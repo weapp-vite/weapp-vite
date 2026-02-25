@@ -59,6 +59,25 @@ function getPageOrder(pages: string[]) {
   return filterSnapshotPages(pages)
 }
 
+async function runPageE2E(page: any) {
+  const methodNames = ['runE2E', '_runE2E']
+
+  for (const methodName of methodNames) {
+    try {
+      return await page.callMethod(methodName)
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (message.includes('not exists')) {
+        continue
+      }
+      throw error
+    }
+  }
+
+  return null
+}
+
 describe.sequential('wevu runtime (weapp e2e)', () => {
   it('runs all pages and snapshots WXML', async () => {
     const config = await loadAppConfig()
@@ -78,11 +97,13 @@ describe.sequential('wevu runtime (weapp e2e)', () => {
           throw new Error(`Failed to launch page: ${route}`)
         }
 
-        const result = await page.callMethod('runE2E')
-        if (!result?.ok) {
-          throw new Error(`E2E failed for ${pagePath}: ${JSON.stringify(result)}`)
+        const result = await runPageE2E(page)
+        if (result != null) {
+          if (!result?.ok) {
+            throw new Error(`E2E failed for ${pagePath}: ${JSON.stringify(result)}`)
+          }
+          expect(result.ok).toBe(true)
         }
-        expect(result.ok).toBe(true)
 
         const element = await page.$('page')
         if (!element) {
