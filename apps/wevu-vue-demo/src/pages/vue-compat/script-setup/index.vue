@@ -26,6 +26,12 @@ function toggleTone() {
 function onPanelRun(payload: { at: string, title: string }) {
   logs.value = [`emit: ${payload.title} @ ${payload.at}`, ...logs.value].slice(0, 8)
 }
+
+function onPanelRunEvent(payload: { type?: string, timeStamp?: number }) {
+  const type = payload.type ?? 'unknown'
+  const timeStamp = payload.timeStamp ?? 'n/a'
+  logs.value = [`emit $event: ${type} @ ${timeStamp}`, ...logs.value].slice(0, 8)
+}
 </script>
 
 <template>
@@ -94,6 +100,7 @@ function onPanelRun(payload: { at: string, title: string }) {
         v-else
         title="Alt Script Setup 面板"
         @run="onPanelRun"
+        @runevent="onPanelRunEvent"
       />
 
       <text class="card-meta">

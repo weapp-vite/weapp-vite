@@ -39,6 +39,21 @@ function normalizeDatasetIndex(value: unknown): number | undefined {
   return undefined
 }
 
+function shouldUseDetailPayload(dataset: Record<string, any>): boolean {
+  const flag = dataset?.wvEventDetail
+  return flag === true || flag === 1 || flag === '1' || flag === 'true'
+}
+
+function resolveInlineEventArg(event: any, dataset: Record<string, any>): any {
+  if (!shouldUseDetailPayload(dataset)) {
+    return event
+  }
+  if (!event || typeof event !== 'object' || !('detail' in event)) {
+    return event
+  }
+  return (event as any).detail === undefined ? event : (event as any).detail
+}
+
 function getByPath(target: any, path: string) {
   if (!path) {
     return undefined
@@ -82,6 +97,7 @@ export function runInlineExpression(
   inlineMap?: InlineExpressionMap,
 ) {
   const dataset = (event?.currentTarget as any)?.dataset ?? (event?.target as any)?.dataset ?? {}
+  const inlineEvent = resolveInlineEventArg(event, dataset)
   const inlineId = dataset?.wvInlineId
   if (inlineId && inlineMap) {
     const entry = inlineMap[inlineId]
@@ -107,7 +123,7 @@ export function runInlineExpression(
         try {
           let resolved: any
           if (typeof resolver === 'function') {
-            resolved = resolver(ctx, scope, event)
+            resolved = resolver(ctx, scope, inlineEvent)
           }
           else if (resolver && typeof resolver === 'object' && resolver.type === 'for-item') {
             const index = scope[resolver.indexKey]
@@ -125,9 +141,9 @@ export function runInlineExpression(
           // 解析失败时保持 dataset 快照回退。
         }
       }
-      const result = entry.fn(ctx, scope, event)
+      const result = entry.fn(ctx, scope, inlineEvent)
       if (typeof result === 'function') {
-        return result.call(ctx, event)
+        return result.call(ctx, inlineEvent)
       }
       return result
     }
@@ -158,7 +174,7 @@ export function runInlineExpression(
   if (!Array.isArray(args)) {
     args = []
   }
-  const resolvedArgs = args.map((item: any) => item === '$event' ? event : item)
+  const resolvedArgs = args.map((item: any) => item === '$event' ? inlineEvent : item)
   const handler = (ctx as any)?.[handlerName]
   if (typeof handler === 'function') {
     return handler.apply(ctx, resolvedArgs)

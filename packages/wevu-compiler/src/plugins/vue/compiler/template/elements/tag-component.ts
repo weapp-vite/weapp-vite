@@ -275,7 +275,7 @@ export function transformComponentElement(node: ElementNode, context: TransformC
       }
     }
     else if (prop.type === NodeTypes.DIRECTIVE) {
-      const dir = transformDirective(prop, context, node)
+      const dir = transformDirective(prop, context, node, undefined, { isComponent: true })
       if (dir) {
         attrs.push(dir)
       }

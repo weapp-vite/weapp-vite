@@ -25,6 +25,7 @@ export function collectElementAttributes(
   },
 ) {
   const { props } = node
+  const isComponentElement = options?.isComponent ?? !isBuiltinTag(node.tag)
   const attrs: string[] = options?.extraAttrs ? [...options.extraAttrs] : []
   let staticClass: string | undefined
   let dynamicClassExp: string | undefined
@@ -108,7 +109,7 @@ export function collectElementAttributes(
         vTextExp = runtimeExp ?? normalizeWxmlExpressionWithContext(rawExp, context)
         continue
       }
-      const dir = transformDirective(prop, context, node, options?.forInfo)
+      const dir = transformDirective(prop, context, node, options?.forInfo, { isComponent: isComponentElement })
       if (dir) {
         attrs.push(dir)
       }
@@ -118,13 +119,12 @@ export function collectElementAttributes(
   if (templateRef) {
     const className = `__wv-ref-${context.templateRefIndexSeed++}`
     staticClass = staticClass ? `${staticClass} ${className}` : className
-    const isComponentRef = options?.isComponent ?? !isBuiltinTag(node.tag)
     context.templateRefs.push({
       selector: `.${className}`,
       inFor,
       name: templateRef.name,
       expAst: templateRef.expAst,
-      kind: isComponentRef ? 'component' : 'element',
+      kind: isComponentElement ? 'component' : 'element',
     })
   }
 
