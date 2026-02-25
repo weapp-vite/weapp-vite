@@ -216,8 +216,8 @@ describe('compileVueTemplateToWxml', () => {
     const { code, inlineExpressions } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('bindrun="__weapp_vite_inline"')
-    expect(code).toContain('data-wv-event-detail="1"')
-    expect(code).toContain('data-wv-inline-id="__wv_inline_0"')
+    expect(code).toContain('data-wv-event-detail-run="1"')
+    expect(code).toContain('data-wv-inline-id-run="__wv_inline_0"')
     expect(code).not.toContain('bindrun="onPanelRun"')
     expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
   })
@@ -230,9 +230,27 @@ describe('compileVueTemplateToWxml', () => {
     const { code, inlineExpressions } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
     expect(code).toContain('bindrun="__weapp_vite_inline"')
-    expect(code).toContain('data-wv-event-detail="1"')
-    expect(code).toContain('data-wv-inline-id="__wv_inline_0"')
+    expect(code).toContain('data-wv-event-detail-run="1"')
+    expect(code).toContain('data-wv-inline-id-run="__wv_inline_0"')
     expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
+  })
+
+  it('emits event-scoped inline attrs for multiple component listeners', () => {
+    const template = `
+<CompatAltPanel @run="onPanelRun" @runevent="onPanelRunEvent($event)" />
+    `.trim()
+
+    const { code, inlineExpressions } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('bindrun="__weapp_vite_inline"')
+    expect(code).toContain('bindrunevent="__weapp_vite_inline"')
+    expect(code).toContain('data-wv-inline-id-run="__wv_inline_0"')
+    expect(code).toContain('data-wv-inline-id-runevent="__wv_inline_1"')
+    expect(code).toContain('data-wv-event-detail-run="1"')
+    expect(code).toContain('data-wv-event-detail-runevent="1"')
+    expect(code).not.toContain('data-wv-inline-id="')
+    expect(inlineExpressions?.[0]?.expression).toContain('ctx.onPanelRun($event)')
+    expect(inlineExpressions?.[1]?.expression).toContain('ctx.onPanelRunEvent($event)')
   })
 
   it('emits array-based scoped slot props', () => {

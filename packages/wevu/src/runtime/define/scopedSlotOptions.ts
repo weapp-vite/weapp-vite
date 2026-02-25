@@ -1,6 +1,6 @@
 import type { InlineExpressionMap } from '../register/inline'
 import type { ComputedDefinitions } from '../types'
-import { runInlineExpression } from '../register/inline'
+import { resolveDatasetEventValue, runInlineExpression } from '../register/inline'
 import { getOwnerProxy, getOwnerSnapshot, subscribeOwner } from '../scopedSlots'
 
 function decodeWxmlEntities(value: string) {
@@ -15,7 +15,8 @@ function decodeWxmlEntities(value: string) {
 }
 
 function parseInlineArgs(event: any) {
-  const argsRaw = event?.currentTarget?.dataset?.wvArgs ?? event?.target?.dataset?.wvArgs
+  const dataset = event?.currentTarget?.dataset ?? event?.target?.dataset ?? {}
+  const argsRaw = resolveDatasetEventValue(dataset, 'wvArgs', event)
   let args: any[] = []
   if (Array.isArray(argsRaw)) {
     args = argsRaw
@@ -130,14 +131,15 @@ export function createScopedSlotOptions(
       __weapp_vite_owner(this: any, event: any) {
         const owner = this.__wvOwnerProxy
         const inlineMap = (this as any).__wevu?.methods?.__weapp_vite_inline_map
-        const result = runInlineExpression(owner, event?.currentTarget?.dataset?.wvHandler ?? event?.target?.dataset?.wvHandler, event, inlineMap)
+        const result = runInlineExpression(owner, undefined, event, inlineMap)
         if (result !== undefined) {
           return result
         }
         if (!owner) {
           return undefined
         }
-        const handlerName = event?.currentTarget?.dataset?.wvHandler ?? event?.target?.dataset?.wvHandler
+        const dataset = event?.currentTarget?.dataset ?? event?.target?.dataset ?? {}
+        const handlerName = resolveDatasetEventValue(dataset, 'wvHandler', event)
         if (typeof handlerName !== 'string' || !handlerName) {
           return undefined
         }

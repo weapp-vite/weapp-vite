@@ -254,6 +254,79 @@ describe('runtime: inline event handler', () => {
     expect(result).toBe('script setup payload')
   })
 
+  it('resolves event-scoped inline ids for multiple component emits on same node', () => {
+    const onRun = vi.fn((payload: any) => payload.title)
+    const onRunEvent = vi.fn((payload: any) => payload.type)
+    const inlineMap = {
+      __wv_inline_0: {
+        keys: [],
+        fn: (ctx: any, _scope: Record<string, any>, payload: any) => ctx.onRun(payload),
+      },
+      __wv_inline_1: {
+        keys: [],
+        fn: (ctx: any, _scope: Record<string, any>, payload: any) => ctx.onRunEvent(payload),
+      },
+    }
+
+    defineComponent({
+      data: () => ({}),
+      methods: {
+        onRun,
+        onRunEvent,
+        __weapp_vite_inline_map: inlineMap,
+      },
+      setup() {
+        return {}
+      },
+    })
+
+    const opts = registeredComponents.pop()
+    expect(opts).toBeTruthy()
+    const inst: any = {
+      __wevu: {
+        proxy: {
+          onRun,
+          onRunEvent,
+        },
+        methods: {
+          __weapp_vite_inline_map: inlineMap,
+        },
+      },
+    }
+    const runEvent = {
+      type: 'run',
+      detail: { title: 'run-payload' },
+      currentTarget: {
+        dataset: {
+          wvInlineIdRun: '__wv_inline_0',
+          wvInlineIdRunevent: '__wv_inline_1',
+          wvEventDetailRun: '1',
+          wvEventDetailRunevent: '1',
+        },
+      },
+    }
+    const runeventEvent = {
+      type: 'runevent',
+      detail: { type: 'tap' },
+      currentTarget: {
+        dataset: {
+          wvInlineIdRun: '__wv_inline_0',
+          wvInlineIdRunevent: '__wv_inline_1',
+          wvEventDetailRun: '1',
+          wvEventDetailRunevent: '1',
+        },
+      },
+    }
+
+    const runResult = opts.methods.__weapp_vite_inline.call(inst, runEvent)
+    const runeventResult = opts.methods.__weapp_vite_inline.call(inst, runeventEvent)
+
+    expect(onRun).toHaveBeenCalledWith({ title: 'run-payload' })
+    expect(onRunEvent).toHaveBeenCalledWith({ type: 'tap' })
+    expect(runResult).toBe('run-payload')
+    expect(runeventResult).toBe('tap')
+  })
+
   it('executes function result from inline map', () => {
     const handle = vi.fn((value: number) => value)
     const inlineMap = {

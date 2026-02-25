@@ -33,8 +33,11 @@ describe.sequential('e2e app: wevu-vue-demo (script setup emit compat)', () => {
     expect(pageWxml).toContain('<CompatAltPanel')
     expect(pageWxml).toContain('bindrun="__weapp_vite_inline"')
     expect(pageWxml).toContain('bindrunevent="__weapp_vite_inline"')
-    expect(pageWxml).toContain('data-wv-event-detail="1"')
-    expect(pageWxml).toContain('data-wv-inline-id="__wv_inline_')
+    expect(pageWxml).toContain('data-wv-event-detail-run="1"')
+    expect(pageWxml).toContain('data-wv-event-detail-runevent="1"')
+    expect(pageWxml).toContain('data-wv-inline-id-run="__wv_inline_')
+    expect(pageWxml).toContain('data-wv-inline-id-runevent="__wv_inline_')
+    expect(pageWxml).not.toContain('data-wv-inline-id="')
     expect(pageWxml).not.toContain('bindrun="onPanelRun"')
 
     expect(pageJs).toContain('__weapp_vite_inline_map')
@@ -50,6 +53,8 @@ describe.sequential('e2e app: wevu-vue-demo (script setup emit compat)', () => {
 
     expect(altPanelJs).toContain('run')
     expect(altPanelJs).toContain('runevent')
+    expect(altPanelJs).toContain('[CompatAltPanel] emit run payload')
+    expect(altPanelJs).toContain('[CompatAltPanel] emit runevent payload')
     expect(altPanelJs).toMatch(/toISOString\(\)/)
     expect(altPanelJs).toMatch(/title:/)
   })

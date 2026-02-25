@@ -39,13 +39,46 @@ function normalizeDatasetIndex(value: unknown): number | undefined {
   return undefined
 }
 
-function shouldUseDetailPayload(dataset: Record<string, any>): boolean {
-  const flag = dataset?.wvEventDetail
+function normalizeEventToken(value: string): string {
+  return value
+    .trim()
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+}
+
+function resolveEventDatasetKey(baseKey: string, event: any): string | undefined {
+  const eventType = typeof event?.type === 'string' ? event.type : ''
+  const token = normalizeEventToken(eventType)
+  if (!token) {
+    return undefined
+  }
+  const camelToken = token.replace(/-([a-z0-9])/g, (_, ch: string) => ch.toUpperCase())
+  if (!camelToken) {
+    return undefined
+  }
+  return `${baseKey}${camelToken[0].toUpperCase()}${camelToken.slice(1)}`
+}
+
+export function resolveDatasetEventValue(
+  dataset: Record<string, any>,
+  baseKey: string,
+  event: any,
+): any {
+  const specificKey = resolveEventDatasetKey(baseKey, event)
+  if (specificKey && dataset?.[specificKey] !== undefined) {
+    return dataset[specificKey]
+  }
+  return dataset?.[baseKey]
+}
+
+function shouldUseDetailPayload(dataset: Record<string, any>, event: any): boolean {
+  const flag = resolveDatasetEventValue(dataset, 'wvEventDetail', event)
   return flag === true || flag === 1 || flag === '1' || flag === 'true'
 }
 
 function resolveInlineEventArg(event: any, dataset: Record<string, any>): any {
-  if (!shouldUseDetailPayload(dataset)) {
+  if (!shouldUseDetailPayload(dataset, event)) {
     return event
   }
   if (!event || typeof event !== 'object' || !('detail' in event)) {
@@ -98,7 +131,7 @@ export function runInlineExpression(
 ) {
   const dataset = (event?.currentTarget as any)?.dataset ?? (event?.target as any)?.dataset ?? {}
   const inlineEvent = resolveInlineEventArg(event, dataset)
-  const inlineId = dataset?.wvInlineId
+  const inlineId = resolveDatasetEventValue(dataset, 'wvInlineId', event)
   if (inlineId && inlineMap) {
     const entry = inlineMap[inlineId]
     if (entry && typeof entry.fn === 'function') {
@@ -149,11 +182,14 @@ export function runInlineExpression(
     }
   }
 
-  const handlerName = typeof expr === 'string' ? expr : undefined
+  const datasetHandler = resolveDatasetEventValue(dataset, 'wvHandler', event)
+  const handlerName = typeof expr === 'string' && expr
+    ? expr
+    : (typeof datasetHandler === 'string' ? datasetHandler : undefined)
   if (!handlerName) {
     return undefined
   }
-  const argsRaw = dataset?.wvArgs
+  const argsRaw = resolveDatasetEventValue(dataset, 'wvArgs', event)
   let args: any[] = []
   if (Array.isArray(argsRaw)) {
     args = argsRaw
