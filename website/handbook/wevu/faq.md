@@ -1,8 +1,8 @@
 ---
 title: FAQ 与排错
-description: FAQ 与排错，聚焦 handbook / wevu 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: FAQ 与排错，聚焦 handbook / Wevu 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
-  - wevu
+  - Wevu
   - handbook
   - faq
   - 与排错
@@ -31,7 +31,7 @@ keywords:
 
 ## 更多排错入口
 
-- wevu：`/wevu/runtime`
+- Wevu：`/wevu/runtime`
 - SFC：`/wevu/vue-sfc`
 - 常见问题：`/troubleshoot/index`
 - 监听上限问题（`EMFILE` / `ENOSPC`）：`/troubleshoot/index#watch-limit`

@@ -1,12 +1,12 @@
 ---
 title: npm 自动构建
-description: weapp-vite 会尽量帮你把“npm 依赖怎么进小程序”这件事自动化：默认提供 **2 种自动策略**，以及 **1 个手动触发**命令。
+description: Weapp-vite 会尽量帮你把“npm 依赖怎么进小程序”这件事自动化：默认提供 **2 种自动策略**，以及 **1 个手动触发**命令。
 keywords:
   - 微信小程序
   - guide
   - npm
   - 自动构建
-  - weapp-vite
+  - Weapp-vite
   - 会尽量帮你把“npm
   - 依赖怎么进小程序”这件事自动化：默认提供
   - "2"
@@ -50,7 +50,7 @@ keywords:
 }
 ```
 
-其中 `lodash` 在 `dependencies`，`lodash-es` 在 `devDependencies`。在页面里分别引入它们时，weapp-vite 的处理方式不同：
+其中 `lodash` 在 `dependencies`，`lodash-es` 在 `devDependencies`。在页面里分别引入它们时，Weapp-vite 的处理方式不同：
 
 - **`dependencies` → 构建 `miniprogram_npm`**：产物保留 `require('lodash')`，依赖会被同步到 `miniprogram_npm`，保持最小化的页面代码。
   ```js
@@ -72,7 +72,7 @@ keywords:
   ```
 
 > [!TIP]
-> 实际内联出来的代码会比示例长得多（可能包含工具函数等），但你不需要手动维护。只要把依赖放在合适的字段里，weapp-vite 会自动选择“进 `miniprogram_npm`”还是“直接内联”。
+> 实际内联出来的代码会比示例长得多（可能包含工具函数等），但你不需要手动维护。只要把依赖放在合适的字段里，Weapp-vite 会自动选择“进 `miniprogram_npm`”还是“直接内联”。
 
 ### 怎么选（建议）
 

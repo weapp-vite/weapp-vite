@@ -1,6 +1,6 @@
 ---
 title: 网络请求与数据层
-description: 网络请求与数据层，聚焦 handbook / network 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: 网络请求与数据层，聚焦 handbook / network 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
   - handbook
   - network
@@ -9,7 +9,7 @@ keywords:
   - /
   - 相关场景
   - 覆盖
-  - weapp-vite
+  - Weapp-vite
 ---
 
 # 网络请求与数据层

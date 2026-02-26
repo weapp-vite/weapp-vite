@@ -1,6 +1,6 @@
 ---
 title: Options API：兼容写法
-description: Options API：兼容写法，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: Options API：兼容写法，聚焦 handbook / sfc 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
   - api
   - handbook
@@ -38,4 +38,4 @@ export default defineComponent({
 
 ## 相关链接
 
-- wevu 组件与选项：`/wevu/component`
+- Wevu 组件与选项：`/wevu/component`

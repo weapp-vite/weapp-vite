@@ -1,6 +1,6 @@
 ---
 title: Template：原生 WXML 语法直通
-description: weapp-vite 会把 Vue 模板编译成 WXML。未被 Vue 指令接管的原生语法（标签/属性/事件）基本按原样保留。
+description: Weapp-vite 会把 Vue 模板编译成 WXML。未被 Vue 指令接管的原生语法（标签/属性/事件）基本按原样保留。
 keywords:
   - Vue SFC
   - 编译
@@ -16,12 +16,12 @@ keywords:
 
 ## 本章你会学到什么
 
-- weapp-vite 如何处理 Vue 模板里的原生 WXML 语法
+- Weapp-vite 如何处理 Vue 模板里的原生 WXML 语法
 - 哪些原生语法可以直接写，哪些需要注意
 
 ## 结论
 
-weapp-vite 会把 Vue 模板编译成 WXML。未被 Vue 指令接管的原生语法（标签/属性/事件）基本按原样保留。
+Weapp-vite 会把 Vue 模板编译成 WXML。未被 Vue 指令接管的原生语法（标签/属性/事件）基本按原样保留。
 
 ## 原生语法直通清单
 
@@ -61,7 +61,7 @@ weapp-vite 会把 Vue 模板编译成 WXML。未被 Vue 指令接管的原生语
 
 ## `<template>` 何时编译为 WXML template，何时变成 block
 
-这些规则直接来自 weapp-vite 的模板编译逻辑（`transformTemplateElement`）：
+这些规则直接来自 Weapp-vite 的模板编译逻辑（`transformTemplateElement`）：
 
 ### 保留为 WXML `<template>`
 

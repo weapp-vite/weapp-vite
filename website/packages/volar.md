@@ -1,8 +1,8 @@
 ---
 title: "@weapp-vite/volar"
-description: "@weapp-vite/volar 为 weapp-vite 项目提供 Volar 语言服务能力，重点增强 配置块的补全与校验。"
+description: "@weapp-vite/volar 为 Weapp-vite 项目提供 Volar 语言服务能力，重点增强 配置块的补全与校验。"
 keywords:
-  - weapp-vite
+  - Weapp-vite
   - packages
   - volar
   - "@weapp-vite/volar"
@@ -14,7 +14,7 @@ keywords:
 
 # @weapp-vite/volar
 
-`@weapp-vite/volar` 为 weapp-vite 项目提供 Volar 语言服务能力，重点增强 `<json>` 配置块的补全与校验。
+`@weapp-vite/volar` 为 Weapp-vite 项目提供 Volar 语言服务能力，重点增强 `<json>` 配置块的补全与校验。
 
 ## 何时使用
 

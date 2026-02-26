@@ -2,7 +2,7 @@
 title: 运行时：setup 上下文与更新
 description: 所有 onXXX() 必须在 setup() 的同步阶段调用；不要写在 await 或回调之后。
 keywords:
-  - wevu
+  - Wevu
   - 运行时
   - handbook
   - runtime
@@ -18,7 +18,7 @@ keywords:
 
 - `defineComponent` 的运行模型
 - `setup(props, ctx)` 的上下文里有什么
-- 为什么 wevu 能最小化 `setData`
+- 为什么 Wevu 能最小化 `setData`
 
 ## 基本用法（页面/组件统一）
 

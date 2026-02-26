@@ -67,3 +67,4 @@ e2e-apps/lib-mode/dist-lib-file
 e2e-apps/lib-mode/dist-matrix
 
 packages/weapp-vite/test-d/.tmp-tsd
+.playwright-cli

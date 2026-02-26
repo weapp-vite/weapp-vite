@@ -1,9 +1,9 @@
 ---
 title: 什么是 Weapp-vite ?
-description: weapp-vite 是一个面向微信小程序的现代构建框架：尽量不改变你写原生小程序的方式（语法、目录结构都能沿用），但把 Vite
+description: Weapp-vite 是一个面向微信小程序的现代构建框架：尽量不改变你写原生小程序的方式（语法、目录结构都能沿用），但把 Vite
   生态、TypeScript、CSS 预处理器和更顺滑的开发/构建流程带进来。你仍然写小程序，但开发体验会更…
 keywords:
-  - weapp-vite
+  - Weapp-vite
   - 迁移指南
   - guide
   - what

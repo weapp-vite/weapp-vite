@@ -103,7 +103,7 @@ function copyInstallCommand(code: string, index: number) {
       <header class="hero">
         <p class="hero-chip">
           <span class="hero-chip-dot" />
-          Weapp-vite AI Console
+          weapp-vite AI Console
         </p>
         <h1>AI 学习入口 {{ props.entryPath }}</h1>
         <p class="hero-lead">

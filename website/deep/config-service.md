@@ -1,6 +1,6 @@
 ---
 title: 配置服务内部结构
-description: 想在 weapp-vite
+description: 想在 Weapp-vite
   中扩展配置加载或贡献新能力？这一页梳理了配置服务的核心文件，帮助你快速定位到对应模块。即便不准备修改源码，也能借此了解 defineConfig
   背后的执行流程。
 keywords:
@@ -10,13 +10,13 @@ keywords:
   - service
   - 配置服务内部结构
   - 想在
-  - weapp-vite
+  - Weapp-vite
   - 帮助你快速定位到对应模块。即便不准备修改源码
 ---
 
 # 配置服务内部结构
 
-想在 weapp-vite 中扩展配置加载或贡献新能力？这一页梳理了配置服务的核心文件，帮助你快速定位到对应模块。即便不准备修改源码，也能借此了解 `defineConfig` 背后的执行流程。
+想在 Weapp-vite 中扩展配置加载或贡献新能力？这一页梳理了配置服务的核心文件，帮助你快速定位到对应模块。即便不准备修改源码，也能借此了解 `defineConfig` 背后的执行流程。
 
 ## createConfigService.ts
 

@@ -1,8 +1,8 @@
 ---
 title: 运行时与生命周期
-description: 介绍 wevu 运行时的桥接机制、生命周期映射与 setData 更新策略，并给出定位“未触发/未更新”问题的实操方法。
+description: 介绍 Wevu 运行时的桥接机制、生命周期映射与 setData 更新策略，并给出定位“未触发/未更新”问题的实操方法。
 keywords:
-  - wevu
+  - Wevu
   - 运行时
   - 编译
   - runtime
@@ -14,9 +14,9 @@ keywords:
 
 # 运行时与生命周期
 
-本页主要说明 wevu 运行时做了什么、哪些生命周期可用，以及常见的“为什么没触发/为什么没更新”的定位思路。
+本页主要说明 Wevu 运行时做了什么、哪些生命周期可用，以及常见的“为什么没触发/为什么没更新”的定位思路。
 
-wevu 运行时的核心职责是：
+Wevu 运行时的核心职责是：
 
 - 把 `data/computed/methods/setup/watch` 等选项桥接到小程序 `Component() / App()`；
 - 将 state + computed 生成快照（plain object），diff 后只下发变化路径到 `setData()`；
@@ -26,9 +26,9 @@ wevu 运行时的核心职责是：
 所有 API 都从 `wevu` 主入口导入。
 :::
 
-## 更新链路：为什么 wevu 不需要 Virtual DOM
+## 更新链路：为什么 Wevu 不需要 Virtual DOM
 
-wevu 的渲染心智模型更接近“小程序原生”：
+Wevu 的渲染心智模型更接近“小程序原生”：
 
 1. 你在 `setup()` 中创建响应式 state（`ref/reactive`）与 `computed`
 2. 运行时把 **state + computed** 转成 **plain snapshot**（可序列化的普通对象）
@@ -37,12 +37,12 @@ wevu 的渲染心智模型更接近“小程序原生”：
 
 这也是为什么你会看到一些“小程序语义”对行为有硬性影响：
 
-- 小程序 `created` 阶段不能调用 `setData`：wevu 会缓冲由响应式更新产生的 `setData`，并在首次安全时机（组件 `attached` / 页面 `onLoad`）统一 flush（细节见 `/wevu/component`）。
+- 小程序 `created` 阶段不能调用 `setData`：Wevu 会缓冲由响应式更新产生的 `setData`，并在首次安全时机（组件 `attached` / 页面 `onLoad`）统一 flush（细节见 `/wevu/component`）。
 - 小程序模板只能消费 JSON 友好的数据：`undefined` 会被归一化（通常变成 `null`），不要依赖“模板里区分 undefined 与缺失字段”的行为（见 `/wevu/compatibility`）。
 
 ## defineComponent：注册页面/组件
 
-`defineComponent(options)` 会直接调用全局 `Component()` 完成注册（页面和组件都走 `Component()`，这是 wevu 的统一模型）。
+`defineComponent(options)` 会直接调用全局 `Component()` 完成注册（页面和组件都走 `Component()`，这是 Wevu 的统一模型）。
 
 ```ts
 import { defineComponent, onShow, ref } from 'wevu'
@@ -59,7 +59,7 @@ export default defineComponent({
 })
 ```
 
-`defineComponent` 的 `data` 必须是函数（与 Vue 3 一致，和小程序原生对象写法不同）。原生小程序会在实例化时拷贝 `data` 对象以隔离实例；wevu 需要为每个实例创建独立的响应式 state/代理与快照 diff，因此要求返回新对象。
+`defineComponent` 的 `data` 必须是函数（与 Vue 3 一致，和小程序原生对象写法不同）。原生小程序会在实例化时拷贝 `data` 对象以隔离实例；Wevu 需要为每个实例创建独立的响应式 state/代理与快照 diff，因此要求返回新对象。
 
 :::warning 运行环境
 `defineComponent()` 依赖小程序运行时提供的全局 `Component()`；在 Node/Vitest 等环境运行时请自行 stub。
@@ -67,16 +67,16 @@ export default defineComponent({
 
 ### props / properties
 
-wevu 同时支持两种 props 定义方式：
+Wevu 同时支持两种 props 定义方式：
 
 - 小程序原生 `properties`：完全按小程序规范书写，`setup(props, ctx)` 通过 `props`/`ctx.props` 读取。
 - Vue 风格 `props`：会被转换为小程序 `properties`（支持 `type` 与 `default` / `value`）。
 
-如果你使用 weapp-vite 的 SFC 编译产物，通常会走 `createWevuComponent(options)`（见下节），并直接携带小程序 `properties`。
+如果你使用 Weapp-vite 的 SFC 编译产物，通常会走 `createWevuComponent(options)`（见下节），并直接携带小程序 `properties`。
 
 ### createWevuComponent（供编译产物调用）
 
-`createWevuComponent(options)` 是 `defineComponent()` 的兼容入口，主要用于 weapp-vite 生成的组件代码调用；它会保留小程序 `properties` 定义并完成组件注册。
+`createWevuComponent(options)` 是 `defineComponent()` 的兼容入口，主要用于 Weapp-vite 生成的组件代码调用；它会保留小程序 `properties` 定义并完成组件注册。
 
 ## 全局默认值（setWevuDefaults / resetWevuDefaults） {#wevu-defaults}
 
@@ -129,7 +129,7 @@ setWevuDefaults({
 > 关键点：必须是**顶层语句**（不要放进 `setup()`/hook 里），这样才能早于 `createApp()` 执行。
 
 > [!TIP]
-> 使用 weapp-vite 时，可以通过 `weapp.wevu.defaults` 在编译期自动注入 `setWevuDefaults()`（见 `/config/shared#weapp-wevu-defaults`）。
+> 使用 Weapp-vite 时，可以通过 `weapp.wevu.defaults` 在编译期自动注入 `setWevuDefaults()`（见 `/config/shared#weapp-wevu-defaults`）。
 
 ## setup：签名与上下文
 
@@ -177,8 +177,8 @@ setWevuDefaults({
 - `onAddToFavorites`
 
 注意：分享/朋友圈/收藏是否触发由微信官方机制决定（例如右上角菜单/`open-type="share"`；朋友圈通常需配合 `wx.showShareMenu()` 开启菜单项）。
-此外，小程序会对部分页面事件做“按需派发”：只有定义了对应页面方法，事件才会从渲染层派发到逻辑层；wevu 也仅在你定义了这些页面方法时才桥接 `setup()` 中注册的同名 hooks。
-如果你使用 weapp-vite 构建，默认会在编译阶段根据你是否调用 `onPageScroll/onShareAppMessage/...` 自动补齐对应 `features.enableOnXxx = true`，以降低手动配置成本。
+此外，小程序会对部分页面事件做“按需派发”：只有定义了对应页面方法，事件才会从渲染层派发到逻辑层；Wevu 也仅在你定义了这些页面方法时才桥接 `setup()` 中注册的同名 hooks。
+如果你使用 Weapp-vite 构建，默认会在编译阶段根据你是否调用 `onPageScroll/onShareAppMessage/...` 自动补齐对应 `features.enableOnXxx = true`，以降低手动配置成本。
 
 ### 返回值型钩子（单实例）
 
@@ -197,7 +197,7 @@ setWevuDefaults({
 - `onDeactivated` → `onHide`
 - `onErrorCaptured` → `onError`
 - `onBeforeMount` / `onBeforeUnmount`：在 `setup()` 同步阶段立即执行（小程序无精确对应时机）
-- `onBeforeUpdate` / `onUpdated`：在每次 `setData` 前/后触发（小程序没有“更新生命周期”，wevu 通过在更新链路里补齐语义）
+- `onBeforeUpdate` / `onUpdated`：在每次 `setData` 前/后触发（小程序没有“更新生命周期”，Wevu 通过在更新链路里补齐语义）
 
 ## bindModel：模型绑定
 
@@ -234,7 +234,7 @@ const onPriceChange = bindModel<number>('form.price').model({ event: 'change' })
 
 默认解析器会优先取 `event.detail.value`，其次取 `event.target.value`；你也可以通过 `parser` 自定义解析逻辑。
 
-> 注意：weapp-vite 模板编译目前不支持 `v-bind="object"` 的对象展开语法（不会生成任何属性），建议使用显式 `:value` + `@change/@input` 绑定。
+> 注意：Weapp-vite 模板编译目前不支持 `v-bind="object"` 的对象展开语法（不会生成任何属性），建议使用显式 `:value` + `@change/@input` 绑定。
 
 ## watch：组合式与选项式
 
@@ -281,7 +281,7 @@ b.value += 1
 endBatch()
 ```
 
-一般情况下不需要手动 batch：wevu 默认会在微任务中批量调度，但“同一 tick 内修改非常多字段”的场景，显式批处理更稳定。
+一般情况下不需要手动 batch：Wevu 默认会在微任务中批量调度，但“同一 tick 内修改非常多字段”的场景，显式批处理更稳定。
 
 ### 选项式 watch（defineComponent/watch）
 
@@ -317,7 +317,7 @@ app.use((runtime) => {
 
 ## 在测试环境使用（Vitest/Node）
 
-wevu 的 `defineComponent()` 依赖全局 `Component()`（以及部分小程序实例方法）。在 Vitest/Node 环境测试时，通常有两条路：
+Wevu 的 `defineComponent()` 依赖全局 `Component()`（以及部分小程序实例方法）。在 Vitest/Node 环境测试时，通常有两条路：
 
 - 把业务逻辑下沉到纯函数/composable/service，避免直接依赖小程序构造器（最推荐）
 - 对测试用例 stub 全局 `Component` 并断言注册参数（只测“桥接层”）

@@ -1,9 +1,9 @@
 ---
 title: 快速上手
-description: 这一页只做一件事：帮你最快把 wevu 跑起来。按“装包 -> 写一个页面/组件 ->（可选）接入 Store”走一遍即可。示例以
-  weapp-vite + Vue SFC 为主；如果你不使用 SFC，也可以直接参考运行时 API 的部分。
+description: 这一页只做一件事：帮你最快把 Wevu 跑起来。按“装包 -> 写一个页面/组件 ->（可选）接入 Store”走一遍即可。示例以
+  Weapp-vite + Vue SFC 为主；如果你不使用 SFC，也可以直接参考运行时 API 的部分。
 keywords:
-  - wevu
+  - Wevu
   - 微信小程序
   - 运行时
   - quick
@@ -13,9 +13,9 @@ keywords:
   - 跑起来。按“装包
 ---
 
-# 快速上手 wevu
+# 快速上手 Wevu
 
-这一页只做一件事：帮你最快把 wevu 跑起来。按“装包 -> 写一个页面/组件 ->（可选）接入 Store”走一遍即可。示例以 weapp-vite + Vue SFC 为主；如果你不使用 SFC，也可以直接参考运行时 API 的部分。
+这一页只做一件事：帮你最快把 Wevu 跑起来。按“装包 -> 写一个页面/组件 ->（可选）接入 Store”走一遍即可。示例以 Weapp-vite + Vue SFC 为主；如果你不使用 SFC，也可以直接参考运行时 API 的部分。
 
 ## 1. 安装
 
@@ -40,12 +40,12 @@ bun add -D wevu
 :::
 
 :::tip
-运行时 API 均从 `wevu` 主入口导入；`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
+运行时 API 均从 `wevu` 主入口导入；`wevu/compiler` 仅供 Weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
 
 ## 2. （可选）启用 Volar 插件
 
-如果你正在使用 weapp-vite + Vue SFC 开发小程序，可以在 `tsconfig.app.json`（或项目主 `tsconfig.json`）里启用 weapp-vite 的 Volar 插件，以获得模板侧的更好类型推导：
+如果你正在使用 Weapp-vite + Vue SFC 开发小程序，可以在 `tsconfig.app.json`（或项目主 `tsconfig.json`）里启用 Weapp-vite 的 Volar 插件，以获得模板侧的更好类型推导：
 
 ```json
 {
@@ -57,11 +57,11 @@ bun add -D wevu
 ```
 
 :::warning 必须设置 lib
-`"vueCompilerOptions.lib": "wevu"` 用于告诉 Volar 从 wevu 的类型声明里解析 `defineProps/withDefaults/defineEmits` 等脚本宏。若不设置，Volar 会按 Vue 默认宏处理，最终只剩 `any` 类型提示。
+`"vueCompilerOptions.lib": "wevu"` 用于告诉 Volar 从 Wevu 的类型声明里解析 `defineProps/withDefaults/defineEmits` 等脚本宏。若不设置，Volar 会按 Vue 默认宏处理，最终只剩 `any` 类型提示。
 :::
 
-:::info wevu@1.2.0 起的 vue 依赖说明
-从 wevu@1.2.0 开始，`wevu` 会依赖 `vue`，但只用于获取其 `dts` 类型定义，不会引入任何 Vue 运行时代码。这样做是为了让 Volar 在 `<script setup>` 下正确解析 `props`、宏类型与 IDE 跳转（此前尝试过多种方案仍无法稳定解决）。业务代码仍应从 `wevu` 导入运行时 API。
+:::info Wevu@1.2.0 起的 vue 依赖说明
+从 Wevu@1.2.0 开始，`wevu` 会依赖 `vue`，但只用于获取其 `dts` 类型定义，不会引入任何 Vue 运行时代码。这样做是为了让 Volar 在 `<script setup>` 下正确解析 `props`、宏类型与 IDE 跳转（此前尝试过多种方案仍无法稳定解决）。业务代码仍应从 `wevu` 导入运行时 API。
 :::
 
 ## 3. 写一个页面（SFC 示例）

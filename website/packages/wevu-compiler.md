@@ -2,8 +2,8 @@
 title: "@wevu/compiler"
 description: "@wevu/compiler 是 Wevu 的编译能力底座，提供 Vue SFC 与小程序模板的解析、转换和输出能力。"
 keywords:
-  - weapp-vite
-  - wevu
+  - Weapp-vite
+  - Wevu
   - 编译
   - packages
   - compiler
@@ -50,6 +50,6 @@ console.log(result.style)
 - `collectWevuPageFeatureFlags`
 - `injectWevuPageFeaturesInJs`
 
-## 与 weapp-vite 的关系
+## 与 Weapp-vite 的关系
 
-`weapp-vite` 在上层整合构建流程，`@wevu/compiler` 提供底层编译能力。若你只是常规业务开发，优先看 [weapp-vite 指引](/guide/)。
+`weapp-vite` 在上层整合构建流程，`@wevu/compiler` 提供底层编译能力。若你只是常规业务开发，优先看 [Weapp-vite 指引](/guide/)。

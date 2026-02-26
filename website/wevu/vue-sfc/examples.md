@@ -1,9 +1,9 @@
 ---
 title: Vue SFC：示例
-description: 这个示例展示一个自定义组件如何配合 v-model 工作。对于自定义组件，weapp-vite 会把 v-model="x"
+description: 这个示例展示一个自定义组件如何配合 v-model 工作。对于自定义组件，Weapp-vite 会把 v-model="x"
   按默认策略编译为 value="{{x}}" + bind:input="x = $event.detail.v…
 keywords:
-  - wevu
+  - Wevu
   - Vue SFC
   - vue
   - sfc
@@ -57,7 +57,7 @@ function inc() {
 </template>
 ```
 
-> 说明：小程序部分页面事件是“按需派发”（分享/滚动等），weapp-vite 会在编译阶段根据你是否调用 `onPageScroll/onShareAppMessage/...` 自动补齐 `features.enableOnXxx = true`；如需手动控制，仍可在 `defineComponent({ features: ... })` 中显式覆盖。
+> 说明：小程序部分页面事件是“按需派发”（分享/滚动等），Weapp-vite 会在编译阶段根据你是否调用 `onPageScroll/onShareAppMessage/...` 自动补齐 `features.enableOnXxx = true`；如需手动控制，仍可在 `defineComponent({ features: ... })` 中显式覆盖。
 
 ## 组件示例：Props + Emits + v-model（Script Setup + 宏）
 

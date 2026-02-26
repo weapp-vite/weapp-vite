@@ -1,6 +1,6 @@
 ---
 title: 使用 TS/JS 生成 JSON
-description: 小程序项目里有很多结构相似的 json 配置（页面/组件/App）。weapp-vite 在兼容原生 json/jsonc
+description: 小程序项目里有很多结构相似的 json 配置（页面/组件/App）。Weapp-vite 在兼容原生 json/jsonc
   的基础上，允许你用 json.ts / json.js 生成最终配置，让配置也能享受模块化、类型提示和复用能力。
 keywords:
   - 配置
@@ -119,7 +119,7 @@ export default <Page>{
 }
 ```
 
-- `@/assets/shared.config` 通过别名引入，weapp-vite 会根据 `tsconfig.json` 的 `baseUrl` 和 `paths` 自动解析。
+- `@/assets/shared.config` 通过别名引入，Weapp-vite 会根据 `tsconfig.json` 的 `baseUrl` 和 `paths` 自动解析。
 - 多个配置对象会被合并后再输出到最终的 `page.json`。
 
 ## 提示与最佳实践

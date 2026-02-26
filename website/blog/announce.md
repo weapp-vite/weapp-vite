@@ -1,9 +1,9 @@
 ---
-title: weapp-vite 发布：重塑小程序开发体验！
-description: weapp-vite 发布：重塑小程序开发体验！，聚焦 blog / announce 相关场景，覆盖 weapp-vite 与
-  wevu 的能力、配置和实践要点。
+title: Weapp-vite 发布：重塑小程序开发体验！
+description: Weapp-vite 发布：重塑小程序开发体验！，聚焦 blog / announce 相关场景，覆盖 Weapp-vite 与
+  Wevu 的能力、配置和实践要点。
 keywords:
-  - weapp-vite
+  - Weapp-vite
   - 微信小程序
   - 配置
   - blog
@@ -67,7 +67,7 @@ date: 2025-05-06
 
 > 假如你创建的是一个 `ts` 项目，你需要在 `vite.config.ts` 里的 `weapp.srcRoot` 配置项，指明使用的是 `'./miniprogram'` 目录，详见本页下方
 
-3. 安装 weapp-vite 并执行初始化命令
+3. 安装 Weapp-vite 并执行初始化命令
 
 ```sh
 npm i -D weapp-vite

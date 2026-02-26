@@ -2,7 +2,7 @@
 title: "@weapp-vite/web"
 description: "@weapp-vite/web 是实验性的 H5 运行时与 Vite 插件，用于把小程序模板能力映射到浏览器环境做验证。"
 keywords:
-  - weapp-vite
+  - Weapp-vite
   - 运行时
   - packages
   - web

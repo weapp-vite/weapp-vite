@@ -1,6 +1,6 @@
 ---
 title: 分包配置
-description: weapp-vite 会读取 app.json.subPackages 来生成分包产物；weapp.subPackages 则用于
+description: Weapp-vite 会读取 app.json.subPackages 来生成分包产物；weapp.subPackages 则用于
   **构建期补充配置**（独立分包、依赖裁剪、共享样式等）。
 keywords:
   - 配置
@@ -8,7 +8,7 @@ keywords:
   - config
   - subpackages
   - 分包配置
-  - weapp-vite
+  - Weapp-vite
   - 会读取
 ---
 

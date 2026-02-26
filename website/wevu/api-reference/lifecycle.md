@@ -1,8 +1,8 @@
 ---
 title: Lifecycle API
-description: wevu 生命周期 API 都需要在 setup() 的同步阶段调用。
+description: Wevu 生命周期 API 都需要在 setup() 的同步阶段调用。
 keywords:
-  - wevu
+  - Wevu
   - Vue SFC
   - 微信小程序
   - api

@@ -1,10 +1,10 @@
 ---
-title: Vue 3 SFC vs weapp-vite SFC：写法对比
-description: 本文聚焦“写法层面”的相同与不同：当你用 weapp-vite + wevu 写 .vue 时，哪些与 Vue 3 SFC
+title: Vue 3 SFC vs Weapp-vite SFC：写法对比
+description: 本文聚焦“写法层面”的相同与不同：当你用 Weapp-vite + Wevu 写 .vue 时，哪些与 Vue 3 SFC
   一致，哪些会因为小程序编译/运行时而发生变化。
 keywords:
-  - weapp-vite
-  - wevu
+  - Weapp-vite
+  - Wevu
   - 微信小程序
   - 运行时
   - 编译
@@ -13,9 +13,9 @@ keywords:
   - Vue 3
 ---
 
-# Vue 3 SFC vs weapp-vite SFC：写法对比
+# Vue 3 SFC vs Weapp-vite SFC：写法对比
 
-本文聚焦“写法层面”的相同与不同：当你用 weapp-vite + wevu 写 `.vue` 时，哪些与 Vue 3 SFC 一致，哪些会因为小程序编译/运行时而发生变化。
+本文聚焦“写法层面”的相同与不同：当你用 Weapp-vite + Wevu 写 `.vue` 时，哪些与 Vue 3 SFC 一致，哪些会因为小程序编译/运行时而发生变化。
 
 ## 相同点（写法层面）
 
@@ -37,9 +37,9 @@ keywords:
 
 ### 2. 组件注册方式不同：usingComponents 仍是最终产物
 
-Vue 3 中常见写法是“import + 注册/自动注册”。小程序最终仍要求 **JSON 声明式** 的 `usingComponents`，但 weapp-vite 支持在**编译期**把“import + 模板使用”转为 `usingComponents`，因此可以保留类似的写法心智。
+Vue 3 中常见写法是“import + 注册/自动注册”。小程序最终仍要求 **JSON 声明式** 的 `usingComponents`，但 Weapp-vite 支持在**编译期**把“import + 模板使用”转为 `usingComponents`，因此可以保留类似的写法心智。
 
-在 weapp-vite 中：
+在 Weapp-vite 中：
 
 - `usingComponents` 可以写在 `<json>` 或 `definePageJson/defineComponentJson` 宏里。
 - 编译器会从 **模板标签** 与 **`<script setup>` 导入** 自动补齐 `usingComponents`（编译期生成，不是运行时注册）。
@@ -49,19 +49,19 @@ Vue 3 中常见写法是“import + 注册/自动注册”。小程序最终仍�
 
 ### 3. 新增 `<json>` 与 JSON 宏（Vue 3 没有）
 
-weapp-vite 允许在 `.vue` 中直接写小程序配置：
+Weapp-vite 允许在 `.vue` 中直接写小程序配置：
 
 - `<json>` 自定义块（支持 json/jsonc/json5）。
 - `<script setup>` 中的 `defineAppJson / definePageJson / defineComponentJson`（构建期执行并合并到最终 JSON）。
 
 这些配置最终生成 `app.json / page.json / component.json`，属于小程序必需产物。
 
-### 4. 运行时来源是 wevu（而非 vue）
+### 4. 运行时来源是 Wevu（而非 vue）
 
-SFC 运行时基于 **wevu**，不是浏览器 DOM：
+SFC 运行时基于 **Wevu**，不是浏览器 DOM：
 
 - `defineComponent`、`ref` 等 API 应从 `wevu` 导入。
-- weapp-vite 会把部分 `vue` 运行时 API 重写为 `wevu` 版本（如 `useAttrs` / `useSlots` / `useModel`）。
+- Weapp-vite 会把部分 `vue` 运行时 API 重写为 `wevu` 版本（如 `useAttrs` / `useSlots` / `useModel`）。
 - `ctx.emit` 实际调用的是小程序 `triggerEvent`，只携带 `detail` 单一载荷。
 
 ### 5. 样式输出是 WXSS，scoped 规则不同
@@ -87,7 +87,7 @@ const count = ref(0)
 </template>
 ```
 
-weapp-vite + wevu（小程序）：
+Weapp-vite + Wevu（小程序）：
 
 ```vue
 <script setup lang="ts">
@@ -106,5 +106,5 @@ const count = ref(0)
 ## 实用总结
 
 - **“写法像 Vue 3，产物是小程序”**：语法趋同，但目标平台完全不同。
-- **优先认清两层**：模板/配置在编译期解决，响应式与生命周期在 wevu 运行期解决。
-- **遇到问题先分层**：模板/指令 → 看 weapp-vite 编译；状态/生命周期 → 看 wevu 运行时。
+- **优先认清两层**：模板/配置在编译期解决，响应式与生命周期在 Wevu 运行期解决。
+- **遇到问题先分层**：模板/指令 → 看 Weapp-vite 编译；状态/生命周期 → 看 Wevu 运行时。

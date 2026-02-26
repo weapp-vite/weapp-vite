@@ -1,6 +1,6 @@
 ---
 title: Vant Weapp 集成
-description: Vant Weapp 集成，聚焦 integration / vant 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: Vant Weapp 集成，聚焦 integration / vant 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
   - 配置
   - integration
@@ -58,7 +58,7 @@ WXML：
 
 ## 自动导入组件
 
-如果你不想手写 `usingComponents`，可以开启 weapp-vite 的自动导入组件：之后你在 WXML 里写 `<van-button />`，构建器会自动补齐注册信息。
+如果你不想手写 `usingComponents`，可以开启 Weapp-vite 的自动导入组件：之后你在 WXML 里写 `<van-button />`，构建器会自动补齐注册信息。
 
 ::: code-group
 
@@ -78,4 +78,4 @@ export default defineConfig({
 :::
 
 > [!TIP]
-> 旧版本 weapp-vite 可能仍支持 `weapp.enhance.autoImportComponents`，但该写法已废弃，建议使用顶层 `weapp.autoImportComponents`。
+> 旧版本 Weapp-vite 可能仍支持 `weapp.enhance.autoImportComponents`，但该写法已废弃，建议使用顶层 `weapp.autoImportComponents`。

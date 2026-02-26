@@ -2,7 +2,7 @@
 title: "@wevu/api"
 description: "@wevu/api 提供跨平台小程序 API 封装，默认推荐 Promise 调用方式，同时兼容传统回调风格。"
 keywords:
-  - wevu
+  - Wevu
   - api
   - packages
   - weapi

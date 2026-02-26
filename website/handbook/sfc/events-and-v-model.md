@@ -1,6 +1,6 @@
 ---
 title: 事件与 v-model：绑定策略
-description: weapp-vite 的 SFC 模板编译会把 v-model="x" 直接编译成小程序的赋值表达式事件（例如
+description: Weapp-vite 的 SFC 模板编译会把 v-model="x" 直接编译成小程序的赋值表达式事件（例如
   bind:input="x = $event.detail.value"），因此存在天然限制：
 keywords:
   - 微信小程序
@@ -10,7 +10,7 @@ keywords:
   - model
   - 事件与
   - v-model：绑定策略
-  - weapp-vite
+  - Weapp-vite
 ---
 
 # 事件与 v-model：绑定策略
@@ -27,7 +27,7 @@ keywords:
 
 ## v-model：本质是“赋值表达式事件”
 
-weapp-vite 的 SFC 模板编译会把 `v-model="x"` 直接编译成小程序的赋值表达式事件（例如 `bind:input="x = $event.detail.value"`），因此存在天然限制：
+Weapp-vite 的 SFC 模板编译会把 `v-model="x"` 直接编译成小程序的赋值表达式事件（例如 `bind:input="x = $event.detail.value"`），因此存在天然限制：
 
 - 表达式必须可赋值（左值）：`x` / `x.y` / `x[i]`
 - 不要写：`a + b`、函数调用、可选链（`a?.b`）

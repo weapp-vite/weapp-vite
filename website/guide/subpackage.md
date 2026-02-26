@@ -1,6 +1,6 @@
 ---
 title: 分包指南
-description: 微信小程序的分包机制在 weapp-vite 中得到完整支持。本页帮你快速搞清楚两件事：
+description: 微信小程序的分包机制在 Weapp-vite 中得到完整支持。本页帮你快速搞清楚两件事：
 keywords:
   - 调试
   - 分包
@@ -8,7 +8,7 @@ keywords:
   - subpackage
   - 分包指南
   - 微信小程序的分包机制在
-  - weapp-vite
+  - Weapp-vite
   - 中得到完整支持。本页帮你快速搞清楚两件事：
 ---
 
@@ -17,13 +17,13 @@ keywords:
 微信小程序的分包机制在 `weapp-vite` 中得到完整支持。本页帮你快速搞清楚两件事：
 
 - **普通分包 vs 独立分包** 有什么区别（哪些能互相引用、哪些不能）
-- **weapp-vite 会怎么分发产物**（共享代码/依赖/样式会落到哪里）
+- **Weapp-vite 会怎么分发产物**（共享代码/依赖/样式会落到哪里）
 
 如果你需要原理级配置（`weapp.subPackages`、`weapp.chunks` 等），请继续阅读 [配置文档 · 分包配置](/config/subpackages.md) 与 [配置文档 · Worker 配置](/config/worker.md)。
 
 先记住 3 句话：
 
-- **只想开启分包**：直接沿用官方 `app.json.subPackages` 写法即可，weapp-vite 会识别并按分包输出。
+- **只想开启分包**：直接沿用官方 `app.json.subPackages` 写法即可，Weapp-vite 会识别并按分包输出。
 - **想共享主题/基础样式**：用 [`weapp.subPackages[].styles`](/config/subpackages.md#subpackages-styles) 交给构建器注入，别手写一堆相对路径 `@import`。
 - **想控制共享代码怎么落盘**：关注 `weapp.chunks.sharedStrategy`（`duplicate` vs `hoist`）。
 
@@ -104,7 +104,7 @@ export default defineConfig({
 
 默认的 `duplicate` 策略可以在分包首次打开时避免回到主包拉取共享模块；若更在意控制整体包体、希望统一落到主包，也可以设置 `weapp.chunks.sharedStrategy = 'hoist'`，或结合 [advanced-chunks](https://rolldown.rs/guide/in-depth/advanced-chunks) 做更精细的拆分。
 
-在实际项目中，跨分包共享逻辑往往会抽象到 `src/action/`、`src/services/` 等目录。若这些模块只被分包页面（或其它共享 chunk）间接引用，weapp-vite 会把位于根目录的“伪主包”导入者排除在统计之外，使共享代码仍然复制到各自的 `pages/*/weapp-shared/common.js`。例如下列最小复现：
+在实际项目中，跨分包共享逻辑往往会抽象到 `src/action/`、`src/services/` 等目录。若这些模块只被分包页面（或其它共享 chunk）间接引用，Weapp-vite 会把位于根目录的“伪主包”导入者排除在统计之外，使共享代码仍然复制到各自的 `pages/*/weapp-shared/common.js`。例如下列最小复现：
 
 ```ts
 // src/pages/index1/index.ts & src/pages/index3/index.ts
@@ -202,7 +202,7 @@ export default defineConfig({
 [`weapp.subPackages[].styles`](/config/subpackages.md#subpackages-styles) 能把重复的 `@import` 交还给构建器处理：声明一次主题、设计令牌或基础布局，普通分包与独立分包都会在生成样式时自动插入对应的共享入口。
 
 > [!TIP]
-> 分包根目录下若存在 `index.*` / `pages.*` / `components.*`（默认扫描 `.wxss`/`.css`），weapp-vite 会自动识别它们作为共享入口，零配置即可复用。
+> 分包根目录下若存在 `index.*` / `pages.*` / `components.*`（默认扫描 `.wxss`/`.css`），Weapp-vite 会自动识别它们作为共享入口，零配置即可复用。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'

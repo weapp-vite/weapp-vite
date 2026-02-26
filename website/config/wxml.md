@@ -1,11 +1,11 @@
 ---
 title: WXML 配置
-description: weapp-vite 会扫描 WXML 以完成组件自动导入、WXS 依赖分析与模板产物输出。本页说明 weapp.wxml 的配置项与当前生效范围。
+description: Weapp-vite 会扫描 WXML 以完成组件自动导入、WXS 依赖分析与模板产物输出。本页说明 weapp.wxml 的配置项与当前生效范围。
 keywords:
   - 配置
   - config
   - wxml
-  - weapp-vite
+  - Weapp-vite
   - 会扫描
   - 以完成组件自动导入
   - wxs

@@ -1,9 +1,9 @@
 ---
-title: weapp-vite init 做了什么？
-description: weapp-vite init 是在现有原生项目上接入 weapp-vite
+title: Weapp-vite init 做了什么？
+description: Weapp-vite init 是在现有原生项目上接入 Weapp-vite
   的最快方式。它会检查当前目录结构、补齐必需的配置文件，然后提示你后续可以手动调整的地方。本节逐步拆解各项改动，方便团队在需要时自行定制或纯手动迁移。
 keywords:
-  - weapp-vite
+  - Weapp-vite
   - 配置
   - deep
   - init
@@ -15,21 +15,21 @@ keywords:
 
 # `weapp-vite init` 做了什么？
 
-`weapp-vite init` 是在现有原生项目上接入 weapp-vite 的最快方式。它会检查当前目录结构、补齐必需的配置文件，然后提示你后续可以手动调整的地方。本节逐步拆解各项改动，方便团队在需要时自行定制或纯手动迁移。
+`weapp-vite init` 是在现有原生项目上接入 Weapp-vite 的最快方式。它会检查当前目录结构、补齐必需的配置文件，然后提示你后续可以手动调整的地方。本节逐步拆解各项改动，方便团队在需要时自行定制或纯手动迁移。
 
 > [!TIP]
 > 如果你更倾向于完全手工搭建，也可以把下面每一小节视为 Checklist，按需执行对应步骤。
 
 ## 1. 修改 `project.config.json`
 
-- 设置 `miniprogramRoot` 指向 weapp-vite 产物目录（默认 `dist`），确保微信开发者工具预览/上传的始终是编译后的文件。
-- 统一 `npm` 构建相关字段，避免与 weapp-vite 的自动 npm 策略冲突。
+- 设置 `miniprogramRoot` 指向 Weapp-vite 产物目录（默认 `dist`），确保微信开发者工具预览/上传的始终是编译后的文件。
+- 统一 `npm` 构建相关字段，避免与 Weapp-vite 的自动 npm 策略冲突。
 
 > 手工迁移时，记得在开发者工具中重新选择项目根目录或刷新配置，使其指向新的 `dist` 路径。
 
 ## 2. 更新 `package.json`
 
-- 添加 `pnpm dev`、`pnpm build`、`pnpm open` 等脚本，与 weapp-vite CLI 对齐。
+- 添加 `pnpm dev`、`pnpm build`、`pnpm open` 等脚本，与 Weapp-vite CLI 对齐。
 - 安装基础依赖（`weapp-vite`、`typescript`、`@types` 系列）以及推荐的工具链。
 
 脚本示例：
@@ -48,13 +48,13 @@ keywords:
 ## 3. 新增 `tsconfig.json` 与 `vite-env.d.ts`
 
 - `tsconfig.json` 提供 TypeScript 编译基础配置，并启用小程序类型提示。
-- `vite-env.d.ts` 声明 weapp-vite 自动注入的全局类型，避免在编辑器中出现缺失提示。
+- `vite-env.d.ts` 声明 Weapp-vite 自动注入的全局类型，避免在编辑器中出现缺失提示。
 
 如果项目暂不使用 TypeScript，也建议保留这些文件，以便后续随时开启类型支持。
 
 ## 4. 生成 `vite.config.[m]ts`
 
-- 创建标准的 `vite.config.ts`（或 `vite.config.mts`）并写入 weapp-vite 默认配置。
+- 创建标准的 `vite.config.ts`（或 `vite.config.mts`）并写入 Weapp-vite 默认配置。
 - 默认配置中包含 `weapp: { srcRoot: '.', subPackages: [] }` 等常用字段，你可以在此基础上继续补充别名、插件等设置。
 
 ```ts

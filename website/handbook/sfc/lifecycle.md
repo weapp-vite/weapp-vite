@@ -1,6 +1,6 @@
 ---
 title: 生命周期：页面/组件对齐
-description: 生命周期：页面/组件对齐，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: 生命周期：页面/组件对齐，聚焦 handbook / sfc 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
   - handbook
   - sfc
@@ -16,7 +16,7 @@ keywords:
 
 ## 本章你会学到什么
 
-- 小程序生命周期与 wevu hooks 的对齐关系
+- 小程序生命周期与 Wevu hooks 的对齐关系
 - 为什么 hooks 必须在 `setup()` 同步阶段注册
 
 ## 页面常用 hooks

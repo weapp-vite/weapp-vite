@@ -1,8 +1,8 @@
 ---
 title: create-weapp-vite
-description: create-weapp-vite 是官方脚手架，用于快速创建小程序工程，并在模板中对齐 weapp-vite / wevu 的版本组合。
+description: create-weapp-vite 是官方脚手架，用于快速创建小程序工程，并在模板中对齐 Weapp-vite / Wevu 的版本组合。
 keywords:
-  - weapp-vite
+  - Weapp-vite
   - api
   - packages
   - create

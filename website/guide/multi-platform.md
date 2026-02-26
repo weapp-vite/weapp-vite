@@ -3,14 +3,14 @@ outline:
   - 2
   - 4
 title: 面向多平台构建
-description: weapp-vite 内置了多端适配能力：在开发/构建命令后追加 --platform （或短写 -p ），即可输出目标平台所需的文件后缀与目录结构。
+description: Weapp-vite 内置了多端适配能力：在开发/构建命令后追加 --platform （或短写 -p ），即可输出目标平台所需的文件后缀与目录结构。
 keywords:
   - 微信小程序
   - guide
   - multi
   - platform
   - 面向多平台构建
-  - weapp-vite
+  - Weapp-vite
   - 内置了多端适配能力：在开发/构建命令后追加
 ---
 

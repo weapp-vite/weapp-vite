@@ -1,9 +1,9 @@
 ---
 title: class/style 绑定能力
-description: weapp-vite + wevu 在小程序侧对齐 Vue 3 的 :class / :style
+description: Weapp-vite + Wevu 在小程序侧对齐 Vue 3 的 :class / :style
   绑定语法，支持字符串、数组、对象与嵌套组合，并会输出小程序可识别的字符串 class/style。
 keywords:
-  - wevu
+  - Wevu
   - 运行时
   - vue
   - sfc
@@ -15,7 +15,7 @@ keywords:
 
 # class/style 绑定能力
 
-`weapp-vite + wevu` 在小程序侧对齐 Vue 3 的 `:class` / `:style` 绑定语法，支持字符串、数组、对象与嵌套组合，并会输出小程序可识别的字符串 class/style。
+`weapp-vite + Wevu` 在小程序侧对齐 Vue 3 的 `:class` / `:style` 绑定语法，支持字符串、数组、对象与嵌套组合，并会输出小程序可识别的字符串 class/style。
 
 ```vue
 <template>

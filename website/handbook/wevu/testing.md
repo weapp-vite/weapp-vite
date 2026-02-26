@@ -1,8 +1,8 @@
 ---
 title: 测试与 Mock
-description: 测试与 Mock，聚焦 handbook / wevu 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: 测试与 Mock，聚焦 handbook / Wevu 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
-  - wevu
+  - Wevu
   - handbook
   - testing
   - 测试与
@@ -16,7 +16,7 @@ keywords:
 
 ## 本章你会学到什么
 
-- 在非小程序环境（Vitest/Node）里如何测试 wevu 逻辑
+- 在非小程序环境（Vitest/Node）里如何测试 Wevu 逻辑
 - 需要 stub 哪些全局（`Component`、`triggerEvent` 等）
 
 ## 最小原则
@@ -26,4 +26,4 @@ keywords:
 
 ## 相关链接
 
-- wevu 运行时提示（Node 环境需要 stub）：`/wevu/runtime#defineComponent：注册页面组件`
+- Wevu 运行时提示（Node 环境需要 stub）：`/wevu/runtime#defineComponent：注册页面组件`

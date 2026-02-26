@@ -1,12 +1,12 @@
 ---
 title: JSON 配置
-description: weapp-vite 支持原生 json/jsonc，并提供 **JSON 别名** 与 **JSON 合并策略**，方便在
+description: Weapp-vite 支持原生 json/jsonc，并提供 **JSON 别名** 与 **JSON 合并策略**，方便在
   app.json / page.json / component.json 中复用配置。
 keywords:
   - 配置
   - config
   - json
-  - weapp-vite
+  - Weapp-vite
   - 支持原生
   - json/jsonc
   - 并提供

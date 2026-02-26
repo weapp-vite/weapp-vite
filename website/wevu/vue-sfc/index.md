@@ -1,10 +1,10 @@
 ---
 title: Vue SFC 开发指南
-description: weapp-vite 内置了 Vue SFC 编译链路，配合 wevu 运行时即可用 Vue
+description: Weapp-vite 内置了 Vue SFC 编译链路，配合 Wevu 运行时即可用 Vue
   风格开发小程序页面/组件，同时保持小程序能力（页面特性、分享、性能优化）。
 keywords:
-  - weapp-vite
-  - wevu
+  - Weapp-vite
+  - Wevu
   - Vue SFC
   - vue
   - sfc
@@ -13,9 +13,9 @@ keywords:
   - 编译链路
 ---
 
-# 在 weapp-vite 中使用 Vue SFC
+# 在 Weapp-vite 中使用 Vue SFC
 
-weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue 风格开发小程序页面/组件，同时保持小程序能力（页面特性、分享、性能优化）。
+Weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue 风格开发小程序页面/组件，同时保持小程序能力（页面特性、分享、性能优化）。
 
 > 适用版本：Vue SFC 仅在 `weapp-vite@6.x` 及以上可用，请先升级到 6 大版本。
 
@@ -49,8 +49,8 @@ bun add -D wevu
 
 Vue SFC 在小程序里建议拆成两段：
 
-- **编译期（weapp-vite）**：负责把 `.vue` 拆解/编译为小程序产物（WXML/WXSS/JS/JSON），并做模板语法（如 `v-if/v-for/v-model`）到 WXML 的转换。
-- **运行期（wevu）**：负责响应式、生命周期 hooks、快照 diff 与最小化 `setData`，让你用 Vue 3 风格的 Composition API 写业务逻辑。
+- **编译期（Weapp-vite）**：负责把 `.vue` 拆解/编译为小程序产物（WXML/WXSS/JS/JSON），并做模板语法（如 `v-if/v-for/v-model`）到 WXML 的转换。
+- **运行期（Wevu）**：负责响应式、生命周期 hooks、快照 diff 与最小化 `setData`，让你用 Vue 3 风格的 Composition API 写业务逻辑。
 
 ```mermaid
 flowchart LR

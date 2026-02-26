@@ -1,8 +1,8 @@
 ---
 title: Runtime Bridge API
-description: 本页覆盖 wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的底层 API。
+description: 本页覆盖 Wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的底层 API。
 keywords:
-  - wevu
+  - Wevu
   - Vue SFC
   - 调试
   - 运行时
@@ -14,7 +14,7 @@ keywords:
 
 # Runtime Bridge API（桥接与调试）
 
-本页覆盖 wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的底层 API。
+本页覆盖 Wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的底层 API。
 
 ## 1. 运行时注册与挂载 {#registration-mount}
 

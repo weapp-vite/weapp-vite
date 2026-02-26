@@ -1,9 +1,9 @@
 ---
 title: 从原生小程序迁移到 Vue SFC
-description: 这是一份面向实际项目的迁移手册，不是概念介绍。目标是让你在**不重写业务**的前提下，把原生小程序稳定迁移到 weapp-vite +
-  wevu + Vue SFC。
+description: 这是一份面向实际项目的迁移手册，不是概念介绍。目标是让你在**不重写业务**的前提下，把原生小程序稳定迁移到 Weapp-vite +
+  Wevu + Vue SFC。
 keywords:
-  - wevu
+  - Wevu
   - Vue SFC
   - 微信小程序
   - 迁移指南
@@ -15,7 +15,7 @@ keywords:
 
 # 从原生小程序迁移到 Vue SFC（详细指南）
 
-这是一份面向实际项目的迁移手册，不是概念介绍。目标是让你在**不重写业务**的前提下，把原生小程序稳定迁移到 `weapp-vite + wevu + Vue SFC`。
+这是一份面向实际项目的迁移手册，不是概念介绍。目标是让你在**不重写业务**的前提下，把原生小程序稳定迁移到 `weapp-vite + Wevu + Vue SFC`。
 
 适用场景：
 
@@ -90,12 +90,12 @@ flowchart LR
 
 ## 原生到 Vue SFC 映射表（高频）
 
-| 原生小程序                 | Vue SFC / wevu 对应                                                  | 迁移建议                             |
+| 原生小程序                 | Vue SFC / Wevu 对应                                                  | 迁移建议                             |
 | -------------------------- | -------------------------------------------------------------------- | ------------------------------------ |
-| `Page({...})`              | `<script setup>` + `definePageJson` + wevu hooks                     | 页面不再写原生构造器                 |
+| `Page({...})`              | `<script setup>` + `definePageJson` + Wevu hooks                     | 页面不再写原生构造器                 |
 | `Component({...})`         | `<script setup>` + `defineComponentJson` + `defineProps/defineEmits` | 组件声明聚合到 SFC                   |
 | `data: {}`                 | `ref/reactive`                                                       | 细粒度状态更易维护                   |
-| `this.setData({...})`      | 直接赋值：`state.xxx = y`                                            | 由 wevu 负责最小更新                 |
+| `this.setData({...})`      | 直接赋值：`state.xxx = y`                                            | 由 Wevu 负责最小更新                 |
 | `onLoad/onShow/onHide/...` | `onLoad/onShow/onHide/...`（从 `wevu` 导入）                         | 生命周期迁移成本低                   |
 | `observers`                | `watch` / `watchEffect`                                              | 逻辑更明确，易测试                   |
 | `properties`               | `defineProps`（推荐）或兼容 `properties`                             | 新代码优先 Vue 风格                  |
@@ -108,7 +108,7 @@ flowchart LR
 
 | 波次   | 范围     | 目标                                | 退出条件                         |
 | ------ | -------- | ----------------------------------- | -------------------------------- |
-| Wave 0 | 框架接入 | 接入 weapp-vite + wevu，业务 0 改动 | `build` 可过，首页可打开         |
+| Wave 0 | 框架接入 | 接入 Weapp-vite + Wevu，业务 0 改动 | `build` 可过，首页可打开         |
 | Wave 1 | 低风险页 | 列表页、展示页迁移到 SFC            | 页面冒烟 + 基础 e2e 通过         |
 | Wave 2 | 中风险页 | 表单页、筛选页、详情页              | 正/反向流程通过，参数健壮性通过  |
 | Wave 3 | 高风险页 | 下单、支付、售后等核心路径          | 关键链路 e2e 通过 + 真机回归通过 |
@@ -124,7 +124,7 @@ flowchart LR
 ## setup 上下文迁移：`this` 到 `ctx/instance` 对照
 
 原生代码常直接依赖 `this` 上的方法（如 `triggerEvent`、`createSelectorQuery`、`setData`）。
-迁移到 wevu 后，建议使用 `setup(props, { emit, instance })`，优先通过 `emit` 与响应式状态完成业务，必要时再使用 `instance` 访问原生能力。
+迁移到 Wevu 后，建议使用 `setup(props, { emit, instance })`，优先通过 `emit` 与响应式状态完成业务，必要时再使用 `instance` 访问原生能力。
 
 ```ts
 import { defineComponent, ref } from 'wevu'
@@ -329,7 +329,7 @@ const specs = Array.isArray(item.skuSpecLst)
 
 ### 4. 生命周期没触发
 
-根因：迁移后把页面事件写成普通函数，未通过 wevu hooks 注册。
+根因：迁移后把页面事件写成普通函数，未通过 Wevu hooks 注册。
 
 修复：从 `wevu` 导入 `onLoad/onPageScroll/onShareAppMessage/...`。
 

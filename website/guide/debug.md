@@ -1,13 +1,13 @@
 ---
 title: 调试与贡献
-description: 这份指南面向想要参与 weapp-vite 开发或排查源码问题的伙伴。按照下面的步骤准备环境，就可以在本地命中断点、验证修改，并把贡献发送到社区。
+description: 这份指南面向想要参与 Weapp-vite 开发或排查源码问题的伙伴。按照下面的步骤准备环境，就可以在本地命中断点、验证修改，并把贡献发送到社区。
 keywords:
   - 调试
   - guide
   - debug
   - 调试与贡献
   - 这份指南面向想要参与
-  - weapp-vite
+  - Weapp-vite
   - 开发或排查源码问题的伙伴。按照下面的步骤准备环境
   - 就可以在本地命中断点
 ---
@@ -70,7 +70,7 @@ cd weapp-vite
 3. 打开仓库的 **Pull requests** 页面，点击 **New pull request**，选择你的分支 → 上游 `main`。
 4. 在 PR 模板中说明动机、做了哪些验证，并附上截图或日志（如果适用）。
 
-提交后维护者会安排 Review，并和你沟通改进建议。PR 合并后，你的改动就会进入 weapp-vite 的主线版本。
+提交后维护者会安排 Review，并和你沟通改进建议。PR 合并后，你的改动就会进入 Weapp-vite 的主线版本。
 
 > [!TIP]
 > 想持续参与社区？欢迎在 Issue 区挑选 `good first issue`、`help wanted` 标签的任务，也可以加入讨论区提出想法。

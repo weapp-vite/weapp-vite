@@ -1,9 +1,9 @@
 ---
-title: weapp-vite@6：原生模式之外，多一种 Vue 选择
-description: 还记得在 weapp-vite 4.0 的发布文章里，我写过这样的话：
+title: Weapp-vite@6：原生模式之外，多一种 Vue 选择
+description: 还记得在 Weapp-vite 4.0 的发布文章里，我写过这样的话：
 keywords:
-  - weapp-vite
-  - wevu
+  - Weapp-vite
+  - Wevu
   - 微信小程序
   - 配置
   - 运行时
@@ -13,15 +13,15 @@ keywords:
 date: 2026-02-25
 ---
 
-# weapp-vite@6：原生模式之外，多一种 Vue 选择
+# Weapp-vite@6：原生模式之外，多一种 Vue 选择
 
 ## 前言
 
-还记得在 weapp-vite 4.0 的发布文章里，我写过这样的话：
+还记得在 Weapp-vite 4.0 的发布文章里，我写过这样的话：
 
 > **不适用场景**：需要使用 `Vue`/`React` 等前端框架的写法，来取代小程序原生写法。
 
-当时的想法很单纯：weapp-vite 的定位是「原生小程序的现代化构建工具」，保持零运行时，专注于 TypeScript、SCSS、HMR 这些开发体验的提升。
+当时的想法很单纯：Weapp-vite 的定位是「原生小程序的现代化构建工具」，保持零运行时，专注于 TypeScript、SCSS、HMR 这些开发体验的提升。
 
 但社区的声音让我重新思考这个定位。
 
@@ -34,13 +34,13 @@ date: 2026-02-25
 
 **能不能做一个既保留原生模式优势，又提供 Vue 开发体验的工具？**
 
-于是，weapp-vite@6 来了——**在原生模式之外，多一种 Vue 选择**。
+于是，Weapp-vite@6 来了——**在原生模式之外，多一种 Vue 选择**。
 
 ## 背景故事：从零运行时到 Vue 支持
 
 ### 最初的定位
 
-weapp-vite 最初的设计理念是做一个**零运行时**的原生小程序构建工具。用户用原生写法，weapp-vite 提供现代化的开发体验，保证打出来的包足够小、性能足够好。
+Weapp-vite 最初的设计理念是做一个**零运行时**的原生小程序构建工具。用户用原生写法，Weapp-vite 提供现代化的开发体验，保证打出来的包足够小、性能足够好。
 
 这个定位满足了很多只需要开发微信小程序、追求极致性能的用户。
 
@@ -57,30 +57,30 @@ weapp-vite 最初的设计理念是做一个**零运行时**的原生小程序�
 - **mpx**：美团出品，基于 Vue 2.7 + webpack。技术栈较老，而且响应式系统和标准 Vue 不完全一样。
 
 
-### weapp-vite 的思路
+### Weapp-vite 的思路
 
-weapp-vite@6 的思路是：**同一个工具，给你两种模式**。
+Weapp-vite@6 的思路是：**同一个工具，给你两种模式**。
 
 - **原生模式**：零运行时，极致性能，适合追求包体积和性能的项目
 - **Vue 模式**：完整的 Vue 3 开发体验，适合熟悉 Vue 的团队
 
 两者可以在同一个项目中并存，你可以根据具体页面/组件的需求来选择。
 
-### wevu 的诞生
+### Wevu 的诞生
 
 转折点是在开发 `wevu` 时——一个专为小程序设计的 Vue 运行时。
 
 `wevu` 保留了 Vue 3 的核心 API——`ref`、`computed`、`watch`、`onMounted` 等，但底层用小程序的 `setData` 做更新。给小程序装上了 Vue 的"大脑"，但骨子里还是小程序的"身体"。
 
-更重要的是，**wevu 既可以在 weapp-vite 中配合 SFC 编译时使用，也可以单独作为纯运行时库使用**。
+更重要的是，**Wevu 既可以在 Weapp-vite 中配合 SFC 编译时使用，也可以单独作为纯运行时库使用**。
 
 ### 编译时 + 运行时
 
 既然 `wevu` 运行时已经就绪，Vue SFC 编译支持就是顺水推舟的事了。
 
-## 认识 wevu：Vue 3 风格的小程序运行时
+## 认识 Wevu：Vue 3 风格的小程序运行时
 
-**wevu** 是一个专为小程序设计的 Vue 3 风格运行时。它的核心设计理念是：**响应式系统与 Vue 3 同源，渲染层深度适配小程序**。
+**Wevu** 是一个专为小程序设计的 Vue 3 风格运行时。它的核心设计理念是：**响应式系统与 Vue 3 同源，渲染层深度适配小程序**。
 
 ### 核心特点
 
@@ -88,13 +88,13 @@ weapp-vite@6 的思路是：**同一个工具，给你两种模式**。
 - **Vue 3 生命周期支持**：`onMounted`、`onUpdated`、`onUnmounted` 等，自动映射到小程序生命周期
 - **快照 diff 优化**：最小化 `setData` 调用，只传递变更的数据路径
 - **内置状态管理**：`defineStore`/`storeToRefs`，API 类似 Pinia
-- **可独立使用**：既可以配合 weapp-vite 的 SFC 编译，也可以单独作为运行时库使用
+- **可独立使用**：既可以配合 Weapp-vite 的 SFC 编译，也可以单独作为运行时库使用
 
-### Vue 3 vs wevu：实现上的异同
+### Vue 3 vs Wevu：实现上的异同
 
-虽然 wevu 的 API 设计与 Vue 3 高度一致，但由于运行环境不同，底层实现有本质区别。
+虽然 Wevu 的 API 设计与 Vue 3 高度一致，但由于运行环境不同，底层实现有本质区别。
 
-| 对比维度 | Vue 3 | wevu |
+| 对比维度 | Vue 3 | Wevu |
 |:---|:---|:---|
 | **运行环境** | Web 浏览器 | 微信小程序 |
 | **响应式系统** | Proxy + effect | Proxy + effect（**相同实现**） |
@@ -104,11 +104,11 @@ weapp-vite@6 的思路是：**同一个工具，给你两种模式**。
 | **更新机制** | 异步调度 + DOM 操作 | 异步调度 + `setData` |
 | **生命周期** | onMounted/onUpdated 等 | 映射到小程序生命周期 |
 | **事件系统** | DOM 事件 | 小程序 bind/catch 事件 |
-| **SFC 编译** | @vitejs/plugin-vue | weapp-vite 内置 |
+| **SFC 编译** | @vitejs/plugin-vue | Weapp-vite 内置 |
 
 **相同点：响应式系统**
 
-Vue 3 和 wevu 的响应式系统**完全相同**，都基于 `Proxy` + `effect` 实现：
+Vue 3 和 Wevu 的响应式系统**完全相同**，都基于 `Proxy` + `effect` 实现：
 
 ```ts
 // 这段代码在 Vue 3 和 wevu 中写法完全一致
@@ -128,23 +128,23 @@ Vue 3 使用 Virtual DOM Diff，然后调用 DOM API 更新视图：
 状态变化 → effect 触发 → 组件更新 → VNode Diff → DOM 操作
 ```
 
-wevu 使用快照 Diff，然后调用小程序的 `setData`：
+Wevu 使用快照 Diff，然后调用小程序的 `setData`：
 
 ```
 状态变化 → effect 触发 → 快照 Diff → setData → 小程序渲染
 ```
 
-wevu 的快照 Diff 直接对响应式数据对象做深度比较，计算出最小变更路径（如 `data.a.b[2]`），然后只传递这部分数据给 `setData`，避免全量更新。
+Wevu 的快照 Diff 直接对响应式数据对象做深度比较，计算出最小变更路径（如 `data.a.b[2]`），然后只传递这部分数据给 `setData`，避免全量更新。
 
-### weapp-vite + wevu 的组合
+### Weapp-vite + Wevu 的组合
 
-- **weapp-vite**：负责**编译时**工作，把 Vue SFC 拆解、转换、生成小程序四件套
-- **wevu**：负责**运行时**工作，提供响应式系统和生命周期
+- **Weapp-vite**：负责**编译时**工作，把 Vue SFC 拆解、转换、生成小程序四件套
+- **Wevu**：负责**运行时**工作，提供响应式系统和生命周期
 
 两者结合，你得到的是：
 1. Vue 3 风格的开发体验（SFC + Composition API）
 2. 小程序原生的运行性能
-3. 可选的独立运行时使用（wevu 可单独安装）
+3. 可选的独立运行时使用（Wevu 可单独安装）
 
 最关键的设计决策是：**把 Vue SFC 支持直接内置到 `weapp-vite` 里**，而不是作为外部插件。
 
@@ -167,11 +167,11 @@ export default defineConfig({
 })
 ```
 
-从现在起，weapp-vite 不再只是"原生小程序的现代化工具"，而是"**原生 + Vue**的双料选择"。
+从现在起，Weapp-vite 不再只是"原生小程序的现代化工具"，而是"**原生 + Vue**的双料选择"。
 
 ## 一处编写，四处生成
 
-当你创建一个 `.vue` 文件时，weapp-vite 会悄悄地施展编译魔法：
+当你创建一个 `.vue` 文件时，Weapp-vite 会悄悄地施展编译魔法：
 
 ```
 MyComponent.vue
@@ -194,7 +194,7 @@ Vue 的 `<script>`、`<template>`、`<style>` 会被智能拆分并转换成小�
 
 ## Vue 语法无缝转换
 
-weapp-vite 的 Vue 支持不是简单地把 Vue 代码塞进小程序，而是做了真正聪明的语法转换：
+Weapp-vite 的 Vue 支持不是简单地把 Vue 代码塞进小程序，而是做了真正聪明的语法转换：
 
 | Vue 写法 | 转换为 |
 |:---|:---|
@@ -205,7 +205,7 @@ weapp-vite 的 Vue 支持不是简单地把 Vue 代码塞进小程序，而是�
 | `v-model` | 双向绑定的完整实现（input/checkbox/radio/textarea 等） |
 | `<script setup>` | 自动处理响应式和生命周期 |
 
-你用 Vue 的方式思考，weapp-vite 用小程序的方式执行。
+你用 Vue 的方式思考，Weapp-vite 用小程序的方式执行。
 
 ## 使用用例：从简单到复杂
 
@@ -227,7 +227,7 @@ Page({
 })
 ```
 
-**weapp-vite + Vue 写法**：
+**Weapp-vite + Vue 写法**：
 ```html
 <script setup>
 import { ref } from 'wevu'
@@ -288,7 +288,7 @@ function increment() {
 
 ### 用例 3：definePageJson——宏的魔法
 
-weapp-vite 提供了三个独特的宏，让你在 `<script setup>` 里定义小程序配置：
+Weapp-vite 提供了三个独特的宏，让你在 `<script setup>` 里定义小程序配置：
 
 ```html
 <script setup lang="ts">
@@ -456,7 +456,7 @@ function handleClick() {
 
 ### 用例 7：app.vue——应用级配置
 
-`app.vue` 是 weapp-vite Vue 模式的入口文件，你可以在这里定义全局配置和应用生命周期：
+`app.vue` 是 Weapp-vite Vue 模式的入口文件，你可以在这里定义全局配置和应用生命周期：
 
 ```html
 <script setup lang="ts">
@@ -505,7 +505,7 @@ page {
 
 ### 用例 8：自定义 `<json>` 块
 
-除了用宏定义配置，weapp-vite 还支持 Vue SFC 的自定义块语法：
+除了用宏定义配置，Weapp-vite 还支持 Vue SFC 的自定义块语法：
 
 ```html
 <script setup>
@@ -532,11 +532,11 @@ const count = ref(0)
 </json>
 ```
 
-`<json>` 块的内容会直接合并到生成的 `.json` 文件中。这是 weapp-vite 支持的语法，但**不推荐使用**——推荐使用前面介绍的 `definePageJson` 等宏指令，因为它们有完整的 TypeScript 类型支持，并且可以共享 `<script setup>` 作用域的变量。
+`<json>` 块的内容会直接合并到生成的 `.json` 文件中。这是 Weapp-vite 支持的语法，但**不推荐使用**——推荐使用前面介绍的 `definePageJson` 等宏指令，因为它们有完整的 TypeScript 类型支持，并且可以共享 `<script setup>` 作用域的变量。
 
 ### 用例 9：插槽 Slots
 
-插槽是组件复用的重要机制，weapp-vite 支持完整的插槽语法：
+插槽是组件复用的重要机制，Weapp-vite 支持完整的插槽语法：
 
 ```html
 <!-- Card.vue -->
@@ -591,9 +591,9 @@ import Card from './Card.vue'
 
 ## 适用场景
 
-### weapp-vite 的独特优势：双模式并存
+### Weapp-vite 的独特优势：双模式并存
 
-与其他框架不同，weapp-vite@6 支持在同一个项目中同时使用原生模式和 Vue 模式。你可以：
+与其他框架不同，Weapp-vite@6 支持在同一个项目中同时使用原生模式和 Vue 模式。你可以：
 
 - 核心页面用原生模式，保证极致性能
 - 业务页面用 Vue 模式，提升开发效率
@@ -620,7 +620,7 @@ import Card from './Card.vue'
 
 - **mpx**：基于 Vue 2.7 + webpack，技术栈较老。如果你已经在用美团的小程序生态，可以考虑，否则不建议新项目使用。
 
-**一句话总结**：weapp-vite@6 的独特之处在于——原生 + Vue 双模式并存，同一个工具，给你两种选择。
+**一句话总结**：Weapp-vite@6 的独特之处在于——原生 + Vue 双模式并存，同一个工具，给你两种选择。
 
 ## 快速体验
 
@@ -653,7 +653,7 @@ const message = ref('Hello, weapp-vite@6!')
 
 ## 技术细节（给好奇的同学）
 
-weapp-vite 的 Vue 支持不是简单的黑盒，而是精心设计的编译管道：
+Weapp-vite 的 Vue 支持不是简单的黑盒，而是精心设计的编译管道：
 
 ### 编译流程
 
@@ -677,7 +677,7 @@ vue/compiler-sfc 解析
 
 ### 构建内核升级：切换到 Rolldown 带来的效率提升
 
-在 v6 这轮演进里，weapp-vite 的构建链路逐步切换到 **Rolldown** 内核（并保持对现有插件生态的兼容能力）。
+在 v6 这轮演进里，Weapp-vite 的构建链路逐步切换到 **Rolldown** 内核（并保持对现有插件生态的兼容能力）。
 
 这件事最直接的收益是“工程体感”上的提速，主要体现在：
 
@@ -689,11 +689,11 @@ vue/compiler-sfc 解析
 
 ### 为什么主线没有使用 `@vue/runtime-core` 的 `createRenderer`
 
-`createRenderer` 在技术上是可行路线，但 wevu 当前没有把它作为主实现，核心原因是“抽象不对齐”：
+`createRenderer` 在技术上是可行路线，但 Wevu 当前没有把它作为主实现，核心原因是“抽象不对齐”：
 
 - `createRenderer` 需要宿主提供完整的节点操作语义（`insert/remove/patchProp` 等）；
 - 小程序运行时真正的更新通道是 `setData(payload)`，优化重点是“何时触发 + payload 多小”；
-- wevu 主链路已经是“编译到 WXML + 快照 diff + 最小 setData”，直接命中小程序性能约束。
+- Wevu 主链路已经是“编译到 WXML + 快照 diff + 最小 setData”，直接命中小程序性能约束。
 
 这也是为什么类似 “大 `base.wxml` + 运行时节点树” 的方案虽然可做，但在多数业务场景里，通常会带来额外映射和协调成本，整体性能往往不如当前链路。
 
@@ -726,20 +726,20 @@ vue/compiler-sfc 解析
 
 ## 最后
 
-weapp-vite@6 的 Vue SFC 支持建立在：
+Weapp-vite@6 的 Vue SFC 支持建立在：
 - `vue/compiler-sfc` 的解析能力
 - `wevu` 运行时的精心设计
 - 社区对更好开发体验的需求反馈
 
 感谢每一位提出建议、反馈 bug、贡献代码的同学。
 
-weapp-vite@6 把选择权交给你：
+Weapp-vite@6 把选择权交给你：
 - 需要极致性能？用原生模式
 - 需要 Vue 开发体验？用 Vue 模式
-- wevu 也可以单独作为纯运行时库使用
+- Wevu 也可以单独作为纯运行时库使用
 
 ---
 
-如果 weapp-vite 帮到了你，欢迎给项目点个 [Star](https://github.com/weapp-vite/weapp-vite)！
+如果 Weapp-vite 帮到了你，欢迎给项目点个 [Star](https://github.com/weapp-vite/weapp-vite)！
 
 Happy Coding! 🚀

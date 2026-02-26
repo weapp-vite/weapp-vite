@@ -1,12 +1,12 @@
 ---
 title: 配置概览
-description: weapp-vite 使用 **Vite 配置模型**：在 vite.config.ts 中增加一个 weapp
+description: Weapp-vite 使用 **Vite 配置模型**：在 vite.config.ts 中增加一个 weapp
   字段即可。你也可以把小程序专属配置拆到 weapp-vite.config.*，两者会合并。
 keywords:
   - 配置
   - config
   - 配置概览
-  - weapp-vite
+  - Weapp-vite
   - 使用
   - vite
   - 配置模型：在

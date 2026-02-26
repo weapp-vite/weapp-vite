@@ -2,7 +2,7 @@
 title: bindModel：双向绑定方案
 description: bindModel 的完整说明在：/wevu/runtime#bindModel：模型绑定
 keywords:
-  - wevu
+  - Wevu
   - Vue SFC
   - handbook
   - bind
@@ -48,7 +48,7 @@ const onAttachmentsChange = bindModel<UploadFile[]>('form.attachments').model({
 <t-upload :files="form.attachments" @change="onAttachmentsChange" />
 ```
 
-> 注意：weapp-vite 模板编译目前不支持 `v-bind="object"` 的对象展开语法（不会生成任何属性），建议使用显式 `:value` + `@change/@input` 绑定。
+> 注意：Weapp-vite 模板编译目前不支持 `v-bind="object"` 的对象展开语法（不会生成任何属性），建议使用显式 `:value` + `@change/@input` 绑定。
 
 ## 参考入口
 

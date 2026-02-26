@@ -1,5 +1,5 @@
 ---
-title: wevu API
+title: Wevu API
 sidebar: false
 outline: false
 ---

@@ -1,6 +1,6 @@
 ---
 title: 目录结构
-description: weapp-vite 默认沿用原生小程序的目录习惯：app.* 放在 src/，页面在 pages/，分包在
+description: Weapp-vite 默认沿用原生小程序的目录习惯：app.* 放在 src/，页面在 pages/，分包在
   packages/。在这个基础上，框架提供了一些“可选但推荐”的约定目录，让自动路由、自动导入组件、分包增强等能力能直接生效。
 keywords:
   - 配置
@@ -9,7 +9,7 @@ keywords:
   - directory
   - structure
   - 目录结构
-  - weapp-vite
+  - Weapp-vite
   - 默认沿用原生小程序的目录习惯：app.
 ---
 
@@ -44,7 +44,7 @@ keywords:
 
 | 路径                  | 说明                                                                                                         |
 | --------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `vite.config.ts`      | weapp-vite 的主配置。可在 `weapp.subPackages`、`weapp.autoImportComponents` 等字段中定制目录行为。           |
+| `vite.config.ts`      | Weapp-vite 的主配置。可在 `weapp.subPackages`、`weapp.autoImportComponents` 等字段中定制目录行为。           |
 | `project.config.json` | 微信开发者工具项目配置，保持与原生项目一致。                                                                 |
 | `typed-router.d.ts`   | 由 `weapp-vite` 自动生成的页面/分包路由类型声明。每次编译会根据 `pages/` 与 `packages/` 更新。               |
 | `public/`             | 任意静态资源（icon、字体等）。构建时会原样拷贝到输出目录，适合存放 `sitemap.json`、`theme.json` 的模板文件。 |
@@ -90,7 +90,7 @@ keywords:
 
 ### `workers/`
 
-- 微信 Worker 入口目录。若在 `app.json` 中配置了 `workers`，再在 `vite.config.ts` 里设置 `weapp.worker.entry` 即可让 weapp-vite 代为打包 worker 代码（参考 [Worker 配置](/config/worker)）。
+- 微信 Worker 入口目录。若在 `app.json` 中配置了 `workers`，再在 `vite.config.ts` 里设置 `weapp.worker.entry` 即可让 Weapp-vite 代为打包 worker 代码（参考 [Worker 配置](/config/worker)）。
 
 ## 快速生成目录
 

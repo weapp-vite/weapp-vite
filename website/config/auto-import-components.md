@@ -1,6 +1,6 @@
 ---
 title: 自动导入组件配置
-description: weapp-vite 会在构建阶段扫描 WXML 组件标签并自动补齐 usingComponents，免去手写 JSON
+description: Weapp-vite 会在构建阶段扫描 WXML 组件标签并自动补齐 usingComponents，免去手写 JSON
   的负担。支持本地组件与第三方库 Resolver（如 Vant/TDesign）。
 keywords:
   - 配置
@@ -10,7 +10,7 @@ keywords:
   - import
   - components
   - 自动导入组件配置
-  - weapp-vite
+  - Weapp-vite
 ---
 
 # 自动导入组件配置 {#auto-import-components}
@@ -70,7 +70,7 @@ export default defineConfig({
 - `typedComponents`：生成 `typed-components.d.ts`（WXML props 类型）。
 - `htmlCustomData`：生成 `mini-program.html-data.json`（VS Code/DevTools 提示）。
 - `vueComponents`：生成 `components.d.ts`（Vue SFC 模板补全）。
-- `vueComponentsModule`：`components.d.ts` 的 `declare module 'xxx'` 模块名。使用 wevu 时建议填 `wevu`。
+- `vueComponentsModule`：`components.d.ts` 的 `declare module 'xxx'` 模块名。使用 Wevu 时建议填 `wevu`。
 
 ### 禁用与分包覆盖
 

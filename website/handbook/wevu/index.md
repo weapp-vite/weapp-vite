@@ -1,10 +1,10 @@
 ---
-title: wevu：定位与选择
-description: wevu 是小程序运行时：提供 Vue 3 风格的响应式与生命周期 hooks，并通过快照 diff 最小化 setData。
+title: Wevu：定位与选择
+description: Wevu 是小程序运行时：提供 Vue 3 风格的响应式与生命周期 hooks，并通过快照 diff 最小化 setData。
 keywords:
-  - wevu
+  - Wevu
   - handbook
-  - wevu：定位与选择
+  - Wevu：定位与选择
   - 是小程序运行时：提供
   - vue
   - "3"
@@ -12,12 +12,12 @@ keywords:
   - hooks
 ---
 
-# wevu：定位与选择
+# Wevu：定位与选择
 
 ## 本章你会学到什么
 
-- wevu 在体系里负责什么、不负责什么
-- 什么时候应该用 wevu，什么时候应该直接写原生
+- Wevu 在体系里负责什么、不负责什么
+- 什么时候应该用 Wevu，什么时候应该直接写原生
 
 ## 定位一句话
 

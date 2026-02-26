@@ -40,7 +40,7 @@ WXS（WeiXin Script）是微信小程序提供的轻量脚本语言，常用于�
 
 ## 内联 WXS：`lang="js"` / `lang="ts"`
 
-在 WXML 中内联 WXS 时，可以给 `<wxs>` 标签添加 `lang` 属性，让 weapp-vite 帮你完成转译：
+在 WXML 中内联 WXS 时，可以给 `<wxs>` 标签添加 `lang` 属性，让 Weapp-vite 帮你完成转译：
 
 ```html
 <view>{{test.foo}}</view>
@@ -78,7 +78,7 @@ export {
 
 ## 调试与回退方案
 
-- 构建产物位于 `dist/**.wxs`，可直接打开查看 weapp-vite 的转译结果。
+- 构建产物位于 `dist/**.wxs`，可直接打开查看 Weapp-vite 的转译结果。
 - 若遇到构建失败或运行异常，可临时回退到手写 `.wxs` 版本，或提交 Issue 反馈不兼容的语法。
 - 对于复杂逻辑，推荐改写为普通 JS/TS 工具函数，在页面脚本中使用，而不是放在 WXS 中。
 

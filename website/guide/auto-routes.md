@@ -1,9 +1,9 @@
 ---
 title: 自动路由（weapp-vite/auto-routes）
-description: weapp-vite 提供了一个可选的“自动路由”能力：扫描主包/分包的页面目录，自动生成路由清单，并通过虚拟模块
+description: Weapp-vite 提供了一个可选的“自动路由”能力：扫描主包/分包的页面目录，自动生成路由清单，并通过虚拟模块
   weapp-vite/auto-routes 导出。
 keywords:
-  - weapp-vite
+  - Weapp-vite
   - guide
   - auto
   - routes

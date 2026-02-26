@@ -26,13 +26,13 @@ const packageFeatureCards: HomeFeatureCard[] = [
     icon: '🚀',
     title: '官方脚手架',
     packageName: 'create-weapp-vite',
-    description: '内置 default / wevu / tailwindcss / tdesign 等模板，快速创建并对齐依赖组合。',
+    description: '内置 default / Wevu / tailwindcss / tdesign 等模板，快速创建并对齐依赖组合。',
   },
   {
     href: '/wevu/',
     icon: '⚡',
     title: '轻量运行时',
-    packageName: 'wevu',
+    packageName: 'Wevu',
     description: '提供 Vue 3 风格响应式与 Store，采用快照 diff 策略，尽量减少 setData 更新。',
   },
   {
@@ -85,7 +85,7 @@ const packageFeatureCards: HomeFeatureCard[] = [
         >
           Weapp‑vite
         </h1>
-        <div class="hero-logo-formula" aria-label="Vue + Vite + Rolldown = Weapp-vite">
+        <div class="hero-logo-formula" aria-label="Vue + Vite + Rolldown = weapp-vite">
           <span class="hero-logo-badge">
             <span class="i-vscode-icons-file-type-vue h-[18px] w-[18px]" aria-hidden="true" />
             <span>Vue</span>
@@ -102,7 +102,7 @@ const packageFeatureCards: HomeFeatureCard[] = [
           </span>
           <span class="hero-logo-sign">=</span>
           <span class="hero-logo-badge hero-logo-badge-target">
-            <img src="/logo.svg" alt="Weapp-vite logo" class="h-[18px] w-[18px] object-contain">
+            <img src="/logo.svg" alt="weapp-vite logo" class="h-[18px] w-[18px] object-contain">
             <span>Weapp‑vite</span>
           </span>
         </div>

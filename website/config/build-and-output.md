@@ -1,6 +1,6 @@
 ---
 title: 构建输出与兼容
-description: 解释 weapp-vite 的产物输出目录、JS 输出格式与兼容策略，以及这些配置对包体积和运行稳定性的影响。
+description: 解释 Weapp-vite 的产物输出目录、JS 输出格式与兼容策略，以及这些配置对包体积和运行稳定性的影响。
 keywords:
   - 配置
   - config
