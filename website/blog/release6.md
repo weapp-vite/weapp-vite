@@ -338,7 +338,35 @@ definePageJson({
 
 相比之下，自定义 `<json>` 块虽然支持 JSONC 和 JS/TS 格式，但与 `<script setup>` 作用域隔离，无法共享变量，也缺乏类型支持。
 
-### 用例 4：v-model——双向绑定
+### 用例 4：`.vue` 文件直接引入原生组件
+
+除了 `.vue` 子组件，原生小程序组件也可以在 `<script setup>` 中直接引入并在模板里使用。
+
+```html
+<script setup lang="ts">
+import NativeMeter from '../../native/native-meter/index'
+</script>
+
+<template>
+  <view class="native-demo">
+    <NativeMeter label="构建链能力" :value="80" tone="success" />
+  </view>
+</template>
+```
+
+构建阶段会根据 `import` + 模板实际使用，自动补齐产物里的 `usingComponents`，你不需要再手写同样的映射。
+
+```json
+{
+  "usingComponents": {
+    "native-meter": "../../native/native-meter/index"
+  }
+}
+```
+
+这让 Vue SFC 的组件编排体验和原生组件生态可以自然衔接：写法更统一，重构和类型提示也更稳定。
+
+### 用例 5：v-model——双向绑定
 
 表单处理一直是小程序的痛点。原生写法需要手动监听 `input` 事件，然后 `setData`。Vue 的 `v-model` 让这一切变得简单：
 
@@ -376,7 +404,7 @@ const selected = ref('option1')
 
 `v-model` 会自动处理不同表单元素的双向绑定逻辑，无需手动写事件监听。
 
-### 用例 5：组件通信——props 和 emits
+### 用例 6：组件通信——props 和 emits
 
 ```html
 <!-- Parent.vue -->
@@ -426,7 +454,7 @@ function handleClick() {
 
 完整的 TypeScript 支持，类型安全的组件通信。
 
-### 用例 6：app.vue——应用级配置
+### 用例 7：app.vue——应用级配置
 
 `app.vue` 是 weapp-vite Vue 模式的入口文件，你可以在这里定义全局配置和应用生命周期：
 
@@ -475,7 +503,7 @@ page {
 
 注意这里还支持 SCSS 和 TailwindCSS——现代化的开发体验，一个都不能少。
 
-### 用例 7：自定义 `<json>` 块
+### 用例 8：自定义 `<json>` 块
 
 除了用宏定义配置，weapp-vite 还支持 Vue SFC 的自定义块语法：
 
@@ -506,7 +534,7 @@ const count = ref(0)
 
 `<json>` 块的内容会直接合并到生成的 `.json` 文件中。这是 weapp-vite 支持的语法，但**不推荐使用**——推荐使用前面介绍的 `definePageJson` 等宏指令，因为它们有完整的 TypeScript 类型支持，并且可以共享 `<script setup>` 作用域的变量。
 
-### 用例 8：插槽 Slots
+### 用例 9：插槽 Slots
 
 插槽是组件复用的重要机制，weapp-vite 支持完整的插槽语法：
 
@@ -647,6 +675,30 @@ vue/compiler-sfc 解析
          .js .wxml .wxss .json
 ```
 
+### 构建内核升级：切换到 Rolldown 带来的效率提升
+
+在 v6 这轮演进里，weapp-vite 的构建链路逐步切换到 **Rolldown** 内核（并保持对现有插件生态的兼容能力）。
+
+这件事最直接的收益是“工程体感”上的提速，主要体现在：
+
+- **冷启动更快**：大型项目首次启动时，依赖图建立与模块处理耗时更短；
+- **增量构建更灵敏**：改动后重新编译和回写产物的等待时间明显下降；
+- **大仓库更稳定**：在依赖规模较大、分包较多的场景下，构建波动更小。
+
+对于日常开发来说，这种提升会直接转化为更顺滑的 HMR 反馈和更短的“改完代码到看到结果”的链路时间。
+
+### 为什么主线没有使用 `@vue/runtime-core` 的 `createRenderer`
+
+`createRenderer` 在技术上是可行路线，但 wevu 当前没有把它作为主实现，核心原因是“抽象不对齐”：
+
+- `createRenderer` 需要宿主提供完整的节点操作语义（`insert/remove/patchProp` 等）；
+- 小程序运行时真正的更新通道是 `setData(payload)`，优化重点是“何时触发 + payload 多小”；
+- wevu 主链路已经是“编译到 WXML + 快照 diff + 最小 setData”，直接命中小程序性能约束。
+
+这也是为什么类似 “大 `base.wxml` + 运行时节点树” 的方案虽然可做，但在多数业务场景里，通常会带来额外映射和协调成本，整体性能往往不如当前链路。
+
+完整分析可见：[`为什么没有使用 @vue/runtime-core 的 createRenderer 来实现`](/wevu/why-not-runtime-core-create-renderer)
+
 ### 支持的功能清单
 
 - **核心指令**：v-if、v-else、v-for、v-show、v-model
@@ -663,6 +715,14 @@ vue/compiler-sfc 解析
 - **73+ 测试用例** 全部通过
 - **85%+ 代码覆盖率**
 - 测试分类：基础模板编译、样式处理、高级特性、E2E 集成测试
+
+### 延伸阅读
+
+如果你想进一步理解“为什么编译期与运行时要做这样的职责划分”，以及“为什么某些渲染抽象在小程序场景会出现额外成本”，可以看我写的：
+
+- [《Vue 编译本质论》](https://deep-in-vue.icebreaker.top/)
+
+它和上文 “为什么主线没有使用 `createRenderer`” 的讨论是同一条思路：先看宿主约束，再选最匹配的编译与运行时路径。
 
 ## 最后
 
