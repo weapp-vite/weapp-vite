@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useData } from 'vitepress'
 import { computed, ref } from 'vue'
 import TechBackground from './TechBackground.vue'
 
@@ -9,6 +10,7 @@ const props = withDefaults(defineProps<{
   entryPath: '/ai',
   altPath: '/llms',
 })
+const { isDark } = useData()
 
 const resources = computed(() => [
   {
@@ -37,6 +39,13 @@ const resources = computed(() => [
   },
 ])
 
+const directSkills = [
+  'weapp-vite-best-practices',
+  'weapp-vite-vue-sfc-best-practices',
+  'wevu-best-practices',
+  'native-to-weapp-vite-wevu-migration',
+]
+
 const installPresets = [
   {
     title: '推荐（最短）',
@@ -44,7 +53,7 @@ const installPresets = [
   },
   {
     title: '安装后可直接使用',
-    code: '$weapp-vite-best-practices\n$weapp-vite-vue-sfc-best-practices\n$wevu-best-practices',
+    code: directSkills.map(skill => `$${skill}`).join('\n'),
   },
 ]
 
@@ -85,7 +94,7 @@ function copyInstallCommand(code: string, index: number) {
 </script>
 
 <template>
-  <section class="ai-shell">
+  <section class="ai-shell" :class="{ 'theme-dark': isDark }">
     <TechBackground class="ai-bg" :speed="0.28" :density="0.7" />
 
     <div class="ai-overlay" />
@@ -98,7 +107,7 @@ function copyInstallCommand(code: string, index: number) {
         </p>
         <h1>AI 学习入口 {{ props.entryPath }}</h1>
         <p class="hero-lead">
-          用统一入口快速喂给 AI 可检索文档、最佳实践 Skill 与可执行安装命令。
+          先安装 Skills，再按索引和全文喂给 AI，能够最快进入可执行回答。
         </p>
         <div class="hero-actions">
           <a href="/llms.txt" target="_blank" rel="noopener noreferrer">打开 /llms.txt</a>
@@ -108,41 +117,12 @@ function copyInstallCommand(code: string, index: number) {
         </div>
       </header>
 
-      <section class="resource-grid" aria-label="AI resources">
-        <a
-          v-for="item in resources"
-          :key="item.href"
-          :href="item.href"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="resource-card"
-        >
-          <p class="resource-badge">{{ item.badge }}</p>
-          <h2>{{ item.title }}</h2>
-          <p>{{ item.desc }}</p>
-        </a>
-      </section>
+      <section class="install-section spotlight" aria-label="skills install">
+        <header class="section-head">
+          <h2>Skills 安装命令与用法</h2>
+          <p>优先执行安装命令，再用下方 4 个 Skill 名称直接调用。</p>
+        </header>
 
-      <section class="workflow" aria-label="workflow">
-        <article>
-          <span>01</span>
-          <h3>先读取索引</h3>
-          <p>对话开始时先加载 <code>/llms.txt</code>，建立目录级语义地图。</p>
-        </article>
-        <article>
-          <span>02</span>
-          <h3>再按需拉全文</h3>
-          <p>定位到主题后，针对性读取 <code>/llms-full.txt</code>，减少无效上下文。</p>
-        </article>
-        <article>
-          <span>03</span>
-          <h3>挂载专用 Skills</h3>
-          <p>通过 <code>npx skills add sonofmagic/skills</code> 安装技能，让 AI 走统一工程流程回答。</p>
-        </article>
-      </section>
-
-      <section class="install-section" aria-label="skills install">
-        <h2>Skills 安装命令</h2>
         <div class="install-grid">
           <article v-for="(cmd, index) in installPresets" :key="cmd.title" class="install-card">
             <header class="install-card-header">
@@ -154,23 +134,134 @@ function copyInstallCommand(code: string, index: number) {
             <pre><code>{{ cmd.code }}</code></pre>
           </article>
         </div>
+
+        <div class="skill-usage">
+          <p class="skill-usage-label">
+            安装后可直接调用
+          </p>
+          <ul class="skill-usage-list">
+            <li v-for="skill in directSkills" :key="skill">
+              <code>${{ skill }}</code>
+            </li>
+          </ul>
+        </div>
       </section>
+
+      <div class="info-grid">
+        <section class="resource-section" aria-label="AI resources">
+          <header class="section-head">
+            <h2>资源入口</h2>
+            <p>所有链接均新开页面，便于对照阅读与持续提问。</p>
+          </header>
+          <div class="resource-grid">
+            <a
+              v-for="item in resources"
+              :key="item.href"
+              :href="item.href"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="resource-card"
+            >
+              <p class="resource-badge">{{ item.badge }}</p>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.desc }}</p>
+            </a>
+          </div>
+        </section>
+
+        <section class="workflow-section" aria-label="workflow">
+          <header class="section-head">
+            <h2>推荐流程</h2>
+            <p>按“索引 -> 全文 -> 技能”的顺序，能让上下文更干净。</p>
+          </header>
+          <div class="workflow">
+            <article>
+              <span>01</span>
+              <h3>先读取索引</h3>
+              <p>对话开始时先加载 <code>/llms.txt</code>，建立目录级语义地图。</p>
+            </article>
+            <article>
+              <span>02</span>
+              <h3>再按需拉全文</h3>
+              <p>定位到主题后，针对性读取 <code>/llms-full.txt</code>，减少无效上下文。</p>
+            </article>
+            <article>
+              <span>03</span>
+              <h3>挂载专用 Skills</h3>
+              <p>通过 <code>npx skills add sonofmagic/skills</code> 安装技能，让 AI 走统一工程流程回答。</p>
+            </article>
+          </div>
+        </section>
+      </div>
     </div>
   </section>
 </template>
 
 <style scoped lang="scss">
 .ai-shell {
+  --ai-shell-bg:
+    radial-gradient(circle at 14% 14%, rgb(56 189 248 / 18%), transparent 38%),
+    radial-gradient(circle at 84% 20%, rgb(14 165 233 / 12%), transparent 36%),
+    linear-gradient(165deg, #f7fbff 0%, #edf5ff 52%, #e6f0ff 100%);
+  --ai-shell-border: rgb(96 165 250 / 30%);
+  --ai-shell-shadow: 0 20px 48px rgb(15 23 42 / 18%);
+  --ai-text: #18344f;
+  --ai-text-strong: #0f2740;
+  --ai-muted: rgb(41 76 109 / 86%);
+  --ai-chip-bg: rgb(255 255 255 / 74%);
+  --ai-chip-border: rgb(56 189 248 / 44%);
+  --ai-chip-text: #0e7490;
+  --ai-card-bg: linear-gradient(180deg, rgb(255 255 255 / 88%), rgb(244 250 255 / 92%));
+  --ai-card-border: rgb(59 130 246 / 24%);
+  --ai-card-title: #12345a;
+  --ai-link-bg: rgb(255 255 255 / 86%);
+  --ai-link-bg-hover: rgb(239 249 255 / 96%);
+  --ai-link-border: rgb(56 189 248 / 34%);
+  --ai-link-border-hover: rgb(14 165 233 / 56%);
+  --ai-spot-bg: linear-gradient(135deg, rgb(220 242 255 / 88%), rgb(235 246 255 / 94%));
+  --ai-spot-border: rgb(14 165 233 / 40%);
+  --ai-code-bg: rgb(12 36 61 / 96%);
+  --ai-code-border: rgb(14 116 144 / 40%);
+  --ai-code-text: #e2f5ff;
+
   position: relative;
-  margin: 8px 0 32px;
+  height: calc(100vh - 186px);
+  min-height: 620px;
+  max-height: 760px;
+  margin: 4px 0;
   overflow: hidden;
-  background:
+  color: var(--ai-text);
+  background: var(--ai-shell-bg);
+  border: 1px solid var(--ai-shell-border);
+  border-radius: 24px;
+  box-shadow: var(--ai-shell-shadow);
+}
+
+.ai-shell.theme-dark {
+  --ai-shell-bg:
     radial-gradient(circle at 20% 20%, rgb(14 165 233 / 14%), transparent 45%),
     radial-gradient(circle at 85% 15%, rgb(59 130 246 / 12%), transparent 40%),
     linear-gradient(160deg, #03101f 0%, #071c33 48%, #0a2036 100%);
-  border: 1px solid rgb(14 165 233 / 28%);
-  border-radius: 24px;
-  box-shadow: 0 24px 80px rgb(2 6 23 / 42%);
+  --ai-shell-border: rgb(14 165 233 / 30%);
+  --ai-shell-shadow: 0 24px 80px rgb(2 6 23 / 42%);
+  --ai-text: #e6f2ff;
+  --ai-text-strong: #f4fbff;
+  --ai-muted: rgb(197 226 250 / 84%);
+  --ai-chip-bg: rgb(3 20 36 / 72%);
+  --ai-chip-border: rgb(125 211 252 / 38%);
+  --ai-chip-text: #9fe7ff;
+  --ai-card-bg: linear-gradient(180deg, rgb(7 30 54 / 78%), rgb(4 17 31 / 86%));
+  --ai-card-border: rgb(147 197 253 / 24%);
+  --ai-card-title: #eff8ff;
+  --ai-link-bg: rgb(3 17 31 / 76%);
+  --ai-link-bg-hover: rgb(10 34 58 / 88%);
+  --ai-link-border: rgb(125 211 252 / 34%);
+  --ai-link-border-hover: rgb(125 211 252 / 62%);
+  --ai-spot-bg: linear-gradient(135deg, rgb(5 31 49 / 88%), rgb(3 16 30 / 92%));
+  --ai-spot-border: rgb(34 211 238 / 42%);
+  --ai-code-bg: rgb(2 10 18 / 94%);
+  --ai-code-border: rgb(125 211 252 / 22%);
+  --ai-code-text: #e8f7ff;
 }
 
 .ai-bg {
@@ -191,31 +282,36 @@ function copyInstallCommand(code: string, index: number) {
 .ai-content {
   position: relative;
   z-index: 1;
-  max-width: 1100px;
-  padding: 32px 26px 28px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 10px;
+  max-width: 1120px;
+  height: 100%;
+  padding: 12px 14px;
   margin: 0 auto;
-  color: #e6f2ff;
+  font-family: 'Avenir Next', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 }
 
 .hero {
-  position: relative;
-  margin-bottom: 24px;
+  padding: 12px;
+  background: var(--ai-card-bg);
+  border: 1px solid var(--ai-card-border);
+  border-radius: 16px;
 }
 
 .hero-chip {
   display: inline-flex;
   gap: 8px;
   align-items: center;
-  padding: 6px 12px;
+  padding: 5px 11px;
   margin: 0;
-  font-size: 12px;
-  color: #9fe7ff;
+  font-size: 11px;
+  color: var(--ai-chip-text);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  background: rgb(3 20 36 / 72%);
-  border: 1px solid rgb(125 211 252 / 38%);
+  background: var(--ai-chip-bg);
+  border: 1px solid var(--ai-chip-border);
   border-radius: 999px;
-  backdrop-filter: blur(6px);
 }
 
 .hero-chip-dot {
@@ -228,39 +324,40 @@ function copyInstallCommand(code: string, index: number) {
 }
 
 .hero h1 {
-  margin: 14px 0 10px;
-  font-size: clamp(30px, 5.2vw, 48px);
-  line-height: 1.05;
-  color: #f4fbff;
+  margin: 8px 0 4px;
+  font-size: clamp(22px, 3.4vw, 36px);
+  line-height: 1.1;
+  color: var(--ai-text-strong);
   letter-spacing: 0.01em;
 }
 
 .hero-lead {
-  max-width: 800px;
+  max-width: 960px;
   margin: 0;
-  font-size: 16px;
-  color: rgb(203 231 255 / 88%);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ai-muted);
 }
 
 .hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .hero-actions a {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 10px 14px;
-  font-size: 13px;
+  justify-content: space-between;
+  padding: 8px 10px;
+  font-size: 12px;
   font-weight: 600;
-  color: #d4efff;
+  color: var(--ai-text-strong);
   text-decoration: none;
-  background: rgb(3 17 31 / 66%);
-  border: 1px solid rgb(125 211 252 / 30%);
-  border-radius: 12px;
+  background: var(--ai-link-bg);
+  border: 1px solid var(--ai-link-border);
+  border-radius: 10px;
   transition:
     transform 180ms ease,
     border-color 180ms ease,
@@ -268,26 +365,78 @@ function copyInstallCommand(code: string, index: number) {
 }
 
 .hero-actions a:hover {
-  background: rgb(8 28 49 / 85%);
-  border-color: rgb(125 211 252 / 58%);
+  background: var(--ai-link-bg-hover);
+  border-color: var(--ai-link-border-hover);
   transform: translateY(-1px);
+}
+
+.spotlight {
+  background: var(--ai-spot-bg);
+  border-color: var(--ai-spot-border);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 8%);
+}
+
+.resource-section,
+.workflow-section,
+.install-section {
+  padding: 10px;
+  background: var(--ai-card-bg);
+  border: 1px solid var(--ai-card-border);
+  border-radius: 14px;
+}
+
+.section-head {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: 21px;
+  color: var(--ai-text-strong);
+}
+
+.section-head p {
+  max-width: 500px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ai-muted);
+  text-align: right;
+}
+
+.info-grid {
+  display: flex;
+  gap: 10px;
+  min-height: 0;
+}
+
+.resource-section {
+  flex: 1.1;
+}
+
+.workflow-section {
+  flex: 1;
 }
 
 .resource-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .resource-card {
   display: block;
-  padding: 16px;
+  min-height: 92px;
+  padding: 10px;
   color: inherit;
   text-decoration: none;
-  background: linear-gradient(180deg, rgb(7 30 54 / 82%), rgb(4 17 31 / 86%));
-  border: 1px solid rgb(147 197 253 / 26%);
-  border-radius: 14px;
+  background: var(--ai-link-bg);
+  border: 1px solid var(--ai-card-border);
+  border-radius: 10px;
   transition:
     transform 180ms ease,
     border-color 180ms ease,
@@ -295,97 +444,101 @@ function copyInstallCommand(code: string, index: number) {
 }
 
 .resource-card:hover {
-  border-color: rgb(125 211 252 / 56%);
-  box-shadow: 0 12px 24px rgb(2 12 27 / 40%);
+  border-color: var(--ai-link-border-hover);
   transform: translateY(-2px);
 }
 
 .resource-badge {
   margin: 0;
   font-size: 11px;
-  color: #7dd3fc;
+  color: var(--ai-chip-text);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
-.resource-card h2 {
-  margin: 6px 0;
-  font-size: 20px;
-  color: #eff8ff;
+.resource-card h3 {
+  margin: 4px 0 6px;
+  font-size: 16px;
+  color: var(--ai-card-title);
 }
 
 .resource-card p {
   margin: 0;
-  font-size: 13px;
-  color: rgb(196 226 255 / 84%);
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ai-muted);
 }
 
 .workflow {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
 }
 
 .workflow article {
-  padding: 14px;
-  background: rgb(5 20 35 / 78%);
-  border: 1px solid rgb(125 211 252 / 24%);
-  border-radius: 14px;
+  position: relative;
+  padding: 10px 10px 10px 40px;
+  background: var(--ai-link-bg);
+  border: 1px solid var(--ai-card-border);
+  border-radius: 10px;
 }
 
 .workflow span {
-  display: inline-block;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-  font-size: 12px;
-  color: #67e8f9;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  color: var(--ai-code-text);
+  letter-spacing: 0.06em;
+  background: var(--ai-code-bg);
+  border: 1px solid var(--ai-code-border);
+  border-radius: 999px;
 }
 
 .workflow h3 {
-  margin: 6px 0;
-  font-size: 18px;
-  color: #eef8ff;
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--ai-card-title);
 }
 
 .workflow p {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: rgb(194 224 250 / 86%);
+  font-size: 12px;
+  line-height: 1.36;
+  color: var(--ai-muted);
 }
 
 .workflow code {
   padding: 1px 6px;
-  color: #ccf4ff;
-  background: rgb(15 41 66 / 88%);
-  border: 1px solid rgb(125 211 252 / 24%);
+  color: var(--ai-code-text);
+  background: var(--ai-code-bg);
+  border: 1px solid var(--ai-code-border);
   border-radius: 6px;
-}
-
-.install-section h2 {
-  margin: 0 0 12px;
-  font-size: 24px;
-  color: #f3fbff;
 }
 
 .install-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 8px;
 }
 
 .install-card {
-  padding: 14px;
-  background: linear-gradient(180deg, rgb(4 16 29 / 92%), rgb(4 14 24 / 94%));
-  border: 1px solid rgb(165 243 252 / 22%);
-  border-radius: 14px;
+  padding: 10px;
+  background: rgb(255 255 255 / 28%);
+  border: 1px solid var(--ai-card-border);
+  border-radius: 10px;
 }
 
 .install-card h3 {
   margin: 0;
   font-size: 14px;
-  color: #b7e8ff;
+  color: var(--ai-card-title);
 }
 
 .install-card-header {
@@ -399,12 +552,12 @@ function copyInstallCommand(code: string, index: number) {
 .install-card button {
   flex-shrink: 0;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
-  color: #cff4ff;
+  color: var(--ai-code-text);
   cursor: pointer;
-  background: rgb(8 34 53 / 88%);
-  border: 1px solid rgb(125 211 252 / 36%);
+  background: var(--ai-code-bg);
+  border: 1px solid var(--ai-code-border);
   border-radius: 8px;
   transition:
     border-color 180ms ease,
@@ -412,24 +565,64 @@ function copyInstallCommand(code: string, index: number) {
 }
 
 .install-card button:hover {
-  background: rgb(10 41 64 / 92%);
-  border-color: rgb(125 211 252 / 58%);
+  border-color: var(--ai-link-border-hover);
 }
 
 .install-card pre {
-  padding: 12px;
+  padding: 10px;
   margin: 0;
   overflow-x: auto;
-  background: rgb(2 10 18 / 94%);
-  border: 1px solid rgb(125 211 252 / 18%);
-  border-radius: 10px;
+  background: var(--ai-code-bg);
+  border: 1px solid var(--ai-code-border);
+  border-radius: 8px;
 }
 
 .install-card code {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 12px;
-  line-height: 1.6;
-  color: #e8f7ff;
+  line-height: 1.45;
+  color: var(--ai-code-text);
+}
+
+.skill-usage {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.skill-usage-label {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  margin: 0;
+  font-size: 11px;
+  color: var(--ai-chip-text);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: var(--ai-chip-bg);
+  border: 1px solid var(--ai-chip-border);
+  border-radius: 999px;
+}
+
+.skill-usage-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.skill-usage-list code {
+  display: inline-flex;
+  padding: 5px 9px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--ai-code-text);
+  overflow-wrap: anywhere;
+  background: var(--ai-code-bg);
+  border: 1px solid var(--ai-code-border);
+  border-radius: 999px;
 }
 
 @keyframes signal {
@@ -444,10 +637,42 @@ function copyInstallCommand(code: string, index: number) {
 }
 
 @media (width <= 1024px) {
+  .hero-actions,
+  .install-grid,
   .resource-grid,
-  .workflow,
-  .install-grid {
+  .info-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ai-shell {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    margin: 4px 0 14px;
+  }
+
+  .ai-content {
+    display: block;
+    height: auto;
+    padding: 14px;
+  }
+
+  .install-grid,
+  .info-grid {
+    display: grid;
+  }
+
+  .skill-usage {
+    flex-direction: column;
+  }
+
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .section-head p {
+    text-align: left;
   }
 
   .ai-content {
@@ -455,7 +680,7 @@ function copyInstallCommand(code: string, index: number) {
   }
 
   .hero h1 {
-    font-size: clamp(26px, 9vw, 38px);
+    font-size: clamp(24px, 8.6vw, 34px);
   }
 }
 </style>
