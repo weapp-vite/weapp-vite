@@ -16,7 +16,7 @@ keywords:
 
 本页覆盖 `wevu` 响应式层的全部公开函数，包括“业务常用”和“调试/底层”两类。
 
-## 1. 状态创建与派生
+## 1. 状态创建与派生 {#state-creation}
 
 | API               | 类型入口                              | 说明                        |
 | ----------------- | ------------------------------------- | --------------------------- |
@@ -27,7 +27,7 @@ keywords:
 | `readonly`        | `Readonly<T>`                         | 只读代理。                  |
 | `computed`        | `ComputedRef` / `WritableComputedRef` | 声明计算属性（只读/可写）。 |
 
-## 2. 监听与副作用
+## 2. 监听与副作用 {#watch-effects}
 
 | API               | 类型入口                           | 说明                       |
 | ----------------- | ---------------------------------- | -------------------------- |
@@ -39,7 +39,7 @@ keywords:
 | `onScopeDispose`  | `() => void`                       | scope 销毁时回调。         |
 | `stop`            | `void`                             | 停止某个 effect/watch。    |
 
-## 3. Ref/Proxy 工具
+## 3. Ref/Proxy 工具 {#reactivity-utils}
 
 | API          | 类型入口           | 说明                       |
 | ------------ | ------------------ | -------------------------- |
@@ -61,7 +61,7 @@ keywords:
 | `isShallowReactive` | type predicate | 判定是否 shallowReactive。 |
 | `isRaw`             | `boolean`      | 判定对象是否被 `markRaw`。 |
 
-## 5. 批处理与调度
+## 5. 批处理与调度 {#scheduling}
 
 | API          | 类型入口        | 说明                     |
 | ------------ | --------------- | ------------------------ |

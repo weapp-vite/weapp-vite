@@ -16,7 +16,7 @@ keywords:
 
 本页覆盖 wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的底层 API。
 
-## 1. 运行时注册与挂载
+## 1. 运行时注册与挂载 {#registration-mount}
 
 | API                       | 类型入口                         | 说明                         | 使用建议                                  |
 | ------------------------- | -------------------------------- | ---------------------------- | ----------------------------------------- |
@@ -25,7 +25,7 @@ keywords:
 | `registerApp`             | `MiniProgramAppOptions`          | 原生 App 注册桥接。          | 框架层接口。                              |
 | `registerComponent`       | `MiniProgramComponentRawOptions` | 原生 Component 注册桥接。    | 框架层接口。                              |
 
-## 2. 全局默认值与行为开关
+## 2. 全局默认值与行为开关 {#defaults-switches}
 
 | API                 | 类型入口       | 说明                                        |
 | ------------------- | -------------- | ------------------------------------------- |
@@ -34,7 +34,7 @@ keywords:
 | `markNoSetData`     | `T`            | 标记对象不参与 `setData` 快照。             |
 | `isNoSetData`       | `boolean`      | 判断对象是否被标记为 no-setData。           |
 
-## 3. 调试与观测
+## 3. 调试与观测 {#debug-observe}
 
 | API                      | 类型入口         | 说明                   | 场景                     |
 | ------------------------ | ---------------- | ---------------------- | ------------------------ |
@@ -44,7 +44,7 @@ keywords:
 | `callHookReturn`         | -                | 执行返回值型 hook。    | `onShareAppMessage` 等。 |
 | `callUpdateHooks`        | -                | 执行更新类 hook。      | 渲染更新调度。           |
 
-## 4. 编译侧常量（`wevu/compiler`）
+## 4. 编译侧常量（`wevu/compiler`） {#compiler-constants}
 
 `wevu/compiler` 主要给编译工具使用，业务代码不建议直接依赖。
 

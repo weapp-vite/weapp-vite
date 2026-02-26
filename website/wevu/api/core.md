@@ -16,7 +16,7 @@ keywords:
 
 本页聚焦 `wevu` 的“最先接触”能力：应用入口、组件定义、`<script setup>` 宏，以及模板辅助函数。
 
-## 1. 入口与组件定义
+## 1. 入口与组件定义 {#entry-and-component}
 
 | API                             | 类型入口                                         | 说明                                                 |
 | ------------------------------- | ------------------------------------------------ | ---------------------------------------------------- |
@@ -27,7 +27,7 @@ keywords:
 | `registerApp`                   | `MiniProgramAppOptions`                          | 底层 App 注册桥接（调试/框架层更常用）。             |
 | `registerComponent`             | `MiniProgramComponentRawOptions`                 | 底层 Component 注册桥接。                            |
 
-## 2. `<script setup>` 宏
+## 2. `<script setup>` 宏 {#script-setup-macros}
 
 这些 API 主要用于 SFC 编译阶段，运行时多数会被擦除或改写。建议和 `weapp-vite/volar` 一起使用以获得更完整类型提示。
 
@@ -108,7 +108,7 @@ defineExpose({ onSubmit })
 
 :::
 
-## 3. 模板和 class/style 工具
+## 3. 模板和 class/style 工具 {#template-utils}
 
 | API              | 类型入口                           | 说明                                    |
 | ---------------- | ---------------------------------- | --------------------------------------- |
@@ -165,6 +165,6 @@ const styleText = computed(() => normalizeStyle([{ color: '#1f2937', fontWeight:
 
 ## 4. 相关页
 
-- 响应式能力：[/wevu/api-reference/reactivity](/wevu/api-reference/reactivity)
-- setup 上下文与原生实例：[/wevu/api-reference/setup-context](/wevu/api-reference/setup-context)
+- 响应式能力：[/wevu/api/reactivity](/wevu/api/reactivity)
+- setup 上下文与原生实例：[/wevu/api/setup-context](/wevu/api/setup-context)
 - 完整函数索引：/wevu/api/

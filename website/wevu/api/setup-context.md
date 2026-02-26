@@ -1,7 +1,6 @@
 ---
 title: Setup Context API
-description: wevu 的 setup(props, ctx) 除了 Vue 语义，还补齐了小程序运行时场景，特别是
-  ctx.instance（原生实例）和 ctx.emit（事件派发）。
+description: wevu 的 setup(props, ctx) 除了 Vue 语义，还补齐了小程序运行时场景，特别是 ctx.instance（原生实例）和 ctx.emit（事件派发）。
 keywords:
   - wevu
   - Vue SFC
@@ -17,7 +16,7 @@ keywords:
 
 `wevu` 的 `setup(props, ctx)` 除了 Vue 语义，还补齐了小程序运行时场景，特别是 `ctx.instance`（原生实例）和 `ctx.emit`（事件派发）。
 
-## 1. `setup` 签名与核心类型
+## 1. `setup` 签名与核心类型 {#setup-signature}
 
 | 类型/接口           | 链接                  | 说明                                         |
 | ------------------- | --------------------- | -------------------------------------------- |
@@ -27,7 +26,7 @@ keywords:
 | `ctx.instance`      | `MiniProgramInstance` | 小程序原生实例。                             |
 | `ctx.emit`          | `TriggerEventOptions` | 自定义事件派发入口。                         |
 
-## 2. setup 上下文相关 API
+## 2. setup 上下文相关 API {#setup-context-api}
 
 | API                      | 类型入口          | 说明                                       |
 | ------------------------ | ----------------- | ------------------------------------------ |
@@ -37,7 +36,7 @@ keywords:
 | `setCurrentSetupContext` | `SetupContext`    | 设置当前 setup context（框架层）。         |
 | `runSetupFunction`       | `SetupFunction`   | 手动运行 setup 并绑定上下文（调试/底层）。 |
 
-## 3. provide/inject（含全局容器）
+## 3. provide/inject（含全局容器） {#provide-inject}
 
 | API             | 类型入口               | 说明                            |
 | --------------- | ---------------------- | ------------------------------- |
@@ -142,7 +141,7 @@ function patchRaw() {
 
 :::
 
-## 5. 双向绑定辅助
+## 5. 双向绑定辅助 {#bind-model}
 
 | API            | 类型入口                               | 说明                                      |
 | -------------- | -------------------------------------- | ----------------------------------------- |
@@ -150,5 +149,5 @@ function patchRaw() {
 
 ## 6. 相关页
 
-- 生命周期与页面事件：[/wevu/api-reference/lifecycle](/wevu/api-reference/lifecycle)
-- 运行时桥接与调试：[/wevu/api-reference/runtime-bridge](/wevu/api-reference/runtime-bridge)
+- 生命周期与页面事件：[/wevu/api/lifecycle](/wevu/api/lifecycle)
+- 运行时桥接与调试：[/wevu/api/runtime-bridge](/wevu/api/runtime-bridge)
