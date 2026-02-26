@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "vitepress dev",
     "dev:docs": "vitepress dev",
-    "build": "vitepress build",
+    "build": "pnpm -w seo:prepare && vitepress build",
     "preview": "vitepress preview",
     "get-tree": "tree ../templates/weapp-vite-template -I \"node_modules|dist\" > snippets/template-tree.txt"
   },

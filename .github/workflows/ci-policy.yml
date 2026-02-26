@@ -35,6 +35,9 @@ jobs:
       - name: Check create-weapp-vite changeset rule
         run: pnpm check:create-weapp-vite-changeset
 
+      - name: SEO quality strict gate
+        run: pnpm seo:quality:strict
+
       - name: Security Audit
         run: pnpm audit --audit-level=moderate
         continue-on-error: true
