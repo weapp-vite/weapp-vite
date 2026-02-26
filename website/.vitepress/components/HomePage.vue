@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { useData } from 'vitepress'
 import { computed } from 'vue'
 import TechBackground from './TechBackground.vue'
@@ -88,22 +87,22 @@ const packageFeatureCards: HomeFeatureCard[] = [
         </h1>
         <div class="hero-logo-formula" aria-label="Vue + Vite + Rolldown = Weapp-vite">
           <span class="hero-logo-badge">
-            <Icon icon="vscode-icons:file-type-vue" class="hero-logo-icon" />
+            <span class="i-vscode-icons-file-type-vue h-[18px] w-[18px]" aria-hidden="true" />
             <span>Vue</span>
           </span>
           <span class="hero-logo-sign">+</span>
           <span class="hero-logo-badge">
-            <Icon :icon="isDark ? 'vscode-icons:file-type-light-vite' : 'vscode-icons:file-type-vite'" class="hero-logo-icon" />
+            <span class="i-vscode-icons-file-type-vite h-[18px] w-[18px] shrink-0 dark:brightness-110 dark:saturate-125" aria-hidden="true" />
             <span>Vite</span>
           </span>
           <span class="hero-logo-sign">+</span>
           <span class="hero-logo-badge">
-            <Icon :icon="isDark ? 'vscode-icons:file-type-light-rolldown' : 'vscode-icons:file-type-rolldown'" class="hero-logo-icon" />
+            <span class="i-vscode-icons-file-type-rolldown h-[18px] w-[18px] shrink-0 dark:brightness-115 dark:saturate-120" aria-hidden="true" />
             <span>Rolldown</span>
           </span>
           <span class="hero-logo-sign">=</span>
           <span class="hero-logo-badge hero-logo-badge-target">
-            <img class="hero-logo-weapp-icon" src="/logo.svg" alt="Weapp-vite logo">
+            <img src="/logo.svg" alt="Weapp-vite logo" class="h-[18px] w-[18px] object-contain">
             <span>Weapp‑vite</span>
           </span>
         </div>
@@ -325,16 +324,6 @@ const packageFeatureCards: HomeFeatureCard[] = [
   border: 1px solid rgb(16 185 129 / 22%);
   border-radius: 999px;
   box-shadow: 0 6px 18px rgb(16 185 129 / 12%);
-}
-
-.hero-logo-icon,
-.hero-logo-weapp-icon {
-  width: 18px;
-  height: 18px;
-}
-
-.hero-logo-weapp-icon {
-  object-fit: contain;
 }
 
 .hero-logo-sign {
