@@ -8,10 +8,11 @@ type PropMethod<T, TConstructor = any> = [T] extends
   : never
 
 export type PropConstructor<T = any>
-  = | { new (...args: any[]): T & object }
+  = | { new (...args: any[]): T & {} }
     | { (): T }
     | PropMethod<T>
-export type PropType<T> = PropConstructor<T> | PropConstructor<T>[]
+export type PropType<T> = PropConstructor<T> | (PropConstructor<T> | null)[]
+type Prop<T, D = T> = PropOptions<T, D> | PropType<T>
 export type ComponentPropsOptions = Record<string, PropOptions<any> | PropType<any> | null>
 
 export interface NativeTypeHint<T = any> {
@@ -30,16 +31,16 @@ export type NativeTypedProperty<
   P extends WechatMiniprogram.Component.AllProperty = WechatMiniprogram.Component.AllProperty,
 > = P & NativeTypeHint<T>
 
-export interface PropOptions<T = any> {
+export interface PropOptions<T = any, D = T> {
   type?: PropType<T> | true | null
   /**
    * 默认值（对齐 Vue 的 `default`；会被赋给小程序 property 的 `value`）
    */
-  default?: T | (() => T)
+  default?: D | (() => D)
   /**
    * 小程序 `value` 的别名
    */
-  value?: T | (() => T)
+  value?: D | (() => D)
   required?: boolean
 }
 
@@ -82,24 +83,30 @@ type DefaultKeys<T> = {
       : never
 }[keyof T]
 
-export type InferPropType<O>
-  = O extends null ? any
-    : O extends { type?: infer T } ? InferPropConstructor<T>
-      : O extends PropType<infer V> ? V
-        : InferPropConstructor<O>
+type IfAny<T, Y, N> = 0 extends (1 & T) ? Y : N
 
-type InferPropConstructor<T>
-  = T extends readonly any[] ? InferPropConstructor<T[number]>
-    : T extends undefined ? any
-      : T extends null ? any
-        : T extends BooleanConstructor ? boolean
-          : T extends NumberConstructor ? number
-            : T extends StringConstructor ? string
-              : T extends DateConstructor ? Date
-                : T extends ArrayConstructor ? any[]
-                  : T extends ObjectConstructor ? Record<string, any>
-                    : T extends PropConstructor<infer V> ? V
-                      : any
+export type InferPropType<O, NullAsAny = true>
+  = [O] extends [null]
+    ? NullAsAny extends true ? any : null
+    : [O] extends [{ type: null | true }]
+        ? any
+        : [O] extends [ObjectConstructor | { type: ObjectConstructor }]
+            ? Record<string, any>
+            : [O] extends [BooleanConstructor | { type: BooleanConstructor }]
+                ? boolean
+                : [O] extends [DateConstructor | { type: DateConstructor }]
+                    ? Date
+                    : [O] extends [(infer U)[] | { type: (infer U)[] }]
+                        ? U extends DateConstructor
+                          ? Date | InferPropType<U, false>
+                          : InferPropType<U, false>
+                        : [O] extends [Prop<infer V, infer D>]
+                            ? unknown extends V
+                              ? keyof V extends never
+                                ? IfAny<V, V, D>
+                                : V
+                              : V
+                            : O
 
 type IsUnion<T, U = T> = T extends any ? ([U] extends [T] ? false : true) : never
 

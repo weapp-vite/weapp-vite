@@ -33,6 +33,9 @@ defineComponent({
     variants: {
       type: [String, Number] as PropType<string | number>,
     },
+    nullableText: {
+      type: [String, null],
+    },
     format: {
       type: Function as PropType<(n: number) => string>,
     },
@@ -42,6 +45,7 @@ defineComponent({
     expectType<number | undefined>(props.optionalStep)
     expectType<Book>(props.book)
     expectType<string | number | undefined>(props.variants)
+    expectType<string | null | undefined>(props.nullableText)
     expectType<((n: number) => string) | undefined>(props.format)
     expectError(props.nonexistent)
     expectError(props.book.nonexistent)
