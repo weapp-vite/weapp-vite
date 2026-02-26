@@ -85,3 +85,8 @@ wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 - [兼容性与注意事项](/wevu/compatibility)
 - [Vue 3 兼容性说明（完整）](/wevu/vue3-compat)
 - [wevu vs Vue 3（核心差异）](/wevu/vue3-vs-wevu)
+
+## 扩展阅读
+
+- [为什么没有使用 @vue/runtime-core 的 createRenderer 来实现](/wevu/why-not-runtime-core-create-renderer)
+- [wevu 中的 setData 什么时候触发？](/wevu/when-setdata-triggers)
