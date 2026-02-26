@@ -336,4 +336,13 @@
   .VPDoc .content-container {
     max-width: 760px;
   }
+
+  /* /wevu/api/ 入口页使用无侧栏布局，适当放宽主内容宽度避免两侧留白过大 */
+  .wevu-api-home .VPDoc .content-container {
+    max-width: 980px;
+  }
+
+  .wevu-api-home .VPDoc .content {
+    max-width: 1080px;
+  }
 }

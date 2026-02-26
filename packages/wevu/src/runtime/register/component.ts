@@ -477,6 +477,19 @@ export function registerComponent<D extends object, C extends ComputedDefinition
           ;(userPageLifetimes as any).resize.apply(this, args)
         }
       },
+      routeDone: function routeDone(this: InternalRuntimeState, ...args: any[]) {
+        if (isPage && typeof (pageLifecycleHooks as any).onRouteDone === 'function') {
+          ;(pageLifecycleHooks as any).onRouteDone.call(this, ...args)
+          if (typeof (userPageLifetimes as any).routeDone === 'function') {
+            ;(userPageLifetimes as any).routeDone.apply(this, args)
+          }
+          return
+        }
+        callHookList(this, 'onRouteDone', args)
+        if (typeof (userPageLifetimes as any).routeDone === 'function') {
+          ;(userPageLifetimes as any).routeDone.apply(this, args)
+        }
+      },
     },
     methods: {
       ...pageShareMethodBridges,
