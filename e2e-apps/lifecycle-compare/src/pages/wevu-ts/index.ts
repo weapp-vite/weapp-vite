@@ -52,6 +52,7 @@ export default defineComponent({
   }),
   features: {
     enableOnRouteDone: true,
+    enableOnRouteDoneFallback: true,
     enableOnPullDownRefresh: true,
     enableOnReachBottom: true,
     enableOnPageScroll: true,

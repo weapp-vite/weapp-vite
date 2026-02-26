@@ -122,6 +122,7 @@ export default defineComponent({
   }),
   features: {
     enableOnRouteDone: true,
+    enableOnRouteDoneFallback: true,
     enableOnPullDownRefresh: true,
     enableOnReachBottom: true,
     enableOnPageScroll: true,
@@ -197,11 +198,11 @@ export default defineComponent({
 }
 
 .panel {
-  margin: 12rpx 0 16rpx;
   padding: 12rpx;
+  margin: 12rpx 0 16rpx;
+  background: #f8fafc;
   border: 1rpx solid #e5e7eb;
   border-radius: 12rpx;
-  background: #f8fafc;
 }
 
 .panel-title {
