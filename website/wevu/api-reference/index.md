@@ -18,41 +18,41 @@ keywords:
 
 ### 入口与应用
 
-- [Core API（入口、组件、宏）](/wevu/api/#core-api)
+- [Core API（入口、组件、宏）](/wevu/api/core.html)
   - `defineComponent` / `createApp` / `defineProps` / `defineEmits` / `defineModel`
 
 ### 通用调度
 
-- [Reactivity API（响应式与调度）](/wevu/api/#reactivity-api)
+- [Reactivity API（响应式与调度）](/wevu/api/reactivity.html)
   - `ref` / `reactive` / `computed` / `watch` / `nextTick`
 
 ## 组合式 API
 
 ### 生命周期
 
-- [Lifecycle API（生命周期）](/wevu/api/#lifecycle-api)
+- [Lifecycle API（生命周期）](/wevu/api/lifecycle.html)
   - `onLoad` / `onShow` / `onReady` / `onUnload`
 
 ### setup 上下文
 
-- [Setup Context API（setup 上下文）](/wevu/api/#setup-context-api)
-  - `ctx.emit` / `ctx.bindModel` / `getCurrentInstance` / `provide` / `inject`
+- [Setup Context API（setup 上下文）](/wevu/api/setup-context.html)
+  - `ctx.emit` / `useBindModel` / `getCurrentInstance` / `provide` / `inject`
 
 ### 状态管理
 
-- [Store API（状态管理）](/wevu/api/#store-api)
+- [Store API（状态管理）](/wevu/api/store.html)
   - `defineStore` / `createStore` / `storeToRefs`
 
 ## 进阶 API
 
 ### 运行时桥接
 
-- [Runtime Bridge API（桥接与调试）](/wevu/api/#runtime-bridge-api)
+- [Runtime Bridge API（桥接与调试）](/wevu/api/runtime-bridge.html)
   - 小程序实例桥接、`setData` 策略、调试与性能开关
 
 ### 类型与工具
 
-- [Type Reference（类型总览）](/wevu/api/#type-reference)
+- [Type Reference（类型总览）](/wevu/api/types.html)
   - 核心类型、上下文类型、Store 类型、桥接类型
 
 ## 建议阅读路径

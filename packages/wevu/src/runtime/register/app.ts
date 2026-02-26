@@ -4,6 +4,10 @@ import { callHookList } from '../hooks'
 import { runInlineExpression } from './inline'
 import { mountRuntimeInstance } from './runtimeInstance'
 
+/**
+ * 注册 App 入口（框架内部使用）。
+ * @internal
+ */
 export function registerApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   runtimeApp: RuntimeApp<D, C, M>,
   methods: MethodDefinitions,

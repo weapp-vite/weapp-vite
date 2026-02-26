@@ -1,6 +1,6 @@
 ---
 title: Runtime Bridge API
-description: 本页覆盖 Wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的底层 API。
+description: 本页覆盖 Wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的公共 API。
 keywords:
   - Wevu
   - Vue SFC
@@ -14,18 +14,9 @@ keywords:
 
 # Runtime Bridge API（桥接与调试）
 
-本页覆盖 Wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的底层 API。
+本页覆盖 Wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的公共 API。
 
-## 1. 运行时注册与挂载
-
-| API                       | 类型入口                         | 说明                         | 使用建议                                  |
-| ------------------------- | -------------------------------- | ---------------------------- | ----------------------------------------- |
-| `mountRuntimeInstance`    | `RuntimeInstance`                | 挂载并初始化运行时实例。     | 框架层/测试中使用，业务侧通常不直接调用。 |
-| `teardownRuntimeInstance` | `RuntimeInstance`                | 销毁运行时实例并清理副作用。 | 与 `mountRuntimeInstance` 成对调用。      |
-| `registerApp`             | `MiniProgramAppOptions`          | 原生 App 注册桥接。          | 框架层接口。                              |
-| `registerComponent`       | `MiniProgramComponentRawOptions` | 原生 Component 注册桥接。    | 框架层接口。                              |
-
-## 2. 全局默认值与行为开关
+## 1. 全局默认值与行为开关
 
 | API                 | 类型入口       | 说明                                        |
 | ------------------- | -------------- | ------------------------------------------- |
@@ -34,17 +25,14 @@ keywords:
 | `markNoSetData`     | `T`            | 标记对象不参与 `setData` 快照。             |
 | `isNoSetData`       | `boolean`      | 判断对象是否被标记为 no-setData。           |
 
-## 3. 调试与观测
+## 2. 调试与观测
 
-| API                      | 类型入口         | 说明                   | 场景                     |
-| ------------------------ | ---------------- | ---------------------- | ------------------------ |
-| `addMutationRecorder`    | `MutationRecord` | 注册 mutation 记录器。 | 调试 state 变化来源。    |
-| `removeMutationRecorder` | `MutationRecord` | 移除 mutation 记录器。 | 测试结束清理。           |
-| `callHookList`           | -                | 顺序执行 hook 列表。   | 框架内部生命周期调度。   |
-| `callHookReturn`         | -                | 执行返回值型 hook。    | `onShareAppMessage` 等。 |
-| `callUpdateHooks`        | -                | 执行更新类 hook。      | 渲染更新调度。           |
+| API                      | 类型入口         | 说明                   | 场景                  |
+| ------------------------ | ---------------- | ---------------------- | --------------------- |
+| `addMutationRecorder`    | `MutationRecord` | 注册 mutation 记录器。 | 调试 state 变化来源。 |
+| `removeMutationRecorder` | `MutationRecord` | 移除 mutation 记录器。 | 测试结束清理。        |
 
-## 4. 编译侧常量（`wevu/compiler`）
+## 3. 编译侧常量（`wevu/compiler`）
 
 `wevu/compiler` 主要给编译工具使用，业务代码不建议直接依赖。
 
@@ -57,7 +45,7 @@ keywords:
 | `WevuPageHookName`           | `WevuPageHookName`           | 页面 hook 名称联合类型。        |
 | `WevuPageFeatureFlag`        | `WevuPageFeatureFlag`        | 页面 feature 标记联合类型。     |
 
-## 5. 示例：默认值 + mutation 记录（script setup）
+## 4. 示例：默认值 + mutation 记录（script setup）
 
 ::: code-group
 

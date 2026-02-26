@@ -8,6 +8,10 @@ export function getCurrentInstance<T extends InternalRuntimeState = InternalRunt
   return __currentInstance as T | undefined
 }
 
+/**
+ * 设置当前运行时实例（框架内部使用）。
+ * @internal
+ */
 export function setCurrentInstance(inst: InternalRuntimeState | undefined) {
   __currentInstance = inst
 }
@@ -16,6 +20,10 @@ export function getCurrentSetupContext<T = any>(): T | undefined {
   return __currentSetupContext as T | undefined
 }
 
+/**
+ * 设置当前 setup 上下文（框架内部使用）。
+ * @internal
+ */
 export function setCurrentSetupContext(ctx: any | undefined) {
   __currentSetupContext = ctx
 }
@@ -126,6 +134,10 @@ function ensurePageShareMenusOnSetup(target: InternalRuntimeState) {
   }
 }
 
+/**
+ * 调用批量 hook（框架内部调度入口）。
+ * @internal
+ */
 export function callHookList(target: InternalRuntimeState, name: string, args: any[] = []) {
   const hooks = target.__wevuHooks
   if (!hooks) {
@@ -157,6 +169,10 @@ export function callHookList(target: InternalRuntimeState, name: string, args: a
   }
 }
 
+/**
+ * 调用返回值型 hook（框架内部调度入口）。
+ * @internal
+ */
 export function callHookReturn(target: InternalRuntimeState, name: string, args: any[] = []) {
   const hooks = target.__wevuHooks
   if (!hooks) {
@@ -245,6 +261,12 @@ export function onResize(handler: (opt: WechatMiniprogram.Page.IResizeOption) =>
 }
 export function onMoved(handler: () => void) {
   pushHook(assertInSetup('onMoved'), 'onMoved', handler as any)
+}
+export function onAttached(handler: () => void) {
+  pushHook(assertInSetup('onAttached'), 'onAttached', handler as any)
+}
+export function onDetached(handler: () => void) {
+  pushHook(assertInSetup('onDetached'), 'onDetached', handler as any)
 }
 export function onError(handler: (err: any) => void) {
   pushHook(assertInSetup('onError'), 'onError', handler as any)
@@ -355,6 +377,10 @@ export function onServerPrefetch(_handler: () => void) {
 }
 
 // 内部更新钩子派发：before/after 阶段统一入口
+/**
+ * 派发更新阶段钩子（框架内部调度入口）。
+ * @internal
+ */
 export function callUpdateHooks(target: InternalRuntimeState, phase: 'before' | 'after') {
   const hookName = phase === 'before' ? '__wevuOnBeforeUpdate' : '__wevuOnUpdated'
   callHookList(target, hookName)

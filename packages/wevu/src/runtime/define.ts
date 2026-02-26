@@ -202,6 +202,7 @@ export function defineComponent(
  * 从 Vue SFC 选项创建 wevu 组件，供 weapp-vite 编译产物直接调用的兼容入口。
  *
  * @param options 组件选项，可能包含小程序特有的 properties
+ * @internal
  */
 export function createWevuComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   options: DefineComponentOptions<ComponentPropsOptions, D, C, M> & { properties?: WechatMiniprogram.Component.PropertyOption },
@@ -220,6 +221,10 @@ export function createWevuComponent<D extends object, C extends ComputedDefiniti
   defineComponent(finalOptions)
 }
 
+/**
+ * scoped slot 兼容组件入口（编译产物内部使用）。
+ * @internal
+ */
 export function createWevuScopedSlotComponent(
   overrides?: { computed?: ComputedDefinitions, inlineMap?: InlineExpressionMap },
 ): void {

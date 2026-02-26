@@ -18,6 +18,10 @@ export interface PrelinkReactiveTreeOptions {
   maxKeys?: number
 }
 
+/**
+ * 预链接响应式树结构，供运行时差量路径追踪使用。
+ * @internal
+ */
 export function prelinkReactiveTree(root: object, options?: PrelinkReactiveTreeOptions) {
   const rootRaw = toRaw(root as any) as object
   rawPathMap.set(rootRaw, '')
@@ -78,6 +82,10 @@ export function prelinkReactiveTree(root: object, options?: PrelinkReactiveTreeO
   }
 }
 
+/**
+ * 清理预链接阶段建立的路径与父子索引。
+ * @internal
+ */
 export function clearPatchIndices(root: object) {
   const rootRaw = toRaw(root as any) as object
   const nodes = rootPatchNodesMap.get(rootRaw)
@@ -100,6 +108,7 @@ export function clearPatchIndices(root: object) {
 
 /**
  * 让 effect 订阅整个对象的“版本号”，无需深度遍历即可对任何字段变化做出响应。
+ * @internal
  */
 export function touchReactive(target: object) {
   const raw = toRaw(target as any) as object

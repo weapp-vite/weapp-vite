@@ -9,6 +9,10 @@ import { createComponentMethods } from './component/methods'
 import { createPropsSync } from './component/props'
 import { enableDeferredSetData, mountRuntimeInstance, teardownRuntimeInstance } from './runtimeInstance'
 
+/**
+ * 注册组件入口（框架内部使用）。
+ * @internal
+ */
 export function registerComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   runtimeApp: RuntimeApp<D, C, M>,
   methods: MethodDefinitions,
@@ -388,6 +392,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         if (setupLifecycle === 'created') {
           enableDeferredSetData(this)
         }
+        callHookList(this, 'onAttached', args)
         if (typeof (userLifetimes as any).attached === 'function') {
           ;(userLifetimes as any).attached.apply(this, args)
         }
@@ -416,6 +421,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         }
       },
       detached: function detached(this: InternalRuntimeState, ...args: any[]) {
+        callHookList(this, 'onDetached', args)
         if (isPage && typeof (pageLifecycleHooks as any).onUnload === 'function') {
           ;(pageLifecycleHooks as any).onUnload.call(this, ...args)
           if (typeof (userLifetimes as any).detached === 'function') {

@@ -2,6 +2,10 @@ import { isObject, isReactive, toRaw } from './reactive'
 import { ReactiveFlags } from './reactive/shared'
 import { isRef } from './ref'
 
+/**
+ * 深度遍历工具（框架内部依赖收集使用）。
+ * @internal
+ */
 export function traverse(value: any, depth: number = Infinity, seen = new Map<object, number>()): any {
   if (depth <= 0 || !isObject(value)) {
     return value

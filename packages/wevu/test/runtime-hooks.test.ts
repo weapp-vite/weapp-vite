@@ -6,6 +6,8 @@ import {
   callHookReturn,
   getCurrentInstance,
   onAddToFavorites,
+  onAttached,
+  onDetached,
   onError,
   onHide,
   onLaunch,
@@ -190,6 +192,29 @@ describe('hooks - lifecycle registration', () => {
       setCurrentInstance(undefined)
 
       expect(() => onTabItemTap(vi.fn())).toThrow('onTabItemTap() 必须在 setup() 的同步阶段调用')
+    })
+  })
+
+  describe('onAttached / onDetached', () => {
+    it('should register onAttached hook', () => {
+      const handler = vi.fn()
+      onAttached(handler)
+
+      expect(instance.__wevuHooks?.onAttached).toContain(handler)
+    })
+
+    it('should register onDetached hook', () => {
+      const handler = vi.fn()
+      onDetached(handler)
+
+      expect(instance.__wevuHooks?.onDetached).toContain(handler)
+    })
+
+    it('should throw when called outside setup', () => {
+      setCurrentInstance(undefined)
+
+      expect(() => onAttached(vi.fn())).toThrow('onAttached() 必须在 setup() 的同步阶段调用')
+      expect(() => onDetached(vi.fn())).toThrow('onDetached() 必须在 setup() 的同步阶段调用')
     })
   })
 

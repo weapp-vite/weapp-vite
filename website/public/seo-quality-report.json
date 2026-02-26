@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-02-26T07:26:17.443Z",
+  "generatedAt": "2026-02-26T18:29:27.632Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
-    "files": 166,
-    "docs": 157,
+    "files": 162,
+    "docs": 153,
     "blog": 4,
     "page": 5,
-    "withFrontmatter": 166,
-    "missingFrontmatter": 0
+    "withFrontmatter": 161,
+    "missingFrontmatter": 1
   },
   "coverage": {
     "all": {
-      "total": 166,
-      "title": 166,
-      "description": 166,
-      "keywords": 166,
+      "total": 162,
+      "title": 161,
+      "description": 160,
+      "keywords": 160,
       "date": 5
     },
     "docs": {
-      "total": 157,
-      "title": 157,
-      "description": 157,
-      "keywords": 157,
+      "total": 153,
+      "title": 152,
+      "description": 151,
+      "keywords": 151,
       "date": 1
     },
     "blog": {
@@ -41,16 +41,16 @@
   },
   "coveragePercent": {
     "all": {
-      "title": 100,
-      "description": 100,
-      "keywords": 100,
-      "date": 3
+      "title": 99.4,
+      "description": 98.8,
+      "keywords": 98.8,
+      "date": 3.1
     },
     "docs": {
-      "title": 100,
-      "description": 100,
-      "keywords": 100,
-      "date": 0.6
+      "title": 99.3,
+      "description": 98.7,
+      "keywords": 98.7,
+      "date": 0.7
     },
     "blog": {
       "title": 100,
@@ -107,8 +107,39 @@
     "seoQualityReportPublic": true
   },
   "quality": {
-    "checked": 166,
-    "issues": []
+    "checked": 162,
+    "issues": [
+      {
+        "path": "demos/my-app/README.md",
+        "type": "missing-description",
+        "message": "缺少 description。"
+      },
+      {
+        "path": "demos/my-app/README.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "wevu/api-reference/index.md",
+        "type": "non-normalized-keywords",
+        "message": "keywords 未标准化（去噪/去重/格式不一致）。",
+        "detail": "当前: wevu, api, reference, vue-style, 指南 | 标准: wevu, api, reference, vue-style"
+      },
+      {
+        "path": "wevu/api/index.md",
+        "type": "missing-description",
+        "message": "缺少 description。"
+      },
+      {
+        "path": "wevu/api/index.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      }
+    ]
   },
-  "qualityIssueCounts": {}
+  "qualityIssueCounts": {
+    "missing-description": 2,
+    "missing-keywords": 2,
+    "non-normalized-keywords": 1
+  }
 }

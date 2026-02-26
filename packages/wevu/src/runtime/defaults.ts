@@ -77,14 +77,26 @@ export function resetWevuDefaults() {
   currentDefaults = {}
 }
 
+/**
+ * 读取当前默认配置（框架内部使用）。
+ * @internal
+ */
 export function resolveWevuDefaults() {
   return currentDefaults
 }
 
+/**
+ * 将默认配置应用到 App 选项（框架内部使用）。
+ * @internal
+ */
 export function applyWevuAppDefaults<T extends CreateAppOptions<any, any, any>>(options: T): T {
   return mergeWithDefaults(currentDefaults.app as Partial<T> | undefined, options)
 }
 
+/**
+ * 将默认配置应用到组件选项（框架内部使用）。
+ * @internal
+ */
 export function applyWevuComponentDefaults<T extends DefineComponentOptions<any, any, any, any>>(options: T): T {
   return mergeWithDefaults(currentDefaults.component as Partial<T> | undefined, options)
 }
