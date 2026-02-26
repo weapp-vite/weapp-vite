@@ -23,6 +23,7 @@
     "get-tree": "tree ../templates/weapp-vite-template -I \"node_modules|dist\" > snippets/template-tree.txt"
   },
   "dependencies": {
+    "@iconify/vue": "^5.0.0",
     "echarts": "^6.0.0",
     "element-plus": "^2.13.2",
     "gridstack": "^12.4.2",
@@ -33,7 +34,9 @@
   "devDependencies": {
     "@egoist/tailwindcss-icons": "^1.9.2",
     "@iconify-json/bi": "^1.2.1",
+    "@iconify-json/logos": "^1.2.10",
     "@iconify-json/mdi": "^1.2.3",
+    "@iconify-json/vscode-icons": "^1.2.44",
     "@shikijs/vitepress-twoslash": "^3.23.0",
     "create-weapp-vite": "workspace:*",
     "mermaid": "^11.12.3",

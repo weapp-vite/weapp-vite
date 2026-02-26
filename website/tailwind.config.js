@@ -11,7 +11,7 @@ export default {
   },
   plugins: [
     iconsPlugin({
-      collections: getIconCollections(['mdi', 'bi']),
+      collections: getIconCollections(['mdi', 'bi', 'logos']),
     }),
     themeTransitionPlugin(),
   ],

@@ -1,10 +1,17 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { useData } from 'vitepress'
 import { computed } from 'vue'
 import TechBackground from './TechBackground.vue'
 
 const { isDark } = useData()
 const glowClass = computed(() => (isDark.value ? 'from-emerald-500/25 to-lime-400/20' : 'from-emerald-400/25 to-emerald-300/15'))
+const heroKeywordTextClass = computed(() => (isDark.value ? 'text-zinc-100' : 'text-zinc-800'))
+const heroKeywordChipToneClass = computed(() => (
+  isDark.value
+    ? 'border-emerald-300/45 bg-slate-900/75 text-emerald-50 shadow-[0_10px_20px_rgba(2,6,23,0.28)]'
+    : 'border-emerald-500/20 bg-white/90 text-zinc-800 shadow-[0_6px_14px_rgba(16,185,129,0.1)]'
+))
 </script>
 
 <template>
@@ -26,6 +33,27 @@ const glowClass = computed(() => (isDark.value ? 'from-emerald-500/25 to-lime-40
         >
           Weapp‑vite
         </h1>
+        <div class="hero-logo-formula" aria-label="Vue + Vite + Rolldown = Weapp-vite">
+          <span class="hero-logo-badge">
+            <Icon icon="vscode-icons:file-type-vue" class="hero-logo-icon" />
+            <span>Vue</span>
+          </span>
+          <span class="hero-logo-sign">+</span>
+          <span class="hero-logo-badge">
+            <Icon :icon="isDark ? 'vscode-icons:file-type-light-vite' : 'vscode-icons:file-type-vite'" class="hero-logo-icon" />
+            <span>Vite</span>
+          </span>
+          <span class="hero-logo-sign">+</span>
+          <span class="hero-logo-badge">
+            <Icon :icon="isDark ? 'vscode-icons:file-type-light-rolldown' : 'vscode-icons:file-type-rolldown'" class="hero-logo-icon" />
+            <span>Rolldown</span>
+          </span>
+          <span class="hero-logo-sign">=</span>
+          <span class="hero-logo-badge hero-logo-badge-target">
+            <img class="hero-logo-weapp-icon" src="/logo.svg" alt="Weapp-vite logo">
+            <span>Weapp‑vite</span>
+          </span>
+        </div>
         <p class="mt-5 text-balance text-base/7 text-zinc-700 dark:text-zinc-300 sm:text-lg/8">
           把现代化的开发模式带入小程序开发：极速热更、类型安全、插件生态、原子化样式与工程化能力，一站式串联。
         </p>
@@ -51,17 +79,17 @@ const glowClass = computed(() => (isDark.value ? 'from-emerald-500/25 to-lime-40
             <span class="i-mdi-github text-lg" /> GitHub
           </a>
         </div>
-        <div class="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
-          <span class="rounded-full bg-white/60 dark:bg-white/10 px-3 py-1 ring-1 ring-inset ring-zinc-900/5 dark:ring-white/10">
+        <div class="hero-keywords mt-6 flex flex-wrap items-center justify-center gap-2 text-xs" :class="heroKeywordTextClass">
+          <span class="hero-keyword-chip" :class="heroKeywordChipToneClass">
             TypeScript/ESM
           </span>
-          <span class="rounded-full bg-white/60 dark:bg-white/10 px-3 py-1 ring-1 ring-inset ring-zinc-900/5 dark:ring-white/10">
+          <span class="hero-keyword-chip" :class="heroKeywordChipToneClass">
             Vite / Rolldown 插件
           </span>
-          <span class="rounded-full bg-white/60 dark:bg-white/10 px-3 py-1 ring-1 ring-inset ring-zinc-900/5 dark:ring-white/10">
+          <span class="hero-keyword-chip" :class="heroKeywordChipToneClass">
             自动构建 npm
           </span>
-          <span class="rounded-full bg-white/60 dark:bg-white/10 px-3 py-1 ring-1 ring-inset ring-zinc-900/5 dark:ring-white/10">
+          <span class="hero-keyword-chip" :class="heroKeywordChipToneClass">
             自动引入组件
           </span>
         </div>
@@ -299,6 +327,77 @@ const glowClass = computed(() => (isDark.value ? 'from-emerald-500/25 to-lime-40
 
 .hero-chip {
   animation: gentle-pulse 9s ease-in-out infinite;
+}
+
+.hero-logo-formula {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.hero-logo-badge {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgb(6 95 70);
+  letter-spacing: 0.01em;
+  background: rgb(255 255 255 / 78%);
+  border: 1px solid rgb(16 185 129 / 22%);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgb(16 185 129 / 12%);
+}
+
+.hero-logo-icon,
+.hero-logo-weapp-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.hero-logo-weapp-icon {
+  object-fit: contain;
+}
+
+.hero-logo-sign {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgb(5 150 105);
+}
+
+.hero-logo-badge-target {
+  color: rgb(6 78 59);
+  background: linear-gradient(180deg, rgb(209 250 229 / 92%), rgb(187 247 208 / 72%));
+  border-color: rgb(16 185 129 / 35%);
+}
+
+:global(html.dark) .hero-logo-badge {
+  color: rgb(209 250 229 / 96%);
+  background: rgb(6 46 35 / 72%);
+  border-color: rgb(16 185 129 / 38%);
+  box-shadow: 0 10px 24px rgb(3 10 8 / 30%);
+}
+
+:global(html.dark) .hero-logo-sign {
+  color: rgb(110 231 183 / 92%);
+}
+
+:global(html.dark) .hero-logo-badge-target {
+  color: rgb(236 253 245);
+  background: linear-gradient(180deg, rgb(6 95 70 / 62%), rgb(4 47 46 / 68%));
+  border-color: rgb(110 231 183 / 52%);
+}
+
+.hero-keyword-chip {
+  padding: 4px 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: 999px;
 }
 
 .interactive-cta {
