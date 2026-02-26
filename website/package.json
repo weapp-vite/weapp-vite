@@ -43,7 +43,7 @@
     "tailwindcss": "^3.4.19",
     "unplugin-auto-import": "^21.0.0",
     "unplugin-vue-components": "^31.0.0",
-    "vitepress": "^2.0.0-alpha.15",
+    "vitepress": "^2.0.0-alpha.16",
     "vitepress-plugin-group-icons": "^1.7.1",
     "vitepress-plugin-llms": "1.11.0",
     "vitepress-plugin-mermaid": "^2.0.17",

@@ -384,8 +384,8 @@ export default defineConfig({
     nav: [
       { text: '指引', link: '/guide/' },
       // { text: '教程', link: '/handbook/' }, // 暂时隐藏：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
-      { text: '社区', link: '/community/group' },
       { text: 'wevu', link: '/wevu/' },
+      { text: '社区', link: '/community/group' },
       { text: '周边包', link: '/packages/' },
       // { text: '参考', link: '/config' },
       { text: '迁移', link: '/migration/' },

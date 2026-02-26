@@ -12,6 +12,59 @@ const heroKeywordChipToneClass = computed(() => (
     ? 'border-emerald-300/45 bg-slate-900/75 text-emerald-50 shadow-[0_10px_20px_rgba(2,6,23,0.28)]'
     : 'border-emerald-500/20 bg-white/90 text-zinc-800 shadow-[0_6px_14px_rgba(16,185,129,0.1)]'
 ))
+
+interface HomeFeatureCard {
+  href: string
+  icon: string
+  title: string
+  packageName: string
+  description: string
+}
+
+const packageFeatureCards: HomeFeatureCard[] = [
+  {
+    href: '/packages/create-weapp-vite',
+    icon: '🚀',
+    title: '官方脚手架',
+    packageName: 'create-weapp-vite',
+    description: '内置 default / wevu / tailwindcss / tdesign 等模板，快速创建并对齐依赖组合。',
+  },
+  {
+    href: '/wevu/',
+    icon: '⚡',
+    title: '轻量运行时',
+    packageName: 'wevu',
+    description: '提供 Vue 3 风格响应式与 Store，采用快照 diff 策略，尽量减少 setData 更新。',
+  },
+  {
+    href: '/packages/wevu-compiler',
+    icon: '🧩',
+    title: '编译能力底座',
+    packageName: '@wevu/compiler',
+    description: '独立复用 SFC script/template/style/config 编译链，支持页面特性分析与注入。',
+  },
+  {
+    href: '/packages/rolldown-require/index.zh',
+    icon: '🧠',
+    title: '配置加载引擎',
+    packageName: 'rolldown-require',
+    description: '基于 Rolldown 的 bundle + require，支持 ts/mjs/cjs 配置加载，适配 CLI 与 Node 脚本。',
+  },
+  {
+    href: '/packages/weapp-ide-cli',
+    icon: '🤖',
+    title: '开发者工具自动化',
+    packageName: 'weapp-ide-cli',
+    description: '增强 open / preview / upload 命令，补齐路径与非交互参数，便于本地脚本和 CI。',
+  },
+  {
+    href: '/packages/',
+    icon: '📦',
+    title: '工具链能力矩阵',
+    packageName: 'rolldown-require / vite-plugin-performance / volar / web / mcp',
+    description: '覆盖配置加载、插件性能分析、编辑器智能提示与实验运行时，按场景自由组合。',
+  },
+]
 </script>
 
 <template>
@@ -110,104 +163,24 @@ const heroKeywordChipToneClass = computed(() => (
     <div class="mx-auto max-w-7xl px-6 py-8 sm:py-12">
       <div class="feature-grid grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <a
-          href="/guide/"
+          v-for="(feature, featureIndex) in packageFeatureCards"
+          :key="feature.title"
+          :href="feature.href"
           class="feature-card group relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-white/60 p-6 shadow-[0_0_0_1px_rgba(16,185,129,0.15)_inset,0_10px_30px_rgba(16,185,129,0.12)] dark:border-emerald-300/20 dark:bg-white/5"
-          style="
-
---card-index: 0"
+          :style="{ '--card-index': featureIndex }"
         >
           <div class="flex items-center gap-3">
             <div class="rounded-lg bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-300">
-              🛠️
+              {{ feature.icon }}
             </div>
-            <h3 class="text-lg font-semibold">丰富的功能</h3>
-          </div>
-          <p class="mt-3 text-sm text-zinc-700 dark:text-zinc-300">对 TypeScript、SCSS 等支持开箱即用。</p>
-          <div class="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-2xl transition group-hover:opacity-100 bg-gradient-to-br from-emerald-400/10 via-lime-300/10 to-emerald-600/10" />
-        </a>
-
-        <a
-          href="/guide/npm"
-          class="feature-card group relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-white/60 p-6 shadow-[0_0_0_1px_rgba(16,185,129,0.15)_inset,0_10px_30px_rgba(16,185,129,0.12)] dark:border-emerald-300/20 dark:bg-white/5"
-          style="
-
---card-index: 1"
-        >
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-300">
-              🌲
+            <div>
+              <h3 class="text-lg font-semibold">{{ feature.title }}</h3>
+              <p class="text-[11px] font-semibold tracking-wide text-emerald-700/90 dark:text-emerald-200/90">
+                {{ feature.packageName }}
+              </p>
             </div>
-            <h3 class="text-lg font-semibold">自动构建 npm</h3>
           </div>
-          <p class="mt-3 text-sm text-zinc-700 dark:text-zinc-300">内置小程序构建 npm 与内联 npm 代码两种策略。</p>
-          <div class="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-2xl transition group-hover:opacity-100 bg-gradient-to-br from-emerald-400/10 via-lime-300/10 to-emerald-600/10" />
-        </a>
-
-        <a
-          href="/guide/auto-import"
-          class="feature-card group relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-white/60 p-6 shadow-[0_0_0_1px_rgba(16,185,129,0.15)_inset,0_10px_30px_rgba(16,185,129,0.12)] dark:border-emerald-300/20 dark:bg-white/5"
-          style="
-
---card-index: 2"
-        >
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-300">
-              🔑
-            </div>
-            <h3 class="text-lg font-semibold">自动引入组件</h3>
-          </div>
-          <p class="mt-3 text-sm text-zinc-700 dark:text-zinc-300">直接在模板中使用组件，自动感应注册。</p>
-          <div class="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-2xl transition group-hover:opacity-100 bg-gradient-to-br from-emerald-400/10 via-lime-300/10 to-emerald-600/10" />
-        </a>
-
-        <a
-          href="/config/"
-          class="feature-card group relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-white/60 p-6 shadow-[0_0_0_1px_rgba(16,185,129,0.15)_inset,0_10px_30px_rgba(16,185,129,0.12)] dark:border-emerald-300/20 dark:bg-white/5"
-          style="
-
---card-index: 3"
-        >
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-300">
-              🔩
-            </div>
-            <h3 class="text-lg font-semibold">通用的插件</h3>
-          </div>
-          <p class="mt-3 text-sm text-zinc-700 dark:text-zinc-300">在开发与构建过程中复用 Vite/Rolldown 插件接口。</p>
-          <div class="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-2xl transition group-hover:opacity-100 bg-gradient-to-br from-emerald-400/10 via-lime-300/10 to-emerald-600/10" />
-        </a>
-
-        <a
-          href="/guide/alias"
-          class="feature-card group relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-white/60 p-6 shadow-[0_0_0_1px_rgba(16,185,129,0.15)_inset,0_10px_30px_rgba(16,185,129,0.12)] dark:border-emerald-300/20 dark:bg-white/5"
-          style="
-
---card-index: 4"
-        >
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-300">
-              ❤️
-            </div>
-            <h3 class="text-lg font-semibold">完全的别名支持</h3>
-          </div>
-          <p class="mt-3 text-sm text-zinc-700 dark:text-zinc-300">任意 js/ts 或 json 文件中使用别名，自动转译。</p>
-          <div class="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-2xl transition group-hover:opacity-100 bg-gradient-to-br from-emerald-400/10 via-lime-300/10 to-emerald-600/10" />
-        </a>
-
-        <a
-          href="/guide/subpackage"
-          class="feature-card group relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-white/60 p-6 shadow-[0_0_0_1px_rgba(16,185,129,0.15)_inset,0_10px_30px_rgba(16,185,129,0.12)] dark:border-emerald-300/20 dark:bg-white/5"
-          style="
-
---card-index: 5"
-        >
-          <div class="flex items-center gap-3">
-            <div class="rounded-lg bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-300">
-              🌞
-            </div>
-            <h3 class="text-lg font-semibold">分包适配</h3>
-          </div>
-          <p class="mt-3 text-sm text-zinc-700 dark:text-zinc-300">自动计算分包依赖，独立分包自动创建编译上下文。</p>
+          <p class="mt-3 text-sm text-zinc-700 dark:text-zinc-300">{{ feature.description }}</p>
           <div class="pointer-events-none absolute inset-0 -z-10 opacity-0 blur-2xl transition group-hover:opacity-100 bg-gradient-to-br from-emerald-400/10 via-lime-300/10 to-emerald-600/10" />
         </a>
       </div>
