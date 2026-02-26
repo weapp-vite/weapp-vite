@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   defineComponent,
+  onAttached,
+  onDetached,
   onError,
   onHide,
   onMoved,
@@ -34,6 +36,8 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
       data: () => ({}),
       onTabItemTap() {},
       setup() {
+        onAttached(() => logs.push('attached'))
+        onDetached(() => logs.push('detached'))
         onReady(() => logs.push('ready'))
         onShow(() => logs.push('show'))
         onHide(() => logs.push('hide'))
@@ -68,7 +72,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     }
     // 生命周期：detach（卸载/清理）
     opts.lifetimes.detached.call(inst)
-    expect(logs).toEqual(['ready', 'moved', 'error', 'show', 'hide', 'resize', 'routeDone', 'tab'])
+    expect(logs).toEqual(['attached', 'ready', 'moved', 'error', 'show', 'hide', 'resize', 'routeDone', 'tab', 'detached'])
   })
 
   it('enables multipleSlots by default for components', () => {

@@ -1,6 +1,6 @@
 ---
 title: Core API
-description: 本页聚焦 Wevu 的“最先接触”能力：应用入口、组件定义、 宏，以及模板辅助函数。
+description: 本页聚焦 Wevu 的“最先接触”能力：应用入口、组件定义、宏，以及模板辅助函数。
 keywords:
   - Wevu
   - Vue SFC
@@ -18,14 +18,10 @@ keywords:
 
 ## 1. 入口与组件定义
 
-| API                             | 类型入口                                         | 说明                                                 |
-| ------------------------------- | ------------------------------------------------ | ---------------------------------------------------- |
-| `createApp`                     | `CreateAppOptions` / `RuntimeApp`                | 创建并注册小程序 App，桥接全局生命周期。             |
-| `defineComponent`               | `DefineComponentOptions` / `ComponentDefinition` | 定义页面或组件（统一注册为 `Component()`）。         |
-| `createWevuComponent`           | `MiniProgramComponentOptions`                    | 编译产物专用入口，保留小程序字段并接入 Wevu 运行时。 |
-| `createWevuScopedSlotComponent` | `MiniProgramComponentOptions`                    | scoped-slot 场景的兼容组件构造器。                   |
-| `registerApp`                   | `MiniProgramAppOptions`                          | 底层 App 注册桥接（调试/框架层更常用）。             |
-| `registerComponent`             | `MiniProgramComponentRawOptions`                 | 底层 Component 注册桥接。                            |
+| API               | 类型入口                                         | 说明                                         |
+| ----------------- | ------------------------------------------------ | -------------------------------------------- |
+| `createApp`       | `CreateAppOptions` / `RuntimeApp`                | 创建并注册小程序 App，桥接全局生命周期。     |
+| `defineComponent` | `DefineComponentOptions` / `ComponentDefinition` | 定义页面或组件（统一注册为 `Component()`）。 |
 
 ## 2. `<script setup>` 宏
 

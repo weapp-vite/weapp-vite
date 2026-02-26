@@ -395,6 +395,10 @@ function syncRuntimeProps(props: Record<string, any>, mpProperties: Record<strin
   }
 }
 
+/**
+ * 挂载运行时实例（框架内部注册流程使用）。
+ * @internal
+ */
 export function mountRuntimeInstance<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
   target: InternalRuntimeState,
   runtimeApp: RuntimeApp<D, C, M>,
@@ -736,6 +740,10 @@ export function enableDeferredSetData(target: InternalRuntimeState) {
   }
 }
 
+/**
+ * 卸载运行时实例（框架内部注册流程使用）。
+ * @internal
+ */
 export function teardownRuntimeInstance(target: InternalRuntimeState) {
   const runtime = target.__wevu
   const ownerId = (target as any).__wvOwnerId

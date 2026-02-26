@@ -1,6 +1,6 @@
 ---
 title: Reactivity API
-description: 本页覆盖 Wevu 响应式层的全部公开函数，包括“业务常用”和“调试/底层”两类。
+description: 本页覆盖 Wevu 响应式层的公共 API，聚焦业务可直接使用的能力。
 keywords:
   - Wevu
   - Vue SFC
@@ -14,7 +14,7 @@ keywords:
 
 # Reactivity API（响应式与调度）
 
-本页覆盖 `wevu` 响应式层的全部公开函数，包括“业务常用”和“调试/底层”两类。
+本页覆盖 `wevu` 响应式层的公共 API，聚焦业务可直接使用的能力。
 
 ## 1. 状态创建与派生
 
@@ -70,18 +70,9 @@ keywords:
 | `startBatch` | `void`          | 手动开始批处理。         |
 | `endBatch`   | `void`          | 手动结束批处理。         |
 
-## 6. 调试与底层能力
+## 6. 内部能力说明
 
-这组 API 通常用于框架层、性能调试或复杂序列化场景：
-
-| API                    | 类型入口                     | 说明                               |
-| ---------------------- | ---------------------------- | ---------------------------------- |
-| `prelinkReactiveTree`  | `PrelinkReactiveTreeOptions` | 预链接对象树，优化后续路径追踪。   |
-| `touchReactive`        | `void`                       | 手动触发 reactive 树探测。         |
-| `traverse`             | `void`                       | 深度遍历依赖收集辅助。             |
-| `getReactiveVersion`   | `number`                     | 读取响应式内部版本号。             |
-| `getDeepWatchStrategy` | `string`                     | 获取当前深度 watch 策略。          |
-| `setDeepWatchStrategy` | `void`                       | 修改深度 watch 策略（测试/调优）。 |
+`wevu` 在响应式实现里存在少量内部能力，用于框架运行时与测试场景；这些接口不属于业务稳定 API，不建议在应用代码中直接调用。
 
 ## 7. 组合示例（script setup）
 

@@ -54,9 +54,19 @@ export interface WatchStopHandle {
 }
 type DeepWatchStrategy = 'version' | 'traverse'
 let __deepWatchStrategy: DeepWatchStrategy = 'version'
+
+/**
+ * 设置深度 watch 内部策略（测试/框架内部使用）。
+ * @internal
+ */
 export function setDeepWatchStrategy(strategy: DeepWatchStrategy) {
   __deepWatchStrategy = strategy
 }
+
+/**
+ * 获取深度 watch 内部策略（测试/框架内部使用）。
+ * @internal
+ */
 export function getDeepWatchStrategy(): DeepWatchStrategy {
   return __deepWatchStrategy
 }

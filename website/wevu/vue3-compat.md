@@ -81,7 +81,7 @@ keywords:
 
 - `provide()`：提供依赖
 - `inject()`：注入依赖
-- `provideGlobal()` / `injectGlobal()`：全局 provide/inject（已弃用，仅用于兼容/过渡）
+- `provideGlobal()` / `injectGlobal()`：全局 provide/inject（已弃用，仅用于兼容/过渡；当前版本仍保留导出）
 
 ### Store（Pinia 风格）
 

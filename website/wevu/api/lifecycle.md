@@ -1,137 +1,275 @@
 ---
 title: Lifecycle API
-description: Wevu 生命周期 API 都需要在 setup() 的同步阶段调用。
+description: 本页仅覆盖 wevu 实际导出的生命周期 Hook（源码：runtime/hooks.ts），并补充与小程序 lifetimes/pageLifetimes 的映射说明。
+outline:
+  level: [3, 3]
 keywords:
   - Wevu
-  - Vue SFC
-  - 微信小程序
   - api
-  - reference
   - lifecycle
-  - 生命周期
-  - 都需要在
+  - hooks
 ---
 
 # Lifecycle API（生命周期）
 
-`wevu` 生命周期 API 都需要在 `setup()` 的同步阶段调用。
+以下条目严格对应 `packages/wevu/src/runtime/hooks.ts` 的导出函数。所有 Hook 都要求在 `setup()` 同步阶段调用。
 
-## 1. App 生命周期 {#app-lifecycle}
+## App 生命周期 Hook
 
-| API                    | 类型入口           | 说明                       |
-| ---------------------- | ------------------ | -------------------------- |
-| `onLaunch`             | `DefineAppOptions` | 小程序 App 启动。          |
-| `onShow`               | `RuntimeApp`       | App 进入前台。             |
-| `onHide`               | `RuntimeApp`       | App 进入后台。             |
-| `onError`              | `RuntimeApp`       | 运行时错误回调。           |
-| `onPageNotFound`       | `RuntimeApp`       | 路由未命中。               |
-| `onUnhandledRejection` | `RuntimeApp`       | 未处理 Promise rejection。 |
-| `onThemeChange`        | `RuntimeApp`       | 系统主题变化。             |
+### `onLaunch()` {#onlaunch}
 
-## 2. 页面与组件通用生命周期 {#common-lifecycle}
+- 作用域：`App`
+- 源码行为：注册到 `onLaunch`。
 
-| API        | 类型入口          | 说明                       |
-| ---------- | ----------------- | -------------------------- |
-| `onLoad`   | `RuntimeInstance` | 页面参数加载（页面常用）。 |
-| `onReady`  | `RuntimeInstance` | 首次渲染完成。             |
-| `onShow`   | `RuntimeInstance` | 页面/组件显示。            |
-| `onHide`   | `RuntimeInstance` | 页面/组件隐藏。            |
-| `onUnload` | `RuntimeInstance` | 页面卸载。                 |
+### `onShow()` {#onshow}
 
-## 3. 组件渲染阶段（Vue 风格）
+- 作用域：`App / Page / Component`
+- 源码行为：统一注册到 `onShow`（App 与页面/组件共用函数名）。
 
-| API                | 类型入口          | 说明                      |
-| ------------------ | ----------------- | ------------------------- |
-| `onBeforeMount`    | `RuntimeInstance` | 挂载前。                  |
-| `onMounted`        | `RuntimeInstance` | 挂载后。                  |
-| `onBeforeUpdate`   | `RuntimeInstance` | 更新前。                  |
-| `onUpdated`        | `RuntimeInstance` | 更新后。                  |
-| `onBeforeUnmount`  | `RuntimeInstance` | 卸载前。                  |
-| `onUnmounted`      | `RuntimeInstance` | 卸载后。                  |
-| `onActivated`      | `RuntimeInstance` | 激活（缓存场景）。        |
-| `onDeactivated`    | `RuntimeInstance` | 失活（缓存场景）。        |
-| `onErrorCaptured`  | `RuntimeInstance` | 捕获子树错误。            |
-| `onServerPrefetch` | `RuntimeInstance` | 兼容 Vue 语义的预取钩子。 |
+### `onHide()` {#onhide}
 
-## 4. 小程序特有页面事件 {#page-events}
+- 作用域：`App / Page / Component`
+- 源码行为：统一注册到 `onHide`。
 
-| API                 | 类型入口       | 说明           |
-| ------------------- | -------------- | -------------- |
-| `onPageScroll`      | `PageFeatures` | 页面滚动。     |
-| `onPullDownRefresh` | `PageFeatures` | 下拉刷新。     |
-| `onReachBottom`     | `PageFeatures` | 触底事件。     |
-| `onRouteDone`       | `PageFeatures` | 页面路由完成。 |
-| `onTabItemTap`      | `PageFeatures` | Tab 点击。     |
-| `onResize`          | `PageFeatures` | 视图尺寸变化。 |
+### `onError()` {#onerror}
 
-## 5. 带返回值的页面钩子
+- 作用域：`App / Component`
+- 源码行为：注册到 `onError`。
 
-| API                 | 类型入口       | 说明                   |
-| ------------------- | -------------- | ---------------------- |
-| `onShareAppMessage` | `PageFeatures` | 自定义转发内容。       |
-| `onShareTimeline`   | `PageFeatures` | 自定义朋友圈分享内容。 |
-| `onAddToFavorites`  | `PageFeatures` | 添加收藏。             |
-| `onSaveExitState`   | `PageFeatures` | 离开时保存状态。       |
+### `onPageNotFound()` {#onpagenotfound}
 
-## 6. 小程序组件生命周期（lifetimes / pageLifetimes） {#mini-component-lifetimes}
+- 作用域：`App`
+- 源码行为：注册到 `onPageNotFound`。
 
-### 6.1 官方生命周期清单（组件侧）
+### `onUnhandledRejection()` {#onunhandledrejection}
 
-| 分类            | 官方生命周期                                            |
-| --------------- | ------------------------------------------------------- |
-| `lifetimes`     | `created / attached / ready / moved / detached / error` |
-| `pageLifetimes` | `show / hide / resize / routeDone`                      |
+- 作用域：`App`
+- 源码行为：注册到 `onUnhandledRejection`。
 
-### 6.2 Wevu 对应能力（组合式 + 桥接）
+### `onThemeChange()` {#onthemechange}
 
-| 官方生命周期              | Wevu 对应能力                                      | 说明                                         |
-| ------------------------- | -------------------------------------------------- | -------------------------------------------- |
-| `lifetimes.created`       | 组件注册时内部桥接（无独立 `onCreated` Hook）      | 已覆盖；可继续使用原生 `lifetimes.created`。 |
-| `lifetimes.attached`      | 组件注册时内部桥接 + `onMounted`（组合式）         | 已覆盖；常用组合式写法是 `onMounted`。       |
-| `lifetimes.ready`         | `onReady`                                          | 已覆盖。                                     |
-| `lifetimes.moved`         | `onMoved`                                          | 已覆盖。                                     |
-| `lifetimes.detached`      | 组件注册时内部桥接 + `onBeforeUnmount/onUnmounted` | 已覆盖。                                     |
-| `lifetimes.error`         | `onError`                                          | 已覆盖。                                     |
-| `pageLifetimes.show`      | `onShow`                                           | 已覆盖。                                     |
-| `pageLifetimes.hide`      | `onHide`                                           | 已覆盖。                                     |
-| `pageLifetimes.resize`    | `onResize`                                         | 已覆盖。                                     |
-| `pageLifetimes.routeDone` | `onRouteDone`                                      | 已覆盖（微信官方基础库 `2.31.2+`）。         |
+- 作用域：`App`
+- 源码行为：注册到 `onThemeChange`。
 
-## 7. 小程序组件扩展 Hook（组合式）
+## 页面生命周期 Hook
 
-| API               | 类型入口                   | 说明                                                           |
-| ----------------- | -------------------------- | -------------------------------------------------------------- |
-| `onMoved`         | `MiniProgramPageLifetimes` | 组件节点位置变更。                                             |
-| `onError`         | `MiniProgramPageLifetimes` | 组件或 App 错误（按上下文桥接）。                              |
-| `onShow`          | `RuntimeInstance`          | 组件在页面 show 时触发（由 `pageLifetimes.show` 桥接）。       |
-| `onHide`          | `RuntimeInstance`          | 组件在页面 hide 时触发（由 `pageLifetimes.hide` 桥接）。       |
-| `onResize`        | `PageFeatures`             | 组件所在页面 resize 时触发（由 `pageLifetimes.resize` 桥接）。 |
-| `onMounted`       | `RuntimeInstance`          | 组件 attached 后触发（对应 `lifetimes.attached`）。            |
-| `onBeforeUnmount` | `RuntimeInstance`          | 组件 detached 前触发（对应 `lifetimes.detached`）。            |
-| `onUnmounted`     | `RuntimeInstance`          | 组件 detached 后触发（对应 `lifetimes.detached`）。            |
-| `onRouteDone`     | `PageFeatures`             | 页面路由动画完成时触发（微信官方基础库 `2.31.2+`）。           |
+### `onLoad()` {#onload}
 
-## 8. 示例：滚动 + 分享（script setup）
+- 作用域：`Page`
+- 源码行为：注册到页面 `onLoad`。
+
+### `onReady()` {#onready}
+
+- 作用域：`Page / Component`
+- 源码行为：注册到 `onReady`；组件通过 `lifetimes.ready` 触发。
+
+### `onUnload()` {#onunload}
+
+- 作用域：`Page / Component`
+- 源码行为：在页面 `onUnload` 或组件 teardown 时统一触发。
+
+## 页面事件 Hook
+
+### `onPullDownRefresh()` {#onpulldownrefresh}
+
+- 作用域：`Page`
+- 源码行为：注册到页面 `onPullDownRefresh`。
+
+### `onReachBottom()` {#onreachbottom}
+
+- 作用域：`Page`
+- 源码行为：注册到页面 `onReachBottom`。
+
+### `onPageScroll()` {#onpagescroll}
+
+- 作用域：`Page`
+- 源码行为：注册到页面 `onPageScroll`。
+
+### `onRouteDone()` {#onroutedone}
+
+- 作用域：`Page / Component`
+- 源码行为：注册到 `onRouteDone`；组件通过 `pageLifetimes.routeDone` 桥接触发。
+
+### `onTabItemTap()` {#ontabitemtap}
+
+- 作用域：`Page`
+- 源码行为：注册到页面 `onTabItemTap`。
+
+### `onResize()` {#onresize}
+
+- 作用域：`Page / Component`
+- 源码行为：注册到 `onResize`；组件通过 `pageLifetimes.resize` 桥接触发。
+
+## 返回值型页面 Hook
+
+### `onShareAppMessage()` {#onshareappmessage}
+
+- 作用域：`Page`
+- 源码行为：单实例 Hook（`single: true`），返回值用于分享配置。
+
+### `onShareTimeline()` {#onsharetimeline}
+
+- 作用域：`Page`
+- 源码行为：单实例 Hook（`single: true`），返回值用于朋友圈分享配置。
+
+### `onAddToFavorites()` {#onaddtofavorites}
+
+- 作用域：`Page`
+- 源码行为：单实例 Hook（`single: true`），返回值用于收藏配置。
+
+### `onSaveExitState()` {#onsaveexitstate}
+
+- 作用域：`Page`
+- 源码行为：单实例 Hook（`single: true`），返回值用于退出状态保存。
+
+## 组件扩展 Hook
+
+### `onAttached()` {#onattached}
+
+- 作用域：`Component`
+- 源码行为：在组件 `lifetimes.attached` 阶段触发。
+
+### `onDetached()` {#ondetached}
+
+- 作用域：`Component`
+- 源码行为：在组件 `lifetimes.detached` 阶段触发。
+
+### `onMoved()` {#onmoved}
+
+- 作用域：`Component`
+- 源码行为：注册到 `lifetimes.moved`。
+
+## Vue 语义对齐 Hook
+
+### `onBeforeMount()` {#onbeforemount}
+
+- 对齐语义：Vue `beforeMount`
+- 源码行为：在 `setup()` 内同步立即执行。
+
+### `onMounted()` {#onmounted}
+
+- 对齐语义：Vue `mounted`
+- 源码行为：映射到 `onReady`。
+
+### `onBeforeUpdate()` {#onbeforeupdate}
+
+- 对齐语义：Vue `beforeUpdate`
+- 源码行为：映射到内部 `__wevuOnBeforeUpdate`。
+
+### `onUpdated()` {#onupdated}
+
+- 对齐语义：Vue `updated`
+- 源码行为：映射到内部 `__wevuOnUpdated`。
+
+### `onBeforeUnmount()` {#onbeforeunmount}
+
+- 对齐语义：Vue `beforeUnmount`
+- 源码行为：在 `setup()` 内同步立即执行（小程序无对应原生 before-unmount）。
+
+### `onUnmounted()` {#onunmounted}
+
+- 对齐语义：Vue `unmounted`
+- 源码行为：映射到 `onUnload`。
+
+### `onActivated()` {#onactivated}
+
+- 对齐语义：Vue `activated`
+- 源码行为：映射到 `onShow`。
+
+### `onDeactivated()` {#ondeactivated}
+
+- 对齐语义：Vue `deactivated`
+- 源码行为：映射到 `onHide`。
+
+### `onErrorCaptured()` {#onerrorcaptured}
+
+- 对齐语义：Vue `errorCaptured`
+- 源码行为：映射到 `onError` 包装调用。
+
+### `onServerPrefetch()` {#onserverprefetch}
+
+- 对齐语义：Vue `serverPrefetch`
+- 源码行为：保留 API 形态，仅做调用时机校验，不执行实际逻辑。
+
+## 小程序原生生命周期映射（说明）
+
+以下是桥接关系说明，不是 `wevu` 直接导出的 Hook API。
+
+### `lifetimes.created` {#lifetimes-created}
+
+- 映射：组件初始化桥接（无独立 `onCreated` 导出）。
+
+### `lifetimes.attached` {#lifetimes-attached}
+
+- 映射：组件挂载流程（可使用 `onAttached`；`onMounted` 仍映射 `onReady`）。
+
+### `lifetimes.ready` {#lifetimes-ready}
+
+- 映射：`onReady`。
+
+### `lifetimes.moved` {#lifetimes-moved}
+
+- 映射：`onMoved`。
+
+### `lifetimes.detached` {#lifetimes-detached}
+
+- 映射：组件 teardown（可使用 `onDetached`）+ `onUnload` 钩子链（含 `onUnmounted`）。
+
+### `lifetimes.error` {#lifetimes-error}
+
+- 映射：`onError`。
+
+### `pageLifetimes.show` {#pagelifetimes-show}
+
+- 映射：`onShow`。
+
+### `pageLifetimes.hide` {#pagelifetimes-hide}
+
+- 映射：`onHide`。
+
+### `pageLifetimes.resize` {#pagelifetimes-resize}
+
+- 映射：`onResize`。
+
+### `pageLifetimes.routeDone` {#pagelifetimes-routedone}
+
+- 映射：`onRouteDone`。
+
+## 示例
 
 ::: code-group
 
 ```vue [TypeScript]
 <script setup lang="ts">
-import { onPageScroll, onShareAppMessage, onShow, ref } from 'wevu'
+import {
+  onMounted,
+  onPageScroll,
+  onRouteDone,
+  onShareAppMessage,
+  onShow,
+  ref,
+} from 'wevu'
 
-// [TS-only] 此示例无专属语法，TS/JS 写法一致。
 const scrollTop = ref(0)
 
 onShow(() => {
   console.log('page show')
 })
 
+onMounted(() => {
+  console.log('mounted')
+})
+
 onPageScroll((e) => {
   scrollTop.value = e.scrollTop
 })
 
+onRouteDone(() => {
+  console.log('route done')
+})
+
 onShareAppMessage(() => ({
-  title: 'wevu 页面分享',
+  title: 'Wevu 页面分享',
   path: '/pages/index/index',
 }))
 </script>
@@ -143,7 +281,14 @@ onShareAppMessage(() => ({
 
 ```vue [JavaScript]
 <script setup>
-import { onPageScroll, onShareAppMessage, onShow, ref } from 'wevu'
+import {
+  onMounted,
+  onPageScroll,
+  onRouteDone,
+  onShareAppMessage,
+  onShow,
+  ref,
+} from 'wevu'
 
 const scrollTop = ref(0)
 
@@ -151,12 +296,20 @@ onShow(() => {
   console.log('page show')
 })
 
+onMounted(() => {
+  console.log('mounted')
+})
+
 onPageScroll((e) => {
   scrollTop.value = e.scrollTop
 })
 
+onRouteDone(() => {
+  console.log('route done')
+})
+
 onShareAppMessage(() => ({
-  title: 'wevu 页面分享',
+  title: 'Wevu 页面分享',
   path: '/pages/index/index',
 }))
 </script>

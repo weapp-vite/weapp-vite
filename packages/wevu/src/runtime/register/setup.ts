@@ -2,6 +2,10 @@ type SetupRunner = {
   bivarianceHack: (props: Record<string, any>, ctx: any) => any
 }['bivarianceHack']
 
+/**
+ * 执行 setup 函数并注入运行时上下文（框架内部使用）。
+ * @internal
+ */
 export function runSetupFunction(
   setup: SetupRunner | undefined,
   props: Record<string, any>,

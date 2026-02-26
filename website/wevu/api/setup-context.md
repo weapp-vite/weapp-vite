@@ -1,88 +1,84 @@
 ---
 title: Setup Context API
-description: Wevu 的 setup(props, ctx) 除了 Vue 语义，还补齐了小程序运行时场景，特别是 ctx.instance（原生实例）和 ctx.emit（事件派发）。
+description: 本页严格对应 wevu 源码中的 setup 上下文相关导出（runtime/hooks.ts、runtime/provide.ts、runtime/register.ts、runtime/vueCompat.ts）。
+outline:
+  level: [3, 3]
 keywords:
   - Wevu
-  - Vue SFC
   - api
-  - reference
   - setup
   - context
-  - 的
-  - setup props
 ---
 
 # Setup Context API（setup 上下文）
 
-`wevu` 的 `setup(props, ctx)` 除了 Vue 语义，还补齐了小程序运行时场景，特别是 `ctx.instance`（原生实例）和 `ctx.emit`（事件派发）。
+`setup(props, ctx)` 的字段语义来自 `SetupContext` 类型；本页重点列出可直接导入调用的公开 API。
 
-## 1. `setup` 签名与核心类型 {#setup-signature}
+`ctx` 常见字段（类型定义语义）：
 
-| 类型/接口           | 链接                  | 说明                                         |
-| ------------------- | --------------------- | -------------------------------------------- |
-| `setup(props, ctx)` | `SetupFunction`       | 组件/页面 setup 函数签名。                   |
-| `ctx`               | `SetupContext`        | setup 上下文总入口。                         |
-| `ctx.runtime`       | `RuntimeInstance`     | 运行时实例（watch、snapshot、teardown 等）。 |
-| `ctx.instance`      | `MiniProgramInstance` | 小程序原生实例。                             |
-| `ctx.emit`          | `TriggerEventOptions` | 自定义事件派发入口。                         |
+- `ctx.runtime`：当前 `RuntimeInstance`
+- `ctx.instance`：原生小程序实例
+- `ctx.emit`：事件派发函数
 
-## 2. setup 上下文相关 API {#setup-context-api}
+## 实例与上下文访问 API
 
-| API                      | 类型入口          | 说明                                       |
-| ------------------------ | ----------------- | ------------------------------------------ |
-| `getCurrentInstance`     | `RuntimeInstance` | 获取当前运行时实例。                       |
-| `setCurrentInstance`     | `RuntimeInstance` | 设置当前运行时实例（框架层）。             |
-| `getCurrentSetupContext` | `SetupContext`    | 获取当前 setup context。                   |
-| `setCurrentSetupContext` | `SetupContext`    | 设置当前 setup context（框架层）。         |
-| `runSetupFunction`       | `SetupFunction`   | 手动运行 setup 并绑定上下文（调试/底层）。 |
+### `getCurrentInstance()` {#getcurrentinstance}
 
-## 3. provide/inject（含全局容器） {#provide-inject}
+- 用途：获取当前运行时实例。
+- 源码：`runtime/hooks.ts`。
 
-| API             | 类型入口               | 说明                            |
-| --------------- | ---------------------- | ------------------------------- |
-| `provide`       | `InjectionKey<T>` 兼容 | 在当前组件树提供依赖。          |
-| `inject`        | `T \| undefined`       | 从当前组件树读取依赖。          |
-| `provideGlobal` | `Record<string, any>`  | 提供全局级依赖（跨页面/组件）。 |
-| `injectGlobal`  | `any`                  | 读取全局级依赖。                |
+### `getCurrentSetupContext()` {#getcurrentsetupcontext}
 
-## 4. 推荐：通过 `ctx.instance` 操作原生实例
+- 用途：获取当前 setup context。
+- 源码：`runtime/hooks.ts`。
 
-在 Wevu 里，和小程序实例直接耦合的方法，推荐放在 `ctx.instance` 上调用，而不是依赖 `this`：
+## 依赖注入 API
 
-- `ctx.instance.triggerEvent(...)`
-- `ctx.instance.createSelectorQuery()`
-- `ctx.instance.setData(...)`
-- 以及平台原生 `wx` 组件实例 API
+### `provide()` {#provide}
 
-### 示例（script setup）
+- 用途：在当前组件树提供依赖。
+- 源码：`runtime/provide.ts`。
+
+### `inject()` {#inject}
+
+- 用途：从上层读取依赖。
+- 源码：`runtime/provide.ts`。
+
+## Setup 兼容工具 API
+
+### `useNativeInstance()` {#usenativeinstance}
+
+- 用途：获取当前 setup 对应的原生实例。
+- 源码：`runtime/vueCompat.ts`。
+
+### `useBindModel()` {#usebindmodel}
+
+- 用途：创建绑定 payload（`value + onXxx`）辅助函数。
+- 源码：`runtime/vueCompat.ts`。
+
+## 示例
 
 ::: code-group
 
 ```vue [TypeScript]
 <script setup lang="ts">
-import { getCurrentSetupContext, provide, ref } from 'wevu'
+import { getCurrentSetupContext, provide, ref, useBindModel, useNativeInstance } from 'wevu'
 
-// [TS-only] 此示例无专属语法，TS/JS 写法一致。
 const visible = ref(false)
+const model = useBindModel({
+  prop: 'modelValue',
+  event: 'update:modelValue',
+})
+
 provide('featureFlag', 'ctx-instance-demo')
 
 function open() {
   const ctx = getCurrentSetupContext()
+  const instance = useNativeInstance()
   visible.value = true
+  model.setValue?.(true)
   ctx?.emit('open', { ok: true })
-  ctx?.instance?.triggerEvent?.('opened', { ts: Date.now() })
-}
-
-function measure() {
-  const ctx = getCurrentSetupContext()
-  const query = ctx?.instance?.createSelectorQuery?.()
-  query?.select('#target').boundingClientRect()
-  query?.exec(console.log)
-}
-
-function patchRaw() {
-  const ctx = getCurrentSetupContext()
-  ctx?.instance?.setData?.({ rawFlag: true })
+  instance.triggerEvent?.('opened', { ts: Date.now() })
 }
 </script>
 
@@ -90,39 +86,28 @@ function patchRaw() {
   <view id="target" @tap="open">
     open: {{ visible }}
   </view>
-  <button @tap="measure">
-    measure
-  </button>
-  <button @tap="patchRaw">
-    patchRaw
-  </button>
 </template>
 ```
 
 ```vue [JavaScript]
 <script setup>
-import { getCurrentSetupContext, provide, ref } from 'wevu'
+import { getCurrentSetupContext, provide, ref, useBindModel, useNativeInstance } from 'wevu'
 
 const visible = ref(false)
+const model = useBindModel({
+  prop: 'modelValue',
+  event: 'update:modelValue',
+})
+
 provide('featureFlag', 'ctx-instance-demo')
 
 function open() {
   const ctx = getCurrentSetupContext()
+  const instance = useNativeInstance()
   visible.value = true
+  model.setValue?.(true)
   ctx?.emit('open', { ok: true })
-  ctx?.instance?.triggerEvent?.('opened', { ts: Date.now() })
-}
-
-function measure() {
-  const ctx = getCurrentSetupContext()
-  const query = ctx?.instance?.createSelectorQuery?.()
-  query?.select('#target').boundingClientRect()
-  query?.exec(console.log)
-}
-
-function patchRaw() {
-  const ctx = getCurrentSetupContext()
-  ctx?.instance?.setData?.({ rawFlag: true })
+  instance.triggerEvent?.('opened', { ts: Date.now() })
 }
 </script>
 
@@ -130,24 +115,7 @@ function patchRaw() {
   <view id="target" @tap="open">
     open: {{ visible }}
   </view>
-  <button @tap="measure">
-    measure
-  </button>
-  <button @tap="patchRaw">
-    patchRaw
-  </button>
 </template>
 ```
 
 :::
-
-## 5. 双向绑定辅助 {#bind-model}
-
-| API            | 类型入口                               | 说明                                      |
-| -------------- | -------------------------------------- | ----------------------------------------- |
-| `useBindModel` | `ModelBindingOptions` / `ModelBinding` | 生成小程序可直接绑定的数据 + 事件处理器。 |
-
-## 6. 相关页
-
-- 生命周期与页面事件：[/wevu/api/lifecycle](/wevu/api/lifecycle)
-- 运行时桥接与调试：[/wevu/api/runtime-bridge](/wevu/api/runtime-bridge)

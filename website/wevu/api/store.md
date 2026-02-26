@@ -1,44 +1,70 @@
 ---
 title: Store API
-description: Wevu 的 store 设计接近 Pinia：defineStore 定义，createStore 创建管理器，storeToRefs 安全解构。
+description: 本页严格对应 wevu/store 的公开导出，包含 defineStore、createStore、storeToRefs 及相关类型。
+outline:
+  level: [3, 3]
 keywords:
   - Wevu
-  - Vue SFC
-  - 调试
   - api
-  - reference
   - store
-  - 的
-  - 设计接近
 ---
 
 # Store API（状态管理）
 
-`wevu` 的 store 设计接近 Pinia：`defineStore` 定义，`createStore` 创建管理器，`storeToRefs` 安全解构。
+以下条目来源于 `packages/wevu/src/store/index.ts` 的公开导出。
 
-## 1. 核心函数 {#store-core}
+## 核心函数
 
-| API           | 类型入口             | 说明                                    |
-| ------------- | -------------------- | --------------------------------------- |
-| `defineStore` | `DefineStoreOptions` | 定义 store（setup/option 两种风格）。   |
-| `createStore` | `StoreManager`       | 创建 store 管理器（插件、作用域隔离）。 |
-| `storeToRefs` | `ToRefs`             | 将 store 状态安全转换为 ref。           |
+### `defineStore()` {#definestore}
 
-## 2. 常用类型 {#store-types}
+- 类型入口：`DefineStoreOptions`
+- 用途：定义 store（setup 风格或 option 风格）。
 
-| 类型                   | 链接                   | 用途                     |
-| ---------------------- | ---------------------- | ------------------------ |
-| `StoreManager`         | `StoreManager`         | store 根管理器。         |
-| `DefineStoreOptions`   | `DefineStoreOptions`   | 选项式 store 定义类型。  |
-| `ActionSubscriber`     | `ActionSubscriber`     | action 订阅回调签名。    |
-| `SubscriptionCallback` | `SubscriptionCallback` | 状态变更订阅回调。       |
-| `MutationRecord`       | `MutationRecord`       | mutation 记录结构。      |
-| `MutationKind`         | `MutationKind`         | mutation 大类。          |
-| `MutationType`         | `MutationType`         | mutation 类型枚举。      |
-| `MutationOp`           | `MutationOp`           | mutation 操作类型。      |
-| `WevuPlugin`           | `WevuPlugin`           | store/runtime 插件类型。 |
+### `createStore()` {#createstore}
 
-## 3. 端到端示例（script setup）
+- 类型入口：`StoreManager`
+- 用途：创建 store 管理器（可用于作用域隔离和测试隔离）。
+
+### `storeToRefs()` {#storetorefs}
+
+- 类型入口：`StoreToRefsResult`
+- 用途：将 store 状态转换为 refs，避免解构丢失响应性。
+
+## Store 类型
+
+### `StoreManager` {#storemanager}
+
+- 用途：store 根管理器类型。
+
+### `DefineStoreOptions` {#definestoreoptions}
+
+- 用途：定义 option 风格 store 的类型约束。
+
+### `StoreToRefsResult` {#storetorefsresult}
+
+- 用途：`storeToRefs()` 返回结果类型。
+
+### `ActionContext` {#actioncontext}
+
+- 用途：`$onAction` 回调上下文。
+
+### `ActionSubscriber` {#actionsubscriber}
+
+- 用途：action 订阅回调签名。
+
+### `SubscriptionCallback` {#subscriptioncallback}
+
+- 用途：状态变更订阅回调签名。
+
+### `StoreSubscribeOptions` {#storesubscribeoptions}
+
+- 用途：`$subscribe` 的订阅选项类型。
+
+### `MutationType` {#mutationtype}
+
+- 用途：store mutation 类型（`'patch object' | 'patch function' | 'direct'`）。
+
+## 示例
 
 ::: code-group
 
@@ -46,15 +72,16 @@ keywords:
 <script setup lang="ts">
 import { computed, createStore, defineStore, ref, storeToRefs } from 'wevu'
 
-// [TS-only] 此示例无专属语法，TS/JS 写法一致。
 const storeManager = createStore()
 
 const useCartStore = defineStore('cart', () => {
   const count = ref(0)
   const total = computed(() => count.value * 99)
+
   function addOne() {
     count.value += 1
   }
+
   return { count, total, addOne }
 })
 
@@ -79,9 +106,11 @@ const storeManager = createStore()
 const useCartStore = defineStore('cart', () => {
   const count = ref(0)
   const total = computed(() => count.value * 99)
+
   function addOne() {
     count.value += 1
   }
+
   return { count, total, addOne }
 })
 
@@ -98,13 +127,3 @@ const { count, total } = storeToRefs(cart)
 ```
 
 :::
-
-## 4. 调试建议 {#store-debug}
-
-- 如果要统计状态变化路径，可结合 `addMutationRecorder` / `removeMutationRecorder`。
-- 如果要确认 `setData` 最终快照，可配合 `SetDataSnapshotOptions` 和运行时调试日志。
-
-## 5. 相关页
-
-- 响应式 API：[/wevu/api/reactivity](/wevu/api/reactivity)
-- 运行时桥接 API：[/wevu/api/runtime-bridge](/wevu/api/runtime-bridge)

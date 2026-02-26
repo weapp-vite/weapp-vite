@@ -29,22 +29,17 @@ keywords:
 
 ## 2. setup 上下文相关 API
 
-| API                      | 类型入口          | 说明                                       |
-| ------------------------ | ----------------- | ------------------------------------------ |
-| `getCurrentInstance`     | `RuntimeInstance` | 获取当前运行时实例。                       |
-| `setCurrentInstance`     | `RuntimeInstance` | 设置当前运行时实例（框架层）。             |
-| `getCurrentSetupContext` | `SetupContext`    | 获取当前 setup context。                   |
-| `setCurrentSetupContext` | `SetupContext`    | 设置当前 setup context（框架层）。         |
-| `runSetupFunction`       | `SetupFunction`   | 手动运行 setup 并绑定上下文（调试/底层）。 |
+| API                      | 类型入口          | 说明                     |
+| ------------------------ | ----------------- | ------------------------ |
+| `getCurrentInstance`     | `RuntimeInstance` | 获取当前运行时实例。     |
+| `getCurrentSetupContext` | `SetupContext`    | 获取当前 setup context。 |
 
-## 3. provide/inject（含全局容器）
+## 3. provide/inject
 
-| API             | 类型入口               | 说明                            |
-| --------------- | ---------------------- | ------------------------------- |
-| `provide`       | `InjectionKey<T>` 兼容 | 在当前组件树提供依赖。          |
-| `inject`        | `T \| undefined`       | 从当前组件树读取依赖。          |
-| `provideGlobal` | `Record<string, any>`  | 提供全局级依赖（跨页面/组件）。 |
-| `injectGlobal`  | `any`                  | 读取全局级依赖。                |
+| API       | 类型入口               | 说明                   |
+| --------- | ---------------------- | ---------------------- |
+| `provide` | `InjectionKey<T>` 兼容 | 在当前组件树提供依赖。 |
+| `inject`  | `T \| undefined`       | 从当前组件树读取依赖。 |
 
 ## 4. 推荐：通过 `ctx.instance` 操作原生实例
 

@@ -24,6 +24,10 @@ export { clearPatchIndices, prelinkReactiveTree, touchReactive } from './reactiv
 export { isShallowReactive, shallowReactive } from './reactive/shallow'
 export { isObject, ReactiveFlags, toRaw } from './reactive/shared'
 
+/**
+ * 读取响应式版本号（框架内部调试能力）。
+ * @internal
+ */
 export function getReactiveVersion(target: object) {
   const raw = toRaw(target as any) as object
   return getRawVersion(raw)

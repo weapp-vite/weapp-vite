@@ -101,6 +101,8 @@ keywords:
 
 | API               | 类型入口                   | 说明                                                           |
 | ----------------- | -------------------------- | -------------------------------------------------------------- |
+| `onAttached`      | `RuntimeInstance`          | 组件 attached 时触发（对应 `lifetimes.attached`）。            |
+| `onDetached`      | `RuntimeInstance`          | 组件 detached 时触发（对应 `lifetimes.detached`）。            |
 | `onMoved`         | `MiniProgramPageLifetimes` | 组件节点位置变更。                                             |
 | `onError`         | `MiniProgramPageLifetimes` | 组件或 App 错误（按上下文桥接）。                              |
 | `onShow`          | `RuntimeInstance`          | 组件在页面 show 时触发（由 `pageLifetimes.show` 桥接）。       |

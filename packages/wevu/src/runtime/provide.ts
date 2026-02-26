@@ -97,14 +97,20 @@ export function inject<T>(key: any, defaultValue?: T): T {
 // ============================================================================
 
 /**
- * 全局注入值，适用于组件外部调用场景。
+ * 全局注入值，适用于历史兼容场景。
+ *
+ * @deprecated 已弃用，仅用于兼容/过渡。推荐优先使用 `provide()`，
+ * 在无实例上下文时 `provide()` 会自动回落到全局存储。
  */
 export function provideGlobal<T>(key: any, value: T): void {
   __wevuGlobalProvideStore.set(key, value)
 }
 
 /**
- * 从全局存储读取值，适用于组件外部调用场景。
+ * 从全局存储读取值，适用于历史兼容场景。
+ *
+ * @deprecated 已弃用，仅用于兼容/过渡。推荐优先使用 `inject()`，
+ * 在无实例上下文时 `inject()` 会自动从全局存储读取。
  */
 export function injectGlobal<T>(key: any, defaultValue?: T): T {
   if (__wevuGlobalProvideStore.has(key)) {
