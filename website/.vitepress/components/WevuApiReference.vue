@@ -4,11 +4,18 @@ import { computed, ref } from 'vue'
 interface ApiItem {
   text: string
   href: string
+  scopes?: Array<'app' | 'page' | 'component'>
+}
+
+interface ApiColumn {
+  title: string
+  items: ApiItem[]
 }
 
 interface ApiGroup {
   title: string
-  items: ApiItem[]
+  items?: ApiItem[]
+  columns?: ApiColumn[]
 }
 
 interface ApiSection {
@@ -81,10 +88,46 @@ const sections: ApiSection[] = [
       },
       {
         title: 'Lifecycle',
-        items: [
-          { text: 'onLaunch()/onAppShow()/onAppHide()', href: '/wevu/api/lifecycle#app-lifecycle' },
-          { text: 'onLoad()/onShow()/onReady()/onHide()/onUnload()', href: '/wevu/api/lifecycle#common-lifecycle' },
-          { text: 'onPullDownRefresh()/onReachBottom()/onPageScroll()', href: '/wevu/api/lifecycle#page-events' },
+        columns: [
+          {
+            title: '组合式API',
+            items: [
+              { text: 'onLaunch()', href: '/wevu/api/lifecycle#app-lifecycle', scopes: ['app'] },
+              { text: 'onShow()', href: '/wevu/api/lifecycle#app-lifecycle', scopes: ['app'] },
+              { text: 'onHide()', href: '/wevu/api/lifecycle#app-lifecycle', scopes: ['app'] },
+              { text: 'onLoad()', href: '/wevu/api/lifecycle#common-lifecycle', scopes: ['page', 'component'] },
+              { text: 'onReady()', href: '/wevu/api/lifecycle#common-lifecycle', scopes: ['page', 'component'] },
+              { text: 'onUnload()', href: '/wevu/api/lifecycle#common-lifecycle', scopes: ['page', 'component'] },
+              { text: 'onMounted()', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+              { text: 'onBeforeUnmount()', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+              { text: 'onUnmounted()', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+              { text: 'onResize()', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['page', 'component'] },
+              { text: 'onRouteDone()', href: '/wevu/api/lifecycle#page-events', scopes: ['page'] },
+              { text: 'onPullDownRefresh()', href: '/wevu/api/lifecycle#page-events' },
+              { text: 'onReachBottom()', href: '/wevu/api/lifecycle#page-events' },
+              { text: 'onPageScroll()', href: '/wevu/api/lifecycle#page-events' },
+            ],
+          },
+          {
+            title: 'lifetimes',
+            items: [
+              { text: 'lifetimes.created', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+              { text: 'lifetimes.attached', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+              { text: 'lifetimes.ready', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+              { text: 'lifetimes.moved', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+              { text: 'lifetimes.detached', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+              { text: 'lifetimes.error', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+            ],
+          },
+          {
+            title: 'pageLifetimes',
+            items: [
+              { text: 'pageLifetimes.show', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+              { text: 'pageLifetimes.hide', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+              { text: 'pageLifetimes.resize', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+              { text: 'pageLifetimes.routeDone', href: '/wevu/api/lifecycle#mini-component-lifetimes', scopes: ['component'] },
+            ],
+          },
         ],
       },
     ],
@@ -105,7 +148,8 @@ const sections: ApiSection[] = [
         items: [
           { text: 'registerRuntime()', href: '/wevu/api/runtime-bridge#registration-mount' },
           { text: 'setWevuDefaults()', href: '/wevu/api/runtime-bridge#defaults-switches' },
-          { text: 'createMutationRecord()/toRawSnapshot()', href: '/wevu/api/runtime-bridge#debug-observe' },
+          { text: 'createMutationRecord()', href: '/wevu/api/runtime-bridge#debug-observe' },
+          { text: 'toRawSnapshot()', href: '/wevu/api/runtime-bridge#debug-observe' },
         ],
       },
     ],
@@ -136,18 +180,50 @@ const filteredSections = computed(() => {
     .map(section => ({
       ...section,
       groups: section.groups
-        .map(group => ({
-          ...group,
-          items: group.items.filter(item =>
-            item.text.toLowerCase().includes(normalizedQuery.value)
-            || group.title.toLowerCase().includes(normalizedQuery.value)
-            || section.title.toLowerCase().includes(normalizedQuery.value),
-          ),
-        }))
-        .filter(group => group.items.length > 0),
+        .map((group) => {
+          const groupMatched = group.title.toLowerCase().includes(normalizedQuery.value)
+            || section.title.toLowerCase().includes(normalizedQuery.value)
+          if (group.columns) {
+            const columns = group.columns
+              .map(column => ({
+                ...column,
+                items: column.items.filter(item =>
+                  groupMatched
+                  || column.title.toLowerCase().includes(normalizedQuery.value)
+                  || item.text.toLowerCase().includes(normalizedQuery.value),
+                ),
+              }))
+              .filter(column => column.items.length > 0)
+            return {
+              ...group,
+              columns,
+              items: [],
+            }
+          }
+          const items = (group.items || []).filter(item =>
+            groupMatched || item.text.toLowerCase().includes(normalizedQuery.value),
+          )
+          return {
+            ...group,
+            items,
+          }
+        })
+        .filter(group => (group.columns && group.columns.length > 0) || (group.items && group.items.length > 0)),
     }))
     .filter(section => section.groups.length > 0)
 })
+
+const scopeIconMap: Record<'app' | 'page' | 'component', string> = {
+  app: 'App',
+  page: 'Page',
+  component: 'Comp',
+}
+
+const scopeLabelMap: Record<'app' | 'page' | 'component', string> = {
+  app: 'App',
+  page: 'Page',
+  component: 'Comp',
+}
 </script>
 
 <template>
@@ -163,6 +239,11 @@ const filteredSections = computed(() => {
         placeholder="Type to filter APIs"
       >
     </div>
+    <div class="wevu-api-reference__legend" aria-label="Scope legend">
+      <span class="wevu-api-reference__scope wevu-api-reference__scope--app" title="App">App</span>
+      <span class="wevu-api-reference__scope wevu-api-reference__scope--page" title="Page">Page</span>
+      <span class="wevu-api-reference__scope wevu-api-reference__scope--component" title="Comp">Comp</span>
+    </div>
 
     <section
       v-for="section in filteredSections"
@@ -175,11 +256,46 @@ const filteredSections = computed(() => {
           v-for="group in section.groups"
           :key="`${section.title}-${group.title}`"
           class="wevu-api-reference__group"
+          :class="{ 'wevu-api-reference__group--full': group.title === 'Lifecycle' }"
         >
           <h3>{{ group.title }}</h3>
-          <ul>
-            <li v-for="item in group.items" :key="item.href">
+          <div v-if="group.columns" class="wevu-api-reference__columns">
+            <section
+              v-for="column in group.columns"
+              :key="`${group.title}-${column.title}`"
+              class="wevu-api-reference__column"
+            >
+              <h4>{{ column.title }}</h4>
+              <ul>
+                <li v-for="item in column.items" :key="item.href">
+                  <a :href="item.href">{{ item.text }}</a>
+                  <span
+                    v-for="scope in item.scopes || []"
+                    :key="`${item.href}-${scope}`"
+                    class="wevu-api-reference__scope"
+                    :class="`wevu-api-reference__scope--${scope}`"
+                    :title="scopeLabelMap[scope]"
+                    :aria-label="scopeLabelMap[scope]"
+                  >
+                    {{ scopeIconMap[scope] }}
+                  </span>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <ul v-else>
+            <li v-for="item in group.items || []" :key="item.href">
               <a :href="item.href">{{ item.text }}</a>
+              <span
+                v-for="scope in item.scopes || []"
+                :key="`${item.href}-${scope}`"
+                class="wevu-api-reference__scope"
+                :class="`wevu-api-reference__scope--${scope}`"
+                :title="scopeLabelMap[scope]"
+                :aria-label="scopeLabelMap[scope]"
+              >
+                {{ scopeIconMap[scope] }}
+              </span>
             </li>
           </ul>
         </div>
@@ -193,8 +309,25 @@ const filteredSections = computed(() => {
 </template>
 
 <style scoped>
+/* stylelint-disable-next-line selector-class-pattern */
+:global(.Layout.wevu-api-home .VPDoc .content) {
+  max-width: 1080px !important;
+}
+
+/* stylelint-disable-next-line selector-class-pattern */
+:global(.Layout.wevu-api-home .VPDoc .content-container) {
+  max-width: 980px !important;
+}
+
 .wevu-api-reference__filter {
   margin: 20px 0 28px;
+}
+
+.wevu-api-reference__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -12px 0 18px;
 }
 
 .wevu-api-reference__label {
@@ -235,6 +368,27 @@ const filteredSections = computed(() => {
   margin: 0 0 10px;
 }
 
+.wevu-api-reference__group--full {
+  grid-column: 1 / -1;
+}
+
+.wevu-api-reference__columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.wevu-api-reference__column {
+  min-width: 0;
+}
+
+.wevu-api-reference__column h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--vp-c-text-2);
+}
+
 .wevu-api-reference__group ul {
   padding-left: 20px;
   margin: 0;
@@ -242,6 +396,48 @@ const filteredSections = computed(() => {
 
 .wevu-api-reference__group li + li {
   margin-top: 6px;
+}
+
+.wevu-api-reference__scope {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid rgb(15 23 42 / 18%);
+  border-radius: 999px;
+}
+
+.wevu-api-reference__scope--app {
+  color: #0f5132;
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.wevu-api-reference__scope--page {
+  color: #1e40af;
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.wevu-api-reference__scope--component {
+  color: #7c2d12;
+  background: #ffedd5;
+  border-color: #fdba74;
+}
+
+@media (width <= 1100px) {
+  .wevu-api-reference__columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 .wevu-api-reference__empty {

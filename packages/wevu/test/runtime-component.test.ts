@@ -6,6 +6,7 @@ import {
   onMoved,
   onReady,
   onResize,
+  onRouteDone,
   onShow,
   onTabItemTap,
   resetWevuDefaults,
@@ -27,7 +28,7 @@ afterEach(() => {
 })
 
 describe('runtime: component lifetimes/pageLifetimes mapping', () => {
-  it('attached/ready/moved/error/detached + pageLifetimes show/hide/resize + onTabItemTap', () => {
+  it('attached/ready/moved/error/detached + pageLifetimes show/hide/resize/routeDone + onTabItemTap', () => {
     const logs: string[] = []
     defineComponent({
       data: () => ({}),
@@ -38,6 +39,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
         onHide(() => logs.push('hide'))
         onMoved(() => logs.push('moved'))
         onResize(() => logs.push('resize'))
+        onRouteDone(() => logs.push('routeDone'))
         onError(() => logs.push('error'))
         onTabItemTap(() => logs.push('tab'))
       },
@@ -59,13 +61,14 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     opts.pageLifetimes.show.call(inst)
     opts.pageLifetimes.hide.call(inst)
     opts.pageLifetimes.resize.call(inst)
+    opts.pageLifetimes.routeDone.call(inst)
     // tab
     if (typeof opts.onTabItemTap === 'function') {
       opts.onTabItemTap.call(inst, { index: 0, pagePath: '', text: '' })
     }
     // 生命周期：detach（卸载/清理）
     opts.lifetimes.detached.call(inst)
-    expect(logs).toEqual(['ready', 'moved', 'error', 'show', 'hide', 'resize', 'tab'])
+    expect(logs).toEqual(['ready', 'moved', 'error', 'show', 'hide', 'resize', 'routeDone', 'tab'])
   })
 
   it('enables multipleSlots by default for components', () => {

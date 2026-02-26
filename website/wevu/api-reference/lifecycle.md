@@ -73,14 +73,45 @@ keywords:
 | `onAddToFavorites`  | `PageFeatures` | 添加收藏。             |
 | `onSaveExitState`   | `PageFeatures` | 离开时保存状态。       |
 
-## 6. 小程序组件扩展生命周期
+## 6. 小程序组件生命周期（lifetimes / pageLifetimes）
 
-| API       | 类型入口                   | 说明                              |
-| --------- | -------------------------- | --------------------------------- |
-| `onMoved` | `MiniProgramPageLifetimes` | 组件节点位置变更。                |
-| `onError` | `MiniProgramPageLifetimes` | 组件或 App 错误（按上下文桥接）。 |
+### 6.1 官方生命周期清单（组件侧）
 
-## 7. 示例：滚动 + 分享（script setup）
+| 分类            | 官方生命周期                                            |
+| --------------- | ------------------------------------------------------- |
+| `lifetimes`     | `created / attached / ready / moved / detached / error` |
+| `pageLifetimes` | `show / hide / resize / routeDone`                      |
+
+### 6.2 Wevu 对应能力（组合式 + 桥接）
+
+| 官方生命周期              | Wevu 对应能力                                      | 说明                                         |
+| ------------------------- | -------------------------------------------------- | -------------------------------------------- |
+| `lifetimes.created`       | 组件注册时内部桥接（无独立 `onCreated` Hook）      | 已覆盖；可继续使用原生 `lifetimes.created`。 |
+| `lifetimes.attached`      | 组件注册时内部桥接 + `onMounted`（组合式）         | 已覆盖；常用组合式写法是 `onMounted`。       |
+| `lifetimes.ready`         | `onReady`                                          | 已覆盖。                                     |
+| `lifetimes.moved`         | `onMoved`                                          | 已覆盖。                                     |
+| `lifetimes.detached`      | 组件注册时内部桥接 + `onBeforeUnmount/onUnmounted` | 已覆盖。                                     |
+| `lifetimes.error`         | `onError`                                          | 已覆盖。                                     |
+| `pageLifetimes.show`      | `onShow`                                           | 已覆盖。                                     |
+| `pageLifetimes.hide`      | `onHide`                                           | 已覆盖。                                     |
+| `pageLifetimes.resize`    | `onResize`                                         | 已覆盖。                                     |
+| `pageLifetimes.routeDone` | `onRouteDone`                                      | 已覆盖（微信官方基础库 `2.31.2+`）。         |
+
+## 7. 小程序组件扩展 Hook（组合式）
+
+| API               | 类型入口                   | 说明                                                           |
+| ----------------- | -------------------------- | -------------------------------------------------------------- |
+| `onMoved`         | `MiniProgramPageLifetimes` | 组件节点位置变更。                                             |
+| `onError`         | `MiniProgramPageLifetimes` | 组件或 App 错误（按上下文桥接）。                              |
+| `onShow`          | `RuntimeInstance`          | 组件在页面 show 时触发（由 `pageLifetimes.show` 桥接）。       |
+| `onHide`          | `RuntimeInstance`          | 组件在页面 hide 时触发（由 `pageLifetimes.hide` 桥接）。       |
+| `onResize`        | `PageFeatures`             | 组件所在页面 resize 时触发（由 `pageLifetimes.resize` 桥接）。 |
+| `onMounted`       | `RuntimeInstance`          | 组件 attached 后触发（对应 `lifetimes.attached`）。            |
+| `onBeforeUnmount` | `RuntimeInstance`          | 组件 detached 前触发（对应 `lifetimes.detached`）。            |
+| `onUnmounted`     | `RuntimeInstance`          | 组件 detached 后触发（对应 `lifetimes.detached`）。            |
+| `onRouteDone`     | `PageFeatures`             | 页面路由动画完成时触发（微信官方基础库 `2.31.2+`）。           |
+
+## 8. 示例：滚动 + 分享（script setup）
 
 ::: code-group
 

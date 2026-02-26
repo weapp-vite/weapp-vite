@@ -49,7 +49,7 @@ keywords:
 | `lifetimes`        | 推荐用 `setup()` + Wevu hooks；也可写 `defineComponent({ lifetimes: { ... } })`                                                   | `lifetimes.ready/detached/moved/error` 会被 Wevu 包装以派发对应 hook，但你的原生回调仍会被调用；`lifetimes.created` 用于执行 Wevu 的 `setup()`，并会在后续首次安全时机（`attached/onLoad`）flush 缓冲的 `setData`。                      |
 | `observers`        | 推荐用 `watch()`/`watchEffect()` 或 `defineComponent({ watch: { 'a.b': fn } })`；也可写 `defineComponent({ observers: { ... } })` | `observers` 是原生数据监听器（支持更复杂的表达式/通配），Wevu 不改写，直接透传；Wevu 的 `watch` 是基于运行时代理的路径监听（更像 Vue 的 `watch` 选项）。                                                                                 |
 | `options`          | `defineComponent({ options: { ... } })`                                                                                           | 原生 `ComponentOptions`（`multipleSlots/styleIsolation/pureDataPattern/virtualHost/...`）。注意：Wevu 默认会把 `options.multipleSlots` 置为 `true`（用户显式传入则以用户为准）。                                                         |
-| `pageLifetimes`    | 推荐用 `onShow/onHide/onResize`；也可写 `defineComponent({ pageLifetimes: { ... } })`                                             | `show/hide/resize` 会被 Wevu 包装以派发 hook；其他字段按原生透传执行。                                                                                                                                                                   |
+| `pageLifetimes`    | 推荐用 `onShow/onHide/onResize/onRouteDone`；也可写 `defineComponent({ pageLifetimes: { ... } })`                                 | `show/hide/resize/routeDone` 会被 Wevu 包装以派发 hook；其他字段按原生透传执行。                                                                                                                                                         |
 | `properties`       | 推荐：`props`；也可：`defineComponent({ properties: { ... } })`                                                                   | `props` 会被 Wevu 规范化为原生 `properties`；如果同时传了 `props` 与 `properties`，以 `props` 生成的 `properties` 为准。                                                                                                                 |
 | `relations`        | `defineComponent({ relations: { ... } })`                                                                                         | 原样透传。                                                                                                                                                                                                                               |
 
@@ -72,8 +72,9 @@ keywords:
 
 ### pageLifetimes（页面对组件的影响）
 
-| 小程序字段             | 回调名   | 对应 Wevu hook             | 说明                                 |
-| ---------------------- | -------- | -------------------------- | ------------------------------------ |
-| `pageLifetimes.show`   | `show`   | `onShow` / `onActivated`   | 所在页面显示                         |
-| `pageLifetimes.hide`   | `hide`   | `onHide` / `onDeactivated` | 所在页面隐藏                         |
-| `pageLifetimes.resize` | `resize` | `onResize`                 | 所在页面尺寸变化（参数透传原生回调） |
+| 小程序字段                | 回调名      | 对应 Wevu hook             | 说明                                     |
+| ------------------------- | ----------- | -------------------------- | ---------------------------------------- |
+| `pageLifetimes.show`      | `show`      | `onShow` / `onActivated`   | 所在页面显示                             |
+| `pageLifetimes.hide`      | `hide`      | `onHide` / `onDeactivated` | 所在页面隐藏                             |
+| `pageLifetimes.resize`    | `resize`    | `onResize`                 | 所在页面尺寸变化（参数透传原生回调）     |
+| `pageLifetimes.routeDone` | `routeDone` | `onRouteDone`              | 所在页面路由动画完成（基础库 `2.31.2+`） |
