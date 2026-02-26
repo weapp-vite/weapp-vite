@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import TechBackground from './TechBackground.vue'
 
 const props = withDefaults(defineProps<{
@@ -30,12 +30,6 @@ const resources = computed(() => [
     badge: 'Structured Index',
   },
   {
-    title: '/seo-quality-report.json',
-    desc: 'SEO/GEO 质量报告，可用于持续治理和回归检查。',
-    href: '/seo-quality-report.json',
-    badge: 'Quality Report',
-  },
-  {
     title: props.altPath,
     desc: `备用入口 ${props.altPath}，可与当前地址互跳。`,
     href: props.altPath,
@@ -53,6 +47,41 @@ const installPresets = [
     code: '$weapp-vite-best-practices\n$weapp-vite-vue-sfc-best-practices\n$wevu-best-practices',
   },
 ]
+
+const copiedInstallIndex = ref<number | null>(null)
+
+function copyInstallCommand(code: string, index: number) {
+  const normalizedCode = code.replace(/^\$/gm, '')
+  const onSuccess = () => {
+    copiedInstallIndex.value = index
+    setTimeout(() => {
+      if (copiedInstallIndex.value === index) {
+        copiedInstallIndex.value = null
+      }
+    }, 1400)
+  }
+  const fallbackCopy = () => {
+    const textarea = document.createElement('textarea')
+    textarea.value = normalizedCode
+    textarea.style.position = 'fixed'
+    textarea.style.top = '-9999px'
+    document.body.appendChild(textarea)
+    textarea.focus()
+    textarea.select()
+    const copied = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    if (copied) {
+      onSuccess()
+    }
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    navigator.clipboard.writeText(normalizedCode).then(onSuccess).catch(fallbackCopy)
+    return
+  }
+
+  fallbackCopy()
+}
 </script>
 
 <template>
@@ -72,15 +101,22 @@ const installPresets = [
           用统一入口快速喂给 AI 可检索文档、最佳实践 Skill 与可执行安装命令。
         </p>
         <div class="hero-actions">
-          <a href="/llms.txt">打开 /llms.txt</a>
-          <a href="/llms-full.txt">打开 /llms-full.txt</a>
-          <a href="/llms-index.json">打开 /llms-index.json</a>
-          <a :href="props.altPath">访问备用入口 {{ props.altPath }}</a>
+          <a href="/llms.txt" target="_blank" rel="noopener noreferrer">打开 /llms.txt</a>
+          <a href="/llms-full.txt" target="_blank" rel="noopener noreferrer">打开 /llms-full.txt</a>
+          <a href="/llms-index.json" target="_blank" rel="noopener noreferrer">打开 /llms-index.json</a>
+          <a :href="props.altPath" target="_blank" rel="noopener noreferrer">访问备用入口 {{ props.altPath }}</a>
         </div>
       </header>
 
       <section class="resource-grid" aria-label="AI resources">
-        <a v-for="item in resources" :key="item.href" :href="item.href" class="resource-card">
+        <a
+          v-for="item in resources"
+          :key="item.href"
+          :href="item.href"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="resource-card"
+        >
           <p class="resource-badge">{{ item.badge }}</p>
           <h2>{{ item.title }}</h2>
           <p>{{ item.desc }}</p>
@@ -108,8 +144,13 @@ const installPresets = [
       <section class="install-section" aria-label="skills install">
         <h2>Skills 安装命令</h2>
         <div class="install-grid">
-          <article v-for="cmd in installPresets" :key="cmd.title" class="install-card">
-            <h3>{{ cmd.title }}</h3>
+          <article v-for="(cmd, index) in installPresets" :key="cmd.title" class="install-card">
+            <header class="install-card-header">
+              <h3>{{ cmd.title }}</h3>
+              <button type="button" @click="copyInstallCommand(cmd.code, index)">
+                {{ copiedInstallIndex === index ? '已复制' : '复制命令' }}
+              </button>
+            </header>
             <pre><code>{{ cmd.code }}</code></pre>
           </article>
         </div>
@@ -342,9 +383,37 @@ const installPresets = [
 }
 
 .install-card h3 {
-  margin: 0 0 10px;
+  margin: 0;
   font-size: 14px;
   color: #b7e8ff;
+}
+
+.install-card-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.install-card button {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1;
+  color: #cff4ff;
+  cursor: pointer;
+  background: rgb(8 34 53 / 88%);
+  border: 1px solid rgb(125 211 252 / 36%);
+  border-radius: 8px;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.install-card button:hover {
+  background: rgb(10 41 64 / 92%);
+  border-color: rgb(125 211 252 / 58%);
 }
 
 .install-card pre {
