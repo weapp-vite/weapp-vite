@@ -1,8 +1,8 @@
 ---
 title: Vue SFC：模板与指令
-description: Vue SFC：模板与指令，聚焦 wevu / vue-sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: Vue SFC：模板与指令，聚焦 Wevu / vue-sfc 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
-  - wevu
+  - Wevu
   - Vue SFC
   - vue
   - sfc
@@ -32,8 +32,8 @@ flowchart LR
 
 你通常不需要手写 `features.enableOnXxx`：
 
-- **使用 weapp-vite 构建**：当编译器检测到你调用了对应 hooks，会在编译阶段自动补齐 `features.enableOnXxx = true`。
-- **不使用 weapp-vite（或极端场景）**：才需要在 `defineComponent({ features: ... })` 里手动开启。
+- **使用 Weapp-vite 构建**：当编译器检测到你调用了对应 hooks，会在编译阶段自动补齐 `features.enableOnXxx = true`。
+- **不使用 Weapp-vite（或极端场景）**：才需要在 `defineComponent({ features: ... })` 里手动开启。
 
 ## v-model 支持范围与限制
 

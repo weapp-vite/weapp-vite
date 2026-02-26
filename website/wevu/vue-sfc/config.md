@@ -2,7 +2,7 @@
 title: Vue SFC：配置与宏
 description: 小程序组件的注册是 **JSON 声明式** 的：只认 usingComponents。因此在 SFC 里推荐：
 keywords:
-  - wevu
+  - Wevu
   - Vue SFC
   - 配置
   - vue
@@ -49,7 +49,7 @@ definePageJson(() => ({
 > 提示：`tsconfig.app.json` 已预置 `"vueCompilerOptions.plugins": ["weapp-vite/volar"]`，配合 Volar 扩展即可获得 JSON 宏与模板提示。
 
 :::warning 必须设置 vueCompilerOptions.lib
-若使用 wevu 的 `<script setup>` 宏（`defineProps/withDefaults/defineEmits` 等），请务必在同一处设置 `"vueCompilerOptions.lib": "wevu"`，否则宏的类型提示会退化为 `any`。
+若使用 Wevu 的 `<script setup>` 宏（`defineProps/withDefaults/defineEmits` 等），请务必在同一处设置 `"vueCompilerOptions.lib": "wevu"`，否则宏的类型提示会退化为 `any`。
 :::
 
 ## 配置块模式对比

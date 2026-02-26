@@ -1,8 +1,8 @@
 ---
 title: 共享配置
-description: 除了 WXML/WXS 这些“底层开关”，weapp-vite 还有一些通用增强能力，比如自动路由、调试钩子等。本页主要讲：
+description: 除了 WXML/WXS 这些“底层开关”，Weapp-vite 还有一些通用增强能力，比如自动路由、调试钩子等。本页主要讲：
 keywords:
-  - wevu
+  - Wevu
   - 配置
   - 调试
   - config
@@ -41,7 +41,7 @@ export default defineConfig({
 })
 ```
 
-开启后 weapp-vite 会：
+开启后 Weapp-vite 会：
 
 - 持续扫描主包和分包下的页面目录，维护 `routes`、`entries`、`pages`、`subPackages` 等清单；
 - 在配置文件同级输出 `typed-router.d.ts`，提供 `AutoRoutes` 等类型；
@@ -101,7 +101,7 @@ export default defineConfig({
 
 ## `weapp.wevu.defaults` {#weapp-wevu-defaults}
 - **类型**：`WevuDefaults`
-- **作用**：在编译 `app.vue` 时自动注入 `setWevuDefaults()`，统一控制 wevu 的 `createApp/defineComponent` 默认值。
+- **作用**：在编译 `app.vue` 时自动注入 `setWevuDefaults()`，统一控制 Wevu 的 `createApp/defineComponent` 默认值。
 - **适用场景**：
   - 希望全局配置 `setData` 策略（例如 `includeComputed` / `strategy`）。
   - 希望统一小程序 `Component` 选项默认值（例如 `options.addGlobalClass`）。
@@ -137,15 +137,15 @@ export default defineConfig({
 
 ### 注意事项
 
-- 仅对 `app.vue` 生效：weapp-vite 会在编译产物中插入 `setWevuDefaults()`，并确保它在 `createApp()` 之前执行。
+- 仅对 `app.vue` 生效：Weapp-vite 会在编译产物中插入 `setWevuDefaults()`，并确保它在 `createApp()` 之前执行。
 - 配置必须可序列化（JSON 兼容）：不支持函数、`Symbol`、循环引用。
 - 局部显式配置会覆盖默认值；`setData` 与 `options` 会做浅合并，其余字段按对象顶层合并。
 - 若你希望手动控制时机，可以在 `app.vue` 顶层显式调用 `setWevuDefaults()`，并关闭此配置以避免重复注入。
-- 当 `app.vue`/组件导出为对象字面量时，weapp-vite 会把默认值直接合并进编译产物，方便排查与调试；若导出是变量或函数，仍会回落到运行时合并。
-- 若设置了 `component.options.virtualHost = true`，weapp-vite 会在 **页面** 入口自动补上 `virtualHost: false`，避免页面虚拟节点导致的渲染层错误；需要为页面开启时请在页面内显式配置。
+- 当 `app.vue`/组件导出为对象字面量时，Weapp-vite 会把默认值直接合并进编译产物，方便排查与调试；若导出是变量或函数，仍会回落到运行时合并。
+- 若设置了 `component.options.virtualHost = true`，Weapp-vite 会在 **页面** 入口自动补上 `virtualHost: false`，避免页面虚拟节点导致的渲染层错误；需要为页面开启时请在页面内显式配置。
 
 > [!TIP]
-> 如果你不通过 weapp-vite 构建，也可以在运行时手动调用 `setWevuDefaults()`（见 `/wevu/runtime`）。
+> 如果你不通过 Weapp-vite 构建，也可以在运行时手动调用 `setWevuDefaults()`（见 `/wevu/runtime`）。
 
 ## `weapp.hmr.sharedChunks` {#weapp-hmr-sharedchunks}
 - **类型**：`'full' | 'auto' | 'off'`

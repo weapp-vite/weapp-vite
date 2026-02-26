@@ -1,9 +1,9 @@
 ---
 title: 组件：props/emit/slots 语义
-description: 组件：props/emit/slots 语义，聚焦 handbook / wevu 相关场景，覆盖 weapp-vite 与 wevu
+description: 组件：props/emit/slots 语义，聚焦 handbook / Wevu 相关场景，覆盖 Weapp-vite 与 Wevu
   的能力、配置和实践要点。
 keywords:
-  - wevu
+  - Wevu
   - 微信小程序
   - handbook
   - component
@@ -30,7 +30,7 @@ keywords:
 
 ## emit：只有一个 detail
 
-小程序事件只有一个 `detail` 载荷；因此在 wevu 里要把需要的字段放在 `detail` 里。
+小程序事件只有一个 `detail` 载荷；因此在 Wevu 里要把需要的字段放在 `detail` 里。
 
 ## slots：以小程序能力为准
 

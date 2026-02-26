@@ -1,8 +1,8 @@
 ---
 title: Store（状态管理）
-description: Store（状态管理），聚焦 wevu / store 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: Store（状态管理），聚焦 Wevu / store 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
-  - wevu
+  - Wevu
   - api
   - store
   - Store（状态管理）
@@ -14,14 +14,14 @@ keywords:
 
 # Store（状态管理）
 
-wevu 内置了类 Pinia 的 Store：
+Wevu 内置了类 Pinia 的 Store：
 
 - 用 `defineStore()` 定义 Store
 - 用 `useXxx()` 获取**单例**实例
 - 用 `storeToRefs()` 解构 state/getter，避免丢失响应式
 
 :::tip 导入约定
-运行时 API 均从 `wevu` 主入口导入；`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
+运行时 API 均从 `wevu` 主入口导入；`wevu/compiler` 仅供 Weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
 
 ## 导入与核心 API
@@ -191,7 +191,7 @@ export const usePrefs = defineStore('prefs', {
 - Setup Store 会自动推导返回对象的类型；Options Store 可通过泛型精确声明 `state/getters/actions`。
 - Store 文件按功能域组织（例如 `stores/user.ts`、`stores/cart.ts`），Store ID 使用小写单数。
 - 避免直接解构 state：使用 `storeToRefs`；actions 可以直接解构。
-- SSR/HMR/Devtools：wevu 面向小程序运行环境，暂未提供这些 Web 专属能力。
+- SSR/HMR/Devtools：Wevu 面向小程序运行环境，暂未提供这些 Web 专属能力。
 
 ## 常见问题
 

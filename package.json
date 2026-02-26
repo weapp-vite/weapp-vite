@@ -95,7 +95,7 @@
     "@icebreakers/changelog-github": "^0.2.0",
     "@icebreakers/commitlint-config": "^1.2.8",
     "@icebreakers/eslint-config": "^1.6.22",
-    "@icebreakers/monorepo": "^3.2.11",
+    "@icebreakers/monorepo": "^3.2.12",
     "@icebreakers/stylelint-config": "^2.0.2",
     "@oxc-node/cli": "^0.0.35",
     "@oxc-node/core": "^0.0.35",

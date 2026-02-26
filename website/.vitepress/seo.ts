@@ -1,7 +1,7 @@
 import type { HeadConfig, PageData } from 'vitepress'
 
 const siteBaseUrl = 'https://vite.icebreaker.top'
-const siteName = 'Weapp-vite'
+const siteName = 'weapp-vite'
 const defaultImage = '/logo.png'
 
 function toAbsoluteUrl(input: string) {
@@ -71,7 +71,7 @@ function fallbackDescription(frontmatterDescription: unknown, excerpt: string, t
   }
 
   const hint = routePath.replace(/^\//, '').replace(/\/$/, '').split('/').slice(0, 2).join(' / ')
-  return `${title}，聚焦 ${hint || 'weapp-vite'} 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践建议。`
+  return `${title}，聚焦 ${hint || 'weapp-vite'} 相关场景，覆盖 weapp-vite 与 Wevu 的能力、配置和实践建议。`
 }
 
 function inferTitle(pageData: PageData) {
@@ -186,7 +186,7 @@ export function transformPageDataForSeo(pageData: PageData) {
   }
 
   if (existingKeywords.length === 0) {
-    pageData.frontmatter.keywords = ['weapp-vite', 'wevu', '微信小程序']
+    pageData.frontmatter.keywords = ['weapp-vite', 'Wevu', '微信小程序']
   }
 }
 
@@ -202,7 +202,7 @@ export function createSeoHead(pageData: PageData): HeadConfig[] {
   const keywords = normalizeKeywords(pageData.frontmatter.keywords)
   const effectiveKeywords = keywords.length > 0
     ? keywords
-    : ['weapp-vite', 'wevu', '微信小程序']
+    : ['weapp-vite', 'Wevu', '微信小程序']
 
   const frontmatterImage = typeof pageData.frontmatter.image === 'string'
     ? pageData.frontmatter.image

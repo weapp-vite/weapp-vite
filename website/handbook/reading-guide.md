@@ -1,6 +1,6 @@
 ---
 title: 阅读路线与约定
-description: 阅读路线与约定，聚焦 handbook / reading-guide 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: 阅读路线与约定，聚焦 handbook / reading-guide 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
   - handbook
   - reading
@@ -16,9 +16,9 @@ keywords:
 
 ## 术语说明
 
-- **weapp-vite**：开发/构建工具链，把你的源码编译成小程序能运行的产物。
+- **Weapp-vite**：开发/构建工具链，把你的源码编译成小程序能运行的产物。
 - **wuve（本文用法）**：不是独立 npm 包；指 _weapp-vite 内置的 Vue SFC 编译链路_，把 `.vue` 编译成 WXML/WXSS/JS/JSON。
-- **wevu**：运行时库，提供 Composition API、生命周期 hooks、快照 diff，尽量少调用 `setData`。
+- **Wevu**：运行时库，提供 Composition API、生命周期 hooks、快照 diff，尽量少调用 `setData`。
 
 ## 这套教程的组织方式
 

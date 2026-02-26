@@ -1,13 +1,13 @@
 ---
 title: 静态资源的处理与优化
-description: weapp-vite 在静态资源方面沿用了 Vite 的约定：import 语句、public
+description: Weapp-vite 在静态资源方面沿用了 Vite 的约定：import 语句、public
   目录、插件生态都可以直接使用。本页聚焦最常见的资源场景，并给出优化建议。
 keywords:
   - guide
   - image
   - optimize
   - 静态资源的处理与优化
-  - weapp-vite
+  - Weapp-vite
   - 在静态资源方面沿用了
   - vite
   - 的约定：import

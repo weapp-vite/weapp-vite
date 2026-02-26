@@ -2,7 +2,7 @@
 title: 调试与排错（体系化）
 description: 遇到复杂问题时，先把问题缩到一个页面/一个组件，再把“业务依赖”剥离（只留模板 + 少量 state）。
 keywords:
-  - wevu
+  - Wevu
   - 微信小程序
   - 调试
   - 运行时
@@ -17,7 +17,7 @@ keywords:
 ## 本章你会学到什么
 
 - 遇到问题时的“最短定位路径”
-- weapp-vite / SFC / wevu 三者的排错分层
+- Weapp-vite / SFC / Wevu 三者的排错分层
 
 ## 第 0 步：先把现象分类
 
@@ -39,7 +39,7 @@ keywords:
 - `v-model` 是否写成“不可赋值表达式”（详见 `/handbook/sfc/events-and-v-model`）
 - `<json>` 与宏的合并是否符合预期（详见 `/handbook/sfc/json`）
 
-## 第 3 层：wevu 运行时排错
+## 第 3 层：Wevu 运行时排错
 
 - hooks 是否在 `setup()` 同步阶段注册（详见 `/wevu/runtime`）
 - 是否从 `wevu` 导入响应式 API（而不是 `vue`）

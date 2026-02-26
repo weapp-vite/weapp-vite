@@ -1,8 +1,8 @@
 ---
 title: Type Reference
-description: 本页先给出“高频类型速查”，然后提供 wevu 当前导出的接口/类型别名全量索引。
+description: 本页先给出“高频类型速查”，然后提供 Wevu 当前导出的接口/类型别名全量索引。
 keywords:
-  - wevu
+  - Wevu
   - 微信小程序
   - 运行时
   - 编译
@@ -71,8 +71,8 @@ keywords:
 | `TemplateRefValue`            | 模板 ref 值类型      |
 | `WatchOptions`                | watch 配置           |
 | `WevuDefaults`                | 全局默认值配置       |
-| `WevuGlobalComponents`        | wevu 全局组件        |
-| `WevuGlobalDirectives`        | wevu 全局指令        |
+| `WevuGlobalComponents`        | Wevu 全局组件        |
+| `WevuGlobalDirectives`        | Wevu 全局指令        |
 | `WritableComputedOptions`     | 可写 computed 配置   |
 | `WritableComputedRef`         | 可写 computed 引用   |
 

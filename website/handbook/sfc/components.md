@@ -1,6 +1,6 @@
 ---
 title: 组件：script setup import 与拆分
-description: 在 weapp-vite + Vue SFC 项目中，推荐直接在脚本里导入 .vue 组件：
+description: 在 Weapp-vite + Vue SFC 项目中，推荐直接在脚本里导入 .vue 组件：
 keywords:
   - Vue SFC
   - handbook
@@ -22,7 +22,7 @@ keywords:
 
 ## 推荐范式（默认）
 
-在 weapp-vite + Vue SFC 项目中，推荐直接在脚本里导入 `.vue` 组件：
+在 Weapp-vite + Vue SFC 项目中，推荐直接在脚本里导入 `.vue` 组件：
 
 - 编辑器（Volar/TS）能直接识别组件类型与跳转
 - 重构（改名、移动文件）更稳定

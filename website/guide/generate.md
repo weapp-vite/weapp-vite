@@ -1,12 +1,12 @@
 ---
 title: 生成脚手架
-description: weapp-vite 自带一个生成器，用来一键生成页面/组件/App 的基础文件（页面/组件包含
+description: Weapp-vite 自带一个生成器，用来一键生成页面/组件/App 的基础文件（页面/组件包含
   js/ts、wxml、wxss、json；App 不生成 wxml）。它适合两类情况：
 keywords:
   - guide
   - generate
   - 生成脚手架
-  - weapp-vite
+  - Weapp-vite
   - 自带一个生成器
   - 用来一键生成页面/组件/App
   - 的基础文件（页面/组件包含
@@ -45,7 +45,7 @@ pnpm weapp-vite g components/avatar
 ```
 
 > [!TIP]
-> `weapp-vite init` 会自动把脚本添加到 `package.json`。如果你在现有项目中手动安装了 weapp-vite，也可以自行补上 `"g": "weapp-vite generate"`。
+> `weapp-vite init` 会自动把脚本添加到 `package.json`。如果你在现有项目中手动安装了 Weapp-vite，也可以自行补上 `"g": "weapp-vite generate"`。
 
 ## 自定义文件后缀与目录
 

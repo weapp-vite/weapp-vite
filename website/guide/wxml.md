@@ -1,6 +1,6 @@
 ---
 title: WXML 增强
-description: WXML 增强，聚焦 guide / wxml 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: WXML 增强，聚焦 guide / wxml 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
   - 配置
   - guide
@@ -30,7 +30,7 @@ keywords:
 
 ## 事件绑定语法糖（可选）
 
-开启 `weapp.wxml` 后，可以使用类似 Vue 的 `@` 语法，weapp-vite 会在构建时转换为原生事件写法：
+开启 `weapp.wxml` 后，可以使用类似 Vue 的 `@` 语法，Weapp-vite 会在构建时转换为原生事件写法：
 
 ```html
 <!-- 源代码 -->

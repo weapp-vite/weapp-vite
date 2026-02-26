@@ -1,6 +1,6 @@
 ---
 title: 页面与路由（导航）
-description: 页面与路由（导航），聚焦 handbook / navigation 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: 页面与路由（导航），聚焦 handbook / navigation 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
   - api
   - handbook

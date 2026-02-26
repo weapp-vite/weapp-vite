@@ -1,10 +1,10 @@
 ---
 title: SEO/GEO 质量门禁
-description: 说明 weapp-vite 文档站的 SEO/GEO 自动化治理流程，包括审计、质量检查、llms 索引生成与 CI 严格门禁。
+description: 说明 Weapp-vite 文档站的 SEO/GEO 自动化治理流程，包括审计、质量检查、llms 索引生成与 CI 严格门禁。
 keywords:
   - seo
   - geo
-  - weapp-vite
+  - Weapp-vite
   - VitePress
   - 质量门禁
   - guide

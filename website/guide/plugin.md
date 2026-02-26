@@ -1,13 +1,13 @@
 ---
 title: 微信小程序插件开发
-description: weapp-vite 可以在同一个项目中同时维护主应用与插件，只要开启 pluginRoot
+description: Weapp-vite 可以在同一个项目中同时维护主应用与插件，只要开启 pluginRoot
   就能复用现有的热更新、构建、调试能力。本页将介绍适用场景、目录约定和常见问题，帮助你在几分钟内完成插件开发环境的搭建。
 keywords:
   - 微信小程序
   - guide
   - plugin
   - 微信小程序插件开发
-  - weapp-vite
+  - Weapp-vite
   - 可以在同一个项目中同时维护主应用与插件
   - 只要开启
   - pluginroot

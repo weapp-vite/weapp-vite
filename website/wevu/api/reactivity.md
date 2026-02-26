@@ -1,8 +1,8 @@
 ---
 title: Reactivity API
-description: 本页覆盖 wevu 响应式层的全部公开函数，包括“业务常用”和“调试/底层”两类。
+description: 本页覆盖 Wevu 响应式层的全部公开函数，包括“业务常用”和“调试/底层”两类。
 keywords:
-  - wevu
+  - Wevu
   - Vue SFC
   - 调试
   - api

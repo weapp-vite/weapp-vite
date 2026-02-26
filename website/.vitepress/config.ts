@@ -97,7 +97,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
-        text: 'weapp-vite init 做了什么?',
+        text: 'Weapp-vite init 做了什么?',
         link: '/deep/init',
       },
       {
@@ -146,7 +146,7 @@ const blogSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       {
-        text: 'weapp-vite@6：支持 Vue SFC！',
+        text: 'Weapp-vite@6：支持 Vue SFC！',
         link: '/blog/release6',
       },
       {
@@ -222,7 +222,7 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
 
 const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
   {
-    text: 'wevu',
+    text: 'Wevu',
     collapsed: false,
     items: [
       { text: '概览', link: '/wevu/' },
@@ -245,13 +245,13 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '兼容性与注意事项', link: '/wevu/compatibility' },
       { text: 'Vue 3 兼容性说明（完整）', link: '/wevu/vue3-compat' },
       { text: '从原生小程序迁移到 Vue SFC', link: '/wevu/migration/from-native-to-vue-sfc' },
-      { text: 'wevu vs Vue 3（核心差异）', link: '/wevu/vue3-vs-wevu' },
+      { text: 'Wevu vs Vue 3（核心差异）', link: '/wevu/vue3-vs-wevu' },
       {
         text: '扩展阅读',
         collapsed: false,
         items: [
           { text: '为什么没有使用 @vue/runtime-core 的 createRenderer 来实现', link: '/wevu/why-not-runtime-core-create-renderer' },
-          { text: 'wevu 中的 setData 什么时候触发？', link: '/wevu/when-setdata-triggers' },
+          { text: 'Wevu 中的 setData 什么时候触发？', link: '/wevu/when-setdata-triggers' },
         ],
       },
       { text: 'API 参考 ↗', link: '/wevu/api-reference/' },
@@ -310,7 +310,7 @@ const _handbookSidebarItems: DefaultTheme.SidebarItem[] = [
     ],
   },
   {
-    text: '上手与工程化（weapp-vite）',
+    text: '上手与工程化（Weapp-vite）',
     collapsed: false,
     items: [
       { text: '快速开始（教程版）', link: '/handbook/getting-started' },
@@ -339,10 +339,10 @@ const _handbookSidebarItems: DefaultTheme.SidebarItem[] = [
     ],
   },
   {
-    text: 'wevu（运行时）',
+    text: 'Wevu（运行时）',
     collapsed: false,
     items: [
-      { text: '定位与选择：为什么是 wevu', link: '/handbook/wevu/' },
+      { text: '定位与选择：为什么是 Wevu', link: '/handbook/wevu/' },
       { text: '运行时：setup 上下文与更新', link: '/handbook/wevu/runtime' },
       { text: '组件：props/emit/slots 语义', link: '/handbook/wevu/component' },
       { text: 'Store：模式与工程落地', link: '/handbook/wevu/store' },
@@ -416,8 +416,8 @@ export default defineConfig({
     nav: [
       { text: '指引', link: '/guide/' },
       // { text: '教程', link: '/handbook/' }, // 暂时隐藏：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
-      { text: 'wevu', link: '/wevu/' },
-      { text: 'wevu API', link: '/wevu/api/' },
+      { text: 'Wevu', link: '/wevu/' },
+      { text: 'Wevu API', link: '/wevu/api/' },
       { text: '社区', link: '/community/group' },
       { text: '周边包', link: '/packages/' },
       // { text: '参考', link: '/config' },
@@ -450,7 +450,7 @@ export default defineConfig({
       //     text: '参考',
       //     items: [
       //       // {
-      //       //   text: 'Weapp-vite 配置项',
+      //       //   text: 'weapp-vite 配置项',
       //       //   link: '/config/',
       //       // },
       //       {
@@ -469,7 +469,7 @@ export default defineConfig({
               link: '/migration/index',
             },
             {
-              text: '从原生小程序迁移到 weapp-vite / wevu',
+              text: '从原生小程序迁移到 Weapp-vite / Wevu',
               link: '/wevu/migration/from-native-to-vue-sfc',
             },
             {

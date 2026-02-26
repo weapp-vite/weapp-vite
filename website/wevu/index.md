@@ -1,9 +1,9 @@
 ---
-title: wevu 概览
-description: wevu 是一个面向小程序（以微信小程序为主）的轻量运行时。可以把它看作“把 Vue 3 的响应式心智模型带到小程序里”，但不引入
+title: Wevu 概览
+description: Wevu 是一个面向小程序（以微信小程序为主）的轻量运行时。可以把它看作“把 Vue 3 的响应式心智模型带到小程序里”，但不引入
   Virtual DOM，而是用快照 diff 来尽量减少 setData 的更新量。
 keywords:
-  - wevu
+  - Wevu
   - 编译
   - 概览
   - vue
@@ -13,7 +13,7 @@ keywords:
   - virtual
 ---
 
-# wevu 概览
+# Wevu 概览
 
 `wevu` 是一个面向小程序（以微信小程序为主）的轻量运行时。可以把它看作“把 Vue 3 的响应式心智模型带到小程序里”，但不引入 Virtual DOM，而是用快照 diff 来尽量减少 `setData` 的更新量。
 
@@ -23,14 +23,14 @@ keywords:
 - 基于快照 diff 的最小化 `setData` 更新
 - 类 Pinia 的 Store（状态管理）
 
-wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍然写 WXML/WXSS（或配合 weapp-vite 用 Vue SFC 编写模板/样式/配置），但业务逻辑可以用熟悉的 Composition API 组织起来。
+Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍然写 WXML/WXSS（或配合 Weapp-vite 用 Vue SFC 编写模板/样式/配置），但业务逻辑可以用熟悉的 Composition API 组织起来。
 
-## wevu 在整套体系里的位置
+## Wevu 在整套体系里的位置
 
-如果你同时使用 weapp-vite 的 Vue SFC：
+如果你同时使用 Weapp-vite 的 Vue SFC：
 
-- **weapp-vite（编译期）**：把 `.vue` 编译成 WXML/WXSS/JS/JSON，并做模板语法转换。
-- **wevu（运行期）**：负责响应式、生命周期 hooks、快照 diff 与最小化 `setData`。
+- **Weapp-vite（编译期）**：把 `.vue` 编译成 WXML/WXSS/JS/JSON，并做模板语法转换。
+- **Wevu（运行期）**：负责响应式、生命周期 hooks、快照 diff 与最小化 `setData`。
 
 因此遇到问题时可以快速分层定位：
 
@@ -43,29 +43,29 @@ wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 
 - 最初想叫 `wevue`（weapp + vue），但 npm 已被占用，于是缩写成了 `wevu`。
 - 在为 `weapp-vite` 补齐 Vue SFC 支持时，调研过社区方案（如 `vue-mini`），但编译器与运行时都需要大改，最后选择自己实现以更贴合小程序。
-- 借鉴 Vue 3 的响应式设计思路，并考虑多小程序平台适配，逐步形成现在的 wevu。
+- 借鉴 Vue 3 的响应式设计思路，并考虑多小程序平台适配，逐步形成现在的 Wevu。
 
 ## 你会用到的能力
 
 - **响应式与调度**：与 Vue 3 相同心智的 `ref` / `reactive` / `computed` / `watch` / `watchEffect`，更新通过微任务批量调度（`nextTick`）。
-- **页面/组件注册**：`defineComponent()` 统一通过小程序 `Component()` 注册；`createApp()` 可在存在全局 `App()` 时自动注册应用；`createWevuComponent()` 供 weapp-vite 编译产物调用。
+- **页面/组件注册**：`defineComponent()` 统一通过小程序 `Component()` 注册；`createApp()` 可在存在全局 `App()` 时自动注册应用；`createWevuComponent()` 供 Weapp-vite 编译产物调用。
 - **最小化 setData**：运行时把 state + computed 转为 plain snapshot，diff 后只把变化路径传给 `setData`。
 - **双向绑定辅助**：`bindModel(path)` 生成适配小程序事件的数据/事件绑定对象。
 - **Store（状态管理）**：`defineStore` / `storeToRefs` / `createStore`（可选插件入口）。
 
 :::tip 导入约定
-运行时 API 都从 `wevu` 主入口导入。`wevu/compiler` 仅供 weapp-vite 等编译侧工具使用（非稳定用户 API）。
+运行时 API 都从 `wevu` 主入口导入。`wevu/compiler` 仅供 Weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
 
 ## 编译侧桥接（wevu/compiler）
 
-`wevu/compiler` 用来承载 wevu 与编译工具之间的共享常量，避免在多个项目里重复写字符串：
+`wevu/compiler` 用来承载 Wevu 与编译工具之间的共享常量，避免在多个项目里重复写字符串：
 
 - `WE_VU_MODULE_ID`：运行时入口模块名（`wevu`）。
 - `WE_VU_RUNTIME_APIS`：运行时 API 名称集合（如 `createApp` / `defineComponent` / `createWevuComponent`）。
 - `WE_VU_PAGE_HOOK_TO_FEATURE`：页面 hook 与 features 的映射表。
 
-这些导出面向编译工具（例如 weapp-vite），应用代码不要依赖它们作为稳定 API。
+这些导出面向编译工具（例如 Weapp-vite），应用代码不要依赖它们作为稳定 API。
 
 ## 推荐学习顺序（按“最短上手 → 深入理解”）
 
@@ -84,9 +84,9 @@ wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 - [API 参考总览](/wevu/api-reference/)
 - [兼容性与注意事项](/wevu/compatibility)
 - [Vue 3 兼容性说明（完整）](/wevu/vue3-compat)
-- [wevu vs Vue 3（核心差异）](/wevu/vue3-vs-wevu)
+- [Wevu vs Vue 3（核心差异）](/wevu/vue3-vs-wevu)
 
 ## 扩展阅读
 
 - [为什么没有使用 @vue/runtime-core 的 createRenderer 来实现](/wevu/why-not-runtime-core-create-renderer)
-- [wevu 中的 setData 什么时候触发？](/wevu/when-setdata-triggers)
+- [Wevu 中的 setData 什么时候触发？](/wevu/when-setdata-triggers)

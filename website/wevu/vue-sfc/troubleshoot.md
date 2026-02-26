@@ -1,8 +1,8 @@
 ---
 title: Vue SFC：调试与排错
-description: Vue SFC：调试与排错，聚焦 wevu / vue-sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: Vue SFC：调试与排错，聚焦 Wevu / vue-sfc 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
-  - wevu
+  - Wevu
   - Vue SFC
   - 调试
   - vue

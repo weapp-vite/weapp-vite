@@ -1,6 +1,6 @@
 ---
 title: 构建、预览与上传
-description: 构建、预览与上传，聚焦 handbook / publish 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: 构建、预览与上传，聚焦 handbook / publish 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
   - handbook
   - publish

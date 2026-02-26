@@ -1,8 +1,8 @@
 ---
 title: Setup Context API
-description: wevu 的 setup(props, ctx) 除了 Vue 语义，还补齐了小程序运行时场景，特别是 ctx.instance（原生实例）和 ctx.emit（事件派发）。
+description: Wevu 的 setup(props, ctx) 除了 Vue 语义，还补齐了小程序运行时场景，特别是 ctx.instance（原生实例）和 ctx.emit（事件派发）。
 keywords:
-  - wevu
+  - Wevu
   - Vue SFC
   - api
   - reference
@@ -47,7 +47,7 @@ keywords:
 
 ## 4. 推荐：通过 `ctx.instance` 操作原生实例
 
-在 wevu 里，和小程序实例直接耦合的方法，推荐放在 `ctx.instance` 上调用，而不是依赖 `this`：
+在 Wevu 里，和小程序实例直接耦合的方法，推荐放在 `ctx.instance` 上调用，而不是依赖 `this`：
 
 - `ctx.instance.triggerEvent(...)`
 - `ctx.instance.createSelectorQuery()`

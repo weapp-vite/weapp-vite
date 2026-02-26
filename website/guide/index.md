@@ -3,9 +3,9 @@ outline:
   - 2
   - 4
 title: 快速开始
-description: 执行以下命令，快速创建一个集成了 weapp-vite 的原生微信小程序项目：
+description: 执行以下命令，快速创建一个集成了 Weapp-vite 的原生微信小程序项目：
 keywords:
-  - weapp-vite
+  - Weapp-vite
   - 微信小程序
   - 配置
   - guide
@@ -165,7 +165,7 @@ bun open
 
 ### 1. 创建项目
 
-如果你不想用脚手架，也可以先用开发者工具创建一个“原生小程序”，再手动接入 weapp-vite：
+如果你不想用脚手架，也可以先用开发者工具创建一个“原生小程序”，再手动接入 Weapp-vite：
 
 打开微信开发者工具 → 点击 `+` → 依次选择：
 
@@ -179,9 +179,9 @@ bun open
 
 > 如果你创建的是 **TS 模板项目**，请在 `vite.config.ts` 中设置 [`weapp.srcRoot`](../config/paths.md#weapp-srcroot) 为 `'./miniprogram'`。
 
-### 2. 手动接入 weapp-vite
+### 2. 手动接入 Weapp-vite
 
-如果你已经有运行中的小程序，希望在原目录上直接接入 weapp-vite，请跳转到[《手动集成》](/guide/manual-integration)查看完整步骤（依赖安装、脚本配置、目录迁移等）。这里的快速开始章节仅演示模板创建流程。
+如果你已经有运行中的小程序，希望在原目录上直接接入 Weapp-vite，请跳转到[《手动集成》](/guide/manual-integration)查看完整步骤（依赖安装、脚本配置、目录迁移等）。这里的快速开始章节仅演示模板创建流程。
 
 完成依赖与脚本配置后，执行一次安装命令，确保 `node_modules` 就绪：
 
@@ -209,7 +209,7 @@ bun i
 
 这样小程序 API 的类型声明（typings）也会一起装好，编辑器里就有补全和校验了。
 
-> 想要一步步把现有项目接入 weapp-vite：参考[《手动集成》](/guide/manual-integration)。想知道 CLI 初始化做了哪些改动：阅读 [`weapp-vite init 做了什么?`](/deep/init)。
+> 想要一步步把现有项目接入 Weapp-vite：参考[《手动集成》](/guide/manual-integration)。想知道 CLI 初始化做了哪些改动：阅读 [`weapp-vite init 做了什么?`](/deep/init)。
 
 ## 预置命令
 

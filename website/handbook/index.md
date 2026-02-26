@@ -1,12 +1,12 @@
 ---
-title: 教程总览（weapp-vite × Vue SFC × wevu）
+title: 教程总览（Weapp-vite × Vue SFC × Wevu）
 description: 这套教程想帮你把“小程序工程化 + Vue SFC + 运行时”这条链路一次性跑顺，核心就三件事：
 keywords:
-  - weapp-vite
-  - wevu
+  - Weapp-vite
+  - Wevu
   - Vue SFC
   - handbook
-  - 教程总览（weapp-vite
+  - 教程总览（Weapp-vite
   - ×
   - vue
   - sfc
@@ -16,9 +16,9 @@ keywords:
 
 这套教程想帮你把“小程序工程化 + Vue SFC + 运行时”这条链路一次性跑顺，核心就三件事：
 
-- 用 **weapp-vite** 把项目开发/构建起来（输出小程序能跑的产物）
-- 用 **Vue SFC** 写页面和组件（本教程把 weapp-vite 内置的 SFC 编译链路称作 _wuve_）
-- 用 **wevu** 在运行时获得 Vue 3 风格的响应式与生命周期能力
+- 用 **Weapp-vite** 把项目开发/构建起来（输出小程序能跑的产物）
+- 用 **Vue SFC** 写页面和组件（本教程把 Weapp-vite 内置的 SFC 编译链路称作 _wuve_）
+- 用 **Wevu** 在运行时获得 Vue 3 风格的响应式与生命周期能力
 
 ## 你会在这里得到什么
 
@@ -36,4 +36,4 @@ keywords:
 - 第一次接触：先看 `/handbook/reading-guide`
 - 直接开写：从 `/handbook/getting-started` 开始
 - 只想系统学 SFC：从 `/handbook/sfc/` 开始
-- 只想系统学 wevu：从 `/handbook/wevu/` 开始
+- 只想系统学 Wevu：从 `/handbook/wevu/` 开始

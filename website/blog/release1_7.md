@@ -2,11 +2,11 @@
 outline:
   - 2
   - 5
-title: 这段时间 weapp-vite 的功能更新与优化
-description: 这段时间 weapp-vite 的功能更新与优化，聚焦 blog / release1_7 相关场景，覆盖 weapp-vite 与
-  wevu 的能力、配置和实践要点。
+title: 这段时间 Weapp-vite 的功能更新与优化
+description: 这段时间 Weapp-vite 的功能更新与优化，聚焦 blog / release1_7 相关场景，覆盖 Weapp-vite 与
+  Wevu 的能力、配置和实践要点。
 keywords:
-  - weapp-vite
+  - Weapp-vite
   - 分包
   - blog
   - 发布日志

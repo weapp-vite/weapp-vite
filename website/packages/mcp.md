@@ -2,7 +2,7 @@
 title: "@weapp-vite/mcp"
 description: "@weapp-vite/mcp 是一个 MCP 示例服务包，用于展示如何基于 MCP SDK 注册工具并通过 stdio 传输响应调用。"
 keywords:
-  - weapp-vite
+  - Weapp-vite
   - packages
   - mcp
   - "@weapp-vite/mcp"

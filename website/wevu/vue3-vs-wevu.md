@@ -1,9 +1,9 @@
 ---
-title: wevu vs Vue 3：核心差异与小程序适配
-description: wevu vs Vue 3：核心差异与小程序适配，聚焦 wevu / vue3-vs-wevu 相关场景，覆盖 weapp-vite
-  与 wevu 的能力、配置和实践要点。
+title: Wevu vs Vue 3：核心差异与小程序适配
+description: Wevu vs Vue 3：核心差异与小程序适配，聚焦 Wevu / vue3-vs-wevu 相关场景，覆盖 Weapp-vite
+  与 Wevu 的能力、配置和实践要点。
 keywords:
-  - wevu
+  - Wevu
   - 微信小程序
   - api
   - Vue 3
@@ -13,9 +13,9 @@ keywords:
   - 聚焦
 ---
 
-# wevu vs Vue 3：核心差异与小程序适配
+# Wevu vs Vue 3：核心差异与小程序适配
 
-> 深入对比 wevu 与 Vue 3 的架构差异，以及 wevu 如何适配微信小程序
+> 深入对比 Wevu 与 Vue 3 的架构差异，以及 Wevu 如何适配微信小程序
 
 ## 目录
 
@@ -64,7 +64,7 @@ keywords:
         └─────────────────────────┘
 ```
 
-#### wevu 架构
+#### Wevu 架构
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
@@ -106,7 +106,7 @@ keywords:
 
 ### 关键差异表
 
-| 层级           | Vue 3               | wevu                | 差异说明    |
+| 层级           | Vue 3               | Wevu                | 差异说明    |
 | -------------- | ------------------- | ------------------- | ----------- |
 | **响应式系统** | Proxy + effect      | Proxy + effect      | 相同        |
 | **调度器**     | queueJob + nextTick | queueJob + nextTick | 相同        |
@@ -137,7 +137,7 @@ class RefImpl<T> {
 }
 ```
 
-结论：wevu 直接复用了 Vue 3 的响应式系统设计。
+结论：Wevu 直接复用了 Vue 3 的响应式系统设计。
 
 #### 2. 调度器（99% 相同）
 
@@ -155,7 +155,7 @@ export function queueJob(job: Job) {
 }
 ```
 
-**唯一区别**：Vue 3 的 job 主要是执行 Virtual DOM patch，wevu 的 job 是执行 diff + setData。
+**唯一区别**：Vue 3 的 job 主要是执行 Virtual DOM patch，Wevu 的 job 是执行 diff + setData。
 
 ### 不同的部分
 
@@ -182,7 +182,7 @@ function patch(n1, n2) {
 }
 ```
 
-**wevu 的渲染流程：**
+**Wevu 的渲染流程：**
 
 ```typescript
 // 文件：packages/wevu/src/runtime/app.ts
@@ -201,7 +201,7 @@ function job() {
 
 **关键差异：**
 
-| 特性          | Vue 3            | wevu             |
+| 特性          | Vue 3            | Wevu             |
 | ------------- | ---------------- | ---------------- |
 | **数据结构**  | Virtual DOM Tree | Plain JS Objects |
 | **Diff 算法** | 树形结构 Diff    | 深度对象 Diff    |
@@ -229,7 +229,7 @@ el.setAttribute(key, value)
 el.addEventListener(key, handler)
 ```
 
-**wevu 的 setData 操作：**
+**Wevu 的 setData 操作：**
 
 ```typescript
 // wevu 通过小程序 setData 更新
@@ -584,7 +584,7 @@ Page({
 })
 ```
 
-**wevu 的适配方案：**
+**Wevu 的适配方案：**
 
 ```typescript
 // 文件：packages/wevu/src/runtime/bindModel.ts
@@ -822,7 +822,7 @@ Page({
 })
 ```
 
-### wevu 的 bindModel
+### Wevu 的 bindModel
 
 ```typescript
 // 文件：packages/wevu/src/runtime/bindModel.ts
@@ -911,7 +911,7 @@ DOM 操作:
 浏览器渲染引擎更新 DOM
 ```
 
-### wevu 的渲染流程
+### Wevu 的渲染流程
 
 ```text
 用户代码: state.count++
@@ -947,7 +947,7 @@ Diff 算法:
 
 ### 核心差异
 
-| 维度           | Vue 3               | wevu                | 是否相同 |
+| 维度           | Vue 3               | Wevu                | 是否相同 |
 | -------------- | ------------------- | ------------------- | -------- |
 | **响应式系统** | Proxy + effect      | Proxy + effect      | 相同     |
 | **调度器**     | queueJob + nextTick | queueJob + nextTick | 基本相同 |
@@ -964,7 +964,7 @@ Diff 算法:
 3. **Diff 算法 (diff.ts)**：生成小程序兼容的 setData 路径
 4. **双向绑定 (bindModel.ts)**：解析小程序事件，适配 v-model
 
-### 为什么 wevu 更轻量？
+### 为什么 Wevu 更轻量？
 
 ```text
 Vue 3 核心代码量：
@@ -987,28 +987,28 @@ Total: ~8,600 行
 
 ### 适配策略
 
-| 需求           | Vue 3       | wevu        | 适配方式                 |
+| 需求           | Vue 3       | Wevu        | 适配方式                 |
 | -------------- | ----------- | ----------- | ------------------------ |
 | **数据响应式** | Proxy       | Proxy       | 直接复用                 |
 | **批量更新**   | nextTick    | nextTick    | 直接复用                 |
 | **视图更新**   | DOM API     | setData     | Adapter 桥接             |
 | **事件处理**   | DOM Events  | Mini Events | Parser 解析              |
 | **生命周期**   | Web Hooks   | MP Hooks    | 映射转换                 |
-| **模板编译**   | VNode → DOM | Vue → WXML  | 编译器处理（weapp-vite） |
+| **模板编译**   | VNode → DOM | Vue → WXML  | 编译器处理（Weapp-vite） |
 
 ---
 
 ## 参考源码
 
-- **wevu 响应式**: `packages/wevu/src/reactivity/`
-- **wevu 调度器**: `packages/wevu/src/scheduler.ts`
-- **wevu 运行时**: `packages/wevu/src/runtime/app.ts`
+- **Wevu 响应式**: `packages/wevu/src/reactivity/`
+- **Wevu 调度器**: `packages/wevu/src/scheduler.ts`
+- **Wevu 运行时**: `packages/wevu/src/runtime/app.ts`
 - **小程序注册**: `packages/wevu/src/runtime/register.ts`
 - **Diff 算法**: `packages/wevu/src/runtime/diff.ts`
 - **双向绑定**: `packages/wevu/src/runtime/bindModel.ts`
 
 ## 相关阅读
 
-- [wevu 工作原理](https://github.com/weapp-vite/weapp-vite/blob/main/packages/wevu/ARCHITECTURE.md)
+- [Wevu 工作原理](https://github.com/weapp-vite/weapp-vite/blob/main/packages/wevu/ARCHITECTURE.md)
 - [Vue 3 兼容性文档](./vue3-compat)
 - [小程序 setData 优化](https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips.html)

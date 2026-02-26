@@ -1,8 +1,8 @@
 ---
-title: wevu 的 Vue 3 兼容性说明
-description: wevu 是一个面向小程序（以微信小程序为主）的 Vue 3 风格运行时：尽量提供熟悉的 Vue 3 API 形态，同时针对小程序运行环境进行适配与约束。
+title: Wevu 的 Vue 3 兼容性说明
+description: Wevu 是一个面向小程序（以微信小程序为主）的 Vue 3 风格运行时：尽量提供熟悉的 Vue 3 API 形态，同时针对小程序运行环境进行适配与约束。
 keywords:
-  - wevu
+  - Wevu
   - 微信小程序
   - 迁移指南
   - api
@@ -12,7 +12,7 @@ keywords:
   - vue
 ---
 
-# wevu 的 Vue 3 兼容性说明
+# Wevu 的 Vue 3 兼容性说明
 
 `wevu` 是一个面向小程序（以微信小程序为主）的 Vue 3 风格运行时：尽量提供熟悉的 Vue 3 API 形态，同时针对小程序运行环境进行适配与约束。
 
@@ -336,12 +336,12 @@ defineComponent({
 import type { ComponentPublicInstance, Ref, SetupContext } from 'wevu'
 ```
 
-## 从 Vue 3 迁移到 wevu（迁移要点）
+## 从 Vue 3 迁移到 Wevu（迁移要点）
 
 1. 替换导入：把 `from 'vue'` 改为 `from 'wevu'`
 2. 生命周期映射：大多数钩子无需改动，但请注意 `onBeforeMount/onBeforeUnmount` 在小程序里会立即执行
 3. 模板差异：使用 WXML（而非 HTML）；双向绑定建议使用 `bindModel()` 生成事件/属性绑定对象
-4. 组件注册：`wevu` 组件基于小程序 `Component()`；SFC 场景一般由构建侧（如 weapp-vite）产出注册代码
+4. 组件注册：`wevu` 组件基于小程序 `Component()`；SFC 场景一般由构建侧（如 Weapp-vite）产出注册代码
 
 ## License
 

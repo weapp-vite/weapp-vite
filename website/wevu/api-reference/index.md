@@ -1,16 +1,16 @@
 ---
 title: API 参考
-description: wevu API 参考首页。按 Vue API 风格提供分组导航，先定位能力域，再跳转到对应 API 分页。
+description: Wevu API 参考首页。按 Vue API 风格提供分组导航，先定位能力域，再跳转到对应 API 分页。
 sidebar: false
 keywords:
-  - wevu
+  - Wevu
   - api
   - reference
   - vue-style
   - 指南
 ---
 
-# wevu API 参考
+# Wevu API 参考
 
 本页参考了 Vue 官方 API 导航方式：先按能力域分组，再进入具体条目。
 
@@ -57,7 +57,7 @@ keywords:
 
 ## 建议阅读路径
 
-1. 先读 `Core`，建立 wevu 的组件与宏心智。
+1. 先读 `Core`，建立 Wevu 的组件与宏心智。
 2. 再读 `Reactivity` + `Lifecycle`，形成页面更新与生命周期调度模型。
 3. 业务接入 `Setup Context` + `Store`。
 4. 需要排障或优化时再进入 `Runtime Bridge` 与 `Type Reference`。

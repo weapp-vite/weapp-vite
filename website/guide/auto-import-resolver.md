@@ -44,11 +44,11 @@ interface ResolverObject {
 ```
 
 > [!TIP]
-> weapp-vite 内置的 `VantResolver` / `TDesignResolver` / `WeuiResolver` 也是对象 resolver。自定义 resolver 推荐优先用对象写法：结构更清晰，也更方便提供 `components` / metadata 信息。
+> Weapp-vite 内置的 `VantResolver` / `TDesignResolver` / `WeuiResolver` 也是对象 resolver。自定义 resolver 推荐优先用对象写法：结构更清晰，也更方便提供 `components` / metadata 信息。
 
 - `componentName`: 模板中的标签名（如 `van-button`、`t-tabs`、`HelloWorld`）
 - `baseName`: 当前处理的文件名（用于进阶场景：按页面/组件上下文做差异化映射）
-- 返回值：告诉 weapp-vite 把该标签注册到哪个 `from`
+- 返回值：告诉 Weapp-vite 把该标签注册到哪个 `from`
 
 ## 推荐：对象写法（静态映射）
 
@@ -75,7 +75,7 @@ export default defineConfig({
 ```
 
 > [!TIP]
-> 这个实现已经足够让 weapp-vite 在构建时自动补全 `usingComponents`，并且便于参与 `auto-import-components.json` / `typed-components.d.ts` 等产物生成。
+> 这个实现已经足够让 Weapp-vite 在构建时自动补全 `usingComponents`，并且便于参与 `auto-import-components.json` / `typed-components.d.ts` 等产物生成。
 
 ## 建议增强 1：暴露 `resolver.components`（用于“全量生成”）
 
@@ -102,12 +102,12 @@ export const MyUiResolver: Resolver = {
 }
 ```
 
-- `resolver.components` 会被 weapp-vite 用来收集“该 resolver 支持哪些组件”。
+- `resolver.components` 会被 Weapp-vite 用来收集“该 resolver 支持哪些组件”。
 - 如果你只写了动态解析逻辑但没有 `components` 映射，通常仍能自动注册 `usingComponents`，但“全量类型/补全文件”可能无法覆盖到这些组件。
 
 ## 建议增强 2：支持第三方组件库 props 类型解析
 
-如果你的 `from` 指向 npm 包（例如 `@vant/weapp/button`），并且希望 weapp-vite 在生成 `typed-components.d.ts` 时能从第三方库读取 `.d.ts` / `.js` 里的 props 信息，可以实现：
+如果你的 `from` 指向 npm 包（例如 `@vant/weapp/button`），并且希望 Weapp-vite 在生成 `typed-components.d.ts` 时能从第三方库读取 `.d.ts` / `.js` 里的 props 信息，可以实现：
 
 ```ts
 resolver.resolveExternalMetadataCandidates = (from) => {
@@ -154,7 +154,7 @@ const resolver: Resolver = {
 ```
 
 > [!NOTE]
-> `resolveExternalMetadataCandidates` 的目标不是“让组件能被解析”，而是“告诉 weapp-vite 到第三方依赖包里去哪里找 metadata 文件”，用于类型与补全产物。
+> `resolveExternalMetadataCandidates` 的目标不是“让组件能被解析”，而是“告诉 Weapp-vite 到第三方依赖包里去哪里找 metadata 文件”，用于类型与补全产物。
 
 ## 进阶：函数写法（按需动态解析）
 

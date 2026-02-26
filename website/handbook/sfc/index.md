@@ -1,6 +1,6 @@
 ---
 title: SFC 总览：映射到小程序
-description: 在本教程里，**wuve** 指 weapp-vite 内置的 Vue SFC 编译链路：
+description: 在本教程里，**wuve** 指 Weapp-vite 内置的 Vue SFC 编译链路：
 keywords:
   - 微信小程序
   - handbook
@@ -9,7 +9,7 @@ keywords:
   - 在本教程里
   - wuve
   - 指
-  - weapp-vite
+  - Weapp-vite
 ---
 
 # SFC 总览：映射到小程序
@@ -21,7 +21,7 @@ keywords:
 
 ## wuve（本文用法）到底是什么
 
-在本教程里，**wuve** 指 weapp-vite 内置的 Vue SFC 编译链路：
+在本教程里，**wuve** 指 Weapp-vite 内置的 Vue SFC 编译链路：
 
 - 你写：`<template>` / `<script>` / `<style>`（推荐 `<script setup lang="ts">`）
 - 构建产物：小程序可识别的 WXML/WXSS/JS/JSON
@@ -32,7 +32,7 @@ keywords:
 
 1. 模板最终落到 WXML：优先使用 `<view>`、`<text>`、`@tap` 等小程序语义。
 2. 组件优先在脚本中 `import .vue`：这样类型提示与 IDE 集成更好。
-3. 运行时 API 从 `wevu` 导入：响应式与 hooks 以 wevu 为准。
+3. 运行时 API 从 `wevu` 导入：响应式与 hooks 以 Wevu 为准。
 
 ## 下一章
 

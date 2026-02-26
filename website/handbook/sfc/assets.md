@@ -1,6 +1,6 @@
 ---
 title: 资源：图片/字体/路径
-description: 资源：图片/字体/路径，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+description: 资源：图片/字体/路径，聚焦 handbook / sfc 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
 keywords:
   - handbook
   - sfc

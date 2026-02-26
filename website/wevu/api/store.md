@@ -1,8 +1,8 @@
 ---
 title: Store API
-description: wevu 的 store 设计接近 Pinia：defineStore 定义，createStore 创建管理器，storeToRefs 安全解构。
+description: Wevu 的 store 设计接近 Pinia：defineStore 定义，createStore 创建管理器，storeToRefs 安全解构。
 keywords:
-  - wevu
+  - Wevu
   - Vue SFC
   - 调试
   - api

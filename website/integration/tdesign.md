@@ -1,6 +1,6 @@
 ---
 title: tdesign-miniprogram 集成
-description: 在 weapp-vite 项目里接入 tdesign-miniprogram 的整体思路很简单：
+description: 在 Weapp-vite 项目里接入 tdesign-miniprogram 的整体思路很简单：
 keywords:
   - 微信小程序
   - 配置
@@ -18,7 +18,7 @@ keywords:
 
 - 安装依赖
 - 按官方文档完成基础配置
-- （可选）开启 weapp-vite 的自动导入组件，让你不用手写 `usingComponents`
+- （可选）开启 Weapp-vite 的自动导入组件，让你不用手写 `usingComponents`
 
 官方快速开始：<https://tdesign.tencent.com/miniprogram/getting-started>
 
@@ -74,7 +74,7 @@ WXML：
 
 ## 自动导入组件
 
-如果你不想手写 `usingComponents`，可以开启 weapp-vite 的自动导入组件：之后你在 WXML 里写 `<t-button />` 这类标签，构建器会自动补齐注册信息。
+如果你不想手写 `usingComponents`，可以开启 Weapp-vite 的自动导入组件：之后你在 WXML 里写 `<t-button />` 这类标签，构建器会自动补齐注册信息。
 
 ::: code-group
 
@@ -94,4 +94,4 @@ export default defineConfig({
 :::
 
 > [!TIP]
-> 旧版本 weapp-vite 可能仍支持 `weapp.enhance.autoImportComponents`，但该写法已废弃，建议使用上面的顶层 `weapp.autoImportComponents`。
+> 旧版本 Weapp-vite 可能仍支持 `weapp.enhance.autoImportComponents`，但该写法已废弃，建议使用上面的顶层 `weapp.autoImportComponents`。
