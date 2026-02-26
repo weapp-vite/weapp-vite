@@ -84,12 +84,16 @@ function normalizeEntries(entries: any[]) {
     return normalizedEntry
   })
 
-  // Some IDE/runtime combinations may merge adjacent scroll callbacks.
-  // Keep only the latest entry in a continuous onPageScroll segment.
+  // Some IDE/runtime combinations may merge adjacent callbacks or emit
+  // routeDone more than once in the same transition.
+  // Keep only the latest entry in a continuous segment.
   const compacted: any[] = []
   for (const entry of normalized) {
     const prev = compacted[compacted.length - 1]
-    if (entry.hook === 'onPageScroll' && prev?.hook === 'onPageScroll') {
+    if (
+      (entry.hook === 'onPageScroll' && prev?.hook === 'onPageScroll')
+      || (entry.hook === 'onRouteDone' && prev?.hook === 'onRouteDone')
+    ) {
       compacted[compacted.length - 1] = entry
       continue
     }

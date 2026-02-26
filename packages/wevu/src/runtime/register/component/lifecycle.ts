@@ -209,9 +209,6 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       if (typeof userOnShow === 'function') {
         return userOnShow.apply(this, args)
       }
-      if (isPage && enableOnRouteDone && (this as any).__wevuReadyCalled && !(this as any).__wevuRouteDoneCalled) {
-        return pageLifecycleHooks.onRouteDone?.call(this)
-      }
     },
     onHide(this: InternalRuntimeState, ...args: any[]) {
       if (isPage && currentPageInstance === this) {
@@ -239,9 +236,6 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
           callHookList(this, 'onReady', args)
           if (typeof userOnReady === 'function') {
             userOnReady.apply(this, args)
-          }
-          if (isPage && enableOnRouteDone && !(this as any).__wevuRouteDoneCalled) {
-            pageLifecycleHooks.onRouteDone?.call(this)
           }
         })
         return
@@ -287,6 +281,13 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
   }
   if (enableOnRouteDone) {
     pageLifecycleHooks.onRouteDone = function onRouteDone(this: InternalRuntimeState, ...args: any[]) {
+      if ((this as any).__wevuRouteDoneInTick) {
+        return
+      }
+      ;(this as any).__wevuRouteDoneInTick = true
+      Promise.resolve().then(() => {
+        ;(this as any).__wevuRouteDoneInTick = false
+      })
       ;(this as any).__wevuRouteDoneCalled = true
       callHookList(this, 'onRouteDone', args)
       if (!hasHook(this, 'onRouteDone')) {
