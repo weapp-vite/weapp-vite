@@ -46,7 +46,7 @@ const resources = computed(() => [
 const installPresets = [
   {
     title: '推荐（最短）',
-    code: 'npx skills add weapp-vite/weapp-vite',
+    code: 'npx skills add sonofmagic/skills',
   },
   {
     title: '安装后可直接使用',
@@ -101,7 +101,7 @@ const installPresets = [
         <article>
           <span>03</span>
           <h3>挂载专用 Skills</h3>
-          <p>通过 <code>npx skills add</code> 安装技能，让 AI 走统一工程流程回答。</p>
+          <p>通过 <code>npx skills add sonofmagic/skills</code> 安装技能，让 AI 走统一工程流程回答。</p>
         </article>
       </section>
 
