@@ -72,7 +72,13 @@ This repo includes installable user-facing skills in `./skills`:
 - `wevu-best-practices`
 - Project-specific Claude skills can also live in `./.claude/skills` (for example: `playwright-cli`).
 
-To make them directly available in local CLI environments:
+Recommended remote install source for all public skills:
+
+```bash
+npx skills add sonofmagic/skills
+```
+
+To make this repository's latest local skills directly available in local CLI environments:
 
 ```bash
 pnpm skills:link
