@@ -56,9 +56,10 @@ import type {
   WevuPlugin,
 } from 'wevu'
 import type * as wevu from 'wevu'
-import type * as CompilerEntry from 'wevu/compiler'
-import type { JSX as WevuJsx } from 'wevu/jsx-runtime'
 import { expectType } from 'tsd'
+
+type CompilerEntry = typeof import('wevu/compiler')
+type WevuJsxRuntime = typeof import('wevu/jsx-runtime')
 
 type RuntimeApiName
   = | 'addMutationRecorder'
@@ -183,8 +184,17 @@ expectType<never>({} as MissingMacroApi)
 declare const compilerEntry: CompilerEntry
 expectType<CompilerEntry>(compilerEntry)
 
-declare const jsxTypes: WevuJsx
-expectType<WevuJsx>(jsxTypes)
+declare const jsxRuntimeEntry: WevuJsxRuntime
+expectType<WevuJsxRuntime>(jsxRuntimeEntry)
+
+interface PublicApiPropsOptions extends ComponentPropsOptions {
+  label: StringConstructor
+  count: { type: NumberConstructor, value: 0 }
+}
+
+interface PublicApiNativePropsOptions extends NativePropsOptions {
+  tone: { type: NativePropType<'neutral' | 'success'>, value: 'neutral' }
+}
 
 type _TypeCoverage = [
   AllowedComponentProps,
@@ -194,17 +204,17 @@ type _TypeCoverage = [
   ComputedDefinitions,
   CreateAppOptions<any, any, any>,
   DefineAppOptions<any, any, any>,
-  DefineComponent<any, any, any, any, any, any, any, any>,
-  DefineComponentOptions<any, any, any, any>,
+  DefineComponent<PublicApiPropsOptions>,
+  DefineComponentOptions<PublicApiPropsOptions, any, any, any>,
   ExtractComputed<any>,
-  ExtractDefaultPropTypes<any>,
+  ExtractDefaultPropTypes<PublicApiPropsOptions>,
   ExtractMethods<any>,
-  ExtractPropTypes<any>,
-  ExtractPublicPropTypes<any>,
-  InferPropType<any>,
-  InferNativePropType<any>,
-  InferNativeProps<any>,
-  InferProps<any>,
+  ExtractPropTypes<PublicApiPropsOptions>,
+  ExtractPublicPropTypes<PublicApiPropsOptions>,
+  InferPropType<StringConstructor>,
+  InferNativePropType<PublicApiNativePropsOptions['tone']>,
+  InferNativeProps<PublicApiNativePropsOptions>,
+  InferProps<PublicApiPropsOptions>,
   InternalRuntimeState,
   InternalRuntimeStateFields,
   MethodDefinitions,
@@ -236,7 +246,7 @@ type _TypeCoverage = [
   SetDataSnapshotOptions,
   SetupContext<any, any, any>,
   SetupContextNativeInstance,
-  SetupFunction<any, any, any>,
+  SetupFunction<any, any, any, any>,
   ShallowUnwrapRef<any>,
   TriggerEventOptions,
   VNode,
