@@ -5,6 +5,7 @@ import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
+import { createSeoHead, transformPageDataForSeo } from './seo'
 
 function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Sidebar | undefined {
   const cleanItems = (items?: DefaultTheme.SidebarItem[]): DefaultTheme.SidebarItem[] =>
@@ -83,6 +84,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
   { text: '配置和 API 参考', link: 'config' },
   { text: '常见问题', link: '/troubleshoot/index' },
   { text: '调试与贡献', link: '/guide/debug' },
+  { text: 'SEO/GEO 质量门禁', link: '/guide/seo-governance' },
   { text: '模块化风格', link: '/guide/module' },
   {
     text: '深入 Weapp-vite',
@@ -473,25 +475,12 @@ export default defineConfig({
       md.use(copyOrDownloadAsMarkdownButtons)
     },
   },
+  transformHead: ({ pageData }) => createSeoHead(pageData),
+  transformPageData(pageData) {
+    transformPageDataForSeo(pageData)
+  },
   head: [
     ['meta', { name: 'theme-color', content: '#95ec69' }],
-    ['meta', { property: 'og:url', content: 'https://vite.icebreaker.top/' }],
-    ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'Weapp-vite - 把现代化的开发模式带入小程序开发吧!' }],
-    [
-      'meta',
-      {
-        property: 'og:description',
-        content: 'Weapp-vite - 把现代化的开发模式带入小程序开发吧!',
-      },
-    ],
-    [
-      'meta',
-      {
-        property: 'og:image',
-        content: 'https://vite.icebreaker.top/logo.png',
-      },
-    ],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
     ['link', { rel: 'icon', type: 'image/png', href: '/logo.png' }],
     // google analytics start

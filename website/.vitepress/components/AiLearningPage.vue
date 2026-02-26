@@ -24,6 +24,18 @@ const resources = computed(() => [
     badge: 'Full Corpus',
   },
   {
+    title: '/llms-index.json',
+    desc: '结构化索引，包含标题、摘要、关键词、章节与来源路径。',
+    href: '/llms-index.json',
+    badge: 'Structured Index',
+  },
+  {
+    title: '/seo-quality-report.json',
+    desc: 'SEO/GEO 质量报告，可用于持续治理和回归检查。',
+    href: '/seo-quality-report.json',
+    badge: 'Quality Report',
+  },
+  {
     title: props.altPath,
     desc: `备用入口 ${props.altPath}，可与当前地址互跳。`,
     href: props.altPath,
@@ -62,6 +74,7 @@ const installPresets = [
         <div class="hero-actions">
           <a href="/llms.txt">打开 /llms.txt</a>
           <a href="/llms-full.txt">打开 /llms-full.txt</a>
+          <a href="/llms-index.json">打开 /llms-index.json</a>
           <a :href="props.altPath">访问备用入口 {{ props.altPath }}</a>
         </div>
       </header>
@@ -221,7 +234,7 @@ const installPresets = [
 
 .resource-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 18px;
 }
