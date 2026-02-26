@@ -158,6 +158,17 @@ html.dark {
     div[class*=' language-'] {
       outline-color: color.change($p1, $alpha: 0.22);
     }
+    div[class^='language-'] > .lang,
+    div[class*=' language-'] > .lang,
+    div[class^='language-'] > .vp-code-lang,
+    div[class*=' language-'] > .vp-code-lang {
+      color: color.change(#d1fae5, $alpha: 0.95);
+      background: color.change(#065f46, $alpha: 0.84);
+      border-color: color.change(#6ee7b7, $alpha: 0.52);
+      box-shadow:
+        0 0 0 1px color.change(#fff, $alpha: 0.08) inset,
+        0 8px 16px color.change(#000, $alpha: 0.3);
+    }
     p code,
     li code {
       background: color.change($p2, $alpha: 0.16);

@@ -180,18 +180,23 @@
   div[class^='language-'] > .vp-code-lang,
   div[class*=' language-'] > .vp-code-lang {
     position: absolute;
-    top: 8px;
-    right: 10px;
+    top: 9px;
+    right: 12px;
     z-index: 2;
-    font-size: 12px;
-    letter-spacing: 0.3px;
-    padding: 2px 8px;
+    padding: 3px 9px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    color: color.change(#0f172a, $alpha: 0.95);
+    text-transform: lowercase;
+    letter-spacing: 0.04em;
+    background: color.change(#ecfdf5, $alpha: 0.96);
+    border: 1px solid color.change($p2, $alpha: 0.32);
     border-radius: 999px;
-    color: #0a0f0a;
-    background: linear-gradient(135deg, #{$p1}, #{$p2});
+    pointer-events: none;
     box-shadow:
-      0 0 0 1px color.change(#fff, $alpha: 0.4) inset,
-      0 6px 14px color.change($p2, $alpha: 0.35);
+      0 0 0 1px color.change(#fff, $alpha: 0.45) inset,
+      0 6px 14px color.change($p2, $alpha: 0.2);
   }
   p code,
   li code {
