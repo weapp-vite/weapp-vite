@@ -484,8 +484,8 @@ export function registerComponent<D extends object, C extends ComputedDefinition
         }
       },
       routeDone: function routeDone(this: InternalRuntimeState, ...args: any[]) {
-        if (isPage && typeof (pageLifecycleHooks as any).onRouteDone === 'function') {
-          ;(pageLifecycleHooks as any).onRouteDone.call(this, ...args)
+        if (isPage) {
+          // 页面场景下优先由顶层 onRouteDone 桥接，避免与 pageLifetimes.routeDone 双重分发。
           if (typeof (userPageLifetimes as any).routeDone === 'function') {
             ;(userPageLifetimes as any).routeDone.apply(this, args)
           }

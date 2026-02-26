@@ -33,7 +33,41 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       <view class="feature-nav-item-title">store</view>
       <view class="feature-nav-item-summary">展示 setup/options store 与 patch/reset/订阅能力</view>
     </navigator>
+    <navigator class="feature-nav-item" url="/pages/native-uses-vue/index" role="link">
+      <view class="feature-nav-item-title">native -&gt; vue</view>
+      <view class="feature-nav-item-summary">展示原生组件通过 usingComponents 引入 Vue 组件</view>
+    </navigator>
   </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/native-uses-vue/index 1`] = `
+"<view class="native-interop-page">
+  <view class="native-interop-page__title">原生组件引入 Vue 组件</view>
+  <view class="native-interop-page__subtitle">
+    验证 native usingComponents -&amp;gt; Vue SFC 链路
+  </view>
+  <view class="native-interop-page__toolbar">
+    <view class="native-interop-page__btn" id="native-interop-toggle">mode: basic</view>
+    <view class="native-interop-page__btn" id="native-interop-count">count: 1</view>
+  </view>
+  <nativeusesvue is="native/native-uses-vue/index">
+    <view class="native-uses-vue vue-index--native-uses-vue">
+      <native-card is="components/native-card/index">
+        <view class="native-card index--native-card">
+          <view class="native-card__head index--native-card__head">
+            <text class="native-card__title index--native-card__title"></text>
+            <text class="native-card__badge index--native-card__badge"></text>
+          </view>
+          <text class="native-card__subtitle index--native-card__subtitle"></text>
+          <view class="native-card__body index--native-card__body">
+            <text class="native-uses-vue__note vue-index--native-uses-vue__note"></text>
+          </view>
+        </view>
+      </native-card>
+    </view>
+  </nativeusesvue>
 </view>
 "
 `;
