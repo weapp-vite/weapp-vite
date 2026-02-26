@@ -23,7 +23,7 @@
     "open": "weapp-vite open"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^5.0.1",
+    "miniprogram-api-typings": "^5.1.1",
     "typescript": "^5.9.3",
     "weapp-tailwindcss": "^4.10.3",
     "weapp-vite": "workspace:*",
