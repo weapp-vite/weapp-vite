@@ -8,20 +8,23 @@ title: Type Reference
 
 ## 1. 高频类型速查
 
-| 类型                     | 链接                                                                                                   | 说明                                             |
-| ------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
-| `SetupContext`           | [/wevu/api/index/interfaces/SetupContext](/wevu/api/index/interfaces/SetupContext)                     | `setup(props, ctx)` 的上下文类型。               |
-| `RuntimeInstance`        | [/wevu/api/index/interfaces/RuntimeInstance](/wevu/api/index/interfaces/RuntimeInstance)               | 运行时实例，含 snapshot/watch/bindModel 等能力。 |
-| `ComponentDefinition`    | [/wevu/api/index/interfaces/ComponentDefinition](/wevu/api/index/interfaces/ComponentDefinition)       | 小程序组件定义结构。                             |
-| `DefineComponentOptions` | [/wevu/api/index/interfaces/DefineComponentOptions](/wevu/api/index/interfaces/DefineComponentOptions) | `defineComponent` 参数类型。                     |
-| `CreateAppOptions`       | [/wevu/api/index/interfaces/CreateAppOptions](/wevu/api/index/interfaces/CreateAppOptions)             | `createApp` 参数类型。                           |
-| `DefineStoreOptions`     | [/wevu/api/index/interfaces/DefineStoreOptions](/wevu/api/index/interfaces/DefineStoreOptions)         | `defineStore` 参数类型。                         |
-| `WatchOptions`           | [/wevu/api/index/interfaces/WatchOptions](/wevu/api/index/interfaces/WatchOptions)                     | `watch/watchEffect` 配置。                       |
-| `ModelBinding`           | [/wevu/api/index/interfaces/ModelBinding](/wevu/api/index/interfaces/ModelBinding)                     | `bindModel/useModel` 绑定结果。                  |
-| `TriggerEventOptions`    | [/wevu/api/index/type-aliases/TriggerEventOptions](/wevu/api/index/type-aliases/TriggerEventOptions)   | `emit/triggerEvent` 选项类型。                   |
-| `WevuDefaults`           | [/wevu/api/index/interfaces/WevuDefaults](/wevu/api/index/interfaces/WevuDefaults)                     | `setWevuDefaults` 配置结构。                     |
-| `MiniProgramInstance`    | [/wevu/api/index/type-aliases/MiniProgramInstance](/wevu/api/index/type-aliases/MiniProgramInstance)   | setup 中原生实例类型。                           |
-| `WevuPlugin`             | [/wevu/api/index/type-aliases/WevuPlugin](/wevu/api/index/type-aliases/WevuPlugin)                     | 插件函数类型。                                   |
+| 类型                     | 链接                                                                                                   | 说明                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `SetupContext`           | [/wevu/api/index/interfaces/SetupContext](/wevu/api/index/interfaces/SetupContext)                     | `setup(props, ctx)` 的上下文类型。                   |
+| `RuntimeInstance`        | [/wevu/api/index/interfaces/RuntimeInstance](/wevu/api/index/interfaces/RuntimeInstance)               | 运行时实例，含 snapshot/watch/bindModel 等能力。     |
+| `ComponentDefinition`    | [/wevu/api/index/interfaces/ComponentDefinition](/wevu/api/index/interfaces/ComponentDefinition)       | 小程序组件定义结构。                                 |
+| `DefineComponentOptions` | [/wevu/api/index/interfaces/DefineComponentOptions](/wevu/api/index/interfaces/DefineComponentOptions) | `defineComponent` 参数类型。                         |
+| `CreateAppOptions`       | [/wevu/api/index/interfaces/CreateAppOptions](/wevu/api/index/interfaces/CreateAppOptions)             | `createApp` 参数类型。                               |
+| `DefineStoreOptions`     | [/wevu/api/index/interfaces/DefineStoreOptions](/wevu/api/index/interfaces/DefineStoreOptions)         | `defineStore` 参数类型。                             |
+| `WatchOptions`           | [/wevu/api/index/interfaces/WatchOptions](/wevu/api/index/interfaces/WatchOptions)                     | `watch/watchEffect` 配置。                           |
+| `ModelBinding`           | [/wevu/api/index/interfaces/ModelBinding](/wevu/api/index/interfaces/ModelBinding)                     | `bindModel/useModel` 绑定结果。                      |
+| `NativeComponent`        | [/wevu/api/index/type-aliases/NativeComponent](/wevu/api/index/type-aliases/NativeComponent)           | 原生组件导入时的轻量类型包装。                       |
+| `InferNativeProps`       | [/wevu/api/index/type-aliases/InferNativeProps](/wevu/api/index/type-aliases/InferNativeProps)         | 从原生 `properties` 自动推导 props。                 |
+| `NativePropType`         | [/wevu/api/index/type-aliases/NativePropType](/wevu/api/index/type-aliases/NativePropType)             | 原生 `properties.type` 的泛型提示（类 `PropType`）。 |
+| `TriggerEventOptions`    | [/wevu/api/index/type-aliases/TriggerEventOptions](/wevu/api/index/type-aliases/TriggerEventOptions)   | `emit/triggerEvent` 选项类型。                       |
+| `WevuDefaults`           | [/wevu/api/index/interfaces/WevuDefaults](/wevu/api/index/interfaces/WevuDefaults)                     | `setWevuDefaults` 配置结构。                         |
+| `MiniProgramInstance`    | [/wevu/api/index/type-aliases/MiniProgramInstance](/wevu/api/index/type-aliases/MiniProgramInstance)   | setup 中原生实例类型。                               |
+| `WevuPlugin`             | [/wevu/api/index/type-aliases/WevuPlugin](/wevu/api/index/type-aliases/WevuPlugin)                     | 插件函数类型。                                       |
 
 ## 2. 接口（Interfaces）全量索引
 
@@ -67,27 +70,32 @@ title: Type Reference
 
 ### 3.1 组件、Props、宏相关
 
-| 类型别名                                                                          | 说明                     |
-| --------------------------------------------------------------------------------- | ------------------------ |
-| [`AllowedComponentProps`](/wevu/api/index/type-aliases/AllowedComponentProps)     | 允许透传的组件属性       |
-| [`ComponentCustomProps`](/wevu/api/index/type-aliases/ComponentCustomProps)       | 自定义组件属性扩展       |
-| [`ComponentOptionsMixin`](/wevu/api/index/type-aliases/ComponentOptionsMixin)     | 组件选项 mixin           |
-| [`ComponentPropsOptions`](/wevu/api/index/type-aliases/ComponentPropsOptions)     | props 选项定义           |
-| [`ComponentPublicInstance`](/wevu/api/index/type-aliases/ComponentPublicInstance) | 公共实例类型             |
-| [`DefineComponent`](/wevu/api/index/type-aliases/DefineComponent)                 | defineComponent 类型签名 |
-| [`EmitsOptions`](/wevu/api/index/type-aliases/EmitsOptions)                       | emits 配置类型           |
-| [`ExtractDefaultPropTypes`](/wevu/api/index/type-aliases/ExtractDefaultPropTypes) | 默认值推断               |
-| [`ExtractPropTypes`](/wevu/api/index/type-aliases/ExtractPropTypes)               | props 推断结果           |
-| [`ExtractPublicPropTypes`](/wevu/api/index/type-aliases/ExtractPublicPropTypes)   | 对外 props 推断          |
-| [`InferPropType`](/wevu/api/index/type-aliases/InferPropType)                     | 单个 prop 类型推断       |
-| [`InferProps`](/wevu/api/index/type-aliases/InferProps)                           | props 对象推断           |
-| [`PropConstructor`](/wevu/api/index/type-aliases/PropConstructor)                 | prop 构造器类型          |
-| [`PropType`](/wevu/api/index/type-aliases/PropType)                               | prop 类型声明            |
-| [`PublicProps`](/wevu/api/index/type-aliases/PublicProps)                         | 公共 props 合集          |
-| [`SetupFunction`](/wevu/api/index/type-aliases/SetupFunction)                     | setup 函数签名           |
-| [`TriggerEventOptions`](/wevu/api/index/type-aliases/TriggerEventOptions)         | triggerEvent 选项        |
-| [`VNode`](/wevu/api/index/type-aliases/VNode)                                     | VNode 兼容类型           |
-| [`VNodeProps`](/wevu/api/index/type-aliases/VNodeProps)                           | VNode props 兼容类型     |
+| 类型别名                                                                          | 说明                       |
+| --------------------------------------------------------------------------------- | -------------------------- |
+| [`AllowedComponentProps`](/wevu/api/index/type-aliases/AllowedComponentProps)     | 允许透传的组件属性         |
+| [`ComponentCustomProps`](/wevu/api/index/type-aliases/ComponentCustomProps)       | 自定义组件属性扩展         |
+| [`ComponentOptionsMixin`](/wevu/api/index/type-aliases/ComponentOptionsMixin)     | 组件选项 mixin             |
+| [`ComponentPropsOptions`](/wevu/api/index/type-aliases/ComponentPropsOptions)     | props 选项定义             |
+| [`ComponentPublicInstance`](/wevu/api/index/type-aliases/ComponentPublicInstance) | 公共实例类型               |
+| [`DefineComponent`](/wevu/api/index/type-aliases/DefineComponent)                 | defineComponent 类型签名   |
+| [`EmitsOptions`](/wevu/api/index/type-aliases/EmitsOptions)                       | emits 配置类型             |
+| [`ExtractDefaultPropTypes`](/wevu/api/index/type-aliases/ExtractDefaultPropTypes) | 默认值推断                 |
+| [`ExtractPropTypes`](/wevu/api/index/type-aliases/ExtractPropTypes)               | props 推断结果             |
+| [`ExtractPublicPropTypes`](/wevu/api/index/type-aliases/ExtractPublicPropTypes)   | 对外 props 推断            |
+| [`InferPropType`](/wevu/api/index/type-aliases/InferPropType)                     | 单个 prop 类型推断         |
+| [`InferProps`](/wevu/api/index/type-aliases/InferProps)                           | props 对象推断             |
+| [`InferNativePropType`](/wevu/api/index/type-aliases/InferNativePropType)         | 原生 property 单项推断     |
+| [`InferNativeProps`](/wevu/api/index/type-aliases/InferNativeProps)               | 原生 properties 对象推断   |
+| [`NativeComponent`](/wevu/api/index/type-aliases/NativeComponent)                 | 原生组件类型包装           |
+| [`NativePropType`](/wevu/api/index/type-aliases/NativePropType)                   | 原生 property type 泛型    |
+| [`NativeTypedProperty`](/wevu/api/index/type-aliases/NativeTypedProperty)         | 原生 property 进阶兜底提示 |
+| [`PropConstructor`](/wevu/api/index/type-aliases/PropConstructor)                 | prop 构造器类型            |
+| [`PropType`](/wevu/api/index/type-aliases/PropType)                               | prop 类型声明              |
+| [`PublicProps`](/wevu/api/index/type-aliases/PublicProps)                         | 公共 props 合集            |
+| [`SetupFunction`](/wevu/api/index/type-aliases/SetupFunction)                     | setup 函数签名             |
+| [`TriggerEventOptions`](/wevu/api/index/type-aliases/TriggerEventOptions)         | triggerEvent 选项          |
+| [`VNode`](/wevu/api/index/type-aliases/VNode)                                     | VNode 兼容类型             |
+| [`VNodeProps`](/wevu/api/index/type-aliases/VNodeProps)                           | VNode props 兼容类型       |
 
 ### 3.2 响应式与工具类型
 

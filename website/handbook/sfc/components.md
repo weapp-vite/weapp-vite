@@ -45,3 +45,47 @@ import RootClassExample from '../../components/issue-289/RootClassExample/index.
 - 兼容历史工程中无法快速迁移到 `import` 的模块
 
 结论：**业务 SFC 组件优先 `import`，`usingComponents` 作为补充而不是默认。**
+
+## 原生组件类型提示（`NativePropType` + `InferNativeProps`）
+
+当你在 `<script setup lang="ts">` 中直接 `import` 原生组件（`index.ts/js + wxml + wxss/scss`）时，
+推荐把 `properties` 作为唯一数据源，再用 `InferNativeProps` 自动推导 props 类型；
+`type` 字段可通过 `NativePropType<T>`（类似 Vue 的 `PropType<T>`）补充字面量联合类型。
+
+```ts
+import type { InferNativeProps, NativeComponent, NativePropType } from 'wevu'
+
+type Tone = 'neutral' | 'success' | 'danger'
+
+const nativeProperties = {
+  label: { type: String, value: '' },
+  value: { type: Number, value: 0 },
+  tone: {
+    type: String as NativePropType<Tone>,
+    value: 'neutral',
+  },
+}
+
+Component({
+  properties: nativeProperties,
+})
+
+type NativeMeterProps = InferNativeProps<typeof nativeProperties>
+
+const NativeMeter = {} as NativeComponent<NativeMeterProps>
+export default NativeMeter
+```
+
+页面中使用：
+
+```vue
+<script setup lang="ts">
+import NativeMeter from '../../native/native-meter/index'
+</script>
+
+<template>
+  <NativeMeter label="构建链能力" :value="80" tone="success" />
+</template>
+```
+
+如果遇到特别复杂的原生 `properties` 写法，仍可使用 `NativeTypedProperty<T, ...>` 作为兜底类型提示。
