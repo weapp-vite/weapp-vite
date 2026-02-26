@@ -16,7 +16,7 @@ keywords:
 
 本页先给出“高频类型速查”，然后提供 `wevu` 当前导出的接口/类型别名全量索引。
 
-## 1. 高频类型速查
+## 1. 高频类型速查 {#quick-reference}
 
 | 类型                     | 链接                     | 说明                                                 |
 | ------------------------ | ------------------------ | ---------------------------------------------------- |
@@ -36,7 +36,7 @@ keywords:
 | `MiniProgramInstance`    | `MiniProgramInstance`    | setup 中原生实例类型。                               |
 | `WevuPlugin`             | `WevuPlugin`             | 插件函数类型。                                       |
 
-## 2. 接口（Interfaces）全量索引
+## 2. 接口（Interfaces）全量索引 {#interfaces-index}
 
 | 接口                          | 领域                 |
 | ----------------------------- | -------------------- |
@@ -76,7 +76,7 @@ keywords:
 | `WritableComputedOptions`     | 可写 computed 配置   |
 | `WritableComputedRef`         | 可写 computed 引用   |
 
-## 3. 类型别名（Type Aliases）全量索引
+## 3. 类型别名（Type Aliases）全量索引 {#aliases-index}
 
 ### 3.1 组件、Props、宏相关
 
@@ -159,6 +159,6 @@ keywords:
 
 ## 5. 相关页
 
-- Core API：[/wevu/api-reference/core](/wevu/api-reference/core)
-- Reactivity API：[/wevu/api-reference/reactivity](/wevu/api-reference/reactivity)
-- Runtime Bridge API：[/wevu/api-reference/runtime-bridge](/wevu/api-reference/runtime-bridge)
+- Core API：[/wevu/api/core](/wevu/api/core)
+- Reactivity API：[/wevu/api/reactivity](/wevu/api/reactivity)
+- Runtime Bridge API：[/wevu/api/runtime-bridge](/wevu/api/runtime-bridge)

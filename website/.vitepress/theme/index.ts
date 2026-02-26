@@ -7,6 +7,7 @@ import { h } from 'vue'
 import AiLearningPage from '../components/AiLearningPage.vue'
 import HomePage from '../components/HomePage.vue'
 import TechBackground from '../components/TechBackground.vue'
+import WevuApiReference from '../components/WevuApiReference.vue'
 import Layout from './Layout.vue'
 import '@shikijs/vitepress-twoslash/style.css'
 import './index.scss'
@@ -26,6 +27,7 @@ export default {
     app.component('AiLearningPage', AiLearningPage)
     app.component('HomePage', HomePage)
     app.component('TechBackground', TechBackground)
+    app.component('WevuApiReference', WevuApiReference)
     if (typeof window !== 'undefined') {
       let cleanupOutline: (() => void) | null = null
       // keep a single click handler per aside element without mutating DOM nodes

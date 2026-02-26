@@ -242,34 +242,60 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '运行时与生命周期', link: '/wevu/runtime' },
       { text: 'defineComponent（组件）', link: '/wevu/component' },
       { text: 'Store（状态管理）', link: '/wevu/store' },
-      {
-        text: 'API 参考',
-        collapsed: false,
-        items: [
-          { text: '总览', link: '/wevu/api-reference/' },
-          { text: 'Core API', link: '/wevu/api-reference/core' },
-          { text: 'Reactivity API', link: '/wevu/api-reference/reactivity' },
-          { text: 'Lifecycle API', link: '/wevu/api-reference/lifecycle' },
-          { text: 'Setup Context API', link: '/wevu/api-reference/setup-context' },
-          { text: 'Store API', link: '/wevu/api-reference/store' },
-          { text: 'Runtime Bridge API', link: '/wevu/api-reference/runtime-bridge' },
-          { text: 'Type Reference', link: '/wevu/api-reference/types' },
-          { text: '完整 Typedoc（runtime）', link: '/wevu/api/index/index' },
-          { text: '完整 Typedoc（compiler）', link: '/wevu/api/compiler/index' },
-        ],
-      },
       { text: '兼容性与注意事项', link: '/wevu/compatibility' },
       { text: 'Vue 3 兼容性说明（完整）', link: '/wevu/vue3-compat' },
       { text: '从原生小程序迁移到 Vue SFC', link: '/wevu/migration/from-native-to-vue-sfc' },
       { text: 'wevu vs Vue 3（核心差异）', link: '/wevu/vue3-vs-wevu' },
       {
         text: '扩展阅读',
-        collapsed: true,
+        collapsed: false,
         items: [
           { text: '为什么没有使用 @vue/runtime-core 的 createRenderer 来实现', link: '/wevu/why-not-runtime-core-create-renderer' },
           { text: 'wevu 中的 setData 什么时候触发？', link: '/wevu/when-setdata-triggers' },
         ],
       },
+      { text: 'API 参考 ↗', link: '/wevu/api-reference/' },
+    ],
+  },
+]
+
+const wevuApiSidebarItems: DefaultTheme.SidebarItem[] = [
+  {
+    text: 'API 首页',
+    collapsed: false,
+    items: [
+      { text: 'API 首页', link: '/wevu/api/' },
+    ],
+  },
+  {
+    text: 'Global API',
+    collapsed: false,
+    items: [
+      { text: 'Core API', link: '/wevu/api/core' },
+    ],
+  },
+  {
+    text: 'Composition API',
+    collapsed: false,
+    items: [
+      { text: 'Reactivity API', link: '/wevu/api/reactivity' },
+      { text: 'Lifecycle API', link: '/wevu/api/lifecycle' },
+      { text: 'Setup Context API', link: '/wevu/api/setup-context' },
+    ],
+  },
+  {
+    text: 'Runtime API',
+    collapsed: false,
+    items: [
+      { text: 'Store API', link: '/wevu/api/store' },
+      { text: 'Runtime Bridge API', link: '/wevu/api/runtime-bridge' },
+    ],
+  },
+  {
+    text: 'Type API',
+    collapsed: false,
+    items: [
+      { text: 'Type Reference', link: '/wevu/api/types' },
     ],
   },
 ]
@@ -391,6 +417,7 @@ export default defineConfig({
       { text: '指引', link: '/guide/' },
       // { text: '教程', link: '/handbook/' }, // 暂时隐藏：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
       { text: 'wevu', link: '/wevu/' },
+      { text: 'wevu API', link: '/wevu/api/' },
       { text: '社区', link: '/community/group' },
       { text: '周边包', link: '/packages/' },
       // { text: '参考', link: '/config' },
@@ -414,6 +441,8 @@ export default defineConfig({
       '/blog/': blogSidebarItems,
       '/config/': configSidebarItems,
       '/packages/': packagesSidebarItems,
+      '/wevu/api/': wevuApiSidebarItems,
+      '/wevu/api-reference/': wevuApiSidebarItems,
       '/wevu/': wevuSidebarItems,
       // '/handbook/': handbookSidebarItems, // 暂时隐藏：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
       // '/config/': [

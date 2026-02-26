@@ -16,7 +16,7 @@ keywords:
 
 `wevu` 生命周期 API 都需要在 `setup()` 的同步阶段调用。
 
-## 1. App 生命周期
+## 1. App 生命周期 {#app-lifecycle}
 
 | API                    | 类型入口           | 说明                       |
 | ---------------------- | ------------------ | -------------------------- |
@@ -28,7 +28,7 @@ keywords:
 | `onUnhandledRejection` | `RuntimeApp`       | 未处理 Promise rejection。 |
 | `onThemeChange`        | `RuntimeApp`       | 系统主题变化。             |
 
-## 2. 页面与组件通用生命周期
+## 2. 页面与组件通用生命周期 {#common-lifecycle}
 
 | API        | 类型入口          | 说明                       |
 | ---------- | ----------------- | -------------------------- |
@@ -53,7 +53,7 @@ keywords:
 | `onErrorCaptured`  | `RuntimeInstance` | 捕获子树错误。            |
 | `onServerPrefetch` | `RuntimeInstance` | 兼容 Vue 语义的预取钩子。 |
 
-## 4. 小程序特有页面事件
+## 4. 小程序特有页面事件 {#page-events}
 
 | API                 | 类型入口       | 说明           |
 | ------------------- | -------------- | -------------- |
