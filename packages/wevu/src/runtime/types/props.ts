@@ -14,6 +14,22 @@ export type PropConstructor<T = any>
 export type PropType<T> = PropConstructor<T> | PropConstructor<T>[]
 export type ComponentPropsOptions = Record<string, PropOptions<any> | PropType<any> | null>
 
+export interface NativeTypeHint<T = any> {
+  readonly __wevuNativeType?: T
+}
+
+export type NativePropsOptions = Record<string, WechatMiniprogram.Component.AllProperty | NativeTypeHint<any>>
+
+export type NativePropType<
+  T = any,
+  C extends WechatMiniprogram.Component.ShortProperty = StringConstructor,
+> = C & NativeTypeHint<T>
+
+export type NativeTypedProperty<
+  T = any,
+  P extends WechatMiniprogram.Component.AllProperty = WechatMiniprogram.Component.AllProperty,
+> = P & NativeTypeHint<T>
+
 export interface PropOptions<T = any> {
   type?: PropType<T> | true | null
   /**
@@ -84,6 +100,68 @@ type InferPropConstructor<T>
                   : T extends ObjectConstructor ? Record<string, any>
                     : T extends PropConstructor<infer V> ? V
                       : any
+
+type IsUnion<T, U = T> = T extends any ? ([U] extends [T] ? false : true) : never
+
+type WidenLiteral<T>
+  = T extends string
+    ? string extends T
+      ? string
+      : IsUnion<T> extends true
+        ? T
+        : string
+    : T extends number
+      ? number extends T
+        ? number
+        : IsUnion<T> extends true
+          ? T
+          : number
+      : T extends boolean
+        ? boolean extends T
+          ? boolean
+          : IsUnion<T> extends true
+            ? T
+            : boolean
+        : T
+
+type NativeInferByCtor<C>
+  = C extends readonly any[] ? NativeInferByCtor<C[number]>
+    : C extends StringConstructor ? string
+      : C extends NumberConstructor ? number
+        : C extends BooleanConstructor ? boolean
+          : C extends DateConstructor ? Date
+            : C extends ArrayConstructor ? any[]
+              : C extends ObjectConstructor ? Record<string, any>
+                : C extends null ? any
+                  : C extends PropConstructor<infer V> ? V
+                    : any
+
+type MergeNativeType<Base, V>
+  = Base extends string
+    ? Exclude<Extract<WidenLiteral<V>, string>, never> | (Extract<WidenLiteral<V>, string> extends never ? string : never)
+    : Base extends number
+      ? Exclude<Extract<WidenLiteral<V>, number>, never> | (Extract<WidenLiteral<V>, number> extends never ? number : never)
+      : Base extends boolean
+        ? Exclude<Extract<WidenLiteral<V>, boolean>, never> | (Extract<WidenLiteral<V>, boolean> extends never ? boolean : never)
+        : Base
+
+type InferNativeByOption<O extends { type?: any }>
+  = O['type'] extends NativeTypeHint<infer THint>
+    ? THint
+    : O extends { value: infer V }
+      ? MergeNativeType<NativeInferByCtor<O['type']>, V>
+      : NativeInferByCtor<O['type']>
+
+export type InferNativePropType<O>
+  = O extends NativeTypeHint<infer T>
+    ? T
+    : O extends { type?: any }
+      ? InferNativeByOption<O>
+      : NativeInferByCtor<O>
+
+export type InferNativeProps<P extends NativePropsOptions = NativePropsOptions> = {
+  readonly [K in keyof P]?: InferNativePropType<P[K]>
+}
 
 export type InferProps<P extends ComponentPropsOptions = ComponentPropsOptions> = {
   [K in keyof Pick<P, RequiredKeys<P>>]:
