@@ -1,3 +1,17 @@
+---
+title: vite-plugin-performance
+description: vite-plugin-performance 用于包装一个或多个 Vite 插件，并统计每个生命周期 Hook 的执行耗时。
+keywords:
+  - 性能优化
+  - packages
+  - vite
+  - plugin
+  - performance
+  - vite-plugin-performance
+  - 用于包装一个或多个
+  - 插件
+---
+
 # vite-plugin-performance
 
 `vite-plugin-performance` 用于包装一个或多个 Vite 插件，并统计每个生命周期 Hook 的执行耗时。

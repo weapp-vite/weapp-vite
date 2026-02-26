@@ -1,3 +1,18 @@
+---
+title: 自动导入组件配置
+description: weapp-vite 会在构建阶段扫描 WXML 组件标签并自动补齐 usingComponents，免去手写 JSON
+  的负担。支持本地组件与第三方库 Resolver（如 Vant/TDesign）。
+keywords:
+  - 配置
+  - 分包
+  - config
+  - auto
+  - import
+  - components
+  - 自动导入组件配置
+  - weapp-vite
+---
+
 # 自动导入组件配置 {#auto-import-components}
 
 `weapp-vite` 会在构建阶段扫描 WXML 组件标签并自动补齐 `usingComponents`，免去手写 JSON 的负担。支持本地组件与第三方库 Resolver（如 Vant/TDesign）。

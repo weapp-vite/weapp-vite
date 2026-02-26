@@ -1,3 +1,19 @@
+---
+title: weapp-vite 发布：重塑小程序开发体验！
+description: weapp-vite 发布：重塑小程序开发体验！，聚焦 blog / announce 相关场景，覆盖 weapp-vite 与
+  wevu 的能力、配置和实践要点。
+keywords:
+  - weapp-vite
+  - 微信小程序
+  - 配置
+  - blog
+  - announce
+  - 发布日志
+  - 版本更新
+  - 发布：重塑小程序开发体验！
+date: 2025-05-06
+---
+
 ![bg](./assets/release4.png)
 
 # `weapp-vite` 发布：重塑小程序开发体验！
@@ -45,7 +61,7 @@
 
 1. 在微信开发者工具中创建一个新的 `js`/`ts` 项目。
 
-![](../images/create-project.png)
+![微信开发者工具创建项目界面](../images/create-project.png)
 
 2. 确保项目根目录下有 `package.json`，若无则运行 `npm init -y`
 

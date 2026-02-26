@@ -1,5 +1,15 @@
 ---
 title: 迁移指南（路线与清单）
+description: 迁移指南（路线与清单），聚焦 handbook / migration 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - 迁移指南
+  - handbook
+  - migration
+  - 迁移指南（路线与清单）
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
 ---
 
 # 迁移指南（路线与清单）

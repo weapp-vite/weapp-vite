@@ -1,5 +1,15 @@
 ---
 title: 测试与 Mock
+description: 测试与 Mock，聚焦 handbook / wevu 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - wevu
+  - handbook
+  - testing
+  - 测试与
+  - mock
+  - 聚焦
+  - /
+  - 相关场景
 ---
 
 # 测试与 Mock

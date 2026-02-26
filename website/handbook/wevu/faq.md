@@ -1,5 +1,15 @@
 ---
 title: FAQ 与排错
+description: FAQ 与排错，聚焦 handbook / wevu 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - wevu
+  - handbook
+  - faq
+  - 与排错
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
 ---
 
 # FAQ 与排错

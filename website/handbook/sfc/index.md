@@ -1,5 +1,15 @@
 ---
 title: SFC 总览：映射到小程序
+description: 在本教程里，**wuve** 指 weapp-vite 内置的 Vue SFC 编译链路：
+keywords:
+  - 微信小程序
+  - handbook
+  - sfc
+  - 总览：映射到小程序
+  - 在本教程里
+  - wuve
+  - 指
+  - weapp-vite
 ---
 
 # SFC 总览：映射到小程序

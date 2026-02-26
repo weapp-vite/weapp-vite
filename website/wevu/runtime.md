@@ -1,5 +1,15 @@
 ---
 title: 运行时与生命周期
+description: 介绍 wevu 运行时的桥接机制、生命周期映射与 setData 更新策略，并给出定位“未触发/未更新”问题的实操方法。
+keywords:
+  - wevu
+  - 运行时
+  - 编译
+  - runtime
+  - 运行时与生命周期
+  - 生命周期
+  - setdata
+  - 调试
 ---
 
 # 运行时与生命周期

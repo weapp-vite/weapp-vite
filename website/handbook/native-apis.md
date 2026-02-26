@@ -1,5 +1,15 @@
 ---
-title: 原生能力调用（wx.*）
+title: 原生能力调用（wx.）
+description: 原生能力调用（wx.*），聚焦 handbook / native-apis 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - api
+  - handbook
+  - native
+  - apis
+  - 原生能力调用（wx.）
+  - 聚焦
+  - /
+  - native-apis
 ---
 
 # 原生能力调用（wx.\*）

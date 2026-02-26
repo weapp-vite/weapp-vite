@@ -1,5 +1,16 @@
 ---
 title: Vue SFC 开发
+description: 这里是 Vue SFC 开发的入口说明。完整内容已迁移到 wevu 文档目录：weapp-vite 负责编译期（.vue →
+  小程序产物），wevu 负责运行期（响应式与生命周期）。
+keywords:
+  - Vue SFC
+  - guide
+  - vue
+  - sfc
+  - 开发
+  - 这里是
+  - 开发的入口说明。完整内容已迁移到
+  - wevu
 ---
 
 # Vue SFC 开发

@@ -1,5 +1,18 @@
 ---
-outline: [2, 3]
+outline:
+  - 2
+  - 3
+title: 共享 Chunk 策略（weapp.chunks）
+description: weapp.chunks 用于控制 **复用模块的输出位置和形态**，常用于分包优化、避免不必要的 common.js、或减少重复体积。
+keywords:
+  - guide
+  - chunks
+  - 共享
+  - chunk
+  - 策略（weapp.chunks）
+  - weapp.chunks
+  - 用于控制
+  - 复用模块的输出位置和形态
 ---
 
 # 共享 Chunk 策略（weapp.chunks）

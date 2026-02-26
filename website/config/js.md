@@ -1,3 +1,17 @@
+---
+title: JS 配置
+description: weapp-vite 内置集成了 vite-tsconfig-paths，用于读取
+  tsconfig.json/jsconfig.json 的 paths/baseUrl，把别名映射到 Vite/Rolldown 流程中。
+keywords:
+  - 配置
+  - config
+  - js
+  - weapp-vite
+  - 内置集成了
+  - vite-tsconfig-paths
+  - 用于读取
+---
+
 # JS 配置 {#js-config}
 
 `weapp-vite` 内置集成了 `vite-tsconfig-paths`，用于读取 `tsconfig.json/jsconfig.json` 的 `paths/baseUrl`，把别名映射到 Vite/Rolldown 流程中。

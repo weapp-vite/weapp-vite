@@ -1,5 +1,16 @@
 ---
 title: 从原生小程序迁移到 Vue SFC
+description: 这是一份面向实际项目的迁移手册，不是概念介绍。目标是让你在**不重写业务**的前提下，把原生小程序稳定迁移到 weapp-vite +
+  wevu + Vue SFC。
+keywords:
+  - wevu
+  - Vue SFC
+  - 微信小程序
+  - 迁移指南
+  - migration
+  - from
+  - native
+  - to
 ---
 
 # 从原生小程序迁移到 Vue SFC（详细指南）

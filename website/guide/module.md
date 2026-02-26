@@ -1,3 +1,18 @@
+---
+title: 模块化风格
+description: weapp-vite 基于 ESM（ECMAScript Modules）进行构建。建议在业务代码里尽量统一使用 import /
+  export，这样类型推导、Tree Shaking、热更新都会更稳定。
+keywords:
+  - guide
+  - module
+  - 模块化风格
+  - weapp-vite
+  - 基于
+  - ESM（ECMAScript
+  - import
+  - /
+---
+
 # 模块化风格
 
 `weapp-vite` 基于 ESM（ECMAScript Modules）进行构建。建议在业务代码里尽量统一使用 `import` / `export`，这样类型推导、Tree Shaking、热更新都会更稳定。

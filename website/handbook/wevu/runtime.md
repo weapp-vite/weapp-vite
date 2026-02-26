@@ -1,5 +1,15 @@
 ---
 title: 运行时：setup 上下文与更新
+description: 所有 onXXX() 必须在 setup() 的同步阶段调用；不要写在 await 或回调之后。
+keywords:
+  - wevu
+  - 运行时
+  - handbook
+  - runtime
+  - 运行时：setup
+  - 上下文与更新
+  - 所有
+  - onxxx
 ---
 
 # 运行时：setup 上下文与更新

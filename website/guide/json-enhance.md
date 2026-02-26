@@ -1,3 +1,18 @@
+---
+title: 使用 TS/JS 生成 JSON
+description: 小程序项目里有很多结构相似的 json 配置（页面/组件/App）。weapp-vite 在兼容原生 json/jsonc
+  的基础上，允许你用 json.ts / json.js 生成最终配置，让配置也能享受模块化、类型提示和复用能力。
+keywords:
+  - 配置
+  - guide
+  - json
+  - enhance
+  - 使用
+  - TS/JS
+  - 生成
+  - 小程序项目里有很多结构相似的
+---
+
 # 使用 TS/JS 生成 JSON
 
 小程序项目里有很多结构相似的 `json` 配置（页面/组件/App）。`weapp-vite` 在兼容原生 `json/jsonc` 的基础上，允许你用 `json.ts` / `json.js` 生成最终配置，让配置也能享受模块化、类型提示和复用能力。

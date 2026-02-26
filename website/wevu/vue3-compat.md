@@ -1,5 +1,15 @@
 ---
 title: wevu 的 Vue 3 兼容性说明
+description: wevu 是一个面向小程序（以微信小程序为主）的 Vue 3 风格运行时：尽量提供熟悉的 Vue 3 API 形态，同时针对小程序运行环境进行适配与约束。
+keywords:
+  - wevu
+  - 微信小程序
+  - 迁移指南
+  - api
+  - Vue 3
+  - compat
+  - 的
+  - vue
 ---
 
 # wevu 的 Vue 3 兼容性说明

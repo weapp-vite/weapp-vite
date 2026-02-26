@@ -1,3 +1,18 @@
+---
+title: rolldown-require Guide
+description: rolldown-require bundles and then loads config files of any flavor
+  (TS / MJS / CJS / JSX, etc.) using rolldown, so CLI …
+keywords:
+  - packages
+  - rolldown
+  - require
+  - rolldown-require
+  - guide
+  - bundles
+  - then
+  - loads
+---
+
 # rolldown-require Guide
 
 > Language: English | [中文](/packages/rolldown-require/index.zh)

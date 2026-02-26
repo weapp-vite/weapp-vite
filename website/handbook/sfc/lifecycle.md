@@ -1,5 +1,15 @@
 ---
 title: 生命周期：页面/组件对齐
+description: 生命周期：页面/组件对齐，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - handbook
+  - sfc
+  - lifecycle
+  - 生命周期：页面/组件对齐
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
 ---
 
 # 生命周期：页面/组件对齐

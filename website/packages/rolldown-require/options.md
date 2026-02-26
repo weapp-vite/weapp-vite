@@ -1,3 +1,18 @@
+---
+title: API & options
+description: "rolldown-require exposes three APIs: bundleRequire, bundleFile,
+  and loadFromBundledFile. Prefer the one-stop bundleRequ…"
+keywords:
+  - 配置
+  - api
+  - packages
+  - rolldown
+  - require
+  - options
+  - "&"
+  - rolldown-require
+---
+
 # API & options
 
 > Language: English | [中文](/packages/rolldown-require/options.zh)

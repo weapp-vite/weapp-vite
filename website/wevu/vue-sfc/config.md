@@ -1,5 +1,15 @@
 ---
 title: Vue SFC：配置与宏
+description: 小程序组件的注册是 **JSON 声明式** 的：只认 usingComponents。因此在 SFC 里推荐：
+keywords:
+  - wevu
+  - Vue SFC
+  - 配置
+  - vue
+  - sfc
+  - config
+  - SFC：配置与宏
+  - 小程序组件的注册是
 ---
 
 # Vue SFC：配置与宏

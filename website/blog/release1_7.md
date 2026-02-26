@@ -1,5 +1,20 @@
 ---
-outline: [2, 5]
+outline:
+  - 2
+  - 5
+title: 这段时间 weapp-vite 的功能更新与优化
+description: 这段时间 weapp-vite 的功能更新与优化，聚焦 blog / release1_7 相关场景，覆盖 weapp-vite 与
+  wevu 的能力、配置和实践要点。
+keywords:
+  - weapp-vite
+  - 分包
+  - blog
+  - 发布日志
+  - 版本更新
+  - 这段时间
+  - 的功能更新与优化
+  - 聚焦
+date: 2026-01-15
 ---
 
 ![bg](/1.7.x-release.png)

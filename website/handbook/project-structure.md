@@ -1,5 +1,15 @@
 ---
 title: 目录结构与分层
+description: 目录结构与分层，聚焦 handbook / project-structure 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - handbook
+  - project
+  - structure
+  - 目录结构与分层
+  - 聚焦
+  - /
+  - project-structure
+  - 相关场景
 ---
 
 # 目录结构与分层

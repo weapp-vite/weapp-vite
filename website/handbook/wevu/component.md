@@ -1,5 +1,16 @@
 ---
 title: 组件：props/emit/slots 语义
+description: 组件：props/emit/slots 语义，聚焦 handbook / wevu 相关场景，覆盖 weapp-vite 与 wevu
+  的能力、配置和实践要点。
+keywords:
+  - wevu
+  - 微信小程序
+  - handbook
+  - component
+  - 组件：props/emit/slots
+  - 语义
+  - 聚焦
+  - /
 ---
 
 # 组件：props / emit / slots 语义

@@ -1,5 +1,15 @@
 ---
 title: 参考与索引
+description: 参考与索引，聚焦 handbook / reference 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - handbook
+  - reference
+  - 参考与索引
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
+  - weapp-vite
 ---
 
 # 参考与索引

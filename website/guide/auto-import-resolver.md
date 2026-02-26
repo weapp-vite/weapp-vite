@@ -1,3 +1,18 @@
+---
+title: 自定义 autoImportComponents Resolver
+description: weapp.autoImportComponents.resolvers 用来把 WXML 里的组件标签（例如 ）解析成小程序
+  usingComponents 需要的 from 路径（例如 @vant/weapp/button）。
+keywords:
+  - guide
+  - auto
+  - import
+  - resolver
+  - 自定义
+  - autoimportcomponents
+  - 用来把
+  - wxml
+---
+
 # 自定义 autoImportComponents Resolver
 
 `weapp.autoImportComponents.resolvers` 用来把 WXML 里的组件标签（例如 `<van-button>`）解析成小程序 `usingComponents` 需要的 `from` 路径（例如 `@vant/weapp/button`）。

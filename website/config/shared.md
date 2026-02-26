@@ -1,3 +1,16 @@
+---
+title: 共享配置
+description: 除了 WXML/WXS 这些“底层开关”，weapp-vite 还有一些通用增强能力，比如自动路由、调试钩子等。本页主要讲：
+keywords:
+  - wevu
+  - 配置
+  - 调试
+  - config
+  - shared
+  - 共享配置
+  - 除了
+---
+
 # 共享配置 {#shared-config}
 
 除了 WXML/WXS 这些“底层开关”，`weapp-vite` 还有一些通用增强能力，比如自动路由、调试钩子等。本页主要讲：

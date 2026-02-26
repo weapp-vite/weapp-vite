@@ -1,5 +1,16 @@
 ---
 title: 快速上手
+description: 这一页只做一件事：帮你最快把 wevu 跑起来。按“装包 -> 写一个页面/组件 ->（可选）接入 Store”走一遍即可。示例以
+  weapp-vite + Vue SFC 为主；如果你不使用 SFC，也可以直接参考运行时 API 的部分。
+keywords:
+  - wevu
+  - 微信小程序
+  - 运行时
+  - quick
+  - start
+  - 快速上手
+  - 这一页只做一件事：帮你最快把
+  - 跑起来。按“装包
 ---
 
 # 快速上手 wevu

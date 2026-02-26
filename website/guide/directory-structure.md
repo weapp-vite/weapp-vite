@@ -1,3 +1,18 @@
+---
+title: 目录结构
+description: weapp-vite 默认沿用原生小程序的目录习惯：app.* 放在 src/，页面在 pages/，分包在
+  packages/。在这个基础上，框架提供了一些“可选但推荐”的约定目录，让自动路由、自动导入组件、分包增强等能力能直接生效。
+keywords:
+  - 配置
+  - 分包
+  - guide
+  - directory
+  - structure
+  - 目录结构
+  - weapp-vite
+  - 默认沿用原生小程序的目录习惯：app.
+---
+
 # 目录结构
 
 `weapp-vite` 默认沿用原生小程序的目录习惯：`app.*` 放在 `src/`，页面在 `pages/`，分包在 `packages/`。在这个基础上，框架提供了一些“可选但推荐”的约定目录，让自动路由、自动导入组件、分包增强等能力能直接生效。

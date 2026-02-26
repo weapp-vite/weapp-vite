@@ -1,5 +1,15 @@
 ---
 title: 监控与埋点
+description: 监控与埋点，聚焦 handbook / observability 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - handbook
+  - observability
+  - 监控与埋点
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
+  - weapp-vite
 ---
 
 # 监控与埋点

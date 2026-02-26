@@ -1,5 +1,15 @@
 ---
 title: Template：语法与差异点
+description: Template：语法与差异点，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - Vue SFC
+  - handbook
+  - sfc
+  - template
+  - Template：语法与差异点
+  - 聚焦
+  - /
+  - 相关场景
 ---
 
 # Template：语法与差异点

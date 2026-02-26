@@ -1,3 +1,16 @@
+---
+title: Worker 配置
+description: 当 app.json 配置了 workers 目录，weapp-vite 可以帮助编译 Worker 入口脚本。
+keywords:
+  - 配置
+  - config
+  - worker
+  - 当
+  - app.json
+  - 配置了
+  - workers
+---
+
 # Worker 配置 {#worker-config}
 
 当 `app.json` 配置了 `workers` 目录，`weapp-vite` 可以帮助编译 Worker 入口脚本。

@@ -1,0 +1,114 @@
+{
+  "generatedAt": "2026-02-26T07:26:17.443Z",
+  "site": "https://vite.icebreaker.top",
+  "totals": {
+    "files": 166,
+    "docs": 157,
+    "blog": 4,
+    "page": 5,
+    "withFrontmatter": 166,
+    "missingFrontmatter": 0
+  },
+  "coverage": {
+    "all": {
+      "total": 166,
+      "title": 166,
+      "description": 166,
+      "keywords": 166,
+      "date": 5
+    },
+    "docs": {
+      "total": 157,
+      "title": 157,
+      "description": 157,
+      "keywords": 157,
+      "date": 1
+    },
+    "blog": {
+      "total": 4,
+      "title": 4,
+      "description": 4,
+      "keywords": 4,
+      "date": 4
+    },
+    "page": {
+      "total": 5,
+      "title": 5,
+      "description": 5,
+      "keywords": 5,
+      "date": 0
+    }
+  },
+  "coveragePercent": {
+    "all": {
+      "title": 100,
+      "description": 100,
+      "keywords": 100,
+      "date": 3
+    },
+    "docs": {
+      "title": 100,
+      "description": 100,
+      "keywords": 100,
+      "date": 0.6
+    },
+    "blog": {
+      "title": 100,
+      "description": 100,
+      "keywords": 100,
+      "date": 100
+    },
+    "page": {
+      "title": 100,
+      "description": 100,
+      "keywords": 100,
+      "date": 0
+    }
+  },
+  "siteCapabilities": {
+    "sitemap": {
+      "enabled": true,
+      "detail": "vitepress sitemap 已配置。"
+    },
+    "robots": {
+      "enabled": true,
+      "detail": "public/robots.txt 已存在。"
+    },
+    "canonical": {
+      "enabled": true,
+      "detail": "检测到 canonical 策略。"
+    },
+    "og": {
+      "enabled": true,
+      "detail": "检测到 Open Graph 元信息。"
+    },
+    "twitter": {
+      "enabled": true,
+      "detail": "检测到 Twitter Card 元信息。"
+    },
+    "jsonLd": {
+      "enabled": true,
+      "detail": "检测到 JSON-LD 结构化数据策略。"
+    },
+    "hreflang": {
+      "enabled": true,
+      "detail": "检测到 hreflang 策略。"
+    },
+    "noindex": {
+      "enabled": true,
+      "detail": "检测到 noindex/robots 策略。"
+    }
+  },
+  "llmAssets": {
+    "llmsEntry": true,
+    "llmsFullDist": true,
+    "llmsTxtDist": true,
+    "llmsIndexPublic": true,
+    "seoQualityReportPublic": true
+  },
+  "quality": {
+    "checked": 166,
+    "issues": []
+  },
+  "qualityIssueCounts": {}
+}

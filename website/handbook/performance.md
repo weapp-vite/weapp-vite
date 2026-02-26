@@ -1,5 +1,15 @@
 ---
 title: 性能与体验优化
+description: 性能与体验优化，聚焦 handbook / performance 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - wevu
+  - 性能优化
+  - handbook
+  - performance
+  - 性能与体验优化
+  - 聚焦
+  - /
+  - 相关场景
 ---
 
 # 性能与体验优化

@@ -1,3 +1,17 @@
+---
+title: Vue-mini 集成
+description: Vue Mini 是一个基于 Vue 3 的小程序框架，你可以用 Vue 3 的响应式和组合式 API 来开发小程序。
+keywords:
+  - integration
+  - vue
+  - mini
+  - vue-mini
+  - 集成
+  - 是一个基于
+  - "3"
+  - 的小程序框架
+---
+
 # Vue-mini 集成
 
 ## vue-mini 介绍

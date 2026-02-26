@@ -1,3 +1,17 @@
+---
+title: 基础目录与资源收集
+description: 基础目录与资源收集 {#paths-config}，聚焦 config / paths 相关场景，覆盖 weapp-vite 与
+  wevu 的能力、配置和实践要点。
+keywords:
+  - 配置
+  - config
+  - paths
+  - 基础目录与资源收集
+  - 聚焦
+  - /
+  - 相关场景
+---
+
 # 基础目录与资源收集 {#paths-config}
 
 本页涵盖：

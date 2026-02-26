@@ -1,5 +1,15 @@
 ---
 title: JSON：Script Setup 宏优先
+description: JSON：Script Setup 宏优先，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - Vue SFC
+  - 配置
+  - handbook
+  - sfc
+  - json
+  - JSON：Script
+  - setup
+  - 宏优先
 ---
 
 # JSON：Script Setup 宏优先

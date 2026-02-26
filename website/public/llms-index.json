@@ -1,0 +1,4442 @@
+{
+  "version": 1,
+  "generatedAt": "2026-02-26T07:26:17.342Z",
+  "site": "https://vite.icebreaker.top",
+  "count": 166,
+  "items": [
+    {
+      "id": "doc-72ab937a75",
+      "title": "AI 学习入口",
+      "summary": "统一的 AI 学习入口，聚合 llms 语料与 weapp-vite / wevu 技能安装方式。",
+      "url": "/ai",
+      "canonical": "https://vite.icebreaker.top/ai",
+      "keywords": [
+        "ai",
+        "学习入口",
+        "统一的",
+        "聚合",
+        "llms",
+        "语料与",
+        "weapp-vite",
+        "/"
+      ],
+      "headings": [],
+      "updatedAt": "2026-02-26",
+      "source": "ai.md"
+    },
+    {
+      "id": "doc-9164703fdd",
+      "title": "weapp-vite 发布：重塑小程序开发体验！",
+      "summary": "weapp-vite 发布：重塑小程序开发体验！，聚焦 blog / announce 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/blog/announce",
+      "canonical": "https://vite.icebreaker.top/blog/announce",
+      "keywords": [
+        "weapp-vite",
+        "微信小程序",
+        "配置",
+        "blog",
+        "announce",
+        "发布日志",
+        "版本更新",
+        "发布：重塑小程序开发体验！"
+      ],
+      "headings": [
+        "weapp-vite 发布：重塑小程序开发体验！",
+        "什么是 weapp-vite?",
+        "诞生背景",
+        "原生小程序开发的痛点",
+        "差异化加剧的挑战",
+        "轻量化与灵活性的追求",
+        "weapp-vite的优势",
+        "快速开始",
+        "创建与初始化",
+        "语言默认支持",
+        "开发与构建",
+        "配置项"
+      ],
+      "updatedAt": "2025-05-06",
+      "source": "blog/announce.md"
+    },
+    {
+      "id": "doc-5399d2c807",
+      "title": "这段时间 weapp-vite 的功能更新与优化",
+      "summary": "这段时间 weapp-vite 的功能更新与优化，聚焦 blog / release1_7 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/blog/release1_7",
+      "canonical": "https://vite.icebreaker.top/blog/release1_7",
+      "keywords": [
+        "weapp-vite",
+        "分包",
+        "blog",
+        "发布日志",
+        "版本更新",
+        "这段时间",
+        "的功能更新与优化",
+        "聚焦"
+      ],
+      "headings": [
+        "这段时间 weapp-vite 的功能更新与优化",
+        "核心功能更新",
+        "1. 自动构建 npm",
+        "2. 语法增强",
+        "2.1 JSON 文件增强",
+        "1. 支持注释",
+        "2. 智能提示",
+        "3. 别名支持",
+        "4. 编程支持",
+        "2.2 WXML 文件增强",
+        "事件绑定语法糖",
+        "2.3 WXS 增强"
+      ],
+      "updatedAt": "2026-01-15",
+      "source": "blog/release1_7.md"
+    },
+    {
+      "id": "doc-e82a1a003f",
+      "title": "weapp-vite - 微信小程序工具链的另一种选择",
+      "summary": "weapp-vite 是由 笔者 icebreaker 开发的一个基于 vite 的现代化微信小程序开发工具链。我给它设定的目标初心是: 为小程序开发者带来笑容。",
+      "url": "/blog/release4",
+      "canonical": "https://vite.icebreaker.top/blog/release4",
+      "keywords": [
+        "weapp-vite",
+        "微信小程序",
+        "blog",
+        "release4",
+        "发布日志",
+        "版本更新",
+        "-",
+        "微信小程序工具链的另一种选择"
+      ],
+      "headings": [
+        "weapp-vite - 微信小程序工具链的另一种选择",
+        "前言",
+        "之前版本遇到的一些困难",
+        "热更新与耦合问题",
+        "自定义加载模块方式",
+        "主要特点",
+        "适用场景",
+        "不适用的场景",
+        "快速开始",
+        "结尾"
+      ],
+      "updatedAt": "2025-09-08",
+      "source": "blog/release4.md"
+    },
+    {
+      "id": "doc-8f1a98491f",
+      "title": "weapp-vite@6：原生模式之外，多一种 Vue 选择",
+      "summary": "还记得在 weapp-vite 4.0 的发布文章里，我写过这样的话：",
+      "url": "/blog/release6",
+      "canonical": "https://vite.icebreaker.top/blog/release6",
+      "keywords": [
+        "weapp-vite",
+        "wevu",
+        "微信小程序",
+        "配置",
+        "运行时",
+        "编译",
+        "blog",
+        "release6"
+      ],
+      "headings": [
+        "weapp-vite@6：原生模式之外，多一种 Vue 选择",
+        "前言",
+        "背景故事：从零运行时到 Vue 支持",
+        "最初的定位",
+        "市面上的选择",
+        "weapp-vite 的思路",
+        "wevu 的诞生",
+        "编译时 + 运行时",
+        "认识 wevu：Vue 3 风格的小程序运行时",
+        "核心特点",
+        "Vue 3 vs wevu：实现上的异同",
+        "weapp-vite + wevu 的组合"
+      ],
+      "updatedAt": "2026-02-25",
+      "source": "blog/release6.md"
+    },
+    {
+      "id": "doc-9196c343ef",
+      "title": "website-weapp-vite",
+      "summary": "Store API 统一从主入口导出，并补充 wevu 使用文档与案例合集。",
+      "url": "/CHANGELOG",
+      "canonical": "https://vite.icebreaker.top/CHANGELOG",
+      "keywords": [
+        "weapp-vite",
+        "changelog",
+        "website-weapp-vite",
+        "store",
+        "api",
+        "统一从主入口导出",
+        "并补充",
+        "wevu"
+      ],
+      "headings": [
+        "website-weapp-vite",
+        "1.0.4",
+        "Patch Changes",
+        "1.0.4-alpha.1",
+        "Patch Changes",
+        "1.0.4-alpha.0",
+        "Patch Changes",
+        "1.0.3",
+        "Patch Changes",
+        "1.0.2",
+        "Patch Changes",
+        "1.0.1"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "CHANGELOG.md"
+    },
+    {
+      "id": "doc-3c5c9877d4",
+      "title": "加入技术交流群",
+      "summary": "如果你在使用中遇到什么问题，也欢迎你进入交流群进行提问。提问时请尽量携带最小复现案例，我们会更快定位问题。",
+      "url": "/community/group",
+      "canonical": "https://vite.icebreaker.top/community/group",
+      "keywords": [
+        "community",
+        "group",
+        "加入技术交流群",
+        "如果你在使用中遇到什么问题",
+        "我们会更快定位问题。"
+      ],
+      "headings": [
+        "加入技术交流群"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "community/group.md"
+    },
+    {
+      "id": "doc-d8e6a627ed",
+      "title": "优秀案例展示",
+      "summary": "优秀案例展示，聚焦 community / showcase 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/community/showcase",
+      "canonical": "https://vite.icebreaker.top/community/showcase",
+      "keywords": [
+        "微信小程序",
+        "community",
+        "showcase",
+        "优秀案例展示",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "优秀案例展示",
+        "xiaomusic 小程序客户端"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "community/showcase.md"
+    },
+    {
+      "id": "doc-03878c298c",
+      "title": "自动导入组件配置",
+      "summary": "weapp-vite 会在构建阶段扫描 WXML 组件标签并自动补齐 usingComponents，免去手写 JSON 的负担。支持本地组件与第三方库 Resolver（如 Vant/TDesign）。",
+      "url": "/config/auto-import-components",
+      "canonical": "https://vite.icebreaker.top/config/auto-import-components",
+      "keywords": [
+        "配置",
+        "分包",
+        "config",
+        "auto",
+        "import",
+        "components",
+        "自动导入组件配置",
+        "weapp-vite"
+      ],
+      "headings": [
+        "自动导入组件配置 {#auto-import-components}",
+        "weapp.autoImportComponents {#weapp-autoimportcomponents}",
+        "示例",
+        "字段说明",
+        "禁用与分包覆盖"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/auto-import-components.md"
+    },
+    {
+      "id": "doc-608305280c",
+      "title": "构建输出与兼容",
+      "summary": "解释 weapp-vite 的产物输出目录、JS 输出格式与兼容策略，以及这些配置对包体积和运行稳定性的影响。",
+      "url": "/config/build-and-output",
+      "canonical": "https://vite.icebreaker.top/config/build-and-output",
+      "keywords": [
+        "配置",
+        "config",
+        "build",
+        "output",
+        "构建输出与兼容",
+        "构建产物",
+        "兼容策略"
+      ],
+      "headings": [
+        "构建输出与兼容 {#build-and-output}",
+        "输出目录来源",
+        "weapp.jsFormat {#weapp-jsformat}",
+        "weapp.es5 {#weapp-es5}"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/build-and-output.md"
+    },
+    {
+      "id": "doc-c913ecf4c4",
+      "title": "生成脚手架配置",
+      "summary": "weapp-vite generate 用于快速生成页面、组件和 App 基础文件。本页列出 weapp.generate 的字段，方便你把生成目录、文件名、后缀和模板内容对齐到团队习惯。**这些配置仅影响 CLI 生成器，不影响构建流程…",
+      "url": "/config/generate",
+      "canonical": "https://vite.icebreaker.top/config/generate",
+      "keywords": [
+        "配置",
+        "config",
+        "generate",
+        "生成脚手架配置",
+        "weapp-vite",
+        "用于快速生成页面",
+        "组件和"
+      ],
+      "headings": [
+        "生成脚手架配置 {#generate-config}",
+        "weapp.generate {#weapp-generate}",
+        "配置示例",
+        "字段说明",
+        "CLI 说明与常见问题"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/generate.md"
+    },
+    {
+      "id": "doc-e657eb7231",
+      "title": "配置概览",
+      "summary": "weapp-vite 使用 **Vite 配置模型**：在 vite.config.ts 中增加一个 weapp 字段即可。你也可以把小程序专属配置拆到 weapp-vite.config.*，两者会合并。",
+      "url": "/config/",
+      "canonical": "https://vite.icebreaker.top/config/",
+      "keywords": [
+        "配置",
+        "config",
+        "配置概览",
+        "weapp-vite",
+        "使用",
+        "vite",
+        "配置模型：在"
+      ],
+      "headings": [
+        "配置概览 {#config-overview}",
+        "你最可能先要改的 3 项",
+        "配置索引"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/index.md"
+    },
+    {
+      "id": "doc-72c899ca3f",
+      "title": "JS 配置",
+      "summary": "weapp-vite 内置集成了 vite-tsconfig-paths，用于读取 tsconfig.json/jsconfig.json 的 paths/baseUrl，把别名映射到 Vite/Rolldown 流程中。",
+      "url": "/config/js",
+      "canonical": "https://vite.icebreaker.top/config/js",
+      "keywords": [
+        "配置",
+        "config",
+        "js",
+        "weapp-vite",
+        "内置集成了",
+        "vite-tsconfig-paths",
+        "用于读取"
+      ],
+      "headings": [
+        "JS 配置 {#js-config}",
+        "weapp.tsconfigPaths {#weapp-tsconfigpaths}",
+        "与 resolve.alias 的关系",
+        "常见问题"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/js.md"
+    },
+    {
+      "id": "doc-034de520bd",
+      "title": "JSON 配置",
+      "summary": "weapp-vite 支持原生 json/jsonc，并提供 **JSON 别名** 与 **JSON 合并策略**，方便在 app.json / page.json / component.json 中复用配置。",
+      "url": "/config/json",
+      "canonical": "https://vite.icebreaker.top/config/json",
+      "keywords": [
+        "配置",
+        "config",
+        "json",
+        "weapp-vite",
+        "支持原生",
+        "json/jsonc",
+        "并提供"
+      ],
+      "headings": [
+        "JSON 配置 {#json-config}",
+        "weapp.jsonAlias {#weapp-jsonalias}",
+        "weapp.json.defaults {#weapp-json-defaults}",
+        "weapp.json.mergeStrategy {#weapp-json-merge-strategy}"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/json.md"
+    },
+    {
+      "id": "doc-0f26edd636",
+      "title": "npm 配置",
+      "summary": "weapp-vite 会自动把 **dependencies** 里的依赖构建成 miniprogram_npm/，而把 **devDependencies** 视为“仅构建期依赖”，直接内联进产物。",
+      "url": "/config/npm",
+      "canonical": "https://vite.icebreaker.top/config/npm",
+      "keywords": [
+        "配置",
+        "config",
+        "npm",
+        "weapp-vite",
+        "会自动把",
+        "dependencies",
+        "里的依赖构建成"
+      ],
+      "headings": [
+        "npm 配置 {#config-npm}",
+        "依赖分类规则（默认）",
+        "weapp.npm {#weapp-npm}",
+        "手动构建命令",
+        "常见问题"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/npm.md"
+    },
+    {
+      "id": "doc-8e3066d5f3",
+      "title": "基础目录与资源收集",
+      "summary": "基础目录与资源收集 {#paths-config}，聚焦 config / paths 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/config/paths",
+      "canonical": "https://vite.icebreaker.top/config/paths",
+      "keywords": [
+        "配置",
+        "config",
+        "paths",
+        "基础目录与资源收集",
+        "聚焦",
+        "/",
+        "相关场景"
+      ],
+      "headings": [
+        "基础目录与资源收集 {#paths-config}",
+        "weapp.srcRoot {#weapp-srcroot}",
+        "weapp.pluginRoot {#weapp-pluginroot}",
+        "weapp.copy {#weapp-copy}",
+        "weapp.isAdditionalWxml {#weapp-isadditionalwxml}"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/paths.md"
+    },
+    {
+      "id": "doc-8b23c4fd4a",
+      "title": "共享配置",
+      "summary": "除了 WXML/WXS 这些“底层开关”，weapp-vite 还有一些通用增强能力，比如自动路由、调试钩子等。本页主要讲：",
+      "url": "/config/shared",
+      "canonical": "https://vite.icebreaker.top/config/shared",
+      "keywords": [
+        "wevu",
+        "配置",
+        "调试",
+        "config",
+        "shared",
+        "共享配置",
+        "除了"
+      ],
+      "headings": [
+        "共享配置 {#shared-config}",
+        "weapp.autoRoutes {#weapp-autoroutes}",
+        "配置示例",
+        "weapp.debug {#weapp-debug}",
+        "调试示例",
+        "常见调试技巧",
+        "weapp.wevu.defaults {#weapp-wevu-defaults}",
+        "配置示例",
+        "注意事项",
+        "weapp.hmr.sharedChunks {#weapp-hmr-sharedchunks}",
+        "weapp.hmr.touchAppWxss {#weapp-hmr-touchappwxss}",
+        "weapp.chunks {#weapp-chunks}"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/shared.md"
+    },
+    {
+      "id": "doc-7a3b2be564",
+      "title": "分包配置",
+      "summary": "weapp-vite 会读取 app.json.subPackages 来生成分包产物；weapp.subPackages 则用于 **构建期补充配置**（独立分包、依赖裁剪、共享样式等）。",
+      "url": "/config/subpackages",
+      "canonical": "https://vite.icebreaker.top/config/subpackages",
+      "keywords": [
+        "配置",
+        "分包",
+        "config",
+        "subpackages",
+        "分包配置",
+        "weapp-vite",
+        "会读取"
+      ],
+      "headings": [
+        "分包配置 {#subpackages-config}",
+        "weapp.subPackages {#weapp-subpackages}",
+        "字段说明",
+        "subPackages.*.styles {#subpackages-styles}"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/subpackages.md"
+    },
+    {
+      "id": "doc-d07898a8ab",
+      "title": "Vue SFC 配置",
+      "summary": "weapp-vite 内置 Vue SFC（.vue → WXML/WXSS/JS/JSON）编译链路。这里聚焦编译期可配置项。",
+      "url": "/config/vue",
+      "canonical": "https://vite.icebreaker.top/config/vue",
+      "keywords": [
+        "Vue SFC",
+        "配置",
+        "config",
+        "vue",
+        "sfc",
+        "weapp-vite",
+        "内置"
+      ],
+      "headings": [
+        "Vue SFC 配置 {#vue-config}",
+        "weapp.vue.enable {#weapp-vue-enable}",
+        "weapp.vue.template {#weapp-vue-template}",
+        "weapp.vue.autoImport {#weapp-vue-autoimport}"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/vue.md"
+    },
+    {
+      "id": "doc-7b53a5ab4d",
+      "title": "Web 运行时配置 experimental",
+      "summary": "weapp-vite 可选集成浏览器端运行时（@weapp-vite/web），用于 Web 预览/调试。",
+      "url": "/config/web",
+      "canonical": "https://vite.icebreaker.top/config/web",
+      "keywords": [
+        "配置",
+        "运行时",
+        "config",
+        "web",
+        "运行时配置",
+        "experimental",
+        "weapp-vite"
+      ],
+      "headings": [
+        "Web 运行时配置 experimental {#web-config}",
+        "weapp.web {#weapp-web}",
+        "示例"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/web.md"
+    },
+    {
+      "id": "doc-df7f0b77a9",
+      "title": "Worker 配置",
+      "summary": "当 app.json 配置了 workers 目录，weapp-vite 可以帮助编译 Worker 入口脚本。",
+      "url": "/config/worker",
+      "canonical": "https://vite.icebreaker.top/config/worker",
+      "keywords": [
+        "配置",
+        "config",
+        "worker",
+        "当",
+        "app.json",
+        "配置了",
+        "workers"
+      ],
+      "headings": [
+        "Worker 配置 {#worker-config}",
+        "weapp.worker {#weapp-worker}"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/worker.md"
+    },
+    {
+      "id": "doc-d095d73ec3",
+      "title": "WXML 配置",
+      "summary": "weapp-vite 会扫描 WXML 以完成组件自动导入、WXS 依赖分析与模板产物输出。本页说明 weapp.wxml 的配置项与当前生效范围。",
+      "url": "/config/wxml",
+      "canonical": "https://vite.icebreaker.top/config/wxml",
+      "keywords": [
+        "配置",
+        "config",
+        "wxml",
+        "weapp-vite",
+        "会扫描",
+        "以完成组件自动导入",
+        "wxs"
+      ],
+      "headings": [
+        "WXML 配置 {#wxml-config}",
+        "weapp.wxml {#weapp-wxml}",
+        "当前版本的实际生效范围",
+        "示例"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/wxml.md"
+    },
+    {
+      "id": "doc-d4c1bd99cd",
+      "title": "WXS 配置 experimental",
+      "summary": "weapp-vite 会对 .wxs/.sjs（以及 .wxs.ts/.wxs.js）进行编译输出，并在 Vue SFC 的 class/style 运行时中按需使用 WXS。",
+      "url": "/config/wxs",
+      "canonical": "https://vite.icebreaker.top/config/wxs",
+      "keywords": [
+        "配置",
+        "config",
+        "wxs",
+        "experimental",
+        "weapp-vite",
+        "会对",
+        ".wxs/.sjs（以及"
+      ],
+      "headings": [
+        "WXS 配置 experimental {#wxs-config}",
+        "weapp.wxs {#weapp-wxs}",
+        "实际生效范围",
+        "示例",
+        "常见问题"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "config/wxs.md"
+    },
+    {
+      "id": "doc-93ae840408",
+      "title": "dashboard",
+      "summary": "const Dashboard = defineClientComponent(()=>{ return import('./.vitepress/components/Dashboard.vue') }) // import Dashb…",
+      "url": "/dashboard",
+      "canonical": "https://vite.icebreaker.top/dashboard",
+      "keywords": [
+        "dashboard",
+        "const",
+        "=",
+        "return",
+        "//",
+        "import",
+        "Dashb…"
+      ],
+      "headings": [],
+      "updatedAt": "2026-02-26",
+      "source": "dashboard.md"
+    },
+    {
+      "id": "doc-2181f5ff4e",
+      "title": "配置服务内部结构",
+      "summary": "想在 weapp-vite 中扩展配置加载或贡献新能力？这一页梳理了配置服务的核心文件，帮助你快速定位到对应模块。即便不准备修改源码，也能借此了解 defineConfig 背后的执行流程。",
+      "url": "/deep/config-service",
+      "canonical": "https://vite.icebreaker.top/deep/config-service",
+      "keywords": [
+        "配置",
+        "deep",
+        "config",
+        "service",
+        "配置服务内部结构",
+        "想在",
+        "weapp-vite",
+        "帮助你快速定位到对应模块。即便不准备修改源码"
+      ],
+      "headings": [
+        "配置服务内部结构",
+        "createConfigService.ts",
+        "internal/alias.ts",
+        "internal/loadConfig.ts",
+        "internal/merge.ts"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "deep/config-service.md"
+    },
+    {
+      "id": "doc-2d98ea63a3",
+      "title": "weapp-vite init 做了什么？",
+      "summary": "weapp-vite init 是在现有原生项目上接入 weapp-vite 的最快方式。它会检查当前目录结构、补齐必需的配置文件，然后提示你后续可以手动调整的地方。本节逐步拆解各项改动，方便团队在需要时自行定制或纯手动迁移。",
+      "url": "/deep/init",
+      "canonical": "https://vite.icebreaker.top/deep/init",
+      "keywords": [
+        "weapp-vite",
+        "配置",
+        "deep",
+        "init",
+        "做了什么？",
+        "是在现有原生项目上接入",
+        "的最快方式。它会检查当前目录结构",
+        "补齐必需的配置文件"
+      ],
+      "headings": [
+        "weapp-vite init 做了什么？",
+        "1. 修改 project.config.json",
+        "2. 更新 package.json",
+        "3. 新增 tsconfig.json 与 vite-env.d.ts",
+        "4. 生成 vite.config.[m]ts",
+        "5. 更新 .gitignore",
+        "6. 其他辅助文件"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "deep/init.md"
+    },
+    {
+      "id": "doc-cbd1e6bf5c",
+      "title": "依赖分析扫描流程",
+      "summary": "当 weapp-vite 启动构建或监听时，会先确定哪些文件属于入口，然后递归分析它们之间的引用关系。理解这一流程有助于调试“页面没有被构建”“组件样式缺失”等问题。本页以文字和示意图梳理扫描逻辑，方便贡献者和高级用户参考。",
+      "url": "/deep/scan",
+      "canonical": "https://vite.icebreaker.top/deep/scan",
+      "keywords": [
+        "调试",
+        "deep",
+        "scan",
+        "依赖分析扫描流程",
+        "当",
+        "weapp-vite",
+        "启动构建或监听时",
+        "会先确定哪些文件属于入口"
+      ],
+      "headings": [
+        "依赖分析扫描流程",
+        "入口类型判定",
+        "引用边与递归规则",
+        "调试建议"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "deep/scan.md"
+    },
+    {
+      "id": "doc-8a12762232",
+      "title": "weapp-vite-template",
+      "summary": "weapp-vite-template，聚焦 demos / aa 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/demos/aa/README",
+      "canonical": "https://vite.icebreaker.top/demos/aa/README",
+      "keywords": [
+        "weapp-vite",
+        "Vue SFC",
+        "微信小程序",
+        "demos",
+        "aa",
+        "weapp-vite-template",
+        "聚焦",
+        "/"
+      ],
+      "headings": [
+        "weapp-vite-template",
+        "使用方式",
+        "开发",
+        "构建",
+        "打开微信开发者工具",
+        "生成组件/页面",
+        "文档地址"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "demos/aa/README.md"
+    },
+    {
+      "id": "doc-587e0b70cd",
+      "title": "别名",
+      "summary": "weapp-vite 同时支持 **JS/TS 别名** 与 **JSON/JSONC 别名**，让你在脚本和配置文件里都能用同一套路径前缀。本页先给出最常见的配置方式，再补充一些使用建议；更细的字段说明请参考 配置文档 · JSON 配…",
+      "url": "/guide/alias",
+      "canonical": "https://vite.icebreaker.top/guide/alias",
+      "keywords": [
+        "guide",
+        "alias",
+        "别名",
+        "weapp-vite",
+        "同时支持",
+        "JS/TS"
+      ],
+      "headings": [
+        "别名 {#alias}",
+        "适用场景",
+        "JS/TS 别名",
+        "JSON / JSONC 别名",
+        "常见问题排查"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/alias.md"
+    },
+    {
+      "id": "doc-9b2986e688",
+      "title": "自定义 autoImportComponents Resolver",
+      "summary": "weapp.autoImportComponents.resolvers 用来把 WXML 里的组件标签（例如 ）解析成小程序 usingComponents 需要的 from 路径（例如 @vant/weapp/button）。",
+      "url": "/guide/auto-import-resolver",
+      "canonical": "https://vite.icebreaker.top/guide/auto-import-resolver",
+      "keywords": [
+        "guide",
+        "auto",
+        "import",
+        "resolver",
+        "自定义",
+        "autoimportcomponents",
+        "用来把",
+        "wxml"
+      ],
+      "headings": [
+        "自定义 autoImportComponents Resolver",
+        "Resolver 是什么",
+        "推荐：对象写法（静态映射）",
+        "建议增强 1：暴露 resolver.components（用于“全量生成”）",
+        "建议增强 2：支持第三方组件库 props 类型解析",
+        "进阶：函数写法（按需动态解析）",
+        "参考实现"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/auto-import-resolver.md"
+    },
+    {
+      "id": "doc-842662f7bf",
+      "title": "自动引入组件",
+      "summary": "weapp-vite 可以在构建阶段自动扫描并注册组件，让你在 WXML 里直接写组件标签，而不需要手动维护 usingComponents。",
+      "url": "/guide/auto-import",
+      "canonical": "https://vite.icebreaker.top/guide/auto-import",
+      "keywords": [
+        "guide",
+        "auto",
+        "import",
+        "自动引入组件",
+        "weapp-vite",
+        "可以在构建阶段自动扫描并注册组件",
+        "让你在",
+        "wxml"
+      ],
+      "headings": [
+        "自动引入组件",
+        "适用场景",
+        "快速上手：扫描项目组件",
+        "第三方 UI 库自动引入",
+        "自动生成的辅助文件",
+        "组件清单",
+        "类型声明与 HTML 自定义数据",
+        "常见疑问"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/auto-import.md"
+    },
+    {
+      "id": "doc-b3b6d8daae",
+      "title": "自动路由（weapp-vite/auto-routes）",
+      "summary": "weapp-vite 提供了一个可选的“自动路由”能力：扫描主包/分包的页面目录，自动生成路由清单，并通过虚拟模块 weapp-vite/auto-routes 导出。",
+      "url": "/guide/auto-routes",
+      "canonical": "https://vite.icebreaker.top/guide/auto-routes",
+      "keywords": [
+        "weapp-vite",
+        "guide",
+        "auto",
+        "routes",
+        "自动生成路由清单",
+        "并通过虚拟模块",
+        "weapp-vite/auto-routes",
+        "导出。"
+      ],
+      "headings": [
+        "自动路由（weapp-vite/auto-routes）",
+        "适用场景",
+        "快速开启",
+        "监听范围",
+        "在代码中使用",
+        "写入 app.json 的方式",
+        "常见问题"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/auto-routes.md"
+    },
+    {
+      "id": "doc-fa4e11f624",
+      "title": "共享 Chunk 策略（weapp.chunks）",
+      "summary": "weapp.chunks 用于控制 **复用模块的输出位置和形态**，常用于分包优化、避免不必要的 common.js、或减少重复体积。",
+      "url": "/guide/chunks",
+      "canonical": "https://vite.icebreaker.top/guide/chunks",
+      "keywords": [
+        "guide",
+        "chunks",
+        "共享",
+        "chunk",
+        "策略（weapp.chunks）",
+        "weapp.chunks",
+        "用于控制",
+        "复用模块的输出位置和形态"
+      ],
+      "headings": [
+        "共享 Chunk 策略（weapp.chunks）",
+        "基础示例",
+        "sharedStrategy：共享模块落盘策略",
+        "sharedMode：共享模块输出形态",
+        "1) common（默认）",
+        "2) path（按源码路径输出）",
+        "3) inline（禁用共享 chunk）",
+        "sharedOverrides：针对模块覆盖输出形态",
+        "sharedPathRoot：路径型共享输出的根目录",
+        "dynamicImports：动态 import 的处理方式",
+        "forceDuplicatePatterns：强制复制共享模块",
+        "duplicateWarningBytes：冗余体积告警"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/chunks.md"
+    },
+    {
+      "id": "doc-c7a5c8344e",
+      "title": "调试与贡献",
+      "summary": "这份指南面向想要参与 weapp-vite 开发或排查源码问题的伙伴。按照下面的步骤准备环境，就可以在本地命中断点、验证修改，并把贡献发送到社区。",
+      "url": "/guide/debug",
+      "canonical": "https://vite.icebreaker.top/guide/debug",
+      "keywords": [
+        "调试",
+        "guide",
+        "debug",
+        "调试与贡献",
+        "这份指南面向想要参与",
+        "weapp-vite",
+        "开发或排查源码问题的伙伴。按照下面的步骤准备环境",
+        "就可以在本地命中断点"
+      ],
+      "headings": [
+        "调试与贡献",
+        "1. Fork 与克隆仓库",
+        "2. 安装依赖并准备调试",
+        "3. 提交贡献"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/debug.md"
+    },
+    {
+      "id": "doc-fa8d7d1869",
+      "title": "目录结构",
+      "summary": "weapp-vite 默认沿用原生小程序的目录习惯：app.* 放在 src/，页面在 pages/，分包在 packages/。在这个基础上，框架提供了一些“可选但推荐”的约定目录，让自动路由、自动导入组件、分包增强等能力能直接生效。",
+      "url": "/guide/directory-structure",
+      "canonical": "https://vite.icebreaker.top/guide/directory-structure",
+      "keywords": [
+        "配置",
+        "分包",
+        "guide",
+        "directory",
+        "structure",
+        "目录结构",
+        "weapp-vite",
+        "默认沿用原生小程序的目录习惯：app."
+      ],
+      "headings": [
+        "目录结构",
+        "根目录必备文件",
+        "src/ 内的默认约定",
+        "App 基础文件",
+        "pages/ —— 主包页面",
+        "components/ —— 主包组件",
+        "packages/ —— 分包",
+        "shared/",
+        "action/、config/、utils/",
+        "workers/",
+        "快速生成目录"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/directory-structure.md"
+    },
+    {
+      "id": "doc-16e9c3f82a",
+      "title": "生成脚手架",
+      "summary": "weapp-vite 自带一个生成器，用来一键生成页面/组件/App 的基础文件（页面/组件包含 js/ts、wxml、wxss、json；App 不生成 wxml）。它适合两类情况：",
+      "url": "/guide/generate",
+      "canonical": "https://vite.icebreaker.top/guide/generate",
+      "keywords": [
+        "guide",
+        "generate",
+        "生成脚手架",
+        "weapp-vite",
+        "自带一个生成器",
+        "用来一键生成页面/组件/App",
+        "的基础文件（页面/组件包含",
+        "js/ts"
+      ],
+      "headings": [
+        "生成脚手架",
+        "快速上手",
+        "自定义文件后缀与目录",
+        "自定义模板内容",
+        "调整生成文件名",
+        "生成不同类型的模板",
+        "CLI 参数速查"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/generate.md"
+    },
+    {
+      "id": "doc-5f68bba105",
+      "title": "静态资源的处理与优化",
+      "summary": "weapp-vite 在静态资源方面沿用了 Vite 的约定：import 语句、public 目录、插件生态都可以直接使用。本页聚焦最常见的资源场景，并给出优化建议。",
+      "url": "/guide/image-optimize",
+      "canonical": "https://vite.icebreaker.top/guide/image-optimize",
+      "keywords": [
+        "guide",
+        "image",
+        "optimize",
+        "静态资源的处理与优化",
+        "weapp-vite",
+        "在静态资源方面沿用了",
+        "vite",
+        "的约定：import"
+      ],
+      "headings": [
+        "静态资源的处理与优化",
+        "何时放入 public",
+        "通过 import 引用的资源",
+        "图片压缩与 CDN",
+        "使用 vite-plugin-image-optimizer",
+        "与 CDN/OSS 协同",
+        "常见问题"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/image-optimize.md"
+    },
+    {
+      "id": "doc-5ea47be888",
+      "title": "快速开始",
+      "summary": "执行以下命令，快速创建一个集成了 weapp-vite 的原生微信小程序项目：",
+      "url": "/guide/",
+      "canonical": "https://vite.icebreaker.top/guide/",
+      "keywords": [
+        "weapp-vite",
+        "微信小程序",
+        "配置",
+        "guide",
+        "快速开始",
+        "执行以下命令",
+        "快速创建一个集成了"
+      ],
+      "headings": [
+        "快速开始 {#getting-started}",
+        "0. 准备工作",
+        "1. 使用内置模板",
+        "1. 选择模板",
+        "2. 切换到目录中，执行安装命令",
+        "3. 开始开发",
+        "执行 dev 命令（已开启服务端口后再添加 --open）",
+        "4. 开发者工具预览",
+        "执行 open 命令",
+        "2. 手动集成",
+        "1. 创建项目",
+        "2. 手动接入 weapp-vite"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/index.md"
+    },
+    {
+      "id": "doc-4b406ce947",
+      "title": "使用 TS/JS 生成 JSON",
+      "summary": "小程序项目里有很多结构相似的 json 配置（页面/组件/App）。weapp-vite 在兼容原生 json/jsonc 的基础上，允许你用 json.ts / json.js 生成最终配置，让配置也能享受模块化、类型提示和复用能力。",
+      "url": "/guide/json-enhance",
+      "canonical": "https://vite.icebreaker.top/guide/json-enhance",
+      "keywords": [
+        "配置",
+        "guide",
+        "json",
+        "enhance",
+        "使用",
+        "TS/JS",
+        "生成",
+        "小程序项目里有很多结构相似的"
+      ],
+      "headings": [
+        "使用 TS/JS 生成 JSON",
+        "为什么要用脚本生成 JSON？",
+        "快速示例",
+        "获得类型提示",
+        "组合与复用配置",
+        "提示与最佳实践"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/json-enhance.md"
+    },
+    {
+      "id": "doc-ca9f0cd96d",
+      "title": "JSON 配置文件的智能提示",
+      "summary": "给 app.json、page.json 等文件加上 $schema 字段后，VS Code、微信开发者工具等编辑器就能提供：",
+      "url": "/guide/json-intelli-sense",
+      "canonical": "https://vite.icebreaker.top/guide/json-intelli-sense",
+      "keywords": [
+        "配置",
+        "guide",
+        "json",
+        "intelli",
+        "sense",
+        "配置文件的智能提示",
+        "给",
+        "app.json"
+      ],
+      "headings": [
+        "JSON 配置文件的智能提示",
+        "如何添加 $schema",
+        "常用 Schema 列表",
+        "效果展示",
+        "常见问题"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/json-intelli-sense.md"
+    },
+    {
+      "id": "doc-e10de99829",
+      "title": "组件库构建（lib 模式）",
+      "summary": "weapp-vite 的 **lib 模式** 用于打包小程序组件库或业务模块。它和应用模式的最大区别是：",
+      "url": "/guide/lib-mode",
+      "canonical": "https://vite.icebreaker.top/guide/lib-mode",
+      "keywords": [
+        "配置",
+        "调试",
+        "guide",
+        "lib",
+        "mode",
+        "组件库构建（lib",
+        "模式）",
+        "weapp-vite"
+      ],
+      "headings": [
+        "组件库构建（lib 模式）",
+        "适用场景",
+        "快速开始（官方模板）",
+        "基础配置",
+        "核心字段说明",
+        "自定义输出路径",
+        "自动生成组件 JSON",
+        "产物结构示例",
+        "与 weapp.chunks 联动",
+        "常见问题",
+        "为什么没有 app.json 与页面产物？",
+        "输出路径冲突怎么办？"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/lib-mode.md"
+    },
+    {
+      "id": "doc-4c252a4611",
+      "title": "手动集成 weapp-vite",
+      "summary": "已经有运行中的微信小程序？可以按下面步骤在不依赖脚手架的情况下把 weapp-vite 接进来。整体思路就三步：补齐配置文件 → 安装依赖 → 调整目录。",
+      "url": "/guide/manual-integration",
+      "canonical": "https://vite.icebreaker.top/guide/manual-integration",
+      "keywords": [
+        "weapp-vite",
+        "配置",
+        "guide",
+        "manual",
+        "integration",
+        "手动集成",
+        "接进来。整体思路就三步：补齐配置文件",
+        "→"
+      ],
+      "headings": [
+        "手动集成 weapp-vite",
+        "1. 安装依赖",
+        "2. 初始化必需文件",
+        "package.json",
+        "tsconfig",
+        "vite.config.ts",
+        "项目配置",
+        "3. 调整目录",
+        "4. 验证运行",
+        "5. 可选增强"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/manual-integration.md"
+    },
+    {
+      "id": "doc-5d9fcdf459",
+      "title": "模块化风格",
+      "summary": "weapp-vite 基于 ESM（ECMAScript Modules）进行构建。建议在业务代码里尽量统一使用 import / export，这样类型推导、Tree Shaking、热更新都会更稳定。",
+      "url": "/guide/module",
+      "canonical": "https://vite.icebreaker.top/guide/module",
+      "keywords": [
+        "guide",
+        "module",
+        "模块化风格",
+        "weapp-vite",
+        "基于",
+        "ESM（ECMAScript",
+        "import",
+        "/"
+      ],
+      "headings": [
+        "模块化风格",
+        "统一改用 ESM",
+        "处理路径差异",
+        "混合 ESM 与 CJS 时的注意事项",
+        "其他最佳实践"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/module.md"
+    },
+    {
+      "id": "doc-606b7aa1e1",
+      "title": "面向多平台构建",
+      "summary": "weapp-vite 内置了多端适配能力：在开发/构建命令后追加 --platform （或短写 -p ），即可输出目标平台所需的文件后缀与目录结构。",
+      "url": "/guide/multi-platform",
+      "canonical": "https://vite.icebreaker.top/guide/multi-platform",
+      "keywords": [
+        "微信小程序",
+        "guide",
+        "multi",
+        "platform",
+        "面向多平台构建",
+        "weapp-vite",
+        "内置了多端适配能力：在开发/构建命令后追加"
+      ],
+      "headings": [
+        "面向多平台构建 {#multi-platform}",
+        "支付宝小程序 {#platform-alipay}",
+        "字节系（抖音 / 今日头条）小程序 {#platform-tt}",
+        "百度智能小程序 {#platform-swan}",
+        "京东小程序 {#platform-jd}",
+        "小红书小程序 {#platform-xhs}"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/multi-platform.md"
+    },
+    {
+      "id": "doc-8d79918065",
+      "title": "npm 自动构建",
+      "summary": "weapp-vite 会尽量帮你把“npm 依赖怎么进小程序”这件事自动化：默认提供 **2 种自动策略**，以及 **1 个手动触发**命令。",
+      "url": "/guide/npm",
+      "canonical": "https://vite.icebreaker.top/guide/npm",
+      "keywords": [
+        "微信小程序",
+        "guide",
+        "npm",
+        "自动构建",
+        "weapp-vite",
+        "会尽量帮你把“npm",
+        "依赖怎么进小程序”这件事自动化：默认提供",
+        "2"
+      ],
+      "headings": [
+        "npm 自动构建",
+        "自动构建",
+        "1. 构建到 miniprogram_npm（来自 dependencies）",
+        "2. 内联到脚本产物（不在 dependencies 的依赖）",
+        "详细解释",
+        "怎么选（建议）",
+        "手动构建"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/npm.md"
+    },
+    {
+      "id": "doc-e24c2f0468",
+      "title": "微信小程序插件开发",
+      "summary": "weapp-vite 可以在同一个项目中同时维护主应用与插件，只要开启 pluginRoot 就能复用现有的热更新、构建、调试能力。本页将介绍适用场景、目录约定和常见问题，帮助你在几分钟内完成插件开发环境的搭建。",
+      "url": "/guide/plugin",
+      "canonical": "https://vite.icebreaker.top/guide/plugin",
+      "keywords": [
+        "微信小程序",
+        "guide",
+        "plugin",
+        "微信小程序插件开发",
+        "weapp-vite",
+        "可以在同一个项目中同时维护主应用与插件",
+        "只要开启",
+        "pluginroot"
+      ],
+      "headings": [
+        "微信小程序插件开发",
+        "适用场景",
+        "开启插件目录",
+        "目录约定",
+        "开发流程",
+        "启动本地开发",
+        "构建与上传",
+        "示例项目",
+        "常见问题",
+        "插件 WXSS 没有生成？",
+        "附加功能是否生效？"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/plugin.md"
+    },
+    {
+      "id": "doc-2991430373",
+      "title": "SEO/GEO 质量门禁",
+      "summary": "说明 weapp-vite 文档站的 SEO/GEO 自动化治理流程，包括审计、质量检查、llms 索引生成与 CI 严格门禁。",
+      "url": "/guide/seo-governance",
+      "canonical": "https://vite.icebreaker.top/guide/seo-governance",
+      "keywords": [
+        "seo",
+        "geo",
+        "weapp-vite",
+        "VitePress",
+        "质量门禁",
+        "guide",
+        "governance",
+        "SEO/GEO"
+      ],
+      "headings": [
+        "SEO/GEO 质量门禁",
+        "核心命令",
+        "构建接入",
+        "CI 门禁",
+        "frontmatter 自动治理约束"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/seo-governance.md"
+    },
+    {
+      "id": "doc-44abce2120",
+      "title": "分包指南",
+      "summary": "微信小程序的分包机制在 weapp-vite 中得到完整支持。本页帮你快速搞清楚两件事：",
+      "url": "/guide/subpackage",
+      "canonical": "https://vite.icebreaker.top/guide/subpackage",
+      "keywords": [
+        "调试",
+        "分包",
+        "guide",
+        "subpackage",
+        "分包指南",
+        "微信小程序的分包机制在",
+        "weapp-vite",
+        "中得到完整支持。本页帮你快速搞清楚两件事："
+      ],
+      "headings": [
+        "分包指南",
+        "普通分包",
+        "代码产物的位置",
+        "详细示例",
+        "独立分包",
+        "单独开发某个分包（把它当成独立分包）",
+        "分包样式共享",
+        "调试建议",
+        "分析产物布局",
+        "常见问题"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/subpackage.md"
+    },
+    {
+      "id": "doc-eb961e908c",
+      "title": "Vue SFC：基础与组成",
+      "summary": "Vue SFC：基础与组成，聚焦 guide / vue-sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/guide/vue-sfc/basics",
+      "canonical": "https://vite.icebreaker.top/guide/vue-sfc/basics",
+      "keywords": [
+        "Vue SFC",
+        "迁移指南",
+        "guide",
+        "vue",
+        "sfc",
+        "basics",
+        "SFC：基础与组成",
+        "聚焦"
+      ],
+      "headings": [
+        "已迁移"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/vue-sfc/basics.md"
+    },
+    {
+      "id": "doc-7f8bfac2b7",
+      "title": "Vue SFC：配置与宏",
+      "summary": "Vue SFC：配置与宏，聚焦 guide / vue-sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/guide/vue-sfc/config",
+      "canonical": "https://vite.icebreaker.top/guide/vue-sfc/config",
+      "keywords": [
+        "Vue SFC",
+        "配置",
+        "迁移指南",
+        "guide",
+        "vue",
+        "sfc",
+        "config",
+        "SFC：配置与宏"
+      ],
+      "headings": [
+        "已迁移"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/vue-sfc/config.md"
+    },
+    {
+      "id": "doc-355b8fd308",
+      "title": "Vue SFC：示例",
+      "summary": "本页已迁移至 /wevu/vue-sfc/examples。",
+      "url": "/guide/vue-sfc/examples",
+      "canonical": "https://vite.icebreaker.top/guide/vue-sfc/examples",
+      "keywords": [
+        "Vue SFC",
+        "迁移指南",
+        "guide",
+        "vue",
+        "sfc",
+        "examples",
+        "SFC：示例",
+        "本页已迁移至"
+      ],
+      "headings": [
+        "已迁移"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/vue-sfc/examples.md"
+    },
+    {
+      "id": "doc-09659616ff",
+      "title": "Vue SFC 开发",
+      "summary": "这里是 Vue SFC 开发的入口说明。完整内容已迁移到 wevu 文档目录：weapp-vite 负责编译期（.vue → 小程序产物），wevu 负责运行期（响应式与生命周期）。",
+      "url": "/guide/vue-sfc/",
+      "canonical": "https://vite.icebreaker.top/guide/vue-sfc/",
+      "keywords": [
+        "Vue SFC",
+        "guide",
+        "vue",
+        "sfc",
+        "开发",
+        "这里是",
+        "开发的入口说明。完整内容已迁移到",
+        "wevu"
+      ],
+      "headings": [
+        "Vue SFC 开发",
+        "目录"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/vue-sfc/index.md"
+    },
+    {
+      "id": "doc-da83f275c2",
+      "title": "Vue SFC：模板与指令",
+      "summary": "本页已迁移至 /wevu/vue-sfc/template。",
+      "url": "/guide/vue-sfc/template",
+      "canonical": "https://vite.icebreaker.top/guide/vue-sfc/template",
+      "keywords": [
+        "Vue SFC",
+        "迁移指南",
+        "guide",
+        "vue",
+        "sfc",
+        "template",
+        "SFC：模板与指令",
+        "本页已迁移至"
+      ],
+      "headings": [
+        "已迁移"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/vue-sfc/template.md"
+    },
+    {
+      "id": "doc-8b31a98c89",
+      "title": "Vue SFC：调试与排错",
+      "summary": "本页已迁移至 /wevu/vue-sfc/troubleshoot。",
+      "url": "/guide/vue-sfc/troubleshoot",
+      "canonical": "https://vite.icebreaker.top/guide/vue-sfc/troubleshoot",
+      "keywords": [
+        "Vue SFC",
+        "迁移指南",
+        "调试",
+        "guide",
+        "vue",
+        "sfc",
+        "troubleshoot",
+        "SFC：调试与排错"
+      ],
+      "headings": [
+        "已迁移"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/vue-sfc/troubleshoot.md"
+    },
+    {
+      "id": "doc-9c88738c06",
+      "title": "Web 兼容矩阵 experimental",
+      "summary": "本文用于说明 weapp-vite 在 Web 运行时（@weapp-vite/web）下的能力边界。 状态含义如下：",
+      "url": "/guide/web-compat-matrix",
+      "canonical": "https://vite.icebreaker.top/guide/web-compat-matrix",
+      "keywords": [
+        "api",
+        "guide",
+        "web",
+        "compat",
+        "matrix",
+        "兼容矩阵",
+        "experimental"
+      ],
+      "headings": [
+        "Web 兼容矩阵 experimental {#web-compat-matrix}",
+        "模板语法矩阵",
+        "组件选项矩阵",
+        "wx API 矩阵（Web bridge）",
+        "已知限制",
+        "建议用法"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/web-compat-matrix.md"
+    },
+    {
+      "id": "doc-95c7de0814",
+      "title": "什么是 Weapp-vite ?",
+      "summary": "weapp-vite 是一个面向微信小程序的现代构建框架：尽量不改变你写原生小程序的方式（语法、目录结构都能沿用），但把 Vite 生态、TypeScript、CSS 预处理器和更顺滑的开发/构建流程带进来。你仍然写小程序，但开发体验会更…",
+      "url": "/guide/what-is-weapp-vite",
+      "canonical": "https://vite.icebreaker.top/guide/what-is-weapp-vite",
+      "keywords": [
+        "weapp-vite",
+        "迁移指南",
+        "guide",
+        "what",
+        "is",
+        "weapp",
+        "vite",
+        "什么是"
+      ],
+      "headings": [
+        "什么是 Weapp-vite ?",
+        "核心简介",
+        "我们想解决的问题",
+        "Weapp-vite 的能力亮点",
+        "什么时候适合选择 Weapp-vite",
+        "什么时候可以考虑其他方案",
+        "迁移与生态"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/what-is-weapp-vite.md"
+    },
+    {
+      "id": "doc-0448f04376",
+      "title": "WXML 增强",
+      "summary": "WXML 增强，聚焦 guide / wxml 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/guide/wxml",
+      "canonical": "https://vite.icebreaker.top/guide/wxml",
+      "keywords": [
+        "配置",
+        "guide",
+        "wxml",
+        "增强",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "WXML 增强",
+        "静态分析与额外文件",
+        "事件绑定语法糖（可选）",
+        "当前可配置的范围"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/wxml.md"
+    },
+    {
+      "id": "doc-2930e07de7",
+      "title": "WXS 增强 experimental",
+      "summary": "WXS（WeiXin Script）是微信小程序提供的轻量脚本语言，常用于在模板里做一些同步的、简单的逻辑处理。它和 JavaScript 不完全一样，能力也更受限。",
+      "url": "/guide/wxs",
+      "canonical": "https://vite.icebreaker.top/guide/wxs",
+      "keywords": [
+        "调试",
+        "guide",
+        "wxs",
+        "增强",
+        "experimental",
+        "WXS（WeiXin",
+        "Script）是微信小程序提供的轻量脚本语言",
+        "常用于在模板里做一些同步的"
+      ],
+      "headings": [
+        "WXS 增强 experimental",
+        "外部文件：.wxs.js / .wxs.ts",
+        "内联 WXS：lang=\"js\" / lang=\"ts\"",
+        "当前支持的语法",
+        "调试与回退方案"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/wxs.md"
+    },
+    {
+      "id": "doc-af7734c324",
+      "title": "WXSS 样式增强与注意点",
+      "summary": "weapp-vite 继承了 Vite 的样式处理能力：支持 .wxss、.css、.scss、.less、.sass、.styl 等格式，并输出为小程序可识别的 WXSS。",
+      "url": "/guide/wxss",
+      "canonical": "https://vite.icebreaker.top/guide/wxss",
+      "keywords": [
+        "微信小程序",
+        "guide",
+        "wxss",
+        "样式增强与注意点",
+        "weapp-vite",
+        "继承了",
+        "vite",
+        "的样式处理能力：支持"
+      ],
+      "headings": [
+        "WXSS 样式增强与注意点",
+        "支持的样式格式",
+        "Vite 的默认行为",
+        "小程序场景下的差异",
+        "何时使用 @wv-keep-import",
+        "资源引用与公共样式",
+        "常见问题"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "guide/wxss.md"
+    },
+    {
+      "id": "doc-6beb4050e3",
+      "title": "构建与输出：你应该关心什么",
+      "summary": "构建与输出：你应该关心什么，聚焦 handbook / build-and-output 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/build-and-output",
+      "canonical": "https://vite.icebreaker.top/handbook/build-and-output",
+      "keywords": [
+        "handbook",
+        "build",
+        "output",
+        "构建与输出：你应该关心什么",
+        "聚焦",
+        "/",
+        "build-and-output",
+        "相关场景"
+      ],
+      "headings": [
+        "构建与输出：你应该关心什么",
+        "本章你会学到什么",
+        "你要关心的 4 件事",
+        "相关链接（细节以现有文档为准）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/build-and-output.md"
+    },
+    {
+      "id": "doc-8f5a8d0b78",
+      "title": "调试与排错（体系化）",
+      "summary": "遇到复杂问题时，先把问题缩到一个页面/一个组件，再把“业务依赖”剥离（只留模板 + 少量 state）。",
+      "url": "/handbook/debugging",
+      "canonical": "https://vite.icebreaker.top/handbook/debugging",
+      "keywords": [
+        "wevu",
+        "微信小程序",
+        "调试",
+        "运行时",
+        "编译",
+        "handbook",
+        "debugging",
+        "调试与排错（体系化）"
+      ],
+      "headings": [
+        "调试与排错（体系化）",
+        "本章你会学到什么",
+        "第 0 步：先把现象分类",
+        "第 1 层：小程序侧排错",
+        "第 2 层：SFC 编译侧排错（wuve）",
+        "第 3 层：wevu 运行时排错",
+        "最小复现建议"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/debugging.md"
+    },
+    {
+      "id": "doc-14791a203e",
+      "title": "多环境与配置分层",
+      "summary": "多环境与配置分层，聚焦 handbook / env-and-config 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/env-and-config",
+      "canonical": "https://vite.icebreaker.top/handbook/env-and-config",
+      "keywords": [
+        "配置",
+        "handbook",
+        "env",
+        "config",
+        "多环境与配置分层",
+        "聚焦",
+        "/",
+        "env-and-config"
+      ],
+      "headings": [
+        "多环境与配置分层",
+        "本章你会学到什么",
+        "推荐做法",
+        "常见坑",
+        "相关链接"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/env-and-config.md"
+    },
+    {
+      "id": "doc-475b15497f",
+      "title": "快速开始（教程版）",
+      "summary": "建议优先用仓库模板/脚手架创建项目，然后对照本教程逐步添加能力。",
+      "url": "/handbook/getting-started",
+      "canonical": "https://vite.icebreaker.top/handbook/getting-started",
+      "keywords": [
+        "Vue SFC",
+        "handbook",
+        "getting",
+        "started",
+        "快速开始（教程版）",
+        "建议优先用仓库模板/脚手架创建项目",
+        "然后对照本教程逐步添加能力。"
+      ],
+      "headings": [
+        "快速开始（教程版）",
+        "本章你会学到什么",
+        "1. 先决条件",
+        "2. 最短路径：用模板创建",
+        "3. Vue SFC 最小页面（只演示形态）",
+        "4. 常见问题速查"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/getting-started.md"
+    },
+    {
+      "id": "doc-e2ce0b9ee8",
+      "title": "教程总览（weapp-vite × Vue SFC × wevu）",
+      "summary": "这套教程想帮你把“小程序工程化 + Vue SFC + 运行时”这条链路一次性跑顺，核心就三件事：",
+      "url": "/handbook/",
+      "canonical": "https://vite.icebreaker.top/handbook/",
+      "keywords": [
+        "weapp-vite",
+        "wevu",
+        "Vue SFC",
+        "handbook",
+        "教程总览（weapp-vite",
+        "×",
+        "vue",
+        "sfc"
+      ],
+      "headings": [
+        "教程总览",
+        "你会在这里得到什么",
+        "两条阅读路线",
+        "从哪开始"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/index.md"
+    },
+    {
+      "id": "doc-5e3dd6d779",
+      "title": "迁移指南（路线与清单）",
+      "summary": "迁移指南（路线与清单），聚焦 handbook / migration 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/migration",
+      "canonical": "https://vite.icebreaker.top/handbook/migration",
+      "keywords": [
+        "迁移指南",
+        "handbook",
+        "migration",
+        "迁移指南（路线与清单）",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "迁移指南（路线与清单）",
+        "本章你会学到什么",
+        "建议迁移路线（最稳）",
+        "相关链接"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/migration.md"
+    },
+    {
+      "id": "doc-fc82d0ef7b",
+      "title": "Monorepo 与多包协作",
+      "summary": "Monorepo 与多包协作，聚焦 handbook / monorepo 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/monorepo",
+      "canonical": "https://vite.icebreaker.top/handbook/monorepo",
+      "keywords": [
+        "handbook",
+        "monorepo",
+        "与多包协作",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖",
+        "weapp-vite"
+      ],
+      "headings": [
+        "Monorepo 与多包协作",
+        "本章你会学到什么",
+        "推荐实践",
+        "常见坑",
+        "相关链接"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/monorepo.md"
+    },
+    {
+      "id": "doc-3d1ab8b204",
+      "title": "原生能力调用（wx.）",
+      "summary": "原生能力调用（wx.*），聚焦 handbook / native-apis 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/native-apis",
+      "canonical": "https://vite.icebreaker.top/handbook/native-apis",
+      "keywords": [
+        "api",
+        "handbook",
+        "native",
+        "apis",
+        "原生能力调用（wx.）",
+        "聚焦",
+        "/",
+        "native-apis"
+      ],
+      "headings": [
+        "原生能力调用（wx.\\*）",
+        "本章你会学到什么",
+        "推荐封装方式",
+        "高风险点（务必提前设计）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/native-apis.md"
+    },
+    {
+      "id": "doc-b717499b10",
+      "title": "页面与路由（导航）",
+      "summary": "页面与路由（导航），聚焦 handbook / navigation 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/navigation",
+      "canonical": "https://vite.icebreaker.top/handbook/navigation",
+      "keywords": [
+        "api",
+        "handbook",
+        "navigation",
+        "页面与路由（导航）",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "页面与路由（导航）",
+        "本章你会学到什么",
+        "你要掌握的导航 API",
+        "参数传递与回跳",
+        "常见坑"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/navigation.md"
+    },
+    {
+      "id": "doc-c8481ead8d",
+      "title": "网络请求与数据层",
+      "summary": "网络请求与数据层，聚焦 handbook / network 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/network",
+      "canonical": "https://vite.icebreaker.top/handbook/network",
+      "keywords": [
+        "handbook",
+        "network",
+        "网络请求与数据层",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖",
+        "weapp-vite"
+      ],
+      "headings": [
+        "网络请求与数据层",
+        "本章你会学到什么",
+        "推荐分层",
+        "token 刷新（建议要有的能力）",
+        "上传/下载"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/network.md"
+    },
+    {
+      "id": "doc-3a0a8651d9",
+      "title": "监控与埋点",
+      "summary": "监控与埋点，聚焦 handbook / observability 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/observability",
+      "canonical": "https://vite.icebreaker.top/handbook/observability",
+      "keywords": [
+        "handbook",
+        "observability",
+        "监控与埋点",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖",
+        "weapp-vite"
+      ],
+      "headings": [
+        "监控与埋点",
+        "本章你会学到什么",
+        "最小监控清单（建议上线前具备）",
+        "推荐组织方式"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/observability.md"
+    },
+    {
+      "id": "doc-71b93ba1e9",
+      "title": "性能与体验优化",
+      "summary": "性能与体验优化，聚焦 handbook / performance 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/performance",
+      "canonical": "https://vite.icebreaker.top/handbook/performance",
+      "keywords": [
+        "wevu",
+        "性能优化",
+        "handbook",
+        "performance",
+        "性能与体验优化",
+        "聚焦",
+        "/",
+        "相关场景"
+      ],
+      "headings": [
+        "性能与体验优化",
+        "本章你会学到什么",
+        "优先级最高的优化清单",
+        "wevu 相关建议",
+        "需要真机验证的点"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/performance.md"
+    },
+    {
+      "id": "doc-82b32362b9",
+      "title": "目录结构与分层",
+      "summary": "目录结构与分层，聚焦 handbook / project-structure 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/project-structure",
+      "canonical": "https://vite.icebreaker.top/handbook/project-structure",
+      "keywords": [
+        "handbook",
+        "project",
+        "structure",
+        "目录结构与分层",
+        "聚焦",
+        "/",
+        "project-structure",
+        "相关场景"
+      ],
+      "headings": [
+        "目录结构与分层",
+        "本章你会学到什么",
+        "推荐结构（可按团队裁剪）",
+        "页面与组件的“最小单位”",
+        "约定（强烈建议）",
+        "相关链接"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/project-structure.md"
+    },
+    {
+      "id": "doc-63a5423054",
+      "title": "构建、预览与上传",
+      "summary": "构建、预览与上传，聚焦 handbook / publish 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/publish",
+      "canonical": "https://vite.icebreaker.top/handbook/publish",
+      "keywords": [
+        "handbook",
+        "publish",
+        "构建",
+        "预览与上传",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "构建、预览与上传",
+        "本章你会学到什么",
+        "标准流程（建议写进团队脚本）",
+        "常见坑",
+        "相关链接"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/publish.md"
+    },
+    {
+      "id": "doc-8050fc8988",
+      "title": "阅读路线与约定",
+      "summary": "阅读路线与约定，聚焦 handbook / reading-guide 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/reading-guide",
+      "canonical": "https://vite.icebreaker.top/handbook/reading-guide",
+      "keywords": [
+        "handbook",
+        "reading",
+        "guide",
+        "阅读路线与约定",
+        "聚焦",
+        "/",
+        "reading-guide",
+        "相关场景"
+      ],
+      "headings": [
+        "阅读路线与约定",
+        "术语说明",
+        "这套教程的组织方式",
+        "版本与兼容性提示",
+        "示例与“能不能用”的判断原则"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/reading-guide.md"
+    },
+    {
+      "id": "doc-adacbe8b34",
+      "title": "参考与索引",
+      "summary": "参考与索引，聚焦 handbook / reference 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/reference",
+      "canonical": "https://vite.icebreaker.top/handbook/reference",
+      "keywords": [
+        "handbook",
+        "reference",
+        "参考与索引",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖",
+        "weapp-vite"
+      ],
+      "headings": [
+        "参考与索引",
+        "首选参考入口",
+        "源码定位（遇到边界问题时）",
+        "FAQ（入口）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/reference.md"
+    },
+    {
+      "id": "doc-20292ae0bb",
+      "title": "资源：图片/字体/路径",
+      "summary": "资源：图片/字体/路径，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/sfc/assets",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/assets",
+      "keywords": [
+        "handbook",
+        "sfc",
+        "assets",
+        "资源：图片/字体/路径",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "资源：图片/字体/路径",
+        "本章你会学到什么",
+        "图片引用策略（建议优先级）",
+        "常见坑",
+        "相关链接"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/assets.md"
+    },
+    {
+      "id": "doc-535d1b00be",
+      "title": "组件：script setup import 与拆分",
+      "summary": "在 weapp-vite + Vue SFC 项目中，推荐直接在脚本里导入 .vue 组件：",
+      "url": "/handbook/sfc/components",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/components",
+      "keywords": [
+        "Vue SFC",
+        "handbook",
+        "sfc",
+        "components",
+        "组件：script",
+        "setup",
+        "import",
+        "与拆分"
+      ],
+      "headings": [
+        "组件：script setup import 与拆分",
+        "本章你会学到什么",
+        "推荐范式（默认）",
+        "usingComponents 何时使用",
+        "原生组件类型提示（NativePropType + InferNativeProps）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/components.md"
+    },
+    {
+      "id": "doc-46d05d67ee",
+      "title": "Cookbook：高频场景配方",
+      "summary": "本页把高频需求按“可复制的小片段”组织，后续你可以逐条补充可运行 demo。",
+      "url": "/handbook/sfc/cookbook",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/cookbook",
+      "keywords": [
+        "handbook",
+        "sfc",
+        "cookbook",
+        "Cookbook：高频场景配方",
+        "本页把高频需求按“可复制的小片段”组织",
+        "后续你可以逐条补充可运行",
+        "demo。"
+      ],
+      "headings": [
+        "Cookbook：高频场景配方",
+        "登录态与拦截跳转",
+        "请求队列与 token 刷新",
+        "通用弹窗/Toast 服务",
+        "列表页模板",
+        "分享卡片"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/cookbook.md"
+    },
+    {
+      "id": "doc-242e4b1693",
+      "title": "事件与 v-model：绑定策略",
+      "summary": "weapp-vite 的 SFC 模板编译会把 v-model=\"x\" 直接编译成小程序的赋值表达式事件（例如 bind:input=\"x = $event.detail.value\"），因此存在天然限制：",
+      "url": "/handbook/sfc/events-and-v-model",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/events-and-v-model",
+      "keywords": [
+        "微信小程序",
+        "handbook",
+        "sfc",
+        "events",
+        "model",
+        "事件与",
+        "v-model：绑定策略",
+        "weapp-vite"
+      ],
+      "headings": [
+        "事件与 v-model：绑定策略",
+        "本章你会学到什么",
+        "事件：优先使用小程序事件名",
+        "v-model：本质是“赋值表达式事件”",
+        "自定义组件的 v-model 协议（简版）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/events-and-v-model.md"
+    },
+    {
+      "id": "doc-e73cab5ae3",
+      "title": "表单：受控输入与校验",
+      "summary": "表单：受控输入与校验，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/sfc/forms",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/forms",
+      "keywords": [
+        "handbook",
+        "sfc",
+        "forms",
+        "表单：受控输入与校验",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "表单：受控输入与校验",
+        "本章你会学到什么",
+        "输入类组件的基本模式",
+        "v-model 使用建议",
+        "校验建议"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/forms.md"
+    },
+    {
+      "id": "doc-e961caaf2d",
+      "title": "SFC 总览：映射到小程序",
+      "summary": "在本教程里，**wuve** 指 weapp-vite 内置的 Vue SFC 编译链路：",
+      "url": "/handbook/sfc/",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/",
+      "keywords": [
+        "微信小程序",
+        "handbook",
+        "sfc",
+        "总览：映射到小程序",
+        "在本教程里",
+        "wuve",
+        "指",
+        "weapp-vite"
+      ],
+      "headings": [
+        "SFC 总览：映射到小程序",
+        "本章你会学到什么",
+        "wuve（本文用法）到底是什么",
+        "你要记住的 3 条规则",
+        "下一章"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/index.md"
+    },
+    {
+      "id": "doc-94fe59216f",
+      "title": "JSON：Script Setup 宏优先",
+      "summary": "JSON：Script Setup 宏优先，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/sfc/json",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/json",
+      "keywords": [
+        "Vue SFC",
+        "配置",
+        "handbook",
+        "sfc",
+        "json",
+        "JSON：Script",
+        "setup",
+        "宏优先"
+      ],
+      "headings": [
+        "JSON：Script Setup 宏优先",
+        "本章你会学到什么",
+        "推荐：使用 JSON 宏",
+        "app.vue 配置示例",
+        "页面配置示例",
+        "关于 usingComponents",
+        "兼容说明"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/json.md"
+    },
+    {
+      "id": "doc-d8fe4e2086",
+      "title": "生命周期：页面/组件对齐",
+      "summary": "生命周期：页面/组件对齐，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/sfc/lifecycle",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/lifecycle",
+      "keywords": [
+        "handbook",
+        "sfc",
+        "lifecycle",
+        "生命周期：页面/组件对齐",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "生命周期：页面/组件对齐",
+        "本章你会学到什么",
+        "页面常用 hooks",
+        "常见坑"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/lifecycle.md"
+    },
+    {
+      "id": "doc-03b9539a06",
+      "title": "Template：原生 WXML 语法直通",
+      "summary": "weapp-vite 会把 Vue 模板编译成 WXML。未被 Vue 指令接管的原生语法（标签/属性/事件）基本按原样保留。",
+      "url": "/handbook/sfc/native-wxml",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/native-wxml",
+      "keywords": [
+        "Vue SFC",
+        "编译",
+        "handbook",
+        "sfc",
+        "native",
+        "wxml",
+        "Template：原生",
+        "语法直通"
+      ],
+      "headings": [
+        "Template：原生 WXML 语法直通",
+        "本章你会学到什么",
+        "结论",
+        "原生语法直通清单",
+        "结构与列表",
+        "事件绑定",
+        "资源/模板相关标签",
+        "常见原生属性",
+        "与 Vue 语法共存的注意点",
+        "何时编译为 WXML template，何时变成 block",
+        "保留为 WXML",
+        "降级为"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/native-wxml.md"
+    },
+    {
+      "id": "doc-6e1cad03d1",
+      "title": "Options API：兼容写法",
+      "summary": "Options API：兼容写法，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/sfc/options-api",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/options-api",
+      "keywords": [
+        "api",
+        "handbook",
+        "sfc",
+        "options",
+        "API：兼容写法",
+        "聚焦",
+        "/",
+        "相关场景"
+      ],
+      "headings": [
+        "Options API：兼容写法",
+        "本章你会学到什么",
+        "建议场景",
+        "基本示例",
+        "相关链接"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/options-api.md"
+    },
+    {
+      "id": "doc-bb65759914",
+      "title": "Script Setup：推荐范式",
+      "summary": "Script Setup：推荐范式，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/sfc/script-setup",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/script-setup",
+      "keywords": [
+        "Vue SFC",
+        "handbook",
+        "sfc",
+        "script",
+        "setup",
+        "Setup：推荐范式",
+        "聚焦",
+        "/"
+      ],
+      "headings": [
+        "Script Setup：推荐范式",
+        "本章你会学到什么",
+        "基本原则",
+        "页面示例（推荐）",
+        "App 示例（推荐 app.vue）",
+        "常见坑"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/script-setup.md"
+    },
+    {
+      "id": "doc-826825b6d4",
+      "title": "样式：wxss / scoped / 预处理器",
+      "summary": "样式：wxss / scoped / 预处理器，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/sfc/style",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/style",
+      "keywords": [
+        "handbook",
+        "sfc",
+        "style",
+        "样式：wxss",
+        "/",
+        "scoped",
+        "预处理器",
+        "聚焦"
+      ],
+      "headings": [
+        "样式：wxss / scoped / 预处理器",
+        "本章你会学到什么",
+        "你要记住的 3 件事",
+        "相关链接"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/style.md"
+    },
+    {
+      "id": "doc-149f007a1c",
+      "title": "Template：语法与差异点",
+      "summary": "Template：语法与差异点，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/sfc/template",
+      "canonical": "https://vite.icebreaker.top/handbook/sfc/template",
+      "keywords": [
+        "Vue SFC",
+        "handbook",
+        "sfc",
+        "template",
+        "Template：语法与差异点",
+        "聚焦",
+        "/",
+        "相关场景"
+      ],
+      "headings": [
+        "Template：语法与差异点",
+        "本章你会学到什么",
+        "推荐心智模型",
+        "常用写法",
+        "事件命名建议",
+        "常见坑",
+        "相关链接"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/sfc/template.md"
+    },
+    {
+      "id": "doc-cf4a502cad",
+      "title": "分包与包体策略",
+      "summary": "分包与包体策略，聚焦 handbook / subpackages 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/subpackages",
+      "canonical": "https://vite.icebreaker.top/handbook/subpackages",
+      "keywords": [
+        "分包",
+        "handbook",
+        "subpackages",
+        "分包与包体策略",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "分包与包体策略",
+        "本章你会学到什么",
+        "什么时候必须分包",
+        "设计原则",
+        "相关链接"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/subpackages.md"
+    },
+    {
+      "id": "doc-4a097961c2",
+      "title": "bindModel：双向绑定方案",
+      "summary": "bindModel 的完整说明在：/wevu/runtime#bindModel：模型绑定",
+      "url": "/handbook/wevu/bind-model",
+      "canonical": "https://vite.icebreaker.top/handbook/wevu/bind-model",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "handbook",
+        "bind",
+        "model",
+        "bindModel：双向绑定方案",
+        "bindmodel"
+      ],
+      "headings": [
+        "bindModel：双向绑定方案",
+        "本章你会学到什么",
+        "适用场景",
+        "使用示例（script setup）",
+        "参考入口"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/wevu/bind-model.md"
+    },
+    {
+      "id": "doc-4df354dc90",
+      "title": "组件：props/emit/slots 语义",
+      "summary": "组件：props/emit/slots 语义，聚焦 handbook / wevu 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/wevu/component",
+      "canonical": "https://vite.icebreaker.top/handbook/wevu/component",
+      "keywords": [
+        "wevu",
+        "微信小程序",
+        "handbook",
+        "component",
+        "组件：props/emit/slots",
+        "语义",
+        "聚焦",
+        "/"
+      ],
+      "headings": [
+        "组件：props / emit / slots 语义",
+        "本章你会学到什么",
+        "props：优先理解为小程序 properties",
+        "emit：只有一个 detail",
+        "slots：以小程序能力为准"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/wevu/component.md"
+    },
+    {
+      "id": "doc-8f24d0ca45",
+      "title": "FAQ 与排错",
+      "summary": "FAQ 与排错，聚焦 handbook / wevu 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/wevu/faq",
+      "canonical": "https://vite.icebreaker.top/handbook/wevu/faq",
+      "keywords": [
+        "wevu",
+        "handbook",
+        "faq",
+        "与排错",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "FAQ 与排错",
+        "Q1：为什么我更新了 ref，但页面没变？",
+        "Q2：为什么 onPageScroll/onShareAppMessage 不触发？",
+        "Q3：为什么自定义组件 v-model 不生效？",
+        "更多排错入口"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/wevu/faq.md"
+    },
+    {
+      "id": "doc-01e51ec7e9",
+      "title": "wevu：定位与选择",
+      "summary": "wevu 是小程序运行时：提供 Vue 3 风格的响应式与生命周期 hooks，并通过快照 diff 最小化 setData。",
+      "url": "/handbook/wevu/",
+      "canonical": "https://vite.icebreaker.top/handbook/wevu/",
+      "keywords": [
+        "wevu",
+        "handbook",
+        "wevu：定位与选择",
+        "是小程序运行时：提供",
+        "vue",
+        "3",
+        "风格的响应式与生命周期",
+        "hooks"
+      ],
+      "headings": [
+        "wevu：定位与选择",
+        "本章你会学到什么",
+        "定位一句话",
+        "与 Vue Web 的关键差异",
+        "下一章"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/wevu/index.md"
+    },
+    {
+      "id": "doc-c776e1ebd9",
+      "title": "插件与全局能力",
+      "summary": "更完整说明：/wevu/runtime#createApp：应用运行时与插件",
+      "url": "/handbook/wevu/plugins",
+      "canonical": "https://vite.icebreaker.top/handbook/wevu/plugins",
+      "keywords": [
+        "wevu",
+        "handbook",
+        "plugins",
+        "插件与全局能力"
+      ],
+      "headings": [
+        "插件与全局能力",
+        "本章你会学到什么",
+        "基本示例"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/wevu/plugins.md"
+    },
+    {
+      "id": "doc-6289583ecb",
+      "title": "provide/inject：依赖注入",
+      "summary": "wevu 当前版本没有完整的组件树父子指针，inject() 不会像 Vue 那样向上逐级查找祖先组件；需要依赖注入时建议：",
+      "url": "/handbook/wevu/provide-inject",
+      "canonical": "https://vite.icebreaker.top/handbook/wevu/provide-inject",
+      "keywords": [
+        "wevu",
+        "handbook",
+        "provide",
+        "inject",
+        "provide/inject：依赖注入",
+        "当前版本没有完整的组件树父子指针",
+        "不会像"
+      ],
+      "headings": [
+        "provide / inject：依赖注入",
+        "本章你会学到什么",
+        "重要限制（先读）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/wevu/provide-inject.md"
+    },
+    {
+      "id": "doc-adcbf38444",
+      "title": "运行时：setup 上下文与更新",
+      "summary": "所有 onXXX() 必须在 setup() 的同步阶段调用；不要写在 await 或回调之后。",
+      "url": "/handbook/wevu/runtime",
+      "canonical": "https://vite.icebreaker.top/handbook/wevu/runtime",
+      "keywords": [
+        "wevu",
+        "运行时",
+        "handbook",
+        "runtime",
+        "运行时：setup",
+        "上下文与更新",
+        "所有",
+        "onxxx"
+      ],
+      "headings": [
+        "运行时：setup 上下文与更新",
+        "本章你会学到什么",
+        "基本用法（页面/组件统一）",
+        "关键约束：hooks 必须同步注册",
+        "深入参考"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/wevu/runtime.md"
+    },
+    {
+      "id": "doc-4371013d0d",
+      "title": "Store：模式与工程落地",
+      "summary": "Store：模式与工程落地，聚焦 handbook / wevu 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/wevu/store",
+      "canonical": "https://vite.icebreaker.top/handbook/wevu/store",
+      "keywords": [
+        "wevu",
+        "handbook",
+        "store",
+        "Store：模式与工程落地",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "Store：模式与工程落地",
+        "本章你会学到什么",
+        "典型使用形态",
+        "工程建议",
+        "深入参考"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/wevu/store.md"
+    },
+    {
+      "id": "doc-b910c2b69f",
+      "title": "测试与 Mock",
+      "summary": "测试与 Mock，聚焦 handbook / wevu 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/handbook/wevu/testing",
+      "canonical": "https://vite.icebreaker.top/handbook/wevu/testing",
+      "keywords": [
+        "wevu",
+        "handbook",
+        "testing",
+        "测试与",
+        "mock",
+        "聚焦",
+        "/",
+        "相关场景"
+      ],
+      "headings": [
+        "测试与 Mock",
+        "本章你会学到什么",
+        "最小原则",
+        "相关链接"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "handbook/wevu/testing.md"
+    },
+    {
+      "id": "doc-8698cf9a35",
+      "title": "Weapp-vite",
+      "summary": "Weapp-vite，聚焦 index 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/",
+      "canonical": "https://vite.icebreaker.top/",
+      "keywords": [
+        "weapp-vite",
+        "聚焦",
+        "相关场景",
+        "覆盖",
+        "与",
+        "wevu",
+        "的能力",
+        "配置和实践要点。"
+      ],
+      "headings": [],
+      "updatedAt": "2026-02-26",
+      "source": "index.md"
+    },
+    {
+      "id": "doc-dd9f759e59",
+      "title": "miniprogram-computed 集成",
+      "summary": "miniprogram-computed 的用法基本和官方一致。需要注意的是：为了确保构建产物里依赖齐全，建议把它的运行时依赖也显式安装到项目里（避免构建时被裁剪/遗漏）。",
+      "url": "/integration/miniprogram-computed",
+      "canonical": "https://vite.icebreaker.top/integration/miniprogram-computed",
+      "keywords": [
+        "微信小程序",
+        "integration",
+        "computed",
+        "miniprogram-computed",
+        "集成"
+      ],
+      "headings": [
+        "miniprogram-computed 集成",
+        "安装",
+        "使用方式"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "integration/miniprogram-computed.md"
+    },
+    {
+      "id": "doc-9939a9f8d9",
+      "title": "Tailwindcss 集成",
+      "summary": "如果你是新项目，直接用官方模板创建即可，模板已集成 Tailwind CSS：",
+      "url": "/integration/tailwindcss",
+      "canonical": "https://vite.icebreaker.top/integration/tailwindcss",
+      "keywords": [
+        "integration",
+        "tailwindcss",
+        "集成",
+        "如果你是新项目",
+        "直接用官方模板创建即可",
+        "模板已集成",
+        "tailwind",
+        "CSS："
+      ],
+      "headings": [
+        "Tailwindcss 集成",
+        "直接使用模板（推荐）",
+        "手动集成"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "integration/tailwindcss.md"
+    },
+    {
+      "id": "doc-9bd0784325",
+      "title": "tdesign-miniprogram 集成",
+      "summary": "在 weapp-vite 项目里接入 tdesign-miniprogram 的整体思路很简单：",
+      "url": "/integration/tdesign",
+      "canonical": "https://vite.icebreaker.top/integration/tdesign",
+      "keywords": [
+        "微信小程序",
+        "配置",
+        "编译",
+        "integration",
+        "tdesign",
+        "tdesign-miniprogram",
+        "集成",
+        "在"
+      ],
+      "headings": [
+        "tdesign-miniprogram 集成",
+        "安装包",
+        "构建成功后勾选 将 JS 编译成 ES5",
+        "修改 app.json",
+        "修改 tsconfig.json (与官方文档不同)",
+        "使用组件",
+        "自动导入组件"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "integration/tdesign.md"
+    },
+    {
+      "id": "doc-0f8ef824d3",
+      "title": "Vant Weapp 集成",
+      "summary": "Vant Weapp 集成，聚焦 integration / vant 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/integration/vant",
+      "canonical": "https://vite.icebreaker.top/integration/vant",
+      "keywords": [
+        "配置",
+        "integration",
+        "vant",
+        "weapp",
+        "集成",
+        "聚焦",
+        "/",
+        "相关场景"
+      ],
+      "headings": [
+        "Vant Weapp 集成",
+        "安装",
+        "修改 app.json",
+        "修改 tsconfig.json (与官方文档不同)",
+        "使用组件",
+        "自动导入组件"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "integration/vant.md"
+    },
+    {
+      "id": "doc-6876a31c06",
+      "title": "Vue-mini 集成",
+      "summary": "Vue Mini 是一个基于 Vue 3 的小程序框架，你可以用 Vue 3 的响应式和组合式 API 来开发小程序。",
+      "url": "/integration/vue-mini",
+      "canonical": "https://vite.icebreaker.top/integration/vue-mini",
+      "keywords": [
+        "integration",
+        "vue",
+        "mini",
+        "vue-mini",
+        "集成",
+        "是一个基于",
+        "3",
+        "的小程序框架"
+      ],
+      "headings": [
+        "Vue-mini 集成",
+        "vue-mini 介绍",
+        "集成",
+        "模板地址"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "integration/vue-mini.md"
+    },
+    {
+      "id": "doc-d889ef0740",
+      "title": "让 AI 学习 Weapp-vite",
+      "summary": "兼容入口（/llms），与 /ai 共享同一套 AI 学习页面。",
+      "url": "/llms",
+      "canonical": "https://vite.icebreaker.top/llms",
+      "keywords": [
+        "weapp-vite",
+        "llms",
+        "让",
+        "ai",
+        "学习",
+        "兼容入口（/llms）",
+        "与",
+        "/ai"
+      ],
+      "headings": [],
+      "updatedAt": "2026-02-26",
+      "source": "llms.md"
+    },
+    {
+      "id": "doc-fc485b2137",
+      "title": "迁移",
+      "summary": "迁移，聚焦 migration / index 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/migration/",
+      "canonical": "https://vite.icebreaker.top/migration/",
+      "keywords": [
+        "迁移指南",
+        "migration",
+        "迁移",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖",
+        "weapp-vite"
+      ],
+      "headings": [
+        "迁移"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "migration/index.md"
+    },
+    {
+      "id": "doc-1a472f8b21",
+      "title": "从 v2 升级到 v3",
+      "summary": "这可能会导致一些 vite 的配置项失效，请根据 v6 的文档进行配置。",
+      "url": "/migration/v3",
+      "canonical": "https://vite.icebreaker.top/migration/v3",
+      "keywords": [
+        "迁移指南",
+        "migration",
+        "v3",
+        "从",
+        "v2",
+        "升级到",
+        "这可能会导致一些",
+        "vite"
+      ],
+      "headings": [
+        "从 v2 升级到 v3",
+        "重大变更",
+        "升级了内置 vite 的版本，从 v5 到 v6,",
+        "修复"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "migration/v3.md"
+    },
+    {
+      "id": "doc-9085ece2fd",
+      "title": "从 v3 升级到 v4",
+      "summary": "由于 4 的更改，这导致我们项目中，假如需要引用外部的 cjs / umd 模块，比如: visactor index-wx-simple.min.js",
+      "url": "/migration/v4",
+      "canonical": "https://vite.icebreaker.top/migration/v4",
+      "keywords": [
+        "迁移指南",
+        "migration",
+        "v4",
+        "从",
+        "v3",
+        "升级到",
+        "由于",
+        "4"
+      ],
+      "headings": [
+        "从 v3 升级到 v4",
+        "重大变更"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "migration/v4.md"
+    },
+    {
+      "id": "doc-12f888cbb0",
+      "title": "从 v4 升级到 v5",
+      "summary": "从 v4 升级到 v5，聚焦 migration / v5 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/migration/v5",
+      "canonical": "https://vite.icebreaker.top/migration/v5",
+      "keywords": [
+        "迁移指南",
+        "migration",
+        "v5",
+        "从",
+        "v4",
+        "升级到",
+        "聚焦",
+        "/"
+      ],
+      "headings": [
+        "从 v4 升级到 v5",
+        "重大变更",
+        "1. 从 vite 切换到 rolldown-vite",
+        "2. 从 tsup 切换到 tsdown",
+        "3. 从 bunldle-require 切换到 rolldown-require",
+        "迁移成本",
+        "是否过于激进?"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "migration/v5.md"
+    },
+    {
+      "id": "doc-114c2ea4db",
+      "title": "从 v5 升级到 v6",
+      "summary": "从 v5 升级到 v6，聚焦 migration / v6 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/migration/v6",
+      "canonical": "https://vite.icebreaker.top/migration/v6",
+      "keywords": [
+        "迁移指南",
+        "migration",
+        "v6",
+        "从",
+        "v5",
+        "升级到",
+        "聚焦",
+        "/"
+      ],
+      "headings": [
+        "从 v5 升级到 v6",
+        "升级步骤",
+        "变更要点"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "migration/v6.md"
+    },
+    {
+      "id": "doc-5d0bb659f4",
+      "title": "create-weapp-vite",
+      "summary": "create-weapp-vite 是官方脚手架，用于快速创建小程序工程，并在模板中对齐 weapp-vite / wevu 的版本组合。",
+      "url": "/packages/create-weapp-vite",
+      "canonical": "https://vite.icebreaker.top/packages/create-weapp-vite",
+      "keywords": [
+        "weapp-vite",
+        "api",
+        "packages",
+        "create",
+        "weapp",
+        "vite",
+        "create-weapp-vite",
+        "是官方脚手架"
+      ],
+      "headings": [
+        "create-weapp-vite",
+        "何时使用",
+        "快速开始",
+        "非交互模式",
+        "可编程 API",
+        "可选模板（当前实现）",
+        "与主文档的关系"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/create-weapp-vite.md"
+    },
+    {
+      "id": "doc-724a3516e3",
+      "title": "周边包总览",
+      "summary": "weapp-vite 不只是一个构建器，packages/* 里还提供了脚手架、CLI、编译器、跨端 API、实验运行时和性能分析工具。",
+      "url": "/packages/",
+      "canonical": "https://vite.icebreaker.top/packages/",
+      "keywords": [
+        "packages",
+        "周边包总览",
+        "weapp-vite",
+        "不只是一个构建器",
+        "packages/",
+        "里还提供了脚手架",
+        "cli",
+        "编译器"
+      ],
+      "headings": [
+        "周边包总览",
+        "选型建议（先看这个）",
+        "包能力矩阵",
+        "已有独立文档模块",
+        "说明"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/index.md"
+    },
+    {
+      "id": "doc-a24699342e",
+      "title": "@weapp-vite/mcp",
+      "summary": "@weapp-vite/mcp 是一个 MCP 示例服务包，用于展示如何基于 MCP SDK 注册工具并通过 stdio 传输响应调用。",
+      "url": "/packages/mcp",
+      "canonical": "https://vite.icebreaker.top/packages/mcp",
+      "keywords": [
+        "weapp-vite",
+        "packages",
+        "mcp",
+        "@weapp-vite/mcp",
+        "是一个",
+        "示例服务包",
+        "用于展示如何基于",
+        "sdk"
+      ],
+      "headings": [
+        "@weapp-vite/mcp",
+        "何时使用",
+        "安装",
+        "运行示例",
+        "二次开发建议"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/mcp.md"
+    },
+    {
+      "id": "doc-b22b09d73a",
+      "title": "Loading flow & cache",
+      "summary": "This page outlines how bundleRequire bundles, writes, and loads under the hood, plus practical cache settings.",
+      "url": "/packages/rolldown-require/cache",
+      "canonical": "https://vite.icebreaker.top/packages/rolldown-require/cache",
+      "keywords": [
+        "调试",
+        "packages",
+        "rolldown",
+        "require",
+        "cache",
+        "loading",
+        "flow",
+        "&"
+      ],
+      "headings": [
+        "Loading flow & cache",
+        "End-to-end flow",
+        "Externalization & resolution",
+        "Temp output control",
+        "Cache strategy",
+        "Debugging tips"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/rolldown-require/cache.md"
+    },
+    {
+      "id": "doc-7a53206d1e",
+      "title": "加载流程与缓存策略",
+      "summary": "本文梳理 bundleRequire 在内部如何打包、落盘与加载，并介绍缓存相关的实用配置。",
+      "url": "/packages/rolldown-require/cache.zh",
+      "canonical": "https://vite.icebreaker.top/packages/rolldown-require/cache.zh",
+      "keywords": [
+        "调试",
+        "packages",
+        "rolldown",
+        "require",
+        "加载流程与缓存策略",
+        "本文梳理",
+        "bundlerequire",
+        "在内部如何打包"
+      ],
+      "headings": [
+        "加载流程与缓存策略",
+        "整体流程",
+        "外部化与解析",
+        "临时产物控制",
+        "缓存策略",
+        "调试建议"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/rolldown-require/cache.zh.md"
+    },
+    {
+      "id": "doc-b6d5eb5cdb",
+      "title": "rolldown-require Guide",
+      "summary": "rolldown-require bundles and then loads config files of any flavor (TS / MJS / CJS / JSX, etc.) using rolldown, so CLI …",
+      "url": "/packages/rolldown-require/",
+      "canonical": "https://vite.icebreaker.top/packages/rolldown-require/",
+      "keywords": [
+        "packages",
+        "rolldown",
+        "require",
+        "rolldown-require",
+        "guide",
+        "bundles",
+        "then",
+        "loads"
+      ],
+      "headings": [
+        "rolldown-require Guide",
+        "What problems it solves",
+        "Install",
+        "Quick start",
+        "How it differs from bundle-require",
+        "Next steps"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/rolldown-require/index.md"
+    },
+    {
+      "id": "doc-05437af25c",
+      "title": "rolldown-require 使用指南",
+      "summary": "rolldown-require 是基于 rolldown 的「打包再加载」工具，帮助 CLI 或 Node 脚本安全地执行任意格式的配置文件（ts / mjs / cjs / JSX 等）。API 与 bundle-require 保持…",
+      "url": "/packages/rolldown-require/index.zh",
+      "canonical": "https://vite.icebreaker.top/packages/rolldown-require/index.zh",
+      "keywords": [
+        "packages",
+        "rolldown",
+        "require",
+        "rolldown-require",
+        "使用指南",
+        "是基于",
+        "的「打包再加载」工具",
+        "帮助"
+      ],
+      "headings": [
+        "rolldown-require 使用指南",
+        "它解决什么问题",
+        "安装",
+        "快速开始",
+        "和 bundle-require 的区别",
+        "下一步"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/rolldown-require/index.zh.md"
+    },
+    {
+      "id": "doc-51172dc452",
+      "title": "API & options",
+      "summary": "rolldown-require exposes three APIs: bundleRequire, bundleFile, and loadFromBundledFile. Prefer the one-stop bundleRequ…",
+      "url": "/packages/rolldown-require/options",
+      "canonical": "https://vite.icebreaker.top/packages/rolldown-require/options",
+      "keywords": [
+        "配置",
+        "api",
+        "packages",
+        "rolldown",
+        "require",
+        "options",
+        "&",
+        "rolldown-require"
+      ],
+      "headings": [
+        "API & options",
+        "Common options",
+        "filepath / cwd",
+        "format",
+        "require",
+        "rolldownOptions",
+        "external",
+        "tsconfig",
+        "getOutputFile",
+        "preserveTemporaryFile",
+        "cache",
+        "Example configuration"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/rolldown-require/options.md"
+    },
+    {
+      "id": "doc-4a7105aa2d",
+      "title": "API 与选项说明",
+      "summary": "rolldown-require 暴露了 bundleRequire / bundleFile / loadFromBundledFile 三个 API，但推荐优先使用一站式的 bundleRequire。它会完成入口解析、rolldow…",
+      "url": "/packages/rolldown-require/options.zh",
+      "canonical": "https://vite.icebreaker.top/packages/rolldown-require/options.zh",
+      "keywords": [
+        "配置",
+        "api",
+        "packages",
+        "rolldown",
+        "require",
+        "与选项说明",
+        "rolldown-require",
+        "暴露了"
+      ],
+      "headings": [
+        "API 与选项说明",
+        "常用选项",
+        "filepath / cwd",
+        "format",
+        "require",
+        "rolldownOptions",
+        "external",
+        "tsconfig",
+        "getOutputFile",
+        "preserveTemporaryFile",
+        "cache",
+        "组合示例"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/rolldown-require/options.zh.md"
+    },
+    {
+      "id": "doc-6ac27ef068",
+      "title": "vite-plugin-performance",
+      "summary": "vite-plugin-performance 用于包装一个或多个 Vite 插件，并统计每个生命周期 Hook 的执行耗时。",
+      "url": "/packages/vite-plugin-performance",
+      "canonical": "https://vite.icebreaker.top/packages/vite-plugin-performance",
+      "keywords": [
+        "性能优化",
+        "packages",
+        "vite",
+        "plugin",
+        "performance",
+        "vite-plugin-performance",
+        "用于包装一个或多个",
+        "插件"
+      ],
+      "headings": [
+        "vite-plugin-performance",
+        "何时使用",
+        "安装",
+        "最小示例",
+        "常用选项",
+        "相关导出"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/vite-plugin-performance.md"
+    },
+    {
+      "id": "doc-c5aee3cb3a",
+      "title": "@weapp-vite/volar",
+      "summary": "@weapp-vite/volar 为 weapp-vite 项目提供 Volar 语言服务能力，重点增强 配置块的补全与校验。",
+      "url": "/packages/volar",
+      "canonical": "https://vite.icebreaker.top/packages/volar",
+      "keywords": [
+        "weapp-vite",
+        "packages",
+        "volar",
+        "@weapp-vite/volar",
+        "为",
+        "项目提供",
+        "语言服务能力",
+        "重点增强"
+      ],
+      "headings": [
+        "@weapp-vite/volar",
+        "何时使用",
+        "安装说明",
+        "主要能力",
+        "推荐阅读"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/volar.md"
+    },
+    {
+      "id": "doc-88c8eadf0e",
+      "title": "@wevu/api",
+      "summary": "@wevu/api 提供跨平台小程序 API 封装，默认推荐 Promise 调用方式，同时兼容传统回调风格。",
+      "url": "/packages/weapi",
+      "canonical": "https://vite.icebreaker.top/packages/weapi",
+      "keywords": [
+        "wevu",
+        "api",
+        "packages",
+        "weapi",
+        "@wevu/api",
+        "提供跨平台小程序",
+        "封装",
+        "默认推荐"
+      ],
+      "headings": [
+        "@wevu/api",
+        "何时使用",
+        "安装",
+        "Promise 风格（推荐）",
+        "回调风格（兼容）",
+        "显式注入平台",
+        "行为说明"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/weapi.md"
+    },
+    {
+      "id": "doc-70402715ac",
+      "title": "weapp-ide-cli",
+      "summary": "weapp-ide-cli 是对微信开发者工具官方命令行的增强封装：保留官方命令语义，同时补齐路径、配置和非交互体验。",
+      "url": "/packages/weapp-ide-cli",
+      "canonical": "https://vite.icebreaker.top/packages/weapp-ide-cli",
+      "keywords": [
+        "packages",
+        "weapp",
+        "ide",
+        "cli",
+        "weapp-ide-cli",
+        "同时补齐路径",
+        "配置和非交互体验。"
+      ],
+      "headings": [
+        "weapp-ide-cli",
+        "何时使用",
+        "前置条件",
+        "安装",
+        "常用命令",
+        "支付宝 minidev 转发",
+        "CI 建议"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/weapp-ide-cli.md"
+    },
+    {
+      "id": "doc-41f0bdb222",
+      "title": "@weapp-vite/web",
+      "summary": "@weapp-vite/web 是实验性的 H5 运行时与 Vite 插件，用于把小程序模板能力映射到浏览器环境做验证。",
+      "url": "/packages/web",
+      "canonical": "https://vite.icebreaker.top/packages/web",
+      "keywords": [
+        "weapp-vite",
+        "运行时",
+        "packages",
+        "web",
+        "@weapp-vite/web",
+        "是实验性的",
+        "h5",
+        "运行时与"
+      ],
+      "headings": [
+        "@weapp-vite/web",
+        "何时使用",
+        "安装",
+        "Vite 插件接入",
+        "运行时能力",
+        "能力边界"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/web.md"
+    },
+    {
+      "id": "doc-683109f6b2",
+      "title": "@wevu/compiler",
+      "summary": "@wevu/compiler 是 Wevu 的编译能力底座，提供 Vue SFC 与小程序模板的解析、转换和输出能力。",
+      "url": "/packages/wevu-compiler",
+      "canonical": "https://vite.icebreaker.top/packages/wevu-compiler",
+      "keywords": [
+        "weapp-vite",
+        "wevu",
+        "编译",
+        "packages",
+        "compiler",
+        "@wevu/compiler",
+        "是",
+        "的编译能力底座"
+      ],
+      "headings": [
+        "@wevu/compiler",
+        "何时使用",
+        "安装",
+        "最小示例：编译 SFC",
+        "常用导出",
+        "与 weapp-vite 的关系"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "packages/wevu-compiler.md"
+    },
+    {
+      "id": "doc-c6d110bdf1",
+      "title": "常见问题排查",
+      "summary": "遇到构建或运行异常？先从以下问题入手自检，大多数情况都能在几分钟内定位原因。若仍未解决，可携带日志在 Issue 或社区群反馈。",
+      "url": "/troubleshoot/",
+      "canonical": "https://vite.icebreaker.top/troubleshoot/",
+      "keywords": [
+        "调试",
+        "troubleshoot",
+        "常见问题排查",
+        "遇到构建或运行异常？先从以下问题入手自检",
+        "大多数情况都能在几分钟内定位原因。若仍未解决",
+        "可携带日志在",
+        "issue",
+        "或社区群反馈。"
+      ],
+      "headings": [
+        "常见问题排查",
+        "启动开发时出现 EMFILE / ENOSPC 或 unable to start FSEvent stream？",
+        "临时处理（当前终端生效）",
+        "长期处理（推荐）",
+        "macOS",
+        "Linux（inotify 上限）",
+        "仍有问题时建议一并检查",
+        "构建产物里只有 WXML？",
+        "目录结构正确仍报 require() 错误？",
+        "引入 UMD/CJS 模块时报错？",
+        "custom-tab-bar 不生效？"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "troubleshoot/index.md"
+    },
+    {
+      "id": "doc-0eeef59057",
+      "title": "weapp-vite",
+      "summary": "weapp-vite，聚焦 typedoc-api / index 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/",
+      "keywords": [
+        "weapp-vite",
+        "api",
+        "typedoc",
+        "聚焦",
+        "typedoc-api",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "weapp-vite",
+        "Interfaces",
+        "Type Aliases"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/index.md"
+    },
+    {
+      "id": "doc-33d1d4f4ae",
+      "title": "Interface: AppEntry",
+      "summary": "Interface: AppEntry，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/interfaces/AppEntry",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/AppEntry",
+      "keywords": [
+        "api",
+        "typedoc",
+        "interfaces",
+        "appentry",
+        "Interface:",
+        "聚焦",
+        "typedoc-api",
+        "/"
+      ],
+      "headings": [
+        "Interface: AppEntry",
+        "Properties",
+        "deps",
+        "Defined in",
+        "json",
+        "Defined in",
+        "jsonPath",
+        "Defined in",
+        "path",
+        "Defined in",
+        "type",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/interfaces/AppEntry.md"
+    },
+    {
+      "id": "doc-b34cad9026",
+      "title": "Interface: ComponentDep",
+      "summary": "Interface: ComponentDep，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/interfaces/ComponentDep",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/ComponentDep",
+      "keywords": [
+        "api",
+        "typedoc",
+        "interfaces",
+        "componentdep",
+        "Interface:",
+        "聚焦",
+        "typedoc-api",
+        "/"
+      ],
+      "headings": [
+        "Interface: ComponentDep",
+        "Properties",
+        "path",
+        "Defined in",
+        "type",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/interfaces/ComponentDep.md"
+    },
+    {
+      "id": "doc-c86a061560",
+      "title": "Interface: ComponentEntry",
+      "summary": "Interface: ComponentEntry，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/interfaces/ComponentEntry",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/ComponentEntry",
+      "keywords": [
+        "api",
+        "typedoc",
+        "interfaces",
+        "componententry",
+        "Interface:",
+        "聚焦",
+        "typedoc-api",
+        "/"
+      ],
+      "headings": [
+        "Interface: ComponentEntry",
+        "Properties",
+        "deps",
+        "Defined in",
+        "json",
+        "Defined in",
+        "jsonPath",
+        "Defined in",
+        "path",
+        "Defined in",
+        "type",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/interfaces/ComponentEntry.md"
+    },
+    {
+      "id": "doc-dbf2a3fa37",
+      "title": "Interface: PageDep",
+      "summary": "Interface: PageDep，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/interfaces/PageDep",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/PageDep",
+      "keywords": [
+        "api",
+        "typedoc",
+        "interfaces",
+        "pagedep",
+        "Interface:",
+        "聚焦",
+        "typedoc-api",
+        "/"
+      ],
+      "headings": [
+        "Interface: PageDep",
+        "Properties",
+        "path",
+        "Defined in",
+        "type",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/interfaces/PageDep.md"
+    },
+    {
+      "id": "doc-84a2e3e2fa",
+      "title": "Interface: PageEntry",
+      "summary": "Interface: PageEntry，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/interfaces/PageEntry",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/PageEntry",
+      "keywords": [
+        "api",
+        "typedoc",
+        "interfaces",
+        "pageentry",
+        "Interface:",
+        "聚焦",
+        "typedoc-api",
+        "/"
+      ],
+      "headings": [
+        "Interface: PageEntry",
+        "Properties",
+        "deps",
+        "Defined in",
+        "json?",
+        "Defined in",
+        "jsonPath?",
+        "Defined in",
+        "path",
+        "Defined in",
+        "type",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/interfaces/PageEntry.md"
+    },
+    {
+      "id": "doc-a88ee2b4a7",
+      "title": "Interface: Subpackage",
+      "summary": "Interface: Subpackage，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/interfaces/Subpackage",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/Subpackage",
+      "keywords": [
+        "分包",
+        "api",
+        "typedoc",
+        "interfaces",
+        "subpackage",
+        "Interface:",
+        "聚焦",
+        "typedoc-api"
+      ],
+      "headings": [
+        "Interface: Subpackage",
+        "Extended by",
+        "Properties",
+        "entry?",
+        "Defined in",
+        "independent?",
+        "Defined in",
+        "name?",
+        "Defined in",
+        "pages",
+        "Defined in",
+        "root"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/interfaces/Subpackage.md"
+    },
+    {
+      "id": "doc-ee8e6663d3",
+      "title": "Interface: SubpackageDep",
+      "summary": "Interface: SubpackageDep，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/interfaces/SubpackageDep",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/SubpackageDep",
+      "keywords": [
+        "分包",
+        "api",
+        "typedoc",
+        "interfaces",
+        "subpackagedep",
+        "Interface:",
+        "聚焦",
+        "typedoc-api"
+      ],
+      "headings": [
+        "Interface: SubpackageDep",
+        "Extends",
+        "Properties",
+        "entry?",
+        "Inherited from",
+        "Defined in",
+        "independent?",
+        "Inherited from",
+        "Defined in",
+        "name?",
+        "Inherited from",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/interfaces/SubpackageDep.md"
+    },
+    {
+      "id": "doc-3062b638f9",
+      "title": "Interface: SubPackageEntry",
+      "summary": "Interface: SubPackageEntry，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/interfaces/SubPackageEntry",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/SubPackageEntry",
+      "keywords": [
+        "分包",
+        "api",
+        "typedoc",
+        "interfaces",
+        "subpackageentry",
+        "Interface:",
+        "聚焦",
+        "typedoc-api"
+      ],
+      "headings": [
+        "Interface: SubPackageEntry",
+        "Properties",
+        "deps",
+        "Defined in",
+        "path",
+        "Defined in",
+        "type",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/interfaces/SubPackageEntry.md"
+    },
+    {
+      "id": "doc-542a4e35b6",
+      "title": "Interface: WatchOptions",
+      "summary": "Interface: WatchOptions，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/interfaces/WatchOptions",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/WatchOptions",
+      "keywords": [
+        "api",
+        "typedoc",
+        "interfaces",
+        "watchoptions",
+        "Interface:",
+        "聚焦",
+        "typedoc-api",
+        "/"
+      ],
+      "headings": [
+        "Interface: WatchOptions",
+        "Extends",
+        "Properties",
+        "alwaysStat?",
+        "Inherited from",
+        "Defined in",
+        "atomic?",
+        "Inherited from",
+        "Defined in",
+        "awaitWriteFinish?",
+        "Inherited from",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/interfaces/WatchOptions.md"
+    },
+    {
+      "id": "doc-20cef0e38a",
+      "title": "Interface: WeappViteConfig",
+      "summary": "Interface: WeappViteConfig，聚焦 typedoc-api / interfaces 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/interfaces/WeappViteConfig",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/interfaces/WeappViteConfig",
+      "keywords": [
+        "weapp-vite",
+        "配置",
+        "分包",
+        "api",
+        "typedoc",
+        "interfaces",
+        "weappviteconfig",
+        "Interface:"
+      ],
+      "headings": [
+        "Interface: WeappViteConfig",
+        "Properties",
+        "srcRoot?",
+        "Defined in",
+        "subPackage?",
+        "Defined in",
+        "watch?",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/interfaces/WeappViteConfig.md"
+    },
+    {
+      "id": "doc-d6b38ab5de",
+      "title": "Type Alias: Dep",
+      "summary": "Type Alias: Dep，聚焦 typedoc-api / type-aliases 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/type-aliases/Dep",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/type-aliases/Dep",
+      "keywords": [
+        "api",
+        "typedoc",
+        "type",
+        "aliases",
+        "dep",
+        "Alias:",
+        "聚焦",
+        "typedoc-api"
+      ],
+      "headings": [
+        "Type Alias: Dep",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/type-aliases/Dep.md"
+    },
+    {
+      "id": "doc-afe8a68f14",
+      "title": "Type Alias: Entry",
+      "summary": "Type Alias: Entry，聚焦 typedoc-api / type-aliases 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/type-aliases/Entry",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/type-aliases/Entry",
+      "keywords": [
+        "api",
+        "typedoc",
+        "type",
+        "aliases",
+        "entry",
+        "Alias:",
+        "聚焦",
+        "typedoc-api"
+      ],
+      "headings": [
+        "Type Alias: Entry",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/type-aliases/Entry.md"
+    },
+    {
+      "id": "doc-eaa1089f6b",
+      "title": "Type Alias: UserConfig",
+      "summary": "Type Alias: UserConfig，聚焦 typedoc-api / type-aliases 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/typedoc-api/type-aliases/UserConfig",
+      "canonical": "https://vite.icebreaker.top/typedoc-api/type-aliases/UserConfig",
+      "keywords": [
+        "配置",
+        "api",
+        "typedoc",
+        "type",
+        "aliases",
+        "userconfig",
+        "Alias:",
+        "聚焦"
+      ],
+      "headings": [
+        "Type Alias: UserConfig",
+        "Type declaration",
+        "weapp?",
+        "Defined in"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "typedoc-api/type-aliases/UserConfig.md"
+    },
+    {
+      "id": "doc-588f3be686",
+      "title": "Core API",
+      "summary": "本页聚焦 wevu 的“最先接触”能力：应用入口、组件定义、 宏，以及模板辅助函数。",
+      "url": "/wevu/api-reference/core",
+      "canonical": "https://vite.icebreaker.top/wevu/api-reference/core",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "api",
+        "reference",
+        "core",
+        "本页聚焦",
+        "的“最先接触”能力：应用入口",
+        "组件定义"
+      ],
+      "headings": [
+        "Core API（入口、组件、宏）",
+        "1. 入口与组件定义",
+        "2. 宏",
+        "宏能力示例（script setup）",
+        "3. 模板和 class/style 工具",
+        "模板工具示例（script setup）",
+        "4. 相关页"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/api-reference/core.md"
+    },
+    {
+      "id": "doc-fbdec7ef97",
+      "title": "API 参考总览",
+      "summary": "这套文档是 wevu 的人工整理版 API 参考，目标是解决两个问题：",
+      "url": "/wevu/api-reference/",
+      "canonical": "https://vite.icebreaker.top/wevu/api-reference/",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "api",
+        "reference",
+        "参考总览",
+        "这套文档是",
+        "的人工整理版",
+        "参考"
+      ],
+      "headings": [
+        "wevu API 参考总览",
+        "阅读顺序",
+        "分页目录",
+        "API 稳定性说明",
+        "TS-only 写法约定",
+        "最小示例（script setup）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/api-reference/index.md"
+    },
+    {
+      "id": "doc-158567b310",
+      "title": "Lifecycle API",
+      "summary": "wevu 生命周期 API 都需要在 setup() 的同步阶段调用。",
+      "url": "/wevu/api-reference/lifecycle",
+      "canonical": "https://vite.icebreaker.top/wevu/api-reference/lifecycle",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "微信小程序",
+        "api",
+        "reference",
+        "lifecycle",
+        "生命周期",
+        "都需要在"
+      ],
+      "headings": [
+        "Lifecycle API（生命周期）",
+        "1. App 生命周期",
+        "2. 页面与组件通用生命周期",
+        "3. 组件渲染阶段（Vue 风格）",
+        "4. 小程序特有页面事件",
+        "5. 带返回值的页面钩子",
+        "6. 小程序组件扩展生命周期",
+        "7. 示例：滚动 + 分享（script setup）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/api-reference/lifecycle.md"
+    },
+    {
+      "id": "doc-4ea42f2382",
+      "title": "Reactivity API",
+      "summary": "本页覆盖 wevu 响应式层的全部公开函数，包括“业务常用”和“调试/底层”两类。",
+      "url": "/wevu/api-reference/reactivity",
+      "canonical": "https://vite.icebreaker.top/wevu/api-reference/reactivity",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "调试",
+        "api",
+        "reference",
+        "reactivity",
+        "本页覆盖",
+        "响应式层的全部公开函数"
+      ],
+      "headings": [
+        "Reactivity API（响应式与调度）",
+        "1. 状态创建与派生",
+        "2. 监听与副作用",
+        "3. Ref/Proxy 工具",
+        "4. 响应式判定",
+        "5. 批处理与调度",
+        "6. 调试与底层能力",
+        "7. 组合示例（script setup）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/api-reference/reactivity.md"
+    },
+    {
+      "id": "doc-ca10cb76a9",
+      "title": "Runtime Bridge API",
+      "summary": "本页覆盖 wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的底层 API。",
+      "url": "/wevu/api-reference/runtime-bridge",
+      "canonical": "https://vite.icebreaker.top/wevu/api-reference/runtime-bridge",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "调试",
+        "运行时",
+        "编译",
+        "api",
+        "reference",
+        "runtime"
+      ],
+      "headings": [
+        "Runtime Bridge API（桥接与调试）",
+        "1. 运行时注册与挂载",
+        "2. 全局默认值与行为开关",
+        "3. 调试与观测",
+        "4. 编译侧常量（wevu/compiler）",
+        "5. 示例：默认值 + mutation 记录（script setup）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/api-reference/runtime-bridge.md"
+    },
+    {
+      "id": "doc-5303ed9e55",
+      "title": "Setup Context API",
+      "summary": "wevu 的 setup(props, ctx) 除了 Vue 语义，还补齐了小程序运行时场景，特别是 ctx.instance（原生实例）和 ctx.emit（事件派发）。",
+      "url": "/wevu/api-reference/setup-context",
+      "canonical": "https://vite.icebreaker.top/wevu/api-reference/setup-context",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "api",
+        "reference",
+        "setup",
+        "context",
+        "的",
+        "setup props"
+      ],
+      "headings": [
+        "Setup Context API（setup 上下文）",
+        "1. setup 签名与核心类型",
+        "2. setup 上下文相关 API",
+        "3. provide/inject（含全局容器）",
+        "4. 推荐：通过 ctx.instance 操作原生实例",
+        "示例（script setup）",
+        "5. 双向绑定辅助",
+        "6. 相关页"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/api-reference/setup-context.md"
+    },
+    {
+      "id": "doc-0f10c598bf",
+      "title": "Store API",
+      "summary": "wevu 的 store 设计接近 Pinia：defineStore 定义，createStore 创建管理器，storeToRefs 安全解构。",
+      "url": "/wevu/api-reference/store",
+      "canonical": "https://vite.icebreaker.top/wevu/api-reference/store",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "调试",
+        "api",
+        "reference",
+        "store",
+        "的",
+        "设计接近"
+      ],
+      "headings": [
+        "Store API（状态管理）",
+        "1. 核心函数",
+        "2. 常用类型",
+        "3. 端到端示例（script setup）",
+        "4. 调试建议",
+        "5. 相关页"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/api-reference/store.md"
+    },
+    {
+      "id": "doc-add3162a09",
+      "title": "Type Reference",
+      "summary": "本页先给出“高频类型速查”，然后提供 wevu 当前导出的接口/类型别名全量索引。",
+      "url": "/wevu/api-reference/types",
+      "canonical": "https://vite.icebreaker.top/wevu/api-reference/types",
+      "keywords": [
+        "wevu",
+        "微信小程序",
+        "运行时",
+        "编译",
+        "api",
+        "reference",
+        "types",
+        "type"
+      ],
+      "headings": [
+        "Type Reference（类型总览）",
+        "1. 高频类型速查",
+        "2. 接口（Interfaces）全量索引",
+        "3. 类型别名（Type Aliases）全量索引",
+        "3.1 组件、Props、宏相关",
+        "3.2 响应式与工具类型",
+        "3.3 小程序桥接与运行时内部",
+        "3.4 store / model / mutation",
+        "4. 编译侧类型（wevu/compiler）",
+        "5. 相关页"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/api-reference/types.md"
+    },
+    {
+      "id": "doc-0a38f92146",
+      "title": "兼容性与注意事项",
+      "summary": "本页用于快速排雷：哪些能力能用、有哪些限制来自小程序环境，以及哪些点最容易踩坑。",
+      "url": "/wevu/compatibility",
+      "canonical": "https://vite.icebreaker.top/wevu/compatibility",
+      "keywords": [
+        "wevu",
+        "compatibility",
+        "兼容性与注意事项",
+        "本页用于快速排雷：哪些能力能用",
+        "有哪些限制来自小程序环境",
+        "以及哪些点最容易踩坑。"
+      ],
+      "headings": [
+        "兼容性与注意事项"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/compatibility.md"
+    },
+    {
+      "id": "doc-2453cac573",
+      "title": "defineComponent（组件）",
+      "summary": "defineComponent() 是对原生 Component() 的一层封装/增强：在组件 lifetimes.created 阶段初始化运行时并同步执行 setup()；setup() 返回对象会合并到组件实例，模板可直接使用。",
+      "url": "/wevu/component",
+      "canonical": "https://vite.icebreaker.top/wevu/component",
+      "keywords": [
+        "wevu",
+        "component",
+        "defineComponent（组件）",
+        "definecomponent",
+        "是对原生",
+        "的一层封装/增强：在组件",
+        "lifetimes.created"
+      ],
+      "headings": [
+        "defineComponent（组件）",
+        "页面也用 defineComponent（统一模型）",
+        "原生 Component 选项在 wevu 的写法",
+        "lifetimes / pageLifetimes 对应的 hooks",
+        "lifetimes（组件生命周期）",
+        "pageLifetimes（页面对组件的影响）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/component.md"
+    },
+    {
+      "id": "doc-8da5f687d8",
+      "title": "wevu 概览",
+      "summary": "wevu 是一个面向小程序（以微信小程序为主）的轻量运行时。可以把它看作“把 Vue 3 的响应式心智模型带到小程序里”，但不引入 Virtual DOM，而是用快照 diff 来尽量减少 setData 的更新量。",
+      "url": "/wevu/",
+      "canonical": "https://vite.icebreaker.top/wevu/",
+      "keywords": [
+        "wevu",
+        "编译",
+        "概览",
+        "vue",
+        "3",
+        "的响应式心智模型带到小程序里",
+        "但不引入",
+        "virtual"
+      ],
+      "headings": [
+        "wevu 概览",
+        "wevu 在整套体系里的位置",
+        "诞生的小故事",
+        "你会用到的能力",
+        "编译侧桥接（wevu/compiler）",
+        "推荐学习顺序（按“最短上手 → 深入理解”）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/index.md"
+    },
+    {
+      "id": "doc-e341d32955",
+      "title": "从原生小程序迁移到 Vue SFC",
+      "summary": "这是一份面向实际项目的迁移手册，不是概念介绍。目标是让你在**不重写业务**的前提下，把原生小程序稳定迁移到 weapp-vite + wevu + Vue SFC。",
+      "url": "/wevu/migration/from-native-to-vue-sfc",
+      "canonical": "https://vite.icebreaker.top/wevu/migration/from-native-to-vue-sfc",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "微信小程序",
+        "迁移指南",
+        "migration",
+        "from",
+        "native",
+        "to"
+      ],
+      "headings": [
+        "从原生小程序迁移到 Vue SFC（详细指南）",
+        "迁移目标与验收标准",
+        "迁移前准备（必须做）",
+        "1. 版本与工程基线",
+        "2. 冻结阶段策略",
+        "3. 建立对照样本",
+        "总体迁移路线（推荐 4 阶段）",
+        "阶段 0：只替构建链路，不改业务行为",
+        "阶段 1：机械迁移（重点是“等价”）",
+        "阶段 2：语义迁移（重点是“可维护”）",
+        "阶段 3：收口（重点是“可持续”）",
+        "原生到 Vue SFC 映射表（高频）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/migration/from-native-to-vue-sfc.md"
+    },
+    {
+      "id": "doc-774dd6e918",
+      "title": "快速上手",
+      "summary": "这一页只做一件事：帮你最快把 wevu 跑起来。按“装包 -> 写一个页面/组件 ->（可选）接入 Store”走一遍即可。示例以 weapp-vite + Vue SFC 为主；如果你不使用 SFC，也可以直接参考运行时 API 的部分。",
+      "url": "/wevu/quick-start",
+      "canonical": "https://vite.icebreaker.top/wevu/quick-start",
+      "keywords": [
+        "wevu",
+        "微信小程序",
+        "运行时",
+        "quick",
+        "start",
+        "快速上手",
+        "这一页只做一件事：帮你最快把",
+        "跑起来。按“装包"
+      ],
+      "headings": [
+        "快速上手 wevu",
+        "1. 安装",
+        "2. （可选）启用 Volar 插件",
+        "3. 写一个页面（SFC 示例）",
+        "4. 引入自定义组件（小程序规则）",
+        "5. 组件 props / emit（运行时约定）",
+        "6. 接入 Store（可选但常用）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/quick-start.md"
+    },
+    {
+      "id": "doc-4645be464c",
+      "title": "运行时与生命周期",
+      "summary": "介绍 wevu 运行时的桥接机制、生命周期映射与 setData 更新策略，并给出定位“未触发/未更新”问题的实操方法。",
+      "url": "/wevu/runtime",
+      "canonical": "https://vite.icebreaker.top/wevu/runtime",
+      "keywords": [
+        "wevu",
+        "运行时",
+        "编译",
+        "runtime",
+        "运行时与生命周期",
+        "生命周期",
+        "setdata",
+        "调试"
+      ],
+      "headings": [
+        "运行时与生命周期",
+        "更新链路：为什么 wevu 不需要 Virtual DOM",
+        "defineComponent：注册页面/组件",
+        "props / properties",
+        "createWevuComponent（供编译产物调用）",
+        "全局默认值（setWevuDefaults / resetWevuDefaults） {#wevu-defaults}",
+        "在 app.vue 顶层手动调用",
+        "setup：签名与上下文",
+        "生命周期钩子",
+        "通用钩子（页面/组件）",
+        "组件钩子（来自 lifetimes/pageLifetimes）",
+        "页面钩子（Page 事件）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/runtime.md"
+    },
+    {
+      "id": "doc-53339f1116",
+      "title": "Store（状态管理）",
+      "summary": "Store（状态管理），聚焦 wevu / store 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/wevu/store",
+      "canonical": "https://vite.icebreaker.top/wevu/store",
+      "keywords": [
+        "wevu",
+        "api",
+        "store",
+        "Store（状态管理）",
+        "聚焦",
+        "/",
+        "相关场景",
+        "覆盖"
+      ],
+      "headings": [
+        "Store（状态管理）",
+        "导入与核心 API",
+        "Setup Store 示例（推荐）",
+        "Options Store 示例",
+        "在页面/组件中使用",
+        "插件与订阅",
+        "持久化（storage）与初始化顺序",
+        "Store 实例 API",
+        "TypeScript 与最佳实践",
+        "常见问题"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/store.md"
+    },
+    {
+      "id": "doc-69ed50eefe",
+      "title": "Vue SFC：基础与组成",
+      "summary": "Vue SFC：基础与组成，聚焦 wevu / vue-sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/wevu/vue-sfc/basics",
+      "canonical": "https://vite.icebreaker.top/wevu/vue-sfc/basics",
+      "keywords": [
+        "weapp-vite",
+        "wevu",
+        "Vue SFC",
+        "运行时",
+        "编译",
+        "vue",
+        "sfc",
+        "basics"
+      ],
+      "headings": [
+        "Vue SFC：基础与组成",
+        "Vue SFC = 编译期（weapp-vite）+ 运行期（wevu）",
+        "SFC 组成速查",
+        "宏与指令：哪些是编译时，哪些是运行时",
+        "基础范式",
+        "页面与组件：如何区分",
+        ".vue 编写注意事项（示例前必看）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/vue-sfc/basics.md"
+    },
+    {
+      "id": "doc-5f56ac2d4d",
+      "title": "class/style 绑定能力",
+      "summary": "weapp-vite + wevu 在小程序侧对齐 Vue 3 的 :class / :style 绑定语法，支持字符串、数组、对象与嵌套组合，并会输出小程序可识别的字符串 class/style。",
+      "url": "/wevu/vue-sfc/class-style",
+      "canonical": "https://vite.icebreaker.top/wevu/vue-sfc/class-style",
+      "keywords": [
+        "wevu",
+        "运行时",
+        "vue",
+        "sfc",
+        "class",
+        "style",
+        "class/style",
+        "绑定能力"
+      ],
+      "headings": [
+        "class/style 绑定能力",
+        "运行时模式",
+        "实现细节与限制"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/vue-sfc/class-style.md"
+    },
+    {
+      "id": "doc-c74f190ae5",
+      "title": "Vue SFC：配置与宏",
+      "summary": "小程序组件的注册是 **JSON 声明式** 的：只认 usingComponents。因此在 SFC 里推荐：",
+      "url": "/wevu/vue-sfc/config",
+      "canonical": "https://vite.icebreaker.top/wevu/vue-sfc/config",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "配置",
+        "vue",
+        "sfc",
+        "config",
+        "SFC：配置与宏",
+        "小程序组件的注册是"
+      ],
+      "headings": [
+        "Vue SFC：配置与宏",
+        "usingComponents：为什么脚本里不要 import",
+        "配置块模式对比",
+        "Script Setup JSON 宏（build-time） {#script-setup-json-macros}"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/vue-sfc/config.md"
+    },
+    {
+      "id": "doc-2d04e4e1da",
+      "title": "Vue SFC：示例",
+      "summary": "这个示例展示一个自定义组件如何配合 v-model 工作。对于自定义组件，weapp-vite 会把 v-model=\"x\" 按默认策略编译为 value=\"{{x}}\" + bind:input=\"x = $event.detail.v…",
+      "url": "/wevu/vue-sfc/examples",
+      "canonical": "https://vite.icebreaker.top/wevu/vue-sfc/examples",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "vue",
+        "sfc",
+        "examples",
+        "SFC：示例",
+        "这个示例展示一个自定义组件如何配合",
+        "v-model"
+      ],
+      "headings": [
+        "Vue SFC：示例",
+        "页面示例：计数 + 分享 + 页面滚动",
+        "组件示例：Props + Emits + v-model（Script Setup + 宏）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/vue-sfc/examples.md"
+    },
+    {
+      "id": "doc-3df95b9ffd",
+      "title": "Vue SFC 开发指南",
+      "summary": "weapp-vite 内置了 Vue SFC 编译链路，配合 wevu 运行时即可用 Vue 风格开发小程序页面/组件，同时保持小程序能力（页面特性、分享、性能优化）。",
+      "url": "/wevu/vue-sfc/",
+      "canonical": "https://vite.icebreaker.top/wevu/vue-sfc/",
+      "keywords": [
+        "weapp-vite",
+        "wevu",
+        "Vue SFC",
+        "vue",
+        "sfc",
+        "开发指南",
+        "内置了",
+        "编译链路"
+      ],
+      "headings": [
+        "在 weapp-vite 中使用 Vue SFC",
+        "快速开始",
+        "心智模型",
+        "章节导航"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/vue-sfc/index.md"
+    },
+    {
+      "id": "doc-2f44e2f598",
+      "title": "从原生小程序迁移到 Vue SFC",
+      "summary": "本章节已迁移为独立迁移指南，不再归属到“Vue SFC 开发”子章节。",
+      "url": "/wevu/vue-sfc/migrate-from-native",
+      "canonical": "https://vite.icebreaker.top/wevu/vue-sfc/migrate-from-native",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "微信小程序",
+        "迁移指南",
+        "vue",
+        "sfc",
+        "migrate",
+        "from"
+      ],
+      "headings": [
+        "章节已迁移"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/vue-sfc/migrate-from-native.md"
+    },
+    {
+      "id": "doc-97b619c70c",
+      "title": "Vue SFC：模板与指令",
+      "summary": "Vue SFC：模板与指令，聚焦 wevu / vue-sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/wevu/vue-sfc/template",
+      "canonical": "https://vite.icebreaker.top/wevu/vue-sfc/template",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "vue",
+        "sfc",
+        "template",
+        "SFC：模板与指令",
+        "聚焦",
+        "/"
+      ],
+      "headings": [
+        "Vue SFC：模板与指令",
+        "页面事件与生命周期：怎么触发",
+        "v-model 支持范围与限制",
+        "v-bind 限制",
+        "延伸阅读"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/vue-sfc/template.md"
+    },
+    {
+      "id": "doc-6ee89ac615",
+      "title": "Vue SFC：调试与排错",
+      "summary": "Vue SFC：调试与排错，聚焦 wevu / vue-sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/wevu/vue-sfc/troubleshoot",
+      "canonical": "https://vite.icebreaker.top/wevu/vue-sfc/troubleshoot",
+      "keywords": [
+        "wevu",
+        "Vue SFC",
+        "调试",
+        "vue",
+        "sfc",
+        "troubleshoot",
+        "SFC：调试与排错",
+        "聚焦"
+      ],
+      "headings": [
+        "Vue SFC：调试与排错",
+        "最佳实践与限制",
+        "常见问题",
+        "1) 组件不渲染",
+        "2) 状态不更新",
+        "3) hooks 不触发（滚动/分享/触底等）",
+        "4) v-model 行为不符合 Vue 预期"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/vue-sfc/troubleshoot.md"
+    },
+    {
+      "id": "doc-4e7f731c80",
+      "title": "Vue 3 SFC vs weapp-vite SFC：写法对比",
+      "summary": "本文聚焦“写法层面”的相同与不同：当你用 weapp-vite + wevu 写 .vue 时，哪些与 Vue 3 SFC 一致，哪些会因为小程序编译/运行时而发生变化。",
+      "url": "/wevu/vue-sfc/vue3-vs-weapp-sfc",
+      "canonical": "https://vite.icebreaker.top/wevu/vue-sfc/vue3-vs-weapp-sfc",
+      "keywords": [
+        "weapp-vite",
+        "wevu",
+        "微信小程序",
+        "运行时",
+        "编译",
+        "vue",
+        "sfc",
+        "Vue 3"
+      ],
+      "headings": [
+        "Vue 3 SFC vs weapp-vite SFC：写法对比",
+        "相同点（写法层面）",
+        "不同点（由小程序编译/运行时造成）",
+        "1. 模板目标不是 DOM，而是 WXML",
+        "2. 组件注册方式不同：usingComponents 仍是最终产物",
+        "3. 新增 与 JSON 宏（Vue 3 没有）",
+        "4. 运行时来源是 wevu（而非 vue）",
+        "5. 样式输出是 WXSS，scoped 规则不同",
+        "快速对照示例",
+        "实用总结"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/vue-sfc/vue3-vs-weapp-sfc.md"
+    },
+    {
+      "id": "doc-258c7e6440",
+      "title": "wevu 的 Vue 3 兼容性说明",
+      "summary": "wevu 是一个面向小程序（以微信小程序为主）的 Vue 3 风格运行时：尽量提供熟悉的 Vue 3 API 形态，同时针对小程序运行环境进行适配与约束。",
+      "url": "/wevu/vue3-compat",
+      "canonical": "https://vite.icebreaker.top/wevu/vue3-compat",
+      "keywords": [
+        "wevu",
+        "微信小程序",
+        "迁移指南",
+        "api",
+        "Vue 3",
+        "compat",
+        "的",
+        "vue"
+      ],
+      "headings": [
+        "wevu 的 Vue 3 兼容性说明",
+        "Vue 3 兼容性目标",
+        "完全兼容的 API",
+        "响应式（Reactivity）",
+        "浅层响应式（Shallow Reactivity）",
+        "生命周期钩子（Lifecycle Hooks）",
+        "组件与调度（Component API）",
+        "依赖注入（Dependency Injection）",
+        "Store（Pinia 风格）",
+        "部分兼容 / 不同 API",
+        "setup() 上下文（Setup Context）",
+        "emit 的差异（triggerEvent 语义）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/vue3-compat.md"
+    },
+    {
+      "id": "doc-780e50a2ab",
+      "title": "wevu vs Vue 3：核心差异与小程序适配",
+      "summary": "wevu vs Vue 3：核心差异与小程序适配，聚焦 wevu / vue3-vs-wevu 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。",
+      "url": "/wevu/vue3-vs-wevu",
+      "canonical": "https://vite.icebreaker.top/wevu/vue3-vs-wevu",
+      "keywords": [
+        "wevu",
+        "微信小程序",
+        "api",
+        "Vue 3",
+        "vs",
+        "vue",
+        "3：核心差异与小程序适配",
+        "聚焦"
+      ],
+      "headings": [
+        "wevu vs Vue 3：核心差异与小程序适配",
+        "目录",
+        "核心架构对比",
+        "架构图对比",
+        "Vue 3 架构",
+        "wevu 架构",
+        "关键差异表",
+        "相同的部分",
+        "1. 响应式系统（100% 相同）",
+        "2. 调度器（99% 相同）",
+        "不同的部分",
+        "1. 渲染层（完全不同）"
+      ],
+      "updatedAt": "2026-02-26",
+      "source": "wevu/vue3-vs-wevu.md"
+    }
+  ]
+}

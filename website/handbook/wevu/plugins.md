@@ -1,5 +1,11 @@
 ---
 title: 插件与全局能力
+description: 更完整说明：/wevu/runtime#createApp：应用运行时与插件
+keywords:
+  - wevu
+  - handbook
+  - plugins
+  - 插件与全局能力
 ---
 
 # 插件与全局能力

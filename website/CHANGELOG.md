@@ -1,3 +1,17 @@
+---
+title: website-weapp-vite
+description: Store API 统一从主入口导出，并补充 wevu 使用文档与案例合集。
+keywords:
+  - weapp-vite
+  - changelog
+  - website-weapp-vite
+  - store
+  - api
+  - 统一从主入口导出
+  - 并补充
+  - wevu
+---
+
 # website-weapp-vite
 
 ## 1.0.4

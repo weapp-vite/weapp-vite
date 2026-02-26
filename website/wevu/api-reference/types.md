@@ -1,5 +1,15 @@
 ---
 title: Type Reference
+description: 本页先给出“高频类型速查”，然后提供 wevu 当前导出的接口/类型别名全量索引。
+keywords:
+  - wevu
+  - 微信小程序
+  - 运行时
+  - 编译
+  - api
+  - reference
+  - types
+  - type
 ---
 
 # Type Reference（类型总览）
