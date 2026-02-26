@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.0.35
+
+### Patch Changes
+
+- 🐛 **新增原生组件 `properties` 类型推导工具：`InferNativePropType`、`InferNativeProps`、`NativePropType`、`NativeTypeHint`、`NativeTypedProperty`，并在 `wevu-vue-demo` 与文档中补充 `script setup` 直接导入原生组件的推荐写法。现在可基于 `properties` 作为单一数据源生成 props 类型，并通过 `NativePropType<T>`（类似 Vue `PropType<T>`）为联合字面量提供更简洁的类型提示，减少手写接口与重复断言。** [`788a4e0`](https://github.com/weapp-vite/weapp-vite/commit/788a4e080a95524207754bd29316a1504c26b195) by @sonofmagic
+
+- 🐛 **新增 `NativeComponent<Props>` 类型导出，用于简化原生小程序组件在 `script setup` 场景下的类型包装写法；同时补充 `wevu-vue-demo` 原生组件示例（含 `TS + SCSS` 版本）与对应页面引入演示，使原生组件 `props` 在模板中的智能提示与类型约束更稳定、易用。** [`ad8c631`](https://github.com/weapp-vite/weapp-vite/commit/ad8c631f7d1aa19e9f3ac70e5ddc68eb116862ef) by @sonofmagic
+
 ## 2.0.34
 
 ### Patch Changes
