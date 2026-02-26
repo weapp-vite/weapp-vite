@@ -1,0 +1,50 @@
+.native-meter {
+  padding: 16rpx;
+  margin-top: 8rpx;
+  border: 2rpx solid #ecf0fb;
+  border-radius: 14rpx;
+  background: #f8faff;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__label {
+    font-size: 24rpx;
+    font-weight: 600;
+    color: #273251;
+  }
+
+  &__value {
+    font-size: 23rpx;
+    color: #5f6882;
+  }
+
+  &__track {
+    height: 14rpx;
+    margin-top: 12rpx;
+    overflow: hidden;
+    background: #e7ecfb;
+    border-radius: 999rpx;
+  }
+
+  &__bar {
+    height: 100%;
+    border-radius: 999rpx;
+    transition: width 0.25s ease;
+  }
+
+  &__bar--neutral {
+    background: linear-gradient(90deg, #6b7cff, #4f66ff);
+  }
+
+  &__bar--success {
+    background: linear-gradient(90deg, #16a34a, #22c55e);
+  }
+
+  &__bar--danger {
+    background: linear-gradient(90deg, #dc2626, #ef4444);
+  }
+}

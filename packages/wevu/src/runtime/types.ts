@@ -3,6 +3,7 @@ export type {
   ComponentCustomProps,
   ComponentOptionsMixin,
   DefineComponent,
+  NativeComponent,
   ObjectDirective,
   PublicProps,
   ShallowUnwrapRef,

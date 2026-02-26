@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'wevu'
+import { computed, ref } from 'wevu'
+import NativeBadge from '../../../native/native-badge/index'
+import NativeMeterTs from '../../../native/native-meter-ts/index'
 import CompatAltPanel from '../components/CompatAltPanel.vue'
 import CompatPanel from '../components/CompatPanel.vue'
 import ModelInput from '../components/ModelInput.vue'
@@ -14,6 +16,18 @@ const panelKind = ref<PanelKind>('main')
 const tone = ref<'neutral' | 'success'>('neutral')
 const modelText = ref('wevu model')
 const logs = ref<string[]>([])
+const nativeBadgeTypes = ['info', 'success', 'warning'] as const
+const nativeBadgeIndex = ref(0)
+const nativeMeterTones = ['neutral', 'success', 'danger'] as const
+const nativeMeterToneIndex = ref(0)
+const nativeMeterValue = ref(28)
+
+const nativeBadgeType = computed(() => {
+  return nativeBadgeTypes[nativeBadgeIndex.value]
+})
+const nativeMeterTone = computed(() => {
+  return nativeMeterTones[nativeMeterToneIndex.value]
+})
 
 function togglePanelKind() {
   panelKind.value = panelKind.value === 'main' ? 'alt' : 'main'
@@ -31,6 +45,22 @@ function onPanelRunEvent(payload: { type?: string, timeStamp?: number }) {
   const type = payload.type ?? 'unknown'
   const timeStamp = payload.timeStamp ?? 'n/a'
   logs.value = [`emit $event: ${type} @ ${timeStamp}`, ...logs.value].slice(0, 8)
+}
+
+function nextNativeBadgeType() {
+  nativeBadgeIndex.value = (nativeBadgeIndex.value + 1) % nativeBadgeTypes.length
+}
+
+function nextNativeMeterTone() {
+  nativeMeterToneIndex.value = (nativeMeterToneIndex.value + 1) % nativeMeterTones.length
+}
+
+function increaseNativeMeterValue() {
+  nativeMeterValue.value = Math.min(100, nativeMeterValue.value + 12)
+}
+
+function resetNativeMeterValue() {
+  nativeMeterValue.value = 28
 }
 </script>
 
@@ -55,6 +85,52 @@ function onPanelRunEvent(payload: { type?: string, timeStamp?: number }) {
       </text>
       <text class="card-meta">
         说明：wevu 已支持 Vue 官方 defineModel tuple 形态，可解构出 modifiers 并配合泛型使用。
+      </text>
+    </view>
+
+    <view class="section">
+      <text class="section-title">
+        script setup 引入原生组件
+      </text>
+      <view class="row">
+        <NativeBadge :text="`状态：${nativeBadgeType}`" :type="nativeBadgeType" />
+        <button class="btn light" @tap="nextNativeBadgeType">
+          切换状态
+        </button>
+      </view>
+      <text class="card-meta">
+        示例：直接在 script setup 中 `import NativeBadge from '../../../native/native-badge/index'`。
+      </text>
+      <text class="card-meta">
+        说明：`NativeBadge` 的 props 类型由同目录 d.ts 提供，模板里 `text/type` 都有智能提示。
+      </text>
+    </view>
+
+    <view class="section">
+      <text class="section-title">
+        script setup 引入 TS + SCSS 原生组件
+      </text>
+      <NativeMeterTs
+        label="构建链能力"
+        :value="nativeMeterValue"
+        :tone="nativeMeterTone"
+      />
+      <view class="row">
+        <button class="btn light" @tap="increaseNativeMeterValue">
+          增加进度
+        </button>
+        <button class="btn light" @tap="nextNativeMeterTone">
+          切换 tone（{{ nativeMeterTone }}）
+        </button>
+        <button class="btn light" @tap="resetNativeMeterValue">
+          重置
+        </button>
+      </view>
+      <text class="card-meta">
+        当前 value = {{ nativeMeterValue }}，tone = {{ nativeMeterTone }}。
+      </text>
+      <text class="card-meta">
+        示例：`NativeMeterTs` 来自 `src/native/native-meter-ts/index.ts + index.scss`，由当前页面 script setup 直接 import。
       </text>
     </view>
 

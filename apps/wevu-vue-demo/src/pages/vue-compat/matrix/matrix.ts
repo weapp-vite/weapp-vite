@@ -126,9 +126,9 @@ export const compatMatrix: CompatMatrixItem[] = [
     id: 'setup-macros',
     category: 'script-setup',
     feature: '宏函数',
-    sample: 'defineProps / defineEmits / withDefaults',
+    sample: 'defineProps / defineEmits / withDefaults / import NativeBadge + NativeMeterTs',
     status: 'pass',
-    notes: '类型推导和模板使用均通过。',
+    notes: '类型推导、模板使用、原生组件引入以及 TS+SCSS 原生组件链路均通过。',
   },
   {
     id: 'setup-model-single',
