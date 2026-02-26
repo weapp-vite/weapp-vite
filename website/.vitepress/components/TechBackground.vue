@@ -21,6 +21,39 @@ let raf = 0
 let particles: { x: number, y: number, vx: number, vy: number, r: number }[] = []
 const { isDark } = useData()
 
+function withAlpha(color: string, alpha: number) {
+  const normalized = color.trim()
+  const safeAlpha = Math.max(0, Math.min(1, alpha))
+  const hexMatch = normalized.match(/^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i)
+  if (hexMatch) {
+    const hex = hexMatch[1]
+    const expand = (value: string) => value.length === 1 ? `${value}${value}` : value
+    const isShort = hex.length <= 4
+    const getPair = (index: number) => {
+      const start = isShort ? index : index * 2
+      return expand(hex.slice(start, start + (isShort ? 1 : 2)))
+    }
+    const r = Number.parseInt(getPair(0), 16)
+    const g = Number.parseInt(getPair(1), 16)
+    const b = Number.parseInt(getPair(2), 16)
+    if ([r, g, b].every(Number.isFinite)) {
+      return `rgba(${r}, ${g}, ${b}, ${safeAlpha})`
+    }
+  }
+
+  const rgbMatch = normalized.match(/^rgba?\((.*)\)$/i)
+  if (rgbMatch) {
+    const parts = rgbMatch[1].split(/[,\s/]+/).filter(Boolean)
+    const [r, g, b] = parts.slice(0, 3).map(part => Number.parseFloat(part))
+    if ([r, g, b].every(Number.isFinite)) {
+      return `rgba(${r}, ${g}, ${b}, ${safeAlpha})`
+    }
+  }
+
+  // Fallback: never return an unknown format, because CanvasGradient may reject it.
+  return `rgba(43, 162, 69, ${safeAlpha})`
+}
+
 function getColors() {
   const root = document.documentElement
   const styles = getComputedStyle(root)
@@ -120,7 +153,7 @@ function loop(start = performance.now()) {
   const sweepY = (Math.sin(t * 0.8) * 0.5 + 0.5) * h
   const g = ctx.createLinearGradient(0, sweepY - 120, 0, sweepY + 120)
   g.addColorStop(0, 'rgba(0,0,0,0)')
-  g.addColorStop(0.5, isDark ? `${brand2}33` : `${brand1}33`)
+  g.addColorStop(0.5, isDark ? withAlpha(brand2, 0.2) : withAlpha(brand1, 0.2))
   g.addColorStop(1, 'rgba(0,0,0,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, w, h)
@@ -146,7 +179,7 @@ function loop(start = performance.now()) {
       }
       ctx.beginPath()
       const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 30)
-      glow.addColorStop(0, isDark ? `${brand2}bb` : `${brand1}aa`)
+      glow.addColorStop(0, isDark ? withAlpha(brand2, 0.73) : withAlpha(brand1, 0.67))
       glow.addColorStop(1, 'rgba(0,0,0,0)')
       ctx.fillStyle = glow
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
