@@ -63,8 +63,14 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       },
       { text: 'Alias 别名', link: '/guide/alias' },
       { text: '自动构建 npm ', link: '/guide/npm' },
-      { text: '自动导入组件 ', link: '/guide/auto-import' },
-      { text: '自定义 Resolver（自动导入组件）', link: '/guide/auto-import-resolver' },
+      {
+        text: '自动导入组件 ',
+        collapsed: false,
+        items: [
+          { text: '自动导入组件', link: '/guide/auto-import' },
+          { text: '自定义 Resolver', link: '/guide/auto-import-resolver' },
+        ],
+      },
       { text: '自动路由', link: '/guide/auto-routes' },
       { text: '生成脚手架', link: '/guide/generate' },
       { text: 'JSON 配置文件的智能提示', link: '/guide/json-intelli-sense' },
