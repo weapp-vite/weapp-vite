@@ -39,6 +39,7 @@
 | script-setup | model 单 Ref 形态 | `const m = defineModel()`                  | pass    | 可用                                                       |
 | script-setup | model tuple 形态  | `const [m, mods] = defineModel()`          | pass    | 已支持 tuple 解构与 modifiers 泛型推导                     |
 | component    | 动态组件          | `<component :is=\"Comp\" />`               | partial | 当前构建链对跨文件 `.vue` 动态组件存在 default export 问题 |
+| component    | 组件互操作        | `native usingComponents -> Vue SFC`        | pass    | 原生组件可通过 usingComponents 引入并渲染 Vue 组件         |
 | build        | 工程校验          | `typecheck + eslint + build`               | pass    | 当前对照目录全通过                                         |
 
 ## 已观察到的差异

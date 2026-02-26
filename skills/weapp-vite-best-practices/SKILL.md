@@ -27,7 +27,9 @@ Build and maintain weapp-vite projects with stable conventions first, then tune 
 
 - Enable `weapp.autoRoutes` when using convention-based pages.
 - Keep auto component import on by default; only add custom `globs/resolvers` when needed.
-- Use Script Setup JSON macros or `<json>` blocks for page/component config instead of scattered manual JSON edits.
+- Use Script Setup JSON macros for App/Page/Component config instead of scattered manual JSON edits.
+- Prefer matching JSON macros by file type: `defineAppJson` / `definePageJson` / `defineComponentJson`.
+- Keep `<json>` only for legacy compatibility.
 
 4. Choose subpackage strategy intentionally
 

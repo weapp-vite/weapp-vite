@@ -13,8 +13,8 @@ Implement Vue SFC in mini-programs with a two-layer mindset: compile-time rules 
 
 1. Establish SFC boundaries
 
-- Treat `<template>/<script>/<style>/<json>` as separate responsibilities.
-- Keep mini-program config in `<json>` or Script Setup JSON macros.
+- Treat `<template>/<script>/<style>` as separate responsibilities, with config managed by JSON macros first.
+- Keep mini-program config in Script Setup JSON macros. Use `<json>` only for legacy compatibility.
 - Avoid script-side ESM component registration for mini-program components.
 
 2. Choose script strategy
@@ -26,6 +26,8 @@ Implement Vue SFC in mini-programs with a two-layer mindset: compile-time rules 
 3. Configure JSON correctly
 
 - Use one macro family per SFC: `definePageJson` or `defineComponentJson` or `defineAppJson`.
+- For App/Page/Component SFC, prefer the corresponding macro even for static config.
+- App uses `defineAppJson`, Page uses `definePageJson`, Component uses `defineComponentJson`.
 - Keep macro calls top-level and single-argument.
 - Remember macro output has highest merge priority over `<json>` and auto-inferred config.
 
@@ -56,7 +58,7 @@ Implement Vue SFC in mini-programs with a two-layer mindset: compile-time rules 
 
 ## Completion Checklist
 
-- SFC config path is clear (`<json>` or one JSON macro family).
+- SFC config path is clear (prefer one JSON macro family; avoid new `<json>` usage).
 - `usingComponents` strategy is deterministic and path-safe.
 - Template usage avoids unsupported directive forms.
 - Runtime API imports come from `wevu`.

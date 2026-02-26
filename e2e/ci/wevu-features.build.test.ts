@@ -46,6 +46,7 @@ describe.sequential('e2e app: wevu-features (build)', () => {
       'pages/use-model/index',
       'pages/use-provide-inject/index',
       'pages/use-store/index',
+      'pages/native-uses-vue/index',
     ])
 
     expect(indexWxml).toContain('url="{{item.path}}"')
@@ -54,11 +55,13 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(indexJs).toContain('/pages/use-model/index')
     expect(indexJs).toContain('/pages/use-provide-inject/index')
     expect(indexJs).toContain('/pages/use-store/index')
+    expect(indexJs).toContain('/pages/native-uses-vue/index')
     expect(indexJs).toContain('useAttrs')
     expect(indexJs).toContain('useSlots')
     expect(indexJs).toContain('useModel')
     expect(indexJs).toContain('provide / inject')
     expect(indexJs).toContain('store')
+    expect(indexJs).toContain('native -> vue')
 
     expect(useAttrsPageWxml).toContain('<UseAttrsFeature')
     expect(useAttrsPageWxml).toContain('stateClass="{{currentToneClass}}"')
@@ -91,6 +94,11 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     const useProvideInjectFeatureWxmlPath = path.join(DIST_ROOT, 'components/use-provide-inject-feature/index.wxml')
     const useStorePageWxmlPath = path.join(DIST_ROOT, 'pages/use-store/index.wxml')
     const useStorePageJsPath = path.join(DIST_ROOT, 'pages/use-store/index.js')
+    const nativeUsesVuePageWxmlPath = path.join(DIST_ROOT, 'pages/native-uses-vue/index.wxml')
+    const nativeUsesVuePageJsPath = path.join(DIST_ROOT, 'pages/native-uses-vue/index.js')
+    const nativeUsesVueComponentJsonPath = path.join(DIST_ROOT, 'native/native-uses-vue/index.json')
+    const nativeUsesVueComponentWxmlPath = path.join(DIST_ROOT, 'native/native-uses-vue/index.wxml')
+    const nativeCardComponentWxmlPath = path.join(DIST_ROOT, 'components/native-card/index.wxml')
 
     expect(await fs.pathExists(useSlotsPageWxmlPath)).toBe(true)
     expect(await fs.pathExists(useSlotsPageJsPath)).toBe(true)
@@ -103,6 +111,11 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(await fs.pathExists(useProvideInjectFeatureWxmlPath)).toBe(true)
     expect(await fs.pathExists(useStorePageWxmlPath)).toBe(true)
     expect(await fs.pathExists(useStorePageJsPath)).toBe(true)
+    expect(await fs.pathExists(nativeUsesVuePageWxmlPath)).toBe(true)
+    expect(await fs.pathExists(nativeUsesVuePageJsPath)).toBe(true)
+    expect(await fs.pathExists(nativeUsesVueComponentJsonPath)).toBe(true)
+    expect(await fs.pathExists(nativeUsesVueComponentWxmlPath)).toBe(true)
+    expect(await fs.pathExists(nativeCardComponentWxmlPath)).toBe(true)
 
     const useSlotsPageWxml = await fs.readFile(useSlotsPageWxmlPath, 'utf8')
     const useSlotsPageJs = await fs.readFile(useSlotsPageJsPath, 'utf8')
@@ -115,6 +128,11 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     const useProvideInjectFeatureWxml = await fs.readFile(useProvideInjectFeatureWxmlPath, 'utf8')
     const useStorePageWxml = await fs.readFile(useStorePageWxmlPath, 'utf8')
     const useStorePageJs = await fs.readFile(useStorePageJsPath, 'utf8')
+    const nativeUsesVuePageWxml = await fs.readFile(nativeUsesVuePageWxmlPath, 'utf8')
+    const nativeUsesVuePageJs = await fs.readFile(nativeUsesVuePageJsPath, 'utf8')
+    const nativeUsesVueComponentJson = await fs.readJson(nativeUsesVueComponentJsonPath)
+    const nativeUsesVueComponentWxml = await fs.readFile(nativeUsesVueComponentWxmlPath, 'utf8')
+    const nativeCardComponentWxml = await fs.readFile(nativeCardComponentWxmlPath, 'utf8')
 
     expect(useSlotsPageWxml).toContain('<UseSlotsFeature')
     expect(useSlotsPageWxml).toContain('bindtap="toggleOpen"')
@@ -162,5 +180,16 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(useStorePageJs).toContain('featureSetupCounter')
     expect(useStorePageJs).toContain('featureOptionsCounter')
     expect(useStorePageJs).toContain('_runE2E')
+
+    expect(nativeUsesVuePageWxml).toMatch(/<(native-uses-vue|NativeUsesVue)\b/)
+    expect(nativeUsesVuePageWxml).toContain('id="native-interop-toggle"')
+    expect(nativeUsesVuePageWxml).toContain('id="native-interop-count"')
+    expect(nativeUsesVuePageJs).toContain('_runE2E')
+
+    expect(nativeUsesVueComponentJson.usingComponents?.['native-card']).toBe('/components/native-card/index')
+    expect(nativeUsesVueComponentWxml).toContain('<native-card')
+    expect(nativeUsesVueComponentWxml).toContain('{{note}}')
+    expect(nativeCardComponentWxml).toContain('badge:')
+    expect(nativeCardComponentWxml).toContain('<slot')
   })
 })

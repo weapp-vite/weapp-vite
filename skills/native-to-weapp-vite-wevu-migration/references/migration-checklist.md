@@ -10,7 +10,7 @@
 ## B. 机械迁移
 
 - [ ] 将 `js + wxml + wxss + json` 合并到 `index.vue`。
-- [ ] 使用 `definePageJson/defineComponentJson` 或 `<json>` 维护配置。
+- [ ] 使用 `defineAppJson/definePageJson/defineComponentJson` 维护配置；`<json>` 仅作历史兼容。
 - [ ] 保持函数名和调用顺序，先不改业务语义。
 - [ ] 页面可打开且主流程可走通。
 

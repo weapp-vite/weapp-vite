@@ -18,7 +18,8 @@ keywords:
 
 小程序组件的注册是 **JSON 声明式** 的：只认 `usingComponents`。因此在 SFC 里推荐：
 
-- 在 `<json>` 或 `definePageJson/defineComponentJson` 里声明 `usingComponents`
+- 优先在 `defineAppJson/definePageJson/defineComponentJson` 里声明 `usingComponents`
+- App/Page/Component SFC 能用对应 JSON 宏就不要再写 `<json>`
 - 模板里直接写组件标签（例如 `<my-card />`）
 
 页面示例：
@@ -45,7 +46,7 @@ definePageJson(() => ({
 不要把小程序组件当成 Web Vue 组件来做“ESM import + components 注册”。即使你在脚本里写了 import，最终是否能工作也取决于产物如何生成 `usingComponents`。
 :::
 
-> 提示：`tsconfig.app.json` 已预置 `"vueCompilerOptions.plugins": ["weapp-vite/volar"]`，配合 Volar 扩展即可获得 `<json>` 与模板提示。
+> 提示：`tsconfig.app.json` 已预置 `"vueCompilerOptions.plugins": ["weapp-vite/volar"]`，配合 Volar 扩展即可获得 JSON 宏与模板提示。
 
 :::warning 必须设置 vueCompilerOptions.lib
 若使用 wevu 的 `<script setup>` 宏（`defineProps/withDefaults/defineEmits` 等），请务必在同一处设置 `"vueCompilerOptions.lib": "wevu"`，否则宏的类型提示会退化为 `any`。
@@ -53,12 +54,12 @@ definePageJson(() => ({
 
 ## 配置块模式对比
 
-| 写法                  | 作用                | 适合场景                 |
-| --------------------- | ------------------- | ------------------------ |
-| `<json>`              | JSONC + Schema 提示 | 静态配置（默认可写注释） |
-| `<json lang="jsonc">` | JSONC + Schema 提示 | 静态配置（显式标注）     |
-| `<json lang="ts/js">` | TS/JS + 类型检查    | 动态/异步配置            |
-| Script Setup 宏       | build-time 注入配置 | 覆盖/拼装页面与组件配置  |
+| 写法                  | 作用                | 适合场景                         |
+| --------------------- | ------------------- | -------------------------------- |
+| Script Setup 宏       | build-time 注入配置 | 默认方案（页面/组件/App 均推荐） |
+| `<json>`              | JSONC + Schema 提示 | 兼容旧代码的静态配置             |
+| `<json lang="jsonc">` | JSONC + Schema 提示 | 兼容旧代码的静态配置（显式标注） |
+| `<json lang="ts/js">` | TS/JS + 类型检查    | 历史项目迁移期的动态/异步配置    |
 
 ```mermaid
 flowchart TB
@@ -88,6 +89,14 @@ definePageJson(async () => ({
 - `defineAppJson`
 - `definePageJson`
 - `defineComponentJson`
+
+建议：
+
+- App/Page/Component SFC 默认使用对应宏：
+  - App 用 `defineAppJson`
+  - Page 用 `definePageJson`
+  - Component 用 `defineComponentJson`
+- `<json>` 作为兼容模式保留，不建议在新增 SFC 里使用。
 
 特点与限制：
 

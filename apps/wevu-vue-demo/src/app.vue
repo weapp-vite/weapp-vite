@@ -10,6 +10,7 @@ defineAppJson({
     'pages/vue-compat/template/index',
     'pages/vue-compat/reactivity/index',
     'pages/vue-compat/script-setup/index',
+    'pages/vue-compat/component-interop/index',
     'pages/vue-compat/matrix/index',
     'pages/api-demos/base/index',
     'pages/api-demos/device/index',

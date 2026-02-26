@@ -9,6 +9,7 @@ defineAppJson({
     'pages/use-model/index',
     'pages/use-provide-inject/index',
     'pages/use-store/index',
+    'pages/native-uses-vue/index',
   ],
   window: {
     navigationBarTitleText: 'wevu-features',

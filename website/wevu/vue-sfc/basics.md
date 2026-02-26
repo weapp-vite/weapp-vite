@@ -84,10 +84,10 @@ flowchart LR
 ## 基础范式
 
 - `wevu` 提供运行时：`defineComponent`（页面/组件统一使用）、`ref/reactive/computed/watch`、生命周期等。
-- 推荐使用 Script Setup JSON 宏（build-time）注入小程序 App/Page/Component 配置；也可在 SFC `<json>` 块中编写静态配置。配合 `weapp-vite/volar` 获得智能提示。
+- 推荐使用 Script Setup JSON 宏（build-time）注入小程序 App/Page/Component 配置。App/Page/Component 场景都应优先使用对应宏，不再新增 `<json>` 块。配合 `weapp-vite/volar` 获得智能提示。
 - 模板语法与 Vue 3 基本一致（事件、v-if/v-for/class/style 绑定），构建时转为小程序原生 WXML。
 - 样式使用 `<style lang="scss|less|css">`，构建后输出 `wxss`。
-- 组件引入沿用小程序约定：在 `<json>` 的 `usingComponents` 中声明，脚本里不要用 ESModule `import` 引入组件。
+- 组件引入沿用小程序约定：在 `definePageJson/defineComponentJson` 中声明 `usingComponents`，脚本里不要用 ESModule `import` 注册小程序组件。
 - props 推荐：wevu 会把 Vue 风格的 `props` 规范化为小程序 `properties`，原生 `properties` 亦兼容。
 
 ## 页面与组件：如何区分
@@ -95,10 +95,10 @@ flowchart LR
 在微信小程序里，页面与组件都是“用 `Component()` 注册”的，但它们的 JSON 字段与生命周期事件并不一样。
 
 - **页面**：通常位于 `src/pages/**/index.vue`，最终会出现在 `app.json` 的 `pages` 列表中（来源依赖你的路由/扫描策略）。
-  - 页面配置用 `definePageJson()` 或 `<json>` 写（最终生成 `page.json`）。
+  - 页面配置优先用 `definePageJson()`（最终生成 `page.json`），`<json>` 仅用于兼容历史代码。
   - 页面 hooks（滚动/分享/触底/下拉刷新等）只对页面生效。
 - **组件**：通常位于 `src/components/**/index.vue`，通过页面/组件 JSON 的 `usingComponents` 使用。
-  - 组件配置用 `defineComponentJson()` 或 `<json>` 写（最终生成 `component.json`），并确保 `component: true`。
+  - 组件配置优先用 `defineComponentJson()`（最终生成 `component.json`），并确保 `component: true`；新增组件不建议再写 `<json>`。
 
 组件最小示例（只展示关键字段）：
 
@@ -123,5 +123,5 @@ defineComponentJson(() => ({
 - `<script lang="ts">`：页面/组件均使用 `export default defineComponent({ setup() {...} })` 注册；组件推荐写 `props`（wevu 会转为小程序 `properties`），并在 `setup()` 里返回/暴露模板需要的数据与方法。
 - `<script setup lang="ts">`：组合式语法糖，顶层定义的 ref/computed/函数会自动暴露到模板；如需声明 props/emits 使用 `defineProps/defineEmits`。
 - 运行时 API 请从 `wevu` 导入（`ref/reactive/computed/watch`、生命周期钩子等），确保挂载到小程序生命周期与 `setData` diff。
-- `usingComponents` 可写在 `<json>` 块，也可通过 Script Setup JSON 宏注入；脚本侧不要通过 `import` 注册小程序组件（见“配置与宏”章节）。
+- `usingComponents` 推荐通过 Script Setup JSON 宏注入；`<json>` 仅用于兼容旧代码。脚本侧不要通过 `import` 注册小程序组件（见“配置与宏”章节）。
 - 避免直接使用 `window/document` 等浏览器专属能力，需改用微信小程序 API；模板事件使用小程序事件名（`@tap` 等）。
