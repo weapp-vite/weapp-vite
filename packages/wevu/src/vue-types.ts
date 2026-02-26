@@ -57,6 +57,24 @@ export type DefineComponent<
   Defaults,
   S
 >
+
+export type NativeComponent<Props = Record<string, any>> = new (...args: any[]) => InstanceType<
+  DefineComponent<
+    {},
+    {},
+    {},
+    {},
+    {},
+    VueComponentOptionsMixin,
+    VueComponentOptionsMixin,
+    {},
+    string,
+    VuePublicProps,
+    Props,
+    {}
+  >
+>
+
 export type ObjectDirective<
   HostElement = any,
   Value = any,

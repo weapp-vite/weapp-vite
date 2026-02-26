@@ -1,0 +1,12 @@
+<view class="native-meter">
+  <view class="native-meter__head">
+    <text class="native-meter__label">{{label || 'TS + SCSS 原生组件'}}</text>
+    <text class="native-meter__value">{{value}}%</text>
+  </view>
+  <view class="native-meter__track">
+    <view
+      class="native-meter__bar native-meter__bar--{{tone}}"
+      style="width: {{value > 100 ? 100 : value < 0 ? 0 : value}}%;"
+    />
+  </view>
+</view>

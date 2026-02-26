@@ -28,7 +28,7 @@ export const vueCompatCases: VueCompatCase[] = [
     key: 'script-setup',
     title: 'Script Setup 宏',
     path: '/pages/vue-compat/script-setup/index',
-    focus: 'defineProps / defineEmits / defineModel / withDefaults',
+    focus: 'defineProps / defineEmits / defineModel / withDefaults / 原生组件 import（含 TS+SCSS）',
     llmsTopic: 'SFC <script setup>',
     status: 'pass',
   },
