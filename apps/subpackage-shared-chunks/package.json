@@ -23,9 +23,9 @@
     "g": "weapp-vite generate"
   },
   "devDependencies": {
-    "@types/node": "^25.3.0",
+    "@types/node": "^25.3.1",
     "crypto-es": "^3.1.2",
-    "miniprogram-api-typings": "^5.0.1",
+    "miniprogram-api-typings": "^5.1.1",
     "sass": "^1.97.3",
     "typescript": "^5.9.3",
     "weapp-tailwindcss": "^4.10.3",

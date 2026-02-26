@@ -27,8 +27,8 @@
     "tdesign-miniprogram": "^1.12.3"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.24",
-    "miniprogram-api-typings": "^5.0.1",
+    "autoprefixer": "^10.4.27",
+    "miniprogram-api-typings": "^5.1.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
     "weapp-tailwindcss": "^4.10.3",

@@ -13,7 +13,7 @@
     "vue": "^3.5.29"
   },
   "devDependencies": {
-    "@microsoft/api-extractor": "^7.57.5",
+    "@microsoft/api-extractor": "^7.57.6",
     "typescript": "^5.9.3"
   }
 }
