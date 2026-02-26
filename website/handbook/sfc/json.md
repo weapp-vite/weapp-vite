@@ -28,6 +28,12 @@ keywords:
 - `definePageJson`
 - `defineComponentJson`
 
+补充约定：
+
+- 对 App/Page/Component SFC，能用对应 JSON 宏就不要使用 `<json>` 代码块。
+- App 用 `defineAppJson`，Page 用 `definePageJson`，Component 用 `defineComponentJson`。
+- `<json>` 仅作为兼容历史代码的兜底方案保留。
+
 这样做的优势：
 
 - 类型提示更完整

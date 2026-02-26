@@ -72,6 +72,13 @@
           "scene": null
         },
         {
+          "name": "pages/vue-compat/component-interop/index",
+          "pathName": "pages/vue-compat/component-interop/index",
+          "query": "",
+          "launchMode": "default",
+          "scene": null
+        },
+        {
           "name": "pages/vue-compat/matrix/index",
           "pathName": "pages/vue-compat/matrix/index",
           "query": "",

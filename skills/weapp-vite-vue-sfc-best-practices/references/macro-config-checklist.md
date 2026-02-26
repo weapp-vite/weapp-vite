@@ -2,8 +2,9 @@
 
 ## JSON config strategy
 
-- Static config: prefer `<json>` / `<json lang="jsonc">`.
-- Dynamic/merged config: use Script Setup JSON macros.
+- Component SFC: prefer `defineComponentJson` for both static and dynamic config.
+- Page/App SFC: prefer `definePageJson` / `defineAppJson`.
+- `<json>` blocks are legacy-compatible fallback only; avoid for new code.
 
 ## Macro rules
 

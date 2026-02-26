@@ -33,6 +33,14 @@ export const vueCompatCases: VueCompatCase[] = [
     status: 'pass',
   },
   {
+    key: 'component-interop',
+    title: '组件互操作',
+    path: '/pages/vue-compat/component-interop/index',
+    focus: '原生组件 usingComponents 引入 Vue 组件（native -> vue）',
+    llmsTopic: 'Component Interop',
+    status: 'pass',
+  },
+  {
     key: 'matrix',
     title: '能力矩阵',
     path: '/pages/vue-compat/matrix/index',

@@ -1,0 +1,11 @@
+.native-uses-vue {
+  margin-top: 12rpx;
+}
+
+.native-uses-vue__note {
+  display: block;
+  margin-top: 8rpx;
+  color: #475569;
+  font-size: 22rpx;
+  line-height: 1.6;
+}

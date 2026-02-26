@@ -253,7 +253,7 @@ describe.sequential('e2e app: wevu-features', () => {
     }
   })
 
-  it('updates runtime slots, model, provide/inject and store pages', async (ctx) => {
+  it('updates runtime slots, model, provide/inject, store and native->vue interop pages', async (ctx) => {
     await runBuild()
 
     let miniProgram
@@ -485,6 +485,35 @@ describe.sequential('e2e app: wevu-features', () => {
       expect(storeResult?.details?.actionBeforeCount).toBeGreaterThan(0)
       expect(storeResult?.details?.actionAfterCount).toBeGreaterThan(0)
       expect(storeResult?.details?.actionErrorCount).toBe(0)
+
+      const nativeUsesVuePage = await relaunchPage(miniProgram, '/pages/native-uses-vue/index', '原生组件引入 Vue 组件')
+      if (!nativeUsesVuePage) {
+        throw new Error('Failed to launch native-uses-vue page')
+      }
+
+      const nativeBeforeWxml = await readPageWxml(nativeUsesVuePage)
+      expect(nativeBeforeWxml).toContain('mode: basic')
+      expect(nativeBeforeWxml).toContain('count: 1')
+      expect(nativeBeforeWxml).toContain('native-uses-vue')
+      expect(nativeBeforeWxml).toContain('native-card')
+      expect(nativeBeforeWxml).toContain('is="components/native-card/index"')
+
+      const nativeToggleOk = await tapControlUntil(nativeUsesVuePage, '#native-interop-toggle', async () => {
+        const wxml = await readPageWxml(nativeUsesVuePage)
+        return wxml.includes('mode: contrast')
+      })
+      expect(nativeToggleOk).toBe(true)
+
+      const nativeCountOk = await tapControlUntil(nativeUsesVuePage, '#native-interop-count', async () => {
+        const wxml = await readPageWxml(nativeUsesVuePage)
+        return wxml.includes('count: 2')
+      })
+      expect(nativeCountOk).toBe(true)
+
+      const nativeResult = await nativeUsesVuePage.callMethod('runE2E')
+      expect(nativeResult?.ok).toBe(true)
+      expect(nativeResult?.checks?.modeChanged).toBe(true)
+      expect(nativeResult?.checks?.countChanged).toBe(true)
     }
     finally {
       await miniProgram.close()

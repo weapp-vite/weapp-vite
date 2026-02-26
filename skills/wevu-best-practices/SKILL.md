@@ -19,7 +19,8 @@ Write mini-program business logic with Vue-style ergonomics while respecting wev
 
 2. Use correct component/page boundaries
 
-- Define mini-program config via `<json>` or Script Setup JSON macros.
+- Define mini-program config via Script Setup JSON macros first.
+- For App/Page/Component SFC, prefer `defineAppJson` / `definePageJson` / `defineComponentJson` over `<json>` blocks.
 - Declare `usingComponents` through JSON config, not script-side ESM component registration.
 - Keep page hooks only in page contexts.
 

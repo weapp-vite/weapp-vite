@@ -30,6 +30,12 @@ const featureList = [
     summary: '展示 setup/options store 与 patch/reset/订阅能力',
     path: '/pages/use-store/index',
   },
+  {
+    key: 'native-uses-vue',
+    title: 'native -> vue',
+    summary: '展示原生组件通过 usingComponents 引入 Vue 组件',
+    path: '/pages/native-uses-vue/index',
+  },
 ] as const
 </script>
 
@@ -62,8 +68,8 @@ const featureList = [
 
 <style scoped>
 .feature-nav-page {
-  min-height: 100vh;
   box-sizing: border-box;
+  min-height: 100vh;
   padding: 28rpx;
   background: #f8fafc;
 }
@@ -86,11 +92,11 @@ const featureList = [
 
 .feature-nav-item {
   display: block;
-  margin-top: 14rpx;
   padding: 22rpx;
-  border-radius: 18rpx;
-  border: 2rpx solid #cbd5e1;
+  margin-top: 14rpx;
   background: #fff;
+  border: 2rpx solid #cbd5e1;
+  border-radius: 18rpx;
 }
 
 .feature-nav-item-title {

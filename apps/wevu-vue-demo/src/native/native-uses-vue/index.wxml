@@ -1,0 +1,9 @@
+<view class="native-uses-vue">
+  <vue-card
+    title="{{title}}"
+    subtitle="{{subtitle}}"
+    badge="{{badge}}"
+  >
+    <text class="native-uses-vue__note">{{note}}</text>
+  </vue-card>
+</view>

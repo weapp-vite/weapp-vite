@@ -155,6 +155,14 @@ export const compatMatrix: CompatMatrixItem[] = [
     notes: '跨文件 .vue 组件在当前构建链触发 default export 解析问题。',
   },
   {
+    id: 'comp-native-uses-vue',
+    category: 'component',
+    feature: '组件互操作（native -> vue）',
+    sample: '原生组件 usingComponents 引入 Vue SFC',
+    status: 'pass',
+    notes: '原生组件内通过 usingComponents 指向 Vue 组件，可稳定渲染与传参。',
+  },
+  {
     id: 'build-check',
     category: 'build',
     feature: '项目校验',
