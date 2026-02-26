@@ -109,6 +109,13 @@ export interface PageFeatures {
    */
   enableOnRouteDone?: boolean
   /**
+   * 启用 onReady 阶段的 routeDone 兜底补发。
+   *
+   * 默认关闭：保持与微信小程序平台事件更一致的行为。
+   * 仅当个别 IDE/基础库未派发 routeDone 且业务确实依赖该时机时再开启。
+   */
+  enableOnRouteDoneFallback?: boolean
+  /**
    * 启用 Tab 点击事件（注入 `onTabItemTap`）。
    */
   enableOnTabItemTap?: boolean

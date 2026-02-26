@@ -31,6 +31,7 @@ export function resolveComponentFeatures(options: {
   const enableOnReachBottom = typeof userOnReachBottom === 'function' || Boolean(features.enableOnReachBottom)
   const enableOnPageScroll = typeof userOnPageScroll === 'function' || Boolean(features.enableOnPageScroll)
   const enableOnRouteDone = typeof userOnRouteDone === 'function' || Boolean(features.enableOnRouteDone)
+  const enableOnRouteDoneFallback = Boolean(features.enableOnRouteDoneFallback)
   const enableOnTabItemTap = typeof userOnTabItemTap === 'function' || Boolean(features.enableOnTabItemTap)
   const enableOnResize = typeof userOnResize === 'function' || Boolean(features.enableOnResize)
   const enableOnShareTimeline = typeof userOnShareTimeline === 'function' || Boolean(features.enableOnShareTimeline)
@@ -58,6 +59,7 @@ export function resolveComponentFeatures(options: {
     enableOnReachBottom,
     enableOnPageScroll,
     enableOnRouteDone,
+    enableOnRouteDoneFallback,
     enableOnTabItemTap,
     enableOnResize,
     enableOnShareAppMessage,

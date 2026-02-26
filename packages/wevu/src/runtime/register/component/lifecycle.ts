@@ -113,6 +113,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
   enableOnReachBottom: boolean
   enableOnPageScroll: boolean
   enableOnRouteDone: boolean
+  enableOnRouteDoneFallback: boolean
   enableOnTabItemTap: boolean
   enableOnResize: boolean
   enableOnShareAppMessage: boolean
@@ -145,6 +146,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
     enableOnReachBottom,
     enableOnPageScroll,
     enableOnRouteDone,
+    enableOnRouteDoneFallback,
     enableOnTabItemTap,
     enableOnResize,
     enableOnShareAppMessage,
@@ -232,6 +234,17 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       // 兼容：部分平台/模式可能触发 Page.onReady，而非 Component lifetimes.ready
       if (!(this as any).__wevuReadyCalled) {
         ;(this as any).__wevuReadyCalled = true
+        // 部分 IDE/基础库在首屏场景可能不派发 routeDone，这里做一次延迟兜底。
+        // 若平台随后派发了真实 routeDone，会因为 __wevuRouteDoneCalled 判定而跳过补发。
+        if (isPage && enableOnRouteDone && enableOnRouteDoneFallback) {
+          // eslint-disable-next-line ts/no-this-alias
+          const current = this
+          setTimeout(() => {
+            if (!(current as any).__wevuRouteDoneCalled) {
+              pageLifecycleHooks.onRouteDone?.call(current)
+            }
+          }, 0)
+        }
         scheduleTemplateRefUpdate(this, () => {
           callHookList(this, 'onReady', args)
           if (typeof userOnReady === 'function') {
