@@ -1,3 +1,17 @@
+---
+title: WXML 增强
+description: WXML 增强，聚焦 guide / wxml 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - 配置
+  - guide
+  - wxml
+  - 增强
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
+---
+
 # WXML 增强
 
 `weapp-vite` 对 WXML 做了两类增强：

@@ -1,3 +1,17 @@
+---
+title: 周边包总览
+description: weapp-vite 不只是一个构建器，packages/* 里还提供了脚手架、CLI、编译器、跨端 API、实验运行时和性能分析工具。
+keywords:
+  - packages
+  - 周边包总览
+  - weapp-vite
+  - 不只是一个构建器
+  - packages/
+  - 里还提供了脚手架
+  - cli
+  - 编译器
+---
+
 # 周边包总览
 
 `weapp-vite` 不只是一个构建器，`packages/*` 里还提供了脚手架、CLI、编译器、跨端 API、实验运行时和性能分析工具。

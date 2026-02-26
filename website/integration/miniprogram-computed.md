@@ -1,3 +1,15 @@
+---
+title: miniprogram-computed 集成
+description: miniprogram-computed
+  的用法基本和官方一致。需要注意的是：为了确保构建产物里依赖齐全，建议把它的运行时依赖也显式安装到项目里（避免构建时被裁剪/遗漏）。
+keywords:
+  - 微信小程序
+  - integration
+  - computed
+  - miniprogram-computed
+  - 集成
+---
+
 # miniprogram-computed 集成
 
 `miniprogram-computed` 的用法基本和官方一致。需要注意的是：为了确保构建产物里依赖齐全，建议把它的运行时依赖也显式安装到项目里（避免构建时被裁剪/遗漏）。

@@ -1,3 +1,17 @@
+---
+title: Vant Weapp 集成
+description: Vant Weapp 集成，聚焦 integration / vant 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - 配置
+  - integration
+  - vant
+  - weapp
+  - 集成
+  - 聚焦
+  - /
+  - 相关场景
+---
+
 # Vant Weapp 集成
 
 官方文档：<https://vant-ui.github.io/vant-weapp/#/home>

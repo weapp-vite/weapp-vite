@@ -1,3 +1,17 @@
+---
+title: JSON 配置文件的智能提示
+description: 给 app.json、page.json 等文件加上 $schema 字段后，VS Code、微信开发者工具等编辑器就能提供：
+keywords:
+  - 配置
+  - guide
+  - json
+  - intelli
+  - sense
+  - 配置文件的智能提示
+  - 给
+  - app.json
+---
+
 # JSON 配置文件的智能提示
 
 给 `app.json`、`page.json` 等文件加上 `$schema` 字段后，VS Code、微信开发者工具等编辑器就能提供：

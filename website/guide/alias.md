@@ -1,3 +1,16 @@
+---
+title: 别名
+description: weapp-vite 同时支持 **JS/TS 别名** 与 **JSON/JSONC
+  别名**，让你在脚本和配置文件里都能用同一套路径前缀。本页先给出最常见的配置方式，再补充一些使用建议；更细的字段说明请参考 配置文档 · JSON 配…
+keywords:
+  - guide
+  - alias
+  - 别名
+  - weapp-vite
+  - 同时支持
+  - JS/TS
+---
+
 # 别名 {#alias}
 
 `weapp-vite` 同时支持 **JS/TS 别名** 与 **JSON/JSONC 别名**，让你在脚本和配置文件里都能用同一套路径前缀。本页先给出最常见的配置方式，再补充一些使用建议；更细的字段说明请参考 [配置文档 · JSON 配置](/config/json.md) 与 [配置文档 · JS 配置](/config/js.md)。

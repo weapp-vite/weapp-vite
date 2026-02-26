@@ -1,5 +1,16 @@
 ---
 title: 构建与输出：你应该关心什么
+description: 构建与输出：你应该关心什么，聚焦 handbook / build-and-output 相关场景，覆盖 weapp-vite 与
+  wevu 的能力、配置和实践要点。
+keywords:
+  - handbook
+  - build
+  - output
+  - 构建与输出：你应该关心什么
+  - 聚焦
+  - /
+  - build-and-output
+  - 相关场景
 ---
 
 # 构建与输出：你应该关心什么

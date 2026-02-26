@@ -1,5 +1,15 @@
 ---
 title: 教程总览（weapp-vite × Vue SFC × wevu）
+description: 这套教程想帮你把“小程序工程化 + Vue SFC + 运行时”这条链路一次性跑顺，核心就三件事：
+keywords:
+  - weapp-vite
+  - wevu
+  - Vue SFC
+  - handbook
+  - 教程总览（weapp-vite
+  - ×
+  - vue
+  - sfc
 ---
 
 # 教程总览

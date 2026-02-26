@@ -1,5 +1,16 @@
 ---
 title: wevu 概览
+description: wevu 是一个面向小程序（以微信小程序为主）的轻量运行时。可以把它看作“把 Vue 3 的响应式心智模型带到小程序里”，但不引入
+  Virtual DOM，而是用快照 diff 来尽量减少 setData 的更新量。
+keywords:
+  - wevu
+  - 编译
+  - 概览
+  - vue
+  - "3"
+  - 的响应式心智模型带到小程序里
+  - 但不引入
+  - virtual
 ---
 
 # wevu 概览

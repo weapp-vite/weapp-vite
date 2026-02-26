@@ -1,3 +1,16 @@
+---
+title: Vue SFC 配置
+description: weapp-vite 内置 Vue SFC（.vue → WXML/WXSS/JS/JSON）编译链路。这里聚焦编译期可配置项。
+keywords:
+  - Vue SFC
+  - 配置
+  - config
+  - vue
+  - sfc
+  - weapp-vite
+  - 内置
+---
+
 # Vue SFC 配置 {#vue-config}
 
 `weapp-vite` 内置 Vue SFC（`.vue` → WXML/WXSS/JS/JSON）编译链路。这里聚焦编译期可配置项。

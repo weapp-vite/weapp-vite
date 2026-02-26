@@ -1,5 +1,15 @@
 ---
 title: Script Setup：推荐范式
+description: Script Setup：推荐范式，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - Vue SFC
+  - handbook
+  - sfc
+  - script
+  - setup
+  - Setup：推荐范式
+  - 聚焦
+  - /
 ---
 
 # Script Setup：推荐范式

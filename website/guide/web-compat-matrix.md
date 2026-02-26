@@ -1,5 +1,17 @@
 ---
-outline: [2, 4]
+outline:
+  - 2
+  - 4
+title: Web 兼容矩阵 experimental
+description: 本文用于说明 weapp-vite 在 Web 运行时（@weapp-vite/web）下的能力边界。 状态含义如下：
+keywords:
+  - api
+  - guide
+  - web
+  - compat
+  - matrix
+  - 兼容矩阵
+  - experimental
 ---
 
 # Web 兼容矩阵 <span class="wv-badge wv-badge--experimental">experimental</span> {#web-compat-matrix}

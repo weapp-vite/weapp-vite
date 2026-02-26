@@ -1,5 +1,15 @@
 ---
 title: defineComponent（组件）
+description: defineComponent() 是对原生 Component() 的一层封装/增强：在组件 lifetimes.created
+  阶段初始化运行时并同步执行 setup()；setup() 返回对象会合并到组件实例，模板可直接使用。
+keywords:
+  - wevu
+  - component
+  - defineComponent（组件）
+  - definecomponent
+  - 是对原生
+  - 的一层封装/增强：在组件
+  - lifetimes.created
 ---
 
 # defineComponent（组件）

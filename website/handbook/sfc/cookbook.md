@@ -1,5 +1,14 @@
 ---
 title: Cookbook：高频场景配方
+description: 本页把高频需求按“可复制的小片段”组织，后续你可以逐条补充可运行 demo。
+keywords:
+  - handbook
+  - sfc
+  - cookbook
+  - Cookbook：高频场景配方
+  - 本页把高频需求按“可复制的小片段”组织
+  - 后续你可以逐条补充可运行
+  - demo。
 ---
 
 # Cookbook：高频场景配方

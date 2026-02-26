@@ -1,3 +1,17 @@
+---
+title: WXS 配置 experimental
+description: weapp-vite 会对 .wxs/.sjs（以及 .wxs.ts/.wxs.js）进行编译输出，并在 Vue SFC 的
+  class/style 运行时中按需使用 WXS。
+keywords:
+  - 配置
+  - config
+  - wxs
+  - experimental
+  - weapp-vite
+  - 会对
+  - .wxs/.sjs（以及
+---
+
 # WXS 配置 <span class="wv-badge wv-badge--experimental">experimental</span> {#wxs-config}
 
 `weapp-vite` 会对 `.wxs/.sjs`（以及 `.wxs.ts/.wxs.js`）进行编译输出，并在 Vue SFC 的 class/style 运行时中按需使用 WXS。

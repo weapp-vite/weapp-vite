@@ -1,3 +1,17 @@
+---
+title: 手动集成 weapp-vite
+description: 已经有运行中的微信小程序？可以按下面步骤在不依赖脚手架的情况下把 weapp-vite 接进来。整体思路就三步：补齐配置文件 → 安装依赖 → 调整目录。
+keywords:
+  - weapp-vite
+  - 配置
+  - guide
+  - manual
+  - integration
+  - 手动集成
+  - 接进来。整体思路就三步：补齐配置文件
+  - →
+---
+
 # 手动集成 weapp-vite
 
 已经有运行中的微信小程序？可以按下面步骤在不依赖脚手架的情况下把 `weapp-vite` 接进来。整体思路就三步：补齐配置文件 → 安装依赖 → 调整目录。
@@ -108,7 +122,7 @@ export default defineConfig({
 
 建议同步创建以下结构（可参考 [目录结构](/guide/directory-structure)）：
 
-```
+```text
 src/
 ├─ app.ts / app.json / app.scss
 ├─ pages/

@@ -1,3 +1,17 @@
+---
+title: 分包指南
+description: 微信小程序的分包机制在 weapp-vite 中得到完整支持。本页帮你快速搞清楚两件事：
+keywords:
+  - 调试
+  - 分包
+  - guide
+  - subpackage
+  - 分包指南
+  - 微信小程序的分包机制在
+  - weapp-vite
+  - 中得到完整支持。本页帮你快速搞清楚两件事：
+---
+
 # 分包指南
 
 微信小程序的分包机制在 `weapp-vite` 中得到完整支持。本页帮你快速搞清楚两件事：
@@ -102,7 +116,7 @@ import { test1 } from './test1'
 
 在旧版本中，`test1` 会因为 `action/test2.ts` 的存在而被迫回退到主包 `common.js`。升级后构建日志会提示：
 
-```
+```text
 [subpackages] 分包 pages/index1、pages/index3 共享模块已复制到各自 weapp-shared/common.js（2 处引用，忽略主包引用：action/test2.ts）
 ```
 

@@ -1,5 +1,15 @@
 ---
 title: wevu：定位与选择
+description: wevu 是小程序运行时：提供 Vue 3 风格的响应式与生命周期 hooks，并通过快照 diff 最小化 setData。
+keywords:
+  - wevu
+  - handbook
+  - wevu：定位与选择
+  - 是小程序运行时：提供
+  - vue
+  - "3"
+  - 风格的响应式与生命周期
+  - hooks
 ---
 
 # wevu：定位与选择

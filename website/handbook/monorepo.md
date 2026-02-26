@@ -1,5 +1,15 @@
 ---
 title: Monorepo 与多包协作
+description: Monorepo 与多包协作，聚焦 handbook / monorepo 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - handbook
+  - monorepo
+  - 与多包协作
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
+  - weapp-vite
 ---
 
 # Monorepo 与多包协作

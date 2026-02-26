@@ -1,3 +1,18 @@
+---
+title: weapp-vite@6：原生模式之外，多一种 Vue 选择
+description: 还记得在 weapp-vite 4.0 的发布文章里，我写过这样的话：
+keywords:
+  - weapp-vite
+  - wevu
+  - 微信小程序
+  - 配置
+  - 运行时
+  - 编译
+  - blog
+  - release6
+date: 2026-02-25
+---
+
 # weapp-vite@6：原生模式之外，多一种 Vue 选择
 
 ## 前言

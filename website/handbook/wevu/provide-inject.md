@@ -1,5 +1,14 @@
 ---
 title: provide/inject：依赖注入
+description: wevu 当前版本没有完整的组件树父子指针，inject() 不会像 Vue 那样向上逐级查找祖先组件；需要依赖注入时建议：
+keywords:
+  - wevu
+  - handbook
+  - provide
+  - inject
+  - provide/inject：依赖注入
+  - 当前版本没有完整的组件树父子指针
+  - 不会像
 ---
 
 # provide / inject：依赖注入

@@ -1,5 +1,16 @@
 ---
 title: Vue SFC：示例
+description: 这个示例展示一个自定义组件如何配合 v-model 工作。对于自定义组件，weapp-vite 会把 v-model="x"
+  按默认策略编译为 value="{{x}}" + bind:input="x = $event.detail.v…
+keywords:
+  - wevu
+  - Vue SFC
+  - vue
+  - sfc
+  - examples
+  - SFC：示例
+  - 这个示例展示一个自定义组件如何配合
+  - v-model
 ---
 
 # Vue SFC：示例

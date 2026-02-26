@@ -1,5 +1,15 @@
 ---
 title: 阅读路线与约定
+description: 阅读路线与约定，聚焦 handbook / reading-guide 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - handbook
+  - reading
+  - guide
+  - 阅读路线与约定
+  - 聚焦
+  - /
+  - reading-guide
+  - 相关场景
 ---
 
 # 阅读路线与约定

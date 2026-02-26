@@ -1,5 +1,18 @@
 ---
-outline: [2, 3]
+outline:
+  - 2
+  - 3
+title: 组件库构建（lib 模式）
+description: weapp-vite 的 **lib 模式** 用于打包小程序组件库或业务模块。它和应用模式的最大区别是：
+keywords:
+  - 配置
+  - 调试
+  - guide
+  - lib
+  - mode
+  - 组件库构建（lib
+  - 模式）
+  - weapp-vite
 ---
 
 # 组件库构建（lib 模式）

@@ -1,3 +1,17 @@
+---
+title: 优秀案例展示
+description: 优秀案例展示，聚焦 community / showcase 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - 微信小程序
+  - community
+  - showcase
+  - 优秀案例展示
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
+---
+
 # 优秀案例展示
 
 ## xiaomusic 小程序客户端

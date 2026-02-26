@@ -1,5 +1,15 @@
 ---
 title: Vue SFC：模板与指令
+description: Vue SFC：模板与指令，聚焦 wevu / vue-sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - wevu
+  - Vue SFC
+  - vue
+  - sfc
+  - template
+  - SFC：模板与指令
+  - 聚焦
+  - /
 ---
 
 # Vue SFC：模板与指令

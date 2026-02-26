@@ -1,5 +1,15 @@
 ---
 title: API 参考总览
+description: 这套文档是 wevu 的人工整理版 API 参考，目标是解决两个问题：
+keywords:
+  - wevu
+  - Vue SFC
+  - api
+  - reference
+  - 参考总览
+  - 这套文档是
+  - 的人工整理版
+  - 参考
 ---
 
 # wevu API 参考总览

@@ -1,3 +1,17 @@
+---
+title: npm 配置
+description: weapp-vite 会自动把 **dependencies** 里的依赖构建成 miniprogram_npm/，而把
+  **devDependencies** 视为“仅构建期依赖”，直接内联进产物。
+keywords:
+  - 配置
+  - config
+  - npm
+  - weapp-vite
+  - 会自动把
+  - dependencies
+  - 里的依赖构建成
+---
+
 # npm 配置 {#config-npm}
 
 `weapp-vite` 会自动把 **dependencies** 里的依赖构建成 `miniprogram_npm/`，而把 **devDependencies** 视为“仅构建期依赖”，直接内联进产物。

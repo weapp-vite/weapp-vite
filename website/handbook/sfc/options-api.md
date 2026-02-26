@@ -1,5 +1,15 @@
 ---
 title: Options API：兼容写法
+description: Options API：兼容写法，聚焦 handbook / sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - api
+  - handbook
+  - sfc
+  - options
+  - API：兼容写法
+  - 聚焦
+  - /
+  - 相关场景
 ---
 
 # Options API：兼容写法

@@ -1,3 +1,18 @@
+---
+title: Loading flow & cache
+description: This page outlines how bundleRequire bundles, writes, and loads
+  under the hood, plus practical cache settings.
+keywords:
+  - 调试
+  - packages
+  - rolldown
+  - require
+  - cache
+  - loading
+  - flow
+  - "&"
+---
+
 # Loading flow & cache
 
 > Language: English | [中文](/packages/rolldown-require/cache.zh)

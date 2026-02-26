@@ -1,5 +1,15 @@
 ---
 title: Store（状态管理）
+description: Store（状态管理），聚焦 wevu / store 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - wevu
+  - api
+  - store
+  - Store（状态管理）
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
 ---
 
 # Store（状态管理）

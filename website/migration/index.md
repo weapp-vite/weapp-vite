@@ -1,3 +1,17 @@
+---
+title: 迁移
+description: 迁移，聚焦 migration / index 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - 迁移指南
+  - migration
+  - 迁移
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
+  - weapp-vite
+---
+
 # 迁移
 
 1. [从原生小程序迁移到 weapp-vite / wevu](../wevu/migration/from-native-to-vue-sfc.md)

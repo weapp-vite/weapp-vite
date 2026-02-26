@@ -1,3 +1,16 @@
+---
+title: weapp-ide-cli
+description: weapp-ide-cli 是对微信开发者工具官方命令行的增强封装：保留官方命令语义，同时补齐路径、配置和非交互体验。
+keywords:
+  - packages
+  - weapp
+  - ide
+  - cli
+  - weapp-ide-cli
+  - 同时补齐路径
+  - 配置和非交互体验。
+---
+
 # weapp-ide-cli
 
 `weapp-ide-cli` 是对微信开发者工具官方命令行的增强封装：保留官方命令语义，同时补齐路径、配置和非交互体验。

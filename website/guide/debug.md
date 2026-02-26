@@ -1,3 +1,17 @@
+---
+title: 调试与贡献
+description: 这份指南面向想要参与 weapp-vite 开发或排查源码问题的伙伴。按照下面的步骤准备环境，就可以在本地命中断点、验证修改，并把贡献发送到社区。
+keywords:
+  - 调试
+  - guide
+  - debug
+  - 调试与贡献
+  - 这份指南面向想要参与
+  - weapp-vite
+  - 开发或排查源码问题的伙伴。按照下面的步骤准备环境
+  - 就可以在本地命中断点
+---
+
 # 调试与贡献
 
 这份指南面向想要参与 `weapp-vite` 开发或排查源码问题的伙伴。按照下面的步骤准备环境，就可以在本地命中断点、验证修改，并把贡献发送到社区。
@@ -36,7 +50,7 @@ cd weapp-vite
 3. 仓库内的 `apps/` 目录准备了多个演示项目（`vite-native`、`vite-native-skyline` 等），可以任选一个作为调试入口。
 4. VS Code 用户可以直接使用仓库内置的 `.vscode/launch.json`，也可以在“调试和运行”面板选择需要的配置，一键启动并命中 TypeScript 源码断点。
 
-![](../images/vscode-debug.png)
+![VS Code 调试配置示例](../images/vscode-debug.png)
 
 > [!NOTE]
 > 如果你更喜欢终端调试，也可以运行 `pnpm --filter apps/vite-native dev` 再配合浏览器/IDE 附加调试，会同样命中源码断点。

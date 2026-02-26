@@ -1,3 +1,18 @@
+---
+title: API 与选项说明
+description: rolldown-require 暴露了 bundleRequire / bundleFile /
+  loadFromBundledFile 三个 API，但推荐优先使用一站式的 bundleRequire。它会完成入口解析、rolldow…
+keywords:
+  - 配置
+  - api
+  - packages
+  - rolldown
+  - require
+  - 与选项说明
+  - rolldown-require
+  - 暴露了
+---
+
 # API 与选项说明
 
 > 语言： [English](/packages/rolldown-require/options) | 中文

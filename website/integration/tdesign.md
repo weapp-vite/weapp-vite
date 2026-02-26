@@ -1,3 +1,17 @@
+---
+title: tdesign-miniprogram 集成
+description: 在 weapp-vite 项目里接入 tdesign-miniprogram 的整体思路很简单：
+keywords:
+  - 微信小程序
+  - 配置
+  - 编译
+  - integration
+  - tdesign
+  - tdesign-miniprogram
+  - 集成
+  - 在
+---
+
 # tdesign-miniprogram 集成
 
 在 `weapp-vite` 项目里接入 `tdesign-miniprogram` 的整体思路很简单：

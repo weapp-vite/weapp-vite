@@ -1,5 +1,16 @@
 ---
 title: Vue SFC 开发指南
+description: weapp-vite 内置了 Vue SFC 编译链路，配合 wevu 运行时即可用 Vue
+  风格开发小程序页面/组件，同时保持小程序能力（页面特性、分享、性能优化）。
+keywords:
+  - weapp-vite
+  - wevu
+  - Vue SFC
+  - vue
+  - sfc
+  - 开发指南
+  - 内置了
+  - 编译链路
 ---
 
 # 在 weapp-vite 中使用 Vue SFC

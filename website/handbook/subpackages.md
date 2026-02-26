@@ -1,5 +1,15 @@
 ---
 title: 分包与包体策略
+description: 分包与包体策略，聚焦 handbook / subpackages 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - 分包
+  - handbook
+  - subpackages
+  - 分包与包体策略
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
 ---
 
 # 分包与包体策略

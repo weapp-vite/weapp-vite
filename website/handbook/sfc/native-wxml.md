@@ -1,5 +1,15 @@
 ---
 title: Template：原生 WXML 语法直通
+description: weapp-vite 会把 Vue 模板编译成 WXML。未被 Vue 指令接管的原生语法（标签/属性/事件）基本按原样保留。
+keywords:
+  - Vue SFC
+  - 编译
+  - handbook
+  - sfc
+  - native
+  - wxml
+  - Template：原生
+  - 语法直通
 ---
 
 # Template：原生 WXML 语法直通

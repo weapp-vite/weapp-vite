@@ -1,3 +1,17 @@
+---
+title: 加载流程与缓存策略
+description: 本文梳理 bundleRequire 在内部如何打包、落盘与加载，并介绍缓存相关的实用配置。
+keywords:
+  - 调试
+  - packages
+  - rolldown
+  - require
+  - 加载流程与缓存策略
+  - 本文梳理
+  - bundlerequire
+  - 在内部如何打包
+---
+
 # 加载流程与缓存策略
 
 > 语言： [English](/packages/rolldown-require/cache) | 中文

@@ -1,3 +1,16 @@
+---
+title: Web 运行时配置 experimental
+description: weapp-vite 可选集成浏览器端运行时（@weapp-vite/web），用于 Web 预览/调试。
+keywords:
+  - 配置
+  - 运行时
+  - config
+  - web
+  - 运行时配置
+  - experimental
+  - weapp-vite
+---
+
 # Web 运行时配置 <span class="wv-badge wv-badge--experimental">experimental</span> {#web-config}
 
 `weapp-vite` 可选集成浏览器端运行时（`@weapp-vite/web`），用于 Web 预览/调试。

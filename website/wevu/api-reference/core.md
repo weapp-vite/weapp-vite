@@ -1,5 +1,15 @@
 ---
 title: Core API
+description: 本页聚焦 wevu 的“最先接触”能力：应用入口、组件定义、 宏，以及模板辅助函数。
+keywords:
+  - wevu
+  - Vue SFC
+  - api
+  - reference
+  - core
+  - 本页聚焦
+  - 的“最先接触”能力：应用入口
+  - 组件定义
 ---
 
 # Core API（入口、组件、宏）

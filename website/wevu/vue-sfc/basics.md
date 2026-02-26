@@ -1,5 +1,15 @@
 ---
 title: Vue SFC：基础与组成
+description: Vue SFC：基础与组成，聚焦 wevu / vue-sfc 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - weapp-vite
+  - wevu
+  - Vue SFC
+  - 运行时
+  - 编译
+  - vue
+  - sfc
+  - basics
 ---
 
 # Vue SFC：基础与组成

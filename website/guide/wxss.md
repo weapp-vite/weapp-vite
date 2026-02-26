@@ -1,3 +1,18 @@
+---
+title: WXSS 样式增强与注意点
+description: weapp-vite 继承了 Vite 的样式处理能力：支持 .wxss、.css、.scss、.less、.sass、.styl
+  等格式，并输出为小程序可识别的 WXSS。
+keywords:
+  - 微信小程序
+  - guide
+  - wxss
+  - 样式增强与注意点
+  - weapp-vite
+  - 继承了
+  - vite
+  - 的样式处理能力：支持
+---
+
 # WXSS 样式增强与注意点
 
 `weapp-vite` 继承了 Vite 的样式处理能力：支持 `.wxss`、`.css`、`.scss`、`.less`、`.sass`、`.styl` 等格式，并输出为小程序可识别的 WXSS。

@@ -1,3 +1,18 @@
+---
+title: 生成脚手架
+description: weapp-vite 自带一个生成器，用来一键生成页面/组件/App 的基础文件（页面/组件包含
+  js/ts、wxml、wxss、json；App 不生成 wxml）。它适合两类情况：
+keywords:
+  - guide
+  - generate
+  - 生成脚手架
+  - weapp-vite
+  - 自带一个生成器
+  - 用来一键生成页面/组件/App
+  - 的基础文件（页面/组件包含
+  - js/ts
+---
+
 # 生成脚手架
 
 `weapp-vite` 自带一个生成器，用来一键生成页面/组件/App 的基础文件（页面/组件包含 `js/ts`、`wxml`、`wxss`、`json`；App 不生成 `wxml`）。它适合两类情况：

@@ -1,3 +1,17 @@
+---
+title: Tailwindcss 集成
+description: 如果你是新项目，直接用官方模板创建即可，模板已集成 Tailwind CSS：
+keywords:
+  - integration
+  - tailwindcss
+  - 集成
+  - 如果你是新项目
+  - 直接用官方模板创建即可
+  - 模板已集成
+  - tailwind
+  - CSS：
+---
+
 # Tailwindcss 集成
 
 ## 直接使用模板（推荐）

@@ -1,3 +1,18 @@
+---
+title: rolldown-require 使用指南
+description: rolldown-require 是基于 rolldown 的「打包再加载」工具，帮助 CLI 或 Node
+  脚本安全地执行任意格式的配置文件（ts / mjs / cjs / JSX 等）。API 与 bundle-require 保持…
+keywords:
+  - packages
+  - rolldown
+  - require
+  - rolldown-require
+  - 使用指南
+  - 是基于
+  - 的「打包再加载」工具
+  - 帮助
+---
+
 # rolldown-require 使用指南
 
 > 语言： [English](/packages/rolldown-require/) | 中文

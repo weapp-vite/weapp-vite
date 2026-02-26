@@ -1,5 +1,15 @@
 ---
 title: 组件：script setup import 与拆分
+description: 在 weapp-vite + Vue SFC 项目中，推荐直接在脚本里导入 .vue 组件：
+keywords:
+  - Vue SFC
+  - handbook
+  - sfc
+  - components
+  - 组件：script
+  - setup
+  - import
+  - 与拆分
 ---
 
 # 组件：`script setup` import 与拆分

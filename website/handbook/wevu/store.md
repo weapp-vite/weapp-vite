@@ -1,5 +1,15 @@
 ---
 title: Store：模式与工程落地
+description: Store：模式与工程落地，聚焦 handbook / wevu 相关场景，覆盖 weapp-vite 与 wevu 的能力、配置和实践要点。
+keywords:
+  - wevu
+  - handbook
+  - store
+  - Store：模式与工程落地
+  - 聚焦
+  - /
+  - 相关场景
+  - 覆盖
 ---
 
 # Store：模式与工程落地

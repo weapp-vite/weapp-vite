@@ -1,5 +1,16 @@
 ---
 title: Setup Context API
+description: wevu 的 setup(props, ctx) 除了 Vue 语义，还补齐了小程序运行时场景，特别是
+  ctx.instance（原生实例）和 ctx.emit（事件派发）。
+keywords:
+  - wevu
+  - Vue SFC
+  - api
+  - reference
+  - setup
+  - context
+  - 的
+  - setup props
 ---
 
 # Setup Context API（setup 上下文）

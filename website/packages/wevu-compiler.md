@@ -1,3 +1,17 @@
+---
+title: "@wevu/compiler"
+description: "@wevu/compiler 是 Wevu 的编译能力底座，提供 Vue SFC 与小程序模板的解析、转换和输出能力。"
+keywords:
+  - weapp-vite
+  - wevu
+  - 编译
+  - packages
+  - compiler
+  - "@wevu/compiler"
+  - 是
+  - 的编译能力底座
+---
+
 # @wevu/compiler
 
 `@wevu/compiler` 是 Wevu 的编译能力底座，提供 Vue SFC 与小程序模板的解析、转换和输出能力。

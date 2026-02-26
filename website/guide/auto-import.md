@@ -1,3 +1,17 @@
+---
+title: 自动引入组件
+description: weapp-vite 可以在构建阶段自动扫描并注册组件，让你在 WXML 里直接写组件标签，而不需要手动维护 usingComponents。
+keywords:
+  - guide
+  - auto
+  - import
+  - 自动引入组件
+  - weapp-vite
+  - 可以在构建阶段自动扫描并注册组件
+  - 让你在
+  - wxml
+---
+
 # 自动引入组件
 
 `weapp-vite` 可以在构建阶段自动扫描并注册组件，让你在 WXML 里直接写组件标签，而不需要手动维护 `usingComponents`。

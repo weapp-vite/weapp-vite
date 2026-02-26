@@ -1,5 +1,16 @@
 ---
 layout: page
+title: dashboard
+description: const Dashboard = defineClientComponent(()=>{ return
+  import('./.vitepress/components/Dashboard.vue') }) // import Dashb…
+keywords:
+  - dashboard
+  - const
+  - =
+  - return
+  - //
+  - import
+  - Dashb…
 ---
 
 <script setup lang="ts">

@@ -1,5 +1,17 @@
 ---
-outline: [2, 4]
+outline:
+  - 2
+  - 4
+title: 快速开始
+description: 执行以下命令，快速创建一个集成了 weapp-vite 的原生微信小程序项目：
+keywords:
+  - weapp-vite
+  - 微信小程序
+  - 配置
+  - guide
+  - 快速开始
+  - 执行以下命令
+  - 快速创建一个集成了
 ---
 
 # 快速开始 {#getting-started}
@@ -163,7 +175,7 @@ bun open
 
 > 使用 `JS` 基础模板创建项目，依然可以使用 `TypeScript`
 
-![](../images/create-project.png)
+![微信开发者工具创建基础项目](../images/create-project.png)
 
 > 如果你创建的是 **TS 模板项目**，请在 `vite.config.ts` 中设置 [`weapp.srcRoot`](../config/paths.md#weapp-srcroot) 为 `'./miniprogram'`。
 

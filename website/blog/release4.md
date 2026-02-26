@@ -1,3 +1,19 @@
+---
+title: weapp-vite - 微信小程序工具链的另一种选择
+description: "weapp-vite 是由 笔者 icebreaker 开发的一个基于 vite
+  的现代化微信小程序开发工具链。我给它设定的目标初心是: 为小程序开发者带来笑容。"
+keywords:
+  - weapp-vite
+  - 微信小程序
+  - blog
+  - release4
+  - 发布日志
+  - 版本更新
+  - "-"
+  - 微信小程序工具链的另一种选择
+date: 2025-09-08
+---
+
 # weapp-vite - 微信小程序工具链的另一种选择
 
 ## 前言

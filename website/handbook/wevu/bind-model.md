@@ -1,5 +1,14 @@
 ---
 title: bindModel：双向绑定方案
+description: bindModel 的完整说明在：/wevu/runtime#bindModel：模型绑定
+keywords:
+  - wevu
+  - Vue SFC
+  - handbook
+  - bind
+  - model
+  - bindModel：双向绑定方案
+  - bindmodel
 ---
 
 # bindModel：双向绑定方案
