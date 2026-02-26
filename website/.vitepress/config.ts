@@ -256,6 +256,14 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'Vue 3 兼容性说明（完整）', link: '/wevu/vue3-compat' },
       { text: '从原生小程序迁移到 Vue SFC', link: '/wevu/migration/from-native-to-vue-sfc' },
       { text: 'wevu vs Vue 3（核心差异）', link: '/wevu/vue3-vs-wevu' },
+      {
+        text: '扩展阅读',
+        collapsed: true,
+        items: [
+          { text: '为什么没有使用 @vue/runtime-core 的 createRenderer 来实现', link: '/wevu/why-not-runtime-core-create-renderer' },
+          { text: 'wevu 中的 setData 什么时候触发？', link: '/wevu/when-setdata-triggers' },
+        ],
+      },
     ],
   },
 ]
