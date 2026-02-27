@@ -1,5 +1,15 @@
 # create-weapp-vite
 
+## 2.0.36
+
+### Patch Changes
+
+- 🐛 **修复 `wevu` 组件侧 `pageLifetimes.routeDone` 的生命周期桥接，确保在组件中可通过 `onRouteDone` 正常接收页面路由动画完成事件；同步补齐相关运行时测试与文档映射说明（`lifetimes/pageLifetimes` 与组合式 API 的对应关系），避免与微信官方生命周期定义不一致。** [`6742994`](https://github.com/weapp-vite/weapp-vite/commit/6742994ffd0a3c522d1e527e0d90e4863a2d853c) by @sonofmagic
+
+- 🐛 **优化 Wevu API 文档的公开边界：移除 API 页面中不应面向业务侧展示的内部接口，并在运行时源码中为内部能力补充 `@internal` 标注；同时将 `provideGlobal` / `injectGlobal` 标记为 `@deprecated`（保留导出用于兼容过渡），统一文档与实际导出语义，降低误用内部能力的风险。** [`c7f37ac`](https://github.com/weapp-vite/weapp-vite/commit/c7f37acc6cab3acc8cef50154f840ef71cc42cb4) by @sonofmagic
+
+- 🐛 **对齐 `wevu` 对外 `PropType<T>` 的类型行为到 Vue 官方定义，支持 `type: [String, null]` 等构造器数组写法，并修复该场景下 `InferPropType` 对 `null` 推导退化为 `any` 的问题，保证与 Vue utility types 的使用体验一致。** [`86c7300`](https://github.com/weapp-vite/weapp-vite/commit/86c73009267c18219b2dfbf5772e7f182827cbbd) by @sonofmagic
+
 ## 2.0.35
 
 ### Patch Changes
