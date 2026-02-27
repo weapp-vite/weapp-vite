@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
@@ -19,6 +19,38 @@ async function runBuild() {
     cwd: APP_ROOT,
     label: 'ide:github-issues',
   })
+}
+
+let sharedMiniProgram: any = null
+let sharedBuildPrepared = false
+
+async function getSharedMiniProgram() {
+  if (!sharedBuildPrepared) {
+    await runBuild()
+    sharedBuildPrepared = true
+  }
+  if (!sharedMiniProgram) {
+    sharedMiniProgram = await launchAutomator({
+      projectPath: APP_ROOT,
+    })
+  }
+  return sharedMiniProgram
+}
+
+async function releaseSharedMiniProgram(_miniProgram: any) {
+  if (!sharedMiniProgram || sharedMiniProgram === _miniProgram) {
+    return
+  }
+  await _miniProgram.close()
+}
+
+async function closeSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    return
+  }
+  const miniProgram = sharedMiniProgram
+  sharedMiniProgram = null
+  await miniProgram.close()
 }
 
 function stripAutomatorOverlay(wxml: string) {
@@ -167,12 +199,12 @@ async function tapElement(page: any, selector: string) {
 }
 
 describe.sequential('e2e app: github-issues', () => {
-  it('issue #289: updates runtime classes on split pages', async () => {
-    await runBuild()
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
 
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+  it('issue #289: updates runtime classes on split pages', async () => {
+    const miniProgram = await getSharedMiniProgram()
 
     try {
       const objectPage = await miniProgram.reLaunch('/pages/issue-289/object-literal/index')
@@ -368,13 +400,11 @@ describe.sequential('e2e app: github-issues', () => {
       expect(computedListEnabledClassAfter).toBe(computedListOnClass)
     }
     finally {
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 
   it('issue #297: compiles and renders complex call expressions', async () => {
-    await runBuild()
-
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-297/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-297/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -403,9 +433,7 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageJs).toContain('this.sayHello')
     expect(issuePageJs).toContain('_runE2E')
 
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    const miniProgram = await getSharedMiniProgram()
 
     try {
       const issuePage = await miniProgram.reLaunch('/pages/issue-297/index')
@@ -427,13 +455,11 @@ describe.sequential('e2e app: github-issues', () => {
       ])
     }
     finally {
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 
   it('issue #297: setup method call variants remain stable across expression contexts', async () => {
-    await runBuild()
-
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-297-setup-method-calls/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-297-setup-method-calls/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -466,9 +492,7 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageJs).toContain('this.getOptionalInvoker')
     expect(issuePageJs).toContain('_runE2E')
 
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    const miniProgram = await getSharedMiniProgram()
 
     try {
       const issuePage = await miniProgram.reLaunch('/pages/issue-297-setup-method-calls/index')
@@ -507,13 +531,11 @@ describe.sequential('e2e app: github-issues', () => {
       expect(optionalDisabledWxml).toContain('data-optional="none"')
     }
     finally {
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 
   it('issue #302: updates v-for class bindings with active state changes', async () => {
-    await runBuild()
-
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-302/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-302/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -526,9 +548,7 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageJs).toContain('setActive')
     expect(issuePageJs).toContain('_runE2E')
 
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    const miniProgram = await getSharedMiniProgram()
 
     try {
       const issuePage = await miniProgram.reLaunch('/pages/issue-302/index')
@@ -585,13 +605,11 @@ describe.sequential('e2e app: github-issues', () => {
       expect(runtimeResult?.active).toBe('c')
     }
     finally {
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 
   it('issue #300: renders destructured boolean props in runtime call-expression bindings', async () => {
-    await runBuild()
-
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-300/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-300/index.js')
     const probeWxmlPath = path.join(DIST_ROOT, 'components/issue-300/PropsDestructureProbe/index.wxml')
@@ -625,9 +643,7 @@ describe.sequential('e2e app: github-issues', () => {
     expect(strictProbeJs).toContain('Object.prototype.hasOwnProperty.call(this.$state,`bool`)')
     expect(strictProbeJs).not.toContain('__wevuProps.props')
 
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    const miniProgram = await getSharedMiniProgram()
 
     try {
       const issuePage = await miniProgram.reLaunch('/pages/issue-300/index')
@@ -685,7 +701,7 @@ describe.sequential('e2e app: github-issues', () => {
       expect(syncedWxml).not.toContain('data-strict-bool="undefined"')
     }
     finally {
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 })

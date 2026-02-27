@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
@@ -28,13 +28,45 @@ async function runBuild() {
   })
 }
 
-describe.sequential('template e2e: weapp-vite-wevu-template dynamic object/array class style', () => {
-  it('supports object and array bindings merged with static class/style', async () => {
-    await runBuild()
+let sharedMiniProgram: any = null
+let sharedBuildPrepared = false
 
-    const miniProgram = await launchAutomator({
+async function getSharedMiniProgram() {
+  if (!sharedBuildPrepared) {
+    await runBuild()
+    sharedBuildPrepared = true
+  }
+  if (!sharedMiniProgram) {
+    sharedMiniProgram = await launchAutomator({
       projectPath: TEMPLATE_ROOT,
     })
+  }
+  return sharedMiniProgram
+}
+
+async function releaseSharedMiniProgram(miniProgram: any) {
+  if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
+    return
+  }
+  await miniProgram.close()
+}
+
+async function closeSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    return
+  }
+  const miniProgram = sharedMiniProgram
+  sharedMiniProgram = null
+  await miniProgram.close()
+}
+
+describe.sequential('template e2e: weapp-vite-wevu-template dynamic object/array class style', () => {
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
+
+  it('supports object and array bindings merged with static class/style', async () => {
+    const miniProgram = await getSharedMiniProgram()
 
     try {
       const page = await miniProgram.reLaunch('/pages/index/index')
@@ -70,7 +102,7 @@ describe.sequential('template e2e: weapp-vite-wevu-template dynamic object/array
       expect(updatedWxml).toMatch(/box-shadow:\s*0\s+(?:8rpx|4px)\s+(?:20rpx|10px)\s+rgba\(76,\s*110,\s*245,\s*0\.28\)\s*;?/)
     }
     finally {
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 })

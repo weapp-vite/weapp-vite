@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
@@ -103,55 +103,88 @@ function normalizeEntries(entries: any[]) {
   return compacted
 }
 
-describe.sequential('lifecycle compare (e2e)', () => {
-  let miniProgram: any
+let sharedMiniProgram: any = null
+let sharedBuildPrepared = false
 
-  beforeAll(async () => {
+async function getSharedMiniProgram() {
+  if (!sharedBuildPrepared) {
     await runBuild()
-    miniProgram = await launchAutomator({
+    sharedBuildPrepared = true
+  }
+  if (!sharedMiniProgram) {
+    sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
     })
-  }, 120_000)
+  }
+  return sharedMiniProgram
+}
 
+async function releaseSharedMiniProgram(miniProgram: any) {
+  if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
+    return
+  }
+  await miniProgram.close()
+}
+
+async function closeSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    return
+  }
+  const miniProgram = sharedMiniProgram
+  sharedMiniProgram = null
+  await miniProgram.close()
+}
+
+describe.sequential('lifecycle compare (e2e)', () => {
   afterAll(async () => {
-    if (miniProgram) {
-      await miniProgram.close()
-    }
+    await closeSharedMiniProgram()
   })
 
   it('compares page lifecycles (native vs wevu ts/vue)', async () => {
-    await miniProgram.reLaunch('/pages/native/index?from=e2e')
-    const nativeActive = (await triggerPageEvents(miniProgram, '/pages/native/index')) ?? await miniProgram.currentPage()
-    await nativeActive.callMethod('finalizeLifecycleLogs')
-    const nativeLogs = (await nativeActive.data('__lifecycleLogs')) ?? []
-    expect(nativeLogs.length).toBeGreaterThan(0)
+    const miniProgram = await getSharedMiniProgram()
+    try {
+      await miniProgram.reLaunch('/pages/native/index?from=e2e')
+      const nativeActive = (await triggerPageEvents(miniProgram, '/pages/native/index')) ?? await miniProgram.currentPage()
+      await nativeActive.callMethod('finalizeLifecycleLogs')
+      const nativeLogs = (await nativeActive.data('__lifecycleLogs')) ?? []
+      expect(nativeLogs.length).toBeGreaterThan(0)
 
-    await miniProgram.reLaunch('/pages/wevu-ts/index?from=e2e')
-    const wevuTsActive = (await triggerPageEvents(miniProgram, '/pages/wevu-ts/index')) ?? await miniProgram.currentPage()
-    await wevuTsActive.callMethod('finalizeLifecycleLogs')
-    const wevuTsLogs = (await wevuTsActive.data('__lifecycleLogs')) ?? []
+      await miniProgram.reLaunch('/pages/wevu-ts/index?from=e2e')
+      const wevuTsActive = (await triggerPageEvents(miniProgram, '/pages/wevu-ts/index')) ?? await miniProgram.currentPage()
+      await wevuTsActive.callMethod('finalizeLifecycleLogs')
+      const wevuTsLogs = (await wevuTsActive.data('__lifecycleLogs')) ?? []
 
-    await miniProgram.reLaunch('/pages/wevu-vue/index?from=e2e')
-    const wevuVueActive = (await triggerPageEvents(miniProgram, '/pages/wevu-vue/index')) ?? await miniProgram.currentPage()
-    await wevuVueActive.callMethod('finalizeLifecycleLogs')
-    const wevuVueLogs = (await wevuVueActive.data('__lifecycleLogs')) ?? []
+      await miniProgram.reLaunch('/pages/wevu-vue/index?from=e2e')
+      const wevuVueActive = (await triggerPageEvents(miniProgram, '/pages/wevu-vue/index')) ?? await miniProgram.currentPage()
+      await wevuVueActive.callMethod('finalizeLifecycleLogs')
+      const wevuVueLogs = (await wevuVueActive.data('__lifecycleLogs')) ?? []
 
-    expect(normalizeEntries(wevuTsLogs)).toEqual(normalizeEntries(nativeLogs))
-    expect(normalizeEntries(wevuVueLogs)).toEqual(normalizeEntries(nativeLogs))
+      expect(normalizeEntries(wevuTsLogs)).toEqual(normalizeEntries(nativeLogs))
+      expect(normalizeEntries(wevuVueLogs)).toEqual(normalizeEntries(nativeLogs))
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
   })
 
   it('compares component lifecycles (native vs wevu ts/vue)', async () => {
-    await miniProgram.reLaunch('/pages/components/index?from=e2e')
-    const componentsActive = (await triggerPageEvents(miniProgram, '/pages/components/index')) ?? await miniProgram.currentPage()
-    await componentsActive.callMethod('finalizeLifecycleLogs')
-    const componentLogs = (await componentsActive.data('__componentLogs')) ?? {}
+    const miniProgram = await getSharedMiniProgram()
+    try {
+      await miniProgram.reLaunch('/pages/components/index?from=e2e')
+      const componentsActive = (await triggerPageEvents(miniProgram, '/pages/components/index')) ?? await miniProgram.currentPage()
+      await componentsActive.callMethod('finalizeLifecycleLogs')
+      const componentLogs = (await componentsActive.data('__componentLogs')) ?? {}
 
-    const nativeLogs = componentLogs.native ?? []
-    const wevuTsLogs = componentLogs['wevu-ts'] ?? []
-    const wevuVueLogs = componentLogs['wevu-vue'] ?? []
+      const nativeLogs = componentLogs.native ?? []
+      const wevuTsLogs = componentLogs['wevu-ts'] ?? []
+      const wevuVueLogs = componentLogs['wevu-vue'] ?? []
 
-    expect(nativeLogs.length).toBeGreaterThan(0)
-    expect(normalizeEntries(wevuTsLogs)).toEqual(normalizeEntries(nativeLogs))
-    expect(normalizeEntries(wevuVueLogs)).toEqual(normalizeEntries(nativeLogs))
+      expect(nativeLogs.length).toBeGreaterThan(0)
+      expect(normalizeEntries(wevuTsLogs)).toEqual(normalizeEntries(nativeLogs))
+      expect(normalizeEntries(wevuVueLogs)).toEqual(normalizeEntries(nativeLogs))
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
   })
 })

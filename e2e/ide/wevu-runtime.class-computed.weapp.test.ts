@@ -1,14 +1,46 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { APP_ROOT, runBuild } from '../wevu-runtime.utils'
 
-describe.sequential('wevu runtime class computed (weapp e2e)', () => {
-  it('resolves class ternary with refs and computed values', async () => {
-    await runBuild('weapp')
+let sharedMiniProgram: any = null
+let sharedBuildPrepared = false
 
-    const miniProgram = await launchAutomator({
+async function getSharedMiniProgram() {
+  if (!sharedBuildPrepared) {
+    await runBuild('weapp')
+    sharedBuildPrepared = true
+  }
+  if (!sharedMiniProgram) {
+    sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
     })
+  }
+  return sharedMiniProgram
+}
+
+async function releaseSharedMiniProgram(miniProgram: any) {
+  if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
+    return
+  }
+  await miniProgram.close()
+}
+
+async function closeSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    return
+  }
+  const miniProgram = sharedMiniProgram
+  sharedMiniProgram = null
+  await miniProgram.close()
+}
+
+describe.sequential('wevu runtime class computed (weapp e2e)', () => {
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
+
+  it('resolves class ternary with refs and computed values', async () => {
+    const miniProgram = await getSharedMiniProgram()
 
     try {
       const page = await miniProgram.reLaunch('/pages/class-computed/index')
@@ -27,7 +59,7 @@ describe.sequential('wevu runtime class computed (weapp e2e)', () => {
       expect(result.checks?.computedTernaryClassResolved).toBe(true)
     }
     finally {
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 })

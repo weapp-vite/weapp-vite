@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
@@ -207,7 +207,43 @@ async function runBuild() {
   })
 }
 
+let sharedMiniProgram: any = null
+let sharedBuildPrepared = false
+
+async function getSharedMiniProgram() {
+  if (!sharedBuildPrepared) {
+    await runBuild()
+    sharedBuildPrepared = true
+  }
+  if (!sharedMiniProgram) {
+    sharedMiniProgram = await launchAutomator({
+      projectPath: APP_ROOT,
+    })
+  }
+  return sharedMiniProgram
+}
+
+async function releaseSharedMiniProgram(miniProgram: any) {
+  if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
+    return
+  }
+  await miniProgram.close()
+}
+
+async function closeSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    return
+  }
+  const miniProgram = sharedMiniProgram
+  sharedMiniProgram = null
+  await miniProgram.close()
+}
+
 describe.sequential('e2e app: tdesign-miniprogram-starter-retail', () => {
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
+
   it('loads every page from app config without runtime errors', async () => {
     const appConfig = await fs.readJson(APP_JSON_PATH)
     const projectConfig = await fs.readJson(PROJECT_CONFIG_PATH)
@@ -221,11 +257,7 @@ describe.sequential('e2e app: tdesign-miniprogram-starter-retail', () => {
       throw new Error('No pages found in app.json')
     }
 
-    await runBuild()
-
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    const miniProgram = await getSharedMiniProgram()
 
     const runtimeEvents: string[] = []
     const onConsole = (entry: any) => {
@@ -269,7 +301,7 @@ describe.sequential('e2e app: tdesign-miniprogram-starter-retail', () => {
     finally {
       miniProgram.removeListener('console', onConsole)
       miniProgram.removeListener('exception', onException)
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 })

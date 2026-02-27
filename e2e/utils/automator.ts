@@ -14,10 +14,18 @@ const DEVTOOLS_INFRA_ERROR_PATTERNS = [
   /ECONNREFUSED/i,
   /connect ECONNREFUSED/i,
 ]
+const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
+  /code\s*[:=]\s*10/i,
+  /需要重新登录/,
+  /need\s+re-?login/i,
+  /re-?login/i,
+]
 const RUNTIME_LOG_META_KEY = '__weappViteRuntimeLogMeta'
 const RUNTIME_LOG_FILE = process.env.WEAPP_VITE_E2E_RUNTIME_LOG_FILE || '/tmp/weapp-vite-e2e-runtime.log'
+const DEFAULT_LOGIN_PREFLIGHT_TIMEOUT = 30_000
 
 let versionPatched = false
+let loginPreflightPassed = false
 
 interface RuntimeLogStats {
   warn: number
@@ -180,6 +188,95 @@ function isLikelyDevtoolsInfraErrorMessage(message: string) {
     || DEVTOOLS_INFRA_ERROR_PATTERNS.some(pattern => pattern.test(message))
 }
 
+function extractExecutionErrorText(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return ''
+  }
+
+  const parts: string[] = []
+  const candidate = error as {
+    message?: unknown
+    shortMessage?: unknown
+    stderr?: unknown
+    stdout?: unknown
+  }
+
+  for (const field of [candidate.message, candidate.shortMessage, candidate.stderr, candidate.stdout]) {
+    if (typeof field === 'string' && field.trim()) {
+      parts.push(field)
+    }
+  }
+
+  return parts.join('\n')
+}
+
+function extractLoginRequiredMessage(text: string) {
+  if (!text) {
+    return ''
+  }
+  if (/需要重新登录/.test(text)) {
+    return '需要重新登录'
+  }
+
+  const englishMatch = text.match(/need\s+re-?login|re-?login/i)
+  if (englishMatch?.[0]) {
+    return englishMatch[0].toLowerCase()
+  }
+
+  const firstLine = text
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .find(line => Boolean(line) && !line.startsWith('at '))
+
+  if (!firstLine) {
+    return ''
+  }
+
+  return firstLine
+    .replace(/^\[error\]\s*/i, '')
+    .replace(/^error\s*:\s*/i, '')
+    .slice(0, 120)
+}
+
+export function isDevtoolsLoginRequiredError(error: unknown) {
+  const text = extractExecutionErrorText(error)
+  if (!text) {
+    return false
+  }
+  return DEVTOOLS_LOGIN_REQUIRED_PATTERNS.some(pattern => pattern.test(text))
+}
+
+export function formatDevtoolsLoginRequiredError(error: unknown) {
+  const text = extractExecutionErrorText(error)
+  const code = text.match(/code\s*[:=]\s*(\d+)/i)?.[1]
+  const message = extractLoginRequiredMessage(text)
+
+  const lines = ['微信开发者工具返回登录错误：']
+  if (code) {
+    lines.push(`- code: ${code}`)
+  }
+  if (message) {
+    lines.push(`- message: ${message}`)
+  }
+  if (!code && !message) {
+    lines.push('- message: 需要重新登录')
+  }
+
+  return lines.join('\n')
+}
+
+function createDevtoolsLoginRequiredError(error: unknown) {
+  const details = formatDevtoolsLoginRequiredError(error)
+  const next = new Error(
+    `检测到微信开发者工具登录状态失效，请先登录后再执行 e2e。\n${details}`,
+    { cause: error as Error },
+  ) as Error & { code: number, exitCode: number }
+  next.name = 'WechatIdeLoginRequiredError'
+  next.code = 10
+  next.exitCode = 10
+  return next
+}
+
 function logRuntimeStats(meta: RuntimeLogMeta) {
   const summary = `[e2e-runtime-stats] warn=${meta.stats.warn} error=${meta.stats.error} exception=${meta.stats.exception} total=${meta.stats.total}`
   appendRuntimeLog(summary)
@@ -264,12 +361,15 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
     .catch((error) => {
       const message = error instanceof Error ? error.message : String(error)
       const isInfraError = isLikelyDevtoolsInfraErrorMessage(message)
+      const isLoginRequiredError = isDevtoolsLoginRequiredError(error)
       const summary = isInfraError
         ? '[e2e-runtime-stats] warn=0 error=0 exception=0 total=0'
         : '[e2e-runtime-stats] warn=0 error=1 exception=0 total=1'
       const logLine = isInfraError
         ? `[runtime:launch-infra] ${message}`
-        : `[error] [runtime:launch] ${message}`
+        : isLoginRequiredError
+          ? `[error] [runtime:launch-login] ${formatDevtoolsLoginRequiredError(error)}`
+          : `[error] [runtime:launch] ${message}`
       if (isInfraError) {
         process.stdout.write(`${summary}\n`)
         process.stdout.write(`${logLine}\n`)
@@ -280,8 +380,37 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
       }
       appendRuntimeLog(summary)
       appendRuntimeLog(logLine)
+      if (isLoginRequiredError) {
+        throw createDevtoolsLoginRequiredError(error)
+      }
       throw error
     })
+}
+
+export async function assertDevtoolsLoggedIn(projectPath: string) {
+  if (loginPreflightPassed) {
+    return
+  }
+
+  let miniProgram: any = null
+  try {
+    miniProgram = await launchAutomator({
+      projectPath,
+      timeout: DEFAULT_LOGIN_PREFLIGHT_TIMEOUT,
+    })
+    loginPreflightPassed = true
+  }
+  catch (error) {
+    if (isDevtoolsLoginRequiredError(error)) {
+      throw createDevtoolsLoginRequiredError(error)
+    }
+    throw error
+  }
+  finally {
+    if (miniProgram) {
+      await miniProgram.close()
+    }
+  }
 }
 
 export function isDevtoolsHttpPortError(error: unknown) {

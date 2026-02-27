@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { APP_ROOT, normalizeAutomatorWxml, runBuild } from '../wevu-runtime.utils'
 
@@ -95,6 +95,46 @@ async function launchMiniProgramWithRetry(ctx: { skip: (message?: string) => voi
     }
     throw error
   }
+}
+
+let sharedMiniProgram: any = null
+let sharedBuildPrepared = false
+
+async function closeMiniProgramSafely(miniProgram: any) {
+  await runAutomatorOp('close mini program', () => miniProgram.close(), {
+    timeoutMs: 12_000,
+    retries: 2,
+    retryDelayMs: 200,
+  }).catch(() => {})
+}
+
+async function getSharedMiniProgram(ctx: { skip: (message?: string) => void }) {
+  if (!sharedBuildPrepared) {
+    await runBuild('weapp')
+    sharedBuildPrepared = true
+  }
+  if (!sharedMiniProgram) {
+    sharedMiniProgram = await launchMiniProgramWithRetry(ctx)
+  }
+  return sharedMiniProgram
+}
+
+async function resetSharedMiniProgram(ctx: { skip: (message?: string) => void }) {
+  if (sharedMiniProgram) {
+    await closeMiniProgramSafely(sharedMiniProgram)
+    sharedMiniProgram = null
+  }
+  sharedMiniProgram = await launchMiniProgramWithRetry(ctx)
+  return sharedMiniProgram
+}
+
+async function closeSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    return
+  }
+  const miniProgram = sharedMiniProgram
+  sharedMiniProgram = null
+  await closeMiniProgramSafely(miniProgram)
 }
 
 async function readPageWxml(page: any) {
@@ -261,9 +301,8 @@ async function runInlineObjectScenario(
 ) {
   let lastError: unknown
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    let miniProgram
     try {
-      miniProgram = await launchMiniProgramWithRetry(ctx)
+      const miniProgram = await getSharedMiniProgram(ctx)
       const page = await openInlineObjectPage(miniProgram)
       await expectQtySynced(page, 2)
       await scenario(page)
@@ -272,27 +311,19 @@ async function runInlineObjectScenario(
     catch (error) {
       lastError = error
       if (attempt < 2 && shouldRetryAutomatorError(error)) {
+        await resetSharedMiniProgram(ctx)
         await sleep(300)
         continue
       }
       throw error
-    }
-    finally {
-      if (miniProgram) {
-        await runAutomatorOp('close mini program', () => miniProgram.close(), {
-          timeoutMs: 12_000,
-          retries: 2,
-          retryDelayMs: 200,
-        }).catch(() => {})
-      }
     }
   }
   throw lastError
 }
 
 describe.sequential('wevu runtime inline object reactivity (weapp e2e)', () => {
-  beforeAll(async () => {
-    await runBuild('weapp')
+  afterAll(async () => {
+    await closeSharedMiniProgram()
   })
 
   it('updates qty for minus/plus taps and enforces min bound', async (ctx) => {

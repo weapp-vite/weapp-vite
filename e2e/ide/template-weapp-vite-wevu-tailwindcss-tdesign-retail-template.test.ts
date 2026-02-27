@@ -1,7 +1,7 @@
 import type { RuntimeErrorCollector } from './runtimeErrors'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { extractConfigFromVue } from '../../packages/weapp-vite/src/utils/file'
 import { formatWxml, normalizeWxmlForSnapshot } from '../template-e2e.utils'
 import { launchAutomator } from '../utils/automator'
@@ -498,6 +498,38 @@ async function launchAutomatorWithRetry(projectPath: string) {
   throw new Error(`[retail-parity] failed to launch automator for ${projectPath}: ${getErrorMessage(lastError)}`)
 }
 
+interface SharedProjectSession {
+  miniProgram: any
+  errorCollector: RuntimeErrorCollector
+}
+
+const sharedProjectSessions = new Map<string, SharedProjectSession>()
+
+async function getSharedProjectSession(projectRoot: string) {
+  const existing = sharedProjectSessions.get(projectRoot)
+  if (existing) {
+    return existing
+  }
+
+  const miniProgram = await launchAutomatorWithRetry(projectRoot)
+  const errorCollector = attachRuntimeErrorCollector(miniProgram)
+  const session: SharedProjectSession = {
+    miniProgram,
+    errorCollector,
+  }
+  sharedProjectSessions.set(projectRoot, session)
+  return session
+}
+
+async function closeSharedProjectSessions() {
+  const sessions = Array.from(sharedProjectSessions.values())
+  sharedProjectSessions.clear()
+  for (const session of sessions) {
+    session.errorCollector.dispose()
+  }
+  await Promise.allSettled(sessions.map(session => session.miniProgram.close()))
+}
+
 async function captureRouteWxml(options: {
   miniProgram: any
   projectName: string
@@ -588,25 +620,18 @@ async function captureProjectPagesWxml(options: {
   launchQueryMap: Map<string, string>
 }) {
   const { projectRoot, projectName, pages, launchQueryMap } = options
-  const miniProgram = await launchAutomatorWithRetry(projectRoot)
-  const errorCollector = attachRuntimeErrorCollector(miniProgram)
+  const { miniProgram, errorCollector } = await getSharedProjectSession(projectRoot)
   const pageWxmlMap = new Map<string, string>()
-  try {
-    for (const pagePath of pages) {
-      const route = buildRoute(pagePath, launchQueryMap.get(pagePath))
-      const wxml = await captureRouteWxml({
-        miniProgram,
-        projectName,
-        route,
-        pagePath,
-        errorCollector,
-      })
-      pageWxmlMap.set(pagePath, wxml)
-    }
-  }
-  finally {
-    errorCollector.dispose()
-    await miniProgram.close()
+  for (const pagePath of pages) {
+    const route = buildRoute(pagePath, launchQueryMap.get(pagePath))
+    const wxml = await captureRouteWxml({
+      miniProgram,
+      projectName,
+      route,
+      pagePath,
+      errorCollector,
+    })
+    pageWxmlMap.set(pagePath, wxml)
   }
   return pageWxmlMap
 }
@@ -628,6 +653,10 @@ async function dumpCapturedWxml(
 }
 
 describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-template parity', () => {
+  afterAll(async () => {
+    await closeSharedProjectSessions()
+  })
+
   it('keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail', async () => {
     const [appConfig, templateAppConfig, projectConfig] = await Promise.all([
       fs.readJson(APP_JSON_PATH),

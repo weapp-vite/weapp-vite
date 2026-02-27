@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import {
   APP_ROOT,
@@ -78,16 +78,48 @@ async function runPageE2E(page: any) {
   return null
 }
 
+let sharedMiniProgram: any = null
+let sharedBuildPrepared = false
+
+async function getSharedMiniProgram() {
+  if (!sharedBuildPrepared) {
+    await runBuild('weapp')
+    sharedBuildPrepared = true
+  }
+  if (!sharedMiniProgram) {
+    sharedMiniProgram = await launchAutomator({
+      projectPath: APP_ROOT,
+    })
+  }
+  return sharedMiniProgram
+}
+
+async function releaseSharedMiniProgram(miniProgram: any) {
+  if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
+    return
+  }
+  await miniProgram.close()
+}
+
+async function closeSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    return
+  }
+  const miniProgram = sharedMiniProgram
+  sharedMiniProgram = null
+  await miniProgram.close()
+}
+
 describe.sequential('wevu runtime (weapp e2e)', () => {
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
+
   it('runs all pages and snapshots WXML', async () => {
     const config = await loadAppConfig()
     const pages = getPageOrder(resolvePages(config))
 
-    await runBuild('weapp')
-
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    const miniProgram = await getSharedMiniProgram()
 
     try {
       for (const pagePath of pages) {
@@ -114,16 +146,12 @@ describe.sequential('wevu runtime (weapp e2e)', () => {
       }
     }
     finally {
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 
   it('triggers page scroll and prints debug console logs', async () => {
-    await runBuild('weapp')
-
-    const miniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    const miniProgram = await getSharedMiniProgram()
 
     const consoleEntries: string[] = []
     const onConsole = (entry: any) => {
@@ -168,7 +196,7 @@ describe.sequential('wevu runtime (weapp e2e)', () => {
     }
     finally {
       miniProgram.removeListener('console', onConsole)
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 })
