@@ -1,6 +1,6 @@
 ---
 name: wevu-best-practices
-description: Runtime playbook for wevu in mini-programs: lifecycle registration, reactive state updates, event contracts, `bindModel/useBindModel`, and Pinia/store usage patterns with mini-program compatibility constraints. Use when users implement or refactor wevu pages/components/stores, debug hook timing or setData-diff behavior, or ask about differences from Vue 3 web runtime (e.g. "wevu 生命周期", "storeToRefs 类型", "emit/detail/options", "v-model 双向绑定").
+description: "Runtime playbook for wevu in mini-programs: lifecycle registration, reactive state updates, event contracts, bindModel/useBindModel, and Pinia/store usage patterns with mini-program compatibility constraints. Use when users implement or refactor wevu pages/components/stores, debug hook timing or setData-diff behavior, or ask about differences from Vue 3 web runtime."
 ---
 
 # wevu-best-practices
