@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.6.13
+
+### Patch Changes
+
+- 🐛 **upgrade "vite": "8.0.0-beta.16" and "rolldown": "1.0.0-rc.6"** [`dfb47d7`](https://github.com/weapp-vite/weapp-vite/commit/dfb47d7c8b5699fe25c066803890e6611d8e6d68) by @sonofmagic
+- 📦 **Dependencies** [`6742994`](https://github.com/weapp-vite/weapp-vite/commit/6742994ffd0a3c522d1e527e0d90e4863a2d853c)
+  → `wevu@6.6.13`
+
 ## 6.6.12
 
 ### Patch Changes
