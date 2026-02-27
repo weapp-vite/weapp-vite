@@ -59,6 +59,13 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - For the same `e2e-app`, launch automator only once per test suite (`describe`) and reuse that session.
   - Validate multiple cases by `miniProgram.reLaunch(...)` across different pages/routes instead of re-launching DevTools for each case.
   - If a case must use an isolated launch, document the reason in test comments.
+- For GitHub issue fixes (especially cases mapped to `e2e-apps/github-issues`), follow this order strictly:
+  - Reproduce the issue first in `e2e-apps/github-issues` with a minimal, reviewable case.
+  - Analyze and identify root cause before editing source.
+  - Fix the relevant source package(s) only after reproduction is stable.
+  - Add or update unit tests to lock the root-cause behavior.
+  - Add or update e2e tests (including the `e2e-apps/github-issues` case when applicable) to verify end-to-end regression coverage.
+  - Run targeted unit + e2e verification and confirm the bug is fixed before closing the task.
 - All `e2e-apps/*/project.config.json` must use a real AppID (no `touristappid`).
 - When adding pages in any `e2e-apps/*`, also update `project.private.config.json` under `condition.miniprogram.list`.
 
