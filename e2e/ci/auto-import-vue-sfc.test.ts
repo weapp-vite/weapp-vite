@@ -116,6 +116,21 @@ function createHotCardSfc() {
 `
 }
 
+function detectEol(source: string) {
+  return source.includes('\r\n') ? '\r\n' : '\n'
+}
+
+function removeStandaloneTagLine(source: string, tagName: string) {
+  const tagPattern = new RegExp(`^[ \\t]*<${tagName}\\s*\\/>\\r?\\n?`, 'm')
+  return source.replace(tagPattern, '')
+}
+
+function insertStandaloneTagAfter(source: string, anchorTagName: string, tagName: string) {
+  const eol = detectEol(source)
+  const anchorPattern = new RegExp(`^([ \\t]*)<${anchorTagName}\\s*\\/>\\r?$`, 'm')
+  return source.replace(anchorPattern, (_line, indent: string) => `${indent}<${anchorTagName} />${eol}${indent}<${tagName} />`)
+}
+
 describe.sequential('auto import local components (e2e)', () => {
   it.each(PLATFORM_LIST)('covers local/resolver auto-import for %s build output', async (platform) => {
     await fs.remove(DIST_ROOT)
@@ -229,10 +244,10 @@ describe.sequential('auto import local components (e2e)', () => {
     await fs.remove(VUE_COMPONENTS_DTS)
 
     const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
-    const pageSourceWithoutAutoCard = originalPageSource.replace('    <AutoCard />\n', '')
-    const pageSourceWithAutoCard = pageSourceWithoutAutoCard.includes('<AutoCard />')
+    const pageSourceWithoutAutoCard = removeStandaloneTagLine(originalPageSource, 'AutoCard')
+    const pageSourceWithAutoCard = /<AutoCard\s*\/>/.test(pageSourceWithoutAutoCard)
       ? pageSourceWithoutAutoCard
-      : pageSourceWithoutAutoCard.replace('<ResolverCard />', '<ResolverCard />\n    <AutoCard />')
+      : insertStandaloneTagAfter(pageSourceWithoutAutoCard, 'ResolverCard', 'AutoCard')
 
     if (pageSourceWithoutAutoCard === originalPageSource || pageSourceWithAutoCard === pageSourceWithoutAutoCard) {
       throw new Error('Failed to create page source variants for AutoCard toggling.')
@@ -290,9 +305,9 @@ describe.sequential('auto import local components (e2e)', () => {
     await fs.remove(HOT_COMPONENT_DIR)
 
     const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
-    const pageSourceWithHotCard = originalPageSource.includes('<HotCard />')
+    const pageSourceWithHotCard = /<HotCard\s*\/>/.test(originalPageSource)
       ? originalPageSource
-      : originalPageSource.replace('<ResolverCard />', '<ResolverCard />\n    <HotCard />')
+      : insertStandaloneTagAfter(originalPageSource, 'ResolverCard', 'HotCard')
 
     if (pageSourceWithHotCard === originalPageSource) {
       throw new Error('Failed to inject <HotCard /> into page source.')
