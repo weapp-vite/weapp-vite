@@ -32,11 +32,11 @@ apps/** linguist-vendored
 *.html            text diff=html
 *.inc             text
 *.ini             text
-*.js              text
-*.mjs             text
-*.cjs             text
-*.json            text
-*.jsx             text
+*.js              text eol=lf
+*.mjs             text eol=lf
+*.cjs             text eol=lf
+*.json            text eol=lf
+*.jsx             text eol=lf
 *.less            text
 *.ls              text
 *.map             text -diff
@@ -55,8 +55,8 @@ apps/** linguist-vendored
 *.sql             text
 *.styl            text
 *.tag             text
-*.ts              text
-*.tsx             text
+*.ts              text eol=lf
+*.tsx             text eol=lf
 *.xml             text
 *.xhtml           text diff=html
 
@@ -106,7 +106,7 @@ TODO              text
 *.tmpl            text
 *.tpl             text
 *.twig            text
-*.vue             text
+*.vue             text eol=lf
 
 # Configs
 *.cnf             text
