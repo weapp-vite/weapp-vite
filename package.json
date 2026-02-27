@@ -41,7 +41,7 @@
     "e2e:ci": "pnpm run e2e:ci:build-only && pnpm run e2e:ci:hmr:all",
     "e2e:ci:build-only": "vitest run -c ./e2e/vitest.e2e.ci.build-only.config.ts",
     "e2e:ci:hmr": "pnpm run e2e:ci:hmr:all",
-    "e2e:ci:hmr:core": "vitest run -c ./e2e/vitest.e2e.ci.config.ts e2e/ci/hmr-*.test.ts",
+    "e2e:ci:hmr:core": "vitest run -c ./e2e/vitest.e2e.ci.config.ts e2e/ci/hmr-",
     "e2e:ci:hmr:runtime": "vitest run -c ./e2e/vitest.e2e.ci.config.ts e2e/ci/wevu-runtime.hmr.test.ts",
     "e2e:ci:hmr:auto-import": "vitest run -c ./e2e/vitest.e2e.ci.config.ts e2e/ci/auto-import-vue-sfc.test.ts",
     "e2e:ci:hmr:style-import": "vitest run -c ./e2e/vitest.e2e.ci.config.ts e2e/ci/style-import-vue.test.ts",
