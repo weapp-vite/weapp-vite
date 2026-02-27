@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.37
+
+### Patch Changes
+
+- 🐛 **修复 issue #309 的页面生命周期边界场景：页面未声明 `onPullDownRefresh` 或使用 `setupLifecycle: 'created'` 时，`onLoad` 仍会稳定触发，同时避免编译阶段重复注入 `__wevu_isPage`。补充对应单元测试与 e2e 用例，防止后续回归。** [`39227de`](https://github.com/weapp-vite/weapp-vite/commit/39227de97e3d6e4e1f82b14a6ce5e8bce918b0d9) by @sonofmagic
+
 ## 2.0.36
 
 ### Patch Changes
