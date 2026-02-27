@@ -100,7 +100,9 @@ export function filterSnapshotPages(pages: string[]) {
 }
 
 export function normalizeAutomatorWxml(wxml: string) {
-  return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
+  return wxml
+    .replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
+    .replace(/"onRouteDone",\s*"onRouteDone"/g, '"onRouteDone"')
 }
 
 export async function readPageOutput(platform: RuntimePlatform, pagePath: string) {

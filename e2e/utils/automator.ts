@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import path from 'node:path'
 import process from 'node:process'
 import cmpVersion from 'licia/cmpVersion'
 import automator from 'miniprogram-automator'
@@ -21,8 +22,35 @@ const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
   /re-?login/i,
 ]
 const RUNTIME_LOG_META_KEY = '__weappViteRuntimeLogMeta'
+const RELAUNCH_PATCH_META_KEY = '__weappViteRelaunchPatchMeta'
 const RUNTIME_LOG_FILE = process.env.WEAPP_VITE_E2E_RUNTIME_LOG_FILE || '/tmp/weapp-vite-e2e-runtime.log'
 const DEFAULT_LOGIN_PREFLIGHT_TIMEOUT = 30_000
+const DEFAULT_RELUNCH_READY_TIMEOUT = 15_000
+const DEFAULT_RELUNCH_RETRIES = 3
+const DEFAULT_RELUNCH_RETRY_DELAY = 280
+const DEFAULT_RELUNCH_SETTLE_DELAY = 260
+const RELAUNCH_READY_TIMEOUT = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT,
+  DEFAULT_RELUNCH_READY_TIMEOUT,
+)
+const RELAUNCH_RETRIES = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_RELUNCH_RETRIES,
+  DEFAULT_RELUNCH_RETRIES,
+)
+const RELAUNCH_RETRY_DELAY = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_RELUNCH_RETRY_DELAY,
+  DEFAULT_RELUNCH_RETRY_DELAY,
+)
+const RELAUNCH_SETTLE_DELAY = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_RELUNCH_SETTLE_DELAY,
+  DEFAULT_RELUNCH_SETTLE_DELAY,
+)
+const TRUST_ALL_PROJECTS = process.env.WEAPP_VITE_E2E_TRUST_PROJECT === '1'
+const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
+  .split(/[,;\n]/)
+  .map(item => item.trim())
+  .filter(Boolean)
+  .map(item => normalizePathForMatch(item))
 
 let versionPatched = false
 let loginPreflightPassed = false
@@ -41,11 +69,43 @@ interface RuntimeLogMeta {
   closeWrapped: boolean
 }
 
+interface RelaunchPatchMeta {
+  wrapped: boolean
+}
+
 type RuntimeLogLevel = 'warn' | 'error' | 'exception'
 
 interface RuntimeLogEntry {
   level: RuntimeLogLevel
   text: string
+}
+
+function normalizePathForMatch(value: string) {
+  const normalized = path.normalize(path.resolve(value))
+  return normalized.replace(/[\\/]+$/, '')
+}
+
+function resolvePositiveIntEnv(raw: string | undefined, fallback: number) {
+  const parsed = Number.parseInt(raw ?? '', 10)
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback
+  }
+  return parsed
+}
+
+function isProjectPathTrustedByEnv(projectPath: string | undefined) {
+  if (TRUST_ALL_PROJECTS) {
+    return true
+  }
+
+  if (!projectPath || TRUST_PROJECT_PREFIXES.length === 0) {
+    return false
+  }
+
+  const normalizedProjectPath = normalizePathForMatch(projectPath)
+  return TRUST_PROJECT_PREFIXES.some((prefix) => {
+    return normalizedProjectPath === prefix || normalizedProjectPath.startsWith(`${prefix}${path.sep}`)
+  })
 }
 
 function resolveConsolePayload(entry: any) {
@@ -188,6 +248,50 @@ function isLikelyDevtoolsInfraErrorMessage(message: string) {
     || DEVTOOLS_INFRA_ERROR_PATTERNS.some(pattern => pattern.test(message))
 }
 
+function sleep(ms: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, ms))
+}
+
+function isLikelyRelaunchRetryableError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return /Wait timed out after/i.test(message)
+    || /timed out waiting page root/i.test(message)
+    || /Failed to find page root/i.test(message)
+    || /Execution context was destroyed/i.test(message)
+    || /Target closed/i.test(message)
+    || /ECONNRESET/i.test(message)
+    || /not connected/i.test(message)
+}
+
+async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIMEOUT) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    try {
+      if (typeof page?.$$ === 'function') {
+        const roots = await page.$$('page')
+        if (Array.isArray(roots) && roots.length > 0) {
+          return roots[0]
+        }
+      }
+      const root = await page?.$('page')
+      if (root) {
+        return root
+      }
+    }
+    catch {
+      // Ignore transient query errors during devtools route swaps.
+    }
+
+    if (typeof page?.waitFor === 'function') {
+      await page.waitFor(120)
+    }
+    else {
+      await sleep(120)
+    }
+  }
+  return null
+}
+
 function extractExecutionErrorText(error: unknown) {
   if (!error || typeof error !== 'object') {
     return ''
@@ -325,6 +429,56 @@ function enhanceMiniProgramWithRuntimeLogs(miniProgram: any) {
   return miniProgram
 }
 
+function enhanceMiniProgramRelaunch(miniProgram: any) {
+  const meta = (miniProgram as Record<string, any>)[RELAUNCH_PATCH_META_KEY] as RelaunchPatchMeta | undefined
+  if (meta?.wrapped) {
+    return miniProgram
+  }
+
+  ;(miniProgram as Record<string, any>)[RELAUNCH_PATCH_META_KEY] = { wrapped: true } as RelaunchPatchMeta
+  const rawReLaunch = miniProgram.reLaunch.bind(miniProgram)
+  miniProgram.reLaunch = async (...args: any[]) => {
+    const route = typeof args[0] === 'string' ? args[0] : '<unknown-route>'
+    let lastError: unknown = null
+
+    for (let attempt = 1; attempt <= RELAUNCH_RETRIES; attempt += 1) {
+      try {
+        const page = await rawReLaunch(...args)
+        if (!page) {
+          throw new Error(`reLaunch returned empty page: ${route}`)
+        }
+
+        if (RELAUNCH_SETTLE_DELAY > 0) {
+          if (typeof page.waitFor === 'function') {
+            await page.waitFor(RELAUNCH_SETTLE_DELAY)
+          }
+          else {
+            await sleep(RELAUNCH_SETTLE_DELAY)
+          }
+        }
+
+        const pageRoot = await waitForRelaunchPageRoot(page)
+        if (!pageRoot) {
+          throw new Error(`Timed out waiting page root after reLaunch: ${route}`)
+        }
+
+        return page
+      }
+      catch (error) {
+        lastError = error
+        if (attempt >= RELAUNCH_RETRIES || !isLikelyRelaunchRetryableError(error)) {
+          throw error
+        }
+        await sleep(RELAUNCH_RETRY_DELAY)
+      }
+    }
+
+    throw lastError
+  }
+
+  return miniProgram
+}
+
 function patchAutomatorVersionCheck() {
   if (versionPatched) {
     return
@@ -348,16 +502,21 @@ function patchAutomatorVersionCheck() {
 
 export function launchAutomator(options: Parameters<typeof automator.launch>[0]) {
   patchAutomatorVersionCheck()
-  const { projectConfig, timeout, ...rest } = options
+  const { projectConfig, timeout, trustProject, ...rest } = options
+  const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   return automator.launch({
     ...rest,
     timeout: timeout ?? 90_000,
+    trustProject: resolvedTrustProject,
     projectConfig: {
       libVersion: DEFAULT_LIB_VERSION,
       ...projectConfig,
     },
   })
-    .then(miniProgram => enhanceMiniProgramWithRuntimeLogs(miniProgram))
+    .then((miniProgram) => {
+      const withRuntimeLogs = enhanceMiniProgramWithRuntimeLogs(miniProgram)
+      return enhanceMiniProgramRelaunch(withRuntimeLogs)
+    })
     .catch((error) => {
       const message = error instanceof Error ? error.message : String(error)
       const isInfraError = isLikelyDevtoolsInfraErrorMessage(message)
