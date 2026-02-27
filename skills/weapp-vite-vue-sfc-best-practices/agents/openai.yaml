@@ -1,7 +1,16 @@
 interface:
   display_name: Vue SFC Best Practices
-  short_description: weapp-vite 的 Vue SFC 详细用法与最佳实践
-  default_prompt: 'Use $weapp-vite-vue-sfc-best-practices to implement or refactor my weapp-vite Vue SFC files with correct JSON macros, template compatibility, and wevu runtime patterns.'
+  short_description: weapp-vite Vue SFC 宏配置与模板兼容（definePageJson / v-model / usingComponents）
+  default_prompt: >-
+    Use $weapp-vite-vue-sfc-best-practices when the main task is authoring or
+    refactoring mini-program `.vue` files: JSON macros, `usingComponents`,
+    template directive compatibility, and SFC compile/runtime troubleshooting.
+    Keep one macro family per SFC and check directive constraints (for example
+    assignable `v-model` targets). If the issue is project-level
+    build/subpackage/CI strategy, switch to $weapp-vite-best-practices; if it is
+    primarily runtime lifecycle/store/event design, switch to
+    $wevu-best-practices. Return: stage-based diagnosis, concrete SFC edits,
+    compatibility notes, and minimal verification commands.
 
 policy:
   allow_implicit_invocation: true

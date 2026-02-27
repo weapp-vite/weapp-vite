@@ -1,7 +1,15 @@
 interface:
   display_name: Native Migration Guide
-  short_description: 原生小程序迁移到 weapp-vite / wevu 的落地流程与检查清单
-  default_prompt: 'Use $native-to-weapp-vite-wevu-migration to migrate my native mini-program pages/components to weapp-vite + wevu with phased rollout, typed props/events, platform guards, and migration-focused e2e validation.'
+  short_description: 原生小程序迁移工作流（Page/Component -> Vue SFC，setData 改造，回滚与 e2e）
+  default_prompt: >-
+    Use $native-to-weapp-vite-wevu-migration for incremental migration from
+    native mini-program code to `weapp-vite + wevu + Vue SFC`. Plan in waves,
+    keep behavior equivalence first, and separate mechanical migration from
+    semantic upgrades. Cover mappings for
+    `Page/Component`, `setData`, `properties/observers/triggerEvent`,
+    `import.meta.env.PLATFORM` guards, and migration-focused e2e validation.
+    Return: wave boundaries, per-wave task list (mechanical/semantic/verification),
+    risk + rollback points, and minimal pass criteria.
 
 policy:
   allow_implicit_invocation: true

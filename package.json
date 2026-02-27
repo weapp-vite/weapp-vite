@@ -69,6 +69,8 @@
     "script:mirror": "monorepo mirror",
     "skills:link": "node scripts/link-agent-skills.mjs",
     "skills:link:dry": "node scripts/link-agent-skills.mjs --dry-run",
+    "skills:score": "node skills/scripts/score-skill-trigger-regression.mjs",
+    "skills:score:json": "node skills/scripts/score-skill-trigger-regression.mjs --json",
     "seo-audit": "node --import tsx scripts/seo/seo-audit.ts",
     "seo-audit:strict": "node --import tsx scripts/seo/seo-audit.ts --strict",
     "seo-enrich-frontmatter": "node --import tsx scripts/seo/seo-enrich-frontmatter.ts",

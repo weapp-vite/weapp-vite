@@ -1,66 +1,100 @@
 ---
 name: wevu-best-practices
-description: Apply Vue-3-style runtime best practices for wevu in mini-programs. Use when implementing pages/components/stores with wevu, defining lifecycle hooks, handling setData diff behavior, designing props/emit and bindModel flows, integrating with weapp-vite SFC JSON macros, or troubleshooting compatibility differences versus Vue 3.
+description: Runtime playbook for wevu in mini-programs: lifecycle registration, reactive state updates, event contracts, `bindModel/useBindModel`, and Pinia/store usage patterns with mini-program compatibility constraints. Use when users implement or refactor wevu pages/components/stores, debug hook timing or setData-diff behavior, or ask about differences from Vue 3 web runtime (e.g. "wevu 生命周期", "storeToRefs 类型", "emit/detail/options", "v-model 双向绑定").
 ---
 
 # wevu-best-practices
 
-## Overview
+## Purpose
 
-Write mini-program business logic with Vue-style ergonomics while respecting wevu runtime constraints. Keep hooks, state updates, and component contracts explicit.
+Implement mini-program runtime logic with Vue-style ergonomics while respecting wevu constraints. Keep lifecycle timing, reactive updates, and component contracts explicit.
 
-## Workflow
+## Trigger Signals
 
-1. Set runtime conventions first
+- User asks how to implement page/component logic with `wevu`.
+- User asks about lifecycle hook timing or setup patterns.
+- User asks about props/emit contracts, event detail payloads, or two-way binding patterns.
+- User asks about store architecture, `storeToRefs`, or type inference behavior.
+- User reports runtime differences versus Vue 3 web behavior.
 
-- Import runtime APIs only from `wevu`.
-- Use `defineComponent` as the registration model for both pages and components.
-- Keep `data` as a function when using options-style state.
+## Scope Boundary
 
-2. Use correct component/page boundaries
+Use this skill when the main problem is runtime behavior and state/event contracts.
 
-- Define mini-program config via Script Setup JSON macros first.
-- For App/Page/Component SFC, prefer `defineAppJson` / `definePageJson` / `defineComponentJson` over `<json>` blocks.
-- Declare `usingComponents` through JSON config, not script-side ESM component registration.
-- Keep page hooks only in page contexts.
+Do not use this as the primary skill when:
 
-3. Keep reactive updates predictable
+- The task is build/config/subpackage/CI orchestration. Use `weapp-vite-best-practices`.
+- The task is mainly `.vue` macro/template syntax compatibility. Use `weapp-vite-vue-sfc-best-practices`.
+- The task is native mini-program phased migration. Use `native-to-weapp-vite-wevu-migration`.
 
-- Use `ref/reactive/computed` for state and derive template data from them.
-- Register lifecycle hooks synchronously inside `setup()`.
-- Use explicit bindings for forms/events when semantics are complex.
+## Quick Start
 
-4. Design events and two-way binding intentionally
+1. Verify runtime API imports and component registration model.
+2. Confirm hook registration timing and component/page boundaries.
+3. Normalize state/event binding patterns (`ref/reactive`, `emit`, `bindModel`).
+4. Validate with targeted runtime or unit tests.
 
-- Use `ctx.emit(event, detail, options)` with mini-program event semantics.
-- For reusable field bindings, prefer `bindModel`/`useBindModel` with explicit event and parser.
-- Avoid assuming full Vue web `v-model` feature parity in mini-program templates.
+## Execution Protocol
 
-5. Structure stores for maintainability
+1. Establish runtime conventions
 
-- Prefer Setup Store for simple domains and strong inference.
+- Import runtime APIs from `wevu` only.
+- Use `defineComponent` registration for both pages and components.
+- Keep options-style `data` as a function when used.
+
+2. Validate boundaries and timing
+
+- Keep page hooks in page context only.
+- Register lifecycle hooks synchronously in `setup()`.
+- Avoid post-`await` hook registration.
+
+3. Normalize reactive update patterns
+
+- Prefer `ref/reactive/computed` for state derivation.
+- Avoid large opaque state writes; prefer fine-grained reactive updates.
+- Use explicit bindings when form/event semantics are non-trivial.
+
+4. Define event and two-way binding contracts
+
+- Use `ctx.emit(event, detail, options)` with mini-program semantics.
+- Prefer `bindModel`/`useBindModel` for reusable field contracts.
+- Document parser/formatter behavior when value transforms are involved.
+
+5. Apply store discipline
+
+- Prefer Setup Store for simple domains and strong TS inference.
 - Use `storeToRefs` when destructuring state/getters.
-- Add `createStore()` only when global plugin/persistence hooks are needed.
+- Introduce `createStore()` only when global plugin/persistence behavior is required.
 
-6. Handle compatibility and testing explicitly
+6. Verify compatibility explicitly
 
-- Do not use DOM/browser-only APIs in runtime logic.
-- For Node/Vitest tests, stub `Component`/`wx` when testing runtime bridges.
-- Treat lifecycle and provide/inject differences as platform constraints, not bugs.
+- Avoid DOM/browser-only APIs in runtime business logic.
+- In Node/Vitest, stub `Component`/`wx` for bridge tests.
+- Treat platform differences as explicit constraints, not implicit bugs.
 
 ## Guardrails
 
 - Avoid hook registration after `await` in `setup()`.
 - Avoid direct state destructuring without `storeToRefs` for stores.
 - Avoid relying on undocumented Vue web-only behavior in templates or lifecycle timing.
+- Avoid returning non-serializable native instance objects into template state.
+
+## Output Contract
+
+When applying this skill, return:
+
+- A runtime risk summary (lifecycle/state/event/store).
+- Concrete file-level edits.
+- Compatibility caveats versus Vue 3 web runtime.
+- Minimal verification commands and expected signals.
 
 ## Completion Checklist
 
 - API imports come from `wevu`, not `vue` runtime in business code.
-- Page/component JSON config strategy is consistent.
+- Page/component boundary usage is consistent.
 - Hook registration timing is synchronous and predictable.
 - Store usage follows singleton + `storeToRefs` conventions.
-- Template bindings match mini-program-supported semantics.
+- Template/event bindings match mini-program-supported semantics.
 
 ## References
 

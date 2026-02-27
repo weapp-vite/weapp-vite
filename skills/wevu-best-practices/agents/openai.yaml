@@ -1,7 +1,16 @@
 interface:
   display_name: wevu Best Practices
-  short_description: wevu 组件、生命周期与状态管理最佳实践
-  default_prompt: 'Use $wevu-best-practices to implement or refactor my wevu pages/components/stores with correct lifecycle, binding, and mini-program compatibility patterns.'
+  short_description: wevu 运行时模式（生命周期、响应式更新、事件契约、storeToRefs/bindModel）
+  default_prompt: >-
+    Use $wevu-best-practices for runtime behavior in wevu pages/components/stores:
+    lifecycle timing, reactive state updates, event contracts, `bindModel`,
+    and store patterns (`storeToRefs`, setup store discipline). Prefer explicit
+    mini-program semantics over Vue web assumptions. If the issue is mostly
+    SFC macro/template compilation, use $weapp-vite-vue-sfc-best-practices; if
+    it is project-level config/chunk/CI strategy, use
+    $weapp-vite-best-practices; if it is phased native migration planning, use
+    $native-to-weapp-vite-wevu-migration. Return: runtime risk summary,
+    file-level edits, compatibility caveats, and minimal verification commands.
 
 policy:
   allow_implicit_invocation: true
