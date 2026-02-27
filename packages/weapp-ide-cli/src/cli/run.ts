@@ -21,6 +21,7 @@ import {
   isWechatIdeLoginRequiredError,
   waitForRetryKeypress,
 } from './retry'
+import { parseScreenshotArgs, printScreenshotHelp, takeScreenshot } from './screenshot'
 
 const MINIDEV_NAMESPACE = new Set(['alipay', 'ali', 'minidev'])
 const ALIPAY_PLATFORM_ALIASES = new Set(['alipay', 'ali', 'minidev'])
@@ -46,6 +47,33 @@ const ARG_TRANSFORMS: readonly ArgvTransform[] = [
   createPathCompat('--info-output'),
   createPathCompat('-i'),
 ]
+
+/**
+ * @description 运行截图命令
+ */
+async function runScreenshot(argv: string[]) {
+  const options = parseScreenshotArgs(argv)
+  const isJsonOutput = argv.includes('--json')
+
+  try {
+    const result = await takeScreenshot(options)
+
+    if (isJsonOutput) {
+      console.log(JSON.stringify(result, null, 2))
+    }
+    else if (result.base64) {
+      console.log(result.base64)
+    }
+    else if (result.path) {
+      // Already logged by takeScreenshot
+    }
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.error(message)
+    process.exit(1)
+  }
+}
 
 /**
  * @description CLI 入口解析与分发
@@ -74,6 +102,16 @@ export async function parse(argv: string[]) {
 
   if (head === 'config') {
     await promptForCliPath()
+    return
+  }
+
+  if (head === 'screenshot') {
+    await runScreenshot(argv.slice(1))
+    return
+  }
+
+  if (head === 'help' && argv[1] === 'screenshot') {
+    printScreenshotHelp()
     return
   }
 

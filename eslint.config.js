@@ -135,4 +135,10 @@ export default icebreaker(
       'ts/no-unused-vars': 'off',
     },
   },
+  {
+    files: ['**/*.json'],
+    rules: {
+      'style/eol-last': 'off',
+    },
+  },
 )
