@@ -18,6 +18,8 @@ keywords:
 Weapp-vite 内置了 Vue SFC 编译链路，配合 `wevu` 运行时即可用 Vue 风格开发小程序页面/组件，同时保持小程序能力（页面特性、分享、性能优化）。
 
 > 适用版本：Vue SFC 仅在 `weapp-vite@6.x` 及以上可用，请先升级到 6 大版本。
+>
+> 若项目同时使用 `weapp-vite` 与 `wevu`，请保持两者版本号一致（例如 `weapp-vite@x.y.z` 与 `wevu@x.y.z`）。
 
 ## 快速开始
 

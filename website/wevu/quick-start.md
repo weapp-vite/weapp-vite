@@ -39,6 +39,10 @@ bun add -D wevu
 
 :::
 
+:::warning 版本一致性
+如果你同时安装 `weapp-vite` 与 `wevu`，请保持两者版本号一致（例如 `weapp-vite@x.y.z` 与 `wevu@x.y.z`），这样可以避免编译期与运行期组合不一致。
+:::
+
 :::tip
 运行时 API 均从 `wevu` 主入口导入；`wevu/compiler` 仅供 Weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
