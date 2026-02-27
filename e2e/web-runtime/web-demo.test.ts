@@ -86,24 +86,41 @@ async function stopWebServer(server?: ExecaChildProcess) {
   }
 }
 
-async function navigateToByRuntime(page: Page, url: string) {
-  await page.evaluate(async (url) => {
-    const wxRuntime = (window as any).wx
-    if (!wxRuntime || typeof wxRuntime.navigateTo !== 'function') {
-      throw new TypeError('[web-e2e] wx.navigateTo is unavailable in runtime')
+function isNavigationContextDestroyedError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false
+  }
+  return /Execution context was destroyed|Cannot find context with specified id|Target page, context or browser has been closed/i.test(error.message)
+}
+
+async function dispatchRuntimeNavigation(
+  page: Page,
+  method: 'navigateTo' | 'navigateBack',
+  payload: Record<string, unknown>,
+) {
+  try {
+    await page.evaluate(({ method, payload }) => {
+      const wxRuntime = (window as any).wx
+      const navigate = wxRuntime?.[method]
+      if (typeof navigate !== 'function') {
+        throw new TypeError(`[web-e2e] wx.${method} is unavailable in runtime`)
+      }
+      void navigate(payload)
+    }, { method, payload })
+  }
+  catch (error) {
+    if (!isNavigationContextDestroyedError(error)) {
+      throw error
     }
-    await wxRuntime.navigateTo({ url })
-  }, url)
+  }
+}
+
+async function navigateToByRuntime(page: Page, url: string) {
+  await dispatchRuntimeNavigation(page, 'navigateTo', { url })
 }
 
 async function navigateBackByRuntime(page: Page, delta = 1) {
-  await page.evaluate(async (delta) => {
-    const wxRuntime = (window as any).wx
-    if (!wxRuntime || typeof wxRuntime.navigateBack !== 'function') {
-      throw new TypeError('[web-e2e] wx.navigateBack is unavailable in runtime')
-    }
-    await wxRuntime.navigateBack({ delta })
-  }, delta)
+  await dispatchRuntimeNavigation(page, 'navigateBack', { delta })
 }
 
 type CurrentPageData = Record<string, any> | null
