@@ -178,6 +178,34 @@ The system uses a **service-oriented architecture** centered around `CompilerCon
 - Volar support in `@weapp-vite/volar` package
 - Auto-generated types for components and APIs
 
+## AI 代码规范
+
+### 语言规范
+- 所有 AI 添加的 JSDoc 代码注释必须使用中文
+- 所有 AI 添加的 changeset 摘要段落必须使用中文
+
+### 编码规范
+- TypeScript + ESM + 2空格缩进
+- 包名：kebab-case（如 `weapp-vite`）
+- 变量/文件：camelCase（如 `myVariable`）
+- 类/类型：PascalCase（如 `MyClass`）
+- 优先使用命名导出，除非文件明确只导出一个默认导出
+- 保持 eslint/stylelint 干净，避免引入 TypeScript 错误
+- 始终修复独立样式文件和 `.vue` 文件中 `<style>` 块的 stylelint 问题
+- 如果源文件超过 300 行，评估是否拆分，并在 PR 说明中记录决策
+- 拆分时优先使用目录布局：
+  - `foo/index.ts`
+  - `foo/style.ts`
+  - `foo/helpers.ts`
+  - 避免 `foo.style.ts` / `foo.helpers.ts`
+
+### Commit 和 Changeset 规范
+- 使用 Conventional Commits，如：`feat(weapp-vite): add css preprocess support`
+- 对于用户可见或影响行为的变更，必须添加 changeset
+- 对于源码 bug 修复（包括带有单元/e2e 更新的 GitHub issue 修复），必须添加 changeset
+- 如果发布包含 `weapp-vite`、`wevu` 或 `templates/` 下的内容，还需包含 `create-weapp-vite` 的 bump changeset
+- 默认操作是仅提交：检查通过后直接提交变更，除非用户明确要求推送，否则不推送
+
 ## Development Workflow
 
 When making changes:
