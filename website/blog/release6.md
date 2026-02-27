@@ -1,5 +1,5 @@
 ---
-title: Weapp-vite：原生模式之外，多一种 Vue 选择
+title: 重走 Vue 长征路 Weapp-vite：原生模式之外，多一种 Vue 选择
 description: 还记得在 Weapp-vite 4.0 的发布文章里，我写过这样的话：
 keywords:
   - Weapp-vite
@@ -13,19 +13,17 @@ keywords:
 date: 2026-02-25
 ---
 
-# Weapp-vite：原生模式之外，多一种 Vue SFC 选择
+![Weapp-vite 6 顶部海报](/6/bg.jpg)
+
+# 重走 Vue 长征路: Weapp-vite：原生模式之外，多一种 Vue SFC 选择
+
+大家好呀，我是你们的老朋友，开源爱好者 [icebreaker](https://github.com/sonofmagic)！又到了新的一年，我想死你们了。
+
+今天主要来分享一下我开源项目 [Weapp-vite](https://github.com/weapp-vite/weapp-vite) 的开发里程碑。核心就是来给大家秀一把。
 
 ## 前言
 
-大家好呀，我是你们的老朋友，开源爱好者 icebreaker！又到了新的一年，我想死你们了。
-
-今天主要来分享一下我的开源项目 Weapp-vite 的开发里程碑。
-
-文章的核心就是来给大家秀一把。
-
----
-
-还记得在 Weapp-vite 4.0 的发布文章里，我写过这样的话：
+我还记得在过去 Weapp-vite 4.0 的发布文章里，写过这样的话：
 
 > Weapp-vite **不适用场景**：需要使用 `Vue`/`React` 等前端框架的写法，来取代小程序原生写法。
 
@@ -115,7 +113,7 @@ Weapp-vite@6 的思路是：**同一个工具，给你两种模式**。
 - **Vue 3 生命周期支持**：`onMounted`、`onUpdated`、`onUnmounted` 等，自动映射到小程序生命周期
 - **快照 diff 优化**：最小化 `setData` 调用，只传递变更的数据路径
 - **内置状态管理**：`defineStore`/`storeToRefs`，API 类似 Pinia
-- **可独立使用**：既可以配合 Weapp-vite 的 SFC 编译，也可以单独作为运行时库使用
+- **编译协同**：配合 Weapp-vite 的 SFC 编译，提供一致的响应式与生命周期能力
 
 ### Vue 3 vs Wevu：实现上的异同
 
@@ -186,11 +184,11 @@ MyComponent.vue
     └─> MyComponent.json  // 组件配置
 ```
 
-Vue 的 `<script>`、`<template>`、`<style>` 会被智能拆分并转换成小程序能理解的格式。整个过程就像是把 Vue 组件"翻译"成了小程序的方言。
+Vue 的 `<script>`、`<template>`、`<style>`、`<json>`(可被 `defineXXXJson` 宏指令取代) 会被智能拆分并转换成小程序能理解的格式。整个过程就像是把 Vue 组件"翻译"成了小程序的方言。
 
 **编译原理小剧场**：
 
-1. **解析阶段**：使用 `vue/compiler-sfc` 把 SFC 拆成三块
+1. **解析阶段**：使用 `vue/compiler-sfc` 把 SFC 拆成四块
 2. **转换阶段**：Vue 指令 → 小程序指令（`v-if` → `wx:if`，`@click` → `bindtap`）
 3. **生成阶段**：输出小程序四件套
 4. **运行时**：配合 `wevu` 提供响应式能力
@@ -211,6 +209,41 @@ Weapp-vite 的 Vue 支持不是简单地把 Vue 代码塞进小程序，而是�
 | `<script setup>` | 自动处理响应式和生命周期 |
 
 你用 Vue 的方式思考，Weapp-vite 用小程序的方式执行。
+
+## 工具链友好：智能提示 + AI 协作
+
+### 智能提示友好：复用 Vue 官方插件
+
+在 VS Code 里安装 Vue 官方插件（Vue - Official / Volar）后，Weapp-vite 的 `.vue` 文件可以直接复用成熟的模板智能提示与类型能力，不需要再适配一套全新的编辑器插件链路。
+
+- `v-for` 场景下的 `:key` 等属性补全
+- `:class` / `:style` 等常用绑定提示
+- 组件属性与事件相关补全
+
+![Vue 模板智能提示（v-for + :key）](/6/ic.png)
+![Vue 模板智能提示（原生标签属性补全）](/6/in.png)
+![Vue 模板智能提示（组件属性补全）](/6/inc.png)
+
+### AI 友好
+
+Weapp-vite@6 的 Vue 模式对 AI 协作也比较友好，核心原因是「语法接近标准 Vue SFC」和「编译边界清晰」：
+
+- 模板、脚本、样式、JSON 配置职责清楚，便于 AI 定位与修改
+- 大量 API 与 Vue 3 同名，AI 可以复用 Vue 官方文档和社区知识
+- `definePageJson` / `defineComponentJson` 这类宏语义明确，生成代码更稳定
+
+如果你在 Codex / Claude Code 中协作开发，可以直接安装和同步项目技能：
+
+```bash
+# 推荐：安装公开 skills 集合
+npx skills add sonofmagic/skills
+```
+
+常用的 Weapp-vite 相关 skills：
+
+- `weapp-vite-best-practices`
+- `weapp-vite-vue-sfc-best-practices`
+- `wevu-best-practices`
 
 ## 使用用例：从简单到复杂
 
@@ -541,7 +574,7 @@ const count = ref(0)
 
 ### 用例 9：插槽 Slots
 
-插槽是组件复用的重要机制，Weapp-vite 支持完整的插槽语法：
+插槽是组件复用的重要机制，Weapp-vite 支持常用的插槽语法（默认插槽、具名插槽、作用域插槽）：
 
 ```html
 <!-- Card.vue -->
@@ -589,10 +622,11 @@ import Card from './Card.vue'
 </template>
 ```
 
-编译后会转换为小程序的 `<slot>` 语法：
+编译阶段会按小程序 slot 语义做转换：
 - 默认插槽 `<slot></slot>` → `<slot></slot>`
 - 具名插槽 `<slot name="footer"></slot>` → `<slot name="footer"></slot>`
-- 插槽内容 `<template #footer>` → `<template slot="footer">`
+- 插槽内容 `<template #footer>`（无作用域参数）→ 转为带 `slot="footer"` 的原生节点
+- 若使用 `<template #footer="{ item }">` 这类作用域插槽 → 编译为 scoped slot 组件（不是简单的 `template slot` 文本替换）
 
 ## 适用场景
 
@@ -715,19 +749,21 @@ vue/compiler-sfc 解析
 - **响应式 API**：ref、computed、watch、watchEffect
 - **TypeScript**：完整支持，包括泛型组件
 
-### 测试覆盖
+## 未来计划
 
-- **73+ 测试用例** 全部通过
-- **85%+ 代码覆盖率**
-- 测试分类：基础模板编译、样式处理、高级特性、E2E 集成测试
+接下来我会把 Weapp-vite 的跨端能力继续往前推，重点是两条线：更多小程序平台支持，以及 Web 目标支持。
 
-### 延伸阅读
+### 更多小程序平台
 
-如果你想进一步理解“为什么编译期与运行时要做这样的职责划分”，以及“为什么某些渲染抽象在小程序场景会出现额外成本”，可以看我写的：
+目前社区里对多平台小程序（不只是微信）的需求越来越明显，后续会继续补齐和验证更多平台的适配能力，让同一套工程配置能覆盖更广的端。
 
-- [《Vue 编译本质论》](https://deep-in-vue.icebreaker.top/)
+### Web 目标支持
 
-它和上文 “为什么主线没有使用 `createRenderer`” 的讨论是同一条思路：先看宿主约束，再选最匹配的编译与运行时路径。
+除了小程序端，后续也会继续探索和增强 Vue 代码到 Web 的复用路径，尽量让业务组件在小程序与 Web 之间共享更多逻辑，减少重复开发成本。
+
+### Android / iOS 原生现状与后续方向
+
+现在在原生 Android / iOS 侧，很多场景仍然需要借助微信开发者工具提供的多端框架能力来做转换。这个方向后续也会继续投入，目标是把这条链路做得更稳定、更易用，减少迁移和接入成本。
 
 ## 最后
 
@@ -741,7 +777,7 @@ Weapp-vite@6 的 Vue SFC 支持建立在：
 Weapp-vite@6 把选择权交给你：
 - 需要极致性能？用原生模式
 - 需要 Vue 开发体验？用 Vue 模式
-- Wevu 也可以单独作为纯运行时库使用
+- Vue 模式由 Wevu 提供运行时支撑
 
 ---
 
