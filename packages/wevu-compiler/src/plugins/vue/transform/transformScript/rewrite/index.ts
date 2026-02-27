@@ -1,7 +1,8 @@
-import type { File as BabelFile } from '@babel/types'
+import type { File as BabelFile, ObjectExpression } from '@babel/types'
 import type { WevuDefaults } from '../../../../../types/wevu'
 import type { WevuPageFeatureFlag } from '../../../../wevu/pageFeatures'
 import type { TransformScriptOptions, TransformState } from '../utils'
+import * as t from '@babel/types'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { injectWevuPageFeatureFlagsIntoOptionsObject } from '../../../../wevu/pageFeatures'
 import { resolveComponentExpression, resolveComponentOptionsObject } from '../../scriptComponent'
@@ -10,6 +11,22 @@ import { applyWevuDefaultsToComponentOptions, injectWevuDefaultsForApp } from '.
 import { rewriteComponentExport } from './export'
 import { injectInlineExpressions } from './inlineExpressions'
 import { injectTemplateRefs } from './templateRefs'
+
+function hasStaticProperty(target: ObjectExpression, keyName: string) {
+  for (const prop of target.properties) {
+    if ((prop.type !== 'ObjectProperty' && prop.type !== 'ObjectMethod') || prop.computed) {
+      continue
+    }
+    const key = prop.key
+    if (key.type === 'Identifier' && key.name === keyName) {
+      return true
+    }
+    if (key.type === 'StringLiteral' && key.value === keyName) {
+      return true
+    }
+  }
+  return false
+}
 
 export function rewriteDefaultExport(
   ast: BabelFile,
@@ -32,6 +49,15 @@ export function rewriteDefaultExport(
     state.defineComponentAliases,
   )
   const componentOptionsObject = resolveComponentOptionsObject(componentExpr)
+
+  if (componentOptionsObject && options?.isPage && !options?.isApp && !hasStaticProperty(componentOptionsObject, '__wevu_isPage')) {
+    componentOptionsObject.properties.splice(
+      0,
+      0,
+      t.objectProperty(t.identifier('__wevu_isPage'), t.booleanLiteral(true)),
+    )
+    transformed = true
+  }
 
   if (componentOptionsObject && enabledPageFeatures.size) {
     transformed = injectWevuPageFeatureFlagsIntoOptionsObject(componentOptionsObject, enabledPageFeatures) || transformed
