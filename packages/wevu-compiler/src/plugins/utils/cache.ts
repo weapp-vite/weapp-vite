@@ -1,5 +1,6 @@
 import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
+import { normalizeLineEndings } from '../../utils/text'
 
 export const mtimeCache = new Map<string, { mtimeMs: number, size: number }>()
 
@@ -55,7 +56,7 @@ export async function readFile(
     if (cached !== undefined) {
       return cached
     }
-    const content = await fs.readFile(id, encoding)
+    const content = normalizeLineEndings(await fs.readFile(id, encoding))
     loadCache.set(id, content)
     return content
   }
@@ -68,7 +69,7 @@ export async function readFile(
     }
   }
 
-  const content = await fs.readFile(id, encoding)
+  const content = normalizeLineEndings(await fs.readFile(id, encoding))
   loadCache.set(id, content)
   return content
 }

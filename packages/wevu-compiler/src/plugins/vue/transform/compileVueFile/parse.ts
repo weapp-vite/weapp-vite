@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto'
 import * as t from '@babel/types'
 import { parse } from 'vue/compiler-sfc'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
+import { normalizeLineEndings } from '../../../../utils/text'
 import { preprocessScriptSetupSrc, preprocessScriptSrc, resolveSfcBlockSrc, restoreScriptSetupSrc, restoreScriptSrc } from '../../../utils/vueSfc'
 import { extractJsonMacroFromScriptSetup } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
@@ -68,10 +69,11 @@ export async function parseVueFile(
   filename: string,
   options?: CompileVueFileOptions,
 ): Promise<ParsedVueFile> {
-  const normalizedSource = preprocessScriptSrc(preprocessScriptSetupSrc(source))
+  const normalizedInputSource = normalizeLineEndings(source)
+  const normalizedSource = preprocessScriptSrc(preprocessScriptSetupSrc(normalizedInputSource))
   const { descriptor, errors } = parse(normalizedSource, {
     filename,
-    ignoreEmpty: normalizedSource === source,
+    ignoreEmpty: normalizedSource === normalizedInputSource,
   })
   restoreScriptSetupSrc(descriptor)
   restoreScriptSrc(descriptor)
