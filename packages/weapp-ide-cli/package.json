@@ -89,6 +89,7 @@
     "@weapp-core/logger": "workspace:^",
     "execa": "9.6.1",
     "fs-extra": "^11.3.3",
+    "miniprogram-automator": "^0.12.1",
     "pathe": "^2.0.3"
   }
 }

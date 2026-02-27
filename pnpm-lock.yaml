@@ -1027,6 +1027,9 @@ importers:
       fs-extra:
         specifier: ^11.3.3
         version: 11.3.3
+      miniprogram-automator:
+        specifier: ^0.12.1
+        version: 0.12.1(bufferutil@4.0.9)
       pathe:
         specifier: ^2.0.3
         version: 2.0.3
