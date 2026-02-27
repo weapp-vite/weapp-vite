@@ -55,6 +55,10 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 
 - Co-locate tests with source and use `*.test.ts` or `*.spec.ts`.
 - Update snapshots/assertions together with behavior changes.
+- For WeChat DevTools runtime e2e in `e2e/ide/**`:
+  - For the same `e2e-app`, launch automator only once per test suite (`describe`) and reuse that session.
+  - Validate multiple cases by `miniProgram.reLaunch(...)` across different pages/routes instead of re-launching DevTools for each case.
+  - If a case must use an isolated launch, document the reason in test comments.
 - All `e2e-apps/*/project.config.json` must use a real AppID (no `touristappid`).
 - When adding pages in any `e2e-apps/*`, also update `project.private.config.json` under `condition.miniprogram.list`.
 

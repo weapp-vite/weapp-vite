@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
@@ -20,12 +20,45 @@ async function runBuild() {
   })
 }
 
-describe.sequential('wevu watch controls (e2e)', () => {
-  it('supports pause/resume/stop via destructuring', async () => {
+let sharedMiniProgram: any = null
+let sharedBuildPrepared = false
+
+async function getSharedMiniProgram() {
+  if (!sharedBuildPrepared) {
     await runBuild()
-    const miniProgram = await launchAutomator({
+    sharedBuildPrepared = true
+  }
+  if (!sharedMiniProgram) {
+    sharedMiniProgram = await launchAutomator({
       projectPath: APP_ROOT,
     })
+  }
+  return sharedMiniProgram
+}
+
+async function releaseSharedMiniProgram(miniProgram: any) {
+  if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
+    return
+  }
+  await miniProgram.close()
+}
+
+async function closeSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    return
+  }
+  const miniProgram = sharedMiniProgram
+  sharedMiniProgram = null
+  await miniProgram.close()
+}
+
+describe.sequential('wevu watch controls (e2e)', () => {
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
+
+  it('supports pause/resume/stop via destructuring', async () => {
+    const miniProgram = await getSharedMiniProgram()
 
     try {
       const page = await miniProgram.reLaunch('/pages/index/index')
@@ -38,7 +71,7 @@ describe.sequential('wevu watch controls (e2e)', () => {
       expect(storedLogs).toEqual([2])
     }
     finally {
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 })

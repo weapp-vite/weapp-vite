@@ -1,5 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
+import { afterAll } from 'vitest'
 import { formatWxml } from '../template-e2e.utils'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
@@ -26,15 +27,47 @@ async function runBuild(root: string) {
   })
 }
 
-describe.sequential('e2e baseline app', () => {
-  it('renders index page wxml', async () => {
+let sharedMiniProgram: any = null
+let sharedBuildPrepared = false
+
+async function getSharedMiniProgram() {
+  if (!sharedBuildPrepared) {
     const outputRoot = path.join(BASE_APP_ROOT, 'dist')
     await fs.remove(outputRoot)
     await runBuild(BASE_APP_ROOT)
-
-    const miniProgram = await launchAutomator({
+    sharedBuildPrepared = true
+  }
+  if (!sharedMiniProgram) {
+    sharedMiniProgram = await launchAutomator({
       projectPath: BASE_APP_ROOT,
     })
+  }
+  return sharedMiniProgram
+}
+
+async function releaseSharedMiniProgram(miniProgram: any) {
+  if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
+    return
+  }
+  await miniProgram.close()
+}
+
+async function closeSharedMiniProgram() {
+  if (!sharedMiniProgram) {
+    return
+  }
+  const miniProgram = sharedMiniProgram
+  sharedMiniProgram = null
+  await miniProgram.close()
+}
+
+describe.sequential('e2e baseline app', () => {
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
+
+  it('renders index page wxml', async () => {
+    const miniProgram = await getSharedMiniProgram()
 
     try {
       const page = await miniProgram.reLaunch('/pages/index/index')
@@ -51,7 +84,7 @@ describe.sequential('e2e baseline app', () => {
       expect(await formatWxml(wxml)).toMatchSnapshot('wxml')
     }
     finally {
-      await miniProgram.close()
+      await releaseSharedMiniProgram(miniProgram)
     }
   })
 })

@@ -1,8 +1,9 @@
-import os from 'node:os'
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { resolveE2EMaxWorkers } from './utils/max-workers'
 
-const cpuCount = os.cpus().length
+const DEVTOOLS_GLOBAL_SETUP = path.resolve(import.meta.dirname, './vitest.e2e.ide.global-setup.ts')
+const maxWorkers = resolveE2EMaxWorkers()
 
 export default defineConfig({
   test: {
@@ -13,7 +14,8 @@ export default defineConfig({
     testTimeout: 36_000_000,
     globals: true,
     pool: 'threads',
-    maxWorkers: Math.max(2, cpuCount - 1),
-    fileParallelism: true,
+    maxWorkers,
+    fileParallelism: maxWorkers > 1,
+    globalSetup: [DEVTOOLS_GLOBAL_SETUP],
   },
 })

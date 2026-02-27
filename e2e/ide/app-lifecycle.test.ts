@@ -1,6 +1,6 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
@@ -21,25 +21,42 @@ async function runBuild(root: string) {
   })
 }
 
-async function collectAppLogs(root: string) {
-  await runBuild(root)
-  const miniProgram = await launchAutomator({
-    projectPath: root,
-  })
-  try {
-    await miniProgram.reLaunch('/pages/index/index')
-    const logs = await miniProgram.evaluate(() => {
-      const app = getApp()
-      if (typeof app?.finalizeLifecycleLogs === 'function') {
-        app.finalizeLifecycleLogs()
-      }
-      return app?.globalData?.__lifecycleLogs ?? []
+const sharedMiniProgramByRoot = new Map<string, any>()
+const sharedBuildPreparedRoots = new Set<string>()
+
+async function getSharedMiniProgram(root: string) {
+  if (!sharedBuildPreparedRoots.has(root)) {
+    await runBuild(root)
+    sharedBuildPreparedRoots.add(root)
+  }
+
+  let miniProgram = sharedMiniProgramByRoot.get(root)
+  if (!miniProgram) {
+    miniProgram = await launchAutomator({
+      projectPath: root,
     })
-    return logs ?? []
+    sharedMiniProgramByRoot.set(root, miniProgram)
   }
-  finally {
-    await miniProgram.close()
-  }
+  return miniProgram
+}
+
+async function closeSharedMiniPrograms() {
+  const sessions = Array.from(sharedMiniProgramByRoot.values())
+  sharedMiniProgramByRoot.clear()
+  await Promise.allSettled(sessions.map(miniProgram => miniProgram.close()))
+}
+
+async function collectAppLogs(root: string) {
+  const miniProgram = await getSharedMiniProgram(root)
+  await miniProgram.reLaunch('/pages/index/index')
+  const logs = await miniProgram.evaluate(() => {
+    const app = getApp()
+    if (typeof app?.finalizeLifecycleLogs === 'function') {
+      app.finalizeLifecycleLogs()
+    }
+    return app?.globalData?.__lifecycleLogs ?? []
+  })
+  return logs ?? []
 }
 
 function normalizeEntries(entries: any[]) {
@@ -47,6 +64,10 @@ function normalizeEntries(entries: any[]) {
 }
 
 describe.sequential('app lifecycle compare (e2e)', () => {
+  afterAll(async () => {
+    await closeSharedMiniPrograms()
+  })
+
   it('compares wevu app lifecycle logs against native', async () => {
     const nativeLogs = await collectAppLogs(APP_NATIVE_ROOT)
     const wevuTsLogs = await collectAppLogs(APP_WEVU_TS_ROOT)

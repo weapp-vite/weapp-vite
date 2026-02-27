@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { resolveE2EMaxWorkers } from './utils/max-workers'
 
 export default defineConfig({
   test: {
@@ -8,7 +9,7 @@ export default defineConfig({
     hookTimeout: 180_000,
     globals: true,
     pool: 'threads',
-    maxWorkers: 1,
+    maxWorkers: resolveE2EMaxWorkers(),
     fileParallelism: false,
   },
 })

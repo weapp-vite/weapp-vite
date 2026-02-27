@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@10.30.2",
+  "packageManager": "pnpm@10.30.3",
   "author": "ice breaker <1324318532@qq.com>",
   "repository": {
     "type": "git",
@@ -57,6 +57,7 @@
     "e2e:wevu-features": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/ci/wevu-features.build.test.ts e2e/ide/template-wevu-features-app.test.ts e2e/ide/wevu-features.runtime.test.ts",
     "e2e:chunks": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/ci/chunk-modes.e2e.test.ts",
     "e2e:lib-mode": "vitest run -c ./e2e/vitest.e2e.config.ts e2e/ci/lib-mode.e2e.test.ts",
+    "check:e2e-ide-shared-launch": "node --import tsx scripts/check-e2e-ide-shared-launch.ts",
     "check:create-weapp-vite-changeset": "tsx scripts/check-create-weapp-vite-changeset.ts",
     "publish-packages": "pnpm run ci && turbo run test && turbo run test:types && changeset version && changeset publish",
     "preinstall": "npx only-allow pnpm",
