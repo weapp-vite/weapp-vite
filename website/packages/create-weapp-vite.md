@@ -16,6 +16,9 @@ keywords:
 
 `create-weapp-vite` 是官方脚手架，用于快速创建小程序工程，并在模板中对齐 `weapp-vite` / `wevu` 的版本组合。
 
+> [!IMPORTANT]
+> 如果你在已有项目里手动安装 `weapp-vite` 与 `wevu`，也请保持两者版本号一致（例如 `weapp-vite@x.y.z` 与 `wevu@x.y.z`）。
+
 ## 何时使用
 
 - 你想快速初始化新项目

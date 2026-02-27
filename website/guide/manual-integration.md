@@ -28,6 +28,13 @@ pnpm add -D weapp-vite vite typescript @types/node sass
 
 如果你计划使用 Tailwind、Less、Vue Runtime 等，可以一并安装，但这里保持最小化。
 
+> [!IMPORTANT]
+> 如果项目会同时使用 `weapp-vite` 与 `wevu`（例如启用 Vue SFC），请保持两者版本号一致，避免编译期与运行期组合不一致导致的问题。推荐写法如下：
+>
+> ```sh
+> pnpm add -D weapp-vite@x.y.z wevu@x.y.z
+> ```
+
 ## 2. 初始化必需文件
 
 ### package.json
