@@ -101,8 +101,9 @@ async function waitForMissingUsingComponent(pageJsonPath: string, name: string, 
 }
 
 async function rewritePageSourceForWatch(pageSourcePath: string, targetSource: string) {
+  const eol = detectEol(targetSource)
   const marker = `<!-- auto-import-e2e-retry-${Date.now()} -->`
-  await fs.writeFile(pageSourcePath, `${targetSource}\n${marker}\n`, 'utf8')
+  await fs.writeFile(pageSourcePath, `${targetSource}${eol}${marker}${eol}`, 'utf8')
   await new Promise(resolve => setTimeout(resolve, 120))
   await fs.writeFile(pageSourcePath, targetSource, 'utf8')
 }
@@ -118,6 +119,10 @@ function createHotCardSfc() {
 
 function detectEol(source: string) {
   return source.includes('\r\n') ? '\r\n' : '\n'
+}
+
+function toCrlf(source: string) {
+  return source.replace(/\r?\n/g, '\r\n')
 }
 
 function removeStandaloneTagLine(source: string, tagName: string) {
@@ -294,6 +299,65 @@ describe.sequential('auto import local components (e2e)', () => {
     finally {
       await devProcess.stop(3_000)
 
+      await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
+    }
+  })
+
+  it.each(PLATFORM_LIST)('updates usingComponents when page source is CRLF in dev (%s)', async (platform) => {
+    await fs.remove(DIST_ROOT)
+    await fs.remove(TYPED_COMPONENTS_DTS)
+    await fs.remove(VUE_COMPONENTS_DTS)
+
+    const originalPageSource = await fs.readFile(PAGE_SOURCE_PATH, 'utf8')
+    const pageSourceCrlf = toCrlf(originalPageSource)
+    const pageSourceWithoutAutoCard = removeStandaloneTagLine(pageSourceCrlf, 'AutoCard')
+    const pageSourceWithAutoCard = /<AutoCard\s*\/>/.test(pageSourceWithoutAutoCard)
+      ? pageSourceWithoutAutoCard
+      : insertStandaloneTagAfter(pageSourceWithoutAutoCard, 'ResolverCard', 'AutoCard')
+
+    if (pageSourceWithoutAutoCard === pageSourceCrlf || pageSourceWithAutoCard === pageSourceWithoutAutoCard) {
+      throw new Error('Failed to create CRLF page source variants for AutoCard toggling.')
+    }
+
+    await fs.writeFile(PAGE_SOURCE_PATH, pageSourceCrlf, 'utf8')
+
+    const devProcess = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
+      env: createDevProcessEnv(),
+      stdio: 'inherit',
+    })
+
+    try {
+      const pageJsonPath = path.join(DIST_ROOT, 'pages/index/index.json')
+      const autoCardKey = resolveComponentKey(platform, 'AutoCard')
+      await devProcess.waitFor(waitForFileContains(pageJsonPath, ['"usingComponents"']), `${platform} crlf initial usingComponents`)
+      await devProcess.waitFor(
+        waitForUsingComponent(pageJsonPath, autoCardKey, '/components/AutoCard/index'),
+        `${platform} crlf autoCard initial registration`,
+      )
+
+      await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard, 'utf8')
+      try {
+        await devProcess.waitFor(
+          waitForMissingUsingComponent(pageJsonPath, autoCardKey),
+          `${platform} crlf autoCard removal`,
+        )
+      }
+      catch {
+        await rewritePageSourceForWatch(PAGE_SOURCE_PATH, pageSourceWithoutAutoCard)
+        await devProcess.waitFor(
+          waitForMissingUsingComponent(pageJsonPath, autoCardKey, 30_000),
+          `${platform} crlf autoCard removal retry`,
+        )
+      }
+
+      await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
+      await devProcess.waitFor(
+        waitForUsingComponent(pageJsonPath, autoCardKey, '/components/AutoCard/index'),
+        `${platform} crlf autoCard re-registration`,
+      )
+    }
+    finally {
+      await devProcess.stop(3_000)
       await fs.writeFile(PAGE_SOURCE_PATH, originalPageSource, 'utf8')
     }
   })
