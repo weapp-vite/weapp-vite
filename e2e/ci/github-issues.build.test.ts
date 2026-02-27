@@ -293,6 +293,23 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageJs).toContain('issue302-item-inactive')
   })
 
+  it('issue #309: keeps onLoad hook active even without onPullDownRefresh', async () => {
+    await runBuild()
+
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-309/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-309/index.js')
+
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-309 onLoad hook')
+    expect(issuePageWxml).toContain('loadCount: {{loadCount}}')
+    expect(issuePageJs).toContain('_runE2E')
+    expect(issuePageJs).toContain('__wevu_isPage:!0')
+    expect(issuePageJs).toContain('loadCount')
+    expect(issuePageJs).not.toContain('onPullDownRefresh')
+  })
+
   it('issue #300: keeps boolean props available in runtime call-expression bindings', async () => {
     await runBuild()
 

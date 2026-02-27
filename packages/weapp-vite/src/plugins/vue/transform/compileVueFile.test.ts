@@ -190,4 +190,31 @@ onShareTimeline(() => ({ title: 'timeline' }))
     expect(result.script).not.toMatch(/onShareAppMessage\s*\(\)\s*\{\s*return\s*\{\s*\}/)
     expect(result.script).not.toMatch(/onShareTimeline\s*\(\)\s*\{\s*return\s*\{\s*\}/)
   })
+
+  it('marks page options as page even when only onLoad is used', async () => {
+    const result = await compileVueFile(
+      `
+<script setup lang="ts">
+import { onLoad, ref } from 'wevu'
+
+definePageJson({
+  navigationBarTitleText: 'issue-309',
+})
+
+const loadCount = ref(0)
+onLoad(() => {
+  loadCount.value += 1
+})
+</script>
+      `.trim(),
+      '/project/src/pages/issue-309/index.vue',
+      {
+        isPage: true,
+      },
+    )
+
+    expect(result.script).toContain('__wevu_isPage: true')
+    expect(result.script).toContain('onLoad')
+    expect(result.script).not.toContain('enableOnPullDownRefresh')
+  })
 })
