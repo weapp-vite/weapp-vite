@@ -44,4 +44,24 @@ const props = defineProps<{ str: string; bool: boolean }>()
     expect(result.script).toContain('this.__wevuProps != null ? this.__wevuProps : this.props')
     expect(result.script).not.toContain('__wevuProps.props')
   })
+
+  it('produces consistent output for LF and CRLF sources', async () => {
+    const lfSource = `
+<script setup lang="ts">
+const title = 'hello'
+</script>
+<template>
+  <view>{{ title }}</view>
+</template>
+    `.trim()
+    const crlfSource = lfSource.replace(/\n/g, '\r\n')
+
+    const lfResult = await compileVueFile(lfSource, '/project/src/pages/index/index.vue')
+    const crlfResult = await compileVueFile(crlfSource, '/project/src/pages/index/index.vue')
+
+    expect(crlfResult.template).toBe(lfResult.template)
+    expect(crlfResult.script).toBe(lfResult.script)
+    expect(crlfResult.style).toBe(lfResult.style)
+    expect(crlfResult.config).toEqual(lfResult.config)
+  })
 })

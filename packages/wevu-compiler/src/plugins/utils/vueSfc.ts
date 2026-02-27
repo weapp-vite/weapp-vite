@@ -4,6 +4,7 @@ import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { getReadFileCheckMtime } from '../../utils/cachePolicy'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../utils/resolvedId'
+import { normalizeLineEndings } from '../../utils/text'
 import { mtimeCache, readFile as readFileCached } from './cache'
 
 /**
@@ -277,7 +278,7 @@ export async function readAndParseSfc(
   options?: ReadAndParseSfcOptions,
 ): Promise<{ source: string, descriptor: SFCDescriptor, errors: SFCParseResult['errors'] }> {
   const checkMtime = options?.checkMtime ?? true
-  const source = options?.source ?? await readFileCached(filename, { checkMtime })
+  const source = normalizeLineEndings(options?.source ?? await readFileCached(filename, { checkMtime }))
   const normalizedSource = preprocessScriptSrc(preprocessScriptSetupSrc(source))
 
   const signature = checkMtime
