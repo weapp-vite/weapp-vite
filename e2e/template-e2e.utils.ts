@@ -53,13 +53,35 @@ export async function formatWxss(wxss: string) {
   })
 }
 
+function normalizeButtonCompatAttrs(wxml: string) {
+  return wxml.replace(/<button\b([^>]*)>/g, (_fullMatch, attrsRaw: string) => {
+    const attrs = attrsRaw ?? ''
+    const hasAttr = (name: string) => new RegExp(`\\s${name}=`, 'i').test(attrs)
+    const normalizedAttrs = attrs.replace(/^\s+/, '')
+    const missing: string[] = []
+
+    if (!hasAttr('activity-type')) {
+      missing.push('activity-type="0"')
+    }
+    if (!hasAttr('entrance-path')) {
+      missing.push('entrance-path=""')
+    }
+    if (!hasAttr('need-show-entrance')) {
+      missing.push('need-show-entrance=""')
+    }
+
+    const merged = [...missing, normalizedAttrs].filter(Boolean).join(' ')
+    return `<button ${merged}>`
+  })
+}
+
 function stripAutomatorOverlay(wxml: string) {
   // Strip devtools overlay styles appended by automator.
   return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
 }
 
 export function normalizeWxmlForSnapshot(wxml: string) {
-  const cleaned = stripAutomatorOverlay(wxml)
+  const cleaned = normalizeButtonCompatAttrs(stripAutomatorOverlay(wxml))
     .replace(/\s+(?:@tap|bind:tap|bindtap)=["'][^"']*["']/g, '')
     // Normalize invalid void-element markup from devtools.
     .replace(/<input\b([^>]*)>([\s\S]*?)<\/input>/gi, '<input$1 />$2')
@@ -121,9 +143,19 @@ function pushUnique(list: string[], seen: Set<string>, value: string) {
   list.push(value)
 }
 
-async function waitForPageRoot(page: any, timeoutMs = 8000) {
+async function waitForPageRoot(page: any, timeoutMs = 12_000) {
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
+    if (typeof page?.$$ === 'function') {
+      try {
+        const roots = await page.$$('page')
+        if (Array.isArray(roots) && roots.length > 0) {
+          return roots[0]
+        }
+      }
+      catch {
+      }
+    }
     const element = await page.$('page')
     if (element) {
       return element

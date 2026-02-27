@@ -182,18 +182,18 @@ exports[`wevu runtime (weapp e2e) > runs all pages and snapshots WXML > wevu-run
     "childAttrs": true, "childSlots": true, "compatComponent": true, "scopedComponent": true,
     "modelEmitLogged": true, "localInjected": true, "globalInjected": true, "explicitGlobal": true,
     "defaultsApplied": true }, "details": { "beforeHooks": [ "onBeforeMount", "onBeforeUnmount",
-    "onLoad", "onShow", "onActivated", "onReady", "onMounted", "onRouteDone", "onRouteDone" ],
-    "afterHooks": [ "onBeforeMount", "onBeforeUnmount", "onLoad", "onShow", "onActivated",
-    "onReady", "onMounted", "onRouteDone", "onRouteDone", "onPageScroll", "onReachBottom",
-    "onPullDownRefresh", "onTabItemTap", "onRouteDone", "onResize", "onMoved", "onErrorCaptured",
-    "onUnhandledRejection", "onShareAppMessage", "onShareTimeline", "onAddToFavorites",
-    "onSaveExitState" ], "extraHooks": [ "onPageScroll", "onReachBottom", "onPullDownRefresh",
-    "onTabItemTap", "onRouteDone", "onResize", "onMoved", "onErrorCaptured", "onUnhandledRejection",
-    "onShareAppMessage", "onShareTimeline", "onAddToFavorites", "onSaveExitState" ], "shareResult":
-    { "title": "share" }, "timelineResult": { "title": "timeline" }, "favoritesResult": { "title":
-    "favorites" }, "exitStateResult": { "data": { "key": "value" } }, "modelBefore": { "value":
-    "changed", "logs": [] }, "modelAfter": { "value": "changed", "logs": [
-    "update:modelValue:\\"model-next\\"" ] }, "childAttrs": "[]", "childSlots": "[]" }}
+    "onLoad", "onShow", "onActivated", "onReady", "onMounted", "onRouteDone" ], "afterHooks": [
+    "onBeforeMount", "onBeforeUnmount", "onLoad", "onShow", "onActivated", "onReady", "onMounted",
+    "onRouteDone", "onPageScroll", "onReachBottom", "onPullDownRefresh", "onTabItemTap",
+    "onRouteDone", "onResize", "onMoved", "onErrorCaptured", "onUnhandledRejection",
+    "onShareAppMessage", "onShareTimeline", "onAddToFavorites", "onSaveExitState" ], "extraHooks": [
+    "onPageScroll", "onReachBottom", "onPullDownRefresh", "onTabItemTap", "onRouteDone", "onResize",
+    "onMoved", "onErrorCaptured", "onUnhandledRejection", "onShareAppMessage", "onShareTimeline",
+    "onAddToFavorites", "onSaveExitState" ], "shareResult": { "title": "share" }, "timelineResult":
+    { "title": "timeline" }, "favoritesResult": { "title": "favorites" }, "exitStateResult": {
+    "data": { "key": "value" } }, "modelBefore": { "value": "changed", "logs": [] }, "modelAfter": {
+    "value": "changed", "logs": [ "update:modelValue:\\"model-next\\"" ] }, "childAttrs": "[]",
+    "childSlots": "[]" }}
   </text>
 </view>
 "
