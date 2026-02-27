@@ -629,6 +629,26 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
+  it('issue #309: triggers onLoad with created setupLifecycle and no pull-down hook', async () => {
+    const miniProgram = await getSharedMiniProgram()
+
+    try {
+      const issuePage = await miniProgram.reLaunch('/pages/issue-309-created/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-309-created page')
+      }
+      await issuePage.waitFor(500)
+
+      const runtimeResult = await issuePage.callMethod('_runE2E')
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.loadCount).toBeGreaterThanOrEqual(1)
+      expect(await issuePage.data('loadCount')).toBeGreaterThanOrEqual(1)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('issue #300: renders destructured boolean props in runtime call-expression bindings', async () => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-300/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-300/index.js')

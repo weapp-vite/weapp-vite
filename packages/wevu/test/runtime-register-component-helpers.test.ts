@@ -124,4 +124,54 @@ describe('runtime: register component helpers', () => {
     hooks.onUnload.call(instance, 'b')
     expect(teardownRuntimeInstance).toHaveBeenCalledWith(instance)
   })
+
+  it('keeps onLoad fallback idempotent across onShow and onReady', () => {
+    vi.clearAllMocks()
+    const userOnLoad = vi.fn()
+    const hooks = createPageLifecycleHooks({
+      runtimeApp: {} as any,
+      watch: undefined,
+      setup: undefined as any,
+      userOnLoad,
+      enableOnSaveExitState: false,
+      enableOnPullDownRefresh: false,
+      enableOnReachBottom: false,
+      enableOnPageScroll: false,
+      enableOnRouteDone: false,
+      enableOnRouteDoneFallback: false,
+      enableOnTabItemTap: false,
+      enableOnResize: false,
+      enableOnShareAppMessage: false,
+      enableOnShareTimeline: false,
+      enableOnAddToFavorites: false,
+      effectiveOnSaveExitState: vi.fn(),
+      effectiveOnPullDownRefresh: vi.fn(),
+      effectiveOnReachBottom: vi.fn(),
+      effectiveOnPageScroll: vi.fn(),
+      effectiveOnRouteDone: vi.fn(),
+      effectiveOnTabItemTap: vi.fn(),
+      effectiveOnResize: vi.fn(),
+      effectiveOnShareAppMessage: vi.fn(),
+      effectiveOnShareTimeline: vi.fn(),
+      effectiveOnAddToFavorites: vi.fn(),
+      hasHook: () => false,
+      isPage: true,
+    })
+
+    const instance: any = {
+      options: {
+        from: 'route-options',
+      },
+    }
+
+    hooks.onShow.call(instance)
+    hooks.onReady.call(instance)
+    hooks.onShow.call(instance)
+
+    expect(mountRuntimeInstance).toHaveBeenCalledTimes(1)
+    expect(enableDeferredSetData).toHaveBeenCalledTimes(1)
+    expect(userOnLoad).toHaveBeenCalledTimes(1)
+    expect(userOnLoad).toHaveBeenCalledWith({ from: 'route-options' })
+    expect(instance.__wevuOnLoadCalled).toBe(true)
+  })
 })

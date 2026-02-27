@@ -217,4 +217,54 @@ onLoad(() => {
     expect(result.script).toContain('onLoad')
     expect(result.script).not.toContain('enableOnPullDownRefresh')
   })
+
+  it('marks page options as page even when no page lifecycle hook is declared', async () => {
+    const result = await compileVueFile(
+      `
+<script setup lang="ts">
+import { ref } from 'wevu'
+
+definePageJson({
+  navigationBarTitleText: 'issue-309-no-hook',
+})
+
+const count = ref(0)
+const increase = () => {
+  count.value += 1
+}
+</script>
+      `.trim(),
+      '/project/src/pages/issue-309-no-hook/index.vue',
+      {
+        isPage: true,
+      },
+    )
+
+    expect(result.script).toContain('__wevu_isPage: true')
+    expect(result.script).toContain('increase')
+    expect(result.script).not.toContain('onPullDownRefresh')
+  })
+
+  it('does not duplicate __wevu_isPage when user already defines it in options', async () => {
+    const result = await compileVueFile(
+      `
+<script setup lang="ts">
+defineOptions({
+  __wevu_isPage: true,
+})
+
+definePageJson({
+  navigationBarTitleText: 'issue-309-duplicate-guard',
+})
+</script>
+      `.trim(),
+      '/project/src/pages/issue-309-duplicate-guard/index.vue',
+      {
+        isPage: true,
+      },
+    )
+
+    const markerMatches = result.script.match(/__wevu_isPage\s*:\s*(?:true|!0)/g) ?? []
+    expect(markerMatches).toHaveLength(1)
+  })
 })

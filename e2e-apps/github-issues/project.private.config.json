@@ -97,6 +97,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-309-created/index",
+          "pathName": "pages/issue-309-created/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }
