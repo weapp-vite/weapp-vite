@@ -32,7 +32,15 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
           <text class="index--summary"></text>
           <text class="index--summary"></text>
         </view>
-        <button class="index--tiny-btn" role="button" aria-disabled="false">收起</button>
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="index--tiny-btn"
+          role="button"
+          aria-disabled="false">
+          收起
+        </button>
       </view>
       <view class="index--panel-body">
         <view class="index--metrics">
@@ -64,7 +72,13 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
             placeholder="筛选能力关键词…"
             value="" />
           筛选能力关键词…
-          <button class="index--tiny-btn index--tiny-btn-light" role="button" aria-disabled="false">
+          <button
+            activity-type="0"
+            entrance-path=""
+            need-show-entrance=""
+            class="index--tiny-btn index--tiny-btn-light"
+            role="button"
+            aria-disabled="false">
             复制当前
           </button>
         </view>
@@ -151,8 +165,25 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
       <text class="label"></text>
     </view>
     <view class="row actions">
-      <button style="opacity: 1" role="button" aria-disabled="false" class="btn primary">+1</button>
-      <button class="btn danger" role="button" aria-disabled="false">重置</button>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        style="opacity: 1"
+        role="button"
+        aria-disabled="false"
+        class="btn primary">
+        +1
+      </button>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        class="btn danger"
+        role="button"
+        aria-disabled="false">
+        重置
+      </button>
     </view>
     <view class="row"><text class="label"></text></view>
     <input class="input" data-wv-model="message" placeholder="输入标题…" value="Hello WeVU!" />

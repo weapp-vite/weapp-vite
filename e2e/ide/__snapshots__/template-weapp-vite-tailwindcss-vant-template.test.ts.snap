@@ -334,6 +334,9 @@ exports[`template e2e: weapp-vite-tailwindcss-vant-template > renders all pages 
             is="miniprogram_npm/@vant/weapp/button/index"
             data-url="https://vite.icebreaker.top">
             <button
+              activity-type="0"
+              entrance-path=""
+              need-show-entrance=""
               app-parameter=""
               business-id="0"
               class="px-5 HelloWorld--px-5 py-2 HelloWorld--py-2 rounded-full HelloWorld--rounded-full text-sm HelloWorld--text-sm font-medium HelloWorld--font-medium transition HelloWorld--transition active HelloWorld--active scale-95 HelloWorld--scale-95 van-button button-index--van-button van-button--primary button-index--van-button--primary van-button--small button-index--van-button--small"
@@ -356,6 +359,9 @@ exports[`template e2e: weapp-vite-tailwindcss-vant-template > renders all pages 
             is="miniprogram_npm/@vant/weapp/button/index"
             data-url="https://vant-contrib.gitee.io/vant-weapp/#/home">
             <button
+              activity-type="0"
+              entrance-path=""
+              need-show-entrance=""
               app-parameter=""
               business-id="0"
               class="px-5 HelloWorld--px-5 py-2 HelloWorld--py-2 rounded-full HelloWorld--rounded-full text-sm HelloWorld--text-sm font-medium HelloWorld--font-medium transition HelloWorld--transition active HelloWorld--active scale-95 HelloWorld--scale-95 van-button button-index--van-button van-button--default button-index--van-button--default van-button--small button-index--van-button--small van-button--plain button-index--van-button--plain"
@@ -386,6 +392,9 @@ exports[`template e2e: weapp-vite-tailwindcss-vant-template > renders all pages 
     <view>
       <van-button is="miniprogram_npm/@vant/weapp/button/index">
         <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
           app-parameter=""
           business-id="0"
           class="van-button button-index--van-button van-button--default button-index--van-button--default van-button--normal button-index--van-button--normal"

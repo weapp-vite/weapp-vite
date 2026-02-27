@@ -333,6 +333,9 @@ exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pag
       </view>
       <view class="flex HelloWorld--flex flex-wrap HelloWorld--flex-wrap gap-4 HelloWorld--gap-4">
         <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
           app-parameter=""
           data-custom="null"
           form-type=""
@@ -352,6 +355,9 @@ exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pag
           <view class="t-button__content button--t-button__content">复制文档链接</view>
         </button>
         <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
           app-parameter=""
           data-custom="null"
           form-type=""
@@ -383,6 +389,9 @@ exports[`template e2e: weapp-vite-tailwindcss-tdesign-template > renders all pag
     <view class="underline">https://tw.icebreaker.top</view>
     <view>
       <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
         app-parameter=""
         data-custom="null"
         form-type=""
