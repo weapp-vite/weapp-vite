@@ -31,7 +31,7 @@ date: 2026-02-25
 
 但社区的声音让我重新思考这个定位。原因在于原生小程序的语法确实烂到让人不想写，尤其是对于习惯了 Vue 3 的开发者来说，原生的 `this.setData`、事件绑定、生命周期等都显得非常笨重和不优雅。
 
-而且即使到了这个 AI 时代， 小程序的验收工具也很烂，导致还原度远远不及 Web, 因为小程序缺少 playwright cli, browser use, chrome devtools mcp 这类的验证工具。
+而且即使到了这个 AI 时代， 小程序的验收工具也很烂，导致还原度远远不及 Web, 因为小程序缺少 playwright-cli, agent-browser, chrome-devtools-mcp 这类的验证工具。
 
 而现在，市面上已经有不少支持 Vue 写小程序的方案：
 - **Taro**：React/Vue 语法，跨端能力强大
