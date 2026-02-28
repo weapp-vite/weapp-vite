@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module'
+import process from 'node:process'
 import fs from 'fs-extra'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
@@ -13,6 +15,56 @@ const vueConfigCache = new Map<string, {
 }>()
 const configMtimeInFlight = new Map<string, Promise<number | undefined>>()
 const NODE_MODULES_RE = /[\\/]node_modules[\\/]/
+const nodeRequire = createRequire(import.meta.url)
+const AUTO_ROUTES_SPECIFIER_RE = /(['"])(?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)\1/g
+const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
+const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
+
+function resolveAutoRoutesMacroImportPath() {
+  const fallbackCandidates = [
+    path.resolve(import.meta.dirname, 'auto-routes.mjs'),
+    path.resolve(import.meta.dirname, '../dist/auto-routes.mjs'),
+    path.resolve(import.meta.dirname, '../src/auto-routes.ts'),
+    path.resolve(import.meta.dirname, '../auto-routes.ts'),
+  ]
+  try {
+    const resolved = nodeRequire.resolve('weapp-vite/auto-routes')
+    if (fs.existsSync(resolved)) {
+      return resolved
+    }
+  }
+  catch {
+    // ignore
+  }
+
+  for (const candidate of fallbackCandidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate
+    }
+  }
+  throw new Error('无法解析 auto-routes 模块路径。')
+}
+
+async function resolveAutoRoutesInlineSnapshot() {
+  try {
+    const { getCompilerContext } = await import('../context/getInstance')
+    const service = getCompilerContext().autoRoutesService
+    await service?.ensureFresh?.()
+    const reference = service?.getReference?.()
+    return {
+      pages: reference?.pages ?? [],
+      entries: reference?.entries ?? [],
+      subPackages: reference?.subPackages ?? [],
+    }
+  }
+  catch {
+    return {
+      pages: [] as string[],
+      entries: [] as string[],
+      subPackages: [] as Array<{ root: string, pages: string[] }>,
+    }
+  }
+}
 
 function pathExistsCached(filePath: string) {
   const pending = pathExistsInFlight.get(filePath)
@@ -261,8 +313,16 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
     if (hasMacroHint) {
       const { extractJsonMacroFromScriptSetup } = await import('wevu/compiler')
       try {
+        const autoRoutesInline = await resolveAutoRoutesInlineSnapshot()
+        const autoRoutesModulePath = resolveAutoRoutesMacroImportPath()
+        const macroEvalContent = setupContent!
+          .replace(AUTO_ROUTES_DEFAULT_IMPORT_RE, (_, localName: string) => {
+            return `const ${localName} = ${JSON.stringify(autoRoutesInline)};`
+          })
+          .replace(AUTO_ROUTES_DYNAMIC_IMPORT_RE, `Promise.resolve(${JSON.stringify(autoRoutesInline)})`)
+          .replace(AUTO_ROUTES_SPECIFIER_RE, JSON.stringify(autoRoutesModulePath))
         const extracted = await extractJsonMacroFromScriptSetup(
-          setupContent!,
+          macroEvalContent,
           vueFilePath,
           descriptor.scriptSetup?.lang,
         )
@@ -308,7 +368,11 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
 
     return hasConfig ? mergedConfig : undefined
   }
-  catch {
+  catch (error) {
+    if (process.env.__WEAPP_VITE_DEBUG_VUE_CONFIG__) {
+      // eslint-disable-next-line no-console
+      console.error('[extractConfigFromVue] failed:', vueFilePath, error)
+    }
     return undefined
   }
 }

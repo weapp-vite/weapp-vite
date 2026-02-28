@@ -20,6 +20,9 @@ import { injectWevuPageFeaturesInJsWithViteResolver } from './injectPageFeatures
 import { emitScopedSlotChunks, loadScopedSlotModule, resolveScopedSlotVirtualId } from './scopedSlot'
 import { buildWeappVueStyleRequest, parseWeappVueStyleRequest } from './styleRequest'
 
+const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
+const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
+
 function registerVueTemplateToken(
   ctx: CompilerContext,
   filename: string,
@@ -211,6 +214,25 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           isPage = await currentPageMatcher.isPageFile(filename)
           isApp = isAppEntry(filename)
         }
+
+        let transformedSource = source
+        if (
+          isApp
+          && (AUTO_ROUTES_DEFAULT_IMPORT_RE.test(transformedSource) || AUTO_ROUTES_DYNAMIC_IMPORT_RE.test(transformedSource))
+        ) {
+          AUTO_ROUTES_DEFAULT_IMPORT_RE.lastIndex = 0
+          AUTO_ROUTES_DYNAMIC_IMPORT_RE.lastIndex = 0
+          await ctx.autoRoutesService?.ensureFresh?.()
+          const routesRef = ctx.autoRoutesService?.getReference?.()
+          const inlineRoutes = {
+            pages: routesRef?.pages ?? [],
+            entries: routesRef?.entries ?? [],
+            subPackages: routesRef?.subPackages ?? [],
+          }
+          transformedSource = transformedSource
+            .replace(AUTO_ROUTES_DEFAULT_IMPORT_RE, (_, localName: string) => `const ${localName} = ${JSON.stringify(inlineRoutes)};`)
+            .replace(AUTO_ROUTES_DYNAMIC_IMPORT_RE, `Promise.resolve(${JSON.stringify(inlineRoutes)})`)
+        }
         // 编译 Vue 文件
         const compileOptions = createCompileVueFileOptions(ctx, this, filename, isPage, isApp, configService, {
           reExportResolutionCache,
@@ -219,12 +241,12 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
         const result = filename.endsWith('.vue')
           ? await compileVueFile(
-              source,
+              transformedSource,
               filename,
               compileOptions,
             )
           : await compileJsxFile(
-              source,
+              transformedSource,
               filename,
               compileOptions,
             )
