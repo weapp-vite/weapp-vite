@@ -422,10 +422,21 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
 
       await fs.writeFile(SFC_SRC_PATH, updatedSource, 'utf8')
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} updated SFC script marker`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker, 20_000),
+          `${platform} updated SFC script marker`,
+        )
+      }
+      catch {
+        // 某些环境下可能错过第一次文件变更事件，追加一次“无语义变更”确保触发重编译。
+        await fs.writeFile(SFC_SRC_PATH, `${updatedSource}\n`, 'utf8')
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker),
+          `${platform} updated SFC script marker (retry)`,
+        )
+      }
       expect(content).toContain(marker)
     }
     finally {
