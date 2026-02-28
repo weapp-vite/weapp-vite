@@ -11,22 +11,47 @@ Page({
   },
 
   onLoad(query) {
-    const promotionID = parseInt(query.promotion_id);
+    const promotionID = this.parsePromotionId(query?.promotion_id);
     this.getGoodsList(promotionID);
+  },
+
+  parsePromotionId(rawPromotionId) {
+    const parsed = Number.parseInt(String(rawPromotionId ?? ''), 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return 0;
+    }
+    return parsed;
   },
 
   getGoodsList(promotionID) {
     fetchPromotion(promotionID).then(({ list, banner, time, showBannerDesc, statusTag }) => {
-      const goods = list.map((item) => ({
-        ...item,
-        tags: item.tags.map((v) => v.title),
-      }));
+      const safeList = Array.isArray(list) ? list : [];
+      const goods = safeList.map((item) => {
+        const rawTags = Array.isArray(item?.tags) ? item.tags : [];
+        return {
+          ...item,
+          tags: rawTags.map((tag) => (typeof tag === 'string' ? tag : tag?.title)).filter(Boolean),
+        };
+      });
       this.setData({
         list: goods,
         banner,
         time,
         showBannerDesc,
         statusTag,
+      });
+    }).catch(() => {
+      this.setData({
+        list: [],
+        banner: '',
+        time: 0,
+        showBannerDesc: false,
+        statusTag: '',
+      });
+      Toast({
+        context: this,
+        selector: '#t-toast',
+        message: '营销活动加载失败',
       });
     });
   },
