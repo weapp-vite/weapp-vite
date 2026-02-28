@@ -15,6 +15,7 @@ Build or refactor weapp-vite projects with stable defaults first, then optimize 
 - User asks how to organize pages/components/subpackages in weapp-vite.
 - User reports build output problems: missing pages/components, wrong output root, route generation mismatch, chunk duplication.
 - User asks about CI automation with WeChat DevTools or `weapp-ide-cli`.
+- User asks how `weapp-vite` CLI and `weapp-ide-cli` should split command ownership / passthrough.
 - User asks when to use `autoRoutes`, auto-imported components, or chunk shared strategy.
 
 ## Scope Boundary
@@ -52,6 +53,10 @@ Do not use this as the primary skill when:
 - Choose `weapp.chunks.sharedStrategy` by explicit goal:
   - `duplicate` for better subpackage first-open performance.
   - `hoist` for stronger deduplication and package-size control.
+- When handling CLI orchestration between `weapp-vite` and `weapp-ide-cli`, keep a single source-of-truth command catalog:
+  - Define and export full top-level command names in `weapp-ide-cli`.
+  - Let `weapp-vite` consume that export for passthrough decision.
+  - Resolve commands in this order: `weapp-vite` native commands first, then `weapp-ide-cli` passthrough only if command is cataloged.
 
 3. Diagnose by symptom category
 
@@ -81,6 +86,8 @@ pnpm vitest run <related-test-file>
 - Do not combine many advanced overrides in the first iteration.
 - Do not assume web-only conventions; keep mini-program JSON semantics explicit.
 - Do not mix architecture refactor with unrelated business logic changes.
+- Do not implement IDE command passthrough with hardcoded duplicate lists in multiple packages.
+- Do not passthrough unknown commands blindly; require catalog hit before delegation.
 
 ## Output Contract
 
@@ -98,8 +105,11 @@ When applying this skill, return:
 - Component registration strategy is deterministic (auto import + resolver policy).
 - Subpackage/chunk strategy is selected with stated reason.
 - Dev/CI workflow is reproducible and not dependent on manual IDE clicks.
+- CLI dispatch ownership is deterministic: native-first, catalog-based passthrough second.
+- Command catalog changes are made in `weapp-ide-cli` and consumed by `weapp-vite`, not duplicated.
 
 ## References
 
 - `references/config-playbook.md`
 - `references/debug-playbook.md`
+- `references/cli-dispatch-playbook.md`
