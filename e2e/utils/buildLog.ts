@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
 
@@ -18,6 +19,11 @@ interface BuildCommandOptions {
   cwd?: string
   label?: string
   skipNpm?: boolean
+}
+
+interface DependencyMeta {
+  count: number
+  source: 'dependencies' | 'none'
 }
 
 function appendBuildLog(line: string) {
@@ -70,6 +76,38 @@ function createLineCollector(stats: BuildLogStats) {
   }
 }
 
+function readDependencyMeta(projectRoot: string): DependencyMeta {
+  const packageJsonPath = path.resolve(projectRoot, 'package.json')
+  if (!fs.existsSync(packageJsonPath)) {
+    return {
+      count: 0,
+      source: 'none',
+    }
+  }
+
+  try {
+    const raw = fs.readFileSync(packageJsonPath, 'utf-8')
+    const pkg = JSON.parse(raw) as Record<string, any>
+    const dependencies = pkg?.dependencies && typeof pkg.dependencies === 'object'
+      ? Object.keys(pkg.dependencies)
+      : []
+    if (dependencies.length > 0) {
+      return {
+        count: dependencies.length,
+        source: 'dependencies',
+      }
+    }
+  }
+  catch {
+    // 忽略 package.json 解析异常，回退为不触发 guard。
+  }
+
+  return {
+    count: 0,
+    source: 'none',
+  }
+}
+
 export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptions) {
   const {
     cliPath,
@@ -84,8 +122,17 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
     warn: 0,
     error: 0,
   }
+
+  const dependencyMeta = readDependencyMeta(projectRoot)
+  const safeSkipNpm = skipNpm && dependencyMeta.count === 0
+  if (skipNpm && !safeSkipNpm) {
+    const guardLine = `[e2e-build-guard] label=${label} project=${projectRoot} skipNpm=true ignored due to ${dependencyMeta.source}(${dependencyMeta.count})`
+    process.stdout.write(`${guardLine}\n`)
+    appendBuildLog(guardLine)
+  }
+
   const args = [cliPath, 'build', projectRoot, '--platform', platform]
-  if (skipNpm) {
+  if (safeSkipNpm) {
     args.push('--skipNpm')
   }
 
