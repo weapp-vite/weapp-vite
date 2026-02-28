@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 6.6.15
+
+### Patch Changes
+
+- 🐛 **增强 `weapp-vite` CLI 对 `weapp-ide-cli` 的能力复用：现在可直接在 `weapp-vite` 中调用 `preview`、`upload`、`config`、automator 等命令，并新增 `weapp-vite ide <args...>` 命名空间透传入口，方便在脚本与 CI 中统一命令入口。** [`648e2ba`](https://github.com/weapp-vite/weapp-vite/commit/648e2ba893373dc04ac45cc627ca260cfaa9d9a6) by @sonofmagic
+
+- 🐛 **在 `weapp-ide-cli` 中整理并导出了完整命令目录（官方 CLI、automator、config、minidev），新增 `isWeappIdeTopLevelCommand` 判断函数。`weapp-vite` 的 IDE 透传逻辑改为基于该目录判断，仅在命令未被 `weapp-vite` 自身注册且命中 `weapp-ide-cli` 命令目录时才透传执行。** [`83a3e18`](https://github.com/weapp-vite/weapp-vite/commit/83a3e18c07bf9780e1b012a106f217af51cd2123) by @sonofmagic
+- 📦 **Dependencies** [`02dc3e8`](https://github.com/weapp-vite/weapp-vite/commit/02dc3e84674222e6769b975a96c8943dc33d4b52)
+  → `weapp-ide-cli@5.1.0`, `wevu@6.6.15`
+
 ## 6.6.14
 
 ### Patch Changes

@@ -1,5 +1,22 @@
 # weapp-ide-cli
 
+## 5.1.0
+
+### Minor Changes
+
+- ✨ **新增截图命令，集成 miniprogram-automator** [`02dc3e8`](https://github.com/weapp-vite/weapp-vite/commit/02dc3e84674222e6769b975a96c8943dc33d4b52) by @sonofmagic
+  - 新增 `weapp screenshot` 命令用于捕获小程序截图
+  - 支持输出为 base64 或保存到文件
+  - 支持截图前进行页面导航
+  - 添加登录校验和 HTTP 端口错误处理
+  - 添加 automator 和截图模块的单元测试
+
+### Patch Changes
+
+- 🐛 **重构 weapp-ide-cli 的命令解析与 automator 执行架构，统一参数解析、登录重试与会话生命周期处理；同时修复 automator 命令测试导入路径问题并补齐结构化分层实现，提升后续扩展和维护稳定性。** [`1a04e9f`](https://github.com/weapp-vite/weapp-vite/commit/1a04e9f3067bdc7815184d0488cf73c3d714ef38) by @sonofmagic
+
+- 🐛 **在 `weapp-ide-cli` 中整理并导出了完整命令目录（官方 CLI、automator、config、minidev），新增 `isWeappIdeTopLevelCommand` 判断函数。`weapp-vite` 的 IDE 透传逻辑改为基于该目录判断，仅在命令未被 `weapp-vite` 自身注册且命中 `weapp-ide-cli` 命令目录时才透传执行。** [`83a3e18`](https://github.com/weapp-vite/weapp-vite/commit/83a3e18c07bf9780e1b012a106f217af51cd2123) by @sonofmagic
+
 ## 5.0.4
 
 ### Patch Changes
