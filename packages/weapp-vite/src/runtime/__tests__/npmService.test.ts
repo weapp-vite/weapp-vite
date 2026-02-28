@@ -27,6 +27,19 @@ describe('npmService bundleBuild', () => {
     return ctx
   }
 
+  function createContextWithNpmBuildOptions(
+    isDev: boolean,
+    buildOptions: NonNullable<NonNullable<MutableCompilerContext['configService']>['weappViteConfig']>['npm']['buildOptions'],
+  ) {
+    const ctx = createContext(isDev)
+    ;(ctx.configService as any).weappViteConfig = {
+      npm: {
+        buildOptions,
+      },
+    }
+    return ctx
+  }
+
   it('enables minify and targets es6 in dev mode', async () => {
     const ctx = createContext(true)
     createNpmServicePlugin(ctx)
@@ -55,6 +68,31 @@ describe('npmService bundleBuild', () => {
       build: expect.objectContaining({
         minify: true,
         target: 'es6',
+      }),
+    }))
+  })
+
+  it('allows overriding minify and sourcemap via weapp.npm.buildOptions', async () => {
+    const ctx = createContextWithNpmBuildOptions(false, (options) => {
+      return {
+        ...options,
+        build: {
+          ...options.build,
+          minify: false,
+          sourcemap: true,
+        },
+      }
+    })
+    createNpmServicePlugin(ctx)
+    await ctx.npmService!.bundleBuild({
+      entry: { index: '/tmp/index.js' },
+      name: 'pkg',
+      outDir: '/tmp/out',
+    })
+    expect(buildMock).toHaveBeenCalledWith(expect.objectContaining({
+      build: expect.objectContaining({
+        minify: false,
+        sourcemap: true,
       }),
     }))
   })

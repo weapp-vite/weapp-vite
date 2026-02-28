@@ -17,6 +17,7 @@ keywords:
 - `dist/` 的目录结构
 - 是否输出 CommonJS 或 ESM
 - 是否启用 ES5 兼容降级
+- 是否压缩代码、是否生成 sourcemap
 
 [[toc]]
 
@@ -72,6 +73,36 @@ export default defineConfig({
 - 仅支持 `jsFormat: 'cjs'`，与 `esm` 同用会直接报错。
 - 需要安装 `@swc/core`：`pnpm add -D @swc/core`。
 - 开启后，`build.target` 会被强制收敛到 `es2015`，再由 SWC 降级到 ES5。
+
+## `build.minify` 与 `build.sourcemap` {#build-minify-sourcemap}
+
+`weapp-vite` 直接复用 Vite 的 `build` 配置：
+
+- `build.minify`：是否压缩代码（默认生产环境开启）。
+- `build.sourcemap`：是否输出 sourcemap（可为 `true | false | 'inline' | 'hidden'`）。
+
+如果你希望 **打包产物不压缩且生成 sourcemap**，可以这样配置：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  build: {
+    minify: false,
+    sourcemap: true,
+  },
+})
+```
+
+也可以通过 CLI 临时覆盖：
+
+```bash
+weapp-vite build --minify false --sourcemap
+```
+
+> [!TIP]
+> 以上配置作用于你的项目产物（页面/组件/公共 chunk）。  
+> 若还需要控制 `miniprogram_npm` 中依赖包的压缩与 sourcemap，请看下方 npm 配置页说明。
 
 ---
 
