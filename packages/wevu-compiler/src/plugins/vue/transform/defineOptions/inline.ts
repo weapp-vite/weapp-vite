@@ -76,7 +76,11 @@ function serializeStaticValueToExpression(value: unknown, seen = new WeakSet<obj
     throw new Error('defineOptions 的参数中不支持 Symbol 值。')
   }
   if (valueType === 'function') {
-    throw new Error('defineOptions 的参数中不支持函数值。')
+    const source = Function.prototype.toString.call(value)
+    if (source.includes('[native code]')) {
+      throw new Error('defineOptions 的参数中不支持原生函数值。')
+    }
+    return `(${source})`
   }
 
   if (value instanceof Date) {
@@ -245,6 +249,22 @@ const __weapp_defineOptions = (value) => (__weapp_define_options_values.push(val
   })
 }
 
+async function resolveDefineOptionsValue(raw: unknown) {
+  let next = raw
+
+  if (typeof next === 'function') {
+    next = next()
+  }
+  if (next && typeof (next as PromiseLike<unknown>).then === 'function') {
+    next = await next
+  }
+  if (!next || typeof next !== 'object' || Array.isArray(next)) {
+    throw new Error('defineOptions 的参数最终必须解析为对象。')
+  }
+
+  return next
+}
+
 /**
  * 将 defineOptions 的参数内联为静态字面量，允许参数引用局部变量或导入值。
  */
@@ -275,7 +295,7 @@ export async function inlineScriptSetupDefineOptionsArgs(
     if (!argNode || typeof argNode.start !== 'number' || typeof argNode.end !== 'number') {
       continue
     }
-    const value = values[index]
+    const value = await resolveDefineOptionsValue(values[index])
     const literal = serializeStaticValueToExpression(value)
     ms.overwrite(argNode.start, argNode.end, literal)
   }
