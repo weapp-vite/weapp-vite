@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, useBindModel, watch } from 'wevu'
+import { computed, reactive, ref, watch } from 'wevu'
 
 import SectionTitle from '@/components/SectionTitle/index.vue'
 
@@ -12,11 +12,42 @@ const isActive = ref(true)
 const hasError = ref(false)
 const isRound = ref(false)
 const isGhost = ref(false)
-const bindModel = useBindModel({ event: 'change', valueProp: 'value' })
-const onActiveChange = bindModel.model<boolean>('isActive').onChange
-const onErrorChange = bindModel.model<boolean>('hasError').onChange
-const onRoundChange = bindModel.model<boolean>('isRound').onChange
-const onGhostChange = bindModel.model<boolean>('isGhost').onChange
+
+function resolveSwitchValue(event: unknown, fallback: boolean) {
+  if (typeof event === 'boolean') {
+    return event
+  }
+  if (event && typeof event === 'object') {
+    const payload = event as Record<string, any>
+    const detail = payload.detail
+    if (typeof detail === 'boolean') {
+      return detail
+    }
+    if (detail && typeof detail === 'object' && typeof detail.value === 'boolean') {
+      return detail.value
+    }
+    if (typeof payload.value === 'boolean') {
+      return payload.value
+    }
+  }
+  return fallback
+}
+
+function onActiveChange(event: unknown) {
+  isActive.value = resolveSwitchValue(event, !isActive.value)
+}
+
+function onErrorChange(event: unknown) {
+  hasError.value = resolveSwitchValue(event, !hasError.value)
+}
+
+function onRoundChange(event: unknown) {
+  isRound.value = resolveSwitchValue(event, !isRound.value)
+}
+
+function onGhostChange(event: unknown) {
+  isGhost.value = resolveSwitchValue(event, !isGhost.value)
+}
 
 const classObject = reactive({
   'demo-active': true,
@@ -191,7 +222,7 @@ function runE2EState() {
             <text class="block text-[24rpx] font-semibold">
               Object Syntax
             </text>
-            <text class="mt-[6rpx] block text-[20rpx] text-[#6f6b8a]">
+            <text class="mt-[6rpx] block text-[20rpx] demo-subtext">
               active 触发高亮
             </text>
           </view>
@@ -212,7 +243,7 @@ function runE2EState() {
             <text class="block text-[24rpx] font-semibold">
               Static + Object
             </text>
-            <text class="mt-[6rpx] block text-[20rpx] text-[#6f6b8a]">
+            <text class="mt-[6rpx] block text-[20rpx] demo-subtext">
               error 显示警示色
             </text>
           </view>
@@ -229,7 +260,7 @@ function runE2EState() {
             <text class="block text-[24rpx] font-semibold">
               Reactive Object
             </text>
-            <text class="mt-[6rpx] block text-[20rpx] text-[#6f6b8a]">
+            <text class="mt-[6rpx] block text-[20rpx] demo-subtext">
               多状态合并控制
             </text>
           </view>
@@ -246,7 +277,7 @@ function runE2EState() {
             <text class="block text-[24rpx] font-semibold">
               Array Syntax
             </text>
-            <text class="mt-[6rpx] block text-[20rpx] text-[#6f6b8a]">
+            <text class="mt-[6rpx] block text-[20rpx] demo-subtext">
               组合多个 class
             </text>
           </view>
@@ -263,7 +294,7 @@ function runE2EState() {
             <text class="block text-[24rpx] font-semibold">
               Conditional Array
             </text>
-            <text class="mt-[6rpx] block text-[20rpx] text-[#6f6b8a]">
+            <text class="mt-[6rpx] block text-[20rpx] demo-subtext">
               条件表达式返回 class
             </text>
           </view>
@@ -280,7 +311,7 @@ function runE2EState() {
             <text class="block text-[24rpx] font-semibold">
               Array + Key
             </text>
-            <text class="mt-[6rpx] block text-[20rpx] text-[#6f6b8a]">
+            <text class="mt-[6rpx] block text-[20rpx] demo-subtext">
               支持计算属性 key
             </text>
           </view>
@@ -297,7 +328,7 @@ function runE2EState() {
             <text class="block text-[24rpx] font-semibold">
               Style Object
             </text>
-            <text class="mt-[6rpx] block text-[20rpx] text-[#6f6b8a]">
+            <text class="mt-[6rpx] block text-[20rpx] demo-subtext">
               多属性对象绑定
             </text>
           </view>
@@ -314,7 +345,7 @@ function runE2EState() {
             <text class="block text-[24rpx] font-semibold">
               Style Array
             </text>
-            <text class="mt-[6rpx] block text-[20rpx] text-[#6f6b8a]">
+            <text class="mt-[6rpx] block text-[20rpx] demo-subtext">
               条件 style 片段
             </text>
           </view>
@@ -331,7 +362,7 @@ function runE2EState() {
             <text class="block text-[24rpx] font-semibold">
               Style String
             </text>
-            <text class="mt-[6rpx] block text-[20rpx] text-[#6f6b8a]">
+            <text class="mt-[6rpx] block text-[20rpx] demo-subtext">
               string 绑定与条件拼接
             </text>
           </view>
@@ -348,7 +379,7 @@ function runE2EState() {
             <text class="block text-[24rpx] font-semibold">
               Style Variable
             </text>
-            <text class="mt-[6rpx] block text-[20rpx] text-[#6f6b8a]">
+            <text class="mt-[6rpx] block text-[20rpx] demo-subtext">
               变量透传与消费
             </text>
           </view>
@@ -389,6 +420,11 @@ function runE2EState() {
   letter-spacing: 0.5rpx;
   border: 2rpx solid currentcolor;
   border-radius: 999rpx;
+}
+
+.demo-subtext {
+  color: currentcolor;
+  opacity: 0.82;
 }
 
 .demo-ghost {

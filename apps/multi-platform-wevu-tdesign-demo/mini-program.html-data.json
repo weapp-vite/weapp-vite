@@ -2404,6 +2404,10 @@
       "description": "自动导入的小程序组件",
       "attributes": [
         {
+          "name": "activityType",
+          "description": "类型: number"
+        },
+        {
           "name": "appParameter",
           "description": "类型: string"
         },
@@ -2422,6 +2426,10 @@
         {
           "name": "disabled",
           "description": "类型: boolean"
+        },
+        {
+          "name": "entrancePath",
+          "description": "类型: string"
         },
         {
           "name": "ghost",
@@ -2458,6 +2466,10 @@
         {
           "name": "loadingProps",
           "description": "类型: LoadingProps"
+        },
+        {
+          "name": "needShowEntrance",
+          "description": "类型: boolean"
         },
         {
           "name": "openType",

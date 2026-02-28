@@ -4,5 +4,59 @@
   "setting": {
     "compileHotReLoad": true
   },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "首页",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "数据页",
+          "pathName": "pages/data/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "表单页",
+          "pathName": "pages/form/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "清单页",
+          "pathName": "pages/list/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "能力页",
+          "pathName": "pages/ability/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "组件实验室",
+          "pathName": "subpackages/lab/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "Class 绑定实验室",
+          "pathName": "subpackages/lab/class-binding/index",
+          "query": "",
+          "scene": null
+        },
+        {
+          "name": "系统能力页",
+          "pathName": "subpackages/ability/index",
+          "query": "",
+          "scene": null
+        }
+      ]
+    }
+  },
   "libVersion": "3.14.0"
 }

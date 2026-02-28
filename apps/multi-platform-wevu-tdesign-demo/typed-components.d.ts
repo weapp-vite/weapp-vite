@@ -58,11 +58,13 @@ declare module 'weapp-vite/typed-components' {
       readonly size?: 'medium' | 'large';
     };
     't-button': {
+      readonly activityType?: number;
       readonly appParameter?: string;
       readonly block?: boolean;
       readonly content?: string;
       readonly customDataset?: null;
       readonly disabled?: boolean;
+      readonly entrancePath?: string;
       readonly ghost?: boolean;
       readonly hoverClass?: string;
       readonly hoverStartTime?: number;
@@ -72,6 +74,7 @@ declare module 'weapp-vite/typed-components' {
       readonly lang?: 'en' | 'zh_CN' | 'zh_TW';
       readonly loading?: boolean;
       readonly loadingProps?: LoadingProps;
+      readonly needShowEntrance?: boolean;
       readonly openType?: 'contact' | 'share' | 'getPhoneNumber' | 'getUserInfo' | 'launchApp' | 'openSetting' | 'feedback' | 'chooseAvatar' | 'agreePrivacyAuthorization';
       readonly phoneNumberNoQuotaToast?: boolean;
       readonly sendMessageImg?: string;
