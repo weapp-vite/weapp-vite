@@ -56,21 +56,67 @@ export async function formatWxss(wxss: string) {
 function normalizeButtonCompatAttrs(wxml: string) {
   return wxml.replace(/<button\b([^>]*)>/g, (_fullMatch, attrsRaw: string) => {
     const attrs = attrsRaw ?? ''
-    const hasAttr = (name: string) => new RegExp(`\\s${name}=`, 'i').test(attrs)
-    const normalizedAttrs = attrs.replace(/^\s+/, '')
-    const missing: string[] = []
+    const normalizedAttrs = attrs.trim()
+    const attrMap = new Map<string, string>()
+    const attrOrder: string[] = []
 
-    if (!hasAttr('activity-type')) {
-      missing.push('activity-type="0"')
-    }
-    if (!hasAttr('entrance-path')) {
-      missing.push('entrance-path=""')
-    }
-    if (!hasAttr('need-show-entrance')) {
-      missing.push('need-show-entrance=""')
+    for (const match of normalizedAttrs.matchAll(/([:@\w-]+)\s*=\s*(".*?"|'.*?')/g)) {
+      const name = match[1]
+      const value = match[2]
+      if (!name || !value) {
+        continue
+      }
+      if (!attrMap.has(name)) {
+        attrOrder.push(name)
+      }
+      attrMap.set(name, value)
     }
 
-    const merged = [...missing, normalizedAttrs].filter(Boolean).join(' ')
+    const ensureAttr = (name: string, value: string) => {
+      if (attrMap.has(name)) {
+        return
+      }
+      attrMap.set(name, value)
+    }
+
+    ensureAttr('activity-type', '"0"')
+    ensureAttr('entrance-path', '""')
+    ensureAttr('need-show-entrance', '""')
+
+    const fixedPrefix = ['activity-type', 'entrance-path', 'need-show-entrance', 'app-parameter']
+    const renderedNames = new Set<string>()
+    const renderedAttrs: string[] = []
+
+    for (const name of fixedPrefix) {
+      const value = attrMap.get(name)
+      if (!value) {
+        continue
+      }
+      renderedNames.add(name)
+      renderedAttrs.push(`${name}=${value}`)
+    }
+
+    for (const name of attrOrder) {
+      if (renderedNames.has(name)) {
+        continue
+      }
+      const value = attrMap.get(name)
+      if (!value) {
+        continue
+      }
+      renderedNames.add(name)
+      renderedAttrs.push(`${name}=${value}`)
+    }
+
+    for (const [name, value] of attrMap.entries()) {
+      if (renderedNames.has(name)) {
+        continue
+      }
+      renderedNames.add(name)
+      renderedAttrs.push(`${name}=${value}`)
+    }
+
+    const merged = renderedAttrs.join(' ')
     return `<button ${merged}>`
   })
 }
