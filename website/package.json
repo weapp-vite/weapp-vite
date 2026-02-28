@@ -25,7 +25,7 @@
   "dependencies": {
     "@iconify/vue": "^5.0.0",
     "echarts": "^6.0.0",
-    "element-plus": "^2.13.2",
+    "element-plus": "^2.13.3",
     "gridstack": "^12.4.2",
     "theme-transition": "^2.0.1",
     "vue": "^3.5.29",
