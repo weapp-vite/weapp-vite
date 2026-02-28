@@ -1,0 +1,12 @@
+interface:
+  display_name: Weapp IDE CLI Best Practices
+  short_description: weapp-ide-cli 命令治理、自动化分发、i18n 与配置持久化实践
+  default_prompt: >-
+    Use $weapp-ide-cli-best-practices when working on weapp-ide-cli command
+    design, command catalog exports, automator/config features, language
+    switching, or cross-CLI dispatch contracts with weapp-vite. Keep command
+    ownership deterministic: native command table first, then catalog-based
+    passthrough only. Return concrete file-level edits, tests, and docs sync.
+
+policy:
+  allow_implicit_invocation: true
