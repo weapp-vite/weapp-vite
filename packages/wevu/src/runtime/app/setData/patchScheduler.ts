@@ -1,7 +1,7 @@
 import type { SetDataDebugInfo } from '../../types'
 import { toPlain } from '../../diff'
 import { checkPayloadSize, collapsePayload, mergeSiblingPayload } from './payload'
-import { applySnapshotUpdate, isDeepEqualValue, isShallowEqualValue, normalizeSetDataValue } from './snapshot'
+import { applySnapshotUpdate, cloneSnapshotValue, isDeepEqualValue, isShallowEqualValue, normalizeSetDataValue } from './snapshot'
 
 interface PatchEntry {
   kind: 'property' | 'array'
@@ -173,7 +173,7 @@ export function runPatchUpdate(options: {
         continue
       }
       computedPatch[key] = normalizeSetDataValue(nextValue)
-      latestComputedSnapshot[key] = nextValue
+      latestComputedSnapshot[key] = cloneSnapshotValue(nextValue)
     }
     Object.assign(payload, computedPatch)
   }
@@ -229,7 +229,7 @@ export function runPatchUpdate(options: {
   }
 
   if (typeof currentAdapter.setData === 'function') {
-    const result = currentAdapter.setData(collapsedPayload)
+    const result = currentAdapter.setData(cloneSnapshotValue(collapsedPayload))
     if (result && typeof (result as Promise<any>).then === 'function') {
       ;(result as Promise<any>).catch(() => {})
     }

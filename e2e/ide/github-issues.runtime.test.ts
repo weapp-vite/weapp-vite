@@ -649,6 +649,62 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
+  it('issue #312: updates computed object bindings after switching back to initial reference', async () => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-312/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-312/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-312 computed object round trip')
+    expect(issuePageWxml).toContain('issue312-btn-inc')
+    expect(issuePageWxml).toContain('issue312-btn-dec')
+    expect(issuePageJs).toContain('_runE2E')
+
+    const miniProgram = await getSharedMiniProgram()
+
+    try {
+      const issuePage = await miniProgram.reLaunch('/pages/issue-312/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-312 page')
+      }
+      await issuePage.waitFor(500)
+
+      const initialRuntime = await issuePage.callMethod('_runE2E')
+      expect(initialRuntime?.ok).toBe(true)
+      expect(initialRuntime?.index).toBe(0)
+      expect(initialRuntime?.label).toBe('选项1')
+      expect(await issuePage.data('index')).toBe(0)
+      const initialWxml = await readPageWxml(issuePage)
+      expect(initialWxml).toContain('data-current-label="选项1"')
+      expect(initialWxml).toContain('data-current-index="0"')
+
+      await issuePage.callMethod('inc')
+      await issuePage.waitFor(240)
+      const afterIncRuntime = await issuePage.callMethod('_runE2E')
+      expect(afterIncRuntime?.ok).toBe(true)
+      expect(afterIncRuntime?.index).toBe(1)
+      expect(afterIncRuntime?.label).toBe('选项2')
+      expect(await issuePage.data('index')).toBe(1)
+      const incWxml = await readPageWxml(issuePage)
+      expect(incWxml).toContain('data-current-label="选项2"')
+      expect(incWxml).toContain('data-current-index="1"')
+
+      await issuePage.callMethod('dec')
+      await issuePage.waitFor(240)
+      const afterDecRuntime = await issuePage.callMethod('_runE2E')
+      expect(afterDecRuntime?.ok).toBe(true)
+      expect(afterDecRuntime?.index).toBe(0)
+      expect(afterDecRuntime?.label).toBe('选项1')
+      expect(await issuePage.data('index')).toBe(0)
+      const finalWxml = await readPageWxml(issuePage)
+      expect(finalWxml).toContain('data-current-label="选项1"')
+      expect(finalWxml).toContain('data-current-index="0"')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('issue #300: renders destructured boolean props in runtime call-expression bindings', async () => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-300/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-300/index.js')

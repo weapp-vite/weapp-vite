@@ -15,6 +15,7 @@ defineAppJson({
     'pages/issue-302/index',
     'pages/issue-309/index',
     'pages/issue-309-created/index',
+    'pages/issue-312/index',
   ],
 })
 

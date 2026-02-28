@@ -5,6 +5,20 @@ export function normalizeSetDataValue<T>(value: T): T | null {
   return value === undefined ? null : value
 }
 
+export function cloneSnapshotValue<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map(item => cloneSnapshotValue(item)) as T
+  }
+  if (!isPlainObjectLike(value)) {
+    return value
+  }
+  const out: Record<string, any> = Object.create(null)
+  for (const key of Object.keys(value)) {
+    out[key] = cloneSnapshotValue((value as Record<string, any>)[key])
+  }
+  return out as T
+}
+
 export function isPlainObjectLike(value: any) {
   if (value == null || typeof value !== 'object') {
     return false
@@ -121,7 +135,7 @@ export function applySnapshotUpdate(
     }
   }
   else {
-    current[leaf] = value
+    current[leaf] = cloneSnapshotValue(value)
   }
 }
 
