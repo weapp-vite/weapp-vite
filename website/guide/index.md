@@ -241,6 +241,20 @@ pnpm open
 
 使用该命令直接打开微信开发者工具（需要先开启服务端口）。
 
+也可以通过 `weapp-vite` 直接调用 `weapp-ide-cli` 的完整命令能力（预览、上传、automator、config 等）：
+
+```sh
+# 直接透传（推荐在脚本中使用）
+weapp-vite preview --project ./dist/build/mp-weixin
+weapp-vite upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
+weapp-vite config lang en
+weapp-vite screenshot --project ./dist/build/mp-weixin --json
+
+# 或使用命名空间透传
+weapp-vite ide preview --project ./dist/build/mp-weixin
+weapp-vite ide config show
+```
+
 > [!WARNING]
 > 请在 `微信开发者工具` → `设置` → `安全设置` → 勾选 `服务端口`。
 
