@@ -8,6 +8,7 @@ import { registerNpmCommand } from './cli/commands/npm'
 import { registerOpenCommand } from './cli/commands/open'
 import { registerServeCommand } from './cli/commands/serve'
 import { handleCLIError } from './cli/error'
+import { tryRunIdeCommand } from './cli/ide'
 import { convertBase } from './cli/options'
 import { VERSION } from './constants'
 import { checkRuntime } from './utils'
@@ -48,9 +49,15 @@ cli.help()
 cli.version(VERSION)
 
 try {
-  cli.parse(process.argv, { run: false })
   Promise.resolve()
-    .then(() => cli.runMatchedCommand())
+    .then(async () => {
+      const forwarded = await tryRunIdeCommand(process.argv.slice(2))
+      if (forwarded) {
+        return
+      }
+      cli.parse(process.argv, { run: false })
+      await cli.runMatchedCommand()
+    })
     .catch((error) => {
       handleCLIError(error)
       process.exitCode = 1

@@ -27,6 +27,7 @@
 
 - ⚡️ **Vite 构建**：带来了 `typescript` / `scss` / `less` 等等的原生支持
 - 🔌 **插件生态**：Vite 插件生态支持，也可以自定义编写插件，方便扩展
+- 🧰 **IDE 命令增强**：可直接透传 `weapp-ide-cli` 全量命令（`preview/upload/config/automator` 等）
 
 ## 快速开始
 
@@ -81,6 +82,24 @@ function handleClick() {
 
 - 配置智能提示文档：[docs/volar.md](./docs/volar.md)
 - defineConfig 重载说明：[docs/define-config-overloads.md](./docs/define-config-overloads.md)
+
+## CLI 中调用 weapp-ide-cli
+
+`weapp-vite` 内置了对 `weapp-ide-cli` 的透传能力，除了 `dev/build/open/init/generate/analyze/npm` 等原生命令外，其它 IDE 相关命令都可以直接调用：
+
+```sh
+weapp-vite preview --project ./dist/build/mp-weixin
+weapp-vite upload --project ./dist/build/mp-weixin -v 1.0.0 -d "release"
+weapp-vite config lang zh
+weapp-vite navigate pages/index/index --project ./dist/build/mp-weixin
+```
+
+也支持命名空间写法：
+
+```sh
+weapp-vite ide preview --project ./dist/build/mp-weixin
+weapp-vite ide config show
+```
 
 ## Contribute
 
