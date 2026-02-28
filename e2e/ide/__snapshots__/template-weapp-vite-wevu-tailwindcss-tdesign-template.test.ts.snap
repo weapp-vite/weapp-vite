@@ -555,6 +555,10 @@ text,
   --tw-text-opacity: 1;
   color: rgba(180, 35, 24, var(--tw-text-opacity, 1));
 }
+.text-slate-300 {
+  --tw-text-opacity: 1;
+  color: rgba(203, 213, 225, var(--tw-text-opacity, 1));
+}
 .text-white {
   --tw-text-opacity: 1;
   color: rgba(255, 255, 255, var(--tw-text-opacity, 1));
@@ -2759,6 +2763,97 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
       </view>
     </view>
+    <view
+      class="mt-_b12rpx_B binding-index--mt-_b12rpx_B flex binding-index--flex flex-wrap binding-index--flex-wrap gap-_b12rpx_B binding-index--gap-_b12rpx_B">
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        app-parameter=""
+        data-custom="null"
+        form-type=""
+        hover-class="t-button--hover"
+        hover-start-time="20"
+        hover-stay-time="70"
+        lang=""
+        open-type=""
+        send-message-img="截图"
+        send-message-path="当前分享路径"
+        send-message-title="当前标题"
+        session-from=""
+        style=""
+        class="t-button button--t-button t-button--outline button--t-button--outline t-button--default button--t-button--default t-button--rectangle button--t-button--rectangle t-button--size-small button--t-button--size-small"
+        role="button"
+        aria-disabled="false">
+        <view class="t-button__content button--t-button__content">Base</view>
+      </button>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        app-parameter=""
+        data-custom="null"
+        form-type=""
+        hover-class="t-button--hover"
+        hover-start-time="20"
+        hover-stay-time="70"
+        lang=""
+        open-type=""
+        send-message-img="截图"
+        send-message-path="当前分享路径"
+        send-message-title="当前标题"
+        session-from=""
+        style=""
+        class="t-button button--t-button t-button--outline button--t-button--outline t-button--default button--t-button--default t-button--rectangle button--t-button--rectangle t-button--size-small button--t-button--size-small"
+        role="button"
+        aria-disabled="false">
+        <view class="t-button__content button--t-button__content">All On</view>
+      </button>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        app-parameter=""
+        data-custom="null"
+        form-type=""
+        hover-class="t-button--hover"
+        hover-start-time="20"
+        hover-stay-time="70"
+        lang=""
+        open-type=""
+        send-message-img="截图"
+        send-message-path="当前分享路径"
+        send-message-title="当前标题"
+        session-from=""
+        style=""
+        class="t-button button--t-button t-button--outline button--t-button--outline t-button--default button--t-button--default t-button--rectangle button--t-button--rectangle t-button--size-small button--t-button--size-small"
+        role="button"
+        aria-disabled="false">
+        <view class="t-button__content button--t-button__content">Mixed</view>
+      </button>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        app-parameter=""
+        data-custom="null"
+        form-type=""
+        hover-class="t-button--hover"
+        hover-start-time="20"
+        hover-stay-time="70"
+        lang=""
+        open-type=""
+        send-message-img="截图"
+        send-message-path="当前分享路径"
+        send-message-title="当前标题"
+        session-from=""
+        style=""
+        class="t-button button--t-button t-button--outline button--t-button--outline t-button--default button--t-button--default t-button--rectangle button--t-button--rectangle t-button--size-small button--t-button--size-small"
+        role="button"
+        aria-disabled="false">
+        <view class="t-button__content button--t-button__content">Error+Ghost</view>
+      </button>
+    </view>
   </view>
   <view
     class="mt-_b18rpx_B binding-index--mt-_b18rpx_B space-y-_b14rpx_B binding-index--space-y-_b14rpx_B">
@@ -2774,6 +2869,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
       </view>
       <view
+        data-e2e="class-object"
         class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-active binding-index--demo-active">
         <view>
           <text
@@ -2796,6 +2892,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
       </view>
       <view
+        data-e2e="class-static-object"
         class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-ghost binding-index--demo-ghost demo-active binding-index--demo-active">
         <view>
           <text
@@ -2818,6 +2915,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
       </view>
       <view
+        data-e2e="class-reactive"
         class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-active binding-index--demo-active">
         <view>
           <text
@@ -2840,6 +2938,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
       </view>
       <view
+        data-e2e="class-array"
         class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-active binding-index--demo-active">
         <view>
           <text
@@ -2862,6 +2961,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
       </view>
       <view
+        data-e2e="class-cond-array"
         class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-active binding-index--demo-active">
         <view>
           <text
@@ -2884,6 +2984,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
       </view>
       <view
+        data-e2e="class-array-key"
         class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-active binding-index--demo-active">
         <view>
           <text
@@ -2893,6 +2994,122 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
         </view>
         <view class="demo-chip binding-index--demo-chip">Key</view>
       </view>
+    </view>
+    <view
+      class="rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-white binding-index--bg-white p-_b20rpx_B binding-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B binding-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view
+        class="flex index--flex items-end index--items-end justify-between index--justify-between">
+        <view>
+          <text
+            class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+          <text
+            class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view
+        class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-style-anchor binding-index--demo-style-anchor"
+        data-e2e="style-object"
+        style="
+          background: linear-gradient(135deg, #2563eb, #6366f1);
+          border-color: #1e40af;
+          border-style: solid;
+          border-radius: 9px;
+          color: #ffffff;
+        ">
+        <view>
+          <text
+            class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
+          <text
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view class="demo-chip binding-index--demo-chip">StyObj</view>
+      </view>
+    </view>
+    <view
+      class="rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-white binding-index--bg-white p-_b20rpx_B binding-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B binding-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view
+        class="flex index--flex items-end index--items-end justify-between index--justify-between">
+        <view>
+          <text
+            class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+          <text
+            class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view
+        class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-style-anchor binding-index--demo-style-anchor"
+        data-e2e="style-array"
+        style="
+          transition: all 0.2s ease;
+          transform: translateY(-2px);
+          box-shadow: 0 5px 10px rgba(37, 99, 235, 0.28);
+          border-radius: 9px;
+          opacity: 1;
+        ">
+        <view>
+          <text
+            class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
+          <text
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view class="demo-chip binding-index--demo-chip">StyArr</view>
+      </view>
+    </view>
+    <view
+      class="rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-white binding-index--bg-white p-_b20rpx_B binding-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B binding-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view
+        class="flex index--flex items-end index--items-end justify-between index--justify-between">
+        <view>
+          <text
+            class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+          <text
+            class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view
+        class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-style-anchor binding-index--demo-style-anchor"
+        data-e2e="style-string"
+        style="font-size: 13px; color: #1f1a3f; letter-spacing: 1px">
+        <view>
+          <text
+            class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
+          <text
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view class="demo-chip binding-index--demo-chip">StyStr</view>
+      </view>
+    </view>
+    <view
+      class="rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-white binding-index--bg-white p-_b20rpx_B binding-index--p-_b20rpx_B shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B binding-index--shadow-_b0_18rpx_40rpx_rgba_p17_m24_m39_m0_d08_P_B">
+      <view
+        class="flex index--flex items-end index--items-end justify-between index--justify-between">
+        <view>
+          <text
+            class="text-_b30rpx_B index--text-_b30rpx_B font-semibold index--font-semibold text-_b_h1f1a3f_B index--text-_b_h1f1a3f_B"></text>
+          <text
+            class="mt-_b6rpx_B index--mt-_b6rpx_B block index--block text-_b22rpx_B index--text-_b22rpx_B text-_b_h6f6b8a_B index--text-_b_h6f6b8a_B"></text>
+        </view>
+      </view>
+      <view
+        class="mt-_b12rpx_B binding-index--mt-_b12rpx_B demo-block binding-index--demo-block demo-style-anchor binding-index--demo-style-anchor"
+        data-e2e="style-var"
+        style="--lab-accent: #2563eb; border-color: var(--lab-accent); color: var(--lab-accent)">
+        <view>
+          <text
+            class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
+          <text
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+        </view>
+        <view class="demo-chip binding-index--demo-chip">StyVar</view>
+      </view>
+    </view>
+    <view
+      class="rounded-_b24rpx_B binding-index--rounded-_b24rpx_B bg-_b_h111827_B binding-index--bg-_b_h111827_B p-_b18rpx_B binding-index--p-_b18rpx_B text-white binding-index--text-white">
+      <text
+        class="text-_b20rpx_B binding-index--text-_b20rpx_B text-slate-300 binding-index--text-slate-300"></text>
+      <text
+        class="mt-_b8rpx_B binding-index--mt-_b8rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B"
+        data-e2e="state-line"></text>
     </view>
   </view>
 </view>
