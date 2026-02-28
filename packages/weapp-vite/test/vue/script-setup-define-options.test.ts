@@ -1,3 +1,7 @@
+import { mkdtemp } from 'node:fs/promises'
+import os from 'node:os'
+import fs from 'fs-extra'
+import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { compileVueFile } from '../../src/plugins/vue/transform'
 
@@ -90,5 +94,41 @@ const count = 1
     expect(changedResult.meta?.defineOptionsHash).toBeDefined()
     expect(noMacroResult.meta?.defineOptionsHash).toBeUndefined()
     expect(baseResult.meta?.defineOptionsHash).not.toBe(changedResult.meta?.defineOptionsHash)
+  })
+
+  it('supports defineOptions referencing local and imported variables', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-define-options-'))
+    try {
+      const constantsPath = path.join(tempDir, 'constants.ts')
+      const vuePath = path.join(tempDir, 'app.vue')
+      await fs.writeFile(constantsPath, `export const pages = ['pages/home/index', 'pages/logs/index'] as const\n`, 'utf8')
+
+      const source = `
+<script setup lang="ts">
+import { pages } from './constants'
+
+const title = pages[0]
+
+defineOptions({
+  globalData: {
+    title,
+    pages,
+  },
+})
+</script>
+`
+      const result = await compileVueFile(source, vuePath, {
+        isApp: true,
+      })
+
+      expect(result.script).toContain('globalData')
+      expect(result.script).toContain('pages/home/index')
+      expect(result.script).toContain('pages/logs/index')
+      expect(result.script).not.toContain('defineOptions(')
+      expect(result.script).toContain('globalData: { title: "pages/home/index"')
+    }
+    finally {
+      await fs.remove(tempDir)
+    }
   })
 })

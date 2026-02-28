@@ -7,6 +7,7 @@ import { parse } from 'vue/compiler-sfc'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 import { normalizeLineEndings } from '../../../../utils/text'
 import { preprocessScriptSetupSrc, preprocessScriptSrc, resolveSfcBlockSrc, restoreScriptSetupSrc, restoreScriptSrc } from '../../../utils/vueSfc'
+import { inlineScriptSetupDefineOptionsArgs } from '../defineOptions/inline'
 import { extractJsonMacroFromScriptSetup } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
 
@@ -71,6 +72,7 @@ export async function parseVueFile(
 ): Promise<ParsedVueFile> {
   const normalizedInputSource = normalizeLineEndings(source)
   const normalizedSource = preprocessScriptSrc(preprocessScriptSetupSrc(normalizedInputSource))
+  let descriptorForCompileSource = normalizedSource
   const { descriptor, errors } = parse(normalizedSource, {
     filename,
     ignoreEmpty: normalizedSource === normalizedInputSource,
@@ -133,7 +135,7 @@ export async function parseVueFile(
         const setupLoc = scriptSetup.loc
         const startOffset = setupLoc.start.offset
         const endOffset = setupLoc.end.offset
-        const nextSource = normalizedSource.slice(0, startOffset) + extracted.stripped + normalizedSource.slice(endOffset)
+        const nextSource = descriptorForCompileSource.slice(0, startOffset) + extracted.stripped + descriptorForCompileSource.slice(endOffset)
         const { descriptor: nextDescriptor, errors: nextErrors } = parse(nextSource, {
           filename,
           ignoreEmpty: false,
@@ -158,11 +160,63 @@ export async function parseVueFile(
         else {
           descriptorForCompile = nextDescriptor
         }
+        descriptorForCompileSource = nextSource
       }
     }
     scriptSetupMacroConfig = extracted.config
     scriptSetupMacroHash = extracted.macroHash
     defineOptionsHash = extractDefineOptionsHash(scriptSetup.content)
+  }
+
+  const compileScriptSetup = descriptorForCompile.scriptSetup
+  if (compileScriptSetup?.content && /\bdefineOptions\s*\(/.test(compileScriptSetup.content)) {
+    const inlined = await inlineScriptSetupDefineOptionsArgs(
+      compileScriptSetup.content,
+      filename,
+      compileScriptSetup.lang,
+    )
+    if (inlined.code !== compileScriptSetup.content) {
+      if (compileScriptSetup.src) {
+        descriptorForCompile = {
+          ...descriptorForCompile,
+          scriptSetup: {
+            ...compileScriptSetup,
+            content: inlined.code,
+          },
+        }
+      }
+      else {
+        const setupLoc = compileScriptSetup.loc
+        const startOffset = setupLoc.start.offset
+        const endOffset = setupLoc.end.offset
+        const nextSource = descriptorForCompileSource.slice(0, startOffset) + inlined.code + descriptorForCompileSource.slice(endOffset)
+        const { descriptor: nextDescriptor, errors: nextErrors } = parse(nextSource, {
+          filename,
+          ignoreEmpty: false,
+        })
+        restoreScriptSetupSrc(nextDescriptor)
+        restoreScriptSrc(nextDescriptor)
+
+        if (nextErrors.length > 0) {
+          const error = nextErrors[0]
+          throw new Error(`解析 ${filename} 失败：${error.message}`)
+        }
+
+        if (options?.sfcSrc) {
+          const resolvedNext = await resolveSfcBlockSrc(nextDescriptor, filename, options.sfcSrc)
+          descriptorForCompile = resolvedNext.descriptor
+          if (resolvedNext.deps.length) {
+            const deps = new Set([...(sfcSrcDeps ?? []), ...resolvedNext.deps])
+            sfcSrcDeps = Array.from(deps)
+            meta.sfcSrcDeps = sfcSrcDeps
+          }
+        }
+        else {
+          descriptorForCompile = nextDescriptor
+        }
+        descriptorForCompileSource = nextSource
+      }
+    }
   }
 
   const isAppFile = /[\\/]app\.vue$/.test(filename)

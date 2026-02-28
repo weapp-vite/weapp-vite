@@ -64,24 +64,105 @@ describe('utils/file', () => {
     it('extracts defineAppJson from <script setup> when <json> is absent', async () => {
       const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
       const file = path.join(root, 'app.vue')
-      await fs.writeFile(
-        file,
-        `
+      try {
+        await fs.writeFile(
+          file,
+          `
 <script setup lang="ts">
 defineAppJson({
   pages: ['pages/index/index'],
   window: { navigationBarTitleText: '首页' },
 })
 </script>
-        `.trim(),
-        'utf8',
-      )
+          `.trim(),
+          'utf8',
+        )
 
-      const config = await extractConfigFromVue(file)
-      expect(config).toMatchObject({
-        pages: ['pages/index/index'],
-        window: { navigationBarTitleText: '首页' },
-      })
+        const config = await extractConfigFromVue(file)
+        expect(config).toMatchObject({
+          pages: ['pages/index/index'],
+          window: { navigationBarTitleText: '首页' },
+        })
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
+
+    it('supports JSON macros referencing local and imported variables', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const appFile = path.join(root, 'app.vue')
+      const pageFile = path.join(root, 'pages/index/index.vue')
+      const constantsFile = path.join(root, 'constants.ts')
+
+      try {
+        await fs.ensureDir(path.dirname(pageFile))
+        await fs.writeFile(
+          constantsFile,
+          `
+export const pages = ['pages/index/index'] as const
+export const title = '宏变量标题'
+          `.trim(),
+          'utf8',
+        )
+
+        await fs.writeFile(
+          appFile,
+          `
+<script setup lang="ts">
+import { pages, title } from './constants'
+
+const navTitle = title
+
+defineAppJson({
+  pages,
+  window: {
+    navigationBarTitleText: navTitle,
+  },
+})
+</script>
+          `.trim(),
+          'utf8',
+        )
+
+        await fs.writeFile(
+          pageFile,
+          `
+<script setup lang="ts">
+import { title } from '../../constants'
+
+const usingComponents = {
+  't-button': 'tdesign-miniprogram/button/button',
+}
+
+definePageJson({
+  navigationBarTitleText: title,
+  usingComponents,
+})
+</script>
+          `.trim(),
+          'utf8',
+        )
+
+        const appConfig = await extractConfigFromVue(appFile)
+        expect(appConfig).toMatchObject({
+          pages: ['pages/index/index'],
+          window: {
+            navigationBarTitleText: '宏变量标题',
+          },
+        })
+
+        const pageConfig = await extractConfigFromVue(pageFile)
+        expect(pageConfig).toMatchObject({
+          navigationBarTitleText: '宏变量标题',
+          usingComponents: {
+            't-button': 'tdesign-miniprogram/button/button',
+          },
+        })
+      }
+      finally {
+        await fs.remove(root)
+      }
     })
   })
 
