@@ -78,6 +78,43 @@ export default defineConfig({
 - `cache`：是否启用 npm 构建缓存（缓存目录：`node_modules/weapp-vite/.cache/`）。
 - `buildOptions`：为单个包覆写 Vite 库模式构建参数。
 
+## 控制 npm 依赖的压缩与 sourcemap
+
+`weapp.npm` 内部依赖构建默认是：
+
+- `minify: true`
+- `sourcemap: false`
+
+如果你希望 `miniprogram_npm` 里的某些包不压缩并生成 sourcemap，可以在 `buildOptions` 中覆写：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    npm: {
+      buildOptions(options, { name }) {
+        if (name === 'lodash') {
+          return {
+            ...options,
+            build: {
+              ...options.build,
+              minify: false,
+              sourcemap: true,
+            },
+          }
+        }
+        return options
+      },
+    },
+  },
+})
+```
+
+> [!NOTE]
+> `build.minify/build.sourcemap` 只影响你的主项目产物；  
+> `weapp.npm.buildOptions` 用于控制 `miniprogram_npm` 依赖包的构建行为。
+
 ## 手动构建命令
 
 如需在命令行触发开发者工具的 npm 构建：
