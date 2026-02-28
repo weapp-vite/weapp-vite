@@ -9,7 +9,7 @@ const DIST_ROOT = path.join(APP_ROOT, 'dist')
 const TYPED_ROUTER_PATH = path.join(APP_ROOT, 'typed-router.d.ts')
 
 describe.sequential('e2e app: auto-routes defineAppJson', () => {
-  it('builds with routes.pages, generates mutable tuple typings, and typechecks app config', async () => {
+  it('builds with routes.pages, generates mutable tuple typings, and shares routes to runtime globalData', async () => {
     await fs.remove(DIST_ROOT)
     await fs.remove(TYPED_ROUTER_PATH)
 
@@ -44,5 +44,12 @@ describe.sequential('e2e app: auto-routes defineAppJson', () => {
       'pages/home/index',
       'pages/logs/index',
     ])
+
+    const appJsPath = path.join(DIST_ROOT, 'app.js')
+    expect(await fs.pathExists(appJsPath)).toBe(true)
+    const appJs = await fs.readFile(appJsPath, 'utf8')
+    expect(appJs).toContain('__autoRoutesPages')
+    expect(appJs).toContain('pages/home/index')
+    expect(appJs).toContain('pages/logs/index')
   })
 })
