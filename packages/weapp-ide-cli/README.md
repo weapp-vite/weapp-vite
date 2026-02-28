@@ -61,17 +61,88 @@ weapp alipay preview --project ./dist/mp-alipay
 weapp open --platform alipay -p ./dist/dev/mp-alipay
 ```
 
-## 常用命令速查
+## 命令大全
 
-| 命令                                            | 说明                                 |
-| ----------------------------------------------- | ------------------------------------ |
-| `weapp login`                                   | 在终端扫码登录账号                   |
-| `weapp open -p [path]`                          | 启动工具并打开项目（默认为当前路径） |
-| `weapp preview --project <path>`                | 生成预览二维码                       |
-| `weapp upload --project <path> --version <ver>` | 上传小程序代码                       |
-| `weapp quit`                                    | 关闭微信开发者工具                   |
+### 1. 微信官方 CLI 透传命令（V2）
 
-更多原生命令与参数请参考官方文档：<https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html>
+下列命令会透传到微信开发者工具官方 CLI（`weapp` 只在外层补了路径兼容、配置与错误处理）：
+
+| 命令                    | 说明            |
+| ----------------------- | --------------- |
+| `weapp open`            | 打开 IDE / 项目 |
+| `weapp login`           | 重新登录 IDE    |
+| `weapp islogin`         | 检查登录状态    |
+| `weapp preview`         | 预览二维码      |
+| `weapp auto-preview`    | 自动预览        |
+| `weapp upload`          | 上传小程序      |
+| `weapp build-npm`       | 构建 npm        |
+| `weapp auto`            | 开启自动化      |
+| `weapp auto-replay`     | 自动化回放      |
+| `weapp reset-fileutils` | 重置文件工具    |
+| `weapp close`           | 关闭项目        |
+| `weapp quit`            | 退出 IDE        |
+| `weapp cache`           | 清理缓存        |
+| `weapp engine`          | 引擎相关命令    |
+| `weapp open-other`      | 打开其它项目    |
+| `weapp build-ipa`       | 生成 iOS 包     |
+| `weapp build-apk`       | 生成 Android 包 |
+| `weapp cloud`           | 云开发命令      |
+
+官方文档：
+
+- <https://developers.weixin.qq.com/miniprogram/dev/devtools/cli.html>
+
+### 2. automator 增强命令
+
+`weapp-ide-cli` 内置 automator 子命令：
+
+| 命令                             | 说明                           |
+| -------------------------------- | ------------------------------ |
+| `weapp screenshot`               | 截图（支持 base64 / 文件输出） |
+| `weapp navigate <url>`           | 保留栈跳转页面                 |
+| `weapp redirect <url>`           | 重定向页面                     |
+| `weapp back`                     | 页面返回                       |
+| `weapp relaunch <url>`           | 重启到指定页面                 |
+| `weapp switch-tab <url>`         | 切换到 tabBar 页               |
+| `weapp page-stack`               | 查看页面栈                     |
+| `weapp current-page`             | 查看当前页面                   |
+| `weapp system-info`              | 查看系统信息                   |
+| `weapp page-data [path]`         | 查看页面数据                   |
+| `weapp tap <selector>`           | 点击元素                       |
+| `weapp input <selector> <value>` | 元素输入                       |
+| `weapp scroll <scrollTop>`       | 页面滚动                       |
+| `weapp audit`                    | 体验评分审计                   |
+| `weapp remote [--disable]`       | 开关远程调试                   |
+
+帮助查看方式：
+
+```sh
+weapp help navigate
+weapp navigate --help
+```
+
+### 3. config 子命令
+
+| 命令                                         | 说明                                |
+| -------------------------------------------- | ----------------------------------- |
+| `weapp config`                               | 交互式配置 CLI 路径                 |
+| `weapp config lang <zh\|en>`                 | 切换并保存语言                      |
+| `weapp config set-lang <zh\|en>`             | `lang` 的别名                       |
+| `weapp config show`                          | 显示完整配置 JSON                   |
+| `weapp config get <cliPath\|locale>`         | 读取单个配置项                      |
+| `weapp config set <cliPath\|locale> <value>` | 写入配置项                          |
+| `weapp config unset <cliPath\|locale>`       | 删除配置项                          |
+| `weapp config doctor`                        | 配置健康诊断                        |
+| `weapp config export [path]`                 | 导出配置（不传 path 则输出 stdout） |
+| `weapp config import <path>`                 | 从 JSON 文件导入配置                |
+
+### 4. 支付宝 minidev 转发命令
+
+| 命令                               | 说明                         |
+| ---------------------------------- | ---------------------------- |
+| `weapp alipay <args...>`           | 透传到 `minidev`             |
+| `weapp ali <args...>`              | `alipay` 别名                |
+| `weapp open --platform alipay ...` | 自动转发为 `minidev ide ...` |
 
 ## 路径与参数兼容
 
@@ -87,12 +158,54 @@ weapp open --platform alipay -p ./dist/dev/mp-alipay
 weapp config
 ```
 
+也可以通过命令直接切换语言并写入同一配置文件：
+
+```sh
+weapp config lang zh
+weapp config lang en
+```
+
+配置子命令：
+
+```sh
+# 查看完整配置（JSON）
+weapp config show
+
+# 读取单个配置项
+weapp config get cliPath
+weapp config get locale
+
+# 设置配置项
+weapp config set cliPath /Applications/wechatwebdevtools.app/Contents/MacOS/cli
+weapp config set locale en
+
+# 清除配置项
+weapp config unset cliPath
+weapp config unset locale
+
+# 诊断配置可用性
+weapp config doctor
+
+# 导出 / 导入配置
+weapp config export ./weapp-ide-cli.config.json
+weapp config import ./weapp-ide-cli.config.json
+```
+
 配置数据保存在用户目录：
 
 - macOS / Linux：`~/.weapp-ide-cli/config.json`
 - Windows：`C:\Users\<用户名>\.weapp-ide-cli\config.json`
 
 可以直接编辑该文件或重新运行 `weapp config` 来更新路径。当配置文件缺失或留空时，CLI 会尝试按系统默认安装位置自动寻找。
+
+配置文件示例：
+
+```json
+{
+  "cliPath": "/Applications/wechatwebdevtools.app/Contents/MacOS/cli",
+  "locale": "zh"
+}
+```
 
 ## 平台支持与限制
 
@@ -127,12 +240,38 @@ weapp build-npm -p --non-interactive
 - `CI=true`
 - `stdin` 非 TTY
 
+## 语言切换（默认中文）
+
+`weapp-ide-cli` 的增强提示、错误信息与 automator 帮助默认使用中文。
+可通过 `--lang en` 切换为英文，也可通过环境变量 `WEAPP_IDE_CLI_LANG=en` 统一设置。
+
+```sh
+# 单次命令切换英文
+weapp help navigate --lang en
+
+# 环境变量方式
+WEAPP_IDE_CLI_LANG=en weapp navigate pages/index/index -p ./mini-app
+```
+
+## 参数前置校验（增强）
+
+为减少进入微信 CLI 后才失败的情况，`weapp-ide-cli` 会在本地先做一部分参数校验：
+
+- `upload` 必须提供 `--version/-v` 与 `--desc/-d`（且值不能为空字符串）
+- `preview` 的 `--qr-format/-f` 仅支持 `terminal` / `image` / `base64`
+- `preview` / `upload` / `auto` / `auto-preview` 需要提供 `--project` 或 `--appid`
+- `--ext-appid` 在未提供 `--project` 时必须同时提供 `--appid`
+- `--port` 必须为正整数
+- `--login-retry` 仅支持 `never` / `once` / `always`
+- `--login-retry-timeout` 必须为正整数
+
 ## 常见问题
 
 - **命令执行后无反应**：请确认微信开发者工具已开启服务端口，并尝试重新登录或升级工具版本。
 - **提示 `需要重新登录` 或 `code: 10`**：表示微信开发者工具登录态失效。交互模式下可按 `r` 重试，按 `q`、`Esc` 或 `Ctrl+C` 取消；非交互模式（含 CI / 非TTY）会直接失败返回非 0。
 - **提示未找到 CLI**：检查配置文件中的路径是否真实存在，可使用绝对路径避免解析误差。
 - **Linux 环境报错**：需安装社区版工具并将 `wechat-devtools-cli` 加入 `PATH`，否则只能手动指定路径。
+- **`upload` 报参数缺失**：`weapp upload` 现在会在本地前置校验 `--version/-v` 与 `--desc/-d`，缺失时直接报错以避免触发远端失败。
 
 ## 贡献
 

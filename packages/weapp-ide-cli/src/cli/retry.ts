@@ -1,5 +1,6 @@
 import process from 'node:process'
 import { emitKeypressEvents } from 'node:readline'
+import { i18nText } from '../i18n'
 import { colors } from '../logger'
 
 export interface RetryKeypressOptions {
@@ -194,7 +195,10 @@ export async function waitForRetryKeypress(options: RetryKeypressOptions = {}) {
 export function formatRetryHotkeyPrompt(timeoutMs = 30_000) {
   const highlight = (key: string) => highlightHotkey(key)
   const timeoutSeconds = Math.max(1, Math.ceil(timeoutMs / 1000))
-  return `按 ${highlight('r')} 重试，按 ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} 退出（${timeoutSeconds}s 内无输入将自动失败）。`
+  return i18nText(
+    `按 ${highlight('r')} 重试，按 ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} 退出（${timeoutSeconds}s 内无输入将自动失败）。`,
+    `Press ${highlight('r')} to retry, ${highlight('q')} / ${highlight('Esc')} / ${highlight('Ctrl+C')} to cancel (auto fail in ${timeoutSeconds}s).`,
+  )
 }
 
 function highlightHotkey(key: string) {

@@ -10,6 +10,17 @@ const formatWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const formatRetryHotkeyPromptMock = vi.hoisted(() => vi.fn())
 const waitForRetryKeypressMock = vi.hoisted(() => vi.fn())
 const createWechatIdeLoginRequiredExitErrorMock = vi.hoisted(() => vi.fn())
+const getConfiguredLocaleMock = vi.hoisted(() => vi.fn())
+const createLocaleConfigMock = vi.hoisted(() => vi.fn())
+const createCustomConfigMock = vi.hoisted(() => vi.fn())
+const overwriteCustomConfigMock = vi.hoisted(() => vi.fn())
+const readCustomConfigMock = vi.hoisted(() => vi.fn())
+const removeCustomConfigKeyMock = vi.hoisted(() => vi.fn())
+const fsExtraMock = vi.hoisted(() => ({
+  pathExists: vi.fn(),
+  writeJSON: vi.fn(),
+  readJSON: vi.fn(),
+}))
 const loggerMock = vi.hoisted(() => ({
   log: vi.fn(),
   warn: vi.fn(),
@@ -25,6 +36,18 @@ vi.mock('../src/cli/minidev', () => ({
 
 vi.mock('../src/cli/resolver', () => ({
   resolveCliPath: resolveCliPathMock,
+}))
+
+vi.mock('../src/config/resolver', () => ({
+  getConfiguredLocale: getConfiguredLocaleMock,
+}))
+
+vi.mock('../src/config/custom', () => ({
+  createLocaleConfig: createLocaleConfigMock,
+  createCustomConfig: createCustomConfigMock,
+  overwriteCustomConfig: overwriteCustomConfigMock,
+  readCustomConfig: readCustomConfigMock,
+  removeCustomConfigKey: removeCustomConfigKeyMock,
 }))
 
 vi.mock('../src/cli/prompt', () => ({
@@ -54,6 +77,16 @@ vi.mock('../src/cli/retry', () => ({
 
 vi.mock('../src/logger', () => ({
   default: loggerMock,
+  colors: {
+    green: (value: string) => value,
+  },
+}))
+
+vi.mock('fs-extra', () => ({
+  default: fsExtraMock,
+  pathExists: fsExtraMock.pathExists,
+  writeJSON: fsExtraMock.writeJSON,
+  readJSON: fsExtraMock.readJSON,
 }))
 
 async function loadRunModule() {
@@ -90,6 +123,15 @@ describe('cli parsing', () => {
     formatRetryHotkeyPromptMock.mockReset()
     waitForRetryKeypressMock.mockReset()
     createWechatIdeLoginRequiredExitErrorMock.mockReset()
+    getConfiguredLocaleMock.mockReset()
+    createLocaleConfigMock.mockReset()
+    createCustomConfigMock.mockReset()
+    overwriteCustomConfigMock.mockReset()
+    readCustomConfigMock.mockReset()
+    removeCustomConfigKeyMock.mockReset()
+    fsExtraMock.pathExists.mockReset()
+    fsExtraMock.writeJSON.mockReset()
+    fsExtraMock.readJSON.mockReset()
     isOperatingSystemSupportedMock.mockReturnValue(true)
     executeMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
@@ -109,6 +151,15 @@ describe('cli parsing', () => {
       cliPath: '/Applications/wechat-cli',
       source: 'default',
     })
+    getConfiguredLocaleMock.mockResolvedValue(undefined)
+    createLocaleConfigMock.mockResolvedValue(undefined)
+    createCustomConfigMock.mockResolvedValue('/workspace/project/cli')
+    overwriteCustomConfigMock.mockResolvedValue(undefined)
+    readCustomConfigMock.mockResolvedValue({})
+    removeCustomConfigKeyMock.mockResolvedValue(undefined)
+    fsExtraMock.pathExists.mockResolvedValue(true)
+    fsExtraMock.writeJSON.mockResolvedValue(undefined)
+    fsExtraMock.readJSON.mockResolvedValue({})
   })
 
   afterEach(() => {
@@ -168,6 +219,227 @@ describe('cli parsing', () => {
       '--project',
       mockCwd,
     ])
+  })
+
+  it('prints automator command help via "help <command>"', async () => {
+    const { parse } = await loadRunModule()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    await parse(['help', 'navigate'])
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Usage: weapp navigate <url> -p <project-path>'))
+    expect(resolveCliPathMock).not.toHaveBeenCalled()
+    expect(executeMock).not.toHaveBeenCalled()
+    logSpy.mockRestore()
+  })
+
+  it('prints english help when --lang en is provided', async () => {
+    const { parse } = await loadRunModule()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    await parse(['help', 'navigate', '--lang', 'en'])
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Navigate to a page'))
+    logSpy.mockRestore()
+  })
+
+  it('uses configured locale when command does not pass --lang', async () => {
+    const { parse } = await loadRunModule()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    getConfiguredLocaleMock.mockResolvedValue('en')
+
+    await parse(['help', 'navigate'])
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Navigate to a page'))
+    logSpy.mockRestore()
+  })
+
+  it('supports switching locale via config command', async () => {
+    const { parse } = await loadRunModule()
+
+    await parse(['config', 'lang', 'en'])
+
+    expect(createLocaleConfigMock).toHaveBeenCalledWith('en')
+    expect(executeMock).not.toHaveBeenCalled()
+    expect(resolveCliPathMock).not.toHaveBeenCalled()
+  })
+
+  it('supports showing config via config show', async () => {
+    const { parse } = await loadRunModule()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    readCustomConfigMock.mockResolvedValue({
+      cliPath: '/custom/cli',
+      locale: 'en',
+    })
+
+    await parse(['config', 'show'])
+
+    expect(readCustomConfigMock).toHaveBeenCalledTimes(1)
+    expect(logSpy).toHaveBeenCalledWith(JSON.stringify({
+      cliPath: '/custom/cli',
+      locale: 'en',
+    }, null, 2))
+    logSpy.mockRestore()
+  })
+
+  it('supports reading config key via config get', async () => {
+    const { parse } = await loadRunModule()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    readCustomConfigMock.mockResolvedValue({
+      locale: 'en',
+    })
+
+    await parse(['config', 'get', 'locale'])
+
+    expect(logSpy).toHaveBeenCalledWith('en')
+    logSpy.mockRestore()
+  })
+
+  it('supports setting cliPath via config set', async () => {
+    const { parse } = await loadRunModule()
+
+    await parse(['config', 'set', 'cliPath', './tools/cli'])
+
+    expect(createCustomConfigMock).toHaveBeenCalledWith({ cliPath: './tools/cli' })
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('supports clearing locale via config unset', async () => {
+    const { parse } = await loadRunModule()
+
+    await parse(['config', 'unset', 'locale'])
+
+    expect(removeCustomConfigKeyMock).toHaveBeenCalledWith('locale')
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('supports config doctor diagnostics output', async () => {
+    const { parse } = await loadRunModule()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    readCustomConfigMock.mockResolvedValue({
+      cliPath: '/custom/cli',
+      locale: 'zh',
+    })
+    resolveCliPathMock.mockResolvedValue({
+      cliPath: '/custom/cli',
+      source: 'custom',
+    })
+
+    await parse(['config', 'doctor'])
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"cliPathValid": true'))
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"locale": "zh"'))
+    logSpy.mockRestore()
+  })
+
+  it('supports config export to file', async () => {
+    const { parse } = await loadRunModule()
+    readCustomConfigMock.mockResolvedValue({
+      locale: 'en',
+    })
+
+    await parse(['config', 'export', '/tmp/weapp-config.json'])
+
+    expect(fsExtraMock.writeJSON).toHaveBeenCalledWith(
+      '/tmp/weapp-config.json',
+      { locale: 'en' },
+      { spaces: 2, encoding: 'utf8' },
+    )
+  })
+
+  it('supports config import from file', async () => {
+    const { parse } = await loadRunModule()
+    fsExtraMock.readJSON.mockResolvedValue({
+      cliPath: '/imported/cli',
+      locale: 'en',
+    })
+
+    await parse(['config', 'import', '/tmp/weapp-config.json'])
+
+    expect(fsExtraMock.readJSON).toHaveBeenCalledWith('/tmp/weapp-config.json')
+    expect(overwriteCustomConfigMock).toHaveBeenCalledWith({
+      cliPath: '/imported/cli',
+      locale: 'en',
+    })
+  })
+
+  it('fails fast when --lang is invalid', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(parse(['help', 'navigate', '--lang', 'fr'])).rejects.toThrow(
+      '不支持的语言: fr，仅支持 zh 或 en',
+    )
+
+    expect(resolveCliPathMock).not.toHaveBeenCalled()
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('fails fast when upload misses required version/desc arguments', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(parse(['upload', '-p', './mini-app'])).rejects.toThrow(
+      'upload 命令缺少必填参数：--version/-v 和 --desc/-d',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('fails fast when preview qr-format is invalid', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(parse(['preview', '-p', './mini-app', '--qr-format', 'svg'])).rejects.toThrow(
+      'preview 命令的二维码格式无效: svg（仅支持 terminal/image/base64）',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('fails fast when --port is invalid', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(parse(['open', '--port', 'abc'])).rejects.toThrow(
+      '无效的 --port 值: abc（必须为正整数）',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('fails fast when preview misses both --project and --appid', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(parse(['preview'])).rejects.toThrow(
+      'preview 命令需要提供 --project 或 --appid',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('fails fast when auto-preview misses both --project and --appid', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(parse(['auto-preview'])).rejects.toThrow(
+      'auto-preview 命令需要提供 --project 或 --appid',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('fails fast when --ext-appid is used without --appid and --project', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(parse(['preview', '--ext-appid', 'wx123'])).rejects.toThrow(
+      '--ext-appid 需要和 --appid 一起使用（当未提供 --project 时）',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('allows --ext-appid when --appid is provided', async () => {
+    const { parse } = await loadRunModule()
+
+    await parse(['preview', '--appid', 'wx123', '--ext-appid', 'wx456'])
+
+    expect(executeMock).toHaveBeenCalledTimes(1)
   })
 
   it('retries wechat cli execution when thrown error indicates login required', async () => {
@@ -337,6 +609,26 @@ describe('cli parsing', () => {
     })
 
     expect(waitForRetryKeypressMock).not.toHaveBeenCalled()
+  })
+
+  it('fails fast when --login-retry is invalid', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(parse(['open', '--login-retry', 'twice'])).rejects.toThrow(
+      '不支持的 --login-retry 值: twice（仅支持 never/once/always）',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
+  })
+
+  it('fails fast when --login-retry-timeout is invalid', async () => {
+    const { parse } = await loadRunModule()
+
+    await expect(parse(['open', '--login-retry-timeout', '0'])).rejects.toThrow(
+      '无效的 --login-retry-timeout 值: 0（必须为正整数）',
+    )
+
+    expect(executeMock).not.toHaveBeenCalled()
   })
 
   it('passes custom login retry timeout to keypress prompt', async () => {

@@ -1,26 +1,37 @@
-import { Buffer } from 'node:buffer'
-import fs from 'node:fs/promises'
-import process from 'node:process'
-import logger, { colors } from '../logger'
-import { formatAutomatorLoginError, isAutomatorLoginError, isDevtoolsHttpPortError, launchAutomator } from './automator'
-
-export interface ScreenshotOptions {
-  projectPath: string
-  outputPath?: string
-  page?: string
-  timeout?: number
-}
-
-export interface ScreenshotResult {
-  base64?: string
-  path?: string
-}
+import type { ScreenshotOptions } from './commands'
+import { i18nText } from '../i18n'
+import { colors } from '../logger'
+import { parseAutomatorArgs, readOptionValue } from './automator-argv'
 
 /**
  * @description Print help for screenshot command
  */
 export function printScreenshotHelp(): void {
-  console.log(`
+  console.log(i18nText(`
+${colors.bold('Usage:')} weapp screenshot [options]
+
+${colors.bold('参数:')}
+  -p, --project <path>   项目路径（默认：当前目录）
+  -o, --output <path>    截图输出文件路径
+      --page <path>      截图前先跳转页面
+  -t, --timeout <ms>     连接超时时间（默认：30000）
+      --json             以 JSON 格式输出
+      --lang <lang>      语言切换：zh | en（默认：zh）
+  -h, --help             显示此帮助信息
+
+${colors.bold('示例:')}
+  # 输出 base64 到 stdout
+  weapp screenshot -p /path/to/project
+
+  # 保存到文件
+  weapp screenshot -p /path/to/project -o screenshot.png
+
+  # 先跳转页面再截图
+  weapp screenshot -p /path/to/project --page pages/index/index
+
+  # 以 JSON 输出便于脚本解析
+  weapp screenshot -p /path/to/project --json
+`, `
 ${colors.bold('Usage:')} weapp screenshot [options]
 
 ${colors.bold('Options:')}
@@ -29,6 +40,7 @@ ${colors.bold('Options:')}
       --page <path>      Navigate to page before taking screenshot
   -t, --timeout <ms>     Connection timeout in milliseconds (default: 30000)
       --json             Output as JSON format
+      --lang <lang>      Language: zh | en (default: zh)
   -h, --help             Show this help message
 
 ${colors.bold('Examples:')}
@@ -43,128 +55,47 @@ ${colors.bold('Examples:')}
 
   # JSON output for parsing
   weapp screenshot -p /path/to/project --json
-`)
+`))
 }
 
 /**
  * @description Parse command line arguments for screenshot command
  */
 export function parseScreenshotArgs(argv: string[]): ScreenshotOptions {
-  const options: ScreenshotOptions = {
-    projectPath: process.cwd(),
+  const parsed = parseAutomatorArgs(argv)
+
+  return {
+    projectPath: parsed.projectPath,
+    timeout: parsed.timeout,
+    outputPath: readOptionValue(argv, '-o') || readOptionValue(argv, '--output'),
+    page: readOptionValue(argv, '--page'),
   }
-
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i]
-
-    if (arg === '-p' || arg === '--project') {
-      options.projectPath = argv[++i] || process.cwd()
-      continue
-    }
-
-    if (arg?.startsWith('--project=')) {
-      options.projectPath = arg.slice('--project='.length) || process.cwd()
-      continue
-    }
-
-    if (arg === '-o' || arg === '--output') {
-      options.outputPath = argv[++i]
-      continue
-    }
-
-    if (arg?.startsWith('--output=')) {
-      options.outputPath = arg.slice('--output='.length)
-      continue
-    }
-
-    if (arg === '--page') {
-      options.page = argv[++i]
-      continue
-    }
-
-    if (arg?.startsWith('--page=')) {
-      options.page = arg.slice('--page='.length)
-      continue
-    }
-
-    if (arg === '-t' || arg === '--timeout') {
-      options.timeout = Number.parseInt(argv[++i] || '30000', 10)
-      continue
-    }
-
-    if (arg?.startsWith('--timeout=')) {
-      options.timeout = Number.parseInt(arg.slice('--timeout='.length), 10)
-      continue
-    }
-
-    if (arg === '-h' || arg === '--help') {
-      printScreenshotHelp()
-      process.exit(0)
-    }
-  }
-
-  return options
 }
 
 /**
- * @description Take a screenshot of the miniprogram
+ * @description 运行截图命令并处理输出格式。
  */
-export async function takeScreenshot(options: ScreenshotOptions): Promise<ScreenshotResult> {
-  const { projectPath, outputPath, page, timeout } = options
-
-  let miniProgram: Awaited<ReturnType<typeof launchAutomator>> | null = null
-
-  try {
-    logger.info(`Connecting to DevTools at ${colors.cyan(projectPath)}...`)
-
-    miniProgram = await launchAutomator({
-      projectPath,
-      timeout,
-    })
-
-    if (page) {
-      logger.info(`Navigating to page ${colors.cyan(page)}...`)
-      await miniProgram.reLaunch(page)
-    }
-
-    logger.info('Taking screenshot...')
-
-    const screenshot = await miniProgram.screenshot()
-
-    if (!screenshot) {
-      throw new Error('Failed to capture screenshot')
-    }
-
-    const base64 = typeof screenshot === 'string'
-      ? screenshot
-      : Buffer.from(screenshot).toString('base64')
-
-    if (outputPath) {
-      await fs.writeFile(outputPath, Buffer.from(base64, 'base64'))
-      logger.success(`Screenshot saved to ${colors.cyan(outputPath)}`)
-      return { path: outputPath }
-    }
-
-    return { base64 }
+export async function runScreenshot(argv: string[]) {
+  if (argv.includes('-h') || argv.includes('--help')) {
+    printScreenshotHelp()
+    return
   }
-  catch (error) {
-    if (isAutomatorLoginError(error)) {
-      logger.error('检测到微信开发者工具登录状态失效，请先登录后重试。')
-      logger.warn(formatAutomatorLoginError(error))
-      throw new Error('DEVTOOLS_LOGIN_REQUIRED')
-    }
 
-    if (isDevtoolsHttpPortError(error)) {
-      logger.error('无法连接到微信开发者工具，请确保已开启 HTTP 服务端口。')
-      logger.warn('请在微信开发者工具中：设置 -> 安全设置 -> 开启服务端口')
-      throw new Error('DEVTOOLS_HTTP_PORT_ERROR')
-    }
+  const options = parseScreenshotArgs(argv)
+  const isJsonOutput = argv.includes('--json')
+  const { takeScreenshot } = await import('./commands')
 
-    throw error
+  const result = await takeScreenshot(options)
+
+  if (isJsonOutput) {
+    console.log(JSON.stringify(result, null, 2))
+    return
   }
-  finally {
-    if (miniProgram) {
-      await miniProgram.close()
-    }
+
+  if (result.base64) {
+    console.log(result.base64)
   }
 }
+
+export { takeScreenshot } from './commands'
+export type { ScreenshotOptions, ScreenshotResult } from './commands'

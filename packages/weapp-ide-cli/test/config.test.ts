@@ -92,12 +92,12 @@ describe('config helpers', () => {
 
   it('returns custom config when file exists with valid path', async () => {
     fsMock.pathExists.mockResolvedValue(true)
-    fsMock.readJSON.mockResolvedValue({ cliPath: '/custom/cli' })
+    fsMock.readJSON.mockResolvedValue({ cliPath: '/custom/cli', locale: 'en' })
 
     const { getConfig } = await loadConfigModule()
     const result = await getConfig()
 
-    expect(result).toEqual({ cliPath: '/custom/cli', source: 'custom' })
+    expect(result).toEqual({ cliPath: '/custom/cli', locale: 'en', source: 'custom' })
     expect(loggerMock.info).toHaveBeenCalledWith('自定义 CLI 路径：/custom/cli')
   })
 
@@ -121,5 +121,59 @@ describe('config helpers', () => {
 
     expect(result.source).toBe('default')
     expect(loggerMock.warn).toHaveBeenCalled()
+  })
+
+  it('writes locale config and preserves existing cliPath', async () => {
+    fsMock.pathExists.mockResolvedValue(true)
+    fsMock.readJSON.mockResolvedValue({ cliPath: '/custom/cli', locale: 'zh' })
+    fsMock.ensureDir.mockResolvedValue(undefined)
+    fsMock.writeJSON.mockResolvedValue(undefined)
+
+    const { createLocaleConfig } = await loadConfigModule()
+    const result = await createLocaleConfig('en')
+
+    expect(result).toBe('en')
+    expect(fsMock.writeJSON).toHaveBeenCalledTimes(1)
+    const [, payload] = fsMock.writeJSON.mock.calls[0]
+    expect(payload).toEqual({
+      cliPath: '/custom/cli',
+      locale: 'en',
+    })
+  })
+
+  it('removes config key via removeCustomConfigKey', async () => {
+    fsMock.pathExists.mockResolvedValue(true)
+    fsMock.readJSON.mockResolvedValue({ cliPath: '/custom/cli', locale: 'en' })
+    fsMock.ensureDir.mockResolvedValue(undefined)
+    fsMock.writeJSON.mockResolvedValue(undefined)
+
+    const { removeCustomConfigKey } = await loadConfigModule()
+    await removeCustomConfigKey('locale')
+
+    const [, payload] = fsMock.writeJSON.mock.calls[0]
+    expect(payload).toEqual({
+      cliPath: '/custom/cli',
+    })
+  })
+
+  it('overwrites config content via overwriteCustomConfig', async () => {
+    fsMock.pathExists.mockResolvedValue(true)
+    fsMock.readJSON.mockResolvedValue({ cliPath: '/old/cli', locale: 'zh' })
+    fsMock.ensureDir.mockResolvedValue(undefined)
+    fsMock.writeJSON.mockResolvedValue(undefined)
+    const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue('/workspace/app')
+
+    const { overwriteCustomConfig } = await loadConfigModule()
+    await overwriteCustomConfig({
+      cliPath: './new/cli',
+      locale: 'en',
+    })
+
+    const [, payload] = fsMock.writeJSON.mock.calls[0]
+    expect(payload).toEqual({
+      cliPath: '/workspace/app/new/cli',
+      locale: 'en',
+    })
+    cwdSpy.mockRestore()
   })
 })
