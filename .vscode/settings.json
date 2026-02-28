@@ -81,6 +81,22 @@
   "css.validate": false,
   "less.validate": false,
   "scss.validate": false,
+  "git.autofetch": false,
+  "git.untrackedChanges": "hidden",
+  "files.watcherExclude": {
+    "**/.git/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/coverage/**": true,
+    "**/.turbo/**": true,
+    "**/.playwright-cli/**": true
+  },
+  "search.exclude": {
+    "**/dist/**": true,
+    "**/coverage/**": true,
+    "**/.turbo/**": true,
+    "**/.playwright-cli/**": true
+  },
   "stylelint.validate": [
     "vue",
     "css",
