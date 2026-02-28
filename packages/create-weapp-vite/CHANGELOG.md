@@ -1,5 +1,16 @@
 # create-weapp-vite
 
+## 2.0.39
+
+### Patch Changes
+
+- 🐛 **修复 auto-routes 在开发模式下对新增页面与目录变更的热更新同步问题：补齐 pages 相关路径变更的兜底重扫逻辑，并修正全量重扫时的候选扫描范围，避免 typed-router 与构建产物在增删改场景下出现漏更新。同步新增并加固 auto-routes HMR 的 e2e 覆盖，验证新增、删除、修改、重建等核心路径。** [`f0dda62`](https://github.com/weapp-vite/weapp-vite/commit/f0dda629ebd785aba358483bae7eeab228102206) by @sonofmagic
+
+- 🐛 **修复 `app.vue` 中 `<script setup>` 的 `defineOptions` 不能引用局部变量或导入变量的问题，并统一增强宏配置提取体验：** [`a1ae4a6`](https://github.com/weapp-vite/weapp-vite/commit/a1ae4a6abe0374644a32d0078085bd662faae641) by @sonofmagic
+  - 新增 `defineOptions` 参数静态内联能力，支持引用本地声明与跨文件导入（包含 `weapp-vite/auto-routes` 顶部静态引入场景）。
+  - `auto-routes-define-app-json` 示例改为单 `script setup`，同一份 `routes` 同时用于 `defineAppJson` 与运行时 `globalData`。
+  - 补充单元测试与 e2e 测试，覆盖 JSON 宏和 `defineOptions` 对局部/导入变量的兼容性与热更新回归。
+
 ## 2.0.38
 
 ### Patch Changes
