@@ -209,6 +209,12 @@ async function runBuild() {
 
 let sharedMiniProgram: any = null
 let sharedBuildPrepared = false
+const AUTOMATOR_LAUNCH_RETRIES = 3
+const AUTOMATOR_LAUNCH_RETRY_DELAY = 1_200
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 async function getSharedMiniProgram() {
   if (!sharedBuildPrepared) {
@@ -216,9 +222,22 @@ async function getSharedMiniProgram() {
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    let lastError: unknown
+    for (let attempt = 1; attempt <= AUTOMATOR_LAUNCH_RETRIES; attempt += 1) {
+      try {
+        sharedMiniProgram = await launchAutomator({
+          projectPath: APP_ROOT,
+        })
+        break
+      }
+      catch (error) {
+        lastError = error
+        if (attempt >= AUTOMATOR_LAUNCH_RETRIES) {
+          throw lastError
+        }
+        await sleep(AUTOMATOR_LAUNCH_RETRY_DELAY * attempt)
+      }
+    }
   }
   return sharedMiniProgram
 }

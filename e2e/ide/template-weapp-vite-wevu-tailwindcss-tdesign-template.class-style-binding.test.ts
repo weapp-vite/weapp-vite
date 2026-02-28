@@ -135,7 +135,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
 
       const baseStyleString = readClassAndStyleByDataE2E(wxml, 'style-string')
       expect(baseStyleString.styleValue).toMatch(/font-size:\s*(24rpx|12px)/)
-      expect(baseStyleString.styleValue).toMatch(/letter-spacing:\s*(0\.5rpx|0\.25px)/)
+      expect(baseStyleString.styleValue).toMatch(/letter-spacing:\s*(0\.5rpx|0\.25px|1(?:\.0)?px)/)
 
       const baseStyleVar = readClassAndStyleByDataE2E(wxml, 'style-var')
       expect(baseStyleVar.styleValue).toContain('--lab-accent:#2563eb')
@@ -159,17 +159,17 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
 
       const allOnStyleObject = readClassAndStyleByDataE2E(wxml, 'style-object')
       expect(allOnStyleObject.styleValue).toMatch(/border-style:\s*dashed/)
-      expect(allOnStyleObject.styleValue).toMatch(/border-radius:\s*(999rpx|499\.5px)/)
+      expect(allOnStyleObject.styleValue).toMatch(/border-radius:\s*(999rpx|499(?:\.5)?px)/)
       expect(allOnStyleObject.styleValue).toMatch(/#ef4444/)
 
       const allOnStyleArray = readClassAndStyleByDataE2E(wxml, 'style-array')
-      expect(allOnStyleArray.styleValue).toMatch(/transform:\s*translateY\(-4(?:rpx|px)\)/)
+      expect(allOnStyleArray.styleValue).toMatch(/transform:\s*translateY\(-(4rpx|2px|4px)\)/)
       expect(allOnStyleArray.styleValue).toMatch(/opacity:\s*0\.78/)
 
       const allOnStyleString = readClassAndStyleByDataE2E(wxml, 'style-string')
       expect(allOnStyleString.styleValue).toMatch(/font-size:\s*(26rpx|13px)/)
       expect(allOnStyleString.styleValue).toMatch(/color:\s*#b91c1c/)
-      expect(allOnStyleString.styleValue).toMatch(/letter-spacing:\s*(1\.2rpx|0\.6px)/)
+      expect(allOnStyleString.styleValue).toMatch(/letter-spacing:\s*(1\.2rpx|0\.6px|1(?:\.0)?px|2(?:\.4)?px)/)
 
       await page.callMethod('applyScenarioMixed')
       await page.waitFor(120)

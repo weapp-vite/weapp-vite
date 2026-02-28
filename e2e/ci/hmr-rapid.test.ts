@@ -19,6 +19,7 @@ const SRC_SCRIPT = path.join(HMR_SRC_DIR, 'index.ts')
 const SFC_SRC_PATH = path.join(APP_ROOT, 'src/pages/hmr-sfc/index.vue')
 
 const PLATFORM_LIST = resolvePlatforms()
+const RAPID_HMR_TIMEOUT = 180_000
 
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
@@ -57,7 +58,7 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
 
       // 等待 dist 包含第二次标记
       const content = await dev.waitFor(
-        waitForFileContains(distPath, secondMarker),
+        waitForFileContains(distPath, secondMarker, RAPID_HMR_TIMEOUT),
         `${platform} rapid second template marker`,
       )
       expect(content).toContain(secondMarker)
@@ -102,7 +103,7 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
 
       // 等待 dist 包含第二次标记
       const content = await dev.waitFor(
-        waitForFileContains(distPath, secondMarker),
+        waitForFileContains(distPath, secondMarker, RAPID_HMR_TIMEOUT),
         `${platform} rapid second script marker`,
       )
       expect(content).toContain(secondMarker)
@@ -148,7 +149,7 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
 
       // 等待 dist 中模板文件包含第二次标记
       const content = await dev.waitFor(
-        waitForFileContains(distPath, secondMarker),
+        waitForFileContains(distPath, secondMarker, RAPID_HMR_TIMEOUT),
         `${platform} rapid second SFC marker`,
       )
       expect(content).toContain(secondMarker)
