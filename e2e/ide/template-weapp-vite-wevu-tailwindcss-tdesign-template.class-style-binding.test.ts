@@ -62,7 +62,6 @@ async function runBuild() {
     cliPath: CLI_PATH,
     projectRoot: TEMPLATE_ROOT,
     platform: 'weapp',
-    skipNpm: true,
     cwd: TEMPLATE_ROOT,
     label: 'ide:template-wevu-class-style-bindings',
   })
