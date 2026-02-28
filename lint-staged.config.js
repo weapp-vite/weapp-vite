@@ -1,4 +1,7 @@
 export default {
+  'skills/**/*.{yaml,yml}': [
+    'node skills/scripts/validate-skills-yaml.mjs',
+  ],
   '!(apps)/**/*.{js,jsx,mjs,ts,tsx,mts,vue}': [
     'eslint --fix --no-warn-ignored',
   ],
