@@ -1,6 +1,7 @@
 export * from './automator'
 export * from './automator-argv'
 export * from './automator-session'
+export * from './command-catalog'
 export * from './commands'
 export * from './config-command'
 export * from './minidev'

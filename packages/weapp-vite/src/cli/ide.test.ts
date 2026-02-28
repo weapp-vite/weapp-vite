@@ -1,15 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const parseWeappIdeCliMock = vi.hoisted(() => vi.fn())
+const isWeappIdeTopLevelCommandMock = vi.hoisted(() => vi.fn())
 
 vi.mock('weapp-ide-cli', () => ({
   parse: parseWeappIdeCliMock,
+  isWeappIdeTopLevelCommand: isWeappIdeTopLevelCommandMock,
 }))
 
 describe('tryRunIdeCommand', () => {
   beforeEach(() => {
     parseWeappIdeCliMock.mockReset()
+    isWeappIdeTopLevelCommandMock.mockReset()
     parseWeappIdeCliMock.mockResolvedValue(undefined)
+    isWeappIdeTopLevelCommandMock.mockImplementation((command: string) =>
+      [
+        'preview',
+        'navigate',
+        'config',
+        'screenshot',
+      ].includes(command),
+    )
   })
 
   it('forwards ide-only command to weapp-ide-cli', async () => {
@@ -80,7 +91,7 @@ describe('tryRunIdeCommand', () => {
 
     const forwarded = await tryRunIdeCommand(['foobar', '--x'])
 
-    expect(forwarded).toBe(true)
-    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['foobar', '--x'])
+    expect(forwarded).toBe(false)
+    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
   })
 })
