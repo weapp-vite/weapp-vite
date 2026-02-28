@@ -154,7 +154,7 @@
     "json-schema-to-typescript": "^15.0.4",
     "just-diff": "^6.0.2",
     "less": "^4.5.1",
-    "lint-staged": "^16.2.7",
+    "lint-staged": "^16.3.0",
     "lodash": "^4.17.23",
     "lodash-es": "^4.17.23",
     "magic-string": "^0.30.21",
