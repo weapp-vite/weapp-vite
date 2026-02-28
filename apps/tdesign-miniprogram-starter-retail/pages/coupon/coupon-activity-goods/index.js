@@ -14,11 +14,19 @@ Page({
   id: '',
 
   onLoad(query) {
-    const id = parseInt(query.id);
+    const id = this.parseCouponId(query?.id);
     this.id = id;
 
     this.getCouponDetail(id);
-    this.getGoodsList(id);
+    this.getGoodsList();
+  },
+
+  parseCouponId(rawCouponId) {
+    const parsed = Number.parseInt(String(rawCouponId ?? ''), 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      return 0;
+    }
+    return parsed;
   },
 
   getCouponDetail(id) {
@@ -44,8 +52,8 @@ Page({
     });
   },
 
-  getGoodsList(id) {
-    fetchGoodsList(id).then((goods) => {
+  getGoodsList() {
+    fetchGoodsList(1, 20).then((goods) => {
       this.setData({ goods });
     });
   },

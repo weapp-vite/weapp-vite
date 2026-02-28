@@ -172,13 +172,13 @@
         {
           "name": "优惠券活动商品",
           "pathName": "pages/coupon/coupon-activity-goods/index",
-          "query": "",
+          "query": "id=1",
           "scene": null
         },
         {
           "name": "营销活动详情",
           "pathName": "pages/promotion/promotion-detail/index",
-          "query": "",
+          "query": "promotion_id=1",
           "scene": null
         }
       ]
