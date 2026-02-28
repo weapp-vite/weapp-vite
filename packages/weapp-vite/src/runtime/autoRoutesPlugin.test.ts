@@ -152,6 +152,47 @@ describe('createAutoRoutesService', () => {
     expect(watchFilesAfterDelete).not.toContain(stylePath)
   })
 
+  it('rebuilds routes after rename events', async () => {
+    const ctx = createContext()
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    const oldPage = path.join(srcRoot, 'pages', 'index', 'index.ts')
+    const newPageDir = path.join(srcRoot, 'pages', 'renamed')
+    const newPage = path.join(newPageDir, 'index.ts')
+    await fs.ensureDir(newPageDir)
+    await fs.move(oldPage, newPage)
+
+    await service.handleFileChange(newPage, 'rename')
+
+    const snapshot = service.getSnapshot()
+    expect(snapshot.pages).toContain('pages/renamed/index')
+    expect(snapshot.pages).not.toContain('pages/index/index')
+
+    const typedRouterPath = path.join(tempDir, 'typed-router.d.ts')
+    const typedRouterContent = await fs.readFile(typedRouterPath, 'utf8')
+    expect(typedRouterContent).toContain('"pages/renamed/index"')
+    expect(typedRouterContent).not.toContain('"pages/index/index"')
+  })
+
+  it('ignores non-route file changes', async () => {
+    const ctx = createContext()
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    const before = service.getSnapshot()
+    const utilPath = path.join(srcRoot, 'utils', 'format.ts')
+    await fs.ensureDir(path.dirname(utilPath))
+    await fs.writeFile(utilPath, 'export const noop = () => {}\n', 'utf8')
+    await service.handleFileChange(utilPath, 'create')
+
+    const after = service.getSnapshot()
+    expect(after).toEqual(before)
+    expect(service.isRouteFile(utilPath)).toBe(false)
+  })
+
   it('no-ops when feature is disabled', async () => {
     const ctx = createContext(false)
     const service = createAutoRoutesService(ctx)

@@ -1,6 +1,7 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
-import { normalizeWatchPath } from '../utils/path'
+import path from 'pathe'
+import { normalizeWatchPath, toPosixPath } from '../utils/path'
 
 const AUTO_ROUTES_ID = 'weapp-vite/auto-routes'
 const VIRTUAL_MODULE_ID = 'virtual:weapp-vite-auto-routes'
@@ -9,6 +10,35 @@ const RESOLVED_VIRTUAL_ID = '\0weapp-vite:auto-routes'
 function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
   const service = ctx.autoRoutesService
   let resolvedConfig: ResolvedConfig | undefined
+
+  function isPagesRelatedPath(id: string) {
+    const configService = ctx.configService
+    if (!configService) {
+      return false
+    }
+
+    const [pathWithoutQuery] = id.split('?')
+    if (!pathWithoutQuery) {
+      return false
+    }
+
+    const normalized = path.isAbsolute(pathWithoutQuery)
+      ? pathWithoutQuery
+      : path.resolve(configService.cwd, pathWithoutQuery)
+
+    if (!normalized.startsWith(configService.absoluteSrcRoot)) {
+      return false
+    }
+
+    const relative = toPosixPath(path.relative(configService.absoluteSrcRoot, normalized))
+    if (!relative || relative.startsWith('..')) {
+      return false
+    }
+
+    return relative === 'pages'
+      || relative.startsWith('pages/')
+      || relative.includes('/pages/')
+  }
 
   return {
     name: 'weapp-vite:auto-routes',
@@ -60,20 +90,36 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     },
 
     async watchChange(id, change) {
-      if (!service.isRouteFile(id)) {
+      const event = change?.event
+      if (service.isRouteFile(id)) {
+        await service.handleFileChange(id, event)
         return
       }
-      const event = change?.event
-      await service.handleFileChange(id, event)
+
+      if (!isPagesRelatedPath(id)) {
+        return
+      }
+
+      // 目录级新增/删除、或未命中的 pages 路径变化，统一触发一次全量重扫，保证路由增删改一致性。
+      if (event === 'create' || event === 'delete' || event === 'rename' || event === 'update') {
+        await service.handleFileChange(id, 'rename')
+      }
     },
 
     async handleHotUpdate(context) {
-      if (!service.isRouteFile(context.file)) {
-        return
-      }
-
       if (resolvedConfig?.command === 'serve') {
-        await service.handleFileChange(context.file, 'update')
+        if (service.isRouteFile(context.file)) {
+          await service.handleFileChange(context.file, 'update')
+        }
+        else if (isPagesRelatedPath(context.file)) {
+          await service.handleFileChange(context.file, 'rename')
+        }
+        else {
+          return
+        }
+      }
+      else if (!service.isRouteFile(context.file) && !isPagesRelatedPath(context.file)) {
+        return
       }
 
       const virtualModule = context.server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID)

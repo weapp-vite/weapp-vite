@@ -157,10 +157,9 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     }
 
     const absoluteSrcRoot = configService.absoluteSrcRoot
-    const searchRoots = state.needsFullRescan && state.watchDirs.size > 0
-      ? state.watchDirs.values()
-      : undefined
-    const candidates = await collectCandidates(absoluteSrcRoot, searchRoots)
+    // 全量重扫必须从 srcRoot 开始，不能只扫描历史 watchDirs；
+    // 否则新增同级 pages 目录（例如 pages/foo -> pages/bar）会被漏掉。
+    const candidates = await collectCandidates(absoluteSrcRoot)
 
     state.candidates.clear()
     for (const candidate of candidates.values()) {
