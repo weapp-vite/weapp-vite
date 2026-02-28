@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-26T18:29:27.278Z",
+  "generatedAt": "2026-02-28T17:18:19.132Z",
   "site": "https://vite.icebreaker.top",
-  "count": 162,
+  "count": 163,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -123,7 +123,7 @@
     },
     {
       "id": "doc-8f1a98491f",
-      "title": "Weapp-vite@6：原生模式之外，多一种 Vue 选择",
+      "title": "重走 Vue 长征路 Weapp-vite：原生模式之外，多一种 Vue 选择",
       "summary": "还记得在 Weapp-vite 4.0 的发布文章里，我写过这样的话：",
       "url": "/blog/release6",
       "canonical": "https://vite.icebreaker.top/blog/release6",
@@ -138,18 +138,18 @@
         "release6"
       ],
       "headings": [
-        "Weapp-vite@6：原生模式之外，多一种 Vue 选择",
+        "重走 Vue 长征路: Weapp-vite：原生模式之外，多一种 Vue SFC 选择",
         "前言",
-        "背景故事：从零运行时到 Vue 支持",
+        "背景故事：从零运行时到 Vue SFC 支持",
         "最初的定位",
         "市面上的选择",
+        "Taro",
+        "uni-app",
+        "mpx",
         "Weapp-vite 的思路",
-        "Wevu 的诞生",
+        "运行时 Wevu 的诞生",
         "编译时 + 运行时",
-        "认识 Wevu：Vue 3 风格的小程序运行时",
-        "核心特点",
-        "Vue 3 vs Wevu：实现上的异同",
-        "Weapp-vite + Wevu 的组合"
+        "认识 Wevu：Vue 3 风格的小程序运行时"
       ],
       "updatedAt": "2026-02-25",
       "source": "blog/release6.md"
@@ -274,9 +274,10 @@
         "构建输出与兼容 {#build-and-output}",
         "输出目录来源",
         "weapp.jsFormat {#weapp-jsformat}",
-        "weapp.es5 {#weapp-es5}"
+        "weapp.es5 {#weapp-es5}",
+        "build.minify 与 build.sourcemap {#build-minify-sourcemap}"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-02-28",
       "source": "config/build-and-output.md"
     },
     {
@@ -394,10 +395,11 @@
         "npm 配置 {#config-npm}",
         "依赖分类规则（默认）",
         "weapp.npm {#weapp-npm}",
+        "控制 npm 依赖的压缩与 sourcemap",
         "手动构建命令",
         "常见问题"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-02-28",
       "source": "config/npm.md"
     },
     {
@@ -867,6 +869,37 @@
       "source": "guide/chunks.md"
     },
     {
+      "id": "doc-13e32e3ea2",
+      "title": "CLI 命令参考",
+      "summary": "Weapp-vite CLI 命令参考，包含全局参数、原生命令、别名、常用示例，以及 weapp-ide-cli 透传规则。",
+      "url": "/guide/cli",
+      "canonical": "https://vite.icebreaker.top/guide/cli",
+      "keywords": [
+        "guide",
+        "cli",
+        "commands",
+        "weapp-vite",
+        "weapp-ide-cli",
+        "命令参考"
+      ],
+      "headings": [
+        "CLI 命令参考",
+        "命令格式",
+        "全局参数",
+        "原生命令",
+        "1) dev / serve（默认命令）",
+        "2) build",
+        "3) analyze",
+        "4) open",
+        "5) npm（含别名）",
+        "6) generate / g",
+        "7) init",
+        "weapp-ide-cli 透传规则"
+      ],
+      "updatedAt": "2026-03-01",
+      "source": "guide/cli.md"
+    },
+    {
       "id": "doc-c7a5c8344e",
       "title": "调试与贡献",
       "summary": "这份指南面向想要参与 Weapp-vite 开发或排查源码问题的伙伴。按照下面的步骤准备环境，就可以在本地命中断点、验证修改，并把贡献发送到社区。",
@@ -1008,7 +1041,7 @@
         "1. 创建项目",
         "2. 手动接入 Weapp-vite"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-01",
       "source": "guide/index.md"
     },
     {
@@ -3198,28 +3231,33 @@
     {
       "id": "doc-70402715ac",
       "title": "weapp-ide-cli",
-      "summary": "weapp-ide-cli 是对微信开发者工具官方命令行的增强封装：保留官方命令语义，同时补齐路径、配置和非交互体验。",
+      "summary": "weapp-ide-cli 是微信开发者工具 CLI 的增强封装，提供命令透传、automator 子命令、配置管理与中英文切换。",
       "url": "/packages/weapp-ide-cli",
       "canonical": "https://vite.icebreaker.top/packages/weapp-ide-cli",
       "keywords": [
         "packages",
-        "weapp",
-        "ide",
-        "cli",
         "weapp-ide-cli",
-        "同时补齐路径",
-        "配置和非交互体验。"
+        "cli",
+        "automator",
+        "config",
+        "微信小程序",
+        "配置",
+        "weapp"
       ],
       "headings": [
         "weapp-ide-cli",
-        "何时使用",
-        "前置条件",
         "安装",
-        "常用命令",
-        "支付宝 minidev 转发",
-        "CI 建议"
+        "命令大全",
+        "1) 微信官方 CLI 透传命令",
+        "2) automator 增强命令",
+        "3) config 子命令",
+        "4) 支付宝 minidev 转发",
+        "5) 程序化命令目录导出",
+        "语言切换",
+        "参数前置校验（增强）",
+        "参考"
       ],
-      "updatedAt": "2026-02-26",
+      "updatedAt": "2026-02-28",
       "source": "packages/weapp-ide-cli.md"
     },
     {
