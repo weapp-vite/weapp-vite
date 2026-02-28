@@ -13,7 +13,9 @@
     "pages/template-compat/index",
     "pages/wevu-inline-object-reactivity-repro/index",
     "pages/hmr-sfc/index",
-    "pages/hmr-html/index"
+    "pages/hmr-html/index",
+    "pages/composition-api/index",
+    "pages/composition-api-vue/index"
   ],
   "window": {
     "navigationBarTitleText": "Wevu Runtime E2E"

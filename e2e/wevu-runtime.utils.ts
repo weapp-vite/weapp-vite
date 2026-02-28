@@ -16,6 +16,8 @@ const PLATFORM_EXT: Record<RuntimePlatform, { template: string, style: string }>
 }
 
 const SNAPSHOT_EXCLUDED_PAGES = new Set<string>([
+  'pages/composition-api/index',
+  'pages/composition-api-vue/index',
   'pages/class-computed/index',
   'pages/template-compat/index',
   'pages/wevu-inline-object-reactivity-repro/index',
