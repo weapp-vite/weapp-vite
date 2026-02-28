@@ -1,0 +1,21 @@
+.page {
+  padding: 24rpx;
+}
+
+.anchor {
+  font-size: 24rpx;
+}
+
+.title {
+  margin-top: 12rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.result {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  color: #374151;
+  word-break: break-all;
+}

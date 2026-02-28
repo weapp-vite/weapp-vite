@@ -22,6 +22,20 @@
     "miniprogram": {
       "list": [
         {
+          "name": "pages/composition-api/index",
+          "pathName": "pages/composition-api/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/composition-api-vue/index",
+          "pathName": "pages/composition-api-vue/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/class-style/index",
           "pathName": "pages/class-style/index",
           "query": "",

@@ -1,0 +1,5 @@
+<view class="page">
+  <view id="api-ref" class="anchor">composition api anchor</view>
+  <view class="title">wevu composition api e2e</view>
+  <text class="result">{{__e2eText}}</text>
+</view>
