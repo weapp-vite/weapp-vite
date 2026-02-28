@@ -1,11 +1,12 @@
 interface:
   display_name: Weapp-vite Best Practices
-  short_description: weapp-vite 工程化、分包与构建调优（vite.config.ts / app.json / CI）
+  short_description: weapp-vite 工程化、分包、CLI 分发与构建调优（vite.config.ts / app.json / CI）
   default_prompt: >-
     Use $weapp-vite-best-practices for project-level architecture and build
     orchestration in weapp-vite. Focus on `vite.config.ts` weapp options,
-    route/subpackage strategy, chunk sharing, and CI/DevTools workflow. If the
-    issue is mainly SFC macro/template syntax, delegate to
+    route/subpackage strategy, chunk sharing, CLI dispatch ownership between
+    `weapp-vite` and `weapp-ide-cli`, and CI/DevTools workflow. If the issue
+    is mainly SFC macro/template syntax, delegate to
     $weapp-vite-vue-sfc-best-practices; if mainly runtime lifecycle/store, use
     $wevu-best-practices; if phased native migration, use
     $native-to-weapp-vite-wevu-migration. Return: diagnosis, minimal file-level
