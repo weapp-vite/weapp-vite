@@ -3,7 +3,7 @@ import type { SetDataDebugInfo } from '../../types'
 import { isRef, toRaw } from '../../../reactivity'
 import { diffSnapshots } from '../../diff'
 import { runPatchUpdate } from './patchScheduler'
-import { collectSnapshot } from './snapshot'
+import { cloneSnapshotValue, collectSnapshot } from './snapshot'
 
 export function createSetDataScheduler(options: {
   state: Record<string, any>
@@ -115,7 +115,7 @@ export function createSetDataScheduler(options: {
   const runDiffUpdate = (reason: SetDataDebugInfo['reason'] = 'diff') => {
     const snapshot = collect()
     const diff = diffSnapshots(latestSnapshot, snapshot)
-    latestSnapshot = snapshot
+    latestSnapshot = cloneSnapshotValue(snapshot)
     needsFullSnapshot.value = false
     pendingPatches.clear()
     if (setDataStrategy === 'patch' && includeComputed) {
@@ -132,7 +132,7 @@ export function createSetDataScheduler(options: {
       return
     }
     if (typeof currentAdapter.setData === 'function') {
-      const result = currentAdapter.setData(diff)
+      const result = currentAdapter.setData(cloneSnapshotValue(diff))
       if (result && typeof (result as Promise<any>).then === 'function') {
         ;(result as Promise<any>).catch(() => {})
       }
@@ -184,6 +184,14 @@ export function createSetDataScheduler(options: {
     runTracker()
 
     if (setDataStrategy === 'patch' && !needsFullSnapshot.value) {
+      const hasPatchSignal = pendingPatches.size > 0
+        || fallbackTopKeys.size > 0
+        || (includeComputed && dirtyComputedKeys.size > 0)
+      // setup 返回的 ref/computed 变更不会进入 mutation recorder，patch 信号为空时兜底走 diff。
+      if (!hasPatchSignal) {
+        runDiffUpdate('diff')
+        return
+      }
       runPatchUpdate({
         state,
         computedRefs,

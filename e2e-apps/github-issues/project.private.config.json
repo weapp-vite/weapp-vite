@@ -104,6 +104,13 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/issue-312/index",
+          "pathName": "pages/issue-312/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

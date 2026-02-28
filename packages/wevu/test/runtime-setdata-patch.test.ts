@@ -71,6 +71,43 @@ describe('runtime: setData patch strategy', () => {
     expect(calls.at(-1)).toEqual({ b: 2 })
   })
 
+  it('keeps computed object updates when returning to initial aliased reference', async () => {
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: () => ({
+        index: 0,
+        options: [
+          { label: '选项1', value: 1 },
+          { label: '选项2', value: 2 },
+          { label: '选项3', value: 3 },
+        ],
+      }),
+      computed: {
+        option(this: any) {
+          return this.options[this.index]
+        },
+      },
+      setData: { strategy: 'patch', includeComputed: true },
+    })
+    const inst = app.mount(adapter)
+    expect(calls).toHaveLength(1)
+
+    calls.length = 0
+    inst.state.index = 1
+    await nextTick()
+    const firstPayload = calls.at(-1) ?? {}
+    expect(firstPayload.index).toBe(1)
+    expect(firstPayload.option?.label ?? firstPayload['option.label']).toBe('选项2')
+    expect(firstPayload.option?.value ?? firstPayload['option.value']).toBe(2)
+
+    inst.state.index = 0
+    await nextTick()
+    const secondPayload = calls.at(-1) ?? {}
+    expect(secondPayload.index).toBe(0)
+    expect(secondPayload.option?.label ?? secondPayload['option.label']).toBe('选项1')
+    expect(secondPayload.option?.value ?? secondPayload['option.value']).toBe(1)
+  })
+
   it('computedCompare=deep uses depth/key limits to avoid heavy recursion', async () => {
     const { calls, adapter } = createMockAdapter()
     const app = createApp({
