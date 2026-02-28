@@ -199,6 +199,9 @@ export default defineComponent({
       (value) => {
         watchedValues.push(value)
       },
+      {
+        flush: 'sync',
+      },
     )
 
     const effectValues: number[] = []
@@ -388,7 +391,9 @@ export default defineComponent({
 
       stopWatch.resume()
       reactiveState.count = 5
-      await nextTick()
+      for (let i = 0; i < 4 && !watchedValues.includes(5); i += 1) {
+        await nextTick()
+      }
       stopWatch.stop()
 
       shallowCounter.value.value += 1

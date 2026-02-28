@@ -174,6 +174,9 @@ const stopWatch = watch(
   (value) => {
     watchedValues.push(value)
   },
+  {
+    flush: 'sync',
+  },
 )
 
 const effectValues: number[] = []
@@ -361,7 +364,9 @@ async function runE2E() {
 
   stopWatch.resume()
   reactiveState.count = 5
-  await nextTick()
+  for (let i = 0; i < 4 && !watchedValues.includes(5); i += 1) {
+    await nextTick()
+  }
   stopWatch.stop()
 
   shallowCounter.value.value += 1
