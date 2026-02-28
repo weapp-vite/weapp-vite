@@ -185,7 +185,8 @@ const COMMAND_DEFINITIONS: Record<string, CommandDefinition> = {
   }),
 }
 
-const AUTOMATOR_COMMANDS = new Set(['screenshot', ...Object.keys(COMMAND_DEFINITIONS)])
+export const AUTOMATOR_COMMAND_NAMES = ['screenshot', ...Object.keys(COMMAND_DEFINITIONS)]
+const AUTOMATOR_COMMANDS = new Set(AUTOMATOR_COMMAND_NAMES)
 
 /**
  * @description 判断是否属于 automator 子命令。

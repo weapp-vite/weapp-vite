@@ -123,6 +123,23 @@ weapp navigate --help
 | `weapp ali <args...>`              | `alipay` 别名                |
 | `weapp open --platform alipay ...` | 自动转发为 `minidev ide ...` |
 
+### 5) 程序化命令目录导出
+
+可直接复用 `weapp-ide-cli` 提供的命令判断能力：
+
+```ts
+import {
+  isWeappIdeTopLevelCommand,
+  WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES,
+} from 'weapp-ide-cli'
+
+if (isWeappIdeTopLevelCommand('preview')) {
+  // 这里可以执行透传
+}
+
+console.log(WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES)
+```
+
 ## 语言切换
 
 默认中文。可通过以下方式切换英文：

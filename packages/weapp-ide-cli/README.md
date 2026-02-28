@@ -144,6 +144,23 @@ weapp navigate --help
 | `weapp ali <args...>`              | `alipay` 别名                |
 | `weapp open --platform alipay ...` | 自动转发为 `minidev ide ...` |
 
+### 5. 程序化命令目录导出
+
+可在 Node 侧直接复用 `weapp-ide-cli` 的命令目录判断能力：
+
+```ts
+import {
+  isWeappIdeTopLevelCommand,
+  WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES,
+} from 'weapp-ide-cli'
+
+if (isWeappIdeTopLevelCommand('preview')) {
+  // 命中 weapp-ide-cli 顶层命令，可执行透传
+}
+
+console.log(WEAPP_IDE_TOP_LEVEL_COMMAND_NAMES)
+```
+
 ## 路径与参数兼容
 
 - `-p` 会被自动替换为 `--project`，并且相对路径会解析为绝对路径。

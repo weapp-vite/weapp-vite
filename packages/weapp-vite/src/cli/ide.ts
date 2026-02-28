@@ -1,4 +1,4 @@
-import { parse as parseWeappIdeCli } from 'weapp-ide-cli'
+import { isWeappIdeTopLevelCommand, parse as parseWeappIdeCli } from 'weapp-ide-cli'
 
 const WEAPP_VITE_NATIVE_COMMANDS = new Set([
   'dev',
@@ -34,14 +34,14 @@ export async function tryRunIdeCommand(argv: string[]) {
 
   if (command === 'help') {
     const target = argv[1]
-    if (!target || WEAPP_VITE_NATIVE_COMMANDS.has(target)) {
+    if (!target || WEAPP_VITE_NATIVE_COMMANDS.has(target) || !isWeappIdeTopLevelCommand(target)) {
       return false
     }
     await parseWeappIdeCli(argv)
     return true
   }
 
-  if (WEAPP_VITE_NATIVE_COMMANDS.has(command)) {
+  if (WEAPP_VITE_NATIVE_COMMANDS.has(command) || !isWeappIdeTopLevelCommand(command)) {
     return false
   }
 
