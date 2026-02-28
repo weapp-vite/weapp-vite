@@ -304,11 +304,11 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
       }
     }
 
-    // 2) <script setup> JSON 宏：defineAppJson / definePageJson / defineComponentJson
+    // 2) <script setup> JSON 宏：defineAppJson / definePageJson / defineComponentJson / defineSitemapJson / defineThemeJson
     // 注意：这些宏是 build-time 的，需要在 Node.js 侧执行一次来得到配置对象。
     const setupContent = descriptor.scriptSetup?.content
     const hasMacroHint = typeof setupContent === 'string'
-      && /\bdefine(?:App|Page|Component)Json\s*\(/.test(setupContent)
+      && /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/.test(setupContent)
 
     if (hasMacroHint) {
       const { extractJsonMacroFromScriptSetup } = await import('wevu/compiler')
