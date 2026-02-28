@@ -32,7 +32,11 @@ function resolveMacroAlias(macroName: string) {
     ? '__weapp_defineAppJson'
     : macroName === 'definePageJson'
       ? '__weapp_definePageJson'
-      : '__weapp_defineComponentJson'
+      : macroName === 'defineComponentJson'
+        ? '__weapp_defineComponentJson'
+        : macroName === 'defineSitemapJson'
+          ? '__weapp_defineSitemapJson'
+          : '__weapp_defineThemeJson'
 }
 
 export async function evaluateScriptSetupJsonMacro(params: {
@@ -107,6 +111,8 @@ const __weapp_json_macro_values = []
 const __weapp_defineAppJson = (config) => (__weapp_json_macro_values.push(config), config)
 const __weapp_definePageJson = (config) => (__weapp_json_macro_values.push(config), config)
 const __weapp_defineComponentJson = (config) => (__weapp_json_macro_values.push(config), config)
+const __weapp_defineSitemapJson = (config) => (__weapp_json_macro_values.push(config), config)
+const __weapp_defineThemeJson = (config) => (__weapp_json_macro_values.push(config), config)
 `.trimStart()
   const footer = `\nexport default __weapp_json_macro_values\n`
   const evalSource = header + ms.toString() + footer

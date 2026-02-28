@@ -164,6 +164,73 @@ definePageJson({
         await fs.remove(root)
       }
     })
+
+    it('supports defineSitemapJson and defineThemeJson referencing local and imported variables', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const sitemapFile = path.join(root, 'sitemap.vue')
+      const themeFile = path.join(root, 'theme.vue')
+      const constantsFile = path.join(root, 'constants.ts')
+
+      try {
+        await fs.writeFile(
+          constantsFile,
+          `
+export const sitemapRules = [{ action: 'allow', page: '*' }]
+export const themeLocation = 'theme/custom.json'
+          `.trim(),
+          'utf8',
+        )
+
+        await fs.writeFile(
+          sitemapFile,
+          `
+<script setup lang="ts">
+import { sitemapRules } from './constants'
+
+const desc = 'sitemap 描述'
+
+defineSitemapJson({
+  desc,
+  rules: sitemapRules,
+})
+</script>
+          `.trim(),
+          'utf8',
+        )
+
+        await fs.writeFile(
+          themeFile,
+          `
+<script setup lang="ts">
+import { themeLocation } from './constants'
+
+const darkmode = true
+
+defineThemeJson({
+  darkmode,
+  location: themeLocation,
+})
+</script>
+          `.trim(),
+          'utf8',
+        )
+
+        const sitemapConfig = await extractConfigFromVue(sitemapFile)
+        expect(sitemapConfig).toMatchObject({
+          desc: 'sitemap 描述',
+          rules: [{ action: 'allow', page: '*' }],
+        })
+
+        const themeConfig = await extractConfigFromVue(themeFile)
+        expect(themeConfig).toMatchObject({
+          darkmode: true,
+          location: 'theme/custom.json',
+        })
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
   })
 
   describe('findJsEntry', () => {
