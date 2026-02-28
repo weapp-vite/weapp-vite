@@ -27,9 +27,15 @@ const EXPECTED_BY_ID = {
   D3: 'native-to-weapp-vite-wevu-migration',
   D4: 'native-to-weapp-vite-wevu-migration',
   D5: 'weapp-vite-best-practices',
+  E1: 'weapp-ide-cli-best-practices',
+  E2: 'weapp-ide-cli-best-practices',
+  E3: 'weapp-ide-cli-best-practices',
+  E4: 'weapp-ide-cli-best-practices',
+  E5: 'weapp-vite-best-practices',
   X1: 'weapp-vite-vue-sfc-best-practices',
   X2: 'native-to-weapp-vite-wevu-migration',
   X3: 'weapp-vite-vue-sfc-best-practices',
+  X4: 'weapp-ide-cli-best-practices',
 }
 
 const MAIN_IDS = new Set([
@@ -49,16 +55,21 @@ const MAIN_IDS = new Set([
   'D2',
   'D3',
   'D4',
+  'E1',
+  'E2',
+  'E3',
+  'E4',
 ])
 
-const BOUNDARY_IDS = new Set(['A5', 'B5', 'C5', 'D5'])
-const CONFLICT_IDS = new Set(['X1', 'X2', 'X3'])
+const BOUNDARY_IDS = new Set(['A5', 'B5', 'C5', 'D5', 'E5'])
+const CONFLICT_IDS = new Set(['X1', 'X2', 'X3', 'X4'])
 
 const SKILL_BY_GROUP = {
   A: 'weapp-vite-best-practices',
   B: 'weapp-vite-vue-sfc-best-practices',
   C: 'wevu-best-practices',
   D: 'native-to-weapp-vite-wevu-migration',
+  E: 'weapp-ide-cli-best-practices',
 }
 
 function parseArgs(argv) {
@@ -128,7 +139,7 @@ function parseTableRows(markdownText) {
     }
 
     const id = parts[1]
-    if (!/^[A-DX]\d+$/.test(id)) {
+    if (!/^[A-EX]\d+$/.test(id)) {
       continue
     }
 
@@ -241,18 +252,18 @@ function printHuman(report, filePath) {
   console.log(`- Pass: ${report.overall.passCount}/${report.overall.filledCount} (${toPercent(report.overall.passCount, report.overall.filledCount)})`)
   console.log('')
 
-  console.log('Main Skill Hit Rate (A1-4/B1-4/C1-4/D1-4)')
+  console.log('Main Skill Hit Rate (A1-4/B1-4/C1-4/D1-4/E1-4)')
   for (const item of report.perSkill) {
     console.log(`- ${item.skill}: ${item.pass}/${item.filled} (${toPercent(item.pass, item.filled)}) | rule(pass>=3): ${item.passThreshold ? 'PASS' : 'FAIL'}`)
   }
   console.log('')
 
-  console.log('Boundary Rule (A5/B5/C5/D5)')
+  console.log('Boundary Rule (A5/B5/C5/D5/E5)')
   console.log(`- Boundary pass: ${report.boundary.pass ? 'PASS' : 'FAIL'}`)
   console.log(`- Wrong-skill distribution: ${JSON.stringify(report.boundary.wrongSkillCounter)}`)
   console.log('')
 
-  console.log('Conflict Rule (X1/X2/X3)')
+  console.log('Conflict Rule (X1/X2/X3/X4)')
   console.log(`- Conflict pass: ${report.conflict.pass}/${report.conflict.filled} (${toPercent(report.conflict.pass, report.conflict.filled)})`)
   console.log(`- All conflict cases pass: ${report.conflict.allPass ? 'PASS' : 'FAIL'}`)
   console.log('')

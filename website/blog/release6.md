@@ -242,6 +242,7 @@ npx skills add sonofmagic/skills
 常用的 Weapp-vite 相关 skills：
 
 - `weapp-vite-best-practices`
+- `weapp-ide-cli-best-practices`
 - `weapp-vite-vue-sfc-best-practices`
 - `wevu-best-practices`
 
