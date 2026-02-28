@@ -125,6 +125,13 @@ function toPercent(part, total) {
   return `${((part / total) * 100).toFixed(1)}%`
 }
 
+function formatGate(value) {
+  if (value === null) {
+    return 'N/A'
+  }
+  return value ? 'PASS' : 'FAIL'
+}
+
 function parseTableRows(markdownText) {
   const rows = []
   const lines = markdownText.split('\n')
@@ -187,7 +194,7 @@ function calc(rows) {
       pass,
       filled: filled.length,
       rate: filled.length ? pass / filled.length : 0,
-      passThreshold: filled.length ? pass >= 3 : false,
+      passThreshold: filled.length ? pass >= 3 : null,
     }
   })
 
@@ -209,6 +216,7 @@ function calc(rows) {
 
   const conflictItems = evaluated.filter(item => CONFLICT_IDS.has(item.id) && item.hasActual)
   const conflictPass = conflictItems.filter(item => item.pass).length
+  const mainEvaluatedItems = perSkill.filter(item => item.filled > 0)
 
   const overall = {
     filledCount: filledRows.length,
@@ -218,9 +226,9 @@ function calc(rows) {
   }
 
   const gate = {
-    mainSkillRule: perSkill.every(item => item.passThreshold),
-    boundaryRule: !boundaryViolation,
-    conflictRule: conflictItems.length ? conflictPass === conflictItems.length : false,
+    mainSkillRule: mainEvaluatedItems.length ? mainEvaluatedItems.every(item => item.passThreshold) : null,
+    boundaryRule: boundaryItems.length ? !boundaryViolation : null,
+    conflictRule: conflictItems.length ? conflictPass === conflictItems.length : null,
   }
 
   return {
@@ -230,13 +238,13 @@ function calc(rows) {
       filled: boundaryItems.length,
       fail: boundaryFailItems.length,
       wrongSkillCounter: Object.fromEntries(wrongSkillCounter.entries()),
-      pass: !boundaryViolation,
+      pass: boundaryItems.length ? !boundaryViolation : null,
     },
     conflict: {
       filled: conflictItems.length,
       pass: conflictPass,
       rate: conflictItems.length ? conflictPass / conflictItems.length : 0,
-      allPass: conflictItems.length ? conflictPass === conflictItems.length : false,
+      allPass: conflictItems.length ? conflictPass === conflictItems.length : null,
     },
     gate,
     details: evaluated,
@@ -254,24 +262,24 @@ function printHuman(report, filePath) {
 
   console.log('Main Skill Hit Rate (A1-4/B1-4/C1-4/D1-4/E1-4)')
   for (const item of report.perSkill) {
-    console.log(`- ${item.skill}: ${item.pass}/${item.filled} (${toPercent(item.pass, item.filled)}) | rule(pass>=3): ${item.passThreshold ? 'PASS' : 'FAIL'}`)
+    console.log(`- ${item.skill}: ${item.pass}/${item.filled} (${toPercent(item.pass, item.filled)}) | rule(pass>=3): ${formatGate(item.passThreshold)}`)
   }
   console.log('')
 
   console.log('Boundary Rule (A5/B5/C5/D5/E5)')
-  console.log(`- Boundary pass: ${report.boundary.pass ? 'PASS' : 'FAIL'}`)
+  console.log(`- Boundary pass: ${formatGate(report.boundary.pass)}`)
   console.log(`- Wrong-skill distribution: ${JSON.stringify(report.boundary.wrongSkillCounter)}`)
   console.log('')
 
   console.log('Conflict Rule (X1/X2/X3/X4)')
   console.log(`- Conflict pass: ${report.conflict.pass}/${report.conflict.filled} (${toPercent(report.conflict.pass, report.conflict.filled)})`)
-  console.log(`- All conflict cases pass: ${report.conflict.allPass ? 'PASS' : 'FAIL'}`)
+  console.log(`- All conflict cases pass: ${formatGate(report.conflict.allPass)}`)
   console.log('')
 
   console.log('Gate Summary')
-  console.log(`- Main skill rule: ${report.gate.mainSkillRule ? 'PASS' : 'FAIL'}`)
-  console.log(`- Boundary rule: ${report.gate.boundaryRule ? 'PASS' : 'FAIL'}`)
-  console.log(`- Conflict rule: ${report.gate.conflictRule ? 'PASS' : 'FAIL'}`)
+  console.log(`- Main skill rule: ${formatGate(report.gate.mainSkillRule)}`)
+  console.log(`- Boundary rule: ${formatGate(report.gate.boundaryRule)}`)
+  console.log(`- Conflict rule: ${formatGate(report.gate.conflictRule)}`)
 }
 
 function main() {
