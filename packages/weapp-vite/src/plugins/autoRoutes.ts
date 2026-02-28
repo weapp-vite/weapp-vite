@@ -11,6 +11,22 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
   const service = ctx.autoRoutesService
   let resolvedConfig: ResolvedConfig | undefined
 
+  const addWatchTargets = (pluginCtx: Pick<Plugin, 'name'> & { addWatchFile?: (id: string) => void }) => {
+    for (const file of service.getWatchFiles()) {
+      try {
+        pluginCtx.addWatchFile?.(normalizeWatchPath(file))
+      }
+      catch { }
+    }
+
+    for (const dir of service.getWatchDirectories()) {
+      try {
+        pluginCtx.addWatchFile?.(normalizeWatchPath(dir))
+      }
+      catch { }
+    }
+  }
+
   function isPagesRelatedPath(id: string) {
     const configService = ctx.configService
     if (!configService) {
@@ -50,6 +66,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
 
     async buildStart() {
       await service.ensureFresh()
+      addWatchTargets(this as any)
     },
 
     resolveId(id) {
@@ -68,20 +85,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       }
 
       await service.ensureFresh()
-
-      for (const file of service.getWatchFiles()) {
-        try {
-          this.addWatchFile(normalizeWatchPath(file))
-        }
-        catch { }
-      }
-
-      for (const dir of service.getWatchDirectories()) {
-        try {
-          this.addWatchFile(normalizeWatchPath(dir))
-        }
-        catch { }
-      }
+      addWatchTargets(this as any)
 
       return {
         code: service.getModuleCode(),
