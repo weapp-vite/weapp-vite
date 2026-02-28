@@ -2875,7 +2875,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
           <text
-            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B demo-subtext binding-index--demo-subtext"></text>
         </view>
         <view class="demo-chip binding-index--demo-chip">Obj</view>
       </view>
@@ -2898,7 +2898,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
           <text
-            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B demo-subtext binding-index--demo-subtext"></text>
         </view>
         <view class="demo-chip binding-index--demo-chip">Mix</view>
       </view>
@@ -2921,7 +2921,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
           <text
-            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B demo-subtext binding-index--demo-subtext"></text>
         </view>
         <view class="demo-chip binding-index--demo-chip">Obj+</view>
       </view>
@@ -2944,7 +2944,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
           <text
-            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B demo-subtext binding-index--demo-subtext"></text>
         </view>
         <view class="demo-chip binding-index--demo-chip">Arr</view>
       </view>
@@ -2967,7 +2967,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
           <text
-            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B demo-subtext binding-index--demo-subtext"></text>
         </view>
         <view class="demo-chip binding-index--demo-chip">Cond</view>
       </view>
@@ -2990,7 +2990,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
           <text
-            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B demo-subtext binding-index--demo-subtext"></text>
         </view>
         <view class="demo-chip binding-index--demo-chip">Key</view>
       </view>
@@ -3020,7 +3020,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
           <text
-            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B demo-subtext binding-index--demo-subtext"></text>
         </view>
         <view class="demo-chip binding-index--demo-chip">StyObj</view>
       </view>
@@ -3050,7 +3050,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
           <text
-            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B demo-subtext binding-index--demo-subtext"></text>
         </view>
         <view class="demo-chip binding-index--demo-chip">StyArr</view>
       </view>
@@ -3074,7 +3074,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
           <text
-            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B demo-subtext binding-index--demo-subtext"></text>
         </view>
         <view class="demo-chip binding-index--demo-chip">StyStr</view>
       </view>
@@ -3098,7 +3098,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
           <text
             class="block binding-index--block text-_b24rpx_B binding-index--text-_b24rpx_B font-semibold binding-index--font-semibold"></text>
           <text
-            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B text-_b_h6f6b8a_B binding-index--text-_b_h6f6b8a_B"></text>
+            class="mt-_b6rpx_B binding-index--mt-_b6rpx_B block binding-index--block text-_b20rpx_B binding-index--text-_b20rpx_B demo-subtext binding-index--demo-subtext"></text>
         </view>
         <view class="demo-chip binding-index--demo-chip">StyVar</view>
       </view>
