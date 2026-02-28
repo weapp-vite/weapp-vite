@@ -39,6 +39,15 @@ describe('tryRunIdeCommand', () => {
     expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['help', 'navigate'])
   })
 
+  it('keeps native help target untouched', async () => {
+    const { tryRunIdeCommand } = await import('./ide')
+
+    const forwarded = await tryRunIdeCommand(['help', 'open'])
+
+    expect(forwarded).toBe(false)
+    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+  })
+
   it('forwards namespaced ide command', async () => {
     const { tryRunIdeCommand } = await import('./ide')
 
@@ -64,5 +73,14 @@ describe('tryRunIdeCommand', () => {
 
     expect(forwarded).toBe(false)
     expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+  })
+
+  it('forwards unknown command to weapp-ide-cli', async () => {
+    const { tryRunIdeCommand } = await import('./ide')
+
+    const forwarded = await tryRunIdeCommand(['foobar', '--x'])
+
+    expect(forwarded).toBe(true)
+    expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['foobar', '--x'])
   })
 })

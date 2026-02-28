@@ -14,48 +14,8 @@ const WEAPP_VITE_NATIVE_COMMANDS = new Set([
   'g',
 ])
 
-const WEAPP_IDE_TOP_LEVEL_COMMANDS = new Set([
-  'open',
-  'login',
-  'islogin',
-  'preview',
-  'auto-preview',
-  'upload',
-  'build-npm',
-  'auto',
-  'auto-replay',
-  'reset-fileutils',
-  'close',
-  'quit',
-  'cache',
-  'engine',
-  'open-other',
-  'build-ipa',
-  'build-apk',
-  'cloud',
-  'screenshot',
-  'navigate',
-  'redirect',
-  'back',
-  'relaunch',
-  'switch-tab',
-  'page-stack',
-  'current-page',
-  'system-info',
-  'page-data',
-  'tap',
-  'input',
-  'scroll',
-  'audit',
-  'remote',
-  'config',
-  'alipay',
-  'ali',
-  'minidev',
-])
-
 /**
- * @description 让 weapp-vite 复用 weapp-ide-cli 全量命令能力。
+ * @description 让 weapp-vite 在未命中自身命令时，回退到 weapp-ide-cli。
  */
 export async function tryRunIdeCommand(argv: string[]) {
   const command = argv[0]
@@ -68,17 +28,17 @@ export async function tryRunIdeCommand(argv: string[]) {
     return true
   }
 
-  if (command === 'help') {
-    const target = argv[1]
-    if (target && WEAPP_IDE_TOP_LEVEL_COMMANDS.has(target)) {
-      await parseWeappIdeCli(argv)
-      return true
-    }
+  if (command.startsWith('-')) {
     return false
   }
 
-  if (!WEAPP_IDE_TOP_LEVEL_COMMANDS.has(command)) {
-    return false
+  if (command === 'help') {
+    const target = argv[1]
+    if (!target || WEAPP_VITE_NATIVE_COMMANDS.has(target)) {
+      return false
+    }
+    await parseWeappIdeCli(argv)
+    return true
   }
 
   if (WEAPP_VITE_NATIVE_COMMANDS.has(command)) {
