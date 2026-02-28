@@ -49,6 +49,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
         link: '/guide/what-is-weapp-vite',
       },
       { text: '快速开始', link: '/guide/' },
+      { text: 'CLI 命令参考', link: '/guide/cli' },
       { text: '目录结构', link: '/guide/directory-structure' },
       { text: '手动集成', link: '/guide/manual-integration' },
     ],
