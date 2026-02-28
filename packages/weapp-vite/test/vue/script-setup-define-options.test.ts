@@ -131,4 +131,40 @@ defineOptions({
       await fs.remove(tempDir)
     }
   })
+
+  it('supports defineOptions async factory using node built-in modules', async () => {
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'weapp-vite-define-options-fs-'))
+    try {
+      const optionsPath = path.join(tempDir, 'app-options.json')
+      const vuePath = path.join(tempDir, 'app.vue')
+      await fs.writeJson(optionsPath, {
+        name: 'AppByFs',
+        globalData: {
+          fromFs: true,
+          version: 1,
+        },
+      }, { spaces: 2 })
+
+      const source = `
+<script setup lang="ts">
+defineOptions(async () => {
+  const fs = await import('node:fs')
+  const raw = fs.readFileSync(${JSON.stringify(optionsPath)}, 'utf8')
+  return JSON.parse(raw)
+})
+</script>
+`
+      const result = await compileVueFile(source, vuePath, {
+        isApp: true,
+      })
+
+      expect(result.script).toContain('name: "AppByFs"')
+      expect(result.script).toContain('fromFs: true')
+      expect(result.script).toContain('version: 1')
+      expect(result.script).not.toContain('defineOptions(')
+    }
+    finally {
+      await fs.remove(tempDir)
+    }
+  })
 })
