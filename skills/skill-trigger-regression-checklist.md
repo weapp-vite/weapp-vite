@@ -2,9 +2,10 @@
 
 ## 目标
 
-验证以下 4 个 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
+验证以下 5 个 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
 
 - `weapp-vite-best-practices`
+- `weapp-ide-cli-best-practices`
 - `weapp-vite-vue-sfc-best-practices`
 - `wevu-best-practices`
 - `native-to-weapp-vite-wevu-migration`
@@ -116,6 +117,23 @@ pnpm skills:score:json
 5. 边界提问：我们现在不是迁移，只是优化现有 weapp-vite 的分包配置。
    预期 skill：`weapp-vite-best-practices`
 
+### E. weapp-ide-cli-best-practices
+
+1. 提问：请把 `weapp-ide-cli` 的命令整理成统一目录导出，让上游 CLI 可以判断是否透传。
+   预期 skill：`weapp-ide-cli-best-practices`
+
+2. 提问：`weapp-vite` 和 `weapp-ide-cli` 的命令分发优先级该怎么设计，避免冲突？
+   预期 skill：`weapp-ide-cli-best-practices`
+
+3. 提问：`weapp-ide-cli` 的报错文案默认中文，但要支持切换英文，配置应该怎么落地？
+   预期 skill：`weapp-ide-cli-best-practices`
+
+4. 提问：我需要给 `weapp-ide-cli` 新增 `config import/export/doctor` 的规范和测试策略。
+   预期 skill：`weapp-ide-cli-best-practices`
+
+5. 边界提问：我们现在只想优化 `vite.config.ts` 的分包和 chunk，不改 CLI。
+   预期 skill：`weapp-vite-best-practices`
+
 ## 冲突场景回归
 
 1. 提问：我这个页面 `v-model` 报错，同时首包也超了，先看哪个？
@@ -128,6 +146,10 @@ pnpm skills:score:json
 
 3. 提问：`usingComponents` 不生效，怀疑是 weapp 配置和宏优先级都有关。
    预期主 skill：`weapp-vite-vue-sfc-best-practices`
+   预期次 skill：`weapp-vite-best-practices`
+
+4. 提问：我在 `weapp-vite` 里执行 `preview/upload`，想知道该走原生命令还是 `weapp-ide-cli` 透传。
+   预期主 skill：`weapp-ide-cli-best-practices`
    预期次 skill：`weapp-vite-best-practices`
 
 ## 通过标准
@@ -161,6 +183,12 @@ pnpm skills:score:json
 | D3   |      |            |            |           |      |
 | D4   |      |            |            |           |      |
 | D5   |      |            |            |           |      |
+| E1   |      |            |            |           |      |
+| E2   |      |            |            |           |      |
+| E3   |      |            |            |           |      |
+| E4   |      |            |            |           |      |
+| E5   |      |            |            |           |      |
 | X1   |      |            |            |           |      |
 | X2   |      |            |            |           |      |
 | X3   |      |            |            |           |      |
+| X4   |      |            |            |           |      |

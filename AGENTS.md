@@ -90,6 +90,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 
 - This repo ships user-facing skills under `skills/*`:
   - `weapp-vite-best-practices`
+  - `weapp-ide-cli-best-practices`
   - `weapp-vite-vue-sfc-best-practices`
   - `wevu-best-practices`
 - Recommended remote install source for all public skills is `sonofmagic/skills`:
