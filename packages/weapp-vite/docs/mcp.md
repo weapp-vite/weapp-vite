@@ -15,6 +15,39 @@
 
 ## 2. 启动方式
 
+### 2.0 CLI 自动启动（默认开启）
+
+从当前版本开始，`weapp-vite` CLI 在执行原生命令时会默认自动拉起 MCP HTTP 服务（`streamable-http`），默认地址：
+
+- `http://127.0.0.1:3088/mcp`
+
+你可以在 `vite.config.ts` 关闭自动启动或完全禁用 MCP：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    mcp: {
+      enabled: true,
+      autoStart: false,
+    },
+  },
+})
+```
+
+完全关闭：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    mcp: false,
+  },
+})
+```
+
 ### 2.1 CLI 启动（推荐）
 
 在 monorepo 根目录或任意子目录执行：
@@ -27,6 +60,12 @@ weapp-vite mcp
 
 ```bash
 weapp-vite mcp --workspace-root /path/to/weapp-vite
+```
+
+以 HTTP 方式手动启动：
+
+```bash
+weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 ```
 
 说明：

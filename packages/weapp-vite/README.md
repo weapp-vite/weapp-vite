@@ -104,7 +104,10 @@ weapp-vite ide config show
 
 ## CLI 启动 MCP
 
-`weapp-vite` 已集成 `@weapp-vite/mcp`，可直接启动 MCP Server：
+`weapp-vite` 已集成 `@weapp-vite/mcp`：
+
+- 默认在执行 CLI 原生命令时自动启动 MCP HTTP 服务（`http://127.0.0.1:3088/mcp`）
+- 也可以手动启动 MCP Server
 
 ```sh
 weapp-vite mcp
@@ -114,6 +117,20 @@ weapp-vite mcp
 
 ```sh
 weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite
+```
+
+在 `vite.config.ts` 中关闭自动启动：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    mcp: {
+      autoStart: false,
+    },
+  },
+})
 ```
 
 详细说明见：[docs/mcp.md](./docs/mcp.md)

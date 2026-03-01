@@ -66,6 +66,13 @@ export function getWeappViteConfig(): WeappViteConfig {
       sharedChunks: 'auto',
       touchAppWxss: 'auto',
     },
+    mcp: {
+      enabled: true,
+      autoStart: true,
+      host: '127.0.0.1',
+      port: 3088,
+      endpoint: '/mcp',
+    },
     chunks: {
       sharedStrategy: 'duplicate',
       sharedMode: 'common',
