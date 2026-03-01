@@ -178,61 +178,31 @@ MCP 服务端做了以下约束：
 
 ## 9. 示例：AI 驱动 weapp-vite screenshot 验收
 
-以下示例用于演示一条完整链路：AI 通过 MCP 驱动 `weapp-vite` 构建小程序，并调用 `weapp-vite screenshot` 产出截图。
+下面给一个简化版示例：只给 AI 一段提示词，让它通过 MCP 自动执行构建与截图验收。
 
 前置条件：
 
 1. 客户端已接入 `weapp-vite` MCP。
 2. 微信开发者工具已登录，并开启「设置 -> 安全设置 -> 服务端口」。
 
-### 9.1 构建小程序
+### 9.1 可直接复制的提示词
 
-调用 `run_weapp_vite_cli`：
-
-```json
-{
-  "tool": "run_weapp_vite_cli",
-  "arguments": {
-    "subCommand": "build",
-    "projectPath": "e2e-apps/auto-routes-define-app-json",
-    "platform": "weapp"
-  }
-}
+```text
+你现在连接的是 weapp-vite MCP。请帮我完成一次小程序截图验收：
+1. 构建 e2e-apps/auto-routes-define-app-json（platform=weapp）。
+2. 执行 weapp-vite screenshot，参数如下：
+   - project: e2e-apps/auto-routes-define-app-json/dist/build/mp-weixin
+   - page: pages/home/index
+   - output: .tmp/mcp-screenshot.png
+   - 使用 --json 返回结果
+3. 检查 .tmp/mcp-screenshot.png 是否存在：
+   - 存在输出 screenshot-ok
+   - 不存在输出 screenshot-missing
+4. 最后汇总：执行命令、关键输出、最终结论。
 ```
 
-### 9.2 调用 weapp-vite screenshot
+### 9.2 期望结果
 
-```json
-{
-  "tool": "run_weapp_vite_cli",
-  "arguments": {
-    "subCommand": "screenshot",
-    "args": [
-      "-p",
-      "e2e-apps/auto-routes-define-app-json/dist/build/mp-weixin",
-      "--page",
-      "pages/home/index",
-      "-o",
-      ".tmp/mcp-screenshot.png",
-      "--json"
-    ]
-  }
-}
-```
-
-### 9.3 验证截图是否生成
-
-```json
-{
-  "tool": "run_repo_command",
-  "arguments": {
-    "command": "node",
-    "args": [
-      "-e",
-      "import fs from 'node:fs'; console.log(fs.existsSync('.tmp/mcp-screenshot.png') ? 'screenshot-ok' : 'screenshot-missing')"
-    ]
-  }
-}
-```
-
-返回 `screenshot-ok` 即表示链路成功。
+1. AI 输出 `screenshot-ok`。
+2. 工作区生成 `.tmp/mcp-screenshot.png`。
+3. AI 输出本次验收摘要（命令、关键日志、结论）。
