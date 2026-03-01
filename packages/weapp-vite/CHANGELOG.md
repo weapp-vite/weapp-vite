@@ -1,5 +1,19 @@
 # weapp-vite
 
+## 6.7.0
+
+### Minor Changes
+
+- ✨ **在 `weapp-vite` 中集成 `@weapp-vite/mcp`：新增 `weapp-vite mcp` CLI 命令用于直接启动 MCP stdio 服务，新增 `weapp-vite/mcp` 程序化导出入口，并补充详细的 MCP 使用文档（启动方式、客户端接入、工具与资源说明、安全边界与排障）。** [`2530a6f`](https://github.com/weapp-vite/weapp-vite/commit/2530a6fb262d106cdfefdd9a36062e9030400f05) by @sonofmagic
+
+- ✨ **为 `weapp-vite` 增加 MCP 自动启动能力并调整默认策略：新增 `weapp.mcp` 配置，默认不自动拉起 MCP 服务（可通过 `autoStart: true` 开启）；同时扩展 `weapp-vite mcp` 命令支持 `streamable-http` 启动参数（host/port/endpoint）。** [`d8050a9`](https://github.com/weapp-vite/weapp-vite/commit/d8050a967743cfa70b7c818ac6fb726a86697282) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复 `weapp-vite/auto-routes` 在页面运行时代码中被别名解析到源码入口时可能触发 Rolldown 崩溃的问题。现在无论通过包名还是别名路径导入，都会统一走 auto-routes 虚拟模块；同时补充相关单测与 `auto-routes-define-app-json` 运行时 e2e 覆盖，确保首页导航链接可稳定渲染。** [`4912425`](https://github.com/weapp-vite/weapp-vite/commit/491242587cd1c15c9fba68eb2b3ec6bcb34b6269) by @sonofmagic
+- 📦 **Dependencies** [`a7768a3`](https://github.com/weapp-vite/weapp-vite/commit/a7768a31befe085638950e1dd54bb9da85f2ee50)
+  → `@weapp-vite/mcp@1.1.0`, `wevu@6.7.0`
+
 ## 6.6.16
 
 ### Patch Changes
