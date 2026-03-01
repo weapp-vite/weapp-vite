@@ -2,42 +2,59 @@
 
 ## 简介
 
-`@weapp-vite/mcp` 是一个基于 Model Context Protocol (MCP) SDK 的示例服务包，展示如何通过 stdio 传输方式注册工具并响应调用。
+`@weapp-vite/mcp` 是面向 `weapp-vite` / `wevu` monorepo 的 MCP 服务端实现，目标是把核心研发能力暴露给 AI：
 
-> 该包目前以示例为主，适合用于学习/验证 MCP 工具服务的基本结构。
+- 包目录与能力发现
+- 源码读取、检索、按行裁剪
+- 包级脚本执行
+- `weapp-vite` CLI 执行
+- 文档/变更记录资源暴露
+- 调试/改造提示词模板
 
-## 特性
+默认通过 `stdio` 运行，适合接入任意 MCP Client。
 
-- 使用 MCP SDK 创建服务
-- 基于 zod 的入参校验
-- 内置示例工具（`calculate-bmi`、`fetch-weather`）
-- stdio 传输，方便被 MCP Client 集成
-
-## 安装
-
-```bash
-pnpm add @weapp-vite/mcp
-```
-
-## 使用
-
-在仓库内启动示例服务：
+## 启动
 
 ```bash
 pnpm --filter @weapp-vite/mcp start
 ```
 
-然后由 MCP Client 通过 stdio 连接并调用工具。
+## 主要 Tools
 
-## 配置
+- `workspace_catalog`: 输出 `weapp-vite / wevu / wevu-compiler` 目录、版本、脚本
+- `list_source_files`: 列出包内文件（默认 `src`）
+- `read_source_file`: 读取包内文件，支持 `startLine/endLine/maxChars`
+- `search_source_code`: 在包源码中检索关键词
+- `run_package_script`: 在指定包目录执行 `pnpm run <script>`
+- `run_weapp_vite_cli`: 执行 `node packages/weapp-vite/bin/weapp-vite.js ...`
+- `run_repo_command`: 执行仓库级命令（`pnpm/node/git/rg`）
 
-目前没有独立配置文件。请直接修改 `src/index.ts` 来：
+## 主要 Resources
 
-- 添加/移除工具
-- 调整工具参数与逻辑
-- 修改服务名称与版本
+- `weapp-vite://workspace/catalog`
+- `weapp-vite://docs/{package}/README.md`
+- `weapp-vite://docs/{package}/CHANGELOG.md`
+- `weapp-vite://source/{package}?path={path}`
+
+其中 `{package}` 支持：
+
+- `weapp-vite`
+- `wevu`
+- `wevu-compiler`
+
+## Prompts
+
+- `plan-weapp-vite-change`: 生成 weapp-vite/wevu 改造计划提示词
+- `debug-wevu-runtime`: 生成 wevu runtime 排查提示词
+
+## 开发
+
+```bash
+pnpm --filter @weapp-vite/mcp test
+pnpm --filter @weapp-vite/mcp build
+```
 
 ## 相关链接
 
-- MCP SDK：https://github.com/modelcontextprotocol/sdk
-- 仓库：https://github.com/weapp-vite/weapp-vite
+- MCP SDK: https://github.com/modelcontextprotocol/sdk
+- 仓库: https://github.com/weapp-vite/weapp-vite
