@@ -1,5 +1,11 @@
 # @weapp-vite/mcp
 
+## 1.1.0
+
+### Minor Changes
+
+- ✨ **重构 `@weapp-vite/mcp` 为面向 `weapp-vite / wevu` 的完整 MCP 服务，实现包目录发现、源码读取与检索、包脚本执行、`weapp-vite` CLI 调用、文档资源暴露与调试提示词模板，并补充对应测试与使用文档。** [`a7768a3`](https://github.com/weapp-vite/weapp-vite/commit/a7768a31befe085638950e1dd54bb9da85f2ee50) by @sonofmagic
+
 ## 1.0.1
 
 ### Patch Changes
