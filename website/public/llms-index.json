@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-01T16:18:59.505Z",
+  "generatedAt": "2026-03-01T16:28:19.830Z",
   "site": "https://vite.icebreaker.top",
   "count": 164,
   "items": [
@@ -456,7 +456,7 @@
         "配置示例",
         "注意事项"
       ],
-      "updatedAt": "2026-03-01",
+      "updatedAt": "2026-03-02",
       "source": "config/shared.md"
     },
     {
@@ -725,6 +725,32 @@
       ],
       "updatedAt": "2026-02-27",
       "source": "demos/my-app/README.md"
+    },
+    {
+      "id": "doc-08bd36b182",
+      "title": "AI 协作指南",
+      "summary": "面向 weapp-vite 团队的 AI 协作入口，聚焦 Skills、MCP 与 llms.txt 三大章节。",
+      "url": "/guide/ai",
+      "canonical": "https://vite.icebreaker.top/guide/ai",
+      "keywords": [
+        "guide",
+        "ai",
+        "skills",
+        "mcp",
+        "llms",
+        "weapp-vite",
+        "协作指南"
+      ],
+      "headings": [
+        "AI 协作指南",
+        "Skills",
+        "MCP",
+        "示例：驱动 weapp-vite screenshot 做验收",
+        "llms.txt",
+        "关联阅读"
+      ],
+      "updatedAt": "2026-03-02",
+      "source": "guide/ai.md"
     },
     {
       "id": "doc-587e0b70cd",
@@ -1160,38 +1186,6 @@
       ],
       "updatedAt": "2026-02-27",
       "source": "guide/manual-integration.md"
-    },
-    {
-      "id": "doc-14311f799d",
-      "title": "MCP 与 AI 协作指南",
-      "summary": "介绍 weapp-vite MCP 能力的价值、接入方式、测试方法与团队落地建议。",
-      "url": "/guide/mcp",
-      "canonical": "https://vite.icebreaker.top/guide/mcp",
-      "keywords": [
-        "guide",
-        "mcp",
-        "ai",
-        "weapp-vite",
-        "wevu",
-        "与",
-        "协作指南"
-      ],
-      "headings": [
-        "MCP 与 AI 协作指南",
-        "MCP 有什么用",
-        "默认行为",
-        "手动启动（推荐）",
-        "1) stdio 模式（通用）",
-        "2) streamable-http 模式（URL 连接）",
-        "AI 客户端快速接入",
-        "Cursor",
-        "Claude（Claude Code / Claude Desktop）",
-        "Cline（VS Code）",
-        "Codex",
-        "客户端接入排查清单"
-      ],
-      "updatedAt": "2026-03-02",
-      "source": "guide/mcp.md"
     },
     {
       "id": "doc-5d9fcdf459",
@@ -3003,7 +2997,7 @@
         "二次开发建议",
         "关联阅读"
       ],
-      "updatedAt": "2026-03-01",
+      "updatedAt": "2026-03-02",
       "source": "packages/mcp.md"
     },
     {

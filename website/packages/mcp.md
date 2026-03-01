@@ -82,5 +82,5 @@ Prompts：
 
 ## 关联阅读
 
-1. [MCP 与 AI 协作指南](/guide/mcp)
+1. [AI 协作指南](/guide/ai)
 2. [AI 学习入口](/ai)

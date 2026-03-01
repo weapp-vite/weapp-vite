@@ -15,9 +15,9 @@ const { isDark } = useData()
 
 const mcpActions = [
   {
-    title: '/guide/mcp',
+    title: '/guide/ai',
     desc: '作用、启动、客户端接入与测试建议。',
-    href: '/guide/mcp',
+    href: '/guide/ai',
   },
   {
     title: '/packages/mcp',

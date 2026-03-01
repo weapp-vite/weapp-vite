@@ -50,7 +50,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       },
       { text: '快速开始', link: '/guide/' },
       { text: 'CLI 命令参考', link: '/guide/cli' },
-      { text: 'AI 与 MCP 协作', link: '/guide/mcp' },
+      { text: 'AI 协作指南', link: '/guide/ai' },
       { text: '目录结构', link: '/guide/directory-structure' },
       { text: '手动集成', link: '/guide/manual-integration' },
     ],

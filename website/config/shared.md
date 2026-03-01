@@ -158,7 +158,7 @@ export default defineConfig({
 3. `host/port/endpoint`: 自动启动时的监听地址配置。
 
 > [!TIP]
-> 完整接入流程、客户端配置与测试建议请看：[MCP 与 AI 协作指南](/guide/mcp)。
+> 完整接入流程、客户端配置与测试建议请看：[AI 协作指南](/guide/ai)。
 
 ## `weapp.wevu.defaults` {#weapp-wevu-defaults}
 - **类型**：`WevuDefaults`
