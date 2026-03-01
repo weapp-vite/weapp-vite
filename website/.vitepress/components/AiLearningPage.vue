@@ -425,7 +425,7 @@ function copyText(text: string, key: string) {
 
 .pillar-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -523,7 +523,9 @@ function copyText(text: string, key: string) {
 .command-card pre {
   padding: 10px;
   margin: 0;
-  overflow-x: auto;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
   background: var(--ai-code-bg);
   border: 1px solid var(--ai-code-border);
   border-radius: 8px;
@@ -534,6 +536,7 @@ function copyText(text: string, key: string) {
   font-size: 12px;
   line-height: 1.45;
   color: var(--ai-code-text);
+  white-space: inherit;
 }
 
 .chip-list,
@@ -572,16 +575,6 @@ function copyText(text: string, key: string) {
   color: var(--ai-muted);
 }
 
-@media (width <= 1180px) {
-  .pillar-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  #llms-pillar {
-    grid-column: 1 / -1;
-  }
-}
-
 @media (width <= 860px) {
   .ai-shell {
     min-height: 0;
@@ -598,10 +591,6 @@ function copyText(text: string, key: string) {
 
   .pillar-grid {
     grid-template-columns: 1fr;
-  }
-
-  #llms-pillar {
-    grid-column: auto;
   }
 }
 </style>
