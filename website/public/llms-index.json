@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-01T15:49:21.766Z",
+  "generatedAt": "2026-03-01T16:04:20.212Z",
   "site": "https://vite.icebreaker.top",
   "count": 164,
   "items": [
@@ -1190,7 +1190,7 @@
         "Codex",
         "客户端接入排查清单"
       ],
-      "updatedAt": "2026-03-01",
+      "updatedAt": "2026-03-02",
       "source": "guide/mcp.md"
     },
     {
