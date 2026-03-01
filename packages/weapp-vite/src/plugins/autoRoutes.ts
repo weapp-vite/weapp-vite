@@ -2,6 +2,7 @@ import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import path from 'pathe'
 import { normalizeWatchPath, toPosixPath } from '../utils/path'
+import { normalizeFsResolvedId } from '../utils/resolvedId'
 
 const AUTO_ROUTES_ID = 'weapp-vite/auto-routes'
 const VIRTUAL_MODULE_ID = 'virtual:weapp-vite-auto-routes'
@@ -10,6 +11,32 @@ const RESOLVED_VIRTUAL_ID = '\0weapp-vite:auto-routes'
 function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
   const service = ctx.autoRoutesService
   let resolvedConfig: ResolvedConfig | undefined
+  const autoRoutesAliasTargets = new Set<string>()
+
+  const normalizeTargetId = (id: string) => {
+    return path.normalize(normalizeFsResolvedId(id))
+  }
+
+  const refreshAutoRoutesAliasTargets = () => {
+    autoRoutesAliasTargets.clear()
+    const packageRoot = ctx.configService?.packageInfo?.rootPath
+    if (!packageRoot) {
+      return
+    }
+    const candidates = [
+      path.resolve(packageRoot, 'src/auto-routes.ts'),
+      path.resolve(packageRoot, 'auto-routes.ts'),
+      path.resolve(packageRoot, 'dist/auto-routes.mjs'),
+      path.resolve(packageRoot, 'dist/auto-routes.js'),
+    ]
+    for (const candidate of candidates) {
+      autoRoutesAliasTargets.add(path.normalize(candidate))
+    }
+  }
+
+  const isAliasedAutoRoutesId = (id: string) => {
+    return autoRoutesAliasTargets.has(normalizeTargetId(id))
+  }
 
   const addWatchTargets = (pluginCtx: Pick<Plugin, 'name'> & { addWatchFile?: (id: string) => void }) => {
     for (const file of service.getWatchFiles()) {
@@ -62,10 +89,12 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
 
     configResolved(config) {
       resolvedConfig = config
+      refreshAutoRoutesAliasTargets()
     },
 
     async buildStart() {
       await service.ensureFresh()
+      refreshAutoRoutesAliasTargets()
       addWatchTargets(this as any)
     },
 
@@ -76,11 +105,14 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       if (id === RESOLVED_VIRTUAL_ID) {
         return RESOLVED_VIRTUAL_ID
       }
+      if (isAliasedAutoRoutesId(id)) {
+        return RESOLVED_VIRTUAL_ID
+      }
       return null
     },
 
     async load(id) {
-      if (id !== RESOLVED_VIRTUAL_ID) {
+      if (id !== RESOLVED_VIRTUAL_ID && !isAliasedAutoRoutesId(id)) {
         return null
       }
 

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed, onShow, ref } from 'wevu'
+
 interface RouteLink {
   route: string
   title: string
@@ -9,6 +11,89 @@ interface RouteLink {
 interface AppGlobalData {
   __autoRoutesPages?: string[]
   __autoRoutesEntries?: string[]
+}
+
+interface AppRuntimeRoutes {
+  pages?: string[]
+  entries?: string[]
+}
+
+interface WxSubPackageConfig {
+  root?: string
+  pages?: string[]
+}
+
+interface WxAppConfig {
+  pages?: string[]
+  subPackages?: WxSubPackageConfig[]
+  subpackages?: WxSubPackageConfig[]
+}
+
+interface AutoRoutesAppInstance {
+  globalData?: AppGlobalData
+  routes?: AppRuntimeRoutes
+}
+
+function normalizeRouteList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.filter((item): item is string => typeof item === 'string')
+}
+
+function readRoutesFromWxConfig() {
+  const wxConfig = (globalThis as { __wxConfig?: WxAppConfig }).__wxConfig
+  if (!wxConfig || typeof wxConfig !== 'object') {
+    return {
+      pages: [] as string[],
+      entries: [] as string[],
+    }
+  }
+
+  const pages = normalizeRouteList(wxConfig.pages)
+  const packageConfigs = Array.isArray(wxConfig.subPackages)
+    ? wxConfig.subPackages
+    : Array.isArray(wxConfig.subpackages)
+      ? wxConfig.subpackages
+      : []
+
+  const subPackageEntries = packageConfigs.flatMap((pkg) => {
+    const root = typeof pkg?.root === 'string' ? pkg.root : ''
+    const pkgPages = normalizeRouteList(pkg?.pages)
+    if (!root) {
+      return pkgPages
+    }
+    return pkgPages.map(page => `${root}/${page}`)
+  })
+
+  return {
+    pages,
+    entries: [...pages, ...subPackageEntries],
+  }
+}
+
+function readAutoRoutesSnapshot() {
+  const app = getApp<AutoRoutesAppInstance>()
+  const globalData = app && app.globalData ? app.globalData : {}
+  const runtimeRoutes = app && app.routes ? app.routes : {}
+
+  const pagesFromGlobalData = normalizeRouteList(globalData.__autoRoutesPages)
+  const entriesFromGlobalData = normalizeRouteList(globalData.__autoRoutesEntries)
+  const pagesFromRoutes = normalizeRouteList(runtimeRoutes.pages)
+  const entriesFromRoutes = normalizeRouteList(runtimeRoutes.entries)
+  const routesFromWxConfig = readRoutesFromWxConfig()
+  return {
+    pages: pagesFromGlobalData.length > 0
+      ? pagesFromGlobalData
+      : pagesFromRoutes.length > 0
+        ? pagesFromRoutes
+        : routesFromWxConfig.pages,
+    entries: entriesFromGlobalData.length > 0
+      ? entriesFromGlobalData
+      : entriesFromRoutes.length > 0
+        ? entriesFromRoutes
+        : routesFromWxConfig.entries,
+  }
 }
 
 function formatTitle(route: string) {
@@ -31,19 +116,30 @@ function routeToUrl(route: string) {
   return `/${route}`
 }
 
-const app = getApp<{ globalData?: AppGlobalData }>()
-const globalData = app && app.globalData ? app.globalData : {}
-const entries = Array.isArray(globalData.__autoRoutesEntries) ? globalData.__autoRoutesEntries : []
-const pages = Array.isArray(globalData.__autoRoutesPages) ? globalData.__autoRoutesPages : []
+const pages = ref<string[]>([])
+const entries = ref<string[]>([])
 
-const pagesCount = pages.length
-const routeLinks: RouteLink[] = entries.map((route) => {
-  return {
-    route,
-    title: formatTitle(route),
-    kind: route.startsWith('pages/') ? 'main' : 'subpackage',
-    url: routeToUrl(route),
-  }
+function syncRouteSnapshot() {
+  const snapshot = readAutoRoutesSnapshot()
+  pages.value = snapshot.pages
+  entries.value = snapshot.entries
+}
+
+syncRouteSnapshot()
+onShow(() => {
+  syncRouteSnapshot()
+})
+
+const pagesCount = computed(() => pages.value.length)
+const routeLinks = computed<RouteLink[]>(() => {
+  return entries.value.map((route) => {
+    return {
+      route,
+      title: formatTitle(route),
+      kind: route.startsWith('pages/') ? 'main' : 'subpackage',
+      url: routeToUrl(route),
+    }
+  })
 })
 </script>
 
