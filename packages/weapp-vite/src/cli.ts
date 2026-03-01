@@ -1,3 +1,4 @@
+import type { GlobalCLIOptions } from './cli/types'
 import process from 'node:process'
 import { cac } from 'cac'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
@@ -10,6 +11,7 @@ import { registerOpenCommand } from './cli/commands/open'
 import { registerServeCommand } from './cli/commands/serve'
 import { handleCLIError } from './cli/error'
 import { tryRunIdeCommand } from './cli/ide'
+import { maybeAutoStartMcpServer } from './cli/mcpAutoStart'
 import { convertBase } from './cli/options'
 import { VERSION } from './constants'
 import { checkRuntime } from './utils'
@@ -58,6 +60,7 @@ try {
         return
       }
       cli.parse(process.argv, { run: false })
+      await maybeAutoStartMcpServer(process.argv.slice(2), cli.options as GlobalCLIOptions)
       await cli.runMatchedCommand()
     })
     .catch((error) => {

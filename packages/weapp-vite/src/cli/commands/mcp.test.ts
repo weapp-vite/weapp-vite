@@ -22,6 +22,11 @@ describe('mcp cli command', () => {
     await cli.runMatchedCommand()
 
     expect(startWeappViteMcpServerMock).toHaveBeenCalledWith({
+      endpoint: undefined,
+      host: undefined,
+      port: undefined,
+      transport: 'stdio',
+      unref: undefined,
       workspaceRoot: undefined,
     })
   })
@@ -35,7 +40,42 @@ describe('mcp cli command', () => {
     await cli.runMatchedCommand()
 
     expect(startWeappViteMcpServerMock).toHaveBeenCalledWith({
+      endpoint: undefined,
+      host: undefined,
+      port: undefined,
+      transport: 'stdio',
+      unref: undefined,
       workspaceRoot: './packages/weapp-vite',
+    })
+  })
+
+  it('supports streamable-http options', async () => {
+    const { registerMcpCommand } = await import('./mcp')
+    const cli = cac('weapp-vite')
+    registerMcpCommand(cli)
+
+    cli.parse([
+      'node',
+      'weapp-vite',
+      'mcp',
+      '--transport',
+      'streamable-http',
+      '--host',
+      '0.0.0.0',
+      '--port',
+      '3199',
+      '--endpoint',
+      '/mcp',
+    ], { run: false })
+    await cli.runMatchedCommand()
+
+    expect(startWeappViteMcpServerMock).toHaveBeenCalledWith({
+      endpoint: '/mcp',
+      host: '0.0.0.0',
+      port: 3199,
+      transport: 'streamable-http',
+      unref: undefined,
+      workspaceRoot: undefined,
     })
   })
 })

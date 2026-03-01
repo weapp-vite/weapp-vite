@@ -571,6 +571,34 @@ export interface MultiPlatformConfig {
   projectConfigRoot?: string
 }
 
+export interface WeappMcpConfig {
+  /**
+   * @description 是否启用 MCP 能力
+   * @default true
+   */
+  enabled?: boolean
+  /**
+   * @description 是否在 weapp-vite CLI 启动时自动拉起 MCP HTTP 服务
+   * @default true
+   */
+  autoStart?: boolean
+  /**
+   * @description MCP HTTP 服务监听主机
+   * @default '127.0.0.1'
+   */
+  host?: string
+  /**
+   * @description MCP HTTP 服务监听端口
+   * @default 3088
+   */
+  port?: number
+  /**
+   * @description MCP HTTP 接口路径
+   * @default '/mcp'
+   */
+  endpoint?: string
+}
+
 export interface WeappViteConfig {
   /**
    * 应用入口目录（`app.json` 所在目录）。
@@ -915,6 +943,20 @@ export interface WeappViteConfig {
      */
     globalName?: string
   }
+  /**
+   * @description MCP 服务配置
+   * - `false`：完全关闭 MCP（包含自动启动）
+   * - `true`：启用默认 MCP 配置
+   * - `object`：细粒度配置
+   * @default { enabled: true, autoStart: true, host: '127.0.0.1', port: 3088, endpoint: '/mcp' }
+   * @example
+   * mcp: false
+   * @example
+   * mcp: { enabled: true, autoStart: false }
+   * @example
+   * mcp: { host: '127.0.0.1', port: 3199, endpoint: '/mcp' }
+   */
+  mcp?: boolean | WeappMcpConfig
   /**
    * @description 共享代码拆分策略配置
    */
