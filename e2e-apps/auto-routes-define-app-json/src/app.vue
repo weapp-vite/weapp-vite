@@ -1,23 +1,13 @@
 <script setup lang="ts">
 /* eslint-disable vue/define-macros-order */
+import type { AutoRoutesAppGlobalData, AutoRoutesAppInstance } from './types/auto-routes'
 import routes from 'weapp-vite/auto-routes'
 import { getCurrentInstance, onLaunch } from 'wevu'
 
-const globalData = {
+const globalData: AutoRoutesAppGlobalData = {
   __autoRoutesPages: routes.pages,
   __autoRoutesEntries: routes.entries,
   __autoRoutesSubPackages: routes.subPackages,
-}
-
-interface AutoRoutesAppGlobalData {
-  __autoRoutesPages?: string[]
-  __autoRoutesEntries?: string[]
-  __autoRoutesSubPackages?: Array<{ root: string, pages: string[] }>
-}
-
-interface AutoRoutesAppInstance {
-  globalData?: AutoRoutesAppGlobalData
-  routes?: typeof routes
 }
 
 const app = getCurrentInstance() as AutoRoutesAppInstance | null

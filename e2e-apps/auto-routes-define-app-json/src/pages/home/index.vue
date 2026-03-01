@@ -1,38 +1,6 @@
 <script setup lang="ts">
+import type { AutoRoutesAppInstance, RouteLink, WxAppConfig } from '../../types/auto-routes'
 import { computed, onShow, ref } from 'wevu'
-
-interface RouteLink {
-  route: string
-  title: string
-  kind: 'main' | 'subpackage'
-  url: string
-}
-
-interface AppGlobalData {
-  __autoRoutesPages?: string[]
-  __autoRoutesEntries?: string[]
-}
-
-interface AppRuntimeRoutes {
-  pages?: string[]
-  entries?: string[]
-}
-
-interface WxSubPackageConfig {
-  root?: string
-  pages?: string[]
-}
-
-interface WxAppConfig {
-  pages?: string[]
-  subPackages?: WxSubPackageConfig[]
-  subpackages?: WxSubPackageConfig[]
-}
-
-interface AutoRoutesAppInstance {
-  globalData?: AppGlobalData
-  routes?: AppRuntimeRoutes
-}
 
 function normalizeRouteList(value: unknown): string[] {
   if (!Array.isArray(value)) {

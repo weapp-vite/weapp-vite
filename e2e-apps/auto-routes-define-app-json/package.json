@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "weapp-vite dev",
-    "dev:open": "weapp-vite dev -o"
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build"
   },
   "devDependencies": {
     "wevu": "workspace:*"
