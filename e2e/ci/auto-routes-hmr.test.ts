@@ -15,6 +15,7 @@ const TYPED_ROUTER_PATH = path.join(APP_ROOT, 'typed-router.d.ts')
 const LOGS_VUE_PATH = path.join(APP_ROOT, 'src/pages/logs/index.vue')
 const ADDED_ROUTE_VUE_PATH = path.join(APP_ROOT, 'src/pages/logs/hmr-added.vue')
 const APP_VUE_PATH = path.join(APP_ROOT, 'src/app.vue')
+const MARKETING_CAMPAIGN_ROUTE = 'subpackages/marketing/pages/campaign/index'
 const LOGS_ROUTE = 'pages/logs/index'
 const ADDED_ROUTE = 'pages/logs/hmr-added'
 const LOGS_WXML_DIST = path.join(DIST_ROOT, `${LOGS_ROUTE}.wxml`)
@@ -146,9 +147,12 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
     try {
       await dev.waitFor(waitForFile(TYPED_ROUTER_PATH), 'initial typed-router generated')
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${LOGS_ROUTE}"`), 'initial logs route in typed-router')
+      await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${MARKETING_CAMPAIGN_ROUTE}"`), 'initial subpackage route in typed-router')
       await dev.waitFor(waitForAppJsonPagesToContain(LOGS_ROUTE), 'initial logs route in app.json pages')
+      await dev.waitFor(waitForFileContains(APP_JSON_DIST, '"subpackages/marketing"'), 'initial subPackages emitted in app.json')
       await dev.waitFor(waitForFileContains(APP_JS_DIST, '__autoRoutesPages'), 'initial globalData marker in app.js')
       await dev.waitFor(waitForFileContains(APP_JS_DIST, LOGS_ROUTE), 'initial logs route in app.js globalData')
+      await dev.waitFor(waitForFileContains(APP_JS_DIST, MARKETING_CAMPAIGN_ROUTE), 'initial subpackage route in app.js globalData')
 
       await fs.writeFile(ADDED_ROUTE_VUE_PATH, `<template><view>${addMarker}</view></template>\n`, 'utf8')
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router includes added route')

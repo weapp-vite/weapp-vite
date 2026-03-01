@@ -5,5 +5,8 @@
   "scripts": {
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o"
+  },
+  "devDependencies": {
+    "wevu": "workspace:*"
   }
 }
