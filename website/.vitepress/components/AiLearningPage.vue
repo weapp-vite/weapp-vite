@@ -243,9 +243,7 @@ function copyInstallCommand(code: string, index: number) {
   --ai-code-text: #e2f5ff;
 
   position: relative;
-  height: calc(100vh - 186px);
-  min-height: 620px;
-  max-height: 760px;
+  min-height: calc(100vh - 186px);
   margin: 4px 0;
   overflow: hidden;
   color: var(--ai-text);
@@ -301,10 +299,9 @@ function copyInstallCommand(code: string, index: number) {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
   gap: 10px;
   max-width: 1120px;
-  height: 100%;
   padding: 12px 14px;
   margin: 0 auto;
   font-family: 'Avenir Next', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
@@ -663,9 +660,7 @@ function copyInstallCommand(code: string, index: number) {
   }
 
   .ai-shell {
-    height: auto;
     min-height: 0;
-    max-height: none;
     margin: 4px 0 14px;
   }
 
