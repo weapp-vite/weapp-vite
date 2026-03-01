@@ -8,6 +8,7 @@
     "build": "weapp-vite build"
   },
   "devDependencies": {
+    "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }
 }
