@@ -46,6 +46,10 @@
       "types": "./dist/runtime.d.ts",
       "import": "./dist/runtime.mjs"
     },
+    "./mcp": {
+      "types": "./dist/mcp.d.ts",
+      "import": "./dist/mcp.mjs"
+    },
     "./types": {
       "types": "./dist/types.d.ts",
       "import": "./dist/types.mjs"
@@ -108,6 +112,7 @@
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/schematics": "workspace:*",
     "@weapp-core/shared": "workspace:*",
+    "@weapp-vite/mcp": "workspace:*",
     "@weapp-vite/volar": "workspace:*",
     "@weapp-vite/web": "workspace:*",
     "@wevu/api": "workspace:*",

@@ -82,6 +82,7 @@ function handleClick() {
 
 - 配置智能提示文档：[docs/volar.md](./docs/volar.md)
 - defineConfig 重载说明：[docs/define-config-overloads.md](./docs/define-config-overloads.md)
+- MCP 集成使用指南：[docs/mcp.md](./docs/mcp.md)
 
 ## CLI 中调用 weapp-ide-cli
 
@@ -100,6 +101,22 @@ weapp-vite navigate pages/index/index --project ./dist/build/mp-weixin
 weapp-vite ide preview --project ./dist/build/mp-weixin
 weapp-vite ide config show
 ```
+
+## CLI 启动 MCP
+
+`weapp-vite` 已集成 `@weapp-vite/mcp`，可直接启动 MCP Server：
+
+```sh
+weapp-vite mcp
+```
+
+指定工作区根路径：
+
+```sh
+weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite
+```
+
+详细说明见：[docs/mcp.md](./docs/mcp.md)
 
 ## Contribute
 

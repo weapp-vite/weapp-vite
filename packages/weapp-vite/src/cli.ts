@@ -4,6 +4,7 @@ import { registerAnalyzeCommand } from './cli/commands/analyze'
 import { registerBuildCommand } from './cli/commands/build'
 import { registerGenerateCommand } from './cli/commands/generate'
 import { registerInitCommand } from './cli/commands/init'
+import { registerMcpCommand } from './cli/commands/mcp'
 import { registerNpmCommand } from './cli/commands/npm'
 import { registerOpenCommand } from './cli/commands/open'
 import { registerServeCommand } from './cli/commands/serve'
@@ -44,6 +45,7 @@ registerInitCommand(cli)
 registerOpenCommand(cli)
 registerNpmCommand(cli)
 registerGenerateCommand(cli)
+registerMcpCommand(cli)
 
 cli.help()
 cli.version(VERSION)

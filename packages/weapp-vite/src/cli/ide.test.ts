@@ -86,6 +86,15 @@ describe('tryRunIdeCommand', () => {
     expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
   })
 
+  it('does not forward weapp-vite mcp command', async () => {
+    const { tryRunIdeCommand } = await import('./ide')
+
+    const forwarded = await tryRunIdeCommand(['mcp'])
+
+    expect(forwarded).toBe(false)
+    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+  })
+
   it('forwards unknown command to weapp-ide-cli', async () => {
     const { tryRunIdeCommand } = await import('./ide')
 

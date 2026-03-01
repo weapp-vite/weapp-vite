@@ -12,6 +12,7 @@ const WEAPP_VITE_NATIVE_COMMANDS = new Set([
   'build-npm',
   'generate',
   'g',
+  'mcp',
 ])
 
 /**

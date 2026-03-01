@@ -1076,6 +1076,9 @@ importers:
       '@weapp-core/shared':
         specifier: workspace:*
         version: link:../../@weapp-core/shared
+      '@weapp-vite/mcp':
+        specifier: workspace:*
+        version: link:../mcp
       '@weapp-vite/volar':
         specifier: workspace:*
         version: link:../volar
