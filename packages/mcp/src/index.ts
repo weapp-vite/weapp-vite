@@ -1,44 +1,34 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { z } from 'zod'
+import { createWeappViteMcpServer } from './server'
 
-// Create an MCP server
-const server = new McpServer({
-  name: 'Demo',
-  version: '1.0.0',
-})
+export * from './catalog'
+export * from './commandOps'
+export * from './constants'
+export * from './fileOps'
+export * from './server'
+export * from './utils'
+export * from './workspace'
 
-server.tool(
-  'calculate-bmi',
-  {
-    weightKg: z.number(),
-    heightM: z.number(),
-  },
-  async ({ weightKg, heightM }) => ({
-    content: [{
-      type: 'text',
-      text: String(weightKg / (heightM * heightM)),
-    }],
-  }),
-)
-
-// Async tool with external API call
-server.tool(
-  'fetch-weather',
-  { city: z.string() },
-  async ({ city }) => {
-    const response = await fetch(`https://api.weather.com/${city}`)
-    const data = await response.text()
-    return {
-      content: [{ type: 'text', text: data }],
-    }
-  },
-)
-
-// Start receiving messages on stdin and sending messages on stdout
-const transport = new StdioServerTransport()
-
-async function main() {
+export async function startStdioServer() {
+  const { server } = await createWeappViteMcpServer()
+  const transport = new StdioServerTransport()
   await server.connect(transport)
 }
-main()
+
+function isDirectExecution() {
+  const entry = process.argv[1]
+  if (!entry) {
+    return false
+  }
+  return fileURLToPath(import.meta.url) === entry
+}
+
+if (isDirectExecution()) {
+  startStdioServer().catch((error) => {
+    const message = error instanceof Error ? error.stack ?? error.message : String(error)
+    process.stderr.write(`[mcp] server start failed\n${message}\n`)
+    process.exitCode = 1
+  })
+}
