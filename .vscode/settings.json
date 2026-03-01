@@ -81,8 +81,6 @@
   "css.validate": false,
   "less.validate": false,
   "scss.validate": false,
-  "git.autofetch": false,
-  "git.untrackedChanges": "hidden",
   "files.watcherExclude": {
     "**/.git/**": true,
     "**/node_modules/**": true,
