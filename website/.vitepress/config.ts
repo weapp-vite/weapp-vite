@@ -50,6 +50,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       },
       { text: '快速开始', link: '/guide/' },
       { text: 'CLI 命令参考', link: '/guide/cli' },
+      { text: 'AI 与 MCP 协作', link: '/guide/mcp' },
       { text: '目录结构', link: '/guide/directory-structure' },
       { text: '手动集成', link: '/guide/manual-integration' },
     ],
@@ -419,6 +420,7 @@ export default defineConfig({
       // { text: '教程', link: '/handbook/' }, // 暂时隐藏：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
       { text: 'Wevu', link: '/wevu/' },
       { text: 'Wevu API', link: '/wevu/api/' },
+      { text: 'AI', link: '/ai' },
       { text: '社区', link: '/community/group' },
       { text: '周边包', link: '/packages/' },
       // { text: '参考', link: '/config' },

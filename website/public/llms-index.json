@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "generatedAt": "2026-02-28T17:18:19.132Z",
+  "generatedAt": "2026-03-01T15:44:50.932Z",
   "site": "https://vite.icebreaker.top",
-  "count": 163,
+  "count": 164,
   "items": [
     {
       "id": "doc-72ab937a75",
       "title": "AI 学习入口",
-      "summary": "统一的 AI 学习入口，聚合 llms 语料与 Weapp-vite / Wevu 技能安装方式。",
+      "summary": "统一的 AI 学习入口，聚合 llms 语料、MCP 接入与 Weapp-vite / Wevu 技能安装方式。",
       "url": "/ai",
       "canonical": "https://vite.icebreaker.top/ai",
       "keywords": [
@@ -21,7 +21,7 @@
         "/"
       ],
       "headings": [],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-01",
       "source": "ai.md"
     },
     {
@@ -449,14 +449,14 @@
         "weapp.debug {#weapp-debug}",
         "调试示例",
         "常见调试技巧",
+        "weapp.mcp {#weapp-mcp}",
+        "配置示例",
+        "字段说明",
         "weapp.wevu.defaults {#weapp-wevu-defaults}",
         "配置示例",
-        "注意事项",
-        "weapp.hmr.sharedChunks {#weapp-hmr-sharedchunks}",
-        "weapp.hmr.touchAppWxss {#weapp-hmr-touchappwxss}",
-        "weapp.chunks {#weapp-chunks}"
+        "注意事项"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-01",
       "source": "config/shared.md"
     },
     {
@@ -894,7 +894,7 @@
         "5) npm（含别名）",
         "6) generate / g",
         "7) init",
-        "weapp-ide-cli 透传规则"
+        "8) mcp"
       ],
       "updatedAt": "2026-03-01",
       "source": "guide/cli.md"
@@ -1160,6 +1160,37 @@
       ],
       "updatedAt": "2026-02-27",
       "source": "guide/manual-integration.md"
+    },
+    {
+      "id": "doc-14311f799d",
+      "title": "MCP 与 AI 协作指南",
+      "summary": "介绍 weapp-vite MCP 能力的价值、接入方式、测试方法与团队落地建议。",
+      "url": "/guide/mcp",
+      "canonical": "https://vite.icebreaker.top/guide/mcp",
+      "keywords": [
+        "guide",
+        "mcp",
+        "ai",
+        "weapp-vite",
+        "wevu",
+        "与",
+        "协作指南"
+      ],
+      "headings": [
+        "MCP 与 AI 协作指南",
+        "MCP 有什么用",
+        "默认行为",
+        "手动启动（推荐）",
+        "1) stdio 模式（通用）",
+        "2) streamable-http 模式（URL 连接）",
+        "AI 客户端快速接入",
+        "能力清单",
+        "如何测试 MCP 是否可用",
+        "安全边界",
+        "关联阅读"
+      ],
+      "updatedAt": "2026-03-01",
+      "source": "guide/mcp.md"
     },
     {
       "id": "doc-5d9fcdf459",
@@ -2754,7 +2785,7 @@
     {
       "id": "doc-d889ef0740",
       "title": "让 AI 学习 Weapp-vite",
-      "summary": "兼容入口（/llms），与 /ai 共享同一套 AI 学习页面。",
+      "summary": "兼容入口（/llms），与 /ai 共享同一套 AI 学习页面（含 MCP 接入指引）。",
       "url": "/llms",
       "canonical": "https://vite.icebreaker.top/llms",
       "keywords": [
@@ -2768,7 +2799,7 @@
         "/ai"
       ],
       "headings": [],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-01",
       "source": "llms.md"
     },
     {
@@ -2944,13 +2975,13 @@
         "已有独立文档模块",
         "说明"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-01",
       "source": "packages/index.md"
     },
     {
       "id": "doc-a24699342e",
       "title": "@weapp-vite/mcp",
-      "summary": "@weapp-vite/mcp 是一个 MCP 示例服务包，用于展示如何基于 MCP SDK 注册工具并通过 stdio 传输响应调用。",
+      "summary": "@weapp-vite/mcp 是 weapp-vite 与 wevu 的 MCP 服务实现，面向 AI 助手提供源码检索、命令执行与文档资源能力。",
       "url": "/packages/mcp",
       "canonical": "https://vite.icebreaker.top/packages/mcp",
       "keywords": [
@@ -2958,19 +2989,20 @@
         "packages",
         "mcp",
         "@weapp-vite/mcp",
-        "是一个",
-        "示例服务包",
-        "用于展示如何基于",
+        "ai",
         "sdk"
       ],
       "headings": [
         "@weapp-vite/mcp",
         "何时使用",
         "安装",
-        "运行示例",
-        "二次开发建议"
+        "启动方式",
+        "主要能力",
+        "安全约束",
+        "二次开发建议",
+        "关联阅读"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-01",
       "source": "packages/mcp.md"
     },
     {

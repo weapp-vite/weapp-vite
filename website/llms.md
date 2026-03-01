@@ -1,7 +1,7 @@
 ---
 layout: page
 title: 让 AI 学习 Weapp-vite
-description: 兼容入口（/llms），与 /ai 共享同一套 AI 学习页面。
+description: 兼容入口（/llms），与 /ai 共享同一套 AI 学习页面（含 MCP 接入指引）。
 keywords:
   - Weapp-vite
   - llms

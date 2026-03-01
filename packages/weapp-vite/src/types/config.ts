@@ -579,7 +579,7 @@ export interface WeappMcpConfig {
   enabled?: boolean
   /**
    * @description 是否在 weapp-vite CLI 启动时自动拉起 MCP HTTP 服务
-   * @default true
+   * @default false
    */
   autoStart?: boolean
   /**
@@ -948,7 +948,7 @@ export interface WeappViteConfig {
    * - `false`：完全关闭 MCP（包含自动启动）
    * - `true`：启用默认 MCP 配置
    * - `object`：细粒度配置
-   * @default { enabled: true, autoStart: true, host: '127.0.0.1', port: 3088, endpoint: '/mcp' }
+   * @default { enabled: true, autoStart: false, host: '127.0.0.1', port: 3088, endpoint: '/mcp' }
    * @example
    * mcp: false
    * @example

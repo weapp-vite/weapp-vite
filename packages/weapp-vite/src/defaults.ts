@@ -68,7 +68,7 @@ export function getWeappViteConfig(): WeappViteConfig {
     },
     mcp: {
       enabled: true,
-      autoStart: true,
+      autoStart: false,
       host: '127.0.0.1',
       port: 3088,
       endpoint: '/mcp',

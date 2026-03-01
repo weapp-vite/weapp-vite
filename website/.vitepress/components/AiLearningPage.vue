@@ -37,6 +37,18 @@ const resources = computed(() => [
     href: props.altPath,
     badge: 'Alt Entry',
   },
+  {
+    title: '/guide/mcp',
+    desc: 'MCP 专章：作用、启动方式、客户端接入与测试建议。',
+    href: '/guide/mcp',
+    badge: 'MCP Guide',
+  },
+  {
+    title: '/packages/mcp',
+    desc: '@weapp-vite/mcp 包能力说明与扩展入口。',
+    href: '/packages/mcp',
+    badge: 'Package Doc',
+  },
 ])
 
 const directSkills = [
@@ -113,6 +125,7 @@ function copyInstallCommand(code: string, index: number) {
           <a href="/llms.txt" target="_blank" rel="noopener noreferrer">打开 /llms.txt</a>
           <a href="/llms-full.txt" target="_blank" rel="noopener noreferrer">打开 /llms-full.txt</a>
           <a href="/llms-index.json" target="_blank" rel="noopener noreferrer">打开 /llms-index.json</a>
+          <a href="/guide/mcp" target="_blank" rel="noopener noreferrer">打开 MCP 指南</a>
           <a :href="props.altPath" target="_blank" rel="noopener noreferrer">访问备用入口 {{ props.altPath }}</a>
         </div>
       </header>
@@ -187,6 +200,11 @@ function copyInstallCommand(code: string, index: number) {
             </article>
             <article>
               <span>03</span>
+              <h3>接入 MCP 服务</h3>
+              <p>使用 <code>weapp-vite mcp</code> 连接仓库工具能力，让 AI 可以直接读取代码与执行验证命令。</p>
+            </article>
+            <article>
+              <span>04</span>
               <h3>挂载专用 Skills</h3>
               <p>通过 <code>npx skills add sonofmagic/skills</code> 安装技能，让 AI 走统一工程流程回答。</p>
             </article>

@@ -70,7 +70,7 @@ export function resolveWeappMcpConfig(config?: boolean | WeappMcpConfig): Resolv
 
   return {
     enabled: record.enabled !== false,
-    autoStart: record.autoStart !== false,
+    autoStart: record.autoStart === true,
     host: typeof record.host === 'string' && record.host.trim().length > 0
       ? record.host.trim()
       : DEFAULT_MCP_HOST,

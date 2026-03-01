@@ -1,28 +1,26 @@
 ---
 title: "@weapp-vite/mcp"
-description: "@weapp-vite/mcp 是一个 MCP 示例服务包，用于展示如何基于 MCP SDK 注册工具并通过 stdio 传输响应调用。"
+description: "@weapp-vite/mcp 是 weapp-vite 与 wevu 的 MCP 服务实现，面向 AI 助手提供源码检索、命令执行与文档资源能力。"
 keywords:
   - Weapp-vite
   - packages
   - mcp
   - "@weapp-vite/mcp"
-  - 是一个
-  - 示例服务包
-  - 用于展示如何基于
+  - ai
   - sdk
 ---
 
 # @weapp-vite/mcp
 
-`@weapp-vite/mcp` 是一个 MCP 示例服务包，用于展示如何基于 MCP SDK 注册工具并通过 stdio 传输响应调用。
+`@weapp-vite/mcp` 是 `weapp-vite` 官方维护的 MCP 服务实现，目标是把 `weapp-vite / wevu / wevu-compiler` 的关键研发能力暴露给 AI 助手。
 
-> 该包以教学和验证为主，不是面向生产的完整服务框架。
+在当前版本中，`weapp-vite` 已集成该能力，你通常不需要单独使用此包，而是直接通过 `weapp-vite mcp` 启动。
 
 ## 何时使用
 
-- 你要快速理解 MCP 服务端最小结构
-- 你要验证 MCP Client 与 stdio 服务联调流程
-- 你要基于示例改造自己的工具服务
+1. 你要让 AI 助手直接读取 `weapp-vite` 仓库源码与文档。
+2. 你要让 AI 在受限命令白名单下完成“修改 + 验证”闭环。
+3. 你要基于官方 MCP 能力扩展团队内部 AI 工作流。
 
 ## 安装
 
@@ -30,21 +28,59 @@ keywords:
 pnpm add @weapp-vite/mcp
 ```
 
-## 运行示例
+## 启动方式
+
+推荐直接使用 `weapp-vite` CLI：
+
+```bash
+weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite
+```
+
+如果你只想单独运行包本身：
 
 ```bash
 pnpm --filter @weapp-vite/mcp start
 ```
 
-包内示例包含两个工具：
+## 主要能力
 
-- `calculate-bmi`
-- `fetch-weather`
+Tools：
+
+1. `workspace_catalog`
+2. `list_source_files`
+3. `read_source_file`
+4. `search_source_code`
+5. `run_package_script`
+6. `run_weapp_vite_cli`
+7. `run_repo_command`
+
+Resources：
+
+1. `weapp-vite://workspace/catalog`
+2. `weapp-vite://docs/{package}/README.md`
+3. `weapp-vite://docs/{package}/CHANGELOG.md`
+4. `weapp-vite://source/{package}?path={path}`
+
+Prompts：
+
+1. `plan-weapp-vite-change`
+2. `debug-wevu-runtime`
+
+## 安全约束
+
+1. 文件读取限制在 workspace 根目录内。
+2. 命令执行限制在白名单（`pnpm/node/git/rg`）。
+3. 输出内容有截断与超时保护。
 
 ## 二次开发建议
 
-直接修改 `packages/mcp/src/index.ts`：
+若你要扩展能力，建议从以下文件开始：
 
-- 新增工具与参数 schema（zod）
-- 调整服务 `name/version`
-- 接入真实业务 API 与鉴权逻辑
+1. `packages/mcp/src/server.ts`：工具/资源/Prompt 注册入口。
+2. `packages/mcp/src/fileOps.ts`：文件读取与搜索策略。
+3. `packages/mcp/src/commandOps.ts`：命令白名单与执行约束。
+
+## 关联阅读
+
+1. [MCP 与 AI 协作指南](/guide/mcp)
+2. [AI 学习入口](/ai)
