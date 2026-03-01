@@ -204,55 +204,48 @@ pnpm --filter weapp-vite build
 3. 连接验证（客户端实际列出 tools/resources）：
    使用你的 MCP Client 连上后执行 `tools/list`，确认能看到上面的 7 个工具。
 
-## 示例：驱动 weapp-vite 做截图验收
+## 示例：驱动 weapp-vite screenshot 做验收
 
-下面给一个可复用的 AI 执行链路示例，目标是验证 `http://localhost:5173/ai.html` 的页面效果并产出截图文件。
+下面给一个可复用的 AI 执行链路示例，目标是构建小程序并通过 `weapp-vite screenshot` 产出截图文件。
 
 前置条件：
 
 1. 你的 AI 客户端已接入 `weapp-vite` MCP。
-2. 本机可用 `playwright-cli`（例如全局安装，或可通过 `pnpm exec playwright-cli` 调用）。
+2. 微信开发者工具已登录，并开启「设置 -> 安全设置 -> 服务端口」。
 
-### 步骤 1：启动页面服务
+### 步骤 1：先构建小程序
 
-优先让 AI 调用 `run_repo_command` 启动文档站点：
+让 AI 调用 `run_weapp_vite_cli` 构建目标项目：
 
 ```json
 {
-  "tool": "run_repo_command",
+  "tool": "run_weapp_vite_cli",
   "arguments": {
-    "command": "pnpm",
-    "cwdRelative": "website",
-    "args": ["dev", "--", "--host", "127.0.0.1", "--port", "5173"]
+    "subCommand": "build",
+    "projectPath": "e2e-apps/auto-routes-define-app-json",
+    "platform": "weapp"
   }
 }
 ```
 
-说明：
+### 步骤 2：调用 weapp-vite screenshot
 
-1. 这是长驻进程。若你的客户端不支持后台任务，请在本地终端手动执行同一命令。
-2. 启动后访问 `http://127.0.0.1:5173/ai.html`。
-
-### 步骤 2：让 AI 产出截图
-
-服务可访问后，继续调用：
+构建完成后，让 AI 直接执行截图命令：
 
 ```json
 {
-  "tool": "run_repo_command",
+  "tool": "run_weapp_vite_cli",
   "arguments": {
-    "command": "pnpm",
-    "args": ["exec", "playwright-cli", "open", "http://127.0.0.1:5173/ai.html"]
-  }
-}
-```
-
-```json
-{
-  "tool": "run_repo_command",
-  "arguments": {
-    "command": "pnpm",
-    "args": ["exec", "playwright-cli", "screenshot", "--filename=.playwright-cli/ai-check.png"]
+    "subCommand": "screenshot",
+    "args": [
+      "-p",
+      "e2e-apps/auto-routes-define-app-json/dist/build/mp-weixin",
+      "--page",
+      "pages/home/index",
+      "-o",
+      ".tmp/mcp-screenshot.png",
+      "--json"
+    ]
   }
 }
 ```
@@ -268,13 +261,13 @@ pnpm --filter weapp-vite build
     "command": "node",
     "args": [
       "-e",
-      "import fs from 'node:fs'; console.log(fs.existsSync('.playwright-cli/ai-check.png') ? 'screenshot-ok' : 'screenshot-missing')"
+      "import fs from 'node:fs'; console.log(fs.existsSync('.tmp/mcp-screenshot.png') ? 'screenshot-ok' : 'screenshot-missing')"
     ]
   }
 }
 ```
 
-若输出为 `screenshot-ok`，说明“weapp-vite 页面启动 + 截图验收”链路已打通。
+若输出为 `screenshot-ok`，说明“weapp-vite 构建 + weapp-vite screenshot 截图验收”链路已打通。
 
 ## 安全边界
 
