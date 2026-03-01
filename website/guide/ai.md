@@ -12,8 +12,6 @@ keywords:
 
 # AI 协作指南
 
-本页只保留 3 个核心章节，按 `Skills -> MCP -> llms.txt` 的顺序落地。
-
 ## Skills
 
 `Skills` 负责给 AI 注入稳定的工程流程，减少“回答看起来对、执行却跑偏”的情况。
