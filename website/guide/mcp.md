@@ -101,6 +101,69 @@ weapp-vite mcp \
 
 建议团队统一一个命名（例如 `weapp-vite`），避免每个人配置名不一致导致提示词模板无法复用。
 
+### Cursor
+
+1. 打开 Cursor 设置，进入 MCP Servers（不同版本入口名称可能有差异）。
+2. 新增一个 server，命名为 `weapp-vite`。
+3. 配置启动命令：
+
+```json
+{
+  "command": "weapp-vite",
+  "args": [
+    "mcp",
+    "--workspace-root",
+    "/absolute/path/to/weapp-vite"
+  ]
+}
+```
+
+4. 保存后重启 Chat 会话，在对话里执行一次 `tools/list`，确认出现 `workspace_catalog` 等工具。
+
+### Claude（Claude Code / Claude Desktop）
+
+1. 打开 Claude 的 MCP 配置入口（CLI 配置或桌面端 Developer 设置中的 MCP）。
+2. 添加 `weapp-vite` 服务，复用上面的 `command + args`。
+3. 若客户端要求 JSON 结构，可直接使用：
+
+```json
+{
+  "mcpServers": {
+    "weapp-vite": {
+      "command": "weapp-vite",
+      "args": [
+        "mcp",
+        "--workspace-root",
+        "/absolute/path/to/weapp-vite"
+      ]
+    }
+  }
+}
+```
+
+4. 重启 Claude 会话后，先让 AI 执行 `workspace_catalog`，确认能读取仓库目录与包信息。
+
+### Cline（VS Code）
+
+1. 在 VS Code 安装并启用 Cline。
+2. 打开命令面板执行 `Cline: Open MCP Settings`。
+3. 在配置文件中添加 `weapp-vite` server（复用上面的 `mcpServers` 模板）。
+4. 回到 Cline 对话，先请求 `tools/list`，再执行一次 `search_source_code` 验证工具可用。
+
+### Codex
+
+1. 打开 Codex 的 MCP Server 配置入口（UI 或配置文件）。
+2. 新增 `weapp-vite` server，填入 `weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite`。
+3. 保存后重启当前会话。
+4. 先调用 `workspace_catalog`，再调用 `read_source_file` 读取一个已知文件，确认端到端可用。
+
+### 客户端接入排查清单
+
+1. `weapp-vite` 命令不可用：先在终端执行 `weapp-vite --version`，确认 PATH 可访问。
+2. 工具列表为空：优先检查 `--workspace-root` 是否指向仓库根目录。
+3. 能列工具但读不到文件：检查客户端工作目录权限与本地沙箱策略。
+4. 需要 HTTP 连接时：改用 `streamable-http` 模式并确认地址可达（如 `http://127.0.0.1:3088/mcp`）。
+
 ## 能力清单
 
 当前 MCP 服务主要暴露：
