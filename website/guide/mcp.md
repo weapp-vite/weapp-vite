@@ -204,6 +204,78 @@ pnpm --filter weapp-vite build
 3. 连接验证（客户端实际列出 tools/resources）：
    使用你的 MCP Client 连上后执行 `tools/list`，确认能看到上面的 7 个工具。
 
+## 示例：驱动 weapp-vite 做截图验收
+
+下面给一个可复用的 AI 执行链路示例，目标是验证 `http://localhost:5173/ai.html` 的页面效果并产出截图文件。
+
+前置条件：
+
+1. 你的 AI 客户端已接入 `weapp-vite` MCP。
+2. 本机可用 `playwright-cli`（例如全局安装，或可通过 `pnpm exec playwright-cli` 调用）。
+
+### 步骤 1：启动页面服务
+
+优先让 AI 调用 `run_repo_command` 启动文档站点：
+
+```json
+{
+  "tool": "run_repo_command",
+  "arguments": {
+    "command": "pnpm",
+    "cwdRelative": "website",
+    "args": ["dev", "--", "--host", "127.0.0.1", "--port", "5173"]
+  }
+}
+```
+
+说明：
+
+1. 这是长驻进程。若你的客户端不支持后台任务，请在本地终端手动执行同一命令。
+2. 启动后访问 `http://127.0.0.1:5173/ai.html`。
+
+### 步骤 2：让 AI 产出截图
+
+服务可访问后，继续调用：
+
+```json
+{
+  "tool": "run_repo_command",
+  "arguments": {
+    "command": "pnpm",
+    "args": ["exec", "playwright-cli", "open", "http://127.0.0.1:5173/ai.html"]
+  }
+}
+```
+
+```json
+{
+  "tool": "run_repo_command",
+  "arguments": {
+    "command": "pnpm",
+    "args": ["exec", "playwright-cli", "screenshot", "--filename=.playwright-cli/ai-check.png"]
+  }
+}
+```
+
+### 步骤 3：校验截图产物
+
+让 AI 再执行一次文件存在性校验：
+
+```json
+{
+  "tool": "run_repo_command",
+  "arguments": {
+    "command": "node",
+    "args": [
+      "-e",
+      "import fs from 'node:fs'; console.log(fs.existsSync('.playwright-cli/ai-check.png') ? 'screenshot-ok' : 'screenshot-missing')"
+    ]
+  }
+}
+```
+
+若输出为 `screenshot-ok`，说明“weapp-vite 页面启动 + 截图验收”链路已打通。
+
 ## 安全边界
 
 MCP 服务端已做基础保护：

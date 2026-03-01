@@ -175,3 +175,68 @@ MCP 服务端做了以下约束：
 1. `weapp-vite mcp` 启动失败：先确认 Node 版本符合 `^20.19.0 || >=22.12.0`。
 2. AI 看不到包内容：检查 `--workspace-root` 是否指向正确仓库根目录。
 3. 命令执行失败：确认命令在白名单中，并检查子目录权限与脚本名是否存在。
+
+## 9. 示例：AI 驱动页面截图验收
+
+以下示例用于演示一条完整链路：AI 通过 MCP 驱动 `weapp-vite` 项目启动页面，并用 `playwright-cli` 产出截图。
+
+前置条件：
+
+1. 客户端已接入 `weapp-vite` MCP。
+2. 本机可执行 `playwright-cli`（如 `pnpm exec playwright-cli`）。
+
+### 9.1 启动站点
+
+调用 `run_repo_command`：
+
+```json
+{
+  "tool": "run_repo_command",
+  "arguments": {
+    "command": "pnpm",
+    "cwdRelative": "website",
+    "args": ["dev", "--", "--host", "127.0.0.1", "--port", "5173"]
+  }
+}
+```
+
+> 这是长驻进程。若客户端不支持后台任务，请在本地终端手动执行该命令。
+
+### 9.2 截图
+
+```json
+{
+  "tool": "run_repo_command",
+  "arguments": {
+    "command": "pnpm",
+    "args": ["exec", "playwright-cli", "open", "http://127.0.0.1:5173/ai.html"]
+  }
+}
+```
+
+```json
+{
+  "tool": "run_repo_command",
+  "arguments": {
+    "command": "pnpm",
+    "args": ["exec", "playwright-cli", "screenshot", "--filename=.playwright-cli/ai-check.png"]
+  }
+}
+```
+
+### 9.3 验证截图是否生成
+
+```json
+{
+  "tool": "run_repo_command",
+  "arguments": {
+    "command": "node",
+    "args": [
+      "-e",
+      "import fs from 'node:fs'; console.log(fs.existsSync('.playwright-cli/ai-check.png') ? 'screenshot-ok' : 'screenshot-missing')"
+    ]
+  }
+}
+```
+
+返回 `screenshot-ok` 即表示链路成功。
