@@ -34,6 +34,34 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/dashboard/index",
+          "pathName": "pages/dashboard/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/detail/index",
+          "pathName": "pages/detail/index",
+          "query": "id=42&from=devtools",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/marketing/pages/campaign/index",
+          "pathName": "subpackages/marketing/pages/campaign/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/lab/pages/state-playground/index",
+          "pathName": "subpackages/lab/pages/state-playground/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }

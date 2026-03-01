@@ -29,6 +29,10 @@ describe.sequential('e2e app: auto-routes defineAppJson', () => {
     expect(typedRouter).toContain('    export type AutoRoutesPages = [')
     expect(typedRouter).toContain('"pages/home/index"')
     expect(typedRouter).toContain('"pages/logs/index"')
+    expect(typedRouter).toContain('"pages/dashboard/index"')
+    expect(typedRouter).toContain('"pages/detail/index"')
+    expect(typedRouter).toContain('"subpackages/marketing/pages/campaign/index"')
+    expect(typedRouter).toContain('"subpackages/lab/pages/state-playground/index"')
     expect(typedRouter).not.toContain('readonly [')
 
     await execa('pnpm', ['exec', 'vue-tsc', '--noEmit', '-p', 'tsconfig.json'], {
@@ -41,15 +45,35 @@ describe.sequential('e2e app: auto-routes defineAppJson', () => {
 
     const appJson = await fs.readJson(appJsonPath)
     expect(appJson.pages).toEqual([
+      'pages/dashboard/index',
+      'pages/detail/index',
       'pages/home/index',
       'pages/logs/index',
+    ])
+    expect(appJson.subPackages).toEqual([
+      {
+        root: 'subpackages/lab',
+        pages: [
+          'pages/state-playground/index',
+        ],
+      },
+      {
+        root: 'subpackages/marketing',
+        pages: [
+          'pages/campaign/index',
+        ],
+      },
     ])
 
     const appJsPath = path.join(DIST_ROOT, 'app.js')
     expect(await fs.pathExists(appJsPath)).toBe(true)
     const appJs = await fs.readFile(appJsPath, 'utf8')
     expect(appJs).toContain('__autoRoutesPages')
+    expect(appJs).toContain('__autoRoutesEntries')
+    expect(appJs).toContain('__autoRoutesSubPackages')
     expect(appJs).toContain('pages/home/index')
     expect(appJs).toContain('pages/logs/index')
+    expect(appJs).toContain('subpackages/marketing/pages/campaign/index')
+    expect(appJs).toContain('subpackages/lab/pages/state-playground/index')
   })
 })
