@@ -176,50 +176,46 @@ MCP 服务端做了以下约束：
 2. AI 看不到包内容：检查 `--workspace-root` 是否指向正确仓库根目录。
 3. 命令执行失败：确认命令在白名单中，并检查子目录权限与脚本名是否存在。
 
-## 9. 示例：AI 驱动页面截图验收
+## 9. 示例：AI 驱动 weapp-vite screenshot 验收
 
-以下示例用于演示一条完整链路：AI 通过 MCP 驱动 `weapp-vite` 项目启动页面，并用 `playwright-cli` 产出截图。
+以下示例用于演示一条完整链路：AI 通过 MCP 驱动 `weapp-vite` 构建小程序，并调用 `weapp-vite screenshot` 产出截图。
 
 前置条件：
 
 1. 客户端已接入 `weapp-vite` MCP。
-2. 本机可执行 `playwright-cli`（如 `pnpm exec playwright-cli`）。
+2. 微信开发者工具已登录，并开启「设置 -> 安全设置 -> 服务端口」。
 
-### 9.1 启动站点
+### 9.1 构建小程序
 
-调用 `run_repo_command`：
+调用 `run_weapp_vite_cli`：
 
 ```json
 {
-  "tool": "run_repo_command",
+  "tool": "run_weapp_vite_cli",
   "arguments": {
-    "command": "pnpm",
-    "cwdRelative": "website",
-    "args": ["dev", "--", "--host", "127.0.0.1", "--port", "5173"]
+    "subCommand": "build",
+    "projectPath": "e2e-apps/auto-routes-define-app-json",
+    "platform": "weapp"
   }
 }
 ```
 
-> 这是长驻进程。若客户端不支持后台任务，请在本地终端手动执行该命令。
-
-### 9.2 截图
+### 9.2 调用 weapp-vite screenshot
 
 ```json
 {
-  "tool": "run_repo_command",
+  "tool": "run_weapp_vite_cli",
   "arguments": {
-    "command": "pnpm",
-    "args": ["exec", "playwright-cli", "open", "http://127.0.0.1:5173/ai.html"]
-  }
-}
-```
-
-```json
-{
-  "tool": "run_repo_command",
-  "arguments": {
-    "command": "pnpm",
-    "args": ["exec", "playwright-cli", "screenshot", "--filename=.playwright-cli/ai-check.png"]
+    "subCommand": "screenshot",
+    "args": [
+      "-p",
+      "e2e-apps/auto-routes-define-app-json/dist/build/mp-weixin",
+      "--page",
+      "pages/home/index",
+      "-o",
+      ".tmp/mcp-screenshot.png",
+      "--json"
+    ]
   }
 }
 ```
@@ -233,7 +229,7 @@ MCP 服务端做了以下约束：
     "command": "node",
     "args": [
       "-e",
-      "import fs from 'node:fs'; console.log(fs.existsSync('.playwright-cli/ai-check.png') ? 'screenshot-ok' : 'screenshot-missing')"
+      "import fs from 'node:fs'; console.log(fs.existsSync('.tmp/mcp-screenshot.png') ? 'screenshot-ok' : 'screenshot-missing')"
     ]
   }
 }
