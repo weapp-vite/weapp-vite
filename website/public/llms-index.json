@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-01T15:44:50.932Z",
+  "generatedAt": "2026-03-01T15:49:21.766Z",
   "site": "https://vite.icebreaker.top",
   "count": 164,
   "items": [
@@ -1184,10 +1184,11 @@
         "1) stdio 模式（通用）",
         "2) streamable-http 模式（URL 连接）",
         "AI 客户端快速接入",
-        "能力清单",
-        "如何测试 MCP 是否可用",
-        "安全边界",
-        "关联阅读"
+        "Cursor",
+        "Claude（Claude Code / Claude Desktop）",
+        "Cline（VS Code）",
+        "Codex",
+        "客户端接入排查清单"
       ],
       "updatedAt": "2026-03-01",
       "source": "guide/mcp.md"
