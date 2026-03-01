@@ -241,5 +241,6 @@
     "npm_config_sharp_binary_host": "https://cdn.npmmirror.com/binaries/sharp",
     "npm_config_sharp_libvips_binary_host": "https://cdn.npmmirror.com/binaries/sharp-libvips",
     "npm_config_robotjs_binary_host": "https://cdn.npmmirror.com/binaries/robotjs"
-  }
+  },
+  "vue3snippets.enable-compile-vue-file-on-did-save-code": true
 }
