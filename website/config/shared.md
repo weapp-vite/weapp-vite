@@ -17,6 +17,7 @@ keywords:
 
 - `weapp.autoRoutes`：生成路由清单与类型，供 `app.json.ts` 或业务代码使用
 - `weapp.debug`：遇到“为什么没扫描到 / 为什么没输出”时怎么定位
+- `weapp.mcp`：AI 协作时的 MCP 服务开关与监听配置
 
 组件自动导入已经拆到 [自动导入组件配置](/config/auto-import-components.md) 单独说明。
 
@@ -98,6 +99,66 @@ export default defineConfig({
 1. **确认分包有没有参与构建**：用 `watchFiles` 看看独立分包的 `miniprogram_npm` 是否生成、文件是否被监听到。
 2. **定位构建卡顿**：在 `resolveId` / `load` 里打时间戳，快速找出慢的模块或目录。
 3. **排查组件自动导入**：组件没被识别时，先确认 `.json` 是否包含 `component: true`，再看 `autoImportComponents.globs` 是否命中。
+
+## `weapp.mcp` {#weapp-mcp}
+- **类型**：`boolean | { enabled?: boolean; autoStart?: boolean; host?: string; port?: number; endpoint?: string }`
+- **默认值**：`{ enabled: true, autoStart: false, host: '127.0.0.1', port: 3088, endpoint: '/mcp' }`
+- **适用场景**：
+  - 需要让 AI 助手直接读取仓库源码与文档。
+  - 希望在本地开发时按需自动拉起 MCP HTTP 服务。
+
+### 配置示例
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    mcp: {
+      enabled: true,
+      autoStart: true,
+      host: '127.0.0.1',
+      port: 3088,
+      endpoint: '/mcp',
+    },
+  },
+})
+```
+
+关闭自动启动（保留手动 `weapp-vite mcp`）：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    mcp: {
+      autoStart: false,
+    },
+  },
+})
+```
+
+完全关闭 MCP：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    mcp: false,
+  },
+})
+```
+
+### 字段说明
+
+1. `enabled`: 是否启用 MCP 能力。
+2. `autoStart`: 是否在 `weapp-vite` 原生命令执行时自动启动 MCP HTTP 服务。
+3. `host/port/endpoint`: 自动启动时的监听地址配置。
+
+> [!TIP]
+> 完整接入流程、客户端配置与测试建议请看：[MCP 与 AI 协作指南](/guide/mcp)。
 
 ## `weapp.wevu.defaults` {#weapp-wevu-defaults}
 - **类型**：`WevuDefaults`

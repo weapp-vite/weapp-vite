@@ -15,13 +15,10 @@
 
 ## 2. 启动方式
 
-### 2.0 CLI 自动启动（默认开启）
+### 2.0 CLI 自动启动（默认关闭）
 
-从当前版本开始，`weapp-vite` CLI 在执行原生命令时会默认自动拉起 MCP HTTP 服务（`streamable-http`），默认地址：
-
-- `http://127.0.0.1:3088/mcp`
-
-你可以在 `vite.config.ts` 关闭自动启动或完全禁用 MCP：
+默认情况下，`weapp-vite` 不会在 CLI 启动时自动拉起 MCP 服务。
+如果你希望开发命令执行时自动拉起本地 MCP HTTP 服务（`streamable-http`），可在 `vite.config.ts` 显式开启：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -30,13 +27,17 @@ export default defineConfig({
   weapp: {
     mcp: {
       enabled: true,
-      autoStart: false,
+      autoStart: true,
     },
   },
 })
 ```
 
-完全关闭：
+默认地址：
+
+- `http://127.0.0.1:3088/mcp`
+
+完全关闭 MCP：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -71,7 +72,8 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 说明：
 
 1. 不传 `--workspace-root` 时，会从当前目录向上自动定位 `pnpm-workspace.yaml`。
-2. MCP 通过标准输入输出通信，不会启动 HTTP 端口。
+2. `--transport stdio` 通过标准输入输出通信，不会启动 HTTP 端口。
+3. `--transport streamable-http` 会启动本地 HTTP 服务，可供支持 URL 连接的 MCP Client 使用。
 
 ### 2.2 程序化启动
 

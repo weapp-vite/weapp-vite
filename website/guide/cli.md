@@ -158,6 +158,32 @@ weapp-vite g [filepath]
 weapp-vite init
 ```
 
+### 8) `mcp`
+
+启动 `weapp-vite` MCP 服务（用于 AI 助手接入）。
+
+```bash
+weapp-vite mcp
+```
+
+参数：
+
+| 参数                      | 说明                                                   |
+| ------------------------- | ------------------------------------------------------ |
+| `--transport <type>`      | 传输类型：`stdio` \| `streamable-http`（默认 `stdio`） |
+| `--host <host>`           | HTTP 模式监听地址                                      |
+| `--port <port>`           | HTTP 模式端口                                          |
+| `--endpoint <path>`       | HTTP 模式 endpoint（默认 `/mcp`）                      |
+| `--unref`                 | HTTP 模式下 `unref` server（不阻塞进程退出）           |
+| `--workspace-root <path>` | 指定 workspace 根目录（默认从当前目录自动向上定位）    |
+
+示例：
+
+```bash
+weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite
+weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
+```
+
 ## `weapp-ide-cli` 透传规则
 
 当你输入的命令不是 `weapp-vite` 原生命令时，CLI 会判断是否属于 `weapp-ide-cli` 顶层命令。若命中，则直接透传执行。
@@ -175,6 +201,7 @@ weapp-vite init
 - `build-npm`
 - `generate`
 - `g`
+- `mcp`
 
 你也可以显式使用命名空间透传：
 

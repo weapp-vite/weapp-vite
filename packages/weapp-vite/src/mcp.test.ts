@@ -13,7 +13,7 @@ describe('weapp mcp config', () => {
     const resolved = resolveWeappMcpConfig(undefined)
 
     expect(resolved.enabled).toBe(true)
-    expect(resolved.autoStart).toBe(true)
+    expect(resolved.autoStart).toBe(false)
     expect(resolved.port).toBe(DEFAULT_MCP_PORT)
     expect(resolved.endpoint).toBe(DEFAULT_MCP_ENDPOINT)
   })
