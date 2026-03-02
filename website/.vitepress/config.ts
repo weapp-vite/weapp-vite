@@ -152,6 +152,10 @@ const blogSidebarItems: DefaultTheme.SidebarItem[] = [
         link: '/blog/release6',
       },
       {
+        text: 'Weapp-vite@6 原理拆解',
+        link: '/blog/release6-principles',
+      },
+      {
         text: '4.0 版本发布',
         link: '/blog/release4',
       },
