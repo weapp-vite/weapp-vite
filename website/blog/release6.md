@@ -69,8 +69,6 @@ Weapp-vite 一开始就是奔着**零运行时**去的——一个纯粹的原�
 
 滴滴出品，基于 Vue 2.7 + webpack。我不喜欢，技术栈老了，响应式系统跟标准 Vue 也不完全一样。
 
-#### Weapp-vite
-
 我的 `Weapp-vite` 方案，你可以理解成 mpx 的下一代：**Vue 3 风格 + Rolldown Vite，只做小程序，但跟原生 API 完全兼容**。
 
 ### Weapp-vite 的思路
@@ -182,7 +180,6 @@ VS Code 里装了 Vue 官方插件（Vue - Official / Volar）的话，Weapp-vit
 
 ```bash
 npx skills add sonofmagic/skills
-pnpm skills:link
 ```
 
 常用的几个：`weapp-vite-best-practices`、`weapp-vite-vue-sfc-best-practices`、`wevu-best-practices`。
