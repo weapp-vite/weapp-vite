@@ -1,5 +1,5 @@
 ---
-title: 重走 Vue 长征路 Weapp-vite：原生模式之外，多一种 Vue 选择
+title: Weapp-vite：原生模式之外，多一种 Vue 选择
 description: 还记得在 Weapp-vite 4.0 的发布文章里，我写过这样的话：
 keywords:
   - Weapp-vite
@@ -15,11 +15,11 @@ date: 2026-02-25
 
 ![Weapp-vite 6 顶部海报](/6/bg.jpg)
 
-# 重走 Vue 长征路: Weapp-vite：原生模式之外，多一种 Vue SFC 选择
+# Weapp-vite：原生模式之外，多一种 Vue SFC 选择
 
 大家好呀，我是你们的老朋友，开源爱好者 [icebreaker](https://github.com/sonofmagic)！又到了新的一年了，祝大家财源滚滚，早日不用上班实现财务自由！
 
-今天主要来分享一下我开源项目 [Weapp-vite](https://github.com/weapp-vite/weapp-vite) 的开发里程碑。核心就是来给大家秀一把。
+今天主要来分享一下我开源项目 [Weapp-vite](https://github.com/weapp-vite/weapp-vite) 的开发里程碑，核心就是来给大家秀一把。
 
 ## 前言
 
@@ -27,7 +27,7 @@ date: 2026-02-25
 
 > Weapp-vite **不适用场景**：需要使用 `Vue`/`React` 等前端框架的写法，来取代小程序原生写法。
 
-但社区的声音让我重新思考这个定位。原因在于原生小程序的语法确实让人不想写，尤其是对于习惯了 Vue 3 的开发者来说，原生的 `this.setData`、事件绑定、生命周期等都显得非常笨重和不优雅，反衬出 Vue 的 SFC 设计的优秀。
+但社区的声音让我重新想了想这个定位。说实话，原生小程序的语法写多了确实烦，尤其是你要是平时写 Vue 3 写习惯了，回头再 `this.setData`、手动绑事件、管生命周期，就会觉得特别笨重。Vue 的 SFC 设计确实好用，这个没什么好争的。
 
 而且即使到了这个 AI 时代，小程序的验收工具也比较笨重，因为小程序缺少 playwright-cli, agent-browser, chrome-devtools-mcp 这类的验收工具, 还原度远远不及 Web。
 
@@ -41,11 +41,11 @@ date: 2026-02-25
 
 ### 最初的定位
 
-Weapp-vite 最初的设计理念是做一个**零运行时** 的原生小程序构建工具。用户用原生写法，Weapp-vite 提供现代化的开发体验，保证打出来的包足够小、性能足够好。
+Weapp-vite 一开始就是奔着**零运行时**去的——一个纯粹的原生小程序构建工具。你用原生写法写代码，它给你提供现代化的开发体验，打出来的包尽量小、跑起来尽量快。
 
-这个定位满足了很多只需要开发微信小程序、追求极致性能的用户，尤其是有 Skyline 需求的用户。
+这个定位确实满足了不少用户，特别是只做微信小程序、对性能有洁癖的那批人，还有用 Skyline 的。
 
-但我也在思考：能不能在不破坏原生模式的前提下，给用户一个 Vue 的选择？
+但我后来一直在琢磨：能不能在不动原生模式的前提下，再给一个 Vue 的选项？
 
 ### 市面上的选择
 
@@ -53,90 +53,87 @@ Weapp-vite 最初的设计理念是做一个**零运行时** 的原生小程序�
 
 #### Taro
 
-跨端能力很强，但代价是庞大的运行时代码。分包规划不好，主包容易爆。而且语法是 React/Vue 的"变种"，学习成本不低。
+跨端能力确实强，但运行时代码量不小。分包没规划好的话，主包很容易超。语法上虽然说支持 React/Vue，但写起来总有种"变种"的感觉，踩坑成本不低。
 
-而且目前 Taro 维护的不是很好，issue 积压的比较多。
+而且说实话 Taro 现在维护节奏慢了不少，issue 堆得挺多的。
 
 我也曾经在 2 年前，在他们的公众号上，看到了招聘启事，于是投了简历，结果人家完全没有鸟我(笑～)。
 
 #### uni-app
 
-上手简单，但专属的 DSL 和 `uni.xxx` API 是另一套新东西。uni-app x 那种 uts 和标准 Vue 生态还有社区有点貌合神离。
+上手是挺快的，但 `uni.xxx` 那套 API 和专属 DSL 毕竟是另一套东西。uni-app x 搞的 uts，跟标准 Vue 生态和社区总感觉有点貌合神离。
 
 我很喜欢 uni-app, 当时也很早就让我另外一个项目 weapp-tailwindcss 中兼容了 uni-app x，但是我不喜欢 HBuilderX
 
 #### mpx
 
-滴滴出品，基于 Vue 2.7 + webpack。我不喜欢，因为技术栈较老，而且响应式系统和标准 Vue 不完全一样。
+滴滴出品，基于 Vue 2.7 + webpack。我不喜欢，技术栈老了，响应式系统跟标准 Vue 也不完全一样。
 
 #### Weapp-vite
 
-而我的 `Weapp-vite` 方案，可以看作是 mpx 的升级版：**基于 Vue 3 风格 + Rolldown Vite，专注小程序，保持对原生 API 的兼容**。
+我的 `Weapp-vite` 方案，你可以理解成 mpx 的下一代：**Vue 3 风格 + Rolldown Vite，只做小程序，但跟原生 API 完全兼容**。
 
 ### Weapp-vite 的思路
 
-Weapp-vite@6 的思路是：**同一个工具，给你两种模式**。
+Weapp-vite@6 想做的事情很简单：**同一个工具，两种模式**。
 
-- **原生模式**：零运行时，极致性能，适合追求包体积和性能的项目
-- **Vue 模式**：完整的 Vue 3 开发体验，适合熟悉 Vue 的团队
+- **原生模式**：零运行时，包体积和性能都拉满，适合对这些有要求的项目
+- **Vue 模式**：完整的 Vue 3 写法，适合 Vue 技术栈的团队
 
-两者可以在同一个项目中并存，你 `.vue` 组件可以使用原生组件，原生组件也可以使用 `.vue` 组件，你可以根据具体页面/组件的需求来选择。
+两者可以在同一个项目里混着用。`.vue` 组件能引原生组件，原生组件也能引 `.vue` 组件，按页面按组件自己选就行。
 
 ### 运行时 Wevu 的诞生
 
-转折点是在开发 `wevu` 时——一个专为小程序设计的 Vue 运行时。
+转折点是 `wevu` 的出现——一个专门给小程序写的 Vue 运行时。
 
 当时本来是叫 `wevue` 的，但是这个名字 `npm` 包已经被注册掉了，所以 `trimEnd` 了一个 `e`
 
-`wevu` 保留了 Vue 3 的核心 API——`ref`、`computed`、`watch`、`onMounted` 等，但底层用小程序的 `setData` 做更新。
+`wevu` 保留了 Vue 3 那些核心 API——`ref`、`computed`、`watch`、`onMounted` 之类的，但底层更新走的是小程序的 `setData`。
 
-更重要的是，**Wevu 是设计给 Weapp-vite 中配合 SFC 编译时使用的**，所以可以在编译时尽可能的添加各种的 `糖` 来帮助大家进行快速开发。
+更重要的是，**Wevu 从一开始就是配合 Weapp-vite 的 SFC 编译来设计的**，所以编译时能加的糖都尽量加上了，写起来会比较顺手。
 
 ### 编译时 + 运行时
 
-既然 `wevu` 运行时已经就绪，Vue SFC 编译支持就是顺水推舟的事了。
+`wevu` 运行时搞定之后，Vue SFC 编译支持就是顺水推舟的事了。
 
-## 认识 Wevu：Vue 3 风格的小程序运行时
+## 认识 Wevu：给小程序写的 Vue 3 风格运行时
 
-**Wevu** 是一个专为小程序设计的 Vue 3 风格运行时。它的核心设计理念是：**响应式系统与 Vue 3 同源，渲染层深度适配小程序**。
+**Wevu** 专门给小程序设计，核心思路就是：**响应式那套跟 Vue 3 同源，渲染层按小程序的规矩来**。
 
-### 核心特点
+### 它能干什么
 
-- **100% 兼容 Vue 3 响应式 API**：`ref`、`reactive`、`computed`、`watch`、`watchEffect` 等
-- **Vue 3 生命周期支持**：`onMounted`、`onUpdated`、`onUnmounted` 等，自动映射到小程序生命周期
-- **快照 diff 优化**：最小化 `setData` 调用，只传递变更的数据路径
-- **内置状态管理**：`defineStore`/`storeToRefs`，API 类似 Pinia
-- **编译协同**：配合 Weapp-vite 的 SFC 编译，提供一致的响应式与生命周期能力
+- `ref`、`reactive`、`computed`、`watch`、`watchEffect` 这些响应式 API 都有，用法跟 Vue 3 一样
+- `onMounted`、`onUpdated`、`onUnmounted` 等生命周期钩子，自动映射到小程序对应的生命周期
+- 快照 diff 优化，`setData` 只传变了的数据路径，不会整坨丢过去
+- 内置了 `defineStore`/`storeToRefs`，用法跟 Pinia 差不多
+- 跟 Weapp-vite 的 SFC 编译配合使用，响应式和生命周期都是打通的
 
-### Vue 3 vs Wevu：实现上的异同
+### Vue 3 和 Wevu 到底哪不一样
 
-一句话版本：
-- **相同点**：响应式 API 和使用方式与 Vue 3 基本一致；
-- **差异点**：渲染目标不是 DOM，而是小程序实例，更新链路是“快照 diff + `setData`”。
+响应式 API 和写法基本一致，区别在渲染那层：Wevu 不操作 DOM，而是操作小程序实例，更新走的是"快照 diff + `setData`"。
 
-### 没有使用 `createRenderer` 作为主实现
+### 为什么没用 `createRenderer`
 
-`@vue/runtime-core` 的 `createRenderer` 是技术上可行的方案，但 Wevu 主线没有采用它，核心是抽象边界不对齐：
-- `createRenderer` 要求宿主提供较完整的节点操作语义；
-- 小程序实际更新通道是 `setData(payload)`；
-- Wevu 主链路是“编译到 WXML + 快照 diff + 最小 setData”，更贴合小程序性能约束。
+`@vue/runtime-core` 的 `createRenderer` 技术上能做，但拿来对小程序有个根本问题：它假设宿主能提供一套比较完整的节点操作接口，而小程序这边核心就一个 `setData(payload)`，两边的抽象对不上。
 
-### Weapp-vite + Wevu 的组合
+Wevu 走的是"编译到 WXML + 快照 diff + 最小 setData"，把优化做在更贴近小程序实际情况的地方。
 
-- **Weapp-vite**：负责**编译时**工作，把 Vue SFC 拆解、转换、生成小程序四件套
-- **Wevu**：负责**运行时**工作，提供响应式系统和生命周期
+### Weapp-vite + Wevu 怎么配合
 
-两者结合，你得到的是：
-1. Vue 3 风格的开发体验（SFC + Composition API）
-2. 几乎小程序原生的运行性能
+- **Weapp-vite** 管编译：把 Vue SFC 拆开、转换、生成小程序四件套
+- **Wevu** 管运行时：提供响应式系统和生命周期
 
-**把 Vue SFC 支持直接内置到 `weapp-vite` 里**，而不是作为外部插件。
+两个加一起，你得到的就是：
+1. Vue 3 的开发体验（SFC + Composition API）
+2. 接近小程序原生的运行性能
+
+Vue SFC 支持是**直接内置在 `weapp-vite` 里的**，不是外挂插件。
 
 ## 一处编写，四处生成
 
-当你创建一个 `.vue` 文件时，Weapp-vite 会悄悄地施展编译魔法：
+你写一个 `.vue` 文件，Weapp-vite 编译完会变成小程序四件套：
 
-```
+```text
 MyComponent.vue
     ├─> MyComponent.js    // 脚本逻辑
     ├─> MyComponent.wxml  // 模板结构
@@ -144,11 +141,11 @@ MyComponent.vue
     └─> MyComponent.json  // 组件配置
 ```
 
-Vue 的 `<script>`、`<template>`、`<style>`、`<json>`(可被 `defineXXXJson` 宏指令取代) 会被智能拆分并转换成小程序能理解的格式。整个过程就像是把 Vue 组件"翻译"成了小程序的方言。
+Vue 的 `<script>`、`<template>`、`<style>`、`<json>`(可被 `defineXXXJson` 宏指令取代) 会被拆开，各自转换成小程序能认的格式。整个过程就像是把 Vue 组件"翻译"成了小程序的方言。
 
-## Vue 语法无缝转换
+## Vue 语法怎么转的
 
-Weapp-vite 的 Vue 支持不是简单地把 Vue 代码塞进小程序，而是做了真正聪明的语法转换：
+这不是简单地把 Vue 代码塞进小程序，而是做了一层语法映射：
 
 | Vue 写法 | 转换为 |
 |:---|:---|
@@ -159,13 +156,13 @@ Weapp-vite 的 Vue 支持不是简单地把 Vue 代码塞进小程序，而是�
 | `v-model` | 双向绑定的完整实现（input/checkbox/radio/textarea 等） |
 | `<script setup>` | 自动处理响应式和生命周期 |
 
-你用 Vue 的方式思考，Weapp-vite 用小程序的方式执行。
+你按 Vue 的方式写，Weapp-vite 按小程序的方式跑。
 
 ## 工具链友好：智能提示 + AI 协作
 
-### 智能提示友好：复用 Vue 官方插件
+### 智能提示：直接复用 Vue 官方插件
 
-在 VS Code 里安装 Vue 官方插件（Vue - Official / Volar）后，Weapp-vite 的 `.vue` 文件可以直接复用成熟的模板智能提示与类型能力，不需要再适配一套全新的编辑器插件链路。
+VS Code 里装了 Vue 官方插件（Vue - Official / Volar）的话，Weapp-vite 的 `.vue` 文件直接就能用上模板智能提示和类型检查，不用再折腾一套新的编辑器插件。
 
 - `v-for` 场景下的 `:key` 等属性补全
 
@@ -177,40 +174,38 @@ Weapp-vite 的 Vue 支持不是简单地把 Vue 代码塞进小程序，而是�
 ![Vue 模板智能提示（原生标签属性补全）](/6/in.png)
 ![Vue 模板智能提示（组件属性补全）](/6/inc.png)
 
-### AI 友好
+### AI 协作
 
-只看三件事：`skills`、`MCP`、`llms`。
+如果你准备用 AI 来协作开发，我自己的顺序一直很固定：先把 `skills` 装好，再起 `MCP`，最后按需喂 `llms` 语料。
 
-**Skills**
+先装 skills：
 
 ```bash
 npx skills add sonofmagic/skills
 pnpm skills:link
 ```
 
-- 常用：`weapp-vite-best-practices` / `weapp-vite-vue-sfc-best-practices` / `wevu-best-practices`
+常用的几个：`weapp-vite-best-practices`、`weapp-vite-vue-sfc-best-practices`、`wevu-best-practices`。
 
-**MCP**
+然后启动 MCP：
 
 ```bash
 weapp-vite mcp
 ```
 
-- 可选：不在仓库目录执行时，再加 `--workspace-root /path/to/weapp-vite`
-- 说明：[/packages/mcp](/packages/mcp)
-- 配置：[/config/shared#weapp-mcp](/config/shared#weapp-mcp)
+如果你不在仓库目录下执行，再补 `--workspace-root /path/to/weapp-vite`。
 
-**LLMs**
+最后是 llms 语料入口：
 
-- 入口：[/llms](/llms)
-- 语料：`/llms.txt`、`/llms-full.txt`、`/llms-index.json`
-- 推荐读取顺序：`llms.txt -> llms-full.txt -> llms-index.json`
+- 页面：[/llms](/llms)
+- 文件：`/llms.txt`、`/llms-full.txt`、`/llms-index.json`
+- 顺序：`llms.txt -> llms-full.txt -> llms-index.json`
 
-完整 AI 指南：[/guide/ai](/guide/ai)
+更多细节放在这里：[/guide/ai](/guide/ai)、[/packages/mcp](/packages/mcp)、[/config/shared#weapp-mcp](/config/shared#weapp-mcp)。
 
-## 使用用例：保留几个高频场景
+## 几个常见用法
 
-### 用例 1：响应式状态 + 计算属性
+### 响应式状态 + 计算属性
 
 ```html
 <script setup lang="ts">
@@ -228,7 +223,7 @@ const doubled = computed(() => count.value * 2)
 </template>
 ```
 
-### 用例 2：`definePageJson` 宏定义页面配置
+### `definePageJson` 宏定义页面配置
 
 ```html
 <script setup lang="ts">
@@ -239,7 +234,7 @@ definePageJson({
 </script>
 ```
 
-### 用例 3：在 `.vue` 中直接用原生组件
+### 在 `.vue` 里直接用原生组件
 
 ```html
 <script setup lang="ts">
@@ -251,7 +246,7 @@ import NativeMeter from '../../native/native-meter/index'
 </template>
 ```
 
-### 用例 4：`v-model` 表单双向绑定
+### `v-model` 表单双向绑定
 
 ```html
 <script setup lang="ts">
@@ -270,36 +265,31 @@ const message = ref('')
 
 ## 适用场景
 
-### Weapp-vite 的独特优势：双模式并存
+### 双模式并存才是 Weapp-vite 的杀手锏
 
-与其他框架不同，Weapp-vite@6 支持在同一个项目中同时使用原生模式和 Vue 模式。你可以：
+Weapp-vite@6 最实用的一点就是"同仓双模式"。性能敏感的页面继续走原生，迭代快、业务重的页面丢到 Vue 模式里。迁移可以一个页面一个页面来，不用一口气重写整个项目。
 
-- 核心页面用原生模式，保证极致性能
-- 业务页面用 Vue 模式，提升开发效率
-- 逐步迁移，不需要一次性重写
+### 什么时候用 Vue 模式：
+- 你平时写 Vue 3，想用同样的写法搞小程序
+- 团队本来就是 Vue 技术栈，想复用过来
+- 想要热重载、TypeScript 这些现代开发体验
+- 希望 Vue 代码后面还能往 Web 项目上搬
 
-### 适合 Vue 模式的场景：
-- 你熟悉 Vue 3，想用 Vue 语法写小程序
-- 团队有 Vue 技术栈，想复用到小程序
-- 追求更优雅的响应式和组件化体验
-- 想要热重载、TypeScript 支持等现代开发体验
-- 希望 Vue 代码能尽量复用到 Web 项目
+### 什么时候用原生模式：
+- 对性能有洁癖，一点运行时开销都不想要
+- 已经有一大堆原生代码，不想大动
+- 团队对小程序原生 API 很熟
+- 包体积卡得很死
 
-### 适合原生模式的场景：
-- 需要极致性能，不想任何运行时开销
-- 已有大量原生小程序代码，不想大改
-- 团队熟悉小程序原生 API
-- 对包体积有严格要求
+### 什么时候该选别的框架？
 
-### 什么时候选其他框架？
+- **Taro**：如果你真的要同时出微信、支付宝、百度、字节好几个平台的小程序，甚至还要编 H5 和 RN，那 Taro 确实是绕不开的。不过说真的，大部分项目真需要跨这么多端吗？
 
-- **Taro**：如果你真的需要同时支持微信、支付宝、百度、字节等所有平台的小程序，甚至还要编译成 H5、RN，Taro 确实是唯一选择。但大部分项目真的需要跨这么多端吗？
+- **uni-app**：如果你想要一个开箱即用的全家桶，而且已经习惯了 DCloud 那套生态（HBuilderX、uniCloud 之类的），uni-app 挺合适。就是它的 DSL 跟标准 Vue 还是有些差异。
 
-- **uni-app**：如果你需要一个"开箱即用"的一站式解决方案，而且习惯了 DCloud 的生态（HBuilderX、uniCloud 等），uni-app 适合你。但它的专属 DSL 和标准 Vue 有差异。
+- **mpx**：Vue 2.7 + webpack，技术栈偏老了。如果你已经在美团的小程序生态里了可以继续用，新项目的话不太建议。
 
-- **mpx**：基于 Vue 2.7 + webpack，技术栈较老。如果你已经在用美团的小程序生态，可以考虑，否则不建议新项目使用。
-
-**一句话总结**：Weapp-vite@6 的独特之处在于——原生 + Vue 双模式并存，同一个工具，给你两种选择。
+总之就是：Weapp-vite 不逼你二选一，你可以按实际业务来组合。
 
 ## 快速体验
 
@@ -334,27 +324,19 @@ const message = ref('Hello, weapp-vite@6!')
 
 原理和实现细节，如果大家有兴趣的话，我会另外写一篇专门的技术拆解文档。
 
-## 未来计划
+## 后面打算做什么
 
-接下来我会把 Weapp-vite 的跨端能力继续往前推，重点是两条线：更多小程序平台支持，以及 Web 目标支持。
+接下来主要推两条线：支持更多小程序平台，以及支持 Web 目标。
 
-### Android / iOS 原生现状与后续方向
+### Android / iOS 原生方向
 
-现在在原生 Android / iOS 侧，很多场景仍然需要借助微信开发者工具提供的多端框架能力来做转换。这个方向后续也会继续投入，目标是把这条链路做得更稳定、更易用，减少迁移和接入成本。
+现在原生 Android / iOS 这边，很多场景还是得靠微信开发者工具的多端框架来转。这块后面会继续投入，目标是把链路做得更稳、接入成本更低。
 
 ## 最后
 
-Weapp-vite@6 的 Vue SFC 支持建立在：
-- `vue/compiler-sfc` 的解析能力
-- `wevu` 运行时的精心设计
-- 社区对更好开发体验的需求反馈
+Weapp-vite@6 这次就是想把选择权留给你：要性能就走原生，要开发体验就走 Vue 模式，混着来也行。背后靠的是 `vue/compiler-sfc` 的解析能力、`wevu` 的运行时设计，以及社区一路给的真实反馈。
 
-感谢每一位提出建议、反馈 bug、贡献代码的同学。
-
-Weapp-vite@6 把选择权交给你：
-- 需要极致性能？用原生模式
-- 需要 Vue 开发体验？用 Vue 模式
-- Vue 模式由 Wevu 提供运行时支撑
+感谢每一位提建议、报 bug、提 PR 的同学。
 
 ---
 
