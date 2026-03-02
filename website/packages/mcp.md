@@ -33,8 +33,10 @@ pnpm add @weapp-vite/mcp
 推荐直接使用 `weapp-vite` CLI：
 
 ```bash
-weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite
+weapp-vite mcp
 ```
+
+不在仓库目录执行时，可选追加 `--workspace-root /path/to/weapp-vite`。
 
 如果你只想单独运行包本身：
 

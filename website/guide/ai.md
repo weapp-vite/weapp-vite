@@ -48,14 +48,16 @@ $native-to-weapp-vite-wevu-migration
 手动启动（推荐）：
 
 ```bash
-weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite
+weapp-vite mcp
 ```
 
 需要 HTTP 连接时：
 
 ```bash
-weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp --workspace-root /absolute/path/to/weapp-vite
+weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 ```
+
+可选：不在仓库目录执行时，再加 `--workspace-root /path/to/weapp-vite`。
 
 ### 示例：驱动 weapp-vite screenshot 做验收
 
