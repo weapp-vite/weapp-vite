@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, vi } from 'vitest'
+import { main as generateTemplateCatalog } from './scripts/generate-template-catalog'
 import { main as syncTemplates } from './scripts/shared'
 
 const logger = {
@@ -13,6 +14,7 @@ vi.mock('@weapp-core/logger', () => ({
 }))
 
 beforeAll(async () => {
+  await generateTemplateCatalog()
   await syncTemplates()
 })
 

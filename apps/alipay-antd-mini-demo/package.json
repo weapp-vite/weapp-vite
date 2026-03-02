@@ -26,11 +26,11 @@
     "open": "weapp-vite open"
   },
   "dependencies": {
-    "antd-mini": "^3.4.3"
+    "antd-mini": "catalog:"
   },
   "devDependencies": {
-    "@mini-types/alipay": "^3.0.14",
-    "typescript": "^5.9.3",
+    "@mini-types/alipay": "catalog:",
+    "typescript": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

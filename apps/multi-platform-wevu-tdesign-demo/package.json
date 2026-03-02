@@ -39,20 +39,20 @@
     "postinstall": "weapp-tw patch"
   },
   "dependencies": {
-    "antd-mini": "^3.4.3",
-    "tdesign-miniprogram": "^1.12.3"
+    "antd-mini": "catalog:",
+    "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
-    "@egoist/tailwindcss-icons": "^1.9.2",
-    "@iconify-json/mdi": "^1.2.3",
-    "autoprefixer": "^10.4.27",
-    "miniprogram-api-typings": "^5.1.1",
-    "postcss": "^8.5.6",
-    "sass": "^1.97.3",
-    "tailwindcss": "^3.4.19",
-    "typescript": "^5.9.3",
-    "vue-tsc": "^3.2.5",
-    "weapp-tailwindcss": "^4.10.3",
+    "@egoist/tailwindcss-icons": "catalog:",
+    "@iconify-json/mdi": "catalog:",
+    "autoprefixer": "catalog:",
+    "miniprogram-api-typings": "catalog:",
+    "postcss": "catalog:",
+    "sass": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:",
+    "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

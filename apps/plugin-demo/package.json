@@ -16,8 +16,8 @@
     "g": "weapp-vite generate"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "latest",
-    "typescript": "latest",
+    "miniprogram-api-typings": "catalog:latest",
+    "typescript": "catalog:latest",
     "weapp-vite": "workspace:*"
   }
 }

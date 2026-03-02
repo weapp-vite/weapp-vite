@@ -4,15 +4,196 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@babel/core':
+      specifier: ^7.29.0
+      version: 7.29.0
+    '@babel/generator':
+      specifier: ^7.29.1
+      version: 7.29.1
+    '@babel/parser':
+      specifier: ^7.29.0
+      version: 7.29.0
+    '@babel/traverse':
+      specifier: ^7.29.0
+      version: 7.29.0
+    '@babel/types':
+      specifier: ^7.29.0
+      version: 7.29.0
+    '@egoist/tailwindcss-icons':
+      specifier: ^1.9.2
+      version: 1.9.2
+    '@iconify-json/mdi':
+      specifier: ^1.2.3
+      version: 1.2.3
+    '@mini-types/alipay':
+      specifier: ^3.0.14
+      version: 3.0.14
+    '@tailwindcss/postcss':
+      specifier: ^4.2.1
+      version: 4.2.1
+    '@tailwindcss/vite':
+      specifier: ^4.2.1
+      version: 4.2.1
+    '@types/node':
+      specifier: ^25.3.3
+      version: 25.3.3
+    '@types/semver':
+      specifier: ^7.7.1
+      version: 7.7.1
+    '@vant/weapp':
+      specifier: ^1.11.7
+      version: 1.11.7
+    '@vue/compiler-core':
+      specifier: ^3.5.29
+      version: 3.5.29
+    '@vue/language-core':
+      specifier: ^3.2.5
+      version: 3.2.5
+    antd-mini:
+      specifier: ^3.4.3
+      version: 3.4.3
+    autoprefixer:
+      specifier: ^10.4.27
+      version: 10.4.27
+    bundle-require:
+      specifier: ^5.1.0
+      version: 5.1.0
+    class-variance-authority:
+      specifier: ^0.7.1
+      version: 0.7.1
+    clsx:
+      specifier: ^2.1.1
+      version: 2.1.1
+    comment-json:
+      specifier: ^4.6.0
+      version: 4.6.0
+    dayjs:
+      specifier: ^1.9.3
+      version: 1.11.19
+    debug:
+      specifier: ^4.4.3
+      version: 4.4.3
+    echarts:
+      specifier: ^6.0.0
+      version: 6.0.0
+    esbuild:
+      specifier: ^0.27.3
+      version: 0.27.3
+    estree-walker:
+      specifier: ^3.0.3
+      version: 3.0.3
+    fdir:
+      specifier: ^6.5.0
+      version: 6.5.0
+    fs-extra:
+      specifier: ^11.3.3
+      version: 11.3.3
+    gm-crypto:
+      specifier: ^0.1.12
+      version: 0.1.12
+    htmlparser2:
+      specifier: ^10.1.0
+      version: 10.1.0
+    lodash:
+      specifier: ^4.17.23
+      version: 4.17.23
+    lru-cache:
+      specifier: ^11.2.6
+      version: 11.2.6
+    magic-string:
+      specifier: ^0.30.21
+      version: 0.30.21
+    merge:
+      specifier: ^2.1.1
+      version: 2.1.1
+    miniprogram-api-typings:
+      specifier: ^5.1.1
+      version: 5.1.1
+    miniprogram-automator:
+      specifier: ^0.12.1
+      version: 0.12.1
+    object-hash:
+      specifier: ^3.0.0
+      version: 3.0.0
+    pathe:
+      specifier: ^2.0.3
+      version: 2.0.3
+    pkg-types:
+      specifier: ^2.3.0
+      version: 2.3.0
+    postcss:
+      specifier: ^8.5.6
+      version: 8.5.6
+    sass:
+      specifier: ^1.97.3
+      version: 1.97.3
+    sass-embedded:
+      specifier: ^1.97.3
+      version: 1.97.3
+    tailwindcss:
+      specifier: ^3.4.19
+      version: 3.4.19
+    tdesign-miniprogram:
+      specifier: ^1.12.3
+      version: 1.12.3
+    ts-morph:
+      specifier: ^27.0.2
+      version: 27.0.2
+    tslib:
+      specifier: ^2.8.1
+      version: 2.8.1
+    typescript:
+      specifier: ^5.9.3
+      version: 5.9.3
+    vite:
+      specifier: 8.0.0-beta.16
+      version: 8.0.0-beta.16
+    vite-plugin-inspect:
+      specifier: ^11.3.3
+      version: 11.3.3
+    vue:
+      specifier: ^3.5.29
+      version: 3.5.29
+    vue-tsc:
+      specifier: ^3.2.5
+      version: 3.2.5
+    weapp-tailwindcss:
+      specifier: ^4.10.3
+      version: 4.10.3
+    zod:
+      specifier: ^4.3.6
+      version: 4.3.6
+  latest:
+    miniprogram-api-typings:
+      specifier: latest
+      version: 5.1.1
+    typescript:
+      specifier: latest
+      version: 5.9.3
+  tailwind4:
+    tailwindcss:
+      specifier: ^4.2.1
+      version: 4.2.1
+  tdesign-miniprogram-fixed:
+    tdesign-miniprogram:
+      specifier: 1.12.3
+      version: 1.12.3
+  weapp-tailwindcss-fixed:
+    weapp-tailwindcss:
+      specifier: 4.10.3
+      version: 4.10.3
+
 importers:
 
   .:
     devDependencies:
       '@babel/core':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@babel/parser':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@babel/preset-env':
         specifier: ^7.29.0
@@ -21,10 +202,10 @@ importers:
         specifier: ^7.28.5
         version: 7.28.5(@babel/core@7.29.0)
       '@babel/traverse':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@babel/types':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@changesets/changelog-github':
         specifier: ^0.5.2
@@ -93,7 +274,7 @@ importers:
         specifier: ^4.13.4
         version: 4.13.4
       '@types/node':
-        specifier: ^25.3.3
+        specifier: 'catalog:'
         version: 25.3.3
       '@types/object-hash':
         specifier: ^3.0.6
@@ -102,7 +283,7 @@ importers:
         specifier: ^4.0.2
         version: 4.0.2
       '@types/semver':
-        specifier: ^7.7.1
+        specifier: 'catalog:'
         version: 7.7.1
       '@types/set-value':
         specifier: ^4.0.3
@@ -114,7 +295,7 @@ importers:
         specifier: ~4.0.18
         version: 4.0.18(vitest@4.0.18(@types/node@25.3.3)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.31.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       '@vue/language-core':
-        specifier: ^3.2.5
+        specifier: 'catalog:'
         version: 3.2.5
       '@vue/reactivity':
         specifier: ^3.5.29
@@ -126,7 +307,7 @@ importers:
         specifier: ^1.13.6
         version: 1.13.6(debug@4.4.3)
       bundle-require:
-        specifier: ^5.1.0
+        specifier: 'catalog:'
         version: 5.1.0(esbuild@0.27.3)
       cheerio:
         specifier: ^1.2.0
@@ -138,8 +319,8 @@ importers:
         specifier: ^2.2.0
         version: 2.2.0
       comment-json:
-        specifier: ^4.5.1
-        version: 4.5.1
+        specifier: 'catalog:'
+        version: 4.6.0
       cross-env:
         specifier: ^10.1.0
         version: 10.1.0
@@ -147,7 +328,7 @@ importers:
         specifier: ^3.0.0
         version: 3.0.0
       debug:
-        specifier: ^4.4.3
+        specifier: 'catalog:'
         version: 4.4.3
       defu:
         specifier: ^6.1.4
@@ -156,13 +337,13 @@ importers:
         specifier: ^1.44.0
         version: 1.44.0
       esbuild:
-        specifier: ^0.27.3
+        specifier: 'catalog:'
         version: 0.27.3
       eslint:
         specifier: ^10.0.2
         version: 10.0.2(jiti@2.6.1)
       estree-walker:
-        specifier: ^3.0.3
+        specifier: 'catalog:'
         version: 3.0.3
       execa:
         specifier: ^9.6.1
@@ -177,16 +358,16 @@ importers:
         specifier: ^3.4.1
         version: 3.4.1
       fdir:
-        specifier: ^6.5.0
+        specifier: 'catalog:'
         version: 6.5.0(picomatch@4.0.3)
       fs-extra:
-        specifier: ^11.3.3
+        specifier: 'catalog:'
         version: 11.3.3
       get-value:
         specifier: ^4.0.1
         version: 4.0.1
       htmlparser2:
-        specifier: ^10.1.0
+        specifier: 'catalog:'
         version: 10.1.0
       husky:
         specifier: ^9.1.7
@@ -213,19 +394,19 @@ importers:
         specifier: ^16.3.1
         version: 16.3.1
       lodash:
-        specifier: ^4.17.23
+        specifier: 'catalog:'
         version: 4.17.23
       lodash-es:
         specifier: ^4.17.23
         version: 4.17.23
       magic-string:
-        specifier: ^0.30.21
+        specifier: 'catalog:'
         version: 0.30.21
       memfs:
         specifier: ^4.56.10
         version: 4.56.10(tslib@2.8.1)
       merge:
-        specifier: ^2.1.1
+        specifier: 'catalog:'
         version: 2.1.1
       micromatch:
         specifier: ^4.0.8
@@ -234,31 +415,31 @@ importers:
         specifier: ^2.2.5
         version: 2.2.5
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       miniprogram-automator:
-        specifier: ^0.12.1
+        specifier: 'catalog:'
         version: 0.12.1(bufferutil@4.0.9)
       mock-fs:
         specifier: ^5.5.0
         version: 5.5.0
       object-hash:
-        specifier: ^3.0.0
+        specifier: 'catalog:'
         version: 3.0.0
       only-allow:
         specifier: ^1.2.2
         version: 1.2.2
       pathe:
-        specifier: ^2.0.3
+        specifier: 'catalog:'
         version: 2.0.3
       pkg-types:
-        specifier: ^2.3.0
+        specifier: 'catalog:'
         version: 2.3.0
       playwright:
         specifier: ^1.58.2
         version: 1.58.2
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       postcss-load-config:
         specifier: ^6.0.1
@@ -279,7 +460,7 @@ importers:
         specifier: ^7.0.0
         version: 7.0.0(rolldown@1.0.0-rc.3)(rollup@4.59.0)
       sass-embedded:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       set-value:
         specifier: ^4.1.0
@@ -294,7 +475,7 @@ importers:
         specifier: ^2.1.0
         version: 2.1.0
       ts-morph:
-        specifier: ^27.0.2
+        specifier: 'catalog:'
         version: 27.0.2
       tsd:
         specifier: ^0.33.0
@@ -303,7 +484,7 @@ importers:
         specifier: 0.20.3
         version: 0.20.3(synckit@0.11.12)(typescript@5.9.3)(vue-tsc@3.2.5(typescript@5.9.3))
       tslib:
-        specifier: ^2.8.1
+        specifier: 'catalog:'
         version: 2.8.1
       tsup:
         specifier: ^8.5.1
@@ -318,25 +499,25 @@ importers:
         specifier: ^5.4.4
         version: 5.4.4
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       unbuild:
         specifier: ^3.6.1
         version: 3.6.1(sass@1.97.3)(typescript@5.9.3)(vue-tsc@3.2.5(typescript@5.9.3))(vue@3.5.29(typescript@5.9.3))
       vite:
-        specifier: 8.0.0-beta.16
+        specifier: 'catalog:'
         version: 8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
       vite-plugin-inspect:
-        specifier: ^11.3.3
+        specifier: 'catalog:'
         version: 11.3.3(vite@8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       vitest:
         specifier: ~4.0.18
         version: 4.0.18(@types/node@25.3.3)(jiti@2.6.1)(less@4.5.1)(lightningcss@1.31.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
       vue:
-        specifier: ^3.5.29
+        specifier: 'catalog:'
         version: 3.5.29(typescript@5.9.3)
       vue-tsc:
-        specifier: ^3.2.5
+        specifier: 'catalog:'
         version: 3.2.5(typescript@5.9.3)
       why-is-node-running:
         specifier: ^3.2.2
@@ -345,7 +526,7 @@ importers:
         specifier: ^2.8.2
         version: 2.8.2
       zod:
-        specifier: ^4.3.6
+        specifier: 'catalog:'
         version: 4.3.6
 
   '@weapp-core/init':
@@ -374,20 +555,20 @@ importers:
   '@weapp-core/shared':
     dependencies:
       object-hash:
-        specifier: ^3.0.0
+        specifier: 'catalog:'
         version: 3.0.0
 
   apps/alipay-antd-mini-demo:
     dependencies:
       antd-mini:
-        specifier: ^3.4.3
+        specifier: 'catalog:'
         version: 3.4.3
     devDependencies:
       '@mini-types/alipay':
-        specifier: ^3.0.14
+        specifier: 'catalog:'
         version: 3.0.14
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       weapp-vite:
         specifier: workspace:*
@@ -399,26 +580,26 @@ importers:
   apps/api-extractor-vue-types-demo:
     dependencies:
       vue:
-        specifier: ^3.5.29
+        specifier: 'catalog:'
         version: 3.5.29(typescript@5.9.3)
     devDependencies:
       '@microsoft/api-extractor':
         specifier: ^7.57.6
         version: 7.57.6(@types/node@25.3.3)
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
 
   apps/multi-platform-demo:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       sass:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       weapp-vite:
         specifier: workspace:*
@@ -427,41 +608,41 @@ importers:
   apps/multi-platform-wevu-tdesign-demo:
     dependencies:
       antd-mini:
-        specifier: ^3.4.3
+        specifier: 'catalog:'
         version: 3.4.3
       tdesign-miniprogram:
-        specifier: ^1.12.3
+        specifier: 'catalog:'
         version: 1.12.3
     devDependencies:
       '@egoist/tailwindcss-icons':
-        specifier: ^1.9.2
+        specifier: 'catalog:'
         version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       '@iconify-json/mdi':
-        specifier: ^1.2.3
+        specifier: 'catalog:'
         version: 1.2.3
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       sass:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       tailwindcss:
-        specifier: ^3.4.19
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       vue-tsc:
-        specifier: ^3.2.5
+        specifier: 'catalog:'
         version: 3.2.5(typescript@5.9.3)
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
@@ -479,10 +660,10 @@ importers:
   apps/plugin-demo:
     devDependencies:
       miniprogram-api-typings:
-        specifier: latest
+        specifier: catalog:latest
         version: 5.1.1
       typescript:
-        specifier: latest
+        specifier: catalog:latest
         version: 5.9.3
       weapp-vite:
         specifier: workspace:*
@@ -491,11 +672,11 @@ importers:
   apps/raw-ts:
     dependencies:
       tdesign-miniprogram:
-        specifier: ^1.12.3
+        specifier: 'catalog:'
         version: 1.12.3
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
 
   apps/rollup-watcher: {}
@@ -503,22 +684,22 @@ importers:
   apps/subpackage-shared-chunks:
     devDependencies:
       '@types/node':
-        specifier: ^25.3.3
+        specifier: 'catalog:'
         version: 25.3.3
       crypto-es:
         specifier: ^3.1.3
         version: 3.1.3
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       sass:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@4.2.1)
       weapp-vite:
         specifier: workspace:*
@@ -527,20 +708,20 @@ importers:
   apps/tdesign-miniprogram-starter-retail:
     dependencies:
       dayjs:
-        specifier: ^1.9.3
+        specifier: 'catalog:'
         version: 1.11.19
       tdesign-miniprogram:
-        specifier: 1.12.3
+        specifier: catalog:tdesign-miniprogram-fixed
         version: 1.12.3
       tslib:
-        specifier: ^2.8.1
+        specifier: 'catalog:'
         version: 2.8.1
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       weapp-vite:
         specifier: workspace:*
@@ -549,19 +730,19 @@ importers:
   apps/vite-native:
     dependencies:
       '@vant/weapp':
-        specifier: ^1.11.7
+        specifier: 'catalog:'
         version: 1.11.7
       '@vue-mini/core':
         specifier: ^1.2.9
         version: 1.2.9
       class-variance-authority:
-        specifier: ^0.7.1
+        specifier: 'catalog:'
         version: 0.7.1
       clsx:
-        specifier: ^2.1.1
+        specifier: 'catalog:'
         version: 2.1.1
       lodash:
-        specifier: ^4.17.23
+        specifier: 'catalog:'
         version: 4.17.23
       mini-stores:
         specifier: ^2.3.0
@@ -570,7 +751,7 @@ importers:
         specifier: ^7.1.0
         version: 7.1.0(miniprogram-api-typings@5.1.1)
       tdesign-miniprogram:
-        specifier: ^1.12.3
+        specifier: 'catalog:'
         version: 1.12.3
     devDependencies:
       '@vue/language-plugin-pug':
@@ -583,7 +764,7 @@ importers:
         specifier: 2.1.6
         version: 2.1.6
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.6)
       cos-wx-sdk-v5:
         specifier: ^1.8.0
@@ -595,16 +776,16 @@ importers:
         specifier: ^0.30.21
         version: 0.30.21
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       miniprogram-simulate:
         specifier: ^1.6.1
         version: 1.6.1
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       sass-embedded:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       sharp:
         specifier: ^0.34.5
@@ -613,10 +794,10 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0
       tailwindcss:
-        specifier: ^3.4.19
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       vite-imagetools:
         specifier: ^10.0.0
@@ -625,10 +806,10 @@ importers:
         specifier: ^2.0.3
         version: 2.0.3(sharp@0.34.5)(svgo@4.0.0)(vite@8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       vite-plugin-inspect:
-        specifier: ^11.3.3
+        specifier: 'catalog:'
         version: 11.3.3(vite@8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
@@ -637,19 +818,19 @@ importers:
   apps/vite-native-skyline:
     devDependencies:
       '@vant/weapp':
-        specifier: ^1.11.7
+        specifier: 'catalog:'
         version: 1.11.7
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.6)
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       tailwindcss:
-        specifier: ^3.4.19
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
@@ -658,11 +839,11 @@ importers:
   apps/vite-native-ts:
     dependencies:
       gm-crypto:
-        specifier: ^0.1.12
+        specifier: 'catalog:'
         version: 0.1.12
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       weapp-vite:
         specifier: workspace:*
@@ -671,23 +852,23 @@ importers:
   apps/vite-native-ts-skyline:
     dependencies:
       tdesign-miniprogram:
-        specifier: ^1.12.3
+        specifier: 'catalog:'
         version: 1.12.3
     devDependencies:
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       tailwindcss:
-        specifier: ^3.4.19
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
@@ -696,13 +877,13 @@ importers:
   apps/weapp-vite-web-demo:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       sass:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       weapp-vite:
         specifier: workspace:*
@@ -711,26 +892,26 @@ importers:
   apps/weapp-wechat-zhihu:
     dependencies:
       tdesign-miniprogram:
-        specifier: ^1.12.3
+        specifier: 'catalog:'
         version: 1.12.3
     devDependencies:
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       tailwindcss:
-        specifier: ^3.4.19
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       weapp-ide-cli:
         specifier: workspace:*
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
@@ -739,13 +920,13 @@ importers:
   apps/wevu-bug:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@4.2.1)
       weapp-vite:
         specifier: workspace:*
@@ -757,10 +938,10 @@ importers:
   apps/wevu-comprehensive-demo:
     dependencies:
       '@vant/weapp':
-        specifier: ^1.11.7
+        specifier: 'catalog:'
         version: 1.11.7
       tdesign-miniprogram:
-        specifier: ^1.12.3
+        specifier: 'catalog:'
         version: 1.12.3
       wevu:
         specifier: workspace:*
@@ -773,10 +954,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/volar
       miniprogram-api-typings:
-        specifier: latest
+        specifier: catalog:latest
         version: 5.1.1
       typescript:
-        specifier: latest
+        specifier: catalog:latest
         version: 5.9.3
       weapp-vite:
         specifier: workspace:*
@@ -788,10 +969,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/volar
       miniprogram-api-typings:
-        specifier: latest
+        specifier: catalog:latest
         version: 5.1.1
       typescript:
-        specifier: latest
+        specifier: catalog:latest
         version: 5.9.3
       weapp-vite:
         specifier: workspace:*
@@ -803,10 +984,10 @@ importers:
   apps/wevu-runtime-demo:
     devDependencies:
       miniprogram-api-typings:
-        specifier: latest
+        specifier: catalog:latest
         version: 5.1.1
       typescript:
-        specifier: latest
+        specifier: catalog:latest
         version: 5.9.3
       weapp-vite:
         specifier: workspace:*
@@ -824,10 +1005,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/volar
       miniprogram-api-typings:
-        specifier: latest
+        specifier: catalog:latest
         version: 5.1.1
       typescript:
-        specifier: latest
+        specifier: catalog:latest
         version: 5.9.3
       weapp-vite:
         specifier: workspace:*
@@ -839,22 +1020,22 @@ importers:
   apps/wevu-vue-sfc-recording-demo:
     devDependencies:
       '@tailwindcss/vite':
-        specifier: ^4.2.1
+        specifier: 'catalog:'
         version: 4.2.1(vite@8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       tailwindcss:
-        specifier: ^4.2.1
+        specifier: catalog:tailwind4
         version: 4.2.1
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       vue-tsc:
-        specifier: ^3.2.5
+        specifier: 'catalog:'
         version: 3.2.5(typescript@5.9.3)
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@4.2.1)
       weapp-vite:
         specifier: workspace:*
@@ -892,7 +1073,7 @@ importers:
         specifier: 3.4.19
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       weapp-tailwindcss:
-        specifier: 4.10.3
+        specifier: catalog:weapp-tailwindcss-fixed
         version: 4.10.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
@@ -904,13 +1085,13 @@ importers:
   e2e-apps/issue-814-tailwind4:
     devDependencies:
       '@tailwindcss/postcss':
-        specifier: ^4.2.1
+        specifier: 'catalog:'
         version: 4.2.1
       tailwindcss:
-        specifier: ^4.2.1
+        specifier: catalog:tailwind4
         version: 4.2.1
       weapp-tailwindcss:
-        specifier: 4.10.3
+        specifier: catalog:weapp-tailwindcss-fixed
         version: 4.10.3(magicast@0.5.1)(tailwindcss@4.2.1)
       weapp-vite:
         specifier: workspace:*
@@ -922,13 +1103,13 @@ importers:
   e2e-apps/issue-814-tailwind4-broken:
     devDependencies:
       '@tailwindcss/postcss':
-        specifier: ^4.2.1
+        specifier: 'catalog:'
         version: 4.2.1
       tailwindcss:
-        specifier: ^4.2.1
+        specifier: catalog:tailwind4
         version: 4.2.1
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@4.2.1)
       weapp-vite:
         specifier: workspace:*
@@ -960,13 +1141,13 @@ importers:
         specifier: workspace:^
         version: link:../../@weapp-core/logger
       fs-extra:
-        specifier: ^11.3.3
+        specifier: 'catalog:'
         version: 11.3.3
       pathe:
-        specifier: ^2.0.3
+        specifier: 'catalog:'
         version: 2.0.3
       pkg-types:
-        specifier: ^2.3.0
+        specifier: 'catalog:'
         version: 2.3.0
 
   packages/mcp:
@@ -975,7 +1156,7 @@ importers:
         specifier: ^1.27.1
         version: 1.27.1(zod@4.3.6)
       zod:
-        specifier: ^4.3.6
+        specifier: 'catalog:'
         version: 4.3.6
 
   packages/rolldown-require:
@@ -1017,10 +1198,10 @@ importers:
         specifier: ^1.3.1
         version: 1.3.1
       '@mini-types/alipay':
-        specifier: ^3.0.14
+        specifier: 'catalog:'
         version: 3.0.14
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
 
   packages/weapp-ide-cli:
@@ -1032,40 +1213,40 @@ importers:
         specifier: 9.6.1
         version: 9.6.1
       fs-extra:
-        specifier: ^11.3.3
+        specifier: 'catalog:'
         version: 11.3.3
       miniprogram-automator:
-        specifier: ^0.12.1
+        specifier: 'catalog:'
         version: 0.12.1(bufferutil@4.0.9)
       pathe:
-        specifier: ^2.0.3
+        specifier: 'catalog:'
         version: 2.0.3
 
   packages/weapp-vite:
     dependencies:
       '@babel/core':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@babel/generator':
-        specifier: ^7.29.1
+        specifier: 'catalog:'
         version: 7.29.1
       '@babel/parser':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@babel/traverse':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@babel/types':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@volar/typescript':
         specifier: ^2.4.28
         version: 2.4.28
       '@vue/compiler-core':
-        specifier: ^3.5.29
+        specifier: 'catalog:'
         version: 3.5.29
       '@vue/language-core':
-        specifier: ^3.2.5
+        specifier: 'catalog:'
         version: 3.2.5
       '@weapp-core/init':
         specifier: workspace:*
@@ -1092,19 +1273,19 @@ importers:
         specifier: workspace:*
         version: link:../weapi
       comment-json:
-        specifier: ^4.5.1
-        version: 4.5.1
+        specifier: 'catalog:'
+        version: 4.6.0
       debug:
-        specifier: ^4.4.3
+        specifier: 'catalog:'
         version: 4.4.3
       fdir:
-        specifier: ^6.5.0
+        specifier: 'catalog:'
         version: 6.5.0(picomatch@4.0.3)
       fs-extra:
-        specifier: ^11.3.3
+        specifier: 'catalog:'
         version: 11.3.3
       magic-string:
-        specifier: ^0.30.21
+        specifier: 'catalog:'
         version: 0.30.21
       oxc-parser:
         specifier: ^0.115.0
@@ -1113,28 +1294,28 @@ importers:
         specifier: ^0.7.0
         version: 0.7.0(oxc-parser@0.115.0)
       pathe:
-        specifier: ^2.0.3
+        specifier: 'catalog:'
         version: 2.0.3
       picomatch:
         specifier: ^4.0.3
         version: 4.0.3
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       rolldown:
         specifier: 1.0.0-rc.6
         version: 1.0.0-rc.6
       rolldown-plugin-dts:
-        specifier: 0.22.2
-        version: 0.22.2(oxc-resolver@11.6.1)(rolldown@1.0.0-rc.6)(typescript@5.9.3)(vue-tsc@3.2.5(typescript@5.9.3))
+        specifier: 0.22.3
+        version: 0.22.3(oxc-resolver@11.6.1)(rolldown@1.0.0-rc.6)(typescript@5.9.3)(vue-tsc@3.2.5(typescript@5.9.3))
       rolldown-require:
         specifier: workspace:*
         version: link:../rolldown-require
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       vite:
-        specifier: 8.0.0-beta.16
+        specifier: 'catalog:'
         version: 8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
       vite-plugin-performance:
         specifier: workspace:*
@@ -1143,10 +1324,10 @@ importers:
         specifier: ^6.1.1
         version: 6.1.1(typescript@5.9.3)(vite@8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       vue:
-        specifier: ^3.5.29
+        specifier: 'catalog:'
         version: 3.5.29(typescript@5.9.3)
       vue-tsc:
-        specifier: ^3.2.5
+        specifier: 'catalog:'
         version: 3.2.5(typescript@5.9.3)
       weapp-ide-cli:
         specifier: workspace:*
@@ -1159,16 +1340,16 @@ importers:
         specifier: ^0.115.0
         version: 0.115.0
       '@tailwindcss/vite':
-        specifier: ^4.2.1
+        specifier: 'catalog:'
         version: 4.2.1(vite@8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       '@types/semver':
-        specifier: ^7.7.1
+        specifier: 'catalog:'
         version: 7.7.1
       '@vitejs/plugin-vue':
         specifier: ^6.0.4
         version: 6.0.4(vite@8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.29(typescript@5.9.3))
       bundle-require:
-        specifier: ^5.1.0
+        specifier: 'catalog:'
         version: 5.1.0(esbuild@0.27.3)
       cac:
         specifier: ^6.7.14
@@ -1180,22 +1361,22 @@ importers:
         specifier: ^8.0.1
         version: 8.0.1
       echarts:
-        specifier: ^6.0.0
+        specifier: 'catalog:'
         version: 6.0.0
       esbuild:
-        specifier: ^0.27.3
+        specifier: 'catalog:'
         version: 0.27.3
       estree-walker:
-        specifier: ^3.0.3
+        specifier: 'catalog:'
         version: 3.0.3
       htmlparser2:
-        specifier: ^10.1.0
+        specifier: 'catalog:'
         version: 10.1.0
       local-pkg:
         specifier: ^1.1.2
         version: 1.1.2
       lru-cache:
-        specifier: ^11.2.6
+        specifier: 'catalog:'
         version: 11.2.6
       p-queue:
         specifier: ^9.1.0
@@ -1213,40 +1394,40 @@ importers:
         specifier: ^7.7.4
         version: 7.7.4
       tailwindcss:
-        specifier: ^4.2.1
+        specifier: catalog:tailwind4
         version: 4.2.1
       ts-morph:
-        specifier: ^27.0.2
+        specifier: 'catalog:'
         version: 27.0.2
 
   packages/web:
     dependencies:
       '@babel/parser':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@babel/traverse':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@babel/types':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       domhandler:
         specifier: ^5.0.3
         version: 5.0.3
       fs-extra:
-        specifier: ^11.3.3
+        specifier: 'catalog:'
         version: 11.3.3
       htmlparser2:
-        specifier: ^10.1.0
+        specifier: 'catalog:'
         version: 10.1.0
       lit:
         specifier: ^3.3.1
         version: 3.3.2
       magic-string:
-        specifier: ^0.30.21
+        specifier: 'catalog:'
         version: 0.30.21
       pathe:
-        specifier: ^2.0.3
+        specifier: 'catalog:'
         version: 2.0.3
       rolldown-require:
         specifier: workspace:*
@@ -1261,64 +1442,64 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0
       vue:
-        specifier: ^3.5.29
+        specifier: 'catalog:'
         version: 3.5.29(typescript@5.9.3)
 
   packages/wevu-compiler:
     dependencies:
       '@babel/generator':
-        specifier: ^7.29.1
+        specifier: 'catalog:'
         version: 7.29.1
       '@babel/parser':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@babel/traverse':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@babel/types':
-        specifier: ^7.29.0
+        specifier: 'catalog:'
         version: 7.29.0
       '@vue/compiler-core':
-        specifier: ^3.5.29
+        specifier: 'catalog:'
         version: 3.5.29
       '@weapp-core/shared':
         specifier: workspace:*
         version: link:../../@weapp-core/shared
       comment-json:
-        specifier: ^4.5.1
-        version: 4.5.1
+        specifier: 'catalog:'
+        version: 4.6.0
       fs-extra:
-        specifier: ^11.3.3
+        specifier: 'catalog:'
         version: 11.3.3
       lru-cache:
-        specifier: ^11.2.6
+        specifier: 'catalog:'
         version: 11.2.6
       magic-string:
-        specifier: ^0.30.21
+        specifier: 'catalog:'
         version: 0.30.21
       merge:
-        specifier: ^2.1.1
+        specifier: 'catalog:'
         version: 2.1.1
       pathe:
-        specifier: ^2.0.3
+        specifier: 'catalog:'
         version: 2.0.3
       rolldown-require:
         specifier: workspace:*
         version: link:../rolldown-require
       vue:
-        specifier: ^3.5.29
+        specifier: 'catalog:'
         version: 3.5.29(typescript@5.9.3)
 
   templates/weapp-vite-lib-template:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       sass:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       weapp-vite:
         specifier: workspace:*
@@ -1330,35 +1511,35 @@ importers:
   templates/weapp-vite-tailwindcss-tdesign-template:
     dependencies:
       tdesign-miniprogram:
-        specifier: ^1.12.3
+        specifier: 'catalog:'
         version: 1.12.3
     devDependencies:
       '@egoist/tailwindcss-icons':
-        specifier: ^1.9.2
+        specifier: 'catalog:'
         version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       '@iconify-json/mdi':
-        specifier: ^1.2.3
+        specifier: 'catalog:'
         version: 1.2.3
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       sass:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       tailwindcss:
-        specifier: ^3.4.19
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
@@ -1367,31 +1548,31 @@ importers:
   templates/weapp-vite-tailwindcss-template:
     devDependencies:
       '@egoist/tailwindcss-icons':
-        specifier: ^1.9.2
+        specifier: 'catalog:'
         version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       '@iconify-json/mdi':
-        specifier: ^1.2.3
+        specifier: 'catalog:'
         version: 1.2.3
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       sass:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       tailwindcss:
-        specifier: ^3.4.19
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
@@ -1400,35 +1581,35 @@ importers:
   templates/weapp-vite-tailwindcss-vant-template:
     dependencies:
       '@vant/weapp':
-        specifier: ^1.11.7
+        specifier: 'catalog:'
         version: 1.11.7
     devDependencies:
       '@egoist/tailwindcss-icons':
-        specifier: ^1.9.2
+        specifier: 'catalog:'
         version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       '@iconify-json/mdi':
-        specifier: ^1.2.3
+        specifier: 'catalog:'
         version: 1.2.3
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       sass:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       tailwindcss:
-        specifier: ^3.4.19
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
@@ -1437,13 +1618,13 @@ importers:
   templates/weapp-vite-template:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       sass:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       weapp-vite:
         specifier: workspace:*
@@ -1452,38 +1633,38 @@ importers:
   templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template:
     dependencies:
       dayjs:
-        specifier: ^1.9.3
+        specifier: 'catalog:'
         version: 1.11.19
       tdesign-miniprogram:
-        specifier: 1.12.3
+        specifier: catalog:tdesign-miniprogram-fixed
         version: 1.12.3
       tslib:
-        specifier: ^2.8.1
+        specifier: 'catalog:'
         version: 2.8.1
       wevu:
         specifier: workspace:*
         version: link:../../packages/wevu
     devDependencies:
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       tailwindcss:
-        specifier: ^3.4.19
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       vue-tsc:
-        specifier: ^3.2.5
+        specifier: 'catalog:'
         version: 3.2.5(typescript@5.9.3)
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
@@ -1492,38 +1673,38 @@ importers:
   templates/weapp-vite-wevu-tailwindcss-tdesign-template:
     dependencies:
       tdesign-miniprogram:
-        specifier: ^1.12.3
+        specifier: 'catalog:'
         version: 1.12.3
     devDependencies:
       '@egoist/tailwindcss-icons':
-        specifier: ^1.9.2
+        specifier: 'catalog:'
         version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       '@iconify-json/mdi':
-        specifier: ^1.2.3
+        specifier: 'catalog:'
         version: 1.2.3
       autoprefixer:
-        specifier: ^10.4.27
+        specifier: 'catalog:'
         version: 10.4.27(postcss@8.5.6)
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       postcss:
-        specifier: ^8.5.6
+        specifier: 'catalog:'
         version: 8.5.6
       sass:
-        specifier: ^1.97.3
+        specifier: 'catalog:'
         version: 1.97.3
       tailwindcss:
-        specifier: ^3.4.19
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       vue-tsc:
-        specifier: ^3.2.5
+        specifier: 'catalog:'
         version: 3.2.5(typescript@5.9.3)
       weapp-tailwindcss:
-        specifier: ^4.10.3
+        specifier: 'catalog:'
         version: 4.10.3(magicast@0.5.1)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
@@ -1535,13 +1716,13 @@ importers:
   templates/weapp-vite-wevu-template:
     devDependencies:
       miniprogram-api-typings:
-        specifier: ^5.1.1
+        specifier: 'catalog:'
         version: 5.1.1
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       vue-tsc:
-        specifier: ^3.2.5
+        specifier: 'catalog:'
         version: 3.2.5(typescript@5.9.3)
       weapp-vite:
         specifier: workspace:*
@@ -1556,7 +1737,7 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(vue@3.5.29(typescript@5.9.3))
       echarts:
-        specifier: ^6.0.0
+        specifier: 'catalog:'
         version: 6.0.0
       element-plus:
         specifier: ^2.13.3
@@ -1568,14 +1749,14 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1
       vue:
-        specifier: ^3.5.29
+        specifier: 'catalog:'
         version: 3.5.29(typescript@5.9.3)
       vue-echarts:
         specifier: ^8.0.1
         version: 8.0.1(echarts@6.0.0)(vue@3.5.29(typescript@5.9.3))
     devDependencies:
       '@egoist/tailwindcss-icons':
-        specifier: ^1.9.2
+        specifier: 'catalog:'
         version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       '@iconify-json/bi':
         specifier: ^1.2.1
@@ -1584,14 +1765,14 @@ importers:
         specifier: ^1.2.10
         version: 1.2.10
       '@iconify-json/mdi':
-        specifier: ^1.2.3
+        specifier: 'catalog:'
         version: 1.2.3
       '@iconify-json/vscode-icons':
         specifier: ^1.2.44
         version: 1.2.44
       '@shikijs/vitepress-twoslash':
-        specifier: ^4.0.0
-        version: 4.0.0(typescript@5.9.3)
+        specifier: ^4.0.1
+        version: 4.0.1(typescript@5.9.3)
       create-weapp-vite:
         specifier: workspace:*
         version: link:../packages/create-weapp-vite
@@ -1599,7 +1780,7 @@ importers:
         specifier: ^11.12.3
         version: 11.12.3
       tailwindcss:
-        specifier: ^3.4.19
+        specifier: 'catalog:'
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       unplugin-auto-import:
         specifier: ^21.0.0
@@ -1703,10 +1884,6 @@ packages:
   '@ast-core/escape@1.0.1':
     resolution: {integrity: sha512-/kVjBkDzYrSW1S+gTBCuOfhnNkge9qZFJgLT+MOZdmPN4Vts36S60uU5br3ozoxpJ1eRGe6pGy7/EfcOpFFHlA==}
 
-  '@babel/code-frame@7.26.2':
-    resolution: {integrity: sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==}
-    engines: {node: '>=6.9.0'}
-
   '@babel/code-frame@7.28.6':
     resolution: {integrity: sha512-JYgintcMjRiCvS8mMECzaEn+m3PfoQiyqukOMCCVQtoJGYJw8j/8LBJEiqkHLkfwCcs74E3pbAUFNg7d9VNJ+Q==}
     engines: {node: '>=6.9.0'}
@@ -1727,8 +1904,8 @@ packages:
     resolution: {integrity: sha512-qsaF+9Qcm2Qv8SRIMMscAvG4O3lJ0F1GuMo5HR/Bp02LopNgnZBC/EkbevHFeGs4ls/oPz9v+Bsmzbkbe+0dUw==}
     engines: {node: '>=6.9.0'}
 
-  '@babel/generator@8.0.0-rc.1':
-    resolution: {integrity: sha512-3ypWOOiC4AYHKr8vYRVtWtWmyvcoItHtVqF8paFax+ydpmUdPsJpLBkBBs5ItmhdrwC3a0ZSqqFAdzls4ODP3w==}
+  '@babel/generator@8.0.0-rc.2':
+    resolution: {integrity: sha512-oCQ1IKPwkzCeJzAPb7Fv8rQ9k5+1sG8mf2uoHiMInPYvkRfrDJxbTIbH51U+jstlkghus0vAi3EBvkfvEsYNLQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@babel/helper-annotate-as-pure@7.27.3':
@@ -1832,16 +2009,12 @@ packages:
     resolution: {integrity: sha512-noLx87RwlBEMrTzncWd/FvTxoJ9+ycHNg0n8yyYydIoDsLZuxknKgWRJUqcrVkNrJ74uGyhWQzQaS3q8xfGAhQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
-  '@babel/helper-validator-identifier@7.25.9':
-    resolution: {integrity: sha512-Ed61U6XJc3CVRfkERJWDz4dJwKe7iLmmJsbOGu9wSloNSFttHV0I8g6UAgb7qnK5ly5bGLPd4oXZlxCdANBOWQ==}
-    engines: {node: '>=6.9.0'}
-
   '@babel/helper-validator-identifier@7.28.5':
     resolution: {integrity: sha512-qSs4ifwzKJSV39ucNjsvc6WVHs6b7S03sOh2OcHF9UHfVPqWWALUsNUVzhSBiItjRZoLHx7nIarVjqKVusUZ1Q==}
     engines: {node: '>=6.9.0'}
 
-  '@babel/helper-validator-identifier@8.0.0-rc.1':
-    resolution: {integrity: sha512-I4YnARytXC2RzkLNVnf5qFNFMzp679qZpmtw/V3Jt2uGnWiIxyJtaukjG7R8pSx8nG2NamICpGfljQsogj+FbQ==}
+  '@babel/helper-validator-identifier@8.0.0-rc.2':
+    resolution: {integrity: sha512-xExUBkuXWJjVuIbO7z6q7/BA9bgfJDEhVL0ggrggLMbg0IzCUWGT1hZGE8qUH7Il7/RD/a6cZ3AAFrrlp1LF/A==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@babel/helper-validator-option@7.27.1':
@@ -1861,8 +2034,8 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
-  '@babel/parser@8.0.0-rc.1':
-    resolution: {integrity: sha512-6HyyU5l1yK/7h9Ki52i5h6mDAx4qJdiLQO4FdCyJNoB/gy3T3GGJdhQzzbZgvgZCugYBvwtQiWRt94QKedHnkA==}
+  '@babel/parser@8.0.0-rc.2':
+    resolution: {integrity: sha512-29AhEtcq4x8Dp3T72qvUMZHx0OMXCj4Jy/TEReQa+KWLln524Cj1fWb3QFi0l/xSpptQBR6y9RNEXuxpFvwiUQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
@@ -2283,8 +2456,8 @@ packages:
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
 
-  '@babel/types@8.0.0-rc.1':
-    resolution: {integrity: sha512-ubmJ6TShyaD69VE9DQrlXcdkvJbmwWPB8qYj0H2kaJi29O7vJT9ajSdBd2W8CG34pwL9pYA74fi7RHC1qbLoVQ==}
+  '@babel/types@8.0.0-rc.2':
+    resolution: {integrity: sha512-91gAaWRznDwSX4E2tZ1YjBuIfnQVOFDCQ2r0Toby0gu4XEbyF623kXLMA8d4ZbCu+fINcrudkmEcwSUHgDDkNw==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@bcoe/v8-coverage@1.0.2':
@@ -3667,10 +3840,6 @@ packages:
 
   '@isaacs/balanced-match@4.0.1':
     resolution: {integrity: sha512-yzMTt9lEb8Gv7zRioUilSglI0c0smZ9k5D65677DLWLtWJaXIS3CqcGyUFByYKlnUj6TkjLVs54fBl6+TiGQDQ==}
-    engines: {node: 20 || >=22}
-
-  '@isaacs/brace-expansion@5.0.0':
-    resolution: {integrity: sha512-ZT55BDLV0yv0RBm2czMiZ+SqCGO7AvmOM3G/w2xhVPH+te0aKgFjmBvGlL1dH+ql2tgGO3MVrbb3jCKyvpgnxA==}
     engines: {node: 20 || >=22}
 
   '@isaacs/brace-expansion@5.0.1':
@@ -5702,47 +5871,47 @@ packages:
   '@shikijs/core@3.23.0':
     resolution: {integrity: sha512-NSWQz0riNb67xthdm5br6lAkvpDJRTgB36fxlo37ZzM2yq0PQFFzbd8psqC2XMPgCzo1fW6cVi18+ArJ44wqgA==}
 
-  '@shikijs/core@4.0.0':
-    resolution: {integrity: sha512-tvV94Dwyz4qFZ8R0MUaFx5Yptgy8yrloa4dwynEJDGjKz+8vqO8Q6FmPZL9W1gSzFHOUMOGQzIHK62aGourFxA==}
+  '@shikijs/core@4.0.1':
+    resolution: {integrity: sha512-vWvqi9JNgz1dRL9Nvog5wtx7RuNkf7MEPl2mU/cyUUxJeH1CAr3t+81h8zO8zs7DK6cKLMoU9TvukWIDjP4Lzg==}
     engines: {node: '>=20'}
 
   '@shikijs/engine-javascript@3.23.0':
     resolution: {integrity: sha512-aHt9eiGFobmWR5uqJUViySI1bHMqrAgamWE1TYSUoftkAeCCAiGawPMwM+VCadylQtF4V3VNOZ5LmfItH5f3yA==}
 
-  '@shikijs/engine-javascript@4.0.0':
-    resolution: {integrity: sha512-+PEyTS+JTz2lLy2C1Dwwx6hzoehIzqxQYh5MEjv9V4JtSabx+bIkRHfQT+6DnBmPAplGH0exBknWeiJSXC7w1w==}
+  '@shikijs/engine-javascript@4.0.1':
+    resolution: {integrity: sha512-DJK9NiwtGYqMuKCRO4Ip0FKNDQpmaiS+K5bFjJ7DWFn4zHueDWgaUG8kAofkrnXF6zPPYYQY7J5FYVW9MbZyBg==}
     engines: {node: '>=20'}
 
   '@shikijs/engine-oniguruma@3.23.0':
     resolution: {integrity: sha512-1nWINwKXxKKLqPibT5f4pAFLej9oZzQTsby8942OTlsJzOBZ0MWKiwzMsd+jhzu8YPCHAswGnnN1YtQfirL35g==}
 
-  '@shikijs/engine-oniguruma@4.0.0':
-    resolution: {integrity: sha512-KXmq4b6Xw16+4+rz5M4NZMoe/tzs5kTOMSJz8+LCyxSrwmxwTBAM/ab85iSO2Gw79E47HkW4B9HPHUXhrNOivw==}
+  '@shikijs/engine-oniguruma@4.0.1':
+    resolution: {integrity: sha512-oCWdCTDch3J8Kc0OZJ98KuUPC02O1VqIE3W/e2uvrHqTxYRR21RGEJMtchrgrxhsoJJCzmIciKsqG+q/yD+Cxg==}
     engines: {node: '>=20'}
 
   '@shikijs/langs@3.23.0':
     resolution: {integrity: sha512-2Ep4W3Re5aB1/62RSYQInK9mM3HsLeB91cHqznAJMuylqjzNVAVCMnNWRHFtcNHXsoNRayP9z1qj4Sq3nMqYXg==}
 
-  '@shikijs/langs@4.0.0':
-    resolution: {integrity: sha512-dSAT6fBcnOcYZQMWZO8+OmzUKKm+OO0As/qZ3TXLiSy0JsCTEYz1TaX7TDupnYLz7dr0oF2DOTEgPocx1D3aFw==}
+  '@shikijs/langs@4.0.1':
+    resolution: {integrity: sha512-v/mluaybWdnGJR4GqAR6zh8qAZohW9k+cGYT28Y7M8+jLbC0l4yG085O1A+WkseHTn+awd+P3UBymb2+MXFc8w==}
     engines: {node: '>=20'}
 
-  '@shikijs/primitive@4.0.0':
-    resolution: {integrity: sha512-6K2zD7JTgsyFc2vM1rqy8eRGC8D5Hius3qzVONjq2lHMrqfTSn1HcGeJZiFPYSV9m3DQuBHncBbA5xe0hKSOkQ==}
+  '@shikijs/primitive@4.0.1':
+    resolution: {integrity: sha512-ns0hHZc5eWZuvuIEJz2pTx3Qecz0aRVYumVQJ8JgWY2tq/dH8WxdcVM49Fc2NsHEILNIT6vfdW9MF26RANWiTA==}
     engines: {node: '>=20'}
 
   '@shikijs/themes@3.23.0':
     resolution: {integrity: sha512-5qySYa1ZgAT18HR/ypENL9cUSGOeI2x+4IvYJu4JgVJdizn6kG4ia5Q1jDEOi7gTbN4RbuYtmHh0W3eccOrjMA==}
 
-  '@shikijs/themes@4.0.0':
-    resolution: {integrity: sha512-xe42kvxOXan5ouXxULez6qwDNUJkoP6kicfg0wKuJBkeIaHLxZBZa2gEGYutL1q27DQZ5+XoR6caVX+E/aNR5A==}
+  '@shikijs/themes@4.0.1':
+    resolution: {integrity: sha512-FW41C/D6j/yKQkzVdjrRPiJCtgeDaYRJFEyCKFCINuRJRj9WcmubhP4KQHPZ4+9eT87jruSrYPyoblNRyDFzvA==}
     engines: {node: '>=20'}
 
   '@shikijs/transformers@3.23.0':
     resolution: {integrity: sha512-F9msZVxdF+krQNSdQ4V+Ja5QemeAoTQ2jxt7nJCwhDsdF1JWS3KxIQXA3lQbyKwS3J61oHRUSv4jYWv3CkaKTQ==}
 
-  '@shikijs/twoslash@4.0.0':
-    resolution: {integrity: sha512-Kl1SpkL7yX2o8MmSCSqXE3Mova/X8LZj5rX5FpAy/JniCEvn/oWEOlUG/8hIDfH3qaRcKuLxwlR92yh5mH8juA==}
+  '@shikijs/twoslash@4.0.1':
+    resolution: {integrity: sha512-FczRriWa7S8MijjSmmanB1Hilcgai1BCwoahjDE2ILA6gibdl/LRiyhnJXBGWA4rToy18+Ox0G+lKpMrugoQkA==}
     engines: {node: '>=20'}
     peerDependencies:
       typescript: '>=5.5.0'
@@ -5750,12 +5919,12 @@ packages:
   '@shikijs/types@3.23.0':
     resolution: {integrity: sha512-3JZ5HXOZfYjsYSk0yPwBrkupyYSLpAE26Qc0HLghhZNGTZg/SKxXIIgoxOpmmeQP0RRSDJTk1/vPfw9tbw+jSQ==}
 
-  '@shikijs/types@4.0.0':
-    resolution: {integrity: sha512-LCnfBTtQKNtJyc1qMShZr2dJt1uxNI6pI0/YTc2DSNET91aUvnMGHUHsucVCC5AJVcv5XyBqk2NgYRwd20EjbA==}
+  '@shikijs/types@4.0.1':
+    resolution: {integrity: sha512-EaygPEn57+jJ76mw+nTLvIpJMAcMPokFbrF8lufsZP7Ukk+ToJYEcswN1G0e49nUZAq7aCQtoeW219A8HK1ZOw==}
     engines: {node: '>=20'}
 
-  '@shikijs/vitepress-twoslash@4.0.0':
-    resolution: {integrity: sha512-UF6Av80Z/G6+nNFY3nYmZAY0wp+YuykIau8efWdf7/VQs3kzukbBVg4YU5OBppgTEkHMZDCj+J6K3o50bLXhMw==}
+  '@shikijs/vitepress-twoslash@4.0.1':
+    resolution: {integrity: sha512-CjoqwqsRtWPfOY4kk60gknEhreFwaYAZk4TnjI95lotGH3MevMjm333V59ereBTDB173n8gvdZVgPrgCywwn0w==}
     engines: {node: '>=20'}
 
   '@shikijs/vscode-textmate@10.0.2':
@@ -6157,9 +6326,6 @@ packages:
   '@types/estree-jsx@1.0.5':
     resolution: {integrity: sha512-52CcUVNFyfb1A2ALocQw/Dd1BQFNmSdkuC3BkZ6iqhdMfQz7JWOFRuJFloOzjk+6WijU56m9oKXFAXc7o3Towg==}
 
-  '@types/estree@1.0.7':
-    resolution: {integrity: sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==}
-
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
@@ -6489,14 +6655,8 @@ packages:
   '@vue-mini/core@1.2.9':
     resolution: {integrity: sha512-y7b2uOGTuGT5e2cydNAhk4gapuMfWBxXaUyuMcaUG1GWUht7oWwI8TsrFWwFWEwr8bgF+uMDiv36qbL1kaqAig==}
 
-  '@vue/compiler-core@3.5.28':
-    resolution: {integrity: sha512-kviccYxTgoE8n6OCw96BNdYlBg2GOWfBuOW4Vqwrt7mSKWKwFVvI8egdTltqRgITGPsTFYtKYfxIG8ptX2PJHQ==}
-
   '@vue/compiler-core@3.5.29':
     resolution: {integrity: sha512-cuzPhD8fwRHk8IGfmYaR4eEe4cAyJEL66Ove/WZL7yWNL134nqLddSLwNRIsFlnnW1kK+p8Ck3viFnC0chXCXw==}
-
-  '@vue/compiler-dom@3.5.28':
-    resolution: {integrity: sha512-/1ZepxAb159jKR1btkefDP+J2xuWL5V3WtleRmxaT+K2Aqiek/Ab/+Ebrw2pPj0sdHO8ViAyyJWfhXXOP/+LQA==}
 
   '@vue/compiler-dom@3.5.29':
     resolution: {integrity: sha512-n0G5o7R3uBVmVxjTIYcz7ovr8sy7QObFG8OQJ3xGCDNhbG60biP/P5KnyY8NLd81OuT1WJflG7N4KWYHaeeaIg==}
@@ -6535,9 +6695,6 @@ packages:
     resolution: {integrity: sha512-G/1k6WK5MusLlbxSE2YTcqAAezS+VuwHhOvLx2KnQU7G2zCH6KIb+5Wyt6UjMq7a3qPzNEjJXs1hvAxDclQH+g==}
     peerDependencies:
       vue: 3.5.29
-
-  '@vue/shared@3.5.28':
-    resolution: {integrity: sha512-cfWa1fCGBxrvaHRhvV3Is0MgmrbSCxYTXCSCau2I0a1Xw1N1pHAvkWCiXPRAqjvToILvguNyEwjevUqAuBQWvQ==}
 
   '@vue/shared@3.5.29':
     resolution: {integrity: sha512-w7SR0A5zyRByL9XUkCfdLs7t9XOHUyJ67qPGQjOou3p6GvBeBW+AVjUUmlxtZ4PIYaRvE+1LmK44O4uajlZwcg==}
@@ -6810,10 +6967,6 @@ packages:
     resolution: {integrity: sha512-4Dj6M28JB+oAH8kFkTLUo+a2jwOFkuqb3yucU0CANcRRUbxS0cP0nZYCGjcc3BNXwRIsUVmDGgzawme7zvJHvg==}
     engines: {node: '>=12'}
 
-  ansis@4.1.0:
-    resolution: {integrity: sha512-BGcItUBWSMRgOCe+SVZJ+S7yTRG0eGt9cXAHev72yuGcY23hnLA7Bky5L/xLyPINoSN95geovfBkqoTlNZYa7w==}
-    engines: {node: '>=14'}
-
   ansis@4.2.0:
     resolution: {integrity: sha512-HqZ5rWlFjGiV0tDm3UxxgNRqsOTniqoKZu0pIAfh7TZQMGuZK+hH0drySty0si0QXj1ieop4+SkSfPZBPPkHig==}
     engines: {node: '>=14'}
@@ -7035,9 +7188,6 @@ packages:
 
   birecord@0.1.1:
     resolution: {integrity: sha512-VUpsf/qykW0heRlC8LooCq28Kxn3mAqKohhDG/49rrsQ1dT1CXyj/pgXS+5BSRzFTR/3DyIBOqQOrGyZOh71Aw==}
-
-  birpc@2.5.0:
-    resolution: {integrity: sha512-VSWO/W6nNQdyP520F1mhf+Lc2f8pjGQOtoHHm7Ze8Go1kX7akpVIrtTa0fn+HB0QJEDVacl6aO08YE0PgXfdnQ==}
 
   birpc@2.9.0:
     resolution: {integrity: sha512-KrayHS5pBi69Xi9JmvoqrIgYGDkD6mcSe/i6YKi3w5kekCLzrX4+nawcXqrj2tIp50Kw/mT/s3p+GVK0A0sKxw==}
@@ -7442,8 +7592,8 @@ packages:
     resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
     engines: {node: '>= 12'}
 
-  comment-json@4.5.1:
-    resolution: {integrity: sha512-taEtr3ozUmOB7it68Jll7s0Pwm+aoiHyXKrEC8SEodL4rNpdfDLqa7PfBlrgFoCNNdR8ImL+muti5IGvktJAAg==}
+  comment-json@4.6.0:
+    resolution: {integrity: sha512-oFKg9uOPlB3Ih/nTX0sM7mPHkfVs7FYTmkVWtKIH1J1XIzLxGzyBT4WHTI7dg/wA2YV2bOQRhfXR5wbBJu1gZA==}
     engines: {node: '>= 6'}
 
   comment-parser@1.4.5:
@@ -7918,15 +8068,6 @@ packages:
       supports-color:
         optional: true
 
-  debug@4.4.1:
-    resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
-    engines: {node: '>=6.0'}
-    peerDependencies:
-      supports-color: '*'
-    peerDependenciesMeta:
-      supports-color:
-        optional: true
-
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
     engines: {node: '>=6.0'}
@@ -7985,16 +8126,8 @@ packages:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
     engines: {node: '>=0.10.0'}
 
-  default-browser-id@5.0.0:
-    resolution: {integrity: sha512-A6p/pu/6fyBcA1TRz/GqWYPViplrftcW2gZC9q79ngNCKAeR/X3gcEdXQHl4KNXV+3wgIJ1CPkJQ3IHM6lcsyA==}
-    engines: {node: '>=18'}
-
   default-browser-id@5.0.1:
     resolution: {integrity: sha512-x1VCxdX4t+8wVfd1so/9w+vQ4vx7lKd2Qp5tDRutErwmR85OgmfX7RlLRMWafRMY7hbEiXIbudNrjOAPa/hL8Q==}
-    engines: {node: '>=18'}
-
-  default-browser@5.2.1:
-    resolution: {integrity: sha512-WY/3TUME0x3KPYdRRxEJJvXRHV4PyPoUsxtZa78lwItwRQRHhd2U9xOscaT/YTf8uCXIAjeJOFBVEh/7FtD8Xg==}
     engines: {node: '>=18'}
 
   default-browser@5.5.0:
@@ -8928,15 +9061,6 @@ packages:
       debug:
         optional: true
 
-  follow-redirects@1.15.9:
-    resolution: {integrity: sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==}
-    engines: {node: '>=4.0'}
-    peerDependencies:
-      debug: '*'
-    peerDependenciesMeta:
-      debug:
-        optional: true
-
   for-each@0.3.5:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
     engines: {node: '>= 0.4'}
@@ -9849,10 +9973,6 @@ packages:
     resolution: {integrity: sha512-eXK1UInq2bPmjyX6e3VHIzMLobc4J94i4AWn+Hpq3OU5KkrRC96OAcR3PRJ/pGu6m8TRnBHP9dkXQVsT/COVIA==}
     engines: {node: '>=0.10.0'}
 
-  is-wsl@3.1.0:
-    resolution: {integrity: sha512-UcVfVfaK4Sc4m7X3dUSoHoozQGBEFeDC+zVo06t98xe8CzHSZZBekNXH+tu0NalHolcJ/QAGqS46Hef7QXBIMw==}
-    engines: {node: '>=16'}
-
   is-wsl@3.1.1:
     resolution: {integrity: sha512-e6rvdUCiQCAuumZslxRJWR/Doq4VpPR82kqclvcS0efgt430SlGIk05vdCN58+VrzgtIcfNODjozVielycD4Sw==}
     engines: {node: '>=16'}
@@ -10750,10 +10870,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  minimatch@10.1.1:
-    resolution: {integrity: sha512-enIvLvRAFZYXJzkCYG5RKmPfrFArdLv+R+lbQ53BmIMLIry74bjKzX6iHAm8WYamJkhSSEabrWN5D97XnKObjQ==}
-    engines: {node: 20 || >=22}
-
   minimatch@10.1.2:
     resolution: {integrity: sha512-fu656aJ0n2kcXwsnwnv9g24tkU5uSmOlTjd6WyyaKm2Z+h1qmY6bAjrcaIxF/BslFqbZ8UBtbJi7KgQOZD2PTw==}
     engines: {node: 20 || >=22}
@@ -11473,9 +11589,6 @@ packages:
 
   pend@1.2.0:
     resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
-
-  perfect-debounce@2.0.0:
-    resolution: {integrity: sha512-fkEH/OBiKrqqI/yIgjR92lMfs2K8105zt/VT6+7eTjNwisrsh47CeIED9z58zI7DfKdH3uHAn25ziRZn3kgAow==}
 
   perfect-debounce@2.1.0:
     resolution: {integrity: sha512-LjgdTytVFXeUgtHZr9WYViYSM/g8MkcTPYDlPa3cDqMirHjKiSZPYd6DoL7pK8AJQr+uWkQvCjHNdiMqsrJs+g==}
@@ -12464,8 +12577,8 @@ packages:
   robust-predicates@3.0.2:
     resolution: {integrity: sha512-IXgzBWvWQwE6PrDI05OvmXUIruQTcoMDzRsOd5CDvHCVLcLHMTSYvOK5Cm46kWqlV3yAbuSpBZdJ5oP5OUoStg==}
 
-  rolldown-plugin-dts@0.22.2:
-    resolution: {integrity: sha512-Ge+XF962Kobjr0hRPx1neVnLU2jpKkD2zevZTfPKf/0el4eYo9SyGPm0stiHDG2JQuL0Q3HLD0Kn+ST8esvVdA==}
+  rolldown-plugin-dts@0.22.3:
+    resolution: {integrity: sha512-APIGZGChvLVu05f+7bMmgf+lpvhjIvELhkOsg7c/95IVdOgULVFOX9iciaHJLaBfZeTthIgp+gryGBjgyKNA1A==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@ts-macro/tsc': ^0.3.6
@@ -12806,8 +12919,8 @@ packages:
   shiki@3.23.0:
     resolution: {integrity: sha512-55Dj73uq9ZXL5zyeRPzHQsK7Nbyt6Y10k5s7OjuFZGMhpp4r/rsLBH0o/0fstIzX1Lep9VxefWljK/SKCzygIA==}
 
-  shiki@4.0.0:
-    resolution: {integrity: sha512-rjKoiw30ZaFsM0xnPPwxco/Jftz/XXqZkcQZBTX4LGheDw8gCDEH87jdgaKDEG3FZO2bFOK27+sR/sDHhbBXfg==}
+  shiki@4.0.1:
+    resolution: {integrity: sha512-EkAEhDTN5WhpoQFXFw79OHIrSAfHhlImeCdSyg4u4XvrpxKEmdo/9x/HWSowujAnUrFsGOwWiE58a6GVentMnQ==}
     engines: {node: '>=20'}
 
   shlex@2.1.2:
@@ -13918,10 +14031,6 @@ packages:
       '@vueuse/core':
         optional: true
 
-  unplugin-utils@0.3.0:
-    resolution: {integrity: sha512-JLoggz+PvLVMJo+jZt97hdIIIZ2yTzGgft9e9q8iMrC4ewufl62ekeW7mixBghonn2gVb/ICjyvlmOCUBnJLQg==}
-    engines: {node: '>=20.19.0'}
-
   unplugin-utils@0.3.1:
     resolution: {integrity: sha512-5lWVjgi6vuHhJ526bI4nlCOmkCIF3nnfXkCMDeMJrtdvxTs6ZFCM8oNufGTsDbKv/tJ/xj8RpvXjRuPBZJuJog==}
     engines: {node: '>=20.19.0'}
@@ -14654,12 +14763,6 @@ snapshots:
 
   '@ast-core/escape@1.0.1': {}
 
-  '@babel/code-frame@7.26.2':
-    dependencies:
-      '@babel/helper-validator-identifier': 7.25.9
-      js-tokens: 4.0.0
-      picocolors: 1.1.1
-
   '@babel/code-frame@7.28.6':
     dependencies:
       '@babel/helper-validator-identifier': 7.28.5
@@ -14703,10 +14806,10 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.31
       jsesc: 3.1.0
 
-  '@babel/generator@8.0.0-rc.1':
+  '@babel/generator@8.0.0-rc.2':
     dependencies:
-      '@babel/parser': 8.0.0-rc.1
-      '@babel/types': 8.0.0-rc.1
+      '@babel/parser': 8.0.0-rc.2
+      '@babel/types': 8.0.0-rc.2
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
       '@types/jsesc': 2.5.1
@@ -14855,11 +14958,9 @@ snapshots:
 
   '@babel/helper-string-parser@8.0.0-rc.2': {}
 
-  '@babel/helper-validator-identifier@7.25.9': {}
-
   '@babel/helper-validator-identifier@7.28.5': {}
 
-  '@babel/helper-validator-identifier@8.0.0-rc.1': {}
+  '@babel/helper-validator-identifier@8.0.0-rc.2': {}
 
   '@babel/helper-validator-option@7.27.1': {}
 
@@ -14880,9 +14981,9 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.0
 
-  '@babel/parser@8.0.0-rc.1':
+  '@babel/parser@8.0.0-rc.2':
     dependencies:
-      '@babel/types': 8.0.0-rc.1
+      '@babel/types': 8.0.0-rc.2
 
   '@babel/plugin-bugfix-firefox-class-in-computed-class-key@7.28.5(@babel/core@7.29.0)':
     dependencies:
@@ -15420,10 +15521,10 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@babel/types@8.0.0-rc.1':
+  '@babel/types@8.0.0-rc.2':
     dependencies:
       '@babel/helper-string-parser': 8.0.0-rc.2
-      '@babel/helper-validator-identifier': 8.0.0-rc.1
+      '@babel/helper-validator-identifier': 8.0.0-rc.2
 
   '@bcoe/v8-coverage@1.0.2': {}
 
@@ -16558,7 +16659,7 @@ snapshots:
       '@pnpm/workspace.find-packages': 1000.0.62(@pnpm/logger@1001.0.1)(@pnpm/worker@1000.6.5(@pnpm/logger@1001.0.1)(@types/node@25.3.3))(typanion@3.14.0)
       '@pnpm/workspace.read-manifest': 1000.2.10
       c12: 3.3.3(magicast@0.5.1)
-      comment-json: 4.5.1
+      comment-json: 4.6.0
       consola: 3.4.2
       fs-extra: 11.3.3
       git-url-parse: 16.1.0
@@ -16578,7 +16679,7 @@ snapshots:
 
   '@icebreakers/stylelint-config@2.0.2(postcss@8.5.6)(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))':
     dependencies:
-      comment-json: 4.5.1
+      comment-json: 4.6.0
       postcss-html: 1.8.1
       stylelint-config-recess-order: 7.6.1(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))
       stylelint-config-recommended-scss: 17.0.0(postcss@8.5.6)(stylelint@17.4.0(typescript@5.9.3))
@@ -16845,10 +16946,6 @@ snapshots:
       '@types/node': 25.3.3
 
   '@isaacs/balanced-match@4.0.1': {}
-
-  '@isaacs/brace-expansion@5.0.0':
-    dependencies:
-      '@isaacs/balanced-match': 4.0.1
 
   '@isaacs/brace-expansion@5.0.1':
     dependencies:
@@ -19117,10 +19214,10 @@ snapshots:
       '@types/hast': 3.0.4
       hast-util-to-html: 9.0.5
 
-  '@shikijs/core@4.0.0':
+  '@shikijs/core@4.0.1':
     dependencies:
-      '@shikijs/primitive': 4.0.0
-      '@shikijs/types': 4.0.0
+      '@shikijs/primitive': 4.0.1
+      '@shikijs/types': 4.0.1
       '@shikijs/vscode-textmate': 10.0.2
       '@types/hast': 3.0.4
       hast-util-to-html: 9.0.5
@@ -19131,9 +19228,9 @@ snapshots:
       '@shikijs/vscode-textmate': 10.0.2
       oniguruma-to-es: 4.3.4
 
-  '@shikijs/engine-javascript@4.0.0':
+  '@shikijs/engine-javascript@4.0.1':
     dependencies:
-      '@shikijs/types': 4.0.0
+      '@shikijs/types': 4.0.1
       '@shikijs/vscode-textmate': 10.0.2
       oniguruma-to-es: 4.3.4
 
@@ -19142,22 +19239,22 @@ snapshots:
       '@shikijs/types': 3.23.0
       '@shikijs/vscode-textmate': 10.0.2
 
-  '@shikijs/engine-oniguruma@4.0.0':
+  '@shikijs/engine-oniguruma@4.0.1':
     dependencies:
-      '@shikijs/types': 4.0.0
+      '@shikijs/types': 4.0.1
       '@shikijs/vscode-textmate': 10.0.2
 
   '@shikijs/langs@3.23.0':
     dependencies:
       '@shikijs/types': 3.23.0
 
-  '@shikijs/langs@4.0.0':
+  '@shikijs/langs@4.0.1':
     dependencies:
-      '@shikijs/types': 4.0.0
+      '@shikijs/types': 4.0.1
 
-  '@shikijs/primitive@4.0.0':
+  '@shikijs/primitive@4.0.1':
     dependencies:
-      '@shikijs/types': 4.0.0
+      '@shikijs/types': 4.0.1
       '@shikijs/vscode-textmate': 10.0.2
       '@types/hast': 3.0.4
 
@@ -19165,19 +19262,19 @@ snapshots:
     dependencies:
       '@shikijs/types': 3.23.0
 
-  '@shikijs/themes@4.0.0':
+  '@shikijs/themes@4.0.1':
     dependencies:
-      '@shikijs/types': 4.0.0
+      '@shikijs/types': 4.0.1
 
   '@shikijs/transformers@3.23.0':
     dependencies:
       '@shikijs/core': 3.23.0
       '@shikijs/types': 3.23.0
 
-  '@shikijs/twoslash@4.0.0(typescript@5.9.3)':
+  '@shikijs/twoslash@4.0.1(typescript@5.9.3)':
     dependencies:
-      '@shikijs/core': 4.0.0
-      '@shikijs/types': 4.0.0
+      '@shikijs/core': 4.0.1
+      '@shikijs/types': 4.0.1
       twoslash: 0.3.6(typescript@5.9.3)
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -19188,14 +19285,14 @@ snapshots:
       '@shikijs/vscode-textmate': 10.0.2
       '@types/hast': 3.0.4
 
-  '@shikijs/types@4.0.0':
+  '@shikijs/types@4.0.1':
     dependencies:
       '@shikijs/vscode-textmate': 10.0.2
       '@types/hast': 3.0.4
 
-  '@shikijs/vitepress-twoslash@4.0.0(typescript@5.9.3)':
+  '@shikijs/vitepress-twoslash@4.0.1(typescript@5.9.3)':
     dependencies:
-      '@shikijs/twoslash': 4.0.0(typescript@5.9.3)
+      '@shikijs/twoslash': 4.0.1(typescript@5.9.3)
       floating-vue: 5.2.2(vue@3.5.29(typescript@5.9.3))
       lz-string: 1.5.0
       magic-string: 0.30.21
@@ -19204,7 +19301,7 @@ snapshots:
       mdast-util-gfm: 3.1.0
       mdast-util-to-hast: 13.2.1
       ohash: 2.0.11
-      shiki: 4.0.0
+      shiki: 4.0.1
       twoslash: 0.3.6(typescript@5.9.3)
       twoslash-vue: 0.3.6(typescript@5.9.3)
       vue: 3.5.29(typescript@5.9.3)
@@ -19422,7 +19519,7 @@ snapshots:
 
   '@ts-morph/common@0.28.1':
     dependencies:
-      minimatch: 10.1.1
+      minimatch: 10.2.4
       path-browserify: 1.0.1
       tinyglobby: 0.2.15
 
@@ -19613,8 +19710,6 @@ snapshots:
     dependencies:
       '@types/estree': 1.0.8
     optional: true
-
-  '@types/estree@1.0.7': {}
 
   '@types/estree@1.0.8': {}
 
@@ -20030,14 +20125,6 @@ snapshots:
       '@vue/reactivity': 3.5.29
       miniprogram-api-typings: 4.0.8
 
-  '@vue/compiler-core@3.5.28':
-    dependencies:
-      '@babel/parser': 7.29.0
-      '@vue/shared': 3.5.28
-      entities: 7.0.1
-      estree-walker: 2.0.2
-      source-map-js: 1.2.1
-
   '@vue/compiler-core@3.5.29':
     dependencies:
       '@babel/parser': 7.29.0
@@ -20045,11 +20132,6 @@ snapshots:
       entities: 7.0.1
       estree-walker: 2.0.2
       source-map-js: 1.2.1
-
-  '@vue/compiler-dom@3.5.28':
-    dependencies:
-      '@vue/compiler-core': 3.5.28
-      '@vue/shared': 3.5.28
 
   '@vue/compiler-dom@3.5.29':
     dependencies:
@@ -20094,8 +20176,8 @@ snapshots:
   '@vue/language-core@3.2.5':
     dependencies:
       '@volar/language-core': 2.4.28
-      '@vue/compiler-dom': 3.5.28
-      '@vue/shared': 3.5.28
+      '@vue/compiler-dom': 3.5.29
+      '@vue/shared': 3.5.29
       alien-signals: 3.1.2
       muggle-string: 0.4.1
       path-browserify: 1.0.1
@@ -20130,8 +20212,6 @@ snapshots:
       '@vue/compiler-ssr': 3.5.29
       '@vue/shared': 3.5.29
       vue: 3.5.29(typescript@5.9.3)
-
-  '@vue/shared@3.5.28': {}
 
   '@vue/shared@3.5.29': {}
 
@@ -20390,8 +20470,6 @@ snapshots:
 
   ansi-styles@6.2.3: {}
 
-  ansis@4.1.0: {}
-
   ansis@4.2.0: {}
 
   antd-mini@3.4.3:
@@ -20536,7 +20614,7 @@ snapshots:
 
   ast-kit@3.0.0-beta.1:
     dependencies:
-      '@babel/parser': 8.0.0-rc.1
+      '@babel/parser': 8.0.0-rc.2
       estree-walker: 3.0.3
       pathe: 2.0.3
 
@@ -20653,8 +20731,6 @@ snapshots:
   binary-extensions@2.3.0: {}
 
   birecord@0.1.1: {}
-
-  birpc@2.5.0: {}
 
   birpc@2.9.0: {}
 
@@ -20894,7 +20970,7 @@ snapshots:
 
   centra@2.7.0(debug@4.4.3):
     dependencies:
-      follow-redirects: 1.15.9(debug@4.4.3)
+      follow-redirects: 1.15.11(debug@4.4.3)
     transitivePeerDependencies:
       - debug
 
@@ -21110,7 +21186,7 @@ snapshots:
 
   commander@8.3.0: {}
 
-  comment-json@4.5.1:
+  comment-json@4.6.0:
     dependencies:
       array-timsort: 1.0.3
       core-util-is: 1.0.3
@@ -21637,10 +21713,6 @@ snapshots:
     dependencies:
       ms: 2.0.0
 
-  debug@4.4.1:
-    dependencies:
-      ms: 2.1.3
-
   debug@4.4.3:
     dependencies:
       ms: 2.1.3
@@ -21708,14 +21780,7 @@ snapshots:
 
   deepmerge@4.3.1: {}
 
-  default-browser-id@5.0.0: {}
-
   default-browser-id@5.0.1: {}
-
-  default-browser@5.2.1:
-    dependencies:
-      bundle-name: 4.1.0
-      default-browser-id: 5.0.0
 
   default-browser@5.5.0:
     dependencies:
@@ -22676,7 +22741,7 @@ snapshots:
 
   estree-walker@3.0.3:
     dependencies:
-      '@types/estree': 1.0.7
+      '@types/estree': 1.0.8
 
   esutils@2.0.3: {}
 
@@ -23006,10 +23071,6 @@ snapshots:
       tabbable: 6.4.0
 
   follow-redirects@1.15.11(debug@4.4.3):
-    optionalDependencies:
-      debug: 4.4.3
-
-  follow-redirects@1.15.9(debug@4.4.3):
     optionalDependencies:
       debug: 4.4.3
 
@@ -23944,10 +24005,6 @@ snapshots:
   is-what@4.1.16: {}
 
   is-windows@1.0.2: {}
-
-  is-wsl@3.1.0:
-    dependencies:
-      is-inside-container: 1.0.0
 
   is-wsl@3.1.1:
     dependencies:
@@ -25188,10 +25245,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  minimatch@10.1.1:
-    dependencies:
-      '@isaacs/brace-expansion': 5.0.0
-
   minimatch@10.1.2:
     dependencies:
       '@isaacs/brace-expansion': 5.0.1
@@ -25627,7 +25680,7 @@ snapshots:
 
   open@10.2.0:
     dependencies:
-      default-browser: 5.2.1
+      default-browser: 5.5.0
       define-lazy-prop: 3.0.0
       is-inside-container: 1.0.0
       wsl-utils: 0.1.0
@@ -25884,7 +25937,7 @@ snapshots:
 
   parse-json@5.2.0:
     dependencies:
-      '@babel/code-frame': 7.26.2
+      '@babel/code-frame': 7.29.0
       error-ex: 1.3.2
       json-parse-even-better-errors: 2.3.1
       lines-and-columns: 1.2.4
@@ -25983,8 +26036,6 @@ snapshots:
   pathe@2.0.3: {}
 
   pend@1.2.0: {}
-
-  perfect-debounce@2.0.0: {}
 
   perfect-debounce@2.1.0: {}
 
@@ -27039,12 +27090,12 @@ snapshots:
 
   robust-predicates@3.0.2: {}
 
-  rolldown-plugin-dts@0.22.2(oxc-resolver@11.6.1)(rolldown@1.0.0-rc.6)(typescript@5.9.3)(vue-tsc@3.2.5(typescript@5.9.3)):
+  rolldown-plugin-dts@0.22.3(oxc-resolver@11.6.1)(rolldown@1.0.0-rc.6)(typescript@5.9.3)(vue-tsc@3.2.5(typescript@5.9.3)):
     dependencies:
-      '@babel/generator': 8.0.0-rc.1
-      '@babel/helper-validator-identifier': 8.0.0-rc.1
-      '@babel/parser': 8.0.0-rc.1
-      '@babel/types': 8.0.0-rc.1
+      '@babel/generator': 8.0.0-rc.2
+      '@babel/helper-validator-identifier': 8.0.0-rc.2
+      '@babel/parser': 8.0.0-rc.2
+      '@babel/types': 8.0.0-rc.2
       ast-kit: 3.0.0-beta.1
       birpc: 4.0.0
       dts-resolver: 2.1.3(oxc-resolver@11.6.1)
@@ -27057,12 +27108,12 @@ snapshots:
     transitivePeerDependencies:
       - oxc-resolver
 
-  rolldown-plugin-dts@0.22.2(rolldown@1.0.0-rc.3)(typescript@5.9.3)(vue-tsc@3.2.5(typescript@5.9.3)):
+  rolldown-plugin-dts@0.22.3(rolldown@1.0.0-rc.3)(typescript@5.9.3)(vue-tsc@3.2.5(typescript@5.9.3)):
     dependencies:
-      '@babel/generator': 8.0.0-rc.1
-      '@babel/helper-validator-identifier': 8.0.0-rc.1
-      '@babel/parser': 8.0.0-rc.1
-      '@babel/types': 8.0.0-rc.1
+      '@babel/generator': 8.0.0-rc.2
+      '@babel/helper-validator-identifier': 8.0.0-rc.2
+      '@babel/parser': 8.0.0-rc.2
+      '@babel/types': 8.0.0-rc.2
       ast-kit: 3.0.0-beta.1
       birpc: 4.0.0
       dts-resolver: 2.1.3(oxc-resolver@11.6.1)
@@ -27360,8 +27411,7 @@ snapshots:
 
   sax@1.4.1: {}
 
-  sax@1.4.3:
-    optional: true
+  sax@1.4.3: {}
 
   scslre@0.3.0:
     dependencies:
@@ -27523,14 +27573,14 @@ snapshots:
       '@shikijs/vscode-textmate': 10.0.2
       '@types/hast': 3.0.4
 
-  shiki@4.0.0:
+  shiki@4.0.1:
     dependencies:
-      '@shikijs/core': 4.0.0
-      '@shikijs/engine-javascript': 4.0.0
-      '@shikijs/engine-oniguruma': 4.0.0
-      '@shikijs/langs': 4.0.0
-      '@shikijs/themes': 4.0.0
-      '@shikijs/types': 4.0.0
+      '@shikijs/core': 4.0.1
+      '@shikijs/engine-javascript': 4.0.1
+      '@shikijs/engine-oniguruma': 4.0.1
+      '@shikijs/langs': 4.0.1
+      '@shikijs/themes': 4.0.1
+      '@shikijs/types': 4.0.1
       '@shikijs/vscode-textmate': 10.0.2
       '@types/hast': 3.0.4
 
@@ -28436,7 +28486,7 @@ snapshots:
       obug: 2.1.1
       picomatch: 4.0.3
       rolldown: 1.0.0-rc.3
-      rolldown-plugin-dts: 0.22.2(rolldown@1.0.0-rc.3)(typescript@5.9.3)(vue-tsc@3.2.5(typescript@5.9.3))
+      rolldown-plugin-dts: 0.22.3(rolldown@1.0.0-rc.3)(typescript@5.9.3)(vue-tsc@3.2.5(typescript@5.9.3))
       semver: 7.7.4
       tinyexec: 1.0.2
       tinyglobby: 0.2.15
@@ -28871,11 +28921,6 @@ snapshots:
     optionalDependencies:
       '@vueuse/core': 14.1.0(vue@3.5.29(typescript@5.9.3))
 
-  unplugin-utils@0.3.0:
-    dependencies:
-      pathe: 2.0.3
-      picomatch: 4.0.3
-
   unplugin-utils@0.3.1:
     dependencies:
       pathe: 2.0.3
@@ -29013,7 +29058,7 @@ snapshots:
 
   vite-dev-rpc@1.1.0(vite@8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
-      birpc: 2.5.0
+      birpc: 2.9.0
       vite: 8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
       vite-hot-client: 2.1.0(vite@8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
 
@@ -29041,14 +29086,14 @@ snapshots:
 
   vite-plugin-inspect@11.3.3(vite@8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
-      ansis: 4.1.0
-      debug: 4.4.1
+      ansis: 4.2.0
+      debug: 4.4.3
       error-stack-parser-es: 1.0.5
       ohash: 2.0.11
       open: 10.2.0
-      perfect-debounce: 2.0.0
+      perfect-debounce: 2.1.0
       sirv: 3.0.1
-      unplugin-utils: 0.3.0
+      unplugin-utils: 0.3.1
       vite: 8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
       vite-dev-rpc: 1.1.0(vite@8.0.0-beta.16(@types/node@25.3.3)(esbuild@0.27.3)(jiti@2.6.1)(less@4.5.1)(sass-embedded@1.97.3)(sass@1.97.3)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
     transitivePeerDependencies:
@@ -29531,7 +29576,7 @@ snapshots:
 
   wsl-utils@0.1.0:
     dependencies:
-      is-wsl: 3.1.0
+      is-wsl: 3.1.1
 
   wsl-utils@0.3.1:
     dependencies:
@@ -29551,7 +29596,7 @@ snapshots:
 
   xml2js@0.5.0:
     dependencies:
-      sax: 1.4.1
+      sax: 1.4.3
       xmlbuilder: 11.0.1
 
   xmlbuilder@11.0.1: {}

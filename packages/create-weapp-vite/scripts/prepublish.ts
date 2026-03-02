@@ -1,3 +1,5 @@
+import { main as generateTemplateCatalog } from './generate-template-catalog'
 import { main } from './shared'
 
-main()
+await generateTemplateCatalog()
+await main()
