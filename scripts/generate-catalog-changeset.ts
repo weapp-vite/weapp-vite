@@ -8,6 +8,13 @@ import { parse } from 'yaml'
 const WORKSPACE_FILE = 'pnpm-workspace.yaml'
 const CHANGESET_DIR = '.changeset'
 const CHANGESET_README = 'README.md'
+const AUTO_CHANGESET_FILE = path.resolve(CHANGESET_DIR, 'catalog-auto-generated.md')
+const VALID_BUMP_TYPES = new Set(['patch', 'minor', 'major'])
+
+interface CatalogSnapshot {
+  defaultCatalog: Record<string, string>
+  namedCatalogs: Record<string, Record<string, string>>
+}
 
 function runGit(args: string[]) {
   const result = spawnSync('git', args, { encoding: 'utf8' })
@@ -63,16 +70,6 @@ function resolveDiffBase(baseRef: string) {
   }
 }
 
-function getDiffFiles(baseRef: string, pathSpec?: string) {
-  const base = resolveDiffBase(baseRef)
-  const args = ['diff', '--name-only', `${base}...HEAD`]
-  if (pathSpec) {
-    args.push('--', pathSpec)
-  }
-  const output = runGit(args)
-  return output ? output.split('\n').filter(Boolean) : []
-}
-
 function readFileAtRef(ref: string, file: string) {
   const result = spawnSync('git', ['show', `${ref}:${file}`], { encoding: 'utf8' })
   if (result.status !== 0) {
@@ -92,11 +89,6 @@ function toCatalogRecord(value: unknown): Record<string, string> {
     }
   }
   return out
-}
-
-interface CatalogSnapshot {
-  defaultCatalog: Record<string, string>
-  namedCatalogs: Record<string, Record<string, string>>
 }
 
 function parseCatalog(content: string | null): CatalogSnapshot {
@@ -129,6 +121,90 @@ function changedCatalogKeys(before: Record<string, string>, after: Record<string
     }
   }
   return changed.sort()
+}
+
+function changedNamedCatalogKeys(
+  before: Record<string, Record<string, string>>,
+  after: Record<string, Record<string, string>>,
+) {
+  const catalogNames = new Set([...Object.keys(before), ...Object.keys(after)])
+  const result: Record<string, Set<string>> = {}
+
+  for (const catalogName of catalogNames) {
+    const beforeCatalog = before[catalogName] ?? {}
+    const afterCatalog = after[catalogName] ?? {}
+    const changedKeys = changedCatalogKeys(beforeCatalog, afterCatalog)
+    if (changedKeys.length > 0) {
+      result[catalogName] = new Set(changedKeys)
+    }
+  }
+
+  return result
+}
+
+async function collectAffectedPackages(
+  defaultCatalogKeys: string[],
+  namedCatalogChangedKeys: Record<string, Set<string>>,
+) {
+  const packageJsonFiles = await fg(
+    ['packages/**/package.json', '@weapp-core/**/package.json'],
+    {
+      dot: false,
+      onlyFiles: true,
+      ignore: ['**/node_modules/**', '**/test/**'],
+    },
+  )
+
+  const keySet = new Set(defaultCatalogKeys)
+  const sections = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'] as const
+  const affected = new Set<string>()
+
+  for (const file of packageJsonFiles) {
+    const content = await fs.readFile(file, 'utf8')
+    const json = JSON.parse(content) as {
+      name?: string
+      private?: boolean
+      dependencies?: Record<string, string>
+      devDependencies?: Record<string, string>
+      optionalDependencies?: Record<string, string>
+      peerDependencies?: Record<string, string>
+    }
+
+    if (!json.name || json.private === true) {
+      continue
+    }
+
+    let hit = false
+    for (const section of sections) {
+      const deps = json[section]
+      if (!deps) {
+        continue
+      }
+      for (const [depName, depSpec] of Object.entries(deps)) {
+        if (depSpec === 'catalog:' && keySet.has(depName)) {
+          hit = true
+          break
+        }
+
+        if (depSpec.startsWith('catalog:') && depSpec !== 'catalog:') {
+          const namedCatalogName = depSpec.slice('catalog:'.length)
+          if (namedCatalogName && namedCatalogChangedKeys[namedCatalogName]?.has(depName)) {
+            hit = true
+            break
+          }
+        }
+      }
+      if (hit) {
+        break
+      }
+    }
+
+    if (hit) {
+      affected.add(json.name)
+    }
+  }
+
+  return [...affected].sort()
 }
 
 function extractChangesetPackages(content: string) {
@@ -177,94 +253,66 @@ function extractChangesetPackages(content: string) {
   return [...packages]
 }
 
-function changedNamedCatalogKeys(
-  before: Record<string, Record<string, string>>,
-  after: Record<string, Record<string, string>>,
-) {
-  const catalogNames = new Set([...Object.keys(before), ...Object.keys(after)])
-  const result: Record<string, Set<string>> = {}
-
-  for (const catalogName of catalogNames) {
-    const beforeCatalog = before[catalogName] ?? {}
-    const afterCatalog = after[catalogName] ?? {}
-    const changedKeys = changedCatalogKeys(beforeCatalog, afterCatalog)
-    if (changedKeys.length > 0) {
-      result[catalogName] = new Set(changedKeys)
+async function collectManualChangesetPackages() {
+  const files = await fg(`${CHANGESET_DIR}/*.md`, { dot: false, onlyFiles: true })
+  const manualFiles = files.filter((file) => {
+    const filename = path.basename(file)
+    if (filename === CHANGESET_README) {
+      return false
     }
-  }
-
-  return result
-}
-
-async function collectAffectedPackages(
-  defaultCatalogKeys: string[],
-  namedCatalogChangedKeys: Record<string, Set<string>>,
-) {
-  const packageJsonFiles = await fg(['packages/**/package.json'], {
-    dot: false,
-    onlyFiles: true,
-    ignore: ['**/node_modules/**', '**/test/**'],
+    return path.resolve(file) !== AUTO_CHANGESET_FILE
   })
 
-  const keySet = new Set(defaultCatalogKeys)
-  const sections = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'] as const
-  const affected = new Set<string>()
-
-  for (const file of packageJsonFiles) {
-    const content = await fs.readFile(file, 'utf8')
-    const json = JSON.parse(content) as {
-      name?: string
-      private?: boolean
-      dependencies?: Record<string, string>
-      devDependencies?: Record<string, string>
-      optionalDependencies?: Record<string, string>
-    }
-
-    if (!json.name || json.private === true) {
-      continue
-    }
-
-    let hit = false
-    for (const section of sections) {
-      const deps = json[section]
-      if (!deps) {
-        continue
-      }
-      for (const [depName, depSpec] of Object.entries(deps)) {
-        if (depSpec === 'catalog:' && keySet.has(depName)) {
-          hit = true
-          break
-        }
-
-        if (depSpec.startsWith('catalog:') && depSpec !== 'catalog:') {
-          const namedCatalogName = depSpec.slice('catalog:'.length)
-          if (namedCatalogName && namedCatalogChangedKeys[namedCatalogName]?.has(depName)) {
-            hit = true
-            break
-          }
-        }
-      }
-      if (hit) {
-        break
-      }
-    }
-
-    if (hit) {
-      affected.add(json.name)
+  const packages = new Set<string>()
+  for (const file of manualFiles) {
+    const content = await fs.readFile(path.resolve(file), 'utf8')
+    for (const pkg of extractChangesetPackages(content)) {
+      packages.add(pkg)
     }
   }
+  return packages
+}
 
-  return [...affected].sort()
+function resolveBumpType() {
+  const args = process.argv.slice(2)
+  const bumpIndex = args.indexOf('--bump')
+  const rawBump = bumpIndex >= 0 && args[bumpIndex + 1] ? args[bumpIndex + 1] : 'patch'
+  if (!VALID_BUMP_TYPES.has(rawBump)) {
+    throw new Error(`Invalid --bump value: ${rawBump}. Valid values: patch, minor, major`)
+  }
+  return rawBump
+}
+
+function formatAutoChangeset(
+  packages: string[],
+  bumpType: string,
+  changedKeys: string[],
+  changedNamedKeys: Record<string, Set<string>>,
+) {
+  const frontmatter = packages
+    .map(pkg => `'${pkg}': ${bumpType}`)
+    .join('\n')
+
+  const namedCatalogSummary = Object.entries(changedNamedKeys)
+    .map(([catalogName, keys]) => `${catalogName}(${[...keys].sort().join(', ')})`)
+    .join('；')
+
+  const defaultSummary = changedKeys.length > 0 ? changedKeys.join(', ') : '无'
+  const namedSummary = namedCatalogSummary || '无'
+
+  return `---
+${frontmatter}
+---
+
+基于 pnpm-workspace.yaml 中 catalog 版本变更，自动补充发布记录。
+默认 catalog 变更键：${defaultSummary}。命名 catalog 变更键：${namedSummary}。
+`
 }
 
 async function main() {
+  const bumpType = resolveBumpType()
   const baseRef = resolveBaseRef()
   const diffBase = resolveDiffBase(baseRef)
-  const changedFiles = getDiffFiles(baseRef)
-
-  if (!changedFiles.includes(WORKSPACE_FILE)) {
-    return
-  }
 
   const beforeCatalog = parseCatalog(readFileAtRef(diffBase, WORKSPACE_FILE))
   const afterCatalog = parseCatalog(await fs.readFile(WORKSPACE_FILE, 'utf8'))
@@ -273,46 +321,34 @@ async function main() {
   const hasNamedCatalogChanges = Object.keys(changedNamedKeys).length > 0
 
   if (changedKeys.length === 0 && !hasNamedCatalogChanges) {
+    await fs.rm(AUTO_CHANGESET_FILE, { force: true })
     return
   }
 
   const affectedPackages = await collectAffectedPackages(changedKeys, changedNamedKeys)
   if (affectedPackages.length === 0) {
+    await fs.rm(AUTO_CHANGESET_FILE, { force: true })
     return
   }
 
-  const allChangesetFiles = await fg(`${CHANGESET_DIR}/*.md`, {
-    dot: false,
-    onlyFiles: true,
-  })
-  const changedChangesetFiles = allChangesetFiles
-    .filter(file => path.basename(file) !== CHANGESET_README)
+  const manualChangesetPackages = await collectManualChangesetPackages()
+  const missingPackages = affectedPackages.filter(pkg => !manualChangesetPackages.has(pkg))
 
-  const changesetPackages = new Set<string>()
-  for (const file of changedChangesetFiles) {
-    const content = await fs.readFile(path.resolve(file), 'utf8')
-    for (const pkg of extractChangesetPackages(content)) {
-      changesetPackages.add(pkg)
-    }
+  if (missingPackages.length === 0) {
+    await fs.rm(AUTO_CHANGESET_FILE, { force: true })
+    return
   }
 
-  const missing = affectedPackages.filter(pkg => !changesetPackages.has(pkg))
-  if (missing.length > 0) {
-    const namedCatalogSummary = Object.entries(changedNamedKeys)
-      .map(([catalogName, keys]) => `${catalogName}: ${[...keys].join(', ')}`)
-      .join('; ')
+  const content = formatAutoChangeset(
+    missingPackages,
+    bumpType,
+    changedKeys,
+    changedNamedKeys,
+  )
 
-    console.error(
-      [
-        `Catalog keys changed: ${changedKeys.join(', ')}`,
-        `Named catalog keys changed: ${namedCatalogSummary || 'none'}`,
-        `Affected publishable packages: ${affectedPackages.join(', ')}`,
-        `Missing in changesets: ${missing.join(', ')}`,
-        'Please add .changeset entries for all affected packages.',
-      ].join('\n'),
-    )
-    process.exitCode = 1
-  }
+  await fs.mkdir(path.dirname(AUTO_CHANGESET_FILE), { recursive: true })
+  await fs.writeFile(AUTO_CHANGESET_FILE, content, 'utf8')
+  console.log(`Generated ${AUTO_CHANGESET_FILE} for packages: ${missingPackages.join(', ')}`)
 }
 
 await main()
