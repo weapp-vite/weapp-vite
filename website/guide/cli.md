@@ -180,9 +180,11 @@ weapp-vite mcp
 示例：
 
 ```bash
-weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite
+weapp-vite mcp
 weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
 ```
+
+不在仓库目录执行时，可选追加 `--workspace-root /path/to/weapp-vite`。
 
 ## `weapp-ide-cli` 透传规则
 
