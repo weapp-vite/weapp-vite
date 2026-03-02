@@ -34,12 +34,12 @@ const mcpActions = [
 const mcpCommands = [
   {
     title: 'stdio（推荐）',
-    code: 'weapp-vite mcp --workspace-root /absolute/path/to/weapp-vite',
+    code: 'weapp-vite mcp',
     key: 'mcp-stdio',
   },
   {
     title: 'streamable-http（URL 连接）',
-    code: 'weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp --workspace-root /absolute/path/to/weapp-vite',
+    code: 'weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp',
     key: 'mcp-http',
   },
 ]
