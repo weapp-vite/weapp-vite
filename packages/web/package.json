@@ -51,15 +51,15 @@
     "test:dev": "vitest"
   },
   "dependencies": {
-    "@babel/parser": "^7.29.0",
-    "@babel/traverse": "^7.29.0",
-    "@babel/types": "^7.29.0",
+    "@babel/parser": "catalog:",
+    "@babel/traverse": "catalog:",
+    "@babel/types": "catalog:",
     "domhandler": "^5.0.3",
-    "fs-extra": "^11.3.3",
-    "htmlparser2": "^10.1.0",
+    "fs-extra": "catalog:",
+    "htmlparser2": "catalog:",
     "lit": "^3.3.1",
-    "magic-string": "^0.30.21",
-    "pathe": "^2.0.3",
+    "magic-string": "catalog:",
+    "pathe": "catalog:",
     "rolldown-require": "workspace:*"
   }
 }

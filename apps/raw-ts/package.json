@@ -8,9 +8,9 @@
   "keywords": [],
   "scripts": {},
   "dependencies": {
-    "tdesign-miniprogram": "^1.12.3"
+    "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^5.1.1"
+    "miniprogram-api-typings": "catalog:"
   }
 }

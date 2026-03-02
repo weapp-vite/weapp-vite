@@ -72,10 +72,8 @@ describe('createProject', () => {
 
     await createProject(root, TemplateName.tailwindcss)
 
-    const templateRoot = path.resolve(import.meta.dirname, '../templates', TemplateName.tailwindcss)
-    const templatePkgJson = await fs.readJSON(path.join(templateRoot, 'package.json'))
     const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
-    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe(templatePkgJson.devDependencies['weapp-tailwindcss'])
+    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^4.10.3')
     const gitignore = await fs.readFile(path.join(root, '.gitignore'), 'utf8')
     expect(gitignore).toContain('# existing entry')
     expect(await fs.pathExists(path.join(root, 'gitignore'))).toBe(false)
@@ -211,5 +209,47 @@ describe('createProject', () => {
     expect(pkgJson.devDependencies['weapp-vite']).toBe(`^${weappViteVersion}`)
     expect(pkgJson.dependencies.wevu).toBe(`^${wevuVersion}`)
     expect(pkgJson.devDependencies.wevu).toBe(`^${wevuVersion}`)
+  })
+
+  it('resolves catalog dependency placeholders from template package', async () => {
+    const root = await createTmpRoot('catalog-specs')
+    const templatePath = path.resolve(import.meta.dirname, '../templates', TemplateName.default)
+    const templatePackagePath = path.join(templatePath, 'package.json')
+    const originalReadJSON = fs.readJSON.bind(fs)
+
+    vi.spyOn(fs, 'readJSON').mockImplementation(async (value) => {
+      if (value === templatePackagePath) {
+        return {
+          name: 'catalog-specs',
+          dependencies: {
+            '@vant/weapp': 'catalog:',
+            'tdesign-miniprogram': 'catalog:tdesign-miniprogram-fixed',
+          },
+          devDependencies: {
+            'tailwindcss': 'catalog:tailwind4',
+            'typescript': 'catalog:latest',
+            'miniprogram-api-typings': 'catalog:',
+            'postcss': 'workspace:^8.5.6',
+            'sass': 'workspace:*',
+            'weapp-vite': 'workspace:*',
+          },
+        }
+      }
+      return originalReadJSON(value as any)
+    })
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, TemplateName.default)
+    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+
+    expect(pkgJson.dependencies['@vant/weapp']).toBe('^1.11.7')
+    expect(pkgJson.dependencies['tdesign-miniprogram']).toBe('1.12.3')
+    expect(pkgJson.devDependencies['tailwindcss']).toBe('^4.2.1')
+    expect(pkgJson.devDependencies['typescript']).toBe('^5.9.3')
+    expect(pkgJson.devDependencies['miniprogram-api-typings']).toBe('^5.1.1')
+    expect(pkgJson.devDependencies['postcss']).toBe('^8.5.6')
+    expect(pkgJson.devDependencies['sass']).toBe('^1.97.3')
+    expect(pkgJson.devDependencies['weapp-vite']).not.toContain('workspace:')
+    expect(pkgJson.devDependencies['weapp-vite']).not.toContain('catalog:')
   })
 })

@@ -12,15 +12,15 @@
     "open": "weapp-vite open"
   },
   "dependencies": {
-    "@vant/weapp": "^1.11.7",
-    "tdesign-miniprogram": "^1.12.3",
+    "@vant/weapp": "catalog:",
+    "tdesign-miniprogram": "catalog:",
     "wevu": "workspace:*"
   },
   "devDependencies": {
     "@weapp-core/schematics": "workspace:*",
     "@weapp-vite/volar": "workspace:*",
-    "miniprogram-api-typings": "latest",
-    "typescript": "latest",
+    "miniprogram-api-typings": "catalog:latest",
+    "typescript": "catalog:latest",
     "weapp-vite": "workspace:*"
   }
 }

@@ -14,13 +14,13 @@
     "g": "weapp-vite generate"
   },
   "dependencies": {
-    "dayjs": "^1.9.3",
-    "tdesign-miniprogram": "1.12.3",
-    "tslib": "^2.8.1"
+    "dayjs": "catalog:",
+    "tdesign-miniprogram": "catalog:tdesign-miniprogram-fixed",
+    "tslib": "catalog:"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^5.1.1",
-    "typescript": "^5.9.3",
+    "miniprogram-api-typings": "catalog:",
+    "typescript": "catalog:",
     "weapp-vite": "workspace:*"
   }
 }

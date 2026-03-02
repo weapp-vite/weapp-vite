@@ -9,9 +9,9 @@
     "build": "weapp-vite build"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.2.1",
-    "tailwindcss": "^4.2.1",
-    "weapp-tailwindcss": "4.10.3",
+    "@tailwindcss/postcss": "catalog:",
+    "tailwindcss": "catalog:tailwind4",
+    "weapp-tailwindcss": "catalog:weapp-tailwindcss-fixed",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

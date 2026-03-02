@@ -32,11 +32,12 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
+    "catalog:sync": "node --import tsx scripts/generate-template-catalog.ts",
     "dev": "tsup --watch --sourcemap",
     "build": "tsup",
     "test": "vitest run",
     "test:dev": "vitest",
-    "prepublishOnly": "tsx scripts/prepublish.ts && pnpm build",
+    "prepublishOnly": "node --import tsx scripts/prepublish.ts && pnpm build",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
@@ -56,8 +57,8 @@
   "dependencies": {
     "@inquirer/prompts": "^8.3.0",
     "@weapp-core/logger": "workspace:^",
-    "fs-extra": "^11.3.3",
-    "pathe": "^2.0.3",
-    "pkg-types": "^2.3.0"
+    "fs-extra": "catalog:",
+    "pathe": "catalog:",
+    "pkg-types": "catalog:"
   }
 }

@@ -50,20 +50,20 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@babel/generator": "^7.29.1",
-    "@babel/parser": "^7.29.0",
-    "@babel/traverse": "^7.29.0",
-    "@babel/types": "^7.29.0",
-    "@vue/compiler-core": "^3.5.29",
+    "@babel/generator": "catalog:",
+    "@babel/parser": "catalog:",
+    "@babel/traverse": "catalog:",
+    "@babel/types": "catalog:",
+    "@vue/compiler-core": "catalog:",
     "@weapp-core/shared": "workspace:*",
-    "comment-json": "^4.5.1",
-    "fs-extra": "^11.3.3",
-    "lru-cache": "^11.2.6",
-    "magic-string": "^0.30.21",
-    "merge": "^2.1.1",
-    "pathe": "^2.0.3",
+    "comment-json": "catalog:",
+    "fs-extra": "catalog:",
+    "lru-cache": "catalog:",
+    "magic-string": "catalog:",
+    "merge": "catalog:",
+    "pathe": "catalog:",
     "rolldown-require": "workspace:*",
-    "vue": "^3.5.29"
+    "vue": "catalog:"
   },
   "publishConfig": {
     "access": "public",

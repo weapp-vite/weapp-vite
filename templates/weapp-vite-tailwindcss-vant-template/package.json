@@ -24,18 +24,18 @@
     "postinstall": "weapp-tw patch"
   },
   "dependencies": {
-    "@vant/weapp": "^1.11.7"
+    "@vant/weapp": "catalog:"
   },
   "devDependencies": {
-    "@egoist/tailwindcss-icons": "^1.9.2",
-    "@iconify-json/mdi": "^1.2.3",
-    "autoprefixer": "^10.4.27",
-    "miniprogram-api-typings": "^5.1.1",
-    "postcss": "^8.5.6",
-    "sass": "^1.97.3",
-    "tailwindcss": "^3.4.19",
-    "typescript": "^5.9.3",
-    "weapp-tailwindcss": "^4.10.3",
+    "@egoist/tailwindcss-icons": "catalog:",
+    "@iconify-json/mdi": "catalog:",
+    "autoprefixer": "catalog:",
+    "miniprogram-api-typings": "catalog:",
+    "postcss": "catalog:",
+    "sass": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*"
   }
 }

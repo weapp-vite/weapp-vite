@@ -14,8 +14,8 @@
   "devDependencies": {
     "@weapp-core/schematics": "workspace:*",
     "@weapp-vite/volar": "workspace:*",
-    "miniprogram-api-typings": "latest",
-    "typescript": "latest",
+    "miniprogram-api-typings": "catalog:latest",
+    "typescript": "catalog:latest",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

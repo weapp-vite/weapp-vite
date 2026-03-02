@@ -63,7 +63,7 @@
     "types": "./dist/index.d.ts"
   },
   "dependencies": {
-    "object-hash": "^3.0.0"
+    "object-hash": "catalog:"
   },
   "devDependencies": {}
 }

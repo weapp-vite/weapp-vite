@@ -24,19 +24,19 @@
     "postinstall": "weapp-tw patch"
   },
   "dependencies": {
-    "dayjs": "^1.9.3",
-    "tdesign-miniprogram": "1.12.3",
-    "tslib": "^2.8.1",
+    "dayjs": "catalog:",
+    "tdesign-miniprogram": "catalog:tdesign-miniprogram-fixed",
+    "tslib": "catalog:",
     "wevu": "workspace:*"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.27",
-    "miniprogram-api-typings": "^5.1.1",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.19",
-    "typescript": "^5.9.3",
-    "vue-tsc": "^3.2.5",
-    "weapp-tailwindcss": "^4.10.3",
+    "autoprefixer": "catalog:",
+    "miniprogram-api-typings": "catalog:",
+    "postcss": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:",
+    "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*"
   }
 }

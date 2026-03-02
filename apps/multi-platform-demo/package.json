@@ -38,9 +38,9 @@
     "g": "weapp-vite generate"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^5.1.1",
-    "sass": "^1.97.3",
-    "typescript": "^5.9.3",
+    "miniprogram-api-typings": "catalog:",
+    "sass": "catalog:",
+    "typescript": "catalog:",
     "weapp-vite": "workspace:*"
   }
 }

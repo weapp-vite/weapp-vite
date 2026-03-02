@@ -24,10 +24,10 @@
     "build-npm": "weapp-vite build-npm"
   },
   "dependencies": {
-    "gm-crypto": "^0.1.12"
+    "gm-crypto": "catalog:"
   },
   "devDependencies": {
-    "miniprogram-api-typings": "^5.1.1",
+    "miniprogram-api-typings": "catalog:",
     "weapp-vite": "workspace:*"
   }
 }
