@@ -23,6 +23,9 @@ export default defineProject({
     coverage: {
       enabled: true,
       all: false,
+      exclude: [
+        '**/dist/**',
+      ],
     },
   },
 })

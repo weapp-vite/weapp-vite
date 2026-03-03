@@ -16,6 +16,7 @@ export default defineProject({
       reporter: ['text', 'lcov'],
       exclude: [
         'src/index.ts', // pure export barrel, exclude from coverage
+        '**/dist/**',
       ],
     },
   },
