@@ -489,7 +489,7 @@ export function createPackageBuilder(
         outDir,
         emptyOutDir: true,
         sourcemap: false,
-        minify: true,
+        minify: false,
         target: 'es6',
         rolldownOptions: {
           external: [],

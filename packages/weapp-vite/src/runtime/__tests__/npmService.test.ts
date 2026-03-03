@@ -40,7 +40,7 @@ describe('npmService bundleBuild', () => {
     return ctx
   }
 
-  it('enables minify and targets es6 in dev mode', async () => {
+  it('defaults minify to false and targets es6 in dev mode', async () => {
     const ctx = createContext(true)
     createNpmServicePlugin(ctx)
     await ctx.npmService!.bundleBuild({
@@ -50,13 +50,13 @@ describe('npmService bundleBuild', () => {
     })
     expect(buildMock).toHaveBeenCalledWith(expect.objectContaining({
       build: expect.objectContaining({
-        minify: true,
+        minify: false,
         target: 'es6',
       }),
     }))
   })
 
-  it('keeps minify enabled in production', async () => {
+  it('keeps minify disabled by default in production', async () => {
     const ctx = createContext(false)
     createNpmServicePlugin(ctx)
     await ctx.npmService!.bundleBuild({
@@ -66,7 +66,7 @@ describe('npmService bundleBuild', () => {
     })
     expect(buildMock).toHaveBeenCalledWith(expect.objectContaining({
       build: expect.objectContaining({
-        minify: true,
+        minify: false,
         target: 'es6',
       }),
     }))
@@ -78,7 +78,7 @@ describe('npmService bundleBuild', () => {
         ...options,
         build: {
           ...options.build,
-          minify: false,
+          minify: true,
           sourcemap: true,
         },
       }
@@ -91,7 +91,7 @@ describe('npmService bundleBuild', () => {
     })
     expect(buildMock).toHaveBeenCalledWith(expect.objectContaining({
       build: expect.objectContaining({
-        minify: false,
+        minify: true,
         sourcemap: true,
       }),
     }))
