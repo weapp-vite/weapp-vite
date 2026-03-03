@@ -160,7 +160,7 @@ describe('runtime npm package builder core', () => {
     expect(getPackageInfoMock).not.toHaveBeenCalledWith('lodash')
   })
 
-  it('copies entry sourcemap into output when source entry has sourcemap', async () => {
+  it('does not copy upstream entry sourcemap after rebundling npm package', async () => {
     const root = await createTempDir()
     const sourceEntry = path.resolve(root, 'demo/index.js')
     const sourceMapPath = `${sourceEntry}.map`
@@ -187,11 +187,10 @@ describe('runtime npm package builder core', () => {
     })
 
     const copiedMapPath = path.resolve(root, 'dist/miniprogram_npm/demo/index.js.map')
-    expect(await fs.pathExists(copiedMapPath)).toBe(true)
-    expect(await fs.readFile(copiedMapPath, 'utf8')).toContain('"sources":["index.ts"]')
+    expect(await fs.pathExists(copiedMapPath)).toBe(false)
   })
 
-  it('backfills entry sourcemap without rebundling when cache is valid', async () => {
+  it('does not backfill upstream sourcemap when non-miniprogram cache is valid', async () => {
     const root = await createTempDir()
     const sourceEntry = path.resolve(root, 'demo/index.js')
     const sourceMapPath = `${sourceEntry}.map`
@@ -228,8 +227,7 @@ describe('runtime npm package builder core', () => {
 
     expect(viteBuildMock).not.toHaveBeenCalled()
     const copiedMapPath = path.resolve(outDir, 'index.js.map')
-    expect(await fs.pathExists(copiedMapPath)).toBe(true)
-    expect(await fs.readFile(copiedMapPath, 'utf8')).toContain('"sources":["index.ts"]')
+    expect(await fs.pathExists(copiedMapPath)).toBe(false)
   })
 
   it('skips non-miniprogram rebuild when output entry is newer than source entry', async () => {

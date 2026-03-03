@@ -3,4 +3,4 @@
 'create-weapp-vite': patch
 ---
 
-优化 npm 构建产物 sourcemap 处理：当依赖打包入口存在 sourcemap（`sourceMappingURL` 指向的文件或同名 `.map`）时，`weapp-vite` 会将其同步复制到对应的 `miniprogram_npm/<dep>/index.js.map`。在命中缓存跳过重打包时，若仅缺失该 map 文件也会自动补齐，便于小程序端调试定位。
+修复 npm 重打包场景 sourcemap 错位问题：对于会被 `weapp-vite` 二次打包的普通依赖，不再复制上游入口自带的 sourcemap 到 `miniprogram_npm`，避免出现 `index.js` 与 `index.js.map` 映射不一致。若需要调试 map，应通过 `weapp.npm.buildOptions` 为最终产物显式开启 `build.sourcemap` 生成。

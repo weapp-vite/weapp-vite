@@ -135,55 +135,6 @@ function hasEsmSyntax(source: string) {
   return /\bimport\s|\bexport\s/.test(source)
 }
 
-function extractSourceMappingUrl(source: string) {
-  const pattern = /\/\/[#@]\s*sourceMappingURL=(\S+)|\/\*[#@]\s*sourceMappingURL=([^*\s]+)\s*\*\//g
-  let lastReference = ''
-  while (true) {
-    const match = pattern.exec(source)
-    if (!match) {
-      break
-    }
-    lastReference = (match[1] ?? match[2] ?? '').trim()
-  }
-  return lastReference || null
-}
-
-async function resolveEntrySourceMapPath(entryPath: string) {
-  try {
-    const entrySource = await fs.readFile(entryPath, 'utf8')
-    const sourceMappingUrl = extractSourceMappingUrl(entrySource)
-    if (sourceMappingUrl && !sourceMappingUrl.startsWith('data:')) {
-      const referencedMapPath = path.resolve(path.dirname(entryPath), sourceMappingUrl)
-      if (await fs.pathExists(referencedMapPath)) {
-        return referencedMapPath
-      }
-    }
-  }
-  catch {
-    // ignore
-  }
-
-  const siblingMapPath = `${entryPath}.map`
-  if (await fs.pathExists(siblingMapPath)) {
-    return siblingMapPath
-  }
-
-  return null
-}
-
-async function syncEntrySourceMapToOutput(entryPath: string, outDir: string) {
-  const sourceMapPath = await resolveEntrySourceMapPath(entryPath)
-  if (!sourceMapPath) {
-    return false
-  }
-
-  await fs.ensureDir(outDir)
-  await fs.copy(sourceMapPath, path.resolve(outDir, 'index.js.map'), {
-    overwrite: true,
-  })
-  return true
-}
-
 function rewriteAlipayWxmlSyntax(source: string) {
   return source
     .replace(/\bwx:(if|elif|else|for|for-item|for-index|key)\b/g, (_, directive: string) => `a:${directive}`)
@@ -662,16 +613,6 @@ export function createPackageBuilder(
         if (await fs.pathExists(destEntry)) {
           const [srcStat, destStat] = await Promise.all([fs.stat(index), fs.stat(destEntry)])
           if (srcStat.mtimeMs <= destStat.mtimeMs) {
-            const destSourceMapPath = path.resolve(destOutDir, 'index.js.map')
-            if (await fs.pathExists(destSourceMapPath)) {
-              npmLogger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
-              return
-            }
-            const copied = await syncEntrySourceMapToOutput(index, destOutDir)
-            if (copied) {
-              npmLogger.info(`[npm] 依赖 \`${dep}\` 未发生变化，已补充 sourcemap。`)
-              return
-            }
             npmLogger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
             return
           }
@@ -685,7 +626,6 @@ export function createPackageBuilder(
         options,
         outDir: destOutDir,
       })
-      await syncEntrySourceMapToOutput(index, destOutDir)
       if (keys.length > 0) {
         await Promise.all(
           keys.filter(x => isBuiltin(x)).map((x) => {
