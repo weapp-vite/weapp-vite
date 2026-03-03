@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { config } from '../../config/index'
 import { getCategoryList as getCategoryListModel } from '../../model/category'
 import { delay } from '../_utils/delay'

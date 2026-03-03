@@ -1,11 +1,33 @@
-// @ts-nocheck
 import Dialog from 'tdesign-miniprogram/dialog/index'
 import Toast from 'tdesign-miniprogram/toast/index'
 
 import { dispatchCommitPay } from '../../../services/order/orderConfirm'
 
+interface CommitPayParams {
+  goodsRequestList: unknown[]
+  invoiceRequest?: unknown
+  userAddressReq?: unknown
+  currency?: string
+  logisticsType?: number
+  orderType?: number
+  payType?: number
+  totalAmount?: number
+  userName?: string
+  storeInfoList?: unknown[]
+  couponList?: unknown[]
+  groupInfo?: unknown
+}
+
+interface PayOrderInfo {
+  payAmt: number | string
+  tradeNo: string
+  groupId?: string
+  promotionId?: string
+  dialogOnCancel?: boolean
+}
+
 // 真实的提交支付
-export function commitPay(params) {
+export function commitPay(params: CommitPayParams) {
   return dispatchCommitPay({
     goodsRequestList: params.goodsRequestList, // 待结算的商品集合
     invoiceRequest: params.invoiceRequest, // 发票信息
@@ -26,7 +48,7 @@ export function commitPay(params) {
   })
 }
 
-export function paySuccess(payOrderInfo) {
+export function paySuccess(payOrderInfo: PayOrderInfo) {
   const { payAmt, tradeNo, groupId, promotionId } = payOrderInfo
   // 支付成功
   Toast({
@@ -37,7 +59,7 @@ export function paySuccess(payOrderInfo) {
     icon: 'check-circle',
   })
 
-  const params = {
+  const params: Record<string, string | number> = {
     totalPaid: payAmt,
     orderNo: tradeNo,
   }
@@ -96,7 +118,7 @@ export function payFail(payOrderInfo, resultMsg) {
 export function wechatPayOrder(payOrderInfo) {
   // const payInfo = JSON.parse(payOrderInfo.payInfo);
   // const { timeStamp, nonceStr, signType, paySign } = payInfo;
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve) => {
     // demo 中直接走支付成功
     paySuccess(payOrderInfo)
     resolve()

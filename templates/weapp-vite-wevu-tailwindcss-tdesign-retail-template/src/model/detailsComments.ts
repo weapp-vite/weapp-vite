@@ -1,4 +1,4 @@
-export function getGoodsDetailsComments() {
+export function getGoodsDetailsComments(_spuId = 0) {
   return {
     homePageComments: [
       {
@@ -17,7 +17,7 @@ export function getGoodsDetailsComments() {
   }
 }
 
-export function getGoodsDetailsCommentsCount() {
+export function getGoodsDetailsCommentsCount(_spuId = 0) {
   return {
     commentCount: '47',
     badCount: '0',

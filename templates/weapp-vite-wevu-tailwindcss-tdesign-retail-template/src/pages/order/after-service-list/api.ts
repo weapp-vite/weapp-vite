@@ -1,4 +1,3 @@
-// @ts-nocheck
 /* eslint-disable */
 import { mockIp, mockReqId } from '../../../utils/mock';
 

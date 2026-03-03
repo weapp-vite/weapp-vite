@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { config } from '../../config/index'
 import { applyService, genApplyReasonList, genRightsPreview } from '../../model/order/applyService'
 import { delay } from '../_utils/delay'

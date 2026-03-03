@@ -1,6 +1,10 @@
-// @ts-nocheck
-function getPermission({ code, name }) {
-  return new Promise((resolve, reject) => {
+interface PermissionOptions {
+  code: string
+  name: string
+}
+
+export function getPermission({ code, name }: PermissionOptions) {
+  return new Promise<void>((resolve, reject) => {
     wx.getSetting({
       success: (res) => {
         if (res.authSetting[code] === false) {
@@ -42,8 +46,4 @@ function getPermission({ code, name }) {
       },
     })
   })
-}
-
-module.exports = {
-  getPermission,
 }

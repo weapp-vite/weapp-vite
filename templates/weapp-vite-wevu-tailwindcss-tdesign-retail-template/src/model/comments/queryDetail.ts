@@ -45,6 +45,6 @@ const queryDetail = {
  * @param {string} spuId
  * @param {string} orderNo
  */
-export function queryCommentDetail() {
+export function queryCommentDetail(_params?: unknown) {
   return queryDetail
 }

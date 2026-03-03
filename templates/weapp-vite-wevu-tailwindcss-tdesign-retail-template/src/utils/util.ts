@@ -1,7 +1,6 @@
-// @ts-nocheck
 import dayjs from 'dayjs'
 
-const formatTime = (date, template) => dayjs(date).format(template)
+const formatTime = (date: dayjs.ConfigType, template: string) => dayjs(date).format(template)
 
 /**
  * 格式化价格数额为字符串
@@ -9,13 +8,13 @@ const formatTime = (date, template) => dayjs(date).format(template)
  * @param price 价格数额，以分为单位!
  * @param fill 是否填充小数部分 0-不填充 1-填充第一位小数 2-填充两位小数
  */
-function priceFormat(price, fill = 0) {
-  if (isNaN(price) || price === null || price === Infinity) {
+function priceFormat(price: number | string | null, fill = 0) {
+  if (Number.isNaN(Number(price)) || price === null || price === Infinity) {
     return price
   }
 
-  let priceFormatValue = Math.round(Number.parseFloat(`${price}`) * 10 ** 8) / 10 ** 8 // 恢复精度丢失
-  priceFormatValue = `${Math.ceil(priceFormatValue) / 100}` // 向上取整，单位转换为元，转换为字符串
+  const normalizedValue = Math.round(Number.parseFloat(`${price}`) * 10 ** 8) / 10 ** 8 // 恢复精度丢失
+  let priceFormatValue = `${Math.ceil(normalizedValue) / 100}` // 向上取整，单位转换为元，转换为字符串
   if (fill > 0) {
     // 补充小数位数
     if (!priceFormatValue.includes('.')) {
@@ -36,7 +35,7 @@ function priceFormat(price, fill = 0) {
  * @param {number} width 宽度，单位px
  * @param {number} [height] 可选，高度，不填时与width同值
  */
-function cosThumb(url, width, height = width) {
+function cosThumb(url: string, width: number, height = width) {
   if (url.includes('?')) {
     return url
   }
@@ -48,7 +47,7 @@ function cosThumb(url, width, height = width) {
   return `${url}?imageMogr2/thumbnail/${~~width}x${~~height}`
 }
 
-function get(source, paths, defaultValue) {
+function get(source: any, paths: string | string[], defaultValue: unknown) {
   if (typeof paths === 'string') {
     paths = paths
       .replace(/\[/g, '.')
@@ -71,7 +70,8 @@ export function loadSystemWidth() {
   }
 
   try {
-    ({ screenWidth: systemWidth, pixelRatio } = wx.getSystemInfoSync())
+    const { screenWidth } = wx.getSystemInfoSync()
+    systemWidth = screenWidth
   }
   catch (e) {
     systemWidth = 0
@@ -87,7 +87,7 @@ export function loadSystemWidth() {
  * - 布局(width: 172rpx)已经写好, 某些组件只接受px作为style或者prop指定
  *
  */
-function rpx2px(rpx, round = false) {
+function rpx2px(rpx: number, round = false) {
   loadSystemWidth()
 
   // px / systemWidth = rpx / 750
@@ -105,7 +105,7 @@ function rpx2px(rpx, round = false) {
  * @param {string} phone 电话号
  * @returns
  */
-function phoneEncryption(phone) {
+function phoneEncryption(phone: string) {
   return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
 }
 
@@ -119,7 +119,7 @@ const innerPhoneReg
  * @param phoneReg 正则字符串
  * @returns true - 校验通过 false - 校验失败
  */
-function phoneRegCheck(phone) {
+function phoneRegCheck(phone: string) {
   const phoneRegExp = new RegExp(innerPhoneReg)
   return phoneRegExp.test(phone)
 }

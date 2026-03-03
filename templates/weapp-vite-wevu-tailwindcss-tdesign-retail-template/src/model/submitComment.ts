@@ -1,4 +1,4 @@
-export function getGoods() {
+export function getGoods(_parameter?: unknown) {
   return {
     goods: [
       {

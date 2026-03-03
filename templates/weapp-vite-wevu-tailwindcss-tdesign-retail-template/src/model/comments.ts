@@ -285,7 +285,7 @@ export function getGoodsAllComments(params) {
   }
 }
 
-export function getGoodsCommentsCount() {
+export function getGoodsCommentsCount(_spuId = 0) {
   return {
     commentCount: '47',
     badCount: '0',

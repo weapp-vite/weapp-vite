@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { config } from '../../config/index'
 import {
   getGoodsDetailsComments,
