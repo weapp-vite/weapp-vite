@@ -1,5 +1,37 @@
 # create-weapp-vite
 
+## 2.0.41
+
+### Patch Changes
+
+- 🐛 **修复在 `setup()` 返回 `getCurrentSetupContext()` 时可能进入 `setData` 快照并触发递归爆栈的问题，同时补充对应回归测试，并将 composition api 的 weapp e2e 用例拆分为可单独执行的页面级 case。** [`8b76120`](https://github.com/weapp-vite/weapp-vite/commit/8b761206940c4e99c1f65b3663898660f448714d) by @sonofmagic
+
+- 🐛 **本次变更主要修复了三类一致性与可维护性问题：一是 `wevu` 构建默认产物此前仅压缩且缺少 sourcemap，不利于排查线上问题，现调整为输出 sourcemap 以提升调试可观测性；二是 `weapp-vite` 侧 `oxc-parser` 与类型依赖升级到同一版本，降低 AST 解析与类型不匹配带来的潜在风险；三是同步更新 workspace catalog 与 `create-weapp-vite` 生成 catalog，避免模板初始化时依赖版本与仓库主线不一致。** [`17f30b1`](https://github.com/weapp-vite/weapp-vite/commit/17f30b169337d5bc015a46841807f964cc1e140f) by @sonofmagic
+
+- 🐛 **修复 `@wevu/compiler` 在 `defineOptions` 与组件事件内联表达式组合场景下的注入缺陷：当组件选项通过 spread 合并且 `methods` 来自 spread 对象时，内联事件映射会新增同名 `methods` 键导致原方法被覆盖，进而在模板中触发 `@change="onChange"` 时出现 `onChange is not a function`。本次调整为按 spread 来源合并 `methods` 后再注入 `__weapp_vite_inline_map`，并恢复零售模板 tabbar 使用标准 Vue 事件写法，避免运行时方法丢失。** [`662630e`](https://github.com/weapp-vite/weapp-vite/commit/662630e7c12e49bf783d7e728618fbbad863ff3b) by @sonofmagic
+
+- 🐛 **统一调整 `weapp-vite-wevu-tailwindcss-tdesign-retail-template` 的 wevu 组件默认样式隔离配置为 `apply-shared`，使组件能够继承 `src/app.vue` 中的全局样式（如 Tailwind 基础样式与全局工具类），减少组件样式隔离导致的全局样式失效问题。** [`00795fc`](https://github.com/weapp-vite/weapp-vite/commit/00795fc409abcc98ea50a607f0f228215faedeb3) by @sonofmagic
+
+- 🐛 **继续收敛 `weapp-vite-wevu-tailwindcss-tdesign-retail-template` 的类型与静态检查问题：移除模板 `src` 中的 `@ts-nocheck`，补齐 mock 工具与服务/模型函数签名，修复订单与优惠券相关类型不一致及重复字段定义，确保模板在默认配置下稳定通过 `typecheck`、`eslint` 与 `build`。** [`0f45e72`](https://github.com/weapp-vite/weapp-vite/commit/0f45e7265589e63472b73834e1f6fd91cf4134a9) by @sonofmagic
+
+- 🐛 **修复了 `defineOptions` 静态内联在模板项目中的编译问题：当配置对象中包含对象方法写法（如 `data() {}`）或内置构造器类型（如 `String`/`Number`）时，之前可能被错误序列化为不可解析代码或被误判为不支持的原生函数。此次同时收敛了 defineOptions 依赖提取范围，避免仅在方法体中使用的模块被提前求值导致构建失败。并同步保留零售模板的 TypeScript 路径映射配置，确保模板工程一致性。** [`8184b9f`](https://github.com/weapp-vite/weapp-vite/commit/8184b9f12b9aafb18292516cb03102db074c9c43) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 包内多处 TypeScript 类型问题，并收敛包级 `tsc` 检查范围到发布源码：** [`3740446`](https://github.com/weapp-vite/weapp-vite/commit/3740446500162e10495ed087e8c6f5c89bbd0f85) by @sonofmagic
+  - 修正 npm 打包器中 Babel 导出节点与支付宝 npm 模式的类型不匹配；
+  - 修正路由监听事件分支、lib 入口类型回退、作用域插槽平台配置空值判断与共享构建输出回调参数类型；
+  - 修正自动导入产物同步时 `outputPath` 缩窄后的可空类型告警；
+  - `packages/weapp-vite/tsconfig.json` 排除 `*.test.ts` 与 `test/`，避免测试夹具类型噪音干扰包级 typecheck。
+
+- 🐛 **清理 `weapp-vite-wevu-tailwindcss-tdesign-retail-template` 中 `useNativeInstance()` 的 `as any` 断言，统一使用默认推断类型调用，减少模板示例中的宽泛类型逃逸，便于后续按运行时 API 做精确类型收敛与维护。** [`8313ac5`](https://github.com/weapp-vite/weapp-vite/commit/8313ac52cd0bcd51b04838b0e8fce0b408b29e99) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite-wevu-tailwindcss-tdesign-retail-template` 首页相关组件在异步回调中调用 `useNativeInstance()` 导致的运行时错误。将 `useNativeInstance()` 收敛到 `setup()` 同步阶段调用，并在后续异步逻辑中复用实例，避免出现 “必须在 setup() 的同步阶段调用” 异常，提升模板初始化与页面渲染稳定性。** [`4a0f1b6`](https://github.com/weapp-vite/weapp-vite/commit/4a0f1b6ef09edd902afb44566b8a16f4c7749449) by @sonofmagic
+
+- 🐛 **清理并收敛 `weapp-vite-wevu-tailwindcss-tdesign-retail-template` 模板源码中的 TypeScript 与 ESLint 问题：统一模板内 Vue SFC 书写形态、修正一批服务层导入与类型冲突、补齐兼容性配置以保证模板在默认环境下可稳定通过 `typecheck`、`eslint` 与 `build`，降低初始化后首次二次开发的错误成本。** [`9ea6d78`](https://github.com/weapp-vite/weapp-vite/commit/9ea6d7873a9027d88760eb65d26183c1fd2c2328) by @sonofmagic
+
+- 🐛 **调整 npm 构建默认压缩策略：`weapp-vite` 的 npm 打包产物默认不再压缩（`build.minify` 默认值从 `true` 改为 `false`），以便在小程序端更容易排查依赖代码问题。若有体积优化需求，仍可通过 `weapp.npm.buildOptions` 显式覆盖为 `minify: true`。** [`e621560`](https://github.com/weapp-vite/weapp-vite/commit/e6215606f17d67a8f6f524c963d35531f184d94e) by @sonofmagic
+
+- 🐛 **修复 npm 重打包场景 sourcemap 错位问题：对于会被 `weapp-vite` 二次打包的普通依赖，不再复制上游入口自带的 sourcemap 到 `miniprogram_npm`，避免出现 `index.js` 与 `index.js.map` 映射不一致。若需要调试 map，应通过 `weapp.npm.buildOptions` 为最终产物显式开启 `build.sourcemap` 生成。** [`e065c65`](https://github.com/weapp-vite/weapp-vite/commit/e065c6579defdb89a81231b97847d2f09c02d0e1) by @sonofmagic
+
 ## 2.0.40
 
 ### Patch Changes
