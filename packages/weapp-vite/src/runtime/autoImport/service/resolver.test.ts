@@ -1,0 +1,261 @@
+import type { Resolver } from '../../../auto-import-components/resolvers'
+import fs from 'fs-extra'
+import path from 'pathe'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createResolverHelpers } from './resolver'
+
+interface CreateStateOptions {
+  cwd?: string
+  configService?: any
+  autoImportComponents?: any
+}
+
+function createState(options: CreateStateOptions = {}) {
+  const { cwd = '/project', autoImportComponents = {}, configService } = options
+  return {
+    ctx: {
+      configService: configService ?? {
+        cwd,
+        currentSubPackageRoot: undefined,
+        weappViteConfig: {
+          autoImportComponents,
+        },
+      },
+    },
+    registry: new Map<string, any>(),
+    componentMetadataMap: new Map<string, any>(),
+    resolverComponentNames: new Set<string>(),
+    resolverComponentsMapRef: { value: {} as Record<string, string> },
+  } as any
+}
+
+async function createPackage(baseDir: string, packageName: string, packageJson: Record<string, any>, files: Record<string, string>) {
+  const packageDir = path.join(baseDir, 'node_modules', ...packageName.split('/'))
+  await fs.ensureDir(packageDir)
+  await fs.writeJson(path.join(packageDir, 'package.json'), packageJson, { spaces: 2 })
+  await Promise.all(
+    Object.entries(files).map(async ([relativePath, content]) => {
+      const target = path.join(packageDir, relativePath)
+      await fs.ensureDir(path.dirname(target))
+      await fs.writeFile(target, content)
+    }),
+  )
+}
+
+describe('autoImport resolver helpers', () => {
+  let tempDirs: string[]
+
+  beforeEach(() => {
+    tempDirs = []
+  })
+
+  afterEach(async () => {
+    await Promise.all(tempDirs.map(dir => fs.remove(dir)))
+  })
+
+  it('resolves with resolver.resolve and kebab-case fallback', () => {
+    const resolver: Resolver = {
+      resolve: vi.fn((componentName: string) => {
+        if (componentName === 't-button') {
+          return {
+            name: 't-button',
+            from: 'tdesign-miniprogram/button/button',
+          }
+        }
+        return undefined
+      }),
+    }
+
+    const state = createState({
+      autoImportComponents: {
+        resolvers: [resolver],
+      },
+    })
+
+    const helpers = createResolverHelpers(state)
+    const resolved = helpers.resolveWithResolvers('TButton', '/project/src/pages/index/index')
+
+    expect(resolved).toEqual({
+      name: 'TButton',
+      from: 'tdesign-miniprogram/button/button',
+    })
+    expect((resolver as any).resolve).toHaveBeenCalledWith('TButton', '/project/src/pages/index/index')
+    expect((resolver as any).resolve).toHaveBeenCalledWith('t-button', '/project/src/pages/index/index')
+  })
+
+  it('resolves with components map and function resolver fallback', () => {
+    const functionResolver = vi.fn((componentName: string) => {
+      if (componentName === 'x-foo') {
+        return {
+          name: 'XFoo',
+          from: 'pkg/x-foo',
+        }
+      }
+      return undefined
+    }) as Resolver
+
+    const state = createState({
+      autoImportComponents: {
+        resolvers: [
+          {
+            components: {
+              'my-comp': 'pkg/my-comp',
+            },
+          },
+          functionResolver,
+        ],
+      },
+    })
+
+    const helpers = createResolverHelpers(state)
+    expect(helpers.resolveWithResolvers('MyComp')).toEqual({
+      name: 'MyComp',
+      from: 'pkg/my-comp',
+    })
+
+    expect(helpers.resolveWithResolvers('XFoo')).toEqual({
+      name: 'XFoo',
+      from: 'pkg/x-foo',
+    })
+
+    expect(functionResolver).toHaveBeenCalledWith('XFoo', '')
+    expect(functionResolver).toHaveBeenCalledWith('x-foo', '')
+
+    const noResolverState = createState({
+      autoImportComponents: {
+        globs: ['components/**/*.wxml'],
+      },
+    })
+    const noResolverHelpers = createResolverHelpers(noResolverState)
+    expect(noResolverHelpers.resolveWithResolvers('AnyComp')).toBeUndefined()
+  })
+
+  it('collects and syncs resolver component metadata', () => {
+    const state = createState({
+      autoImportComponents: {
+        resolvers: [
+          {
+            components: {
+              Keep: 'pkg/keep',
+              NewOne: 'pkg/new-one',
+            },
+          },
+          {
+            components: {
+              Keep: 'pkg/keep-override',
+            },
+          },
+        ],
+      },
+    })
+
+    state.registry.set('LocalOnly', {
+      kind: 'local',
+      value: { name: 'LocalOnly', from: '/components/local-only/index' },
+      entry: {
+        path: '/project/src/components/local-only/index.ts',
+        json: { component: true },
+        type: 'component',
+        templatePath: '/project/src/components/local-only/index.wxml',
+      },
+    })
+
+    state.componentMetadataMap.set('Keep', {
+      types: new Map([['old', 'string']]),
+      docs: new Map([['old', 'old']]),
+    })
+    state.componentMetadataMap.set('LocalOnly', {
+      types: new Map([['local', 'string']]),
+      docs: new Map([['local', 'local']]),
+    })
+    state.componentMetadataMap.set('Stale', {
+      types: new Map([['stale', 'string']]),
+      docs: new Map([['stale', 'stale']]),
+    })
+
+    const helpers = createResolverHelpers(state)
+    expect(helpers.collectResolverComponents()).toEqual({
+      Keep: 'pkg/keep-override',
+      NewOne: 'pkg/new-one',
+    })
+
+    helpers.syncResolverComponentProps()
+
+    expect(state.resolverComponentsMapRef.value).toEqual({
+      Keep: 'pkg/keep-override',
+      NewOne: 'pkg/new-one',
+    })
+    expect(Array.from(state.resolverComponentNames).sort()).toEqual(['Keep', 'NewOne'])
+    expect(state.componentMetadataMap.has('Keep')).toBe(true)
+    expect(state.componentMetadataMap.has('NewOne')).toBe(true)
+    expect(state.componentMetadataMap.has('LocalOnly')).toBe(true)
+    expect(state.componentMetadataMap.has('Stale')).toBe(false)
+    expect(state.componentMetadataMap.get('NewOne')).toEqual({
+      types: new Map(),
+      docs: new Map(),
+    })
+  })
+
+  it('returns undefined for invalid navigation imports or missing cwd', () => {
+    const noConfigServiceState = createState({
+      configService: undefined,
+    })
+    expect(createResolverHelpers(noConfigServiceState).resolveNavigationImport('pkg/button')).toBeUndefined()
+
+    const state = createState({
+      autoImportComponents: {
+        resolvers: [],
+      },
+    })
+    const helpers = createResolverHelpers(state)
+
+    expect(helpers.resolveNavigationImport('./local/path')).toBeUndefined()
+    expect(helpers.resolveNavigationImport('/absolute/path')).toBeUndefined()
+    expect(helpers.resolveNavigationImport('C:\\windows\\absolute')).toBeUndefined()
+    expect(helpers.resolveNavigationImport('@scope-only')).toBeUndefined()
+    expect(helpers.resolveNavigationImport('plain-package')).toBeUndefined()
+  })
+
+  it('resolves navigation import with miniprogram dts and js candidates', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(process.cwd(), '.tmp-resolver-'))
+    tempDirs.push(tmpDir)
+
+    await createPackage(
+      tmpDir,
+      '@scope/ui',
+      {
+        name: '@scope/ui',
+        version: '1.0.0',
+        miniprogram: 'miniprogram_dist',
+      },
+      {
+        'miniprogram_dist/button/index.d.ts': 'export interface ButtonProps {}\n',
+      },
+    )
+
+    await createPackage(
+      tmpDir,
+      'plain-ui',
+      {
+        name: 'plain-ui',
+        version: '1.0.0',
+      },
+      {
+        'button/index.js': 'module.exports = {}\n',
+      },
+    )
+
+    const state = createState({
+      cwd: tmpDir,
+      autoImportComponents: {
+        resolvers: [],
+      },
+    })
+    const helpers = createResolverHelpers(state)
+
+    expect(helpers.resolveNavigationImport('@scope/ui/button/index')).toBe('@scope/ui/miniprogram_dist/button/index')
+    expect(helpers.resolveNavigationImport('plain-ui/button')).toBe('plain-ui/button')
+    expect(helpers.resolveNavigationImport('plain-ui/button/index.js')).toBe('plain-ui/button/index.js')
+    expect(helpers.resolveNavigationImport('missing-ui/button')).toBeUndefined()
+  })
+})
