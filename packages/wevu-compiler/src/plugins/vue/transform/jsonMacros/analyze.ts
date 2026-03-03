@@ -92,6 +92,16 @@ function collectTopLevelReferencedNames(path: any) {
 
   addIfTopLevelReferenced(path)
   path.traverse({
+    Function(p: any) {
+      if (p.node !== path.node) {
+        p.skip()
+      }
+    },
+    Class(p: any) {
+      if (p.node !== path.node) {
+        p.skip()
+      }
+    },
     Identifier(p: any) {
       addIfTopLevelReferenced(p)
     },

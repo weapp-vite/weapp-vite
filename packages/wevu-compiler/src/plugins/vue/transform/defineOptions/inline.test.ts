@@ -2,6 +2,7 @@ import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../../utils/babel'
 import { inlineScriptSetupDefineOptionsArgs } from './inline'
 
 async function createTempProject() {
@@ -62,5 +63,82 @@ defineOptions(() => ({
     await expect(
       inlineScriptSetupDefineOptionsArgs(source, filename, 'ts'),
     ).rejects.toThrow('最终必须解析为对象')
+  })
+
+  it('serializes concise object methods in defineOptions result', async () => {
+    const projectDir = await createTempProject()
+    const filename = path.join(projectDir, 'index.ts')
+    const source = `
+defineOptions(() => ({
+  data() {
+    return { count: 1 }
+  },
+  onLoad() {
+    return this.data.count
+  },
+  methods: {
+    onTap() {
+      return 1
+    },
+  },
+}))
+    `.trim()
+
+    const result = await inlineScriptSetupDefineOptionsArgs(source, filename, 'ts')
+
+    expect(result.code).toContain('data: (function data()')
+    expect(result.code).toContain('onLoad: (function onLoad()')
+    expect(result.code).toContain('onTap: (function onTap()')
+    expect(() => babelParse(result.code, BABEL_TS_MODULE_PARSER_OPTIONS)).not.toThrow()
+  })
+
+  it('does not require imports referenced only inside defineOptions methods', async () => {
+    const projectDir = await createTempProject()
+    const filename = path.join(projectDir, 'index.ts')
+    const source = `
+import MissingToast from 'missing-module'
+
+defineOptions(() => ({
+  data() {
+    return { count: 1 }
+  },
+  onLoad() {
+    MissingToast.show?.()
+  },
+}))
+    `.trim()
+
+    await expect(
+      inlineScriptSetupDefineOptionsArgs(source, filename, 'ts'),
+    ).resolves.toMatchObject({
+      dependencies: [],
+    })
+  })
+
+  it('supports serializing built-in native constructor values', async () => {
+    const projectDir = await createTempProject()
+    const filename = path.join(projectDir, 'index.ts')
+    const source = `
+defineOptions(() => ({
+  properties: {
+    title: { type: String },
+    count: { type: Number },
+    enabled: { type: Boolean },
+    list: { type: Array },
+    payload: { type: Object },
+    onTap: { type: Function },
+  },
+}))
+    `.trim()
+
+    const result = await inlineScriptSetupDefineOptionsArgs(source, filename, 'ts')
+
+    expect(result.code).toContain('type: String')
+    expect(result.code).toContain('type: Number')
+    expect(result.code).toContain('type: Boolean')
+    expect(result.code).toContain('type: Array')
+    expect(result.code).toContain('type: Object')
+    expect(result.code).toContain('type: Function')
+    expect(() => babelParse(result.code, BABEL_TS_MODULE_PARSER_OPTIONS)).not.toThrow()
   })
 })
