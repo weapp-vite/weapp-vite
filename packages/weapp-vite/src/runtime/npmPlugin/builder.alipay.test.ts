@@ -110,4 +110,110 @@ describe('runtime npm builder alipay adaptation', () => {
 
     expect(shouldRebuild).toBe(true)
   })
+
+  it('returns true when cached package root does not exist', async () => {
+    const root = await createTempDir()
+    const shouldRebuild = await shouldRebuildCachedAlipayMiniprogramPackage(
+      path.resolve(root, 'missing'),
+      path.resolve(root, 'out'),
+    )
+
+    expect(shouldRebuild).toBe(true)
+  })
+
+  it('detects incompatible cached syntax in wxml/js/axml files', async () => {
+    const root = await createTempDir()
+    const outDir = path.resolve(root, 'out/miniprogram_npm')
+
+    const wxmlPkg = path.resolve(root, 'wxml-pkg')
+    await fs.ensureDir(wxmlPkg)
+    await fs.writeFile(path.resolve(wxmlPkg, 'index.wxml'), '<view />')
+    expect(await shouldRebuildCachedAlipayMiniprogramPackage(wxmlPkg, outDir)).toBe(true)
+
+    const jsPkg = path.resolve(root, 'js-pkg')
+    await fs.ensureDir(jsPkg)
+    await fs.writeFile(path.resolve(jsPkg, 'index.js'), 'const value = left ?? right')
+    expect(await shouldRebuildCachedAlipayMiniprogramPackage(jsPkg, outDir)).toBe(true)
+
+    const axmlPkg = path.resolve(root, 'axml-pkg')
+    await fs.ensureDir(axmlPkg)
+    await fs.writeFile(path.resolve(axmlPkg, 'index.axml'), '<view wx:if="{{ok}}" else></view>')
+    expect(await shouldRebuildCachedAlipayMiniprogramPackage(axmlPkg, outDir)).toBe(true)
+  })
+
+  it('validates nested dependency cache existence when syntax is already compatible', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'valid-pkg')
+    const outDir = path.resolve(root, 'out/miniprogram_npm')
+    await fs.ensureDir(path.resolve(pkgRoot, 'sub'))
+    await fs.writeFile(path.resolve(pkgRoot, 'sub/index.js'), 'module.exports = 1')
+
+    expect(await shouldRebuildCachedAlipayMiniprogramPackage(pkgRoot, outDir)).toBe(false)
+
+    await fs.ensureDir(path.resolve(pkgRoot, 'miniprogram_npm/tslib'))
+    await fs.writeFile(path.resolve(pkgRoot, 'miniprogram_npm/tslib/index.js'), 'module.exports = 1')
+    expect(await shouldRebuildCachedAlipayMiniprogramPackage(pkgRoot, outDir)).toBe(true)
+
+    await fs.ensureDir(path.resolve(outDir, 'tslib'))
+    await fs.writeFile(path.resolve(outDir, 'tslib/index.js'), 'module.exports = 1')
+    expect(await shouldRebuildCachedAlipayMiniprogramPackage(pkgRoot, outDir)).toBe(false)
+  })
+
+  it('converts multiple esm export/import forms and keeps invalid source stable', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'complex-pkg')
+    await fs.ensureDir(pkgRoot)
+
+    await fs.writeFile(path.resolve(pkgRoot, 'side.js'), 'module.exports = {}')
+    await fs.writeFile(path.resolve(pkgRoot, 'dep.js'), 'exports.foo = 1; exports.bar = 2')
+    await fs.writeFile(path.resolve(pkgRoot, 'main.js'), [
+      'import "./side.js"',
+      'import * as ns from "./dep.js"',
+      'import { foo as renamed } from "./dep.js"',
+      'export default function () { return ns.bar + renamed }',
+      'export const local = renamed',
+      'export { renamed as alias }',
+      'export { foo as forwarded } from "./dep.js"',
+      'export {}',
+    ].join('\n'))
+    await fs.writeFile(path.resolve(pkgRoot, 'klass.js'), 'export default class {}')
+    await fs.writeFile(path.resolve(pkgRoot, 'noop.js'), 'const marker = "import value"; module.exports = marker')
+    await fs.writeFile(path.resolve(pkgRoot, 'broken.js'), 'import {')
+
+    await normalizeMiniprogramPackageForAlipay(pkgRoot)
+
+    const main = await fs.readFile(path.resolve(pkgRoot, 'main.js'), 'utf8')
+    const klass = await fs.readFile(path.resolve(pkgRoot, 'klass.js'), 'utf8')
+    const noop = await fs.readFile(path.resolve(pkgRoot, 'noop.js'), 'utf8')
+    const broken = await fs.readFile(path.resolve(pkgRoot, 'broken.js'), 'utf8')
+
+    expect(main).toContain('require("./side.js")')
+    expect(main).toContain('const _imported = require("./dep.js")')
+    expect(main).toContain('exports["default"]')
+    expect(main).toContain('exports.local')
+    expect(main).toContain('exports.alias')
+    expect(main).toContain('exports.forwarded')
+    expect(klass).toContain('exports["default"]')
+    expect(noop).toContain('"import value"')
+    expect(broken).toBe('import {')
+  })
+
+  it('keeps hoist/copy helpers no-op when source is missing or target already exists', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'pkg')
+    const outDir = path.resolve(root, 'out/miniprogram_npm')
+
+    await fs.ensureDir(path.resolve(pkgRoot, 'miniprogram_npm/dep-a'))
+    await fs.writeFile(path.resolve(pkgRoot, 'miniprogram_npm/dep-a/index.js'), 'module.exports = 1')
+    await fs.ensureDir(path.resolve(outDir, 'dep-a'))
+    await fs.writeFile(path.resolve(outDir, 'dep-a/index.js'), 'module.exports = 2')
+
+    await hoistNestedMiniprogramDependenciesForAlipay(pkgRoot, outDir)
+    expect(await fs.readFile(path.resolve(outDir, 'dep-a/index.js'), 'utf8')).toBe('module.exports = 2')
+
+    await hoistNestedMiniprogramDependenciesForAlipay(path.resolve(root, 'pkg-no-nested'), outDir)
+
+    const copied = await copyEsModuleDirectoryForAlipay(path.resolve(root, 'source-no-es'), path.resolve(root, 'target'))
+    expect(copied).toBe(false)
+  })
 })
