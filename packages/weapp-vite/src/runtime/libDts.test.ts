@@ -320,6 +320,60 @@ for (const file of config.files || []) {
     expect(content).not.toContain('import("vue").DefineComponent')
   })
 
+  it('falls back to cwd as vue-tsc rootDir when vue entry is outside lib root', async () => {
+    const root = await createTempDir()
+    const outDir = path.resolve(root, 'dist')
+    const vueInput = path.resolve(root, 'outside/components/button/index.vue')
+    const outputPath = path.resolve(outDir, 'components/button/index.d.ts')
+    await fs.ensureDir(path.dirname(vueInput))
+    await fs.writeFile(vueInput, '<template><view /></template>', 'utf8')
+
+    const pkgPath = await createFakeVueTscPackage(root, `
+const fs = require('fs')
+const path = require('path')
+const args = process.argv
+const index = args.indexOf('--project')
+const projectPath = index >= 0 ? args[index + 1] : ''
+const config = JSON.parse(fs.readFileSync(projectPath, 'utf8'))
+const outDir = config.compilerOptions.outDir
+const rootDir = config.compilerOptions.rootDir || process.cwd()
+for (const file of config.files || []) {
+  const rel = path.relative(rootDir, file).split(path.sep).join('/')
+  const outFile = path.join(outDir, rel.replace(/\\.vue$/, '').replace(/\\.[mc]?[jt]sx?$/, '') + '.d.ts')
+  fs.mkdirSync(path.dirname(outFile), { recursive: true })
+  fs.writeFileSync(outFile, 'declare const _default: import(\"vue\").DefineComponent<{}, {}, {}, {}, {}>;\\nexport default _default;\\n')
+}
+`)
+    resolveWeappLibEntriesMock.mockResolvedValue([
+      {
+        input: vueInput,
+        outputBase: 'components/button/index',
+      },
+    ])
+    resolveModuleMock.mockImplementation((id: string) => {
+      if (id === 'vue-tsc/package.json') {
+        return pkgPath
+      }
+      return undefined
+    })
+
+    await generateLibDts(createConfig({
+      cwd: root,
+      outDir,
+      weappLibConfig: {
+        enabled: true,
+        root: path.resolve(root, 'src'),
+        dts: {
+          enabled: true,
+          mode: 'vue-tsc',
+        },
+      },
+    }))
+
+    expect(await fs.pathExists(outputPath)).toBe(true)
+    expect(await fs.readFile(outputPath, 'utf8')).toContain('import("wevu").WevuComponentConstructor')
+  })
+
   it('throws when vue-tsc exits with non-zero code', async () => {
     const root = await createTempDir()
     const vueInput = path.resolve(root, 'src/components/button/index.vue')
@@ -670,6 +724,330 @@ for (const file of config.files || []) {
     const content = await fs.readFile(outputPath, 'utf8')
     expect(content).toContain('import("wevu").WevuComponentConstructor')
     expect(content).not.toContain('import("vue").DefineComponent')
+  })
+
+  it('invokes proxyCreateProgram setup callback when generating internal vue dts', async () => {
+    const root = await createTempDir()
+    const outDir = path.resolve(root, 'dist')
+    const vueInput = path.resolve(root, 'src/components/button/index.vue')
+    const outputPath = path.resolve(outDir, 'components/button/index.d.ts')
+    await fs.ensureDir(path.dirname(vueInput))
+    await fs.writeFile(vueInput, '<template><view /></template>', 'utf8')
+
+    resolveWeappLibEntriesMock.mockResolvedValue([
+      {
+        input: vueInput,
+        outputBase: 'components/button/index',
+      },
+    ])
+    resolveModuleMock.mockImplementation((id: string) => {
+      if (
+        id === '@vue/language-core/package.json'
+        || id === '@volar/typescript/package.json'
+        || id === 'typescript/package.json'
+      ) {
+        return '/virtual/package.json'
+      }
+      return undefined
+    })
+
+    const languagePlugin = { name: 'vue-language-plugin' }
+    createVueLanguagePluginMock.mockReturnValueOnce(languagePlugin)
+
+    let setupResult: { languagePlugins: unknown[] } | undefined
+    proxyCreateProgramMock.mockImplementation((tsInstance: any, _createProgram: any, setup: any) => {
+      setupResult = setup(tsInstance, { options: {} })
+      return () => ({
+        getSourceFile(filePath: string) {
+          return filePath.endsWith('.vue') ? { fileName: filePath } : undefined
+        },
+        emit(_sourceFile: unknown, writeFile: (filePath: string, content: string) => void) {
+          writeFile('/virtual/output.d.ts', 'declare const _default: import("vue").DefineComponent<{}, {}, {}, {}, {}>;\nexport default _default;')
+          return {
+            emitSkipped: false,
+            diagnostics: [],
+          }
+        },
+      })
+    })
+
+    await generateLibDts(createConfig({
+      cwd: root,
+      outDir,
+      weappLibConfig: {
+        enabled: true,
+        root: path.resolve(root, 'src'),
+        dts: {
+          enabled: true,
+          mode: 'internal',
+        },
+      },
+    }))
+
+    expect(setupResult?.languagePlugins).toEqual([languagePlugin])
+    expect(await fs.pathExists(outputPath)).toBe(true)
+  })
+
+  it('pads missing DefineComponent generic args with any when rewriting', async () => {
+    const root = await createTempDir()
+    const outDir = path.resolve(root, 'dist')
+    const vueInput = path.resolve(root, 'src/components/button/index.vue')
+    const outputPath = path.resolve(outDir, 'components/button/index.d.ts')
+    await fs.ensureDir(path.dirname(vueInput))
+    await fs.writeFile(vueInput, '<template><view /></template>', 'utf8')
+
+    resolveWeappLibEntriesMock.mockResolvedValue([
+      {
+        input: vueInput,
+        outputBase: 'components/button/index',
+      },
+    ])
+    resolveModuleMock.mockImplementation((id: string) => {
+      if (
+        id === '@vue/language-core/package.json'
+        || id === '@volar/typescript/package.json'
+        || id === 'typescript/package.json'
+      ) {
+        return '/virtual/package.json'
+      }
+      return undefined
+    })
+    proxyCreateProgramMock.mockImplementation(() => {
+      return () => ({
+        getSourceFile(filePath: string) {
+          return filePath.endsWith('.vue') ? { fileName: filePath } : undefined
+        },
+        emit(_sourceFile: unknown, writeFile: (filePath: string, content: string) => void) {
+          writeFile('/virtual/output.d.ts', 'declare const _default: import("vue").DefineComponent<{ a: number }, { b: string }>;\nexport default _default;')
+          return {
+            emitSkipped: false,
+            diagnostics: [],
+          }
+        },
+      })
+    })
+
+    await generateLibDts(createConfig({
+      cwd: root,
+      outDir,
+      weappLibConfig: {
+        enabled: true,
+        root: path.resolve(root, 'src'),
+        dts: {
+          enabled: true,
+          mode: 'internal',
+        },
+      },
+    }))
+
+    const content = await fs.readFile(outputPath, 'utf8')
+    expect(content).toContain('import("wevu").WevuComponentConstructor<{ a: number }, { b: string }, any, any, any>')
+  })
+
+  it('keeps original content when DefineComponent generic is malformed', async () => {
+    const root = await createTempDir()
+    const outDir = path.resolve(root, 'dist')
+    const vueInput = path.resolve(root, 'src/components/button/index.vue')
+    const outputPath = path.resolve(outDir, 'components/button/index.d.ts')
+    await fs.ensureDir(path.dirname(vueInput))
+    await fs.writeFile(vueInput, '<template><view /></template>', 'utf8')
+
+    resolveWeappLibEntriesMock.mockResolvedValue([
+      {
+        input: vueInput,
+        outputBase: 'components/button/index',
+      },
+    ])
+    resolveModuleMock.mockImplementation((id: string) => {
+      if (
+        id === '@vue/language-core/package.json'
+        || id === '@volar/typescript/package.json'
+        || id === 'typescript/package.json'
+      ) {
+        return '/virtual/package.json'
+      }
+      return undefined
+    })
+    proxyCreateProgramMock.mockImplementation(() => {
+      return () => ({
+        getSourceFile(filePath: string) {
+          return filePath.endsWith('.vue') ? { fileName: filePath } : undefined
+        },
+        emit(_sourceFile: unknown, writeFile: (filePath: string, content: string) => void) {
+          writeFile('/virtual/output.d.ts', 'declare const _default: import("vue").DefineComponent<{ a: number };\nexport default _default;')
+          return {
+            emitSkipped: false,
+            diagnostics: [],
+          }
+        },
+      })
+    })
+
+    await generateLibDts(createConfig({
+      cwd: root,
+      outDir,
+      weappLibConfig: {
+        enabled: true,
+        root: path.resolve(root, 'src'),
+        dts: {
+          enabled: true,
+          mode: 'internal',
+        },
+      },
+    }))
+
+    const content = await fs.readFile(outputPath, 'utf8')
+    expect(content).toContain('import("vue").DefineComponent<{ a: number };')
+  })
+
+  it('skips post-pass rewrite when vue output disappears after stub phase', async () => {
+    const root = await createTempDir()
+    const outDir = path.resolve(root, 'dist')
+    const vueInput = path.resolve(root, 'src/components/button/index.vue')
+    const outputPath = path.resolve(outDir, 'components/button/index.d.ts')
+    await fs.ensureDir(path.dirname(vueInput))
+    await fs.writeFile(vueInput, '<template><view /></template>', 'utf8')
+
+    const pkgPath = await createFakeVueTscPackage(root, `
+const fs = require('fs')
+const path = require('path')
+const args = process.argv
+const index = args.indexOf('--project')
+const projectPath = index >= 0 ? args[index + 1] : ''
+const config = JSON.parse(fs.readFileSync(projectPath, 'utf8'))
+const outDir = config.compilerOptions.outDir
+const rootDir = config.compilerOptions.rootDir || process.cwd()
+for (const file of config.files || []) {
+  const rel = path.relative(rootDir, file).split(path.sep).join('/')
+  const outFile = path.join(outDir, rel.replace(/\\.vue$/, '').replace(/\\.[mc]?[jt]sx?$/, '') + '.d.ts')
+  fs.mkdirSync(path.dirname(outFile), { recursive: true })
+  fs.writeFileSync(outFile, 'declare const _default: import(\"vue\").DefineComponent<{}, {}, {}, {}, {}>;\\nexport default _default;\\n')
+}
+`)
+    resolveWeappLibEntriesMock.mockResolvedValue([
+      {
+        input: vueInput,
+        outputBase: 'components/button/index',
+      },
+    ])
+    resolveModuleMock.mockImplementation((id: string) => {
+      if (id === 'vue-tsc/package.json') {
+        return pkgPath
+      }
+      return undefined
+    })
+
+    const originalPathExists = fs.pathExists.bind(fs)
+    let outputPathHit = 0
+    let skippedRewriteCheck = false
+    const pathExistsSpy = vi.spyOn(fs, 'pathExists').mockImplementation(async (targetPath: string) => {
+      if (targetPath === outputPath) {
+        outputPathHit += 1
+        if (outputPathHit >= 2) {
+          skippedRewriteCheck = true
+          return false
+        }
+      }
+      return originalPathExists(targetPath)
+    })
+
+    try {
+      await generateLibDts(createConfig({
+        cwd: root,
+        outDir,
+        weappLibConfig: {
+          enabled: true,
+          root: path.resolve(root, 'src'),
+          dts: {
+            enabled: true,
+            mode: 'vue-tsc',
+          },
+        },
+      }))
+    }
+    finally {
+      pathExistsSpy.mockRestore()
+    }
+
+    expect(skippedRewriteCheck).toBe(true)
+  })
+
+  it('normalizes relative parsed tsconfig file names to absolute rootNames', async () => {
+    const root = await createTempDir()
+    const outDir = path.resolve(root, 'dist')
+    const vueInput = path.resolve(root, 'src/components/button/index.vue')
+    const tsconfigPath = path.resolve(root, 'tsconfig.internal.json')
+    await fs.ensureDir(path.dirname(vueInput))
+    await fs.writeFile(vueInput, '<template><view /></template>', 'utf8')
+    await fs.writeJson(tsconfigPath, {}, { spaces: 2 })
+    await fs.writeFile(path.resolve(root, 'relative-entry.ts'), 'export const value = 1\n', 'utf8')
+
+    resolveWeappLibEntriesMock.mockResolvedValue([
+      {
+        input: vueInput,
+        outputBase: 'components/button/index',
+      },
+    ])
+    resolveModuleMock.mockImplementation((id: string) => {
+      if (
+        id === '@vue/language-core/package.json'
+        || id === '@volar/typescript/package.json'
+        || id === 'typescript/package.json'
+      ) {
+        return '/virtual/package.json'
+      }
+      return undefined
+    })
+
+    const expectedRelativeEntry = path.resolve(root, 'relative-entry.ts').split(path.sep).join('/')
+    let capturedRootNames: string[] = []
+    const originalIsAbsolute = path.isAbsolute.bind(path)
+    const isAbsoluteSpy = vi.spyOn(path, 'isAbsolute').mockImplementation((value: string) => {
+      if (value.includes('relative-entry.ts')) {
+        return false
+      }
+      return originalIsAbsolute(value)
+    })
+    proxyCreateProgramMock.mockImplementation(() => {
+      return (options: { rootNames: string[] }) => {
+        capturedRootNames = options.rootNames
+        return {
+          getSourceFile(filePath: string) {
+            return filePath.endsWith('.vue') ? { fileName: filePath } : undefined
+          },
+          emit(_sourceFile: unknown, writeFile: (filePath: string, content: string) => void) {
+            writeFile('/virtual/output.d.ts', 'declare const _default: import("vue").DefineComponent<{}, {}, {}, {}, {}>;\nexport default _default;')
+            return {
+              emitSkipped: false,
+              diagnostics: [],
+            }
+          },
+        }
+      }
+    })
+
+    try {
+      await generateLibDts(createConfig({
+        cwd: root,
+        outDir,
+        weappLibConfig: {
+          enabled: true,
+          root: path.resolve(root, 'src'),
+          dts: {
+            enabled: true,
+            mode: 'internal',
+            internal: {
+              tsconfig: 'tsconfig.internal.json',
+            },
+          },
+        },
+      }))
+    }
+    finally {
+      isAbsoluteSpy.mockRestore()
+    }
+
+    expect(capturedRootNames).toContain(expectedRelativeEntry)
   })
 
   it('throws when internal mode emit result has no dts output file', async () => {
