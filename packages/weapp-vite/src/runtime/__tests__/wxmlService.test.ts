@@ -1,6 +1,7 @@
 import type { MutableCompilerContext } from '../../context'
 import type { WxmlService } from '../wxmlPlugin'
 import { Buffer } from 'node:buffer'
+import fs from 'fs-extra'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtimeState'
 import { createWxmlServicePlugin } from '../wxmlPlugin'
@@ -61,6 +62,13 @@ vi.mock('@/wxml', () => ({
         ],
       }
     }
+    if (content.includes('<import src="/header.wxml" />')) {
+      return {
+        deps: [
+          { tagName: 'import', value: '/header.wxml' },
+        ],
+      }
+    }
     return {
       deps: [],
     }
@@ -68,9 +76,13 @@ vi.mock('@/wxml', () => ({
   isImportTag: vi.fn(tagName => tagName === 'import'),
 }))
 
-vi.mock('@/utils', () => ({
-  isTemplate: vi.fn(value => value.endsWith('.wxml')),
-}))
+vi.mock('@/utils', async (importOriginal) => {
+  const actual = await importOriginal() as Record<string, any>
+  return {
+    ...actual,
+    isTemplate: vi.fn(value => value.endsWith('.wxml')),
+  }
+})
 
 vi.mock('../../context/shared', () => ({
   isEmptyObject: vi.fn(obj => Object.keys(obj).length === 0),
@@ -86,6 +98,8 @@ vi.mock('../../logger', () => ({
 
 describe('wxmlService', () => {
   let wxmlService: WxmlService
+  let ctx: MutableCompilerContext
+  let plugin: ReturnType<typeof createWxmlServicePlugin>
   const mockConfigService = {
     platform: 'weapp',
     weappViteConfig: {
@@ -96,17 +110,20 @@ describe('wxmlService', () => {
     absoluteSrcRoot: '/mock/project',
     relativeCwd: vi.fn(filePath => filePath.replace('/mock/project/', '')),
     relativeSrcRoot: vi.fn(filePath => filePath.replace('/mock/project/', '')),
+    relativeAbsoluteSrcRoot: vi.fn(filePath => filePath.replace('/mock/project/', '')),
+    currentSubPackageRoot: undefined as string | undefined,
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
     mockFileSystem['/mock/project/file.wxml'] = initialFileContent
     mockFileSystem['/mock/project/header.wxml'] = initialHeaderContent
-    const ctx = {
+    mockConfigService.currentSubPackageRoot = undefined
+    ctx = {
       configService: mockConfigService,
       runtimeState: createRuntimeState(),
     } as unknown as MutableCompilerContext
-    createWxmlServicePlugin(ctx)
+    plugin = createWxmlServicePlugin(ctx)
     wxmlService = ctx.wxmlService!
   })
 
@@ -169,5 +186,65 @@ describe('wxmlService', () => {
 
     const secondScan = await wxmlService.scan(filepath)
     expect(secondScan).toEqual({ deps: [] })
+  })
+
+  it('reuses cached token when file signature does not change', async () => {
+    const filepath = '/mock/project/file.wxml'
+    const first = await wxmlService.scan(filepath)
+    const second = await wxmlService.scan(filepath)
+
+    expect(second).toBe(first)
+  })
+
+  it('resolves absolute import template deps from src root', async () => {
+    const filepath = '/mock/project/file.wxml'
+    mockFileSystem[filepath] = '<import src="/header.wxml" />'
+
+    const result = await wxmlService.scan(filepath)
+
+    expect(result?.deps).toEqual([
+      { tagName: 'import', value: '/header.wxml' },
+    ])
+    expect(wxmlService.depsMap.get(filepath)).toEqual(new Set(['/mock/project/header.wxml']))
+  })
+
+  it('throws non-ENOENT fs.stat errors during scan', async () => {
+    vi.mocked(fs.stat).mockRejectedValueOnce(Object.assign(new Error('permission denied'), { code: 'EACCES' }))
+    await expect(wxmlService.scan('/mock/project/file.wxml')).rejects.toThrow('permission denied')
+  })
+
+  it('buildStart clears only current subpackage state when subpackage root is set', () => {
+    mockConfigService.currentSubPackageRoot = 'packageA'
+    const packageAFile = '/mock/project/packageA/pages/a.wxml'
+    const packageBFile = '/mock/project/packageB/pages/b.wxml'
+
+    wxmlService.depsMap.set(packageAFile, new Set([packageBFile]))
+    wxmlService.depsMap.set(packageBFile, new Set([packageAFile]))
+    wxmlService.tokenMap.set(packageAFile, { deps: [] } as any)
+    wxmlService.tokenMap.set(packageBFile, { deps: [] } as any)
+    wxmlService.wxmlComponentsMap.set('/mock/project/packageA/pages/a', {} as any)
+    wxmlService.wxmlComponentsMap.set('/mock/project/packageB/pages/b', {} as any)
+
+    ctx.runtimeState.wxml.cache.set(packageAFile, { deps: [] } as any)
+    ctx.runtimeState.wxml.cache.set(packageBFile, { deps: [] } as any)
+    ctx.runtimeState.wxml.cache.mtimeMap.set(packageAFile, 1)
+    ctx.runtimeState.wxml.cache.mtimeMap.set(packageBFile, 1)
+    ctx.runtimeState.wxml.emittedCode.set('packageA/pages/a.wxml', 'a')
+    ctx.runtimeState.wxml.emittedCode.set('packageB/pages/b.wxml', 'b')
+
+    plugin.buildStart?.call({} as any)
+
+    expect(wxmlService.depsMap.has(packageAFile)).toBe(false)
+    expect(wxmlService.depsMap.get(packageBFile)?.has(packageAFile)).toBe(false)
+    expect(wxmlService.tokenMap.has(packageAFile)).toBe(false)
+    expect(wxmlService.tokenMap.has(packageBFile)).toBe(true)
+    expect(wxmlService.wxmlComponentsMap.has('/mock/project/packageA/pages/a')).toBe(false)
+    expect(wxmlService.wxmlComponentsMap.has('/mock/project/packageB/pages/b')).toBe(true)
+    expect(ctx.runtimeState.wxml.cache.get(packageAFile)).toBeUndefined()
+    expect(ctx.runtimeState.wxml.cache.get(packageBFile)).toBeTruthy()
+    expect(ctx.runtimeState.wxml.cache.mtimeMap.has(packageAFile)).toBe(false)
+    expect(ctx.runtimeState.wxml.cache.mtimeMap.has(packageBFile)).toBe(true)
+    expect(ctx.runtimeState.wxml.emittedCode.has('packageA/pages/a.wxml')).toBe(false)
+    expect(ctx.runtimeState.wxml.emittedCode.has('packageB/pages/b.wxml')).toBe(true)
   })
 })
