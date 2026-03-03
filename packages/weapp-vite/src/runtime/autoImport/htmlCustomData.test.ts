@@ -164,4 +164,109 @@ describe('createHtmlCustomDataDefinition', () => {
       },
     ])
   })
+
+  it('merges attributes when base has none but generated tag has attributes', () => {
+    const result = createHtmlCustomDataDefinition(
+      ['tag-a'],
+      () => createMetadata({
+        types: {
+          title: 'string',
+        },
+      }),
+      [
+        {
+          name: 'tag-a',
+          description: 'legacy',
+        },
+      ],
+    )
+
+    const payload = JSON.parse(result)
+    const tag = payload.tags.find((item: { name: string }) => item.name === 'tag-a')
+    expect(tag.attributes).toEqual([
+      {
+        name: 'title',
+        description: '类型: string',
+      },
+    ])
+  })
+
+  it('keeps base attributes when generated metadata has no attributes', () => {
+    const result = createHtmlCustomDataDefinition(
+      ['tag-b'],
+      () => createMetadata(),
+      [
+        {
+          name: 'tag-b',
+          attributes: [
+            {
+              name: 'legacy',
+              description: 'legacy attr',
+            },
+          ],
+        },
+      ],
+    )
+
+    const payload = JSON.parse(result)
+    const tag = payload.tags.find((item: { name: string }) => item.name === 'tag-b')
+    expect(tag.attributes).toEqual([
+      {
+        name: 'legacy',
+        description: 'legacy attr',
+      },
+    ])
+  })
+
+  it('merges references by url and keeps base references when generated references are absent', () => {
+    const result = createHtmlCustomDataDefinition(
+      ['tag-c'],
+      () => createMetadata(),
+      [
+        {
+          name: 'tag-c',
+          references: [
+            {
+              name: 'legacy auto-import ref',
+              url: 'https://vite.icebreaker.top/guide/auto-import-components.html',
+            },
+            {
+              name: 'base only',
+              url: 'https://example.com/base-only',
+            },
+          ],
+        },
+        {
+          name: 'tag-d',
+          references: [
+            {
+              name: 'keep when no generated refs',
+              url: 'https://example.com/tag-d',
+            },
+          ],
+        },
+      ],
+    )
+
+    const payload = JSON.parse(result)
+    const tagC = payload.tags.find((item: { name: string }) => item.name === 'tag-c')
+    expect(tagC.references).toEqual(expect.arrayContaining([
+      {
+        name: 'weapp-vite 自动导入组件',
+        url: 'https://vite.icebreaker.top/guide/auto-import-components.html',
+      },
+      {
+        name: 'base only',
+        url: 'https://example.com/base-only',
+      },
+    ]))
+
+    const tagD = payload.tags.find((item: { name: string }) => item.name === 'tag-d')
+    expect(tagD.references).toEqual([
+      {
+        name: 'keep when no generated refs',
+        url: 'https://example.com/tag-d',
+      },
+    ])
+  })
 })
