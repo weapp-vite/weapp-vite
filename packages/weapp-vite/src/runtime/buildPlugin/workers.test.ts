@@ -137,7 +137,10 @@ describe('runtime buildPlugin workers', () => {
 
     buildMock.mockResolvedValue(watcherInstance)
     chokidarWatchMock.mockReturnValue(workerWatcher)
-    existsSpy.mockReturnValueOnce(true).mockReturnValueOnce(false)
+    existsSpy
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true)
 
     const configService = createMockConfigService()
     const watcherService = createMockWatcherService()
@@ -154,6 +157,8 @@ describe('runtime buildPlugin workers', () => {
     workerWatcher.emit('all', 'unlink', '')
     workerWatcher.emit('raw', 'rename', 'new.ts', { watchedPath: '/project/src/workers' })
     workerWatcher.emit('raw', 'rename', 'old.ts', { watchedPath: '/project/src/workers' })
+    workerWatcher.emit('raw', 'rename', '/project/src/workers/abs.ts', { watchedPath: '/project/src/workers' })
+    workerWatcher.emit('raw', 'rename', null, { watchedPath: '/project/src/workers' })
     workerWatcher.emit('raw', 'change', 'skip.ts', { watchedPath: '/project/src/workers' })
 
     await new Promise(resolve => setTimeout(resolve, 0))
@@ -164,6 +169,7 @@ describe('runtime buildPlugin workers', () => {
     expect(loggerMock.info).toHaveBeenCalledWith('[workers:change] src/workers/b.ts')
     expect(loggerMock.success).toHaveBeenCalledWith('[workers:rename->add] src/workers/new.ts')
     expect(loggerMock.info).toHaveBeenCalledWith('[workers:rename->unlink] src/workers/old.ts')
+    expect(loggerMock.success).toHaveBeenCalledWith('[workers:rename->add] src/workers/abs.ts')
 
     const handle = watcherService.sidecarWatcherMap.get('/project/src/workers')
     expect(handle).toBeDefined()
