@@ -752,7 +752,15 @@ for (const file of config.files || []) {
     })
 
     const languagePlugin = { name: 'vue-language-plugin' }
-    createVueLanguagePluginMock.mockReturnValueOnce(languagePlugin)
+    createVueLanguagePluginMock.mockImplementationOnce((
+      _ts: unknown,
+      _compilerOptions: unknown,
+      _vueOptions: unknown,
+      resolveVirtualFile: (id: string) => string,
+    ) => {
+      expect(resolveVirtualFile('virtual:file.vue')).toBe('virtual:file.vue')
+      return languagePlugin
+    })
 
     let setupResult: { languagePlugins: unknown[] } | undefined
     proxyCreateProgramMock.mockImplementation((tsInstance: any, _createProgram: any, setup: any) => {
@@ -842,6 +850,65 @@ for (const file of config.files || []) {
 
     const content = await fs.readFile(outputPath, 'utf8')
     expect(content).toContain('import("wevu").WevuComponentConstructor<{ a: number }, { b: string }, any, any, any>')
+  })
+
+  it('rewrites DefineComponent with nested generic and quoted literal content', async () => {
+    const root = await createTempDir()
+    const outDir = path.resolve(root, 'dist')
+    const vueInput = path.resolve(root, 'src/components/button/index.vue')
+    const outputPath = path.resolve(outDir, 'components/button/index.d.ts')
+    await fs.ensureDir(path.dirname(vueInput))
+    await fs.writeFile(vueInput, '<template><view /></template>', 'utf8')
+
+    resolveWeappLibEntriesMock.mockResolvedValue([
+      {
+        input: vueInput,
+        outputBase: 'components/button/index',
+      },
+    ])
+    resolveModuleMock.mockImplementation((id: string) => {
+      if (
+        id === '@vue/language-core/package.json'
+        || id === '@volar/typescript/package.json'
+        || id === 'typescript/package.json'
+      ) {
+        return '/virtual/package.json'
+      }
+      return undefined
+    })
+    proxyCreateProgramMock.mockImplementation(() => {
+      return () => ({
+        getSourceFile(filePath: string) {
+          return filePath.endsWith('.vue') ? { fileName: filePath } : undefined
+        },
+        emit(_sourceFile: unknown, writeFile: (filePath: string, content: string) => void) {
+          writeFile(
+            '/virtual/output.d.ts',
+            'declare const _default: import("vue").DefineComponent<Record<string, Array<{ text: "a<b>" }>>, { message: "<node>" }, {}, {}, {}>;\nexport default _default;',
+          )
+          return {
+            emitSkipped: false,
+            diagnostics: [],
+          }
+        },
+      })
+    })
+
+    await generateLibDts(createConfig({
+      cwd: root,
+      outDir,
+      weappLibConfig: {
+        enabled: true,
+        root: path.resolve(root, 'src'),
+        dts: {
+          enabled: true,
+          mode: 'internal',
+        },
+      },
+    }))
+
+    const content = await fs.readFile(outputPath, 'utf8')
+    expect(content).toContain('import("wevu").WevuComponentConstructor<Record<string, Array<{ text: "a<b>" }>>, { message: "<node>" }, {}, {}, {}>')
   })
 
   it('keeps original content when DefineComponent generic is malformed', async () => {
