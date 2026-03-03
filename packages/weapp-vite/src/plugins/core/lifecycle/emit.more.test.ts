@@ -1,0 +1,395 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { normalizeWatchPath } from '../../../utils/path'
+import { createGenerateBundleHook, createRenderStartHook } from './emit'
+
+const applySharedChunkStrategyMock = vi.hoisted(() => vi.fn())
+const applyRuntimeChunkLocalizationMock = vi.hoisted(() => vi.fn())
+const emitWxmlAssetsWithCacheMock = vi.hoisted(() => vi.fn())
+const emitJsonAssetsMock = vi.hoisted(() => vi.fn())
+const filterPluginBundleOutputsMock = vi.hoisted(() => vi.fn())
+const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
+const formatBytesMock = vi.hoisted(() => vi.fn((value: number) => `${value}B`))
+const refreshModuleGraphMock = vi.hoisted(() => vi.fn())
+const refreshSharedChunkImportersMock = vi.hoisted(() => vi.fn())
+const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
+const loggerInfoMock = vi.hoisted(() => vi.fn())
+const loggerWarnMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../runtime/chunkStrategy', () => ({
+  DEFAULT_SHARED_CHUNK_STRATEGY: 'copy',
+  applySharedChunkStrategy: applySharedChunkStrategyMock,
+  applyRuntimeChunkLocalization: applyRuntimeChunkLocalizationMock,
+}))
+
+vi.mock('../../utils/wxmlEmit', () => ({
+  emitWxmlAssetsWithCache: emitWxmlAssetsWithCacheMock,
+}))
+
+vi.mock('../helpers', () => ({
+  emitJsonAssets: emitJsonAssetsMock,
+  filterPluginBundleOutputs: filterPluginBundleOutputsMock,
+  flushIndependentBuilds: flushIndependentBuildsMock,
+  formatBytes: formatBytesMock,
+  refreshModuleGraph: refreshModuleGraphMock,
+  refreshSharedChunkImporters: refreshSharedChunkImportersMock,
+  removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
+}))
+
+vi.mock('../../../logger', () => ({
+  default: {
+    info: loggerInfoMock,
+    warn: loggerWarnMock,
+  },
+}))
+
+function createState(overrides: Record<string, any> = {}) {
+  const state = {
+    ctx: {
+      runtimeState: {
+        wxml: {
+          emittedCode: new Map(),
+        },
+      },
+      scanService: {
+        subPackageMap: new Map(),
+      },
+      configService: {
+        isDev: false,
+        platform: 'weapp',
+        outDir: '/project/dist',
+        absolutePluginOutputRoot: '/project/dist/plugin',
+        absolutePluginRoot: '/project/plugin',
+        packageJson: {
+          dependencies: {},
+        },
+        weappViteConfig: {},
+        relativeAbsoluteSrcRoot: (id: string) => id,
+      },
+    },
+    subPackageMeta: {
+      subPackage: {
+        root: 'pkg',
+      },
+    },
+    entriesMap: new Map(),
+    pendingIndependentBuilds: [],
+    moduleImporters: new Map(),
+    entryModuleIds: new Set(),
+    watchFilesSnapshot: [],
+    hmrState: {
+      didEmitAllEntries: false,
+      hasBuiltOnce: false,
+    },
+    hmrSharedChunksMode: 'auto',
+    hmrSharedChunkImporters: new Map(),
+    jsonEmitFilesMap: new Map(),
+  } as any
+
+  return {
+    ...state,
+    ...overrides,
+    ctx: {
+      ...state.ctx,
+      ...(overrides.ctx ?? {}),
+      configService: {
+        ...state.ctx.configService,
+        ...(overrides.ctx?.configService ?? {}),
+      },
+      scanService: {
+        ...state.ctx.scanService,
+        ...(overrides.ctx?.scanService ?? {}),
+      },
+      runtimeState: {
+        ...state.ctx.runtimeState,
+        ...(overrides.ctx?.runtimeState ?? {}),
+      },
+    },
+    hmrState: {
+      ...state.hmrState,
+      ...(overrides.hmrState ?? {}),
+    },
+  }
+}
+
+describe('core lifecycle emit hook extra branches', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    flushIndependentBuildsMock.mockResolvedValue(undefined)
+  })
+
+  it('creates renderStart runtime and stores watch files snapshot', () => {
+    emitWxmlAssetsWithCacheMock.mockImplementationOnce(({ runtime }) => {
+      runtime.addWatchFile?.('foo\\\\bar//main.wxml')
+      runtime.emitFile({ type: 'asset', fileName: 'a.wxml', source: '<view />' })
+      return ['cached/watch/a.wxml']
+    })
+
+    const state = createState()
+    const addWatchFile = vi.fn()
+    const emitFile = vi.fn()
+    const hook = createRenderStartHook(state)
+
+    hook.call({
+      addWatchFile,
+      emitFile,
+    })
+
+    expect(emitJsonAssetsMock).toHaveBeenCalledTimes(1)
+    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('foo\\\\bar//main.wxml'))
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'a.wxml',
+      source: '<view />',
+    })
+    expect(state.watchFilesSnapshot).toEqual(['cached/watch/a.wxml'])
+  })
+
+  it('returns early for plugin builds after filtering outputs', async () => {
+    const state = createState()
+    const hook = createGenerateBundleHook(state, true)
+    const bundle = {
+      'plugin/index.js': {
+        type: 'chunk',
+        fileName: 'plugin/index.js',
+        code: 'module.exports = 1',
+      },
+      'app.js': {
+        type: 'chunk',
+        fileName: 'app.js',
+        code: 'module.exports = 2',
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(flushIndependentBuildsMock).toHaveBeenCalledTimes(1)
+    expect(filterPluginBundleOutputsMock).toHaveBeenCalledWith(bundle, state.ctx.configService)
+    expect(removeImplicitPagePreloadsMock).not.toHaveBeenCalled()
+    expect(refreshModuleGraphMock).not.toHaveBeenCalled()
+  })
+
+  it('handles shared/runtime chunk diagnostics and watcher service watch files', async () => {
+    applySharedChunkStrategyMock.mockImplementationOnce((_bundle, options) => {
+      options.onDuplicate?.({
+        sharedFileName: 'shared/common.js',
+        retainedInMain: true,
+        ignoredMainImporters: ['pages/index/index.js'],
+        chunkBytes: 120,
+        redundantBytes: 240,
+        duplicates: [
+          {
+            fileName: 'pkg-a/pages/a.js',
+            importers: ['pkg-a/pages/a.js'],
+          },
+          {
+            fileName: 'pkg-b/pages/b.js',
+            importers: ['pkg-b/pages/b.js', 'pkg-b/pages/c.js'],
+          },
+        ],
+      })
+      options.onFallback?.({
+        reason: 'main-package',
+        importers: ['pkg-a/pages/a.js', 'pages/index/index.js'],
+        sharedFileName: 'missing.js',
+        finalFileName: 'common.js',
+      })
+      options.onFallback?.({
+        reason: 'main-only',
+        importers: ['pages/index/index.js'],
+        sharedFileName: 'missing.js',
+        finalFileName: 'common.js',
+      })
+    })
+
+    applyRuntimeChunkLocalizationMock.mockImplementationOnce((_bundle, options) => {
+      options.onDuplicate?.({
+        runtimeFileName: 'runtime.js',
+        duplicates: [
+          {
+            fileName: 'pkg-b/pages/b.js',
+            importers: ['pkg-b/pages/b.js'],
+          },
+        ],
+      })
+    })
+
+    const watchFiles = vi.fn()
+    const getWatchFiles = vi.fn(async () => ['watch/from/watcher.js'])
+    const state = createState({
+      subPackageMeta: null,
+      watchFilesSnapshot: ['watch/from/snapshot.js'],
+      hmrState: {
+        didEmitAllEntries: true,
+        hasBuiltOnce: true,
+      },
+      ctx: {
+        scanService: {
+          subPackageMap: new Map([
+            ['pkg-a', {}],
+            ['pkg-b', {}],
+          ]),
+        },
+        watcherService: {
+          getRollupWatcher: vi.fn(() => ({
+            getWatchFiles,
+          })),
+        },
+        configService: {
+          isDev: true,
+          weappViteConfig: {
+            chunks: {
+              sharedStrategy: 'copy',
+              logOptimization: true,
+              duplicateWarningBytes: 100,
+            },
+            debug: {
+              watchFiles,
+            },
+          },
+          relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/', ''),
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'const n = 1',
+        imports: [],
+        dynamicImports: [],
+        modules: {
+          '/project/node_modules/.pnpm/pkg@1.0.0/node_modules/pkg/a.js': {},
+          '/project/src/shared/util.ts': {},
+          '\0virtual:shared': {},
+        },
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(refreshSharedChunkImportersMock).toHaveBeenCalledWith(bundle, state)
+    expect(applySharedChunkStrategyMock).toHaveBeenCalledTimes(1)
+    expect(applyRuntimeChunkLocalizationMock).toHaveBeenCalledTimes(1)
+    expect(loggerInfoMock).toHaveBeenCalled()
+    expect(loggerWarnMock).toHaveBeenCalled()
+    expect(loggerWarnMock.mock.calls.some(args => String(args[0]).includes('超过阈值'))).toBe(true)
+    expect(watchFiles).toHaveBeenCalledWith(['watch/from/watcher.js'], null)
+    expect(state.hmrState.hasBuiltOnce).toBe(true)
+    expect(state.watchFilesSnapshot).toEqual([])
+    expect(removeImplicitPagePreloadsMock).toHaveBeenCalledTimes(1)
+    expect(refreshModuleGraphMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('falls back to watch file snapshot when watcher is unavailable', async () => {
+    const watchFiles = vi.fn()
+    const state = createState({
+      watchFilesSnapshot: ['watch/from/snapshot.js'],
+      ctx: {
+        watcherService: {
+          getRollupWatcher: vi.fn(() => undefined),
+        },
+        configService: {
+          weappViteConfig: {
+            debug: {
+              watchFiles,
+            },
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+
+    await hook.call({}, {}, {} as any)
+
+    expect(watchFiles).toHaveBeenCalledWith(['watch/from/snapshot.js'], state.subPackageMeta)
+    expect(state.watchFilesSnapshot).toEqual([])
+  })
+
+  it('rewrites alipay npm imports with edge cases and keeps parse fallback stable', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          platform: 'alipay',
+          packageJson: {
+            dependencies: {
+              foo: '^1.0.0',
+            },
+          },
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'main.js': {
+        type: 'chunk',
+        fileName: 'main.js',
+        code: [
+          'const a = require(`foo/bar`)',
+          'const b = require("plugin://demo/plugin")',
+          'const c = require(`foo/' + '${' + 'name}`)',
+          'const d = require("other/bar")',
+          'const e = require("npm:foo/utils")',
+          'wx.showToast({ title: "ok" })',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+      'broken.js': {
+        type: 'chunk',
+        fileName: 'broken.js',
+        code: 'const broken = wx.',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const code = bundle['main.js'].code
+    expect(code).toContain('/node_modules/foo/bar')
+    expect(code).toContain('/node_modules/foo/utils')
+    expect(code).toContain('plugin://demo/plugin')
+    expect(code).toMatch(/foo\/\$\{name\}/)
+    expect(code).toContain('other/bar')
+    expect(code).toContain('__weappViteInjectedApi__')
+    expect(code).not.toContain('wx.showToast')
+    expect(bundle['broken.js'].code).toBe('const broken = wx.')
+  })
+
+  it('skips platform api injection when replaceWx is disabled', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: false,
+            },
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'main.js': {
+        type: 'chunk',
+        fileName: 'main.js',
+        code: 'wx.showToast({ title: "ok" })',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['main.js'].code).toContain('wx.showToast')
+    expect(bundle['main.js'].code).not.toContain('__weappViteInjectedApi__')
+  })
+})
