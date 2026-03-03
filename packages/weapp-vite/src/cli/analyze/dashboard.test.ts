@@ -1,0 +1,191 @@
+import { EventEmitter } from 'node:events'
+import process from 'node:process'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { startAnalyzeDashboard } from './dashboard'
+
+const existsSyncMock = vi.hoisted(() => vi.fn(() => true))
+const createServerMock = vi.hoisted(() => vi.fn())
+const loggerMock = vi.hoisted(() => ({
+  info: vi.fn(),
+  error: vi.fn(),
+}))
+
+vi.mock('fs-extra', () => ({
+  default: {
+    existsSync: existsSyncMock,
+  },
+}))
+
+vi.mock('vite', () => ({
+  createServer: createServerMock,
+}))
+
+vi.mock('../../logger', () => ({
+  default: loggerMock,
+}))
+
+interface MockServer {
+  listen: ReturnType<typeof vi.fn>
+  printUrls: ReturnType<typeof vi.fn>
+  close: ReturnType<typeof vi.fn>
+  ws?: {
+    send: ReturnType<typeof vi.fn>
+  }
+  httpServer?: EventEmitter
+  resolvedUrls?: {
+    local?: string[]
+    network?: string[]
+  }
+}
+
+function createMockServer(overrides: Partial<MockServer> = {}): MockServer {
+  return {
+    listen: vi.fn(async () => {}),
+    printUrls: vi.fn(),
+    close: vi.fn(async () => {}),
+    ws: {
+      send: vi.fn(),
+    },
+    httpServer: new EventEmitter(),
+    resolvedUrls: {
+      local: ['http://127.0.0.1:4173/'],
+      network: ['http://192.168.0.2:4173/'],
+    },
+    ...overrides,
+  }
+}
+
+function createAnalyzeResult(label: string) {
+  return {
+    packages: [{ id: label, label, files: [] }],
+    modules: [],
+    subPackages: [],
+  } as any
+}
+
+describe('analyze dashboard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    existsSyncMock.mockReturnValue(true)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('throws when dashboard assets are missing', async () => {
+    existsSyncMock.mockReturnValue(false)
+
+    await expect(startAnalyzeDashboard(createAnalyzeResult('missing'))).rejects.toThrow('未找到仪表盘产物')
+    expect(createServerMock).not.toHaveBeenCalled()
+  })
+
+  it('starts in watch mode and supports update/close/waitForExit', async () => {
+    const server = createMockServer()
+
+    createServerMock.mockImplementation(async (options: any) => {
+      for (const plugin of options.plugins ?? []) {
+        plugin?.configureServer?.(server as any)
+      }
+      return server
+    })
+
+    const initial = createAnalyzeResult('initial')
+    const handle = await startAnalyzeDashboard(initial, { watch: true })
+
+    expect(handle).toBeDefined()
+    expect(handle?.urls).toEqual([
+      'http://127.0.0.1:4173/',
+      'http://192.168.0.2:4173/',
+    ])
+    expect(server.listen).toHaveBeenCalledTimes(1)
+    expect(server.printUrls).toHaveBeenCalledTimes(1)
+    expect(server.ws?.send).toHaveBeenCalledWith({
+      type: 'custom',
+      event: 'weapp-analyze:update',
+      data: initial,
+    })
+
+    const updatePayload = createAnalyzeResult('next')
+    await handle?.update(updatePayload)
+    expect(server.ws?.send).toHaveBeenLastCalledWith({
+      type: 'custom',
+      event: 'weapp-analyze:update',
+      data: updatePayload,
+    })
+
+    const createServerArg = createServerMock.mock.calls[0]?.[0] as any
+    const plugin = createServerArg.plugins[0]
+    const transformed = plugin.transformIndexHtml('<!doctype html>')
+    const script = transformed.tags[0]?.children as string
+    expect(script).toContain('"label":"next"')
+
+    await handle?.close()
+    expect(server.close).toHaveBeenCalledTimes(1)
+
+    server.httpServer?.emit('close')
+    await handle?.waitForExit()
+    expect(server.close).toHaveBeenCalledTimes(2)
+    expect(loggerMock.info).toHaveBeenCalledWith('分析仪表盘已启动（实时模式），按 Ctrl+C 退出。')
+    expect(loggerMock.info).toHaveBeenCalledWith('分包分析仪表盘：http://127.0.0.1:4173/')
+  })
+
+  it('starts in static mode and resolves with empty urls when vite does not expose resolvedUrls', async () => {
+    const server = createMockServer({
+      ws: undefined,
+      resolvedUrls: undefined,
+    })
+
+    createServerMock.mockImplementation(async (options: any) => {
+      for (const plugin of options.plugins ?? []) {
+        plugin?.configureServer?.(server as any)
+      }
+      return server
+    })
+
+    const runPromise = startAnalyzeDashboard(createAnalyzeResult('static'))
+    setTimeout(() => {
+      server.httpServer?.emit('close')
+    }, 0)
+    await expect(runPromise).resolves.toBeUndefined()
+
+    expect(server.ws?.send).toBeUndefined()
+    expect(loggerMock.info).toHaveBeenCalledWith('分析仪表盘已启动（静态模式），按 Ctrl+C 退出。')
+  })
+
+  it('logs close errors when cleanup fails on process signal', async () => {
+    const server = createMockServer({
+      close: vi.fn(async () => {
+        throw new Error('close failed')
+      }),
+    })
+    const signalHandlers = new Map<string, (...args: any[]) => any>()
+    const onceSpy = vi.spyOn(process, 'once').mockImplementation(((signal: string, listener: (...args: any[]) => any) => {
+      signalHandlers.set(signal, listener)
+      return process
+    }) as any)
+    const removeSpy = vi.spyOn(process, 'removeListener').mockImplementation(((signal: string) => {
+      signalHandlers.delete(signal)
+      return process
+    }) as any)
+
+    createServerMock.mockImplementation(async (options: any) => {
+      for (const plugin of options.plugins ?? []) {
+        plugin?.configureServer?.(server as any)
+      }
+      return server
+    })
+
+    const handle = await startAnalyzeDashboard(createAnalyzeResult('signal'), { watch: true })
+    await signalHandlers.get('SIGINT')?.()
+    await handle?.waitForExit()
+
+    expect(onceSpy).toHaveBeenCalled()
+    expect(removeSpy).toHaveBeenCalled()
+    expect(server.close).toHaveBeenCalledTimes(1)
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'close failed',
+    }))
+  })
+})
