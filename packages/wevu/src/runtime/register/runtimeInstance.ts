@@ -615,7 +615,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
 
     const setupInstance = ensureSetupContextInstance(target, runtimeWithDefaults)
 
-    const context: any = {
+    const context = safeMarkNoSetData({
       // 与 Vue 3 对齐的 ctx.props
       props,
 
@@ -643,7 +643,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
 
       // 与 Vue 3 对齐的 slots（小程序场景不提供可调用 slots 函数，兜底只读空对象）
       slots: createSetupSlotsFallback(),
-    }
+    }) as any
 
     // 仅在同步 setup 执行期间暴露 current instance
     setCurrentInstance(target)
