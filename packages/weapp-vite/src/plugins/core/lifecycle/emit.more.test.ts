@@ -363,6 +363,113 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['broken.js'].code).toBe('const broken = wx.')
   })
 
+  it('ignores non-chunk outputs while rewriting alipay imports and platform api access', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          platform: 'alipay',
+          packageJson: {
+            dependencies: {
+              foo: '^1.0.0',
+            },
+          },
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        },
+      },
+    })
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'asset.txt': {
+        type: 'asset',
+        fileName: 'asset.txt',
+        source: 'plain text asset',
+      },
+      'main.js': {
+        type: 'chunk',
+        fileName: 'main.js',
+        code: 'const n = require("foo/path");wx.showToast({ title: "ok" })',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['asset.txt'].source).toBe('plain text asset')
+    expect(bundle['main.js'].code).toContain('/node_modules/foo/path')
+    expect(bundle['main.js'].code).toContain('__weappViteInjectedApi__')
+  })
+
+  it('resolves fallback shared chunk label via scan or raw final file name', async () => {
+    applySharedChunkStrategyMock.mockImplementationOnce((_bundle, options) => {
+      options.onFallback?.({
+        reason: 'main-package',
+        importers: ['pkg-a/pages/index.js'],
+        sharedFileName: 'shared/missing-a.js',
+        finalFileName: 'pkg-a/ghost-common.js',
+      })
+      options.onFallback?.({
+        reason: 'main-package',
+        importers: ['pkg-a/pages/index.js'],
+        sharedFileName: 'shared/missing-b.js',
+        finalFileName: 'pkg-a/scanned-common.js',
+      })
+    })
+
+    const state = createState({
+      subPackageMeta: null,
+      ctx: {
+        scanService: {
+          subPackageMap: new Map([
+            ['pkg-a', {}],
+          ]),
+        },
+        configService: {
+          weappViteConfig: {
+            chunks: {
+              logOptimization: true,
+            },
+          },
+          relativeAbsoluteSrcRoot: (id: string) => id,
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'entry.js': {
+        type: 'chunk',
+        fileName: 'entry.js',
+        code: 'module.exports = 1',
+        imports: [],
+        dynamicImports: [],
+        modules: {},
+      },
+      'virtual-key.js': {
+        type: 'chunk',
+        fileName: 'pkg-a/scanned-common.js',
+        code: 'module.exports = 2',
+        imports: [],
+        dynamicImports: [],
+        modules: {},
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(
+      loggerInfoMock.mock.calls.some(args => String(args[0]).includes('pkg-a/ghost-common.js')),
+    ).toBe(true)
+    expect(
+      loggerInfoMock.mock.calls.some(args => String(args[0]).includes('pkg-a/scanned-common.js')),
+    ).toBe(true)
+  })
+
   it('skips platform api injection when replaceWx is disabled', async () => {
     const state = createState({
       ctx: {
