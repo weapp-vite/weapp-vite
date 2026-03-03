@@ -3,7 +3,20 @@ import path from 'node:path'
 import fs from 'fs-extra'
 import { describe, expect, it, vi } from 'vitest'
 import { jsExtensions } from '../constants'
-import { changeFileExtension, extractConfigFromVue, findJsEntry, isJsOrTs, isTemplate, isTemplateRequest } from './file'
+import {
+  changeFileExtension,
+  extractConfigFromVue,
+  findCssEntry,
+  findJsEntry,
+  findJsonEntry,
+  findTemplateEntry,
+  findVueEntry,
+  isJsOrTs,
+  isTemplate,
+  isTemplateRequest,
+  touch,
+  touchSync,
+} from './file'
 
 describe('utils/file', () => {
   describe('isJsOrTs', () => {
@@ -231,6 +244,37 @@ defineThemeJson({
         await fs.remove(root)
       }
     })
+
+    it('returns undefined when vue parse reports errors', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'broken.vue')
+      try {
+        await fs.writeFile(file, '<template><view></template>')
+        const config = await extractConfigFromVue(file)
+        expect(config).toBeUndefined()
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
+
+    it('prints debug logs and returns undefined when reading fails in debug mode', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'missing.vue')
+      const prev = process.env.__WEAPP_VITE_DEBUG_VUE_CONFIG__
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        process.env.__WEAPP_VITE_DEBUG_VUE_CONFIG__ = '1'
+        const config = await extractConfigFromVue(file)
+        expect(config).toBeUndefined()
+        expect(errorSpy).toHaveBeenCalled()
+      }
+      finally {
+        process.env.__WEAPP_VITE_DEBUG_VUE_CONFIG__ = prev
+        errorSpy.mockRestore()
+        await fs.remove(root)
+      }
+    })
   })
 
   describe('findJsEntry', () => {
@@ -244,6 +288,67 @@ defineThemeJson({
 
       expect(spy.mock.calls.length).toBe(jsExtensions.length)
       spy.mockRestore()
+    })
+  })
+
+  describe('entry discovery helpers', () => {
+    it('finds vue/json/css/template entries by extension list', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-find-entry-'))
+      try {
+        const vueBase = path.join(root, 'pages/home/index')
+        const jsonBase = path.join(root, 'pages/home/index')
+        const cssBase = path.join(root, 'styles/index')
+        const tplBase = path.join(root, 'pages/home/template')
+
+        await fs.ensureDir(path.dirname(vueBase))
+        await fs.ensureDir(path.dirname(cssBase))
+        await fs.writeFile(`${vueBase}.vue`, '<template><view /></template>')
+        await fs.writeFile(`${jsonBase}.json`, '{"navigationBarTitleText":"home"}')
+        await fs.writeFile(`${cssBase}.css`, '.a {}')
+        await fs.writeFile(`${tplBase}.wxml`, '<view />')
+
+        expect(await findVueEntry(vueBase)).toBe(`${vueBase}.vue`)
+
+        const jsonResult = await findJsonEntry(jsonBase)
+        expect(jsonResult.path).toBe(`${jsonBase}.json`)
+        expect(jsonResult.predictions.length).toBeGreaterThan(0)
+
+        const cssResult = await findCssEntry(cssBase)
+        expect(cssResult.path).toBe(`${cssBase}.css`)
+        expect(cssResult.predictions.length).toBeGreaterThan(0)
+
+        const templateResult = await findTemplateEntry(tplBase)
+        expect(templateResult.path).toBe(`${tplBase}.wxml`)
+        expect(templateResult.predictions.length).toBeGreaterThan(0)
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
+  })
+
+  describe('touch helpers', () => {
+    it('creates file for missing path and updates mtime for existing file', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-touch-'))
+      const syncFile = path.join(root, 'sync.txt')
+      const asyncFile = path.join(root, 'async.txt')
+
+      try {
+        touchSync(syncFile)
+        expect(await fs.pathExists(syncFile)).toBe(true)
+
+        await touch(asyncFile)
+        expect(await fs.pathExists(asyncFile)).toBe(true)
+
+        const before = (await fs.stat(syncFile)).mtimeMs
+        await new Promise(resolve => setTimeout(resolve, 5))
+        touchSync(syncFile)
+        const after = (await fs.stat(syncFile)).mtimeMs
+        expect(after).toBeGreaterThanOrEqual(before)
+      }
+      finally {
+        await fs.remove(root)
+      }
     })
   })
 })
