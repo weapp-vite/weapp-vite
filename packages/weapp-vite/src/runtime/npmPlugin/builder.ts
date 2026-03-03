@@ -23,6 +23,13 @@ export interface PackageBuilder {
   buildPackage: (args: { dep: string, outDir: string, options?: NpmBuildOptions, isDependenciesCacheOutdate: boolean }) => Promise<void>
 }
 
+interface BuildPackageArgs {
+  dep: string
+  outDir: string
+  options?: NpmBuildOptions
+  isDependenciesCacheOutdate: boolean
+}
+
 const ALIPAY_EXTENSION_MAP: Record<string, string> = {
   '.wxml': '.axml',
   '.wxss': '.acss',
@@ -185,6 +192,10 @@ function createRequireMemberExpression(base: t.Identifier, name: string) {
   )
 }
 
+function getModuleExportName(name: t.Identifier | t.StringLiteral) {
+  return t.isIdentifier(name) ? name.name : name.value
+}
+
 async function transformJsModuleToCjsForAlipay(source: string) {
   if (!hasEsmSyntax(source)) {
     return source
@@ -270,13 +281,12 @@ async function transformJsModuleToCjsForAlipay(source: string) {
         const declaration = path.node.declaration
 
         if (t.isFunctionDeclaration(declaration) || t.isClassDeclaration(declaration)) {
-          let targetId = declaration.id
-          if (!targetId) {
-            targetId = path.scope.generateUidIdentifier('defaultExport')
-            declaration.id = targetId
+          const exportId = declaration.id ?? path.scope.generateUidIdentifier('defaultExport')
+          if (!declaration.id) {
+            declaration.id = exportId
           }
           path.replaceWith(declaration)
-          exportAssignments.push(createExportsAssignment('default', targetId))
+          exportAssignments.push(createExportsAssignment('default', exportId))
           transformed = true
           return
         }
@@ -324,8 +334,8 @@ async function transformJsModuleToCjsForAlipay(source: string) {
             if (!t.isExportSpecifier(specifier)) {
               continue
             }
-            const localName = t.isIdentifier(specifier.local) ? specifier.local.name : specifier.local.value
-            const exportedName = t.isIdentifier(specifier.exported) ? specifier.exported.name : specifier.exported.value
+            const localName = specifier.local.name
+            const exportedName = getModuleExportName(specifier.exported)
             statements.push(createExportsAssignment(exportedName, createRequireMemberExpression(requireId, localName)))
           }
           path.replaceWithMultiple(statements)
@@ -338,8 +348,8 @@ async function transformJsModuleToCjsForAlipay(source: string) {
           if (!t.isExportSpecifier(specifier)) {
             continue
           }
-          const localName = t.isIdentifier(specifier.local) ? specifier.local.name : specifier.local.value
-          const exportedName = t.isIdentifier(specifier.exported) ? specifier.exported.name : specifier.exported.value
+          const localName = specifier.local.name
+          const exportedName = getModuleExportName(specifier.exported)
           statements.push(createExportsAssignment(exportedName, t.identifier(localName)))
         }
 
@@ -548,9 +558,11 @@ export function createPackageBuilder(
     )
   }
 
+  let buildPackage: PackageBuilder['buildPackage']
+
   async function runBuildPackage(
     { dep, outDir, options, isDependenciesCacheOutdate }:
-    { dep: string, outDir: string, options?: NpmBuildOptions, isDependenciesCacheOutdate: boolean },
+    BuildPackageArgs,
   ) {
     const packageInfo = await getPackageInfo(dep)
     if (!packageInfo || !ctx.configService) {
@@ -643,10 +655,9 @@ export function createPackageBuilder(
     npmLogger.success(`[npm] \`${dep}\` 依赖处理完成!`)
   }
 
-  async function buildPackage(
-    { dep, outDir, options, isDependenciesCacheOutdate }:
-    { dep: string, outDir: string, options?: NpmBuildOptions, isDependenciesCacheOutdate: boolean },
-  ) {
+  buildPackage = async (
+    { dep, outDir, options, isDependenciesCacheOutdate }: BuildPackageArgs,
+  ) => {
     const taskKey = `${path.resolve(outDir)}::${dep}`
     const pending = packageBuildInFlight.get(taskKey)
     if (pending) {

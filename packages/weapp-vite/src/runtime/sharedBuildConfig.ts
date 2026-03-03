@@ -173,7 +173,10 @@ export function createSharedBuildOutput(
     codeSplitting: {
       groups: [
         {
-          name: (id, ctx) => resolveAdvancedChunkName(id, ctx),
+          name: (
+            id: string,
+            ctx: Parameters<typeof resolveAdvancedChunkName>[1],
+          ) => resolveAdvancedChunkName(id, ctx),
         },
       ],
     },
