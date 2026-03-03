@@ -54,5 +54,5 @@ export function getGoods() {
       /** 服务评价 */
       servicesRate: 0,
     },
-  };
+  }
 }

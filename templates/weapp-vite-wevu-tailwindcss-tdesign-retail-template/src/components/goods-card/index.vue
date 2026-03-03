@@ -160,33 +160,32 @@ defineExpose({
 
 <template>
   <view
-    id="{{independentID}}"
+    :id="independentID"
     class="goods-card [box-sizing:border-box] [font-size:24rpx] [border-radius:0_0_16rpx_16rpx] [border-bottom:none]"
-    bind:tap="clickHandle"
-    data-goods="{{ goods }}"
+    :data-goods="goods"
+    @tap="clickHandle"
   >
     <view class="goods-card__main [position:relative] [display:flex] [line-height:1] [padding:0] [background:transparent] [width:342rpx] [border-radius:0_0_16rpx_16rpx] [align-items:center] [justify-content:center] [margin-bottom:16rpx] [flex-direction:column]">
-      <view class="goods-card__thumb [flex-shrink:0] [position:relative] [width:340rpx] [height:340rpx] [&:empty]:[display:none] [&:empty]:[margin:0]" bind:tap="clickThumbHandle">
+      <view class="goods-card__thumb [flex-shrink:0] [position:relative] [width:340rpx] [height:340rpx] [&:empty]:[display:none] [&:empty]:[margin:0]" @tap="clickThumbHandle">
         <t-image
-          wx:if="{{ !!goods.thumb }}"
+          v-if="!!goods.thumb"
           t-class="goods-card__img [display:block] [width:100%] [height:100%] [border-radius:16rpx_16rpx_0_0] [overflow:hidden]"
-          src="{{ goods.thumb }}"
+          :src="goods.thumb"
           mode="aspectFill"
           lazy-load
         />
       </view>
       <view class="goods-card__body [display:flex] [flex:1_1_auto] [background:#fff] [border-radius:0_0_16rpx_16rpx] [padding:16rpx_24rpx_18rpx] [flex-direction:column]">
         <view class="goods-card__upper [display:flex] [flex-direction:column] [overflow:hidden] [flex:1_1_auto]">
-          <view wx:if="{{ goods.title }}" class="goods-card__title [flex-shrink:0] [font-size:28rpx] [color:#333] [font-weight:400] [display:-webkit-box] [height:72rpx] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [overflow:hidden] [word-break:break-word] [line-height:36rpx]">
+          <view v-if="goods.title" class="goods-card__title [flex-shrink:0] [font-size:28rpx] [color:#333] [font-weight:400] [display:-webkit-box] [height:72rpx] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [overflow:hidden] [word-break:break-word] [line-height:36rpx]">
             {{ goods.title }}
           </view>
-          <view wx:if="{{ goods.tags && !!goods.tags.length }}" class="goods-card__tags [display:flex] [flex-direction:row] [flex-wrap:wrap] [margin:8rpx_0_0_0]">
+          <view v-if="goods.tags && !!goods.tags.length" class="goods-card__tags [display:flex] [flex-direction:row] [flex-wrap:wrap] [margin:8rpx_0_0_0]">
             <view
-              wx:for="{{ goods.tags }}"
-              wx:key="index"
-              wx:for-item="tag"
+              v-for="(tag, index) in goods.tags"
+              :key="index"
               class="goods-card__tag [color:#fa4126] [background:transparent] [font-size:20rpx] [border:1rpx_solid_#fa4126] [padding:0_8rpx] [border-radius:16rpx] [line-height:30rpx] [margin:0_8rpx_8rpx_0] [display:block] [overflow:hidden] [white-space:nowrap] [word-break:keep-all] [text-overflow:ellipsis]"
-              data-index="{{index}}"
+              :data-index="index"
             >
               {{ tag }}
             </view>
@@ -194,28 +193,28 @@ defineExpose({
         </view>
         <view class="goods-card__down [display:flex] [position:relative] [flex-direction:row] [justify-content:flex-start] [align-items:baseline] [line-height:32rpx] [margin:8rpx_0_0_0]">
           <price
-            wx:if="{{ goods.price }}"
+            v-if="goods.price"
             wr-class="spec-for-price [font-size:36rpx] [white-space:nowrap] [font-weight:700] [order:1] [color:#fa4126] [margin:0]"
             symbol-class="spec-for-symbol [font-size:24rpx]"
-            symbol="{{currency}}"
-            price="{{goods.price}}"
+            :symbol="currency"
+            :price="goods.price"
           />
           <price
-            wx:if="{{ goods.originPrice && isValidityLinePrice }}"
+            v-if="goods.originPrice && isValidityLinePrice"
             wr-class="goods-card__origin-price [white-space:nowrap] [font-weight:700] [order:2] [color:#bbbbbb] [font-size:24rpx] [margin:0_0_0_8rpx]"
-            symbol="{{currency}}"
-            price="{{goods.originPrice}}"
+            :symbol="currency"
+            :price="goods.originPrice"
             type="delthrough"
           />
           <t-icon
-            id="{{independentID}}-cart"
+            :id="`${independentID}-cart`"
             class="goods-card__add-cart [order:3] [margin:auto_0_0_auto] [position:absolute] [bottom:0] [right:0]"
             prefix="wr"
             name="cartAdd"
-            data-id="{{independentID}}"
-            catchtap="addCartHandle"
+            :data-id="independentID"
             size="48rpx"
             color="#FA550F"
+            @tap.stop="addCartHandle"
           />
         </view>
       </view>

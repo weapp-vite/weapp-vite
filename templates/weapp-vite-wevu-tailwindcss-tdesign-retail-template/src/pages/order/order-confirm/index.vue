@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import Toast from 'tdesign-miniprogram/toast/index';
-import { getAddressPromise } from '../../../services/address/list';
-import { fetchSettleDetail } from '../../../services/order/orderConfirm';
-import { commitPay, wechatPayOrder } from './pay';
-const stripeImg = `https://tdesign.gtimg.com/miniprogram/template/retail/order/stripe.png`;
+import Toast from 'tdesign-miniprogram/toast/index'
+import { getAddressPromise } from '../../../services/address/list'
+import { fetchSettleDetail } from '../../../services/order/orderConfirm'
+import { commitPay, wechatPayOrder } from './pay'
+
 defineOptions({
   data() {
     return {
@@ -21,7 +21,7 @@ defineOptions({
         // 失效或者库存不足
         limitGoodsList: [],
         // 限购商品
-        couponList: [] // 门店优惠券信息
+        couponList: [], // 门店优惠券信息
       },
       // 获取结算页详情 data
       orderCardList: [],
@@ -41,7 +41,7 @@ defineOptions({
         // 个人或公司名称
         titleType: '',
         // 发票抬头 1-公司 2-个人
-        contentType: '' // 发票内容 1-明细 2-类别
+        contentType: '', // 发票内容 1-明细 2-类别
       },
       goodsRequestList: [],
       userAddressReq: null,
@@ -59,122 +59,123 @@ defineOptions({
       // 所有门店所选优惠券
       currentStoreId: null,
       // 当前优惠券storeId
-      userAddress: null
-    };
+      userAddress: null,
+    }
   },
   payLock: false,
   noteInfo: [],
   tempNoteInfo: [],
   onLoad(options) {
     this.setData({
-      loading: true
-    });
-    this.handleOptionsParams(options);
+      loading: true,
+    })
+    this.handleOptionsParams(options)
   },
   onShow() {
-    const invoiceData = wx.getStorageSync('invoiceData');
+    const invoiceData = wx.getStorageSync('invoiceData')
     if (invoiceData) {
       // 处理发票
-      this.invoiceData = invoiceData;
+      this.invoiceData = invoiceData
       this.setData({
-        invoiceData
-      });
-      wx.removeStorageSync('invoiceData');
+        invoiceData,
+      })
+      wx.removeStorageSync('invoiceData')
     }
   },
   init() {
     this.setData({
-      loading: true
-    });
+      loading: true,
+    })
     const {
-      goodsRequestList
-    } = this;
+      goodsRequestList,
+    } = this
     this.handleOptionsParams({
-      goodsRequestList
-    });
+      goodsRequestList,
+    })
   },
   // 处理不同情况下跳转到结算页时需要的参数
   handleOptionsParams(options, couponList) {
     let {
-      goodsRequestList
-    } = this; // 商品列表
+      goodsRequestList,
+    } = this // 商品列表
     let {
-      userAddressReq
-    } = this; // 收货地址
+      userAddressReq,
+    } = this // 收货地址
 
-    const storeInfoList = []; // 门店列表
+    const storeInfoList = [] // 门店列表
     // 如果是从地址选择页面返回，则使用地址显选择页面新选择的地址去获取结算数据
     if (options.userAddressReq) {
-      userAddressReq = options.userAddressReq;
+      userAddressReq = options.userAddressReq
     }
     if (options.type === 'cart') {
       // 从购物车跳转过来时，获取传入的商品列表数据
-      const goodsRequestListJson = wx.getStorageSync('order.goodsRequestList');
-      goodsRequestList = goodsRequestListJson ? JSON.parse(goodsRequestListJson) : [];
-    } else if (typeof options.goodsRequestList === 'string') {
-      goodsRequestList = JSON.parse(options.goodsRequestList);
+      const goodsRequestListJson = wx.getStorageSync('order.goodsRequestList')
+      goodsRequestList = goodsRequestListJson ? JSON.parse(goodsRequestListJson) : []
+    }
+    else if (typeof options.goodsRequestList === 'string') {
+      goodsRequestList = JSON.parse(options.goodsRequestList)
     }
     if (!Array.isArray(goodsRequestList)) {
-      goodsRequestList = [];
+      goodsRequestList = []
     }
     // 获取结算页请求数据列表
-    const storeMap = {};
-    goodsRequestList.forEach(goods => {
+    const storeMap = {}
+    goodsRequestList.forEach((goods) => {
       if (!storeMap[goods.storeId]) {
         storeInfoList.push({
           storeId: goods.storeId,
-          storeName: goods.storeName
-        });
-        storeMap[goods.storeId] = true;
+          storeName: goods.storeName,
+        })
+        storeMap[goods.storeId] = true
       }
-    });
-    this.goodsRequestList = goodsRequestList;
-    this.storeInfoList = storeInfoList;
+    })
+    this.goodsRequestList = goodsRequestList
+    this.storeInfoList = storeInfoList
     const params = {
       goodsRequestList,
       storeInfoList,
       userAddressReq,
-      couponList
-    };
-    fetchSettleDetail(params).then(res => {
+      couponList,
+    }
+    fetchSettleDetail(params).then((res) => {
       this.setData({
-        loading: false
-      });
-      this.initData(res.data);
+        loading: false,
+      })
+      this.initData(res.data)
     }, () => {
       // 接口异常处理
-      this.handleError();
-    });
+      this.handleError()
+    })
   },
   initData(resData) {
     // 转换商品卡片显示数据
-    const data = this.handleResToGoodsCard(resData);
-    this.userAddressReq = resData.userAddress;
+    const data = this.handleResToGoodsCard(resData)
+    this.userAddressReq = resData.userAddress
     if (resData.userAddress) {
       this.setData({
-        userAddress: resData.userAddress
-      });
+        userAddress: resData.userAddress,
+      })
     }
     this.setData({
-      settleDetailData: data
-    });
-    this.isInvalidOrder(data);
+      settleDetailData: data,
+    })
+    this.isInvalidOrder(data)
   },
   isInvalidOrder(data) {
     // 失效 不在配送范围 限购的商品 提示弹窗
     if (data.limitGoodsList && data.limitGoodsList.length > 0 || data.abnormalDeliveryGoodsList && data.abnormalDeliveryGoodsList.length > 0 || data.inValidGoodsList && data.inValidGoodsList.length > 0) {
       this.setData({
-        popupShow: true
-      });
-      return true;
+        popupShow: true,
+      })
+      return true
     }
     this.setData({
-      popupShow: false
-    });
+      popupShow: false,
+    })
     if (data.settleType === 0) {
-      return true;
+      return true
     }
-    return false;
+    return false
   },
   handleError() {
     Toast({
@@ -182,28 +183,28 @@ defineOptions({
       selector: '#t-toast',
       message: '结算异常, 请稍后重试',
       duration: 2000,
-      icon: ''
-    });
+      icon: '',
+    })
     setTimeout(() => {
-      wx.navigateBack();
-    }, 1500);
+      wx.navigateBack()
+    }, 1500)
     this.setData({
-      loading: false
-    });
+      loading: false,
+    })
   },
   getRequestGoodsList(storeGoodsList) {
-    const filterStoreGoodsList = [];
-    storeGoodsList && storeGoodsList.forEach(store => {
+    const filterStoreGoodsList = []
+    storeGoodsList && storeGoodsList.forEach((store) => {
       const {
-        storeName
-      } = store;
-      store.skuDetailVos && store.skuDetailVos.forEach(goods => {
-        const data = goods;
-        data.storeName = storeName;
-        filterStoreGoodsList.push(data);
-      });
-    });
-    return filterStoreGoodsList;
+        storeName,
+      } = store
+      store.skuDetailVos && store.skuDetailVos.forEach((goods) => {
+        const data = goods
+        data.storeName = storeName
+        filterStoreGoodsList.push(data)
+      })
+    })
+    return filterStoreGoodsList
   },
   handleGoodsRequest(goods, isOutStock = false) {
     const {
@@ -216,9 +217,9 @@ defineOptions({
       goodsName,
       skuId,
       storeName,
-      roomId
-    } = goods;
-    const resQuantity = isOutStock ? reminderStock : quantity;
+      roomId,
+    } = goods
+    const resQuantity = isOutStock ? reminderStock : quantity
     return {
       quantity: resQuantity,
       storeId,
@@ -228,27 +229,27 @@ defineOptions({
       goodsName,
       skuId,
       storeName,
-      roomId
-    };
+      roomId,
+    }
   },
   handleResToGoodsCard(data) {
     // 转换数据 符合 goods-card展示
-    const orderCardList = []; // 订单卡片列表
-    const storeInfoList = [];
-    const submitCouponList = []; // 使用优惠券列表;
+    const orderCardList = [] // 订单卡片列表
+    const storeInfoList = []
+    const submitCouponList = [] // 使用优惠券列表;
 
-    data.storeGoodsList && data.storeGoodsList.forEach(ele => {
-      const skuDetailVos = Array.isArray(ele.skuDetailVos) ? ele.skuDetailVos : [];
+    data.storeGoodsList && data.storeGoodsList.forEach((ele) => {
+      const skuDetailVos = Array.isArray(ele.skuDetailVos) ? ele.skuDetailVos : []
       const orderCard = {
         id: ele.storeId,
         storeName: ele.storeName,
         status: 0,
         statusDesc: '',
         amount: ele.storeTotalPayAmount,
-        goodsList: []
-      }; // 订单卡片
+        goodsList: [],
+      } // 订单卡片
       skuDetailVos.forEach((item, index) => {
-        const specs = Array.isArray(item.skuSpecLst) ? item.skuSpecLst.map(s => s?.specValue).filter(Boolean) : [];
+        const specs = Array.isArray(item.skuSpecLst) ? item.skuSpecLst.map(s => s?.specValue).filter(Boolean) : []
         orderCard.goodsList.push({
           id: index,
           thumb: item.image,
@@ -258,141 +259,143 @@ defineOptions({
           price: item.tagPrice || item.settlePrice || '0',
           // 优先取限时活动价
           settlePrice: item.settlePrice,
-          titlePrefixTags: item.tagText ? [{
-            text: item.tagText
-          }] : [],
+          titlePrefixTags: item.tagText
+            ? [{
+                text: item.tagText,
+              }]
+            : [],
           num: item.quantity,
           skuId: item.skuId,
           spuId: item.spuId,
-          storeId: item.storeId
-        });
-      });
+          storeId: item.storeId,
+        })
+      })
       storeInfoList.push({
         storeId: ele.storeId,
         storeName: ele.storeName,
-        remark: ''
-      });
+        remark: '',
+      })
       submitCouponList.push({
         storeId: ele.storeId,
-        couponList: ele.couponList || []
-      });
-      this.noteInfo.push('');
-      this.tempNoteInfo.push('');
-      orderCardList.push(orderCard);
-    });
+        couponList: ele.couponList || [],
+      })
+      this.noteInfo.push('')
+      this.tempNoteInfo.push('')
+      orderCardList.push(orderCard)
+    })
     this.setData({
       orderCardList,
       storeInfoList,
-      submitCouponList
-    });
-    return data;
+      submitCouponList,
+    })
+    return data
   },
   onGotoAddress() {
     /** 获取一个Promise */
-    getAddressPromise().then(address => {
+    getAddressPromise().then((address) => {
       this.handleOptionsParams({
         userAddressReq: {
           ...address,
-          checked: true
-        }
-      });
-    }).catch(() => {});
+          checked: true,
+        },
+      })
+    }).catch(() => {})
     const {
-      userAddressReq
-    } = this; // 收货地址
+      userAddressReq,
+    } = this // 收货地址
 
-    let id = '';
+    let id = ''
     if (userAddressReq?.id) {
-      id = `&id=${userAddressReq.id}`;
+      id = `&id=${userAddressReq.id}`
     }
     wx.navigateTo({
-      url: `/pages/user/address/list/index?selectMode=1&isOrderSure=1${id}`
-    });
+      url: `/pages/user/address/list/index?selectMode=1&isOrderSure=1${id}`,
+    })
   },
   onNotes(e) {
     const {
-      storenoteindex: storeNoteIndex
-    } = e.currentTarget.dataset;
+      storenoteindex: storeNoteIndex,
+    } = e.currentTarget.dataset
     // 添加备注信息
     this.setData({
       dialogShow: true,
-      storeNoteIndex
-    });
+      storeNoteIndex,
+    })
   },
   onInput(e) {
     const {
-      storeNoteIndex
-    } = this.data;
-    this.noteInfo[storeNoteIndex] = e.detail.value;
+      storeNoteIndex,
+    } = this.data
+    this.noteInfo[storeNoteIndex] = e.detail.value
   },
   onBlur() {
     this.setData({
-      notesPosition: 'center'
-    });
+      notesPosition: 'center',
+    })
   },
   onFocus() {
     this.setData({
-      notesPosition: 'self'
-    });
+      notesPosition: 'self',
+    })
   },
   onTap() {
     this.setData({
-      placeholder: ''
-    });
+      placeholder: '',
+    })
   },
   onNoteConfirm() {
     // 备注信息 确认按钮
     const {
       storeInfoList,
-      storeNoteIndex
-    } = this.data;
-    this.tempNoteInfo[storeNoteIndex] = this.noteInfo[storeNoteIndex];
-    storeInfoList[storeNoteIndex].remark = this.noteInfo[storeNoteIndex];
+      storeNoteIndex,
+    } = this.data
+    this.tempNoteInfo[storeNoteIndex] = this.noteInfo[storeNoteIndex]
+    storeInfoList[storeNoteIndex].remark = this.noteInfo[storeNoteIndex]
     this.setData({
       dialogShow: false,
-      storeInfoList
-    });
+      storeInfoList,
+    })
   },
   onNoteCancel() {
     // 备注信息 取消按钮
     const {
-      storeNoteIndex
-    } = this.data;
-    this.noteInfo[storeNoteIndex] = this.tempNoteInfo[storeNoteIndex];
+      storeNoteIndex,
+    } = this.data
+    this.noteInfo[storeNoteIndex] = this.tempNoteInfo[storeNoteIndex]
     this.setData({
-      dialogShow: false
-    });
+      dialogShow: false,
+    })
   },
   onSureCommit() {
     // 商品库存不足继续结算
     const {
-      settleDetailData
-    } = this.data;
+      settleDetailData,
+    } = this.data
     const {
       outOfStockGoodsList,
       storeGoodsList,
-      inValidGoodsList
-    } = settleDetailData;
+      inValidGoodsList,
+    } = settleDetailData
     if (outOfStockGoodsList && outOfStockGoodsList.length > 0 || inValidGoodsList && storeGoodsList) {
       // 合并正常商品 和 库存 不足商品继续支付
       // 过滤不必要的参数
-      const filterOutGoodsList = [];
-      outOfStockGoodsList && outOfStockGoodsList.forEach(outOfStockGoods => {
+      const filterOutGoodsList = []
+      outOfStockGoodsList && outOfStockGoodsList.forEach((outOfStockGoods) => {
         const {
-          storeName
-        } = outOfStockGoods;
-        outOfStockGoods.unSettlementGoods.forEach(ele => {
-          const data = ele;
-          data.quantity = ele.reminderStock;
-          data.storeName = storeName;
-          filterOutGoodsList.push(data);
-        });
-      });
-      const filterStoreGoodsList = this.getRequestGoodsList(storeGoodsList);
-      const goodsRequestList = filterOutGoodsList.concat(filterStoreGoodsList);
+          storeName,
+        } = outOfStockGoods
+        outOfStockGoods.unSettlementGoods.forEach((ele) => {
+          const data = ele
+          data.quantity = ele.reminderStock
+          data.storeName = storeName
+          filterOutGoodsList.push(data)
+        })
+      })
+      const filterStoreGoodsList = this.getRequestGoodsList(storeGoodsList)
+      const goodsRequestList = filterOutGoodsList.concat(filterStoreGoodsList)
       this.handleOptionsParams({
-        goodsRequestList
-      });
+        goodsRequestList,
+      })
     }
   },
   // 提交订单
@@ -402,26 +405,26 @@ defineOptions({
       userAddressReq,
       invoiceData,
       storeInfoList,
-      submitCouponList
-    } = this.data;
+      submitCouponList,
+    } = this.data
     const {
-      goodsRequestList
-    } = this;
+      goodsRequestList,
+    } = this
     if (!userAddressReq && !settleDetailData.userAddress) {
       Toast({
         context: this,
         selector: '#t-toast',
         message: '请添加收货地址',
         duration: 2000,
-        icon: 'help-circle'
-      });
-      return;
+        icon: 'help-circle',
+      })
+      return
     }
     if (this.payLock || !settleDetailData.settleType || !settleDetailData.totalAmount) {
-      return;
+      return
     }
-    this.payLock = true;
-    const resSubmitCouponList = this.handleCouponList(submitCouponList);
+    this.payLock = true
+    const resSubmitCouponList = this.handleCouponList(submitCouponList)
     const params = {
       userAddressReq: settleDetailData.userAddress || userAddressReq,
       goodsRequestList,
@@ -430,86 +433,90 @@ defineOptions({
       // 取优惠后的结算金额
       invoiceRequest: null,
       storeInfoList,
-      couponList: resSubmitCouponList
-    };
-    if (invoiceData && invoiceData.email) {
-      params.invoiceRequest = invoiceData;
+      couponList: resSubmitCouponList,
     }
-    commitPay(params).then(res => {
-      this.payLock = false;
+    if (invoiceData && invoiceData.email) {
+      params.invoiceRequest = invoiceData
+    }
+    commitPay(params).then((res) => {
+      this.payLock = false
       const {
-        data
-      } = res;
+        data,
+      } = res
       // 提交出现 失效 不在配送范围 限购的商品 提示弹窗
       if (this.isInvalidOrder(data)) {
-        return;
+        return
       }
       if (res.code === 'Success') {
-        this.handlePay(data, settleDetailData);
-      } else {
+        this.handlePay(data, settleDetailData)
+      }
+      else {
         Toast({
           context: this,
           selector: '#t-toast',
           message: res.msg || '提交订单超时，请稍后重试',
           duration: 2000,
-          icon: ''
-        });
+          icon: '',
+        })
         setTimeout(() => {
           // 提交支付失败   返回购物车
-          wx.navigateBack();
-        }, 2000);
+          wx.navigateBack()
+        }, 2000)
       }
-    }, err => {
-      this.payLock = false;
+    }, (err) => {
+      this.payLock = false
       if (err.code === 'CONTAINS_INSUFFICIENT_GOODS' || err.code === 'TOTAL_AMOUNT_DIFFERENT') {
         Toast({
           context: this,
           selector: '#t-toast',
           message: err.msg || '支付异常',
           duration: 2000,
-          icon: ''
-        });
-        this.init();
-      } else if (err.code === 'ORDER_PAY_FAIL') {
+          icon: '',
+        })
+        this.init()
+      }
+      else if (err.code === 'ORDER_PAY_FAIL') {
         Toast({
           context: this,
           selector: '#t-toast',
           message: '支付失败',
           duration: 2000,
-          icon: 'close-circle'
-        });
+          icon: 'close-circle',
+        })
         setTimeout(() => {
           wx.redirectTo({
-            url: '/pages/order/order-list/index'
-          });
-        });
-      } else if (err.code === 'ILLEGAL_CONFIG_PARAM') {
+            url: '/pages/order/order-list/index',
+          })
+        })
+      }
+      else if (err.code === 'ILLEGAL_CONFIG_PARAM') {
         Toast({
           context: this,
           selector: '#t-toast',
           message: '支付失败，微信支付商户号设置有误，请商家重新检查支付设置。',
           duration: 2000,
-          icon: 'close-circle'
-        });
+          icon: 'close-circle',
+        })
         setTimeout(() => {
           wx.redirectTo({
-            url: '/pages/order/order-list/index'
-          });
-        });
-      } else {
+            url: '/pages/order/order-list/index',
+          })
+        })
+      }
+      else {
         Toast({
           context: this,
           selector: '#t-toast',
           message: err.msg || '提交支付超时，请稍后重试',
           duration: 2000,
-          icon: ''
-        });
+          icon: '',
+        })
         setTimeout(() => {
           // 提交支付失败  返回购物车
-          wx.navigateBack();
-        }, 2000);
+          wx.navigateBack()
+        }, 2000)
       }
-    });
+    })
   },
   // 处理支付
   handlePay(data, settleDetailData) {
@@ -518,12 +525,12 @@ defineOptions({
       payInfo,
       tradeNo,
       interactId,
-      transactionId
-    } = data;
+      transactionId,
+    } = data
     const {
       totalAmount,
-      totalPayAmount
-    } = settleDetailData;
+      totalPayAmount,
+    } = settleDetailData
     const payOrderInfo = {
       payInfo,
       orderId: tradeNo,
@@ -531,102 +538,105 @@ defineOptions({
       payAmt: totalPayAmount,
       interactId,
       tradeNo,
-      transactionId
-    };
+      transactionId,
+    }
     if (channel === 'wechat') {
-      wechatPayOrder(payOrderInfo);
+      wechatPayOrder(payOrderInfo)
     }
   },
   hide() {
     // 隐藏 popup
     this.setData({
-      'settleDetailData.abnormalDeliveryGoodsList': []
-    });
+      'settleDetailData.abnormalDeliveryGoodsList': [],
+    })
   },
   onReceipt() {
     // 跳转 开发票
-    const invoiceData = this.invoiceData || {};
+    const invoiceData = this.invoiceData || {}
     wx.navigateTo({
-      url: `/pages/order/receipt/index?invoiceData=${JSON.stringify(invoiceData)}`
-    });
+      url: `/pages/order/receipt/index?invoiceData=${JSON.stringify(invoiceData)}`,
+    })
   },
   onCoupons(e) {
     const {
       submitCouponList,
-      currentStoreId
-    } = this.data;
+      currentStoreId,
+    } = this.data
     const {
-      goodsRequestList
-    } = this;
+      goodsRequestList,
+    } = this
     const {
-      selectedList
-    } = e.detail;
-    const tempSubmitCouponList = submitCouponList.map(storeCoupon => {
+      selectedList,
+    } = e.detail
+    const tempSubmitCouponList = submitCouponList.map((storeCoupon) => {
       return {
-        couponList: storeCoupon.storeId === currentStoreId ? selectedList : storeCoupon.couponList
-      };
-    });
-    const resSubmitCouponList = this.handleCouponList(tempSubmitCouponList);
+        couponList: storeCoupon.storeId === currentStoreId ? selectedList : storeCoupon.couponList,
+      }
+    })
+    const resSubmitCouponList = this.handleCouponList(tempSubmitCouponList)
     // 确定选择优惠券
     this.handleOptionsParams({
-      goodsRequestList
-    }, resSubmitCouponList);
+      goodsRequestList,
+    }, resSubmitCouponList)
     this.setData({
-      couponsShow: false
-    });
+      couponsShow: false,
+    })
   },
   onOpenCoupons(e) {
     const {
-      storeid
-    } = e.currentTarget.dataset;
+      storeid,
+    } = e.currentTarget.dataset
     this.setData({
       couponsShow: true,
-      currentStoreId: storeid
-    });
+      currentStoreId: storeid,
+    })
   },
   handleCouponList(storeCouponList) {
     // 处理门店优惠券   转换成接口需要
     if (!storeCouponList) {
-      return [];
+      return []
     }
-    const resSubmitCouponList = [];
-    storeCouponList.forEach(ele => {
-      resSubmitCouponList.push(...ele.couponList);
-    });
-    return resSubmitCouponList;
+    const resSubmitCouponList = []
+    storeCouponList.forEach((ele) => {
+      resSubmitCouponList.push(...ele.couponList)
+    })
+    return resSubmitCouponList
   },
   onGoodsNumChange(e) {
     const {
       detail: {
-        value
+        value,
       },
       currentTarget: {
         dataset: {
-          goods
-        }
-      }
-    } = e;
+          goods,
+        },
+      },
+    } = e
     const index = this.goodsRequestList.findIndex(({
       storeId,
       spuId,
-      skuId
-    }) => goods.storeId === storeId && goods.spuId === spuId && goods.skuId === skuId);
+      skuId,
+    }) => goods.storeId === storeId && goods.spuId === spuId && goods.skuId === skuId)
     if (index >= 0) {
-      const goodsRequestList = this.goodsRequestList.map((item, i) => i === index ? {
-        ...item,
-        quantity: value
-      } : item);
+      const goodsRequestList = this.goodsRequestList.map((item, i) => i === index
+        ? {
+            ...item,
+            quantity: value,
+          }
+        : item)
       this.handleOptionsParams({
-        goodsRequestList
-      });
+        goodsRequestList,
+      })
     }
   },
   onPopupChange() {
     this.setData({
-      popupShow: !this.data.popupShow
-    });
-  }
-});
+      popupShow: !this.data.popupShow,
+    })
+  },
+})
+const stripeImg = `https://tdesign.gtimg.com/miniprogram/template/retail/order/stripe.png`
 </script>
 
 <template>
@@ -634,28 +644,24 @@ defineOptions({
 
   <wxs module="handleInvoice" src="./handleInvoice.wxs" />
   <wxs module="getNotes" src="./getNotes.wxs" />
-  <view class="order-sure [box-sizing:border-box] [background:#f6f6f6] [padding:24rpx_0_calc(env(safe-area-inset-bottom)_+_136rpx)] [min-height:100vh] [&_.wx-pay-cover]:[position:fixed] [&_.wx-pay-cover]:[left:0] [&_.wx-pay-cover]:[bottom:0] [&_.wx-pay-cover]:[right:0] [&_.wx-pay-cover]:[z-index:10] [&_.wx-pay-cover]:[background:#fff] [&_.wx-pay-cover]:[height:112rpx] [&_.wx-pay-cover]:[padding-bottom:env(safe-area-inset-bottom)] [&_.wx-pay-cover_.wx-pay]:[width:100%] [&_.wx-pay-cover_.wx-pay]:[height:100rpx] [&_.wx-pay-cover_.wx-pay]:[box-sizing:border-box] [&_.wx-pay-cover_.wx-pay]:[padding:0rpx_32rpx] [&_.wx-pay-cover_.wx-pay]:[display:flex] [&_.wx-pay-cover_.wx-pay]:[justify-content:space-between] [&_.wx-pay-cover_.wx-pay]:[align-items:center] [&_.wx-pay-cover_.wx-pay_.price]:[color:#fa4126] [&_.wx-pay-cover_.wx-pay_.price]:[font-weight:bold] [&_.wx-pay-cover_.wx-pay_.price]:[font-size:63rpx] [&_.wx-pay-cover_.wx-pay_.price]:[line-height:88rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[height:80rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[width:240rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[border-radius:40rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[background-color:#fa4126] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[color:#ffffff] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[line-height:80rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[font-weight:bold] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[font-size:28rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[text-align:center] [&_.wx-pay-cover_.wx-pay_.btn-gray]:[background:#cccccc] [&_.pay-detail]:[background-color:#ffffff] [&_.pay-detail]:[padding:16rpx_32rpx] [&_.pay-detail]:[width:100%] [&_.pay-detail]:[box-sizing:border-box] [&_.pay-detail_.pay-item]:[width:100%] [&_.pay-detail_.pay-item]:[height:72rpx] [&_.pay-detail_.pay-item]:[display:flex] [&_.pay-detail_.pay-item]:[align-items:center] [&_.pay-detail_.pay-item]:[justify-content:space-between] [&_.pay-detail_.pay-item]:[font-size:26rpx] [&_.pay-detail_.pay-item]:[line-height:36rpx] [&_.pay-detail_.pay-item]:[color:#666666] [&_.pay-detail_.pay-item_.pay-item__right]:[color:#333333] [&_.pay-detail_.pay-item_.pay-item__right]:[font-size:24rpx] [&_.pay-detail_.pay-item_.pay-item__right]:[display:flex] [&_.pay-detail_.pay-item_.pay-item__right]:[align-items:center] [&_.pay-detail_.pay-item_.pay-item__right]:[justify-content:flex-end] [&_.pay-detail_.pay-item_.pay-item__right]:[max-width:400rpx] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[display:-webkit-box] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[-webkit-box-orient:vertical] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[-webkit-line-clamp:2] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[max-width:400rpx] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[text-overflow:ellipsis] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[overflow:hidden] [&_.pay-detail_.pay-item_.font-bold]:[font-weight:bold] [&_.pay-detail_.pay-item_.primary]:[color:#fa4126] [&_.add-notes_.dialog__message]:[border-radius:8rpx] [&_.amount-wrapper]:[width:100%] [&_.amount-wrapper]:[box-sizing:border-box] [&_.amount-wrapper]:[background-color:#ffffff] [&_.amount-wrapper]:[padding:0rpx_32rpx] [&_.amount-wrapper]:[height:96rpx] [&_.pay-amount]:[width:100%] [&_.pay-amount]:[height:96rpx] [&_.pay-amount]:[display:flex] [&_.pay-amount]:[align-items:center] [&_.pay-amount]:[justify-content:flex-end] [&_.pay-amount]:[font-size:28rpx] [&_.pay-amount]:[color:#333333] [&_.pay-amount]:[position:relative] [&_.pay-amount_.order-num]:[color:#999999] [&_.pay-amount_.order-num]:[padding-right:8rpx] [&_.pay-amount_.total-price]:[font-size:36rpx] [&_.pay-amount_.total-price]:[color:#fa4126] [&_.pay-amount_.total-price]:[font-weight:bold] [&_.pay-amount_.total-price]:[padding-left:8rpx]" wx:if="{{!loading}}">
-    <address-card addressData="{{userAddress}}" bind:addclick="onGotoAddress" bind:addressclick="onGotoAddress" />
+  <view v-if="!loading" class="order-sure [box-sizing:border-box] [background:#f6f6f6] [padding:24rpx_0_calc(env(safe-area-inset-bottom)_+_136rpx)] [min-height:100vh] [&_.wx-pay-cover]:[position:fixed] [&_.wx-pay-cover]:[left:0] [&_.wx-pay-cover]:[bottom:0] [&_.wx-pay-cover]:[right:0] [&_.wx-pay-cover]:[z-index:10] [&_.wx-pay-cover]:[background:#fff] [&_.wx-pay-cover]:[height:112rpx] [&_.wx-pay-cover]:[padding-bottom:env(safe-area-inset-bottom)] [&_.wx-pay-cover_.wx-pay]:[width:100%] [&_.wx-pay-cover_.wx-pay]:[height:100rpx] [&_.wx-pay-cover_.wx-pay]:[box-sizing:border-box] [&_.wx-pay-cover_.wx-pay]:[padding:0rpx_32rpx] [&_.wx-pay-cover_.wx-pay]:[display:flex] [&_.wx-pay-cover_.wx-pay]:[justify-content:space-between] [&_.wx-pay-cover_.wx-pay]:[align-items:center] [&_.wx-pay-cover_.wx-pay_.price]:[color:#fa4126] [&_.wx-pay-cover_.wx-pay_.price]:[font-weight:bold] [&_.wx-pay-cover_.wx-pay_.price]:[font-size:63rpx] [&_.wx-pay-cover_.wx-pay_.price]:[line-height:88rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[height:80rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[width:240rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[border-radius:40rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[background-color:#fa4126] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[color:#ffffff] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[line-height:80rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[font-weight:bold] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[font-size:28rpx] [&_.wx-pay-cover_.wx-pay_.submit-btn]:[text-align:center] [&_.wx-pay-cover_.wx-pay_.btn-gray]:[background:#cccccc] [&_.pay-detail]:[background-color:#ffffff] [&_.pay-detail]:[padding:16rpx_32rpx] [&_.pay-detail]:[width:100%] [&_.pay-detail]:[box-sizing:border-box] [&_.pay-detail_.pay-item]:[width:100%] [&_.pay-detail_.pay-item]:[height:72rpx] [&_.pay-detail_.pay-item]:[display:flex] [&_.pay-detail_.pay-item]:[align-items:center] [&_.pay-detail_.pay-item]:[justify-content:space-between] [&_.pay-detail_.pay-item]:[font-size:26rpx] [&_.pay-detail_.pay-item]:[line-height:36rpx] [&_.pay-detail_.pay-item]:[color:#666666] [&_.pay-detail_.pay-item_.pay-item__right]:[color:#333333] [&_.pay-detail_.pay-item_.pay-item__right]:[font-size:24rpx] [&_.pay-detail_.pay-item_.pay-item__right]:[display:flex] [&_.pay-detail_.pay-item_.pay-item__right]:[align-items:center] [&_.pay-detail_.pay-item_.pay-item__right]:[justify-content:flex-end] [&_.pay-detail_.pay-item_.pay-item__right]:[max-width:400rpx] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[display:-webkit-box] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[-webkit-box-orient:vertical] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[-webkit-line-clamp:2] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[max-width:400rpx] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[text-overflow:ellipsis] [&_.pay-detail_.pay-item_.pay-item__right_.pay-remark]:[overflow:hidden] [&_.pay-detail_.pay-item_.font-bold]:[font-weight:bold] [&_.pay-detail_.pay-item_.primary]:[color:#fa4126] [&_.add-notes_.dialog__message]:[border-radius:8rpx] [&_.amount-wrapper]:[width:100%] [&_.amount-wrapper]:[box-sizing:border-box] [&_.amount-wrapper]:[background-color:#ffffff] [&_.amount-wrapper]:[padding:0rpx_32rpx] [&_.amount-wrapper]:[height:96rpx] [&_.pay-amount]:[width:100%] [&_.pay-amount]:[height:96rpx] [&_.pay-amount]:[display:flex] [&_.pay-amount]:[align-items:center] [&_.pay-amount]:[justify-content:flex-end] [&_.pay-amount]:[font-size:28rpx] [&_.pay-amount]:[color:#333333] [&_.pay-amount]:[position:relative] [&_.pay-amount_.order-num]:[color:#999999] [&_.pay-amount_.order-num]:[padding-right:8rpx] [&_.pay-amount_.total-price]:[font-size:36rpx] [&_.pay-amount_.total-price]:[color:#fa4126] [&_.pay-amount_.total-price]:[font-weight:bold] [&_.pay-amount_.total-price]:[padding-left:8rpx]">
+    <address-card :addressData="userAddress" @addclick="onGotoAddress" @addressclick="onGotoAddress" />
     <view
+      v-for="(stores, storeIndex) in settleDetailData.storeGoodsList"
+      :key="storeIndex"
       class="order-wrapper [&_.store-wrapper]:[width:100%] [&_.store-wrapper]:[height:96rpx] [&_.store-wrapper]:[box-sizing:border-box] [&_.store-wrapper]:[padding:0_32rpx] [&_.store-wrapper]:[display:flex] [&_.store-wrapper]:[align-items:center] [&_.store-wrapper]:[font-size:28rpx] [&_.store-wrapper]:[line-height:40rpx] [&_.store-wrapper]:[color:#333333] [&_.store-wrapper]:[background-color:#ffffff] [&_.store-wrapper_.store-logo]:[margin-right:16rpx] [&_.goods-wrapper]:[width:100%] [&_.goods-wrapper]:[box-sizing:border-box] [&_.goods-wrapper]:[padding:16rpx_32rpx] [&_.goods-wrapper]:[display:flex] [&_.goods-wrapper]:[align-items:flex-start] [&_.goods-wrapper]:[justify-content:space-between] [&_.goods-wrapper]:[font-size:24rpx] [&_.goods-wrapper]:[line-height:32rpx] [&_.goods-wrapper]:[color:#999999] [&_.goods-wrapper]:[background-color:#ffffff]"
-      wx:for="{{settleDetailData.storeGoodsList}}"
-      wx:for-item="stores"
-      wx:for-index="storeIndex"
-      wx:key="storeIndex"
     >
       <view class="store-wrapper">
         <t-icon prefix="wr" size="40rpx" color="#333333" name="store" class="store-logo" />
         {{ stores.storeName }}
       </view>
       <view
-        wx:if="{{orderCardList[storeIndex].goodsList.length > 0}}"
-        wx:for="{{orderCardList[storeIndex].goodsList}}"
-        wx:for-item="goods"
-        wx:for-index="gIndex"
-        wx:key="id"
+        v-for="(goods, gIndex) in orderCardList[storeIndex].goodsList"
+        v-if="orderCardList[storeIndex].goodsList.length > 0"
+        :key="goods.id || gIndex"
         class="goods-wrapper [&_.goods-image]:[width:176rpx] [&_.goods-image]:[height:176rpx] [&_.goods-image]:[border-radius:8rpx] [&_.goods-image]:[overflow:hidden] [&_.goods-image]:[margin-right:16rpx] [&_.goods-content]:[flex:1] [&_.goods-content_.goods-title]:[display:-webkit-box] [&_.goods-content_.goods-title]:[-webkit-box-orient:vertical] [&_.goods-content_.goods-title]:[-webkit-line-clamp:2] [&_.goods-content_.goods-title]:[overflow:hidden] [&_.goods-content_.goods-title]:[text-overflow:ellipsis] [&_.goods-content_.goods-title]:[font-size:28rpx] [&_.goods-content_.goods-title]:[line-height:40rpx] [&_.goods-content_.goods-title]:[margin-bottom:12rpx] [&_.goods-content_.goods-title]:[color:#333333] [&_.goods-content_.goods-title]:[margin-right:16rpx] [&_.goods-right]:[min-width:128rpx] [&_.goods-right]:[display:flex] [&_.goods-right]:[flex-direction:column] [&_.goods-right]:[align-items:flex-end]"
       >
-        <t-image src="{{goods.thumb}}" t-class="goods-image" mode="aspectFill" />
+        <t-image :src="goods.thumb" t-class="goods-image" mode="aspectFill" />
         <view class="goods-content">
           <view class="goods-title">
             {{ goods.title }}
@@ -663,7 +669,7 @@ defineOptions({
           <view>{{ goods.specs }}</view>
         </view>
         <view class="goods-right [&_.goods-price]:[color:#333333] [&_.goods-price]:[font-size:32rpx] [&_.goods-price]:[line-height:48rpx] [&_.goods-price]:[font-weight:bold] [&_.goods-price]:[margin-bottom:16rpx] [&_.goods-num]:[text-align:right]">
-          <price wr-class="goods-price" price="{{goods.price}}" fill="{{true}}" decimalSmaller />
+          <price wr-class="goods-price" :price="goods.price" :fill="true" decimalSmaller />
           <view class="goods-num">
             x{{ goods.num }}
           </view>
@@ -677,17 +683,17 @@ defineOptions({
           fill
           decimalSmaller
           wr-class="pay-item__right font-bold"
-          price="{{settleDetailData.totalSalePrice || '0'}}"
+          :price="settleDetailData.totalSalePrice || '0'"
         />
       </view>
       <view class="pay-item">
         <text>运费</text>
         <view class="pay-item__right font-bold">
-          <block wx:if="{{settleDetailData.totalDeliveryFee && settleDetailData.totalDeliveryFee != 0}}">
+          <block v-if="settleDetailData.totalDeliveryFee && settleDetailData.totalDeliveryFee != 0">
             +
-            <price fill decimalSmaller price="{{settleDetailData.totalDeliveryFee}}" />
+            <price fill decimalSmaller :price="settleDetailData.totalDeliveryFee" />
           </block>
-          <text wx:else>
+          <text v-else>
             免运费
           </text>
         </view>
@@ -696,40 +702,40 @@ defineOptions({
         <text>活动优惠</text>
         <view class="pay-item__right primary font-bold">
           -
-          <price fill price="{{settleDetailData.totalPromotionAmount || 0}}" />
+          <price fill :price="settleDetailData.totalPromotionAmount || 0" />
         </view>
       </view>
       <view class="pay-item">
         <text>优惠券</text>
         <view
           class="pay-item__right"
-          data-storeid="{{settleDetailData.storeGoodsList[0].storeId}}"
-          catchtap="onOpenCoupons"
+          :data-storeid="settleDetailData.storeGoodsList[0].storeId"
+          @tap.stop="onOpenCoupons"
         >
-          <block wx:if="{{submitCouponList.length}}">
-            <block wx:if="{{settleDetailData.totalCouponAmount && settleDetailData.totalCouponAmount !== '0'}}">
-              -<price fill decimalSmaller price="{{settleDetailData.totalCouponAmount}}" />
+          <block v-if="submitCouponList.length">
+            <block v-if="settleDetailData.totalCouponAmount && settleDetailData.totalCouponAmount !== '0'">
+              -<price fill decimalSmaller :price="settleDetailData.totalCouponAmount" />
             </block>
-            <block wx:else>
+            <block v-else>
               选择优惠券
             </block>
           </block>
-          <text wx:else>
+          <text v-else>
             无可用
           </text>
           <t-icon name="chevron-right" size="32rpx" color="#BBBBBB" />
         </view>
       </view>
-      <view class="pay-item" wx:if="{{settleDetailData.invoiceSupport}}">
+      <view v-if="settleDetailData.invoiceSupport" class="pay-item">
         <text>发票</text>
-        <view class="pay-item__right" catchtap="onReceipt">
+        <view class="pay-item__right" @tap.stop="onReceipt">
           <text>{{ handleInvoice(invoiceData) }}</text>
           <t-icon name="chevron-right" size="32rpx" color="#BBBBBB" />
         </view>
       </view>
       <view class="pay-item">
         <text>订单备注</text>
-        <view class="pay-item__right" data-storenoteindex="{{0}}" catchtap="onNotes">
+        <view class="pay-item__right" :data-storenoteindex="0" @tap.stop="onNotes">
           <text class="pay-remark">
             {{ getNotes(storeInfoList, 0) ? getNotes(storeInfoList, 0) : '选填，建议先和商家沟通确认' }}
           </text>
@@ -743,13 +749,13 @@ defineOptions({
           共{{ settleDetailData.totalGoodsCount }}件
         </text>
         <text>小计</text>
-        <price class="total-price" price="{{settleDetailData.totalPayAmount}}" fill="{{false}}" decimalSmaller />
+        <price class="total-price" :price="settleDetailData.totalPayAmount" :fill="false" decimalSmaller />
       </view>
     </view>
     <view class="wx-pay-cover">
       <view class="wx-pay">
-        <price decimalSmaller fill class="price" price="{{settleDetailData.totalPayAmount || '0'}}" />
-        <view class="submit-btn {{ settleDetailData.settleType === 1 ? '':'btn-gray'}}" bindtap="submitOrder">
+        <price decimalSmaller fill class="price" :price="settleDetailData.totalPayAmount || '0'" />
+        <view :class="`submit-btn ${settleDetailData.settleType === 1 ? '' : 'btn-gray'}`" @tap="submitOrder">
           提交订单
         </view>
       </view>
@@ -757,42 +763,42 @@ defineOptions({
     <t-dialog
       t-class="add-notes [&_.t-textarea__placeholder]:[color:#aeb3b7] [&_.add-notes__textarea__font]:[font-size:26rpx] [&_.add-notes__textarea]:[margin-top:32rpx]"
       title="填写备注信息"
-      visible="{{dialogShow}}"
+      :visible="dialogShow"
       confirm-btn="确认"
       cancel-btn="取消"
       t-class-content="add-notes__content"
       t-class-confirm="dialog__button-confirm"
       t-class-cancel="dialog__button-cancel"
-      bindconfirm="onNoteConfirm"
-      bindcancel="onNoteCancel"
+      @confirm="onNoteConfirm"
+      @cancel="onNoteCancel"
     >
       <template #content>
         <t-textarea
 
-          focus="{{dialogShow}}"
+          :focus="dialogShow"
           class="notes"
           t-class="add-notes__textarea"
-          value="{{storeInfoList[storeNoteIndex] && storeInfoList[storeNoteIndex].remark}}"
+          :value="storeInfoList[storeNoteIndex] && storeInfoList[storeNoteIndex].remark"
           placeholder="备注信息"
           t-class-textarea="add-notes__textarea__font"
-          bindfocus="onFocus"
-          bindblur="onBlur"
-          bindchange="onInput"
-          maxlength="{{50}}"
+          :maxlength="50"
+          @focus="onFocus"
+          @blur="onBlur"
+          @change="onInput"
         />
       </template>
     </t-dialog>
-    <t-popup visible="{{popupShow}}" placement="bottom" bind:visible-change="onPopupChange">
+    <t-popup :visible="popupShow" placement="bottom" @visible-change="onPopupChange">
       <template #content>
-        <no-goods bind:change="onSureCommit" settleDetailData="{{settleDetailData}}" />
+        <no-goods :settleDetailData="settleDetailData" @change="onSureCommit" />
       </template>
     </t-popup>
     <select-coupons
-      bind:sure="onCoupons"
-      storeId="{{currentStoreId}}"
-      orderSureCouponList="{{couponList}}"
-      promotionGoodsList="{{promotionGoodsList}}"
-      couponsShow="{{couponsShow}}"
+      :storeId="currentStoreId"
+      :orderSureCouponList="couponList"
+      :promotionGoodsList="promotionGoodsList"
+      :couponsShow="couponsShow"
+      @sure="onCoupons"
     />
   </view>
   <t-toast id="t-toast" />

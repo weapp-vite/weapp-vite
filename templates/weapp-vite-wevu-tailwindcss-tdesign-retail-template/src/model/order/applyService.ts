@@ -1,4 +1,5 @@
-import { mockIp, mockReqId } from '../../utils/mock';
+// @ts-nocheck
+import { mockIp, mockReqId } from '../../utils/mock'
 
 const orderResps = [
   {
@@ -267,12 +268,12 @@ const orderResps = [
     rt: 36,
     success: true,
   },
-];
+]
 
 export function genRightsPreview(params) {
-  const { orderNo, skuId } = params;
-  const resp = orderResps.find((r) => r.data.orderNo === orderNo && r.data.skuId === skuId);
-  return resp;
+  const { orderNo, skuId } = params
+  const resp = orderResps.find(r => r.data.orderNo === orderNo && r.data.skuId === skuId)
+  return resp
 }
 
 export function genApplyReasonList(params) {
@@ -296,7 +297,7 @@ export function genApplyReasonList(params) {
     clientIp: mockIp(),
     rt: 6,
     success: true,
-  };
+  }
   // 未收货对应的原因列表
   if (params.rightsReasonType === 'REFUND_MONEY') {
     resp.data.rightsReasonList = [
@@ -304,9 +305,9 @@ export function genApplyReasonList(params) {
       { id: '10', desc: '快递/物流一直未送到' },
       { id: '11', desc: '货物破损已拒签' },
       { id: '12', desc: '不喜欢' },
-    ];
+    ]
   }
-  return resp;
+  return resp
 }
 
 export function applyService() {
@@ -324,6 +325,6 @@ export function applyService() {
     clientIp: mockIp(),
     rt: 269,
     success: true,
-  };
-  return resp;
+  }
+  return resp
 }

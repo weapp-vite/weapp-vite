@@ -1,35 +1,37 @@
-import { config } from '../../config/index';
+// @ts-nocheck
+import { config } from '../../config/index'
+import {
+  getSearchHistory as getSearchHistoryModel,
+  getSearchPopular as getSearchPopularModel,
+} from '../../model/search'
+import { delay } from '../_utils/delay'
 
 /** 获取搜索历史 */
 function mockSearchHistory() {
-  const { delay } = require('../_utils/delay');
-  const { getSearchHistory } = require('../../model/search');
-  return delay().then(() => getSearchHistory());
+  return delay().then(() => getSearchHistoryModel())
 }
 
 /** 获取搜索历史 */
 export function getSearchHistory() {
   if (config.useMock) {
-    return mockSearchHistory();
+    return mockSearchHistory()
   }
   return new Promise((resolve) => {
-    resolve('real api');
-  });
+    resolve('real api')
+  })
 }
 
 /** 获取搜索历史 */
 function mockSearchPopular() {
-  const { delay } = require('../_utils/delay');
-  const { getSearchPopular } = require('../../model/search');
-  return delay().then(() => getSearchPopular());
+  return delay().then(() => getSearchPopularModel())
 }
 
 /** 获取搜索历史 */
 export function getSearchPopular() {
   if (config.useMock) {
-    return mockSearchPopular();
+    return mockSearchPopular()
   }
   return new Promise((resolve) => {
-    resolve('real api');
-  });
+    resolve('real api')
+  })
 }

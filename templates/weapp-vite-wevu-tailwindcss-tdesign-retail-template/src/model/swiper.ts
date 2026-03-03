@@ -32,8 +32,8 @@ const images = [
   'https://tdesign.gtimg.com/miniprogram/template/retail/home/v2/banner4.png',
   'https://tdesign.gtimg.com/miniprogram/template/retail/home/v2/banner5.png',
   'https://tdesign.gtimg.com/miniprogram/template/retail/home/v2/banner6.png',
-];
+]
 
 export function genSwiperImageList() {
-  return images;
+  return images
 }

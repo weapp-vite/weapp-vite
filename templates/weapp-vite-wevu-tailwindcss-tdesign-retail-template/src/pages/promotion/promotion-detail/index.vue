@@ -98,37 +98,37 @@ defineExpose({
 
 <template>
   <view id="js-page-wrap" class="promotion-detail-container [&_.wrap]:[display:block] [&_.wrap]:[padding:0_24rpx] [&_.wrap]:[background:linear-gradient(#fff,_#f5f5f5)] [&_.t-class-promotion-head]:[width:702rpx] [&_.t-class-promotion-head]:[height:160rpx] [&_.t-class-promotion-head]:[border-radius:8rpx] [&_.wrap_.count-down-wrap]:[display:flex] [&_.wrap_.count-down-wrap]:[flex-direction:row] [&_.wrap_.count-down-wrap]:[justify-content:flex-start] [&_.wrap_.count-down-wrap]:[align-items:baseline] [&_.wrap_.count-down-wrap]:[line-height:34rpx] [&_.wrap_.count-down-wrap_.in-banner-count-down-wrap]:[position:absolute] [&_.wrap_.count-down-wrap_.in-banner-count-down-wrap]:[bottom:32rpx] [&_.wrap_.count-down-wrap_.in-banner-count-down-wrap]:[left:32rpx] [&_.wrap_.count-down-wrap_.in-banner-count-down-wrap]:[right:32rpx] [&_.wrap_.count-down-wrap_.status-tag]:[height:32rpx] [&_.wrap_.count-down-wrap_.status-tag]:[line-height:32rpx] [&_.wrap_.count-down-wrap_.status-tag]:[font-size:20rpx] [&_.wrap_.count-down-wrap_.status-tag]:[margin-right:12rpx] [&_.wrap_.count-down-wrap_.status-tag]:[border-radius:16rpx] [&_.wrap_.count-down-wrap_.status-tag]:[padding:0_12rpx] [&_.wrap_.count-down-wrap_.status-tag_.before]:[color:#fff] [&_.wrap_.count-down-wrap_.status-tag_.before]:[background-color:#ff9853] [&_.wrap_.count-down-wrap_.status-tag_.finish]:[color:#fff] [&_.wrap_.count-down-wrap_.status-tag_.finish]:[background-color:#ccc] [&_.wrap_.count-down-wrap_.count-down-label]:[color:#666] [&_.wrap_.count-down-wrap_.count-down-label]:[font-size:24rpx] [&_.wrap_.count-down-wrap_.count-down-label]:[margin-right:0.5em] [&_.wrap_.count-down-wrap_.detail-entry]:[margin-left:auto] [&_.wrap_.count-down-wrap_.detail-entry]:[height:40rpx] [&_.wrap_.count-down-wrap_.detail-entry-label]:[color:#fff] [&_.wrap_.count-down-wrap_.detail-entry-label]:[font-size:24rpx] [&_.wrap_.count-down-wrap_.detail-entry-label]:[margin-right:12rpx] [&_.wrap_.count-down-wrap_.after-banner-count-down-wrap]:[padding:10rpx] [&_.wrap_.count-down-wrap_.after-banner-count-down-wrap_.detail-entry]:[display:flex] [&_.wrap_.count-down-wrap_.after-banner-count-down-wrap_.detail-entry]:[align-items:center] [&_.wrap_.count-down-wrap_.after-banner-count-down-wrap_.detail-entry-label]:[color:#999] [&_.wrap_.count-down-wrap_.after-banner-count-down-wrap_.detail-entry-label]:[margin-right:0] [&_.wrap_.gl-empty-wrap]:[margin-top:180rpx] [&_.wrap_.gl-empty-img]:[width:240rpx] [&_.wrap_.gl-empty-img]:[height:240rpx] [&_.wrap_.gl-empty-img]:[display:block] [&_.wrap_.gl-empty-img]:[margin:0_auto] [&_.wrap_.gl-empty-label]:[font-size:28rpx] [&_.wrap_.gl-empty-label]:[color:#999] [&_.wrap_.gl-empty-label]:[margin-top:40rpx] [&_.wrap_.gl-empty-label]:[text-align:center] [&_.goods-list-container]:[background:#f5f5f5] [&_.promotion-goods-list]:[padding:20rpx_24rpx] [&_.promotion-goods-list]:[background-color:#f5f5f5]">
-    <view id="{{independentID}}" wx:if="{{banner}}" class="wrap">
+    <view v-if="banner" :id="independentID" class="wrap">
       <view class="banner-wrap">
-        <t-image src="{{banner}}" mode="aspectFill" webp="{{true}}" t-class="t-class-promotion-head" />
+        <t-image :src="banner" mode="aspectFill" :webp="true" t-class="t-class-promotion-head" />
         <view
-          wx:if="{{!showBannerDesc && (time >= 0 || statusTag === 'finish')}}"
+          v-if="!showBannerDesc && (time >= 0 || statusTag === 'finish')"
           class="count-down-wrap in-banner-count-down-wrap"
         >
-          <block wx:if="{{statusTag === 'finish'}}">
-            <view class="status-tag {{statusTag}}">
+          <block v-if="statusTag === 'finish'">
+            <view :class="`status-tag ${statusTag}`">
               已结束
             </view>
             <text class="count-down-label">
               活动已结束
             </text>
           </block>
-          <block wx:else>
-            <view wx:if="{{statusTag === 'before'}}" class="status-tag {{statusTag}}">
+          <block v-else>
+            <view v-if="statusTag === 'before'" :class="`status-tag ${statusTag}`">
               未开始
             </view>
             <text class="count-down-label">
               距结束仅剩
             </text>
             <count-down
-              wx:if="{{time > 0}}"
+              v-if="time > 0"
               t-class="wr-cd-class"
-              time="{{time}}"
+              :time="time"
               format="DD天 HH:mm:ss"
-              bind:finish="countDownFinishHandle"
+              @finish="countDownFinishHandle"
             />
           </block>
-          <view class="detail-entry" bind:tap="bannerClickHandle">
+          <view class="detail-entry" @tap="bannerClickHandle">
             <text class="detail-entry-label">
               规则详情
             </text>
@@ -136,39 +136,39 @@ defineExpose({
           </view>
         </view>
         <view
-          wx:if="{{showBannerDesc && (useBannerDescSlot || time >= 0 || statusTag === 'finish')}}"
+          v-if="showBannerDesc && (useBannerDescSlot || time >= 0 || statusTag === 'finish')"
           class="banner-desc-wrap"
         >
-          <block wx:if="{{useBannerDescSlot}}">
+          <block v-if="useBannerDescSlot">
             <slot name="banner-desc" />
           </block>
-          <block wx:else>
+          <block v-else>
             <view class="count-down-wrap after-banner-count-down-wrap">
-              <block wx:if="{{statusTag === 'finish'}}">
-                <view class="status-tag {{statusTag}}">
+              <block v-if="statusTag === 'finish'">
+                <view :class="`status-tag ${statusTag}`">
                   已结束
                 </view>
                 <text class="count-down-label">
                   活动已结束
                 </text>
               </block>
-              <block wx:else>
-                <view wx:if="{{statusTag === 'before'}}" class="status-tag {{statusTag}}">
+              <block v-else>
+                <view v-if="statusTag === 'before'" :class="`status-tag ${statusTag}`">
                   未开始
                 </view>
                 <text class="count-down-label">
                   距结束仅剩
                 </text>
                 <count-down
-                  class="{{cdClass}}"
+                  v-if="time > 0"
+                  :class="cdClass"
                   wr-class="wr-cd-class"
-                  wx:if="{{time > 0}}"
-                  time="{{time}}"
+                  :time="time"
                   format="DD天 HH:mm:ss"
-                  bind:finish="countDownFinishHandle"
+                  @finish="countDownFinishHandle"
                 />
               </block>
-              <view class="detail-entry" bind:tap="bannerClickHandle">
+              <view class="detail-entry" @tap="bannerClickHandle">
                 <text class="detail-entry-label">
                   规则详情
                 </text>
@@ -179,12 +179,12 @@ defineExpose({
         </view>
       </view>
     </view>
-    <view wx:if="{{list && list.length>0}}" class="promotion-goods-list">
+    <view v-if="list && list.length > 0" class="promotion-goods-list">
       <goods-list
         wr-class="goods-list-container"
-        goodsList="{{list}}"
-        bind:click="goodClickHandle"
-        bind:addcart="cardClickHandle"
+        :goodsList="list"
+        @click="goodClickHandle"
+        @addcart="cardClickHandle"
       />
     </view>
     <t-toast id="t-toast" />

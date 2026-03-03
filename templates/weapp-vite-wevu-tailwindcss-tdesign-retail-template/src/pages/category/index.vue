@@ -38,10 +38,10 @@ defineExpose({
 <template>
   <view class="wrap [height:100vh] [overflow:hidden]">
     <goods-category
-      level="{{3}}"
+      :level="3"
       custom-class="goods-category-class ![background-color:#f6f6f6] [height:100%] [&_.goods-category-normal-item-container-item]:[margin-top:20rpx]"
-      category="{{list}}"
-      bind:changeCategory="onChange"
+      :category="list"
+      @changeCategory="onChange"
     />
   </view>
 </template>

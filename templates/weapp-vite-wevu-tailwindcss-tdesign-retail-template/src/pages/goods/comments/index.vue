@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { fetchComments } from '../../../services/comments/fetchComments';
-import { fetchCommentsCount } from '../../../services/comments/fetchCommentsCount';
-import dayjs from 'dayjs';
+import dayjs from 'dayjs'
+import { fetchComments } from '../../../services/comments/fetchComments'
+import { fetchCommentsCount } from '../../../services/comments/fetchCommentsCount'
+
 defineOptions({
   data() {
     return {
@@ -27,24 +28,24 @@ defineOptions({
         goodCount: '0',
         middleCount: '0',
         hasImageCount: '0',
-        uidCount: '0'
-      }
-    };
+        uidCount: '0',
+      },
+    }
   },
   onLoad(options) {
-    this.getCount(options);
-    this.getComments(options);
+    this.getCount(options)
+    this.getComments(options)
   },
   async getCount(options) {
     try {
       const result = await fetchCommentsCount({
-        spuId: options.spuId
+        spuId: options.spuId,
       }, {
-        method: 'POST'
-      });
+        method: 'POST',
+      })
       this.setData({
-        countObj: result
-      });
+        countObj: result,
+      })
       // const { data, code = '' } = result;
       // if (code.toUpperCase() === 'SUCCESS') {
       //     wx.setNavigationBarTitle({
@@ -58,7 +59,8 @@ defineOptions({
       //     title: '查询失败，请稍候重试',
       //     });
       // }
-    } catch (error) {}
+    }
+    catch (error) {}
   },
   generalQueryData(reset) {
     const {
@@ -66,226 +68,231 @@ defineOptions({
       pageNum,
       pageSize,
       spuId,
-      commentLevel
-    } = this.data;
+      commentLevel,
+    } = this.data
     const params = {
       pageNum: 1,
       pageSize: 30,
       queryParameter: {
-        spuId
-      }
-    };
+        spuId,
+      },
+    }
     if (Number(commentLevel) === 3 || Number(commentLevel) === 2 || Number(commentLevel) === 1) {
-      params.queryParameter.commentLevel = Number(commentLevel);
+      params.queryParameter.commentLevel = Number(commentLevel)
     }
     if (hasImage && hasImage === '1') {
-      params.queryParameter.hasImage = true;
-    } else {
-      delete params.queryParameter.hasImage;
+      params.queryParameter.hasImage = true
+    }
+    else {
+      delete params.queryParameter.hasImage
     }
     // 重置请求
-    if (reset) return params;
+    if (reset) { return params }
     return {
       ...params,
       pageNum: pageNum + 1,
-      pageSize
-    };
+      pageSize,
+    }
   },
   async init(reset = true) {
     const {
       loadMoreStatus,
-      commentList = []
-    } = this.data;
-    const params = this.generalQueryData(reset);
+      commentList = [],
+    } = this.data
+    const params = this.generalQueryData(reset)
 
     // 在加载中或者无更多数据，直接返回
-    if (loadMoreStatus !== 0) return;
+    if (loadMoreStatus !== 0) { return }
     this.setData({
-      loadMoreStatus: 1
-    });
+      loadMoreStatus: 1,
+    })
     try {
       const data = await fetchComments(params, {
-        method: 'POST'
-      });
-      const code = 'SUCCESS';
+        method: 'POST',
+      })
+      const code = 'SUCCESS'
       if (code.toUpperCase() === 'SUCCESS') {
         const {
           pageList,
-          totalCount = 0
-        } = data;
-        pageList.forEach(item => {
-          // eslint-disable-next-line no-param-reassign
-          item.commentTime = dayjs(Number(item.commentTime)).format('YYYY/MM/DD HH:mm');
-        });
+          totalCount = 0,
+        } = data
+        pageList.forEach((item) => {
+          item.commentTime = dayjs(Number(item.commentTime)).format('YYYY/MM/DD HH:mm')
+        })
         if (Number(totalCount) === 0 && reset) {
           this.setData({
             commentList: [],
             hasLoaded: true,
             total: totalCount,
-            loadMoreStatus: 2
-          });
-          return;
+            loadMoreStatus: 2,
+          })
+          return
         }
-        const _commentList = reset ? pageList : commentList.concat(pageList);
-        const _loadMoreStatus = _commentList.length === Number(totalCount) ? 2 : 0;
+        const _commentList = reset ? pageList : commentList.concat(pageList)
+        const _loadMoreStatus = _commentList.length === Number(totalCount) ? 2 : 0
         this.setData({
           commentList: _commentList,
           pageNum: params.pageNum || 1,
           totalCount: Number(totalCount),
-          loadMoreStatus: _loadMoreStatus
-        });
-      } else {
-        wx.showToast({
-          title: '查询失败，请稍候重试'
-        });
+          loadMoreStatus: _loadMoreStatus,
+        })
       }
-    } catch (error) {}
-    this.setData({
-      hasLoaded: true
-    });
-  },
-  getScoreArray(score) {
-    var array = [];
-    for (let i = 0; i < 5; i++) {
-      if (i < score) {
-        array.push(2);
-      } else {
-        array.push(0);
+      else {
+        wx.showToast({
+          title: '查询失败，请稍候重试',
+        })
       }
     }
-    return array;
+    catch (error) {}
+    this.setData({
+      hasLoaded: true,
+    })
+  },
+  getScoreArray(score) {
+    const array = []
+    for (let i = 0; i < 5; i++) {
+      if (i < score) {
+        array.push(2)
+      }
+      else {
+        array.push(0)
+      }
+    }
+    return array
   },
   getComments(options) {
     const {
       commentLevel = -1,
       spuId,
-      hasImage = ''
-    } = options;
+      hasImage = '',
+    } = options
     if (commentLevel !== -1) {
       this.setData({
-        commentLevel: commentLevel
-      });
+        commentLevel,
+      })
     }
     this.setData({
-      hasImage: hasImage,
+      hasImage,
       commentType: hasImage ? '4' : '',
-      spuId: spuId
-    });
-    this.init(true);
+      spuId,
+    })
+    this.init(true)
   },
   changeTag(e) {
-    var {
-      commenttype
-    } = e.currentTarget.dataset;
-    var {
-      commentType
-    } = this.data;
-    if (commentType === commenttype) return;
+    const {
+      commenttype,
+    } = e.currentTarget.dataset
+    const {
+      commentType,
+    } = this.data
+    if (commentType === commenttype) { return }
     this.setData({
       loadMoreStatus: 0,
       commentList: [],
       total: 0,
       myTotal: 0,
       myPageNum: 1,
-      pageNum: 1
-    });
+      pageNum: 1,
+    })
     if (commenttype === '' || commenttype === '5') {
       this.setData({
         hasImage: '',
-        commentLevel: ''
-      });
-    } else if (commenttype === '4') {
+        commentLevel: '',
+      })
+    }
+    else if (commenttype === '4') {
       this.setData({
         hasImage: '1',
-        commentLevel: ''
-      });
-    } else {
+        commentLevel: '',
+      })
+    }
+    else {
       this.setData({
         hasImage: '',
-        commentLevel: commenttype
-      });
+        commentLevel: commenttype,
+      })
     }
     if (commenttype === '5') {
       this.setData({
         myLoadStatus: 1,
-        commentType: commenttype
-      });
-      this.getMyCommentsList();
-    } else {
+        commentType: commenttype,
+      })
+      this.getMyCommentsList()
+    }
+    else {
       this.setData({
         myLoadStatus: 0,
-        commentType: commenttype
-      });
-      this.init(true);
+        commentType: commenttype,
+      })
+      this.init(true)
     }
   },
   onReachBottom() {
     const {
       total = 0,
-      commentList
-    } = this.data;
+      commentList,
+    } = this.data
     if (commentList.length === total) {
       this.setData({
-        loadMoreStatus: 2
-      });
-      return;
+        loadMoreStatus: 2,
+      })
+      return
     }
-    this.init(false);
-  }
-});
+    this.init(false)
+  },
+})
 </script>
 
 <template>
-<view class="comments-header [display:flex] [flex-wrap:wrap] [padding:32rpx_32rpx_0rpx] [background-color:#fff] [margin-top:-24rpx] [margin-left:-24rpx]">
-	<t-tag t-class="comments-header-tag {{commentType === '' ? 'comments-header-active' : ''}} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]" data-commentType="" bindtap="changeTag">
-		全部({{countObj.commentCount}})
-	</t-tag>
-	<t-tag
-	  t-class="comments-header-tag {{commentType === '5' ? 'comments-header-active' : ''}} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]"
-	  wx:if="{{countObj.uidCount !== '0'}}"
-	  data-commentType="5"
-	  bindtap="changeTag"
-	>
-		自己({{countObj.uidCount}})
-	</t-tag>
-	<t-tag t-class="comments-header-tag {{commentType === '4' ? 'comments-header-active' : ''}} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]" data-commentType="4" bindtap="changeTag">
-		带图({{countObj.hasImageCount}})
-	</t-tag>
-	<t-tag t-class="comments-header-tag {{commentType === '3' ? 'comments-header-active' : ''}} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]" data-commentType="3" bindtap="changeTag">
-		好评({{countObj.goodCount}})
-	</t-tag>
-	<t-tag t-class="comments-header-tag {{commentType === '2' ? 'comments-header-active' : ''}} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]" data-commentType="2" bindtap="changeTag">
-		中评({{countObj.middleCount}})
-	</t-tag>
-	<t-tag t-class="comments-header-tag {{commentType === '1' ? 'comments-header-active' : ''}} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]" data-commentType="1" bindtap="changeTag">
-		差评({{countObj.badCount}})
-	</t-tag>
-</view>
-<view class="comments-card-list">
-	<block wx:for="{{commentList}}" wx:key="index">
-		<comments-card
-		  commentScore="{{item.commentScore}}"
-		  userName="{{item.userName}}"
-		  commentResources="{{item.commentResources || []}}"
-		  commentContent="{{item.commentContent}}"
-		  isAnonymity="{{item.isAnonymity}}"
-		  commentTime="{{item.commentTime}}"
-		  isAutoComment="{{item.isAutoComment}}"
-		  userHeadUrl="{{item.userHeadUrl}}"
-		  specInfo="{{item.specInfo}}"
-		  sellerReply="{{item.sellerReply || ''}}"
-		  goodsDetailInfo="{{item.goodsDetailInfo || ''}}"
-		/>
-	</block>
-	<t-load-more
-	  t-class="no-more [padding-left:20rpx] [padding-right:20rpx]"
-	  status="{{loadMoreStatus}}"
-	  no-more-text="没有更多了"
-	  color="#BBBBBB"
-	  failedColor="#FA550F"
-	/>
-</view>
-
+  <view class="comments-header [display:flex] [flex-wrap:wrap] [padding:32rpx_32rpx_0rpx] [background-color:#fff] [margin-top:-24rpx] [margin-left:-24rpx]">
+    <t-tag :t-class="`comments-header-tag ${commentType === '' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`" data-commentType="" @tap="changeTag">
+      全部({{ countObj.commentCount }})
+    </t-tag>
+    <t-tag
+      v-if="countObj.uidCount !== '0'"
+      :t-class="`comments-header-tag ${commentType === '5' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`"
+      data-commentType="5"
+      @tap="changeTag"
+    >
+      自己({{ countObj.uidCount }})
+    </t-tag>
+    <t-tag :t-class="`comments-header-tag ${commentType === '4' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`" data-commentType="4" @tap="changeTag">
+      带图({{ countObj.hasImageCount }})
+    </t-tag>
+    <t-tag :t-class="`comments-header-tag ${commentType === '3' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`" data-commentType="3" @tap="changeTag">
+      好评({{ countObj.goodCount }})
+    </t-tag>
+    <t-tag :t-class="`comments-header-tag ${commentType === '2' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`" data-commentType="2" @tap="changeTag">
+      中评({{ countObj.middleCount }})
+    </t-tag>
+    <t-tag :t-class="`comments-header-tag ${commentType === '1' ? 'comments-header-active' : ''} [margin-top:24rpx] [margin-left:24rpx] ![height:56rpx] ![font-size:24rpx] [justify-content:center] ![background-color:#F5F5F5] ![border-radius:8rpx] ![border:1px_solid_#F5F5F5] [background-color:#FFECE9] [color:#FA4126] [border:1px_solid_#FA4126]`" data-commentType="1" @tap="changeTag">
+      差评({{ countObj.badCount }})
+    </t-tag>
+  </view>
+  <view class="comments-card-list">
+    <block v-for="(item, index) in commentList" :key="index">
+      <comments-card
+        :commentScore="item.commentScore"
+        :userName="item.userName"
+        :commentResources="item.commentResources || []"
+        :commentContent="item.commentContent"
+        :isAnonymity="item.isAnonymity"
+        :commentTime="item.commentTime"
+        :isAutoComment="item.isAutoComment"
+        :userHeadUrl="item.userHeadUrl"
+        :specInfo="item.specInfo"
+        :sellerReply="item.sellerReply || ''"
+        :goodsDetailInfo="item.goodsDetailInfo || ''"
+      />
+    </block>
+    <t-load-more
+      t-class="no-more [padding-left:20rpx] [padding-right:20rpx]"
+      :status="loadMoreStatus"
+      no-more-text="没有更多了"
+      color="#BBBBBB"
+      failedColor="#FA550F"
+    />
+  </view>
 </template>
 
 <json>

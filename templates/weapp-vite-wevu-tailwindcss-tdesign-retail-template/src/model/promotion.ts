@@ -1,4 +1,4 @@
-import { getGoodsList } from './goods';
+import { getGoodsList } from './goods'
 
 export function getPromotion(baseID = 0, length = 10) {
   return {
@@ -9,12 +9,12 @@ export function getPromotion(baseID = 0, length = 10) {
         title: item.title,
         price: item.minSalePrice,
         originPrice: item.maxLinePrice,
-        tags: item.spuTagList.map((tag) => ({ title: tag.title })),
-      };
+        tags: item.spuTagList.map(tag => ({ title: tag.title })),
+      }
     }),
     banner: 'https://tdesign.gtimg.com/miniprogram/template/retail/promotion/banner-promotion.png',
     time: 1000 * 60 * 60 * 20,
     showBannerDesc: true,
     statusTag: 'running',
-  };
+  }
 }

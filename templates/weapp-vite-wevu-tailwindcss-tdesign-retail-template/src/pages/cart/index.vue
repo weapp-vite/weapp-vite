@@ -391,34 +391,34 @@ defineExpose({
 
 <template>
   <!-- 分层购物车 -->
-  <block wx:if="{{cartIsNotEmpty}}">
+  <block v-if="cartIsNotEmpty">
     <cart-group
-      store-goods="{{ cartStoreGoods }}"
-      invalid-good-items="{{ cartInvalidGoodItems }}"
-      bindselectgoods="onGoodsSelect"
-      bindselectstore="onStoreSelect"
-      bindchangequantity="onQuantityChange"
-      bindgocollect="goCollect"
-      bindgoodsclick="goGoodsDetail"
-      bindclearinvalidgoods="clearInvalidGoods"
-      binddelete="onGoodsDelete"
+      :store-goods="cartStoreGoods"
+      :invalid-good-items="cartInvalidGoodItems"
+      @selectgoods="onGoodsSelect"
+      @selectstore="onStoreSelect"
+      @changequantity="onQuantityChange"
+      @gocollect="goCollect"
+      @goodsclick="goGoodsDetail"
+      @clearinvalidgoods="clearInvalidGoods"
+      @delete="onGoodsDelete"
     />
 
     <view class="gap [height:100rpx] [width:100%]" />
     <!-- 商品小计以及结算按钮 -->
     <cart-bar
-      is-all-selected="{{cartIsAllSelected}}"
-      total-amount="{{cartTotalAmount}}"
-      total-goods-num="{{cartSelectedGoodsCount}}"
-      total-discount-amount="{{cartTotalDiscountAmount}}"
-      fixed="{{true}}"
-      bottomHeight="{{110}}"
-      bindhandleSelectAll="onSelectAll"
-      bindhandleToSettle="onToSettle"
+      :is-all-selected="cartIsAllSelected"
+      :total-amount="cartTotalAmount"
+      :total-goods-num="cartSelectedGoodsCount"
+      :total-discount-amount="cartTotalDiscountAmount"
+      :fixed="true"
+      :bottomHeight="110"
+      @handleSelectAll="onSelectAll"
+      @handleToSettle="onToSettle"
     />
   </block>
   <!-- 购物车空态 -->
-  <cart-empty wx:else bind:handleClick="onGotoHome" />
+  <cart-empty v-else @handleClick="onGotoHome" />
   <t-toast id="t-toast" />
   <t-dialog id="t-dialog" />
 </template>

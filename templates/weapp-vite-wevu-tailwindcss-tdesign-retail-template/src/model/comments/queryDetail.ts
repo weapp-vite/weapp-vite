@@ -38,7 +38,7 @@ const queryDetail = {
   ],
   logisticsScore: null,
   serviceScore: null,
-};
+}
 
 /**
  * @param {string} skuId
@@ -46,5 +46,5 @@ const queryDetail = {
  * @param {string} orderNo
  */
 export function queryCommentDetail() {
-  return queryDetail;
+  return queryDetail
 }

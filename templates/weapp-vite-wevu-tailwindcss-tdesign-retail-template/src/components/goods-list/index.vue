@@ -67,18 +67,18 @@ defineExpose({
 </script>
 
 <template>
-  <view id="{{independentID}}" class="goods-list-wrap wr-class [display:flex] [flex-flow:row_wrap] [justify-content:space-between] [padding:0] [background:#fff]">
-    <block wx:for="{{goodsList}}" wx:for-item="item" wx:key="index">
+  <view :id="independentID" class="goods-list-wrap wr-class [display:flex] [flex-flow:row_wrap] [justify-content:space-between] [padding:0] [background:#fff]">
+    <block v-for="(item, index) in goodsList" :key="index">
       <goods-card
-        id="{{independentID}}-gd-{{index}}"
-        data="{{item}}"
-        currency="{{item.currency || '¥'}}"
-        thresholds="{{thresholds}}"
+        :id="`${independentID}-gd-${index}`"
+        :data="item"
+        :currency="item.currency || '¥'"
+        :thresholds="thresholds"
         class="goods-card-inside"
-        data-index="{{index}}"
-        bind:thumb="onClickGoodsThumb"
-        bind:click="onClickGoods"
-        bind:add-cart="onAddCart"
+        :data-index="index"
+        @thumb="onClickGoodsThumb"
+        @click="onClickGoods"
+        @add-cart="onAddCart"
       />
     </block>
   </view>

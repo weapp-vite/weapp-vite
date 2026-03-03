@@ -69,9 +69,9 @@ defineExpose({
 
 <template>
   <view
+    v-if="!(listIsEmpty && (status === 0 || status === 2))"
     class="load-more wr-class [font-size:24rpx] [height:100rpx] [display:flex] [flex-direction:column] [justify-content:center] [&_.t-class-loading]:[display:flex] [&_.t-class-loading]:[justify-content:center] [&_.t-class-loading-text]:[color:#bbbbbb] [&_.t-class-indicator]:[color:#b9b9b9]"
-    wx:if="{{!(listIsEmpty && (status === 0 || status === 2))}}"
-    bindtap="tapHandle"
+    @tap="tapHandle"
   >
     <!-- 加载中 -->
 
@@ -79,14 +79,14 @@ defineExpose({
       t-class="t-class-loading"
       t-class-text="t-class-loading-text"
       t-class-indicator="t-class-indicator"
-      loading="{{status === 1}}"
+      :loading="status === 1"
       text="加载中..."
       theme="circular"
       size="40rpx"
     />
 
     <!-- 已全部加载 -->
-    <t-divider wx:if="{{status === 2}}" t-class="t-class-divider" t-class-content="t-class-divider-content">
+    <t-divider v-if="status === 2" t-class="t-class-divider" t-class-content="t-class-divider-content">
       <template #content>
         <text>
           {{ noMoreText }}
@@ -95,16 +95,16 @@ defineExpose({
     </t-divider>
 
     <!-- 加载失败 -->
-    <view class="load-more__error [margin:auto]" wx:if="{{status===3}}">
+    <view v-if="status === 3" class="load-more__error [margin:auto]">
       加载失败
-      <text class="load-more__refresh-btn [margin-left:16rpx] [color:#fa4126]" bind:tap="tapHandle">
+      <text class="load-more__refresh-btn [margin-left:16rpx] [color:#fa4126]" @tap="tapHandle">
         刷新
       </text>
     </view>
   </view>
 
   <!-- 支持通过slot传入页面/列表的空态，load-more来控制空态的显示状态 -->
-  <slot wx:if="{{listIsEmpty && (status === 0 || status === 2)}}" name="empty" />
+  <slot v-if="listIsEmpty && (status === 0 || status === 2)" name="empty" />
 </template>
 
 <json>

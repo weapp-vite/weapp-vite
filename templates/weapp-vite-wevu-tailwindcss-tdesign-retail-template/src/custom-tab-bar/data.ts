@@ -19,4 +19,4 @@ export default [
     text: '个人中心',
     url: 'pages/usercenter/index',
   },
-];
+]

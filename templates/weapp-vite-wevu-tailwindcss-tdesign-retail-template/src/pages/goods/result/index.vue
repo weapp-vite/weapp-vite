@@ -287,10 +287,10 @@ defineExpose({
       t-class-input-container="t-class__input-container"
       t-class-left="t-search__left-icon"
       t-class-input="t-search__input"
-      value="{{keywords}}"
+      :value="keywords"
       leftIcon=""
       placeholder="iPhone12pro"
-      bind:submit="handleSubmit"
+      @submit="handleSubmit"
     >
       <template #left-icon>
         <t-icon prefix="wr" name="search" size="40rpx" color="#bbb" />
@@ -298,19 +298,19 @@ defineExpose({
     </t-search>
     <filter
       wr-class="filter-container"
-      bind:change="handleFilterChange"
-      layout="{{layout}}"
-      sorts="{{sorts}}"
-      overall="{{overall}}"
-      bind:showFilterPopup="showFilterPopup"
+      :layout="layout"
+      :sorts="sorts"
+      :overall="overall"
+      @change="handleFilterChange"
+      @showFilterPopup="showFilterPopup"
     >
       <template #filterPopup>
         <filter-popup
-          show="{{show}}"
+          :show="show"
 
-          bind:showFilterPopupClose="showFilterPopupClose"
-          bind:reset="reset"
-          bind:confirm="confirm"
+          @showFilterPopupClose="showFilterPopupClose"
+          @reset="reset"
+          @confirm="confirm"
         >
           <template #filterSlot>
             <view class="price-container">
@@ -323,8 +323,8 @@ defineExpose({
                   t-class="price-ipt"
                   t-class-input="t-class-input"
                   placeholder="最低价"
-                  value="{{minVal}}"
-                  bindchange="onMinValAction"
+                  :value="minVal"
+                  @change="onMinValAction"
                 />
                 <view class="price-divided">
                   -
@@ -334,8 +334,8 @@ defineExpose({
                   t-class="price-ipt"
                   t-class-input="t-class-input"
                   placeholder="最高价"
-                  value="{{maxVal}}"
-                  bindchange="onMaxValAction"
+                  :value="maxVal"
+                  @change="onMaxValAction"
                 />
               </view>
             </view>
@@ -343,18 +343,18 @@ defineExpose({
         </filter-popup>
       </template>
     </filter>
-    <view class="empty-wrap" wx:if="{{goodsList.length === 0 && hasLoaded}}">
+    <view v-if="goodsList.length === 0 && hasLoaded" class="empty-wrap">
       <t-empty t-class="empty-tips" size="240rpx" description="暂无相关商品" />
     </view>
-    <view class="category-goods-list" wx:if="{{goodsList.length}}">
+    <view v-if="goodsList.length" class="category-goods-list">
       <goods-list
         wr-class="wr-goods-list"
-        goodsList="{{goodsList}}"
-        bind:click="gotoGoodsDetail"
-        bind:addcart="handleAddCart"
+        :goodsList="goodsList"
+        @click="gotoGoodsDetail"
+        @addcart="handleAddCart"
       />
     </view>
-    <load-more wx:if="{{goodsList.length > 0}}" status="{{loadMoreStatus}}" no-more-text="没有更多了" />
+    <load-more v-if="goodsList.length > 0" :status="loadMoreStatus" no-more-text="没有更多了" />
   </view>
   <t-toast id="t-toast" />
 </template>

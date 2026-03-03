@@ -1,9 +1,9 @@
-import { config, cdnBase } from '../../config/index';
+import { cdnBase, config } from '../../config/index'
+import { genSwiperImageList } from '../../model/swiper'
+import { delay } from '../_utils/delay'
 
 /** 获取首页数据 */
 function mockFetchHome() {
-  const { delay } = require('../_utils/delay');
-  const { genSwiperImageList } = require('../../model/swiper');
   return delay().then(() => {
     return {
       swiper: genSwiperImageList(),
@@ -38,16 +38,16 @@ function mockFetchHome() {
         },
       ],
       activityImg: `${cdnBase}/activity/banner.png`,
-    };
-  });
+    }
+  })
 }
 
 /** 获取首页数据 */
 export function fetchHome() {
   if (config.useMock) {
-    return mockFetchHome();
+    return mockFetchHome()
   }
   return new Promise((resolve) => {
-    resolve('real api');
-  });
+    resolve('real api')
+  })
 }

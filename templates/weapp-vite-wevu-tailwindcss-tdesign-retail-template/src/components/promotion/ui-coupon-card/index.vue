@@ -82,9 +82,9 @@ defineExpose({
 
 <template>
   <wxs src="./tools.wxs" module="tools" />
-  <view class="wr-coupon coupon-class theme-{{theme}} [display:flex] [background-image:url(https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-bg-nocorners.png)] [background-size:100%_100%] [background-repeat:no-repeat] [position:relative] [margin-bottom:24rpx] [overflow:hidden] [background-image:url('https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-bg-nocorners.png')]">
+  <view :class="`wr-coupon coupon-class theme-${theme} [display:flex] [background-image:url(https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-bg-nocorners.png)] [background-size:100%_100%] [background-repeat:no-repeat] [position:relative] [margin-bottom:24rpx] [overflow:hidden] [background-image:url('https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-bg-nocorners.png')]`">
     <view class="wr-coupon__left [width:200rpx] [height:180rpx] [display:flex] [flex-direction:column] [justify-content:center] [text-align:center] [color:#fa4126] [overflow:hidden] [position:relative]">
-      <view wx:if="{{type == CouponType.ZK_COUPON || type === CouponType.MERCHANT_ZK_COUPON}}">
+      <view v-if="type == CouponType.ZK_COUPON || type === CouponType.MERCHANT_ZK_COUPON">
         <text class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]">
           {{ value }}
         </text>
@@ -95,8 +95,8 @@ defineExpose({
           {{ desc }}
         </view>
       </view>
-      <view wx:if="{{type == CouponType.MJ_COUPON || type === CouponType.MERCHANT_MJ_COUPON}}">
-        <text class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]" wx:if="{{tools.isBigValue(value)}}">
+      <view v-if="type == CouponType.MJ_COUPON || type === CouponType.MERCHANT_MJ_COUPON">
+        <text v-if="tools.isBigValue(value)" class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]">
           <text class="wr-coupon__left--value-int [font-size:48rpx] [line-height:88rpx]">
             {{ tools.getBigValues(value)[0] }}
           </text>
@@ -104,7 +104,7 @@ defineExpose({
             .{{ tools.getBigValues(value)[1] }}
           </text>
         </text>
-        <text class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]" wx:else>
+        <text v-else class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]">
           {{ value / 100 }}
         </text>
         <text class="wr-coupon__left--unit [font-size:24rpx] [line-height:32rpx]">
@@ -114,7 +114,7 @@ defineExpose({
           {{ desc }}
         </view>
       </view>
-      <view wx:if="{{type === CouponType.MJF_COUPON || type === CouponType.MYF_COUPON}}">
+      <view v-if="type === CouponType.MJF_COUPON || type === CouponType.MYF_COUPON">
         <text class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]" style="font-family: 'PingFang SC', sans-serif; font-size: 44rpx">
           免邮
         </text>
@@ -122,8 +122,8 @@ defineExpose({
           {{ desc }}
         </view>
       </view>
-      <view wx:if="{{type == CouponType.GIFT_COUPON}}">
-        <t-image t-class="wr-coupon__left--image [width:128rpx] [height:128rpx] [border-radius:8px] [margin-top:30rpx]" src="{{image}}" mode="aspectFill" />
+      <view v-if="type == CouponType.GIFT_COUPON">
+        <t-image t-class="wr-coupon__left--image [width:128rpx] [height:128rpx] [border-radius:8px] [margin-top:30rpx]" :src="image" mode="aspectFill" />
       </view>
     </view>
     <view class="wr-coupon__right [flex-grow:1] [padding:0_20rpx] [height:180rpx] [box-sizing:border-box] [overflow:hidden] [display:flex] [align-items:center]">
@@ -135,7 +135,7 @@ defineExpose({
           {{ timeLimit }}
         </view>
         <view class="coupon-desc">
-          <view wx:if="{{ruleDesc}}">
+          <view v-if="ruleDesc">
             {{ ruleDesc }}
           </view>
         </view>
@@ -144,9 +144,9 @@ defineExpose({
         <slot name="operator" />
       </view>
     </view>
-    <view wx:if="{{status === 'useless' || status === 'disabled'}}" class="wr-coupon__seal seal-{{status}} [width:128rpx] [height:128rpx] [position:absolute] [top:0] [right:0] [background-size:100%_100%] [&_.seal-useless]:[background-image:url('https://tdesign.gtimg.com/miniprogram/template/retail/coupon/seal-used.png')] [&_.seal-disabled]:[background-image:url('https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-expired.png')]" />
-    <view wx:if="{{mask}}" class="wr-coupon__mask [width:702rpx] [height:182rpx] [position:absolute] [top:0] [left:0] [background-color:#ffffff] [opacity:0.5]" />
-    <view wx:if="{{superposable}}" class="wr-coupon__tag [position:absolute] [top:8px] [right:-24rpx] [text-align:center] [width:106rpx] [height:28rpx] [opacity:0.9] [font-size:20rpx] [line-height:28rpx] [color:#fa4126] [border:0.5px_solid_#fa4126] [box-sizing:border-box] [transform:rotate(45deg)]">
+    <view v-if="status === 'useless' || status === 'disabled'" :class="`wr-coupon__seal seal-${status} [width:128rpx] [height:128rpx] [position:absolute] [top:0] [right:0] [background-size:100%_100%] [&_.seal-useless]:[background-image:url('https://tdesign.gtimg.com/miniprogram/template/retail/coupon/seal-used.png')] [&_.seal-disabled]:[background-image:url('https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-expired.png')]`" />
+    <view v-if="mask" class="wr-coupon__mask [width:702rpx] [height:182rpx] [position:absolute] [top:0] [left:0] [background-color:#ffffff] [opacity:0.5]" />
+    <view v-if="superposable" class="wr-coupon__tag [position:absolute] [top:8px] [right:-24rpx] [text-align:center] [width:106rpx] [height:28rpx] [opacity:0.9] [font-size:20rpx] [line-height:28rpx] [color:#fa4126] [border:0.5px_solid_#fa4126] [box-sizing:border-box] [transform:rotate(45deg)]">
       可叠加
     </view>
   </view>
