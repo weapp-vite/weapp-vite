@@ -118,6 +118,22 @@ describe('runtime config internal loadConfig', () => {
     } as any)).rejects.toThrow('cjs wrapped')
   })
 
+  it('rethrows original error when cjs wrapper is unavailable', async () => {
+    loadConfigFromFileMock.mockRejectedValueOnce(new Error('raw boom'))
+    createCjsConfigLoadErrorMock.mockReturnValueOnce(null)
+
+    const loadConfig = createFactory()
+
+    await expect(loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: undefined,
+      configFile: '/project/vite.config.ts',
+    } as any)).rejects.toThrow('raw boom')
+  })
+
   it('throws when weapp.lib is configured without a valid entry', async () => {
     loadConfigFromFileMock.mockResolvedValueOnce({
       config: {
@@ -301,6 +317,59 @@ describe('runtime config internal loadConfig', () => {
     } as any)).rejects.toThrow('已开启 weapp.multiPlatform，--project-config 不再支持')
   })
 
+  it('reuses loaded config when resolved weapp config path equals loaded path', async () => {
+    resolveWeappConfigFileMock.mockResolvedValueOnce('/project/vite.config.ts')
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+    resolveProjectConfigRootMock.mockReturnValueOnce('dist')
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(loadConfigFromFileMock).toHaveBeenCalledTimes(1)
+    expect(result.configFilePath).toBe('/project/vite.config.ts')
+  })
+
+  it('wraps cjs errors from weapp-specific config loading', async () => {
+    resolveWeappConfigFileMock.mockResolvedValueOnce('/project/weapp-vite.config.ts')
+    loadConfigFromFileMock
+      .mockResolvedValueOnce({
+        config: {
+          weapp: {
+            platform: 'weapp',
+          },
+        },
+        path: '/project/vite.config.ts',
+      })
+      .mockRejectedValueOnce(new Error('weapp config boom'))
+    createCjsConfigLoadErrorMock.mockReturnValueOnce(new Error('weapp wrapped'))
+
+    const loadConfig = createFactory()
+
+    await expect(loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)).rejects.toThrow('weapp wrapped')
+  })
+
   it('uses explicit project config path when multiPlatform is disabled', async () => {
     loadConfigFromFileMock.mockResolvedValueOnce({
       config: {
@@ -331,6 +400,32 @@ describe('runtime config internal loadConfig', () => {
     })
     expect(result.projectConfigPath).toBe('/project/foo/custom.project.config.json')
     expect(result.projectPrivateConfigPath).toBe('/project/foo/project.private.config.weapp.json')
+  })
+
+  it('keeps default rolldown entryFileNames pattern on success path', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+    resolveProjectConfigRootMock.mockReturnValueOnce('dist')
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    const entryFileNames = result.config.build?.rolldownOptions?.output?.entryFileNames as (chunk: { name: string }) => string
+    expect(entryFileNames({ name: 'pages/index/index' })).toBe('pages/index/index.js')
   })
 
   it('skips project config loading in lib mode and keeps existing swc plugin', async () => {
