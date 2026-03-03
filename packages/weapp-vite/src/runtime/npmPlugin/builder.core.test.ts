@@ -160,6 +160,78 @@ describe('runtime npm package builder core', () => {
     expect(getPackageInfoMock).not.toHaveBeenCalledWith('lodash')
   })
 
+  it('copies entry sourcemap into output when source entry has sourcemap', async () => {
+    const root = await createTempDir()
+    const sourceEntry = path.resolve(root, 'demo/index.js')
+    const sourceMapPath = `${sourceEntry}.map`
+    await fs.ensureDir(path.dirname(sourceEntry))
+    await fs.writeFile(sourceEntry, 'module.exports = 1\n//# sourceMappingURL=index.js.map', 'utf8')
+    await fs.writeFile(sourceMapPath, JSON.stringify({ version: 3, file: 'index.js', sources: ['index.ts'] }), 'utf8')
+
+    const ctx = createMockContext()
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: path.resolve(root, 'demo'),
+      packageJson: {
+        name: 'demo',
+        version: '0.0.0',
+        dependencies: {},
+      },
+    })
+    resolveModuleMock.mockReturnValue(sourceEntry)
+
+    await builder.buildPackage({
+      dep: 'demo',
+      outDir: path.resolve(root, 'dist/miniprogram_npm'),
+      isDependenciesCacheOutdate: true,
+    })
+
+    const copiedMapPath = path.resolve(root, 'dist/miniprogram_npm/demo/index.js.map')
+    expect(await fs.pathExists(copiedMapPath)).toBe(true)
+    expect(await fs.readFile(copiedMapPath, 'utf8')).toContain('"sources":["index.ts"]')
+  })
+
+  it('backfills entry sourcemap without rebundling when cache is valid', async () => {
+    const root = await createTempDir()
+    const sourceEntry = path.resolve(root, 'demo/index.js')
+    const sourceMapPath = `${sourceEntry}.map`
+    const outDir = path.resolve(root, 'dist/miniprogram_npm/demo')
+    const outputEntry = path.resolve(outDir, 'index.js')
+    await fs.ensureDir(path.dirname(sourceEntry))
+    await fs.ensureDir(outDir)
+    await fs.writeFile(sourceEntry, 'module.exports = 1\n//# sourceMappingURL=index.js.map', 'utf8')
+    await fs.writeFile(sourceMapPath, JSON.stringify({ version: 3, file: 'index.js', sources: ['index.ts'] }), 'utf8')
+    await fs.writeFile(outputEntry, 'module.exports = 1', 'utf8')
+
+    const sourceTime = new Date('2024-01-01T00:00:00.000Z')
+    const outputTime = new Date('2024-01-02T00:00:00.000Z')
+    await fs.utimes(sourceEntry, sourceTime, sourceTime)
+    await fs.utimes(outputEntry, outputTime, outputTime)
+
+    const ctx = createMockContext()
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: path.resolve(root, 'demo'),
+      packageJson: {
+        name: 'demo',
+        version: '0.0.0',
+        dependencies: {},
+      },
+    })
+    resolveModuleMock.mockReturnValue(sourceEntry)
+
+    await builder.buildPackage({
+      dep: 'demo',
+      outDir: path.resolve(root, 'dist/miniprogram_npm'),
+      isDependenciesCacheOutdate: false,
+    })
+
+    expect(viteBuildMock).not.toHaveBeenCalled()
+    const copiedMapPath = path.resolve(outDir, 'index.js.map')
+    expect(await fs.pathExists(copiedMapPath)).toBe(true)
+    expect(await fs.readFile(copiedMapPath, 'utf8')).toContain('"sources":["index.ts"]')
+  })
+
   it('skips non-miniprogram rebuild when output entry is newer than source entry', async () => {
     const root = await createTempDir()
     const sourceEntry = path.resolve(root, 'demo/index.js')
