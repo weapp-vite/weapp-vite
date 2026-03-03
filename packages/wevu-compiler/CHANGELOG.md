@@ -1,5 +1,15 @@
 # @wevu/compiler
 
+## 6.7.1
+
+### Patch Changes
+
+- 🐛 **修复 `@wevu/compiler` 在 `defineOptions` 与组件事件内联表达式组合场景下的注入缺陷：当组件选项通过 spread 合并且 `methods` 来自 spread 对象时，内联事件映射会新增同名 `methods` 键导致原方法被覆盖，进而在模板中触发 `@change="onChange"` 时出现 `onChange is not a function`。本次调整为按 spread 来源合并 `methods` 后再注入 `__weapp_vite_inline_map`，并恢复零售模板 tabbar 使用标准 Vue 事件写法，避免运行时方法丢失。** [`662630e`](https://github.com/weapp-vite/weapp-vite/commit/662630e7c12e49bf783d7e728618fbbad863ff3b) by @sonofmagic
+
+- 🐛 **修复 `defineOptions` 参数内联模块的 TypeScript 类型定义：序列化内置构造器映射时，原类型仅允许“可调用函数”，会导致 `WeakMap` / `WeakSet` 等仅可构造对象出现类型不兼容。现已调整为同时支持“可调用或可构造”类型，消除该文件的类型报错且不改变运行时行为。** [`bc7a59a`](https://github.com/weapp-vite/weapp-vite/commit/bc7a59a3181cb71e0593ed6b628e2124cb1b021b) by @sonofmagic
+
+- 🐛 **修复了 `defineOptions` 静态内联在模板项目中的编译问题：当配置对象中包含对象方法写法（如 `data() {}`）或内置构造器类型（如 `String`/`Number`）时，之前可能被错误序列化为不可解析代码或被误判为不支持的原生函数。此次同时收敛了 defineOptions 依赖提取范围，避免仅在方法体中使用的模块被提前求值导致构建失败。并同步保留零售模板的 TypeScript 路径映射配置，确保模板工程一致性。** [`8184b9f`](https://github.com/weapp-vite/weapp-vite/commit/8184b9f12b9aafb18292516cb03102db074c9c43) by @sonofmagic
+
 ## 6.7.0
 
 ## 6.6.16

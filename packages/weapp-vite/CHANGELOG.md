@@ -1,5 +1,23 @@
 # weapp-vite
 
+## 6.7.1
+
+### Patch Changes
+
+- 🐛 **本次变更主要修复了三类一致性与可维护性问题：一是 `wevu` 构建默认产物此前仅压缩且缺少 sourcemap，不利于排查线上问题，现调整为输出 sourcemap 以提升调试可观测性；二是 `weapp-vite` 侧 `oxc-parser` 与类型依赖升级到同一版本，降低 AST 解析与类型不匹配带来的潜在风险；三是同步更新 workspace catalog 与 `create-weapp-vite` 生成 catalog，避免模板初始化时依赖版本与仓库主线不一致。** [`17f30b1`](https://github.com/weapp-vite/weapp-vite/commit/17f30b169337d5bc015a46841807f964cc1e140f) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 包内多处 TypeScript 类型问题，并收敛包级 `tsc` 检查范围到发布源码：** [`3740446`](https://github.com/weapp-vite/weapp-vite/commit/3740446500162e10495ed087e8c6f5c89bbd0f85) by @sonofmagic
+  - 修正 npm 打包器中 Babel 导出节点与支付宝 npm 模式的类型不匹配；
+  - 修正路由监听事件分支、lib 入口类型回退、作用域插槽平台配置空值判断与共享构建输出回调参数类型；
+  - 修正自动导入产物同步时 `outputPath` 缩窄后的可空类型告警；
+  - `packages/weapp-vite/tsconfig.json` 排除 `*.test.ts` 与 `test/`，避免测试夹具类型噪音干扰包级 typecheck。
+
+- 🐛 **调整 npm 构建默认压缩策略：`weapp-vite` 的 npm 打包产物默认不再压缩（`build.minify` 默认值从 `true` 改为 `false`），以便在小程序端更容易排查依赖代码问题。若有体积优化需求，仍可通过 `weapp.npm.buildOptions` 显式覆盖为 `minify: true`。** [`e621560`](https://github.com/weapp-vite/weapp-vite/commit/e6215606f17d67a8f6f524c963d35531f184d94e) by @sonofmagic
+
+- 🐛 **修复 npm 重打包场景 sourcemap 错位问题：对于会被 `weapp-vite` 二次打包的普通依赖，不再复制上游入口自带的 sourcemap 到 `miniprogram_npm`，避免出现 `index.js` 与 `index.js.map` 映射不一致。若需要调试 map，应通过 `weapp.npm.buildOptions` 为最终产物显式开启 `build.sourcemap` 生成。** [`e065c65`](https://github.com/weapp-vite/weapp-vite/commit/e065c6579defdb89a81231b97847d2f09c02d0e1) by @sonofmagic
+- 📦 **Dependencies** [`8b76120`](https://github.com/weapp-vite/weapp-vite/commit/8b761206940c4e99c1f65b3663898660f448714d)
+  → `wevu@6.7.1`
+
 ## 6.7.0
 
 ### Minor Changes
