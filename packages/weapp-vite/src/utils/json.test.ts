@@ -1,7 +1,53 @@
 import { describe, expect, it } from 'vitest'
-import { resolveJson } from './json'
+import {
+  getAliasEntries,
+  jsonFileRemoveJsExtension,
+  matches,
+  parseCommentJson,
+  resolveImportee,
+  resolveJson,
+} from './json'
 
 describe('utils/json resolveJson', () => {
+  it('supports helper utilities for parsing and alias matching', () => {
+    expect(parseCommentJson('{/*c*/"a":1}')).toEqual({ a: 1 })
+    expect(jsonFileRemoveJsExtension('pages/home/index.ts')).toBe('pages/home/index')
+    expect(jsonFileRemoveJsExtension('pages/home/index.js')).toBe('pages/home/index')
+    expect(matches('foo', 'foo/bar')).toBe(true)
+    expect(matches(/^foo\//, 'foo/bar')).toBe(true)
+    expect(matches('foobar', 'foo')).toBe(false)
+  })
+
+  it('normalizes alias entries and resolves importee with and without matches', () => {
+    expect(getAliasEntries()).toEqual([])
+    expect(getAliasEntries({
+      entries: {
+        '@': '/project/src',
+      },
+    })).toEqual([{ find: '@', replacement: '/project/src' }])
+    expect(getAliasEntries({
+      entries: [
+        { find: /^~\//, replacement: '/project/src/' },
+      ],
+    })).toEqual([{ find: /^~\//, replacement: '/project/src/' }])
+
+    expect(resolveImportee('@/components/card', '')).toBe('@/components/card')
+    expect(
+      resolveImportee(
+        '@/components/card',
+        '/project/src/pages/index/index.json',
+        [{ find: '@', replacement: '/project/src' }],
+      ),
+    ).toBe('../../components/card')
+    expect(
+      resolveImportee(
+        'plain/id',
+        '/project/src/pages/index/index.json',
+        [{ find: '@', replacement: '/project/src' }],
+      ),
+    ).toBe('plain/id')
+  })
+
   it('normalizes usingComponents keys for alipay platform', () => {
     const source = resolveJson(
       {
@@ -95,5 +141,113 @@ describe('utils/json resolveJson', () => {
 
     expect(source).toContain('"componentGenerics"')
     expect(source).toContain('"default": "./__weapp_vite_generic_component"')
+  })
+
+  it('fills missing default in object componentGenerics for alipay', () => {
+    const source = resolveJson(
+      {
+        json: {
+          componentGenerics: {
+            list: {
+              default: '   ',
+            },
+            item: {
+              default: './custom-item',
+            },
+          },
+        },
+      },
+      undefined,
+      'alipay',
+    )!
+
+    const normalized = JSON.parse(source)
+    expect(normalized.componentGenerics.list.default).toBe('./__weapp_vite_generic_component')
+    expect(normalized.componentGenerics.item.default).toBe('./custom-item')
+  })
+
+  it('keeps componentGenerics untouched on non-alipay platforms', () => {
+    const source = resolveJson(
+      {
+        json: {
+          componentGenerics: {
+            list: true,
+          },
+        },
+      },
+      undefined,
+      'weapp',
+    )!
+
+    const normalized = JSON.parse(source)
+    expect(normalized.componentGenerics.list).toBe(true)
+  })
+
+  it('keeps non-object componentGenerics values on alipay platform', () => {
+    const source = resolveJson(
+      {
+        json: {
+          componentGenerics: {
+            list: 'literal',
+          },
+        },
+      },
+      undefined,
+      'alipay',
+    )!
+
+    const normalized = JSON.parse(source)
+    expect(normalized.componentGenerics.list).toBe('literal')
+  })
+
+  it('keeps plugin and blank usingComponents paths untouched for alipay', () => {
+    const source = resolveJson(
+      {
+        json: {
+          usingComponents: {
+            pluginComp: 'plugin://foo/bar',
+            blankComp: '   ',
+          },
+        },
+      },
+      undefined,
+      'alipay',
+      {
+        dependencies: {
+          foo: '1.0.0',
+        },
+      },
+    )!
+
+    const normalized = JSON.parse(source)
+    expect(normalized.usingComponents['plugin-comp']).toBe('plugin://foo/bar')
+    expect(normalized.usingComponents['blank-comp']).toBe('   ')
+  })
+
+  it('normalizes explicit node_modules paths with miniprogram_npm mode', () => {
+    const source = resolveJson(
+      {
+        json: {
+          usingComponents: {
+            't-button': '/node_modules/tdesign-miniprogram/button/button',
+          },
+        },
+      },
+      undefined,
+      'alipay',
+      {
+        dependencies: {
+          'tdesign-miniprogram': '^1.12.3',
+        },
+        alipayNpmMode: 'miniprogram_npm',
+      },
+    )!
+
+    const normalized = JSON.parse(source)
+    expect(normalized.usingComponents['t-button']).toBe('/miniprogram_npm/tdesign-miniprogram/button/button')
+  })
+
+  it('returns undefined when json payload is missing', () => {
+    expect(resolveJson({})).toBeUndefined()
   })
 })

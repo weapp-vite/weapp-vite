@@ -372,6 +372,30 @@ defineAppJson({
         await fs.remove(root)
       }
     })
+
+    it('returns undefined when json macro extraction fails without json fallback blocks', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'broken-macro.vue')
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        await fs.writeFile(
+          file,
+          `
+<script setup lang="ts">
+defineAppJson(nonExistentMacroValue)
+</script>
+          `.trim(),
+          'utf8',
+        )
+
+        const config = await extractConfigFromVue(file)
+        expect(config).toBeUndefined()
+      }
+      finally {
+        errorSpy.mockRestore()
+        await fs.remove(root)
+      }
+    })
   })
 
   describe('findJsEntry', () => {
@@ -394,6 +418,7 @@ defineAppJson({
       try {
         const vueBase = path.join(root, 'pages/home/index')
         const jsonBase = path.join(root, 'pages/home/index')
+        const jsBase = path.join(root, 'pages/home/entry')
         const cssBase = path.join(root, 'styles/index')
         const tplBase = path.join(root, 'pages/home/template')
 
@@ -401,10 +426,12 @@ defineAppJson({
         await fs.ensureDir(path.dirname(cssBase))
         await fs.writeFile(`${vueBase}.vue`, '<template><view /></template>')
         await fs.writeFile(`${jsonBase}.json`, '{"navigationBarTitleText":"home"}')
+        await fs.writeFile(`${jsBase}.js`, 'export default 1')
         await fs.writeFile(`${cssBase}.css`, '.a {}')
         await fs.writeFile(`${tplBase}.wxml`, '<view />')
 
         expect(await findVueEntry(vueBase)).toBe(`${vueBase}.vue`)
+        expect((await findJsEntry(jsBase)).path).toBe(`${jsBase}.js`)
 
         const jsonResult = await findJsonEntry(jsonBase)
         expect(jsonResult.path).toBe(`${jsonBase}.json`)
@@ -416,6 +443,29 @@ defineAppJson({
 
         const templateResult = await findTemplateEntry(tplBase)
         expect(templateResult.path).toBe(`${tplBase}.wxml`)
+        expect(templateResult.predictions.length).toBeGreaterThan(0)
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
+
+    it('returns prediction lists when entries are missing', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-find-entry-'))
+      try {
+        const base = path.join(root, 'pages/missing/index')
+        const jsResult = await findJsEntry(base)
+        const jsonResult = await findJsonEntry(base)
+        const cssResult = await findCssEntry(base)
+        const templateResult = await findTemplateEntry(base)
+
+        expect(jsResult.path).toBeUndefined()
+        expect(jsResult.predictions.length).toBeGreaterThan(0)
+        expect(jsonResult.path).toBeUndefined()
+        expect(jsonResult.predictions.length).toBeGreaterThan(0)
+        expect(cssResult.path).toBeUndefined()
+        expect(cssResult.predictions.length).toBeGreaterThan(0)
+        expect(templateResult.path).toBeUndefined()
         expect(templateResult.predictions.length).toBeGreaterThan(0)
       }
       finally {
