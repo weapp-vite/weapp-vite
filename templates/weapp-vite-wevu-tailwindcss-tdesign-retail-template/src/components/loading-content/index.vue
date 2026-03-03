@@ -35,12 +35,12 @@ defineExpose({
 </script>
 
 <template>
-  <view class="t-class loading-content {{position}} {{(position === 'static' || noMask) ? '[visibility:hidden]' : ''}} [width:100%] [height:100%] [background-color:rgba(0,_0,_0,_0.6)] [position:relative] [&_.absolute]:[position:absolute] [&_.absolute]:[z-index:1] [&_.absolute]:[left:0] [&_.absolute]:[top:0] [&_.fixed]:[position:fixed] [&_.fixed]:[z-index:1] [&_.fixed]:[left:0] [&_.fixed]:[top:0] [&_.loading]:[width:100%] [&_.loading]:[height:100%] [&_.loading]:[visibility:visible]" style="background-color: {{backgroundColor}};">
+  <view :class="`t-class loading-content ${position} ${(position === 'static' || noMask) ? '[visibility:hidden]' : ''} [width:100%] [height:100%] [background-color:rgba(0,_0,_0,_0.6)] [position:relative] [&_.absolute]:[position:absolute] [&_.absolute]:[z-index:1] [&_.absolute]:[left:0] [&_.absolute]:[top:0] [&_.fixed]:[position:fixed] [&_.fixed]:[z-index:1] [&_.fixed]:[left:0] [&_.fixed]:[top:0] [&_.loading]:[width:100%] [&_.loading]:[height:100%] [&_.loading]:[visibility:visible]`" :style="`background-color: ${backgroundColor};`">
     <t-loading
       t-class="loading"
-      theme="{{type}}"
-      layout="{{vertical}}"
-      size="{{size}}"
+      :theme="type"
+      :layout="vertical"
+      :size="size"
     >
       <slot />
     </t-loading>

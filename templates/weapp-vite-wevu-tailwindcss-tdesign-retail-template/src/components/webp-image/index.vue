@@ -93,16 +93,16 @@ defineExpose({
   <wxs src="./utils.wxs" module="Utils" />
   <t-image
     class="J-image"
-    src="{{Utils.getSrc({src: src, thumbWidth: thumbWidth || 0, thumbHeight: thumbHeight || 0, systemInfo: systemInfo, webp: webp, mode: mode})}}"
+    :src="Utils.getSrc({ src, thumbWidth: thumbWidth || 0, thumbHeight: thumbHeight || 0, systemInfo, webp, mode })"
     t-class="t-class"
     t-class-load="t-class-load"
-    mode="{{ mode }}"
-    lazy="{{ lazyLoad }}"
-    show-menu-by-longpress="{{showMenuByLongpress}}"
-    error="{{loadFailed}}"
-    loading="{{loading}}"
-    binderror="onError"
-    bindload="onLoad"
+    :mode="mode"
+    :lazy="lazyLoad"
+    :show-menu-by-longpress="showMenuByLongpress"
+    :error="loadFailed"
+    :loading="loading"
+    @error="onError"
+    @load="onLoad"
   />
 </template>
 

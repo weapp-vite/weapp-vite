@@ -19,4 +19,4 @@ export const couponsData = {
     },
   ],
   reduce: 1000,
-};
+}

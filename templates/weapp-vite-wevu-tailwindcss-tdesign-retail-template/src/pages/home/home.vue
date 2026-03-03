@@ -173,11 +173,11 @@ defineExpose({
 </script>
 
 <template>
-  <view style=" color: #b9b9b9;text-align: center" wx:if="{{pageLoading}}">
+  <view v-if="pageLoading" style=" color: #b9b9b9;text-align: center">
     <t-loading theme="circular" size="40rpx" text="加载中..." inherit-color />
   </view>
   <view class="home-page-header [background:linear-gradient(#fff,_#f5f5f5)] [display:block] [padding:0_24rpx] [&_.t-search__input-container]:[border-radius:32rpx] [&_.t-search__input-container]:[height:64rpx] [&_.t-search__input]:[font-size:28rpx] [&_.t-search__input]:[color:rgb(116,_116,_116)] [&_.swiper-wrap]:[margin-top:20rpx] [&_.t-image__swiper]:[width:100%] [&_.t-image__swiper]:[height:300rpx] [&_.t-image__swiper]:[border-radius:10rpx]">
-    <view class="search" bind:tap="navToSearchPage">
+    <view class="search" @tap="navToSearchPage">
       <t-search
         t-class-input="t-search__input"
         t-class-input-container="t-search__input-container"
@@ -192,15 +192,15 @@ defineExpose({
     </view>
     <view class="swiper-wrap">
       <t-swiper
-        wx:if="{{imgSrcs.length > 0}}"
-        current="{{current}}"
-        autoplay="{{autoplay}}"
-        duration="{{duration}}"
-        interval="{{interval}}"
-        navigation="{{navigation}}"
-        imageProps="{{swiperImageProps}}"
-        list="{{imgSrcs}}"
-        bind:click="navToActivityDetail"
+        v-if="imgSrcs.length > 0"
+        :current="current"
+        :autoplay="autoplay"
+        :duration="duration"
+        :interval="interval"
+        :navigation="navigation"
+        :imageProps="swiperImageProps"
+        :list="imgSrcs"
+        @click="navToActivityDetail"
       />
     </view>
   </view>
@@ -210,27 +210,25 @@ defineExpose({
         t-class="t-tabs [&_.t-tabs--top_.t-tabs__scroll]:[border-bottom:none] [&_.t-tabs--top_.t-tabs__item]:[height:86rpx] [&_.t-tabs--bottom_.t-tabs__item]:[height:86rpx]"
         t-class-active="tabs-external__active"
         t-class-item="tabs-external__item"
-        defaultValue="{{0}}"
-        space-evenly="{{false}}"
-        bind:change="tabChangeHandle"
+        :defaultValue="0"
+        :space-evenly="false"
+        @change="tabChangeHandle"
       >
         <t-tab-panel
-          wx:for="{{tabList}}"
-          wx:for-index="index"
-          wx:key="index"
-          label="{{item.text}}"
-          value="{{item.key}}"
+          v-for="(item, index) in tabList" :key="index"
+          :label="item.text"
+          :value="item.key"
         />
       </t-tabs>
     </view>
 
     <goods-list
       wr-class="goods-list-container"
-      goodsList="{{goodsList}}"
-      bind:click="goodListClickHandle"
-      bind:addcart="goodListAddCartHandle"
+      :goodsList="goodsList"
+      @click="goodListClickHandle"
+      @addcart="goodListAddCartHandle"
     />
-    <load-more list-is-empty="{{!goodsList.length}}" status="{{goodsListLoadStatus}}" bind:retry="onReTry" />
+    <load-more :list-is-empty="!goodsList.length" :status="goodsListLoadStatus" @retry="onReTry" />
     <t-toast id="t-toast" />
   </view>
 </template>

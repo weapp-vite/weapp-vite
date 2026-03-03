@@ -1,18 +1,19 @@
-import { config } from '../../config/index';
+// @ts-nocheck
+import { config } from '../../config/index'
+import { getCategoryList as getCategoryListModel } from '../../model/category'
+import { delay } from '../_utils/delay'
 
 /** 获取商品列表 */
 function mockFetchGoodCategory() {
-  const { delay } = require('../_utils/delay');
-  const { getCategoryList } = require('../../model/category');
-  return delay().then(() => getCategoryList());
+  return delay().then(() => getCategoryListModel())
 }
 
 /** 获取商品列表 */
 export function getCategoryList() {
   if (config.useMock) {
-    return mockFetchGoodCategory();
+    return mockFetchGoodCategory()
   }
   return new Promise((resolve) => {
-    resolve('real api');
-  });
+    resolve('real api')
+  })
 }

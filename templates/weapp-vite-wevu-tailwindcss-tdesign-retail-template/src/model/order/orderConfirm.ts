@@ -1,7 +1,8 @@
-import { mockIp, mockReqId } from '../../utils/mock';
+// @ts-nocheck
+import { mockIp, mockReqId } from '../../utils/mock'
 
-export const transformGoodsDataToConfirmData = (goodsDataList) => {
-  const list = [];
+export function transformGoodsDataToConfirmData(goodsDataList) {
+  const list = []
 
   goodsDataList.forEach((goodsData) => {
     list.push({
@@ -29,15 +30,15 @@ export const transformGoodsDataToConfirmData = (goodsDataList) => {
       viceGoodsType: 0,
       roomId: goodsData.roomId,
       egoodsName: null,
-    });
-  });
+    })
+  })
 
-  return list;
-};
+  return list
+}
 
 /** 生成结算数据 */
 export function genSettleDetail(params) {
-  const { userAddressReq, couponList, goodsRequestList } = params;
+  const { userAddressReq, couponList, goodsRequestList } = params
 
   const resp = {
     data: {
@@ -89,15 +90,15 @@ export function genSettleDetail(params) {
     clientIp: mockIp(),
     rt: 244,
     success: true,
-  };
+  }
 
-  const list = transformGoodsDataToConfirmData(goodsRequestList);
+  const list = transformGoodsDataToConfirmData(goodsRequestList)
 
   // 获取购物车传递的商品数据
-  resp.data.storeGoodsList[0].skuDetailVos = list;
+  resp.data.storeGoodsList[0].skuDetailVos = list
 
   // 判断是否携带优惠券数据
-  const discountPrice = [];
+  const discountPrice = []
 
   if (couponList && couponList.length > 0) {
     couponList.forEach((coupon) => {
@@ -105,43 +106,43 @@ export function genSettleDetail(params) {
         discountPrice.push({
           type: coupon.type,
           value: coupon.value,
-        });
+        })
       }
-    });
+    })
   }
 
   // 模拟计算场景
 
   // 计算总价
   const totalPrice = list.reduce((pre, cur) => {
-    return pre + cur.quantity * Number(cur.settlePrice);
-  }, 0);
+    return pre + cur.quantity * Number(cur.settlePrice)
+  }, 0)
 
   // 计算折扣
-  const totalDiscountPrice =
-    discountPrice.length > 0
+  const totalDiscountPrice
+    = discountPrice.length > 0
       ? discountPrice.reduce((pre, cur) => {
           if (cur.type === 1) {
-            return pre + cur.value;
+            return pre + cur.value
           }
           if (cur.type === 2) {
-            return pre + (Number(totalPrice) * cur.value) / 10;
+            return pre + (Number(totalPrice) * cur.value) / 10
           }
 
-          return pre + cur;
+          return pre + cur
         }, 0)
-      : 0;
+      : 0
 
-  resp.data.totalSalePrice = totalPrice;
+  resp.data.totalSalePrice = totalPrice
 
-  resp.data.totalCouponAmount = totalDiscountPrice;
+  resp.data.totalCouponAmount = totalDiscountPrice
 
-  resp.data.totalPayAmount =
-    totalPrice - totalDiscountPrice - Number(resp.data.totalPromotionAmount);
+  resp.data.totalPayAmount
+    = totalPrice - totalDiscountPrice - Number(resp.data.totalPromotionAmount)
 
   if (userAddressReq) {
-    resp.data.settleType = 1;
-    resp.data.userAddress = userAddressReq;
+    resp.data.settleType = 1
+    resp.data.userAddress = userAddressReq
   }
-  return resp;
+  return resp
 }

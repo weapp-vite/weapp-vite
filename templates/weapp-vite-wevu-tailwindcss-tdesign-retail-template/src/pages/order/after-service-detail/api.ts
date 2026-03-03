@@ -1,8 +1,9 @@
-import { resp } from '../after-service-list/api';
-import dayjs from 'dayjs';
-import { mockIp, mockReqId } from '../../../utils/mock';
+// @ts-nocheck
+import dayjs from 'dayjs'
+import { mockIp, mockReqId } from '../../../utils/mock'
+import { resp } from '../after-service-list/api'
 
-export const formatTime = (date, template) => dayjs(date).format(template);
+export const formatTime = (date, template) => dayjs(date).format(template)
 
 export function getRightsDetail({ rightsNo }) {
   const _resq = {
@@ -13,11 +14,11 @@ export function getRightsDetail({ rightsNo }) {
     clientIp: mockIp(),
     rt: 79,
     success: true,
-  };
-  _resq.data =
-    resp.data.dataList.filter((item) => item.rights.rightsNo === rightsNo) ||
-    {};
-  return Promise.resolve(_resq);
+  }
+  _resq.data
+    = resp.data.dataList.filter(item => item.rights.rightsNo === rightsNo)
+      || {}
+  return Promise.resolve(_resq)
 }
 
 export function cancelRights() {
@@ -29,6 +30,6 @@ export function cancelRights() {
     clientIp: mockIp(),
     rt: 79,
     success: true,
-  };
-  return Promise.resolve(_resq);
+  }
+  return Promise.resolve(_resq)
 }

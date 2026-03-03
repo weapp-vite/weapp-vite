@@ -22,10 +22,10 @@ export function genAddress(id) {
     latitude: '34.59103',
     longitude: '102.48699',
     storeId: null,
-  };
+  }
 }
 
 /** 地址列表 */
 export function genAddressList(len = 10) {
-  return new Array(len).fill(0).map((_, idx) => genAddress(idx));
+  return new Array(len).fill(0).map((_, idx) => genAddress(idx))
 }

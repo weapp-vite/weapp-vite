@@ -1,4 +1,5 @@
-const getPermission = ({ code, name }) => {
+// @ts-nocheck
+function getPermission({ code, name }) {
   return new Promise((resolve, reject) => {
     wx.getSetting({
       success: (res) => {
@@ -14,32 +15,35 @@ const getPermission = ({ code, name }) => {
                 wx.openSetting({
                   success(settinRes) {
                     if (settinRes.authSetting[code] === true) {
-                      resolve();
-                    } else {
-                      console.warn('用户未打开权限', name, code);
-                      reject();
+                      resolve()
+                    }
+                    else {
+                      console.warn('用户未打开权限', name, code)
+                      reject()
                     }
                   },
-                });
-              } else {
-                reject();
+                })
+              }
+              else {
+                reject()
               }
             },
             fail() {
-              reject();
+              reject()
             },
-          });
-        } else {
-          resolve();
+          })
+        }
+        else {
+          resolve()
         }
       },
       fail() {
-        reject();
+        reject()
       },
-    });
-  });
-};
+    })
+  })
+}
 
 module.exports = {
   getPermission,
-};
+}

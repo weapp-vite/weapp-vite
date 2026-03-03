@@ -1,12 +1,12 @@
 /**
- *  * @param {number} spuId
+ *  @param {number} spuId
  * @param {number} pageNum
  * @param {number} pageSize
  * @param {number} commentsLevel
  * @param {boolean} hasImage
  */
 export function getGoodsAllComments(params) {
-  const { hasImage } = params.queryParameter;
+  const { hasImage } = params.queryParameter
   if (hasImage) {
     return {
       pageNum: 1,
@@ -128,7 +128,7 @@ export function getGoodsAllComments(params) {
           goodsDetailInfo: '颜色:纯净白  尺码:S码',
         },
       ],
-    };
+    }
   }
   return {
     pageNum: 1,
@@ -282,7 +282,7 @@ export function getGoodsAllComments(params) {
         isAutoComment: true,
       },
     ],
-  };
+  }
 }
 
 export function getGoodsCommentsCount() {
@@ -294,5 +294,5 @@ export function getGoodsCommentsCount() {
     hasImageCount: '1',
     goodRate: 95.7,
     uidCount: '0',
-  };
+  }
 }

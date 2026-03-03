@@ -86,8 +86,8 @@ defineExpose({
     addUnit: addUnit
     };
   </wxs>
-  <view class="price {{type}} wr-class [display:inline] [color:inherit] [font-size:inherit] [text-decoration:inherit] [white-space:nowrap]">
-    <view wx:if="{{type === 'delthrough'}}" class="line" style="height:{{utils.addUnit(lineThroughWidth)}};" />
+  <view :class="`price ${type} wr-class [display:inline] [color:inherit] [font-size:inherit] [text-decoration:inherit] [white-space:nowrap]`">
+    <view v-if="type === 'delthrough'" class="line" :style="`height:${utils.addUnit(lineThroughWidth)};`" />
     <view class="symbol symbol-class [display:inline] [color:inherit] [font-size:inherit] [font-size:0.8em] [white-space:nowrap]">
       {{ symbol }}
     </view>
@@ -95,7 +95,7 @@ defineExpose({
       <view class="integer inline [display:inline] [white-space:nowrap] [color:inherit] [font-size:inherit]">
         {{ pArr[0] }}
       </view>
-      <view wx:if="{{pArr[1]}}" class="decimal inline {{decimalSmaller ? 'smaller' : ''}} decimal-class [display:inline] [white-space:nowrap] [color:inherit] [font-size:inherit] [&_.smaller]:[font-size:0.8em] [&_.smaller]:[vertical-align:baseline]">
+      <view v-if="pArr[1]" :class="`decimal inline ${decimalSmaller ? 'smaller' : ''} decimal-class [display:inline] [white-space:nowrap] [color:inherit] [font-size:inherit] [&_.smaller]:[font-size:0.8em] [&_.smaller]:[vertical-align:baseline]`">
         .{{ pArr[1] }}
       </view>
     </view>

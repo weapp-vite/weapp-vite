@@ -1,4 +1,5 @@
-import { mockIp, mockReqId } from '../utils/mock';
+// @ts-nocheck
+import { mockIp, mockReqId } from '../utils/mock'
 
 export function genCartGroupData() {
   const resp = {
@@ -301,6 +302,6 @@ export function genCartGroupData() {
     clientIp: mockIp(),
     rt: 269,
     success: true,
-  };
-  return resp;
+  }
+  return resp
 }

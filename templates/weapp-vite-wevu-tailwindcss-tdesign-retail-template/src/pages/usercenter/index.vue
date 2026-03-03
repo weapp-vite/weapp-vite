@@ -271,57 +271,55 @@ defineExpose({
 
 <template>
   <t-user-center-card
-    userInfo="{{userInfo}}"
-    isPhoneHide="{{true}}"
+    :userInfo="userInfo"
+    :isPhoneHide="true"
     name-class="custom-name-class"
     phone-class="custom-phone-class"
     avatar-class="customer-avatar-class"
-    currAuthStep="{{currAuthStep}}"
-    bind:gotoUserEditPage="gotoUserEditPage"
+    :currAuthStep="currAuthStep"
+    @gotoUserEditPage="gotoUserEditPage"
   />
   <view class="content-wrapper [margin-top:340rpx] [position:relative] [padding:0_30rpx]">
     <view class="order-group-wrapper [margin-bottom:16rpx]">
-      <t-order-group orderTagInfos="{{orderTagInfos}}" bind:onClickTop="jumpAllOrder" bind:onClickItem="jumpNav" />
+      <t-order-group :orderTagInfos="orderTagInfos" @onClickTop="jumpAllOrder" @onClickItem="jumpNav" />
     </view>
-    <view wx:for="{{menuData}}" wx:key="item" class="cell-box [border-radius:10rpx] [overflow:hidden] [margin-bottom:20rpx] [&_.order-group__left]:[margin-right:0] [&_.t-cell-padding]:[padding:24rpx_18rpx_24rpx_32rpx]">
+    <view v-for="(item, index) in menuData" :key="item" class="cell-box [border-radius:10rpx] [overflow:hidden] [margin-bottom:20rpx] [&_.order-group__left]:[margin-right:0] [&_.t-cell-padding]:[padding:24rpx_18rpx_24rpx_32rpx]">
       <t-cell-group>
         <t-cell
-          wx:for="{{item}}"
-          wx:for-item="xitem"
-          wx:for-index="xindex"
-          wx:key="xindex"
-          title="{{xitem.title}}"
-          arrow="{{!xitem.icon}}"
-          note="{{xitem.tit}}"
-          data-type="{{xitem.type}}"
-          bordered="{{false}}"
-          bind:click="onClickCell"
+          v-for="(xitem, xindex) in item"
+          :key="xindex"
+          :title="xitem.title"
+          :arrow="!xitem.icon"
+          :note="xitem.tit"
+          :data-type="xitem.type"
+          :bordered="false"
           t-class="t-cell-padding"
           t-class-note="order-group-note"
           t-class-left="order-group__left"
+          @click="onClickCell"
         >
           <template #note>
-            <t-icon name="{{xitem.icon}}" size="48rpx" />
+            <t-icon :name="xitem.icon" size="48rpx" />
           </template>
         </t-cell>
       </t-cell-group>
     </view>
   </view>
-  <view class="footer__version [text-align:center] [margin-top:50rpx] [color:#999] [margin-bottom:4rpx] [font-size:24rpx] [line-height:32rpx]" wx:if="{{versionNo !== ''}}">
+  <view v-if="versionNo !== ''" class="footer__version [text-align:center] [margin-top:50rpx] [color:#999] [margin-bottom:4rpx] [font-size:24rpx] [line-height:32rpx]">
     当前版本 {{ versionNo }}
   </view>
-  <t-popup visible="{{showMakePhone}}" placement="bottom" bind:visible-change="closeMakePhone" data-index="2">
+  <t-popup :visible="showMakePhone" placement="bottom" data-index="2" @visible-change="closeMakePhone">
     <view class="popup-content [background:#f5f5f5] [margin-bottom:env(safe-area-inset-bottom)] [border-radius:16rpx_16rpx_0_0] [&_.popup-title]:[background:#fff] [&_.popup-title]:[text-align:center] [&_.popup-title]:[font-size:24rpx] [&_.popup-title]:[color:#999] [&_.popup-title]:[height:112rpx] [&_.popup-title]:[line-height:112rpx] [&_.popup-title]:[border-radius:16rpx_16rpx_0_0] [&_.popup-phone]:[background:#fff] [&_.popup-phone]:[height:100rpx] [&_.popup-phone]:[display:flex] [&_.popup-phone]:[justify-content:center] [&_.popup-phone]:[align-items:center] [&_.popup-phone]:[text-align:center] [&_.popup-phone]:[font-size:30rpx] [&_.popup-phone]:[font-family:PingFangSC-Regular,_PingFang_SC] [&_.popup-phone]:[font-weight:400] [&_.popup-phone]:[color:#333] [&_.popup-close]:[background:#fff] [&_.popup-close]:[height:100rpx] [&_.popup-close]:[display:flex] [&_.popup-close]:[justify-content:center] [&_.popup-close]:[align-items:center] [&_.popup-close]:[text-align:center] [&_.popup-close]:[font-size:30rpx] [&_.popup-close]:[font-family:PingFangSC-Regular,_PingFang_SC] [&_.popup-close]:[font-weight:400] [&_.popup-close]:[color:#333] [&_.popup-phone_.online]:[margin-bottom:20rpx] [&_.popup-close]:[border:0] [&_.popup-close]:[margin-top:16rpx]">
-      <view class="popup-title border-bottom-1px [position:relative]" wx:if="{{customerServiceInfo.serviceTimeDuration}}">
+      <view v-if="customerServiceInfo.serviceTimeDuration" class="popup-title border-bottom-1px [position:relative]">
         服务时间: {{ customerServiceInfo.serviceTimeDuration }}
       </view>
-      <view class="popup-phone {{showKefu ? 'border-bottom-1px' : ''}} [position:relative]" bind:tap="call">
+      <view :class="`popup-phone ${showKefu ? 'border-bottom-1px' : ''} [position:relative]`" @tap="call">
         电话客服
       </view>
-      <button class="popup-phone border-bottom-1px online [position:relative]" open-type="contact" wx:if="{{showKefu}}">
+      <button v-if="showKefu" class="popup-phone border-bottom-1px online [position:relative]" open-type="contact">
         在线客服
       </button>
-      <view class="popup-close" bind:tap="closeMakePhone">
+      <view class="popup-close" @tap="closeMakePhone">
         取消
       </view>
     </view>

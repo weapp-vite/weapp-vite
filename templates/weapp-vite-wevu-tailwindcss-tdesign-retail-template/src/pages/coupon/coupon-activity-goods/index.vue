@@ -101,27 +101,27 @@ defineExpose({
         </text>
         优惠券
       </view>
-      <t-icon name="help-circle" size="32rpx" color="#AAAAAA" bind:tap="openStoreList" />
+      <t-icon name="help-circle" size="32rpx" color="#AAAAAA" @tap="openStoreList" />
     </view>
     <view class="goods-list-container">
       <goods-list
         wr-class="goods-list-wrap"
-        goodsList="{{goods}}"
-        bind:click="goodClickHandle"
-        bind:addcart="cartClickHandle"
+        :goodsList="goods"
+        @click="goodClickHandle"
+        @addcart="cartClickHandle"
       />
     </view>
-    <floating-button count="{{cartNum}}" />
-    <t-popup visible="{{showStoreInfoList}}" placement="bottom" bind:visible-change="closeStoreList">
+    <floating-button :count="cartNum" />
+    <t-popup :visible="showStoreInfoList" placement="bottom" @visible-change="closeStoreList">
       <template #closeBtn>
-        <t-icon name="close" size="40rpx" bind:tap="closeStoreList" />
+        <t-icon name="close" size="40rpx" @tap="closeStoreList" />
       </template>
       <view class="popup-content-wrap">
         <view class="popup-content-title">
           规则详情
         </view>
         <view class="desc-group-wrap">
-          <view wx:if="{{detail && detail.timeLimit}}" class="item-wrap">
+          <view v-if="detail && detail.timeLimit" class="item-wrap">
             <view class="item-title">
               优惠券有效时间
             </view>
@@ -129,7 +129,7 @@ defineExpose({
               {{ detail.timeLimit }}
             </view>
           </view>
-          <view wx:if="{{detail && detail.desc}}" class="item-wrap">
+          <view v-if="detail && detail.desc" class="item-wrap">
             <view class="item-title">
               优惠券说明
             </view>
@@ -137,7 +137,7 @@ defineExpose({
               {{ detail.desc }}
             </view>
           </view>
-          <view wx:if="{{detail && detail.useNotes}}" class="item-wrap">
+          <view v-if="detail && detail.useNotes" class="item-wrap">
             <view class="item-title">
               使用须知
             </view>

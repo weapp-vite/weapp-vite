@@ -1,4 +1,5 @@
-import { mockIp, mockReqId } from '../../utils/mock';
+// @ts-nocheck
+import { mockIp, mockReqId } from '../../utils/mock'
 
 const orderResps = [
   {
@@ -304,13 +305,13 @@ const orderResps = [
       ],
       labelVOs: null,
       invoiceVO: {
-        buyerName: '腾讯计算机有限公司', //个人或公司名称
-        buyerTaxNo: '9144 9808 0909 0293 XG', //税号
-        buyerPhone: '18600008888', //手机
-        email: '73900484@qq.com', //邮箱
-        titleType: 2, //发票抬头 1-个人 2-公司
-        ontentType: 1, //发票内容 1-明细 2类别
-        invoiceType: 5, //是否开票 0-不开 5-电子发票
+        buyerName: '腾讯计算机有限公司', // 个人或公司名称
+        buyerTaxNo: '9144 9808 0909 0293 XG', // 税号
+        buyerPhone: '18600008888', // 手机
+        email: '73900484@qq.com', // 邮箱
+        titleType: 2, // 发票抬头 1-个人 2-公司
+        ontentType: 1, // 发票内容 1-明细 2类别
+        invoiceType: 5, // 是否开票 0-不开 5-电子发票
         money: '1.54',
       },
       trajectoryVos: [
@@ -656,13 +657,13 @@ const orderResps = [
       invoiceDesc: '已开发票',
       invoiceUrl: null,
       invoiceVO: {
-        buyerName: '公司名称XXXX', //个人或公司名称
-        buyerTaxNo: 'R5647U7', //税号
-        buyerPhone: '13534343434', //手机
-        email: '123@qq.com', //邮箱
-        titleType: 2, //发票抬头 1-个人 2-公司
-        ontentType: 2, //发票内容 1-明细 2类别
-        invoiceType: 5, //是否开票 0-不开 5-电子发票
+        buyerName: '公司名称XXXX', // 个人或公司名称
+        buyerTaxNo: 'R5647U7', // 税号
+        buyerPhone: '13534343434', // 手机
+        email: '123@qq.com', // 邮箱
+        titleType: 2, // 发票抬头 1-个人 2-公司
+        ontentType: 2, // 发票内容 1-明细 2类别
+        invoiceType: 5, // 是否开票 0-不开 5-电子发票
         isInvoice: '已开票',
         money: 10000,
       },
@@ -1018,13 +1019,13 @@ const orderResps = [
       ],
       labelVOs: null,
       invoiceVO: {
-        buyerName: '腾讯计算机有限公司', //个人或公司名称
-        buyerTaxNo: '9144 9808 0909 0293 XG', //税号
-        buyerPhone: '18600008888', //手机
-        email: '73900484@qq.com', //邮箱
-        titleType: 2, //发票抬头 1-个人 2-公司
-        ontentType: 1, //发票内容 1-明细 2类别
-        invoiceType: 5, //是否开票 0-不开 5-电子发票
+        buyerName: '腾讯计算机有限公司', // 个人或公司名称
+        buyerTaxNo: '9144 9808 0909 0293 XG', // 税号
+        buyerPhone: '18600008888', // 手机
+        email: '73900484@qq.com', // 邮箱
+        titleType: 2, // 发票抬头 1-个人 2-公司
+        ontentType: 1, // 发票内容 1-明细 2类别
+        invoiceType: 5, // 是否开票 0-不开 5-电子发票
         money: '1.54',
       },
       couponAmount: '0',
@@ -1165,12 +1166,12 @@ const orderResps = [
     rt: 95,
     success: true,
   },
-];
+]
 
 export function genOrderDetail(params) {
-  const { parameter } = params;
-  const resp = orderResps.find((r) => r.data.orderNo === parameter);
-  return resp;
+  const { parameter } = params
+  const resp = orderResps.find(r => r.data.orderNo === parameter)
+  return resp
 }
 
 export function genBusinessTime() {
@@ -1186,6 +1187,6 @@ export function genBusinessTime() {
     clientIp: mockIp(),
     rt: 3,
     success: true,
-  };
-  return resp;
+  }
+  return resp
 }

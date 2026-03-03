@@ -1,4 +1,4 @@
-import { getGoodsList } from './goods';
+import { getGoodsList } from './goods'
 
 /**
  * @param {number} sort
@@ -25,7 +25,7 @@ export function getSearchHistory() {
       '氢跑鞋',
       '三盒处理器',
     ],
-  };
+  }
 }
 
 export function getSearchPopular() {
@@ -44,7 +44,7 @@ export function getSearchPopular() {
       '氢跑鞋',
       '三盒处理器',
     ],
-  };
+  }
 }
 
 export function getSearchResult() {
@@ -56,5 +56,5 @@ export function getSearchResult() {
     totalCount: 1,
     spuList: getGoodsList(7),
     algId: 0,
-  };
+  }
 }

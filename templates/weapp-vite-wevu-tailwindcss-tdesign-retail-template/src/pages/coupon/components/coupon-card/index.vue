@@ -2,89 +2,92 @@
 defineOptions({
   options: {
     addGlobalClass: true,
-    multipleSlots: true // 在组件定义时的选项中启用多slot支持
+    multipleSlots: true, // 在组件定义时的选项中启用多slot支持
   },
   externalClasses: ['coupon-class'],
   properties: {
     couponDTO: {
       type: Object,
-      value: {} // 优惠券数据
-    }
+      value: {}, // 优惠券数据
+    },
   },
   data() {
     return {
       btnText: '',
-      btnTheme: ''
-    };
+      btnTheme: '',
+    }
   },
   observers: {
-    couponDTO: function (couponDTO) {
+    couponDTO(couponDTO) {
       if (!couponDTO) {
-        return;
+        return
       }
       const statusMap = {
         default: {
           text: '去使用',
-          theme: 'primary'
+          theme: 'primary',
         },
         useless: {
           text: '已使用',
-          theme: 'default'
+          theme: 'default',
         },
         disabled: {
           text: '已过期',
-          theme: 'default'
-        }
-      };
-      const statusInfo = statusMap[couponDTO.status];
+          theme: 'default',
+        },
+      }
+      const statusInfo = statusMap[couponDTO.status]
       this.setData({
         btnText: statusInfo.text,
-        btnTheme: statusInfo.theme
-      });
-    }
+        btnTheme: statusInfo.theme,
+      })
+    },
   },
   attached() {},
   methods: {
     // 跳转到详情页
     gotoDetail() {
       wx.navigateTo({
-        url: `/pages/coupon/coupon-detail/index?id=${this.data.couponDTO.key}`
-      });
+        url: `/pages/coupon/coupon-detail/index?id=${this.data.couponDTO.key}`,
+      })
     },
     // 跳转到商品列表
     gotoGoodsList() {
       wx.navigateTo({
-        url: `/pages/coupon/coupon-activity-goods/index?id=${this.data.couponDTO.key}`
-      });
-    }
-  }
-});
+        url: `/pages/coupon/coupon-activity-goods/index?id=${this.data.couponDTO.key}`,
+      })
+    },
+  },
+})
 </script>
 
 <template>
-<ui-coupon-card
-  title="{{couponDTO.title || ''}}"
-  type="{{couponDTO.type || ''}}"
-  value="{{couponDTO.value || '0'}}"
-  tag="{{couponDTO.tag || ''}}"
-  desc="{{couponDTO.desc || ''}}"
-  currency="{{couponDTO.currency || ''}}"
-  timeLimit="{{couponDTO.timeLimit || ''}}"
-  status="{{couponDTO.status || ''}}"
-  bind:tap="gotoDetail"
->
-  <view slot="operator" class="coupon-btn-slot">
-    <t-button
-      t-class="coupon-btn-{{btnTheme}}"
-      theme="{{btnTheme}}"
-      variant="outline"
-      shape="round"
-      size="extra-small"
-      bind:tap="gotoGoodsList"
-      >{{btnText}}
-    </t-button>
-  </view>
-</ui-coupon-card>
+  <ui-coupon-card
+    :title="couponDTO.title || ''"
+    :type="couponDTO.type || ''"
+    :value="couponDTO.value || '0'"
+    :tag="couponDTO.tag || ''"
+    :desc="couponDTO.desc || ''"
+    :currency="couponDTO.currency || ''"
+    :timeLimit="couponDTO.timeLimit || ''"
+    :status="couponDTO.status || ''"
+    @tap="gotoDetail"
+  >
+    <template #operator>
+      <view class="coupon-btn-slot">
+        <t-button
+          :t-class="`coupon-btn-${btnTheme}`"
+          :theme="btnTheme"
+          variant="outline"
+          shape="round"
+          size="extra-small"
+          @tap="gotoGoodsList"
+        >
+          {{ btnText }}
+        </t-button>
+      </view>
+    </template>
+  </ui-coupon-card>
 </template>
 
 <json>

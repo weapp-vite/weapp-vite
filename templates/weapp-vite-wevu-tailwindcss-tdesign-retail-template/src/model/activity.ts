@@ -14,5 +14,5 @@ export function getActivity(key) {
     endTime: '1601467070000',
     teasingStartTime: null,
     activityLadder: [{ label: '满100元减99.9元' }],
-  };
+  }
 }
