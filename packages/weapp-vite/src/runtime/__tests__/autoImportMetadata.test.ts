@@ -205,6 +205,36 @@ describe('autoImport metadata helpers', () => {
   })
 
   describe('createHtmlCustomDataDefinition', () => {
+    it('keeps base tags when component list is empty', () => {
+      const getMetadata = (name: string) => {
+        throw new Error(`unexpected metadata request: ${name}`)
+      }
+      const payload = createHtmlCustomDataDefinition([], getMetadata, [
+        {
+          name: 'view',
+          description: '基础视图组件',
+          attributes: [
+            {
+              name: 'hover-class',
+            },
+          ],
+        },
+      ])
+
+      const parsed = JSON.parse(payload)
+      expect(parsed.tags).toEqual([
+        {
+          name: 'view',
+          description: '基础视图组件',
+          attributes: [
+            {
+              name: 'hover-class',
+            },
+          ],
+        },
+      ])
+    })
+
     it('serializes html custom data payload with attributes and descriptions', () => {
       const metadata = new Map<string, { types: Map<string, string>, docs: Map<string, string> }>([
         ['foo-component', {
@@ -300,6 +330,96 @@ describe('autoImport metadata helpers', () => {
       const parsed = JSON.parse(payload)
       expect(parsed.tags.some((tag: { name: string }) => tag.name === 'view')).toBe(true)
       expect(parsed.tags.some((tag: { name: string }) => tag.name === 'foo-component')).toBe(true)
+    })
+
+    it('merges duplicate tags/attributes/references and keeps valid entries only', () => {
+      const payload = createHtmlCustomDataDefinition(
+        ['foo-component'],
+        () => ({
+          types: new Map([
+            ['title', 'string'],
+            ['count', 'number'],
+          ]),
+          docs: new Map([
+            ['title', '新标题'],
+          ]),
+        }),
+        [
+          {
+            name: 'foo-component',
+            description: '旧描述',
+            attributes: [
+              {
+                name: 'title',
+                description: '旧标题',
+                values: [
+                  {
+                    name: 'small',
+                    description: '旧值',
+                  },
+                ],
+              },
+              {
+                name: 'legacy-only',
+                description: '保留旧属性',
+              },
+              {
+                name: '',
+                description: '无效属性',
+              },
+            ],
+            references: [
+              {
+                name: '旧自动导入文档',
+                url: 'https://vite.icebreaker.top/guide/auto-import-components.html',
+              },
+              {
+                name: '其他文档',
+                url: 'https://example.com/docs',
+              },
+              {
+                name: '无效引用',
+                url: '',
+              },
+            ],
+          },
+        ],
+      )
+
+      const parsed = JSON.parse(payload)
+      const merged = parsed.tags.find((tag: { name: string }) => tag.name === 'foo-component')
+
+      expect(merged.description).toBe('自动导入的小程序组件')
+      expect(merged.attributes).toEqual([
+        {
+          name: 'count',
+          description: '类型: number',
+        },
+        {
+          name: 'legacy-only',
+          description: '保留旧属性',
+        },
+        {
+          name: 'title',
+          description: '类型: string\n新标题',
+          values: [
+            {
+              name: 'small',
+              description: '旧值',
+            },
+          ],
+        },
+      ])
+      expect(merged.references).toEqual([
+        {
+          name: 'weapp-vite 自动导入组件',
+          url: 'https://vite.icebreaker.top/guide/auto-import-components.html',
+        },
+        {
+          name: '其他文档',
+          url: 'https://example.com/docs',
+        },
+      ])
     })
   })
 })

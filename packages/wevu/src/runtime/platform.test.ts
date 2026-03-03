@@ -1,0 +1,55 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+const GLOBAL_KEYS = ['wx', 'my', 'tt'] as const
+
+function clearMiniProgramGlobals() {
+  for (const key of GLOBAL_KEYS) {
+    delete (globalThis as Record<string, unknown>)[key]
+  }
+}
+
+async function loadPlatformModule() {
+  vi.resetModules()
+  return await import('./platform')
+}
+
+describe('runtime platform', () => {
+  afterEach(() => {
+    clearMiniProgramGlobals()
+  })
+
+  it('prefers wx global object in default weapp runtime', async () => {
+    ;(globalThis as any).wx = { name: 'wx-runtime' }
+    ;(globalThis as any).my = { name: 'my-runtime' }
+    ;(globalThis as any).tt = { name: 'tt-runtime' }
+
+    const { getMiniProgramGlobalObject } = await loadPlatformModule()
+    expect(getMiniProgramGlobalObject()).toBe((globalThis as any).wx)
+  })
+
+  it('falls back to my when wx is missing', async () => {
+    ;(globalThis as any).my = { name: 'my-runtime' }
+
+    const { getMiniProgramGlobalObject } = await loadPlatformModule()
+    expect(getMiniProgramGlobalObject()).toBe((globalThis as any).my)
+  })
+
+  it('falls back to tt when wx/my are missing', async () => {
+    ;(globalThis as any).tt = { name: 'tt-runtime' }
+
+    const { getMiniProgramGlobalObject } = await loadPlatformModule()
+    expect(getMiniProgramGlobalObject()).toBe((globalThis as any).tt)
+  })
+
+  it('returns undefined when no supported runtime global exists', async () => {
+    const { getMiniProgramGlobalObject } = await loadPlatformModule()
+    expect(getMiniProgramGlobalObject()).toBeUndefined()
+  })
+
+  it('returns host global object for scoped slot fallback', async () => {
+    const { getMiniProgramGlobalObject, getScopedSlotHostGlobalObject } = await loadPlatformModule()
+
+    expect(getMiniProgramGlobalObject()).toBeUndefined()
+    expect(getScopedSlotHostGlobalObject()).toBe(globalThis)
+  })
+})
