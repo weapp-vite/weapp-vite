@@ -222,4 +222,213 @@ describe('runtime config internal loadConfig', () => {
       privatePath: 'config/weapp/project.private.config.json',
     })
   })
+
+  it('throws when es5 is enabled but jsFormat is not cjs', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          jsFormat: 'esm',
+          es5: true,
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+
+    await expect(loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)).rejects.toThrow('`weapp.es5` 仅支持在 `weapp.jsFormat` 为 "cjs" 时使用')
+  })
+
+  it('throws when project config root is missing in non-lib runtime', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+    resolveProjectConfigRootMock.mockReturnValueOnce('')
+    getProjectConfigRootKeysMock.mockReturnValueOnce(['miniprogramRoot', 'compileType'])
+
+    const loadConfig = createFactory()
+
+    await expect(loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)).rejects.toThrow('请在 project.config.json 里设置 miniprogramRoot 或 compileType')
+  })
+
+  it('throws when multiPlatform is enabled and --project-config is passed', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+          multiPlatform: {
+            enabled: true,
+            projectConfigRoot: 'config',
+          },
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+
+    await expect(loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+      projectConfigPath: 'project.config.json',
+    } as any)).rejects.toThrow('已开启 weapp.multiPlatform，--project-config 不再支持')
+  })
+
+  it('uses explicit project config path when multiPlatform is disabled', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+          multiPlatform: false,
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+    resolveProjectConfigRootMock.mockReturnValueOnce('dist')
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+      projectConfigPath: 'foo/custom.project.config.json',
+    } as any)
+
+    expect(getProjectConfigMock).toHaveBeenCalledWith('/project', {
+      basePath: 'foo/custom.project.config.json',
+      privatePath: 'foo/project.private.config.weapp.json',
+    })
+    expect(result.projectConfigPath).toBe('/project/foo/custom.project.config.json')
+    expect(result.projectPrivateConfigPath).toBe('/project/foo/project.private.config.weapp.json')
+  })
+
+  it('skips project config loading in lib mode and keeps existing swc plugin', async () => {
+    const existingSwcPlugin = { name: 'weapp-runtime:swc-es5-transform' }
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        build: {
+          rolldownOptions: {
+            output: [{}, {}],
+            plugins: [existingSwcPlugin],
+          },
+        },
+        weapp: {
+          platform: 'weapp',
+          jsFormat: 'cjs',
+          es5: true,
+          lib: {
+            entry: 'index.ts',
+            root: '/project/lib-src',
+          },
+          tsconfigPaths: false,
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(true)
+    resolveWeappLibConfigMock.mockReturnValueOnce({
+      enabled: true,
+      outDir: 'dist-lib',
+      root: '/project/lib-src',
+      entry: 'index.ts',
+    })
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    const outputs = result.config.build?.rolldownOptions?.output as Array<{ format?: string }>
+    expect(outputs.every(output => output.format === 'cjs')).toBe(true)
+    expect(result.mpDistRoot).toBe('dist-lib')
+    expect(result.projectConfigPath).toBeUndefined()
+    expect(result.projectPrivateConfigPath).toBeUndefined()
+    expect(getProjectConfigMock).not.toHaveBeenCalled()
+    expect(createLegacyEs5PluginMock).not.toHaveBeenCalled()
+    expect(result.config.plugins?.some((plugin: any) => plugin?.name === 'tsconfig-paths')).toBe(false)
+  })
+
+  it('loads weapp-specific config file and keeps target from sanitize result', async () => {
+    resolveWeappConfigFileMock.mockResolvedValueOnce('/project/weapp-vite.config.ts')
+    loadConfigFromFileMock
+      .mockResolvedValueOnce({
+        config: {
+          build: {
+            target: 'esnext',
+          },
+          weapp: {
+            platform: 'weapp',
+          },
+        },
+        path: '/project/vite.config.ts',
+      })
+      .mockResolvedValueOnce({
+        config: {
+          weapp: {
+            platform: 'weapp',
+            chunks: {
+              duplicateWarningBytes: 1,
+            },
+          },
+        },
+        path: '/project/weapp-vite.config.ts',
+      })
+    hasLibEntryMock.mockReturnValueOnce(false)
+    sanitizeBuildTargetMock.mockReturnValueOnce({
+      hasTarget: true,
+      sanitized: 'es2020',
+    })
+    isNonConcreteBuildTargetMock.mockReturnValueOnce(false)
+    resolveProjectConfigRootMock.mockReturnValueOnce('dist')
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(loadConfigFromFileMock).toHaveBeenCalledTimes(2)
+    expect(result.configFilePath).toBe('/project/weapp-vite.config.ts')
+    expect(result.chunksConfigured).toBe(true)
+    expect(result.config.build?.target).toBe('es2020')
+  })
 })
