@@ -216,6 +216,7 @@ describe('runtime config internal loadConfig', () => {
     expect(result.config.plugins?.[0]).toBe(oxcVitePlugin)
     expect(result.config.plugins?.some((plugin: any) => plugin?.name === 'tsconfig-paths')).toBe(true)
     expect(result.config.build?.outDir).toBe('dist/weapp/dist')
+    expect(result.relativeSrcRoot('/project/src/pages/index.ts')).toBe('/project/src/pages/index.ts')
     expect(injectBuiltinAliases).toHaveBeenCalledTimes(1)
     expect(getProjectConfigMock).toHaveBeenCalledWith('/project', {
       basePath: 'config/weapp/project.config.json',
@@ -381,6 +382,138 @@ describe('runtime config internal loadConfig', () => {
     expect(getProjectConfigMock).not.toHaveBeenCalled()
     expect(createLegacyEs5PluginMock).not.toHaveBeenCalled()
     expect(result.config.plugins?.some((plugin: any) => plugin?.name === 'tsconfig-paths')).toBe(false)
+    expect(result.relativeSrcRoot('/project/lib-src/components/button/index.ts')).toBe('components/button/index.ts')
+  })
+
+  it('applies lib entry file name resolver on object output and falls back to dist outDir', async () => {
+    const entryFileNames = vi.fn((chunk: { name: string }) => `lib/${chunk.name}.js`)
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        build: {
+          rolldownOptions: {},
+        },
+        weapp: {
+          platform: 'weapp',
+          jsFormat: 'cjs',
+          lib: {
+            entry: 'index.ts',
+            root: '/project/lib-src',
+          },
+          tsconfigPaths: false,
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(true)
+    resolveWeappLibConfigMock.mockReturnValueOnce({
+      enabled: true,
+      root: '/project/lib-src',
+      entry: 'index.ts',
+    })
+    createLibEntryFileNameResolverMock.mockReturnValueOnce(entryFileNames)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.config.build?.outDir).toBe('dist')
+    const output = result.config.build?.rolldownOptions?.output as { entryFileNames?: typeof entryFileNames, format?: string }
+    expect(output.format).toBe('cjs')
+    expect(output.entryFileNames).toBe(entryFileNames)
+    expect(result.mpDistRoot).toBe('dist')
+    expect(getProjectConfigMock).not.toHaveBeenCalled()
+  })
+
+  it('removes rollupOptions and applies lib entryFileNames on array outputs', async () => {
+    const entryFileNames = vi.fn((chunk: { name: string }) => `lib/${chunk.name}.js`)
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        build: {
+          rollupOptions: {
+            output: {
+              format: 'esm',
+            },
+          },
+          rolldownOptions: {
+            output: [{}, {}],
+          },
+        },
+        weapp: {
+          platform: 'weapp',
+          jsFormat: 'cjs',
+          lib: {
+            entry: 'index.ts',
+            root: '/project/lib-src',
+          },
+          tsconfigPaths: false,
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(true)
+    resolveWeappLibConfigMock.mockReturnValueOnce({
+      enabled: true,
+      outDir: 'dist-lib',
+      root: '/project/lib-src',
+      entry: 'index.ts',
+    })
+    createLibEntryFileNameResolverMock.mockReturnValueOnce(entryFileNames)
+    getDefaultBuildTargetMock.mockReturnValueOnce('es2021')
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.config.build?.rollupOptions).toBeUndefined()
+    expect(result.config.build?.target).toBe('es2021')
+    const outputs = result.config.build?.rolldownOptions?.output as Array<{ entryFileNames?: typeof entryFileNames }>
+    expect(outputs.every(output => output.entryFileNames === entryFileNames)).toBe(true)
+  })
+
+  it('uses default target for non-concrete build target', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        build: {
+          target: 'esnext',
+        },
+        weapp: {
+          platform: 'weapp',
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+    sanitizeBuildTargetMock.mockReturnValueOnce({
+      hasTarget: true,
+      sanitized: 'esnext',
+    })
+    getDefaultBuildTargetMock.mockReturnValueOnce('es2018')
+    isNonConcreteBuildTargetMock.mockReturnValueOnce(true)
+    resolveProjectConfigRootMock.mockReturnValueOnce('dist')
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.config.build?.target).toBe('es2018')
   })
 
   it('loads weapp-specific config file and keeps target from sanitize result', async () => {
