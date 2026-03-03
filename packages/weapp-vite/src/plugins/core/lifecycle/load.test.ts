@@ -2,7 +2,13 @@ import { mkdtemp, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
-import { createLoadHook } from './load'
+import { createLoadHook, createOptionsHook } from './load'
+
+const resolveWeappLibEntriesMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../runtime/lib', () => ({
+  resolveWeappLibEntries: resolveWeappLibEntriesMock,
+}))
 
 describe('core lifecycle load hook injectWeapi', () => {
   it('injects wpi and replaces wx/my/platform global when replaceWx is enabled', async () => {
@@ -362,5 +368,140 @@ describe('core lifecycle load hook injectWeapi', () => {
     )
 
     expect(unavailableResult).toEqual(rawResult)
+  })
+})
+
+describe('core lifecycle options hook', () => {
+  it('builds input map from subPackageMeta entries', async () => {
+    const optionsHook = createOptionsHook({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+        },
+        scanService: {},
+        buildService: {},
+      },
+      subPackageMeta: {
+        entries: ['pages/a/index', 'pages/b/index'],
+      },
+      pendingIndependentBuilds: [],
+    } as any)
+
+    const options: Record<string, any> = {}
+    await optionsHook(options)
+
+    expect(options.input).toEqual({
+      'pages/a/index': '/project/src/pages/a/index',
+      'pages/b/index': '/project/src/pages/b/index',
+    })
+  })
+
+  it('loads lib entries when weapp lib mode is enabled', async () => {
+    resolveWeappLibEntriesMock.mockResolvedValueOnce([
+      {
+        name: 'card',
+        input: '/project/src/components/card.ts',
+        relativeBase: 'components/card',
+        outputBase: 'lib/card',
+      },
+    ])
+
+    const runtimeState = {
+      lib: {
+        enabled: false,
+        entries: new Map(),
+      },
+    }
+
+    const configService = {
+      absoluteSrcRoot: '/project/src',
+      weappLibConfig: {
+        enabled: true,
+      },
+      options: {},
+    }
+
+    const optionsHook = createOptionsHook({
+      ctx: {
+        runtimeState,
+        configService,
+        scanService: {},
+        buildService: {},
+      },
+      subPackageMeta: undefined,
+      pendingIndependentBuilds: [],
+    } as any)
+
+    const options: Record<string, any> = {}
+    await optionsHook(options)
+
+    expect(options.input).toEqual({
+      card: '/project/src/components/card.ts',
+    })
+    expect(runtimeState.lib.enabled).toBe(true)
+    expect(runtimeState.lib.entries.size).toBe(1)
+    expect(configService.options.weappLibOutputMap.get('components/card')).toBe('lib/card')
+  })
+
+  it('handles app entry and independent subpackage builds when lib mode is disabled', async () => {
+    const runtimeState = {
+      lib: {
+        enabled: true,
+        entries: new Map([['/project/src/old.ts', { input: '/project/src/old.ts' }]]),
+      },
+    }
+    const configService = {
+      absoluteSrcRoot: '/project/src',
+      weappLibConfig: {
+        enabled: false,
+      },
+      isDev: false,
+      currentSubPackageRoot: 'pkgA',
+      options: {
+        weappLibOutputMap: new Map([['legacy', 'legacy']]),
+      },
+    }
+    const pkgAMeta = { root: 'pkgA' }
+
+    const scanService = {
+      loadAppEntry: vi.fn(async () => ({ path: '/project/src/app.ts' })),
+      loadSubPackages: vi.fn(),
+      drainIndependentDirtyRoots: vi.fn(() => ['pkgA', 'pkg-missing']),
+      independentSubPackageMap: new Map([
+        ['pkgA', pkgAMeta],
+      ]),
+    }
+
+    const buildService = {
+      buildIndependentBundle: vi.fn(async () => {
+        configService.currentSubPackageRoot = 'changed'
+        return { ok: true }
+      }),
+    }
+
+    const state = {
+      ctx: {
+        runtimeState,
+        configService,
+        scanService,
+        buildService,
+      },
+      subPackageMeta: undefined,
+      pendingIndependentBuilds: [],
+    } as any
+
+    const optionsHook = createOptionsHook(state)
+    const options: Record<string, any> = {}
+    await optionsHook(options)
+
+    expect(options.input).toEqual({
+      app: '/project/src/app.ts',
+    })
+    expect(runtimeState.lib.enabled).toBe(false)
+    expect(runtimeState.lib.entries.size).toBe(0)
+    expect(configService.options.weappLibOutputMap).toBeUndefined()
+    expect(configService.options.currentSubPackageRoot).toBe('pkgA')
+    expect(state.pendingIndependentBuilds).toHaveLength(1)
+    expect(buildService.buildIndependentBundle).toHaveBeenCalledWith('pkgA', pkgAMeta)
   })
 })
