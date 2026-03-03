@@ -198,6 +198,85 @@ describe('analyze command web branch', () => {
     expect(stdout).not.toHaveBeenCalled()
   })
 
+  it('prints web static summary in non-json mode', async () => {
+    const action = createCliActionHandler()
+    vi.mocked(createCompilerContext).mockResolvedValue(createContext())
+
+    await action('/virtual/project', {
+      platform: 'h5',
+      json: false,
+    })
+
+    expect(analyzeSubpackages).not.toHaveBeenCalled()
+    expect(logger.success).toHaveBeenCalledWith('Web 静态分析完成')
+    expect(logger.info).toHaveBeenCalledWith('- executionMode：safe')
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('未支持范围'))
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('限制：当前仅提供静态配置分析'))
+  })
+
+  it('prints duplicate module summary with overflow hint in mini analyze mode', async () => {
+    const action = createCliActionHandler()
+    const duplicateModules = Array.from({ length: 11 }).map((_, index) => {
+      return {
+        id: `mod-${index}`,
+        source: `src/shared/mod-${index}.ts`,
+        sourceType: 'script',
+        packages: [
+          {
+            packageId: 'main',
+            files: [`main/mod-${index}.js`],
+          },
+          {
+            packageId: 'pkg-a',
+            files: [`pkg-a/mod-${index}.js`],
+          },
+        ],
+      }
+    })
+    const miniResult = {
+      packages: [
+        {
+          id: 'main',
+          label: '主包',
+          files: [
+            { type: 'chunk' },
+            { type: 'asset' },
+          ],
+        },
+        {
+          id: 'pkg-a',
+          label: 'A 分包',
+          files: [
+            { type: 'chunk' },
+          ],
+        },
+      ],
+      modules: duplicateModules,
+      subPackages: [
+        {
+          root: 'pkg-a',
+          name: 'pkgAlias',
+          independent: true,
+        },
+      ],
+    }
+
+    vi.mocked(createCompilerContext).mockResolvedValue(createContext({
+      weappWebConfig: undefined,
+    }))
+    vi.mocked(analyzeSubpackages).mockResolvedValue(miniResult as any)
+
+    await action('/virtual/project', {
+      platform: 'weapp',
+    })
+
+    expect(startAnalyzeDashboard).toHaveBeenCalledWith(miniResult)
+    expect(logger.info).toHaveBeenCalledWith('分包配置：')
+    expect(logger.info).toHaveBeenCalledWith('- pkg-a，别名：pkgAlias，独立构建')
+    expect(logger.info).toHaveBeenCalledWith('跨包复用/复制源码共 11 项：')
+    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('其余 1 项请使用 weapp-vite analyze --json 查看'))
+  })
+
   it('sets exitCode when command execution throws', async () => {
     const action = createCliActionHandler()
     vi.mocked(createCompilerContext).mockRejectedValue(new Error('boom'))
