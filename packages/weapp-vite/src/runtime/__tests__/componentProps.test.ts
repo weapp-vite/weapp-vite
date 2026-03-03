@@ -152,4 +152,67 @@ Component({
       ['supported', 'string'],
     ])
   })
+
+  it('resolves literal/member constructor variants and numeric prop names', () => {
+    const code = `
+const Wechat = { String, Boolean }
+const extraTypes = [String]
+
+Component({
+  properties: {
+    1: { type: 'String' },
+    memberByIdentifier: { type: Wechat.String },
+    memberByLiteral: { type: Wechat['Boolean'] },
+    literalNumber: { type: 1 },
+    literalBoolean: { type: true },
+    wrapped: { type: (String as any) },
+    spreadMode: [...extraTypes],
+    emptyMode: [,],
+  },
+})
+`
+
+    const result = extractComponentProps(code)
+    expect(Array.from(result.entries())).toEqual([
+      ['1', 'string'],
+      ['memberByIdentifier', 'string'],
+      ['memberByLiteral', 'boolean'],
+      ['literalNumber', 'number'],
+      ['literalBoolean', 'boolean'],
+      ['wrapped', 'string'],
+      ['spreadMode', 'any'],
+      ['emptyMode', 'any'],
+    ])
+  })
+
+  it('returns empty map when identifier bindings are non-object or call expressions', () => {
+    const code = `
+const optionsFromCall = getOptions()
+Component(optionsFromCall)
+Component(getOptions())
+`
+
+    expect(Array.from(extractComponentProps(code).entries())).toEqual([])
+  })
+
+  it('keeps the first extracted props map when later call expressions are visited', () => {
+    const code = `
+Component({
+  properties: {
+    first: String,
+  },
+})
+
+Component({
+  properties: {
+    second: Number,
+  },
+})
+`
+
+    const result = extractComponentProps(code)
+    expect(Array.from(result.entries())).toEqual([
+      ['first', 'string'],
+    ])
+  })
 })
