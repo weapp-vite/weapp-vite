@@ -1,23 +1,158 @@
+import process from 'node:process'
+import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { loadConfig } from './loadConfig'
 
 const loadConfigFromFileMock = vi.hoisted(() => vi.fn())
+const resolveWeappConfigFileMock = vi.hoisted(() => vi.fn())
+const createCjsConfigLoadErrorMock = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => ({
   loadConfigFromFile: loadConfigFromFileMock,
 }))
 
+vi.mock('../utils', () => ({
+  createCjsConfigLoadError: createCjsConfigLoadErrorMock,
+  resolveWeappConfigFile: resolveWeappConfigFileMock,
+}))
+
 describe('loadConfig', () => {
   beforeEach(() => {
     loadConfigFromFileMock.mockReset()
+    resolveWeappConfigFileMock.mockReset()
+    createCjsConfigLoadErrorMock.mockReset()
+    createCjsConfigLoadErrorMock.mockReturnValue(undefined)
   })
 
-  it('prints ESM guidance when config uses CJS globals', async () => {
-    loadConfigFromFileMock.mockRejectedValueOnce(new Error('ReferenceError: __dirname is not defined'))
+  it('prints ESM guidance when the main config uses CJS globals', async () => {
+    const originalError = new Error('ReferenceError: __dirname is not defined')
+    const wrappedError = new Error('cjs wrapped')
+    loadConfigFromFileMock.mockRejectedValueOnce(originalError)
+    createCjsConfigLoadErrorMock.mockReturnValueOnce(wrappedError)
 
-    await expect(loadConfig('vite.config.ts')).rejects.toThrow(
-      'vite.config.ts 为 CJS 格式，需要改为 ESM 写法（可参考 import.meta.dirname 等用法）。',
+    await expect(loadConfig('vite.config.ts')).rejects.toThrow('cjs wrapped')
+    expect(createCjsConfigLoadErrorMock).toHaveBeenCalledWith(expect.objectContaining({
+      error: originalError,
+      configPath: path.resolve(process.cwd(), 'vite.config.ts'),
+    }))
+  })
+
+  it('returns the loaded vite config when no weapp config file is found', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        define: {
+          A: '1',
+        },
+      },
+      path: '/project/vite.config.ts',
+      dependencies: ['/project/vite.config.ts'],
+    })
+    resolveWeappConfigFileMock.mockResolvedValueOnce(undefined)
+
+    const result = await loadConfig('vite.config.ts')
+    expect(result).toEqual({
+      config: {
+        define: {
+          A: '1',
+        },
+      },
+      path: '/project/vite.config.ts',
+      dependencies: ['/project/vite.config.ts'],
+    })
+    expect(loadConfigFromFileMock).toHaveBeenCalledWith(
+      { command: 'serve', mode: 'development' },
+      path.resolve(process.cwd(), 'vite.config.ts'),
+      process.cwd(),
+      undefined,
+      undefined,
+      'runner',
     )
+  })
+
+  it('reuses the first load result when vite and weapp config paths are identical', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          a: 1,
+        },
+      },
+      path: '/project/weapp-vite.config.ts',
+      dependencies: ['/project/weapp-vite.config.ts'],
+    })
+    resolveWeappConfigFileMock.mockResolvedValueOnce('/project/weapp-vite.config.ts')
+
+    const result = await loadConfig('/project/weapp-vite.config.ts')
+    expect(loadConfigFromFileMock).toHaveBeenCalledTimes(1)
+    expect(result?.path).toBe('/project/weapp-vite.config.ts')
+    expect(result?.config.weapp).toEqual({
+      a: 1,
+    })
+  })
+
+  it('merges weapp config and dedupes dependencies when both configs are loaded', async () => {
+    loadConfigFromFileMock
+      .mockResolvedValueOnce({
+        config: {
+          define: {
+            A: '1',
+          },
+          weapp: {
+            fromVite: true,
+            overwrite: 'vite',
+          },
+        },
+        path: '/project/vite.config.ts',
+        dependencies: ['/project/shared.ts', '/project/vite.config.ts'],
+      })
+      .mockResolvedValueOnce({
+        config: {
+          weapp: {
+            overwrite: 'weapp',
+            extra: true,
+          },
+        },
+        path: '/project/weapp-vite.config.ts',
+        dependencies: ['/project/shared.ts', '/project/weapp-vite.config.ts'],
+      })
+    resolveWeappConfigFileMock.mockResolvedValueOnce('/project/weapp-vite.config.ts')
+
+    const result = await loadConfig('/project/vite.config.ts')
+    expect(result?.path).toBe('/project/weapp-vite.config.ts')
+    expect(result?.config.weapp).toEqual({
+      overwrite: 'weapp',
+      extra: true,
+      fromVite: true,
+    })
+    expect(result?.dependencies).toEqual([
+      '/project/shared.ts',
+      '/project/vite.config.ts',
+      '/project/weapp-vite.config.ts',
+    ])
+  })
+
+  it('returns undefined when neither config can be loaded', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce(undefined)
+    resolveWeappConfigFileMock.mockResolvedValueOnce(undefined)
+
+    await expect(loadConfig('/project/vite.config.ts')).resolves.toBeUndefined()
+  })
+
+  it('wraps CJS errors from loading weapp config file', async () => {
+    loadConfigFromFileMock
+      .mockResolvedValueOnce({
+        config: {
+          define: {
+            A: '1',
+          },
+        },
+        path: '/project/vite.config.ts',
+        dependencies: [],
+      })
+      .mockRejectedValueOnce(new Error('module is not defined'))
+    resolveWeappConfigFileMock.mockResolvedValueOnce('/project/weapp-vite.config.ts')
+    createCjsConfigLoadErrorMock.mockReturnValueOnce(new Error('weapp cjs wrapped'))
+
+    await expect(loadConfig('/project/vite.config.ts')).rejects.toThrow('weapp cjs wrapped')
   })
 })

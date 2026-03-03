@@ -1,5 +1,136 @@
-import { describe, expect, it } from 'vitest'
-import { DEFAULT_MCP_ENDPOINT, DEFAULT_MCP_PORT, resolveWeappMcpConfig } from './mcp'
+import { mkdtemp, rm } from 'node:fs/promises'
+import http from 'node:http'
+import net from 'node:net'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import process from 'node:process'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import {
+  DEFAULT_MCP_ENDPOINT,
+  DEFAULT_MCP_PORT,
+  resolveWeappMcpConfig,
+  startWeappViteMcpServer,
+} from './mcp'
+
+const mocks = vi.hoisted(() => {
+  const transportInstances: any[] = []
+  const mockStartStdioServer = vi.fn(async () => {})
+  const mockConnect = vi.fn(async () => {})
+  const mockCreateWeappViteMcpServer = vi.fn(async () => ({
+    server: {
+      connect: mockConnect,
+    },
+  }))
+
+  class MockStreamableHTTPServerTransport {
+    requests: Array<{ method?: string, url?: string, body: unknown }> = []
+    close = vi.fn(async () => {})
+
+    constructor(_options: unknown) {
+      transportInstances.push(this)
+    }
+
+    async handleRequest(req: http.IncomingMessage, res: http.ServerResponse, body: unknown) {
+      this.requests.push({
+        method: req.method,
+        url: req.url,
+        body,
+      })
+      res.statusCode = 204
+      res.end()
+    }
+  }
+
+  return {
+    transportInstances,
+    mockStartStdioServer,
+    mockConnect,
+    mockCreateWeappViteMcpServer,
+    MockStreamableHTTPServerTransport,
+  }
+})
+
+vi.mock('@weapp-vite/mcp', () => {
+  return {
+    createWeappViteMcpServer: mocks.mockCreateWeappViteMcpServer,
+    startStdioServer: mocks.mockStartStdioServer,
+  }
+})
+
+vi.mock('@modelcontextprotocol/sdk/server/streamableHttp.js', () => {
+  return {
+    StreamableHTTPServerTransport: mocks.MockStreamableHTTPServerTransport,
+  }
+})
+
+function requestHttp(options: {
+  port: number
+  path: string
+  method: string
+  body?: string
+}) {
+  return new Promise<{ statusCode: number, text: string }>((resolve, reject) => {
+    const req = http.request({
+      host: '127.0.0.1',
+      port: options.port,
+      path: options.path,
+      method: options.method,
+      headers: options.body
+        ? { 'content-type': 'application/json' }
+        : undefined,
+    }, (res) => {
+      let text = ''
+      res.setEncoding('utf8')
+      res.on('data', chunk => text += chunk)
+      res.on('end', () => {
+        resolve({
+          statusCode: res.statusCode ?? 0,
+          text,
+        })
+      })
+    })
+    req.on('error', reject)
+    if (options.body !== undefined) {
+      req.write(options.body)
+    }
+    req.end()
+  })
+}
+
+async function getFreePort() {
+  return await new Promise<number>((resolve, reject) => {
+    const server = net.createServer()
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address()
+      if (!address || typeof address === 'string') {
+        reject(new Error('Failed to resolve free port'))
+        return
+      }
+      const { port } = address
+      server.close((error) => {
+        if (error) {
+          reject(error)
+          return
+        }
+        resolve(port)
+      })
+    })
+  })
+}
+
+beforeEach(() => {
+  mocks.transportInstances.length = 0
+  mocks.mockStartStdioServer.mockReset()
+  mocks.mockConnect.mockReset()
+  mocks.mockCreateWeappViteMcpServer.mockReset()
+  mocks.mockCreateWeappViteMcpServer.mockResolvedValue({
+    server: {
+      connect: mocks.mockConnect,
+    },
+  })
+})
 
 describe('weapp mcp config', () => {
   it('disables mcp when config is false', () => {
@@ -18,13 +149,132 @@ describe('weapp mcp config', () => {
     expect(resolved.endpoint).toBe(DEFAULT_MCP_ENDPOINT)
   })
 
-  it('normalizes endpoint and port', () => {
+  it('normalizes endpoint, host, and port', () => {
     const resolved = resolveWeappMcpConfig({
-      endpoint: 'my-mcp',
+      endpoint: ' my-mcp ',
+      host: ' 0.0.0.0 ',
       port: -1,
     })
 
     expect(resolved.endpoint).toBe('/my-mcp')
+    expect(resolved.host).toBe('0.0.0.0')
     expect(resolved.port).toBe(DEFAULT_MCP_PORT)
+  })
+})
+
+describe('startWeappViteMcpServer', () => {
+  it('starts stdio transport directly when workspaceRoot is not provided', async () => {
+    const handle = await startWeappViteMcpServer()
+
+    expect(handle).toEqual({
+      transport: 'stdio',
+    })
+    expect(mocks.mockStartStdioServer).toHaveBeenCalledTimes(1)
+    expect(mocks.mockCreateWeappViteMcpServer).not.toHaveBeenCalled()
+  })
+
+  it('switches cwd for stdio transport when workspaceRoot is provided', async () => {
+    const workspaceRoot = await mkdtemp(path.join(tmpdir(), 'weapp-vite-mcp-'))
+    const previousCwd = process.cwd()
+    try {
+      const handle = await startWeappViteMcpServer({
+        workspaceRoot,
+      })
+
+      expect(handle).toEqual({
+        transport: 'stdio',
+      })
+      expect(mocks.mockStartStdioServer).toHaveBeenCalledTimes(1)
+      expect(process.cwd()).toBe(previousCwd)
+    }
+    finally {
+      await rm(workspaceRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('restores cwd when stdio startup fails', async () => {
+    const workspaceRoot = await mkdtemp(path.join(tmpdir(), 'weapp-vite-mcp-error-'))
+    const previousCwd = process.cwd()
+    mocks.mockStartStdioServer.mockRejectedValueOnce(new Error('stdio boom'))
+
+    try {
+      await expect(startWeappViteMcpServer({
+        workspaceRoot,
+      })).rejects.toThrow('stdio boom')
+      expect(process.cwd()).toBe(previousCwd)
+    }
+    finally {
+      await rm(workspaceRoot, { recursive: true, force: true })
+    }
+  })
+
+  it('starts streamable http transport and handles request paths', async () => {
+    const port = await getFreePort()
+    const unrefSpy = vi.spyOn(http.Server.prototype, 'unref')
+
+    const handle = await startWeappViteMcpServer({
+      transport: 'streamable-http',
+      host: '127.0.0.1',
+      port,
+      endpoint: 'my-mcp',
+      quiet: true,
+      unref: true,
+    })
+
+    expect(handle.transport).toBe('streamable-http')
+    expect(mocks.mockCreateWeappViteMcpServer).toHaveBeenCalledWith({
+      workspaceRoot: undefined,
+    })
+    expect(mocks.mockConnect).toHaveBeenCalledTimes(1)
+    expect(unrefSpy).toHaveBeenCalled()
+
+    const notFound = await requestHttp({
+      method: 'GET',
+      path: '/missing',
+      port,
+    })
+    expect(notFound.statusCode).toBe(404)
+    expect(JSON.parse(notFound.text).error.code).toBe(-32004)
+
+    const methodNotAllowed = await requestHttp({
+      method: 'PUT',
+      path: '/my-mcp',
+      port,
+    })
+    expect(methodNotAllowed.statusCode).toBe(405)
+    expect(JSON.parse(methodNotAllowed.text).error.code).toBe(-32005)
+
+    const invalidJson = await requestHttp({
+      method: 'POST',
+      path: '/my-mcp',
+      port,
+      body: '{',
+    })
+    expect(invalidJson.statusCode).toBe(500)
+    expect(JSON.parse(invalidJson.text).error.code).toBe(-32603)
+
+    const ok = await requestHttp({
+      method: 'POST',
+      path: '/my-mcp',
+      port,
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/list',
+      }),
+    })
+    expect(ok.statusCode).toBe(204)
+
+    const transport = mocks.transportInstances[0]
+    expect(transport.requests.length).toBeGreaterThan(0)
+    expect(transport.requests.at(-1)?.body).toEqual({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/list',
+    })
+
+    await handle.close?.()
+    expect(transport.close).toHaveBeenCalledTimes(1)
+    unrefSpy.mockRestore()
   })
 })

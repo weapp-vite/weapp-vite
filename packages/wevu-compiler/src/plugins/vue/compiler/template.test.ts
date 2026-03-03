@@ -407,4 +407,116 @@ describe('compileVueTemplateToWxml', () => {
 
     expect(code).toContain(expectedAttr)
   })
+
+  it('transforms v-model for input-like elements', () => {
+    const template = `<input type="checkbox" v-model="checked" />`
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('checked="{{checked}}"')
+    expect(code).toContain('bindchange="__weapp_vite_model"')
+    expect(code).toContain('data-wv-model="checked"')
+  })
+
+  it('warns for unsupported v-model host while keeping fallback binding', () => {
+    const template = `<custom-input v-model="value" />`
+    const { code, warnings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('value="{{value}}"')
+    expect(code).toContain('bindinput="__weapp_vite_model"')
+    expect(warnings.some(message => message.includes('v-model'))).toBe(true)
+  })
+
+  it('handles custom directives with and without expression', () => {
+    const withExp = compileVueTemplateToWxml(
+      `<view v-track="eventId" />`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(withExp.code).toContain('data-v-track="{{eventId}}"')
+
+    const withoutExp = compileVueTemplateToWxml(
+      `<view v-analytics />`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(withoutExp.code).toContain('data-v-analytics')
+    expect(withoutExp.warnings.some(message => message.includes('v-analytics'))).toBe(true)
+  })
+
+  it('transforms keep-alive and transition builtin tags', () => {
+    const keepAlive = compileVueTemplateToWxml(
+      `<keep-alive><view>A</view></keep-alive>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(keepAlive.code).toContain('<block data-keep-alive="true">')
+    expect(keepAlive.code).toContain('<view>A</view>')
+
+    const transition = compileVueTemplateToWxml(
+      `<transition><view>B</view></transition>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(transition.code).toContain('<view>B</view>')
+    expect(transition.code).not.toContain('<transition')
+    expect(transition.warnings.some(message => message.includes('<transition>'))).toBe(true)
+  })
+
+  it('normalizes class/style object-array bindings and warns on spread syntax', () => {
+    const template = `
+<view
+  :class="[baseClass, { active: isActive, [dynamicClass]: dynamicEnabled }, ...extraClass]"
+  :style="[{ color }, { width: width + 'px', [dynamicKey]: dynamicValue }, ...extraStyle]"
+/>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('class="{{__wv_cls_0}}"')
+    expect(code).toContain('style="{{__wv_style_0}}"')
+  })
+
+  it('handles builtin template attrs and structural directives', () => {
+    const namedTemplate = compileVueTemplateToWxml(
+      `<template name="x" is="y" data="z"><view>A</view></template>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(namedTemplate.code).toContain('<template name="x" is="y" data="z">')
+
+    const forTemplate = compileVueTemplateToWxml(
+      `<template v-for="item in list"><view>{{ item }}</view></template>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(forTemplate.code).toContain('wx:for="{{list}}"')
+    expect(forTemplate.code).toContain('<block')
+
+    const conditionalTemplate = compileVueTemplateToWxml(
+      `<template v-if="ok"><view>B</view></template>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(conditionalTemplate.code).toContain('wx:if="{{ok}}"')
+  })
+
+  it('supports dynamic component fallback and :is rendering branches', () => {
+    const withoutIs = compileVueTemplateToWxml(
+      `<component><view>fallback</view></component>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(withoutIs.code).toContain('<component>')
+    expect(withoutIs.warnings.some(message => message.includes('<component> 未提供 :is'))).toBe(true)
+
+    const withIs = compileVueTemplateToWxml(
+      `<component :is="dynamicComp" :id="'id-1'"><view>slot</view></component>`,
+      '/project/src/pages/index/index.vue',
+    )
+    expect(withIs.code).toContain('data-is="{{dynamicComp}}"')
+    expect(withIs.warnings.some(message => message.includes('动态组件使用 data-is 属性'))).toBe(true)
+  })
+
+  it('renders transition with multi-children passthrough', () => {
+    const result = compileVueTemplateToWxml(
+      `<transition><view>A</view><view>B</view></transition>`,
+      '/project/src/pages/index/index.vue',
+    )
+
+    expect(result.code).toContain('<view>A</view>')
+    expect(result.code).toContain('<view>B</view>')
+    expect(result.warnings.some(message => message.includes('<transition>'))).toBe(true)
+  })
 })
