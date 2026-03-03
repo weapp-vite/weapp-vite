@@ -112,17 +112,17 @@ onUnmounted(() => {
   <view
     class="wr-class wr-swipeout [position:relative] [overflow:hidden]"
     data-key="cell"
-    capture-@tap="onClick"
-    :capture-@touchmove="disabled || swipe.onDrag"
+    capture-bind:tap="onClick"
+    bindtouchstart="{{disabled || swipe.startDrag}}"
+    capture-bind:touchmove="{{disabled || swipe.onDrag}}"
+    bindtouchend="{{disabled || swipe.endDrag}}"
+    bindtouchcancel="{{disabled || swipe.endDrag}}"
     :closed="closed"
     :change:closed="swipe.onCloseChange"
     :leftWidth="leftWidth"
     :rightWidth="rightWidth"
     :change:leftWidth="swipe.initLeftWidth"
     :change:rightWidth="swipe.initRightWidth"
-    @touchstart="disabled || swipe.startDrag"
-    @touchend="disabled || swipe.endDrag"
-    @touchcancel="disabled || swipe.endDrag"
   >
     <view id="wrapper">
       <view v-if="leftWidth" class="wr-swipeout__left [position:absolute] [top:0] [height:100%] [left:0] [transform:translate3d(-100%,_0,_0)]" data-key="left" @tap.stop="onClick">
