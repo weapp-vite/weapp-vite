@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, getCurrentInstance, ref } from '@/index'
+import { defineComponent, getCurrentInstance, getCurrentSetupContext, ref } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -43,5 +43,38 @@ describe('runtime: setup returns non-serializable values', () => {
     const lastPayload = setData.mock.calls[setData.mock.calls.length - 1]?.[0] ?? {}
     expect(lastPayload).toEqual(expect.objectContaining({ count: 1 }))
     expect('inst' in lastPayload).toBe(false)
+  })
+
+  it('excludes current setup context from setData snapshot', async () => {
+    defineComponent({
+      data: () => ({}),
+      setup() {
+        const count = ref(0)
+        const ctx = getCurrentSetupContext()
+        function inc() {
+          count.value++
+        }
+        return { count, ctx, inc }
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const setData = vi.fn()
+    const inst: any = { setData }
+
+    opts.lifetimes.attached.call(inst)
+    await Promise.resolve()
+
+    expect(setData).toHaveBeenCalled()
+    const firstPayload = setData.mock.calls[0]?.[0] ?? {}
+    expect(firstPayload).toEqual(expect.objectContaining({ count: 0 }))
+    expect('ctx' in firstPayload).toBe(false)
+
+    inst.inc()
+    await Promise.resolve()
+
+    const lastPayload = setData.mock.calls[setData.mock.calls.length - 1]?.[0] ?? {}
+    expect(lastPayload).toEqual(expect.objectContaining({ count: 1 }))
+    expect('ctx' in lastPayload).toBe(false)
   })
 })

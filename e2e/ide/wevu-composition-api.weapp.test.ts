@@ -105,40 +105,53 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
+async function assertCoverageForRoute(miniProgram: any, route: string) {
+  const page = await miniProgram.reLaunch(route)
+  if (!page) {
+    throw new Error(`Failed to launch ${route}`)
+  }
+  await page.waitFor(160)
+
+  const result = await page.callMethod('runE2E')
+  if (!result?.ok) {
+    throw new Error(`Coverage failed for ${route}: ${JSON.stringify(result?.details ?? {}, null, 2)}`)
+  }
+  expect(result?.ok).toBe(true)
+
+  const checks = result?.checks ?? {}
+  const details = result?.details ?? {}
+  const expectedApis = Array.isArray(details.expectedApis) ? details.expectedApis : []
+  expect([...expectedApis].sort()).toEqual([...EXPECTED_APIS].sort())
+
+  for (const api of EXPECTED_APIS) {
+    expect(checks[api], `route ${route} api ${api} should be covered`).toBe(true)
+  }
+
+  expect(Array.isArray(details.failedApis)).toBe(true)
+  expect(details.failedApis).toEqual([])
+}
+
 describe.sequential('wevu composition api (weapp e2e)', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })
 
-  it('covers all public composition APIs with executable assertions in TS and Vue SFC pages', async () => {
+  it('covers all public composition APIs on the TS page', async () => {
     const miniProgram = await getSharedMiniProgram()
 
     try {
-      for (const route of ['/pages/composition-api/index', '/pages/composition-api-vue/index']) {
-        const page = await miniProgram.reLaunch(route)
-        if (!page) {
-          throw new Error(`Failed to launch ${route}`)
-        }
-        await page.waitFor(160)
+      await assertCoverageForRoute(miniProgram, '/pages/composition-api/index')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
 
-        const result = await page.callMethod('runE2E')
-        if (!result?.ok) {
-          throw new Error(`Coverage failed for ${route}: ${JSON.stringify(result?.details ?? {}, null, 2)}`)
-        }
-        expect(result?.ok).toBe(true)
+  it('covers all public composition APIs on the Vue SFC page', async () => {
+    const miniProgram = await getSharedMiniProgram()
 
-        const checks = result?.checks ?? {}
-        const details = result?.details ?? {}
-        const expectedApis = Array.isArray(details.expectedApis) ? details.expectedApis : []
-        expect([...expectedApis].sort()).toEqual([...EXPECTED_APIS].sort())
-
-        for (const api of EXPECTED_APIS) {
-          expect(checks[api], `route ${route} api ${api} should be covered`).toBe(true)
-        }
-
-        expect(Array.isArray(details.failedApis)).toBe(true)
-        expect(details.failedApis).toEqual([])
-      }
+    try {
+      await assertCoverageForRoute(miniProgram, '/pages/composition-api-vue/index')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
