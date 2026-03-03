@@ -1,0 +1,374 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { syncHtmlCustomData, syncTypedComponentsDefinition, syncVueComponentsDefinition } from './sync'
+
+const fsRemoveMock = vi.hoisted(() => vi.fn())
+const fsOutputFileMock = vi.hoisted(() => vi.fn())
+const loggerErrorMock = vi.hoisted(() => vi.fn())
+const getTypedComponentsSettingsMock = vi.hoisted(() => vi.fn())
+const createTypedComponentsDefinitionMock = vi.hoisted(() => vi.fn())
+const createVueComponentsDefinitionMock = vi.hoisted(() => vi.fn())
+const createHtmlCustomDataDefinitionMock = vi.hoisted(() => vi.fn())
+const loadWeappBuiltinHtmlTagsMock = vi.hoisted(() => vi.fn())
+const collectAllComponentNamesMock = vi.hoisted(() => vi.fn())
+
+vi.mock('fs-extra', () => {
+  const mocked = {
+    remove: fsRemoveMock,
+    outputFile: fsOutputFileMock,
+  }
+  return {
+    ...mocked,
+    default: mocked,
+  }
+})
+
+vi.mock('../../../../context/shared', () => ({
+  logger: {
+    error: loggerErrorMock,
+  },
+}))
+
+vi.mock('../../config', () => ({
+  getTypedComponentsSettings: getTypedComponentsSettingsMock,
+}))
+
+vi.mock('../../typedDefinition', () => ({
+  createTypedComponentsDefinition: createTypedComponentsDefinitionMock,
+}))
+
+vi.mock('../../vueDefinition', () => ({
+  createVueComponentsDefinition: createVueComponentsDefinitionMock,
+}))
+
+vi.mock('../../htmlCustomData', () => ({
+  createHtmlCustomDataDefinition: createHtmlCustomDataDefinitionMock,
+}))
+
+vi.mock('../../weappBuiltinHtmlTags', () => ({
+  loadWeappBuiltinHtmlTags: loadWeappBuiltinHtmlTagsMock,
+}))
+
+vi.mock('./manifest', () => ({
+  collectAllComponentNames: collectAllComponentNamesMock,
+}))
+
+function createOutputsState() {
+  return {
+    pendingWrite: undefined,
+    writeRequested: false,
+    pendingTypedWrite: undefined,
+    typedWriteRequested: false,
+    lastWrittenTypedDefinition: undefined,
+    lastTypedDefinitionOutputPath: undefined,
+    pendingHtmlCustomDataWrite: undefined,
+    htmlCustomDataWriteRequested: false,
+    lastWrittenHtmlCustomData: undefined,
+    lastHtmlCustomDataOutputPath: undefined,
+    pendingVueComponentsWrite: undefined,
+    vueComponentsWriteRequested: false,
+    lastWrittenVueComponentsDefinition: undefined,
+    lastVueComponentsOutputPath: undefined,
+    lastHtmlCustomDataEnabled: false,
+    lastHtmlCustomDataOutput: undefined,
+    lastTypedComponentsEnabled: false,
+    lastTypedComponentsOutput: undefined,
+    lastVueComponentsEnabled: false,
+    lastVueComponentsOutput: undefined,
+  }
+}
+
+function createCommonOptions(overrides: Record<string, any> = {}) {
+  const base = {
+    ctx: {
+      configService: {},
+    },
+    outputsState: createOutputsState(),
+    collectResolverComponents: vi.fn(() => ({})),
+    registry: new Map<string, any>(),
+    componentMetadataMap: new Map<string, any>(),
+    manifestCache: new Map<string, string>(),
+    syncResolverComponentProps: vi.fn(),
+    preloadResolverComponentMetadata: vi.fn(),
+    getComponentMetadata: vi.fn(() => ({
+      types: new Map<string, string>(),
+      docs: new Map<string, string>(),
+    })),
+  } as Record<string, any>
+
+  return {
+    ...base,
+    ...overrides,
+    ctx: {
+      ...base.ctx,
+      ...(overrides.ctx ?? {}),
+    },
+  }
+}
+
+describe('autoImport outputs sync helpers', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    fsRemoveMock.mockResolvedValue(undefined)
+    fsOutputFileMock.mockResolvedValue(undefined)
+    collectAllComponentNamesMock.mockReturnValue(['CompA', 'CompB'])
+    createTypedComponentsDefinitionMock.mockReturnValue('typed-next')
+    createVueComponentsDefinitionMock.mockReturnValue('vue-next')
+    createHtmlCustomDataDefinitionMock.mockReturnValue('html-next')
+    loadWeappBuiltinHtmlTagsMock.mockReturnValue([])
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: false })
+  })
+
+  it('cleans previous typed output when typed components are disabled', async () => {
+    const options = createCommonOptions({
+      outputsState: {
+        ...createOutputsState(),
+        lastTypedDefinitionOutputPath: '/project/types/old.d.ts',
+        lastWrittenTypedDefinition: 'typed-old',
+      },
+    })
+    fsRemoveMock.mockRejectedValueOnce(new Error('remove failed'))
+
+    await syncTypedComponentsDefinition({ enabled: false }, options as any)
+
+    expect(fsRemoveMock).toHaveBeenCalledWith('/project/types/old.d.ts')
+    expect(options.outputsState.lastTypedDefinitionOutputPath).toBeUndefined()
+    expect(options.outputsState.lastWrittenTypedDefinition).toBeUndefined()
+  })
+
+  it('skips typed definition write when output content and path do not change', async () => {
+    const options = createCommonOptions({
+      outputsState: {
+        ...createOutputsState(),
+        lastWrittenTypedDefinition: 'typed-same',
+        lastTypedDefinitionOutputPath: '/project/types/components.d.ts',
+      },
+    })
+    createTypedComponentsDefinitionMock.mockReturnValueOnce('typed-same')
+
+    await syncTypedComponentsDefinition({
+      enabled: true,
+      outputPath: '/project/types/components.d.ts',
+    }, options as any)
+
+    expect(options.syncResolverComponentProps).toHaveBeenCalledTimes(1)
+    expect(options.preloadResolverComponentMetadata).toHaveBeenCalledTimes(1)
+    expect(fsOutputFileMock).not.toHaveBeenCalled()
+  })
+
+  it('writes typed definition to the new path and removes old output', async () => {
+    const options = createCommonOptions({
+      outputsState: {
+        ...createOutputsState(),
+        lastTypedDefinitionOutputPath: '/project/types/old.d.ts',
+      },
+    })
+
+    await syncTypedComponentsDefinition({
+      enabled: true,
+      outputPath: '/project/types/new.d.ts',
+    }, options as any)
+
+    expect(fsRemoveMock).toHaveBeenCalledWith('/project/types/old.d.ts')
+    expect(fsOutputFileMock).toHaveBeenCalledWith('/project/types/new.d.ts', 'typed-next', 'utf8')
+    expect(options.outputsState.lastWrittenTypedDefinition).toBe('typed-next')
+    expect(options.outputsState.lastTypedDefinitionOutputPath).toBe('/project/types/new.d.ts')
+  })
+
+  it('logs typed definition write failure', async () => {
+    const options = createCommonOptions()
+    fsOutputFileMock.mockRejectedValueOnce('typed failed')
+
+    await syncTypedComponentsDefinition({
+      enabled: true,
+      outputPath: '/project/types/new.d.ts',
+    }, options as any)
+
+    expect(loggerErrorMock).toHaveBeenCalledWith(expect.stringContaining('写入 typed-components.d.ts 失败: typed failed'))
+  })
+
+  it('resolves vue component imports from local entries and resolver map', async () => {
+    createVueComponentsDefinitionMock.mockImplementationOnce((_names: string[], _meta: unknown, resolveOptions: any) => {
+      return JSON.stringify({
+        useTypedComponents: resolveOptions.useTypedComponents,
+        moduleName: resolveOptions.moduleName,
+        localTs: resolveOptions.resolveComponentImport('LocalTs'),
+        localVue: resolveOptions.resolveComponentImport('LocalVue'),
+        fallbackResolver: resolveOptions.resolveComponentImport('Fallback'),
+        resolverOnly: resolveOptions.resolveComponentImport('ResolverOnly'),
+        missing: resolveOptions.resolveComponentImport('Missing'),
+      })
+    })
+    getTypedComponentsSettingsMock.mockReturnValueOnce({ enabled: true })
+
+    const resolveNavigationImport = vi.fn((from: string) => `resolved:${from}`)
+    const options = createCommonOptions({
+      outputsState: {
+        ...createOutputsState(),
+        lastVueComponentsOutputPath: '/project/types/old-components.d.ts',
+      },
+      registry: new Map<string, any>([
+        ['LocalTs', { kind: 'local', entry: { path: '/project/src/components/local/index.ts' } }],
+        ['LocalVue', { kind: 'local', entry: { path: '/project/src/components/local-vue/index.vue' } }],
+        ['Fallback', { kind: 'local', entry: {} }],
+      ]),
+      resolverComponentsMapRef: {
+        value: {
+          Fallback: 'resolver/fallback',
+          ResolverOnly: 'resolver/only',
+        },
+      },
+      resolveNavigationImport,
+    })
+
+    await syncVueComponentsDefinition({
+      enabled: true,
+      outputPath: '/project/types/components.d.ts',
+      moduleName: 'auto-components',
+    }, options as any)
+
+    expect(fsRemoveMock).toHaveBeenCalledWith('/project/types/old-components.d.ts')
+    expect(resolveNavigationImport).toHaveBeenCalledWith('resolver/fallback')
+    expect(resolveNavigationImport).toHaveBeenCalledWith('resolver/only')
+    expect(fsOutputFileMock).toHaveBeenCalledWith(
+      '/project/types/components.d.ts',
+      expect.stringContaining('"localTs":"../src/components/local/index"'),
+      'utf8',
+    )
+    expect(fsOutputFileMock).toHaveBeenCalledWith(
+      '/project/types/components.d.ts',
+      expect.stringContaining('"localVue":"../src/components/local-vue/index.vue"'),
+      'utf8',
+    )
+    expect(fsOutputFileMock).toHaveBeenCalledWith(
+      '/project/types/components.d.ts',
+      expect.stringContaining('"fallbackResolver":"resolved:resolver/fallback"'),
+      'utf8',
+    )
+    expect(fsOutputFileMock).toHaveBeenCalledWith(
+      '/project/types/components.d.ts',
+      expect.stringContaining('"useTypedComponents":true'),
+      'utf8',
+    )
+    expect(options.outputsState.lastWrittenVueComponentsDefinition).toContain('"moduleName":"auto-components"')
+    expect(options.outputsState.lastVueComponentsOutputPath).toBe('/project/types/components.d.ts')
+  })
+
+  it('skips vue definition write when output content and path are unchanged', async () => {
+    const options = createCommonOptions({
+      outputsState: {
+        ...createOutputsState(),
+        lastWrittenVueComponentsDefinition: 'vue-same',
+        lastVueComponentsOutputPath: '/project/types/components.d.ts',
+      },
+      resolverComponentsMapRef: { value: {} },
+      resolveNavigationImport: vi.fn(),
+    })
+    createVueComponentsDefinitionMock.mockReturnValueOnce('vue-same')
+
+    await syncVueComponentsDefinition({
+      enabled: true,
+      outputPath: '/project/types/components.d.ts',
+    }, options as any)
+
+    expect(fsOutputFileMock).not.toHaveBeenCalled()
+  })
+
+  it('logs vue definition write failure', async () => {
+    const options = createCommonOptions({
+      resolverComponentsMapRef: { value: {} },
+      resolveNavigationImport: vi.fn(),
+    })
+    fsOutputFileMock.mockRejectedValueOnce(new Error('vue failed'))
+
+    await syncVueComponentsDefinition({
+      enabled: true,
+      outputPath: '/project/types/components.d.ts',
+    }, options as any)
+
+    expect(loggerErrorMock).toHaveBeenCalledWith(expect.stringContaining('写入 components.d.ts 失败: vue failed'))
+  })
+
+  it('cleans previous vue definition output when vue components are disabled', async () => {
+    const options = createCommonOptions({
+      outputsState: {
+        ...createOutputsState(),
+        lastVueComponentsOutputPath: '/project/types/old-components.d.ts',
+        lastWrittenVueComponentsDefinition: 'vue-old',
+      },
+      resolverComponentsMapRef: { value: {} },
+      resolveNavigationImport: vi.fn(),
+    })
+    fsRemoveMock.mockRejectedValueOnce(new Error('remove vue failed'))
+
+    await syncVueComponentsDefinition({ enabled: false }, options as any)
+
+    expect(fsRemoveMock).toHaveBeenCalledWith('/project/types/old-components.d.ts')
+    expect(options.outputsState.lastVueComponentsOutputPath).toBeUndefined()
+    expect(options.outputsState.lastWrittenVueComponentsDefinition).toBeUndefined()
+  })
+
+  it('handles html custom data cleanup, write and error branches', async () => {
+    const disabledOptions = createCommonOptions({
+      outputsState: {
+        ...createOutputsState(),
+        lastHtmlCustomDataOutputPath: '/project/types/old.html-data.json',
+        lastWrittenHtmlCustomData: 'html-old',
+      },
+    })
+    fsRemoveMock.mockRejectedValueOnce(new Error('remove html failed'))
+
+    await syncHtmlCustomData({ enabled: false }, disabledOptions as any)
+
+    expect(disabledOptions.outputsState.lastHtmlCustomDataOutputPath).toBeUndefined()
+    expect(disabledOptions.outputsState.lastWrittenHtmlCustomData).toBeUndefined()
+
+    const writeOptions = createCommonOptions({
+      outputsState: {
+        ...createOutputsState(),
+        lastHtmlCustomDataOutputPath: '/project/types/old.html-data.json',
+      },
+    })
+
+    await syncHtmlCustomData({
+      enabled: true,
+      outputPath: '/project/types/mini-program.html-data.json',
+    }, writeOptions as any)
+
+    expect(loadWeappBuiltinHtmlTagsMock).toHaveBeenCalledTimes(1)
+    expect(fsOutputFileMock).toHaveBeenCalledWith('/project/types/mini-program.html-data.json', 'html-next', 'utf8')
+    expect(writeOptions.outputsState.lastWrittenHtmlCustomData).toBe('html-next')
+    expect(writeOptions.outputsState.lastHtmlCustomDataOutputPath).toBe('/project/types/mini-program.html-data.json')
+
+    fsOutputFileMock.mockRejectedValueOnce(new Error('html failed'))
+    await syncHtmlCustomData({
+      enabled: true,
+      outputPath: '/project/types/mini-program.html-data.json',
+    }, {
+      ...createCommonOptions(),
+      outputsState: {
+        ...createOutputsState(),
+        lastHtmlCustomDataOutputPath: '/project/types/old.html-data.json',
+      },
+    } as any)
+
+    expect(loggerErrorMock).toHaveBeenCalledWith(expect.stringContaining('写入 mini-program.html-data.json 失败: html failed'))
+  })
+
+  it('skips html custom data write when output content and path are unchanged', async () => {
+    const options = createCommonOptions({
+      outputsState: {
+        ...createOutputsState(),
+        lastWrittenHtmlCustomData: 'html-same',
+        lastHtmlCustomDataOutputPath: '/project/types/mini-program.html-data.json',
+      },
+    })
+    createHtmlCustomDataDefinitionMock.mockReturnValueOnce('html-same')
+
+    await syncHtmlCustomData({
+      enabled: true,
+      outputPath: '/project/types/mini-program.html-data.json',
+    }, options as any)
+
+    expect(fsOutputFileMock).not.toHaveBeenCalled()
+  })
+})

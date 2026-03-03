@@ -197,9 +197,8 @@ describe('autoImport resolver helpers', () => {
   })
 
   it('returns undefined for invalid navigation imports or missing cwd', () => {
-    const noConfigServiceState = createState({
-      configService: undefined,
-    })
+    const noConfigServiceState = createState()
+    noConfigServiceState.ctx.configService = { weappViteConfig: { autoImportComponents: {} } }
     expect(createResolverHelpers(noConfigServiceState).resolveNavigationImport('pkg/button')).toBeUndefined()
 
     const state = createState({
@@ -214,6 +213,36 @@ describe('autoImport resolver helpers', () => {
     expect(helpers.resolveNavigationImport('C:\\windows\\absolute')).toBeUndefined()
     expect(helpers.resolveNavigationImport('@scope-only')).toBeUndefined()
     expect(helpers.resolveNavigationImport('plain-package')).toBeUndefined()
+  })
+
+  it('returns undefined when resolver list cannot resolve target component', () => {
+    const state = createState({
+      autoImportComponents: {
+        resolvers: [
+          undefined as any,
+          {},
+          {
+            components: {},
+          },
+          {
+            resolve: () => undefined,
+          },
+        ],
+      },
+    })
+
+    const helpers = createResolverHelpers(state)
+    expect(helpers.collectResolverComponents()).toEqual({})
+    expect(helpers.resolveWithResolvers('NotMatched', '/project/src/pages/index/index')).toBeUndefined()
+
+    const invalidResolverConfigState = createState({
+      autoImportComponents: {
+        resolvers: {} as any,
+      },
+    })
+    const invalidHelpers = createResolverHelpers(invalidResolverConfigState)
+    expect(invalidHelpers.collectResolverComponents()).toEqual({})
+    expect(invalidHelpers.resolveWithResolvers('StillNotMatched')).toBeUndefined()
   })
 
   it('resolves navigation import with miniprogram dts and js candidates', async () => {

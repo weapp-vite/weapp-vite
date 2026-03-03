@@ -11,6 +11,7 @@ const findJsonEntryMock = vi.hoisted(() => vi.fn())
 const findTemplateEntryMock = vi.hoisted(() => vi.fn())
 const findVueEntryMock = vi.hoisted(() => vi.fn())
 const extractConfigFromVueMock = vi.hoisted(() => vi.fn())
+const compileVueFileMock = vi.hoisted(() => vi.fn())
 const extractComponentPropsMock = vi.hoisted(() => vi.fn())
 const requireConfigServiceMock = vi.hoisted(() => vi.fn())
 const getAutoImportConfigMock = vi.hoisted(() => vi.fn())
@@ -50,6 +51,10 @@ vi.mock('../../../utils', () => ({
   findTemplateEntry: findTemplateEntryMock,
   findVueEntry: findVueEntryMock,
   extractConfigFromVue: extractConfigFromVueMock,
+}))
+
+vi.mock('wevu/compiler', () => ({
+  compileVueFile: compileVueFileMock,
 }))
 
 vi.mock('../../componentProps', () => ({
@@ -250,6 +255,25 @@ describe('autoImport registry helpers', () => {
     expect(state.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
   })
 
+  it('removes stale metadata when replaced component is no longer resolver-backed', async () => {
+    const state = createState()
+    state.registry.set('Comp', createLocalEntry('/project/src/components/comp/index'))
+    state.componentMetadataMap.set('Comp', {
+      types: new Map([['stale', 'string']]),
+      docs: new Map([['stale', 'doc']]),
+    })
+
+    findJsEntryMock.mockResolvedValue({ path: undefined })
+    findJsonEntryMock.mockResolvedValue({ path: undefined })
+    findTemplateEntryMock.mockResolvedValue({ path: undefined })
+    findVueEntryMock.mockResolvedValue(undefined)
+
+    const helpers = createRegistryHelpers(state)
+    await helpers.registerLocalComponent('/project/src/components/comp/index.wxml')
+
+    expect(state.componentMetadataMap.has('Comp')).toBe(false)
+  })
+
   it('skips non-component json and duplicate component names', async () => {
     const nonComponentState = createState()
     nonComponentState.ctx.jsonService.read.mockResolvedValue({ component: false })
@@ -274,6 +298,23 @@ describe('autoImport registry helpers', () => {
       expect.stringContaining('发现 `DupComp` 组件重名!'),
     )
     expect(duplicateState.scheduleManifestWrite).toHaveBeenCalledWith(false)
+  })
+
+  it('returns early when resolved component name is empty', async () => {
+    const state = createState()
+    resolvedComponentNameMock.mockReturnValue({
+      componentName: '',
+      base: 'index',
+    })
+
+    const helpers = createRegistryHelpers(state)
+    await helpers.registerLocalComponent('/project/src/components/nameless/index.wxml')
+
+    expect(state.scheduleManifestWrite).toHaveBeenCalledWith(false)
+    expect(state.scheduleTypedComponentsWrite).toHaveBeenCalledWith(false)
+    expect(state.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(false)
+    expect(state.scheduleVueComponentsWrite).toHaveBeenCalledWith(false)
+    expect(state.registry.size).toBe(0)
   })
 
   it('registers component with metadata merge and extraction fallback', async () => {
@@ -365,6 +406,69 @@ describe('autoImport registry helpers', () => {
         name: 'VueCard',
         from: '/components/vue-card/index',
       },
+    })
+  })
+
+  it('extracts props from vue component script and handles missing compiled script', async () => {
+    const state = createState()
+    findJsEntryMock.mockResolvedValue({ path: undefined })
+    findJsonEntryMock.mockResolvedValue({ path: undefined })
+    findTemplateEntryMock.mockResolvedValue({ path: undefined })
+    extractConfigFromVueMock.mockResolvedValue({ component: true })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: false })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: false })
+    resolvedComponentNameMock.mockReturnValue({
+      componentName: 'VueRichProps',
+      base: 'index',
+    })
+    readFileMock.mockResolvedValue('<script setup lang="ts">const x = 1</script>')
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default { properties: { fromVue: String } }',
+    })
+    extractComponentPropsMock.mockReturnValueOnce(new Map([['fromVueScript', 'string']]))
+
+    const helpers = createRegistryHelpers(state)
+    await helpers.registerLocalComponent('/project/src/components/vue-rich/index.vue')
+
+    expect(compileVueFileMock).toHaveBeenCalledWith(
+      '<script setup lang="ts">const x = 1</script>',
+      '/project/src/components/vue-rich/index.vue',
+      {
+        json: {
+          kind: 'component',
+        },
+      },
+    )
+    expect(extractComponentPropsMock).toHaveBeenCalledWith('export default { properties: { fromVue: String } }')
+    expect(state.componentMetadataMap.get('VueRichProps')).toEqual({
+      types: new Map([
+        ['fromJson', 'number'],
+        ['fromVueScript', 'string'],
+      ]),
+      docs: new Map([['fromJson', 'doc']]),
+    })
+
+    const noScriptState = createState()
+    findJsEntryMock.mockResolvedValue({ path: undefined })
+    findJsonEntryMock.mockResolvedValue({ path: undefined })
+    findTemplateEntryMock.mockResolvedValue({ path: undefined })
+    extractConfigFromVueMock.mockResolvedValue({ component: true })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: false })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: false })
+    resolvedComponentNameMock.mockReturnValueOnce({
+      componentName: 'VueNoScript',
+      base: 'index',
+    })
+    compileVueFileMock.mockResolvedValueOnce({ script: '' })
+
+    const helpersNoScript = createRegistryHelpers(noScriptState)
+    await helpersNoScript.registerLocalComponent('/project/src/components/vue-no-script/index.vue')
+
+    expect(noScriptState.componentMetadataMap.get('VueNoScript')).toEqual({
+      types: new Map([['fromJson', 'number']]),
+      docs: new Map([['fromJson', 'doc']]),
     })
   })
 
