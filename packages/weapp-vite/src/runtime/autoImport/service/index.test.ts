@@ -1,0 +1,370 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createRuntimeState } from '../../runtimeState'
+import { createAutoImportService } from './index'
+
+const getTypedComponentsSettingsMock = vi.hoisted(() => vi.fn(() => ({ enabled: false })))
+const getHtmlCustomDataSettingsMock = vi.hoisted(() => vi.fn(() => ({ enabled: false })))
+const getVueComponentsSettingsMock = vi.hoisted(() => vi.fn(() => ({ enabled: false })))
+const createResolverHelpersMock = vi.hoisted(() => vi.fn())
+const createMetadataHelpersMock = vi.hoisted(() => vi.fn())
+const createOutputsHelpersMock = vi.hoisted(() => vi.fn())
+const createRegistryHelpersMock = vi.hoisted(() => vi.fn())
+const loggerWarnMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../config', () => ({
+  DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME: 'components.manifest.json',
+  getTypedComponentsSettings: getTypedComponentsSettingsMock,
+  getHtmlCustomDataSettings: getHtmlCustomDataSettingsMock,
+  getVueComponentsSettings: getVueComponentsSettingsMock,
+}))
+
+vi.mock('./resolver', () => ({
+  createResolverHelpers: createResolverHelpersMock,
+}))
+
+vi.mock('./metadata', () => ({
+  createMetadataHelpers: createMetadataHelpersMock,
+}))
+
+vi.mock('./outputs', () => ({
+  createOutputsHelpers: createOutputsHelpersMock,
+}))
+
+vi.mock('./registry', () => ({
+  createRegistryHelpers: createRegistryHelpersMock,
+}))
+
+vi.mock('../../../context/shared', () => ({
+  logger: {
+    warn: loggerWarnMock,
+  },
+}))
+
+function createContext() {
+  return {
+    runtimeState: createRuntimeState(),
+    configService: {
+      cwd: '/project',
+      currentSubPackageRoot: undefined,
+      weappViteConfig: {
+        autoImportComponents: {},
+      },
+    },
+  } as any
+}
+
+describe('autoImport service index', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('resets runtime state and schedules outputs with settings-aware resolver sync', () => {
+    const resolverHelpers = {
+      collectResolverComponents: vi.fn(() => ({})),
+      syncResolverComponentProps: vi.fn(),
+      resolveWithResolvers: vi.fn(),
+      resolveNavigationImport: vi.fn(),
+    }
+    const outputsHelpers = {
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    }
+    const registryHelpers = {
+      registerLocalComponent: vi.fn(),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(),
+    }
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockReturnValue(outputsHelpers)
+    createRegistryHelpersMock.mockReturnValue(registryHelpers)
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: false })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: true })
+
+    const ctx = createContext()
+    ctx.runtimeState.autoImport.registry.set('CompA', { kind: 'resolver' })
+    ctx.runtimeState.autoImport.matcher = () => true
+    ctx.runtimeState.autoImport.matcherKey = 'dirty'
+    const service = createAutoImportService(ctx)
+
+    service.reset()
+
+    expect(ctx.runtimeState.autoImport.registry.size).toBe(0)
+    expect(ctx.runtimeState.autoImport.matcher).toBeUndefined()
+    expect(ctx.runtimeState.autoImport.matcherKey).toBe('')
+    expect(outputsHelpers.scheduleManifestWrite).toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleTypedComponentsWrite).toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
+    expect(resolverHelpers.syncResolverComponentProps).toHaveBeenCalledTimes(2)
+  })
+
+  it('resolves local component first, then resolver component and schedules outputs', () => {
+    const resolverHelpers = {
+      collectResolverComponents: vi.fn(() => ({})),
+      syncResolverComponentProps: vi.fn(),
+      resolveWithResolvers: vi
+        .fn()
+        .mockReturnValueOnce({ name: 'TButton', from: 'tdesign-miniprogram/button/button' })
+        .mockReturnValueOnce(undefined),
+      resolveNavigationImport: vi.fn(),
+    }
+    const outputsHelpers = {
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    }
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockReturnValue(outputsHelpers)
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent: vi.fn(),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(),
+    })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: false })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: true })
+
+    const ctx = createContext()
+    const localMatch = {
+      kind: 'local',
+      entry: { path: '/project/src/components/local/index.js' },
+      value: {
+        name: 'LocalComp',
+        from: '/components/local/index',
+      },
+    } as any
+    ctx.runtimeState.autoImport.registry.set('LocalComp', localMatch)
+    const service = createAutoImportService(ctx)
+
+    expect(service.resolve('LocalComp')).toBe(localMatch)
+
+    expect(service.resolve('TButton')).toEqual({
+      kind: 'resolver',
+      value: {
+        name: 'TButton',
+        from: 'tdesign-miniprogram/button/button',
+      },
+    })
+    expect(outputsHelpers.scheduleTypedComponentsWrite).toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleHtmlCustomDataWrite).not.toHaveBeenCalled()
+    expect(service.resolve('NotFound')).toBeUndefined()
+  })
+
+  it('removes potential component, filters by matcher and awaits pending writes', async () => {
+    const pending = {
+      typedResolved: false,
+      htmlResolved: false,
+      vueResolved: false,
+      manifestResolved: false,
+    }
+    let capturedOutputsState: any
+    createResolverHelpersMock.mockReturnValue({
+      collectResolverComponents: vi.fn(() => ({})),
+      syncResolverComponentProps: vi.fn(),
+      resolveWithResolvers: vi.fn(),
+      resolveNavigationImport: vi.fn(),
+    })
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockImplementation((args: any) => {
+      capturedOutputsState = args.outputsState
+      return {
+        scheduleManifestWrite: vi.fn(),
+        scheduleTypedComponentsWrite: vi.fn(),
+        scheduleHtmlCustomDataWrite: vi.fn(),
+        scheduleVueComponentsWrite: vi.fn(),
+      }
+    })
+    let warnOnce: ((message: string) => void) | undefined
+    const ensureMatcher = vi.fn()
+      .mockReturnValueOnce(undefined)
+      .mockReturnValueOnce((id: string) => id.endsWith('.vue'))
+    const removeRegisteredComponent = vi.fn(() => ({ removed: true, removedNames: ['CompA'] }))
+    createRegistryHelpersMock.mockImplementation((args: any) => {
+      warnOnce = args.logWarnOnce
+      return {
+        registerLocalComponent: vi.fn(),
+        removeRegisteredComponent,
+        ensureMatcher,
+      }
+    })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: false })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: false })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: false })
+
+    const ctx = createContext()
+    const service = createAutoImportService(ctx)
+
+    service.removePotentialComponent('/project/src/components/a.vue')
+    expect(removeRegisteredComponent).toHaveBeenCalledWith({
+      baseName: '/project/src/components/a',
+      templatePath: '/project/src/components/a.vue',
+    })
+
+    expect(service.filter('/project/src/pages/index/index.wxml')).toBe(false)
+    expect(service.filter('/project/src/pages/index/index.vue')).toBe(true)
+
+    capturedOutputsState.pendingWrite = new Promise<void>((resolve) => {
+      pending.manifestResolved = true
+      resolve()
+    })
+    capturedOutputsState.pendingTypedWrite = new Promise<void>((resolve) => {
+      pending.typedResolved = true
+      resolve()
+    })
+    capturedOutputsState.pendingHtmlCustomDataWrite = new Promise<void>((resolve) => {
+      pending.htmlResolved = true
+      resolve()
+    })
+    capturedOutputsState.pendingVueComponentsWrite = new Promise<void>((resolve) => {
+      pending.vueResolved = true
+      resolve()
+    })
+
+    await service.awaitManifestWrites()
+    expect(pending).toEqual({
+      typedResolved: true,
+      htmlResolved: true,
+      vueResolved: true,
+      manifestResolved: true,
+    })
+
+    warnOnce?.('duplicated warning')
+    warnOnce?.('duplicated warning')
+    expect(loggerWarnMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('handles no-op removals and html-only resolver scheduling', () => {
+    const resolverHelpers = {
+      collectResolverComponents: vi.fn(() => ({})),
+      syncResolverComponentProps: vi.fn(),
+      resolveWithResolvers: vi.fn(() => ({ name: 'TButton', from: 'tdesign-miniprogram/button/button' })),
+      resolveNavigationImport: vi.fn(),
+    }
+    const outputsHelpers = {
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    }
+    createResolverHelpersMock.mockReturnValue(resolverHelpers)
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockReturnValue(outputsHelpers)
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent: vi.fn(),
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(() => undefined),
+    })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: false })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: true })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: false })
+
+    const ctx = createContext()
+    const localMatch = {
+      kind: 'local',
+      entry: { path: '/project/src/components/local/index.js' },
+      value: {
+        name: 'LocalComp',
+        from: '/components/local/index',
+      },
+    } as any
+    ctx.runtimeState.autoImport.registry.set('LocalComp', localMatch)
+    const service = createAutoImportService(ctx)
+
+    service.removePotentialComponent('/project/src/components/noop.vue')
+    expect(outputsHelpers.scheduleManifestWrite).toHaveBeenCalledWith(false)
+    expect(outputsHelpers.scheduleTypedComponentsWrite).toHaveBeenCalledWith(false)
+    expect(outputsHelpers.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(false)
+    expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(false)
+
+    expect(service.resolve('TButton')).toEqual({
+      kind: 'resolver',
+      value: {
+        name: 'TButton',
+        from: 'tdesign-miniprogram/button/button',
+      },
+    })
+    expect(outputsHelpers.scheduleHtmlCustomDataWrite).toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleTypedComponentsWrite).not.toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleVueComponentsWrite).not.toHaveBeenCalledWith(true)
+    expect(service.getRegisteredLocalComponents()).toEqual([localMatch])
+  })
+
+  it('registers potential components and handles resolver metadata branches', async () => {
+    let resolverNames: Set<string> | undefined
+    createResolverHelpersMock.mockImplementation((args: any) => {
+      resolverNames = args.resolverComponentNames
+      return {
+        collectResolverComponents: vi.fn(() => ({ CompA: 'pkg/comp-a' })),
+        syncResolverComponentProps: vi.fn(() => {
+          resolverNames?.add('CompA')
+        }),
+        resolveWithResolvers: vi.fn(() => ({ name: 'CompA', from: 'pkg/comp-a' })),
+        resolveNavigationImport: vi.fn(),
+      }
+    })
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    const outputsHelpers = {
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    }
+    createOutputsHelpersMock.mockReturnValue(outputsHelpers)
+    const registerLocalComponent = vi.fn(async () => {})
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent,
+      removeRegisteredComponent: vi.fn(() => ({ removed: true, removedNames: ['CompA'] })),
+      ensureMatcher: vi.fn(() => undefined),
+    })
+    getTypedComponentsSettingsMock.mockReturnValue({ enabled: false })
+    getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: false })
+    getVueComponentsSettingsMock.mockReturnValue({ enabled: true })
+
+    const ctx = createContext()
+    const service = createAutoImportService(ctx)
+
+    service.reset()
+    outputsHelpers.scheduleManifestWrite.mockClear()
+    outputsHelpers.scheduleTypedComponentsWrite.mockClear()
+    outputsHelpers.scheduleHtmlCustomDataWrite.mockClear()
+    outputsHelpers.scheduleVueComponentsWrite.mockClear()
+    await service.registerPotentialComponent('/project/src/components/comp-a.vue')
+    expect(registerLocalComponent).toHaveBeenCalledWith('/project/src/components/comp-a.vue')
+
+    expect(service.resolve('CompA')).toEqual({
+      kind: 'resolver',
+      value: {
+        name: 'CompA',
+        from: 'pkg/comp-a',
+      },
+    })
+    expect(outputsHelpers.scheduleTypedComponentsWrite).not.toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleHtmlCustomDataWrite).not.toHaveBeenCalledWith(true)
+    expect(outputsHelpers.scheduleVueComponentsWrite).toHaveBeenCalledWith(true)
+
+    service.removePotentialComponent('/project/src/components/comp-a.vue')
+    expect(outputsHelpers.scheduleManifestWrite).toHaveBeenCalledWith(true)
+  })
+})
