@@ -363,6 +363,77 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['broken.js'].code).toBe('const broken = wx.')
   })
 
+  it('keeps bundle code unchanged when require calls are unsupported or scoped', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          platform: 'alipay',
+          packageJson: {
+            dependencies: {
+              foo: '^1.0.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const sourceCode = [
+      'function scoped(require) { return require("foo/path") }',
+      'require()',
+      'require(null)',
+      'require("other/path")',
+    ].join(';')
+    const bundle = {
+      'main.js': {
+        type: 'chunk',
+        fileName: 'main.js',
+        code: sourceCode,
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['main.js'].code).toBe(sourceCode)
+  })
+
+  it('normalizes explicit /miniprogram_npm and /node_modules imports in alipay mode', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          platform: 'alipay',
+          packageJson: {
+            dependencies: {
+              foo: '^1.0.0',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'main.js': {
+        type: 'chunk',
+        fileName: 'main.js',
+        code: [
+          'const a = require("/node_modules/foo/path")',
+          'const b = require("/miniprogram_npm/foo/path")',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    const code = bundle['main.js'].code
+    expect(code).toContain('/node_modules/foo/path')
+    expect(code).not.toContain('/miniprogram_npm/foo/path')
+  })
+
   it('ignores non-chunk outputs while rewriting alipay imports and platform api access', async () => {
     const state = createState({
       ctx: {
