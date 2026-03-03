@@ -620,7 +620,7 @@ describe('vue transform plugin', () => {
 
     compileVueFileMock.mockResolvedValue({
       script: 'export default {}',
-      meta: { jsonMacroHash: 'abc123' },
+      meta: { jsonMacroHash: 'abc123', defineOptionsHash: 'def456' },
     })
     injectPageFeaturesMock.mockResolvedValue({ transformed: true, code: '/* injected */\nexport default {}' })
 
@@ -647,6 +647,7 @@ describe('vue transform plugin', () => {
     expect(res?.code).toContain('?weapp-vite-vue&type=style&index=0')
     expect(res?.code).toContain('?weapp-vite-vue&type=style&index=1&scoped=true&module=true')
     expect(res?.code).toContain('__weappViteJsonMacroHash')
+    expect(res?.code).toContain('__weappViteDefineOptionsHash')
 
     const [, , options] = compileVueFileMock.mock.calls[0]!
     expect(await options.autoImportTags.resolveUsingComponent('t-cell-group', vuePath!)).toEqual({
@@ -987,5 +988,118 @@ describe('vue transform plugin', () => {
 
     await expect(plugin.handleHotUpdate!.call({}, { file: 'a.txt' } as any)).resolves.toBeUndefined()
     await expect(plugin.handleHotUpdate!.call({}, { file: vuePath! } as any)).resolves.toEqual([])
+  })
+
+  it('watchChange() clears style cache for existing files and drops stale cache for removed files', async () => {
+    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const plugin = createVueTransformPlugin(createCtx() as any)
+
+    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+
+    const firstLoad = await plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
+    expect(firstLoad).toEqual({ code: '.a{color:red}', map: null })
+    const beforeReadCalls = readAndParseSfcMock.mock.calls.length
+
+    plugin.watchChange?.call({}, vuePath!)
+
+    const secondLoad = await plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
+    expect(secondLoad).toEqual({ code: '.a{color:red}', map: null })
+    expect(readAndParseSfcMock.mock.calls.length).toBeGreaterThan(beforeReadCalls)
+
+    await fs.remove(vuePath!)
+    plugin.watchChange?.call({}, vuePath!)
+    const afterRemove = await plugin.load!.call({}, buildWeappVueStyleRequest(vuePath!, { lang: 'css' } as any, 0))
+    expect(afterRemove).toBeNull()
+  })
+
+  it('handleHotUpdate() clears cache for existing and removed vue files', async () => {
+    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const plugin = createVueTransformPlugin(createCtx() as any)
+
+    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+    await expect(plugin.handleHotUpdate!.call({}, { file: vuePath! } as any)).resolves.toEqual([])
+
+    await fs.remove(vuePath!)
+    await expect(plugin.handleHotUpdate!.call({}, { file: vuePath! } as any)).resolves.toEqual([])
+  })
+
+  it('transform() inlines auto-routes imports for app entry', async () => {
+    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+    const ensureFresh = vi.fn(async () => {})
+    const getReference = vi.fn(() => ({
+      pages: ['pages/home/index'],
+      entries: ['pages/home/index'],
+      subPackages: [{ root: 'pkgA', pages: ['pages/a'] }],
+    }))
+    const appVuePath = path.join(tmpDir!, 'app.vue')
+    await fs.writeFile(appVuePath, '<template><view/></template>', 'utf8')
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      autoRoutesService: {
+        ensureFresh,
+        getReference,
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call(
+      { addWatchFile: vi.fn() } as any,
+      `
+import routesRef from 'virtual:weapp-vite-auto-routes'
+const lazy = () => import('weapp-vite/auto-routes')
+export default {}
+`,
+      appVuePath,
+    )
+
+    expect(ensureFresh).toHaveBeenCalledTimes(1)
+    const [transformedSource] = compileVueFileMock.mock.calls.at(-1)!
+    expect(String(transformedSource)).toContain('const routesRef =')
+    expect(String(transformedSource)).toContain('Promise.resolve(')
+
+    const createPageMatcherArg = createPageEntryMatcherMock.mock.calls.at(-1)?.[0]
+    createPageMatcherArg?.warn?.('warn-message')
+    expect(warnSpy).toHaveBeenCalledWith('warn-message')
+  })
+
+  it('transform() registers wxml token and tracks sfc src deps', async () => {
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      template: '<view><t-cell /></view>',
+      meta: {
+        sfcSrcDeps: ['/dep/a.vue', '/dep/b.vue'],
+      },
+    })
+
+    const analyze = vi.fn(() => ({ components: ['t-cell'] }))
+    const tokenMap = new Map<string, any>()
+    const setWxmlComponentsMap = vi.fn()
+    const addWatchFile = vi.fn()
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      wxmlService: {
+        analyze,
+        tokenMap,
+        setWxmlComponentsMap,
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call({ addWatchFile } as any, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+
+    expect(analyze).toHaveBeenCalledWith('<view><t-cell /></view>')
+    expect(tokenMap.has(vuePath!)).toBe(true)
+    expect(setWxmlComponentsMap).toHaveBeenCalledWith(vuePath!, ['t-cell'])
+    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/dep/a.vue'))
+    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath('/dep/b.vue'))
+  })
+
+  it('watchChange() ignores non-vue-like ids', async () => {
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const plugin = createVueTransformPlugin(createCtx() as any)
+    expect(plugin.watchChange?.call({}, 'a.ts')).toBeUndefined()
   })
 })

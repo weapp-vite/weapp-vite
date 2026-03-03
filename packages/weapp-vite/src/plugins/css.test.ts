@@ -4,17 +4,23 @@ import type { SubPackageStyleEntry } from '../types'
 import { fileURLToPath } from 'node:url'
 import { dirname, relative, resolve } from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { normalizeWatchPath } from '../utils/path'
 
 const processCssWithCache = vi.fn(async (code: string) => code)
 const renderSharedStyleEntry = vi.fn(async () => ({
   css: '/* shared */',
   dependencies: [],
 }))
+const pathExistsMock = vi.fn(async () => true)
 
 vi.mock('./css/shared/preprocessor', () => ({
   cssCodeCache: { get: () => undefined, set: () => undefined },
   processCssWithCache,
   renderSharedStyleEntry,
+}))
+
+vi.mock('./utils/cache', () => ({
+  pathExists: pathExistsMock,
 }))
 
 const { css } = await import('./css')
@@ -117,7 +123,14 @@ describe('css plugin shared style injection', () => {
   beforeEach(() => {
     emitted = []
     processCssWithCache.mockClear()
-    renderSharedStyleEntry.mockClear()
+    renderSharedStyleEntry.mockReset()
+    renderSharedStyleEntry.mockResolvedValue({
+      css: '/* shared */',
+      dependencies: [],
+    })
+    pathExistsMock.mockReset()
+    pathExistsMock.mockResolvedValue(true)
+    pluginContext.addWatchFile.mockClear()
   })
 
   it('emits wxss asset with shared style imports for modules without local styles', async () => {
@@ -271,5 +284,128 @@ describe('css plugin shared style injection', () => {
 
     const pageStyleAsset = emitted.find(asset => asset.fileName === 'pages/index/index.wxss')
     expect(pageStyleAsset).toBeUndefined()
+  })
+
+  it('skips shared style emission when shared style source file does not exist', async () => {
+    pathExistsMock.mockResolvedValue(false)
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'subpackages/foo/pages/list.js': {
+        type: 'chunk',
+        fileName: 'subpackages/foo/pages/list.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'subpackages/foo/pages/list.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(renderSharedStyleEntry).not.toHaveBeenCalled()
+    expect(emitted.find(asset => asset.fileName === 'subpackages/foo/styles/index.wxss')).toBeUndefined()
+  })
+
+  it('adds watch files for shared style dependencies and replaces existing bundle shared asset', async () => {
+    const dependencyPath = resolve(absoluteSrcRoot, 'subpackages/foo/styles/dep.wxss')
+    renderSharedStyleEntry.mockResolvedValue({
+      css: '/* shared with deps */',
+      dependencies: [styleAbsolutePath, dependencyPath],
+    })
+
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'subpackages/foo/pages/list.js': {
+        type: 'chunk',
+        fileName: 'subpackages/foo/pages/list.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'subpackages/foo/pages/list.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+      'subpackages/foo/styles/index.wxss': {
+        type: 'chunk',
+        fileName: 'subpackages/foo/styles/index.wxss',
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(bundle['subpackages/foo/styles/index.wxss']).toBeUndefined()
+    expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(styleAbsolutePath))
+    expect(pluginContext.addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(dependencyPath))
+  })
+
+  it('skips rendering shared style entries when the same output was already emitted', async () => {
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'subpackages/foo/styles/index.wxss': {
+        type: 'asset',
+        fileName: 'subpackages/foo/styles/index.wxss',
+        source: '',
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(renderSharedStyleEntry).not.toHaveBeenCalled()
+  })
+
+  it('skips css owner emission when converted owner output path cannot be resolved', async () => {
+    const plugin = css(ctx)[0]
+    const bundle: Record<string, any> = {
+      'outside.js': {
+        type: 'chunk',
+        fileName: 'outside.js',
+        facadeModuleId: resolve(cwd, 'outside.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+        viteMetadata: {
+          importedAssets: new Set(),
+          importedCss: new Set(['outside.css']),
+          importedScripts: new Set(),
+          importedUrls: new Set(),
+        },
+      },
+      'outside.css': {
+        type: 'asset',
+        fileName: 'outside.css',
+        source: '.outside{color:blue}',
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(bundle['outside.css']).toBeUndefined()
+    expect(emitted.find(asset => asset.fileName === 'outside.wxss')).toBeUndefined()
+    expect(processCssWithCache).not.toHaveBeenCalledWith('.outside{color:blue}', configService)
   })
 })
