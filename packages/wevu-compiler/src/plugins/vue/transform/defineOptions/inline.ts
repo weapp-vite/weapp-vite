@@ -38,7 +38,9 @@ function isIdentifierLikeKey(key: string) {
   return /^[A-Z_$][\w$]*$/i.test(key)
 }
 
-type SerializableNativeFunction = (...args: any[]) => unknown
+type SerializableNativeFunction
+  = | ((...args: any[]) => unknown)
+    | (new (...args: any[]) => unknown)
 
 const SERIALIZABLE_NATIVE_FUNCTIONS = new Map<SerializableNativeFunction, string>([
   [String, 'String'],
