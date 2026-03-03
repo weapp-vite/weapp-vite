@@ -121,7 +121,7 @@
     "fdir": "catalog:",
     "fs-extra": "catalog:",
     "magic-string": "catalog:",
-    "oxc-parser": "^0.115.0",
+    "oxc-parser": "^0.116.0",
     "oxc-walker": "^0.7.0",
     "pathe": "catalog:",
     "picomatch": "^4.0.3",
@@ -143,7 +143,7 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@oxc-project/types": "^0.115.0",
+    "@oxc-project/types": "^0.116.0",
     "@tailwindcss/vite": "catalog:",
     "@types/semver": "catalog:",
     "@vitejs/plugin-vue": "^6.0.4",

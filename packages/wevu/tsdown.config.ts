@@ -16,6 +16,7 @@ export default defineConfig({
   //   sourcemap: true,
   // },
   clean: true,
-  minify: true,
+  // minify: true,
+  sourcemap: true,
   failOnWarn: false,
 })
