@@ -32,7 +32,7 @@ const emit = defineEmits<{
 const thumbHeight = ref(375)
 const thumbWidth = ref(375)
 const systemInfo = ref(wx.getSystemInfoSync())
-const nativeInstance = useNativeInstance() as any
+const nativeInstance = useNativeInstance()
 
 const { loadFailed, loading, src, mode, webp, lazyLoad, showMenuByLongpress } = toRefs(props)
 

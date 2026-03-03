@@ -45,7 +45,7 @@ const isValidityLinePrice = computed(() => {
 })
 const independentID = ref(props.id || `goods-card-${~~(Math.random() * 10 ** 8)}`)
 const { currency } = toRefs(props)
-const nativeInstance = useNativeInstance() as any
+const nativeInstance = useNativeInstance()
 
 let intersectionObserverContext: WechatMiniprogram.IntersectionObserver | null = null
 

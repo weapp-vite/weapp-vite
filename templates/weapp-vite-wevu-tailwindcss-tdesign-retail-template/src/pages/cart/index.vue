@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onLoad, onShow, reactive, ref, useNativeInstance } from 'wevu'
 import Dialog from 'tdesign-miniprogram/dialog/index'
 import Toast from 'tdesign-miniprogram/toast/index'
+import { onLoad, onShow, reactive, ref, useNativeInstance } from 'wevu'
 import { fetchCartGroupData } from '../../services/cart/cart'
 
 type CartGroupData = Record<string, any>
 
-const nativeInstance = useNativeInstance() as any
+const nativeInstance = useNativeInstance()
 const cartGroupData = reactive<CartGroupData>({
   storeGoods: [],
   invalidGoodItems: [],
@@ -332,7 +332,7 @@ function onToSettle() {
   storeGoods.forEach((store: any) => {
     store.promotionGoodsList?.forEach((promotion: any) => {
       promotion.goodsPromotionList?.forEach((goods: any) => {
-        if (goods.isSelected == 1) {
+        if (goods.isSelected === 1) {
           goodsRequestList.push(goods)
         }
       })
@@ -390,37 +390,37 @@ defineExpose({
 </script>
 
 <template>
-<!-- 分层购物车 -->
-<block wx:if="{{cartIsNotEmpty}}">
-  <cart-group
-    store-goods="{{ cartStoreGoods }}"
-    invalid-good-items="{{ cartInvalidGoodItems }}"
-    bindselectgoods="onGoodsSelect"
-    bindselectstore="onStoreSelect"
-    bindchangequantity="onQuantityChange"
-    bindgocollect="goCollect"
-    bindgoodsclick="goGoodsDetail"
-    bindclearinvalidgoods="clearInvalidGoods"
-    binddelete="onGoodsDelete"
-  />
+  <!-- 分层购物车 -->
+  <block wx:if="{{cartIsNotEmpty}}">
+    <cart-group
+      store-goods="{{ cartStoreGoods }}"
+      invalid-good-items="{{ cartInvalidGoodItems }}"
+      bindselectgoods="onGoodsSelect"
+      bindselectstore="onStoreSelect"
+      bindchangequantity="onQuantityChange"
+      bindgocollect="goCollect"
+      bindgoodsclick="goGoodsDetail"
+      bindclearinvalidgoods="clearInvalidGoods"
+      binddelete="onGoodsDelete"
+    />
 
-  <view class="gap [height:100rpx] [width:100%]" />
-  <!-- 商品小计以及结算按钮 -->
-  <cart-bar
-    is-all-selected="{{cartIsAllSelected}}"
-    total-amount="{{cartTotalAmount}}"
-    total-goods-num="{{cartSelectedGoodsCount}}"
-    total-discount-amount="{{cartTotalDiscountAmount}}"
-    fixed="{{true}}"
-    bottomHeight="{{110}}"
-    bindhandleSelectAll="onSelectAll"
-    bindhandleToSettle="onToSettle"
-  />
-</block>
-<!-- 购物车空态 -->
-<cart-empty wx:else bind:handleClick="onGotoHome" />
-<t-toast id="t-toast" />
-<t-dialog id="t-dialog" />
+    <view class="gap [height:100rpx] [width:100%]" />
+    <!-- 商品小计以及结算按钮 -->
+    <cart-bar
+      is-all-selected="{{cartIsAllSelected}}"
+      total-amount="{{cartTotalAmount}}"
+      total-goods-num="{{cartSelectedGoodsCount}}"
+      total-discount-amount="{{cartTotalDiscountAmount}}"
+      fixed="{{true}}"
+      bottomHeight="{{110}}"
+      bindhandleSelectAll="onSelectAll"
+      bindhandleToSettle="onToSettle"
+    />
+  </block>
+  <!-- 购物车空态 -->
+  <cart-empty wx:else bind:handleClick="onGotoHome" />
+  <t-toast id="t-toast" />
+  <t-dialog id="t-dialog" />
 </template>
 
 <json>
@@ -433,4 +433,5 @@ defineExpose({
     "t-toast": "tdesign-miniprogram/toast/toast",
     "t-dialog": "tdesign-miniprogram/dialog/dialog"
   }
-}</json>
+}
+</json>
