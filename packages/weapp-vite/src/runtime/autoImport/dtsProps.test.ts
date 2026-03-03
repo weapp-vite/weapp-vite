@@ -49,4 +49,43 @@ export interface TdActionSheetProps {
       visible: 'boolean',
     })
   })
+
+  it('prefers interface properties and skips following class declarations', () => {
+    const code = `
+export interface FirstHit {
+  properties: {
+    status?: { type: StringConstructor; value?: 'ok' | 'fail' };
+  };
+}
+
+export default class LaterClass {
+  notTarget: { type: NumberConstructor };
+  properties: {
+    count?: { type: NumberConstructor; value?: number };
+  };
+}
+`
+
+    expect(Object.fromEntries(extractComponentPropsFromDts(code))).toEqual({
+      status: '\'ok\' | \'fail\'',
+    })
+  })
+
+  it('extracts from class properties after skipping methods and non-target fields', () => {
+    const code = `
+export default class FromClass {
+  setup() {}
+  data: { type: StringConstructor };
+  properties: {
+    1?: { type: NumberConstructor; value?: number };
+    mode?: { type: StringConstructor | null };
+  };
+}
+`
+
+    expect(Object.fromEntries(extractComponentPropsFromDts(code))).toEqual({
+      1: 'number',
+      mode: 'string | any',
+    })
+  })
 })

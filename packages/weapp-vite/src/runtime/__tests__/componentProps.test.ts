@@ -84,4 +84,72 @@ Component(options as any)
       ['level', 'number'],
     ])
   })
+
+  it('handles sparse optionalTypes and computed member constructors', () => {
+    const code = `
+const extraTypes = [Boolean]
+const wxTypes = [String]
+
+Component({
+  properties: {
+    mixed: {
+      type: wxTypes[0],
+      optionalTypes: [, ...extraTypes, String],
+    },
+  },
+})
+`
+
+    const result = extractComponentProps(code)
+
+    expect(Array.from(result.entries())).toEqual([
+      ['mixed', 'any | string'],
+    ])
+  })
+
+  it('returns empty props for non-object declarations and absent props keys', () => {
+    const codeWithSpread = `
+const base = { props: { ghost: String } }
+
+Component({
+  ...base,
+  props: getProps(),
+})
+`
+    const codeWithoutProps = `
+Component({
+  data: {
+    count: 1,
+  },
+})
+`
+
+    expect(Array.from(extractComponentProps(codeWithSpread).entries())).toEqual([])
+    expect(Array.from(extractComponentProps(codeWithoutProps).entries())).toEqual([])
+  })
+
+  it('skips unsupported property/option node shapes while keeping valid entries', () => {
+    const code = `
+const dynamicKey = 'dynamic'
+const foo = { bar: 'computed' }
+const extra = { type: Boolean }
+
+Component({
+  properties: {
+    ...spreadProps,
+    [foo.bar]: String,
+    supported: {
+      ...extra,
+      [foo.bar]: String,
+      optionalTypes: [String],
+    },
+  },
+})
+`
+
+    const result = extractComponentProps(code)
+    expect(Array.from(result.entries())).toEqual([
+      ['supported', 'string'],
+    ])
+  })
 })

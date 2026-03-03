@@ -195,4 +195,81 @@ describe('css plugin shared style injection', () => {
     expect(cssAsset).toBeTruthy()
     expect(cssAsset?.source).toContain('.root{color:red}')
   })
+
+  it('returns early when shared style entries are empty', async () => {
+    const plugin = css({
+      configService,
+      scanService: { subPackageMap: new Map() },
+    } as unknown as CompilerContext)[0]
+
+    const bundle: Record<string, any> = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        fileName: 'pages/index/index.js',
+        facadeModuleId: resolve(absoluteSrcRoot, 'pages/index/index.ts'),
+        code: '',
+        map: null,
+        imports: [],
+        exports: [],
+        modules: {},
+        dynamicImports: [],
+        implicitlyLoadedBefore: [],
+        referencedFiles: [],
+      },
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    expect(emitted).toEqual([])
+  })
+
+  it('covers shared style import guard branches for non-chunk and invalid chunk metadata', async () => {
+    const guardedConfigService = {
+      ...configService,
+      relativeOutputPath(id: string) {
+        if (id.endsWith('skip.wxss')) {
+          return undefined
+        }
+        return relativeAbsoluteSrcRoot(id)
+      },
+    } as any
+
+    const plugin = css({
+      configService: guardedConfigService,
+      scanService,
+    } as unknown as CompilerContext)[0]
+
+    const createChunk = (fileName: string, facadeModuleId?: string) => ({
+      type: 'chunk',
+      fileName,
+      facadeModuleId,
+      code: '',
+      map: null,
+      imports: [],
+      exports: [],
+      modules: {},
+      dynamicImports: [],
+      implicitlyLoadedBefore: [],
+      referencedFiles: [],
+    })
+
+    const bundle: Record<string, any> = {
+      'asset.txt': {
+        type: 'asset',
+        fileName: 'asset.txt',
+        source: '',
+      },
+      'no-facade.js': createChunk('no-facade.js'),
+      'outside.js': createChunk('outside.js', resolve(cwd, 'outside.ts')),
+      'skip.js': createChunk('skip.js', resolve(absoluteSrcRoot, 'skip.ts')),
+      'pages/index.js': createChunk('pages/index.js', resolve(absoluteSrcRoot, 'pages/index/index.ts')),
+    }
+
+    await invokeHook(plugin.configResolved, pluginContext, resolvedConfig)
+    await invokeHook(plugin.generateBundle, pluginContext, {} as any, bundle, false)
+
+    const pageStyleAsset = emitted.find(asset => asset.fileName === 'pages/index/index.wxss')
+    expect(pageStyleAsset).toBeUndefined()
+  })
 })
