@@ -60,6 +60,30 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings).toBeUndefined()
   })
 
+  it('supports wxs change listeners via v-bind argument with namespace', () => {
+    const template = `
+<wxs module="swipe">
+  module.exports = {}
+</wxs>
+<view
+  :closed="closed"
+  :leftWidth="leftWidth"
+  :change:closed="swipe.onCloseChange"
+  :change:leftWidth="swipe.initLeftWidth"
+/>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(
+      template,
+      '/project/src/components/swipeout/index.vue',
+    )
+
+    expect(code).toContain('closed="{{closed}}"')
+    expect(code).toContain('leftWidth="{{leftWidth}}"')
+    expect(code).toContain('change:closed="{{swipe.onCloseChange}}"')
+    expect(code).toContain('change:leftWidth="{{swipe.initLeftWidth}}"')
+  })
+
   it('renders mustache with spaces when interpolation mode is spaced', () => {
     const template = `
 <view v-if="ok" :prop="value" :class="dynamicClass" v-show="visible">{{ text }}</view>
