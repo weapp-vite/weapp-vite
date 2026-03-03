@@ -196,9 +196,6 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         if (shouldTreatAsComponent) {
           entryTypeOverride = 'component'
         }
-        else {
-          entryTypeOverride = 'lib'
-        }
       }
 
       // <script setup> 自动 usingComponents：import 后模板使用的组件无需在 <json> 注册

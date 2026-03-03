@@ -108,6 +108,7 @@ export async function syncVueComponentsDefinition(
 
   options.syncResolverComponentProps()
   options.preloadResolverComponentMetadata()
+  const outputPath = settings.outputPath
 
   const componentNames = collectAllComponentNames(options)
   const nextDefinition = createVueComponentsDefinition(componentNames, options.getComponentMetadata, {
@@ -119,7 +120,7 @@ export async function syncVueComponentsDefinition(
         const sourcePath = local.entry?.path || local.entry?.jsonPath || local.entry?.templatePath
         if (sourcePath) {
           return toRelativeImportSpecifier(
-            settings.outputPath,
+            outputPath,
             normalizeLocalNavigationSource(sourcePath),
           )
         }
@@ -132,20 +133,20 @@ export async function syncVueComponentsDefinition(
       return resolveNavigationImport(from)
     },
   })
-  if (nextDefinition === outputsState.lastWrittenVueComponentsDefinition && settings.outputPath === outputsState.lastVueComponentsOutputPath) {
+  if (nextDefinition === outputsState.lastWrittenVueComponentsDefinition && outputPath === outputsState.lastVueComponentsOutputPath) {
     return
   }
 
   try {
-    if (outputsState.lastVueComponentsOutputPath && outputsState.lastVueComponentsOutputPath !== settings.outputPath) {
+    if (outputsState.lastVueComponentsOutputPath && outputsState.lastVueComponentsOutputPath !== outputPath) {
       try {
         await fs.remove(outputsState.lastVueComponentsOutputPath)
       }
       catch { }
     }
-    await fs.outputFile(settings.outputPath, nextDefinition, 'utf8')
+    await fs.outputFile(outputPath, nextDefinition, 'utf8')
     outputsState.lastWrittenVueComponentsDefinition = nextDefinition
-    outputsState.lastVueComponentsOutputPath = settings.outputPath
+    outputsState.lastVueComponentsOutputPath = outputPath
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)

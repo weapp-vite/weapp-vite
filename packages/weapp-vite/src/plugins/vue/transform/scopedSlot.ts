@@ -87,7 +87,11 @@ function normalizeJsonConfigForPlatform(
   json: Record<string, any>,
   compilerCtx?: Pick<CompilerContext, 'configService'>,
 ) {
-  const platform = compilerCtx?.configService?.platform
+  const configService = compilerCtx?.configService
+  if (!configService) {
+    return json
+  }
+  const platform = configService?.platform
   if (platform !== 'alipay') {
     return json
   }
@@ -98,8 +102,8 @@ function normalizeJsonConfigForPlatform(
       undefined,
       platform,
       {
-        dependencies: compilerCtx.configService.packageJson?.dependencies,
-        alipayNpmMode: compilerCtx.configService.weappViteConfig?.npm?.alipayNpmMode,
+        dependencies: configService.packageJson?.dependencies,
+        alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
       },
     )
     if (!source) {

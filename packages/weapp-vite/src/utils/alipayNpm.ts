@@ -6,7 +6,7 @@ export function resolveAlipayNpmMode(mode?: string): AlipayNpmMode {
   return mode === 'miniprogram_npm' ? 'miniprogram_npm' : DEFAULT_ALIPAY_NPM_MODE
 }
 
-export function getAlipayNpmDistDirName(mode?: string): string {
+export function getAlipayNpmDistDirName(mode?: string): AlipayNpmMode {
   return resolveAlipayNpmMode(mode)
 }
 

@@ -137,7 +137,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       }
 
       // 目录级新增/删除、或未命中的 pages 路径变化，统一触发一次全量重扫，保证路由增删改一致性。
-      if (event === 'create' || event === 'delete' || event === 'rename' || event === 'update') {
+      if (event === 'create' || event === 'delete' || event === 'update') {
         await service.handleFileChange(id, 'rename')
       }
     },
