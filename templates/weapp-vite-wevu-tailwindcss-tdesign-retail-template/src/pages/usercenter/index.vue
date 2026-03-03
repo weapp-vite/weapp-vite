@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onLoad, onPullDownRefresh, onShow, ref, useNativeInstance } from 'wevu';
-import { fetchUserCenter } from '../../services/usercenter/fetchUsercenter';
-import Toast from 'tdesign-miniprogram/toast/index';
+import Toast from 'tdesign-miniprogram/toast/index'
+import { onLoad, onPullDownRefresh, onShow, ref, useNativeInstance } from 'wevu'
+import { fetchUserCenter } from '../../services/usercenter/fetchUsercenter'
 
 interface MenuItem {
   title: string
@@ -11,14 +11,14 @@ interface MenuItem {
   icon?: string
 }
 
-const nativeInstance = useNativeInstance() as any;
+const nativeInstance = useNativeInstance()
 
-const showMakePhone = ref(false);
+const showMakePhone = ref(false)
 const userInfo = ref({
   avatarUrl: '',
   nickName: '正在登录...',
   phoneNumber: '',
-});
+})
 const menuData = ref<MenuItem[][]>([
   [
     {
@@ -55,7 +55,7 @@ const menuData = ref<MenuItem[][]>([
       icon: 'service',
     },
   ],
-]);
+])
 const orderTagInfos = ref<Array<Record<string, any>>>([
   {
     title: '待付款',
@@ -92,14 +92,14 @@ const orderTagInfos = ref<Array<Record<string, any>>>([
     tabType: 0,
     status: 1,
   },
-]);
-const customerServiceInfo = ref<Record<string, any>>({});
-const currAuthStep = ref(1);
-const showKefu = ref(true);
-const versionNo = ref('');
+])
+const customerServiceInfo = ref<Record<string, any>>({})
+const currAuthStep = ref(1)
+const showKefu = ref(true)
+const versionNo = ref('')
 
 function init() {
-  void fetUseriInfoHandle();
+  void fetUseriInfoHandle()
 }
 
 function fetUseriInfoHandle() {
@@ -114,41 +114,41 @@ function fetUseriInfoHandle() {
     orderTagInfos: Array<Record<string, any>>
     customerServiceInfo: Record<string, any>
   }) => {
-    const nextMenuData = menuData.value.map(group => group.map(item => ({ ...item })));
+    const nextMenuData = menuData.value.map(group => group.map(item => ({ ...item })))
     nextMenuData?.[0]?.forEach((item) => {
       countsData.forEach((counts) => {
         if (counts.type === item.type) {
-          item.tit = counts.num;
+          item.tit = counts.num
         }
-      });
-    });
+      })
+    })
     const info = orderTagInfos.value.map((item, index) => ({
       ...item,
       ...(orderInfo[index] || {}),
-    }));
+    }))
     userInfo.value = {
       ...userInfo.value,
       ...nextUserInfo,
-    };
-    menuData.value = nextMenuData;
-    orderTagInfos.value = info;
-    customerServiceInfo.value = nextCustomerServiceInfo;
-    currAuthStep.value = 2;
-    wx.stopPullDownRefresh();
-  });
+    }
+    menuData.value = nextMenuData
+    orderTagInfos.value = info
+    customerServiceInfo.value = nextCustomerServiceInfo
+    currAuthStep.value = 2
+    wx.stopPullDownRefresh()
+  })
 }
 
 function onClickCell({ currentTarget }: any) {
-  const type = currentTarget?.dataset?.type;
+  const type = currentTarget?.dataset?.type
   switch (type) {
     case 'address':
       wx.navigateTo({
         url: '/pages/user/address/list/index',
-      });
-      break;
+      })
+      break
     case 'service':
-      openMakePhone();
-      break;
+      openMakePhone()
+      break
     case 'help-center':
       Toast({
         context: nativeInstance,
@@ -156,8 +156,8 @@ function onClickCell({ currentTarget }: any) {
         message: '你点击了帮助中心',
         icon: '',
         duration: 1000,
-      });
-      break;
+      })
+      break
     case 'point':
       Toast({
         context: nativeInstance,
@@ -165,13 +165,13 @@ function onClickCell({ currentTarget }: any) {
         message: '你点击了积分菜单',
         icon: '',
         duration: 1000,
-      });
-      break;
+      })
+      break
     case 'coupon':
       wx.navigateTo({
         url: '/pages/coupon/coupon-list/index',
-      });
-      break;
+      })
+      break
     default:
       Toast({
         context: nativeInstance,
@@ -179,76 +179,76 @@ function onClickCell({ currentTarget }: any) {
         message: '未知跳转',
         icon: '',
         duration: 1000,
-      });
-      break;
+      })
+      break
   }
 }
 
 function jumpNav(e: any) {
-  const status = e?.detail?.tabType;
+  const status = e?.detail?.tabType
   if (status === 0) {
     wx.navigateTo({
       url: '/pages/order/after-service-list/index',
-    });
+    })
   }
   else {
     wx.navigateTo({
       url: `/pages/order/order-list/index?status=${status}`,
-    });
+    })
   }
 }
 
 function jumpAllOrder() {
   wx.navigateTo({
     url: '/pages/order/order-list/index',
-  });
+  })
 }
 
 function openMakePhone() {
-  showMakePhone.value = true;
+  showMakePhone.value = true
 }
 
 function closeMakePhone() {
-  showMakePhone.value = false;
+  showMakePhone.value = false
 }
 
 function call() {
   wx.makePhoneCall({
     phoneNumber: customerServiceInfo.value.servicePhone,
-  });
+  })
 }
 
 function gotoUserEditPage() {
   if (currAuthStep.value === 2) {
     wx.navigateTo({
       url: '/pages/user/person-info/index',
-    });
+    })
   }
   else {
-    fetUseriInfoHandle();
+    fetUseriInfoHandle()
   }
 }
 
 function getVersionInfo() {
-  const versionInfo = wx.getAccountInfoSync() as any;
-  const miniProgramInfo = versionInfo?.miniProgram || {};
-  const version = miniProgramInfo.version || '';
-  const envVersion = miniProgramInfo.envVersion ?? (globalThis as any).__wxConfig;
-  versionNo.value = envVersion === 'release' ? version : (envVersion || '');
+  const versionInfo = wx.getAccountInfoSync() as any
+  const miniProgramInfo = versionInfo?.miniProgram || {}
+  const version = miniProgramInfo.version || ''
+  const envVersion = miniProgramInfo.envVersion ?? (globalThis as any).__wxConfig
+  versionNo.value = envVersion === 'release' ? version : (envVersion || '')
 }
 
 onLoad(() => {
-  getVersionInfo();
-});
+  getVersionInfo()
+})
 
 onShow(() => {
-  nativeInstance.getTabBar?.()?.init?.();
-  init();
-});
+  nativeInstance.getTabBar?.()?.init?.()
+  init()
+})
 
 onPullDownRefresh(() => {
-  init();
-});
+  init()
+})
 
 defineExpose({
   showMakePhone,
@@ -266,57 +266,67 @@ defineExpose({
   closeMakePhone,
   call,
   gotoUserEditPage,
-});
+})
 </script>
 
 <template>
-<t-user-center-card
-  userInfo="{{userInfo}}"
-  isPhoneHide="{{true}}"
-  name-class="custom-name-class"
-  phone-class="custom-phone-class"
-  avatar-class="customer-avatar-class"
-  currAuthStep="{{currAuthStep}}"
-  bind:gotoUserEditPage="gotoUserEditPage"
-/>
-<view class="content-wrapper [margin-top:340rpx] [position:relative] [padding:0_30rpx]">
-  <view class="order-group-wrapper [margin-bottom:16rpx]">
-    <t-order-group orderTagInfos="{{orderTagInfos}}" bind:onClickTop="jumpAllOrder" bind:onClickItem="jumpNav" />
-  </view>
-  <view wx:for="{{menuData}}" wx:key="item" class="cell-box [border-radius:10rpx] [overflow:hidden] [margin-bottom:20rpx] [&_.order-group__left]:[margin-right:0] [&_.t-cell-padding]:[padding:24rpx_18rpx_24rpx_32rpx]">
-    <t-cell-group>
-      <t-cell
-        wx:for="{{item}}"
-        wx:for-item="xitem"
-        wx:for-index="xindex"
-        wx:key="xindex"
-        title="{{xitem.title}}"
-        arrow="{{!xitem.icon}}"
-        note="{{xitem.tit}}"
-        data-type="{{xitem.type}}"
-        bordered="{{false}}"
-        bind:click="onClickCell"
-        t-class="t-cell-padding"
-        t-class-note="order-group-note"
-        t-class-left="order-group__left"
-      >
-        <t-icon name="{{xitem.icon}}" size="48rpx" slot="note" />
-      </t-cell>
-    </t-cell-group>
-  </view>
-</view>
-<view class="footer__version [text-align:center] [margin-top:50rpx] [color:#999] [margin-bottom:4rpx] [font-size:24rpx] [line-height:32rpx]" wx:if="{{versionNo !== ''}}">当前版本 {{versionNo}}</view>
-<t-popup visible="{{showMakePhone}}" placement="bottom" bind:visible-change="closeMakePhone" data-index="2">
-  <view class="popup-content [background:#f5f5f5] [margin-bottom:env(safe-area-inset-bottom)] [border-radius:16rpx_16rpx_0_0] [&_.popup-title]:[background:#fff] [&_.popup-title]:[text-align:center] [&_.popup-title]:[font-size:24rpx] [&_.popup-title]:[color:#999] [&_.popup-title]:[height:112rpx] [&_.popup-title]:[line-height:112rpx] [&_.popup-title]:[border-radius:16rpx_16rpx_0_0] [&_.popup-phone]:[background:#fff] [&_.popup-phone]:[height:100rpx] [&_.popup-phone]:[display:flex] [&_.popup-phone]:[justify-content:center] [&_.popup-phone]:[align-items:center] [&_.popup-phone]:[text-align:center] [&_.popup-phone]:[font-size:30rpx] [&_.popup-phone]:[font-family:PingFangSC-Regular,_PingFang_SC] [&_.popup-phone]:[font-weight:400] [&_.popup-phone]:[color:#333] [&_.popup-close]:[background:#fff] [&_.popup-close]:[height:100rpx] [&_.popup-close]:[display:flex] [&_.popup-close]:[justify-content:center] [&_.popup-close]:[align-items:center] [&_.popup-close]:[text-align:center] [&_.popup-close]:[font-size:30rpx] [&_.popup-close]:[font-family:PingFangSC-Regular,_PingFang_SC] [&_.popup-close]:[font-weight:400] [&_.popup-close]:[color:#333] [&_.popup-phone_.online]:[margin-bottom:20rpx] [&_.popup-close]:[border:0] [&_.popup-close]:[margin-top:16rpx]">
-    <view class="popup-title border-bottom-1px [position:relative]" wx:if="{{customerServiceInfo.serviceTimeDuration}}">
-      服务时间: {{customerServiceInfo.serviceTimeDuration}}
+  <t-user-center-card
+    userInfo="{{userInfo}}"
+    isPhoneHide="{{true}}"
+    name-class="custom-name-class"
+    phone-class="custom-phone-class"
+    avatar-class="customer-avatar-class"
+    currAuthStep="{{currAuthStep}}"
+    bind:gotoUserEditPage="gotoUserEditPage"
+  />
+  <view class="content-wrapper [margin-top:340rpx] [position:relative] [padding:0_30rpx]">
+    <view class="order-group-wrapper [margin-bottom:16rpx]">
+      <t-order-group orderTagInfos="{{orderTagInfos}}" bind:onClickTop="jumpAllOrder" bind:onClickItem="jumpNav" />
     </view>
-    <view class="popup-phone {{showKefu ? 'border-bottom-1px' : ''}} [position:relative]" bind:tap="call">电话客服</view>
-    <button class="popup-phone border-bottom-1px online [position:relative]" open-type="contact" wx:if="{{showKefu}}">在线客服</button>
-    <view class="popup-close" bind:tap="closeMakePhone">取消</view>
+    <view wx:for="{{menuData}}" wx:key="item" class="cell-box [border-radius:10rpx] [overflow:hidden] [margin-bottom:20rpx] [&_.order-group__left]:[margin-right:0] [&_.t-cell-padding]:[padding:24rpx_18rpx_24rpx_32rpx]">
+      <t-cell-group>
+        <t-cell
+          wx:for="{{item}}"
+          wx:for-item="xitem"
+          wx:for-index="xindex"
+          wx:key="xindex"
+          title="{{xitem.title}}"
+          arrow="{{!xitem.icon}}"
+          note="{{xitem.tit}}"
+          data-type="{{xitem.type}}"
+          bordered="{{false}}"
+          bind:click="onClickCell"
+          t-class="t-cell-padding"
+          t-class-note="order-group-note"
+          t-class-left="order-group__left"
+        >
+          <template #note>
+            <t-icon name="{{xitem.icon}}" size="48rpx" />
+          </template>
+        </t-cell>
+      </t-cell-group>
+    </view>
   </view>
-</t-popup>
-<t-toast id="t-toast" />
+  <view class="footer__version [text-align:center] [margin-top:50rpx] [color:#999] [margin-bottom:4rpx] [font-size:24rpx] [line-height:32rpx]" wx:if="{{versionNo !== ''}}">
+    当前版本 {{ versionNo }}
+  </view>
+  <t-popup visible="{{showMakePhone}}" placement="bottom" bind:visible-change="closeMakePhone" data-index="2">
+    <view class="popup-content [background:#f5f5f5] [margin-bottom:env(safe-area-inset-bottom)] [border-radius:16rpx_16rpx_0_0] [&_.popup-title]:[background:#fff] [&_.popup-title]:[text-align:center] [&_.popup-title]:[font-size:24rpx] [&_.popup-title]:[color:#999] [&_.popup-title]:[height:112rpx] [&_.popup-title]:[line-height:112rpx] [&_.popup-title]:[border-radius:16rpx_16rpx_0_0] [&_.popup-phone]:[background:#fff] [&_.popup-phone]:[height:100rpx] [&_.popup-phone]:[display:flex] [&_.popup-phone]:[justify-content:center] [&_.popup-phone]:[align-items:center] [&_.popup-phone]:[text-align:center] [&_.popup-phone]:[font-size:30rpx] [&_.popup-phone]:[font-family:PingFangSC-Regular,_PingFang_SC] [&_.popup-phone]:[font-weight:400] [&_.popup-phone]:[color:#333] [&_.popup-close]:[background:#fff] [&_.popup-close]:[height:100rpx] [&_.popup-close]:[display:flex] [&_.popup-close]:[justify-content:center] [&_.popup-close]:[align-items:center] [&_.popup-close]:[text-align:center] [&_.popup-close]:[font-size:30rpx] [&_.popup-close]:[font-family:PingFangSC-Regular,_PingFang_SC] [&_.popup-close]:[font-weight:400] [&_.popup-close]:[color:#333] [&_.popup-phone_.online]:[margin-bottom:20rpx] [&_.popup-close]:[border:0] [&_.popup-close]:[margin-top:16rpx]">
+      <view class="popup-title border-bottom-1px [position:relative]" wx:if="{{customerServiceInfo.serviceTimeDuration}}">
+        服务时间: {{ customerServiceInfo.serviceTimeDuration }}
+      </view>
+      <view class="popup-phone {{showKefu ? 'border-bottom-1px' : ''}} [position:relative]" bind:tap="call">
+        电话客服
+      </view>
+      <button class="popup-phone border-bottom-1px online [position:relative]" open-type="contact" wx:if="{{showKefu}}">
+        在线客服
+      </button>
+      <view class="popup-close" bind:tap="closeMakePhone">
+        取消
+      </view>
+    </view>
+  </t-popup>
+  <t-toast id="t-toast" />
 </template>
 
 <json>
@@ -333,4 +343,5 @@ defineExpose({
     "t-toast": "tdesign-miniprogram/toast/toast"
   },
   "enablePullDownRefresh": true
-}</json>
+}
+</json>
