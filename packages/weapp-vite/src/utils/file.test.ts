@@ -74,6 +74,42 @@ describe('utils/file', () => {
   })
 
   describe('extractConfigFromVue', () => {
+    it('extracts config from <json> custom block', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'page.vue')
+      try {
+        await fs.writeFile(
+          file,
+          `
+<template>
+  <view />
+</template>
+<json>
+{
+  // comment-json should be supported
+  "navigationBarTitleText": "json block title",
+  "usingComponents": {
+    "x-a": "./x-a"
+  }
+}
+</json>
+          `.trim(),
+          'utf8',
+        )
+
+        const config = await extractConfigFromVue(file)
+        expect(config).toMatchObject({
+          navigationBarTitleText: 'json block title',
+          usingComponents: {
+            'x-a': './x-a',
+          },
+        })
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
+
     it('extracts defineAppJson from <script setup> when <json> is absent', async () => {
       const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
       const file = path.join(root, 'app.vue')
@@ -239,6 +275,67 @@ defineThemeJson({
           darkmode: true,
           location: 'theme/custom.json',
         })
+      }
+      finally {
+        await fs.remove(root)
+      }
+    })
+
+    it('reuses cache when vue file mtime and dependencies are unchanged', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'cache.vue')
+      const readSpy = vi.spyOn(fs, 'readFile')
+      try {
+        await fs.writeFile(
+          file,
+          `
+<template>
+  <view />
+</template>
+<json>
+{
+  "navigationBarTitleText": "cached"
+}
+</json>
+          `.trim(),
+          'utf8',
+        )
+
+        const first = await extractConfigFromVue(file)
+        const second = await extractConfigFromVue(file)
+
+        expect(first).toMatchObject({ navigationBarTitleText: 'cached' })
+        expect(second).toMatchObject({ navigationBarTitleText: 'cached' })
+        const readCalls = readSpy.mock.calls.filter(call => String(call[0]) === file)
+        expect(readCalls.length).toBe(1)
+      }
+      finally {
+        readSpy.mockRestore()
+        await fs.remove(root)
+      }
+    })
+
+    it('supports auto-routes default import replacement in macro extraction', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'app.vue')
+      try {
+        await fs.writeFile(
+          file,
+          `
+<script setup lang="ts">
+import routes from 'weapp-vite/auto-routes'
+
+defineAppJson({
+  pages: routes.pages,
+})
+</script>
+          `.trim(),
+          'utf8',
+        )
+
+        const config = await extractConfigFromVue(file)
+        expect(config).toHaveProperty('pages')
+        expect(Array.isArray(config?.pages)).toBe(true)
       }
       finally {
         await fs.remove(root)
