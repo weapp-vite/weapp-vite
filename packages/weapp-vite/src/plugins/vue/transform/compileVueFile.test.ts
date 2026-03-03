@@ -51,6 +51,32 @@ const handle = (value: string) => value
     expect(result.script).toContain('ctx.handle')
   })
 
+  it('merges inline map with defineOptions methods for component simple handlers', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <t-tab-bar @change="onChange" />
+</template>
+<script setup lang="ts">
+defineOptions({
+  methods: {
+    onChange(event) {
+      return event
+    },
+  },
+})
+</script>
+      `.trim(),
+      '/project/src/components/tab-bar.vue',
+    )
+
+    expect(result.template).toContain('bindchange="__weapp_vite_inline"')
+    expect(result.script).toContain('__weapp_vite_inline_map')
+    expect(result.script).toContain('onChange(event)')
+    expect(result.script).toContain('methods: Object.assign({},')
+    expect(result.script).toContain('?.methods || {}')
+  })
+
   it('compiles script setup interpolation call expression via runtime binding', async () => {
     const result = await compileVueFile(
       `

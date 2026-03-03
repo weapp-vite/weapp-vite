@@ -182,6 +182,40 @@ export default (Object.assign({}, merged, { data: {} }) as any)
     expect(code).toContain('__weapp_vite_inline_map')
   })
 
+  it('merges inline map with methods from spread defineOptions object', () => {
+    const warn = vi.fn()
+    const { transformed, code } = runRewrite(
+      `
+const __default__ = {
+  methods: {
+    onChange(event) {
+      return event
+    },
+  },
+}
+export default {
+  ...__default__,
+  setup() {},
+}
+      `.trim(),
+      {
+        inlineExpressions: [
+          {
+            id: 'e-spread-merge',
+            expression: 'onChange($event)',
+            scopeKeys: [],
+          },
+        ],
+        warn,
+      },
+    )
+
+    expect(transformed).toBe(true)
+    expect(code).toContain('methods: Object.assign({}, __default__?.methods || {}')
+    expect(code).toContain('__weapp_vite_inline_map')
+    expect(warn).not.toHaveBeenCalled()
+  })
+
   it('handles app mode defaults injection and skip component transform mode', () => {
     const serializedWevuDefaults = JSON.stringify({
       app: {

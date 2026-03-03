@@ -43,6 +43,42 @@ function buildInlineMapExpression(inlineExpressions: InlineExpressionAsset[]): t
   return t.objectExpression(entries)
 }
 
+function buildMethodsMergeFromSpreadSources(
+  componentExpr: t.ObjectExpression,
+  inlineMapExpr: t.ObjectExpression,
+): t.Expression | null {
+  const spreadSources: t.Expression[] = []
+  for (const prop of componentExpr.properties) {
+    if (!t.isSpreadElement(prop) || !t.isExpression(prop.argument)) {
+      continue
+    }
+    const methodsAccess = t.optionalMemberExpression(
+      t.cloneNode(prop.argument),
+      t.identifier('methods'),
+      false,
+      true,
+    )
+    spreadSources.push(
+      t.logicalExpression('||', methodsAccess, t.objectExpression([])),
+    )
+  }
+
+  if (!spreadSources.length) {
+    return null
+  }
+
+  return t.callExpression(
+    t.memberExpression(t.identifier('Object'), t.identifier('assign')),
+    [
+      t.objectExpression([]),
+      ...spreadSources,
+      t.objectExpression([
+        t.objectProperty(createStaticObjectKey('__weapp_vite_inline_map'), inlineMapExpr),
+      ]),
+    ],
+  )
+}
+
 export function injectInlineExpressions(
   componentExpr: t.ObjectExpression,
   inlineExpressions: InlineExpressionAsset[],
@@ -53,6 +89,16 @@ export function injectInlineExpressions(
   const inlineMapExpr = buildInlineMapExpression(inlineExpressions)
   const methodsProp = getObjectPropertyByKey(componentExpr, 'methods')
   if (!methodsProp) {
+    const mergedMethods = buildMethodsMergeFromSpreadSources(componentExpr, inlineMapExpr)
+    if (mergedMethods) {
+      componentExpr.properties.push(
+        t.objectProperty(
+          createStaticObjectKey('methods'),
+          mergedMethods,
+        ),
+      )
+      return true
+    }
     componentExpr.properties.push(
       t.objectProperty(
         createStaticObjectKey('methods'),
