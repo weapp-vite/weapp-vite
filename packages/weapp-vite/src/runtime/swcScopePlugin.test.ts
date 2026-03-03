@@ -372,6 +372,44 @@ describe('SWC Scope Plugin - analyzeScope', () => {
     expect(result.localBindings.has('c')).toBe(true)
     expect(result.localBindings.has('d')).toBe(true)
   })
+
+  it('should handle assignment/rest object patterns and function expression params', () => {
+    const code = `
+      const { a = 1, ...rest } = source
+
+      function outer() {
+        return function inner(param = 2, ...args: number[]) {
+          return param + args.length + a + rest.value
+        }
+      }
+    `
+
+    const result = analyzeScope(code)
+
+    expect(result.localBindings.has('a')).toBe(true)
+    expect(result.localBindings.has('rest')).toBe(true)
+    expect(result.localBindings.has('param')).toBe(true)
+    expect(result.localBindings.has('args')).toBe(true)
+  })
+
+  it('should handle class declarations and arrow functions with block body', () => {
+    const code = `
+      class Counter {}
+      const multiplier = 2
+      const calc = (x: number) => {
+        const y = x * multiplier
+        return y
+      }
+    `
+
+    const result = analyzeScope(code)
+
+    expect(result.localBindings.has('Counter')).toBe(true)
+    expect(result.localBindings.has('calc')).toBe(true)
+    const multiplierRef = result.externalRefs.get('multiplier')
+    expect(multiplierRef).toBeDefined()
+    expect(multiplierRef?.kind).toBe('const')
+  })
 })
 
 describe('SWC Scope Plugin - resolveBinding', () => {
