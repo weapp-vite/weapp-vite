@@ -39,6 +39,28 @@ describe('injectInlineExpressions', () => {
     ])).toBe(false)
   })
 
+  it('merges inline map into methods resolved from spread sources', () => {
+    const optionsObject = t.objectExpression([
+      t.spreadElement(t.identifier('__default__')),
+      t.objectProperty(
+        t.identifier('setup'),
+        t.arrowFunctionExpression([], t.objectExpression([])),
+      ),
+    ])
+
+    expect(injectInlineExpressions(optionsObject, [
+      {
+        id: 'e_spread',
+        expression: 'onChange($event)',
+        scopeKeys: [],
+      },
+    ])).toBe(true)
+
+    const code = generate(optionsObject).code
+    expect(code).toContain('methods: Object.assign({}, __default__?.methods || {}')
+    expect(code).toContain('__weapp_vite_inline_map')
+  })
+
   it('appends map entry when inline map already exists', () => {
     const optionsObject = t.objectExpression([
       t.objectProperty(

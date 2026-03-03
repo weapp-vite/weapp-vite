@@ -33,7 +33,7 @@ defineOptions({
   <t-tab-bar
     :value="active"
     :split="false"
-    bindchange="onChange"
+    @change="onChange"
   >
     <t-tab-bar-item
       v-for="(item, index) in list"
