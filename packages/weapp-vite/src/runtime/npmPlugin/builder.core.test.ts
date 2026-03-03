@@ -68,7 +68,7 @@ describe('runtime npm package builder core', () => {
       entry: { index: '/deps/demo/index.js' },
       outDir: '/dist/demo',
       options: {
-        plugins: [[customPlugin, oxcPlugin]],
+        plugins: [[customPlugin, null, oxcPlugin]],
       } as any,
     })
 
@@ -76,6 +76,7 @@ describe('runtime npm package builder core', () => {
     const finalOptions = viteBuildMock.mock.calls[0]?.[0] as any
     expect(finalOptions?.define?.['process.env.NODE_ENV']).toBe(JSON.stringify('production'))
     expect(finalOptions?.define?.['import.meta.env.__TEST__']).toBe(JSON.stringify('yes'))
+    expect(finalOptions?.build?.lib?.fileName?.('cjs', 'entry')).toBe('entry.js')
     expect(finalOptions?.plugins?.filter((plugin: any) => plugin === oxcPlugin)).toHaveLength(1)
     expect(buildOptions).toHaveBeenCalledTimes(1)
   })
@@ -225,5 +226,55 @@ describe('runtime npm package builder core', () => {
     })
 
     expect(copySpy).not.toHaveBeenCalled()
+  })
+
+  it('normalizes alipay miniprogram package and hoists nested dependencies', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'mini-pkg')
+    const outRoot = path.resolve(root, 'dist/node_modules')
+
+    await fs.ensureDir(path.resolve(pkgRoot, 'es/button'))
+    await fs.writeFile(path.resolve(pkgRoot, 'es/button/index.js'), 'export const x = 1', 'utf8')
+
+    await fs.ensureDir(path.resolve(pkgRoot, 'miniprogram/button'))
+    await fs.ensureDir(path.resolve(pkgRoot, 'miniprogram/miniprogram_npm/tslib'))
+    await fs.writeFile(path.resolve(pkgRoot, 'miniprogram/button/index.wxml'), '<view wx:if="{{ok}}" else></view>', 'utf8')
+    await fs.writeFile(path.resolve(pkgRoot, 'miniprogram/button/index.wxss'), '@import "./dep.wxss";', 'utf8')
+    await fs.writeFile(path.resolve(pkgRoot, 'miniprogram/button/dep.wxss'), '.a {}', 'utf8')
+    await fs.writeFile(path.resolve(pkgRoot, 'miniprogram/button/helper.wxs'), 'module.exports = {}', 'utf8')
+    await fs.writeFile(path.resolve(pkgRoot, 'miniprogram/button/index.js'), 'import helper from "./helper.wxs"; export default helper', 'utf8')
+    await fs.writeFile(path.resolve(pkgRoot, 'miniprogram/miniprogram_npm/tslib/index.js'), 'module.exports = 1', 'utf8')
+
+    const ctx = createMockContext({
+      platform: 'alipay',
+      weappViteConfig: {
+        npm: {
+          alipayNpmMode: 'node_modules',
+        },
+      },
+    })
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'mini-pkg',
+        version: '0.0.0',
+        miniprogram: 'miniprogram',
+        dependencies: {},
+      },
+    })
+
+    await builder.buildPackage({
+      dep: 'mini-pkg',
+      outDir: outRoot,
+      isDependenciesCacheOutdate: true,
+    })
+
+    const outPkgRoot = path.resolve(outRoot, 'mini-pkg')
+    expect(await fs.pathExists(path.resolve(outPkgRoot, 'button/index.axml'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(outPkgRoot, 'button/index.acss'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(outPkgRoot, 'button/helper.sjs'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(outPkgRoot, 'es/button/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(outRoot, 'tslib/index.js'))).toBe(true)
   })
 })
