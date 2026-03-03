@@ -32,6 +32,7 @@ const emit = defineEmits<{
 const thumbHeight = ref(375)
 const thumbWidth = ref(375)
 const systemInfo = ref(wx.getSystemInfoSync())
+const nativeInstance = useNativeInstance() as any
 
 const { loadFailed, loading, src, mode, webp, lazyLoad, showMenuByLongpress } = toRefs(props)
 
@@ -43,8 +44,7 @@ const getRect = (() => {
   let selectorQuery: WechatMiniprogram.SelectorQuery | null = null
   return (selector: string) => new Promise<WechatMiniprogram.BoundingClientRectCallbackResult | null>((resolve) => {
     if (!selectorQuery) {
-      const native = useNativeInstance() as any
-      selectorQuery = native.createSelectorQuery?.() || null
+      selectorQuery = nativeInstance.createSelectorQuery?.() || null
     }
     selectorQuery?.select(selector).boundingClientRect(resolve).exec()
   })

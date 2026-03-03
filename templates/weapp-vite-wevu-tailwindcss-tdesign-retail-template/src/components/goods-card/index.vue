@@ -45,6 +45,7 @@ const isValidityLinePrice = computed(() => {
 })
 const independentID = ref(props.id || `goods-card-${~~(Math.random() * 10 ** 8)}`)
 const { currency } = toRefs(props)
+const nativeInstance = useNativeInstance() as any
 
 let intersectionObserverContext: WechatMiniprogram.IntersectionObserver | null = null
 
@@ -105,8 +106,7 @@ function createIntersectionObserverHandle() {
   if (intersectionObserverContext || !independentID.value || !props.thresholds?.length) {
     return
   }
-  const native = useNativeInstance() as any
-  const observer = native.createIntersectionObserver?.({
+  const observer = nativeInstance.createIntersectionObserver?.({
     thresholds: props.thresholds,
   })?.relativeToViewport?.()
   if (!observer) {
