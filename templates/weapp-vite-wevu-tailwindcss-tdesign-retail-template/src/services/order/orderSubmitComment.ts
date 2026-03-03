@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { config } from '../../config/index'
 import { getGoods as getGoodsModel } from '../../model/submitComment'
 import { delay } from '../_utils/delay'

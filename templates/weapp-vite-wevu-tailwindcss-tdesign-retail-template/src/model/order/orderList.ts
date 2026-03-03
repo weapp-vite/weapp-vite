@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { mockIp, mockReqId } from '../../utils/mock'
 
 export function genOrders(params) {
@@ -80,13 +79,10 @@ export function genOrders(params) {
             receiverCountry: '宝安区',
             receiverArea: '',
             receiverAddress: '沙井中心路28号丽沙花都xx栋xx号',
-            receiverAddress: '沙井中心路28号丽沙花都xx栋xx号',
             receiverPostCode: '',
             receiverLongitude: '113.829127',
             receiverLatitude: '22.713649',
             receiverIdentity: '88888888205468',
-            receiverPhone: '17612345678',
-            receiverName: '测试用户',
             receiverPhone: '17612345678',
             receiverName: '测试用户',
             expectArrivalTime: null,
@@ -255,7 +251,6 @@ export function genOrders(params) {
             receiverLongitude: '113.829127',
             receiverLatitude: '22.713649',
             receiverIdentity: '88888888205468',
-            receiverPhone: '17612345678',
             receiverPhone: '17612345678',
             receiverName: '平均线',
             expectArrivalTime: null,
@@ -487,7 +482,6 @@ export function genOrders(params) {
             receiverLatitude: '22.713649',
             receiverIdentity: '88888888205468',
             receiverPhone: '17612345678',
-            receiverPhone: '17612345678',
             receiverName: '平均线',
             expectArrivalTime: null,
             senderName: '',
@@ -605,7 +599,6 @@ export function genOrders(params) {
             receiverLatitude: '22.713649',
             receiverIdentity: '88888888205468',
             receiverPhone: '17612345678',
-            receiverPhone: '17612345678',
             receiverName: '平均线',
             expectArrivalTime: null,
             senderName: '',
@@ -716,7 +709,6 @@ export function genOrders(params) {
             receiverLongitude: '113.829127',
             receiverLatitude: '22.713649',
             receiverIdentity: '88888888205468',
-            receiverPhone: '17612345678',
             receiverPhone: '17612345678',
             receiverName: '平均线',
             expectArrivalTime: null,
@@ -834,7 +826,6 @@ export function genOrders(params) {
             receiverLongitude: '113.829127',
             receiverLatitude: '22.713649',
             receiverIdentity: '88888888205468',
-            receiverPhone: '17612345678',
             receiverPhone: '17612345678',
             receiverName: '平均线',
             expectArrivalTime: null,
@@ -959,7 +950,6 @@ export function genOrders(params) {
             receiverLatitude: '22.713649',
             receiverIdentity: '88888888205468',
             receiverPhone: '17612345678',
-            receiverPhone: '17612345678',
             receiverName: '平均线',
             expectArrivalTime: null,
             senderName: '',
@@ -1015,7 +1005,7 @@ export function genOrders(params) {
   return resp
 }
 
-export function genOrdersCount() {
+export function genOrdersCount(_params?: unknown) {
   const resp = {
     data: [
       { tabType: 5, orderNum: 1 },

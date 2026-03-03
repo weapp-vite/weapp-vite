@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { mockIp, mockReqId } from '../../utils/mock'
 
 const orderResps = [
@@ -310,7 +309,7 @@ export function genApplyReasonList(params) {
   return resp
 }
 
-export function applyService() {
+export function applyService(_params?: unknown) {
   const resp = {
     data: {
       rightsNo: '123123423',

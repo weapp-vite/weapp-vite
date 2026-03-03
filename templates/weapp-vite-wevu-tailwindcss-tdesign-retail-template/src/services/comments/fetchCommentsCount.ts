@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { config } from '../../config/index'
 import { getGoodsCommentsCount } from '../../model/comments'
 import { delay } from '../_utils/delay'

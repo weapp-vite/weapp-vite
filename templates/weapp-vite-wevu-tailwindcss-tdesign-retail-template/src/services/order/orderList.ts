@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { config } from '../../config/index'
 import { genOrders, genOrdersCount } from '../../model/order/orderList'
 import { delay } from '../_utils/delay'

@@ -1,7 +1,6 @@
-// @ts-nocheck
 import { mockIp, mockReqId } from '../utils/mock'
 
-export function genCartGroupData() {
+export function genCartGroupData(_params?: unknown) {
   const resp = {
     data: {
       isNotEmpty: true,

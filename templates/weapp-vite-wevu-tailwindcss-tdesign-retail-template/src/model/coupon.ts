@@ -1,15 +1,18 @@
-// @ts-nocheck
+export type CouponCardStatus = 'default' | 'useless' | 'disabled'
+export type CouponCardType = 1 | 2
+
 /**
  * 优惠券
- *
- * @typedef {'default'|'useless'|'disabled'} CouponCardStatus
- * @typedef {'discount'|'price'} CouponCardType
  *
  * @param {number} [id]
  * @param {CouponCardStatus} [status]
  * @param {CouponCardType} [type]
  */
-export function getCoupon(id = 0, status = 'default', type = (id % 2) + 1) {
+export function getCoupon(
+  id = 0,
+  status: CouponCardStatus = 'default',
+  type: CouponCardType = ((id % 2) + 1) as CouponCardType,
+) {
   return {
     /** key */
     key: `${id}`,
@@ -22,9 +25,9 @@ export function getCoupon(id = 0, status = 'default', type = (id % 2) + 1) {
     /** 标签 */
     tag: '',
     /** 描述 */
-    desc: Number.parseInt(id) > 0 ? `满${Number.parseInt(id) * 100}元可用` : '无门槛使用',
+    desc: id > 0 ? `满${id * 100}元可用` : '无门槛使用',
     /** 订单底价,满n元 */
-    base: 10000 * (Number.parseInt(id) || 0),
+    base: 10000 * id,
     /** 标题 */
     title: type === 2 ? `生鲜折扣券 - ${id}` : `生鲜满减券 - ${id}`,
     /** 有效时间限制 */
@@ -35,6 +38,6 @@ export function getCoupon(id = 0, status = 'default', type = (id % 2) + 1) {
 }
 
 /** 优惠券列表 */
-export function getCouponList(status = 'default', length = 10) {
+export function getCouponList(status: CouponCardStatus = 'default', length = 10) {
   return new Array(length).fill(0).map((_, idx) => getCoupon(idx, status))
 }

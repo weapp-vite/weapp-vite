@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { mockIp, mockReqId } from '../../utils/mock'
 
 export function transformGoodsDataToConfirmData(goodsDataList) {
@@ -133,12 +132,12 @@ export function genSettleDetail(params) {
         }, 0)
       : 0
 
-  resp.data.totalSalePrice = totalPrice
+  resp.data.totalSalePrice = `${totalPrice}`
 
-  resp.data.totalCouponAmount = totalDiscountPrice
+  resp.data.totalCouponAmount = `${totalDiscountPrice}`
 
   resp.data.totalPayAmount
-    = totalPrice - totalDiscountPrice - Number(resp.data.totalPromotionAmount)
+    = `${totalPrice - totalDiscountPrice - Number(resp.data.totalPromotionAmount)}`
 
   if (userAddressReq) {
     resp.data.settleType = 1

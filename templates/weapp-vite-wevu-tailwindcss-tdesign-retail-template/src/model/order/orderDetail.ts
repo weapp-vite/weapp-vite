@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { mockIp, mockReqId } from '../../utils/mock'
 
 const orderResps = [
@@ -1174,7 +1173,7 @@ export function genOrderDetail(params) {
   return resp
 }
 
-export function genBusinessTime() {
+export function genBusinessTime(_params?: unknown) {
   const resp = {
     data: {
       businessTime: ['周一,周二,周三,周四,周五:00:20:00-08:00:00'],

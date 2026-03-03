@@ -47,7 +47,7 @@ export function getSearchPopular() {
   }
 }
 
-export function getSearchResult() {
+export function getSearchResult(_params?: unknown) {
   return {
     saasId: null,
     storeId: null,
