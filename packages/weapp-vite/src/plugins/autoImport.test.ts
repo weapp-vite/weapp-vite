@@ -236,4 +236,134 @@ describe('autoImport plugin', () => {
       }
     }
   })
+
+  it('returns early in buildStart when config is not resolved', async () => {
+    const reset = vi.fn()
+    const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
+    const ctx = {
+      configService: {
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        relativeCwd: (p: string) => p,
+        relativeAbsoluteSrcRoot: (p: string) => p,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoImportService: {
+        reset,
+        awaitManifestWrites,
+        filter: () => true,
+        registerPotentialComponent: vi.fn(),
+        removePotentialComponent: vi.fn(),
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    const plugin = autoImport(ctx)[0]
+    await plugin.buildStart?.()
+    expect(reset).not.toHaveBeenCalled()
+  })
+
+  it('handles watchChange delete and update events after initial scan', async () => {
+    const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
+    await fs.ensureDir(tempRoot)
+    const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-watch-change-'))
+    const srcRoot = path.join(tempDir, 'src')
+    const watchedFile = path.join(srcRoot, 'components/WatchCard/index.vue')
+    await fs.ensureDir(path.dirname(watchedFile))
+    await fs.writeFile(watchedFile, '<template><view>watch</view></template>', 'utf8')
+
+    const reset = vi.fn()
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    const removePotentialComponent = vi.fn()
+    const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
+
+    const ctx = {
+      configService: {
+        cwd: tempDir,
+        absoluteSrcRoot: srcRoot,
+        relativeCwd: (p: string) => p.replace(`${tempDir}/`, ''),
+        relativeAbsoluteSrcRoot: (p: string) => p.replace(`${srcRoot}/`, ''),
+        isDev: true,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoImportService: {
+        reset,
+        awaitManifestWrites,
+        filter: (target: string) => target.includes('components/WatchCard/index.vue'),
+        registerPotentialComponent,
+        removePotentialComponent,
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    try {
+      const plugin = autoImport(ctx)[0]
+      plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+      await plugin.buildStart?.()
+
+      registerPotentialComponent.mockClear()
+      await plugin.watchChange?.('components/WatchCard/index.vue?macro=true', { event: 'update' } as any)
+      expect(registerPotentialComponent).toHaveBeenCalledWith(watchedFile)
+
+      await plugin.watchChange?.(watchedFile, { event: 'delete' } as any)
+      expect(removePotentialComponent).toHaveBeenCalledWith(watchedFile)
+    }
+    finally {
+      await fs.remove(tempDir)
+      if (await fs.pathExists(tempRoot)) {
+        const remaining = await fs.readdir(tempRoot)
+        if (remaining.length === 0) {
+          await fs.remove(tempRoot)
+        }
+      }
+    }
+  })
+
+  it('ignores unmatched or invalid watch changes', async () => {
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    const removePotentialComponent = vi.fn()
+    const ctx = {
+      configService: {
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        relativeCwd: (p: string) => p,
+        relativeAbsoluteSrcRoot: (p: string) => p,
+        weappViteConfig: {
+          autoImportComponents: {
+            output: true,
+          },
+        },
+      },
+      autoImportService: {
+        reset: vi.fn(),
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        filter: () => false,
+        registerPotentialComponent,
+        removePotentialComponent,
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    const plugin = autoImport(ctx)[0]
+    plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+
+    await plugin.watchChange?.('components/Ignore/index.vue', { event: 'update' } as any)
+    await plugin.buildStart?.()
+    await plugin.watchChange?.('\0virtual:entry', { event: 'update' } as any)
+    await plugin.watchChange?.('../outside.vue', { event: 'update' } as any)
+
+    expect(registerPotentialComponent).not.toHaveBeenCalled()
+    expect(removePotentialComponent).not.toHaveBeenCalled()
+  })
 })

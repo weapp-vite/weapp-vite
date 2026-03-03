@@ -3,17 +3,21 @@ import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { autoRoutes } from './autoRoutes'
 
-function createPlugin() {
+function createPlugin(overrides: Record<string, unknown> = {}) {
   const ensureFresh = vi.fn(async () => {})
   const getModuleCode = vi.fn(() => 'export const pages = ["pages/home/index"]')
+  const getWatchFiles = vi.fn(() => [])
+  const getWatchDirectories = vi.fn(() => [])
+  const isRouteFile = vi.fn(() => false)
+  const handleFileChange = vi.fn(async () => {})
   const ctx = {
     autoRoutesService: {
       ensureFresh,
       getModuleCode,
-      getWatchFiles: () => [],
-      getWatchDirectories: () => [],
-      isRouteFile: () => false,
-      handleFileChange: vi.fn(async () => {}),
+      getWatchFiles,
+      getWatchDirectories,
+      isRouteFile,
+      handleFileChange,
     },
     configService: {
       cwd: '/virtual/project',
@@ -24,11 +28,19 @@ function createPlugin() {
     },
   } as any
 
+  if (Object.keys(overrides).length > 0) {
+    Object.assign(ctx, overrides)
+  }
+
   const [plugin] = autoRoutes(ctx) as Plugin[]
   return {
     plugin,
     ensureFresh,
     getModuleCode,
+    getWatchFiles,
+    getWatchDirectories,
+    isRouteFile,
+    handleFileChange,
     packageRoot: ctx.configService.packageInfo.rootPath,
   }
 }
@@ -62,5 +74,136 @@ describe('auto-routes plugin alias fallback', () => {
       code: 'export const pages = ["pages/home/index"]',
       map: { mappings: '' },
     })
+  })
+
+  it('handles built-in virtual ids and skips unrelated ids', async () => {
+    const { plugin } = createPlugin()
+
+    expect(await plugin.resolveId?.call({}, 'weapp-vite/auto-routes')).toBe('\0weapp-vite:auto-routes')
+    expect(await plugin.resolveId?.call({}, 'virtual:weapp-vite-auto-routes')).toBe('\0weapp-vite:auto-routes')
+    expect(await plugin.resolveId?.call({}, '\0weapp-vite:auto-routes')).toBe('\0weapp-vite:auto-routes')
+    expect(await plugin.resolveId?.call({}, '/virtual/project/src/pages/index.ts')).toBeNull()
+  })
+
+  it('adds watch targets during buildStart and swallows registrar errors', async () => {
+    const {
+      plugin,
+      ensureFresh,
+      getWatchFiles,
+      getWatchDirectories,
+    } = createPlugin()
+    const addWatchFile = vi
+      .fn()
+      .mockImplementationOnce(() => {
+        throw new Error('watch failed')
+      })
+    getWatchFiles.mockReturnValueOnce(['/virtual/project/src/pages/index/index.ts'])
+    getWatchDirectories.mockReturnValueOnce(['/virtual/project/src/pages'])
+
+    plugin.configResolved?.({
+      command: 'serve',
+    } as any)
+
+    await expect(plugin.buildStart?.call({ addWatchFile } as any)).resolves.toBeUndefined()
+    expect(ensureFresh).toHaveBeenCalled()
+    expect(addWatchFile).toHaveBeenCalledWith('/virtual/project/src/pages/index/index.ts')
+    expect(addWatchFile).toHaveBeenCalledWith('/virtual/project/src/pages')
+  })
+
+  it('returns null in load for unrelated ids', async () => {
+    const { plugin, ensureFresh } = createPlugin()
+    plugin.configResolved?.({
+      command: 'build',
+    } as any)
+
+    const loaded = await plugin.load?.call({}, '/virtual/project/src/pages/index.ts')
+    expect(loaded).toBeNull()
+    expect(ensureFresh).not.toHaveBeenCalled()
+  })
+
+  it('routes watchChange events to route files and pages paths', async () => {
+    const {
+      plugin,
+      isRouteFile,
+      handleFileChange,
+    } = createPlugin()
+
+    isRouteFile.mockImplementation((id: string) => id.endsWith('app.json'))
+    await plugin.watchChange?.('/virtual/project/src/app.json', { event: 'update' } as any)
+    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/app.json', 'update')
+
+    isRouteFile.mockReturnValue(false)
+    await plugin.watchChange?.('/virtual/project/src/pages/home/index.ts', { event: 'create' } as any)
+    await plugin.watchChange?.('/virtual/project/src/components/card/index.ts', { event: 'update' } as any)
+
+    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/home/index.ts', 'rename')
+    expect(handleFileChange).not.toHaveBeenCalledWith('/virtual/project/src/components/card/index.ts', 'rename')
+  })
+
+  it('handleHotUpdate returns virtual module in serve mode and filters fallback in build mode', async () => {
+    const virtualModule = { id: '\0weapp-vite:auto-routes' }
+    const {
+      plugin,
+      isRouteFile,
+      handleFileChange,
+    } = createPlugin()
+
+    plugin.configResolved?.({
+      command: 'serve',
+    } as any)
+    isRouteFile.mockReturnValue(false)
+
+    const served = await plugin.handleHotUpdate?.({
+      file: '/virtual/project/src/pages/home/index.ts',
+      server: {
+        moduleGraph: {
+          getModuleById: vi.fn(() => virtualModule),
+        },
+      },
+      modules: [],
+    } as any)
+    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/home/index.ts', 'rename')
+    expect(served).toEqual([virtualModule])
+
+    plugin.configResolved?.({
+      command: 'build',
+    } as any)
+    isRouteFile.mockImplementation((id: string) => id.endsWith('app.json'))
+
+    const buildFiltered = await plugin.handleHotUpdate?.({
+      file: '/virtual/project/src/app.json',
+      server: {
+        moduleGraph: {
+          getModuleById: vi.fn(() => undefined),
+        },
+      },
+      modules: [
+        { id: '/virtual/project/src/app.json' },
+        { id: '\0weapp-vite:auto-routes' },
+      ],
+    } as any)
+
+    expect(buildFiltered).toEqual([{ id: '\0weapp-vite:auto-routes' }])
+  })
+
+  it('returns undefined for unrelated handleHotUpdate files', async () => {
+    const { plugin, isRouteFile, handleFileChange } = createPlugin()
+    plugin.configResolved?.({
+      command: 'serve',
+    } as any)
+    isRouteFile.mockReturnValue(false)
+
+    const result = await plugin.handleHotUpdate?.({
+      file: '/virtual/project/src/components/card/index.ts',
+      server: {
+        moduleGraph: {
+          getModuleById: vi.fn(() => undefined),
+        },
+      },
+      modules: [],
+    } as any)
+
+    expect(result).toBeUndefined()
+    expect(handleFileChange).not.toHaveBeenCalled()
   })
 })
