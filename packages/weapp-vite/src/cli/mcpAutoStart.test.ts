@@ -2,9 +2,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const loadConfigMock = vi.hoisted(() => vi.fn())
 const startWeappViteMcpServerMock = vi.hoisted(() => vi.fn())
+const loggerInfoMock = vi.hoisted(() => vi.fn())
+const loggerWarnMock = vi.hoisted(() => vi.fn())
+const loggerSuccessMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./loadConfig', () => ({
   loadConfig: loadConfigMock,
+}))
+
+vi.mock('../logger', () => ({
+  default: {
+    info: loggerInfoMock,
+    warn: loggerWarnMock,
+    success: loggerSuccessMock,
+  },
+  colors: {
+    cyan: (value: string) => value,
+  },
 }))
 
 vi.mock('../mcp', () => ({
@@ -33,6 +47,9 @@ describe('mcp auto start', () => {
   beforeEach(async () => {
     loadConfigMock.mockReset()
     startWeappViteMcpServerMock.mockReset()
+    loggerInfoMock.mockReset()
+    loggerWarnMock.mockReset()
+    loggerSuccessMock.mockReset()
     loadConfigMock.mockResolvedValue(undefined)
     startWeappViteMcpServerMock.mockResolvedValue(undefined)
     const mod = await import('./mcpAutoStart')
@@ -48,6 +65,8 @@ describe('mcp auto start', () => {
       transport: 'streamable-http',
       unref: true,
     }))
+    expect(loggerSuccessMock).toHaveBeenCalledWith('MCP 服务已自动启动：')
+    expect(loggerInfoMock).toHaveBeenCalledWith('  ➜  http://127.0.0.1:3088/mcp')
   })
 
   it('does not auto start when mcp is disabled in config', async () => {

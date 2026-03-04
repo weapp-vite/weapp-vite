@@ -1,7 +1,7 @@
 import type { WeappMcpConfig } from '../types'
 import type { GlobalCLIOptions } from './types'
 import process from 'node:process'
-import logger from '../logger'
+import logger, { colors } from '../logger'
 import { resolveWeappMcpConfig, startWeappViteMcpServer } from '../mcp'
 import { loadConfig } from './loadConfig'
 import { resolveConfigFile } from './options'
@@ -63,7 +63,9 @@ export async function maybeAutoStartMcpServer(argv: string[], cliOptions: Global
       workspaceRoot: process.cwd(),
     })
     started = true
-    logger.info(`[mcp] 已自动启动：http://${resolvedMcp.host}:${resolvedMcp.port}${resolvedMcp.endpoint}`)
+    const mcpUrl = `http://${resolvedMcp.host}:${resolvedMcp.port}${resolvedMcp.endpoint}`
+    logger.success('MCP 服务已自动启动：')
+    logger.info(`  ➜  ${colors.cyan(mcpUrl)}`)
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)

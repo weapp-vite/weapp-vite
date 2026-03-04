@@ -20,6 +20,8 @@ cd apps/mcp-demo
 pnpm dev
 ```
 
+`pnpm dev` 会自动拉起 MCP HTTP 服务，并在终端输出地址（默认 `http://127.0.0.1:3188/mcp`）。
+
 可选命令：
 
 ```bash
