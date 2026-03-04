@@ -34,6 +34,16 @@ Avoid cross-package edits unless the change is truly shared.
 
 Do not default to full monorepo test runs when a targeted test can prove the change.
 
+### 2.1 Dist Sync Guard (Prevent Stale CLI/Runtime)
+
+- When editing `packages/*/src/**`, assume downstream apps/templates/e2e consume built artifacts from `dist` (not live `src`).
+- Before validating through `apps/*`, `templates/*`, or `e2e-apps/*`, rebuild each touched package first:
+  - `pnpm --filter <package-name> build`
+- For `weapp-vite` CLI changes specifically (`packages/weapp-vite/src/cli/**`, `packages/weapp-vite/src/mcp.ts`, or other CLI entry dependencies), always run:
+  - `pnpm --filter weapp-vite build`
+  - then run app-level checks such as `pnpm --filter <app> dev` / `build` / `open` / `run mcp:*`
+- If a verification result does not reflect recent source edits, treat stale `dist` as the first suspect and rebuild before deeper debugging.
+
 ## 3. Coding Rules
 
 - TypeScript + ESM + 2-space indentation.
