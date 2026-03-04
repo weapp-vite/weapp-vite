@@ -63,6 +63,6 @@
   "dependencies": {
     "@weapp-core/logger": "workspace:^",
     "@weapp-core/shared": "workspace:^",
-    "fs-extra": "^11.3.3"
+    "fs-extra": "catalog:"
   }
 }
