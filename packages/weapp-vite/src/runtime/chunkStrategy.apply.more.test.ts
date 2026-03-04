@@ -300,6 +300,48 @@ describe('chunkStrategy apply helpers more branches', () => {
     }
   })
 
+  it('localizes runtime for force roots even when sub-package chunks do not reference runtime', () => {
+    const bundle: OutputBundle = {
+      'rolldown-runtime.js': createChunk('rolldown-runtime.js', '// runtime'),
+      'pages/order/index.js': createChunk(
+        'pages/order/index.js',
+        'const a = require("../shared.js");',
+        ['pages/shared.js'],
+      ),
+    }
+    const emitted: Array<{ fileName: string, source: string }> = []
+    const duplicateEvents: Array<{ runtimeFileName: string, duplicates: Array<{ fileName: string, importers: string[] }> }> = []
+
+    applyRuntimeChunkLocalization.call(createPluginContext(emitted), bundle, {
+      subPackageRoots: ['pages/order'],
+      forceRoots: ['pages/order'],
+      onDuplicate: payload => duplicateEvents.push(payload),
+    })
+
+    expect(emitted).toEqual([
+      {
+        fileName: 'pages/order/rolldown-runtime.js',
+        source: '// runtime',
+      },
+    ])
+    expect(duplicateEvents).toEqual([
+      {
+        runtimeFileName: 'rolldown-runtime.js',
+        duplicates: [
+          {
+            fileName: 'pages/order/rolldown-runtime.js',
+            importers: [],
+          },
+        ],
+      },
+    ])
+    expect(bundle['pages/order/index.js']?.type).toBe('chunk')
+    if (bundle['pages/order/index.js']?.type === 'chunk') {
+      expect(bundle['pages/order/index.js'].imports).toEqual(['pages/shared.js'])
+      expect(bundle['pages/order/index.js'].code).toContain('require("../shared.js")')
+    }
+  })
+
   it('resolves runtime bundle record by basename when direct key is absent', () => {
     const runtimeFileName = 'rolldown-runtime.js'
     const runtimeLookupKey = 'assets/chunks/runtime-hash.js'

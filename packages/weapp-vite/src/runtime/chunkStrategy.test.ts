@@ -413,6 +413,7 @@ describe('applySharedChunkStrategy', () => {
     }
 
     const emitted: Array<{ fileName: string, source: string }> = []
+    const duplicateEvents: SharedChunkDuplicatePayload[] = []
     const pluginContext = {
       pluginName: 'test',
       meta: {
@@ -450,6 +451,7 @@ describe('applySharedChunkStrategy', () => {
     applySharedChunkStrategy.call(pluginContext, bundle, {
       strategy: 'duplicate',
       subPackageRoots: ['subpackages/item', 'subpackages/user'],
+      onDuplicate: event => duplicateEvents.push(event),
     })
 
     const itemSharedFile = `subpackages/item/${SUB_PACKAGE_SHARED_DIR}/common.js`
@@ -461,8 +463,14 @@ describe('applySharedChunkStrategy', () => {
     const userSharedSource = emitted.find(entry => entry.fileName === userSharedFile)?.source
     expect(itemSharedSource).toContain('require("../rolldown-runtime.js")')
     expect(userSharedSource).toContain('require("../rolldown-runtime.js")')
+    expect(itemSharedSource).toContain('require("../../../common.js")')
+    expect(userSharedSource).toContain('require("../../../common.js")')
+    expect(itemSharedSource).not.toContain('require("../../common.js")')
+    expect(userSharedSource).not.toContain('require("../../common.js")')
     expect(itemSharedSource).not.toMatch(/require\((['"`]).*subpackages_item.*subpackages_user\/common\.js\1\)/)
     expect(userSharedSource).not.toMatch(/require\((['"`]).*subpackages_item.*subpackages_user\/common\.js\1\)/)
+    expect(duplicateEvents).toHaveLength(1)
+    expect(duplicateEvents[0].requiresRuntimeLocalization).toBe(true)
   })
 
   it('localizes non-virtual sub-package chunk when imported by another sub-package', () => {

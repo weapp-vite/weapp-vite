@@ -13,7 +13,6 @@ import {
   resolveSourceMapSource,
 } from './sourcemap'
 import { consumeSharedChunkDiagnostics, hasForceDuplicateSharedChunks, isForceDuplicateSharedChunk } from './state'
-import { replaceAll } from './utils'
 
 const ROLLDOWN_RUNTIME_FILE_NAME = 'rolldown-runtime.js'
 
@@ -26,6 +25,7 @@ export interface SharedChunkDuplicatePayload {
   sharedFileName: string
   duplicates: SharedChunkDuplicateDetail[]
   ignoredMainImporters?: string[]
+  requiresRuntimeLocalization?: boolean
   /**
    * @description 单份共享代码的字节数（不含 source map）
    */
@@ -65,6 +65,7 @@ export interface RuntimeChunkDuplicatePayload {
 
 export interface ApplyRuntimeChunkLocalizationOptions {
   subPackageRoots: Iterable<string>
+  forceRoots?: Iterable<string>
   runtimeFileName?: string
   onDuplicate?: (payload: RuntimeChunkDuplicatePayload) => void
 }
@@ -142,7 +143,7 @@ export function applySharedChunkStrategy(
       if (fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
         const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
         chunk.code = rewriteChunkImportSpecifiersInCode(chunk.code ?? '', {
-          sourceFileName: fileName,
+          sourceFileNames: createChunkSourceFileNameCandidates(fileName),
           targetFileName: newFileName,
           imports: chunk.imports,
           dynamicImports: chunk.dynamicImports,
@@ -183,7 +184,7 @@ export function applySharedChunkStrategy(
     if (shouldRetainOriginalChunk && fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
       const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
       chunk.code = rewriteChunkImportSpecifiersInCode(chunk.code ?? '', {
-        sourceFileName: fileName,
+        sourceFileNames: createChunkSourceFileNameCandidates(fileName),
         targetFileName: newFileName,
         imports: chunk.imports,
         dynamicImports: chunk.dynamicImports,
@@ -219,8 +220,11 @@ export function applySharedChunkStrategy(
     }
     for (const [root, { newFileName, importers: importerFiles }] of importerMap.entries()) {
       const runtimeFileName = path.join(root, ROLLDOWN_RUNTIME_FILE_NAME)
-      const duplicatedSource = rewriteRuntimeImportInCode(originalCode, {
-        fromFileName: newFileName,
+      const duplicatedSource = rewriteChunkImportSpecifiersInCode(originalCode, {
+        sourceFileNames: createChunkSourceFileNameCandidates(fileName),
+        targetFileName: newFileName,
+        imports: chunk.imports,
+        dynamicImports: chunk.dynamicImports,
         runtimeFileName,
       })
       this.emitFile({
@@ -263,11 +267,17 @@ export function applySharedChunkStrategy(
     const redundantBytes = typeof chunkBytes === 'number'
       ? chunkBytes * Math.max(duplicates.length - 1, 0)
       : undefined
+    const requiresRuntimeLocalization = chunkReferencesRuntime(
+      chunk,
+      ROLLDOWN_RUNTIME_FILE_NAME,
+      new Set([ROLLDOWN_RUNTIME_FILE_NAME]),
+    )
 
     options.onDuplicate?.({
       sharedFileName: originalSharedFileName,
       duplicates,
       ignoredMainImporters: diagnostics?.ignoredMainImporters,
+      requiresRuntimeLocalization,
       chunkBytes,
       redundantBytes,
       retainedInMain: shouldRetainOriginalChunk,
@@ -403,6 +413,22 @@ function createCrossSubPackageDuplicateBaseName(sourceRoot: string, fileName: st
   return `${rootTag}.${path.basename(fileName)}`
 }
 
+function createChunkSourceFileNameCandidates(fileName: string) {
+  const candidates = [fileName]
+  const normalized = resolveChunkSourceFileNameForRewrite(fileName)
+  if (normalized !== fileName) {
+    candidates.push(normalized)
+  }
+  return candidates
+}
+
+function resolveChunkSourceFileNameForRewrite(fileName: string) {
+  if (!fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
+    return fileName
+  }
+  return fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
+}
+
 function reserveUniqueFileName(reservedFileNames: Set<string>, fileName: string) {
   if (!reservedFileNames.has(fileName)) {
     reservedFileNames.add(fileName)
@@ -467,6 +493,15 @@ export function applyRuntimeChunkLocalization(
     }
     else {
       rootToImporters.set(root, [fileName])
+    }
+  }
+  const forceRoots = Array.from(options.forceRoots ?? []).filter(Boolean)
+  for (const root of forceRoots) {
+    if (!subPackageRoots.includes(root)) {
+      continue
+    }
+    if (!rootToImporters.has(root)) {
+      rootToImporters.set(root, [])
     }
   }
 
@@ -618,57 +653,50 @@ function isRuntimeBundleOutput(output: OutputBundle[string] | undefined): output
   return output?.type === 'chunk' || output?.type === 'asset'
 }
 
-function rewriteRuntimeImportInCode(
-  sourceCode: string,
-  options: {
-    fromFileName: string
-    runtimeFileName: string
-  },
-) {
-  const { fromFileName, runtimeFileName } = options
-  if (!sourceCode.includes(ROLLDOWN_RUNTIME_FILE_NAME)) {
-    return sourceCode
-  }
-
-  const importPath = createRelativeImportPath(fromFileName, runtimeFileName)
-  if (!importPath) {
-    return sourceCode
-  }
-
-  return sourceCode.replace(
-    /(['"`])([^'"`]*rolldown-runtime\.js)\1/g,
-    (_match, quote: string) => `${quote}${importPath}${quote}`,
-  )
-}
-
 function rewriteChunkImportSpecifiersInCode(
   sourceCode: string,
   options: {
-    sourceFileName: string
+    sourceFileName?: string
+    sourceFileNames?: string[]
     targetFileName: string
     imports: string[]
     dynamicImports: string[]
     runtimeFileName: string
   },
 ) {
-  const { sourceFileName, targetFileName, imports, dynamicImports, runtimeFileName } = options
+  const { sourceFileName, sourceFileNames, targetFileName, imports, dynamicImports, runtimeFileName } = options
+  const sourceFileNameCandidates = (sourceFileNames ?? [sourceFileName ?? '']).filter(Boolean)
   const specifiers = new Set([...imports, ...dynamicImports].filter(Boolean))
   let rewrittenCode = sourceCode
   for (const specifier of specifiers) {
-    const sourceImportPath = createRelativeImportPath(sourceFileName, specifier)
-    if (!sourceImportPath) {
-      continue
-    }
     const resolvedTargetSpecifier = path.basename(specifier) === ROLLDOWN_RUNTIME_FILE_NAME
       ? runtimeFileName
       : specifier
     const targetImportPath = createRelativeImportPath(targetFileName, resolvedTargetSpecifier)
-    if (!targetImportPath || sourceImportPath === targetImportPath) {
+    if (!targetImportPath) {
       continue
     }
-    rewrittenCode = replaceAll(rewrittenCode, sourceImportPath, targetImportPath)
+    for (const sourceCandidate of sourceFileNameCandidates) {
+      const sourceImportPath = createRelativeImportPath(sourceCandidate, specifier)
+      if (!sourceImportPath || sourceImportPath === targetImportPath) {
+        continue
+      }
+      rewrittenCode = replaceQuotedImportLiteralValue(rewrittenCode, sourceImportPath, targetImportPath)
+    }
   }
   return rewrittenCode
+}
+
+function replaceQuotedImportLiteralValue(sourceCode: string, sourcePath: string, targetPath: string) {
+  const escapedSourcePath = escapeRegExpForPattern(sourcePath)
+  return sourceCode.replace(
+    new RegExp(`(['"\`])${escapedSourcePath}\\1`, 'g'),
+    (_match, quote: string) => `${quote}${targetPath}${quote}`,
+  )
+}
+
+function escapeRegExpForPattern(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 function createRelativeImportPath(fromFileName: string, toFileName: string) {

@@ -341,40 +341,56 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
         return `${preview.join('、')}${suffix}`
       }
 
-      const handleDuplicate: ((payload: SharedChunkDuplicatePayload) => void) | undefined = shouldLogChunks || shouldWarnOnDuplicate
-        ? ({ duplicates, ignoredMainImporters, chunkBytes, redundantBytes, retainedInMain, sharedFileName }) => {
-            if (shouldWarnOnDuplicate) {
-              const duplicateCount = duplicates.length
-              const computedRedundant = typeof redundantBytes === 'number'
-                ? redundantBytes
-                : typeof chunkBytes === 'number'
-                  ? chunkBytes * Math.max(duplicateCount - 1, 0)
-                  : 0
-              redundantBytesTotal += computedRedundant
-            }
-
-            if (shouldLogChunks) {
-              const subPackageSet = new Set<string>()
-              let totalReferences = 0
-              for (const { fileName, importers } of duplicates) {
-                totalReferences += importers.length
-                const match = matchSubPackage(fileName)
-                if (match) {
-                  subPackageSet.add(match)
-                }
-              }
-              const subPackageList = Array.from(subPackageSet).join('、') || '相关分包'
-              const ignoredHint = ignoredMainImporters?.length
-                ? `，忽略主包引用：${ignoredMainImporters.join('、')}`
-                : ''
-              logger.info(`[分包] 分包 ${subPackageList} 共享模块已复制到各自 weapp-shared/common.js（${totalReferences} 处引用${ignoredHint}）`)
-
-              if (retainedInMain) {
-                logger.warn(`[分包] 模块 ${sharedFileName} 同时被主包引用，因此仍保留在主包 common.js，并复制到 ${subPackageList}，请确认是否需要将源代码移动到主包或公共目录。`)
-              }
+      const runtimeLocalizationRoots = new Set<string>()
+      const handleDuplicate = ({
+        duplicates,
+        ignoredMainImporters,
+        chunkBytes,
+        redundantBytes,
+        retainedInMain,
+        sharedFileName,
+        requiresRuntimeLocalization,
+      }: SharedChunkDuplicatePayload) => {
+        if (shouldWarnOnDuplicate) {
+          const duplicateCount = duplicates.length
+          const computedRedundant = typeof redundantBytes === 'number'
+            ? redundantBytes
+            : typeof chunkBytes === 'number'
+              ? chunkBytes * Math.max(duplicateCount - 1, 0)
+              : 0
+          redundantBytesTotal += computedRedundant
+        }
+        if (requiresRuntimeLocalization) {
+          for (const { fileName } of duplicates) {
+            const match = matchSubPackage(fileName)
+            if (match) {
+              runtimeLocalizationRoots.add(match)
             }
           }
-        : undefined
+        }
+        if (!shouldLogChunks) {
+          return
+        }
+
+        const subPackageSet = new Set<string>()
+        let totalReferences = 0
+        for (const { fileName, importers } of duplicates) {
+          totalReferences += importers.length
+          const match = matchSubPackage(fileName)
+          if (match) {
+            subPackageSet.add(match)
+          }
+        }
+        const subPackageList = Array.from(subPackageSet).join('、') || '相关分包'
+        const ignoredHint = ignoredMainImporters?.length
+          ? `，忽略主包引用：${ignoredMainImporters.join('、')}`
+          : ''
+        logger.info(`[分包] 分包 ${subPackageList} 共享模块已复制到各自 weapp-shared/common.js（${totalReferences} 处引用${ignoredHint}）`)
+
+        if (retainedInMain) {
+          logger.warn(`[分包] 模块 ${sharedFileName} 同时被主包引用，因此仍保留在主包 common.js，并复制到 ${subPackageList}，请确认是否需要将源代码移动到主包或公共目录。`)
+        }
+      }
 
       applySharedChunkStrategy.call(this, rolldownBundle, {
         strategy: sharedStrategy,
@@ -416,6 +432,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
       applyRuntimeChunkLocalization.call(this, rolldownBundle, {
         subPackageRoots,
+        forceRoots: runtimeLocalizationRoots,
         onDuplicate: shouldLogChunks
           ? ({ duplicates, runtimeFileName }: RuntimeChunkDuplicatePayload) => {
               const subPackageSet = new Set<string>()
