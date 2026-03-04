@@ -348,6 +348,123 @@ describe('applySharedChunkStrategy', () => {
     expect(duplicateEvents[0].ignoredMainImporters).toBeUndefined()
   })
 
+  it('does not fallback to main package when virtual shared chunk only has subpackage importers', () => {
+    const sharedFileName = `${SHARED_CHUNK_VIRTUAL_PREFIX}/subpackages_item+subpackages_user/common.js`
+    const sharedChunk: OutputChunk = {
+      type: 'chunk',
+      code: 'const runtime = require("../../rolldown-runtime.js");const root = require("../../common.js");',
+      fileName: sharedFileName,
+      name: 'common',
+      modules: {},
+      imports: ['rolldown-runtime.js', 'common.js'],
+      dynamicImports: [],
+      exports: [],
+      isEntry: false,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${sharedFileName}.map`,
+      preliminaryFileName: sharedFileName,
+    }
+
+    const importerItemFile = 'subpackages/item/index.js'
+    const importerUserFile = 'subpackages/user/index.js'
+    const importerItem: OutputChunk = {
+      type: 'chunk',
+      code: `const shared = require('../../${sharedFileName}');`,
+      fileName: importerItemFile,
+      name: 'subpackages/item/index',
+      modules: {},
+      imports: [sharedFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${importerItemFile}.map`,
+      preliminaryFileName: importerItemFile,
+    }
+
+    const importerUser: OutputChunk = {
+      type: 'chunk',
+      code: `const shared = require('../../${sharedFileName}');`,
+      fileName: importerUserFile,
+      name: 'subpackages/user/index',
+      modules: {},
+      imports: [sharedFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${importerUserFile}.map`,
+      preliminaryFileName: importerUserFile,
+    }
+
+    const bundle: OutputBundle = {
+      [sharedFileName]: sharedChunk,
+      [importerItemFile]: importerItem,
+      [importerUserFile]: importerUser,
+    }
+
+    const emitted: Array<{ fileName: string, source: string }> = []
+    const pluginContext = {
+      pluginName: 'test',
+      meta: {
+        rollupVersion: '0',
+        rolldownVersion: '0',
+        watchMode: false,
+      },
+      emitFile: (file: { type: 'asset', fileName?: string, source: any }) => {
+        if (file.type === 'asset' && file.fileName) {
+          emitted.push({ fileName: file.fileName, source: String(file.source) })
+          return file.fileName
+        }
+        return ''
+      },
+      * getModuleIds() {},
+      getModuleInfo: () => null,
+      addWatchFile: () => {},
+      load: async () => {
+        throw new Error('未实现')
+      },
+      parse: () => {
+        throw new Error('未实现')
+      },
+      resolve: async () => null,
+      fs: {} as any,
+      getFileName: () => '',
+      error: (e: any) => {
+        throw (e instanceof Error ? e : new Error(String(e)))
+      },
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    } as unknown as PluginContext
+
+    applySharedChunkStrategy.call(pluginContext, bundle, {
+      strategy: 'duplicate',
+      subPackageRoots: ['subpackages/item', 'subpackages/user'],
+    })
+
+    const itemSharedFile = `subpackages/item/${SUB_PACKAGE_SHARED_DIR}/common.js`
+    const userSharedFile = `subpackages/user/${SUB_PACKAGE_SHARED_DIR}/common.js`
+    expect(emitted.map(entry => entry.fileName)).toEqual(expect.arrayContaining([itemSharedFile, userSharedFile]))
+    expect(bundle[sharedFileName]).toBeUndefined()
+
+    const itemSharedSource = emitted.find(entry => entry.fileName === itemSharedFile)?.source
+    const userSharedSource = emitted.find(entry => entry.fileName === userSharedFile)?.source
+    expect(itemSharedSource).toContain('require("../rolldown-runtime.js")')
+    expect(userSharedSource).toContain('require("../rolldown-runtime.js")')
+    expect(itemSharedSource).not.toMatch(/require\((['"`]).*subpackages_item.*subpackages_user\/common\.js\1\)/)
+    expect(userSharedSource).not.toMatch(/require\((['"`]).*subpackages_item.*subpackages_user\/common\.js\1\)/)
+  })
+
   it('localizes non-virtual sub-package chunk when imported by another sub-package', () => {
     const sharedFileName = 'packageB/common.js'
     const sharedChunk: OutputChunk = {
@@ -1063,11 +1180,11 @@ describe('applySharedChunkStrategy', () => {
     const sharedFileName = `${SHARED_CHUNK_VIRTUAL_PREFIX}/packageA+packageB/common.js`
     const sharedChunk: OutputChunk = {
       type: 'chunk',
-      code: '// shared chunk',
+      code: 'const runtime = require("../../rolldown-runtime.js");',
       fileName: sharedFileName,
       name: 'common',
       modules: {},
-      imports: [],
+      imports: ['rolldown-runtime.js'],
       dynamicImports: [],
       exports: [],
       isEntry: false,
@@ -1174,10 +1291,16 @@ describe('applySharedChunkStrategy', () => {
     expect(fallbackEvents[0].importers).toEqual(expect.arrayContaining([importerAFile, importerAppFile]))
 
     const expectedFallbackName = 'packageA+packageB/common.js'
+    const retainedChunk = bundle[sharedFileName]
     const importerAChunk = bundle[importerAFile]
     const importerAppChunk = bundle[importerAppFile]
+    expect(retainedChunk?.type).toBe('chunk')
     expect(importerAChunk?.type).toBe('chunk')
     expect(importerAppChunk?.type).toBe('chunk')
+    if (retainedChunk?.type === 'chunk') {
+      expect(retainedChunk.code).toContain('require("../rolldown-runtime.js")')
+      expect(retainedChunk.code).not.toContain('require("../../rolldown-runtime.js")')
+    }
     if (importerAChunk?.type === 'chunk' && importerAppChunk?.type === 'chunk') {
       expect(importerAChunk.imports).toContain(expectedFallbackName)
       expect(importerAChunk.code).toContain(`require('../${expectedFallbackName}')`)

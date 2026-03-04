@@ -6,6 +6,9 @@ export function findChunkImporters(bundle: OutputBundle, target: string) {
   const importers = new Set<string>()
 
   for (const [fileName, output] of Object.entries(bundle)) {
+    if (fileName === target) {
+      continue
+    }
     if (output?.type !== 'chunk') {
       continue
     }
@@ -31,7 +34,7 @@ export function findChunkImporters(bundle: OutputBundle, target: string) {
     }
 
     const potentialImport = createRelativeImport(fileName, target)
-    if (potentialImport && containsImportSpecifier(chunk.code ?? '', potentialImport)) {
+    if (potentialImport && potentialImport !== './' && containsImportSpecifier(chunk.code ?? '', potentialImport)) {
       importers.add(fileName)
     }
   }

@@ -141,6 +141,13 @@ export function applySharedChunkStrategy(
       let finalFileName = chunk.fileName
       if (fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
         const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
+        chunk.code = rewriteChunkImportSpecifiersInCode(chunk.code ?? '', {
+          sourceFileName: fileName,
+          targetFileName: newFileName,
+          imports: chunk.imports,
+          dynamicImports: chunk.dynamicImports,
+          runtimeFileName: ROLLDOWN_RUNTIME_FILE_NAME,
+        })
         chunk.fileName = newFileName
         if (typeof chunk.sourcemapFileName === 'string' && chunk.sourcemapFileName) {
           chunk.sourcemapFileName = `${newFileName}.map`
@@ -175,6 +182,13 @@ export function applySharedChunkStrategy(
 
     if (shouldRetainOriginalChunk && fileName.startsWith(`${SHARED_CHUNK_VIRTUAL_PREFIX}/`)) {
       const newFileName = fileName.slice(SHARED_CHUNK_VIRTUAL_PREFIX.length + 1)
+      chunk.code = rewriteChunkImportSpecifiersInCode(chunk.code ?? '', {
+        sourceFileName: fileName,
+        targetFileName: newFileName,
+        imports: chunk.imports,
+        dynamicImports: chunk.dynamicImports,
+        runtimeFileName: ROLLDOWN_RUNTIME_FILE_NAME,
+      })
       chunk.fileName = newFileName
       if (typeof chunk.sourcemapFileName === 'string' && chunk.sourcemapFileName) {
         chunk.sourcemapFileName = `${newFileName}.map`

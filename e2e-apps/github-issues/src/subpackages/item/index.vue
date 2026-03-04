@@ -1,0 +1,52 @@
+<script setup lang="ts">
+import { ref } from 'wevu'
+import { useIssue317Toast } from '../../hooks/issue-317/useToast'
+
+definePageJson({
+  navigationBarTitleText: 'issue-317-item',
+})
+
+const { showToast } = useIssue317Toast('item')
+const message = ref(showToast('ready'))
+
+function _runE2E() {
+  return {
+    ok: message.value.includes('ITEM:ready'),
+    message: message.value,
+  }
+}
+</script>
+
+<template>
+  <view class="issue317-page">
+    <text class="issue317-title">
+      issue-317 subpackage item
+    </text>
+    <text class="issue317-message">
+      {{ message }}
+    </text>
+  </view>
+</template>
+
+<style scoped>
+.issue317-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #fff;
+}
+
+.issue317-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.issue317-message {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #334155;
+}
+</style>
