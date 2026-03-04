@@ -1,0 +1,83 @@
+.page {
+  padding: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.panel {
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  box-shadow: 0 12rpx 24rpx rgba(12, 33, 60, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.title {
+  font-size: 40rpx;
+  font-weight: 600;
+  color: #0d2a52;
+}
+
+.description {
+  font-size: 26rpx;
+  line-height: 1.5;
+  color: #3f5270;
+}
+
+.meta {
+  font-size: 22rpx;
+  color: #6d7f98;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #123a6f;
+}
+
+.checkpoint,
+.command-item {
+  border: 1rpx solid #e6edf5;
+  border-radius: 14rpx;
+  padding: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.checkpoint-title,
+.command-name {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #1f3654;
+}
+
+.checkpoint-tool,
+.checkpoint-expected,
+.command-value,
+.prompt,
+.probe-value {
+  font-size: 24rpx;
+  color: #4e617d;
+  line-height: 1.6;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.copy-btn,
+.copy-prompt-btn,
+.probe-btn {
+  margin-top: 4rpx;
+  border-radius: 12rpx;
+  background: #1f7aff;
+  color: #ffffff;
+}
+
+.copy-btn::after,
+.copy-prompt-btn::after,
+.probe-btn::after {
+  border: none;
+}

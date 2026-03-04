@@ -1,0 +1,44 @@
+<view class="page">
+  <view class="panel">
+    <view class="title">{{title}}</view>
+    <view class="description">{{description}}</view>
+    <view class="meta">{{lastActionAt}}</view>
+  </view>
+
+  <view class="panel">
+    <view class="section-title">检查点</view>
+    <view wx:for="{{checkpoints}}" wx:key="key" class="checkpoint">
+      <view class="checkpoint-title">{{index + 1}}. {{item.title}}</view>
+      <view class="checkpoint-tool">Tool: {{item.tool}}</view>
+      <view class="checkpoint-expected">预期: {{item.expected}}</view>
+    </view>
+  </view>
+
+  <view class="panel">
+    <view class="section-title">快捷命令</view>
+    <view wx:for="{{commands}}" wx:key="name" class="command-item">
+      <view class="command-name">{{item.name}}</view>
+      <view class="command-value">{{item.command}}</view>
+      <button
+        class="copy-btn"
+        size="mini"
+        data-command="{{item.command}}"
+        bind:tap="onCopyCommand"
+      >
+        复制命令
+      </button>
+    </view>
+  </view>
+
+  <view class="panel">
+    <view class="section-title">测试提示词</view>
+    <view class="prompt">{{promptText}}</view>
+    <button class="copy-prompt-btn" bind:tap="onCopyPrompt">复制提示词</button>
+  </view>
+
+  <view class="panel">
+    <view class="section-title">交互探针</view>
+    <view class="probe-value">tapCounter = {{tapCounter}}</view>
+    <button class="probe-btn" bind:tap="onTapCounter">点击 +1</button>
+  </view>
+</view>
