@@ -18,6 +18,16 @@ defineAppJson({
     'pages/issue-312/index',
     'pages/issue-316/index',
   ],
+  subPackages: [
+    {
+      root: 'subpackages/item',
+      pages: ['index'],
+    },
+    {
+      root: 'subpackages/user',
+      pages: ['index'],
+    },
+  ],
 })
 
 onLaunch(() => {})

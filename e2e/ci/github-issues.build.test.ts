@@ -373,6 +373,29 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(emitterWxml).toContain('bindtap="emitOverlayClick"')
   })
 
+  it('issue #317: keeps shared chunk duplication in subpackages without invalid self or runtime imports', async () => {
+    await runBuild()
+
+    const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
+    const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
+    const fallbackUnderscorePath = path.join(DIST_ROOT, 'subpackages_item_subpackages_user/common.js')
+    const fallbackPlusPath = path.join(DIST_ROOT, 'subpackages_item+subpackages_user/common.js')
+
+    const itemShared = await fs.readFile(itemSharedPath, 'utf-8')
+    const userShared = await fs.readFile(userSharedPath, 'utf-8')
+
+    expect(itemShared).toMatch(/require\((['"`])\.\.\/rolldown-runtime\.js\1\)/)
+    expect(userShared).toMatch(/require\((['"`])\.\.\/rolldown-runtime\.js\1\)/)
+    expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
+    expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
+
+    expect(itemShared).not.toMatch(/require\((['"`]).*subpackages_item.*subpackages_user\/common\.js\1\)/)
+    expect(userShared).not.toMatch(/require\((['"`]).*subpackages_item.*subpackages_user\/common\.js\1\)/)
+
+    expect(await fs.pathExists(fallbackUnderscorePath)).toBe(false)
+    expect(await fs.pathExists(fallbackPlusPath)).toBe(false)
+  })
+
   it('issue #300: keeps boolean props available in runtime call-expression bindings', async () => {
     await runBuild()
 

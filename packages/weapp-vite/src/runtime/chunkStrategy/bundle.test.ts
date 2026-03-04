@@ -71,6 +71,27 @@ describe('chunkStrategy bundle', () => {
     ]))
   })
 
+  it('does not treat target chunk itself as an importer when fallback specifier is "./"', () => {
+    const target = 'weapp_shared_virtual/subpackages_item+subpackages_user/common.js'
+    const bundle: OutputBundle = {
+      [target]: createChunk(target, {
+        code: 'const runtime = require("../../rolldown-runtime.js");',
+      }),
+      'subpackages/item/index.js': createChunk('subpackages/item/index.js', {
+        imports: [target],
+      }),
+      'subpackages/user/index.js': createChunk('subpackages/user/index.js', {
+        imports: [target],
+      }),
+    }
+
+    const importers = findChunkImporters(bundle, target)
+    expect(new Set(importers)).toEqual(new Set([
+      'subpackages/item/index.js',
+      'subpackages/user/index.js',
+    ]))
+  })
+
   it('ensures unique file name with and without directory segment', () => {
     const bundle: OutputBundle = {
       'a.js': createChunk('a.js'),
