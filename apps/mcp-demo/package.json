@@ -1,0 +1,38 @@
+{
+  "name": "mcp-demo",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "用于测试 AI 调用 weapp-vite MCP 能力的演示项目",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "apps/mcp-demo"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "mcp",
+    "weapp-vite",
+    "ai"
+  ],
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "build": "weapp-vite build",
+    "open": "weapp-vite open",
+    "g": "weapp-vite generate",
+    "mcp:stdio": "weapp-vite mcp --workspace-root ../..",
+    "mcp:http": "weapp-vite mcp --workspace-root ../.. --transport streamable-http --host 127.0.0.1 --port 3188 --endpoint /mcp",
+    "mcp:smoke": "pnpm run build && node ./scripts/mcp-smoke.mjs"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "catalog:",
+    "sass": "catalog:",
+    "typescript": "catalog:",
+    "weapp-vite": "workspace:*"
+  }
+}

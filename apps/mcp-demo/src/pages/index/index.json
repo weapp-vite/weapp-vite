@@ -1,0 +1,5 @@
+{
+  "$schema": "https://vite.icebreaker.top/page.json",
+  "usingComponents": {},
+  "navigationBarTitleText": "MCP 能力验证"
+}
