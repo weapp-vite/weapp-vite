@@ -38,6 +38,10 @@ function parseEventBinding(eventName: string) {
   }
 }
 
+function shouldUseColonEventBinding(name: string) {
+  return name.includes(':') || name.includes('-')
+}
+
 /**
  * 抖音小程序平台适配器。
  */
@@ -67,7 +71,7 @@ export const ttPlatform: MiniProgramPlatform = {
     const { prefix, name } = parseEventBinding(eventName)
     switch (prefix) {
       case 'catch':
-        return name.includes(':') ? `catch:${name}` : `catch${name}`
+        return shouldUseColonEventBinding(name) ? `catch:${name}` : `catch${name}`
       case 'capture-bind':
         return `capture-bind:${name}`
       case 'capture-catch':
@@ -75,7 +79,7 @@ export const ttPlatform: MiniProgramPlatform = {
       case 'mut-bind':
         return `mut-bind:${name}`
       default:
-        return name.includes(':') ? `bind:${name}` : `bind${name}`
+        return shouldUseColonEventBinding(name) ? `bind:${name}` : `bind${name}`
     }
   },
 }
