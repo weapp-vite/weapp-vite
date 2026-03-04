@@ -16,6 +16,11 @@ const SKIP_COMMANDS = new Set([
   'mcp',
 ])
 
+const DEV_COMMANDS = new Set([
+  'dev',
+  'serve',
+])
+
 let started = false
 
 export function shouldAutoStartMcp(argv: string[]) {
@@ -23,7 +28,13 @@ export function shouldAutoStartMcp(argv: string[]) {
   if (!command || command.startsWith('-')) {
     return true
   }
-  return !SKIP_COMMANDS.has(command)
+  if (SKIP_COMMANDS.has(command)) {
+    return false
+  }
+  if (DEV_COMMANDS.has(command)) {
+    return true
+  }
+  return command.includes('/') || command.includes('\\') || command.startsWith('.')
 }
 
 export function __resetAutoStartMcpStateForTest() {
