@@ -750,6 +750,44 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
+  it('issue #317: loads duplicated shared chunks with localized runtime inside subpackages', async () => {
+    const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
+    const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
+    const itemRuntimePath = path.join(DIST_ROOT, 'subpackages/item/rolldown-runtime.js')
+    const userRuntimePath = path.join(DIST_ROOT, 'subpackages/user/rolldown-runtime.js')
+
+    const itemShared = await fs.readFile(itemSharedPath, 'utf-8')
+    const userShared = await fs.readFile(userSharedPath, 'utf-8')
+
+    expect(itemShared).toMatch(/require\((['"`])\.\.\/rolldown-runtime\.js\1\)/)
+    expect(userShared).toMatch(/require\((['"`])\.\.\/rolldown-runtime\.js\1\)/)
+    expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
+    expect(userShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
+    expect(await fs.pathExists(itemRuntimePath)).toBe(true)
+    expect(await fs.pathExists(userRuntimePath)).toBe(true)
+
+    const miniProgram = await getSharedMiniProgram()
+
+    try {
+      const itemPage = await miniProgram.reLaunch('/subpackages/item/index')
+      if (!itemPage) {
+        throw new Error('Failed to launch issue-317 item subpackage page')
+      }
+      await itemPage.waitFor(500)
+      expect(itemPage).toBeTruthy()
+
+      const userPage = await miniProgram.reLaunch('/subpackages/user/index')
+      if (!userPage) {
+        throw new Error('Failed to launch issue-317 user subpackage page')
+      }
+      await userPage.waitFor(500)
+      expect(userPage).toBeTruthy()
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('issue #300: renders destructured boolean props in runtime call-expression bindings', async () => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-300/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-300/index.js')
