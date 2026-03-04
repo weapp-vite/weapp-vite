@@ -44,6 +44,24 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - then run app-level checks such as `pnpm --filter <app> dev` / `build` / `open` / `run mcp:*`
 - If a verification result does not reflect recent source edits, treat stale `dist` as the first suspect and rebuild before deeper debugging.
 
+### 2.2 Standard Execution Template (Required for CLI-linked App Validation)
+
+- Trigger condition:
+  - any changes under `packages/weapp-vite/src/cli/**`
+  - any changes that can affect `packages/weapp-vite/dist/cli.mjs` runtime behavior
+  - then validate via `apps/*`, `templates/*`, or `e2e-apps/*`
+- Required command sequence (minimal form):
+  1. `pnpm --filter weapp-vite build`
+  2. `pnpm --filter <target-app> <dev|build|open|run mcp:*>`
+  3. targeted assertion command (for example `rg`, `test`, or output-file existence check)
+- Required assistant status line before step 2:
+  - `dist sync: rebuilt weapp-vite before downstream validation`
+- If step 1 was skipped by mistake:
+  - stop current diagnosis
+  - rebuild `weapp-vite`
+  - rerun downstream validation once
+  - only then continue root-cause analysis
+
 ## 3. Coding Rules
 
 - TypeScript + ESM + 2-space indentation.
