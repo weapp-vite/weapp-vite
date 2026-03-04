@@ -348,6 +348,31 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageJs).toContain('index')
   })
 
+  it('issue #316: compiles kebab-case component events to colon-prefixed bindings', async () => {
+    await runBuild()
+
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-316/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-316/index.js')
+    const emitterWxmlPath = path.join(DIST_ROOT, 'components/issue-316/HyphenEventEmitter/index.wxml')
+
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+    const emitterWxml = await fs.readFile(emitterWxmlPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-316 hyphen event binding')
+    expect(issuePageWxml).toContain('custom component event: overlay-click')
+    expect(issuePageWxml).toContain('bind:overlay-click="__weapp_vite_inline"')
+    expect(issuePageWxml).toContain('data-wv-event-detail-overlay-click="1"')
+    expect(issuePageWxml).toContain('data-wv-inline-id-overlay-click="__wv_inline_0"')
+    expect(issuePageWxml).toContain('data-overlay-count="{{overlayClickCount}}"')
+    expect(issuePageWxml).not.toContain('bindoverlay-click=')
+    expect(issuePageJs).toContain('handleOverlayClick')
+    expect(issuePageJs).toContain('_runE2E')
+
+    expect(emitterWxml).toContain('issue316-emitter-btn')
+    expect(emitterWxml).toContain('bindtap="emitOverlayClick"')
+  })
+
   it('issue #300: keeps boolean props available in runtime call-expression bindings', async () => {
     await runBuild()
 

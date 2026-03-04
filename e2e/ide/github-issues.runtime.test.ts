@@ -705,6 +705,51 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
+  it('issue #316: triggers kebab-case component event bindings at runtime', async () => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-316/index.wxml')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-316 hyphen event binding')
+    expect(issuePageWxml).toContain('bind:overlay-click="__weapp_vite_inline"')
+    expect(issuePageWxml).toContain('data-wv-event-detail-overlay-click="1"')
+    expect(issuePageWxml).toContain('data-wv-inline-id-overlay-click="__wv_inline_0"')
+    expect(issuePageWxml).not.toContain('bindoverlay-click=')
+
+    const miniProgram = await getSharedMiniProgram()
+
+    try {
+      const issuePage = await miniProgram.reLaunch('/pages/issue-316/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-316 page')
+      }
+      await issuePage.waitFor(500)
+
+      const initialRuntime = await issuePage.callMethod('_runE2E')
+      expect(initialRuntime?.ok).toBe(true)
+      expect(initialRuntime?.overlayClickCount).toBe(0)
+      expect(await issuePage.data('overlayClickCount')).toBe(0)
+
+      const emitterHost = await issuePage.$('.issue316-emitter-host')
+      if (!emitterHost) {
+        throw new Error('Failed to find issue-316 emitter host')
+      }
+      await emitterHost.dispatchEvent({ eventName: 'overlay-click' })
+      await issuePage.waitFor(240)
+
+      const afterTapRuntime = await issuePage.callMethod('_runE2E')
+      expect(afterTapRuntime?.ok).toBe(true)
+      expect(afterTapRuntime?.overlayClickCount).toBe(1)
+      expect(await issuePage.data('overlayClickCount')).toBe(1)
+
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toContain('overlay clicks: 1')
+      expect(renderedWxml).toContain('data-overlay-count="1"')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('issue #300: renders destructured boolean props in runtime call-expression bindings', async () => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-300/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-300/index.js')

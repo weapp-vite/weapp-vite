@@ -277,6 +277,19 @@ describe('compileVueTemplateToWxml', () => {
     expect(inlineExpressions?.[1]?.expression).toContain('ctx.onPanelRunEvent($event)')
   })
 
+  it('uses colon event bindings for kebab-case component events', () => {
+    const template = `
+<CompatAltPanel @overlay-click="onOverlayClick" />
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('bind:overlay-click="__weapp_vite_inline"')
+    expect(code).toContain('data-wv-event-detail-overlay-click="1"')
+    expect(code).toContain('data-wv-inline-id-overlay-click="__wv_inline_0"')
+    expect(code).not.toContain('bindoverlay-click=')
+  })
+
   it('emits array-based scoped slot props', () => {
     const template = `
 <slot name="item" :item="card.item" :index="card.index" />
@@ -408,10 +421,14 @@ describe('compileVueTemplateToWxml', () => {
     ['weapp', '@tap.passive="onTap"', 'bindtap="onTap"'],
     ['weapp', '@tap.stop.prevent="onTap"', 'catchtap="onTap"'],
     ['weapp', '@click.catch="onTap"', 'catchtap="onTap"'],
+    ['weapp', '@overlay-click="onTap"', 'bind:overlay-click="onTap"'],
+    ['weapp', '@overlay-click.stop="onTap"', 'catch:overlay-click="onTap"'],
     ['tt', '@tap.stop="onTap"', 'catchtap="onTap"'],
     ['tt', '@tap.catch="onTap"', 'catchtap="onTap"'],
+    ['tt', '@overlay-click="onTap"', 'bind:overlay-click="onTap"'],
     ['swan', '@tap.stop="onTap"', 'catchtap="onTap"'],
     ['swan', '@tap.catch="onTap"', 'catchtap="onTap"'],
+    ['swan', '@overlay-click="onTap"', 'bind:overlay-click="onTap"'],
     ['alipay', '@tap="onTap"', 'onTap="onTap"'],
     ['alipay', '@tap.stop="onTap"', 'catchTap="onTap"'],
     ['alipay', '@tap.capture.stop="onTap"', 'captureCatchTap="onTap"'],
