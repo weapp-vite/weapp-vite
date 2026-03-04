@@ -1,5 +1,15 @@
 # create-weapp-vite
 
+## 2.0.42
+
+### Patch Changes
+
+- 🐛 **修复 duplicate 分包共享 chunk 在 importer 识别阶段误判自身为主包引用的问题，避免错误回退到主包后出现 `common.js` 自引用与 `rolldown-runtime.js` 相对路径异常。同时补充 issue #317 的单元与 e2e 回归覆盖，确保双分包共享模块产物稳定落在各自分包目录。** [`4dde4fd`](https://github.com/weapp-vite/weapp-vite/commit/4dde4fdfff0a6416e07fef81348bbc30187500a2) by @sonofmagic
+
+- 🐛 **为 `weapp.mcp.autoStart` 的自动启动日志补充了接近 Vite 风格的地址输出（`➜ URL`），便于在终端快速识别 MCP 服务入口；并将自动启动触发范围收敛到开发命令（`dev/serve` 与默认开发启动）。同时新增 `apps/mcp-demo` 的自动启动配置，使执行 `pnpm dev` 时可自动拉起 `http://127.0.0.1:3188/mcp`。** [`25e9cc2`](https://github.com/weapp-vite/weapp-vite/commit/25e9cc2b2c865e9a39f7515a24d8015abf5bba44) by @sonofmagic
+
+- 🐛 **修复小程序模板编译时 kebab-case 自定义事件的绑定属性生成规则：`@overlay-click` 现在会输出 `bind:overlay-click`（以及 `catch:overlay-click`），不再错误输出 `bindoverlay-click`。同时补充 issue #316 的单元与 e2e 回归覆盖，确保构建产物和 DevTools 运行时都能正确触发事件。** [`41b049f`](https://github.com/weapp-vite/weapp-vite/commit/41b049f6bca3cd870343dd5b515597075e0c1686) by @sonofmagic
+
 ## 2.0.41
 
 ### Patch Changes
