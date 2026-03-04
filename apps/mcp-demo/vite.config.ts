@@ -3,6 +3,13 @@ import { defineConfig } from 'weapp-vite/config'
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
+    mcp: {
+      enabled: true,
+      autoStart: true,
+      host: '127.0.0.1',
+      port: 3188,
+      endpoint: '/mcp',
+    },
     generate: {
       extensions: {
         js: 'ts',
