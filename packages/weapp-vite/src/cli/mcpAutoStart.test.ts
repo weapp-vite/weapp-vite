@@ -91,4 +91,12 @@ describe('mcp auto start', () => {
 
     expect(startWeappViteMcpServerMock).not.toHaveBeenCalled()
   })
+
+  it('does not auto start for build command', async () => {
+    const { maybeAutoStartMcpServer } = await import('./mcpAutoStart')
+
+    await maybeAutoStartMcpServer(['build'], {})
+
+    expect(startWeappViteMcpServerMock).not.toHaveBeenCalled()
+  })
 })
