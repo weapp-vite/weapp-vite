@@ -1,5 +1,5 @@
 ---
-title: Weapp-vite: 对小程序工程化的重新思考（发布版）
+title: "Weapp-vite: 对小程序工程化的重新思考（发布版）"
 description: 这不是功能清单，而是一篇面向真实项目的工程复盘：AI 协作、原子化样式、分包策略、热更新速度和语法重写，应该如何放进同一条链路。
 keywords:
   - Weapp-vite

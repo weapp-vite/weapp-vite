@@ -1,5 +1,5 @@
 ---
-title: Weapp-vite: 对小程序工程化的重新思考（草稿）
+title: "Weapp-vite: 对小程序工程化的重新思考（草稿）"
 description: 这不是一篇功能罗列，而是从源码与文档出发，重新讨论小程序工程化里最关键的 5 件事：AI 协作、原子化样式、分包策略、热更新速度和语法改写。
 keywords:
   - Weapp-vite

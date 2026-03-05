@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@iconify/vue": "^5.0.0",
+    "@vue/shared": "^3.5.29",
     "echarts": "catalog:",
     "element-plus": "^2.13.3",
     "gridstack": "^12.4.2",
