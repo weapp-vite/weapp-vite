@@ -4,7 +4,10 @@ import { isObject } from '@weapp-core/shared'
 import { createDebugger } from '../debugger'
 
 const debug = createDebugger('weapp-vite:preflight')
-const removePlugins = ['vite:build-import-analysis']
+const removePlugins = [
+  'vite:build-import-analysis',
+  'native:import-analysis-build',
+]
 
 function createPluginPruner(): Plugin {
   return {
