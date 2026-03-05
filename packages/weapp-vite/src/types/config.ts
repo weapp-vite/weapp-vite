@@ -917,6 +917,11 @@ export interface WeappViteConfig {
      * @description wevu createApp/defineComponent 默认值
      */
     defaults?: WevuDefaults
+    /**
+     * @description 自动从编译后的模板表达式推导渲染相关顶层 key，并注入到组件/页面的 `setData.pick`
+     * @default false
+     */
+    autoSetDataPick?: boolean
   }
   /**
    * @description 全局注入 @wevu/api 的 wpi 实例
