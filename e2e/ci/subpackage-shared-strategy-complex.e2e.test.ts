@@ -13,6 +13,8 @@ interface FixtureCase {
   appRoot: string
   subOnlyMarker: string
   npmSubOnlyMarker: string
+  singleNpmMarker: string
+  singleNpmRoot: string
   subOnlyRoots: string[]
   duplicateSubOnlyKind: 'subpackage-shared' | 'flattened-shared'
   pairMarker: string
@@ -27,6 +29,8 @@ const fixtureCases: FixtureCase[] = [
     appRoot: path.resolve(import.meta.dirname, '../../e2e-apps/subpackage-shared-strategy-complex-a'),
     subOnlyMarker: '__SP_COMPLEX_A_SUB_ONLY__',
     npmSubOnlyMarker: '__SP_COMPLEX_A_NPM_SUB_ONLY__',
+    singleNpmMarker: '__SP_COMPLEX_A_NPM_SINGLE__',
+    singleNpmRoot: 'item',
     subOnlyRoots: ['item', 'user', 'report'],
     duplicateSubOnlyKind: 'subpackage-shared',
     pairMarker: '__SP_COMPLEX_A_PAIR_ONLY__',
@@ -39,6 +43,8 @@ const fixtureCases: FixtureCase[] = [
     appRoot: path.resolve(import.meta.dirname, '../../e2e-apps/subpackage-shared-strategy-complex-b'),
     subOnlyMarker: '__SP_COMPLEX_B_CLUSTER__',
     npmSubOnlyMarker: '__SP_COMPLEX_B_NPM_SUB_ONLY__',
+    singleNpmMarker: '__SP_COMPLEX_B_NPM_SINGLE__',
+    singleNpmRoot: 'beta',
     subOnlyRoots: ['alpha', 'beta', 'gamma'],
     duplicateSubOnlyKind: 'flattened-shared',
     pairMarker: '__SP_COMPLEX_B_EDGE__',
@@ -56,6 +62,10 @@ function isRootCommonChunk(file: string) {
 
 function isSubpackageSharedChunk(file: string, root: string) {
   return file.startsWith(`subpackages/${root}/weapp-shared/common`)
+}
+
+function isInSubpackageRoot(file: string, root: string) {
+  return file.startsWith(`subpackages/${root}/`)
 }
 
 function isFlattenedSubpackagesSharedChunk(file: string) {
@@ -128,12 +138,20 @@ describe.sequential('e2e subpackage sharedStrategy complex matrix', () => {
         await fs.remove(outDirAbs)
         await runBuild(fixture.appRoot, outDir, strategy)
 
-        const markers = [fixture.subOnlyMarker, fixture.npmSubOnlyMarker, fixture.pairMarker]
+        const markers = [fixture.subOnlyMarker, fixture.npmSubOnlyMarker, fixture.singleNpmMarker, fixture.pairMarker]
         const { files, locations } = await collectMarkerLocations(outDirAbs, markers)
 
         const subOnlyLocations = locations[fixture.subOnlyMarker]
         const npmSubOnlyLocations = locations[fixture.npmSubOnlyMarker]
+        const singleNpmLocations = locations[fixture.singleNpmMarker]
         const pairLocations = locations[fixture.pairMarker]
+
+        expect(singleNpmLocations.length, `[${fixture.id}] single npm marker emitted`).toBeGreaterThan(0)
+        expect(singleNpmLocations.some(isRootCommonChunk), `[${fixture.id}] single npm in root common`).toBe(false)
+        expect(
+          singleNpmLocations.every(file => isInSubpackageRoot(file, fixture.singleNpmRoot)),
+          `[${fixture.id}] single npm confined to ${fixture.singleNpmRoot}`,
+        ).toBe(true)
 
         if (strategy === 'duplicate') {
           if (fixture.duplicateSubOnlyKind === 'subpackage-shared') {
