@@ -17,6 +17,7 @@ defineAppJson({
     'pages/issue-309-created/index',
     'pages/issue-312/index',
     'pages/issue-316/index',
+    'pages/issue-318/index',
   ],
   subPackages: [
     {
