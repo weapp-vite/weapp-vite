@@ -22,6 +22,7 @@ export default defineConfig({
     },
   },
   build: {
+    modulePreload: false,
     outDir,
     minify: false,
   },
