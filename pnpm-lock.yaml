@@ -1141,9 +1141,17 @@ importers:
 
   e2e-apps/style-import-vue: {}
 
-  e2e-apps/subpackage-shared-strategy-complex-a: {}
+  e2e-apps/subpackage-shared-strategy-complex-a:
+    devDependencies:
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
 
-  e2e-apps/subpackage-shared-strategy-complex-b: {}
+  e2e-apps/subpackage-shared-strategy-complex-b:
+    devDependencies:
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
 
   e2e-apps/wevu-features: {}
 

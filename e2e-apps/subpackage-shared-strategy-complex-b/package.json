@@ -13,5 +13,8 @@
     "build:duplicate": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_OUTDIR=dist-duplicate weapp-vite build --platform weapp --skipNpm",
     "build:hoist": "WEAPP_CHUNK_STRATEGY=hoist WEAPP_CHUNK_OUTDIR=dist-hoist weapp-vite build --platform weapp --skipNpm",
     "build:matrix": "pnpm run build:duplicate && pnpm run build:hoist"
+  },
+  "devDependencies": {
+    "picocolors": "^1.1.1"
   }
 }

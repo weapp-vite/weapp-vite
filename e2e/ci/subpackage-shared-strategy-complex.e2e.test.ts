@@ -12,6 +12,7 @@ interface FixtureCase {
   id: string
   appRoot: string
   subOnlyMarker: string
+  npmSubOnlyMarker: string
   subOnlyRoots: string[]
   duplicateSubOnlyKind: 'subpackage-shared' | 'flattened-shared'
   pairMarker: string
@@ -25,6 +26,7 @@ const fixtureCases: FixtureCase[] = [
     id: 'complex-a',
     appRoot: path.resolve(import.meta.dirname, '../../e2e-apps/subpackage-shared-strategy-complex-a'),
     subOnlyMarker: '__SP_COMPLEX_A_SUB_ONLY__',
+    npmSubOnlyMarker: '__SP_COMPLEX_A_NPM_SUB_ONLY__',
     subOnlyRoots: ['item', 'user', 'report'],
     duplicateSubOnlyKind: 'subpackage-shared',
     pairMarker: '__SP_COMPLEX_A_PAIR_ONLY__',
@@ -36,11 +38,12 @@ const fixtureCases: FixtureCase[] = [
     id: 'complex-b',
     appRoot: path.resolve(import.meta.dirname, '../../e2e-apps/subpackage-shared-strategy-complex-b'),
     subOnlyMarker: '__SP_COMPLEX_B_CLUSTER__',
+    npmSubOnlyMarker: '__SP_COMPLEX_B_NPM_SUB_ONLY__',
     subOnlyRoots: ['alpha', 'beta', 'gamma'],
     duplicateSubOnlyKind: 'flattened-shared',
     pairMarker: '__SP_COMPLEX_B_EDGE__',
     pairRoots: ['alpha', 'gamma'],
-    pairBehavior: 'runtime-chain',
+    pairBehavior: 'subpackage-shared-vs-hoist',
     expectFallbackUnderscoreInDuplicate: true,
   },
 ]
@@ -125,10 +128,11 @@ describe.sequential('e2e subpackage sharedStrategy complex matrix', () => {
         await fs.remove(outDirAbs)
         await runBuild(fixture.appRoot, outDir, strategy)
 
-        const markers = [fixture.subOnlyMarker, fixture.pairMarker]
+        const markers = [fixture.subOnlyMarker, fixture.npmSubOnlyMarker, fixture.pairMarker]
         const { files, locations } = await collectMarkerLocations(outDirAbs, markers)
 
         const subOnlyLocations = locations[fixture.subOnlyMarker]
+        const npmSubOnlyLocations = locations[fixture.npmSubOnlyMarker]
         const pairLocations = locations[fixture.pairMarker]
 
         if (strategy === 'duplicate') {
@@ -140,6 +144,13 @@ describe.sequential('e2e subpackage sharedStrategy complex matrix', () => {
               ).toBe(true)
             }
             expect(subOnlyLocations.some(isFlattenedSubpackagesSharedChunk), `[${fixture.id}] duplicate flattened`).toBe(false)
+            for (const root of fixture.subOnlyRoots) {
+              expect(
+                npmSubOnlyLocations.some(file => isSubpackageSharedChunk(file, root)),
+                `[${fixture.id}] duplicate npm subOnly ${root}`,
+              ).toBe(true)
+            }
+            expect(npmSubOnlyLocations.some(isFlattenedSubpackagesSharedChunk), `[${fixture.id}] duplicate npm flattened`).toBe(false)
           }
           else {
             expect(subOnlyLocations.some(isFlattenedSubpackagesSharedChunk), `[${fixture.id}] duplicate flattened`).toBe(true)
@@ -149,8 +160,16 @@ describe.sequential('e2e subpackage sharedStrategy complex matrix', () => {
                 `[${fixture.id}] duplicate subOnly ${root}`,
               ).toBe(false)
             }
+            expect(npmSubOnlyLocations.some(isFlattenedSubpackagesSharedChunk), `[${fixture.id}] duplicate npm flattened`).toBe(true)
+            for (const root of fixture.subOnlyRoots) {
+              expect(
+                npmSubOnlyLocations.some(file => isSubpackageSharedChunk(file, root)),
+                `[${fixture.id}] duplicate npm subOnly ${root}`,
+              ).toBe(false)
+            }
           }
           expect(subOnlyLocations.some(isRootCommonChunk), `[${fixture.id}] duplicate subOnly`).toBe(false)
+          expect(npmSubOnlyLocations.some(isRootCommonChunk), `[${fixture.id}] duplicate npm subOnly`).toBe(false)
 
           if (fixture.pairBehavior === 'subpackage-shared-vs-hoist') {
             for (const root of fixture.pairRoots) {
@@ -183,11 +202,17 @@ describe.sequential('e2e subpackage sharedStrategy complex matrix', () => {
         }
         else {
           expect(subOnlyLocations.some(isRootCommonChunk), `[${fixture.id}] hoist subOnly`).toBe(true)
+          expect(npmSubOnlyLocations.some(isRootCommonChunk), `[${fixture.id}] hoist npm subOnly`).toBe(true)
           expect(subOnlyLocations.some(isFlattenedSubpackagesSharedChunk), `[${fixture.id}] hoist flattened`).toBe(false)
+          expect(npmSubOnlyLocations.some(isFlattenedSubpackagesSharedChunk), `[${fixture.id}] hoist npm flattened`).toBe(false)
           for (const root of fixture.subOnlyRoots) {
             expect(
               subOnlyLocations.some(file => isSubpackageSharedChunk(file, root)),
               `[${fixture.id}] hoist subOnly ${root}`,
+            ).toBe(false)
+            expect(
+              npmSubOnlyLocations.some(file => isSubpackageSharedChunk(file, root)),
+              `[${fixture.id}] hoist npm subOnly ${root}`,
             ).toBe(false)
           }
 
