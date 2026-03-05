@@ -198,7 +198,15 @@ export default {
         }
         const mermaid = await import('mermaid')
         const isDark = document.documentElement.classList.contains('dark')
-        mermaid.default.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default' })
+        const mermaidConfig = {
+          startOnLoad: false,
+          theme: isDark ? 'dark' : 'default',
+          flowchart: {
+            htmlLabels: false,
+            useMaxWidth: true,
+          },
+        }
+        mermaid.default.initialize(mermaidConfig)
         // v10/v11 API compatibility
         const nodes = document.querySelectorAll<HTMLElement>('.mermaid')
         if ('run' in mermaid.default) {
@@ -244,7 +252,15 @@ export default {
         }
         const mermaid = await import('mermaid')
         const isDark = document.documentElement.classList.contains('dark')
-        mermaid.default.initialize({ startOnLoad: false, theme: isDark ? 'dark' : 'default' })
+        const mermaidConfig = {
+          startOnLoad: false,
+          theme: isDark ? 'dark' : 'default',
+          flowchart: {
+            htmlLabels: false,
+            useMaxWidth: true,
+          },
+        }
+        mermaid.default.initialize(mermaidConfig)
         // restore diagram source from data-mermaid
         for (const el of nodes) {
           const src = el.getAttribute('data-mermaid') || el.textContent || ''
