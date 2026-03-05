@@ -171,12 +171,72 @@ pnpm run e2e:chunks:subpackage-complex:ide
 - `__SP_COMPLEX_B_NPM_SUB_ONLY__`：来自 `src/shared/sub-cluster.ts`，被 `alpha/beta/gamma` 分包链路复用。
 - `__SP_COMPLEX_B_NPM_SINGLE__`：来自 `src/shared/beta-only.ts`，只在 `beta` 分包使用。
 
+依赖关系示意图（和上面四个 marker 一一对应）：
+
+```mermaid
+flowchart LR
+  subgraph MAIN[主包]
+    mainPage[pages/index/index<br/>不引入 npm markers]
+  end
+
+  subgraph CA[complex-a]
+    aItem[subpackages/item/index]
+    aUser[subpackages/user/index]
+    aReport[subpackages/report/index]
+    aSubOnly[src/shared/sub-only.ts<br/>__SP_COMPLEX_A_NPM_SUB_ONLY__]
+    aSingle[src/shared/item-only.ts<br/>__SP_COMPLEX_A_NPM_SINGLE__]
+  end
+
+  subgraph CB[complex-b]
+    bAlpha[subpackages/alpha/index]
+    bBeta[subpackages/beta/index]
+    bGamma[subpackages/gamma/index]
+    bSubOnly[src/shared/sub-cluster.ts<br/>__SP_COMPLEX_B_NPM_SUB_ONLY__]
+    bSingle[src/shared/beta-only.ts<br/>__SP_COMPLEX_B_NPM_SINGLE__]
+  end
+
+  npm[(picocolors)]
+
+  aItem --> aSubOnly
+  aUser --> aSubOnly
+  aReport --> aSubOnly
+  aItem --> aSingle
+
+  bAlpha --> bSubOnly
+  bBeta --> bSubOnly
+  bGamma --> bSubOnly
+  bBeta --> bSingle
+
+  aSubOnly --> npm
+  aSingle --> npm
+  bSubOnly --> npm
+  bSingle --> npm
+
+  mainPage -. 无直接导入 .-> npm
+```
+
 在这两个案例中，构建器行为可以总结为：
 
 | 场景                                        | `sharedStrategy: duplicate`                                                                          | `sharedStrategy: hoist`                    |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | 跨多个分包共享的 npm 模块（主包不直接引用） | 按引用分布复制到分包共享产物（如 `subpackages/*/weapp-shared/common*.js` 或 flattened shared chunk） | 提升到主包 `common.js`                     |
 | 仅单个分包使用的 npm 模块                   | 只留在该分包对应产物，不进入主包                                                                     | 仍只留在该分包，对 `sharedStrategy` 不敏感 |
+
+按构建策略看产物落位的示意图：
+
+```mermaid
+flowchart TD
+  module[npm 依赖模块] --> scope{引用范围}
+
+  scope -->|跨多个分包共享| shared[__SP_*_NPM_SUB_ONLY__]
+  scope -->|仅单个分包使用| single[__SP_*_NPM_SINGLE__]
+
+  shared --> dShared[duplicate:<br/>复制到分包共享产物<br/>subpackages/*/weapp-shared/common*.js]
+  shared --> hShared[hoist:<br/>提升到主包 common.js]
+
+  single --> dSingle[duplicate:<br/>保留在目标分包产物]
+  single --> hSingle[hoist:<br/>仍保留在目标分包产物]
+```
 
 这组案例的价值在于：它不仅验证“源码模块怎么拆”，还验证了 **`node_modules` 依赖在复杂分包图中的真实落位**。如果你的项目担心“分包里引用了 npm，最终是不是会被塞回主包”，可以直接照这个案例建最小复现并对照产物路径检查。
 

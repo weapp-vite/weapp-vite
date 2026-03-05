@@ -1,11 +1,17 @@
 import type { DefaultTheme } from 'vitepress/theme'
+import { fileURLToPath } from 'node:url'
 import AutoImport from 'unplugin-auto-import/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vitepress'
 import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
 import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
+import { withMermaid } from 'vitepress-plugin-mermaid'
 import { createSeoHead, transformPageDataForSeo } from './seo'
+
+const vueSharedEsmPath = fileURLToPath(
+  new URL('../node_modules/@vue/shared/dist/shared.esm-bundler.js', import.meta.url),
+)
 
 function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Sidebar | undefined {
   const cleanItems = (items?: DefaultTheme.SidebarItem[]): DefaultTheme.SidebarItem[] =>
@@ -408,7 +414,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
 ]
 // https://vitepress.dev/reference/site-config
 // https://github.com/emersonbottero/vitepress-plugin-mermaid/issues/47
-export default defineConfig({
+export default withMermaid(defineConfig({
   title: 'Weapp-vite',
   description: '把现代化的开发模式带入小程序!',
   outDir: 'dist',
@@ -525,6 +531,9 @@ export default defineConfig({
       md.use(copyOrDownloadAsMarkdownButtons)
     },
   },
+  mermaid: {
+    theme: 'default',
+  },
   transformHead: ({ pageData }) => createSeoHead(pageData),
   transformPageData(pageData) {
     transformPageDataForSeo(pageData)
@@ -571,6 +580,9 @@ export default defineConfig({
       alias: {
         // Fix SSR build error: mark.js deep import without extension in ESM
         'mark.js/src/vanilla.js': 'mark.js/dist/mark.es6.js',
+        // Element Plus references @vue/shared directly in some ESM entries.
+        // Map it explicitly to the browser ESM build to keep docs build stable under pnpm.
+        '@vue/shared': vueSharedEsmPath,
       },
     },
     build: {
@@ -598,8 +610,10 @@ export default defineConfig({
             if (id.includes('@iconify-json/mdi')) {
               return 'vendor-icons'
             }
+            // Mermaid runtime is loaded by VitePress docs pipeline. Keep both in one chunk
+            // to avoid circular manual chunk graph.
             if (id.includes('mermaid')) {
-              return 'vendor-mermaid'
+              return 'vendor-vitepress'
             }
             if (id.includes('@shikijs') || id.includes('shiki')) {
               return 'vendor-shiki'
@@ -642,4 +656,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

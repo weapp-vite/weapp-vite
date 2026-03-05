@@ -1,5 +1,5 @@
 ---
-title: Weapp-vite: 对小程序工程化的重新思考（技术深聊版）
+title: "Weapp-vite: 对小程序工程化的重新思考（技术深聊版）"
 description: 从源码与文档出发，拆解 Weapp-vite 在 AI 协作、原子化样式、分包策略、HMR 和 Vue SFC 语法重写上的工程取舍。
 keywords:
   - Weapp-vite

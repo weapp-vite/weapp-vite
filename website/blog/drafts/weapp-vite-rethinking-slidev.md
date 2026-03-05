@@ -1,6 +1,6 @@
 ---
 theme: seriph
-title: Weapp-vite: 对小程序工程化的重新思考
+title: "Weapp-vite: 对小程序工程化的重新思考"
 info: |
   20-30 分钟演讲稿（Slidev 版本）
   主题：AI 协作、原子化样式、分包策略、HMR 与语法重写
