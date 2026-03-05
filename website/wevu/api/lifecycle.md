@@ -51,6 +51,12 @@ keywords:
 - 作用域：`App`
 - 源码行为：注册到 `onThemeChange`。
 
+### `onMemoryWarning()` {#onmemorywarning}
+
+- 作用域：`App`
+- 源码行为：通过 `wx.onMemoryWarning` 注册监听，并在重复绑定时自动调用 `wx.offMemoryWarning` 清理旧监听。
+- 建议：回调内优先释放大缓存、长列表临时数据与不必要的订阅/定时器。
+
 ## 页面生命周期 Hook
 
 ### `onLoad()` {#onload}

@@ -135,6 +135,20 @@ setWevuDefaults({
 })
 ```
 
+### 收到内存告警时的清理建议
+
+`wevu` 支持在 `App setup` 中通过 `onMemoryWarning()` 监听系统内存告警（底层基于 `wx.onMemoryWarning`）：
+
+```ts
+import { onMemoryWarning } from 'wevu'
+
+onMemoryWarning(() => {
+  // 释放大缓存 / 取消不必要订阅 / 回收临时对象
+})
+```
+
+建议把“大对象缓存回收”放到该回调中统一处理，避免页面切换后仍长期占用内存。
+
 ### 在 app.vue 顶层手动调用
 
 如果你不使用 `weapp.wevu.defaults`，可以在 `app.vue` 顶层直接调用：

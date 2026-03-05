@@ -112,6 +112,7 @@ type RuntimeApiName
     | 'onLoad'
     | 'onMounted'
     | 'onMoved'
+    | 'onMemoryWarning'
     | 'onPageNotFound'
     | 'onPageScroll'
     | 'onPullDownRefresh'

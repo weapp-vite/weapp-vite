@@ -1,8 +1,43 @@
 import type { ComputedDefinitions, DefineAppOptions, InternalRuntimeState, MethodDefinitions, MiniProgramAppOptions, RuntimeApp } from '../types'
 import type { WatchMap } from './watch'
 import { callHookList } from '../hooks'
+import { getMiniProgramGlobalObject } from '../platform'
 import { runInlineExpression } from './inline'
 import { mountRuntimeInstance } from './runtimeInstance'
+
+const MEMORY_WARNING_LISTENER_KEY = '__wevuOnMemoryWarningListener'
+
+function bindMemoryWarningListener(target: InternalRuntimeState) {
+  const hooks = target.__wevuHooks as Record<string, any> | undefined
+  const hasMemoryWarningHook = Boolean(hooks?.onMemoryWarning)
+  const wxGlobal = getMiniProgramGlobalObject()
+  const onMemoryWarning = wxGlobal?.onMemoryWarning
+  const offMemoryWarning = wxGlobal?.offMemoryWarning
+  if (typeof onMemoryWarning !== 'function') {
+    return
+  }
+
+  const existing = (target as any)[MEMORY_WARNING_LISTENER_KEY]
+  if (typeof existing === 'function' && typeof offMemoryWarning === 'function') {
+    try {
+      offMemoryWarning(existing)
+    }
+    catch {
+      // 忽略平台差异导致的取消监听异常
+    }
+  }
+
+  if (!hasMemoryWarningHook) {
+    delete (target as any)[MEMORY_WARNING_LISTENER_KEY]
+    return
+  }
+
+  const listener = (result: WechatMiniprogram.OnMemoryWarningListenerResult) => {
+    callHookList(target, 'onMemoryWarning', [result])
+  }
+  ;(target as any)[MEMORY_WARNING_LISTENER_KEY] = listener
+  onMemoryWarning(listener)
+}
 
 /**
  * 注册 App 入口（框架内部使用）。
@@ -38,6 +73,7 @@ export function registerApp<D extends object, C extends ComputedDefinitions, M e
   const userOnLaunch = appOptions.onLaunch
   appOptions.onLaunch = function onLaunch(this: InternalRuntimeState, ...args: any[]) {
     mountRuntimeInstance(this, runtimeApp, watch, setup)
+    bindMemoryWarningListener(this)
     callHookList(this, 'onLaunch', args)
     if (typeof userOnLaunch === 'function') {
       userOnLaunch.apply(this, args)

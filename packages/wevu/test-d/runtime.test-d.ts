@@ -16,6 +16,7 @@ import {
   onErrorCaptured,
   onHide,
   onLaunch,
+  onMemoryWarning,
   onMounted,
   onPageNotFound,
   onPageScroll,
@@ -208,6 +209,9 @@ createApp({
     })
     onThemeChange((opt) => {
       expectType<WechatMiniprogram.OnThemeChangeListenerResult>(opt)
+    })
+    onMemoryWarning((opt) => {
+      expectType<WechatMiniprogram.OnMemoryWarningListenerResult>(opt)
     })
   },
 })
