@@ -105,4 +105,72 @@ const count = ref(0)
       await fs.remove(root)
     }
   })
+
+  it('injects setData.pick when performance preset is enabled', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-setdata-pick-preset-'))
+    const srcRoot = path.join(root, 'src')
+
+    try {
+      const plugin = createVueTransformPlugin(createCtx(root, {
+        wevu: {
+          preset: 'performance',
+        },
+      }))
+      const file = path.join(srcRoot, 'components/card.vue')
+
+      const transformed = await plugin.transform!(
+        `
+<template>
+  <view>{{ count }}</view>
+</template>
+<script setup lang="ts">
+import { ref } from 'wevu'
+const count = ref(0)
+</script>
+        `.trim(),
+        file,
+      )
+
+      expect(transformed?.code).toContain('setData')
+      expect(transformed?.code).toContain('pick')
+      expect(transformed?.code).toContain('"count"')
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
+
+  it('respects explicit autoSetDataPick=false even with performance preset', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-setdata-pick-preset-off-'))
+    const srcRoot = path.join(root, 'src')
+
+    try {
+      const plugin = createVueTransformPlugin(createCtx(root, {
+        wevu: {
+          preset: 'performance',
+          autoSetDataPick: false,
+        },
+      }))
+      const file = path.join(srcRoot, 'components/card.vue')
+
+      const transformed = await plugin.transform!(
+        `
+<template>
+  <view>{{ count }}</view>
+</template>
+<script setup lang="ts">
+import { ref } from 'wevu'
+const count = ref(0)
+</script>
+        `.trim(),
+        file,
+      )
+
+      expect(transformed?.code).toContain('setData')
+      expect(transformed?.code).not.toContain('pick:')
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
 })

@@ -108,6 +108,30 @@ resetWevuDefaults()
 - 运行时会合并默认值与局部选项：`setData`/`options` 会做浅合并，其余字段按对象顶层覆盖。
 - 必须在 `createApp()`/`defineComponent()` 之前调用；不会 retroactive 影响已创建的实例。
 
+### `setData.highFrequencyWarning`（开发态高频告警）
+
+- 默认关闭（`undefined` 不启用）。
+- 当启用 `weapp.wevu.preset: 'performance'` 时，会自动注入 `highFrequencyWarning: { enabled: true, devOnly: true }`。
+- 你也可以手动开启并调整阈值：
+
+```ts
+import { setWevuDefaults } from 'wevu'
+
+setWevuDefaults({
+  component: {
+    setData: {
+      highFrequencyWarning: {
+        enabled: true,
+        devOnly: true,
+        sampleWindowMs: 1000,
+        maxCalls: 30,
+        coolDownMs: 5000,
+      },
+    },
+  },
+})
+```
+
 ### 在 app.vue 顶层手动调用
 
 如果你不使用 `weapp.wevu.defaults`，可以在 `app.vue` 顶层直接调用：

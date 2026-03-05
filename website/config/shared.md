@@ -208,6 +208,37 @@ export default defineConfig({
 > [!TIP]
 > 如果你不通过 Weapp-vite 构建，也可以在运行时手动调用 `setWevuDefaults()`（见 `/wevu/runtime`）。
 
+## `weapp.wevu.preset` {#weapp-wevu-preset}
+- **类型**：`'performance'`
+- **默认值**：`undefined`
+- **作用**：一键启用性能向默认项，降低 setData 快照与后台态更新带来的开销。
+
+### 配置示例
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wevu: {
+      preset: 'performance',
+    },
+  },
+})
+```
+
+### `performance` 预设内容
+
+- 为 `app/component` 注入 `setData.strategy: 'patch'`。
+- 为 `app/component` 注入 `setData.suspendWhenHidden: true`。
+- 为 `app/component` 注入开发态高频告警：`setData.highFrequencyWarning = { enabled: true, devOnly: true }`。
+- 默认启用 `autoSetDataPick`（若你显式设置 `autoSetDataPick: false`，则以显式配置为准）。
+
+### 覆盖规则
+
+- 预设先应用，再与 `weapp.wevu.defaults` 做浅合并（`setData/options` 仍按字段浅合并）。
+- 你在 `weapp.wevu.defaults` 中写的同名字段，优先级高于预设默认值。
+
 ## `weapp.wevu.autoSetDataPick` {#weapp-wevu-auto-setdata-pick}
 - **类型**：`boolean`
 - **默认值**：`false`
@@ -216,6 +247,7 @@ export default defineConfig({
 > [!IMPORTANT]
 > 该能力默认关闭，不会在未配置时自动开启。只有显式设置 `weapp.wevu.autoSetDataPick: true` 才会生效。
 > 从旧版本升级到新版本时，若你未手动开启该项，行为保持不变。
+> 如果启用了 `weapp.wevu.preset: 'performance'`，则会默认开启该项（仍可通过显式 `false` 覆盖）。
 
 ### 配置示例
 

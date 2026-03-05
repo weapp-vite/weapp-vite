@@ -109,4 +109,38 @@ onShow(() => {})
       await fs.remove(root)
     }
   })
+
+  it('injects performance preset defaults into app entry', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-app-vue-preset-'))
+    const srcRoot = path.join(root, 'src')
+
+    try {
+      const plugin = createVueTransformPlugin(createCtx(root, {
+        wevu: {
+          preset: 'performance',
+        },
+      }))
+      const file = path.join(srcRoot, 'app.vue')
+
+      const transformed = await plugin.transform!(
+        `
+<template><view>app</view></template>
+<script setup lang="ts">
+import { onShow } from 'wevu'
+onShow(() => {})
+</script>
+        `.trim(),
+        file,
+      )
+
+      expect(transformed?.code).toContain('setWevuDefaults')
+      expect(transformed?.code).toContain('suspendWhenHidden')
+      expect(transformed?.code).toContain('highFrequencyWarning')
+      expect(transformed?.code).toContain('strategy')
+      expect(transformed?.code).toContain('patch')
+    }
+    finally {
+      await fs.remove(root)
+    }
+  })
 })

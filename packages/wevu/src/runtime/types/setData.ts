@@ -1,5 +1,41 @@
 export interface SetDataSnapshotOptions {
   /**
+   * 开发态高频 setData 告警。
+   *
+   * - `undefined`：默认关闭（可通过 `weapp.wevu.preset: 'performance'` 自动开启）
+   * - `false`：关闭告警
+   * - `true`：启用默认阈值（默认仅开发态生效）
+   * - `object`：自定义阈值与开关
+   */
+  highFrequencyWarning?: boolean | {
+    /**
+     * 是否启用告警。
+     * @default true
+     */
+    enabled?: boolean
+    /**
+     * 是否仅在开发态生效。
+     * @default true
+     */
+    devOnly?: boolean
+    /**
+     * 统计窗口（毫秒）。
+     * @default 1000
+     */
+    sampleWindowMs?: number
+    /**
+     * 窗口内超过该次数触发告警。
+     * @default 30
+     */
+    maxCalls?: number
+    /**
+     * 告警冷却时间（毫秒），避免刷屏。
+     * @default 5000
+     */
+    coolDownMs?: number
+  }
+
+  /**
    * setData 策略：
    * - diff：全量快照 + diff（默认，兼容性最好）
    * - patch：按变更路径增量产出 payload（性能更好；在共享引用等场景会自动回退 diff）
