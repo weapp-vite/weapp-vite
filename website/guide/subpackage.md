@@ -141,6 +141,45 @@ export default defineConfig({
 })
 ```
 
+#### 复杂案例：分包专属 npm 与共享 npm
+
+上面的 `dayjs` 示例更偏“入门可读”。如果你想看“更接近真实业务”的复杂图谱，可以直接参考仓库内两个 e2e 应用：
+
+- `e2e-apps/subpackage-shared-strategy-complex-a`
+- `e2e-apps/subpackage-shared-strategy-complex-b`
+
+这两个案例都在 `devDependencies` 中引入了小体积 npm 包 `picocolors`，并且故意拆成两类模块：
+
+- **跨多个分包共享的 npm 模块**（只在分包链路中被引用，主包不直接引用）
+- **仅单个分包使用的 npm 模块**（用于验证不会被错误提升到主包）
+
+可复现命令：
+
+```bash
+pnpm run e2e:chunks:subpackage-complex:build:matrix
+pnpm run e2e:chunks:subpackage-complex:ci
+pnpm run e2e:chunks:subpackage-complex:ide
+```
+
+`complex-a` 的关键标记：
+
+- `__SP_COMPLEX_A_NPM_SUB_ONLY__`：来自 `src/shared/sub-only.ts`，被 `item/user/report` 三个分包页面间接复用。
+- `__SP_COMPLEX_A_NPM_SINGLE__`：来自 `src/shared/item-only.ts`，只在 `item` 分包使用。
+
+`complex-b` 的关键标记：
+
+- `__SP_COMPLEX_B_NPM_SUB_ONLY__`：来自 `src/shared/sub-cluster.ts`，被 `alpha/beta/gamma` 分包链路复用。
+- `__SP_COMPLEX_B_NPM_SINGLE__`：来自 `src/shared/beta-only.ts`，只在 `beta` 分包使用。
+
+在这两个案例中，构建器行为可以总结为：
+
+| 场景                                        | `sharedStrategy: duplicate`                                                                          | `sharedStrategy: hoist`                    |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| 跨多个分包共享的 npm 模块（主包不直接引用） | 按引用分布复制到分包共享产物（如 `subpackages/*/weapp-shared/common*.js` 或 flattened shared chunk） | 提升到主包 `common.js`                     |
+| 仅单个分包使用的 npm 模块                   | 只留在该分包对应产物，不进入主包                                                                     | 仍只留在该分包，对 `sharedStrategy` 不敏感 |
+
+这组案例的价值在于：它不仅验证“源码模块怎么拆”，还验证了 **`node_modules` 依赖在复杂分包图中的真实落位**。如果你的项目担心“分包里引用了 npm，最终是不是会被塞回主包”，可以直接照这个案例建最小复现并对照产物路径检查。
+
 ## 独立分包
 
 独立分包和整个 `app` 是隔离的：它们会在**不同的 Rolldown 上下文**里构建，因此不会和主包/其他分包共享复用的 JS 代码。
