@@ -84,6 +84,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
           ...getDefineImportMetaEnv(),
         },
         build: {
+          modulePreload: false,
           watch: {
             exclude: [
               ...defaultExcluded,
@@ -119,6 +120,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
         ...getDefineImportMetaEnv(),
       },
       build: {
+        modulePreload: false,
         emptyOutDir: false,
         // @ts-ignore
         rolldownOptions: {

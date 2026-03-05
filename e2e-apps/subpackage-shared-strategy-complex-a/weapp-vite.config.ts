@@ -7,9 +7,6 @@ const sharedStrategy = (process.env.WEAPP_CHUNK_STRATEGY as SharedStrategy | und
 const outDir = process.env.WEAPP_CHUNK_OUTDIR ?? 'dist'
 
 export default defineConfig({
-  define: {
-    __VITE_IS_MODERN__: false,
-  },
   weapp: {
     srcRoot: 'src',
     chunks: {
@@ -22,7 +19,6 @@ export default defineConfig({
     },
   },
   build: {
-    modulePreload: false,
     outDir,
     minify: false,
   },

@@ -59,6 +59,7 @@ describe('runtime config merge miniprogram', () => {
     })
     expect(result.build?.minify).toBe(false)
     expect(result.build?.emptyOutDir).toBe(false)
+    expect(result.build?.modulePreload).toBe(false)
     expect(result.build?.sourcemap).toBe(false)
     expect((result.build as any).rollupOptions).toBeUndefined()
     expect(result.build?.watch?.include).toEqual([
@@ -99,6 +100,7 @@ describe('runtime config merge miniprogram', () => {
       '/project/src/plugin/**',
     ])
     expect(result.build?.watch?.exclude).toContain('/project/dist/**')
+    expect(result.build?.modulePreload).toBe(false)
   })
 
   it('builds production inline config and sets current subpackage root', () => {
@@ -148,11 +150,42 @@ describe('runtime config merge miniprogram', () => {
       __PROD__: true,
     })
     expect(result.build?.emptyOutDir).toBe(false)
+    expect(result.build?.modulePreload).toBe(false)
     expect((result.build as any).rollupOptions).toBeUndefined()
     expect(arrangePluginsMock).toHaveBeenCalled()
     expect(injectBuiltinAliases).toHaveBeenCalledWith(result)
     expect(setOptions).toHaveBeenCalledWith({
       currentSubPackageRoot: 'packageA',
+    })
+  })
+
+  it('keeps user-defined modulePreload when explicitly configured', () => {
+    const result = mergeMiniprogram(
+      {
+        ctx: {} as any,
+        subPackageMeta: undefined,
+        config: {
+          build: {
+            modulePreload: {
+              polyfill: true,
+            },
+          },
+        } as any,
+        cwd: '/project',
+        srcRoot: 'src',
+        packageJson: undefined,
+        isDev: false,
+        applyRuntimePlatform: vi.fn(),
+        injectBuiltinAliases: vi.fn(),
+        getDefineImportMetaEnv: () => ({}),
+        setOptions: vi.fn(),
+        oxcRolldownPlugin: undefined,
+      },
+      undefined,
+    )
+
+    expect(result.build?.modulePreload).toEqual({
+      polyfill: true,
     })
   })
 })
