@@ -17,6 +17,7 @@ import { getSourceFromVirtualId } from '../resolver'
 import { emitVueBundleAssets } from './bundle'
 import { createCompileVueFileOptions } from './compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './injectPageFeatures'
+import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from './injectSetDataPick'
 import { emitScopedSlotChunks, loadScopedSlotModule, resolveScopedSlotVirtualId } from './scopedSlot'
 import { buildWeappVueStyleRequest, parseWeappVueStyleRequest } from './styleRequest'
 
@@ -264,6 +265,13 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           })
           if (injected.transformed) {
             result.script = injected.code
+          }
+        }
+        if (!isApp && result.script && result.template && isAutoSetDataPickEnabled(configService.weappViteConfig)) {
+          const keys = collectSetDataPickKeysFromTemplate(result.template)
+          const injectedPick = injectSetDataPickInJs(result.script, keys)
+          if (injectedPick.transformed) {
+            result.script = injectedPick.code
           }
         }
         compilationCache.set(filename, { result, source, isPage })

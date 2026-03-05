@@ -16,6 +16,7 @@ import { createCompileVueFileOptions } from './compileOptions'
 import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from './emitAssets'
 import { collectFallbackPageEntryIds } from './fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './injectPageFeatures'
+import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from './injectSetDataPick'
 import { emitScopedSlotAssets } from './scopedSlot'
 
 export interface CompilationCacheEntry {
@@ -272,6 +273,18 @@ export async function emitVueBundleAssets(
               compiled.script = injected.code
             }
           }
+          if (
+            !isApp
+            && compiled.script
+            && compiled.template
+            && isAutoSetDataPickEnabled(configService.weappViteConfig)
+          ) {
+            const keys = collectSetDataPickKeysFromTemplate(compiled.template)
+            const injectedPick = injectSetDataPickInJs(compiled.script, keys)
+            if (injectedPick.transformed) {
+              compiled.script = injectedPick.code
+            }
+          }
 
           cached.source = source
           cached.result = compiled
@@ -398,6 +411,17 @@ export async function emitVueBundleAssets(
         })
         if (injected.transformed) {
           result.script = injected.code
+        }
+      }
+      if (
+        result.script
+        && result.template
+        && isAutoSetDataPickEnabled(configService.weappViteConfig)
+      ) {
+        const keys = collectSetDataPickKeysFromTemplate(result.template)
+        const injectedPick = injectSetDataPickInJs(result.script, keys)
+        if (injectedPick.transformed) {
+          result.script = injectedPick.code
         }
       }
 

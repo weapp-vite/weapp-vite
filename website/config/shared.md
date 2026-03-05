@@ -208,6 +208,31 @@ export default defineConfig({
 > [!TIP]
 > 如果你不通过 Weapp-vite 构建，也可以在运行时手动调用 `setWevuDefaults()`（见 `/wevu/runtime`）。
 
+## `weapp.wevu.autoSetDataPick` {#weapp-wevu-auto-setdata-pick}
+- **类型**：`boolean`
+- **默认值**：`false`
+- **作用**：在编译阶段从模板表达式自动提取渲染相关顶层 key，并注入到组件/页面的 `setData.pick`，减少非渲染字段参与快照与下发。
+
+### 配置示例
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    wevu: {
+      autoSetDataPick: true,
+    },
+  },
+})
+```
+
+### 行为说明
+
+- 仅对 `defineComponent/createWevuComponent` 产物生效；`app.vue` 不会注入。
+- 若组件已显式声明 `setData.pick` 数组，会与自动推导结果做去重合并。
+- 若 `setData` 为变量或表达式（例如 `setData: externalConfig`），会包裹为 `{ pick: [...], ...externalConfig }` 以保持兼容。
+
 ## `weapp.hmr.sharedChunks` {#weapp-hmr-sharedchunks}
 - **类型**：`'full' | 'auto' | 'off'`
 - **默认值**：`'auto'`
