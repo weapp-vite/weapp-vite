@@ -1,4 +1,5 @@
 import type { DefaultTheme } from 'vitepress/theme'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import AutoImport from 'unplugin-auto-import/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
@@ -12,6 +13,8 @@ import { createSeoHead, transformPageDataForSeo } from './seo'
 const vueSharedEsmPath = fileURLToPath(
   new URL('../node_modules/@vue/shared/dist/shared.esm-bundler.js', import.meta.url),
 )
+const atomGitSocialSvg = readFileSync(fileURLToPath(new URL('../public/AtomGit.svg', import.meta.url)), 'utf8')
+  .replace(/fill="#[0-9a-fA-F]{3,8}"/g, 'fill="currentColor"')
 
 function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Sidebar | undefined {
   const cleanItems = (items?: DefaultTheme.SidebarItem[]): DefaultTheme.SidebarItem[] =>
@@ -507,6 +510,11 @@ export default withMermaid(defineConfig({
     },
 
     socialLinks: [
+      {
+        ariaLabel: 'AtomGit',
+        icon: { svg: atomGitSocialSvg },
+        link: 'https://atomgit.com/sonofmagic/weapp-vite',
+      },
       { icon: 'github', link: 'https://github.com/weapp-vite/weapp-vite' },
     ],
     editLink: {

@@ -13,12 +13,12 @@
 }
 
 /* Mobile nav screen: ensure it expands even if theme JS fails to set height var */
-@media (max-width: 960px) {
+@media (width <= 960px) {
   .VPNavScreen {
     /* use dynamic viewport units to avoid iOS 100vh issues; fallback to 100vh */
-    --_vh: 100dvh;
-    height: var(--vp-nav-screen-height, calc(var(--_vh) - var(--vp-nav-height, 64px)));
-    max-height: var(--vp-nav-screen-height, calc(var(--_vh) - var(--vp-nav-height, 64px)));
+    --vp-nav-vh: 100dvh;
+    height: var(--vp-nav-screen-height, calc(var(--vp-nav-vh) - var(--vp-nav-height, 64px)));
+    max-height: var(--vp-nav-screen-height, calc(var(--vp-nav-vh) - var(--vp-nav-height, 64px)));
     /* keep screen above nav bar */
     z-index: 60;
   }
@@ -33,6 +33,10 @@
 .VPNav .group,
 .VPNav .content {
   color: var(--vp-c-text-1);
+}
+.VPSocialLink[aria-label='AtomGit'] {
+  color: #000;
+  transform: translateY(1px);
 }
 .VPNavBarTitle > .title {
   background: linear-gradient(120deg, #{$p1}, #{$p2});
@@ -113,6 +117,9 @@ html:not(.dark) .VPNavBarTitle > .title {
 
 /* Dark mode tweaks for nav glass */
 html.dark {
+  .VPSocialLink[aria-label='AtomGit'] {
+    color: #fff;
+  }
   .VPNavBar .menu :where(.VPNavBarMenuLink) {
     background: transparent;
     border-color: color.change($p1, $alpha: 0.12);
