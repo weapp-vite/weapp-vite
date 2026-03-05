@@ -56,6 +56,12 @@ keywords:
 - 用途：创建绑定 payload（`value + onXxx`）辅助函数。
 - 源码：`runtime/vueCompat.ts`。
 
+### `useIntersectionObserver()` {#useintersectionobserver}
+
+- 用途：在 `setup()` 中创建 `IntersectionObserver`，并在卸载时自动 `disconnect()`。
+- 建议：优先用它替代 `onPageScroll + setData` 的可见性轮询逻辑。
+- 源码：`runtime/intersectionObserver.ts`。
+
 ## 示例
 
 ::: code-group
@@ -119,3 +125,26 @@ function open() {
 ```
 
 :::
+
+### IntersectionObserver 示例
+
+```vue
+<script setup lang="ts">
+import { ref, useIntersectionObserver } from 'wevu'
+
+const visible = ref(false)
+const io = useIntersectionObserver({ thresholds: [0, 0.5, 1] })
+
+io
+  .relativeToViewport({ bottom: 0 })
+  .observe('#ad-banner', (res) => {
+    visible.value = !!res?.intersectionRatio && res.intersectionRatio > 0
+  })
+</script>
+
+<template>
+  <view id="ad-banner">
+    banner visible: {{ visible }}
+  </view>
+</template>
+```

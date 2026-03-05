@@ -64,7 +64,9 @@ export function createComponentMethods(options: {
       return
     }
     const runtimeProxy = runtime?.proxy as Record<string, any> | undefined
-    const isBridgeMethod = (methodName: 'triggerEvent' | 'createSelectorQuery' | 'setData') => {
+    const isBridgeMethod = (
+      methodName: 'triggerEvent' | 'createSelectorQuery' | 'createIntersectionObserver' | 'setData',
+    ) => {
       const instanceMethod = (instance as any)[methodName]
       if (typeof instanceMethod !== 'function') {
         return false
@@ -72,11 +74,17 @@ export function createComponentMethods(options: {
       const proxyMethod = runtimeProxy?.[methodName]
       return typeof proxyMethod === 'function' && instanceMethod === proxyMethod
     }
-    if (isBridgeMethod('triggerEvent') || isBridgeMethod('createSelectorQuery') || isBridgeMethod('setData')) {
+    if (
+      isBridgeMethod('triggerEvent')
+      || isBridgeMethod('createSelectorQuery')
+      || isBridgeMethod('createIntersectionObserver')
+      || isBridgeMethod('setData')
+    ) {
       return
     }
     const hasNativeApis = typeof (instance as any).triggerEvent === 'function'
       || typeof (instance as any).createSelectorQuery === 'function'
+      || typeof (instance as any).createIntersectionObserver === 'function'
       || typeof (instance as any).setData === 'function'
     if (!hasNativeApis) {
       return

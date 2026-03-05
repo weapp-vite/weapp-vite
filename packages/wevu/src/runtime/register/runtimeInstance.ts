@@ -97,8 +97,8 @@ function normalizeEmitPayload(args: any[]): { detail: any, options: TriggerEvent
   }
 }
 
-type SetupInstanceMethodName = 'triggerEvent' | 'createSelectorQuery' | 'setData'
-const setupInstanceMethodNames: SetupInstanceMethodName[] = ['triggerEvent', 'createSelectorQuery', 'setData']
+type SetupInstanceMethodName = 'triggerEvent' | 'createSelectorQuery' | 'createIntersectionObserver' | 'setData'
+const setupInstanceMethodNames: SetupInstanceMethodName[] = ['triggerEvent', 'createSelectorQuery', 'createIntersectionObserver', 'setData']
 const SETUP_CONTEXT_INSTANCE_KEY = '__wevuSetupContextInstance'
 
 function resolveRuntimeNativeMethodOwner(
@@ -219,6 +219,25 @@ function ensureSetupContextInstance(
     const scopedOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
     return query.in(scopedOwner as any)
   })
+
+  defineSetupInstanceMethod(
+    setupInstanceBridge,
+    'createIntersectionObserver',
+    (options?: WechatMiniprogram.CreateIntersectionObserverOption) => {
+      const nativeOwner = resolveSetupBridgeOwner('createIntersectionObserver')
+      if (nativeOwner && typeof (nativeOwner as any).createIntersectionObserver === 'function') {
+        return (nativeOwner as any).createIntersectionObserver(options ?? {})
+      }
+
+      const miniProgramGlobal = getMiniProgramGlobalObject()
+      if (!miniProgramGlobal || typeof miniProgramGlobal.createIntersectionObserver !== 'function') {
+        return undefined
+      }
+
+      const scopedOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
+      return miniProgramGlobal.createIntersectionObserver(scopedOwner as any, options ?? {})
+    },
+  )
 
   defineSetupInstanceMethod(setupInstanceBridge, 'setData', (payload: Record<string, any>, callback?: () => void) => {
     const nativeOwner = resolveSetupBridgeOwner('setData')
@@ -424,6 +443,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const highFrequencyWarning = createSetDataHighFrequencyWarningMonitor({
     option: (runtimeApp as any)?.__wevuSetDataOptions?.highFrequencyWarning,
     targetLabel,
+    isInPageScrollHook: () => Number((target as any).__wevuPageScrollHookDepth ?? 0) > 0,
   })
   const createDeferredAdapter = (instance: InternalRuntimeState): AdapterWithSetData => {
     let pending: Record<string, any> | undefined

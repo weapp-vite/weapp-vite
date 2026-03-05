@@ -7,6 +7,27 @@ import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibilit
 
 let wxPatched = false
 let currentPageInstance: InternalRuntimeState | undefined
+const PAGE_SCROLL_HOOK_DEPTH_KEY = '__wevuPageScrollHookDepth'
+
+function runInPageScrollHook<T>(
+  target: InternalRuntimeState,
+  task: () => T,
+): T {
+  const currentDepth = Number((target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 0)
+  ;(target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] = currentDepth + 1
+  try {
+    return task()
+  }
+  finally {
+    const nextDepth = Number((target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 1) - 1
+    if (nextDepth <= 0) {
+      delete (target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY]
+    }
+    else {
+      ;(target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] = nextDepth
+    }
+  }
+}
 
 function resolvePageOptions(target: InternalRuntimeState) {
   const direct = (target as any).options
@@ -48,7 +69,9 @@ function ensureWxPatched() {
     wxGlobal.pageScrollTo = function pageScrollToPatched(options: any, ...rest: any[]) {
       const result = rawPageScrollTo.apply(this, [options, ...rest])
       if (currentPageInstance) {
-        callHookList(currentPageInstance, 'onPageScroll', [options ?? {}])
+        runInPageScrollHook(currentPageInstance, () => {
+          callHookList(currentPageInstance, 'onPageScroll', [options ?? {}])
+        })
       }
       return result
     }
@@ -288,10 +311,12 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
   }
   if (enableOnPageScroll) {
     pageLifecycleHooks.onPageScroll = function onPageScroll(this: InternalRuntimeState, ...args: any[]) {
-      callHookList(this, 'onPageScroll', args)
-      if (!hasHook(this, 'onPageScroll')) {
-        return effectiveOnPageScroll.apply(this, args)
-      }
+      return runInPageScrollHook(this, () => {
+        callHookList(this, 'onPageScroll', args)
+        if (!hasHook(this, 'onPageScroll')) {
+          return effectiveOnPageScroll.apply(this, args)
+        }
+      })
     }
   }
   if (enableOnRouteDone) {

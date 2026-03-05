@@ -33,6 +33,16 @@ export interface SetDataSnapshotOptions {
      * @default 5000
      */
     coolDownMs?: number
+    /**
+     * 是否在检测到 `onPageScroll` 回调内调用 setData 时输出专项告警。
+     * @default true
+     */
+    warnOnPageScroll?: boolean
+    /**
+     * `onPageScroll` 专项告警冷却时间（毫秒）。
+     * @default 2000
+     */
+    pageScrollCoolDownMs?: number
   }
 
   /**

@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, mergeModels, useAttrs, useBindModel, useModel, useNativeInstance, useSlots } from '@/index'
+import { defineComponent, mergeModels, useAttrs, useBindModel, useIntersectionObserver, useModel, useNativeInstance, useSlots } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
 beforeEach(() => {
   registeredComponents.length = 0
+  delete (globalThis as any).wx
   ;(globalThis as any).Component = vi.fn((options: Record<string, any>) => {
     registeredComponents.push(options)
   })
@@ -16,11 +17,12 @@ describe('runtime: vue compat helpers', () => {
     expect(mergeModels(null as any, { a: 1 })).toEqual({ a: 1 })
   })
 
-  it('useAttrs/useSlots/useModel/useNativeInstance throw when called outside setup', () => {
+  it('useAttrs/useSlots/useModel/useNativeInstance/useIntersectionObserver throw when called outside setup', () => {
     expect(() => useAttrs()).toThrow()
     expect(() => useSlots()).toThrow()
     expect(() => useModel({}, 'modelValue')).toThrow()
     expect(() => useNativeInstance()).toThrow()
+    expect(() => useIntersectionObserver()).toThrow()
   })
 
   it('useAttrs/useSlots expose setup context values, useModel emits update event', () => {
@@ -166,6 +168,8 @@ describe('runtime: vue compat helpers', () => {
     const triggerEvent = vi.fn()
     const setData = vi.fn()
     const createSelectorQuery = vi.fn(() => ({ in: vi.fn() }))
+    const observer = { disconnect: vi.fn() }
+    const createIntersectionObserver = vi.fn(() => observer)
 
     defineComponent({
       setup(_props, ctx) {
@@ -176,6 +180,8 @@ describe('runtime: vue compat helpers', () => {
         native.triggerEvent('use-native-instance', { from: 'helper' })
         expect(ctx.instance.createSelectorQuery()).toBeTruthy()
         expect(native.createSelectorQuery()).toBeTruthy()
+        expect(ctx.instance.createIntersectionObserver({ thresholds: [0] })).toBe(observer)
+        expect(native.createIntersectionObserver({ thresholds: [0] })).toBe(observer)
         ctx.instance.setData({ fromSetupInstance: true })
         return {}
       },
@@ -186,6 +192,7 @@ describe('runtime: vue compat helpers', () => {
       setData,
       triggerEvent,
       createSelectorQuery,
+      createIntersectionObserver,
       properties: {},
     }
 
@@ -195,6 +202,69 @@ describe('runtime: vue compat helpers', () => {
     expect(triggerEvent).toHaveBeenNthCalledWith(1, 'ctx-instance', { from: 'ctx' })
     expect(triggerEvent).toHaveBeenNthCalledWith(2, 'use-native-instance', { from: 'helper' })
     expect(createSelectorQuery).toHaveBeenCalledTimes(2)
+    expect(createIntersectionObserver).toHaveBeenCalledTimes(2)
     expect(setData.mock.calls.some(call => call?.[0]?.fromSetupInstance === true)).toBe(true)
+  })
+
+  it('useIntersectionObserver auto disconnects on teardown', () => {
+    const disconnect = vi.fn()
+    const observer = {
+      disconnect,
+      observe: vi.fn(),
+      relativeToViewport: vi.fn(),
+    }
+    const createIntersectionObserver = vi.fn(() => observer)
+
+    defineComponent({
+      setup() {
+        const io = useIntersectionObserver({ thresholds: [0, 1] })
+        expect(io).toBe(observer)
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      createIntersectionObserver,
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    opts.lifetimes.detached.call(inst)
+    opts.lifetimes.detached.call(inst)
+
+    expect(createIntersectionObserver).toHaveBeenCalledTimes(1)
+    expect(disconnect).toHaveBeenCalledTimes(1)
+  })
+
+  it('useIntersectionObserver falls back to global createIntersectionObserver', () => {
+    const disconnect = vi.fn()
+    const observer = { disconnect }
+    const wxCreateIntersectionObserver = vi.fn(() => observer)
+    ;(globalThis as any).wx = {
+      createIntersectionObserver: wxCreateIntersectionObserver,
+    }
+
+    defineComponent({
+      setup() {
+        const io = useIntersectionObserver()
+        expect(io).toBe(observer)
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    opts.lifetimes.detached.call(inst)
+
+    expect(wxCreateIntersectionObserver).toHaveBeenCalledWith(inst, {})
+    expect(disconnect).toHaveBeenCalledTimes(1)
   })
 })

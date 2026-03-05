@@ -112,6 +112,7 @@ resetWevuDefaults()
 
 - 默认关闭（`undefined` 不启用）。
 - 当启用 `weapp.wevu.preset: 'performance'` 时，会自动注入 `highFrequencyWarning: { enabled: true, devOnly: true }`。
+- 开启后会额外检测 `onPageScroll` 回调中的 `setData` 调用，并输出专项告警（默认 `warnOnPageScroll: true`），引导你改用 `IntersectionObserver` 或节流。
 - 你也可以手动开启并调整阈值：
 
 ```ts
@@ -126,6 +127,8 @@ setWevuDefaults({
         sampleWindowMs: 1000,
         maxCalls: 30,
         coolDownMs: 5000,
+        warnOnPageScroll: true,
+        pageScrollCoolDownMs: 2000,
       },
     },
   },
