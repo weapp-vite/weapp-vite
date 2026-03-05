@@ -1,4 +1,5 @@
 {
+  "event-probe-native": "/components/event-probe-native/index",
   "lifecycle-native": "/components/lifecycle-native/index",
   "lifecycle-wevu-ts": "/components/lifecycle-wevu-ts/index"
 }

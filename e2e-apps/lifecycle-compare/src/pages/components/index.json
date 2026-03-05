@@ -2,7 +2,9 @@
   "usingComponents": {
     "lifecycle-native": "/components/lifecycle-native/index",
     "lifecycle-wevu-ts": "/components/lifecycle-wevu-ts/index",
-    "lifecycle-wevu-vue": "/components/lifecycle-wevu-vue/index"
+    "lifecycle-wevu-vue": "/components/lifecycle-wevu-vue/index",
+    "event-probe-native": "/components/event-probe-native/index",
+    "event-probe-wevu-vue": "/components/event-probe-wevu-vue/index"
   },
   "enablePullDownRefresh": true,
   "onReachBottomDistance": 50
