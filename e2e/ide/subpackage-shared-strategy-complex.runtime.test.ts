@@ -119,15 +119,15 @@ createRuntimeSuite({
     },
     {
       route: '/subpackages/item/index',
-      expected: ['__SP_COMPLEX_A_SUB_ONLY__', '__SP_COMPLEX_A_PAIR_ONLY__'],
+      expected: ['__SP_COMPLEX_A_SUB_ONLY__', '__SP_COMPLEX_A_NPM_SUB_ONLY__', '__SP_COMPLEX_A_PAIR_ONLY__'],
     },
     {
       route: '/subpackages/user/index',
-      expected: ['__SP_COMPLEX_A_SUB_ONLY__', '__SP_COMPLEX_A_PAIR_ONLY__'],
+      expected: ['__SP_COMPLEX_A_SUB_ONLY__', '__SP_COMPLEX_A_NPM_SUB_ONLY__', '__SP_COMPLEX_A_PAIR_ONLY__'],
     },
     {
       route: '/subpackages/report/index',
-      expected: ['__SP_COMPLEX_A_SUB_ONLY__'],
+      expected: ['__SP_COMPLEX_A_SUB_ONLY__', '__SP_COMPLEX_A_NPM_SUB_ONLY__'],
     },
   ],
 })
@@ -143,15 +143,15 @@ createRuntimeSuite({
     },
     {
       route: '/subpackages/alpha/index',
-      expected: ['__SP_COMPLEX_B_RUNTIME_CHAIN__', '__SP_COMPLEX_B_EDGE__'],
+      expected: ['__SP_COMPLEX_B_RUNTIME_CHAIN__', '__SP_COMPLEX_B_EDGE__', '__SP_COMPLEX_B_NPM_SUB_ONLY__'],
     },
     {
       route: '/subpackages/beta/index',
-      expected: ['__SP_COMPLEX_B_CLUSTER__'],
+      expected: ['__SP_COMPLEX_B_CLUSTER__', '__SP_COMPLEX_B_NPM_SUB_ONLY__'],
     },
     {
       route: '/subpackages/gamma/index',
-      expected: ['__SP_COMPLEX_B_RUNTIME_CHAIN__', '__SP_COMPLEX_B_EDGE__'],
+      expected: ['__SP_COMPLEX_B_RUNTIME_CHAIN__', '__SP_COMPLEX_B_EDGE__', '__SP_COMPLEX_B_NPM_SUB_ONLY__'],
     },
   ],
 })
