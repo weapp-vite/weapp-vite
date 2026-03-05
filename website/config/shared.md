@@ -238,6 +238,20 @@ export default defineConfig({
 - 若 `setData` 为变量或表达式（例如 `setData: externalConfig`），会包裹为 `{ pick: [...], ...externalConfig }` 以保持兼容。
 - 建议在“状态很大但模板只使用少量字段”的页面优先开启；若模板几乎使用全部字段，收益通常不明显。
 
+### FAQ
+
+#### Q: `autoSetDataPick` 默认会自动开启吗？
+不会。默认值是 `false`，只有显式配置 `weapp.wevu.autoSetDataPick: true` 才会生效。
+
+#### Q: 为什么我在 `app.vue` 里看不到注入结果？
+这是预期行为。该能力仅对 `defineComponent/createWevuComponent` 产物生效，不会对 `app.vue` 注入 `setData.pick`。
+
+#### Q: 我已经手写了 `setData.pick`，会被覆盖吗？
+不会。自动推导结果会与已有 `setData.pick` 做去重合并，不会丢掉你手写的 key。
+
+#### Q: 怎么快速确认它是否生效？
+先执行一次构建，然后检查页面/组件产物 JS 中是否出现 `setData.pick`。若模板含调用表达式，通常也会看到 `__wv_bind_*` 被写入 `pick` 数组。
+
 ## `weapp.hmr.sharedChunks` {#weapp-hmr-sharedchunks}
 - **类型**：`'full' | 'auto' | 'off'`
 - **默认值**：`'auto'`
