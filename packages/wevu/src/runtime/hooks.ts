@@ -224,6 +224,10 @@ export function onThemeChange(handler: WechatMiniprogram.OnThemeChangeCallback) 
   pushHook(assertInSetup('onThemeChange'), 'onThemeChange', handler as any)
 }
 
+export function onMemoryWarning(handler: WechatMiniprogram.OnMemoryWarningCallback) {
+  pushHook(assertInSetup('onMemoryWarning'), 'onMemoryWarning', handler as any)
+}
+
 export function onShow(handler: () => void): void
 export function onShow(handler: (options: WechatMiniprogram.App.LaunchShowOption) => void): void
 export function onShow(handler: ((options?: any) => void)) {

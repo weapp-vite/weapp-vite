@@ -54,6 +54,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'onHide',
   'onLaunch',
   'onLoad',
+  'onMemoryWarning',
   'onMounted',
   'onMoved',
   'onPageNotFound',

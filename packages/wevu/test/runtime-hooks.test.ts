@@ -11,6 +11,7 @@ import {
   onError,
   onHide,
   onLaunch,
+  onMemoryWarning,
   onPageNotFound,
   onPageScroll,
   onReady,
@@ -247,6 +248,13 @@ describe('hooks - lifecycle registration', () => {
       expect(instance.__wevuHooks?.onThemeChange).toContain(handler)
     })
 
+    it('should register onMemoryWarning hook', () => {
+      const handler = vi.fn()
+      onMemoryWarning(handler as any)
+
+      expect(instance.__wevuHooks?.onMemoryWarning).toContain(handler)
+    })
+
     it('should register onError hook', () => {
       const handler = vi.fn()
       onError(handler)
@@ -258,6 +266,7 @@ describe('hooks - lifecycle registration', () => {
       setCurrentInstance(undefined)
 
       expect(() => onLaunch(vi.fn())).toThrow('onLaunch() 必须在 setup() 的同步阶段调用')
+      expect(() => onMemoryWarning(vi.fn() as any)).toThrow('onMemoryWarning() 必须在 setup() 的同步阶段调用')
     })
   })
 
@@ -785,6 +794,13 @@ describe('hooks - lifecycle registration', () => {
       expect(instance.__wevuHooks?.onThemeChange).toContain(handler)
     })
 
+    it('should register onMemoryWarning hook', () => {
+      const handler = vi.fn()
+      onMemoryWarning(handler as any)
+
+      expect(instance.__wevuHooks?.onMemoryWarning).toContain(handler)
+    })
+
     it('should register onError hook', () => {
       const handler = vi.fn()
       onError(handler)
@@ -796,6 +812,7 @@ describe('hooks - lifecycle registration', () => {
       setCurrentInstance(undefined)
 
       expect(() => onLaunch(vi.fn())).toThrow('onLaunch() 必须在 setup() 的同步阶段调用')
+      expect(() => onMemoryWarning(vi.fn() as any)).toThrow('onMemoryWarning() 必须在 setup() 的同步阶段调用')
     })
   })
 

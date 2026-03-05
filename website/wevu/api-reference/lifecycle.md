@@ -27,6 +27,7 @@ keywords:
 | `onPageNotFound`       | `RuntimeApp`       | 路由未命中。               |
 | `onUnhandledRejection` | `RuntimeApp`       | 未处理 Promise rejection。 |
 | `onThemeChange`        | `RuntimeApp`       | 系统主题变化。             |
+| `onMemoryWarning`      | `RuntimeApp`       | 内存告警回调。             |
 
 ## 2. 页面与组件通用生命周期
 

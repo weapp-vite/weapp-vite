@@ -4,6 +4,7 @@ import {
   onError,
   onHide,
   onLaunch,
+  onMemoryWarning,
   onPageNotFound,
   onShow,
   onThemeChange,
@@ -21,6 +22,7 @@ beforeEach(() => {
 
 afterEach(() => {
   delete (globalThis as any).App
+  delete (globalThis as any).wx
 })
 
 describe('runtime: app-level hooks', () => {
@@ -70,5 +72,39 @@ describe('runtime: app-level hooks', () => {
     appOptions.onThemeChange.call(appInst, { theme: 'dark' })
 
     expect(logs).toEqual(['launch', 'show', 'hide', 'error', 'notFound', 'unhandled', 'theme'])
+  })
+
+  it('binds wx.onMemoryWarning and dispatches onMemoryWarning hook', async () => {
+    const logs: string[] = []
+    let listener: ((res: WechatMiniprogram.OnMemoryWarningListenerResult) => void) | undefined
+    const onMemoryWarningApi = vi.fn((fn: (res: WechatMiniprogram.OnMemoryWarningListenerResult) => void) => {
+      listener = fn
+    })
+    const offMemoryWarningApi = vi.fn()
+    ;(globalThis as any).wx = {
+      onMemoryWarning: onMemoryWarningApi,
+      offMemoryWarning: offMemoryWarningApi,
+    }
+
+    createApp({
+      data: () => ({}),
+      setup() {
+        onMemoryWarning(() => logs.push('memoryWarning'))
+      },
+    })
+
+    expect(registeredApps).toHaveLength(1)
+    const appOptions = registeredApps[0]
+    const appInst: any = {}
+
+    appOptions.onLaunch.call(appInst, {})
+    expect(onMemoryWarningApi).toHaveBeenCalledTimes(1)
+    listener?.({ level: 10 } as WechatMiniprogram.OnMemoryWarningListenerResult)
+    expect(logs).toEqual(['memoryWarning'])
+
+    // 重复绑定时会先注销旧监听，避免内存告警监听累积。
+    appOptions.onLaunch.call(appInst, {})
+    expect(offMemoryWarningApi).toHaveBeenCalledTimes(1)
+    expect(onMemoryWarningApi).toHaveBeenCalledTimes(2)
   })
 })
