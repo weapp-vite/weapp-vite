@@ -750,6 +750,78 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
+  it('issue #318: keeps template call-expression rendering stable with auto setData.pick', async () => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-318/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-318/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-318 auto setData pick from template')
+    expect(issuePageWxml).toContain('wx:for="{{list}}"')
+    expect(issuePageWxml).toContain('data-line="{{__wv_bind_')
+    expect(issuePageWxml).toContain('data-meta="{{__wv_bind_')
+    expect(issuePageWxml).toContain('{{__wv_bind_')
+    expect(issuePageJs).toContain('_runE2E')
+    expect(issuePageJs).toContain('pick')
+    expect(issuePageJs).toMatch(/pick:\[[^\]]*['"`]count['"`]/)
+    expect(issuePageJs).toMatch(/pick:\[[^\]]*['"`]list['"`]/)
+    expect(issuePageJs).toMatch(/pick:\[[^\]]*['"`]__wv_bind_\d+['"`]/)
+
+    const miniProgram = await getSharedMiniProgram()
+
+    try {
+      const issuePage = await miniProgram.reLaunch('/pages/issue-318/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-318 page')
+      }
+      await issuePage.waitFor(500)
+
+      const initialRuntime = await issuePage.callMethod('_runE2E')
+      expect(initialRuntime?.ok).toBe(true)
+      expect(initialRuntime?.count).toBe(1)
+      expect(initialRuntime?.active).toBe('row-0:Alpha')
+      expect(initialRuntime?.rows).toEqual([
+        'row-0:Alpha',
+        'row-1:Beta',
+      ])
+      expect(initialRuntime?.meta).toBe('meta-1-2')
+      expect(await issuePage.data('count')).toBe(1)
+      expect((await issuePage.data('list'))?.length).toBe(2)
+
+      await issuePage.callMethod('incCount')
+      await issuePage.waitFor(220)
+      await issuePage.callMethod('appendRow')
+      await issuePage.waitFor(220)
+      await issuePage.callMethod('cycleActive')
+      await issuePage.waitFor(220)
+
+      const updatedRuntime = await issuePage.callMethod('_runE2E')
+      expect(updatedRuntime?.ok).toBe(true)
+      expect(updatedRuntime?.count).toBe(2)
+      expect(updatedRuntime?.active).toBe('row-1:Beta')
+      expect(updatedRuntime?.rows).toEqual([
+        'row-0:Alpha',
+        'row-1:Beta',
+        'row-2:Extra-2',
+      ])
+      expect(updatedRuntime?.meta).toBe('meta-2-3')
+      expect(await issuePage.data('count')).toBe(2)
+      expect((await issuePage.data('list'))?.length).toBe(3)
+
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toContain('count: 2')
+      expect(renderedWxml).toContain('size: 3')
+      expect(renderedWxml).toContain('active: row-1:Beta')
+      expect(renderedWxml).toContain('row-2:Extra-2')
+      expect(renderedWxml).toContain('meta-2-3')
+      expect(renderedWxml).toContain('data-count="2"')
+      expect(renderedWxml).toContain('data-size="3"')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('issue #317: loads duplicated shared chunks with localized runtime inside subpackages', async () => {
     const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
     const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
