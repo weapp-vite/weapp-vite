@@ -213,6 +213,10 @@ export default defineConfig({
 - **默认值**：`false`
 - **作用**：在编译阶段从模板表达式自动提取渲染相关顶层 key，并注入到组件/页面的 `setData.pick`，减少非渲染字段参与快照与下发。
 
+> [!IMPORTANT]
+> 该能力默认关闭，不会在未配置时自动开启。只有显式设置 `weapp.wevu.autoSetDataPick: true` 才会生效。
+> 从旧版本升级到新版本时，若你未手动开启该项，行为保持不变。
+
 ### 配置示例
 
 ```ts
@@ -232,6 +236,7 @@ export default defineConfig({
 - 仅对 `defineComponent/createWevuComponent` 产物生效；`app.vue` 不会注入。
 - 若组件已显式声明 `setData.pick` 数组，会与自动推导结果做去重合并。
 - 若 `setData` 为变量或表达式（例如 `setData: externalConfig`），会包裹为 `{ pick: [...], ...externalConfig }` 以保持兼容。
+- 建议在“状态很大但模板只使用少量字段”的页面优先开启；若模板几乎使用全部字段，收益通常不明显。
 
 ## `weapp.hmr.sharedChunks` {#weapp-hmr-sharedchunks}
 - **类型**：`'full' | 'auto' | 'off'`

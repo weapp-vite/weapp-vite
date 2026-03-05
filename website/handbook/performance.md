@@ -30,6 +30,7 @@ keywords:
 
 - 把“频繁变化”的 state 切细：让快照 diff 更容易命中小路径。
 - 对大列表数据做“分页追加”，避免每次替换整个数组。
+- 如果页面状态很大但模板只用了部分顶层字段，可考虑开启 [`weapp.wevu.autoSetDataPick`](/config/shared#weapp-wevu-auto-setdata-pick)（默认关闭，需要手动配置）。
 
 ## 需要真机验证的点
 
