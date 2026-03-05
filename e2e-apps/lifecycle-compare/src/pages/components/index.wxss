@@ -34,3 +34,12 @@
   font-size: 22rpx;
   color: #374151;
 }
+
+.event-trigger {
+  margin: 8rpx 0;
+  padding: 10rpx 12rpx;
+  border: 1rpx solid #cbd5e1;
+  border-radius: 8rpx;
+  background: #fff;
+  color: #1f2937;
+}

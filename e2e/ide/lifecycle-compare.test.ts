@@ -103,6 +103,78 @@ function normalizeEntries(entries: any[]) {
   return compacted
 }
 
+interface EventBindingStats {
+  view: {
+    bindtap: number
+    bindColonTap: number
+    bothBindtap: number
+    bothBindColonTap: number
+    bothReverseBindtap: number
+    bothReverseBindColonTap: number
+  }
+  nativeComponent: {
+    bindprobe: number
+    bindColonProbe: number
+    bothBindprobe: number
+    bothBindColonProbe: number
+    bothReverseBindprobe: number
+    bothReverseBindColonProbe: number
+  }
+  wevuSfcComponent: {
+    bindprobe: number
+    bindColonProbe: number
+    bothBindprobe: number
+    bothBindColonProbe: number
+    bothReverseBindprobe: number
+    bothReverseBindColonProbe: number
+  }
+}
+
+interface NamedEventBindingCounters {
+  bind: number
+  bindColon: number
+  bothBind: number
+  bothBindColon: number
+}
+
+interface NamedEventBindingStats {
+  hyphen: {
+    nativeComponent: NamedEventBindingCounters
+    wevuSfcComponent: NamedEventBindingCounters
+  }
+  underscore: {
+    nativeComponent: NamedEventBindingCounters
+    wevuSfcComponent: NamedEventBindingCounters
+  }
+}
+
+async function tapElementById(page: any, id: string) {
+  const element = await page.$(`#${id}`)
+  if (!element) {
+    throw new Error(`Failed to find element: #${id}`)
+  }
+  const actions = [
+    async () => await element.tap(),
+    async () => await element.trigger('tap'),
+    async () => {
+      await element.touchstart()
+      await element.touchend()
+    },
+    async () => await element.dispatchEvent({ eventName: 'tap' }),
+  ]
+
+  for (const action of actions) {
+    try {
+      await action()
+      return
+    }
+    catch {
+      // continue fallback
+    }
+  }
+  throw new Error(`Failed to dispatch tap-like event for: #${id}`)
+}
+
 let sharedMiniProgram: any = null
 let sharedBuildPrepared = false
 
@@ -182,6 +254,108 @@ describe.sequential('lifecycle compare (e2e)', () => {
       expect(nativeLogs.length).toBeGreaterThan(0)
       expect(normalizeEntries(wevuTsLogs)).toEqual(normalizeEntries(nativeLogs))
       expect(normalizeEntries(wevuVueLogs)).toEqual(normalizeEntries(nativeLogs))
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('verifies bind event alias behavior for native view/native component/wevu sfc component', async () => {
+    const miniProgram = await getSharedMiniProgram()
+    try {
+      const page = await miniProgram.reLaunch('/pages/components/index?from=e2e-event-binding')
+      if (!page) {
+        throw new Error('Failed to launch components page for event binding verify')
+      }
+      await page.waitFor(500)
+      await page.callMethod('resetEventBindingStats')
+      await page.waitFor(120)
+
+      await tapElementById(page, 'eventViewBindtap')
+      await page.waitFor(120)
+      await tapElementById(page, 'eventViewBindColon')
+      await page.waitFor(120)
+      await tapElementById(page, 'eventViewBoth')
+      await page.waitFor(120)
+      await tapElementById(page, 'eventViewBothReverse')
+      await page.waitFor(180)
+
+      for (const componentType of ['nativeComponent', 'wevuSfcComponent'] as const) {
+        for (const bindingMode of ['bind', 'bindColon', 'both', 'bothReverse'] as const) {
+          const triggered = await page.callMethod('triggerComponentProbe', componentType, bindingMode)
+          expect(triggered).toBe(true)
+          await page.waitFor(120)
+        }
+      }
+
+      await page.waitFor(180)
+      const stats = await page.callMethod('getEventBindingStats') as EventBindingStats
+      expect(stats.view.bindtap).toBe(1)
+      expect(stats.view.bindColonTap).toBe(1)
+      expect(stats.view.bothBindtap).toBe(1)
+      expect(stats.view.bothBindColonTap).toBe(0)
+      expect(stats.view.bothReverseBindtap).toBe(1)
+      expect(stats.view.bothReverseBindColonTap).toBe(0)
+
+      expect(stats.nativeComponent.bindprobe).toBe(1)
+      expect(stats.nativeComponent.bindColonProbe).toBe(1)
+      expect(stats.nativeComponent.bothBindprobe).toBe(1)
+      expect(stats.nativeComponent.bothBindColonProbe).toBe(0)
+      expect(stats.nativeComponent.bothReverseBindprobe).toBe(1)
+      expect(stats.nativeComponent.bothReverseBindColonProbe).toBe(0)
+
+      expect(stats.wevuSfcComponent.bindprobe).toBe(1)
+      expect(stats.wevuSfcComponent.bindColonProbe).toBe(1)
+      expect(stats.wevuSfcComponent.bothBindprobe).toBe(1)
+      expect(stats.wevuSfcComponent.bothBindColonProbe).toBe(0)
+      expect(stats.wevuSfcComponent.bothReverseBindprobe).toBe(1)
+      expect(stats.wevuSfcComponent.bothReverseBindColonProbe).toBe(0)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('verifies triggerEvent hyphen/underscore event names with bind and bind: forms', async () => {
+    const miniProgram = await getSharedMiniProgram()
+    try {
+      const page = await miniProgram.reLaunch('/pages/components/index?from=e2e-event-name-binding')
+      if (!page) {
+        throw new Error('Failed to launch components page for triggerEvent event name verify')
+      }
+      await page.waitFor(500)
+      await page.callMethod('resetNamedEventBindingStats')
+      await page.waitFor(120)
+
+      for (const eventNameType of ['hyphen', 'underscore'] as const) {
+        for (const componentType of ['nativeComponent', 'wevuSfcComponent'] as const) {
+          for (const bindingMode of ['bind', 'bindColon', 'both'] as const) {
+            const triggered = await page.callMethod('triggerNamedComponentProbe', componentType, eventNameType, bindingMode)
+            expect(triggered).toBe(true)
+            await page.waitFor(120)
+          }
+        }
+      }
+
+      await page.waitFor(180)
+      const stats = await page.callMethod('getNamedEventBindingStats') as NamedEventBindingStats
+      expect(stats.hyphen.nativeComponent.bind).toBe(0)
+      expect(stats.hyphen.nativeComponent.bindColon).toBe(1)
+      expect(stats.hyphen.nativeComponent.bothBind).toBe(0)
+      expect(stats.hyphen.nativeComponent.bothBindColon).toBe(1)
+      expect(stats.hyphen.wevuSfcComponent.bind).toBe(0)
+      expect(stats.hyphen.wevuSfcComponent.bindColon).toBe(1)
+      expect(stats.hyphen.wevuSfcComponent.bothBind).toBe(0)
+      expect(stats.hyphen.wevuSfcComponent.bothBindColon).toBe(1)
+
+      expect(stats.underscore.nativeComponent.bind).toBe(1)
+      expect(stats.underscore.nativeComponent.bindColon).toBe(1)
+      expect(stats.underscore.nativeComponent.bothBind).toBe(1)
+      expect(stats.underscore.nativeComponent.bothBindColon).toBe(0)
+      expect(stats.underscore.wevuSfcComponent.bind).toBe(1)
+      expect(stats.underscore.wevuSfcComponent.bindColon).toBe(1)
+      expect(stats.underscore.wevuSfcComponent.bothBind).toBe(1)
+      expect(stats.underscore.wevuSfcComponent.bothBindColon).toBe(0)
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

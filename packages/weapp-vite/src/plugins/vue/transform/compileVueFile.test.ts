@@ -98,6 +98,27 @@ function onOverlayClick(event: unknown) {
     expect(result.template).not.toContain('bindoverlay-click=')
   })
 
+  it('keeps underscore component events on non-colon bindings', async () => {
+    const result = await compileVueFile(
+      `
+<template>
+  <CompatAltPanel @overlay_click="onOverlayClick" />
+</template>
+<script setup lang="ts">
+function onOverlayClick(event: unknown) {
+  return event
+}
+</script>
+      `.trim(),
+      '/project/src/components/panel.vue',
+    )
+
+    expect(result.template).toContain('bindoverlay_click="__weapp_vite_inline"')
+    expect(result.template).toContain('data-wv-event-detail-overlay-click="1"')
+    expect(result.template).toContain('data-wv-inline-id-overlay-click="__wv_inline_0"')
+    expect(result.template).not.toContain('bind:overlay_click=')
+  })
+
   it('compiles script setup interpolation call expression via runtime binding', async () => {
     const result = await compileVueFile(
       `
