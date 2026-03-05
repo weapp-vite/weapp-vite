@@ -1141,6 +1141,10 @@ importers:
 
   e2e-apps/style-import-vue: {}
 
+  e2e-apps/subpackage-shared-strategy-complex-a: {}
+
+  e2e-apps/subpackage-shared-strategy-complex-b: {}
+
   e2e-apps/wevu-features: {}
 
   e2e-apps/wevu-runtime-e2e: {}

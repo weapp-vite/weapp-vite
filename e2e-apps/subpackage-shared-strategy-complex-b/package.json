@@ -1,0 +1,17 @@
+{
+  "name": "e2e-app-subpackage-shared-strategy-complex-b",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "weapp-vite dev",
+    "dev:open": "weapp-vite dev -o",
+    "dev:duplicate": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_OUTDIR=dist-dev-duplicate weapp-vite dev",
+    "dev:hoist": "WEAPP_CHUNK_STRATEGY=hoist WEAPP_CHUNK_OUTDIR=dist-dev-hoist weapp-vite dev",
+    "dev:open:duplicate": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_OUTDIR=dist-dev-duplicate weapp-vite dev -o",
+    "dev:open:hoist": "WEAPP_CHUNK_STRATEGY=hoist WEAPP_CHUNK_OUTDIR=dist-dev-hoist weapp-vite dev -o",
+    "build": "weapp-vite build --platform weapp --skipNpm",
+    "build:duplicate": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_OUTDIR=dist-duplicate weapp-vite build --platform weapp --skipNpm",
+    "build:hoist": "WEAPP_CHUNK_STRATEGY=hoist WEAPP_CHUNK_OUTDIR=dist-hoist weapp-vite build --platform weapp --skipNpm",
+    "build:matrix": "pnpm run build:duplicate && pnpm run build:hoist"
+  }
+}
