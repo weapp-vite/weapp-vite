@@ -141,6 +141,49 @@ describe('runtime app - patch and debug branches', () => {
     Math.random = originalRandom
     inst.unmount()
   })
+
+  it('supports built-in diagnostics logging', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const app = createApp({
+      data: () => ({ a: { b: 1 } }),
+      setData: {
+        strategy: 'patch',
+        maxPatchKeys: 0,
+        diagnostics: 'fallback',
+      },
+    })
+
+    const inst = app.mount({ setData() {} })
+    inst.state.a.b = 2
+    await nextTick()
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('[wevu:setData]'))
+    expect(infoSpy).not.toHaveBeenCalled()
+
+    warnSpy.mockRestore()
+    infoSpy.mockRestore()
+    inst.unmount()
+  })
+
+  it('supports diagnostics always mode', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const app = createApp({
+      data: () => ({ a: 1 }),
+      setData: {
+        diagnostics: 'always',
+      },
+    })
+
+    const inst = app.mount({ setData() {} })
+    expect(infoSpy).toHaveBeenCalledWith(expect.stringContaining('[wevu:setData]'))
+    expect(warnSpy).not.toHaveBeenCalled()
+
+    warnSpy.mockRestore()
+    infoSpy.mockRestore()
+    inst.unmount()
+  })
 })
 
 describe('runtime app - merge sibling and payload sizing', () => {

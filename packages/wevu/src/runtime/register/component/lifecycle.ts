@@ -3,7 +3,7 @@ import type { WatchMap } from '../watch'
 import { callHookList, callHookReturn } from '../../hooks'
 import { getMiniProgramGlobalObject } from '../../platform'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
-import { enableDeferredSetData, mountRuntimeInstance, teardownRuntimeInstance } from '../runtimeInstance'
+import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 
 let wxPatched = false
 let currentPageInstance: InternalRuntimeState | undefined
@@ -207,6 +207,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
         })
         ;(this as any).__wevuRouteDoneCalled = false
       }
+      setRuntimeSetDataVisibility(this, true)
       callHookList(this, 'onShow', args)
       if (typeof userOnShow === 'function') {
         return userOnShow.apply(this, args)
@@ -216,6 +217,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       if (isPage && currentPageInstance === this) {
         currentPageInstance = undefined
       }
+      setRuntimeSetDataVisibility(this, false)
       callHookList(this, 'onHide', args)
       if (typeof userOnHide === 'function') {
         return userOnHide.apply(this, args)

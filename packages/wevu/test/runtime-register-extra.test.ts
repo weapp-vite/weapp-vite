@@ -95,6 +95,26 @@ describe('mountRuntimeInstance and teardown', () => {
     teardownRuntimeInstance(target)
   })
 
+  it('buffers setData while hidden when suspendWhenHidden is enabled', () => {
+    const { app } = createRuntimeAppStub()
+    ;(app as any).__wevuSetDataOptions = { suspendWhenHidden: true }
+    const target: any = { setData: vi.fn() }
+
+    mountRuntimeInstance(target, app as any, undefined, undefined)
+
+    const adapter = target.__wevu.adapter as any
+    adapter.__wevu_setVisibility(false)
+    adapter.setData({ a: 1 })
+    adapter.setData({ b: 2, a: 3 })
+    expect(target.setData).not.toHaveBeenCalled()
+
+    adapter.__wevu_setVisibility(true)
+    expect(target.setData).toHaveBeenCalledTimes(1)
+    expect(target.setData).toHaveBeenCalledWith({ a: 3, b: 2 })
+
+    teardownRuntimeInstance(target)
+  })
+
   it('bridges methods to instance and handles teardown errors', () => {
     const { app, runtime } = createRuntimeAppStub()
     runtime.methods = {

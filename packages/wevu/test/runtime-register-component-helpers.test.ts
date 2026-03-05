@@ -3,7 +3,7 @@ import { resolveComponentFeatures } from '@/runtime/register/component/features'
 import { createPageLifecycleHooks } from '@/runtime/register/component/lifecycle'
 import { createComponentMethods } from '@/runtime/register/component/methods'
 import { createPropsSync } from '@/runtime/register/component/props'
-import { enableDeferredSetData, mountRuntimeInstance, teardownRuntimeInstance } from '@/runtime/register/runtimeInstance'
+import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '@/runtime/register/runtimeInstance'
 import { refreshOwnerSnapshotFromInstance } from '@/runtime/register/snapshot'
 
 vi.mock('@/runtime/register/snapshot', () => ({
@@ -14,6 +14,7 @@ vi.mock('@/runtime/register/runtimeInstance', () => ({
   mountRuntimeInstance: vi.fn(),
   teardownRuntimeInstance: vi.fn(),
   enableDeferredSetData: vi.fn(),
+  setRuntimeSetDataVisibility: vi.fn(),
 }))
 
 describe('runtime: register component helpers', () => {
@@ -120,6 +121,11 @@ describe('runtime: register component helpers', () => {
     expect(mountRuntimeInstance).toHaveBeenCalled()
     expect(enableDeferredSetData).toHaveBeenCalledWith(instance)
     expect(userOnLoad).toHaveBeenCalledWith('a')
+
+    hooks.onShow.call(instance)
+    hooks.onHide.call(instance)
+    expect(setRuntimeSetDataVisibility).toHaveBeenCalledWith(instance, true)
+    expect(setRuntimeSetDataVisibility).toHaveBeenCalledWith(instance, false)
 
     hooks.onUnload.call(instance, 'b')
     expect(teardownRuntimeInstance).toHaveBeenCalledWith(instance)

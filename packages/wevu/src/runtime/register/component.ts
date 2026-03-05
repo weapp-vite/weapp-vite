@@ -7,7 +7,7 @@ import { resolveComponentFeatures } from './component/features'
 import { createPageLifecycleHooks } from './component/lifecycle'
 import { createComponentMethods } from './component/methods'
 import { createPropsSync } from './component/props'
-import { enableDeferredSetData, mountRuntimeInstance, teardownRuntimeInstance } from './runtimeInstance'
+import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from './runtimeInstance'
 
 /**
  * 注册组件入口（框架内部使用）。
@@ -454,6 +454,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
           }
           return
         }
+        setRuntimeSetDataVisibility(this, true)
         callHookList(this, 'onShow', args)
         if (typeof (userPageLifetimes as any).show === 'function') {
           ;(userPageLifetimes as any).show.apply(this, args)
@@ -467,6 +468,7 @@ export function registerComponent<D extends object, C extends ComputedDefinition
           }
           return
         }
+        setRuntimeSetDataVisibility(this, false)
         callHookList(this, 'onHide', args)
         if (typeof (userPageLifetimes as any).hide === 'function') {
           ;(userPageLifetimes as any).hide.apply(this, args)

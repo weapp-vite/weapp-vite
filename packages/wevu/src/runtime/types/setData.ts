@@ -23,6 +23,16 @@ export interface SetDataSnapshotOptions {
   includeComputed?: boolean
 
   /**
+   * 页面/组件处于后台态（onHide 之后）时，是否挂起 setData 下发。
+   *
+   * - true：后台态仅合并最新 payload，待 onShow 后一次性 flush
+   * - false：保持默认行为，后台态也继续 setData
+   *
+   * @default false
+   */
+  suspendWhenHidden?: boolean
+
+  /**
    * patch 模式阈值：当本轮变更路径数量超过该值时，自动回退到 diff。
    * 说明：大量路径变更时，全量快照 diff 往往更快/更小。
    */
@@ -91,6 +101,15 @@ export interface SetDataSnapshotOptions {
    * setData 调试信息回调（用于观测 patch 命中率/回退原因/payload 大小）。
    */
   debug?: (info: SetDataDebugInfo) => void
+
+  /**
+   * 内建诊断日志开关（默认 off）。
+   *
+   * - off：关闭内建日志
+   * - fallback：仅在回退 diff / 超阈值时输出
+   * - always：每次 flush 都输出
+   */
+  diagnostics?: 'off' | 'fallback' | 'always'
 
   /**
    * debug 触发时机：
