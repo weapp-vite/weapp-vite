@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 6.7.3
+
+### Patch Changes
+
+- 🐛 **进一步优化小程序动态导入构建链路：在预处理阶段同时移除 `vite:build-import-analysis` 与 `native:import-analysis-build`，避免在小程序产物中注入 `__vitePreload` 包装逻辑。动态导入将直接输出为小程序可用的 `Promise.resolve().then(() => require(...))` 形式，减少运行时代码并规避浏览器预加载分支的潜在兼容性噪音。** [`98906c7`](https://github.com/weapp-vite/weapp-vite/commit/98906c7d418e4ae04173ad33e40bab07dac00ccb) by @sonofmagic
+
+- 🐛 **修复小程序构建中动态导入预加载辅助代码导致的 `__VITE_IS_MODERN__ is not defined` 问题。现在在小程序配置合并阶段默认关闭 `build.modulePreload`，避免注入不适用于小程序运行时的预加载逻辑；若用户显式配置 `build.modulePreload`，仍保持用户配置优先。** [`2201c68`](https://github.com/weapp-vite/weapp-vite/commit/2201c689d263579bda25f5baefb2bfa25ed6c4cf) by @sonofmagic
+- 📦 **Dependencies**
+  → `wevu@6.7.3`
+
 ## 6.7.2
 
 ### Patch Changes
