@@ -2,6 +2,7 @@ import type { NodePath } from '@babel/traverse'
 import type * as t from '@babel/types'
 import type { WeappViteConfig } from '../../../types'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, generate, parse, parseJsLike, traverse } from '../../../utils/babel'
+import { isAutoSetDataPickEnabledWithPreset } from './wevuPreset'
 
 const TEMPLATE_MUSTACHE_RE = /\{\{([\s\S]*?)\}\}/g
 const WX_FOR_TAG_RE = /<[^>]*\bwx:for\s*=\s*(?:"[^"]*"|'[^']*')[^>]*>/g
@@ -40,7 +41,7 @@ const JS_GLOBAL_IDENTIFIERS = new Set([
  * 根据配置判断是否启用自动 setData.pick 注入。
  */
 export function isAutoSetDataPickEnabled(config?: WeappViteConfig): boolean {
-  return Boolean(config?.wevu?.autoSetDataPick)
+  return isAutoSetDataPickEnabledWithPreset(config)
 }
 
 function isTargetWevuComponentCall(callee: t.Expression | t.V8IntrinsicIdentifier): boolean {

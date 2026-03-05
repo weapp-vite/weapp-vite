@@ -5,6 +5,7 @@ import logger from '../../../logger'
 import { getSfcCheckMtime } from '../../utils/vueSfc'
 import { resolveClassStyleWxsLocationForBase } from './classStyle'
 import { createUsingComponentPathResolver } from './usingComponentResolver'
+import { resolveWevuDefaultsWithPreset } from './wevuPreset'
 
 interface CompileOptionsContext {
   reExportResolutionCache: Map<string, Map<string, string | undefined>>
@@ -56,7 +57,7 @@ export function createCompileVueFileOptions(
     }
   }
   const jsonConfig = configService.weappViteConfig?.json
-  const wevuDefaults = configService.weappViteConfig?.wevu?.defaults
+  const wevuDefaults = resolveWevuDefaultsWithPreset(configService.weappViteConfig)
   const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
   const templatePlatform = getMiniProgramTemplatePlatform(configService.platform)
   return {

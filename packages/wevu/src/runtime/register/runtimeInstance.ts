@@ -20,6 +20,7 @@ import { markNoSetData } from '../noSetData'
 import { getMiniProgramGlobalObject } from '../platform'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
+import { createSetDataHighFrequencyWarningMonitor } from './setDataFrequencyWarning'
 import { runSetupFunction } from './setup'
 import { registerWatches } from './watch'
 
@@ -415,6 +416,15 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   safeMarkNoSetData(target)
   const ownerId = allocateOwnerId()
   const suspendWhenHidden = Boolean((runtimeApp as any)?.__wevuSetDataOptions?.suspendWhenHidden)
+  const targetLabel = typeof (target as any).route === 'string' && (target as any).route
+    ? `page:${(target as any).route}`
+    : typeof (target as any).is === 'string' && (target as any).is
+      ? `component:${(target as any).is}`
+      : 'unknown-target'
+  const highFrequencyWarning = createSetDataHighFrequencyWarningMonitor({
+    option: (runtimeApp as any)?.__wevuSetDataOptions?.highFrequencyWarning,
+    targetLabel,
+  })
   const createDeferredAdapter = (instance: InternalRuntimeState): AdapterWithSetData => {
     let pending: Record<string, any> | undefined
     let enabled = false
@@ -484,6 +494,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const adapter: AdapterWithSetData = {
     ...(baseAdapter as any),
     setData(payload: Record<string, any>) {
+      highFrequencyWarning?.()
       if (suspendWhenHidden && !visible) {
         hiddenPendingPayload = mergePendingPayload(hiddenPendingPayload, payload)
         refreshOwnerSnapshot()

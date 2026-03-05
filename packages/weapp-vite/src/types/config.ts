@@ -914,6 +914,11 @@ export interface WeappViteConfig {
    */
   wevu?: {
     /**
+     * @description wevu 预设配置
+     * - `performance`：开启性能向默认项（如 patch + suspendWhenHidden + dev 高频告警），并默认启用 autoSetDataPick（可显式覆盖）
+     */
+    preset?: 'performance'
+    /**
      * @description wevu createApp/defineComponent 默认值
      */
     defaults?: WevuDefaults
