@@ -2,6 +2,7 @@ import type { SetDataSnapshotOptions } from '../types'
 
 export interface ResolvedSetDataOptions {
   includeComputed: boolean
+  suspendWhenHidden: boolean
   setDataStrategy: 'diff' | 'patch'
   maxPatchKeys: number
   maxPayloadBytes: number
@@ -15,6 +16,7 @@ export interface ResolvedSetDataOptions {
   prelinkMaxDepth: number | undefined
   prelinkMaxKeys: number | undefined
   debug: SetDataSnapshotOptions['debug']
+  diagnostics: 'off' | 'fallback' | 'always'
   debugWhen: 'fallback' | 'always'
   debugSampleRate: number
   elevateTopKeyThreshold: number
@@ -29,6 +31,7 @@ export function resolveSetDataOptions(
   setDataOptions?: SetDataSnapshotOptions,
 ): ResolvedSetDataOptions {
   const includeComputed = setDataOptions?.includeComputed ?? true
+  const suspendWhenHidden = setDataOptions?.suspendWhenHidden ?? false
   const setDataStrategy = setDataOptions?.strategy ?? 'diff'
   const maxPatchKeys = typeof setDataOptions?.maxPatchKeys === 'number'
     ? Math.max(0, setDataOptions!.maxPatchKeys!)
@@ -56,6 +59,7 @@ export function resolveSetDataOptions(
   const prelinkMaxDepth = setDataOptions?.prelinkMaxDepth
   const prelinkMaxKeys = setDataOptions?.prelinkMaxKeys
   const debug = setDataOptions?.debug
+  const diagnostics = setDataOptions?.diagnostics ?? 'off'
   const debugWhen = setDataOptions?.debugWhen ?? 'fallback'
   const debugSampleRate = typeof setDataOptions?.debugSampleRate === 'number'
     ? Math.min(1, Math.max(0, setDataOptions!.debugSampleRate!))
@@ -87,6 +91,7 @@ export function resolveSetDataOptions(
 
   return {
     includeComputed,
+    suspendWhenHidden,
     setDataStrategy,
     maxPatchKeys,
     maxPayloadBytes,
@@ -100,6 +105,7 @@ export function resolveSetDataOptions(
     prelinkMaxDepth,
     prelinkMaxKeys,
     debug,
+    diagnostics,
     debugWhen,
     debugSampleRate,
     elevateTopKeyThreshold,

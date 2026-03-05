@@ -8,6 +8,7 @@ import type {
   MiniProgramAdapter,
   RuntimeApp,
   RuntimeInstance,
+  SetDataDebugInfo,
   WevuPlugin,
 } from './types'
 import { addMutationRecorder, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, shallowReactive, stop, toRaw, touchReactive, watch } from '../reactivity'
@@ -41,6 +42,42 @@ type RuntimeInstanceWithSetupMethodsVersion<
   M extends MethodDefinitions,
 > = RuntimeInstance<D, C, M> & {
   __wevu_touchSetupMethodsVersion?: () => void
+}
+
+function isFallbackReason(reason: SetDataDebugInfo['reason']) {
+  return reason !== 'patch' && reason !== 'diff'
+}
+
+function createDiagnosticsLogger(mode: 'off' | 'fallback' | 'always') {
+  if (mode === 'off') {
+    return undefined
+  }
+  return (info: SetDataDebugInfo) => {
+    if (mode === 'fallback' && !isFallbackReason(info.reason)) {
+      return
+    }
+    const bytes = typeof info.bytes === 'number' ? info.bytes : info.estimatedBytes
+    const bytesText = typeof bytes === 'number' ? `${bytes}B` : 'unknown'
+    const parts = [
+      `mode=${info.mode}`,
+      `reason=${info.reason}`,
+      `pending=${info.pendingPatchKeys}`,
+      `keys=${info.payloadKeys}`,
+      `bytes=${bytesText}`,
+    ]
+    if (typeof info.mergedSiblingParents === 'number') {
+      parts.push(`mergedParents=${info.mergedSiblingParents}`)
+    }
+    if (typeof info.computedDirtyKeys === 'number') {
+      parts.push(`computedDirty=${info.computedDirtyKeys}`)
+    }
+    const message = `[wevu:setData] ${parts.join(' ')}`
+    if (isFallbackReason(info.reason)) {
+      console.warn(message)
+      return
+    }
+    console.info(message)
+  }
 }
 
 export function createApp<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
@@ -107,6 +144,7 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         prelinkMaxDepth,
         prelinkMaxKeys,
         debug,
+        diagnostics,
         debugWhen,
         debugSampleRate,
         elevateTopKeyThreshold,
@@ -114,6 +152,18 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         toPlainMaxKeys,
         shouldIncludeKey,
       } = resolveSetDataOptions(setDataOptions)
+      const diagnosticsLogger = createDiagnosticsLogger(diagnostics)
+      const mergedDebug = (debug || diagnosticsLogger)
+        ? (info: SetDataDebugInfo) => {
+            if (typeof debug === 'function') {
+              debug(info)
+            }
+            diagnosticsLogger?.(info)
+          }
+        : undefined
+      const mergedDebugWhen = diagnostics === 'always'
+        ? 'always'
+        : debugWhen
 
       const {
         boundMethods,
@@ -155,8 +205,8 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
         elevateTopKeyThreshold,
         toPlainMaxDepth,
         toPlainMaxKeys,
-        debug,
-        debugWhen,
+        debug: mergedDebug,
+        debugWhen: mergedDebugWhen,
         debugSampleRate,
         runTracker: () => tracker?.(),
         isMounted: () => mounted,
@@ -308,6 +358,19 @@ export function createApp<D extends object, C extends ComputedDefinitions, M ext
   }
 
   const hasGlobalApp = typeof App === 'function'
+
+  try {
+    Object.defineProperty(runtimeApp as Record<string, any>, '__wevuSetDataOptions', {
+      value: setDataOptions,
+      configurable: true,
+      enumerable: false,
+      writable: false,
+    })
+  }
+  catch {
+    ;(runtimeApp as any).__wevuSetDataOptions = setDataOptions
+  }
+
   if (hasGlobalApp) {
     const globalObject = getMiniProgramGlobalObject()
     const hasWxConfig = typeof globalObject?.__wxConfig !== 'undefined'

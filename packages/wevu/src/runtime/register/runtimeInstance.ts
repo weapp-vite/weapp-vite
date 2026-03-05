@@ -23,7 +23,10 @@ import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { runSetupFunction } from './setup'
 import { registerWatches } from './watch'
 
-type AdapterWithSetData = Required<MiniProgramAdapter> & { __wevu_enableSetData?: () => void }
+type AdapterWithSetData = Required<MiniProgramAdapter> & {
+  __wevu_enableSetData?: () => void
+  __wevu_setVisibility?: (visible: boolean) => void
+}
 type RuntimeSetupFunction<
   D extends object,
   C extends ComputedDefinitions,
@@ -411,6 +414,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   }
   safeMarkNoSetData(target)
   const ownerId = allocateOwnerId()
+  const suspendWhenHidden = Boolean((runtimeApp as any)?.__wevuSetDataOptions?.suspendWhenHidden)
   const createDeferredAdapter = (instance: InternalRuntimeState): AdapterWithSetData => {
     let pending: Record<string, any> | undefined
     let enabled = false
@@ -454,6 +458,13 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
         },
       }
   let runtimeRef: RuntimeInstance<any, any, any> | undefined
+  let visible = true
+  let hiddenPendingPayload: Record<string, any> | undefined
+
+  const mergePendingPayload = (pending: Record<string, any> | undefined, payload: Record<string, any>) => ({
+    ...(pending ?? {}),
+    ...payload,
+  })
   const refreshOwnerSnapshot = () => {
     if (!runtimeRef) {
       return
@@ -473,6 +484,24 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   const adapter: AdapterWithSetData = {
     ...(baseAdapter as any),
     setData(payload: Record<string, any>) {
+      if (suspendWhenHidden && !visible) {
+        hiddenPendingPayload = mergePendingPayload(hiddenPendingPayload, payload)
+        refreshOwnerSnapshot()
+        scheduleTemplateRefUpdate(target)
+        return undefined
+      }
+      const result = baseAdapter.setData(payload)
+      refreshOwnerSnapshot()
+      scheduleTemplateRefUpdate(target)
+      return result
+    },
+    __wevu_setVisibility(nextVisible: boolean) {
+      visible = nextVisible
+      if (!visible || !hiddenPendingPayload) {
+        return undefined
+      }
+      const payload = hiddenPendingPayload
+      hiddenPendingPayload = undefined
       const result = baseAdapter.setData(payload)
       refreshOwnerSnapshot()
       scheduleTemplateRefUpdate(target)
@@ -737,6 +766,13 @@ export function enableDeferredSetData(target: InternalRuntimeState) {
   const adapter = (target as any).__wevu?.adapter
   if (adapter && typeof (adapter as any).__wevu_enableSetData === 'function') {
     ;(adapter as any).__wevu_enableSetData()
+  }
+}
+
+export function setRuntimeSetDataVisibility(target: InternalRuntimeState, visible: boolean) {
+  const adapter = (target as any).__wevu?.adapter
+  if (adapter && typeof (adapter as any).__wevu_setVisibility === 'function') {
+    ;(adapter as any).__wevu_setVisibility(visible)
   }
 }
 
