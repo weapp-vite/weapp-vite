@@ -56,6 +56,7 @@ describe('runtime config merge miniprogram', () => {
     expect(result.root).toBe('/project')
     expect(result.define).toMatchObject({
       __DEV__: true,
+      __VITE_IS_MODERN__: 'false',
     })
     expect(result.build?.minify).toBe(false)
     expect(result.build?.emptyOutDir).toBe(false)
@@ -148,6 +149,7 @@ describe('runtime config merge miniprogram', () => {
     expect(result.logLevel).toBe('info')
     expect(result.define).toMatchObject({
       __PROD__: true,
+      __VITE_IS_MODERN__: 'false',
     })
     expect(result.build?.emptyOutDir).toBe(false)
     expect(result.build?.modulePreload).toBe(false)
@@ -186,6 +188,37 @@ describe('runtime config merge miniprogram', () => {
 
     expect(result.build?.modulePreload).toEqual({
       polyfill: true,
+    })
+  })
+
+  it('forces __VITE_IS_MODERN__ to false in miniprogram runtime', () => {
+    const result = mergeMiniprogram(
+      {
+        ctx: {} as any,
+        subPackageMeta: undefined,
+        config: {
+          define: {
+            __VITE_IS_MODERN__: 'true',
+          },
+        } as any,
+        cwd: '/project',
+        srcRoot: 'src',
+        packageJson: undefined,
+        isDev: false,
+        applyRuntimePlatform: vi.fn(),
+        injectBuiltinAliases: vi.fn(),
+        getDefineImportMetaEnv: () => ({
+          __PROD__: true,
+        }),
+        setOptions: vi.fn(),
+        oxcRolldownPlugin: undefined,
+      },
+      undefined,
+    )
+
+    expect(result.define).toMatchObject({
+      __PROD__: true,
+      __VITE_IS_MODERN__: 'false',
     })
   })
 })

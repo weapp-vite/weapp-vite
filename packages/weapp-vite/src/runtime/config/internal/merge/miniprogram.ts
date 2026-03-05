@@ -57,6 +57,12 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     plugins: oxcRolldownPlugin ? [oxcRolldownPlugin] : undefined,
   }
 
+  const miniprogramDefines = {
+    ...getDefineImportMetaEnv(),
+    // Vite 动态导入预加载 helper 依赖该标记，miniprogram 构建需稳定替换为 false。
+    __VITE_IS_MODERN__: 'false',
+  }
+
   if (isDev) {
     const watchInclude: string[] = [
       path.join(cwd, srcRoot, '**'),
@@ -80,9 +86,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       {
         root: cwd,
         mode: 'development',
-        define: {
-          ...getDefineImportMetaEnv(),
-        },
+        define: miniprogramDefines,
         build: {
           modulePreload: false,
           watch: {
@@ -104,6 +108,10 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
         },
       },
     )
+    inline.define = {
+      ...(inline.define ?? {}),
+      __VITE_IS_MODERN__: 'false',
+    }
     stripRollupOptions(inline)
     arrangePlugins(inline, ctx, subPackageMeta)
     injectBuiltinAliases(inline)
@@ -116,9 +124,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     {
       root: cwd,
       mode: 'production',
-      define: {
-        ...getDefineImportMetaEnv(),
-      },
+      define: miniprogramDefines,
       build: {
         modulePreload: false,
         emptyOutDir: false,
@@ -129,6 +135,10 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       },
     },
   )
+  inlineConfig.define = {
+    ...(inlineConfig.define ?? {}),
+    __VITE_IS_MODERN__: 'false',
+  }
   stripRollupOptions(inlineConfig)
   arrangePlugins(inlineConfig, ctx, subPackageMeta)
   inlineConfig.logLevel = 'info'
