@@ -119,7 +119,7 @@ createRuntimeSuite({
     },
     {
       route: '/subpackages/item/index',
-      expected: ['__SP_COMPLEX_A_SUB_ONLY__', '__SP_COMPLEX_A_NPM_SUB_ONLY__', '__SP_COMPLEX_A_PAIR_ONLY__'],
+      expected: ['__SP_COMPLEX_A_SUB_ONLY__', '__SP_COMPLEX_A_NPM_SUB_ONLY__', '__SP_COMPLEX_A_PAIR_ONLY__', '__SP_COMPLEX_A_NPM_SINGLE__'],
     },
     {
       route: '/subpackages/user/index',
@@ -147,7 +147,7 @@ createRuntimeSuite({
     },
     {
       route: '/subpackages/beta/index',
-      expected: ['__SP_COMPLEX_B_CLUSTER__', '__SP_COMPLEX_B_NPM_SUB_ONLY__'],
+      expected: ['__SP_COMPLEX_B_CLUSTER__', '__SP_COMPLEX_B_NPM_SUB_ONLY__', '__SP_COMPLEX_B_NPM_SINGLE__'],
     },
     {
       route: '/subpackages/gamma/index',
