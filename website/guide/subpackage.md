@@ -36,6 +36,16 @@ keywords:
 > [!NOTE]
 > 文档里提到的 **Rolldown** 是 `weapp-vite` 内置的打包器：语法与 Vite/Rollup 插件体系兼容，但针对小程序做了额外的“分包产物分发”优化。可以把它看作「为小程序量身定制的 Rollup」；同一个 Rolldown 上下文意味着编译出的模块、样式和资源可以互相复用。
 
+先看总览模型：
+
+```mermaid
+flowchart LR
+  SRC[源码模块] --> NORMAL[普通分包: 同一构建上下文]
+  SRC --> IND[独立分包: 隔离构建上下文]
+  NORMAL --> CH[可用 sharedStrategy 做共享优化]
+  IND --> ISO[不与主包/其它分包共享 JS 产物]
+```
+
 ## 普通分包
 
 普通分包会被视为和整个 `app` 是一个整体：主包 + 所有普通分包在**同一个 Rolldown 上下文**里构建，因此“共享/复制模块”这类优化是可行的。
@@ -46,83 +56,58 @@ keywords:
 - `packageA` 不能引用 `packageB` 的模板（WXML），但可以引用主包与自身分包内的模板。
 - `packageA` 不能直接使用 `packageB` 的静态资源，但可以使用主包与自身分包内的资源。
 
-### 代码产物的位置
+### 代码产物的位置（核心 4 条）
 
-当一段可复用的 JS（例如 `utils`）被不同位置引用时，它最终会被输出到哪里，取决于“引用它的页面/组件”分布在哪里。下面用 `utils` 举例说明：
+1. 模块只被一个分包引用：产物只在该分包内。
+2. 模块被多个分包引用且主包不引用：由 `sharedStrategy` 决定落位。
+3. 模块被主包和任一分包同时引用：统一进入主包 `common.js`。
+4. 分包 A 不能直接引用分包 B 的源码：需先抽到主包或公共目录。
 
-1. `utils` 只在 `packageA` 内被使用：产物只会出现在 `dist/packageA/` 内。
-2. `utils` 同时在 `packageA` 和 `packageB` 内被使用：默认 `duplicate` 策略会把它复制到各分包的 `__shared__/common.js`，避免分包首开时再去拉主包；如果希望统一提炼到主包，请在 `vite.config.ts` 中设置 `weapp.chunks.sharedStrategy = 'hoist'`。
-3. `utils` 同时在主包和 `packageA` 内被使用：`utils` 会被提炼到主包中，保证主包可以直接使用。
-
-另外，`node_modules` 中的第三方依赖与 Vite 注入的 `commonjsHelpers.js` 也会参与相同的统计：在默认的 `duplicate` 策略下，它们会随着引用方复制到对应分包；只有在 `sharedStrategy: 'hoist'` 时，这些依赖才会统一落到主包的 `common.js`。
-
-#### 详细示例
-
-下面以 `test/fixtures/subpackage-dayjs` 为例，展示一次真实的分包拆分过程。项目结构与配置精简如下：
-
-```text
-src/
-  app.ts
-  utils/shared.ts                 # 主包与 packageA、packageB 同时引用
-  packageA/
-    pages/foo.ts                  # 引入 utils/shared.ts，并使用第三方 dayjs
-  packageB/
-    pages/bar.ts                  # 引入 utils/shared.ts，并使用第三方 dayjs
-  workers/index.ts                # （可选）worker 入口
-
-// vite.config.ts
-export default defineConfig({
-  weapp: {
-    subPackages: [
-      { root: 'packageA' },
-      { root: 'packageB' },
-    ],
-    chunks: {
-      sharedStrategy: 'duplicate',
-    },
-  },
-})
+```mermaid
+flowchart TD
+  S[识别模块引用方] --> M{主包是否引用?}
+  M -->|是| R[落到主包 common.js]
+  M -->|否| N{是否被多个分包引用?}
+  N -->|否| P[落到单分包产物]
+  N -->|是| C[按 sharedStrategy 分发]
 ```
 
-构建完成后，测试夹具会分别生成 `dist-duplicate/` 与 `dist-hoist/` 两个目录，核心产物与模块来源对应关系如下：
+### sharedStrategy = duplicate（默认）
 
-| 产物位置                                                                                        | 说明                                                                                  |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `dist-duplicate/__weapp_shared__/packageA_packageB/common.js`                                   | `packageA` 与 `packageB` 共同引用的模块（如 `utils/shared.ts`），被标记为虚拟共享块。 |
-| `dist-duplicate/packageA/__shared__/common.js`                                                  | 复制自虚拟共享块，供 `packageA` 使用。                                                |
-| `dist-duplicate/packageB/__shared__/common.js`                                                  | 复制自虚拟共享块，供 `packageB` 使用。                                                |
-| `dist-duplicate/packageA/pages/foo.js`                                                          | 入口被自动改写为 `require('../__shared__/common.js')`。                               |
-| `dist-duplicate/packageB/pages/bar.js`                                                          | 入口被自动改写为 `require('../__shared__/common.js')`。                               |
-| `dist-duplicate/packageA/__shared__/common.js` / `dist-duplicate/packageB/__shared__/common.js` | 内含 `dayjs` 等来自 `node_modules` 的依赖代码，因为它们仅被两个分包使用。             |
-| `dist-hoist/common.js`                                                                          | 切换为 `hoist` 策略后，跨分包共享模块统一落在主包。                                   |
-| `dist-hoist/packageA/pages/foo.js` / `dist-hoist/packageB/pages/bar.js`                         | 入口被改写为引用 `../common.js`。                                                     |
-| `dist-hoist/app.js`                                                                             | 主包独享的逻辑，仍留在主包目录。                                                      |
+适合“分包首开优先”。跨分包共享模块会复制到各分包共享产物，避免回主包拉取。
 
-若某个共享模块或 `node_modules` 依赖同样被主包引用，则它会被提炼到主包下的 `common.js`。将 `sharedStrategy` 切换为 `duplicate` 时，上述跨分包共享模块（包括 `dayjs` 等第三方依赖）会复制回各自分包的 `weapp-shared/common.js`，以换取更低的冷启动开销。位于某个分包目录下的源码如果被其它分包引用，构建器会直接报错，提示先把该模块移动到主包或公共目录，再进行跨分包共享。
-
-> 提示：主仓库的演示项目 `apps/vite-native` 也在 `packageA` 与 `packageC` 中引入了 `dayjs`，可以结合 `dist` 产物直观观察默认的 `duplicate` 策略与手动切换为 `hoist` 后的差异。
-
-默认的 `duplicate` 策略可以在分包首次打开时避免回到主包拉取共享模块；若更在意控制整体包体、希望统一落到主包，也可以设置 `weapp.chunks.sharedStrategy = 'hoist'`，或结合 [advanced-chunks](https://rolldown.rs/guide/in-depth/advanced-chunks) 做更精细的拆分。
-
-在实际项目中，跨分包共享逻辑往往会抽象到 `src/action/`、`src/services/` 等目录。若这些模块只被分包页面（或其它共享 chunk）间接引用，Weapp-vite 会把位于根目录的“伪主包”导入者排除在统计之外，使共享代码仍然复制到各自的 `pages/*/weapp-shared/common.js`。例如下列最小复现：
-
-```ts
-// src/pages/index1/index.ts & src/pages/index3/index.ts
-import { test1 } from '@/action/test1'
-
-// src/action/test2.ts
-import { test1 } from './test1'
+```mermaid
+flowchart LR
+  A[subpackage A page] --> U[共享模块 util 或 npm]
+  B[subpackage B page] --> U
+  U --> SA[A/__shared__/common.js]
+  U --> SB[B/__shared__/common.js]
 ```
 
-在旧版本中，`test1` 会因为 `action/test2.ts` 的存在而被迫回退到主包 `common.js`。升级后构建日志会提示：
+### sharedStrategy = hoist
 
-```text
-[subpackages] 分包 pages/index1、pages/index3 共享模块已复制到各自 weapp-shared/common.js（2 处引用，忽略主包引用：action/test2.ts）
+适合“减少重复代码优先”。跨分包共享模块统一提升到主包 `common.js`。
+
+```mermaid
+flowchart LR
+  A[subpackage A page] --> U[共享模块 util 或 npm]
+  B[subpackage B page] --> U
+  U --> R[main/common.js]
 ```
 
-如果扫描阶段拿不到完整的导入图，也可以通过 `weapp.chunks.forceDuplicatePatterns` 手动声明哪些目录始终视为可复制的共享库。
+### 何时选 duplicate / hoist
 
-当复制出的共享模块越来越多时，也可以结合 `weapp.chunks.duplicateWarningBytes` 设定冗余体积的提醒阈值（默认约 `512 KB`），超过后构建日志会给出告警，便于提前关注包体膨胀。
+```mermaid
+flowchart TD
+  T[确定优化目标] --> Q{更在意什么?}
+  Q -->|分包首开速度| D[选 duplicate]
+  Q -->|包体去重与统一管理| H[选 hoist]
+```
+
+### 精细化参数（按需开启）
+
+- `forceDuplicatePatterns`：当导入图里出现“伪主包引用”时，强制某些目录仍按分包复制。
+- `duplicateWarningBytes`：给 `duplicate` 的冗余体积设置告警阈值。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -130,119 +115,24 @@ import { defineConfig } from 'weapp-vite/config'
 export default defineConfig({
   weapp: {
     chunks: {
-      // 若项目更关注分包首屏性能，可以显式复制共享模块
-      sharedStrategy: 'duplicate',
-      // 强制忽略 action/ 下的导入方，防止伪主包引用拖回主包 common.js
-      forceDuplicatePatterns: ['action/**'],
-      // 调整冗余体积告警阈值
-      duplicateWarningBytes: 768 * 1024,
+      sharedStrategy: 'duplicate', // 或 'hoist'
+      // forceDuplicatePatterns: ['action/**'],
+      // duplicateWarningBytes: 768 * 1024,
     },
   },
 })
 ```
 
-#### 复杂案例：分包专属 npm 与共享 npm
-
-上面的 `dayjs` 示例更偏“入门可读”。如果你想看“更接近真实业务”的复杂图谱，可以直接参考仓库内两个 e2e 应用：
-
-- `e2e-apps/subpackage-shared-strategy-complex-a`
-- `e2e-apps/subpackage-shared-strategy-complex-b`
-
-这两个案例都在 `devDependencies` 中引入了小体积 npm 包 `picocolors`，并且故意拆成两类模块：
-
-- **跨多个分包共享的 npm 模块**（只在分包链路中被引用，主包不直接引用）
-- **仅单个分包使用的 npm 模块**（用于验证不会被错误提升到主包）
-
-可复现命令：
-
-```bash
-pnpm run e2e:chunks:subpackage-complex:build:matrix
-pnpm run e2e:chunks:subpackage-complex:ci
-pnpm run e2e:chunks:subpackage-complex:ide
-```
-
-`complex-a` 的关键标记：
-
-- `__SP_COMPLEX_A_NPM_SUB_ONLY__`：来自 `src/shared/sub-only.ts`，被 `item/user/report` 三个分包页面间接复用。
-- `__SP_COMPLEX_A_NPM_SINGLE__`：来自 `src/shared/item-only.ts`，只在 `item` 分包使用。
-
-`complex-b` 的关键标记：
-
-- `__SP_COMPLEX_B_NPM_SUB_ONLY__`：来自 `src/shared/sub-cluster.ts`，被 `alpha/beta/gamma` 分包链路复用。
-- `__SP_COMPLEX_B_NPM_SINGLE__`：来自 `src/shared/beta-only.ts`，只在 `beta` 分包使用。
-
-依赖关系示意图（和上面四个 marker 一一对应）：
-
-```mermaid
-flowchart LR
-  subgraph MAIN[主包]
-    mainPage[pages/index/index<br/>不引入 npm markers]
-  end
-
-  subgraph CA[complex-a]
-    aItem[subpackages/item/index]
-    aUser[subpackages/user/index]
-    aReport[subpackages/report/index]
-    aSubOnly[src/shared/sub-only.ts<br/>__SP_COMPLEX_A_NPM_SUB_ONLY__]
-    aSingle[src/shared/item-only.ts<br/>__SP_COMPLEX_A_NPM_SINGLE__]
-  end
-
-  subgraph CB[complex-b]
-    bAlpha[subpackages/alpha/index]
-    bBeta[subpackages/beta/index]
-    bGamma[subpackages/gamma/index]
-    bSubOnly[src/shared/sub-cluster.ts<br/>__SP_COMPLEX_B_NPM_SUB_ONLY__]
-    bSingle[src/shared/beta-only.ts<br/>__SP_COMPLEX_B_NPM_SINGLE__]
-  end
-
-  npm[(picocolors)]
-
-  aItem --> aSubOnly
-  aUser --> aSubOnly
-  aReport --> aSubOnly
-  aItem --> aSingle
-
-  bAlpha --> bSubOnly
-  bBeta --> bSubOnly
-  bGamma --> bSubOnly
-  bBeta --> bSingle
-
-  aSubOnly --> npm
-  aSingle --> npm
-  bSubOnly --> npm
-  bSingle --> npm
-
-  mainPage -. 无直接导入 .-> npm
-```
-
-在这两个案例中，构建器行为可以总结为：
-
-| 场景                                        | `sharedStrategy: duplicate`                                                                          | `sharedStrategy: hoist`                    |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| 跨多个分包共享的 npm 模块（主包不直接引用） | 按引用分布复制到分包共享产物（如 `subpackages/*/weapp-shared/common*.js` 或 flattened shared chunk） | 提升到主包 `common.js`                     |
-| 仅单个分包使用的 npm 模块                   | 只留在该分包对应产物，不进入主包                                                                     | 仍只留在该分包，对 `sharedStrategy` 不敏感 |
-
-按构建策略看产物落位的示意图：
-
-```mermaid
-flowchart TD
-  module[npm 依赖模块] --> scope{引用范围}
-
-  scope -->|跨多个分包共享| shared[__SP_*_NPM_SUB_ONLY__]
-  scope -->|仅单个分包使用| single[__SP_*_NPM_SINGLE__]
-
-  shared --> dShared[duplicate:<br/>复制到分包共享产物<br/>subpackages/*/weapp-shared/common*.js]
-  shared --> hShared[hoist:<br/>提升到主包 common.js]
-
-  single --> dSingle[duplicate:<br/>保留在目标分包产物]
-  single --> hSingle[hoist:<br/>仍保留在目标分包产物]
-```
-
-这组案例的价值在于：它不仅验证“源码模块怎么拆”，还验证了 **`node_modules` 依赖在复杂分包图中的真实落位**。如果你的项目担心“分包里引用了 npm，最终是不是会被塞回主包”，可以直接照这个案例建最小复现并对照产物路径检查。
-
 ## 独立分包
 
 独立分包和整个 `app` 是隔离的：它们会在**不同的 Rolldown 上下文**里构建，因此不会和主包/其他分包共享复用的 JS 代码。
+
+```mermaid
+flowchart LR
+  MAIN[主包 + 普通分包] --> MCTX[上下文 A]
+  IND[独立分包] --> ICTX[上下文 B]
+  MCTX -. 不共享 JS 产物 .-> ICTX
+```
 
 - **独立分包不能依赖主包和其他分包的内容**，包括 JS、模板、WXSS、自定义组件、插件等。（使用“分包异步化”时，JS/自定义组件/插件会放宽）
 - 主包的 `app.wxss` 对独立分包无效：不要依赖主包全局样式。
@@ -300,6 +190,14 @@ export default defineConfig({
 
 [`weapp.subPackages[].styles`](/config/subpackages.md#subpackages-styles) 能把重复的 `@import` 交还给构建器处理：声明一次主题、设计令牌或基础布局，普通分包与独立分包都会在生成样式时自动插入对应的共享入口。
 
+```mermaid
+flowchart LR
+  STYLES[styles 配置] --> NORMAL[普通分包]
+  STYLES --> IND[独立分包]
+  NORMAL --> NINJ[复用样式产物并注入 @import]
+  IND --> IINJ[在独立上下文编译并注入 @import]
+```
+
 > [!TIP]
 > 分包根目录下若存在 `index.*` / `pages.*` / `components.*`（默认扫描 `.wxss`/`.css`），Weapp-vite 会自动识别它们作为共享入口，零配置即可复用。
 
@@ -345,7 +243,7 @@ export default defineConfig({
 
 ### 分析产物布局
 
-若要快速核对“哪些源码最终落到了主包 / 分包 / 共享 chunk”，可以在 `package.json` 中添加脚本：
+快速核对“源码最终落在主包 / 分包 / 共享 chunk”的最短路径：
 
 ```json
 {
@@ -361,19 +259,13 @@ export default defineConfig({
 pnpm run analyze
 ```
 
-命令会读取当前 `vite.config.ts` 与 `app.json` 配置，进行一次只在内存写入的打包，并输出：
-
-- 每个主包或分包包含的 chunk / 资源数量；
-- 跨包复用、被复制到共享 chunk 的源码列表；
-- `app.json` 中声明的分包及其 `independent` 状态。
-
-需要与其他工具联动时，可以加上 `--json` 输出完整的 JSON 结果，或搭配 `--output <file>` 将结果写入磁盘：
+默认会输出人类可读摘要。需要对接 CI 或自定义检查时，用 JSON 模式：
 
 ```bash
 pnpm run analyze -- --json --output report/analyze.json
 ```
 
-写入文件时会自动创建缺失的目录，路径默认为相对项目根目录。JSON 中同时包含主包、各分包、虚拟共享 chunk 与源码映射的详细信息，可直接用于体积分析或预警脚本。
+输出文件会包含主包、分包、共享 chunk 与源码映射，便于做体积预警和规则校验。
 
 ## 常见问题
 
