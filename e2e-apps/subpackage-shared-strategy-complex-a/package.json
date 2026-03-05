@@ -15,6 +15,7 @@
     "build:matrix": "pnpm run build:duplicate && pnpm run build:hoist"
   },
   "devDependencies": {
-    "picocolors": "^1.1.1"
+    "picocolors": "^1.1.1",
+    "weapp-vite": "workspace:*"
   }
 }
