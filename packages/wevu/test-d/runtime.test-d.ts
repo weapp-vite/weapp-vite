@@ -36,6 +36,7 @@ import {
   registerComponent,
   resetWevuDefaults,
   setWevuDefaults,
+  useIntersectionObserver,
   useNativeInstance,
 
 } from '@/index'
@@ -108,6 +109,7 @@ defineComponent({
     expectType<void>(ctx.emit('multi-args', 1, 2, 3))
     expectType<void>(ctx.instance.triggerEvent('update', props.count))
     expectType<WechatMiniprogram.SelectorQuery | undefined>(ctx.instance.createSelectorQuery())
+    expectType<WechatMiniprogram.IntersectionObserver | undefined>(ctx.instance.createIntersectionObserver())
     expectType<void | Promise<void> | undefined>(ctx.instance.setData({ count: props.count }))
     ctx.expose({ a: 1 })
     const model = ctx.bindModel<number>('path')
@@ -149,6 +151,8 @@ defineComponent({
     onDeactivated(() => {})
     const nativeInstance = useNativeInstance()
     expectType<void>(nativeInstance.triggerEvent('from-helper', { ok: true }))
+    const io = useIntersectionObserver()
+    expectType<WechatMiniprogram.IntersectionObserver>(io)
     return {}
   },
 })

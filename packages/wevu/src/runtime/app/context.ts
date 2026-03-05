@@ -36,7 +36,10 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
     const rawTarget = toRaw(target as any) as Record<string, any>
     const runtimeRef = rawTarget.__wevuRuntime
     const runtimeProxy = runtimeRef?.proxy as Record<string, any> | undefined
-    const isBridgeMethod = (candidate: object, methodName: 'triggerEvent' | 'createSelectorQuery' | 'setData') => {
+    const isBridgeMethod = (
+      candidate: object,
+      methodName: 'triggerEvent' | 'createSelectorQuery' | 'createIntersectionObserver' | 'setData',
+    ) => {
       const candidateMethod = (candidate as any)[methodName]
       return isNativeBridgeMethod(candidateMethod)
     }
@@ -50,6 +53,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       if (
         isBridgeMethod(candidate, 'triggerEvent')
         || isBridgeMethod(candidate, 'createSelectorQuery')
+        || isBridgeMethod(candidate, 'createIntersectionObserver')
         || isBridgeMethod(candidate, 'setData')
       ) {
         return false
@@ -209,6 +213,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
 
   installNativeMethodBridge('triggerEvent')
   installNativeMethodBridge('createSelectorQuery')
+  installNativeMethodBridge('createIntersectionObserver')
   installNativeMethodBridge('setData')
 
   Object.keys(computedDefs).forEach((key) => {

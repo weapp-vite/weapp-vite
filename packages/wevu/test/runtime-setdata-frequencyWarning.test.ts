@@ -12,6 +12,8 @@ describe('runtime: setData high frequency warning', () => {
     expect(defaults.sampleWindowMs).toBe(1000)
     expect(defaults.maxCalls).toBe(30)
     expect(defaults.coolDownMs).toBe(5000)
+    expect(defaults.warnOnPageScroll).toBe(true)
+    expect(defaults.pageScrollCoolDownMs).toBe(2000)
 
     const enabled = resolveHighFrequencyWarningOptions(true)
     expect(enabled.enabled).toBe(true)
@@ -72,6 +74,41 @@ describe('runtime: setData high frequency warning', () => {
     expect(warn).toHaveBeenCalledTimes(1)
 
     now += 600
+    monitor?.()
+    expect(warn).toHaveBeenCalledTimes(2)
+  })
+
+  it('warns when setData is called inside onPageScroll hook', () => {
+    let now = 0
+    const warn = vi.fn()
+    let inPageScrollHook = true
+    const monitor = createSetDataHighFrequencyWarningMonitor({
+      option: {
+        devOnly: false,
+        maxCalls: 999,
+        warnOnPageScroll: true,
+        pageScrollCoolDownMs: 200,
+      },
+      targetLabel: 'page:pages/list/index',
+      isInPageScrollHook: () => inPageScrollHook,
+      now: () => now,
+      logger: warn,
+    })
+
+    monitor?.()
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('onPageScroll')
+
+    now += 100
+    monitor?.()
+    expect(warn).toHaveBeenCalledTimes(1)
+
+    now += 200
+    monitor?.()
+    expect(warn).toHaveBeenCalledTimes(2)
+
+    inPageScrollHook = false
+    now += 300
     monitor?.()
     expect(warn).toHaveBeenCalledTimes(2)
   })

@@ -47,6 +47,7 @@ keywords:
 
 - `ctx.instance.triggerEvent(...)`
 - `ctx.instance.createSelectorQuery()`
+- `ctx.instance.createIntersectionObserver(...)`
 - `ctx.instance.setData(...)`
 - 以及平台原生 `wx` 组件实例 API
 
@@ -76,6 +77,12 @@ function measure() {
   query?.exec(console.log)
 }
 
+function watchBanner() {
+  const ctx = getCurrentSetupContext()
+  const observer = ctx?.instance?.createIntersectionObserver?.({ thresholds: [0, 1] })
+  observer?.relativeToViewport().observe('#target', console.log)
+}
+
 function patchRaw() {
   const ctx = getCurrentSetupContext()
   ctx?.instance?.setData?.({ rawFlag: true })
@@ -88,6 +95,9 @@ function patchRaw() {
   </view>
   <button @tap="measure">
     measure
+  </button>
+  <button @tap="watchBanner">
+    watchBanner
   </button>
   <button @tap="patchRaw">
     patchRaw
@@ -116,6 +126,12 @@ function measure() {
   query?.exec(console.log)
 }
 
+function watchBanner() {
+  const ctx = getCurrentSetupContext()
+  const observer = ctx?.instance?.createIntersectionObserver?.({ thresholds: [0, 1] })
+  observer?.relativeToViewport().observe('#target', console.log)
+}
+
 function patchRaw() {
   const ctx = getCurrentSetupContext()
   ctx?.instance?.setData?.({ rawFlag: true })
@@ -128,6 +144,9 @@ function patchRaw() {
   </view>
   <button @tap="measure">
     measure
+  </button>
+  <button @tap="watchBanner">
+    watchBanner
   </button>
   <button @tap="patchRaw">
     patchRaw
@@ -142,6 +161,12 @@ function patchRaw() {
 | API            | 类型入口                               | 说明                                      |
 | -------------- | -------------------------------------- | ----------------------------------------- |
 | `useBindModel` | `ModelBindingOptions` / `ModelBinding` | 生成小程序可直接绑定的数据 + 事件处理器。 |
+
+## 5.1 可见性监听辅助
+
+| API                       | 类型入口               | 说明                                                            |
+| ------------------------- | ---------------------- | --------------------------------------------------------------- |
+| `useIntersectionObserver` | `IntersectionObserver` | setup 内创建观察器，自动在 `onUnload/onDetached` 阶段断开连接。 |
 
 ## 6. 相关页
 

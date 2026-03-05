@@ -36,7 +36,7 @@ keywords:
 ### setup 上下文
 
 - [Setup Context API（setup 上下文）](/wevu/api/setup-context.html)
-  - `ctx.emit` / `useBindModel` / `getCurrentInstance` / `provide` / `inject`
+  - `ctx.emit` / `useBindModel` / `useIntersectionObserver` / `getCurrentInstance` / `provide` / `inject`
 
 ### 状态管理
 

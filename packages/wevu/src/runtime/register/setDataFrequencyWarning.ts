@@ -7,11 +7,14 @@ interface ResolvedHighFrequencyWarningOptions {
   sampleWindowMs: number
   maxCalls: number
   coolDownMs: number
+  warnOnPageScroll: boolean
+  pageScrollCoolDownMs: number
 }
 
 interface CreateHighFrequencyWarningMonitorOptions {
   option: SetDataSnapshotOptions['highFrequencyWarning']
   targetLabel: string
+  isInPageScrollHook?: () => boolean
   now?: () => number
   logger?: (message: string) => void
 }
@@ -31,6 +34,8 @@ export function resolveHighFrequencyWarningOptions(
     sampleWindowMs: 1000,
     maxCalls: 30,
     coolDownMs: 5000,
+    warnOnPageScroll: true,
+    pageScrollCoolDownMs: 2000,
   }
 
   if (option === undefined || option === false) {
@@ -63,6 +68,10 @@ export function resolveHighFrequencyWarningOptions(
     coolDownMs: typeof option.coolDownMs === 'number'
       ? Math.max(0, Math.floor(option.coolDownMs))
       : defaults.coolDownMs,
+    warnOnPageScroll: option.warnOnPageScroll ?? defaults.warnOnPageScroll,
+    pageScrollCoolDownMs: typeof option.pageScrollCoolDownMs === 'number'
+      ? Math.max(0, Math.floor(option.pageScrollCoolDownMs))
+      : defaults.pageScrollCoolDownMs,
   }
 }
 
@@ -116,6 +125,7 @@ export function createSetDataHighFrequencyWarningMonitor(
 
   const callTimes: number[] = []
   let lastWarnAt = Number.NEGATIVE_INFINITY
+  let lastPageScrollWarnAt = Number.NEGATIVE_INFINITY
 
   return () => {
     const current = now()
@@ -124,6 +134,16 @@ export function createSetDataHighFrequencyWarningMonitor(
     const windowStart = current - resolved.sampleWindowMs
     while (callTimes.length > 0 && callTimes[0] < windowStart) {
       callTimes.shift()
+    }
+
+    const inPageScrollHook = options.isInPageScrollHook?.() ?? false
+    if (resolved.warnOnPageScroll && inPageScrollHook) {
+      if (resolved.pageScrollCoolDownMs <= 0 || current - lastPageScrollWarnAt >= resolved.pageScrollCoolDownMs) {
+        lastPageScrollWarnAt = current
+        logger(
+          `[wevu:setData] 检测到 onPageScroll 回调内调用 setData（${options.targetLabel}）。建议改用 IntersectionObserver 监听可见性，或对滚动更新做节流。`,
+        )
+      }
     }
 
     if (callTimes.length <= resolved.maxCalls) {

@@ -208,6 +208,13 @@ export type SetupContextNativeInstance = InternalRuntimeState & {
   createSelectorQuery: () => WechatMiniprogram.SelectorQuery | undefined
 
   /**
+   * 创建交叉观察器（不可用时返回 undefined）
+   */
+  createIntersectionObserver: (
+    options?: WechatMiniprogram.CreateIntersectionObserverOption,
+  ) => WechatMiniprogram.IntersectionObserver | undefined
+
+  /**
    * 提交视图层更新
    */
   setData: (payload: Record<string, any>, callback?: () => void) => void | Promise<void> | undefined
