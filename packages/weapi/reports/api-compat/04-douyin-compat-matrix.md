@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：145，不支持：334
+总计：479，支持：149，不支持：330
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | --------------------------------------------------------------------------------- |
@@ -46,7 +46,7 @@
 | `chooseMedia`                                 | `chooseMedia`                                 | ✅   | 直连 `tt.chooseMedia`                                                             |
 | `chooseMessageFile`                           | `chooseMessageFile`                           | ❌   | 未提供 tt.chooseMessageFile，调用时将返回 not supported                           |
 | `choosePoi`                                   | `choosePoi`                                   | ❌   | 未提供 tt.choosePoi，调用时将返回 not supported                                   |
-| `chooseVideo`                                 | `chooseVideo`                                 | ❌   | 未提供 tt.chooseVideo，调用时将返回 not supported                                 |
+| `chooseVideo`                                 | `chooseMedia`                                 | ✅   | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构                  |
 | `clearStorage`                                | `clearStorage`                                | ✅   | 直连 `tt.clearStorage`                                                            |
 | `clearStorageSync`                            | `clearStorageSync`                            | ✅   | 直连 `tt.clearStorageSync`                                                        |
 | `closeBLEConnection`                          | `closeBLEConnection`                          | ❌   | 未提供 tt.closeBLEConnection，调用时将返回 not supported                          |
@@ -93,7 +93,7 @@
 | `exitMiniProgram`                             | `exitMiniProgram`                             | ✅   | 直连 `tt.exitMiniProgram`                                                         |
 | `exitVoIPChat`                                | `exitVoIPChat`                                | ❌   | 未提供 tt.exitVoIPChat，调用时将返回 not supported                                |
 | `faceDetect`                                  | `faceDetect`                                  | ❌   | 未提供 tt.faceDetect，调用时将返回 not supported                                  |
-| `getAccountInfoSync`                          | `getAccountInfoSync`                          | ❌   | 未提供 tt.getAccountInfoSync，调用时将返回 not supported                          |
+| `getAccountInfoSync`                          | `getEnvInfoSync`                              | ✅   | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构                                    |
 | `getApiCategory`                              | `getApiCategory`                              | ❌   | 未提供 tt.getApiCategory，调用时将返回 not supported                              |
 | `getAppAuthorizeSetting`                      | `getSetting`                                  | ✅   | 映射到 `tt.getSetting`                                                            |
 | `getAppBaseInfo`                              | `getEnvInfoSync`                              | ✅   | 映射到 `tt.getEnvInfoSync`                                                        |
@@ -120,7 +120,7 @@
 | `getConnectedBluetoothDevices`                | `getConnectedBluetoothDevices`                | ❌   | 未提供 tt.getConnectedBluetoothDevices，调用时将返回 not supported                |
 | `getConnectedWifi`                            | `getConnectedWifi`                            | ✅   | 直连 `tt.getConnectedWifi`                                                        |
 | `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`                      | ❌   | 未提供 tt.getDeviceBenchmarkInfo，调用时将返回 not supported                      |
-| `getDeviceInfo`                               | `getDeviceInfo`                               | ❌   | 未提供 tt.getDeviceInfo，调用时将返回 not supported                               |
+| `getDeviceInfo`                               | `getSystemInfo`                               | ✅   | 映射到 `tt.getSystemInfo`，并提取设备字段                                         |
 | `getDeviceVoIPList`                           | `getDeviceVoIPList`                           | ❌   | 未提供 tt.getDeviceVoIPList，调用时将返回 not supported                           |
 | `getEnterOptionsSync`                         | `getLaunchOptionsSync`                        | ✅   | 映射到 `tt.getLaunchOptionsSync`                                                  |
 | `getExptInfoSync`                             | `getExptInfoSync`                             | ❌   | 未提供 tt.getExptInfoSync，调用时将返回 not supported                             |
@@ -169,7 +169,7 @@
 | `getVideoInfo`                                | `getVideoInfo`                                | ❌   | 未提供 tt.getVideoInfo，调用时将返回 not supported                                |
 | `getWeRunData`                                | `getWeRunData`                                | ❌   | 未提供 tt.getWeRunData，调用时将返回 not supported                                |
 | `getWifiList`                                 | `getWifiList`                                 | ✅   | 直连 `tt.getWifiList`                                                             |
-| `getWindowInfo`                               | `getWindowInfo`                               | ❌   | 未提供 tt.getWindowInfo，调用时将返回 not supported                               |
+| `getWindowInfo`                               | `getSystemInfo`                               | ✅   | 映射到 `tt.getSystemInfo`，并提取窗口字段                                         |
 | `getXrFrameSystem`                            | `getXrFrameSystem`                            | ❌   | 未提供 tt.getXrFrameSystem，调用时将返回 not supported                            |
 | `hideHomeButton`                              | `hideHomeButton`                              | ✅   | 直连 `tt.hideHomeButton`                                                          |
 | `hideKeyboard`                                | `hideKeyboard`                                | ✅   | 直连 `tt.hideKeyboard`                                                            |

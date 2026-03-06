@@ -280,6 +280,17 @@ interface WeapiCrossPlatformMethodDocs {
   pluginLogin: WeapiCrossPlatformAdapter['pluginLogin']
 
   /**
+   * 登录。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.login` | ⚠️ |
+   * | 支付宝 | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段 | ⚠️ |
+   * | 抖音 | 直连 `tt.login` | ⚠️ |
+   */
+  login: WeapiCrossPlatformAdapter['login']
+
+  /**
    * 请求订阅设备消息。
    *
    * | 平台 | 对齐策略 | 支持度 |
@@ -432,6 +443,61 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 映射到 `tt.getEnvInfoSync` | ⚠️ |
    */
   getAppBaseInfo: WeapiCrossPlatformAdapter['getAppBaseInfo']
+
+  /**
+   * 选择视频。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.chooseVideo` | ⚠️ |
+   * | 支付宝 | 直连 `my.chooseVideo` | ⚠️ |
+   * | 抖音 | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构 | ⚠️ |
+   */
+  chooseVideo: WeapiCrossPlatformAdapter['chooseVideo']
+
+  /**
+   * 隐藏返回首页按钮。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.hideHomeButton` | ✅ |
+   * | 支付宝 | 映射到 `my.hideBackHome` | ✅ |
+   * | 抖音 | 直连 `tt.hideHomeButton` | ✅ |
+   */
+  hideHomeButton: WeapiCrossPlatformAdapter['hideHomeButton']
+
+  /**
+   * 获取窗口信息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getWindowInfo` | ⚠️ |
+   * | 支付宝 | 直连 `my.getWindowInfo` | ⚠️ |
+   * | 抖音 | 映射到 `tt.getSystemInfo`，并提取窗口字段 | ⚠️ |
+   */
+  getWindowInfo: WeapiCrossPlatformAdapter['getWindowInfo']
+
+  /**
+   * 获取设备基础信息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getDeviceInfo` | ⚠️ |
+   * | 支付宝 | 映射到 `my.getSystemInfo`，并提取设备字段 | ⚠️ |
+   * | 抖音 | 映射到 `tt.getSystemInfo`，并提取设备字段 | ⚠️ |
+   */
+  getDeviceInfo: WeapiCrossPlatformAdapter['getDeviceInfo']
+
+  /**
+   * 同步获取当前账号信息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getAccountInfoSync` | ⚠️ |
+   * | 支付宝 | 直连 `my.getAccountInfoSync` | ⚠️ |
+   * | 抖音 | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构 | ⚠️ |
+   */
+  getAccountInfoSync: WeapiCrossPlatformAdapter['getAccountInfoSync']
   // @generated weapi-method-docs:end
 }
 

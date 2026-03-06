@@ -14,18 +14,18 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  207 |
-| 抖音可按微信命名调用的方法数     |  145 |
-| 三端完全对齐方法数               |  133 |
+| 支付宝可按微信命名调用的方法数   |  210 |
+| 抖音可按微信命名调用的方法数     |  149 |
+| 三端完全对齐方法数               |  139 |
 
 ## 覆盖率
 
 | 平台                    | 已支持 API 数 | API 总数 |  覆盖率 |
 | ----------------------- | ------------: | -------: | ------: |
 | 微信小程序 (`wx`)       |           479 |      479 | 100.00% |
-| 支付宝小程序 (`my`)     |           207 |      479 |  43.22% |
-| 抖音小程序 (`tt`)       |           145 |      479 |  30.27% |
-| 三端完全对齐 (wx/my/tt) |           133 |      479 |  27.77% |
+| 支付宝小程序 (`my`)     |           210 |      479 |  43.84% |
+| 抖音小程序 (`tt`)       |           149 |      479 |  31.11% |
+| 三端完全对齐 (wx/my/tt) |           139 |      479 |  29.02% |
 
 ## 核心差异映射（手工规则）
 
@@ -45,6 +45,7 @@
 | `getSystemInfoAsync`              | 直连 `wx.getSystemInfoAsync`                        | 映射到 `my.getSystemInfo`                                          | 映射到 `tt.getSystemInfo`                                        |
 | `openAppAuthorizeSetting`         | 直连 `wx.openAppAuthorizeSetting`                   | 映射到 `my.openSetting`                                            | 映射到 `tt.openSetting`                                          |
 | `pluginLogin`                     | 直连 `wx.pluginLogin`                               | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段                    | 映射到 `tt.login`                                                |
+| `login`                           | 直连 `wx.login`                                     | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段                    | 直连 `tt.login`                                                  |
 | `requestSubscribeDeviceMessage`   | 直连 `wx.requestSubscribeDeviceMessage`             | 映射到 `my.requestSubscribeMessage`                                | 映射到 `tt.requestSubscribeMessage`                              |
 | `requestSubscribeEmployeeMessage` | 直连 `wx.requestSubscribeEmployeeMessage`           | 映射到 `my.requestSubscribeMessage`                                | 映射到 `tt.requestSubscribeMessage`                              |
 | `restartMiniProgram`              | 直连 `wx.restartMiniProgram`                        | 映射到 `my.reLaunch`                                               | 映射到 `tt.reLaunch`                                             |
@@ -59,6 +60,11 @@
 | `getUserInfo`                     | 直连 `wx.getUserInfo`                               | 映射到 `my.getOpenUserInfo`                                        | 直连 `tt.getUserInfo`                                            |
 | `getAppAuthorizeSetting`          | 直连 `wx.getAppAuthorizeSetting`                    | 直连 `my.getAppAuthorizeSetting`                                   | 映射到 `tt.getSetting`                                           |
 | `getAppBaseInfo`                  | 直连 `wx.getAppBaseInfo`                            | 直连 `my.getAppBaseInfo`                                           | 映射到 `tt.getEnvInfoSync`                                       |
+| `chooseVideo`                     | 直连 `wx.chooseVideo`                               | 直连 `my.chooseVideo`                                              | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构 |
+| `hideHomeButton`                  | 直连 `wx.hideHomeButton`                            | 映射到 `my.hideBackHome`                                           | 直连 `tt.hideHomeButton`                                         |
+| `getWindowInfo`                   | 直连 `wx.getWindowInfo`                             | 直连 `my.getWindowInfo`                                            | 映射到 `tt.getSystemInfo`，并提取窗口字段                        |
+| `getDeviceInfo`                   | 直连 `wx.getDeviceInfo`                             | 映射到 `my.getSystemInfo`，并提取设备字段                          | 映射到 `tt.getSystemInfo`，并提取设备字段                        |
+| `getAccountInfoSync`              | 直连 `wx.getAccountInfoSync`                        | 直连 `my.getAccountInfoSync`                                       | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构                   |
 
 ## 已执行验证
 

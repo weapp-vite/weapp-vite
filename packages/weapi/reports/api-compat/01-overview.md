@@ -3,14 +3,14 @@
 ## 覆盖结论
 
 - 微信基准命名方法总数：479
-- 支付宝兼容方法数：207
-- 抖音兼容方法数：145
-- 三端完全对齐方法数：133
+- 支付宝兼容方法数：210
+- 抖音兼容方法数：149
+- 三端完全对齐方法数：139
 
 ## 不兼容规模
 
-- 支付宝侧不兼容（按微信命名调用失败）方法：272
-- 抖音侧不兼容（按微信命名调用失败）方法：334
+- 支付宝侧不兼容（按微信命名调用失败）方法：269
+- 抖音侧不兼容（按微信命名调用失败）方法：330
 
 ## 不兼容示例（前 40 项）
 
@@ -91,7 +91,6 @@
 - `chooseLicensePlate` -> 目标 `chooseLicensePlate`
 - `chooseMessageFile` -> 目标 `chooseMessageFile`
 - `choosePoi` -> 目标 `choosePoi`
-- `chooseVideo` -> 目标 `chooseVideo`
 - `closeBLEConnection` -> 目标 `closeBLEConnection`
 - `closeBluetoothAdapter` -> 目标 `closeBluetoothAdapter`
 - `closeSocket` -> 目标 `closeSocket`
@@ -99,3 +98,4 @@
 - `connectWifi` -> 目标 `connectWifi`
 - `createBLEConnection` -> 目标 `createBLEConnection`
 - `createBLEPeripheralServer` -> 目标 `createBLEPeripheralServer`
+- `createBufferURL` -> 目标 `createBufferURL`

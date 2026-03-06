@@ -195,6 +195,14 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     support: '⚠️',
   },
   {
+    method: 'login',
+    description: '登录。',
+    wxStrategy: '直连 `wx.login`',
+    alipayStrategy: '映射到 `my.getAuthCode`，并对齐返回 `code` 字段',
+    douyinStrategy: '直连 `tt.login`',
+    support: '⚠️',
+  },
+  {
     method: 'requestSubscribeDeviceMessage',
     description: '请求订阅设备消息。',
     wxStrategy: '直连 `wx.requestSubscribeDeviceMessage`',
@@ -304,6 +312,46 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     wxStrategy: '直连 `wx.getAppBaseInfo`',
     alipayStrategy: '直连 `my.getAppBaseInfo`',
     douyinStrategy: '映射到 `tt.getEnvInfoSync`',
+    support: '⚠️',
+  },
+  {
+    method: 'chooseVideo',
+    description: '选择视频。',
+    wxStrategy: '直连 `wx.chooseVideo`',
+    alipayStrategy: '直连 `my.chooseVideo`',
+    douyinStrategy: '映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构',
+    support: '⚠️',
+  },
+  {
+    method: 'hideHomeButton',
+    description: '隐藏返回首页按钮。',
+    wxStrategy: '直连 `wx.hideHomeButton`',
+    alipayStrategy: '映射到 `my.hideBackHome`',
+    douyinStrategy: '直连 `tt.hideHomeButton`',
+    support: '✅',
+  },
+  {
+    method: 'getWindowInfo',
+    description: '获取窗口信息。',
+    wxStrategy: '直连 `wx.getWindowInfo`',
+    alipayStrategy: '直连 `my.getWindowInfo`',
+    douyinStrategy: '映射到 `tt.getSystemInfo`，并提取窗口字段',
+    support: '⚠️',
+  },
+  {
+    method: 'getDeviceInfo',
+    description: '获取设备基础信息。',
+    wxStrategy: '直连 `wx.getDeviceInfo`',
+    alipayStrategy: '映射到 `my.getSystemInfo`，并提取设备字段',
+    douyinStrategy: '映射到 `tt.getSystemInfo`，并提取设备字段',
+    support: '⚠️',
+  },
+  {
+    method: 'getAccountInfoSync',
+    description: '同步获取当前账号信息。',
+    wxStrategy: '直连 `wx.getAccountInfoSync`',
+    alipayStrategy: '直连 `my.getAccountInfoSync`',
+    douyinStrategy: '映射到 `tt.getEnvInfoSync`，并对齐账号字段结构',
     support: '⚠️',
   },
 ] as const
@@ -608,6 +656,133 @@ function mapAuthCodeResult(result: any) {
   return result
 }
 
+function mapChooseVideoArgs(args: unknown[]) {
+  const nextArgs = [...args]
+  if (nextArgs.length === 0 || !isPlainObject(nextArgs[nextArgs.length - 1])) {
+    nextArgs.push({})
+  }
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return nextArgs
+  }
+  const nextOptions = {
+    ...lastArg,
+  } as Record<string, any>
+  nextOptions.mediaType = ['video']
+  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'count')) {
+    nextOptions.count = 1
+  }
+  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'sizeType') && typeof nextOptions.compressed === 'boolean') {
+    nextOptions.sizeType = nextOptions.compressed ? ['compressed'] : ['original']
+  }
+  nextArgs[lastIndex] = nextOptions
+  return nextArgs
+}
+
+function mapChooseVideoResult(result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  if (typeof result.tempFilePath === 'string' && result.tempFilePath) {
+    return result
+  }
+  if (!Array.isArray(result.tempFiles) || result.tempFiles.length === 0) {
+    return result
+  }
+  const firstItem = result.tempFiles[0]
+  if (!isPlainObject(firstItem)) {
+    return result
+  }
+  const tempFilePath = typeof firstItem.tempFilePath === 'string' && firstItem.tempFilePath
+    ? firstItem.tempFilePath
+    : typeof firstItem.filePath === 'string' && firstItem.filePath
+      ? firstItem.filePath
+      : undefined
+  if (!tempFilePath) {
+    return result
+  }
+  return {
+    ...result,
+    tempFilePath,
+    duration: typeof firstItem.duration === 'number' ? firstItem.duration : result.duration,
+    size: typeof firstItem.size === 'number' ? firstItem.size : result.size,
+    height: typeof firstItem.height === 'number' ? firstItem.height : result.height,
+    width: typeof firstItem.width === 'number' ? firstItem.width : result.width,
+  }
+}
+
+function mapSystemInfoToWindowInfo(result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  return {
+    ...result,
+    pixelRatio: result.pixelRatio,
+    screenWidth: result.screenWidth,
+    screenHeight: result.screenHeight,
+    windowWidth: result.windowWidth,
+    windowHeight: result.windowHeight,
+    statusBarHeight: result.statusBarHeight,
+    safeArea: result.safeArea,
+    screenTop: result.screenTop,
+  }
+}
+
+function mapSystemInfoToDeviceInfo(result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  return {
+    ...result,
+    brand: result.brand,
+    model: result.model,
+    system: result.system,
+    platform: result.platform,
+    benchmarkLevel: result.benchmarkLevel,
+    abi: result.abi,
+  }
+}
+
+function normalizeEnvVersion(value: unknown) {
+  if (typeof value !== 'string' || !value) {
+    return value
+  }
+  const normalized = value.toLowerCase()
+  if (normalized.includes('release') || normalized.includes('prod')) {
+    return 'release'
+  }
+  if (normalized.includes('trial') || normalized.includes('preview') || normalized.includes('test')) {
+    return 'trial'
+  }
+  if (normalized.includes('develop') || normalized.includes('dev')) {
+    return 'develop'
+  }
+  return value
+}
+
+function mapEnvInfoToAccountInfo(result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  const microapp = isPlainObject(result.microapp) ? result.microapp : {}
+  const plugin = isPlainObject(result.plugin) ? result.plugin : {}
+  const miniProgram = {
+    appId: typeof microapp.appId === 'string' ? microapp.appId : '',
+    envVersion: normalizeEnvVersion(microapp.envType),
+    version: typeof microapp.mpVersion === 'string' ? microapp.mpVersion : '',
+  }
+  const pluginInfo = {
+    appId: typeof plugin.appId === 'string' ? plugin.appId : '',
+    version: typeof plugin.version === 'string' ? plugin.version : '',
+  }
+  return {
+    ...result,
+    miniProgram,
+    plugin: pluginInfo,
+  }
+}
+
 const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMethodMappingRule>>>> = {
   my: {
     showToast: {
@@ -664,6 +839,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getAuthCode',
       mapResult: mapAuthCodeResult,
     },
+    login: {
+      target: 'getAuthCode',
+      mapResult: mapAuthCodeResult,
+    },
     requestSubscribeDeviceMessage: {
       target: 'requestSubscribeMessage',
     },
@@ -705,6 +884,22 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     getAppBaseInfo: {
       target: 'getAppBaseInfo',
+    },
+    chooseVideo: {
+      target: 'chooseVideo',
+    },
+    hideHomeButton: {
+      target: 'hideBackHome',
+    },
+    getWindowInfo: {
+      target: 'getWindowInfo',
+    },
+    getDeviceInfo: {
+      target: 'getSystemInfo',
+      mapResult: mapSystemInfoToDeviceInfo,
+    },
+    getAccountInfoSync: {
+      target: 'getAccountInfoSync',
     },
   },
   tt: {
@@ -754,6 +949,9 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     pluginLogin: {
       target: 'login',
     },
+    login: {
+      target: 'login',
+    },
     requestSubscribeDeviceMessage: {
       target: 'requestSubscribeMessage',
     },
@@ -795,6 +993,26 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     getAppBaseInfo: {
       target: 'getEnvInfoSync',
+    },
+    chooseVideo: {
+      target: 'chooseMedia',
+      mapArgs: mapChooseVideoArgs,
+      mapResult: mapChooseVideoResult,
+    },
+    hideHomeButton: {
+      target: 'hideHomeButton',
+    },
+    getWindowInfo: {
+      target: 'getSystemInfo',
+      mapResult: mapSystemInfoToWindowInfo,
+    },
+    getDeviceInfo: {
+      target: 'getSystemInfo',
+      mapResult: mapSystemInfoToDeviceInfo,
+    },
+    getAccountInfoSync: {
+      target: 'getEnvInfoSync',
+      mapResult: mapEnvInfoToAccountInfo,
     },
   },
 }
