@@ -2,484 +2,484 @@
 
 总计：479，支持：478，不支持：1
 
-| 微信 API                                      | 抖音目标 API                      | 支持 | 策略                                                             |
-| --------------------------------------------- | --------------------------------- | ---- | ---------------------------------------------------------------- |
-| `addCard`                                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `addFileToFavorites`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `addPaymentPassFinish`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `addPaymentPassGetCertificateData`            | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `addPhoneCalendar`                            | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `addPhoneContact`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `addPhoneRepeatCalendar`                      | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `addVideoToFavorites`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `arrayBufferToBase64`                         | `arrayBufferToBase64`             | ✅   | 直连 `tt.arrayBufferToBase64`                                    |
-| `authorize`                                   | `authorize`                       | ✅   | 直连 `tt.authorize`                                              |
-| `authorizeForMiniProgram`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `authPrivateMessage`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `base64ToArrayBuffer`                         | `base64ToArrayBuffer`             | ✅   | 直连 `tt.base64ToArrayBuffer`                                    |
-| `batchGetStorage`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `batchGetStorageSync`                         | `getSystemInfoSync`               | ✅   | 映射到 `tt.getSystemInfoSync`                                    |
-| `batchSetStorage`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `batchSetStorageSync`                         | `getSystemInfoSync`               | ✅   | 映射到 `tt.getSystemInfoSync`                                    |
-| `bindEmployeeRelation`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `canAddSecureElementPass`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `cancelIdleCallback`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `canIUse`                                     | `canIUse`                         | ✅   | 直连 `tt.canIUse`                                                |
-| `canvasGetImageData`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `canvasPutImageData`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `canvasToTempFilePath`                        | `canvasToTempFilePath`            | ✅   | 直连 `tt.canvasToTempFilePath`                                   |
-| `checkDeviceSupportHevc`                      | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `checkEmployeeRelation`                       | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `checkIsAddedToMyMiniProgram`                 | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `checkIsOpenAccessibility`                    | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `checkIsPictureInPictureActive`               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `checkIsSoterEnrolledInDevice`                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `checkIsSupportSoterAuthentication`           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `checkSession`                                | `checkSession`                    | ✅   | 直连 `tt.checkSession`                                           |
-| `chooseAddress`                               | `chooseAddress`                   | ✅   | 直连 `tt.chooseAddress`                                          |
-| `chooseContact`                               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `chooseImage`                                 | `chooseImage`                     | ✅   | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底     |
-| `chooseInvoice`                               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `chooseInvoiceTitle`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `chooseLicensePlate`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `chooseLocation`                              | `chooseLocation`                  | ✅   | 直连 `tt.chooseLocation`                                         |
-| `chooseMedia`                                 | `chooseMedia`                     | ✅   | 直连 `tt.chooseMedia`                                            |
-| `chooseMessageFile`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `choosePoi`                                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `chooseVideo`                                 | `chooseMedia`                     | ✅   | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构 |
-| `clearStorage`                                | `clearStorage`                    | ✅   | 直连 `tt.clearStorage`                                           |
-| `clearStorageSync`                            | `clearStorageSync`                | ✅   | 直连 `tt.clearStorageSync`                                       |
-| `closeBLEConnection`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `closeBluetoothAdapter`                       | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `closeSocket`                                 | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `compressImage`                               | `compressImage`                   | ✅   | 直连 `tt.compressImage`                                          |
-| `compressVideo`                               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `connectSocket`                               | `connectSocket`                   | ✅   | 直连 `tt.connectSocket`                                          |
-| `connectWifi`                                 | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createAnimation`                             | `createAnimation`                 | ✅   | 直连 `tt.createAnimation`                                        |
-| `createAudioContext`                          | `createInnerAudioContext`         | ✅   | 映射到 `tt.createInnerAudioContext`                              |
-| `createBLEConnection`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createBLEPeripheralServer`                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createBufferURL`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createCacheManager`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createCameraContext`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createCanvasContext`                         | `createCanvasContext`             | ✅   | 直连 `tt.createCanvasContext`                                    |
-| `createGlobalPayment`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createInferenceSession`                      | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createInnerAudioContext`                     | `createInnerAudioContext`         | ✅   | 直连 `tt.createInnerAudioContext`                                |
-| `createIntersectionObserver`                  | `createIntersectionObserver`      | ✅   | 直连 `tt.createIntersectionObserver`                             |
-| `createInterstitialAd`                        | `createInterstitialAd`            | ✅   | 直连 `tt.createInterstitialAd`                                   |
-| `createLivePlayerContext`                     | `createLivePlayerContext`         | ✅   | 直连 `tt.createLivePlayerContext`                                |
-| `createLivePusherContext`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createMapContext`                            | `createMapContext`                | ✅   | 直连 `tt.createMapContext`                                       |
-| `createMediaAudioPlayer`                      | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createMediaContainer`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createMediaRecorder`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createOffscreenCanvas`                       | `createOffscreenCanvas`           | ✅   | 直连 `tt.createOffscreenCanvas`                                  |
-| `createRewardedVideoAd`                       | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createSelectorQuery`                         | `createSelectorQuery`             | ✅   | 直连 `tt.createSelectorQuery`                                    |
-| `createTCPSocket`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createUDPSocket`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createVideoContext`                          | `createVideoContext`              | ✅   | 直连 `tt.createVideoContext`                                     |
-| `createVideoDecoder`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createVKSession`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `createWebAudioContext`                       | `createInnerAudioContext`         | ✅   | 映射到 `tt.createInnerAudioContext`                              |
-| `createWorker`                                | `createWorker`                    | ✅   | 直连 `tt.createWorker`                                           |
-| `cropImage`                                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `disableAlertBeforeUnload`                    | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `downloadFile`                                | `downloadFile`                    | ✅   | 直连 `tt.downloadFile`                                           |
-| `editImage`                                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `enableAlertBeforeUnload`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `exitMiniProgram`                             | `exitMiniProgram`                 | ✅   | 直连 `tt.exitMiniProgram`                                        |
-| `exitVoIPChat`                                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `faceDetect`                                  | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getAccountInfoSync`                          | `getEnvInfoSync`                  | ✅   | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构                   |
-| `getApiCategory`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getAppAuthorizeSetting`                      | `getSetting`                      | ✅   | 映射到 `tt.getSetting`                                           |
-| `getAppBaseInfo`                              | `getEnvInfoSync`                  | ✅   | 映射到 `tt.getEnvInfoSync`                                       |
-| `getAvailableAudioSources`                    | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getBackgroundAudioManager`                   | `getBackgroundAudioManager`       | ✅   | 直连 `tt.getBackgroundAudioManager`                              |
-| `getBackgroundAudioPlayerState`               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getBackgroundFetchData`                      | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getBackgroundFetchToken`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getBatteryInfo`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getBatteryInfoSync`                          | `getSystemInfoSync`               | ✅   | 映射到 `tt.getSystemInfoSync`                                    |
-| `getBeacons`                                  | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getBLEDeviceCharacteristics`                 | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getBLEDeviceRSSI`                            | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getBLEDeviceServices`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getBLEMTU`                                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getBluetoothAdapterState`                    | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getBluetoothDevices`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getChannelsLiveInfo`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getChannelsLiveNoticeInfo`                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getChannelsShareKey`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getChatToolInfo`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getClipboardData`                            | `getClipboardData`                | ✅   | 直连 `tt.getClipboardData`                                       |
-| `getCommonConfig`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getConnectedBluetoothDevices`                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getConnectedWifi`                            | `getConnectedWifi`                | ✅   | 直连 `tt.getConnectedWifi`                                       |
-| `getDeviceBenchmarkInfo`                      | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getDeviceInfo`                               | `getSystemInfo`                   | ✅   | 映射到 `tt.getSystemInfo`，并提取设备字段                        |
-| `getDeviceVoIPList`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getEnterOptionsSync`                         | `getLaunchOptionsSync`            | ✅   | 映射到 `tt.getLaunchOptionsSync`                                 |
-| `getExptInfoSync`                             | `getSystemInfoSync`               | ✅   | 映射到 `tt.getSystemInfoSync`                                    |
-| `getExtConfig`                                | `getExtConfig`                    | ✅   | 直连 `tt.getExtConfig`                                           |
-| `getExtConfigSync`                            | `getExtConfigSync`                | ✅   | 直连 `tt.getExtConfigSync`                                       |
-| `getFileSystemManager`                        | `getFileSystemManager`            | ✅   | 直连 `tt.getFileSystemManager`                                   |
-| `getFuzzyLocation`                            | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getGroupEnterInfo`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getHCEState`                                 | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getImageInfo`                                | `getImageInfo`                    | ✅   | 直连 `tt.getImageInfo`                                           |
-| `getInferenceEnvInfo`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getLaunchOptionsSync`                        | `getLaunchOptionsSync`            | ✅   | 直连 `tt.getLaunchOptionsSync`                                   |
-| `getLocalIPAddress`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getLocation`                                 | `getLocation`                     | ✅   | 直连 `tt.getLocation`                                            |
-| `getLogManager`                               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect` | ✅   | 直连 `tt.getMenuButtonBoundingClientRect`                        |
-| `getNetworkType`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getNFCAdapter`                               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getPerformance`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getPrivacySetting`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getRandomValues`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getRealtimeLogManager`                       | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getRecorderManager`                          | `getRecorderManager`              | ✅   | 直连 `tt.getRecorderManager`                                     |
-| `getRendererUserAgent`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getScreenBrightness`                         | `getScreenBrightness`             | ✅   | 直连 `tt.getScreenBrightness`                                    |
-| `getScreenRecordingState`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getSecureElementPasses`                      | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getSelectedTextRange`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getSetting`                                  | `getSetting`                      | ✅   | 直连 `tt.getSetting`                                             |
-| `getShareInfo`                                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getShowSplashAdStatus`                       | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getSkylineInfo`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getSkylineInfoSync`                          | `getSystemInfoSync`               | ✅   | 映射到 `tt.getSystemInfoSync`                                    |
-| `getStorage`                                  | `getStorage`                      | ✅   | 直连 `tt.getStorage`                                             |
-| `getStorageInfo`                              | `getStorageInfo`                  | ✅   | 直连 `tt.getStorageInfo`                                         |
-| `getStorageInfoSync`                          | `getStorageInfoSync`              | ✅   | 直连 `tt.getStorageInfoSync`                                     |
-| `getStorageSync`                              | `getStorageSync`                  | ✅   | 直连 `tt.getStorageSync`                                         |
-| `getSystemInfo`                               | `getSystemInfo`                   | ✅   | 直连 `tt.getSystemInfo`                                          |
-| `getSystemInfoAsync`                          | `getSystemInfo`                   | ✅   | 映射到 `tt.getSystemInfo`                                        |
-| `getSystemInfoSync`                           | `getSystemInfoSync`               | ✅   | 直连 `tt.getSystemInfoSync`                                      |
-| `getSystemSetting`                            | `getSetting`                      | ✅   | 映射到 `tt.getSetting`                                           |
-| `getUpdateManager`                            | `getUpdateManager`                | ✅   | 直连 `tt.getUpdateManager`                                       |
-| `getUserCryptoManager`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getUserInfo`                                 | `getUserInfo`                     | ✅   | 直连 `tt.getUserInfo`                                            |
-| `getUserProfile`                              | `getUserProfile`                  | ✅   | 直连 `tt.getUserProfile`                                         |
-| `getVideoInfo`                                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getWeRunData`                                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `getWifiList`                                 | `getWifiList`                     | ✅   | 直连 `tt.getWifiList`                                            |
-| `getWindowInfo`                               | `getSystemInfo`                   | ✅   | 映射到 `tt.getSystemInfo`，并提取窗口字段                        |
-| `getXrFrameSystem`                            | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `hideHomeButton`                              | `hideHomeButton`                  | ✅   | 直连 `tt.hideHomeButton`                                         |
-| `hideKeyboard`                                | `hideKeyboard`                    | ✅   | 直连 `tt.hideKeyboard`                                           |
-| `hideLoading`                                 | `hideLoading`                     | ✅   | 直连 `tt.hideLoading`                                            |
-| `hideNavigationBarLoading`                    | `hideNavigationBarLoading`        | ✅   | 直连 `tt.hideNavigationBarLoading`                               |
-| `hideShareMenu`                               | `hideShareMenu`                   | ✅   | 直连 `tt.hideShareMenu`                                          |
-| `hideTabBar`                                  | `hideTabBar`                      | ✅   | 直连 `tt.hideTabBar`                                             |
-| `hideTabBarRedDot`                            | `hideTabBarRedDot`                | ✅   | 直连 `tt.hideTabBarRedDot`                                       |
-| `hideToast`                                   | `hideToast`                       | ✅   | 直连 `tt.hideToast`                                              |
-| `initFaceDetect`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `isBluetoothDevicePaired`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `isVKSupport`                                 | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `join1v1Chat`                                 | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `joinVoIPChat`                                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `loadBuiltInFontFace`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `loadFontFace`                                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `login`                                       | `login`                           | ✅   | 直连 `tt.login`                                                  |
-| `makeBluetoothPair`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `makePhoneCall`                               | `makePhoneCall`                   | ✅   | 直连 `tt.makePhoneCall`                                          |
-| `navigateBack`                                | `navigateBack`                    | ✅   | 直连 `tt.navigateBack`                                           |
-| `navigateBackMiniProgram`                     | `navigateBackMiniProgram`         | ✅   | 直连 `tt.navigateBackMiniProgram`                                |
-| `navigateTo`                                  | `navigateTo`                      | ✅   | 直连 `tt.navigateTo`                                             |
-| `navigateToMiniProgram`                       | `navigateToMiniProgram`           | ✅   | 直连 `tt.navigateToMiniProgram`                                  |
-| `nextTick`                                    | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `notifyBLECharacteristicValueChange`          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `notifyGroupMembers`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `offAccelerometerChange`                      | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offAfterPageLoad`                            | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offAfterPageUnload`                          | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offApiCategoryChange`                        | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offAppHide`                                  | `offAppHide`                      | ✅   | 直连 `tt.offAppHide`                                             |
-| `offAppRoute`                                 | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offAppRouteDone`                             | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offAppShow`                                  | `offAppShow`                      | ✅   | 直连 `tt.offAppShow`                                             |
-| `offAudioInterruptionBegin`                   | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offAudioInterruptionEnd`                     | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBatteryInfoChange`                        | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBeaconServiceChange`                      | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBeaconUpdate`                             | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBeforeAppRoute`                           | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBeforePageLoad`                           | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBeforePageUnload`                         | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBLECharacteristicValueChange`             | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBLEConnectionStateChange`                 | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBLEMTUChange`                             | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBLEPeripheralConnectionStateChanged`      | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBluetoothAdapterStateChange`              | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offBluetoothDeviceFound`                     | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offCompassChange`                            | `offCompassChange`                | ✅   | 直连 `tt.offCompassChange`                                       |
-| `offCopyUrl`                                  | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offDeviceMotionChange`                       | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offEmbeddedMiniProgramHeightChange`          | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offError`                                    | `offError`                        | ✅   | 直连 `tt.offError`                                               |
-| `offGeneratePoster`                           | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offGetWifiList`                              | `offGetWifiList`                  | ✅   | 直连 `tt.offGetWifiList`                                         |
-| `offGyroscopeChange`                          | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offHCEMessage`                               | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offKeyboardHeightChange`                     | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offKeyDown`                                  | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offKeyUp`                                    | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offLazyLoadError`                            | `offLazyLoadError`                | ✅   | 直连 `tt.offLazyLoadError`                                       |
-| `offLocalServiceDiscoveryStop`                | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offLocalServiceFound`                        | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offLocalServiceLost`                         | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offLocalServiceResolveFail`                  | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offLocationChange`                           | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offLocationChangeError`                      | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offMemoryWarning`                            | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offMenuButtonBoundingClientRectWeightChange` | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offNetworkStatusChange`                      | `offNetworkStatusChange`          | ✅   | 直连 `tt.offNetworkStatusChange`                                 |
-| `offNetworkWeakChange`                        | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offOnUserTriggerTranslation`                 | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offPageNotFound`                             | `offPageNotFound`                 | ✅   | 直连 `tt.offPageNotFound`                                        |
-| `offParallelStateChange`                      | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offScreenRecordingStateChanged`              | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offThemeChange`                              | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offUnhandledRejection`                       | `offUnhandledRejection`           | ✅   | 直连 `tt.offUnhandledRejection`                                  |
-| `offUserCaptureScreen`                        | `offUserCaptureScreen`            | ✅   | 直连 `tt.offUserCaptureScreen`                                   |
-| `offVoIPChatInterrupted`                      | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offVoIPChatMembersChanged`                   | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offVoIPChatSpeakersChanged`                  | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offVoIPChatStateChanged`                     | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offVoIPVideoMembersChanged`                  | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offWifiConnected`                            | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offWifiConnectedWithPartialInfo`             | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `offWindowResize`                             | `offWindowResize`                 | ✅   | 直连 `tt.offWindowResize`                                        |
-| `offWindowStateChange`                        | `offAppShow`                      | ✅   | 映射到 `tt.offAppShow`                                           |
-| `onAccelerometerChange`                       | `onAccelerometerChange`           | ✅   | 直连 `tt.onAccelerometerChange`                                  |
-| `onAfterPageLoad`                             | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onAfterPageUnload`                           | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onApiCategoryChange`                         | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onAppHide`                                   | `onAppHide`                       | ✅   | 直连 `tt.onAppHide`                                              |
-| `onAppRoute`                                  | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onAppRouteDone`                              | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onAppShow`                                   | `onAppShow`                       | ✅   | 直连 `tt.onAppShow`                                              |
-| `onAudioInterruptionBegin`                    | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onAudioInterruptionEnd`                      | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBackgroundAudioPause`                      | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBackgroundAudioPlay`                       | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBackgroundAudioStop`                       | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBackgroundFetchData`                       | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBatteryInfoChange`                         | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBeaconServiceChange`                       | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBeaconUpdate`                              | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBeforeAppRoute`                            | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBeforePageLoad`                            | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBeforePageUnload`                          | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBLECharacteristicValueChange`              | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBLEConnectionStateChange`                  | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBLEMTUChange`                              | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBLEPeripheralConnectionStateChanged`       | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBluetoothAdapterStateChange`               | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onBluetoothDeviceFound`                      | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onCompassChange`                             | `onCompassChange`                 | ✅   | 直连 `tt.onCompassChange`                                        |
-| `onCopyUrl`                                   | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onDeviceMotionChange`                        | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onEmbeddedMiniProgramHeightChange`           | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onError`                                     | `onError`                         | ✅   | 直连 `tt.onError`                                                |
-| `onGeneratePoster`                            | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onGetWifiList`                               | `onGetWifiList`                   | ✅   | 直连 `tt.onGetWifiList`                                          |
-| `onGyroscopeChange`                           | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onHCEMessage`                                | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onKeyboardHeightChange`                      | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onKeyDown`                                   | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onKeyUp`                                     | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onLazyLoadError`                             | `onLazyLoadError`                 | ✅   | 直连 `tt.onLazyLoadError`                                        |
-| `onLocalServiceDiscoveryStop`                 | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onLocalServiceFound`                         | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onLocalServiceLost`                          | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onLocalServiceResolveFail`                   | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onLocationChange`                            | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onLocationChangeError`                       | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onMemoryWarning`                             | `onMemoryWarning`                 | ✅   | 直连 `tt.onMemoryWarning`                                        |
-| `onMenuButtonBoundingClientRectWeightChange`  | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onNeedPrivacyAuthorization`                  | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onNetworkStatusChange`                       | `onNetworkStatusChange`           | ✅   | 直连 `tt.onNetworkStatusChange`                                  |
-| `onNetworkWeakChange`                         | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onOnUserTriggerTranslation`                  | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onPageNotFound`                              | `onPageNotFound`                  | ✅   | 直连 `tt.onPageNotFound`                                         |
-| `onParallelStateChange`                       | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onScreenRecordingStateChanged`               | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onSocketClose`                               | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onSocketError`                               | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onSocketMessage`                             | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onSocketOpen`                                | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onThemeChange`                               | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onUnhandledRejection`                        | `onUnhandledRejection`            | ✅   | 直连 `tt.onUnhandledRejection`                                   |
-| `onUserCaptureScreen`                         | `onUserCaptureScreen`             | ✅   | 直连 `tt.onUserCaptureScreen`                                    |
-| `onVoIPChatInterrupted`                       | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onVoIPChatMembersChanged`                    | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onVoIPChatSpeakersChanged`                   | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onVoIPChatStateChanged`                      | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onVoIPVideoMembersChanged`                   | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onWifiConnected`                             | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onWifiConnectedWithPartialInfo`              | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `onWindowResize`                              | `onWindowResize`                  | ✅   | 直连 `tt.onWindowResize`                                         |
-| `onWindowStateChange`                         | `onAppShow`                       | ✅   | 映射到 `tt.onAppShow`                                            |
-| `openAppAuthorizeSetting`                     | `openSetting`                     | ✅   | 映射到 `tt.openSetting`                                          |
-| `openBluetoothAdapter`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openCard`                                    | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openChannelsActivity`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openChannelsEvent`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openChannelsLive`                            | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openChannelsLiveNoticeInfo`                  | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openChannelsUserProfile`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openChatTool`                                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openCustomerServiceChat`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openDocument`                                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`           | ✅   | 映射到 `tt.navigateToMiniProgram`                                |
-| `openHKOfflinePayView`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openInquiriesTopic`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openLocation`                                | `openLocation`                    | ✅   | 直连 `tt.openLocation`                                           |
-| `openOfficialAccountArticle`                  | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openOfficialAccountChat`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openOfficialAccountProfile`                  | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openPrivacyContract`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openSetting`                                 | `openSetting`                     | ✅   | 直连 `tt.openSetting`                                            |
-| `openSingleStickerView`                       | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openStickerIPView`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openStickerSetView`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openStoreCouponDetail`                       | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openStoreOrderDetail`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openSystemBluetoothSetting`                  | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `openVideoEditor`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `pageScrollTo`                                | `pageScrollTo`                    | ✅   | 直连 `tt.pageScrollTo`                                           |
-| `pauseBackgroundAudio`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `pauseVoice`                                  | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `playBackgroundAudio`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `playVoice`                                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `pluginLogin`                                 | `login`                           | ✅   | 映射到 `tt.login`                                                |
-| `postMessageToReferrerMiniProgram`            | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `postMessageToReferrerPage`                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `preDownloadSubpackage`                       | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `preloadAssets`                               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `preloadSkylineView`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `preloadWebview`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `previewImage`                                | `previewImage`                    | ✅   | 直连 `tt.previewImage`                                           |
-| `previewMedia`                                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `readBLECharacteristicValue`                  | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `redirectTo`                                  | `redirectTo`                      | ✅   | 直连 `tt.redirectTo`                                             |
-| `reLaunch`                                    | `reLaunch`                        | ✅   | 直连 `tt.reLaunch`                                               |
-| `removeSecureElementPass`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `removeStorage`                               | `removeStorage`                   | ✅   | 直连 `tt.removeStorage`                                          |
-| `removeStorageSync`                           | `removeStorageSync`               | ✅   | 直连 `tt.removeStorageSync`                                      |
-| `removeTabBarBadge`                           | `removeTabBarBadge`               | ✅   | 直连 `tt.removeTabBarBadge`                                      |
-| `reportAnalytics`                             | `reportAnalytics`                 | ✅   | 直连 `tt.reportAnalytics`                                        |
-| `reportEvent`                                 | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `reportMonitor`                               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `reportPerformance`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `request`                                     | `request`                         | ✅   | 直连 `tt.request`                                                |
-| `requestCommonPayment`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `requestDeviceVoIP`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `requestIdleCallback`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `requestMerchantTransfer`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `requestOrderPayment`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `requestPayment`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `requestPluginPayment`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`         | ✅   | 映射到 `tt.requestSubscribeMessage`                              |
-| `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`         | ✅   | 映射到 `tt.requestSubscribeMessage`                              |
-| `requestSubscribeMessage`                     | `requestSubscribeMessage`         | ✅   | 直连 `tt.requestSubscribeMessage`                                |
-| `requestVirtualPayment`                       | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `requirePrivacyAuthorize`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `reserveChannelsLive`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `restartMiniProgram`                          | `reLaunch`                        | ✅   | 映射到 `tt.reLaunch`                                             |
-| `revokeBufferURL`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `rewriteRoute`                                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `saveFileToDisk`                              | `saveFile`                        | ✅   | 映射到 `tt.saveFile`                                             |
-| `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`          | ✅   | 直连 `tt.saveImageToPhotosAlbum`                                 |
-| `saveVideoToPhotosAlbum`                      | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `scanCode`                                    | `scanCode`                        | ✅   | 直连 `tt.scanCode`                                               |
-| `seekBackgroundAudio`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `selectGroupMembers`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `sendHCEMessage`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `sendSms`                                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `sendSocketMessage`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `setBackgroundColor`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `setBackgroundFetchToken`                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `setBackgroundTextStyle`                      | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `setBLEMTU`                                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `setClipboardData`                            | `setClipboardData`                | ✅   | 直连 `tt.setClipboardData`                                       |
-| `setEnable1v1Chat`                            | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `setEnableDebug`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `setInnerAudioOption`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `setKeepScreenOn`                             | `setKeepScreenOn`                 | ✅   | 直连 `tt.setKeepScreenOn`                                        |
-| `setNavigationBarColor`                       | `setNavigationBarColor`           | ✅   | 直连 `tt.setNavigationBarColor`                                  |
-| `setNavigationBarTitle`                       | `setNavigationBarTitle`           | ✅   | 直连 `tt.setNavigationBarTitle`                                  |
-| `setScreenBrightness`                         | `setScreenBrightness`             | ✅   | 直连 `tt.setScreenBrightness`                                    |
-| `setStorage`                                  | `setStorage`                      | ✅   | 直连 `tt.setStorage`                                             |
-| `setStorageSync`                              | `setStorageSync`                  | ✅   | 直连 `tt.setStorageSync`                                         |
-| `setTabBarBadge`                              | `setTabBarBadge`                  | ✅   | 直连 `tt.setTabBarBadge`                                         |
-| `setTabBarItem`                               | `setTabBarItem`                   | ✅   | 直连 `tt.setTabBarItem`                                          |
-| `setTabBarStyle`                              | `setTabBarStyle`                  | ✅   | 直连 `tt.setTabBarStyle`                                         |
-| `setTopBarText`                               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `setVisualEffectOnCapture`                    | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `setWifiList`                                 | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `setWindowSize`                               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `shareAppMessageToGroup`                      | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `shareEmojiToGroup`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `shareFileMessage`                            | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `shareFileToGroup`                            | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `shareImageToGroup`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `shareToOfficialAccount`                      | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `shareToWeRun`                                | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `shareVideoMessage`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `shareVideoToGroup`                           | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `showActionSheet`                             | `showActionSheet`                 | ❌   | 直连 `tt.showActionSheet`，并兼容 `index` → `tapIndex`           |
-| `showLoading`                                 | `showLoading`                     | ✅   | 直连 `tt.showLoading`                                            |
-| `showModal`                                   | `showModal`                       | ✅   | 直连 `tt.showModal`                                              |
-| `showNavigationBarLoading`                    | `showNavigationBarLoading`        | ✅   | 直连 `tt.showNavigationBarLoading`                               |
-| `showRedPackage`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `showShareImageMenu`                          | `showShareMenu`                   | ✅   | 映射到 `tt.showShareMenu`                                        |
-| `showShareMenu`                               | `showShareMenu`                   | ✅   | 直连 `tt.showShareMenu`                                          |
-| `showTabBar`                                  | `showTabBar`                      | ✅   | 直连 `tt.showTabBar`                                             |
-| `showTabBarRedDot`                            | `showTabBarRedDot`                | ✅   | 直连 `tt.showTabBarRedDot`                                       |
-| `showToast`                                   | `showToast`                       | ✅   | `icon=error` 映射为 `fail` 后调用 `tt.showToast`                 |
-| `startAccelerometer`                          | `startAccelerometer`              | ✅   | 直连 `tt.startAccelerometer`                                     |
-| `startBeaconDiscovery`                        | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `startBluetoothDevicesDiscovery`              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `startCompass`                                | `startCompass`                    | ✅   | 直连 `tt.startCompass`                                           |
-| `startDeviceMotionListening`                  | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `startGyroscope`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `startHCE`                                    | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `startLocalServiceDiscovery`                  | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `startLocationUpdate`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `startLocationUpdateBackground`               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `startPullDownRefresh`                        | `startPullDownRefresh`            | ✅   | 直连 `tt.startPullDownRefresh`                                   |
-| `startRecord`                                 | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `startSoterAuthentication`                    | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `startWifi`                                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopAccelerometer`                           | `stopAccelerometer`               | ✅   | 直连 `tt.stopAccelerometer`                                      |
-| `stopBackgroundAudio`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopBeaconDiscovery`                         | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopBluetoothDevicesDiscovery`               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopCompass`                                 | `stopCompass`                     | ✅   | 直连 `tt.stopCompass`                                            |
-| `stopDeviceMotionListening`                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopFaceDetect`                              | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopGyroscope`                               | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopHCE`                                     | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopLocalServiceDiscovery`                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopLocationUpdate`                          | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopPullDownRefresh`                         | `stopPullDownRefresh`             | ✅   | 直连 `tt.stopPullDownRefresh`                                    |
-| `stopRecord`                                  | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopVoice`                                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `stopWifi`                                    | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `subscribeVoIPVideoMembers`                   | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `switchTab`                                   | `switchTab`                       | ✅   | 直连 `tt.switchTab`                                              |
-| `updateShareMenu`                             | `showShareMenu`                   | ✅   | 映射到 `tt.showShareMenu`                                        |
-| `updateVoIPChatMuteConfig`                    | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `updateWeChatApp`                             | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
-| `uploadFile`                                  | `uploadFile`                      | ✅   | 直连 `tt.uploadFile`                                             |
-| `vibrateLong`                                 | `vibrateLong`                     | ✅   | 直连 `tt.vibrateLong`                                            |
-| `vibrateShort`                                | `vibrateShort`                    | ✅   | 直连 `tt.vibrateShort`                                           |
-| `writeBLECharacteristicValue`                 | `hideToast`                       | ✅   | 映射到 `tt.hideToast`                                            |
+| 微信 API                                      | 抖音目标 API                      | 支持 | 支持级别      | 语义对齐 | 策略                                                             |
+| --------------------------------------------- | --------------------------------- | ---- | ------------- | -------- | ---------------------------------------------------------------- |
+| `addCard`                                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `addFileToFavorites`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `addPaymentPassFinish`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `addPaymentPassGetCertificateData`            | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `addPhoneCalendar`                            | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `addPhoneContact`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `addPhoneRepeatCalendar`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `addVideoToFavorites`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `arrayBufferToBase64`                         | `arrayBufferToBase64`             | ✅   | `native`      | ✅       | 直连 `tt.arrayBufferToBase64`                                    |
+| `authorize`                                   | `authorize`                       | ✅   | `native`      | ✅       | 直连 `tt.authorize`                                              |
+| `authorizeForMiniProgram`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `authPrivateMessage`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `base64ToArrayBuffer`                         | `base64ToArrayBuffer`             | ✅   | `native`      | ✅       | 直连 `tt.base64ToArrayBuffer`                                    |
+| `batchGetStorage`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `batchGetStorageSync`                         | `getSystemInfoSync`               | ✅   | `fallback`    | ❌       | 回退映射到 `tt.getSystemInfoSync`（通用兜底）                    |
+| `batchSetStorage`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `batchSetStorageSync`                         | `getSystemInfoSync`               | ✅   | `fallback`    | ❌       | 回退映射到 `tt.getSystemInfoSync`（通用兜底）                    |
+| `bindEmployeeRelation`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `canAddSecureElementPass`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `cancelIdleCallback`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `canIUse`                                     | `canIUse`                         | ✅   | `native`      | ✅       | 直连 `tt.canIUse`                                                |
+| `canvasGetImageData`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `canvasPutImageData`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `canvasToTempFilePath`                        | `canvasToTempFilePath`            | ✅   | `native`      | ✅       | 直连 `tt.canvasToTempFilePath`                                   |
+| `checkDeviceSupportHevc`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `checkEmployeeRelation`                       | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `checkIsAddedToMyMiniProgram`                 | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `checkIsOpenAccessibility`                    | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `checkIsPictureInPictureActive`               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `checkIsSoterEnrolledInDevice`                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `checkIsSupportSoterAuthentication`           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `checkSession`                                | `checkSession`                    | ✅   | `native`      | ✅       | 直连 `tt.checkSession`                                           |
+| `chooseAddress`                               | `chooseAddress`                   | ✅   | `mapped`      | ✅       | 直连 `tt.chooseAddress`                                          |
+| `chooseContact`                               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `chooseImage`                                 | `chooseImage`                     | ✅   | `mapped`      | ✅       | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底     |
+| `chooseInvoice`                               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `chooseInvoiceTitle`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `chooseLicensePlate`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `chooseLocation`                              | `chooseLocation`                  | ✅   | `native`      | ✅       | 直连 `tt.chooseLocation`                                         |
+| `chooseMedia`                                 | `chooseMedia`                     | ✅   | `native`      | ✅       | 直连 `tt.chooseMedia`                                            |
+| `chooseMessageFile`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `choosePoi`                                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `chooseVideo`                                 | `chooseMedia`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构 |
+| `clearStorage`                                | `clearStorage`                    | ✅   | `native`      | ✅       | 直连 `tt.clearStorage`                                           |
+| `clearStorageSync`                            | `clearStorageSync`                | ✅   | `native`      | ✅       | 直连 `tt.clearStorageSync`                                       |
+| `closeBLEConnection`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `closeBluetoothAdapter`                       | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `closeSocket`                                 | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `compressImage`                               | `compressImage`                   | ✅   | `native`      | ✅       | 直连 `tt.compressImage`                                          |
+| `compressVideo`                               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `connectSocket`                               | `connectSocket`                   | ✅   | `native`      | ✅       | 直连 `tt.connectSocket`                                          |
+| `connectWifi`                                 | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createAnimation`                             | `createAnimation`                 | ✅   | `native`      | ✅       | 直连 `tt.createAnimation`                                        |
+| `createAudioContext`                          | `createInnerAudioContext`         | ✅   | `mapped`      | ✅       | 映射到 `tt.createInnerAudioContext`                              |
+| `createBLEConnection`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createBLEPeripheralServer`                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createBufferURL`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createCacheManager`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createCameraContext`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createCanvasContext`                         | `createCanvasContext`             | ✅   | `native`      | ✅       | 直连 `tt.createCanvasContext`                                    |
+| `createGlobalPayment`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createInferenceSession`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createInnerAudioContext`                     | `createInnerAudioContext`         | ✅   | `native`      | ✅       | 直连 `tt.createInnerAudioContext`                                |
+| `createIntersectionObserver`                  | `createIntersectionObserver`      | ✅   | `native`      | ✅       | 直连 `tt.createIntersectionObserver`                             |
+| `createInterstitialAd`                        | `createInterstitialAd`            | ✅   | `native`      | ✅       | 直连 `tt.createInterstitialAd`                                   |
+| `createLivePlayerContext`                     | `createLivePlayerContext`         | ✅   | `native`      | ✅       | 直连 `tt.createLivePlayerContext`                                |
+| `createLivePusherContext`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createMapContext`                            | `createMapContext`                | ✅   | `native`      | ✅       | 直连 `tt.createMapContext`                                       |
+| `createMediaAudioPlayer`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createMediaContainer`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createMediaRecorder`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createOffscreenCanvas`                       | `createOffscreenCanvas`           | ✅   | `native`      | ✅       | 直连 `tt.createOffscreenCanvas`                                  |
+| `createRewardedVideoAd`                       | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createSelectorQuery`                         | `createSelectorQuery`             | ✅   | `native`      | ✅       | 直连 `tt.createSelectorQuery`                                    |
+| `createTCPSocket`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createUDPSocket`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createVideoContext`                          | `createVideoContext`              | ✅   | `native`      | ✅       | 直连 `tt.createVideoContext`                                     |
+| `createVideoDecoder`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createVKSession`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createWebAudioContext`                       | `createInnerAudioContext`         | ✅   | `mapped`      | ✅       | 映射到 `tt.createInnerAudioContext`                              |
+| `createWorker`                                | `createWorker`                    | ✅   | `native`      | ✅       | 直连 `tt.createWorker`                                           |
+| `cropImage`                                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `disableAlertBeforeUnload`                    | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `downloadFile`                                | `downloadFile`                    | ✅   | `native`      | ✅       | 直连 `tt.downloadFile`                                           |
+| `editImage`                                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `enableAlertBeforeUnload`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `exitMiniProgram`                             | `exitMiniProgram`                 | ✅   | `native`      | ✅       | 直连 `tt.exitMiniProgram`                                        |
+| `exitVoIPChat`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `faceDetect`                                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getAccountInfoSync`                          | `getEnvInfoSync`                  | ✅   | `mapped`      | ✅       | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构                   |
+| `getApiCategory`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getAppAuthorizeSetting`                      | `getSetting`                      | ✅   | `mapped`      | ✅       | 映射到 `tt.getSetting`                                           |
+| `getAppBaseInfo`                              | `getEnvInfoSync`                  | ✅   | `mapped`      | ✅       | 映射到 `tt.getEnvInfoSync`                                       |
+| `getAvailableAudioSources`                    | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getBackgroundAudioManager`                   | `getBackgroundAudioManager`       | ✅   | `native`      | ✅       | 直连 `tt.getBackgroundAudioManager`                              |
+| `getBackgroundAudioPlayerState`               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getBackgroundFetchData`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getBackgroundFetchToken`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getBatteryInfo`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getBatteryInfoSync`                          | `getSystemInfoSync`               | ✅   | `fallback`    | ❌       | 回退映射到 `tt.getSystemInfoSync`（通用兜底）                    |
+| `getBeacons`                                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getBLEDeviceCharacteristics`                 | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getBLEDeviceRSSI`                            | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getBLEDeviceServices`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getBLEMTU`                                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getBluetoothAdapterState`                    | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getBluetoothDevices`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getChannelsLiveInfo`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getChannelsLiveNoticeInfo`                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getChannelsShareKey`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getChatToolInfo`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getClipboardData`                            | `getClipboardData`                | ✅   | `mapped`      | ✅       | 直连 `tt.getClipboardData`                                       |
+| `getCommonConfig`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getConnectedBluetoothDevices`                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getConnectedWifi`                            | `getConnectedWifi`                | ✅   | `native`      | ✅       | 直连 `tt.getConnectedWifi`                                       |
+| `getDeviceBenchmarkInfo`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getDeviceInfo`                               | `getSystemInfo`                   | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，并提取设备字段                        |
+| `getDeviceVoIPList`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getEnterOptionsSync`                         | `getLaunchOptionsSync`            | ✅   | `mapped`      | ✅       | 映射到 `tt.getLaunchOptionsSync`                                 |
+| `getExptInfoSync`                             | `getSystemInfoSync`               | ✅   | `fallback`    | ❌       | 回退映射到 `tt.getSystemInfoSync`（通用兜底）                    |
+| `getExtConfig`                                | `getExtConfig`                    | ✅   | `native`      | ✅       | 直连 `tt.getExtConfig`                                           |
+| `getExtConfigSync`                            | `getExtConfigSync`                | ✅   | `native`      | ✅       | 直连 `tt.getExtConfigSync`                                       |
+| `getFileSystemManager`                        | `getFileSystemManager`            | ✅   | `native`      | ✅       | 直连 `tt.getFileSystemManager`                                   |
+| `getFuzzyLocation`                            | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getGroupEnterInfo`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getHCEState`                                 | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getImageInfo`                                | `getImageInfo`                    | ✅   | `native`      | ✅       | 直连 `tt.getImageInfo`                                           |
+| `getInferenceEnvInfo`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getLaunchOptionsSync`                        | `getLaunchOptionsSync`            | ✅   | `native`      | ✅       | 直连 `tt.getLaunchOptionsSync`                                   |
+| `getLocalIPAddress`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getLocation`                                 | `getLocation`                     | ✅   | `native`      | ✅       | 直连 `tt.getLocation`                                            |
+| `getLogManager`                               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect` | ✅   | `native`      | ✅       | 直连 `tt.getMenuButtonBoundingClientRect`                        |
+| `getNetworkType`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getNFCAdapter`                               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getPerformance`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getPrivacySetting`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getRandomValues`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getRealtimeLogManager`                       | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getRecorderManager`                          | `getRecorderManager`              | ✅   | `native`      | ✅       | 直连 `tt.getRecorderManager`                                     |
+| `getRendererUserAgent`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getScreenBrightness`                         | `getScreenBrightness`             | ✅   | `native`      | ✅       | 直连 `tt.getScreenBrightness`                                    |
+| `getScreenRecordingState`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getSecureElementPasses`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getSelectedTextRange`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getSetting`                                  | `getSetting`                      | ✅   | `native`      | ✅       | 直连 `tt.getSetting`                                             |
+| `getShareInfo`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getShowSplashAdStatus`                       | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getSkylineInfo`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getSkylineInfoSync`                          | `getSystemInfoSync`               | ✅   | `fallback`    | ❌       | 回退映射到 `tt.getSystemInfoSync`（通用兜底）                    |
+| `getStorage`                                  | `getStorage`                      | ✅   | `native`      | ✅       | 直连 `tt.getStorage`                                             |
+| `getStorageInfo`                              | `getStorageInfo`                  | ✅   | `native`      | ✅       | 直连 `tt.getStorageInfo`                                         |
+| `getStorageInfoSync`                          | `getStorageInfoSync`              | ✅   | `native`      | ✅       | 直连 `tt.getStorageInfoSync`                                     |
+| `getStorageSync`                              | `getStorageSync`                  | ✅   | `native`      | ✅       | 直连 `tt.getStorageSync`                                         |
+| `getSystemInfo`                               | `getSystemInfo`                   | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfo`                                          |
+| `getSystemInfoAsync`                          | `getSystemInfo`                   | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`                                        |
+| `getSystemInfoSync`                           | `getSystemInfoSync`               | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfoSync`                                      |
+| `getSystemSetting`                            | `getSetting`                      | ✅   | `mapped`      | ✅       | 映射到 `tt.getSetting`                                           |
+| `getUpdateManager`                            | `getUpdateManager`                | ✅   | `native`      | ✅       | 直连 `tt.getUpdateManager`                                       |
+| `getUserCryptoManager`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getUserInfo`                                 | `getUserInfo`                     | ✅   | `mapped`      | ✅       | 直连 `tt.getUserInfo`                                            |
+| `getUserProfile`                              | `getUserProfile`                  | ✅   | `mapped`      | ✅       | 直连 `tt.getUserProfile`                                         |
+| `getVideoInfo`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getWeRunData`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getWifiList`                                 | `getWifiList`                     | ✅   | `native`      | ✅       | 直连 `tt.getWifiList`                                            |
+| `getWindowInfo`                               | `getSystemInfo`                   | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，并提取窗口字段                        |
+| `getXrFrameSystem`                            | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `hideHomeButton`                              | `hideHomeButton`                  | ✅   | `mapped`      | ✅       | 直连 `tt.hideHomeButton`                                         |
+| `hideKeyboard`                                | `hideKeyboard`                    | ✅   | `native`      | ✅       | 直连 `tt.hideKeyboard`                                           |
+| `hideLoading`                                 | `hideLoading`                     | ✅   | `native`      | ✅       | 直连 `tt.hideLoading`                                            |
+| `hideNavigationBarLoading`                    | `hideNavigationBarLoading`        | ✅   | `native`      | ✅       | 直连 `tt.hideNavigationBarLoading`                               |
+| `hideShareMenu`                               | `hideShareMenu`                   | ✅   | `native`      | ✅       | 直连 `tt.hideShareMenu`                                          |
+| `hideTabBar`                                  | `hideTabBar`                      | ✅   | `native`      | ✅       | 直连 `tt.hideTabBar`                                             |
+| `hideTabBarRedDot`                            | `hideTabBarRedDot`                | ✅   | `native`      | ✅       | 直连 `tt.hideTabBarRedDot`                                       |
+| `hideToast`                                   | `hideToast`                       | ✅   | `native`      | ✅       | 直连 `tt.hideToast`                                              |
+| `initFaceDetect`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `isBluetoothDevicePaired`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `isVKSupport`                                 | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `join1v1Chat`                                 | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `joinVoIPChat`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `loadBuiltInFontFace`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `loadFontFace`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `login`                                       | `login`                           | ✅   | `mapped`      | ✅       | 直连 `tt.login`                                                  |
+| `makeBluetoothPair`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `makePhoneCall`                               | `makePhoneCall`                   | ✅   | `native`      | ✅       | 直连 `tt.makePhoneCall`                                          |
+| `navigateBack`                                | `navigateBack`                    | ✅   | `native`      | ✅       | 直连 `tt.navigateBack`                                           |
+| `navigateBackMiniProgram`                     | `navigateBackMiniProgram`         | ✅   | `native`      | ✅       | 直连 `tt.navigateBackMiniProgram`                                |
+| `navigateTo`                                  | `navigateTo`                      | ✅   | `native`      | ✅       | 直连 `tt.navigateTo`                                             |
+| `navigateToMiniProgram`                       | `navigateToMiniProgram`           | ✅   | `native`      | ✅       | 直连 `tt.navigateToMiniProgram`                                  |
+| `nextTick`                                    | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `notifyBLECharacteristicValueChange`          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `notifyGroupMembers`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `offAccelerometerChange`                      | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offAfterPageLoad`                            | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offAfterPageUnload`                          | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offApiCategoryChange`                        | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offAppHide`                                  | `offAppHide`                      | ✅   | `native`      | ✅       | 直连 `tt.offAppHide`                                             |
+| `offAppRoute`                                 | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offAppRouteDone`                             | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offAppShow`                                  | `offAppShow`                      | ✅   | `native`      | ✅       | 直连 `tt.offAppShow`                                             |
+| `offAudioInterruptionBegin`                   | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offAudioInterruptionEnd`                     | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBatteryInfoChange`                        | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBeaconServiceChange`                      | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBeaconUpdate`                             | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBeforeAppRoute`                           | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBeforePageLoad`                           | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBeforePageUnload`                         | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBLECharacteristicValueChange`             | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBLEConnectionStateChange`                 | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBLEMTUChange`                             | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBLEPeripheralConnectionStateChanged`      | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBluetoothAdapterStateChange`              | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offBluetoothDeviceFound`                     | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offCompassChange`                            | `offCompassChange`                | ✅   | `native`      | ✅       | 直连 `tt.offCompassChange`                                       |
+| `offCopyUrl`                                  | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offDeviceMotionChange`                       | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offEmbeddedMiniProgramHeightChange`          | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offError`                                    | `offError`                        | ✅   | `native`      | ✅       | 直连 `tt.offError`                                               |
+| `offGeneratePoster`                           | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offGetWifiList`                              | `offGetWifiList`                  | ✅   | `native`      | ✅       | 直连 `tt.offGetWifiList`                                         |
+| `offGyroscopeChange`                          | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offHCEMessage`                               | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offKeyboardHeightChange`                     | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offKeyDown`                                  | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offKeyUp`                                    | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offLazyLoadError`                            | `offLazyLoadError`                | ✅   | `native`      | ✅       | 直连 `tt.offLazyLoadError`                                       |
+| `offLocalServiceDiscoveryStop`                | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offLocalServiceFound`                        | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offLocalServiceLost`                         | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offLocalServiceResolveFail`                  | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offLocationChange`                           | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offLocationChangeError`                      | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offMemoryWarning`                            | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offMenuButtonBoundingClientRectWeightChange` | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offNetworkStatusChange`                      | `offNetworkStatusChange`          | ✅   | `native`      | ✅       | 直连 `tt.offNetworkStatusChange`                                 |
+| `offNetworkWeakChange`                        | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offOnUserTriggerTranslation`                 | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offPageNotFound`                             | `offPageNotFound`                 | ✅   | `native`      | ✅       | 直连 `tt.offPageNotFound`                                        |
+| `offParallelStateChange`                      | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offScreenRecordingStateChanged`              | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offThemeChange`                              | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offUnhandledRejection`                       | `offUnhandledRejection`           | ✅   | `native`      | ✅       | 直连 `tt.offUnhandledRejection`                                  |
+| `offUserCaptureScreen`                        | `offUserCaptureScreen`            | ✅   | `native`      | ✅       | 直连 `tt.offUserCaptureScreen`                                   |
+| `offVoIPChatInterrupted`                      | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offVoIPChatMembersChanged`                   | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offVoIPChatSpeakersChanged`                  | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offVoIPChatStateChanged`                     | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offVoIPVideoMembersChanged`                  | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offWifiConnected`                            | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offWifiConnectedWithPartialInfo`             | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `offWindowResize`                             | `offWindowResize`                 | ✅   | `native`      | ✅       | 直连 `tt.offWindowResize`                                        |
+| `offWindowStateChange`                        | `offAppShow`                      | ✅   | `fallback`    | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                           |
+| `onAccelerometerChange`                       | `onAccelerometerChange`           | ✅   | `native`      | ✅       | 直连 `tt.onAccelerometerChange`                                  |
+| `onAfterPageLoad`                             | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onAfterPageUnload`                           | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onApiCategoryChange`                         | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onAppHide`                                   | `onAppHide`                       | ✅   | `native`      | ✅       | 直连 `tt.onAppHide`                                              |
+| `onAppRoute`                                  | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onAppRouteDone`                              | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onAppShow`                                   | `onAppShow`                       | ✅   | `native`      | ✅       | 直连 `tt.onAppShow`                                              |
+| `onAudioInterruptionBegin`                    | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onAudioInterruptionEnd`                      | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBackgroundAudioPause`                      | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBackgroundAudioPlay`                       | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBackgroundAudioStop`                       | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBackgroundFetchData`                       | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBatteryInfoChange`                         | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBeaconServiceChange`                       | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBeaconUpdate`                              | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBeforeAppRoute`                            | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBeforePageLoad`                            | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBeforePageUnload`                          | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBLECharacteristicValueChange`              | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBLEConnectionStateChange`                  | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBLEMTUChange`                              | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBLEPeripheralConnectionStateChanged`       | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBluetoothAdapterStateChange`               | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onBluetoothDeviceFound`                      | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onCompassChange`                             | `onCompassChange`                 | ✅   | `native`      | ✅       | 直连 `tt.onCompassChange`                                        |
+| `onCopyUrl`                                   | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onDeviceMotionChange`                        | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onEmbeddedMiniProgramHeightChange`           | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onError`                                     | `onError`                         | ✅   | `native`      | ✅       | 直连 `tt.onError`                                                |
+| `onGeneratePoster`                            | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onGetWifiList`                               | `onGetWifiList`                   | ✅   | `native`      | ✅       | 直连 `tt.onGetWifiList`                                          |
+| `onGyroscopeChange`                           | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onHCEMessage`                                | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onKeyboardHeightChange`                      | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onKeyDown`                                   | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onKeyUp`                                     | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onLazyLoadError`                             | `onLazyLoadError`                 | ✅   | `native`      | ✅       | 直连 `tt.onLazyLoadError`                                        |
+| `onLocalServiceDiscoveryStop`                 | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onLocalServiceFound`                         | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onLocalServiceLost`                          | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onLocalServiceResolveFail`                   | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onLocationChange`                            | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onLocationChangeError`                       | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onMemoryWarning`                             | `onMemoryWarning`                 | ✅   | `native`      | ✅       | 直连 `tt.onMemoryWarning`                                        |
+| `onMenuButtonBoundingClientRectWeightChange`  | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onNeedPrivacyAuthorization`                  | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onNetworkStatusChange`                       | `onNetworkStatusChange`           | ✅   | `native`      | ✅       | 直连 `tt.onNetworkStatusChange`                                  |
+| `onNetworkWeakChange`                         | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onOnUserTriggerTranslation`                  | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onPageNotFound`                              | `onPageNotFound`                  | ✅   | `native`      | ✅       | 直连 `tt.onPageNotFound`                                         |
+| `onParallelStateChange`                       | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onScreenRecordingStateChanged`               | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onSocketClose`                               | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onSocketError`                               | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onSocketMessage`                             | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onSocketOpen`                                | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onThemeChange`                               | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onUnhandledRejection`                        | `onUnhandledRejection`            | ✅   | `native`      | ✅       | 直连 `tt.onUnhandledRejection`                                   |
+| `onUserCaptureScreen`                         | `onUserCaptureScreen`             | ✅   | `native`      | ✅       | 直连 `tt.onUserCaptureScreen`                                    |
+| `onVoIPChatInterrupted`                       | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onVoIPChatMembersChanged`                    | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onVoIPChatSpeakersChanged`                   | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onVoIPChatStateChanged`                      | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onVoIPVideoMembersChanged`                   | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onWifiConnected`                             | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onWifiConnectedWithPartialInfo`              | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `onWindowResize`                              | `onWindowResize`                  | ✅   | `native`      | ✅       | 直连 `tt.onWindowResize`                                         |
+| `onWindowStateChange`                         | `onAppShow`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                            |
+| `openAppAuthorizeSetting`                     | `openSetting`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.openSetting`                                          |
+| `openBluetoothAdapter`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openCard`                                    | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openChannelsActivity`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openChannelsEvent`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openChannelsLive`                            | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openChannelsLiveNoticeInfo`                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openChannelsUserProfile`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openChatTool`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openCustomerServiceChat`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openDocument`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`           | ✅   | `mapped`      | ✅       | 映射到 `tt.navigateToMiniProgram`                                |
+| `openHKOfflinePayView`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openInquiriesTopic`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openLocation`                                | `openLocation`                    | ✅   | `native`      | ✅       | 直连 `tt.openLocation`                                           |
+| `openOfficialAccountArticle`                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openOfficialAccountChat`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openOfficialAccountProfile`                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openPrivacyContract`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openSetting`                                 | `openSetting`                     | ✅   | `native`      | ✅       | 直连 `tt.openSetting`                                            |
+| `openSingleStickerView`                       | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openStickerIPView`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openStickerSetView`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openStoreCouponDetail`                       | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openStoreOrderDetail`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openSystemBluetoothSetting`                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `openVideoEditor`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `pageScrollTo`                                | `pageScrollTo`                    | ✅   | `native`      | ✅       | 直连 `tt.pageScrollTo`                                           |
+| `pauseBackgroundAudio`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `pauseVoice`                                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `playBackgroundAudio`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `playVoice`                                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `pluginLogin`                                 | `login`                           | ✅   | `mapped`      | ✅       | 映射到 `tt.login`                                                |
+| `postMessageToReferrerMiniProgram`            | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `postMessageToReferrerPage`                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `preDownloadSubpackage`                       | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `preloadAssets`                               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `preloadSkylineView`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `preloadWebview`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `previewImage`                                | `previewImage`                    | ✅   | `native`      | ✅       | 直连 `tt.previewImage`                                           |
+| `previewMedia`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `readBLECharacteristicValue`                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `redirectTo`                                  | `redirectTo`                      | ✅   | `native`      | ✅       | 直连 `tt.redirectTo`                                             |
+| `reLaunch`                                    | `reLaunch`                        | ✅   | `native`      | ✅       | 直连 `tt.reLaunch`                                               |
+| `removeSecureElementPass`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `removeStorage`                               | `removeStorage`                   | ✅   | `native`      | ✅       | 直连 `tt.removeStorage`                                          |
+| `removeStorageSync`                           | `removeStorageSync`               | ✅   | `native`      | ✅       | 直连 `tt.removeStorageSync`                                      |
+| `removeTabBarBadge`                           | `removeTabBarBadge`               | ✅   | `native`      | ✅       | 直连 `tt.removeTabBarBadge`                                      |
+| `reportAnalytics`                             | `reportAnalytics`                 | ✅   | `native`      | ✅       | 直连 `tt.reportAnalytics`                                        |
+| `reportEvent`                                 | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `reportMonitor`                               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `reportPerformance`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `request`                                     | `request`                         | ✅   | `native`      | ✅       | 直连 `tt.request`                                                |
+| `requestCommonPayment`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `requestDeviceVoIP`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `requestIdleCallback`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `requestMerchantTransfer`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `requestOrderPayment`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `requestPayment`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `requestPluginPayment`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`         | ✅   | `mapped`      | ✅       | 映射到 `tt.requestSubscribeMessage`                              |
+| `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`         | ✅   | `mapped`      | ✅       | 映射到 `tt.requestSubscribeMessage`                              |
+| `requestSubscribeMessage`                     | `requestSubscribeMessage`         | ✅   | `native`      | ✅       | 直连 `tt.requestSubscribeMessage`                                |
+| `requestVirtualPayment`                       | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `requirePrivacyAuthorize`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `reserveChannelsLive`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `restartMiniProgram`                          | `reLaunch`                        | ✅   | `mapped`      | ✅       | 映射到 `tt.reLaunch`                                             |
+| `revokeBufferURL`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `rewriteRoute`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `saveFileToDisk`                              | `saveFile`                        | ✅   | `mapped`      | ✅       | 映射到 `tt.saveFile`                                             |
+| `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`          | ✅   | `native`      | ✅       | 直连 `tt.saveImageToPhotosAlbum`                                 |
+| `saveVideoToPhotosAlbum`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `scanCode`                                    | `scanCode`                        | ✅   | `mapped`      | ✅       | 直连 `tt.scanCode`                                               |
+| `seekBackgroundAudio`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `selectGroupMembers`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `sendHCEMessage`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `sendSms`                                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `sendSocketMessage`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `setBackgroundColor`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `setBackgroundFetchToken`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `setBackgroundTextStyle`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `setBLEMTU`                                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `setClipboardData`                            | `setClipboardData`                | ✅   | `mapped`      | ✅       | 直连 `tt.setClipboardData`                                       |
+| `setEnable1v1Chat`                            | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `setEnableDebug`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `setInnerAudioOption`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `setKeepScreenOn`                             | `setKeepScreenOn`                 | ✅   | `native`      | ✅       | 直连 `tt.setKeepScreenOn`                                        |
+| `setNavigationBarColor`                       | `setNavigationBarColor`           | ✅   | `native`      | ✅       | 直连 `tt.setNavigationBarColor`                                  |
+| `setNavigationBarTitle`                       | `setNavigationBarTitle`           | ✅   | `native`      | ✅       | 直连 `tt.setNavigationBarTitle`                                  |
+| `setScreenBrightness`                         | `setScreenBrightness`             | ✅   | `native`      | ✅       | 直连 `tt.setScreenBrightness`                                    |
+| `setStorage`                                  | `setStorage`                      | ✅   | `native`      | ✅       | 直连 `tt.setStorage`                                             |
+| `setStorageSync`                              | `setStorageSync`                  | ✅   | `native`      | ✅       | 直连 `tt.setStorageSync`                                         |
+| `setTabBarBadge`                              | `setTabBarBadge`                  | ✅   | `native`      | ✅       | 直连 `tt.setTabBarBadge`                                         |
+| `setTabBarItem`                               | `setTabBarItem`                   | ✅   | `native`      | ✅       | 直连 `tt.setTabBarItem`                                          |
+| `setTabBarStyle`                              | `setTabBarStyle`                  | ✅   | `native`      | ✅       | 直连 `tt.setTabBarStyle`                                         |
+| `setTopBarText`                               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `setVisualEffectOnCapture`                    | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `setWifiList`                                 | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `setWindowSize`                               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `shareAppMessageToGroup`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `shareEmojiToGroup`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `shareFileMessage`                            | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `shareFileToGroup`                            | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `shareImageToGroup`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `shareToOfficialAccount`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `shareToWeRun`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `shareVideoMessage`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `shareVideoToGroup`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `showActionSheet`                             | `showActionSheet`                 | ❌   | `unsupported` | ❌       | 直连 `tt.showActionSheet`，并兼容 `index` → `tapIndex`           |
+| `showLoading`                                 | `showLoading`                     | ✅   | `mapped`      | ✅       | 直连 `tt.showLoading`                                            |
+| `showModal`                                   | `showModal`                       | ✅   | `mapped`      | ✅       | 直连 `tt.showModal`                                              |
+| `showNavigationBarLoading`                    | `showNavigationBarLoading`        | ✅   | `native`      | ✅       | 直连 `tt.showNavigationBarLoading`                               |
+| `showRedPackage`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `showShareImageMenu`                          | `showShareMenu`                   | ✅   | `mapped`      | ✅       | 映射到 `tt.showShareMenu`                                        |
+| `showShareMenu`                               | `showShareMenu`                   | ✅   | `native`      | ✅       | 直连 `tt.showShareMenu`                                          |
+| `showTabBar`                                  | `showTabBar`                      | ✅   | `native`      | ✅       | 直连 `tt.showTabBar`                                             |
+| `showTabBarRedDot`                            | `showTabBarRedDot`                | ✅   | `native`      | ✅       | 直连 `tt.showTabBarRedDot`                                       |
+| `showToast`                                   | `showToast`                       | ✅   | `mapped`      | ✅       | `icon=error` 映射为 `fail` 后调用 `tt.showToast`                 |
+| `startAccelerometer`                          | `startAccelerometer`              | ✅   | `native`      | ✅       | 直连 `tt.startAccelerometer`                                     |
+| `startBeaconDiscovery`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `startBluetoothDevicesDiscovery`              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `startCompass`                                | `startCompass`                    | ✅   | `native`      | ✅       | 直连 `tt.startCompass`                                           |
+| `startDeviceMotionListening`                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `startGyroscope`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `startHCE`                                    | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `startLocalServiceDiscovery`                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `startLocationUpdate`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `startLocationUpdateBackground`               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `startPullDownRefresh`                        | `startPullDownRefresh`            | ✅   | `native`      | ✅       | 直连 `tt.startPullDownRefresh`                                   |
+| `startRecord`                                 | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `startSoterAuthentication`                    | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `startWifi`                                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopAccelerometer`                           | `stopAccelerometer`               | ✅   | `native`      | ✅       | 直连 `tt.stopAccelerometer`                                      |
+| `stopBackgroundAudio`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopBeaconDiscovery`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopBluetoothDevicesDiscovery`               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopCompass`                                 | `stopCompass`                     | ✅   | `native`      | ✅       | 直连 `tt.stopCompass`                                            |
+| `stopDeviceMotionListening`                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopFaceDetect`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopGyroscope`                               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopHCE`                                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopLocalServiceDiscovery`                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopLocationUpdate`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopPullDownRefresh`                         | `stopPullDownRefresh`             | ✅   | `native`      | ✅       | 直连 `tt.stopPullDownRefresh`                                    |
+| `stopRecord`                                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopVoice`                                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `stopWifi`                                    | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `subscribeVoIPVideoMembers`                   | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `switchTab`                                   | `switchTab`                       | ✅   | `native`      | ✅       | 直连 `tt.switchTab`                                              |
+| `updateShareMenu`                             | `showShareMenu`                   | ✅   | `mapped`      | ✅       | 映射到 `tt.showShareMenu`                                        |
+| `updateVoIPChatMuteConfig`                    | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `updateWeChatApp`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `uploadFile`                                  | `uploadFile`                      | ✅   | `native`      | ✅       | 直连 `tt.uploadFile`                                             |
+| `vibrateLong`                                 | `vibrateLong`                     | ✅   | `native`      | ✅       | 直连 `tt.vibrateLong`                                            |
+| `vibrateShort`                                | `vibrateShort`                    | ✅   | `native`      | ✅       | 直连 `tt.vibrateShort`                                           |
+| `writeBLECharacteristicValue`                 | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |

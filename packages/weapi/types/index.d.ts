@@ -13,8 +13,10 @@ import type {
   WeapiDouyinAdapter,
   WeapiDouyinRawAdapter,
   WeapiInstance,
+  WeapiMethodSupportQueryOptions,
   WeapiPromisify,
   WeapiResolvedTarget,
+  WeapiSupportLevel,
   WeapiWxAdapter,
   WeapiWxRawAdapter,
 } from '../dist/index.d.mts'
@@ -29,8 +31,10 @@ export type {
   WeapiDouyinAdapter,
   WeapiDouyinRawAdapter,
   WeapiInstance,
+  WeapiMethodSupportQueryOptions,
   WeapiPromisify,
   WeapiResolvedTarget,
+  WeapiSupportLevel,
   WeapiWxAdapter,
   WeapiWxRawAdapter,
 }

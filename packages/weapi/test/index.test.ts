@@ -65,12 +65,14 @@ describe('weapi', () => {
       adapter: { confirm },
       platform: 'alipay',
     })
-    expect(api.resolveTarget('showModal')).toEqual({
+    expect(api.resolveTarget('showModal')).toMatchObject({
       method: 'showModal',
       target: 'confirm',
       platform: 'my',
       mapped: true,
       supported: true,
+      supportLevel: 'mapped',
+      semanticAligned: true,
     })
     expect(api.supports('showModal')).toBe(true)
     expect(api.supports('request')).toBe(false)
@@ -80,7 +82,58 @@ describe('weapi', () => {
       platform: 'my',
       mapped: false,
       supported: false,
+      supportLevel: 'unsupported',
+      semanticAligned: false,
     })
+  })
+
+  it('exposes fallback support level and semantic support state', async () => {
+    const hideToast = vi.fn((options: any) => {
+      options.success?.({ errMsg: 'hideToast:ok' })
+    })
+    const api = createWeapi({
+      adapter: { hideToast },
+      platform: 'my',
+    })
+
+    expect(api.resolveTarget('nextTick')).toMatchObject({
+      method: 'nextTick',
+      target: 'hideToast',
+      supportLevel: 'fallback',
+      supported: true,
+      semanticAligned: false,
+    })
+    expect(api.supports('nextTick')).toBe(true)
+    expect(api.supports('nextTick', { semantic: true })).toBe(false)
+
+    await api.nextTick()
+    expect(hideToast).toHaveBeenCalledWith(expect.any(Object))
+  })
+
+  it('supports strictCompatibility to disable fallback mapping', async () => {
+    const hideToast = vi.fn((options: any) => {
+      options.success?.({ errMsg: 'hideToast:ok' })
+    })
+    const api = createWeapi({
+      adapter: { hideToast },
+      platform: 'my',
+      strictCompatibility: true,
+    }) as Record<string, any>
+
+    expect(api.resolveTarget('nextTick')).toMatchObject({
+      method: 'nextTick',
+      target: 'nextTick',
+      mapped: false,
+      supported: false,
+      supportLevel: 'unsupported',
+      semanticAligned: false,
+    })
+    expect(api.supports('nextTick')).toBe(false)
+
+    await expect(api.nextTick()).rejects.toMatchObject({
+      errMsg: 'my.nextTick:fail method not supported',
+    })
+    expect(hideToast).not.toHaveBeenCalled()
   })
 
   it('maps showToast options for alipay', async () => {
@@ -667,33 +720,49 @@ describe('weapi', () => {
     const compatibilityMatrix = generateMethodCompatibilityMatrix()
     const wxTotal = WEAPI_WX_METHODS.length
     const alipaySupported = compatibilityMatrix.filter(item => item.alipaySupported).length
+    const alipaySemanticAligned = compatibilityMatrix.filter(item => item.alipaySemanticallyAligned).length
+    const alipayFallback = compatibilityMatrix.filter(item => item.alipaySupportLevel === 'fallback').length
     const douyinSupported = compatibilityMatrix.filter(item => item.douyinSupported).length
+    const douyinSemanticAligned = compatibilityMatrix.filter(item => item.douyinSemanticallyAligned).length
+    const douyinFallback = compatibilityMatrix.filter(item => item.douyinSupportLevel === 'fallback').length
     const fullyAligned = compatibilityMatrix.filter(item => item.alipaySupported && item.douyinSupported).length
+    const fullySemanticAligned = compatibilityMatrix.filter(item => item.alipaySemanticallyAligned && item.douyinSemanticallyAligned).length
     const formatCoverage = (supported: number) => `${((supported / wxTotal) * 100).toFixed(2)}%`
     expect(report.totalApis).toBe(wxTotal)
     expect(report.fullyAlignedApis).toBe(fullyAligned)
     expect(report.fullyAlignedCoverage).toBe(formatCoverage(fullyAligned))
+    expect(report.fullySemanticallyAlignedApis).toBe(fullySemanticAligned)
+    expect(report.fullySemanticallyAlignedCoverage).toBe(formatCoverage(fullySemanticAligned))
     expect(report.platforms).toEqual([
       {
         platform: '微信小程序',
         alias: 'wx',
         supportedApis: wxTotal,
+        semanticAlignedApis: wxTotal,
+        fallbackApis: 0,
         totalApis: wxTotal,
         coverage: '100.00%',
+        semanticCoverage: '100.00%',
       },
       {
         platform: '支付宝小程序',
         alias: 'my',
         supportedApis: alipaySupported,
+        semanticAlignedApis: alipaySemanticAligned,
+        fallbackApis: alipayFallback,
         totalApis: wxTotal,
         coverage: formatCoverage(alipaySupported),
+        semanticCoverage: formatCoverage(alipaySemanticAligned),
       },
       {
         platform: '抖音小程序',
         alias: 'tt',
         supportedApis: douyinSupported,
+        semanticAlignedApis: douyinSemanticAligned,
+        fallbackApis: douyinFallback,
         totalApis: wxTotal,
         coverage: formatCoverage(douyinSupported),
+        semanticCoverage: formatCoverage(douyinSemanticAligned),
       },
     ])
   })

@@ -3,10 +3,11 @@ import type {
   WeapiAdapter,
   WeapiCrossPlatformRawAdapter,
   WeapiInstance,
+  WeapiMethodSupportQueryOptions,
   WeapiResolvedTarget,
 } from './types'
 import { detectGlobalAdapter } from './adapter'
-import { resolveMethodMapping } from './methodMapping'
+import { resolveMethodMappingWithMeta } from './methodMapping'
 import { createNotSupportedError, hasCallbacks, isPlainObject, shouldSkipPromise } from './utils'
 
 const INTERNAL_KEYS = new Set<PropertyKey>([
@@ -97,6 +98,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
 ): WeapiInstance<TAdapter> {
   let adapter: TAdapter | undefined = options.adapter
   let platformName: string | undefined = normalizePlatformName(options.platform)
+  const allowFallback = options.strictCompatibility !== true
   const cache = new Map<PropertyKey, any>()
 
   const resolveAdapter = () => {
@@ -134,22 +136,36 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
   const resolveTarget = (methodName: string): WeapiResolvedTarget => {
     const runtimeAdapter = resolveAdapter()
     const platform = getPlatform()
-    const mappingRule = resolveMethodMapping(platform, methodName)
-    const target = mappingRule?.target ?? methodName
+    const mappingInfo = resolveMethodMappingWithMeta(platform, methodName, { allowFallback })
+    const target = mappingInfo?.target ?? methodName
     const targetMethod = runtimeAdapter
       ? (runtimeAdapter as Record<string, any>)[target]
       : undefined
+    const supported = typeof targetMethod === 'function'
+    const supportLevel = !supported
+      ? 'unsupported'
+      : mappingInfo?.source === 'fallback'
+        ? 'fallback'
+        : mappingInfo?.source === 'explicit'
+          ? 'mapped'
+          : 'native'
     return {
       method: methodName,
       target,
       platform,
       mapped: target !== methodName,
-      supported: typeof targetMethod === 'function',
+      supported,
+      supportLevel,
+      semanticAligned: supportLevel === 'native' || supportLevel === 'mapped',
     }
   }
 
-  const supports = (methodName: string) => {
-    return resolveTarget(methodName).supported
+  const supports = (methodName: string, queryOptions: WeapiMethodSupportQueryOptions = {}) => {
+    const resolved = resolveTarget(methodName)
+    if (queryOptions.semantic === true) {
+      return resolved.semanticAligned
+    }
+    return resolved.supported
   }
 
   const proxy = new Proxy({}, {
@@ -195,7 +211,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
 
       const platform = getPlatform()
       const mappingRule = typeof prop === 'string'
-        ? resolveMethodMapping(platform, prop)
+        ? resolveMethodMappingWithMeta(platform, prop, { allowFallback })
         : undefined
       const methodName = mappingRule?.target ?? (prop as string)
       const value = (currentAdapter as Record<string, any>)[methodName]
@@ -212,8 +228,9 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
       const wrapped = (...args: unknown[]) => {
         const runtimeAdapter = resolveAdapter()
         const platform = getPlatform()
-        const mappingRule = resolveMethodMapping(platform, prop as string)
-        const methodName = mappingRule?.target ?? (prop as string)
+        const mappingInfo = resolveMethodMappingWithMeta(platform, prop as string, { allowFallback })
+        const mappingRule = mappingInfo?.rule
+        const methodName = mappingInfo?.target ?? (prop as string)
         const runtimeMethod = runtimeAdapter
           ? (runtimeAdapter as Record<string, any>)[methodName]
           : undefined

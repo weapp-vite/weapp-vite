@@ -102,10 +102,11 @@ function formatCoverageReport(indent: string) {
   const lines = [
     withIndent('### API 支持覆盖率报告', indent),
     '',
-    withIndent('| 平台 | 已支持 API 数 | API 总数 | 覆盖率 |', indent),
-    withIndent('| --- | --- | --- | --- |', indent),
-    ...report.platforms.map(item => withIndent(`| ${item.platform} (\`${item.alias}\`) | ${item.supportedApis} | ${item.totalApis} | ${item.coverage} |`, indent)),
-    withIndent(`| 三端完全对齐 (wx/my/tt) | ${report.fullyAlignedApis} | ${report.totalApis} | ${report.fullyAlignedCoverage} |`, indent),
+    withIndent('| 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |', indent),
+    withIndent('| --- | --- | --- | --- | --- | --- | --- |', indent),
+    ...report.platforms.map(item => withIndent(`| ${item.platform} (\`${item.alias}\`) | ${item.supportedApis} | ${item.semanticAlignedApis} | ${item.fallbackApis} | ${item.totalApis} | ${item.coverage} | ${item.semanticCoverage} |`, indent)),
+    withIndent(`| 三端可调用完全对齐 (wx/my/tt) | ${report.fullyAlignedApis} | - | - | ${report.totalApis} | ${report.fullyAlignedCoverage} | - |`, indent),
+    withIndent(`| 三端语义完全对齐 (wx/my/tt) | - | ${report.fullySemanticallyAlignedApis} | - | ${report.totalApis} | - | ${report.fullySemanticallyAlignedCoverage} |`, indent),
     '',
     withIndent('> 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。', indent),
   ]
