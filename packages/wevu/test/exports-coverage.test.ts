@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import * as api from '@/api'
 import * as root from '@/index'
 import * as reactivity from '@/reactivity'
+import * as router from '@/router'
 import * as runtime from '@/runtime'
 import * as store from '@/store'
 
@@ -128,6 +129,10 @@ describe('export barrels', () => {
     expect(api).toMatchObject({
       createWeapi: expect.any(Function),
       wpi: expect.any(Object),
+    })
+    expect(router).toMatchObject({
+      usePageRouter: expect.any(Function),
+      useRouter: expect.any(Function),
     })
     expect(reactivity).toBeTruthy()
     expect(runtime).toBeTruthy()

@@ -61,6 +61,13 @@
         "types": "./dist/api.d.mts",
         "default": "./dist/api.mjs"
       }
+    },
+    "./router": {
+      "types": "./dist/router.d.mts",
+      "import": {
+        "types": "./dist/router.d.mts",
+        "default": "./dist/router.mjs"
+      }
     }
   },
   "main": "./dist/index.mjs",
