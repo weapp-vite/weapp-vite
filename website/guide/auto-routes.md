@@ -91,6 +91,8 @@ function jump(route: AutoRoutes['entries'][number]) {
 
 如果你在项目里使用 `wevu` 的 `useRouter()/usePageRouter()`，`typed-router.d.ts` 还会自动注入模块增强，让 Router 的 `url` 参数继承自动路由联合类型（同时保留 `./detail`、`../detail` 这类相对路径写法）。
 
+如果你还想让 `switchTab` 类型更严格（只允许 tabBar 页面），可在业务项目里声明合并 `WevuTypedRouterRouteMap.tabBarEntries` 来进一步收窄。
+
 > [!TIP]
 > 如果你的项目需要兼容较低基础库（`Router` 原生对象可能不存在），`wevu` 会回退到全局路由方法（`wx/my/tt`）。这时为保持跨版本一致性，建议在关键跳转优先使用绝对路径（例如 `AutoRoutes['entries'][number]`）。
 

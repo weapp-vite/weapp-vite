@@ -165,10 +165,10 @@ function patchRaw() {
 
 ## 5.1 路由辅助
 
-| API             | 类型入口 | 说明                                                                                                                                                            |
-| --------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useRouter`     | `Router` | 获取组件路径语义 Router。优先 `this.router`，再回退 `this.pageRouter`，低版本基础库降级到全局 `wx/my/tt`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`。 |
-| `usePageRouter` | `Router` | 获取页面路径语义 Router。优先 `this.pageRouter`，再回退 `this.router`，低版本基础库降级到全局 `wx/my/tt`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`。 |
+| API             | 类型入口 | 说明                                                                                                                                                                                                     |
+| --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useRouter`     | `Router` | 获取组件路径语义 Router。优先 `this.router`，再回退 `this.pageRouter`，低版本基础库降级到全局 `wx/my/tt`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`，并可用 `tabBarEntries` 收窄 `switchTab`。 |
+| `usePageRouter` | `Router` | 获取页面路径语义 Router。优先 `this.pageRouter`，再回退 `this.router`，低版本基础库降级到全局 `wx/my/tt`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`，并可用 `tabBarEntries` 收窄 `switchTab`。 |
 
 ### 5.1.1 Router 语义矩阵
 

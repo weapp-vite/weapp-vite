@@ -55,14 +55,14 @@ keywords:
 
 - 用途：获取当前组件路径语义的 Router 对象。
 - 行为：优先使用 `this.router`；不可用时回退 `this.pageRouter`；低版本基础库（`< 2.16.1`）再回退全局路由方法（`wx`/`my`/`tt`）。
-- 类型：可通过声明合并 `WevuTypedRouterRouteMap.entries` 收窄 `url` 字面量（`weapp-vite autoRoutes` 会自动注入该增强）。
+- 类型：可通过声明合并 `WevuTypedRouterRouteMap.entries` 收窄 `url` 字面量；可选 `tabBarEntries` 进一步收窄 `switchTab`（`weapp-vite autoRoutes` 会自动注入 `entries`）。
 - 源码：`runtime/vueCompat.ts`。
 
 ### `usePageRouter()` {#usepagerouter}
 
 - 用途：获取当前页面路径语义的 Router 对象。
 - 行为：优先使用 `this.pageRouter`；不可用时回退 `this.router`；低版本基础库（`< 2.16.1`）再回退全局路由方法（`wx`/`my`/`tt`）。
-- 类型：与 `useRouter()` 共享 `WevuTypedRouterRouteMap.entries` 收窄能力。
+- 类型：与 `useRouter()` 共享 `WevuTypedRouterRouteMap.entries / tabBarEntries` 收窄能力。
 - 源码：`runtime/vueCompat.ts`。
 
 ### Router 语义与兼容建议
