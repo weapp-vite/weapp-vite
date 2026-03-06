@@ -67,6 +67,7 @@ keywords:
 
 - 类型入口：`MiniProgramComponentOptions`
 - 用途：在 `<script setup>` 中定义组件配置项。
+- Behavior 说明：可直接声明 `behaviors`。当条目来自原生 `Behavior()` 返回值时，编译阶段会保留该表达式并继续后续转换。
 
 ### `mergeModels()` {#mergemodels}
 
