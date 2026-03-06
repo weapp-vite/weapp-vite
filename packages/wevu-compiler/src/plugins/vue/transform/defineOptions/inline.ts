@@ -15,6 +15,18 @@ interface DefineOptionsStatement {
   argPath: any
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message
+  }
+  return typeof error === 'string' ? error : ''
+}
+
+function shouldFallbackToRawDefineOptions(error: unknown) {
+  const message = getErrorMessage(error)
+  return /\bBehavior is not defined\b/.test(message)
+}
+
 function normalizeScriptSetupLang(lang?: string) {
   if (!lang) {
     return 'ts'
@@ -362,12 +374,27 @@ export async function inlineScriptSetupDefineOptionsArgs(
     }
   }
 
-  const { values, dependencies } = await evaluateDefineOptionsValues({
-    content,
-    filename,
-    lang,
-    statements,
-  })
+  let values: unknown[] = []
+  let dependencies: string[] = []
+  try {
+    const evaluated = await evaluateDefineOptionsValues({
+      content,
+      filename,
+      lang,
+      statements,
+    })
+    values = evaluated.values
+    dependencies = evaluated.dependencies
+  }
+  catch (error) {
+    if (shouldFallbackToRawDefineOptions(error)) {
+      return {
+        code: content,
+        dependencies: [],
+      }
+    }
+    throw error
+  }
 
   const ms = new MagicString(content)
   for (let index = 0; index < statements.length; index += 1) {

@@ -141,4 +141,29 @@ defineOptions(() => ({
     expect(result.code).toContain('type: Function')
     expect(() => babelParse(result.code, BABEL_TS_MODULE_PARSER_OPTIONS)).not.toThrow()
   })
+
+  it('falls back to raw defineOptions when imported behavior depends on runtime Behavior()', async () => {
+    const projectDir = await createTempProject()
+    const filename = path.join(projectDir, 'index.ts')
+    const behaviorFile = path.join(projectDir, 'behavior.ts')
+    const source = `
+import FooBehavior from './behavior'
+
+defineOptions({
+  behaviors: [FooBehavior],
+})
+    `.trim()
+
+    await fs.writeFile(
+      behaviorFile,
+      `export default Behavior({ methods: { ping() { return 'ok' } } })\n`,
+      'utf8',
+    )
+
+    const result = await inlineScriptSetupDefineOptionsArgs(source, filename, 'ts')
+
+    expect(result.code).toBe(source)
+    expect(result.code).toContain('behaviors: [FooBehavior]')
+    expect(result.dependencies).toEqual([])
+  })
 })
