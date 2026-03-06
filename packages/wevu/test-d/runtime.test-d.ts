@@ -44,6 +44,7 @@ import {
   registerComponent,
   resetWevuDefaults,
   setWevuDefaults,
+  useDisposables,
   useIntersectionObserver,
   useNativeInstance,
   usePageRouter,
@@ -175,6 +176,12 @@ defineComponent({
     expectType<WechatMiniprogram.IntersectionObserver>(io)
     const stopPerfListen = useUpdatePerformanceListener((_result) => {})
     expectType<() => void>(stopPerfListen)
+    const bag = useDisposables()
+    const removeCleanup = bag.add(() => {})
+    expectType<() => void>(removeCleanup)
+    expectType<void>(bag.dispose())
+    expectAssignable<ReturnType<typeof setTimeout>>(bag.setTimeout(() => {}, 16))
+    expectAssignable<ReturnType<typeof setInterval>>(bag.setInterval(() => {}, 16))
     return {}
   },
 })
