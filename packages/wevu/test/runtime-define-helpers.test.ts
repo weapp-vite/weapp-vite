@@ -59,6 +59,21 @@ describe('runtime: define helpers', () => {
     expect(result.properties.__wvSlotScope).toBeTruthy()
   })
 
+  it('normalizes Vue inferred union arrays to native type and optionalTypes', () => {
+    const result = normalizeProps({ data: () => ({}) }, {
+      mixed: { type: [Number, String] },
+      literalUnion: { type: [String, Number] },
+      multiNative: { type: [String, Number, Boolean, Object, Array] },
+    })
+
+    expect(result.properties.mixed.type).toBe(Number)
+    expect(result.properties.mixed.optionalTypes).toEqual([String])
+    expect(result.properties.literalUnion.type).toBe(String)
+    expect(result.properties.literalUnion.optionalTypes).toEqual([Number])
+    expect(result.properties.multiNative.type).toBe(String)
+    expect(result.properties.multiNative.optionalTypes).toEqual([Number, Boolean, Object, Array])
+  })
+
   it('creates scoped slot options with inline args parsing', () => {
     const options = createScopedSlotOptions({ computed: { foo: () => 1 } })
     expect(options.computed).toBeTruthy()

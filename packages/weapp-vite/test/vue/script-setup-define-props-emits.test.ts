@@ -94,4 +94,25 @@ emit('rename', 'next', true)
     expect(result.script).toContain('props:')
     expect(result.script).toContain('emits:')
   })
+
+  it('infers native constructor arrays from defineProps generic unions', async () => {
+    const source = `
+<template>
+  <view>{{ mixed }} {{ literalUnion }} {{ multiNative }}</view>
+</template>
+
+<script setup lang="ts">
+const props = defineProps<{
+  mixed: number | string
+  literalUnion: 'on' | 'off' | number
+  multiNative: string | number | boolean | Record<string, any> | unknown[]
+}>()
+</script>
+`
+    const result = await compileVueFile(source, 'test.vue')
+
+    expect(result.script).toMatch(/mixed:\s*\{\s*type:\s*\[\s*Number,\s*String\s*\]/)
+    expect(result.script).toMatch(/literalUnion:\s*\{\s*type:\s*\[\s*String,\s*Number\s*\]/)
+    expect(result.script).toMatch(/multiNative:\s*\{\s*type:\s*\[\s*String,\s*Number,\s*Boolean,\s*Object,\s*Array\s*\]/)
+  })
 })
