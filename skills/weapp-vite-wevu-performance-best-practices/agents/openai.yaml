@@ -1,0 +1,16 @@
+interface:
+  display_name: Weapp-vite Wevu Performance
+  short_description: weapp-vite + wevu 运行时性能诊断与优化（setData/渲染/切换/资源/内存）
+  default_prompt: >-
+    Use $weapp-vite-wevu-performance-best-practices whenever the user reports
+    mini-program performance issues (卡顿/掉帧/页面切换慢/白屏/内存告警) or asks for
+    a systematic performance plan in weapp-vite + wevu projects. Classify by
+    setData, render, navigation, resource, and memory first, then propose
+    minimal file-level changes with measurable verification signals and rollback
+    points. If the core issue is build architecture/chunk/subpackage strategy,
+    switch to $weapp-vite-best-practices; if mostly SFC macro/template
+    compatibility, switch to $weapp-vite-vue-sfc-best-practices; if mainly
+    runtime semantics/lifecycle/store design, switch to $wevu-best-practices.
+
+policy:
+  allow_implicit_invocation: true
