@@ -1139,6 +1139,10 @@ importers:
 
   e2e-apps/object-literal-bind-prop: {}
 
+  e2e-apps/script-setup-macros-js-with-defaults-invalid: {}
+
+  e2e-apps/script-setup-macros-mapping: {}
+
   e2e-apps/style-import-vue: {}
 
   e2e-apps/subpackage-shared-strategy-complex-a:
