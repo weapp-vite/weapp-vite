@@ -8,6 +8,15 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
 "
 `;
 
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::components/router-origin-probe/target/index 1`] = `
+"<view class="router-component-target-page">
+  <view id="router-target-component-marker">
+    route=components/router-origin-probe/target/index source=unknown
+  </view>
+</view>
+"
+`;
+
 exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/index/index 1`] = `
 "<view class="feature-nav-page">
   <view class="feature-nav-title">wevu 特性展示</view>
@@ -36,6 +45,12 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
     <navigator class="feature-nav-item" url="/pages/native-uses-vue/index" role="link">
       <view class="feature-nav-item-title">native -&gt; vue</view>
       <view class="feature-nav-item-summary">展示原生组件通过 usingComponents 引入 Vue 组件</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/router-stability/index" role="link">
+      <view class="feature-nav-item-title">router stability</view>
+      <view class="feature-nav-item-summary">
+        展示 wx/pageRouter/router 在相对路径上的基路径差异
+      </view>
     </navigator>
   </view>
 </view>
@@ -68,6 +83,72 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       </native-card>
     </view>
   </nativeusesvue>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-stability/index 1`] = `
+"<view class="router-stability-page">
+  <view class="router-stability-page__title">router stability (page context)</view>
+  <view class="router-stability-page__desc">
+    用于验证 wx.navigateTo 与 this.pageRouter.navigateTo 的相对路径基准差异。
+  </view>
+  <view class="router-stability-page__btn" id="router-open-sub">打开 sub 页面</view>
+  <view class="router-stability-page__btn" id="router-index-wx">
+    当前页触发 wx.navigateTo('./target/index')
+  </view>
+  <view class="router-stability-page__btn" id="router-index-page-router">
+    当前页触发 pageRouter.navigateTo('./target/index')
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-stability/sub/index 1`] = `
+"<view class="router-sub-page">
+  <view class="router-sub-page__title">router stability (sub page)</view>
+  <view class="router-sub-page__desc">本页会调用上一个页面的方法，验证相对路径基准是否稳定。</view>
+  <view class="router-sub-page__btn" id="router-sub-call-prev-wx">
+    调用上页 wx.navigateTo('./target/index')
+  </view>
+  <view class="router-sub-page__btn" id="router-sub-call-prev-page-router">
+    调用上页 pageRouter.navigateTo('./target/index')
+  </view>
+  <routeroriginprobe is="components/router-origin-probe/index" class="__wv-ref-0">
+    <view class="index--router-origin-probe">
+      <view class="index--router-origin-probe__title">component router origin probe</view>
+      <view class="index--router-origin-probe__btn" id="cmp-router-nav">
+        this.router.navigateTo('./target/index')
+      </view>
+      <view class="index--router-origin-probe__btn" id="cmp-page-router-nav">
+        this.pageRouter.navigateTo('./target/index')
+      </view>
+    </view>
+  </routeroriginprobe>
+  <view class="router-sub-page__btn" id="router-sub-call-component-router">
+    组件 this.router.navigateTo('./target/index')
+  </view>
+  <view class="router-sub-page__btn" id="router-sub-call-component-page-router">
+    组件 this.pageRouter.navigateTo('./target/index')
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-stability/sub/target/index 1`] = `
+"<view class="router-sub-target-page">
+  <view id="router-target-sub-marker">
+    route=pages/router-stability/sub/target/index source=unknown
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-stability/target/index 1`] = `
+"<view class="router-target-page">
+  <view id="router-target-main-marker">
+    route=pages/router-stability/target/index source=unknown
+  </view>
 </view>
 "
 `;

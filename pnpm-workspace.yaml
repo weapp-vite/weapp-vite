@@ -19,7 +19,7 @@ catalog:
   '@mini-types/alipay': ^3.0.14
   '@tailwindcss/postcss': ^4.2.1
   '@tailwindcss/vite': ^4.2.1
-  '@types/node': ^25.3.3
+  '@types/node': ^25.3.5
   '@types/semver': ^7.7.1
   '@vant/weapp': ^1.11.7
   '@vue/compiler-core': ^3.5.29
