@@ -49,6 +49,12 @@ const removeGuard = navigation.beforeEach((context: NavigationGuardContext) => {
 })
 expectType<() => void>(removeGuard)
 
+const removeResolveGuard = navigation.beforeResolve((context: NavigationGuardContext) => {
+  expectType<RouteLocationNormalizedLoaded | undefined>(context.to)
+  return '/pages/login/index?from=guard'
+})
+expectType<() => void>(removeResolveGuard)
+
 const failure = createNavigationFailure(NavigationFailureType.cancelled)
 expectType<NavigationFailure>(failure)
 expectType<boolean>(isNavigationFailure(failure))
