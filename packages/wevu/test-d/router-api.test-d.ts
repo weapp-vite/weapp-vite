@@ -57,6 +57,7 @@ expectType<Readonly<RouteLocationNormalizedLoaded>>(route)
 
 const navigationOptions: UseRouterOptions = {
   tabBarEntries: ['pages/home/index'],
+  paramsMode: 'strict',
   namedRoutes: {
     'home': '/pages/home/index',
     'post-detail': '/pages/post/:id/index',

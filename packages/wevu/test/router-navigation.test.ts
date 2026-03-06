@@ -402,6 +402,93 @@ describe('router navigation helpers', () => {
     })
   })
 
+  it('keeps loose params mode by default for unused named-route params', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: {
+        'post-detail': '/pages/post/:id/index',
+      },
+    })
+
+    const result = await router.push({
+      name: 'post-detail',
+      params: {
+        id: 1,
+        extra: 'unused',
+      },
+    })
+    expect(result).toBeUndefined()
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/post/1/index',
+    }))
+  })
+
+  it('strict params mode rejects unexpected named-route params', async () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      paramsMode: 'strict',
+      namedRoutes: {
+        'post-detail': '/pages/post/:id/index',
+      },
+    })
+
+    await expect(router.push({
+      name: 'post-detail',
+      params: {
+        id: 1,
+        extra: 'unused',
+      },
+    })).rejects.toMatchObject({
+      type: NavigationFailureType.unknown,
+      message: expect.stringContaining('Unexpected params for named route "post-detail": extra'),
+    })
+  })
+
   it('provides hasRoute and getRoutes for named route introspection', () => {
     const instance = {
       __wevu: {},

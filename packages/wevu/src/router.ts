@@ -23,6 +23,7 @@ export type RouteParamValue = string
 export type RouteParamValueRaw = RouteParamValue | number | boolean | null | undefined
 export type RouteParams = Record<string, RouteParamValue | RouteParamValue[]>
 export type RouteParamsRaw = Record<string, RouteParamValueRaw | RouteParamValueRaw[]>
+export type RouteParamsMode = 'loose' | 'strict'
 export type RouteQueryParser = (search: string) => LocationQueryRaw | LocationQuery
 export type RouteQueryStringifier = (query: LocationQueryRaw | LocationQuery) => string
 export type RouteMeta = Record<string, unknown>
@@ -148,6 +149,7 @@ export type NavigationErrorHandler = (
 export interface UseRouterOptions {
   tabBarEntries?: readonly (TypedRouterTabBarUrl | string)[]
   namedRoutes?: NamedRoutes
+  paramsMode?: RouteParamsMode
   maxRedirects?: number
   parseQuery?: RouteQueryParser
   stringifyQuery?: RouteQueryStringifier
@@ -205,6 +207,11 @@ interface NamedRouteLookup {
 interface PathParamToken {
   key: string
   modifier: '' | '?' | '+' | '*'
+}
+
+interface NamedRoutePathResolveResult {
+  path: string
+  consumedKeys: ReadonlySet<string>
 }
 
 function decodeQuerySegment(value: string): string {
@@ -536,8 +543,9 @@ function stringifyPathParamSegment(value: RouteParamValue): string {
   return encodeURIComponent(value)
 }
 
-function resolveNamedRoutePath(pathTemplate: string, params: RouteParams, routeName: string): string {
+function resolveNamedRoutePath(pathTemplate: string, params: RouteParams, routeName: string): NamedRoutePathResolveResult {
   const resolvedSegments: string[] = []
+  const consumedKeys = new Set<string>()
   for (const rawSegment of pathTemplate.split('/')) {
     if (!rawSegment) {
       continue
@@ -554,6 +562,7 @@ function resolveNamedRoutePath(pathTemplate: string, params: RouteParams, routeN
       if (values.length !== 1) {
         throw new Error(`Missing required param "${token.key}" for named route "${routeName}"`)
       }
+      consumedKeys.add(token.key)
       resolvedSegments.push(stringifyPathParamSegment(values[0]))
       continue
     }
@@ -565,6 +574,7 @@ function resolveNamedRoutePath(pathTemplate: string, params: RouteParams, routeN
       if (values.length > 1) {
         throw new Error(`Param "${token.key}" for named route "${routeName}" must be a single value`)
       }
+      consumedKeys.add(token.key)
       resolvedSegments.push(stringifyPathParamSegment(values[0]))
       continue
     }
@@ -573,23 +583,57 @@ function resolveNamedRoutePath(pathTemplate: string, params: RouteParams, routeN
       if (values.length === 0) {
         throw new Error(`Missing required repeatable param "${token.key}" for named route "${routeName}"`)
       }
+      consumedKeys.add(token.key)
       for (const value of values) {
         resolvedSegments.push(stringifyPathParamSegment(value))
       }
       continue
     }
 
+    if (values.length > 0) {
+      consumedKeys.add(token.key)
+    }
     for (const value of values) {
       resolvedSegments.push(stringifyPathParamSegment(value))
     }
   }
 
-  return resolvedSegments.join('/')
+  return {
+    path: resolvedSegments.join('/'),
+    consumedKeys,
+  }
+}
+
+function hasNonEmptyRouteParamValue(value: RouteParamValue | RouteParamValue[] | undefined): boolean {
+  if (value === undefined) {
+    return false
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0
+  }
+  return true
+}
+
+function assertNoUnexpectedNamedRouteParams(
+  params: RouteParams,
+  consumedKeys: ReadonlySet<string>,
+  routeName: string,
+) {
+  const unexpectedKeys = Object.keys(params)
+    .filter(key => !consumedKeys.has(key))
+    .filter(key => hasNonEmptyRouteParamValue(params[key]))
+
+  if (unexpectedKeys.length === 0) {
+    return
+  }
+
+  throw new Error(`Unexpected params for named route "${routeName}": ${unexpectedKeys.join(', ')}`)
 }
 
 function resolveNamedRouteLocation(
   to: Extract<RouteLocationRaw, Record<string, unknown>>,
   lookup: NamedRouteLookup,
+  paramsMode: RouteParamsMode,
 ): Extract<RouteLocationRaw, Record<string, unknown>> {
   const routeName = to.name
   if (typeof routeName !== 'string' || !routeName) {
@@ -607,11 +651,14 @@ function resolveNamedRouteLocation(
   const params = to.params
     ? normalizeRouteParams(to.params)
     : {}
-  const resolvedPath = resolveNamedRoutePath(routeRecord.path, params, routeName)
+  const resolvedResult = resolveNamedRoutePath(routeRecord.path, params, routeName)
+  if (paramsMode === 'strict') {
+    assertNoUnexpectedNamedRouteParams(params, resolvedResult.consumedKeys, routeName)
+  }
 
   return {
     ...to,
-    path: resolvedPath ? `/${resolvedPath}` : '/',
+    path: resolvedResult.path ? `/${resolvedResult.path}` : '/',
     params,
   }
 }
@@ -1237,6 +1284,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   const afterEachHooks = new Set<NavigationAfterEach>()
   const errorHandlers = new Set<NavigationErrorHandler>()
   const maxRedirects = options.maxRedirects ?? 10
+  const paramsMode = options.paramsMode ?? 'loose'
   const rejectOnError = options.rejectOnError ?? true
   const routeResolveCodec: RouteResolveCodec = {
     parseQuery: options.parseQuery ?? parseQuery,
@@ -1252,7 +1300,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   function resolveWithCodec(to: RouteLocationRaw, currentPath: string): RouteLocationNormalizedLoaded {
     const rawTo = typeof to === 'string'
       ? to
-      : resolveNamedRouteLocation(to, namedRouteLookup)
+      : resolveNamedRouteLocation(to, namedRouteLookup, paramsMode)
     const resolved = resolveRouteLocation(rawTo, currentPath, routeResolveCodec)
     resolved.href = resolved.fullPath
     const matchedRecord = resolveMatchedRouteRecord(resolved, namedRouteLookup)
