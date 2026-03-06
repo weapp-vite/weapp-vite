@@ -1,6 +1,7 @@
 import type {
   LocationQuery,
   NavigationAfterEachContext,
+  NavigationErrorContext,
   NavigationFailure,
   NavigationGuardContext,
   NavigationRedirect,
@@ -74,6 +75,15 @@ const removeAfterEach = navigation.afterEach((context: NavigationAfterEachContex
   expectType<NavigationFailure | undefined>(context.failure)
 })
 expectType<() => void>(removeAfterEach)
+
+const removeOnError = navigation.onError((error, context: NavigationErrorContext) => {
+  expectType<unknown>(error)
+  expectType<'push' | 'replace' | 'back'>(context.mode)
+  expectType<RouteLocationNormalizedLoaded | undefined>(context.to)
+  expectType<RouteLocationNormalizedLoaded>(context.from)
+  expectType<NavigationFailure>(context.failure)
+})
+expectType<() => void>(removeOnError)
 
 const failure = createNavigationFailure(NavigationFailureType.cancelled)
 expectType<NavigationFailure>(failure)

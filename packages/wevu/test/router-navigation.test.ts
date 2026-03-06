@@ -479,6 +479,95 @@ describe('router navigation helpers', () => {
     })
   })
 
+  it('onError receives thrown guard errors and supports unregister', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const errors: any[] = []
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter()
+    const removeOnError = router.onError((error, context) => {
+      errors.push({ error, context })
+    })
+
+    const guardError = new Error('guard boom')
+    router.beforeEach(() => {
+      throw guardError
+    })
+
+    const firstResult = await router.push('/pages/detail/index')
+    expect(isNavigationFailure(firstResult, NavigationFailureType.aborted)).toBe(true)
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toMatchObject({
+      error: guardError,
+      context: {
+        mode: 'push',
+        from: { path: 'pages/home/index' },
+        to: { path: 'pages/detail/index' },
+        failure: { type: NavigationFailureType.aborted },
+      },
+    })
+
+    removeOnError()
+    const secondResult = await router.push('/pages/detail/index')
+    expect(isNavigationFailure(secondResult, NavigationFailureType.aborted)).toBe(true)
+    expect(errors).toHaveLength(1)
+    expect(navigateTo).not.toHaveBeenCalled()
+  })
+
+  it('onError ignores expected navigation failures', async () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const onError = vi.fn()
+    const router = useRouter()
+    router.onError(onError)
+
+    const result = await router.push('/pages/home/index')
+    expect(isNavigationFailure(result, NavigationFailureType.duplicated)).toBe(true)
+    expect(onError).not.toHaveBeenCalled()
+  })
+
   it('resolve uses latest route state after route hooks update', () => {
     const instance = {
       __wevu: {},

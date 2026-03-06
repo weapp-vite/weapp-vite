@@ -78,6 +78,19 @@ export interface NavigationAfterEachContext {
   readonly failure?: NavigationFailure
 }
 
+export interface NavigationErrorContext {
+  readonly mode: NavigationMode
+  readonly to?: RouteLocationNormalizedLoaded
+  readonly from: RouteLocationNormalizedLoaded
+  readonly nativeRouter: SetupContextRouter
+  readonly failure: NavigationFailure
+}
+
+export type NavigationErrorHandler = (
+  error: unknown,
+  context: NavigationErrorContext,
+) => void | Promise<void>
+
 export interface UseRouterOptions {
   tabBarEntries?: readonly (TypedRouterTabBarUrl | string)[]
   maxRedirects?: number
@@ -97,6 +110,7 @@ export interface RouterNavigation {
   beforeEach: (guard: NavigationGuard) => () => void
   beforeResolve: (guard: NavigationGuard) => () => void
   afterEach: (hook: NavigationAfterEach) => () => void
+  onError: (handler: NavigationErrorHandler) => () => void
 }
 
 interface MiniProgramPageLike {
@@ -583,6 +597,48 @@ async function runAfterEachHooks(
   }
 }
 
+async function runNavigationErrorHooks(
+  handlers: ReadonlySet<NavigationErrorHandler>,
+  error: unknown,
+  context: NavigationErrorContext,
+) {
+  for (const handler of handlers) {
+    try {
+      await handler(error, context)
+    }
+    catch {
+      // 忽略 onError 回调中的异常，避免影响导航主流程。
+    }
+  }
+}
+
+function isNativeFailureLikeError(value: unknown): boolean {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const errMsg = (value as Record<string, unknown>).errMsg
+  return typeof errMsg === 'string'
+}
+
+function shouldEmitNavigationError(failure: NavigationFailure): boolean {
+  if (failure.type === NavigationFailureType.unknown) {
+    return true
+  }
+  if (failure.cause instanceof Error) {
+    return true
+  }
+  if (failure.type === NavigationFailureType.aborted && failure.cause !== undefined) {
+    if (typeof failure.cause === 'string') {
+      return false
+    }
+    if (isNativeFailureLikeError(failure.cause)) {
+      return false
+    }
+    return true
+  }
+  return false
+}
+
 export function resolveRouteLocation(to: RouteLocationRaw, currentPath = ''): RouteLocationNormalizedLoaded {
   if (typeof to === 'string') {
     const parsed = parsePathInput(to)
@@ -665,6 +721,7 @@ export function useRouterNavigation(options: UseRouterOptions = {}): RouterNavig
   const beforeEachGuards = new Set<NavigationGuard>()
   const beforeResolveGuards = new Set<NavigationGuard>()
   const afterEachHooks = new Set<NavigationAfterEach>()
+  const errorHandlers = new Set<NavigationErrorHandler>()
   const maxRedirects = options.maxRedirects ?? 10
   const tabBarPathSet = new Set(
     (options.tabBarEntries ?? [])
@@ -698,6 +755,13 @@ export function useRouterNavigation(options: UseRouterOptions = {}): RouterNavig
     afterEachHooks.add(hook)
     return () => {
       afterEachHooks.delete(hook)
+    }
+  }
+
+  function onError(handler: NavigationErrorHandler): () => void {
+    errorHandlers.add(handler)
+    return () => {
+      errorHandlers.delete(handler)
     }
   }
 
@@ -750,6 +814,20 @@ export function useRouterNavigation(options: UseRouterOptions = {}): RouterNavig
       nativeRouter,
       failure: result.failure,
     })
+
+    if (result.failure && shouldEmitNavigationError(result.failure)) {
+      await runNavigationErrorHooks(
+        errorHandlers,
+        result.failure.cause ?? result.failure,
+        {
+          mode: result.mode,
+          to: result.to,
+          from: result.from,
+          nativeRouter,
+          failure: result.failure,
+        },
+      )
+    }
   }
 
   async function navigateWithTarget(
@@ -958,6 +1036,7 @@ export function useRouterNavigation(options: UseRouterOptions = {}): RouterNavig
     beforeEach,
     beforeResolve,
     afterEach,
+    onError,
   }
 }
 
