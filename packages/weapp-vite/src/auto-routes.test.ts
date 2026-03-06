@@ -5,6 +5,7 @@ describe('auto-routes module exports', () => {
   const modulePath = './auto-routes'
 
   afterEach(() => {
+    delete (globalThis as any).wx
     vi.doUnmock('./context')
     vi.resetModules()
     vi.restoreAllMocks()
@@ -45,10 +46,49 @@ describe('auto-routes module exports', () => {
     expect(module.pages).toBe(reference.pages)
     expect(module.entries).toBe(reference.entries)
     expect(module.subPackages).toBe(reference.subPackages)
+    expect(module.wxRouter).toBeTruthy()
 
     reference.pages.push('pages/about/index')
     expect(module.pages).toContain('pages/about/index')
     expect(module.routes.pages).toContain('pages/about/index')
+  })
+
+  it('wxRouter proxies route methods to global mini-program object', async () => {
+    const wx = {
+      switchTab: vi.fn(),
+      reLaunch: vi.fn(),
+      redirectTo: vi.fn(),
+      navigateTo: vi.fn(),
+      navigateBack: vi.fn(),
+    }
+    ;(globalThis as any).wx = wx
+
+    vi.doMock('./context', () => {
+      return {
+        getCompilerContext: () => ({}),
+      }
+    })
+
+    const module = await import(modulePath)
+
+    module.wxRouter.navigateTo({ url: '/pages/index/index' })
+    module.wxRouter.redirectTo({ url: '/pages/about/index' })
+    module.wxRouter.navigateBack({ delta: 1 })
+
+    expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/index/index' })
+    expect(wx.redirectTo).toHaveBeenCalledWith({ url: '/pages/about/index' })
+    expect(wx.navigateBack).toHaveBeenCalledWith({ delta: 1 })
+  })
+
+  it('wxRouter throws when route capability is unavailable', async () => {
+    vi.doMock('./context', () => {
+      return {
+        getCompilerContext: () => ({}),
+      }
+    })
+
+    const module = await import(modulePath)
+    expect(() => module.wxRouter.navigateTo({ url: '/pages/index/index' })).toThrow('当前运行环境不支持路由方法')
   })
 
   it('falls back to empty collections when no service is available', async () => {

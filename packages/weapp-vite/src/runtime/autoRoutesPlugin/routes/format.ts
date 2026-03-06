@@ -1,6 +1,8 @@
 import type { AutoRoutes, AutoRoutesSubPackage } from '../../../types/routes'
 
 const INDENT = '    '
+const TS_STRING_PLACEHOLDER = '${' + 'string}'
+const TS_PATH_PLACEHOLDER = '${' + 'Path}'
 
 function formatTuple(values: string[], baseIndent = '') {
   if (values.length === 0) {
@@ -54,10 +56,25 @@ export function createTypedRouterDefinition(routes: AutoRoutes) {
     '        readonly entries: AutoRoutesEntries;',
     '        readonly subPackages: AutoRoutesSubPackages;',
     '    }',
+    '    export type AutoRouteEntry = AutoRoutesEntries[number];',
+    `    export type AutoRoutesRelativeUrl = \`./${TS_STRING_PLACEHOLDER}\` | \`../${TS_STRING_PLACEHOLDER}\`;`,
+    `    export type AutoRoutesAbsoluteUrl<Path extends string> = Path | \`/${TS_PATH_PLACEHOLDER}\` | \`${TS_PATH_PLACEHOLDER}?${TS_STRING_PLACEHOLDER}\` | \`/${TS_PATH_PLACEHOLDER}?${TS_STRING_PLACEHOLDER}\`;`,
+    '    export type AutoRoutesUrl = AutoRoutesAbsoluteUrl<AutoRouteEntry> | AutoRoutesRelativeUrl;',
+    '    export type AutoRouteNavigateOption = {',
+    '        readonly url: AutoRoutesUrl;',
+    '    } & Record<string, any>;',
+    '    export interface AutoRoutesWxRouter {',
+    '        switchTab: (option: AutoRouteNavigateOption) => unknown;',
+    '        reLaunch: (option: AutoRouteNavigateOption) => unknown;',
+    '        redirectTo: (option: AutoRouteNavigateOption) => unknown;',
+    '        navigateTo: (option: AutoRouteNavigateOption) => unknown;',
+    '        navigateBack: (option?: Record<string, any>) => unknown;',
+    '    }',
     '    export const routes: AutoRoutes;',
     '    export const pages: AutoRoutesPages;',
     '    export const entries: AutoRoutesEntries;',
     '    export const subPackages: AutoRoutesSubPackages;',
+    '    export const wxRouter: AutoRoutesWxRouter;',
     '    export default routes;',
     '}',
     '',
