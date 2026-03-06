@@ -32,16 +32,28 @@ describe('runtime: define helpers', () => {
   })
 
   it('normalizes props into mini program properties', () => {
+    const statusObserver = vi.fn()
     const props = {
       name: String,
       count: { type: Number, default: 2 },
-      status: { value: 'ok' },
+      status: { type: Number, optionalTypes: [String, Object], observer: statusObserver, value: 0 },
+      mode: [String, Number],
+      anyValue: null,
+      withOptionalOnly: { optionalTypes: [Boolean] },
       demoModifiers: {},
     }
     const result = normalizeProps({ data: () => ({}) }, props)
     expect(result.properties.name.type).toBe(String)
     expect(result.properties.count.value).toBe(2)
-    expect(result.properties.status.value).toBe('ok')
+    expect(result.properties.status.value).toBe(0)
+    expect(result.properties.status.type).toBe(Number)
+    expect(result.properties.status.optionalTypes).toEqual([String, Object])
+    expect(result.properties.status.observer).toBe(statusObserver)
+    expect(result.properties.mode.type).toBe(String)
+    expect(result.properties.mode.optionalTypes).toEqual([Number])
+    expect(result.properties.anyValue.type).toBeNull()
+    expect(result.properties.withOptionalOnly.type).toBeNull()
+    expect(result.properties.withOptionalOnly.optionalTypes).toEqual([Boolean])
     expect(result.properties.demoModifiers.type).toBe(Object)
     expect(result.properties.__wvSlotOwnerId).toBeTruthy()
     expect(result.properties.__wvSlotScope).toBeTruthy()

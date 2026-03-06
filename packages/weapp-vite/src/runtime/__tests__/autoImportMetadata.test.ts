@@ -16,11 +16,16 @@ describe('autoImport metadata helpers', () => {
           count: {
             type: ['Number', 'Boolean'],
           },
+          level: {
+            type: 'Number',
+            optionalTypes: ['String', 'Boolean'],
+          },
           custom: {
             type: {
               optionalTypes: ['String'],
             },
           },
+          simple: 'Boolean',
           mode: {
             type: {
               type: 'Any',
@@ -35,7 +40,9 @@ describe('autoImport metadata helpers', () => {
       expect(Array.from(result.props.entries())).toEqual([
         ['title', 'string'],
         ['count', 'number | boolean'],
+        ['level', 'number | string | boolean'],
         ['custom', 'string'],
+        ['simple', 'boolean'],
         ['mode', 'any'],
       ])
 

@@ -33,6 +33,7 @@ export type NativeTypedProperty<
 
 export interface PropOptions<T = any, D = T> {
   type?: PropType<T> | true | null
+  optionalTypes?: Array<WechatMiniprogram.Component.ShortProperty | PropConstructor<any>>
   /**
    * 默认值（对齐 Vue 的 `default`；会被赋给小程序 property 的 `value`）
    */
@@ -41,6 +42,7 @@ export interface PropOptions<T = any, D = T> {
    * 小程序 `value` 的别名
    */
   value?: D | (() => D)
+  observer?: string | ((newVal: T, oldVal: T, changedPath: Array<string | number>) => void)
   required?: boolean
 }
 

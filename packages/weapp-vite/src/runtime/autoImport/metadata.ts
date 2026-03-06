@@ -15,6 +15,16 @@ const JSON_TYPE_ALIASES: Record<string, string> = {
   Any: 'any',
 }
 
+function mergeTypeCandidates(candidates: Array<string | undefined>) {
+  const merged = candidates
+    .filter((item): item is string => Boolean(item))
+    .flatMap(item => item.split('|').map(part => part.trim()).filter(Boolean))
+  if (merged.length === 0) {
+    return undefined
+  }
+  return Array.from(new Set(merged)).join(' | ')
+}
+
 function normalizeJsonPropertyType(raw: any): string | undefined {
   if (typeof raw === 'string') {
     const key = raw.trim()
@@ -27,12 +37,10 @@ function normalizeJsonPropertyType(raw: any): string | undefined {
     return normalized.length > 0 ? normalized.join(' | ') : undefined
   }
   if (raw && typeof raw === 'object') {
-    if (raw.type !== undefined) {
-      return normalizeJsonPropertyType(raw.type)
-    }
-    if (Array.isArray(raw.optionalTypes)) {
-      return normalizeJsonPropertyType(raw.optionalTypes)
-    }
+    return mergeTypeCandidates([
+      raw.type !== undefined ? normalizeJsonPropertyType(raw.type) : undefined,
+      Array.isArray(raw.optionalTypes) ? normalizeJsonPropertyType(raw.optionalTypes) : undefined,
+    ])
   }
   return undefined
 }
@@ -49,7 +57,7 @@ export function extractJsonPropMetadata(json: Record<string, any> | undefined) {
   }
   for (const [propName, rawConfig] of Object.entries(properties)) {
     const config = (rawConfig ?? {}) as Record<string, any>
-    const type = normalizeJsonPropertyType(config.type) ?? 'any'
+    const type = normalizeJsonPropertyType(rawConfig) ?? 'any'
     props.set(propName, type)
     const description = config.description
     if (typeof description === 'string' && description.trim().length > 0) {
