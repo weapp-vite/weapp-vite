@@ -74,6 +74,29 @@ Wevu 同时支持两种 props 定义方式：
 
 如果你使用 Weapp-vite 的 SFC 编译产物，通常会走 `createWevuComponent(options)`（见下节），并直接携带小程序 `properties`。
 
+#### defineProps 泛型到 properties 的映射
+
+`<script setup>` 的 `defineProps<T>()` 会先被 Vue 编译器推导成 runtime `props`，再由 Wevu 归一化为小程序 `properties`。
+
+归一化规则（对齐小程序 `properties` 约束）：
+
+- `type` 只保留一个主类型（`String/Number/Boolean/Object/Array` 或 `null`）
+- 若存在多个可用类型，其余类型写入 `optionalTypes: []`
+- 非小程序原生类型（如 `Date/Map/Set`）会被过滤；若全部不可用则降级为 `type: null`
+- `required` 仅存在于 Vue runtime `props`，不会出现在小程序 `properties`
+
+常见映射示例：
+
+| defineProps 泛型             | Vue runtime props（编译后）               | Wevu 归一化后 `properties`              |
+| ---------------------------- | ----------------------------------------- | --------------------------------------- |
+| `mixed: string \| number`    | `type: [String, Number], required: true`  | `type: String, optionalTypes: [Number]` |
+| `opt?: 'a' \| 'b'`           | `type: String, required: false`           | `type: String`                          |
+| `opt?: 'a' \| 'b' \| number` | `type: [String, Number], required: false` | `type: String, optionalTypes: [Number]` |
+| `opt?: Date \| string`       | `type: [Date, String], required: false`   | `type: String`（`Date` 被过滤）         |
+| `opt?: Date`                 | `type: Date, required: false`             | `type: null`                            |
+
+> 注意：`'a' \| 'b'` 这类字面量联合在 runtime 层会被收敛为 `String`，不会保留枚举约束。
+
 ### createWevuComponent（供编译产物调用）
 
 `createWevuComponent(options)` 是 `defineComponent()` 的兼容入口，主要用于 Weapp-vite 生成的组件代码调用；它会保留小程序 `properties` 定义并完成组件注册。
