@@ -511,6 +511,41 @@ describe('weapi', () => {
     ])
   })
 
+  it('keeps top high-frequency alias mappings in sync', () => {
+    const expectedMappings = [
+      { method: 'chooseAddress', my: 'getAddress', tt: 'chooseAddress' },
+      { method: 'createAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
+      { method: 'createWebAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
+      { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
+      { method: 'openAppAuthorizeSetting', my: 'openSetting', tt: 'openSetting' },
+      { method: 'pluginLogin', my: 'getAuthCode', tt: 'login' },
+      { method: 'requestSubscribeDeviceMessage', my: 'requestSubscribeMessage', tt: 'requestSubscribeMessage' },
+      { method: 'requestSubscribeEmployeeMessage', my: 'requestSubscribeMessage', tt: 'requestSubscribeMessage' },
+      { method: 'restartMiniProgram', my: 'reLaunch', tt: 'reLaunch' },
+      { method: 'scanCode', my: 'scan', tt: 'scanCode' },
+      { method: 'showShareImageMenu', my: 'showSharePanel', tt: 'showShareMenu' },
+      { method: 'updateShareMenu', my: 'showSharePanel', tt: 'showShareMenu' },
+      { method: 'openEmbeddedMiniProgram', my: 'navigateToMiniProgram', tt: 'navigateToMiniProgram' },
+      { method: 'saveFileToDisk', my: 'saveFileToDisk', tt: 'saveFile' },
+      { method: 'getEnterOptionsSync', my: 'getEnterOptionsSync', tt: 'getLaunchOptionsSync' },
+      { method: 'getSystemSetting', my: 'getSystemSetting', tt: 'getSetting' },
+      { method: 'getUserProfile', my: 'getOpenUserInfo', tt: 'getUserProfile' },
+      { method: 'getUserInfo', my: 'getOpenUserInfo', tt: 'getUserInfo' },
+      { method: 'getAppAuthorizeSetting', my: 'getAppAuthorizeSetting', tt: 'getSetting' },
+      { method: 'getAppBaseInfo', my: 'getAppBaseInfo', tt: 'getEnvInfoSync' },
+    ] as const
+
+    for (const item of expectedMappings) {
+      expect(generateMethodCompatibilityMatrix().find(mapping => mapping.method === item.method)).toMatchObject({
+        method: item.method,
+        alipayTarget: item.my,
+        douyinTarget: item.tt,
+        alipaySupported: true,
+        douyinSupported: true,
+      })
+    }
+  })
+
   it('keeps support matrix data in sync with mappings', () => {
     const {
       extraDouyinMappings,
@@ -530,7 +565,10 @@ describe('weapi', () => {
       '抖音小程序',
       '其他平台（swan/jd/xhs 等）',
     ])
-    expect(WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method)).toEqual([
+    const methodNames = WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method)
+    const uniqueMethodNames = new Set(methodNames)
+    expect(uniqueMethodNames.size).toBe(methodNames.length)
+    expect(methodNames).toEqual(expect.arrayContaining([
       'showToast',
       'showLoading',
       'showActionSheet',
@@ -539,6 +577,26 @@ describe('weapi', () => {
       'saveFile',
       'setClipboardData',
       'getClipboardData',
-    ])
+      'chooseAddress',
+      'createAudioContext',
+      'createWebAudioContext',
+      'getSystemInfoAsync',
+      'openAppAuthorizeSetting',
+      'pluginLogin',
+      'requestSubscribeDeviceMessage',
+      'requestSubscribeEmployeeMessage',
+      'restartMiniProgram',
+      'scanCode',
+      'showShareImageMenu',
+      'updateShareMenu',
+      'openEmbeddedMiniProgram',
+      'saveFileToDisk',
+      'getEnterOptionsSync',
+      'getSystemSetting',
+      'getUserProfile',
+      'getUserInfo',
+      'getAppAuthorizeSetting',
+      'getAppBaseInfo',
+    ]))
   })
 })

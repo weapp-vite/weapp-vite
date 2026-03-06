@@ -146,6 +146,166 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     douyinStrategy: '直连 `tt.getClipboardData`',
     support: '✅',
   },
+  {
+    method: 'chooseAddress',
+    description: '选择收货地址。',
+    wxStrategy: '直连 `wx.chooseAddress`',
+    alipayStrategy: '映射到 `my.getAddress`',
+    douyinStrategy: '直连 `tt.chooseAddress`',
+    support: '⚠️',
+  },
+  {
+    method: 'createAudioContext',
+    description: '创建音频上下文。',
+    wxStrategy: '直连 `wx.createAudioContext`',
+    alipayStrategy: '映射到 `my.createInnerAudioContext`',
+    douyinStrategy: '映射到 `tt.createInnerAudioContext`',
+    support: '⚠️',
+  },
+  {
+    method: 'createWebAudioContext',
+    description: '创建 WebAudio 上下文。',
+    wxStrategy: '直连 `wx.createWebAudioContext`',
+    alipayStrategy: '映射到 `my.createInnerAudioContext`',
+    douyinStrategy: '映射到 `tt.createInnerAudioContext`',
+    support: '⚠️',
+  },
+  {
+    method: 'getSystemInfoAsync',
+    description: '异步获取系统信息。',
+    wxStrategy: '直连 `wx.getSystemInfoAsync`',
+    alipayStrategy: '映射到 `my.getSystemInfo`',
+    douyinStrategy: '映射到 `tt.getSystemInfo`',
+    support: '✅',
+  },
+  {
+    method: 'openAppAuthorizeSetting',
+    description: '打开小程序授权设置页。',
+    wxStrategy: '直连 `wx.openAppAuthorizeSetting`',
+    alipayStrategy: '映射到 `my.openSetting`',
+    douyinStrategy: '映射到 `tt.openSetting`',
+    support: '⚠️',
+  },
+  {
+    method: 'pluginLogin',
+    description: '插件登录。',
+    wxStrategy: '直连 `wx.pluginLogin`',
+    alipayStrategy: '映射到 `my.getAuthCode`，并对齐返回 `code` 字段',
+    douyinStrategy: '映射到 `tt.login`',
+    support: '⚠️',
+  },
+  {
+    method: 'requestSubscribeDeviceMessage',
+    description: '请求订阅设备消息。',
+    wxStrategy: '直连 `wx.requestSubscribeDeviceMessage`',
+    alipayStrategy: '映射到 `my.requestSubscribeMessage`',
+    douyinStrategy: '映射到 `tt.requestSubscribeMessage`',
+    support: '⚠️',
+  },
+  {
+    method: 'requestSubscribeEmployeeMessage',
+    description: '请求订阅员工消息。',
+    wxStrategy: '直连 `wx.requestSubscribeEmployeeMessage`',
+    alipayStrategy: '映射到 `my.requestSubscribeMessage`',
+    douyinStrategy: '映射到 `tt.requestSubscribeMessage`',
+    support: '⚠️',
+  },
+  {
+    method: 'restartMiniProgram',
+    description: '重启小程序。',
+    wxStrategy: '直连 `wx.restartMiniProgram`',
+    alipayStrategy: '映射到 `my.reLaunch`',
+    douyinStrategy: '映射到 `tt.reLaunch`',
+    support: '⚠️',
+  },
+  {
+    method: 'scanCode',
+    description: '扫码。',
+    wxStrategy: '直连 `wx.scanCode`',
+    alipayStrategy: '映射到 `my.scan`',
+    douyinStrategy: '直连 `tt.scanCode`',
+    support: '✅',
+  },
+  {
+    method: 'showShareImageMenu',
+    description: '显示分享图片菜单。',
+    wxStrategy: '直连 `wx.showShareImageMenu`',
+    alipayStrategy: '映射到 `my.showSharePanel`',
+    douyinStrategy: '映射到 `tt.showShareMenu`',
+    support: '⚠️',
+  },
+  {
+    method: 'updateShareMenu',
+    description: '更新分享菜单配置。',
+    wxStrategy: '直连 `wx.updateShareMenu`',
+    alipayStrategy: '映射到 `my.showSharePanel`',
+    douyinStrategy: '映射到 `tt.showShareMenu`',
+    support: '⚠️',
+  },
+  {
+    method: 'openEmbeddedMiniProgram',
+    description: '打开嵌入式小程序。',
+    wxStrategy: '直连 `wx.openEmbeddedMiniProgram`',
+    alipayStrategy: '映射到 `my.navigateToMiniProgram`',
+    douyinStrategy: '映射到 `tt.navigateToMiniProgram`',
+    support: '⚠️',
+  },
+  {
+    method: 'saveFileToDisk',
+    description: '保存文件到磁盘。',
+    wxStrategy: '直连 `wx.saveFileToDisk`',
+    alipayStrategy: '直连 `my.saveFileToDisk`',
+    douyinStrategy: '映射到 `tt.saveFile`',
+    support: '⚠️',
+  },
+  {
+    method: 'getEnterOptionsSync',
+    description: '获取启动参数（同步）。',
+    wxStrategy: '直连 `wx.getEnterOptionsSync`',
+    alipayStrategy: '直连 `my.getEnterOptionsSync`',
+    douyinStrategy: '映射到 `tt.getLaunchOptionsSync`',
+    support: '⚠️',
+  },
+  {
+    method: 'getSystemSetting',
+    description: '获取系统设置。',
+    wxStrategy: '直连 `wx.getSystemSetting`',
+    alipayStrategy: '直连 `my.getSystemSetting`',
+    douyinStrategy: '映射到 `tt.getSetting`',
+    support: '⚠️',
+  },
+  {
+    method: 'getUserProfile',
+    description: '获取用户资料。',
+    wxStrategy: '直连 `wx.getUserProfile`',
+    alipayStrategy: '映射到 `my.getOpenUserInfo`',
+    douyinStrategy: '直连 `tt.getUserProfile`',
+    support: '⚠️',
+  },
+  {
+    method: 'getUserInfo',
+    description: '获取用户信息。',
+    wxStrategy: '直连 `wx.getUserInfo`',
+    alipayStrategy: '映射到 `my.getOpenUserInfo`',
+    douyinStrategy: '直连 `tt.getUserInfo`',
+    support: '⚠️',
+  },
+  {
+    method: 'getAppAuthorizeSetting',
+    description: '获取 App 授权设置。',
+    wxStrategy: '直连 `wx.getAppAuthorizeSetting`',
+    alipayStrategy: '直连 `my.getAppAuthorizeSetting`',
+    douyinStrategy: '映射到 `tt.getSetting`',
+    support: '⚠️',
+  },
+  {
+    method: 'getAppBaseInfo',
+    description: '获取 App 基础信息。',
+    wxStrategy: '直连 `wx.getAppBaseInfo`',
+    alipayStrategy: '直连 `my.getAppBaseInfo`',
+    douyinStrategy: '映射到 `tt.getEnvInfoSync`',
+    support: '⚠️',
+  },
 ] as const
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
@@ -435,6 +595,19 @@ function mapClipboardResult(result: any) {
   return result
 }
 
+function mapAuthCodeResult(result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  if (!Object.prototype.hasOwnProperty.call(result, 'code') && typeof result.authCode === 'string' && result.authCode) {
+    return {
+      ...result,
+      code: result.authCode,
+    }
+  }
+  return result
+}
+
 const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMethodMappingRule>>>> = {
   my: {
     showToast: {
@@ -472,6 +645,67 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getClipboard',
       mapResult: mapClipboardResult,
     },
+    chooseAddress: {
+      target: 'getAddress',
+    },
+    createAudioContext: {
+      target: 'createInnerAudioContext',
+    },
+    createWebAudioContext: {
+      target: 'createInnerAudioContext',
+    },
+    getSystemInfoAsync: {
+      target: 'getSystemInfo',
+    },
+    openAppAuthorizeSetting: {
+      target: 'openSetting',
+    },
+    pluginLogin: {
+      target: 'getAuthCode',
+      mapResult: mapAuthCodeResult,
+    },
+    requestSubscribeDeviceMessage: {
+      target: 'requestSubscribeMessage',
+    },
+    requestSubscribeEmployeeMessage: {
+      target: 'requestSubscribeMessage',
+    },
+    restartMiniProgram: {
+      target: 'reLaunch',
+    },
+    scanCode: {
+      target: 'scan',
+    },
+    showShareImageMenu: {
+      target: 'showSharePanel',
+    },
+    updateShareMenu: {
+      target: 'showSharePanel',
+    },
+    openEmbeddedMiniProgram: {
+      target: 'navigateToMiniProgram',
+    },
+    saveFileToDisk: {
+      target: 'saveFileToDisk',
+    },
+    getEnterOptionsSync: {
+      target: 'getEnterOptionsSync',
+    },
+    getSystemSetting: {
+      target: 'getSystemSetting',
+    },
+    getUserProfile: {
+      target: 'getOpenUserInfo',
+    },
+    getUserInfo: {
+      target: 'getOpenUserInfo',
+    },
+    getAppAuthorizeSetting: {
+      target: 'getAppAuthorizeSetting',
+    },
+    getAppBaseInfo: {
+      target: 'getAppBaseInfo',
+    },
   },
   tt: {
     showToast: {
@@ -501,6 +735,66 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     getClipboardData: {
       target: 'getClipboardData',
+    },
+    chooseAddress: {
+      target: 'chooseAddress',
+    },
+    createAudioContext: {
+      target: 'createInnerAudioContext',
+    },
+    createWebAudioContext: {
+      target: 'createInnerAudioContext',
+    },
+    getSystemInfoAsync: {
+      target: 'getSystemInfo',
+    },
+    openAppAuthorizeSetting: {
+      target: 'openSetting',
+    },
+    pluginLogin: {
+      target: 'login',
+    },
+    requestSubscribeDeviceMessage: {
+      target: 'requestSubscribeMessage',
+    },
+    requestSubscribeEmployeeMessage: {
+      target: 'requestSubscribeMessage',
+    },
+    restartMiniProgram: {
+      target: 'reLaunch',
+    },
+    scanCode: {
+      target: 'scanCode',
+    },
+    showShareImageMenu: {
+      target: 'showShareMenu',
+    },
+    updateShareMenu: {
+      target: 'showShareMenu',
+    },
+    openEmbeddedMiniProgram: {
+      target: 'navigateToMiniProgram',
+    },
+    saveFileToDisk: {
+      target: 'saveFile',
+    },
+    getEnterOptionsSync: {
+      target: 'getLaunchOptionsSync',
+    },
+    getSystemSetting: {
+      target: 'getSetting',
+    },
+    getUserProfile: {
+      target: 'getUserProfile',
+    },
+    getUserInfo: {
+      target: 'getUserInfo',
+    },
+    getAppAuthorizeSetting: {
+      target: 'getSetting',
+    },
+    getAppBaseInfo: {
+      target: 'getEnvInfoSync',
     },
   },
 }

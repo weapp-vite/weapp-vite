@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：192，不支持：287
+总计：479，支持：207，不支持：272
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | --------------------------------------------------------------------------------- |
@@ -36,7 +36,7 @@
 | `checkIsSoterEnrolledInDevice`                | `checkIsSoterEnrolledInDevice`                | ❌   | 未提供 my.checkIsSoterEnrolledInDevice，调用时将返回 not supported                |
 | `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication`           | ❌   | 未提供 my.checkIsSupportSoterAuthentication，调用时将返回 not supported           |
 | `checkSession`                                | `checkSession`                                | ❌   | 未提供 my.checkSession，调用时将返回 not supported                                |
-| `chooseAddress`                               | `chooseAddress`                               | ❌   | 未提供 my.chooseAddress，调用时将返回 not supported                               |
+| `chooseAddress`                               | `getAddress`                                  | ✅   | 映射到 `my.getAddress`                                                            |
 | `chooseContact`                               | `chooseContact`                               | ✅   | 直连 `my.chooseContact`                                                           |
 | `chooseImage`                                 | `chooseImage`                                 | ✅   | 返回值 `apFilePaths` 映射到 `tempFilePaths`                                       |
 | `chooseInvoice`                               | `chooseInvoice`                               | ❌   | 未提供 my.chooseInvoice，调用时将返回 not supported                               |
@@ -57,7 +57,7 @@
 | `connectSocket`                               | `connectSocket`                               | ✅   | 直连 `my.connectSocket`                                                           |
 | `connectWifi`                                 | `connectWifi`                                 | ✅   | 直连 `my.connectWifi`                                                             |
 | `createAnimation`                             | `createAnimation`                             | ✅   | 直连 `my.createAnimation`                                                         |
-| `createAudioContext`                          | `createAudioContext`                          | ❌   | 未提供 my.createAudioContext，调用时将返回 not supported                          |
+| `createAudioContext`                          | `createInnerAudioContext`                     | ✅   | 映射到 `my.createInnerAudioContext`                                               |
 | `createBLEConnection`                         | `createBLEConnection`                         | ❌   | 未提供 my.createBLEConnection，调用时将返回 not supported                         |
 | `createBLEPeripheralServer`                   | `createBLEPeripheralServer`                   | ❌   | 未提供 my.createBLEPeripheralServer，调用时将返回 not supported                   |
 | `createBufferURL`                             | `createBufferURL`                             | ❌   | 未提供 my.createBufferURL，调用时将返回 not supported                             |
@@ -83,7 +83,7 @@
 | `createVideoContext`                          | `createVideoContext`                          | ✅   | 直连 `my.createVideoContext`                                                      |
 | `createVideoDecoder`                          | `createVideoDecoder`                          | ❌   | 未提供 my.createVideoDecoder，调用时将返回 not supported                          |
 | `createVKSession`                             | `createVKSession`                             | ❌   | 未提供 my.createVKSession，调用时将返回 not supported                             |
-| `createWebAudioContext`                       | `createWebAudioContext`                       | ❌   | 未提供 my.createWebAudioContext，调用时将返回 not supported                       |
+| `createWebAudioContext`                       | `createInnerAudioContext`                     | ✅   | 映射到 `my.createInnerAudioContext`                                               |
 | `createWorker`                                | `createWorker`                                | ✅   | 直连 `my.createWorker`                                                            |
 | `cropImage`                                   | `cropImage`                                   | ❌   | 未提供 my.cropImage，调用时将返回 not supported                                   |
 | `disableAlertBeforeUnload`                    | `disableAlertBeforeUnload`                    | ✅   | 直连 `my.disableAlertBeforeUnload`                                                |
@@ -159,13 +159,13 @@
 | `getStorageInfoSync`                          | `getStorageInfoSync`                          | ✅   | 直连 `my.getStorageInfoSync`                                                      |
 | `getStorageSync`                              | `getStorageSync`                              | ✅   | 直连 `my.getStorageSync`                                                          |
 | `getSystemInfo`                               | `getSystemInfo`                               | ✅   | 直连 `my.getSystemInfo`                                                           |
-| `getSystemInfoAsync`                          | `getSystemInfoAsync`                          | ❌   | 未提供 my.getSystemInfoAsync，调用时将返回 not supported                          |
+| `getSystemInfoAsync`                          | `getSystemInfo`                               | ✅   | 映射到 `my.getSystemInfo`                                                         |
 | `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | 直连 `my.getSystemInfoSync`                                                       |
 | `getSystemSetting`                            | `getSystemSetting`                            | ✅   | 直连 `my.getSystemSetting`                                                        |
 | `getUpdateManager`                            | `getUpdateManager`                            | ✅   | 直连 `my.getUpdateManager`                                                        |
 | `getUserCryptoManager`                        | `getUserCryptoManager`                        | ❌   | 未提供 my.getUserCryptoManager，调用时将返回 not supported                        |
-| `getUserInfo`                                 | `getUserInfo`                                 | ❌   | 未提供 my.getUserInfo，调用时将返回 not supported                                 |
-| `getUserProfile`                              | `getUserProfile`                              | ❌   | 未提供 my.getUserProfile，调用时将返回 not supported                              |
+| `getUserInfo`                                 | `getOpenUserInfo`                             | ✅   | 映射到 `my.getOpenUserInfo`                                                       |
+| `getUserProfile`                              | `getOpenUserInfo`                             | ✅   | 映射到 `my.getOpenUserInfo`                                                       |
 | `getVideoInfo`                                | `getVideoInfo`                                | ✅   | 直连 `my.getVideoInfo`                                                            |
 | `getWeRunData`                                | `getWeRunData`                                | ❌   | 未提供 my.getWeRunData，调用时将返回 not supported                                |
 | `getWifiList`                                 | `getWifiList`                                 | ✅   | 直连 `my.getWifiList`                                                             |
@@ -327,7 +327,7 @@
 | `onWifiConnectedWithPartialInfo`              | `onWifiConnectedWithPartialInfo`              | ❌   | 未提供 my.onWifiConnectedWithPartialInfo，调用时将返回 not supported              |
 | `onWindowResize`                              | `onWindowResize`                              | ❌   | 未提供 my.onWindowResize，调用时将返回 not supported                              |
 | `onWindowStateChange`                         | `onWindowStateChange`                         | ❌   | 未提供 my.onWindowStateChange，调用时将返回 not supported                         |
-| `openAppAuthorizeSetting`                     | `openAppAuthorizeSetting`                     | ❌   | 未提供 my.openAppAuthorizeSetting，调用时将返回 not supported                     |
+| `openAppAuthorizeSetting`                     | `openSetting`                                 | ✅   | 映射到 `my.openSetting`                                                           |
 | `openBluetoothAdapter`                        | `openBluetoothAdapter`                        | ✅   | 直连 `my.openBluetoothAdapter`                                                    |
 | `openCard`                                    | `openCard`                                    | ❌   | 未提供 my.openCard，调用时将返回 not supported                                    |
 | `openChannelsActivity`                        | `openChannelsActivity`                        | ❌   | 未提供 my.openChannelsActivity，调用时将返回 not supported                        |
@@ -338,7 +338,7 @@
 | `openChatTool`                                | `openChatTool`                                | ❌   | 未提供 my.openChatTool，调用时将返回 not supported                                |
 | `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ❌   | 未提供 my.openCustomerServiceChat，调用时将返回 not supported                     |
 | `openDocument`                                | `openDocument`                                | ✅   | 直连 `my.openDocument`                                                            |
-| `openEmbeddedMiniProgram`                     | `openEmbeddedMiniProgram`                     | ❌   | 未提供 my.openEmbeddedMiniProgram，调用时将返回 not supported                     |
+| `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`                       | ✅   | 映射到 `my.navigateToMiniProgram`                                                 |
 | `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ❌   | 未提供 my.openHKOfflinePayView，调用时将返回 not supported                        |
 | `openInquiriesTopic`                          | `openInquiriesTopic`                          | ❌   | 未提供 my.openInquiriesTopic，调用时将返回 not supported                          |
 | `openLocation`                                | `openLocation`                                | ✅   | 直连 `my.openLocation`                                                            |
@@ -359,7 +359,7 @@
 | `pauseVoice`                                  | `pauseVoice`                                  | ❌   | 未提供 my.pauseVoice，调用时将返回 not supported                                  |
 | `playBackgroundAudio`                         | `playBackgroundAudio`                         | ❌   | 未提供 my.playBackgroundAudio，调用时将返回 not supported                         |
 | `playVoice`                                   | `playVoice`                                   | ❌   | 未提供 my.playVoice，调用时将返回 not supported                                   |
-| `pluginLogin`                                 | `pluginLogin`                                 | ❌   | 未提供 my.pluginLogin，调用时将返回 not supported                                 |
+| `pluginLogin`                                 | `getAuthCode`                                 | ✅   | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段                                   |
 | `postMessageToReferrerMiniProgram`            | `postMessageToReferrerMiniProgram`            | ❌   | 未提供 my.postMessageToReferrerMiniProgram，调用时将返回 not supported            |
 | `postMessageToReferrerPage`                   | `postMessageToReferrerPage`                   | ❌   | 未提供 my.postMessageToReferrerPage，调用时将返回 not supported                   |
 | `preDownloadSubpackage`                       | `preDownloadSubpackage`                       | ❌   | 未提供 my.preDownloadSubpackage，调用时将返回 not supported                       |
@@ -387,19 +387,19 @@
 | `requestOrderPayment`                         | `requestOrderPayment`                         | ❌   | 未提供 my.requestOrderPayment，调用时将返回 not supported                         |
 | `requestPayment`                              | `requestPayment`                              | ❌   | 未提供 my.requestPayment，调用时将返回 not supported                              |
 | `requestPluginPayment`                        | `requestPluginPayment`                        | ❌   | 未提供 my.requestPluginPayment，调用时将返回 not supported                        |
-| `requestSubscribeDeviceMessage`               | `requestSubscribeDeviceMessage`               | ❌   | 未提供 my.requestSubscribeDeviceMessage，调用时将返回 not supported               |
-| `requestSubscribeEmployeeMessage`             | `requestSubscribeEmployeeMessage`             | ❌   | 未提供 my.requestSubscribeEmployeeMessage，调用时将返回 not supported             |
+| `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`                     | ✅   | 映射到 `my.requestSubscribeMessage`                                               |
+| `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`                     | ✅   | 映射到 `my.requestSubscribeMessage`                                               |
 | `requestSubscribeMessage`                     | `requestSubscribeMessage`                     | ✅   | 直连 `my.requestSubscribeMessage`                                                 |
 | `requestVirtualPayment`                       | `requestVirtualPayment`                       | ❌   | 未提供 my.requestVirtualPayment，调用时将返回 not supported                       |
 | `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`                     | ❌   | 未提供 my.requirePrivacyAuthorize，调用时将返回 not supported                     |
 | `reserveChannelsLive`                         | `reserveChannelsLive`                         | ❌   | 未提供 my.reserveChannelsLive，调用时将返回 not supported                         |
-| `restartMiniProgram`                          | `restartMiniProgram`                          | ❌   | 未提供 my.restartMiniProgram，调用时将返回 not supported                          |
+| `restartMiniProgram`                          | `reLaunch`                                    | ✅   | 映射到 `my.reLaunch`                                                              |
 | `revokeBufferURL`                             | `revokeBufferURL`                             | ❌   | 未提供 my.revokeBufferURL，调用时将返回 not supported                             |
 | `rewriteRoute`                                | `rewriteRoute`                                | ❌   | 未提供 my.rewriteRoute，调用时将返回 not supported                                |
 | `saveFileToDisk`                              | `saveFileToDisk`                              | ✅   | 直连 `my.saveFileToDisk`                                                          |
 | `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | 直连 `my.saveImageToPhotosAlbum`                                                  |
 | `saveVideoToPhotosAlbum`                      | `saveVideoToPhotosAlbum`                      | ✅   | 直连 `my.saveVideoToPhotosAlbum`                                                  |
-| `scanCode`                                    | `scanCode`                                    | ❌   | 未提供 my.scanCode，调用时将返回 not supported                                    |
+| `scanCode`                                    | `scan`                                        | ✅   | 映射到 `my.scan`                                                                  |
 | `seekBackgroundAudio`                         | `seekBackgroundAudio`                         | ❌   | 未提供 my.seekBackgroundAudio，调用时将返回 not supported                         |
 | `selectGroupMembers`                          | `selectGroupMembers`                          | ❌   | 未提供 my.selectGroupMembers，调用时将返回 not supported                          |
 | `sendHCEMessage`                              | `sendHCEMessage`                              | ❌   | 未提供 my.sendHCEMessage，调用时将返回 not supported                              |
@@ -440,7 +440,7 @@
 | `showModal`                                   | `confirm`                                     | ✅   | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果                                  |
 | `showNavigationBarLoading`                    | `showNavigationBarLoading`                    | ✅   | 直连 `my.showNavigationBarLoading`                                                |
 | `showRedPackage`                              | `showRedPackage`                              | ❌   | 未提供 my.showRedPackage，调用时将返回 not supported                              |
-| `showShareImageMenu`                          | `showShareImageMenu`                          | ❌   | 未提供 my.showShareImageMenu，调用时将返回 not supported                          |
+| `showShareImageMenu`                          | `showSharePanel`                              | ✅   | 映射到 `my.showSharePanel`                                                        |
 | `showShareMenu`                               | `showShareMenu`                               | ✅   | 直连 `my.showShareMenu`                                                           |
 | `showTabBar`                                  | `showTabBar`                                  | ✅   | 直连 `my.showTabBar`                                                              |
 | `showTabBarRedDot`                            | `showTabBarRedDot`                            | ✅   | 直连 `my.showTabBarRedDot`                                                        |
@@ -476,7 +476,7 @@
 | `stopWifi`                                    | `stopWifi`                                    | ✅   | 直连 `my.stopWifi`                                                                |
 | `subscribeVoIPVideoMembers`                   | `subscribeVoIPVideoMembers`                   | ❌   | 未提供 my.subscribeVoIPVideoMembers，调用时将返回 not supported                   |
 | `switchTab`                                   | `switchTab`                                   | ✅   | 直连 `my.switchTab`                                                               |
-| `updateShareMenu`                             | `updateShareMenu`                             | ❌   | 未提供 my.updateShareMenu，调用时将返回 not supported                             |
+| `updateShareMenu`                             | `showSharePanel`                              | ✅   | 映射到 `my.showSharePanel`                                                        |
 | `updateVoIPChatMuteConfig`                    | `updateVoIPChatMuteConfig`                    | ❌   | 未提供 my.updateVoIPChatMuteConfig，调用时将返回 not supported                    |
 | `updateWeChatApp`                             | `updateWeChatApp`                             | ❌   | 未提供 my.updateWeChatApp，调用时将返回 not supported                             |
 | `uploadFile`                                  | `uploadFile`                                  | ✅   | 直连 `my.uploadFile`                                                              |
