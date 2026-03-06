@@ -76,6 +76,12 @@ expectType<SetupContextRouter>(useNativeRouter())
 expectType<SetupContextRouter>(useNativePageRouter())
 expectType<boolean>(navigation.hasRoute('home'))
 expectType<readonly NamedRouteRecord[]>(navigation.getRoutes())
+const removeDynamicRoute = navigation.addRoute({
+  name: 'dynamic-post',
+  path: '/pages/post/:id/index',
+})
+expectType<() => void>(removeDynamicRoute)
+expectType<void>(navigation.removeRoute('dynamic-post'))
 
 const resolvedByName = navigation.resolve({
   name: 'post-detail',

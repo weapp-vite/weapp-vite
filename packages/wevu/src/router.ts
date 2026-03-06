@@ -136,6 +136,8 @@ export interface RouterNavigation {
   back: (delta?: number) => Promise<void | NavigationFailure>
   hasRoute: (name: string) => boolean
   getRoutes: () => readonly NamedRouteRecord[]
+  addRoute: (route: NamedRouteRecord) => () => void
+  removeRoute: (name: string) => void
   beforeEach: (guard: NavigationGuard) => () => void
   beforeResolve: (guard: NavigationGuard) => () => void
   afterEach: (hook: NavigationAfterEach) => () => void
@@ -154,9 +156,8 @@ interface RouteResolveCodec {
 }
 
 interface NamedRouteLookup {
-  pathByName: ReadonlyMap<string, string>
-  nameByStaticPath: ReadonlyMap<string, string>
-  records: readonly NamedRouteRecord[]
+  pathByName: Map<string, string>
+  nameByStaticPath: Map<string, string>
 }
 
 interface PathParamToken {
@@ -411,33 +412,30 @@ function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): Array<[string, s
     })
 }
 
+function createNamedRouteNameByStaticPath(pathByName: ReadonlyMap<string, string>): Map<string, string> {
+  const nameByStaticPath = new Map<string, string>()
+  for (const [name, normalizedPath] of pathByName.entries()) {
+    if (!isDynamicRoutePath(normalizedPath) && !nameByStaticPath.has(normalizedPath)) {
+      nameByStaticPath.set(normalizedPath, name)
+    }
+  }
+  return nameByStaticPath
+}
+
 function createNamedRouteLookup(namedRoutes?: NamedRoutes): NamedRouteLookup {
   const pathByName = new Map<string, string>()
-  const nameByStaticPath = new Map<string, string>()
 
   for (const [name, path] of normalizeNamedRouteEntries(namedRoutes)) {
     const normalizedPath = resolvePath(path, '')
     if (!normalizedPath) {
       continue
     }
-
     pathByName.set(name, normalizedPath)
-    if (!isDynamicRoutePath(normalizedPath) && !nameByStaticPath.has(normalizedPath)) {
-      nameByStaticPath.set(normalizedPath, name)
-    }
   }
-
-  const records = Array.from(pathByName.entries()).map(([name, normalizedPath]) => {
-    return {
-      name,
-      path: normalizedPath ? `/${normalizedPath}` : '/',
-    }
-  })
 
   return {
     pathByName,
-    nameByStaticPath,
-    records,
+    nameByStaticPath: createNamedRouteNameByStaticPath(pathByName),
   }
 }
 
@@ -1081,10 +1079,39 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   }
 
   function getRoutes(): readonly NamedRouteRecord[] {
-    return namedRouteLookup.records.map(record => ({
-      name: record.name,
-      path: record.path,
+    return Array.from(namedRouteLookup.pathByName.entries()).map(([name, normalizedPath]) => ({
+      name,
+      path: normalizedPath ? `/${normalizedPath}` : '/',
     }))
+  }
+
+  function addRoute(route: NamedRouteRecord): () => void {
+    const routeName = route.name.trim()
+    if (!routeName) {
+      throw new Error('Route name is required when adding a named route')
+    }
+
+    const normalizedPath = resolvePath(route.path, '')
+    if (!normalizedPath) {
+      throw new Error(`Route path is required for named route "${routeName}"`)
+    }
+
+    namedRouteLookup.pathByName.set(routeName, normalizedPath)
+    namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.pathByName)
+
+    return () => {
+      const currentPath = namedRouteLookup.pathByName.get(routeName)
+      if (currentPath === normalizedPath) {
+        namedRouteLookup.pathByName.delete(routeName)
+        namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.pathByName)
+      }
+    }
+  }
+
+  function removeRoute(name: string): void {
+    if (namedRouteLookup.pathByName.delete(name)) {
+      namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.pathByName)
+    }
   }
 
   function isTabBarTarget(target: RouteLocationNormalizedLoaded): boolean {
@@ -1433,6 +1460,8 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     back,
     hasRoute,
     getRoutes,
+    addRoute,
+    removeRoute,
     beforeEach,
     beforeResolve,
     afterEach,
