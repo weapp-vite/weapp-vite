@@ -10,6 +10,11 @@ defineAppJson({
     'pages/use-provide-inject/index',
     'pages/use-store/index',
     'pages/native-uses-vue/index',
+    'pages/router-stability/index',
+    'pages/router-stability/sub/index',
+    'pages/router-stability/target/index',
+    'pages/router-stability/sub/target/index',
+    'components/router-origin-probe/target/index',
   ],
   window: {
     navigationBarTitleText: 'wevu-features',

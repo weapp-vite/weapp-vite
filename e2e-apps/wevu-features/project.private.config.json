@@ -69,6 +69,41 @@
           "query": "",
           "scene": null,
           "launchMode": "default"
+        },
+        {
+          "name": "pages/router-stability/index",
+          "pathName": "pages/router-stability/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/router-stability/sub/index",
+          "pathName": "pages/router-stability/sub/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/router-stability/target/index",
+          "pathName": "pages/router-stability/target/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/router-stability/sub/target/index",
+          "pathName": "pages/router-stability/sub/target/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "components/router-origin-probe/target/index",
+          "pathName": "components/router-origin-probe/target/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
         }
       ]
     }
