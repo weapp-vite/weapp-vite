@@ -4,7 +4,6 @@ import {
   isNavigationFailure,
   NavigationFailureType,
   useRouter,
-  useRouterNavigation,
 } from '@/router'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 
@@ -24,38 +23,6 @@ describe('router navigation helpers', () => {
     expect(isNavigationFailure(failure, NavigationFailureType.cancelled)).toBe(true)
     expect(isNavigationFailure(failure, NavigationFailureType.aborted)).toBe(false)
     expect(isNavigationFailure(new Error('x'))).toBe(false)
-  })
-
-  it('keeps useRouterNavigation as backward-compatible alias', () => {
-    const instance = {
-      __wevu: {},
-      __wevuHooks: {},
-      router: {
-        switchTab: vi.fn(),
-        reLaunch: vi.fn(),
-        redirectTo: vi.fn(),
-        navigateTo: vi.fn(),
-        navigateBack: vi.fn(),
-      },
-    } as any
-
-    setCurrentInstance(instance)
-    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
-
-    ;(globalThis as any).getCurrentPages = vi.fn(() => [
-      {
-        route: 'pages/home/index',
-        options: {},
-      },
-    ])
-
-    const legacyRouter = useRouterNavigation()
-    const router = useRouter()
-
-    expect(typeof legacyRouter.push).toBe('function')
-    expect(typeof router.push).toBe('function')
-    expect(typeof legacyRouter.beforeEach).toBe('function')
-    expect(typeof router.beforeEach).toBe('function')
   })
 
   it('push resolves target with current route path and calls native navigateTo', async () => {

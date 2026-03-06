@@ -96,11 +96,6 @@ export interface UseRouterOptions {
   maxRedirects?: number
 }
 
-/**
- * @deprecated 请改用 `UseRouterOptions`
- */
-export type UseRouterNavigationOptions = UseRouterOptions
-
 export interface RouterNavigation {
   readonly nativeRouter: SetupContextRouter
   resolve: (to: RouteLocationRaw) => RouteLocationNormalizedLoaded
@@ -692,13 +687,6 @@ export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
 }
 
 /**
- * @description 获取高阶路由导航器（对齐 Vue Router 心智）
- */
-export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
-  return useRouterNavigation(options)
-}
-
-/**
  * @description 获取当前组件路径语义的原生 Router
  */
 export function useNativeRouter(): SetupContextRouter {
@@ -713,9 +701,9 @@ export function useNativePageRouter(): SetupContextRouter {
 }
 
 /**
- * @deprecated 请改用 `useRouter()`
+ * @description 获取高阶路由导航器（对齐 Vue Router 心智）
  */
-export function useRouterNavigation(options: UseRouterOptions = {}): RouterNavigation {
+export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   const nativeRouter = useNativeRouter()
   const route = useRoute()
   const beforeEachGuards = new Set<NavigationGuard>()
