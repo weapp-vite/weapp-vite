@@ -25,6 +25,11 @@ export type RouteParams = Record<string, RouteParamValue | RouteParamValue[]>
 export type RouteParamsRaw = Record<string, RouteParamValueRaw | RouteParamValueRaw[]>
 export type RouteQueryParser = (search: string) => LocationQueryRaw | LocationQuery
 export type RouteQueryStringifier = (query: LocationQueryRaw | LocationQuery) => string
+export interface NamedRouteRecord {
+  name: string
+  path: string
+}
+export type NamedRoutes = Readonly<Record<string, string>> | readonly NamedRouteRecord[]
 
 export type RouteLocationRaw = string | {
   path?: string
@@ -110,6 +115,7 @@ export type NavigationErrorHandler = (
 
 export interface UseRouterOptions {
   tabBarEntries?: readonly (TypedRouterTabBarUrl | string)[]
+  namedRoutes?: NamedRoutes
   maxRedirects?: number
   parseQuery?: RouteQueryParser
   stringifyQuery?: RouteQueryStringifier
@@ -143,6 +149,16 @@ interface MiniProgramPageLike {
 interface RouteResolveCodec {
   parseQuery: RouteQueryParser
   stringifyQuery: RouteQueryStringifier
+}
+
+interface NamedRouteLookup {
+  pathByName: ReadonlyMap<string, string>
+  nameByStaticPath: ReadonlyMap<string, string>
+}
+
+interface PathParamToken {
+  key: string
+  modifier: '' | '?' | '+' | '*'
 }
 
 function decodeQuerySegment(value: string): string {
@@ -360,6 +376,164 @@ function resolvePath(path: string, currentPath: string): string {
   }
 
   return normalizePathSegments(path).join('/')
+}
+
+function isDynamicRoutePath(path: string): boolean {
+  return /(?:^|\/):/.test(path)
+}
+
+function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): Array<[string, string]> {
+  if (!namedRoutes) {
+    return []
+  }
+
+  if (Array.isArray(namedRoutes)) {
+    return namedRoutes
+      .filter((item): item is NamedRouteRecord => {
+        return Boolean(
+          item
+          && typeof item.name === 'string'
+          && item.name
+          && typeof item.path === 'string'
+          && item.path,
+        )
+      })
+      .map(item => [item.name, item.path])
+  }
+
+  return Object.entries(namedRoutes)
+    .filter((entry): entry is [string, string] => {
+      const [name, path] = entry
+      return Boolean(name && typeof path === 'string' && path)
+    })
+}
+
+function createNamedRouteLookup(namedRoutes?: NamedRoutes): NamedRouteLookup {
+  const pathByName = new Map<string, string>()
+  const nameByStaticPath = new Map<string, string>()
+
+  for (const [name, path] of normalizeNamedRouteEntries(namedRoutes)) {
+    const normalizedPath = resolvePath(path, '')
+    if (!normalizedPath) {
+      continue
+    }
+
+    pathByName.set(name, normalizedPath)
+    if (!isDynamicRoutePath(normalizedPath) && !nameByStaticPath.has(normalizedPath)) {
+      nameByStaticPath.set(normalizedPath, name)
+    }
+  }
+
+  return {
+    pathByName,
+    nameByStaticPath,
+  }
+}
+
+function parsePathParamToken(segment: string): PathParamToken | undefined {
+  const match = /^:(\w+)(?:\([^)]*\))?([+*?])?$/.exec(segment)
+  if (!match) {
+    return undefined
+  }
+
+  return {
+    key: match[1],
+    modifier: (match[2] ?? '') as PathParamToken['modifier'],
+  }
+}
+
+function normalizePathParamValues(value: RouteParamValue | RouteParamValue[] | undefined): RouteParamValue[] {
+  if (value === undefined) {
+    return []
+  }
+  if (Array.isArray(value)) {
+    return value
+  }
+  return [value]
+}
+
+function stringifyPathParamSegment(value: RouteParamValue): string {
+  return encodeURIComponent(value)
+}
+
+function resolveNamedRoutePath(pathTemplate: string, params: RouteParams, routeName: string): string {
+  const resolvedSegments: string[] = []
+  for (const rawSegment of pathTemplate.split('/')) {
+    if (!rawSegment) {
+      continue
+    }
+
+    const token = parsePathParamToken(rawSegment)
+    if (!token) {
+      resolvedSegments.push(rawSegment)
+      continue
+    }
+
+    const values = normalizePathParamValues(params[token.key])
+    if (token.modifier === '') {
+      if (values.length !== 1) {
+        throw new Error(`Missing required param "${token.key}" for named route "${routeName}"`)
+      }
+      resolvedSegments.push(stringifyPathParamSegment(values[0]))
+      continue
+    }
+
+    if (token.modifier === '?') {
+      if (values.length === 0) {
+        continue
+      }
+      if (values.length > 1) {
+        throw new Error(`Param "${token.key}" for named route "${routeName}" must be a single value`)
+      }
+      resolvedSegments.push(stringifyPathParamSegment(values[0]))
+      continue
+    }
+
+    if (token.modifier === '+') {
+      if (values.length === 0) {
+        throw new Error(`Missing required repeatable param "${token.key}" for named route "${routeName}"`)
+      }
+      for (const value of values) {
+        resolvedSegments.push(stringifyPathParamSegment(value))
+      }
+      continue
+    }
+
+    for (const value of values) {
+      resolvedSegments.push(stringifyPathParamSegment(value))
+    }
+  }
+
+  return resolvedSegments.join('/')
+}
+
+function resolveNamedRouteLocation(
+  to: Extract<RouteLocationRaw, Record<string, unknown>>,
+  lookup: NamedRouteLookup,
+): Extract<RouteLocationRaw, Record<string, unknown>> {
+  const routeName = to.name
+  if (typeof routeName !== 'string' || !routeName) {
+    return to
+  }
+  if (to.path !== undefined || to.fullPath !== undefined) {
+    return to
+  }
+
+  const pathTemplate = lookup.pathByName.get(routeName)
+  if (!pathTemplate) {
+    throw new Error(`Named route "${routeName}" is not defined in useRouter({ namedRoutes })`)
+  }
+
+  const params = to.params
+    ? normalizeRouteParams(to.params)
+    : {}
+  const resolvedPath = resolveNamedRoutePath(pathTemplate, params, routeName)
+
+  return {
+    ...to,
+    path: resolvedPath ? `/${resolvedPath}` : '/',
+    params,
+  }
 }
 
 function parsePathInput(
@@ -600,7 +774,7 @@ function isRouteLocationRawCandidate(value: unknown): value is RouteLocationRaw 
 async function runNavigationGuards(
   guards: ReadonlySet<NavigationGuard>,
   context: NavigationGuardContext,
-  resolveRoute: (to: RouteLocationRaw, currentPath: string) => RouteLocationNormalizedLoaded = resolveRouteLocation,
+  resolveRoute: (to: RouteLocationRaw, currentPath: string) => RouteLocationNormalizedLoaded,
 ): Promise<GuardPipelineResult> {
   for (const guard of guards) {
     try {
@@ -866,6 +1040,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     parseQuery: options.parseQuery ?? parseQuery,
     stringifyQuery: options.stringifyQuery ?? stringifyQuery,
   }
+  const namedRouteLookup = createNamedRouteLookup(options.namedRoutes)
   const tabBarPathSet = new Set(
     (options.tabBarEntries ?? [])
       .map(path => resolvePath(path, ''))
@@ -873,7 +1048,17 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   )
 
   function resolveWithCodec(to: RouteLocationRaw, currentPath: string): RouteLocationNormalizedLoaded {
-    return resolveRouteLocation(to, currentPath, routeResolveCodec)
+    const rawTo = typeof to === 'string'
+      ? to
+      : resolveNamedRouteLocation(to, namedRouteLookup)
+    const resolved = resolveRouteLocation(rawTo, currentPath, routeResolveCodec)
+    if (resolved.name === undefined) {
+      const inferredName = namedRouteLookup.nameByStaticPath.get(resolved.path)
+      if (inferredName !== undefined) {
+        resolved.name = inferredName
+      }
+    }
+    return resolved
   }
 
   function resolve(to: RouteLocationRaw): RouteLocationNormalizedLoaded {
@@ -1118,14 +1303,38 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
 
   async function push(to: RouteLocationRaw): Promise<void | NavigationFailure> {
     const from = snapshotRouteLocation(route)
-    const target = resolveWithCodec(to, from.path)
+    let target: RouteLocationNormalizedLoaded
+    try {
+      target = resolveWithCodec(to, from.path)
+    }
+    catch (error) {
+      const result = createNavigationRunResult(
+        'push',
+        from,
+        undefined,
+        createNavigationFailure(NavigationFailureType.unknown, undefined, from, error),
+      )
+      return settleNavigationResult(result)
+    }
     const result = await navigateWithTarget('push', target, from)
     return settleNavigationResult(result)
   }
 
   async function replace(to: RouteLocationRaw): Promise<void | NavigationFailure> {
     const from = snapshotRouteLocation(route)
-    const target = resolveWithCodec(to, from.path)
+    let target: RouteLocationNormalizedLoaded
+    try {
+      target = resolveWithCodec(to, from.path)
+    }
+    catch (error) {
+      const result = createNavigationRunResult(
+        'replace',
+        from,
+        undefined,
+        createNavigationFailure(NavigationFailureType.unknown, undefined, from, error),
+      )
+      return settleNavigationResult(result)
+    }
     const result = await navigateWithTarget('replace', target, from)
     return settleNavigationResult(result)
   }
@@ -1136,7 +1345,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       mode: 'back',
       from,
       nativeRouter,
-    })
+    }, resolveWithCodec)
     if (beforeEachResult.status === 'failure') {
       const result = createNavigationRunResult('back', from, undefined, beforeEachResult.failure)
       return settleNavigationResult(result)
@@ -1160,7 +1369,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       mode: 'back',
       from,
       nativeRouter,
-    })
+    }, resolveWithCodec)
     if (beforeResolveResult.status === 'failure') {
       const result = createNavigationRunResult('back', from, undefined, beforeResolveResult.failure)
       return settleNavigationResult(result)

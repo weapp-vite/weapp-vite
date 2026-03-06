@@ -190,6 +190,156 @@ describe('router navigation helpers', () => {
     }))
   })
 
+  it('resolves named routes with params and preserves route metadata', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: {
+        'post-detail': '/pages/post/:id/index',
+      },
+    })
+
+    const resolved = router.resolve({
+      name: 'post-detail',
+      params: {
+        id: 123,
+      },
+      query: {
+        from: 'home',
+      },
+      hash: 'comment',
+    })
+    expect(resolved).toEqual({
+      path: 'pages/post/123/index',
+      fullPath: '/pages/post/123/index?from=home#comment',
+      query: {
+        from: 'home',
+      },
+      hash: '#comment',
+      name: 'post-detail',
+      params: {
+        id: '123',
+      },
+    })
+
+    const result = await router.push({
+      name: 'post-detail',
+      params: {
+        id: 123,
+      },
+      query: {
+        from: 'home',
+      },
+    })
+    expect(result).toBeUndefined()
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/post/123/index?from=home',
+    }))
+  })
+
+  it('infers route name when resolving static named route paths', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'home',
+          path: '/pages/home/index',
+        },
+      ],
+    })
+
+    expect(router.resolve('/pages/home/index').name).toBe('home')
+  })
+
+  it('returns unknown navigation failure for invalid named route targets', async () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: {
+        'home': '/pages/home/index',
+        'post-detail': '/pages/post/:id/index',
+      },
+    })
+
+    await expect(router.push({
+      name: 'missing-route',
+    })).rejects.toMatchObject({
+      type: NavigationFailureType.unknown,
+      message: expect.stringContaining('Named route "missing-route"'),
+    })
+
+    await expect(router.push({
+      name: 'post-detail',
+    })).rejects.toMatchObject({
+      type: NavigationFailureType.unknown,
+      message: expect.stringContaining('Missing required param "id"'),
+    })
+  })
+
   it('replace returns duplicated failure when navigating to same location', async () => {
     const redirectTo = vi.fn()
     const instance = {

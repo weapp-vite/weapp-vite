@@ -54,6 +54,10 @@ expectType<Readonly<RouteLocationNormalizedLoaded>>(route)
 
 const navigationOptions: UseRouterOptions = {
   tabBarEntries: ['pages/home/index'],
+  namedRoutes: {
+    'home': '/pages/home/index',
+    'post-detail': '/pages/post/:id/index',
+  },
   parseQuery: (search) => {
     return {
       from: search || null,
@@ -69,6 +73,18 @@ const navigation = useRouter(navigationOptions)
 expectType<RouterNavigation>(navigation)
 expectType<SetupContextRouter>(useNativeRouter())
 expectType<SetupContextRouter>(useNativePageRouter())
+
+const resolvedByName = navigation.resolve({
+  name: 'post-detail',
+  params: {
+    id: 1,
+  },
+  query: {
+    from: 'feed',
+  },
+})
+expectType<RouteLocationNormalizedLoaded>(resolvedByName)
+expectType<string | undefined>(resolvedByName.name)
 
 const removeGuard = navigation.beforeEach((to, from, context) => {
   expectType<RouteLocationNormalizedLoaded | undefined>(to)
