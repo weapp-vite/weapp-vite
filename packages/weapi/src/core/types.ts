@@ -230,6 +230,29 @@ export interface CreateWeapiOptions<TAdapter extends WeapiAdapter = WeapiCrossPl
   platform?: string
 }
 
+export interface WeapiResolvedTarget {
+  /**
+   * @description 输入的微信命名 API
+   */
+  method: string
+  /**
+   * @description 当前平台最终调用的目标 API 名称
+   */
+  target: string
+  /**
+   * @description 当前平台标识
+   */
+  platform?: string
+  /**
+   * @description 是否发生了命名映射（method !== target）
+   */
+  mapped: boolean
+  /**
+   * @description 当前适配器上是否存在可调用的目标方法
+   */
+  supported: boolean
+}
+
 export type WeapiInstance<TAdapter extends WeapiAdapter = WeapiCrossPlatformRawAdapter> = WeapiPromisify<TAdapter> & TAdapter & WeapiMethodDocOverlay<TAdapter> & {
   /**
    * @description 当前平台标识
@@ -247,4 +270,12 @@ export type WeapiInstance<TAdapter extends WeapiAdapter = WeapiCrossPlatformRawA
    * @description 获取原始平台对象
    */
   readonly raw?: TAdapter
+  /**
+   * @description 解析微信命名 API 在当前平台的目标方法信息
+   */
+  resolveTarget: (method: string) => WeapiResolvedTarget
+  /**
+   * @description 判断微信命名 API 在当前平台是否可调用
+   */
+  supports: (method: string) => boolean
 }

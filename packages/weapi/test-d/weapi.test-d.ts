@@ -2,6 +2,7 @@ import type {
   WeapiCrossPlatformRawAdapter,
   WeapiDefaultInstance,
   WeapiDouyinRawAdapter,
+  WeapiResolvedTarget,
 } from '@wevu/api'
 import { createWeapi, wpi } from '@wevu/api'
 import { expectType } from 'tsd'
@@ -27,6 +28,8 @@ expectType<WeapiDefaultInstance>(wpi)
 expectType<WeapiDefaultInstance['raw']>(wpi.raw)
 expectType<WeapiDefaultInstance['showToast']>(wpi.showToast)
 expectType<WeapiDefaultInstance['confirm']>(wpi.confirm)
+expectType<WeapiResolvedTarget>(wpi.resolveTarget('showModal'))
+expectType<boolean>(wpi.supports('showModal'))
 
 expectType<WechatMiniprogram.SystemInfo>(wpi.getSystemInfoSync())
 expectType<WeapiDouyinRawAdapter>(tt)

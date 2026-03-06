@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import prettier from 'prettier'
 import {
   WEAPI_MY_METHODS,
   WEAPI_TT_METHODS,
@@ -28,7 +29,12 @@ function formatBool(value) {
 
 async function writeReportFile(fileName, content) {
   const filePath = path.join(reportDir, fileName)
-  await fs.writeFile(filePath, `${content.trimEnd()}\n`)
+  const config = await prettier.resolveConfig(filePath)
+  const formatted = await prettier.format(`${content.trim()}\n`, {
+    ...config,
+    parser: 'markdown',
+  })
+  await fs.writeFile(filePath, formatted)
 }
 
 async function run() {
@@ -50,12 +56,9 @@ async function run() {
     .map(item => item.method)
     .filter(method => !WEAPI_WX_METHODS.includes(method))
 
-  const generatedAt = new Date().toISOString()
-
   const overview = `
 # weapi 三端 API 兼容报告（总览）
 
-- 生成时间：\`${generatedAt}\`
 - 类型来源：
   - 微信：\`${WEAPI_TYPE_SOURCES.wx.package}@${WEAPI_TYPE_SOURCES.wx.version}\`
   - 支付宝：\`${WEAPI_TYPE_SOURCES.my.package}@${WEAPI_TYPE_SOURCES.my.version}\`

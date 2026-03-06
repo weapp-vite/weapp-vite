@@ -14,6 +14,7 @@ import type {
   WeapiDouyinRawAdapter,
   WeapiInstance,
   WeapiPromisify,
+  WeapiResolvedTarget,
   WeapiWxAdapter,
   WeapiWxRawAdapter,
 } from '../dist/index.d.mts'
@@ -29,6 +30,7 @@ export type {
   WeapiDouyinRawAdapter,
   WeapiInstance,
   WeapiPromisify,
+  WeapiResolvedTarget,
   WeapiWxAdapter,
   WeapiWxRawAdapter,
 }

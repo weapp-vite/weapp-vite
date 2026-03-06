@@ -12,6 +12,7 @@ export type {
   WeapiDouyinRawAdapter,
   WeapiInstance,
   WeapiPromisify,
+  WeapiResolvedTarget,
   WeapiWxAdapter,
   WeapiWxRawAdapter,
 } from './core/types'
