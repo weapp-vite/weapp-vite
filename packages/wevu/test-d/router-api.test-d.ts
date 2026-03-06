@@ -104,6 +104,7 @@ const resolvedByName = navigation.resolve({
 })
 expectType<RouteLocationNormalizedLoaded>(resolvedByName)
 expectType<string | undefined>(resolvedByName.name)
+expectType<string | undefined>(resolvedByName.href)
 
 const removeGuard = navigation.beforeEach((to, from, context) => {
   expectType<RouteLocationNormalizedLoaded | undefined>(to)

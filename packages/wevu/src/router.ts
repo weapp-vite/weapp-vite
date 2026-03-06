@@ -48,6 +48,9 @@ export interface RouteLocationNormalizedLoaded {
   hash: string
   name?: string
   meta?: RouteMeta
+  href?: string
+  matched?: readonly RouteRecordMatched[]
+  redirectedFrom?: RouteLocationRedirectedFrom
   params: RouteParams
 }
 
@@ -81,6 +84,24 @@ export interface RouteRecordRaw extends NamedRouteRecord {
   meta?: RouteMeta
   beforeEnter?: NavigationGuard | readonly NavigationGuard[]
   redirect?: RouteRecordRedirect
+}
+
+export interface RouteRecordMatched {
+  name: string
+  path: string
+  meta?: RouteMeta
+}
+
+export interface RouteLocationRedirectedFrom {
+  path: string
+  fullPath: string
+  query: LocationQuery
+  hash: string
+  name?: string
+  meta?: RouteMeta
+  href?: string
+  matched?: readonly RouteRecordMatched[]
+  params: RouteParams
 }
 
 export type NavigationGuardResult = void | boolean | NavigationFailure | RouteLocationRaw | NavigationRedirect
@@ -602,6 +623,80 @@ function cloneRouteMeta(meta?: RouteMeta): RouteMeta | undefined {
   }
 }
 
+function normalizeRouteRecordMatched(record: RouteRecordNormalized): RouteRecordMatched {
+  const matchedRecord: RouteRecordMatched = {
+    name: record.name,
+    path: record.path ? `/${record.path}` : '/',
+  }
+  if (record.meta !== undefined) {
+    matchedRecord.meta = cloneRouteMeta(record.meta)
+  }
+  return matchedRecord
+}
+
+function cloneRouteRecordMatchedList(matched?: readonly RouteRecordMatched[]): RouteRecordMatched[] | undefined {
+  if (!matched) {
+    return undefined
+  }
+  return matched.map(record => ({
+    name: record.name,
+    path: record.path,
+    meta: cloneRouteMeta(record.meta),
+  }))
+}
+
+function cloneRouteLocationRedirectedFrom(
+  redirectedFrom?: RouteLocationRedirectedFrom,
+): RouteLocationRedirectedFrom | undefined {
+  if (!redirectedFrom) {
+    return undefined
+  }
+
+  const cloned: RouteLocationRedirectedFrom = {
+    path: redirectedFrom.path,
+    fullPath: redirectedFrom.fullPath,
+    query: cloneLocationQuery(redirectedFrom.query),
+    hash: redirectedFrom.hash,
+    params: cloneRouteParams(redirectedFrom.params),
+  }
+  if (redirectedFrom.name !== undefined) {
+    cloned.name = redirectedFrom.name
+  }
+  if (redirectedFrom.meta !== undefined) {
+    cloned.meta = cloneRouteMeta(redirectedFrom.meta)
+  }
+  if (redirectedFrom.href !== undefined) {
+    cloned.href = redirectedFrom.href
+  }
+  if (redirectedFrom.matched !== undefined) {
+    cloned.matched = cloneRouteRecordMatchedList(redirectedFrom.matched)
+  }
+  return cloned
+}
+
+function createRedirectedFromSnapshot(route: RouteLocationNormalizedLoaded): RouteLocationRedirectedFrom {
+  const snapshot: RouteLocationRedirectedFrom = {
+    path: route.path,
+    fullPath: route.fullPath,
+    query: cloneLocationQuery(route.query),
+    hash: route.hash,
+    params: cloneRouteParams(route.params),
+  }
+  if (route.name !== undefined) {
+    snapshot.name = route.name
+  }
+  if (route.meta !== undefined) {
+    snapshot.meta = cloneRouteMeta(route.meta)
+  }
+  if (route.href !== undefined) {
+    snapshot.href = route.href
+  }
+  if (route.matched !== undefined) {
+    snapshot.matched = cloneRouteRecordMatchedList(route.matched)
+  }
+  return snapshot
+}
+
 function resolveMatchedRouteRecord(
   target: RouteLocationNormalizedLoaded,
   lookup: NamedRouteLookup,
@@ -734,6 +829,15 @@ function snapshotRouteLocation(route: RouteLocationNormalizedLoaded): RouteLocat
   }
   if (route.meta !== undefined) {
     snapshot.meta = cloneRouteMeta(route.meta)
+  }
+  if (route.href !== undefined) {
+    snapshot.href = route.href
+  }
+  if (route.matched !== undefined) {
+    snapshot.matched = cloneRouteRecordMatchedList(route.matched)
+  }
+  if (route.redirectedFrom !== undefined) {
+    snapshot.redirectedFrom = cloneRouteLocationRedirectedFrom(route.redirectedFrom)
   }
   if (route.name !== undefined) {
     snapshot.name = route.name
@@ -1148,6 +1252,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       ? to
       : resolveNamedRouteLocation(to, namedRouteLookup)
     const resolved = resolveRouteLocation(rawTo, currentPath, routeResolveCodec)
+    resolved.href = resolved.fullPath
     const matchedRecord = resolveMatchedRouteRecord(resolved, namedRouteLookup)
     if (matchedRecord) {
       if (resolved.name === undefined) {
@@ -1156,6 +1261,10 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       if (matchedRecord.meta !== undefined) {
         resolved.meta = cloneRouteMeta(matchedRecord.meta)
       }
+      resolved.matched = [normalizeRouteRecordMatched(matchedRecord)]
+    }
+    else {
+      resolved.matched = []
     }
     return resolved
   }
@@ -1235,6 +1344,16 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       target: resolveWithCodec(redirectResult, to.path),
       replace: true,
     }
+  }
+
+  function applyRedirectedFrom(
+    redirectedTarget: RouteLocationNormalizedLoaded,
+    currentTarget: RouteLocationNormalizedLoaded,
+  ) {
+    const redirectedFrom = currentTarget.redirectedFrom
+      ? cloneRouteLocationRedirectedFrom(currentTarget.redirectedFrom)
+      : createRedirectedFromSnapshot(currentTarget)
+    redirectedTarget.redirectedFrom = redirectedFrom
   }
 
   function isTabBarTarget(target: RouteLocationNormalizedLoaded): boolean {
@@ -1401,6 +1520,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
             ? 'push'
             : currentMode
         if (redirectedTarget.fullPath !== currentTarget.fullPath || redirectedMode !== currentMode) {
+          applyRedirectedFrom(redirectedTarget, currentTarget)
           currentTarget = redirectedTarget
           currentMode = redirectedMode
           redirectCount += 1
@@ -1429,6 +1549,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
         const redirectedMode = redirectedByRecord.replace === false ? 'push' : 'replace'
         const redirectedTarget = redirectedByRecord.target
         if (redirectedTarget.fullPath !== currentTarget.fullPath || redirectedMode !== currentMode) {
+          applyRedirectedFrom(redirectedTarget, currentTarget)
           currentTarget = redirectedTarget
           currentMode = redirectedMode
           redirectCount += 1
@@ -1458,6 +1579,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
               ? 'push'
               : currentMode
           if (redirectedTarget.fullPath !== currentTarget.fullPath || redirectedMode !== currentMode) {
+            applyRedirectedFrom(redirectedTarget, currentTarget)
             currentTarget = redirectedTarget
             currentMode = redirectedMode
             redirectCount += 1
@@ -1487,6 +1609,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
             ? 'push'
             : currentMode
         if (redirectedTarget.fullPath !== currentTarget.fullPath || redirectedMode !== currentMode) {
+          applyRedirectedFrom(redirectedTarget, currentTarget)
           currentTarget = redirectedTarget
           currentMode = redirectedMode
           redirectCount += 1
