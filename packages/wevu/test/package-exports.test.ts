@@ -34,4 +34,16 @@ describe('package exports', () => {
       },
     })
   })
+
+  it('declares router subpath export', () => {
+    const exportsField = readExports()
+
+    expect(exportsField['./router']).toEqual({
+      types: './dist/router.d.mts',
+      import: {
+        types: './dist/router.d.mts',
+        default: './dist/router.mjs',
+      },
+    })
+  })
 })

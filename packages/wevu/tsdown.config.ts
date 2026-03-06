@@ -7,6 +7,7 @@ export default defineConfig({
     './src/jsx-runtime',
     './src/store',
     './src/api',
+    './src/router',
   ],
   format: ['esm'],
   target: 'es2018',
