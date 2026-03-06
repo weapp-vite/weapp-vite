@@ -2,11 +2,11 @@
 import { useModel } from 'vue'
 
 const props = defineProps<{
-  modelValue: string
+  modelValue: string | null
   title: string
 }>()
 
-const model = useModel<string>(props, 'modelValue')
+const model = useModel<string | null>(props, 'modelValue')
 
 function applyValue(next: string) {
   model.value = next
@@ -36,11 +36,11 @@ function applyValue(next: string) {
 
 <style scoped>
 .use-model-feature {
-  margin-top: 20rpx;
   padding: 20rpx;
-  border-radius: 16rpx;
-  border: 2rpx solid #cbd5e1;
+  margin-top: 20rpx;
   background: #fff;
+  border: 2rpx solid #cbd5e1;
+  border-radius: 16rpx;
 }
 
 .use-model-feature__title {
@@ -56,19 +56,19 @@ function applyValue(next: string) {
 }
 
 .use-model-feature__actions {
-  margin-top: 12rpx;
   display: flex;
   flex-wrap: wrap;
+  margin-top: 12rpx;
 }
 
 .use-model-feature__btn {
-  margin: 6rpx;
   min-height: 56rpx;
-  line-height: 56rpx;
   padding: 0 16rpx;
-  border-radius: 9999rpx;
-  background: #e2e8f0;
-  color: #1f2937;
+  margin: 6rpx;
   font-size: 22rpx;
+  line-height: 56rpx;
+  color: #1f2937;
+  background: #e2e8f0;
+  border-radius: 9999rpx;
 }
 </style>

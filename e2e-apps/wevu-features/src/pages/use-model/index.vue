@@ -3,17 +3,31 @@ import { nextTick, ref } from 'wevu'
 import UseModelFeature from '../../components/use-model-feature/index.vue'
 
 const modelValue = ref('seed-model')
+const childModelValue = ref('seed-model')
 const emitLogs = ref<string[]>([])
 
+function normalizeModelValue(value: unknown) {
+  if (typeof value === 'string') {
+    return value
+  }
+  if (value == null) {
+    return ''
+  }
+  return String(value)
+}
+
 function onModelUpdate(event: any) {
-  const next = event?.detail ?? ''
-  modelValue.value = String(next)
+  const normalizedValue = normalizeModelValue(event?.detail)
+  modelValue.value = normalizedValue
+  childModelValue.value = normalizedValue
   emitLogs.value.push(`update:modelValue:${modelValue.value}`)
 }
 
-function setByParent(value: string) {
-  modelValue.value = value
-  emitLogs.value.push(`parent-set:${value}`)
+function setByParent(value: unknown) {
+  const normalizedValue = normalizeModelValue(value)
+  modelValue.value = normalizedValue
+  childModelValue.value = normalizedValue
+  emitLogs.value.push(`parent-set:${normalizedValue}`)
 }
 
 function setParentAlpha() {
@@ -22,6 +36,19 @@ function setParentAlpha() {
 
 function setParentBeta() {
   setByParent('beta-from-parent')
+}
+
+async function runNullGuardE2E() {
+  setByParent(null)
+  await nextTick()
+
+  const safeValue = childModelValue.value
+  return {
+    ok: safeValue === '',
+    safeValue,
+    rawValue: modelValue.value,
+    hasNullLiteral: safeValue.includes('null'),
+  }
 }
 
 async function runE2E() {
@@ -49,6 +76,7 @@ async function runE2E() {
 }
 
 const _runE2E = runE2E
+const _runNullGuardE2E = runNullGuardE2E
 </script>
 
 <template>
@@ -78,7 +106,7 @@ const _runE2E = runE2E
 
     <UseModelFeature
       title="组件内 useModel()"
-      :model-value="modelValue"
+      :model-value="childModelValue"
       @update:modelValue="onModelUpdate($event)"
     />
   </view>
@@ -86,8 +114,8 @@ const _runE2E = runE2E
 
 <style scoped>
 .use-model-page {
-  min-height: 100vh;
   box-sizing: border-box;
+  min-height: 100vh;
   padding: 24rpx;
   background: #f8fafc;
 }
@@ -105,20 +133,20 @@ const _runE2E = runE2E
 }
 
 .use-model-page__toolbar {
-  margin-top: 16rpx;
   display: flex;
   flex-wrap: wrap;
+  margin-top: 16rpx;
 }
 
 .use-model-page__btn {
-  margin: 6rpx;
   min-height: 58rpx;
-  line-height: 58rpx;
   padding: 0 16rpx;
-  border-radius: 9999rpx;
-  background: #e2e8f0;
-  color: #1f2937;
+  margin: 6rpx;
   font-size: 22rpx;
+  line-height: 58rpx;
+  color: #1f2937;
+  background: #e2e8f0;
+  border-radius: 9999rpx;
 }
 
 .use-model-page__value {

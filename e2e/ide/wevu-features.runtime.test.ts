@@ -385,6 +385,16 @@ describe.sequential('e2e app: wevu-features', () => {
       })
       expect(parentSetOk).toBe(true)
 
+      const nullGuardResult = await modelPage.callMethod('runNullGuardE2E')
+      expect(nullGuardResult?.ok).toBe(true)
+      expect(nullGuardResult?.safeValue).toBe('')
+      expect(nullGuardResult?.rawValue).toBe('')
+      expect(nullGuardResult?.hasNullLiteral).toBe(false)
+
+      const nullGuardWxml = await readPageWxml(modelPage)
+      expect(nullGuardWxml).not.toContain('parent modelValue = null')
+      expect(nullGuardWxml).not.toContain('inner model = null')
+
       const provideInjectPage = await relaunchPage(miniProgram, '/pages/use-provide-inject/index', 'wevu provide / inject 特性展示')
       if (!provideInjectPage) {
         throw new Error('Failed to launch use-provide-inject page')
