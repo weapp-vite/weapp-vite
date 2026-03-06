@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：129，不支持：350
+总计：479，支持：145，不支持：334
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | --------------------------------------------------------------------------------- |
@@ -57,7 +57,7 @@
 | `connectSocket`                               | `connectSocket`                               | ✅   | 直连 `tt.connectSocket`                                                           |
 | `connectWifi`                                 | `connectWifi`                                 | ❌   | 未提供 tt.connectWifi，调用时将返回 not supported                                 |
 | `createAnimation`                             | `createAnimation`                             | ✅   | 直连 `tt.createAnimation`                                                         |
-| `createAudioContext`                          | `createAudioContext`                          | ❌   | 未提供 tt.createAudioContext，调用时将返回 not supported                          |
+| `createAudioContext`                          | `createInnerAudioContext`                     | ✅   | 映射到 `tt.createInnerAudioContext`                                               |
 | `createBLEConnection`                         | `createBLEConnection`                         | ❌   | 未提供 tt.createBLEConnection，调用时将返回 not supported                         |
 | `createBLEPeripheralServer`                   | `createBLEPeripheralServer`                   | ❌   | 未提供 tt.createBLEPeripheralServer，调用时将返回 not supported                   |
 | `createBufferURL`                             | `createBufferURL`                             | ❌   | 未提供 tt.createBufferURL，调用时将返回 not supported                             |
@@ -83,7 +83,7 @@
 | `createVideoContext`                          | `createVideoContext`                          | ✅   | 直连 `tt.createVideoContext`                                                      |
 | `createVideoDecoder`                          | `createVideoDecoder`                          | ❌   | 未提供 tt.createVideoDecoder，调用时将返回 not supported                          |
 | `createVKSession`                             | `createVKSession`                             | ❌   | 未提供 tt.createVKSession，调用时将返回 not supported                             |
-| `createWebAudioContext`                       | `createWebAudioContext`                       | ❌   | 未提供 tt.createWebAudioContext，调用时将返回 not supported                       |
+| `createWebAudioContext`                       | `createInnerAudioContext`                     | ✅   | 映射到 `tt.createInnerAudioContext`                                               |
 | `createWorker`                                | `createWorker`                                | ✅   | 直连 `tt.createWorker`                                                            |
 | `cropImage`                                   | `cropImage`                                   | ❌   | 未提供 tt.cropImage，调用时将返回 not supported                                   |
 | `disableAlertBeforeUnload`                    | `disableAlertBeforeUnload`                    | ❌   | 未提供 tt.disableAlertBeforeUnload，调用时将返回 not supported                    |
@@ -95,8 +95,8 @@
 | `faceDetect`                                  | `faceDetect`                                  | ❌   | 未提供 tt.faceDetect，调用时将返回 not supported                                  |
 | `getAccountInfoSync`                          | `getAccountInfoSync`                          | ❌   | 未提供 tt.getAccountInfoSync，调用时将返回 not supported                          |
 | `getApiCategory`                              | `getApiCategory`                              | ❌   | 未提供 tt.getApiCategory，调用时将返回 not supported                              |
-| `getAppAuthorizeSetting`                      | `getAppAuthorizeSetting`                      | ❌   | 未提供 tt.getAppAuthorizeSetting，调用时将返回 not supported                      |
-| `getAppBaseInfo`                              | `getAppBaseInfo`                              | ❌   | 未提供 tt.getAppBaseInfo，调用时将返回 not supported                              |
+| `getAppAuthorizeSetting`                      | `getSetting`                                  | ✅   | 映射到 `tt.getSetting`                                                            |
+| `getAppBaseInfo`                              | `getEnvInfoSync`                              | ✅   | 映射到 `tt.getEnvInfoSync`                                                        |
 | `getAvailableAudioSources`                    | `getAvailableAudioSources`                    | ❌   | 未提供 tt.getAvailableAudioSources，调用时将返回 not supported                    |
 | `getBackgroundAudioManager`                   | `getBackgroundAudioManager`                   | ✅   | 直连 `tt.getBackgroundAudioManager`                                               |
 | `getBackgroundAudioPlayerState`               | `getBackgroundAudioPlayerState`               | ❌   | 未提供 tt.getBackgroundAudioPlayerState，调用时将返回 not supported               |
@@ -122,7 +122,7 @@
 | `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`                      | ❌   | 未提供 tt.getDeviceBenchmarkInfo，调用时将返回 not supported                      |
 | `getDeviceInfo`                               | `getDeviceInfo`                               | ❌   | 未提供 tt.getDeviceInfo，调用时将返回 not supported                               |
 | `getDeviceVoIPList`                           | `getDeviceVoIPList`                           | ❌   | 未提供 tt.getDeviceVoIPList，调用时将返回 not supported                           |
-| `getEnterOptionsSync`                         | `getEnterOptionsSync`                         | ❌   | 未提供 tt.getEnterOptionsSync，调用时将返回 not supported                         |
+| `getEnterOptionsSync`                         | `getLaunchOptionsSync`                        | ✅   | 映射到 `tt.getLaunchOptionsSync`                                                  |
 | `getExptInfoSync`                             | `getExptInfoSync`                             | ❌   | 未提供 tt.getExptInfoSync，调用时将返回 not supported                             |
 | `getExtConfig`                                | `getExtConfig`                                | ✅   | 直连 `tt.getExtConfig`                                                            |
 | `getExtConfigSync`                            | `getExtConfigSync`                            | ✅   | 直连 `tt.getExtConfigSync`                                                        |
@@ -159,9 +159,9 @@
 | `getStorageInfoSync`                          | `getStorageInfoSync`                          | ✅   | 直连 `tt.getStorageInfoSync`                                                      |
 | `getStorageSync`                              | `getStorageSync`                              | ✅   | 直连 `tt.getStorageSync`                                                          |
 | `getSystemInfo`                               | `getSystemInfo`                               | ✅   | 直连 `tt.getSystemInfo`                                                           |
-| `getSystemInfoAsync`                          | `getSystemInfoAsync`                          | ❌   | 未提供 tt.getSystemInfoAsync，调用时将返回 not supported                          |
+| `getSystemInfoAsync`                          | `getSystemInfo`                               | ✅   | 映射到 `tt.getSystemInfo`                                                         |
 | `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | 直连 `tt.getSystemInfoSync`                                                       |
-| `getSystemSetting`                            | `getSystemSetting`                            | ❌   | 未提供 tt.getSystemSetting，调用时将返回 not supported                            |
+| `getSystemSetting`                            | `getSetting`                                  | ✅   | 映射到 `tt.getSetting`                                                            |
 | `getUpdateManager`                            | `getUpdateManager`                            | ✅   | 直连 `tt.getUpdateManager`                                                        |
 | `getUserCryptoManager`                        | `getUserCryptoManager`                        | ❌   | 未提供 tt.getUserCryptoManager，调用时将返回 not supported                        |
 | `getUserInfo`                                 | `getUserInfo`                                 | ✅   | 直连 `tt.getUserInfo`                                                             |
@@ -327,7 +327,7 @@
 | `onWifiConnectedWithPartialInfo`              | `onWifiConnectedWithPartialInfo`              | ❌   | 未提供 tt.onWifiConnectedWithPartialInfo，调用时将返回 not supported              |
 | `onWindowResize`                              | `onWindowResize`                              | ✅   | 直连 `tt.onWindowResize`                                                          |
 | `onWindowStateChange`                         | `onWindowStateChange`                         | ❌   | 未提供 tt.onWindowStateChange，调用时将返回 not supported                         |
-| `openAppAuthorizeSetting`                     | `openAppAuthorizeSetting`                     | ❌   | 未提供 tt.openAppAuthorizeSetting，调用时将返回 not supported                     |
+| `openAppAuthorizeSetting`                     | `openSetting`                                 | ✅   | 映射到 `tt.openSetting`                                                           |
 | `openBluetoothAdapter`                        | `openBluetoothAdapter`                        | ❌   | 未提供 tt.openBluetoothAdapter，调用时将返回 not supported                        |
 | `openCard`                                    | `openCard`                                    | ❌   | 未提供 tt.openCard，调用时将返回 not supported                                    |
 | `openChannelsActivity`                        | `openChannelsActivity`                        | ❌   | 未提供 tt.openChannelsActivity，调用时将返回 not supported                        |
@@ -338,7 +338,7 @@
 | `openChatTool`                                | `openChatTool`                                | ❌   | 未提供 tt.openChatTool，调用时将返回 not supported                                |
 | `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ❌   | 未提供 tt.openCustomerServiceChat，调用时将返回 not supported                     |
 | `openDocument`                                | `openDocument`                                | ❌   | 未提供 tt.openDocument，调用时将返回 not supported                                |
-| `openEmbeddedMiniProgram`                     | `openEmbeddedMiniProgram`                     | ❌   | 未提供 tt.openEmbeddedMiniProgram，调用时将返回 not supported                     |
+| `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`                       | ✅   | 映射到 `tt.navigateToMiniProgram`                                                 |
 | `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ❌   | 未提供 tt.openHKOfflinePayView，调用时将返回 not supported                        |
 | `openInquiriesTopic`                          | `openInquiriesTopic`                          | ❌   | 未提供 tt.openInquiriesTopic，调用时将返回 not supported                          |
 | `openLocation`                                | `openLocation`                                | ✅   | 直连 `tt.openLocation`                                                            |
@@ -359,7 +359,7 @@
 | `pauseVoice`                                  | `pauseVoice`                                  | ❌   | 未提供 tt.pauseVoice，调用时将返回 not supported                                  |
 | `playBackgroundAudio`                         | `playBackgroundAudio`                         | ❌   | 未提供 tt.playBackgroundAudio，调用时将返回 not supported                         |
 | `playVoice`                                   | `playVoice`                                   | ❌   | 未提供 tt.playVoice，调用时将返回 not supported                                   |
-| `pluginLogin`                                 | `pluginLogin`                                 | ❌   | 未提供 tt.pluginLogin，调用时将返回 not supported                                 |
+| `pluginLogin`                                 | `login`                                       | ✅   | 映射到 `tt.login`                                                                 |
 | `postMessageToReferrerMiniProgram`            | `postMessageToReferrerMiniProgram`            | ❌   | 未提供 tt.postMessageToReferrerMiniProgram，调用时将返回 not supported            |
 | `postMessageToReferrerPage`                   | `postMessageToReferrerPage`                   | ❌   | 未提供 tt.postMessageToReferrerPage，调用时将返回 not supported                   |
 | `preDownloadSubpackage`                       | `preDownloadSubpackage`                       | ❌   | 未提供 tt.preDownloadSubpackage，调用时将返回 not supported                       |
@@ -387,16 +387,16 @@
 | `requestOrderPayment`                         | `requestOrderPayment`                         | ❌   | 未提供 tt.requestOrderPayment，调用时将返回 not supported                         |
 | `requestPayment`                              | `requestPayment`                              | ❌   | 未提供 tt.requestPayment，调用时将返回 not supported                              |
 | `requestPluginPayment`                        | `requestPluginPayment`                        | ❌   | 未提供 tt.requestPluginPayment，调用时将返回 not supported                        |
-| `requestSubscribeDeviceMessage`               | `requestSubscribeDeviceMessage`               | ❌   | 未提供 tt.requestSubscribeDeviceMessage，调用时将返回 not supported               |
-| `requestSubscribeEmployeeMessage`             | `requestSubscribeEmployeeMessage`             | ❌   | 未提供 tt.requestSubscribeEmployeeMessage，调用时将返回 not supported             |
+| `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`                     | ✅   | 映射到 `tt.requestSubscribeMessage`                                               |
+| `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`                     | ✅   | 映射到 `tt.requestSubscribeMessage`                                               |
 | `requestSubscribeMessage`                     | `requestSubscribeMessage`                     | ✅   | 直连 `tt.requestSubscribeMessage`                                                 |
 | `requestVirtualPayment`                       | `requestVirtualPayment`                       | ❌   | 未提供 tt.requestVirtualPayment，调用时将返回 not supported                       |
 | `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`                     | ❌   | 未提供 tt.requirePrivacyAuthorize，调用时将返回 not supported                     |
 | `reserveChannelsLive`                         | `reserveChannelsLive`                         | ❌   | 未提供 tt.reserveChannelsLive，调用时将返回 not supported                         |
-| `restartMiniProgram`                          | `restartMiniProgram`                          | ❌   | 未提供 tt.restartMiniProgram，调用时将返回 not supported                          |
+| `restartMiniProgram`                          | `reLaunch`                                    | ✅   | 映射到 `tt.reLaunch`                                                              |
 | `revokeBufferURL`                             | `revokeBufferURL`                             | ❌   | 未提供 tt.revokeBufferURL，调用时将返回 not supported                             |
 | `rewriteRoute`                                | `rewriteRoute`                                | ❌   | 未提供 tt.rewriteRoute，调用时将返回 not supported                                |
-| `saveFileToDisk`                              | `saveFileToDisk`                              | ❌   | 未提供 tt.saveFileToDisk，调用时将返回 not supported                              |
+| `saveFileToDisk`                              | `saveFile`                                    | ✅   | 映射到 `tt.saveFile`                                                              |
 | `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | 直连 `tt.saveImageToPhotosAlbum`                                                  |
 | `saveVideoToPhotosAlbum`                      | `saveVideoToPhotosAlbum`                      | ❌   | 未提供 tt.saveVideoToPhotosAlbum，调用时将返回 not supported                      |
 | `scanCode`                                    | `scanCode`                                    | ✅   | 直连 `tt.scanCode`                                                                |
@@ -440,7 +440,7 @@
 | `showModal`                                   | `showModal`                                   | ✅   | 直连 `tt.showModal`                                                               |
 | `showNavigationBarLoading`                    | `showNavigationBarLoading`                    | ✅   | 直连 `tt.showNavigationBarLoading`                                                |
 | `showRedPackage`                              | `showRedPackage`                              | ❌   | 未提供 tt.showRedPackage，调用时将返回 not supported                              |
-| `showShareImageMenu`                          | `showShareImageMenu`                          | ❌   | 未提供 tt.showShareImageMenu，调用时将返回 not supported                          |
+| `showShareImageMenu`                          | `showShareMenu`                               | ✅   | 映射到 `tt.showShareMenu`                                                         |
 | `showShareMenu`                               | `showShareMenu`                               | ✅   | 直连 `tt.showShareMenu`                                                           |
 | `showTabBar`                                  | `showTabBar`                                  | ✅   | 直连 `tt.showTabBar`                                                              |
 | `showTabBarRedDot`                            | `showTabBarRedDot`                            | ✅   | 直连 `tt.showTabBarRedDot`                                                        |
@@ -476,7 +476,7 @@
 | `stopWifi`                                    | `stopWifi`                                    | ❌   | 未提供 tt.stopWifi，调用时将返回 not supported                                    |
 | `subscribeVoIPVideoMembers`                   | `subscribeVoIPVideoMembers`                   | ❌   | 未提供 tt.subscribeVoIPVideoMembers，调用时将返回 not supported                   |
 | `switchTab`                                   | `switchTab`                                   | ✅   | 直连 `tt.switchTab`                                                               |
-| `updateShareMenu`                             | `updateShareMenu`                             | ❌   | 未提供 tt.updateShareMenu，调用时将返回 not supported                             |
+| `updateShareMenu`                             | `showShareMenu`                               | ✅   | 映射到 `tt.showShareMenu`                                                         |
 | `updateVoIPChatMuteConfig`                    | `updateVoIPChatMuteConfig`                    | ❌   | 未提供 tt.updateVoIPChatMuteConfig，调用时将返回 not supported                    |
 | `updateWeChatApp`                             | `updateWeChatApp`                             | ❌   | 未提供 tt.updateWeChatApp，调用时将返回 not supported                             |
 | `uploadFile`                                  | `uploadFile`                                  | ✅   | 直连 `tt.uploadFile`                                                              |

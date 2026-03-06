@@ -14,31 +14,51 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  192 |
-| 抖音可按微信命名调用的方法数     |  129 |
-| 三端完全对齐方法数               |  113 |
+| 支付宝可按微信命名调用的方法数   |  207 |
+| 抖音可按微信命名调用的方法数     |  145 |
+| 三端完全对齐方法数               |  133 |
 
 ## 覆盖率
 
 | 平台                    | 已支持 API 数 | API 总数 |  覆盖率 |
 | ----------------------- | ------------: | -------: | ------: |
 | 微信小程序 (`wx`)       |           479 |      479 | 100.00% |
-| 支付宝小程序 (`my`)     |           192 |      479 |  40.08% |
-| 抖音小程序 (`tt`)       |           129 |      479 |  26.93% |
-| 三端完全对齐 (wx/my/tt) |           113 |      479 |  23.59% |
+| 支付宝小程序 (`my`)     |           207 |      479 |  43.22% |
+| 抖音小程序 (`tt`)       |           145 |      479 |  30.27% |
+| 三端完全对齐 (wx/my/tt) |           133 |      479 |  27.77% |
 
 ## 核心差异映射（手工规则）
 
-| API                | 微信策略                                            | 支付宝策略                                                         | 抖音策略                                                         |
-| ------------------ | --------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| `showToast`        | 直连 `wx.showToast`                                 | `title/icon` 映射到 `content/type` 后调用 `my.showToast`           | `icon=error` 映射为 `fail` 后调用 `tt.showToast`                 |
-| `showLoading`      | 直连 `wx.showLoading`                               | `title` 映射到 `content` 后调用 `my.showLoading`                   | 直连 `tt.showLoading`                                            |
-| `showActionSheet`  | 直连 `wx.showActionSheet`                           | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐                | 直连 `tt.showActionSheet`，并兼容 `index` → `tapIndex`           |
-| `showModal`        | 直连 `wx.showModal`                                 | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果                   | 直连 `tt.showModal`                                              |
-| `chooseImage`      | 直连 `wx.chooseImage`                               | 返回值 `apFilePaths` 映射到 `tempFilePaths`                        | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底     |
-| `saveFile`         | 微信当前 typings 未声明同名 API，保留为跨端扩展能力 | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | 直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath` |
-| `setClipboardData` | 直连 `wx.setClipboardData`                          | 转调 `my.setClipboard` 并映射 `data` → `text`                      | 直连 `tt.setClipboardData`                                       |
-| `getClipboardData` | 直连 `wx.getClipboardData`                          | 转调 `my.getClipboard` 并映射 `text` → `data`                      | 直连 `tt.getClipboardData`                                       |
+| API                               | 微信策略                                            | 支付宝策略                                                         | 抖音策略                                                         |
+| --------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| `showToast`                       | 直连 `wx.showToast`                                 | `title/icon` 映射到 `content/type` 后调用 `my.showToast`           | `icon=error` 映射为 `fail` 后调用 `tt.showToast`                 |
+| `showLoading`                     | 直连 `wx.showLoading`                               | `title` 映射到 `content` 后调用 `my.showLoading`                   | 直连 `tt.showLoading`                                            |
+| `showActionSheet`                 | 直连 `wx.showActionSheet`                           | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐                | 直连 `tt.showActionSheet`，并兼容 `index` → `tapIndex`           |
+| `showModal`                       | 直连 `wx.showModal`                                 | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果                   | 直连 `tt.showModal`                                              |
+| `chooseImage`                     | 直连 `wx.chooseImage`                               | 返回值 `apFilePaths` 映射到 `tempFilePaths`                        | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底     |
+| `saveFile`                        | 微信当前 typings 未声明同名 API，保留为跨端扩展能力 | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | 直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath` |
+| `setClipboardData`                | 直连 `wx.setClipboardData`                          | 转调 `my.setClipboard` 并映射 `data` → `text`                      | 直连 `tt.setClipboardData`                                       |
+| `getClipboardData`                | 直连 `wx.getClipboardData`                          | 转调 `my.getClipboard` 并映射 `text` → `data`                      | 直连 `tt.getClipboardData`                                       |
+| `chooseAddress`                   | 直连 `wx.chooseAddress`                             | 映射到 `my.getAddress`                                             | 直连 `tt.chooseAddress`                                          |
+| `createAudioContext`              | 直连 `wx.createAudioContext`                        | 映射到 `my.createInnerAudioContext`                                | 映射到 `tt.createInnerAudioContext`                              |
+| `createWebAudioContext`           | 直连 `wx.createWebAudioContext`                     | 映射到 `my.createInnerAudioContext`                                | 映射到 `tt.createInnerAudioContext`                              |
+| `getSystemInfoAsync`              | 直连 `wx.getSystemInfoAsync`                        | 映射到 `my.getSystemInfo`                                          | 映射到 `tt.getSystemInfo`                                        |
+| `openAppAuthorizeSetting`         | 直连 `wx.openAppAuthorizeSetting`                   | 映射到 `my.openSetting`                                            | 映射到 `tt.openSetting`                                          |
+| `pluginLogin`                     | 直连 `wx.pluginLogin`                               | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段                    | 映射到 `tt.login`                                                |
+| `requestSubscribeDeviceMessage`   | 直连 `wx.requestSubscribeDeviceMessage`             | 映射到 `my.requestSubscribeMessage`                                | 映射到 `tt.requestSubscribeMessage`                              |
+| `requestSubscribeEmployeeMessage` | 直连 `wx.requestSubscribeEmployeeMessage`           | 映射到 `my.requestSubscribeMessage`                                | 映射到 `tt.requestSubscribeMessage`                              |
+| `restartMiniProgram`              | 直连 `wx.restartMiniProgram`                        | 映射到 `my.reLaunch`                                               | 映射到 `tt.reLaunch`                                             |
+| `scanCode`                        | 直连 `wx.scanCode`                                  | 映射到 `my.scan`                                                   | 直连 `tt.scanCode`                                               |
+| `showShareImageMenu`              | 直连 `wx.showShareImageMenu`                        | 映射到 `my.showSharePanel`                                         | 映射到 `tt.showShareMenu`                                        |
+| `updateShareMenu`                 | 直连 `wx.updateShareMenu`                           | 映射到 `my.showSharePanel`                                         | 映射到 `tt.showShareMenu`                                        |
+| `openEmbeddedMiniProgram`         | 直连 `wx.openEmbeddedMiniProgram`                   | 映射到 `my.navigateToMiniProgram`                                  | 映射到 `tt.navigateToMiniProgram`                                |
+| `saveFileToDisk`                  | 直连 `wx.saveFileToDisk`                            | 直连 `my.saveFileToDisk`                                           | 映射到 `tt.saveFile`                                             |
+| `getEnterOptionsSync`             | 直连 `wx.getEnterOptionsSync`                       | 直连 `my.getEnterOptionsSync`                                      | 映射到 `tt.getLaunchOptionsSync`                                 |
+| `getSystemSetting`                | 直连 `wx.getSystemSetting`                          | 直连 `my.getSystemSetting`                                         | 映射到 `tt.getSetting`                                           |
+| `getUserProfile`                  | 直连 `wx.getUserProfile`                            | 映射到 `my.getOpenUserInfo`                                        | 直连 `tt.getUserProfile`                                         |
+| `getUserInfo`                     | 直连 `wx.getUserInfo`                               | 映射到 `my.getOpenUserInfo`                                        | 直连 `tt.getUserInfo`                                            |
+| `getAppAuthorizeSetting`          | 直连 `wx.getAppAuthorizeSetting`                    | 直连 `my.getAppAuthorizeSetting`                                   | 映射到 `tt.getSetting`                                           |
+| `getAppBaseInfo`                  | 直连 `wx.getAppBaseInfo`                            | 直连 `my.getAppBaseInfo`                                           | 映射到 `tt.getEnvInfoSync`                                       |
 
 ## 已执行验证
 
