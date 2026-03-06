@@ -483,8 +483,10 @@ describe('router navigation helpers', () => {
       throw guardError
     })
 
-    const firstResult = await router.push('/pages/detail/index')
-    expect(isNavigationFailure(firstResult, NavigationFailureType.aborted)).toBe(true)
+    await expect(router.push('/pages/detail/index')).rejects.toMatchObject({
+      type: NavigationFailureType.aborted,
+      cause: guardError,
+    })
     expect(errors).toHaveLength(1)
     expect(errors[0]).toMatchObject({
       error: guardError,
@@ -497,10 +499,46 @@ describe('router navigation helpers', () => {
     })
 
     removeOnError()
-    const secondResult = await router.push('/pages/detail/index')
-    expect(isNavigationFailure(secondResult, NavigationFailureType.aborted)).toBe(true)
+    await expect(router.push('/pages/detail/index')).rejects.toMatchObject({
+      type: NavigationFailureType.aborted,
+      cause: guardError,
+    })
     expect(errors).toHaveLength(1)
     expect(navigateTo).not.toHaveBeenCalled()
+  })
+
+  it('can resolve unexpected failures when rejectOnError is disabled', async () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      rejectOnError: false,
+    })
+    router.beforeEach(() => {
+      throw new Error('guard boom')
+    })
+
+    const result = await router.push('/pages/detail/index')
+    expect(isNavigationFailure(result, NavigationFailureType.aborted)).toBe(true)
   })
 
   it('onError ignores expected navigation failures', async () => {

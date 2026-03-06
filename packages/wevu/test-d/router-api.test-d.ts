@@ -43,6 +43,7 @@ expectType<Readonly<RouteLocationNormalizedLoaded>>(route)
 
 const navigationOptions: UseRouterOptions = {
   tabBarEntries: ['pages/home/index'],
+  rejectOnError: true,
 }
 const navigation = useRouter(navigationOptions)
 expectType<RouterNavigation>(navigation)

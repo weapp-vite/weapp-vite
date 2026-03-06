@@ -99,6 +99,13 @@ export type NavigationErrorHandler = (
 export interface UseRouterOptions {
   tabBarEntries?: readonly (TypedRouterTabBarUrl | string)[]
   maxRedirects?: number
+  /**
+   * 异常型导航失败时是否以 Promise reject 抛出失败对象。
+   *
+   * - `true`：更贴近 Vue Router 心智（默认）
+   * - `false`：始终以返回值形式携带失败对象
+   */
+  rejectOnError?: boolean
 }
 
 export interface RouterNavigation {
@@ -716,6 +723,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   const afterEachHooks = new Set<NavigationAfterEach>()
   const errorHandlers = new Set<NavigationErrorHandler>()
   const maxRedirects = options.maxRedirects ?? 10
+  const rejectOnError = options.rejectOnError ?? true
   const tabBarPathSet = new Set(
     (options.tabBarEntries ?? [])
       .map(path => resolvePath(path, ''))
@@ -821,6 +829,18 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
         },
       )
     }
+  }
+
+  function shouldRejectNavigationFailure(failure: NavigationFailure): boolean {
+    return rejectOnError && shouldEmitNavigationError(failure)
+  }
+
+  async function settleNavigationResult(result: NavigationRunResult): Promise<void | NavigationFailure> {
+    await emitNavigationAfterEach(result)
+    if (result.failure && shouldRejectNavigationFailure(result.failure)) {
+      throw result.failure
+    }
+    return result.failure
   }
 
   async function navigateWithTarget(
@@ -939,16 +959,14 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     const from = snapshotRouteLocation(route)
     const target = resolveRouteLocation(to, from.path)
     const result = await navigateWithTarget('push', target, from)
-    await emitNavigationAfterEach(result)
-    return result.failure
+    return settleNavigationResult(result)
   }
 
   async function replace(to: RouteLocationRaw): Promise<void | NavigationFailure> {
     const from = snapshotRouteLocation(route)
     const target = resolveRouteLocation(to, from.path)
     const result = await navigateWithTarget('replace', target, from)
-    await emitNavigationAfterEach(result)
-    return result.failure
+    return settleNavigationResult(result)
   }
 
   async function back(delta = 1): Promise<void | NavigationFailure> {
@@ -960,8 +978,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     })
     if (beforeEachResult.status === 'failure') {
       const result = createNavigationRunResult('back', from, undefined, beforeEachResult.failure)
-      await emitNavigationAfterEach(result)
-      return result.failure
+      return settleNavigationResult(result)
     }
     if (beforeEachResult.status === 'redirect') {
       const result = createNavigationRunResult(
@@ -975,8 +992,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
           'Redirect is not supported in back navigation guards',
         ),
       )
-      await emitNavigationAfterEach(result)
-      return result.failure
+      return settleNavigationResult(result)
     }
 
     const beforeResolveResult = await runNavigationGuards(beforeResolveGuards, {
@@ -986,8 +1002,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     })
     if (beforeResolveResult.status === 'failure') {
       const result = createNavigationRunResult('back', from, undefined, beforeResolveResult.failure)
-      await emitNavigationAfterEach(result)
-      return result.failure
+      return settleNavigationResult(result)
     }
     if (beforeResolveResult.status === 'redirect') {
       const result = createNavigationRunResult(
@@ -1001,8 +1016,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
           'Redirect is not supported in back navigation guards',
         ),
       )
-      await emitNavigationAfterEach(result)
-      return result.failure
+      return settleNavigationResult(result)
     }
 
     const result = await executeNavigationMethod(
@@ -1016,8 +1030,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     const runResult = isNavigationFailure(result)
       ? createNavigationRunResult('back', from, undefined, result)
       : createNavigationRunResult('back', from)
-    await emitNavigationAfterEach(runResult)
-    return runResult.failure
+    return settleNavigationResult(runResult)
   }
 
   return {
