@@ -108,6 +108,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'unref',
   'useAttrs',
   'useBindModel',
+  'useDisposables',
   'useIntersectionObserver',
   'useModel',
   'useNativeInstance',

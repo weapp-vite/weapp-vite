@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, mergeModels, useAttrs, useBindModel, useIntersectionObserver, useModel, useNativeInstance, usePageRouter, useRouter, useSlots, useUpdatePerformanceListener } from '@/index'
+import { defineComponent, mergeModels, useAttrs, useBindModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, usePageRouter, useRouter, useSlots, useUpdatePerformanceListener } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -19,7 +19,7 @@ describe('runtime: vue compat helpers', () => {
     expect(mergeModels(null as any, { a: 1 })).toEqual({ a: 1 })
   })
 
-  it('useAttrs/useSlots/useModel/useNativeInstance/useIntersectionObserver/useRouter/usePageRouter/useUpdatePerformanceListener throw when called outside setup', () => {
+  it('useAttrs/useSlots/useModel/useNativeInstance/useIntersectionObserver/useRouter/usePageRouter/useUpdatePerformanceListener/useDisposables throw when called outside setup', () => {
     expect(() => useAttrs()).toThrow()
     expect(() => useSlots()).toThrow()
     expect(() => useModel({}, 'modelValue')).toThrow()
@@ -28,6 +28,7 @@ describe('runtime: vue compat helpers', () => {
     expect(() => useRouter()).toThrow()
     expect(() => usePageRouter()).toThrow()
     expect(() => useUpdatePerformanceListener(() => {})).toThrow()
+    expect(() => useDisposables()).toThrow()
   })
 
   it('useAttrs/useSlots expose setup context values, useModel emits update event', () => {
@@ -589,5 +590,71 @@ describe('runtime: vue compat helpers', () => {
     }
     opts.lifetimes.created.call(inst)
     opts.lifetimes.attached.call(inst)
+  })
+
+  it('useDisposables auto runs registered cleanups on teardown', () => {
+    const disposeFn = vi.fn()
+    const stopFn = vi.fn()
+    const abortFn = vi.fn()
+    let bagRef: ReturnType<typeof useDisposables> | undefined
+
+    defineComponent({
+      setup() {
+        const bag = useDisposables()
+        bagRef = bag
+        bag.add(disposeFn)
+        bag.add({ stop: stopFn })
+        const removeAbort = bag.add({ abort: abortFn })
+        removeAbort()
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    opts.lifetimes.detached.call(inst)
+    opts.lifetimes.detached.call(inst)
+    bagRef?.dispose()
+
+    expect(disposeFn).toHaveBeenCalledTimes(1)
+    expect(stopFn).toHaveBeenCalledTimes(1)
+    expect(abortFn).toHaveBeenCalledTimes(0)
+  })
+
+  it('useDisposables timer helpers register clear handlers', () => {
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+    const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval')
+
+    try {
+      defineComponent({
+        setup() {
+          const bag = useDisposables()
+          bag.setTimeout(() => {}, 30_000)
+          bag.setInterval(() => {}, 30_000)
+          return {}
+        },
+      })
+
+      const opts = registeredComponents[0]
+      const inst: any = {
+        setData() {},
+        properties: {},
+      }
+      opts.lifetimes.created.call(inst)
+      opts.lifetimes.attached.call(inst)
+      opts.lifetimes.detached.call(inst)
+
+      expect(clearTimeoutSpy).toHaveBeenCalledTimes(1)
+      expect(clearIntervalSpy).toHaveBeenCalledTimes(1)
+    }
+    finally {
+      clearTimeoutSpy.mockRestore()
+      clearIntervalSpy.mockRestore()
+    }
   })
 })

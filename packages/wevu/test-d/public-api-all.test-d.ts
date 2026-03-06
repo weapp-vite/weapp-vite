@@ -166,6 +166,7 @@ type RuntimeApiName
     | 'unref'
     | 'useAttrs'
     | 'useBindModel'
+    | 'useDisposables'
     | 'useIntersectionObserver'
     | 'useModel'
     | 'useNativeInstance'
