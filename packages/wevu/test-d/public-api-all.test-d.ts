@@ -62,6 +62,8 @@ import { expectType } from 'tsd'
 
 type CompilerEntry = typeof import('wevu/compiler')
 type WevuJsxRuntime = typeof import('wevu/jsx-runtime')
+type WevuStoreEntry = typeof import('wevu/store')
+type WevuApiEntry = typeof import('wevu/api')
 
 type RuntimeApiName
   = | 'addMutationRecorder'
@@ -198,6 +200,12 @@ expectType<CompilerEntry>(compilerEntry)
 
 declare const jsxRuntimeEntry: WevuJsxRuntime
 expectType<WevuJsxRuntime>(jsxRuntimeEntry)
+
+declare const storeEntry: WevuStoreEntry
+expectType<WevuStoreEntry>(storeEntry)
+
+declare const apiEntry: WevuApiEntry
+expectType<WevuApiEntry>(apiEntry)
 
 interface PublicApiPropsOptions extends ComponentPropsOptions {
   label: StringConstructor

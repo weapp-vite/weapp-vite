@@ -47,6 +47,20 @@
         "types": "./dist/jsx-runtime.d.mts",
         "default": "./dist/jsx-runtime.mjs"
       }
+    },
+    "./store": {
+      "types": "./dist/store.d.mts",
+      "import": {
+        "types": "./dist/store.d.mts",
+        "default": "./dist/store.mjs"
+      }
+    },
+    "./api": {
+      "types": "./dist/api.d.mts",
+      "import": {
+        "types": "./dist/api.d.mts",
+        "default": "./dist/api.mjs"
+      }
     }
   },
   "main": "./dist/index.mjs",
@@ -77,6 +91,7 @@
     "miniprogram-api-typings": "^5.0.0"
   },
   "dependencies": {
+    "@wevu/api": "workspace:*",
     "@wevu/compiler": "workspace:*",
     "vue": "catalog:"
   }

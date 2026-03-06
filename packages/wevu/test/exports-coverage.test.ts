@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import * as api from '@/api'
 import * as root from '@/index'
 import * as reactivity from '@/reactivity'
 import * as runtime from '@/runtime'
@@ -124,6 +125,10 @@ const ROOT_RUNTIME_EXPORTS = [
 
 describe('export barrels', () => {
   it('loads public exports', () => {
+    expect(api).toMatchObject({
+      createWeapi: expect.any(Function),
+      wpi: expect.any(Object),
+    })
     expect(reactivity).toBeTruthy()
     expect(runtime).toBeTruthy()
     expect(store).toBeTruthy()

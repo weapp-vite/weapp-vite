@@ -5,6 +5,8 @@ export default defineConfig({
     './src/index.ts',
     './src/compiler',
     './src/jsx-runtime',
+    './src/store',
+    './src/api',
   ],
   format: ['esm'],
   target: 'es2018',
