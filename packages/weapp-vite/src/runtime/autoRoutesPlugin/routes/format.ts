@@ -61,5 +61,11 @@ export function createTypedRouterDefinition(routes: AutoRoutes) {
     '    export default routes;',
     '}',
     '',
+    'declare module \'wevu\' {',
+    '    interface WevuTypedRouterRouteMap {',
+    '        entries: import(\'weapp-vite/auto-routes\').AutoRoutesEntries[number];',
+    '    }',
+    '}',
+    '',
   ].join('\n')
 }

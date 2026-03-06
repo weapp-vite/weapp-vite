@@ -19,6 +19,9 @@ describe('createTypedRouterDefinition', () => {
     expect(dts).toContain('        "pages/logs/index"')
     expect(dts).toContain('    export type AutoRoutesEntries = [')
     expect(dts).toContain('export type AutoRoutesSubPackages = [];')
+    expect(dts).toContain('declare module \'wevu\' {')
+    expect(dts).toContain('interface WevuTypedRouterRouteMap {')
+    expect(dts).toContain('entries: import(\'weapp-vite/auto-routes\').AutoRoutesEntries[number];')
   })
 
   it('preserves subpackage tuple literal shape', () => {

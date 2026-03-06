@@ -50,7 +50,9 @@ export type {
   PropType,
   SetupContext,
   SetupContextNativeInstance,
+  SetupContextRouter,
   SetupFunction,
+  WevuTypedRouterRouteMap,
 } from './types/props'
 export type {
   AppConfig,

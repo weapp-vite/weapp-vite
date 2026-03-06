@@ -81,12 +81,14 @@ console.log(routes.subPackages) // 分包 root 与页面列表
 ```ts
 import type { AutoRoutes } from 'weapp-vite/auto-routes'
 
-function jump(route: AutoRoutes.Pages) {
+function jump(route: AutoRoutes['entries'][number]) {
   wx.navigateTo({ url: route })
 }
 ```
 
 随着文件结构变化，类型声明也会自动刷新，无需手动维护。
+
+如果你在项目里使用 `wevu` 的 `useRouter()/usePageRouter()`，`typed-router.d.ts` 还会自动注入模块增强，让 Router 的 `url` 参数继承自动路由联合类型（同时保留 `./detail`、`../detail` 这类相对路径写法）。
 
 ## 写入 `app.json` 的方式
 

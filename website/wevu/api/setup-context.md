@@ -55,12 +55,14 @@ keywords:
 
 - 用途：获取当前组件路径语义的 Router 对象。
 - 行为：优先使用 `this.router`；不可用时回退 `this.pageRouter`；低版本基础库（`< 2.16.1`）再回退全局 `wx.*` 路由方法。
+- 类型：可通过声明合并 `WevuTypedRouterRouteMap.entries` 收窄 `url` 字面量（`weapp-vite autoRoutes` 会自动注入该增强）。
 - 源码：`runtime/vueCompat.ts`。
 
 ### `usePageRouter()` {#usepagerouter}
 
 - 用途：获取当前页面路径语义的 Router 对象。
 - 行为：优先使用 `this.pageRouter`；不可用时回退 `this.router`；低版本基础库（`< 2.16.1`）再回退全局 `wx.*` 路由方法。
+- 类型：与 `useRouter()` 共享 `WevuTypedRouterRouteMap.entries` 收窄能力。
 - 源码：`runtime/vueCompat.ts`。
 
 ### `useBindModel()` {#usebindmodel}
