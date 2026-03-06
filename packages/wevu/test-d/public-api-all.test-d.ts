@@ -171,6 +171,7 @@ type RuntimeApiName
     | 'useModel'
     | 'useNativeInstance'
     | 'usePageRouter'
+    | 'usePageScrollThrottle'
     | 'useRouter'
     | 'useSlots'
     | 'useTemplateRef'
