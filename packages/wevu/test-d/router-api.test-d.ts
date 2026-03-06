@@ -54,6 +54,15 @@ expectType<Readonly<RouteLocationNormalizedLoaded>>(route)
 
 const navigationOptions: UseRouterOptions = {
   tabBarEntries: ['pages/home/index'],
+  parseQuery: (search) => {
+    return {
+      from: search || null,
+    }
+  },
+  stringifyQuery: (query) => {
+    const from = (query as Record<string, unknown>).from
+    return typeof from === 'string' ? `from=${from}` : ''
+  },
   rejectOnError: true,
 }
 const navigation = useRouter(navigationOptions)

@@ -23,6 +23,8 @@ export type RouteParamValue = string
 export type RouteParamValueRaw = RouteParamValue | number | boolean | null | undefined
 export type RouteParams = Record<string, RouteParamValue | RouteParamValue[]>
 export type RouteParamsRaw = Record<string, RouteParamValueRaw | RouteParamValueRaw[]>
+export type RouteQueryParser = (search: string) => LocationQueryRaw | LocationQuery
+export type RouteQueryStringifier = (query: LocationQueryRaw | LocationQuery) => string
 
 export type RouteLocationRaw = string | {
   path?: string
@@ -109,6 +111,8 @@ export type NavigationErrorHandler = (
 export interface UseRouterOptions {
   tabBarEntries?: readonly (TypedRouterTabBarUrl | string)[]
   maxRedirects?: number
+  parseQuery?: RouteQueryParser
+  stringifyQuery?: RouteQueryStringifier
   /**
    * 异常型导航失败时是否以 Promise reject 抛出失败对象。
    *
@@ -134,6 +138,11 @@ interface MiniProgramPageLike {
   route?: string
   __route__?: string
   options?: Record<string, unknown>
+}
+
+interface RouteResolveCodec {
+  parseQuery: RouteQueryParser
+  stringifyQuery: RouteQueryStringifier
 }
 
 function decodeQuerySegment(value: string): string {
@@ -297,6 +306,11 @@ export function stringifyQuery(query: LocationQueryRaw | LocationQuery = {}): st
   return segments.join('&')
 }
 
+const DEFAULT_ROUTE_RESOLVE_CODEC: RouteResolveCodec = {
+  parseQuery,
+  stringifyQuery,
+}
+
 function normalizePathSegments(path: string): string[] {
   const segments: string[] = []
   for (const segment of path.split('/')) {
@@ -348,7 +362,10 @@ function resolvePath(path: string, currentPath: string): string {
   return normalizePathSegments(path).join('/')
 }
 
-function parsePathInput(input: string): { path: string, query: LocationQuery, hash: string } {
+function parsePathInput(
+  input: string,
+  codec: RouteResolveCodec = DEFAULT_ROUTE_RESOLVE_CODEC,
+): { path: string, query: LocationQuery, hash: string } {
   const hashIndex = input.indexOf('#')
   const withoutHash = hashIndex >= 0 ? input.slice(0, hashIndex) : input
   const hash = hashIndex >= 0 ? normalizeHash(input.slice(hashIndex + 1)) : ''
@@ -364,7 +381,7 @@ function parsePathInput(input: string): { path: string, query: LocationQuery, ha
 
   return {
     path: withoutHash.slice(0, queryIndex),
-    query: parseQuery(withoutHash.slice(queryIndex + 1)),
+    query: normalizeQuery(codec.parseQuery(withoutHash.slice(queryIndex + 1))),
     hash,
   }
 }
@@ -375,9 +392,10 @@ function createRouteLocation(
   hash = '',
   name?: string,
   params: RouteParams = {},
+  queryStringifier: RouteQueryStringifier = stringifyQuery,
 ): RouteLocationNormalizedLoaded {
   const normalizedPath = resolvePath(path, '')
-  const queryString = stringifyQuery(query)
+  const queryString = queryStringifier(query)
   const fullPathBase = normalizedPath ? `/${normalizedPath}` : '/'
   const normalizedHash = normalizeHash(hash)
   const fullPath = queryString ? `${fullPathBase}?${queryString}` : fullPathBase
@@ -466,9 +484,12 @@ function createAbsoluteRoutePath(path: string): string {
   return path ? `/${path}` : '/'
 }
 
-function createNativeRouteUrl(target: RouteLocationNormalizedLoaded): string {
+function createNativeRouteUrl(
+  target: RouteLocationNormalizedLoaded,
+  queryStringifier: RouteQueryStringifier = stringifyQuery,
+): string {
   const basePath = createAbsoluteRoutePath(target.path)
-  const queryString = stringifyQuery(target.query)
+  const queryString = queryStringifier(target.query)
   return queryString ? `${basePath}?${queryString}` : basePath
 }
 
@@ -579,6 +600,7 @@ function isRouteLocationRawCandidate(value: unknown): value is RouteLocationRaw 
 async function runNavigationGuards(
   guards: ReadonlySet<NavigationGuard>,
   context: NavigationGuardContext,
+  resolveRoute: (to: RouteLocationRaw, currentPath: string) => RouteLocationNormalizedLoaded = resolveRouteLocation,
 ): Promise<GuardPipelineResult> {
   for (const guard of guards) {
     try {
@@ -614,7 +636,7 @@ async function runNavigationGuards(
         }
         return {
           status: 'redirect',
-          target: resolveRouteLocation(result.to, context.to.path),
+          target: resolveRoute(result.to, context.to.path),
           replace: result.replace,
         }
       }
@@ -632,7 +654,7 @@ async function runNavigationGuards(
         }
         return {
           status: 'redirect',
-          target: resolveRouteLocation(result, context.to.path),
+          target: resolveRoute(result, context.to.path),
         }
       }
     }
@@ -747,15 +769,19 @@ function shouldEmitNavigationError(failure: NavigationFailure): boolean {
   return false
 }
 
-export function resolveRouteLocation(to: RouteLocationRaw, currentPath = ''): RouteLocationNormalizedLoaded {
+export function resolveRouteLocation(
+  to: RouteLocationRaw,
+  currentPath = '',
+  codec: RouteResolveCodec = DEFAULT_ROUTE_RESOLVE_CODEC,
+): RouteLocationNormalizedLoaded {
   if (typeof to === 'string') {
-    const parsed = parsePathInput(to)
+    const parsed = parsePathInput(to, codec)
     const path = resolvePath(parsed.path, currentPath)
-    return createRouteLocation(path, parsed.query, parsed.hash)
+    return createRouteLocation(path, parsed.query, parsed.hash, undefined, {}, codec.stringifyQuery)
   }
 
   const parsedFromFullPath = typeof to.fullPath === 'string'
-    ? parsePathInput(to.fullPath)
+    ? parsePathInput(to.fullPath, codec)
     : undefined
 
   const rawPath = to.path ?? parsedFromFullPath?.path ?? currentPath
@@ -769,7 +795,7 @@ export function resolveRouteLocation(to: RouteLocationRaw, currentPath = ''): Ro
     ? normalizeRouteParams(to.params)
     : {}
 
-  return createRouteLocation(path, query, hash, name, params)
+  return createRouteLocation(path, query, hash, name, params, codec.stringifyQuery)
 }
 
 export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
@@ -836,14 +862,22 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   const errorHandlers = new Set<NavigationErrorHandler>()
   const maxRedirects = options.maxRedirects ?? 10
   const rejectOnError = options.rejectOnError ?? true
+  const routeResolveCodec: RouteResolveCodec = {
+    parseQuery: options.parseQuery ?? parseQuery,
+    stringifyQuery: options.stringifyQuery ?? stringifyQuery,
+  }
   const tabBarPathSet = new Set(
     (options.tabBarEntries ?? [])
       .map(path => resolvePath(path, ''))
       .filter(Boolean),
   )
 
+  function resolveWithCodec(to: RouteLocationRaw, currentPath: string): RouteLocationNormalizedLoaded {
+    return resolveRouteLocation(to, currentPath, routeResolveCodec)
+  }
+
   function resolve(to: RouteLocationRaw): RouteLocationNormalizedLoaded {
-    return resolveRouteLocation(to, route.path)
+    return resolveWithCodec(to, route.path)
   }
 
   function isTabBarTarget(target: RouteLocationNormalizedLoaded): boolean {
@@ -902,6 +936,15 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       target,
       from,
       `Navigation redirected more than ${maxRedirects} times`,
+    )
+  }
+
+  function createHashOnlyNavigationFailure(target: RouteLocationNormalizedLoaded, from: RouteLocationNormalizedLoaded): NavigationFailure {
+    return createNavigationFailure(
+      NavigationFailureType.aborted,
+      target,
+      from,
+      'Hash-only navigation is not supported in mini-program router',
     )
   }
 
@@ -966,6 +1009,12 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
 
     while (true) {
       const tabBarTarget = isTabBarTarget(currentTarget)
+      const sameNativeLocation = createNativeRouteUrl(currentTarget, routeResolveCodec.stringifyQuery)
+        === createNativeRouteUrl(from, routeResolveCodec.stringifyQuery)
+      if (sameNativeLocation && currentTarget.hash !== from.hash) {
+        return createNavigationRunResult(currentMode, from, currentTarget, createHashOnlyNavigationFailure(currentTarget, from))
+      }
+
       const duplicated = tabBarTarget
         ? currentTarget.path === from.path
         : currentTarget.fullPath === from.fullPath
@@ -982,7 +1031,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
         to: currentTarget,
         from,
         nativeRouter,
-      })
+      }, resolveWithCodec)
 
       if (beforeEachResult.status === 'failure') {
         return createNavigationRunResult(currentMode, from, currentTarget, beforeEachResult.failure)
@@ -1010,7 +1059,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
         to: currentTarget,
         from,
         nativeRouter,
-      })
+      }, resolveWithCodec)
 
       if (beforeResolveResult.status === 'failure') {
         return createNavigationRunResult(currentMode, from, currentTarget, beforeResolveResult.failure)
@@ -1055,7 +1104,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       const result = await executeNavigationMethod(
         nativeMethod as (options: Record<string, any>) => unknown,
         {
-          url: createNativeRouteUrl(currentTarget),
+          url: createNativeRouteUrl(currentTarget, routeResolveCodec.stringifyQuery),
         },
         currentTarget,
         from,
@@ -1069,14 +1118,14 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
 
   async function push(to: RouteLocationRaw): Promise<void | NavigationFailure> {
     const from = snapshotRouteLocation(route)
-    const target = resolveRouteLocation(to, from.path)
+    const target = resolveWithCodec(to, from.path)
     const result = await navigateWithTarget('push', target, from)
     return settleNavigationResult(result)
   }
 
   async function replace(to: RouteLocationRaw): Promise<void | NavigationFailure> {
     const from = snapshotRouteLocation(route)
-    const target = resolveRouteLocation(to, from.path)
+    const target = resolveWithCodec(to, from.path)
     const result = await navigateWithTarget('replace', target, from)
     return settleNavigationResult(result)
   }

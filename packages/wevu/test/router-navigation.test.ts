@@ -101,6 +101,95 @@ describe('router navigation helpers', () => {
     }))
   })
 
+  it('returns aborted failure for hash-only navigation changes', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {
+          tab: 'all',
+        },
+      },
+    ])
+
+    const router = useRouter()
+    const result = await router.push('/pages/home/index?tab=all#comment')
+    expect(isNavigationFailure(result, NavigationFailureType.aborted)).toBe(true)
+    expect(result?.message).toContain('Hash-only navigation is not supported')
+    expect(navigateTo).not.toHaveBeenCalled()
+  })
+
+  it('supports custom parseQuery and stringifyQuery through useRouter options', async () => {
+    const parseQueryHook = vi.fn(() => ({
+      from: 'codec',
+    }))
+    const stringifyQueryHook = vi.fn((query: any) => {
+      if (query.from) {
+        return `from=${query.from}`
+      }
+      return ''
+    })
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      parseQuery: parseQueryHook,
+      stringifyQuery: stringifyQueryHook,
+    })
+
+    const resolved = router.resolve('/pages/detail/index?scene=1')
+    expect(parseQueryHook).toHaveBeenCalledWith('scene=1')
+    expect(resolved.query).toEqual({
+      from: 'codec',
+    })
+    expect(resolved.fullPath).toBe('/pages/detail/index?from=codec')
+
+    const result = await router.push('/pages/detail/index?scene=1')
+    expect(result).toBeUndefined()
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/detail/index?from=codec',
+    }))
+  })
+
   it('replace returns duplicated failure when navigating to same location', async () => {
     const redirectTo = vi.fn()
     const instance = {
