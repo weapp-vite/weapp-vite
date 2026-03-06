@@ -6,6 +6,8 @@ const registeredComponents: Record<string, any>[] = []
 beforeEach(() => {
   registeredComponents.length = 0
   delete (globalThis as any).wx
+  delete (globalThis as any).my
+  delete (globalThis as any).tt
   ;(globalThis as any).Component = vi.fn((options: Record<string, any>) => {
     registeredComponents.push(options)
   })
@@ -284,6 +286,183 @@ describe('runtime: vue compat helpers', () => {
 
     expect(wxNavigateTo).toHaveBeenCalledWith({ url: '/pages/a/index' })
     expect(wxRedirectTo).toHaveBeenCalledWith({ url: '/pages/b/index' })
+  })
+
+  it('useRouter/usePageRouter fallback to complementary instance accessor before global fallback', () => {
+    const pageRouterOnly = {
+      switchTab: vi.fn(),
+      reLaunch: vi.fn(),
+      redirectTo: vi.fn(),
+      navigateTo: vi.fn(),
+      navigateBack: vi.fn(),
+    }
+    const componentRouterOnly = {
+      switchTab: vi.fn(),
+      reLaunch: vi.fn(),
+      redirectTo: vi.fn(),
+      navigateTo: vi.fn(),
+      navigateBack: vi.fn(),
+    }
+
+    defineComponent({
+      setup() {
+        expect(useRouter()).toBe(pageRouterOnly)
+        expect(usePageRouter()).toBe(pageRouterOnly)
+        return {}
+      },
+    })
+
+    defineComponent({
+      setup() {
+        expect(useRouter()).toBe(componentRouterOnly)
+        expect(usePageRouter()).toBe(componentRouterOnly)
+        return {}
+      },
+    })
+
+    const pageRouterOnlyOptions = registeredComponents[0]
+    const componentRouterOnlyOptions = registeredComponents[1]
+    const pageRouterOnlyInstance: any = {
+      setData() {},
+      properties: {},
+      pageRouter: pageRouterOnly,
+    }
+    const componentRouterOnlyInstance: any = {
+      setData() {},
+      properties: {},
+      router: componentRouterOnly,
+    }
+
+    pageRouterOnlyOptions.lifetimes.created.call(pageRouterOnlyInstance)
+    pageRouterOnlyOptions.lifetimes.attached.call(pageRouterOnlyInstance)
+    componentRouterOnlyOptions.lifetimes.created.call(componentRouterOnlyInstance)
+    componentRouterOnlyOptions.lifetimes.attached.call(componentRouterOnlyInstance)
+  })
+
+  it('useRouter/usePageRouter fallback to my route methods when wx is unavailable', () => {
+    const myContexts: any[] = []
+    const myGlobal = {
+      switchTab: vi.fn(function (this: any, option: any) {
+        myContexts.push(this)
+        return option
+      }),
+      reLaunch: vi.fn(function (this: any, option: any) {
+        myContexts.push(this)
+        return option
+      }),
+      redirectTo: vi.fn(function (this: any, option: any) {
+        myContexts.push(this)
+        return option
+      }),
+      navigateTo: vi.fn(function (this: any, option: any) {
+        myContexts.push(this)
+        return option
+      }),
+      navigateBack: vi.fn(function (this: any, option: any) {
+        myContexts.push(this)
+        return option
+      }),
+    }
+    ;(globalThis as any).my = myGlobal
+
+    defineComponent({
+      setup() {
+        const router = useRouter()
+        const pageRouter = usePageRouter()
+        router.navigateTo({ url: '/pages/fallback-my/index' })
+        pageRouter.navigateBack({ delta: 1 })
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(myGlobal.navigateTo).toHaveBeenCalledWith({ url: '/pages/fallback-my/index' })
+    expect(myGlobal.navigateBack).toHaveBeenCalledWith({ delta: 1 })
+    expect(myContexts).toHaveLength(2)
+    expect(myContexts.every(context => context === myGlobal)).toBe(true)
+  })
+
+  it('useRouter/usePageRouter fallback to tt route methods when wx/my are unavailable', () => {
+    const ttContexts: any[] = []
+    const ttGlobal = {
+      switchTab: vi.fn(function (this: any, option: any) {
+        ttContexts.push(this)
+        return option
+      }),
+      reLaunch: vi.fn(function (this: any, option: any) {
+        ttContexts.push(this)
+        return option
+      }),
+      redirectTo: vi.fn(function (this: any, option: any) {
+        ttContexts.push(this)
+        return option
+      }),
+      navigateTo: vi.fn(function (this: any, option: any) {
+        ttContexts.push(this)
+        return option
+      }),
+      navigateBack: vi.fn(function (this: any, option: any) {
+        ttContexts.push(this)
+        return option
+      }),
+    }
+    ;(globalThis as any).tt = ttGlobal
+
+    defineComponent({
+      setup() {
+        const router = useRouter()
+        const pageRouter = usePageRouter()
+        router.reLaunch({ url: '/pages/fallback-tt/index' })
+        pageRouter.redirectTo({ url: '/pages/fallback-tt/detail' })
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(ttGlobal.reLaunch).toHaveBeenCalledWith({ url: '/pages/fallback-tt/index' })
+    expect(ttGlobal.redirectTo).toHaveBeenCalledWith({ url: '/pages/fallback-tt/detail' })
+    expect(ttContexts).toHaveLength(2)
+    expect(ttContexts.every(context => context === ttGlobal)).toBe(true)
+  })
+
+  it('useRouter/usePageRouter throw when runtime global route methods are incomplete', () => {
+    ;(globalThis as any).wx = {
+      switchTab: vi.fn(),
+      reLaunch: vi.fn(),
+      redirectTo: vi.fn(),
+      navigateTo: vi.fn(),
+      // navigateBack 缺失，视为不支持完整 Router 能力
+    }
+
+    defineComponent({
+      setup() {
+        expect(() => useRouter()).toThrow('当前运行环境不支持 Router')
+        expect(() => usePageRouter()).toThrow('当前运行环境不支持 Router')
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
   })
 
   it('useRouter/usePageRouter throw when Router and fallback route methods are both unavailable', () => {
