@@ -113,6 +113,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'useModel',
   'useNativeInstance',
   'usePageRouter',
+  'usePageScrollThrottle',
   'useRouter',
   'useSlots',
   'useTemplateRef',

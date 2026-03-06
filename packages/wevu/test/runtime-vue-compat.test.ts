@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, mergeModels, useAttrs, useBindModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, usePageRouter, useRouter, useSlots, useUpdatePerformanceListener } from '@/index'
+import { defineComponent, mergeModels, useAttrs, useBindModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, usePageRouter, usePageScrollThrottle, useRouter, useSlots, useUpdatePerformanceListener } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -19,7 +19,7 @@ describe('runtime: vue compat helpers', () => {
     expect(mergeModels(null as any, { a: 1 })).toEqual({ a: 1 })
   })
 
-  it('useAttrs/useSlots/useModel/useNativeInstance/useIntersectionObserver/useRouter/usePageRouter/useUpdatePerformanceListener/useDisposables throw when called outside setup', () => {
+  it('useAttrs/useSlots/useModel/useNativeInstance/useIntersectionObserver/useRouter/usePageRouter/usePageScrollThrottle/useUpdatePerformanceListener/useDisposables throw when called outside setup', () => {
     expect(() => useAttrs()).toThrow()
     expect(() => useSlots()).toThrow()
     expect(() => useModel({}, 'modelValue')).toThrow()
@@ -27,6 +27,7 @@ describe('runtime: vue compat helpers', () => {
     expect(() => useIntersectionObserver()).toThrow()
     expect(() => useRouter()).toThrow()
     expect(() => usePageRouter()).toThrow()
+    expect(() => usePageScrollThrottle(() => {})).toThrow()
     expect(() => useUpdatePerformanceListener(() => {})).toThrow()
     expect(() => useDisposables()).toThrow()
   })
@@ -655,6 +656,48 @@ describe('runtime: vue compat helpers', () => {
     finally {
       clearTimeoutSpy.mockRestore()
       clearIntervalSpy.mockRestore()
+    }
+  })
+
+  it('usePageScrollThrottle throttles page scroll callbacks and clears pending timer on detach', () => {
+    vi.useFakeTimers()
+    const calls: number[] = []
+
+    try {
+      defineComponent({
+        features: {
+          enableOnPageScroll: true,
+        },
+        setup() {
+          usePageScrollThrottle((opt) => {
+            calls.push(Number(opt?.scrollTop ?? -1))
+          }, { interval: 100 })
+          return {}
+        },
+      })
+
+      const opts = registeredComponents[0]
+      const inst: any = {
+        setData() {},
+        properties: {},
+      }
+      opts.lifetimes.created.call(inst)
+      opts.lifetimes.attached.call(inst)
+
+      opts.onPageScroll.call(inst, { scrollTop: 1 })
+      opts.onPageScroll.call(inst, { scrollTop: 2 })
+      expect(calls).toEqual([1])
+
+      vi.advanceTimersByTime(100)
+      expect(calls).toEqual([1, 2])
+
+      opts.onPageScroll.call(inst, { scrollTop: 3 })
+      opts.lifetimes.detached.call(inst)
+      vi.advanceTimersByTime(200)
+      expect(calls).toEqual([1, 2])
+    }
+    finally {
+      vi.useRealTimers()
     }
   })
 })

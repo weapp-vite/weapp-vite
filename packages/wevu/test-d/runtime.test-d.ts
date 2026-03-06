@@ -48,6 +48,7 @@ import {
   useIntersectionObserver,
   useNativeInstance,
   usePageRouter,
+  usePageScrollThrottle,
   useRouter,
   useUpdatePerformanceListener,
 
@@ -168,6 +169,8 @@ defineComponent({
     expectType<void>(nativeInstance.triggerEvent('from-helper', { ok: true }))
     const router = useRouter()
     const pageRouter = usePageRouter()
+    const stopPageScroll = usePageScrollThrottle((_opt) => {}, { interval: 120, leading: true, trailing: true })
+    expectType<() => void>(stopPageScroll)
     expectType<SetupContextRouter>(router)
     expectType<SetupContextRouter>(pageRouter)
     router.navigateTo({ url: '/pages/demo/index' })
