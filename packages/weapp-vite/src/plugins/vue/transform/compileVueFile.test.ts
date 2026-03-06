@@ -1,5 +1,12 @@
+import os from 'node:os'
+import fs from 'fs-extra'
+import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { compileVueFile } from 'wevu/compiler'
+
+async function createTempProject() {
+  return await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-compile-vue-'))
+}
 
 describe('compileVueFile - auto import tags', () => {
   it('collects PascalCase tags for autoImportTags', async () => {
@@ -75,6 +82,34 @@ defineOptions({
     expect(result.script).toContain('onChange(event)')
     expect(result.script).toContain('methods: Object.assign({},')
     expect(result.script).toContain('?.methods || {}')
+  })
+
+  it('keeps imported behavior identifier in defineOptions when behavior module uses native Behavior()', async () => {
+    const projectDir = await createTempProject()
+    const behaviorFile = path.join(projectDir, 'behavior.ts')
+    const filename = path.join(projectDir, 'behavior-consumer.vue')
+    const source = `
+<script setup lang="ts">
+import FooBehavior from './behavior'
+
+defineOptions({
+  behaviors: [FooBehavior],
+})
+</script>
+<template><view /></template>
+      `.trim()
+
+    await fs.writeFile(
+      behaviorFile,
+      `export default Behavior({ methods: { ping() { return 'ok' } } })\n`,
+      'utf8',
+    )
+
+    const result = await compileVueFile(source, filename)
+
+    expect(result.script).toContain('import FooBehavior from')
+    expect(result.script).toContain('behaviors: [FooBehavior]')
+    expect(result.script).toContain('createWevuComponent')
   })
 
   it('keeps kebab-case component events on colon-prefixed bindings', async () => {
