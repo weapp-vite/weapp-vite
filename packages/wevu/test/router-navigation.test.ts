@@ -132,6 +132,118 @@ describe('router navigation helpers', () => {
     expect(isNavigationFailure(result, NavigationFailureType.cancelled)).toBe(true)
   })
 
+  it('push auto-switches to tabBar entries', async () => {
+    const switchTab = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const navigateTo = vi.fn()
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab,
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/profile/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouterNavigation({
+      tabBarEntries: ['pages/home/index'],
+    })
+
+    const result = await router.push('/pages/home/index')
+    expect(result).toBeUndefined()
+    expect(switchTab).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/home/index',
+    }))
+    expect(navigateTo).not.toHaveBeenCalled()
+  })
+
+  it('returns aborted failure when tabBar navigation contains query', async () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/profile/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouterNavigation({
+      tabBarEntries: ['pages/home/index'],
+    })
+    const result = await router.push('/pages/home/index?from=profile')
+
+    expect(isNavigationFailure(result, NavigationFailureType.aborted)).toBe(true)
+  })
+
+  it('beforeEach can abort and unregister guards', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const guard = vi.fn(() => false)
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouterNavigation()
+    const removeGuard = router.beforeEach(guard)
+
+    const blocked = await router.push('/pages/detail/index')
+    expect(isNavigationFailure(blocked, NavigationFailureType.aborted)).toBe(true)
+    expect(navigateTo).not.toHaveBeenCalled()
+    expect(guard).toHaveBeenCalledTimes(1)
+
+    removeGuard()
+
+    const allowed = await router.push('/pages/detail/index')
+    expect(allowed).toBeUndefined()
+    expect(navigateTo).toHaveBeenCalledTimes(1)
+  })
+
   it('resolve uses latest route state after route hooks update', () => {
     const instance = {
       __wevu: {},
