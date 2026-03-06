@@ -134,6 +134,8 @@ export interface RouterNavigation {
   push: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
   replace: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
   back: (delta?: number) => Promise<void | NavigationFailure>
+  hasRoute: (name: string) => boolean
+  getRoutes: () => readonly NamedRouteRecord[]
   beforeEach: (guard: NavigationGuard) => () => void
   beforeResolve: (guard: NavigationGuard) => () => void
   afterEach: (hook: NavigationAfterEach) => () => void
@@ -154,6 +156,7 @@ interface RouteResolveCodec {
 interface NamedRouteLookup {
   pathByName: ReadonlyMap<string, string>
   nameByStaticPath: ReadonlyMap<string, string>
+  records: readonly NamedRouteRecord[]
 }
 
 interface PathParamToken {
@@ -424,9 +427,17 @@ function createNamedRouteLookup(namedRoutes?: NamedRoutes): NamedRouteLookup {
     }
   }
 
+  const records = Array.from(pathByName.entries()).map(([name, normalizedPath]) => {
+    return {
+      name,
+      path: normalizedPath ? `/${normalizedPath}` : '/',
+    }
+  })
+
   return {
     pathByName,
     nameByStaticPath,
+    records,
   }
 }
 
@@ -1065,6 +1076,17 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     return resolveWithCodec(to, route.path)
   }
 
+  function hasRoute(name: string): boolean {
+    return namedRouteLookup.pathByName.has(name)
+  }
+
+  function getRoutes(): readonly NamedRouteRecord[] {
+    return namedRouteLookup.records.map(record => ({
+      name: record.name,
+      path: record.path,
+    }))
+  }
+
   function isTabBarTarget(target: RouteLocationNormalizedLoaded): boolean {
     return tabBarPathSet.has(target.path)
   }
@@ -1409,6 +1431,8 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     push,
     replace,
     back,
+    hasRoute,
+    getRoutes,
     beforeEach,
     beforeResolve,
     afterEach,
