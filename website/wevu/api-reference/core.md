@@ -35,7 +35,7 @@ keywords:
 | `defineSlots`   | `VNode`                                      | 声明 slots 类型。                                       |
 | `defineExpose`  | `ComponentPublicInstance`                    | 暴露实例字段给父组件引用。                              |
 | `defineModel`   | `ModelBinding`                               | 定义 `v-model` 对应模型（含默认键）。                   |
-| `defineOptions` | `MiniProgramComponentOptions`                | 在 `<script setup>` 中声明组件选项。                    |
+| `defineOptions` | `MiniProgramComponentOptions`                | 在 `<script setup>` 中声明组件选项（含 `behaviors`）。  |
 | `mergeModels`   | `ModelBindingPayload`                        | 合并多路 model 绑定结果。                               |
 | `useModel`      | `ModelBinding`                               | 运行时读取/写入某个 model。                             |
 

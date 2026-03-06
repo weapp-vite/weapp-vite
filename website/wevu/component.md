@@ -55,6 +55,44 @@ keywords:
 
 > 小提示：如果你在 Wevu 里需要使用“原生 this”（例如访问 `this.setData`、`this.triggerEvent`、`selectComponent` 等），可以在 `setup(props, ctx)` 里通过 `ctx.instance` 访问小程序实例。
 
+## Behavior 迁移补充（SFC 场景）
+
+结论先说：
+
+- `wevu` 运行时不会重写 `behaviors` 合并规则，`behaviors` 仍由小程序原生 `Component()` 处理。
+- 迁移原生 `Behavior()` 时，推荐优先保持“Behavior 文件 + 组件引用”模式，不要把 behavior 内容手动改写成 Wevu 私有逻辑。
+
+### 写法 1：`<script>` + `defineComponent`（最直观）
+
+```vue
+<script lang="ts">
+import { defineComponent } from 'wevu'
+import SkylineBehavior from '@/behaviors/skyline'
+
+export default defineComponent({
+  behaviors: [SkylineBehavior],
+})
+</script>
+```
+
+### 写法 2：`<script setup>` + `defineOptions`
+
+```vue
+<script setup lang="ts">
+import SkylineBehavior from '@/behaviors/skyline'
+
+defineOptions({
+  behaviors: [SkylineBehavior],
+})
+</script>
+```
+
+补充说明：
+
+- 如果 `behaviors` 里是内建 behavior（例如 `wx://component-export`），直接写字符串数组即可。
+- 如果 `behaviors` 来自原生 `Behavior()` 返回值，`defineOptions` 会在编译阶段保留该表达式并继续编译，不会因为构建环境没有全局 `Behavior` 而中断。
+- `definitionFilter`、`observers`、`lifetimes` 的执行顺序与覆盖关系，仍以微信官方 `behaviors` 规则为准。
+
 ## lifetimes / pageLifetimes 对应的 hooks
 
 > 说明：Wevu 的 `onXXX()` 必须在 `setup()` **同步阶段**注册；由于 Wevu 会在 `lifetimes.created` 内执行 `setup()`，因此你可以在 `setup()` 里注册所有 Wevu hooks（包括 `onBeforeMount` 等）。
