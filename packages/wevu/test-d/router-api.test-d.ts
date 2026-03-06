@@ -1,12 +1,12 @@
 import type {
   LocationQuery,
-  NamedRouteRecord,
   NavigationAfterEachContext,
   NavigationErrorContext,
   NavigationFailure,
   NavigationGuardContext,
   NavigationRedirect,
   RouteLocationNormalizedLoaded,
+  RouteRecordRaw,
   RouterNavigation,
   SetupContextRouter,
   UseRouterOptions,
@@ -75,10 +75,20 @@ expectType<RouterNavigation>(navigation)
 expectType<SetupContextRouter>(useNativeRouter())
 expectType<SetupContextRouter>(useNativePageRouter())
 expectType<boolean>(navigation.hasRoute('home'))
-expectType<readonly NamedRouteRecord[]>(navigation.getRoutes())
+expectType<readonly RouteRecordRaw[]>(navigation.getRoutes())
 const removeDynamicRoute = navigation.addRoute({
   name: 'dynamic-post',
   path: '/pages/post/:id/index',
+  meta: {
+    requiresAuth: true,
+  },
+  redirect: '/pages/login/index',
+  beforeEnter: (to, from, context) => {
+    expectType<RouteLocationNormalizedLoaded | undefined>(to)
+    expectType<RouteLocationNormalizedLoaded>(from)
+    expectType<NavigationGuardContext | undefined>(context)
+    return true
+  },
 })
 expectType<() => void>(removeDynamicRoute)
 expectType<void>(navigation.removeRoute('dynamic-post'))
