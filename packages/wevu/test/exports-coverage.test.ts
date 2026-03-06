@@ -131,10 +131,14 @@ describe('export barrels', () => {
       wpi: expect.any(Object),
     })
     expect(router).toMatchObject({
+      NavigationFailureType: expect.any(Object),
+      createNavigationFailure: expect.any(Function),
+      isNavigationFailure: expect.any(Function),
       parseQuery: expect.any(Function),
       resolveRouteLocation: expect.any(Function),
       stringifyQuery: expect.any(Function),
       useRoute: expect.any(Function),
+      useRouterNavigation: expect.any(Function),
       usePageRouter: expect.any(Function),
       useRouter: expect.any(Function),
     })
