@@ -4,8 +4,13 @@ import { shallowRef } from '../reactivity'
 import { customRef } from '../reactivity/ref'
 import { capitalize } from '../utils'
 import { getCurrentInstance, getCurrentSetupContext } from './hooks'
+import { getMiniProgramGlobalObject } from './platform'
 
 const EMPTY_SETUP_SLOTS = Object.freeze(Object.create(null)) as Record<string, never>
+type RuntimeRouter = WechatMiniprogram.Component.Router
+type RuntimeRouterMethodName = 'switchTab' | 'reLaunch' | 'redirectTo' | 'navigateTo' | 'navigateBack'
+type RuntimeRouterAccessor = 'router' | 'pageRouter'
+const RUNTIME_ROUTER_METHODS: RuntimeRouterMethodName[] = ['switchTab', 'reLaunch', 'redirectTo', 'navigateTo', 'navigateBack']
 
 export function useAttrs(): Record<string, any> {
   const ctx = getCurrentSetupContext<any>()
@@ -30,6 +35,82 @@ export function useNativeInstance(): SetupContextNativeInstance {
     throw new Error('useNativeInstance() 必须在 setup() 的同步阶段调用')
   }
   return ctx.instance as SetupContextNativeInstance
+}
+
+function isRuntimeRouter(candidate: unknown): candidate is RuntimeRouter {
+  if (!candidate || typeof candidate !== 'object') {
+    return false
+  }
+  return RUNTIME_ROUTER_METHODS.every((methodName) => {
+    return typeof (candidate as Record<string, any>)[methodName] === 'function'
+  })
+}
+
+function createGlobalRouterFallback(): RuntimeRouter | undefined {
+  const miniProgramGlobal = getMiniProgramGlobalObject()
+  if (!miniProgramGlobal) {
+    return undefined
+  }
+  const fallbackRouter = Object.create(null) as RuntimeRouter
+  for (const methodName of RUNTIME_ROUTER_METHODS) {
+    const handler = (miniProgramGlobal as Record<string, any>)[methodName]
+    if (typeof handler !== 'function') {
+      return undefined
+    }
+    ;(fallbackRouter as Record<string, any>)[methodName] = (...args: any[]) => handler.apply(miniProgramGlobal, args)
+  }
+  return fallbackRouter
+}
+
+function useRuntimeRouterByAccessor(
+  primaryAccessor: RuntimeRouterAccessor,
+  fallbackAccessor: RuntimeRouterAccessor,
+  helperName: 'useRouter' | 'usePageRouter',
+): RuntimeRouter {
+  const ctx = getCurrentSetupContext<any>()
+  if (!ctx?.instance) {
+    throw new Error(`${helperName}() 必须在 setup() 的同步阶段调用`)
+  }
+
+  const nativeInstance = ctx.instance as Record<string, any>
+  const primaryRouter = nativeInstance[primaryAccessor]
+  if (isRuntimeRouter(primaryRouter)) {
+    return primaryRouter
+  }
+
+  const fallbackRouter = nativeInstance[fallbackAccessor]
+  if (isRuntimeRouter(fallbackRouter)) {
+    return fallbackRouter
+  }
+
+  const globalFallbackRouter = createGlobalRouterFallback()
+  if (globalFallbackRouter) {
+    return globalFallbackRouter
+  }
+
+  throw new Error('当前运行环境不支持 Router，请升级微信基础库到 2.16.1+ 或检查平台路由能力')
+}
+
+/**
+ * 在 setup 中获取与当前组件路径语义一致的 Router 对象。
+ *
+ * - 优先使用实例上的 `this.router`（组件路径语义）。
+ * - 不可用时回退到 `this.pageRouter`。
+ * - 低版本基础库再回退到全局 `wx.*` 路由方法。
+ */
+export function useRouter(): RuntimeRouter {
+  return useRuntimeRouterByAccessor('router', 'pageRouter', 'useRouter')
+}
+
+/**
+ * 在 setup 中获取与当前页面路径语义一致的 Router 对象。
+ *
+ * - 优先使用实例上的 `this.pageRouter`（页面路径语义）。
+ * - 不可用时回退到 `this.router`。
+ * - 低版本基础库再回退到全局 `wx.*` 路由方法。
+ */
+export function usePageRouter(): RuntimeRouter {
+  return useRuntimeRouterByAccessor('pageRouter', 'router', 'usePageRouter')
 }
 
 type TemplateRefMap = Map<string, Ref<any>>

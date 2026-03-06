@@ -49,6 +49,7 @@ keywords:
 - `ctx.instance.createSelectorQuery()`
 - `ctx.instance.createIntersectionObserver(...)`
 - `ctx.instance.setData(...)`
+- `ctx.instance.router` / `ctx.instance.pageRouter`（基础库 `2.16.1+`）
 - 以及平台原生 `wx` 组件实例 API
 
 ### 示例（script setup）
@@ -162,7 +163,14 @@ function patchRaw() {
 | -------------- | -------------------------------------- | ----------------------------------------- |
 | `useBindModel` | `ModelBindingOptions` / `ModelBinding` | 生成小程序可直接绑定的数据 + 事件处理器。 |
 
-## 5.1 可见性监听辅助
+## 5.1 路由辅助
+
+| API             | 类型入口 | 说明                                                                                                   |
+| --------------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| `useRouter`     | `Router` | 获取组件路径语义 Router。优先 `this.router`，再回退 `this.pageRouter`，低版本基础库降级到全局 `wx.*`。 |
+| `usePageRouter` | `Router` | 获取页面路径语义 Router。优先 `this.pageRouter`，再回退 `this.router`，低版本基础库降级到全局 `wx.*`。 |
+
+## 5.2 可见性监听辅助
 
 | API                       | 类型入口               | 说明                                                            |
 | ------------------------- | ---------------------- | --------------------------------------------------------------- |
