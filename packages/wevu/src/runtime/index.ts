@@ -18,8 +18,8 @@ export {
   useBindModel,
   useModel,
   useNativeInstance,
-  usePageRouter,
-  useRouter,
+  useNativePageRouter,
+  useNativeRouter,
   useSlots,
   useTemplateRef,
 } from './vueCompat'

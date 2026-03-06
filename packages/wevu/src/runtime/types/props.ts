@@ -202,7 +202,7 @@ export type SetupFunction<
  * Router 路由类型映射（供声明合并扩展）。
  *
  * 典型用法：在业务项目的类型声明中补充 `entries` 联合类型，
- * 让 `useRouter()/usePageRouter()` 的 `url` 参数获得字面量约束。
+ * 让 `useNativeRouter()/useNativePageRouter()` 的 `url` 参数获得字面量约束。
  */
 export interface WevuTypedRouterRouteMap {}
 
@@ -288,13 +288,13 @@ export type SetupContextNativeInstance = InternalRuntimeState & {
 
   /**
    * 相对于当前组件路径的 Router（基础库 2.16.1+）。
-   * 低版本基础库可能不存在，建议优先使用 `useRouter()` 获取带降级能力的路由对象。
+   * 低版本基础库可能不存在，建议优先使用 `useNativeRouter()` 获取带降级能力的路由对象。
    */
   router?: SetupContextRouter
 
   /**
    * 相对于当前页面路径的 Router（基础库 2.16.1+）。
-   * 低版本基础库可能不存在，建议优先使用 `usePageRouter()` 获取带降级能力的路由对象。
+   * 低版本基础库可能不存在，建议优先使用 `useNativePageRouter()` 获取带降级能力的路由对象。
    */
   pageRouter?: SetupContextRouter
 }

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, mergeModels, useAttrs, useBindModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, usePageRouter, usePageScrollThrottle, useRouter, useSlots, useUpdatePerformanceListener } from '@/index'
+import { defineComponent, mergeModels, useAttrs, useBindModel, useDisposables, useIntersectionObserver, useModel, useNativeInstance, useNativePageRouter, useNativeRouter, usePageScrollThrottle, useSlots, useUpdatePerformanceListener } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -19,14 +19,14 @@ describe('runtime: vue compat helpers', () => {
     expect(mergeModels(null as any, { a: 1 })).toEqual({ a: 1 })
   })
 
-  it('useAttrs/useSlots/useModel/useNativeInstance/useIntersectionObserver/useRouter/usePageRouter/usePageScrollThrottle/useUpdatePerformanceListener/useDisposables throw when called outside setup', () => {
+  it('useAttrs/useSlots/useModel/useNativeInstance/useIntersectionObserver/useNativeRouter/useNativePageRouter/usePageScrollThrottle/useUpdatePerformanceListener/useDisposables throw when called outside setup', () => {
     expect(() => useAttrs()).toThrow()
     expect(() => useSlots()).toThrow()
     expect(() => useModel({}, 'modelValue')).toThrow()
     expect(() => useNativeInstance()).toThrow()
     expect(() => useIntersectionObserver()).toThrow()
-    expect(() => useRouter()).toThrow()
-    expect(() => usePageRouter()).toThrow()
+    expect(() => useNativeRouter()).toThrow()
+    expect(() => useNativePageRouter()).toThrow()
     expect(() => usePageScrollThrottle(() => {})).toThrow()
     expect(() => useUpdatePerformanceListener(() => {})).toThrow()
     expect(() => useDisposables()).toThrow()
@@ -213,7 +213,7 @@ describe('runtime: vue compat helpers', () => {
     expect(setData.mock.calls.some(call => call?.[0]?.fromSetupInstance === true)).toBe(true)
   })
 
-  it('useRouter/usePageRouter prefer native router and pageRouter', () => {
+  it('useNativeRouter/useNativePageRouter prefer native router and pageRouter', () => {
     const componentRouter = {
       switchTab: vi.fn(),
       reLaunch: vi.fn(),
@@ -231,8 +231,8 @@ describe('runtime: vue compat helpers', () => {
 
     defineComponent({
       setup() {
-        const router = useRouter()
-        const hostPageRouter = usePageRouter()
+        const router = useNativeRouter()
+        const hostPageRouter = useNativePageRouter()
         expect(router).toBe(componentRouter)
         expect(hostPageRouter).toBe(pageRouter)
         router.navigateTo({ url: './from-component' })
@@ -255,7 +255,7 @@ describe('runtime: vue compat helpers', () => {
     expect(pageRouter.navigateTo).toHaveBeenCalledWith({ url: './from-page' })
   })
 
-  it('useRouter/usePageRouter fallback to global route methods when instance router is unavailable', () => {
+  it('useNativeRouter/useNativePageRouter fallback to global route methods when instance router is unavailable', () => {
     const wxNavigateTo = vi.fn()
     const wxRedirectTo = vi.fn()
     const wxSwitchTab = vi.fn()
@@ -271,8 +271,8 @@ describe('runtime: vue compat helpers', () => {
 
     defineComponent({
       setup() {
-        const router = useRouter()
-        const pageRouter = usePageRouter()
+        const router = useNativeRouter()
+        const pageRouter = useNativePageRouter()
         router.navigateTo({ url: '/pages/a/index' })
         pageRouter.redirectTo({ url: '/pages/b/index' })
         return {}
@@ -291,7 +291,7 @@ describe('runtime: vue compat helpers', () => {
     expect(wxRedirectTo).toHaveBeenCalledWith({ url: '/pages/b/index' })
   })
 
-  it('useRouter/usePageRouter fallback to complementary instance accessor before global fallback', () => {
+  it('useNativeRouter/useNativePageRouter fallback to complementary instance accessor before global fallback', () => {
     const pageRouterOnly = {
       switchTab: vi.fn(),
       reLaunch: vi.fn(),
@@ -309,16 +309,16 @@ describe('runtime: vue compat helpers', () => {
 
     defineComponent({
       setup() {
-        expect(useRouter()).toBe(pageRouterOnly)
-        expect(usePageRouter()).toBe(pageRouterOnly)
+        expect(useNativeRouter()).toBe(pageRouterOnly)
+        expect(useNativePageRouter()).toBe(pageRouterOnly)
         return {}
       },
     })
 
     defineComponent({
       setup() {
-        expect(useRouter()).toBe(componentRouterOnly)
-        expect(usePageRouter()).toBe(componentRouterOnly)
+        expect(useNativeRouter()).toBe(componentRouterOnly)
+        expect(useNativePageRouter()).toBe(componentRouterOnly)
         return {}
       },
     })
@@ -342,7 +342,7 @@ describe('runtime: vue compat helpers', () => {
     componentRouterOnlyOptions.lifetimes.attached.call(componentRouterOnlyInstance)
   })
 
-  it('useRouter/usePageRouter fallback to my route methods when wx is unavailable', () => {
+  it('useNativeRouter/useNativePageRouter fallback to my route methods when wx is unavailable', () => {
     const myContexts: any[] = []
     const myGlobal = {
       switchTab: vi.fn(function (this: any, option: any) {
@@ -370,8 +370,8 @@ describe('runtime: vue compat helpers', () => {
 
     defineComponent({
       setup() {
-        const router = useRouter()
-        const pageRouter = usePageRouter()
+        const router = useNativeRouter()
+        const pageRouter = useNativePageRouter()
         router.navigateTo({ url: '/pages/fallback-my/index' })
         pageRouter.navigateBack({ delta: 1 })
         return {}
@@ -392,7 +392,7 @@ describe('runtime: vue compat helpers', () => {
     expect(myContexts.every(context => context === myGlobal)).toBe(true)
   })
 
-  it('useRouter/usePageRouter fallback to tt route methods when wx/my are unavailable', () => {
+  it('useNativeRouter/useNativePageRouter fallback to tt route methods when wx/my are unavailable', () => {
     const ttContexts: any[] = []
     const ttGlobal = {
       switchTab: vi.fn(function (this: any, option: any) {
@@ -420,8 +420,8 @@ describe('runtime: vue compat helpers', () => {
 
     defineComponent({
       setup() {
-        const router = useRouter()
-        const pageRouter = usePageRouter()
+        const router = useNativeRouter()
+        const pageRouter = useNativePageRouter()
         router.reLaunch({ url: '/pages/fallback-tt/index' })
         pageRouter.redirectTo({ url: '/pages/fallback-tt/detail' })
         return {}
@@ -442,7 +442,7 @@ describe('runtime: vue compat helpers', () => {
     expect(ttContexts.every(context => context === ttGlobal)).toBe(true)
   })
 
-  it('useRouter/usePageRouter throw when runtime global route methods are incomplete', () => {
+  it('useNativeRouter/useNativePageRouter throw when runtime global route methods are incomplete', () => {
     ;(globalThis as any).wx = {
       switchTab: vi.fn(),
       reLaunch: vi.fn(),
@@ -453,8 +453,8 @@ describe('runtime: vue compat helpers', () => {
 
     defineComponent({
       setup() {
-        expect(() => useRouter()).toThrow('当前运行环境不支持 Router')
-        expect(() => usePageRouter()).toThrow('当前运行环境不支持 Router')
+        expect(() => useNativeRouter()).toThrow('当前运行环境不支持 Router')
+        expect(() => useNativePageRouter()).toThrow('当前运行环境不支持 Router')
         return {}
       },
     })
@@ -468,11 +468,11 @@ describe('runtime: vue compat helpers', () => {
     opts.lifetimes.attached.call(inst)
   })
 
-  it('useRouter/usePageRouter throw when Router and fallback route methods are both unavailable', () => {
+  it('useNativeRouter/useNativePageRouter throw when Router and fallback route methods are both unavailable', () => {
     defineComponent({
       setup() {
-        expect(() => useRouter()).toThrow('当前运行环境不支持 Router')
-        expect(() => usePageRouter()).toThrow('当前运行环境不支持 Router')
+        expect(() => useNativeRouter()).toThrow('当前运行环境不支持 Router')
+        expect(() => useNativePageRouter()).toThrow('当前运行环境不支持 Router')
         return {}
       },
     })

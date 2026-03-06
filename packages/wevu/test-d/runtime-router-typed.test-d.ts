@@ -1,5 +1,5 @@
 import { expectError } from 'tsd'
-import { defineComponent, usePageRouter, useRouter } from '@/index'
+import { defineComponent, useNativePageRouter, useNativeRouter } from '@/index'
 
 declare module '@/index' {
   interface WevuTypedRouterRouteMap {
@@ -10,8 +10,8 @@ declare module '@/index' {
 
 defineComponent({
   setup() {
-    const router = useRouter()
-    const pageRouter = usePageRouter()
+    const router = useNativeRouter()
+    const pageRouter = useNativePageRouter()
 
     router.navigateTo({ url: 'pages/home/index' })
     router.navigateTo({ url: '/pages/home/index' })

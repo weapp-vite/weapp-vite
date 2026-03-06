@@ -47,9 +47,9 @@ import {
   useDisposables,
   useIntersectionObserver,
   useNativeInstance,
-  usePageRouter,
+  useNativePageRouter,
+  useNativeRouter,
   usePageScrollThrottle,
-  useRouter,
   useUpdatePerformanceListener,
 
 } from '@/index'
@@ -167,8 +167,8 @@ defineComponent({
     onDeactivated(() => {})
     const nativeInstance = useNativeInstance()
     expectType<void>(nativeInstance.triggerEvent('from-helper', { ok: true }))
-    const router = useRouter()
-    const pageRouter = usePageRouter()
+    const router = useNativeRouter()
+    const pageRouter = useNativePageRouter()
     const stopPageScroll = usePageScrollThrottle((_opt) => {}, {
       interval: 120,
       leading: true,
