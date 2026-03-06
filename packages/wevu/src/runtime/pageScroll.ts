@@ -13,6 +13,11 @@ export interface UsePageScrollThrottleOptions {
    * 是否在窗口结束边缘补一次回调，默认 true。
    */
   trailing?: boolean
+  /**
+   * 持续滚动时的最大等待时间（毫秒）。
+   * 当 trailing 为 false 时，可用于兜底触发一次回调。
+   */
+  maxWait?: number
 }
 
 export type UsePageScrollThrottleStopHandle = () => void
@@ -22,6 +27,13 @@ function resolvePositiveInterval(interval: number | undefined): number {
     return 80
   }
   return Math.max(0, interval)
+}
+
+function resolveMaxWait(maxWait: number | undefined): number | undefined {
+  if (typeof maxWait !== 'number' || !Number.isFinite(maxWait)) {
+    return undefined
+  }
+  return Math.max(0, maxWait)
 }
 
 /**
@@ -41,21 +53,34 @@ export function usePageScrollThrottle(
   const interval = resolvePositiveInterval(options.interval)
   const leading = options.leading ?? true
   const trailing = options.trailing ?? true
+  const maxWait = resolveMaxWait(options.maxWait)
 
-  let timer: ReturnType<typeof setTimeout> | undefined
+  let trailingTimer: ReturnType<typeof setTimeout> | undefined
+  let maxWaitTimer: ReturnType<typeof setTimeout> | undefined
   let stopped = false
   let lastInvokeTime = 0
   let trailingEvent: WechatMiniprogram.Page.IPageScrollOption | undefined
 
-  const clearTimer = () => {
-    if (!timer) {
+  const clearTrailingTimer = () => {
+    if (!trailingTimer) {
       return
     }
-    clearTimeout(timer)
-    timer = undefined
+    clearTimeout(trailingTimer)
+    trailingTimer = undefined
+  }
+
+  const clearMaxWaitTimer = () => {
+    if (!maxWaitTimer) {
+      return
+    }
+    clearTimeout(maxWaitTimer)
+    maxWaitTimer = undefined
   }
 
   const invoke = (event: WechatMiniprogram.Page.IPageScrollOption) => {
+    clearTrailingTimer()
+    clearMaxWaitTimer()
+    trailingEvent = undefined
     lastInvokeTime = Date.now()
     handler(event)
   }
@@ -63,11 +88,42 @@ export function usePageScrollThrottle(
   const flushTrailing = () => {
     const event = trailingEvent
     trailingEvent = undefined
-    timer = undefined
-    if (!event) {
+    trailingTimer = undefined
+    if (!event || stopped) {
       return
     }
     invoke(event)
+  }
+
+  const flushMaxWait = () => {
+    const event = trailingEvent
+    maxWaitTimer = undefined
+    if (!event || stopped) {
+      return
+    }
+    invoke(event)
+  }
+
+  const scheduleTrailing = (now: number) => {
+    if (!trailing || trailingTimer) {
+      return
+    }
+    const base = lastInvokeTime === 0 ? now : lastInvokeTime
+    const remaining = Math.max(0, interval - (now - base))
+    trailingTimer = setTimeout(flushTrailing, remaining)
+  }
+
+  const scheduleMaxWait = (now: number) => {
+    if (typeof maxWait !== 'number' || maxWaitTimer) {
+      return
+    }
+    const base = lastInvokeTime === 0 ? now : lastInvokeTime
+    const remaining = maxWait - (now - base)
+    if (remaining <= 0) {
+      flushMaxWait()
+      return
+    }
+    maxWaitTimer = setTimeout(flushMaxWait, remaining)
   }
 
   const register = (event: WechatMiniprogram.Page.IPageScrollOption) => {
@@ -81,26 +137,27 @@ export function usePageScrollThrottle(
     }
 
     const now = Date.now()
-    if (lastInvokeTime === 0 && !leading) {
-      lastInvokeTime = now
-    }
+    trailingEvent = event
 
-    const elapsed = now - lastInvokeTime
-    const remaining = interval - elapsed
-
-    if (remaining <= 0 || remaining > interval) {
-      clearTimer()
-      trailingEvent = undefined
+    if (leading && (lastInvokeTime === 0 || now - lastInvokeTime >= interval)) {
       invoke(event)
       return
     }
 
-    trailingEvent = event
-    if (!trailing || timer) {
+    if (typeof maxWait === 'number') {
+      const base = lastInvokeTime === 0 ? now : lastInvokeTime
+      if (now - base >= maxWait) {
+        invoke(event)
+        return
+      }
+    }
+
+    if (!trailing && typeof maxWait !== 'number') {
       return
     }
 
-    timer = setTimeout(flushTrailing, remaining)
+    scheduleTrailing(now)
+    scheduleMaxWait(now)
   }
 
   onPageScroll(register)
@@ -111,7 +168,8 @@ export function usePageScrollThrottle(
     }
     stopped = true
     trailingEvent = undefined
-    clearTimer()
+    clearTrailingTimer()
+    clearMaxWaitTimer()
   }
 
   onUnload(stop)
