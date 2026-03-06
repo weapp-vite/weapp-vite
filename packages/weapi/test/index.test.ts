@@ -1,5 +1,7 @@
+import { WEAPI_WX_METHODS } from '@/core/apiCatalog'
 import {
   generateApiSupportCoverageReport,
+  generateMethodCompatibilityMatrix,
   validateSupportMatrixConsistency,
   WEAPI_METHOD_SUPPORT_MATRIX,
   WEAPI_PLATFORM_SUPPORT_MATRIX,
@@ -451,40 +453,53 @@ describe('weapi', () => {
 
   it('generates api coverage report from mapping matrix', () => {
     const report = generateApiSupportCoverageReport()
-    expect(report.totalApis).toBe(WEAPI_METHOD_SUPPORT_MATRIX.length)
-    expect(report.fullyAlignedApis).toBe(WEAPI_METHOD_SUPPORT_MATRIX.length)
-    expect(report.fullyAlignedCoverage).toBe('100.00%')
+    const compatibilityMatrix = generateMethodCompatibilityMatrix()
+    const wxTotal = WEAPI_WX_METHODS.length
+    const alipaySupported = compatibilityMatrix.filter(item => item.alipaySupported).length
+    const douyinSupported = compatibilityMatrix.filter(item => item.douyinSupported).length
+    const fullyAligned = compatibilityMatrix.filter(item => item.alipaySupported && item.douyinSupported).length
+    const formatCoverage = (supported: number) => `${((supported / wxTotal) * 100).toFixed(2)}%`
+    expect(report.totalApis).toBe(wxTotal)
+    expect(report.fullyAlignedApis).toBe(fullyAligned)
+    expect(report.fullyAlignedCoverage).toBe(formatCoverage(fullyAligned))
     expect(report.platforms).toEqual([
       {
         platform: '微信小程序',
         alias: 'wx',
-        supportedApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
-        totalApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
+        supportedApis: wxTotal,
+        totalApis: wxTotal,
         coverage: '100.00%',
       },
       {
         platform: '支付宝小程序',
         alias: 'my',
-        supportedApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
-        totalApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
-        coverage: '100.00%',
+        supportedApis: alipaySupported,
+        totalApis: wxTotal,
+        coverage: formatCoverage(alipaySupported),
       },
       {
         platform: '抖音小程序',
         alias: 'tt',
-        supportedApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
-        totalApis: WEAPI_METHOD_SUPPORT_MATRIX.length,
-        coverage: '100.00%',
+        supportedApis: douyinSupported,
+        totalApis: wxTotal,
+        coverage: formatCoverage(douyinSupported),
       },
     ])
   })
 
   it('keeps support matrix data in sync with mappings', () => {
-    const { missingDocs, missingMappings, missingDouyinMappings, extraDouyinMappings } = validateSupportMatrixConsistency()
+    const {
+      extraDouyinMappings,
+      missingCatalogMethods,
+      missingDocs,
+      missingDouyinMappings,
+      missingMappings,
+    } = validateSupportMatrixConsistency()
     expect(missingDocs).toEqual([])
     expect(missingMappings).toEqual([])
     expect(missingDouyinMappings).toEqual([])
     expect(extraDouyinMappings).toEqual([])
+    expect(missingCatalogMethods).toEqual([])
     expect(WEAPI_PLATFORM_SUPPORT_MATRIX.map(item => item.platform)).toEqual([
       '微信小程序',
       '支付宝小程序',

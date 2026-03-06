@@ -34,10 +34,10 @@
 
 | 平台 | 已支持 API 数 | API 总数 | 覆盖率 |
 | --- | --- | --- | --- |
-| 微信小程序 (`wx`) | 8 | 8 | 100.00% |
-| 支付宝小程序 (`my`) | 8 | 8 | 100.00% |
-| 抖音小程序 (`tt`) | 8 | 8 | 100.00% |
-| 三端完全对齐 (wx/my/tt) | 8 | 8 | 100.00% |
+| 微信小程序 (`wx`) | 479 | 479 | 100.00% |
+| 支付宝小程序 (`my`) | 192 | 479 | 40.08% |
+| 抖音小程序 (`tt`) | 129 | 479 | 26.93% |
+| 三端完全对齐 (wx/my/tt) | 113 | 479 | 23.59% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -50,7 +50,7 @@
 | `showActionSheet` | 显示操作菜单。 | 直连 `wx.showActionSheet` | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | 直连 `tt.showActionSheet`，并兼容 `index` → `tapIndex` | ✅ |
 | `showModal` | 显示模态弹窗。 | 直连 `wx.showModal` | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果 | 直连 `tt.showModal` | ✅ |
 | `chooseImage` | 选择图片。 | 直连 `wx.chooseImage` | 返回值 `apFilePaths` 映射到 `tempFilePaths` | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底 | ✅ |
-| `saveFile` | 保存文件。 | 直连 `wx.saveFile` | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | 直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath` | ✅ |
+| `saveFile` | 保存文件（跨端扩展，微信 typings 未声明同名 API）。 | 微信当前 typings 未声明同名 API，保留为跨端扩展能力 | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | 直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath` | ⚠️ |
 | `setClipboardData` | 设置剪贴板内容。 | 直连 `wx.setClipboardData` | 转调 `my.setClipboard` 并映射 `data` → `text` | 直连 `tt.setClipboardData` | ✅ |
 | `getClipboardData` | 获取剪贴板内容。 | 直连 `wx.getClipboardData` | 转调 `my.getClipboard` 并映射 `text` → `data` | 直连 `tt.getClipboardData` | ✅ |
 <!-- @generated weapi-support-matrix:end -->

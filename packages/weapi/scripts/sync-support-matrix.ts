@@ -214,8 +214,20 @@ async function syncTypeSources(check: boolean) {
 }
 
 function ensureMatrixConsistency() {
-  const { missingDocs, missingMappings, missingDouyinMappings, extraDouyinMappings } = validateSupportMatrixConsistency()
-  if (missingDocs.length > 0 || missingMappings.length > 0 || missingDouyinMappings.length > 0 || extraDouyinMappings.length > 0) {
+  const {
+    extraDouyinMappings,
+    missingCatalogMethods,
+    missingDocs,
+    missingDouyinMappings,
+    missingMappings,
+  } = validateSupportMatrixConsistency()
+  if (
+    missingDocs.length > 0
+    || missingMappings.length > 0
+    || missingDouyinMappings.length > 0
+    || extraDouyinMappings.length > 0
+    || missingCatalogMethods.length > 0
+  ) {
     const lines = ['weapi 支持矩阵与映射规则不一致：']
     if (missingDocs.length > 0) {
       lines.push(`- 缺少文档方法：${missingDocs.join(', ')}`)
@@ -228,6 +240,9 @@ function ensureMatrixConsistency() {
     }
     if (extraDouyinMappings.length > 0) {
       lines.push(`- 抖音映射多余方法：${extraDouyinMappings.join(', ')}`)
+    }
+    if (missingCatalogMethods.length > 0) {
+      lines.push(`- 文档方法不在三端 API 清单中：${missingCatalogMethods.join(', ')}`)
     }
     throw new Error(lines.join('\n'))
   }
