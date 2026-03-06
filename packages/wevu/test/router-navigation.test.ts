@@ -434,6 +434,87 @@ describe('router navigation helpers', () => {
     }))
   })
 
+  it('supports adding and removing named routes at runtime', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter()
+    expect(router.hasRoute('dynamic-post')).toBe(false)
+
+    const removeDynamicPostRoute = router.addRoute({
+      name: 'dynamic-post',
+      path: '/pages/post/:id/index',
+    })
+    expect(router.hasRoute('dynamic-post')).toBe(true)
+    expect(router.getRoutes()).toEqual([
+      {
+        name: 'dynamic-post',
+        path: '/pages/post/:id/index',
+      },
+    ])
+
+    const resolvedByName = router.resolve({
+      name: 'dynamic-post',
+      params: {
+        id: 7,
+      },
+    })
+    expect(resolvedByName.fullPath).toBe('/pages/post/7/index')
+
+    const pushed = await router.push({
+      name: 'dynamic-post',
+      params: {
+        id: 7,
+      },
+    })
+    expect(pushed).toBeUndefined()
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/post/7/index',
+    }))
+
+    removeDynamicPostRoute()
+    expect(router.hasRoute('dynamic-post')).toBe(false)
+    await expect(router.push({
+      name: 'dynamic-post',
+      params: {
+        id: 7,
+      },
+    })).rejects.toMatchObject({
+      type: NavigationFailureType.unknown,
+      message: expect.stringContaining('Named route "dynamic-post"'),
+    })
+
+    router.addRoute({
+      name: 'dynamic-post',
+      path: '/pages/post/:id/index',
+    })
+    expect(router.hasRoute('dynamic-post')).toBe(true)
+    router.removeRoute('dynamic-post')
+    expect(router.hasRoute('dynamic-post')).toBe(false)
+  })
+
   it('replace returns duplicated failure when navigating to same location', async () => {
     const redirectTo = vi.fn()
     const instance = {
