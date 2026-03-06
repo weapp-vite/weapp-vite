@@ -1,6 +1,5 @@
 # weapi 三端 API 兼容报告（总览）
 
-- 生成时间：`2026-03-06T17:32:09.785Z`
 - 类型来源：
   - 微信：`miniprogram-api-typings@5.1.1`
   - 支付宝：`@mini-types/alipay@3.0.14`

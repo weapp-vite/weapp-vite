@@ -59,6 +59,30 @@ describe('weapi', () => {
     })
   })
 
+  it('resolves mapped target and support state', () => {
+    const confirm = vi.fn()
+    const api = createWeapi({
+      adapter: { confirm },
+      platform: 'alipay',
+    })
+    expect(api.resolveTarget('showModal')).toEqual({
+      method: 'showModal',
+      target: 'confirm',
+      platform: 'my',
+      mapped: true,
+      supported: true,
+    })
+    expect(api.supports('showModal')).toBe(true)
+    expect(api.supports('request')).toBe(false)
+    expect(api.resolveTarget('request')).toMatchObject({
+      method: 'request',
+      target: 'request',
+      platform: 'my',
+      mapped: false,
+      supported: false,
+    })
+  })
+
   it('maps showToast options for alipay', async () => {
     const showToast = vi.fn((options: any) => {
       options.success?.({ errMsg: 'showToast:ok' })

@@ -3,6 +3,7 @@ import type {
   WeapiAdapter,
   WeapiCrossPlatformRawAdapter,
   WeapiInstance,
+  WeapiResolvedTarget,
 } from './types'
 import { detectGlobalAdapter } from './adapter'
 import { resolveMethodMapping } from './methodMapping'
@@ -13,6 +14,8 @@ const INTERNAL_KEYS = new Set<PropertyKey>([
   'getAdapter',
   'platform',
   'raw',
+  'resolveTarget',
+  'supports',
 ])
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
@@ -128,6 +131,27 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     return platformName
   }
 
+  const resolveTarget = (methodName: string): WeapiResolvedTarget => {
+    const runtimeAdapter = resolveAdapter()
+    const platform = getPlatform()
+    const mappingRule = resolveMethodMapping(platform, methodName)
+    const target = mappingRule?.target ?? methodName
+    const targetMethod = runtimeAdapter
+      ? (runtimeAdapter as Record<string, any>)[target]
+      : undefined
+    return {
+      method: methodName,
+      target,
+      platform,
+      mapped: target !== methodName,
+      supported: typeof targetMethod === 'function',
+    }
+  }
+
+  const supports = (methodName: string) => {
+    return resolveTarget(methodName).supported
+  }
+
   const proxy = new Proxy({}, {
     get(_target, prop) {
       if (prop === Symbol.toStringTag) {
@@ -148,6 +172,12 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         }
         if (prop === 'raw') {
           return getAdapter()
+        }
+        if (prop === 'resolveTarget') {
+          return resolveTarget
+        }
+        if (prop === 'supports') {
+          return supports
         }
       }
 

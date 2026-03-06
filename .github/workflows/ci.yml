@@ -56,3 +56,49 @@ jobs:
         uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  weapi-compat:
+    name: Weapi Compatibility Guard
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate weapi generated catalog and docs
+        run: |
+          pnpm --filter @wevu/api catalog:check
+          pnpm --filter @wevu/api docs:check
+
+      - name: Validate weapi tests
+        run: |
+          pnpm --filter @wevu/api test
+          pnpm --filter @wevu/api test:types
+
+      - name: Validate weapi report generation
+        run: pnpm --filter @wevu/api report:api
+
+      - name: Ensure generated artifacts are committed
+        run: |
+          git diff --exit-code -- \
+            packages/weapi/README.md \
+            packages/weapi/src/core/apiCatalog.ts \
+            packages/weapi/src/core/types.ts \
+            packages/weapi/src/index.ts \
+            packages/weapi/types/index.d.ts \
+            packages/weapi/reports/api-compat
