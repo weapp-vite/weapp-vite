@@ -70,7 +70,7 @@ export default defineComponent({
 Wevu 同时支持两种 props 定义方式：
 
 - 小程序原生 `properties`：完全按小程序规范书写，`setup(props, ctx)` 通过 `props`/`ctx.props` 读取。
-- Vue 风格 `props`：会被转换为小程序 `properties`（支持 `type` 与 `default` / `value`）。
+- Vue 风格 `props`：会被转换为小程序 `properties`（支持 `type`、`optionalTypes`、`observer` 与 `default` / `value`）。
 
 如果你使用 Weapp-vite 的 SFC 编译产物，通常会走 `createWevuComponent(options)`（见下节），并直接携带小程序 `properties`。
 
