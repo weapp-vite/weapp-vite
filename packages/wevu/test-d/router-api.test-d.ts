@@ -6,6 +6,8 @@ import type {
   NavigationGuardContext,
   NavigationRedirect,
   RouteLocationNormalizedLoaded,
+  RouteLocationRedirectedFrom,
+  RouteRecordMatched,
   RouteRecordRaw,
   RouterNavigation,
   SetupContextRouter,
@@ -105,6 +107,8 @@ const resolvedByName = navigation.resolve({
 expectType<RouteLocationNormalizedLoaded>(resolvedByName)
 expectType<string | undefined>(resolvedByName.name)
 expectType<string | undefined>(resolvedByName.href)
+expectType<readonly RouteRecordMatched[] | undefined>(resolvedByName.matched)
+expectType<RouteLocationRedirectedFrom | undefined>(resolvedByName.redirectedFrom)
 
 const removeGuard = navigation.beforeEach((to, from, context) => {
   expectType<RouteLocationNormalizedLoaded | undefined>(to)
