@@ -239,7 +239,14 @@ describe('router navigation helpers', () => {
         from: 'home',
       },
       hash: '#comment',
+      href: '/pages/post/123/index?from=home#comment',
       name: 'post-detail',
+      matched: [
+        {
+          name: 'post-detail',
+          path: '/pages/post/:id/index',
+        },
+      ],
       params: {
         id: '123',
       },
@@ -333,6 +340,17 @@ describe('router navigation helpers', () => {
 
     const resolved = router.resolve('/pages/dashboard/index')
     expect(resolved.name).toBe('dashboard')
+    expect(resolved.href).toBe('/pages/dashboard/index')
+    expect(resolved.matched).toEqual([
+      {
+        name: 'dashboard',
+        path: '/pages/dashboard/index',
+        meta: {
+          requiresAuth: true,
+          layout: 'admin',
+        },
+      },
+    ])
     expect(resolved.meta).toEqual({
       requiresAuth: true,
       layout: 'admin',
@@ -570,6 +588,56 @@ describe('router navigation helpers', () => {
       url: '/pages/new/index?from=legacy',
     }))
     expect(navigateTo).not.toHaveBeenCalled()
+  })
+
+  it('exposes redirectedFrom on resolved redirect targets', () => {
+    const redirectTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo,
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'legacy-home',
+          path: '/pages/legacy/index',
+          redirect: '/pages/new/index?from=legacy',
+        },
+      ],
+    })
+
+    let finalTo: any
+    router.afterEach((to) => {
+      finalTo = to
+    })
+
+    return router.push({ name: 'legacy-home' }).then(() => {
+      expect(finalTo?.fullPath).toBe('/pages/new/index?from=legacy')
+      expect(finalTo?.redirectedFrom).toMatchObject({
+        fullPath: '/pages/legacy/index',
+        name: 'legacy-home',
+      })
+    })
   })
 
   it('supports adding and removing named routes at runtime', async () => {
