@@ -69,11 +69,12 @@ export default defineConfig({
 自动路由模块默认导出 `routes` 对象，包含主包与分包的完整信息，同时提供若干辅助数组方便按需使用：
 
 ```ts
-import routes, { entries, pages, subPackages } from 'weapp-vite/auto-routes'
+import routes, { entries, pages, subPackages, wxRouter } from 'weapp-vite/auto-routes'
 
 console.log(routes.pages) // 主包页面清单
 console.log(routes.entries) // 所有入口（主包 + 分包）
 console.log(routes.subPackages) // 分包 root 与页面列表
+wxRouter.navigateTo({ url: '/pages/index/index' }) // 带路由联合类型提示
 ```
 
 在 TypeScript 项目中，可以直接引用 `typed-router.d.ts` 生成的类型，获得枚举式的路径提示，例如：
