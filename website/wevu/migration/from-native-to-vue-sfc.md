@@ -201,6 +201,71 @@ watch(() => props.disabled, (disabled) => {
 - `observers` 优先迁移到 `watch`，避免“隐式副作用”扩散。
 - `triggerEvent` 统一迁移到 `defineEmits` + `emit`，事件名和 payload 类型显式定义。
 
+## Behavior 迁移：`Behavior({...})` 到 Wevu 组件体系
+
+在原生小程序里，`Behavior` 本质是组件选项复用机制。迁移到 Wevu 后，建议保留这个模型，不要把 behavior 逻辑拆散到多个自定义工具函数里。
+
+迁移原则：
+
+- `wevu` 不重写 `behaviors` 的合并/覆盖规则，仍交给小程序原生 `Component()` 处理。
+- behavior 文件继续保持“单独导出 + 组件引用”的结构，降低回归风险。
+- 新代码优先迁移组件主逻辑到 `setup`，behavior 里保留“横切能力”。
+
+### 字段对照（原生 Behavior -> Wevu）
+
+| 原生 Behavior 字段                   | 迁移后位置                                                    | 说明                                         |
+| ------------------------------------ | ------------------------------------------------------------- | -------------------------------------------- |
+| `data`                               | 保留在 behavior 内，或迁移到组件 `setup` 状态                 | 推荐保留 behavior 内的数据契约，避免语义漂移 |
+| `properties`                         | 组件优先改为 `defineProps`；behavior 内的 `properties` 可保留 | 组件声明覆盖 behavior 同名字段（原生语义）   |
+| `methods`                            | 保留在 behavior 或迁移到 `setup` 返回函数                     | 事件/实例方法都可继续复用                    |
+| `lifetimes` / `pageLifetimes`        | 继续写在 behavior / 组件中                                    | 执行顺序仍以微信官方规则为准                 |
+| `observers`                          | 可保留；新逻辑推荐迁移到 `watch/watchEffect`                  | 复杂表达式监听仍可留在 `observers`           |
+| `definitionFilter` / `export` / 其他 | 继续写在组件选项中                                            | Wevu 透传给原生 `Component()`                |
+
+### 推荐写法 A：`<script>` + `defineComponent`
+
+```vue
+<script lang="ts">
+import { defineComponent } from 'wevu'
+import SkylineBehavior from '@/behaviors/skyline'
+
+export default defineComponent({
+  behaviors: [SkylineBehavior],
+  lifetimes: {
+    attached() {
+      // 组件自身逻辑
+    },
+  },
+})
+</script>
+```
+
+### 推荐写法 B：`<script setup>` + `defineOptions`
+
+```vue
+<script setup lang="ts">
+import SkylineBehavior from '@/behaviors/skyline'
+
+defineOptions({
+  behaviors: [SkylineBehavior],
+})
+</script>
+```
+
+补充：
+
+- 内建 behavior（如 `wx://component-export`）可直接写字符串。
+- 若 behavior 条目来自原生 `Behavior()` 返回值，`defineOptions` 在编译阶段会保留该表达式继续转换，不会因为构建环境无全局 `Behavior` 而中断。
+- 若同名字段在组件与 behavior 同时声明，最终行为仍以微信官方 `behaviors` 覆盖与执行顺序规则为准。
+
+### Behavior 迁移清单（建议按顺序执行）
+
+1. 先保留 behavior 文件结构与导出方式，不做业务重构。
+2. 在组件里先接入 `behaviors: [...]`，确认功能基线一致。
+3. 将组件主流程迁移到 `setup`，behavior 仅保留复用横切逻辑。
+4. 把新增观察逻辑优先写成 `watch/watchEffect`，旧 `observers` 逐步清理。
+5. 最后再处理命名/目录规范，不与行为迁移混在同一提交。
+
 ## 多平台差异处理：`import.meta.env.PLATFORM`
 
 当你在同一套业务代码中兼容微信、抖音、支付宝等平台时，迁移阶段就要把平台分支显式化，避免在运行时才踩到 `wx`/`my` 不存在的问题。
