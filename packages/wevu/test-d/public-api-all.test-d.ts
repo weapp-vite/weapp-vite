@@ -48,12 +48,14 @@ import type {
   SetDataSnapshotOptions,
   SetupContext,
   SetupContextNativeInstance,
+  SetupContextRouter,
   SetupFunction,
   ShallowUnwrapRef,
   TriggerEventOptions,
   VNode,
   VNodeProps,
   WevuPlugin,
+  WevuTypedRouterRouteMap,
 } from 'wevu'
 import type * as wevu from 'wevu'
 import { expectType } from 'tsd'
@@ -252,12 +254,14 @@ type _TypeCoverage = [
   SetDataDebugInfo,
   SetDataSnapshotOptions,
   SetupContext<any, any, any>,
+  SetupContextRouter,
   SetupContextNativeInstance,
   SetupFunction<any, any, any, any>,
   ShallowUnwrapRef<any>,
   TriggerEventOptions,
   VNode,
   VNodeProps,
+  WevuTypedRouterRouteMap,
   WevuPlugin,
 ]
 

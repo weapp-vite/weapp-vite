@@ -1,5 +1,13 @@
 import type { Ref, ShallowRef } from '../reactivity'
-import type { InternalRuntimeState, ModelBinding, ModelBindingOptions, ModelBindingPayload, SetupContextNativeInstance, TemplateRefs } from './types'
+import type {
+  InternalRuntimeState,
+  ModelBinding,
+  ModelBindingOptions,
+  ModelBindingPayload,
+  SetupContextNativeInstance,
+  SetupContextRouter,
+  TemplateRefs,
+} from './types'
 import { shallowRef } from '../reactivity'
 import { customRef } from '../reactivity/ref'
 import { capitalize } from '../utils'
@@ -7,7 +15,7 @@ import { getCurrentInstance, getCurrentSetupContext } from './hooks'
 import { getMiniProgramGlobalObject } from './platform'
 
 const EMPTY_SETUP_SLOTS = Object.freeze(Object.create(null)) as Record<string, never>
-type RuntimeRouter = WechatMiniprogram.Component.Router
+type RuntimeRouter = SetupContextRouter
 type RuntimeRouterMethodName = 'switchTab' | 'reLaunch' | 'redirectTo' | 'navigateTo' | 'navigateBack'
 type RuntimeRouterAccessor = 'router' | 'pageRouter'
 const RUNTIME_ROUTER_METHODS: RuntimeRouterMethodName[] = ['switchTab', 'reLaunch', 'redirectTo', 'navigateTo', 'navigateBack']

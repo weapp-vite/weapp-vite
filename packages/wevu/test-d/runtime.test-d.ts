@@ -1,4 +1,11 @@
-import type { ComponentOptionsMixin, DefineComponent, ModelBindingPayload, PublicProps, RuntimeApp } from '@/index'
+import type {
+  ComponentOptionsMixin,
+  DefineComponent,
+  ModelBindingPayload,
+  PublicProps,
+  RuntimeApp,
+  SetupContextRouter,
+} from '@/index'
 import { expectError, expectType } from 'tsd'
 import {
   createApp,
@@ -114,8 +121,8 @@ defineComponent({
     expectType<WechatMiniprogram.SelectorQuery | undefined>(ctx.instance.createSelectorQuery())
     expectType<WechatMiniprogram.IntersectionObserver | undefined>(ctx.instance.createIntersectionObserver())
     expectType<void | Promise<void> | undefined>(ctx.instance.setData({ count: props.count }))
-    expectType<WechatMiniprogram.Component.Router | undefined>(ctx.instance.router)
-    expectType<WechatMiniprogram.Component.Router | undefined>(ctx.instance.pageRouter)
+    expectType<SetupContextRouter | undefined>(ctx.instance.router)
+    expectType<SetupContextRouter | undefined>(ctx.instance.pageRouter)
     ctx.expose({ a: 1 })
     const model = ctx.bindModel<number>('path')
     expectType<number>(model.value)
@@ -158,8 +165,8 @@ defineComponent({
     expectType<void>(nativeInstance.triggerEvent('from-helper', { ok: true }))
     const router = useRouter()
     const pageRouter = usePageRouter()
-    expectType<WechatMiniprogram.Component.Router>(router)
-    expectType<WechatMiniprogram.Component.Router>(pageRouter)
+    expectType<SetupContextRouter>(router)
+    expectType<SetupContextRouter>(pageRouter)
     expectType<void>(router.navigateTo({ url: '/pages/demo/index' }))
     expectType<void>(pageRouter.navigateBack({ delta: 1 }))
     const io = useIntersectionObserver()
