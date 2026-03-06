@@ -318,6 +318,47 @@ describe('router navigation helpers', () => {
     }))
   })
 
+  it('guard redirect supports replace semantics', async () => {
+    const navigateTo = vi.fn()
+    const redirectTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo,
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouterNavigation()
+    router.beforeEach(() => ({
+      to: '/pages/login/index?from=home',
+      replace: true,
+    }))
+
+    const result = await router.push('/pages/detail/index')
+    expect(result).toBeUndefined()
+    expect(redirectTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/login/index?from=home',
+    }))
+    expect(navigateTo).not.toHaveBeenCalled()
+  })
+
   it('returns aborted failure when guard redirects exceed maxRedirects', async () => {
     const instance = {
       __wevu: {},
@@ -350,6 +391,59 @@ describe('router navigation helpers', () => {
 
     const result = await router.push('/pages/detail/index')
     expect(isNavigationFailure(result, NavigationFailureType.aborted)).toBe(true)
+  })
+
+  it('afterEach receives success and failure contexts', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const contexts: any[] = []
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouterNavigation()
+    router.afterEach((context) => {
+      contexts.push(context)
+    })
+
+    const duplicated = await router.push('/pages/home/index')
+    expect(isNavigationFailure(duplicated, NavigationFailureType.duplicated)).toBe(true)
+
+    const success = await router.push('/pages/detail/index')
+    expect(success).toBeUndefined()
+
+    expect(contexts).toHaveLength(2)
+    expect(contexts[0]).toMatchObject({
+      mode: 'push',
+      from: { path: 'pages/home/index' },
+      to: { path: 'pages/home/index' },
+      failure: { type: NavigationFailureType.duplicated },
+    })
+    expect(contexts[1]).toMatchObject({
+      mode: 'push',
+      from: { path: 'pages/home/index' },
+      to: { path: 'pages/detail/index' },
+      failure: undefined,
+    })
   })
 
   it('resolve uses latest route state after route hooks update', () => {

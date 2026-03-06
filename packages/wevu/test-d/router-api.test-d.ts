@@ -1,7 +1,9 @@
 import type {
   LocationQuery,
+  NavigationAfterEachContext,
   NavigationFailure,
   NavigationGuardContext,
+  NavigationRedirect,
   RouteLocationNormalizedLoaded,
   RouterNavigation,
   UseRouterNavigationOptions,
@@ -51,10 +53,27 @@ expectType<() => void>(removeGuard)
 
 const removeResolveGuard = navigation.beforeResolve((context: NavigationGuardContext) => {
   expectType<RouteLocationNormalizedLoaded | undefined>(context.to)
-  return '/pages/login/index?from=guard'
+  return {
+    to: '/pages/login/index?from=guard',
+    replace: true,
+  }
 })
 expectType<() => void>(removeResolveGuard)
+
+const removeAfterEach = navigation.afterEach((context: NavigationAfterEachContext) => {
+  expectType<'push' | 'replace' | 'back'>(context.mode)
+  expectType<RouteLocationNormalizedLoaded | undefined>(context.to)
+  expectType<RouteLocationNormalizedLoaded>(context.from)
+  expectType<NavigationFailure | undefined>(context.failure)
+})
+expectType<() => void>(removeAfterEach)
 
 const failure = createNavigationFailure(NavigationFailureType.cancelled)
 expectType<NavigationFailure>(failure)
 expectType<boolean>(isNavigationFailure(failure))
+
+const redirect: NavigationRedirect = {
+  to: '/pages/login/index',
+  replace: true,
+}
+expectType<NavigationRedirect>(redirect)

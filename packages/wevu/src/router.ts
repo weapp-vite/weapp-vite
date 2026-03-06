@@ -47,16 +47,32 @@ export interface NavigationFailure extends Error {
 }
 
 export type NavigationMode = 'push' | 'replace' | 'back'
-export type NavigationGuardResult = void | boolean | NavigationFailure | RouteLocationRaw
+export interface NavigationRedirect {
+  to: RouteLocationRaw
+  replace?: boolean
+}
+
+export type NavigationGuardResult = void | boolean | NavigationFailure | RouteLocationRaw | NavigationRedirect
 export type NavigationGuard = (
   context: NavigationGuardContext,
 ) => NavigationGuardResult | Promise<NavigationGuardResult>
+export type NavigationAfterEach = (
+  context: NavigationAfterEachContext,
+) => void | Promise<void>
 
 export interface NavigationGuardContext {
   readonly mode: NavigationMode
   readonly to?: RouteLocationNormalizedLoaded
   readonly from: RouteLocationNormalizedLoaded
   readonly nativeRouter: SetupContextRouter
+}
+
+export interface NavigationAfterEachContext {
+  readonly mode: NavigationMode
+  readonly to?: RouteLocationNormalizedLoaded
+  readonly from: RouteLocationNormalizedLoaded
+  readonly nativeRouter: SetupContextRouter
+  readonly failure?: NavigationFailure
 }
 
 export interface UseRouterNavigationOptions {
@@ -72,6 +88,7 @@ export interface RouterNavigation {
   back: (delta?: number) => Promise<void | NavigationFailure>
   beforeEach: (guard: NavigationGuard) => () => void
   beforeResolve: (guard: NavigationGuard) => () => void
+  afterEach: (hook: NavigationAfterEach) => () => void
 }
 
 interface MiniProgramPageLike {
@@ -406,9 +423,17 @@ interface GuardPipelineFailure {
 interface GuardPipelineRedirect {
   status: 'redirect'
   target: RouteLocationNormalizedLoaded
+  replace?: boolean
 }
 
 type GuardPipelineResult = GuardPipelineContinue | GuardPipelineFailure | GuardPipelineRedirect
+
+function isNavigationRedirectCandidate(value: unknown): value is NavigationRedirect {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  return 'to' in (value as Record<string, unknown>)
+}
 
 function isRouteLocationRawCandidate(value: unknown): value is RouteLocationRaw {
   if (typeof value === 'string') {
@@ -443,6 +468,24 @@ async function runNavigationGuards(
             context.from,
             'Navigation aborted by guard',
           ),
+        }
+      }
+      if (isNavigationRedirectCandidate(result)) {
+        if (!context.to) {
+          return {
+            status: 'failure',
+            failure: createNavigationFailure(
+              NavigationFailureType.aborted,
+              context.to,
+              context.from,
+              'Redirect is not supported in back navigation guards',
+            ),
+          }
+        }
+        return {
+          status: 'redirect',
+          target: resolveRouteLocation(result.to, context.to.path),
+          replace: result.replace,
         }
       }
       if (isRouteLocationRawCandidate(result)) {
@@ -511,6 +554,27 @@ function executeNavigationMethod(
   })
 }
 
+interface NavigationRunResult {
+  mode: NavigationMode
+  from: RouteLocationNormalizedLoaded
+  to?: RouteLocationNormalizedLoaded
+  failure?: NavigationFailure
+}
+
+async function runAfterEachHooks(
+  hooks: ReadonlySet<NavigationAfterEach>,
+  context: NavigationAfterEachContext,
+) {
+  for (const hook of hooks) {
+    try {
+      await hook(context)
+    }
+    catch {
+      // 忽略 afterEach hook 的异常，避免影响导航主流程。
+    }
+  }
+}
+
 export function resolveRouteLocation(to: RouteLocationRaw, currentPath = ''): RouteLocationNormalizedLoaded {
   if (typeof to === 'string') {
     const parsed = parsePathInput(to)
@@ -568,6 +632,7 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
   const route = useRoute()
   const beforeEachGuards = new Set<NavigationGuard>()
   const beforeResolveGuards = new Set<NavigationGuard>()
+  const afterEachHooks = new Set<NavigationAfterEach>()
   const maxRedirects = options.maxRedirects ?? 10
   const tabBarPathSet = new Set(
     (options.tabBarEntries ?? [])
@@ -594,6 +659,13 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
     beforeResolveGuards.add(guard)
     return () => {
       beforeResolveGuards.delete(guard)
+    }
+  }
+
+  function afterEach(hook: NavigationAfterEach): () => void {
+    afterEachHooks.add(hook)
+    return () => {
+      afterEachHooks.delete(hook)
     }
   }
 
@@ -624,12 +696,37 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
     )
   }
 
+  function createNavigationRunResult(
+    mode: NavigationMode,
+    from: RouteLocationNormalizedLoaded,
+    to?: RouteLocationNormalizedLoaded,
+    failure?: NavigationFailure,
+  ): NavigationRunResult {
+    return {
+      mode,
+      from,
+      to,
+      failure,
+    }
+  }
+
+  async function emitNavigationAfterEach(result: NavigationRunResult): Promise<void> {
+    await runAfterEachHooks(afterEachHooks, {
+      mode: result.mode,
+      to: result.to,
+      from: result.from,
+      nativeRouter,
+      failure: result.failure,
+    })
+  }
+
   async function navigateWithTarget(
     mode: Exclude<NavigationMode, 'back'>,
     target: RouteLocationNormalizedLoaded,
     from: RouteLocationNormalizedLoaded,
-  ): Promise<void | NavigationFailure> {
+  ): Promise<NavigationRunResult> {
     let currentTarget = target
+    let currentMode: Exclude<NavigationMode, 'back'> = mode
     let redirectCount = 0
 
     while (true) {
@@ -638,59 +735,71 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
         ? currentTarget.path === from.path
         : currentTarget.fullPath === from.fullPath
       if (duplicated) {
-        return createDuplicatedFailure(currentTarget, from)
+        return createNavigationRunResult(currentMode, from, currentTarget, createDuplicatedFailure(currentTarget, from))
       }
 
       if (tabBarTarget && hasLocationQuery(currentTarget.query)) {
-        return createTabBarQueryFailure(currentTarget, from)
+        return createNavigationRunResult(currentMode, from, currentTarget, createTabBarQueryFailure(currentTarget, from))
       }
 
       const beforeEachResult = await runNavigationGuards(beforeEachGuards, {
-        mode,
+        mode: currentMode,
         to: currentTarget,
         from,
         nativeRouter,
       })
 
       if (beforeEachResult.status === 'failure') {
-        return beforeEachResult.failure
+        return createNavigationRunResult(currentMode, from, currentTarget, beforeEachResult.failure)
       }
       if (beforeEachResult.status === 'redirect') {
         const redirectedTarget = beforeEachResult.target
-        if (redirectedTarget.fullPath !== currentTarget.fullPath) {
+        const redirectedMode = beforeEachResult.replace === true
+          ? 'replace'
+          : beforeEachResult.replace === false
+            ? 'push'
+            : currentMode
+        if (redirectedTarget.fullPath !== currentTarget.fullPath || redirectedMode !== currentMode) {
           currentTarget = redirectedTarget
+          currentMode = redirectedMode
           redirectCount += 1
           if (redirectCount > maxRedirects) {
-            return createTooManyRedirectsFailure(currentTarget, from)
+            return createNavigationRunResult(currentMode, from, currentTarget, createTooManyRedirectsFailure(currentTarget, from))
           }
           continue
         }
       }
 
       const beforeResolveResult = await runNavigationGuards(beforeResolveGuards, {
-        mode,
+        mode: currentMode,
         to: currentTarget,
         from,
         nativeRouter,
       })
 
       if (beforeResolveResult.status === 'failure') {
-        return beforeResolveResult.failure
+        return createNavigationRunResult(currentMode, from, currentTarget, beforeResolveResult.failure)
       }
       if (beforeResolveResult.status === 'redirect') {
         const redirectedTarget = beforeResolveResult.target
-        if (redirectedTarget.fullPath !== currentTarget.fullPath) {
+        const redirectedMode = beforeResolveResult.replace === true
+          ? 'replace'
+          : beforeResolveResult.replace === false
+            ? 'push'
+            : currentMode
+        if (redirectedTarget.fullPath !== currentTarget.fullPath || redirectedMode !== currentMode) {
           currentTarget = redirectedTarget
+          currentMode = redirectedMode
           redirectCount += 1
           if (redirectCount > maxRedirects) {
-            return createTooManyRedirectsFailure(currentTarget, from)
+            return createNavigationRunResult(currentMode, from, currentTarget, createTooManyRedirectsFailure(currentTarget, from))
           }
           continue
         }
       }
 
       if (tabBarTarget) {
-        return executeNavigationMethod(
+        const result = await executeNavigationMethod(
           nativeRouter.switchTab as (options: Record<string, any>) => unknown,
           {
             url: createAbsoluteRoutePath(currentTarget.path),
@@ -698,13 +807,17 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
           currentTarget,
           from,
         )
+        if (isNavigationFailure(result)) {
+          return createNavigationRunResult(currentMode, from, currentTarget, result)
+        }
+        return createNavigationRunResult(currentMode, from, currentTarget)
       }
 
-      const nativeMethod = mode === 'push'
+      const nativeMethod = currentMode === 'push'
         ? nativeRouter.navigateTo
         : nativeRouter.redirectTo
 
-      return executeNavigationMethod(
+      const result = await executeNavigationMethod(
         nativeMethod as (options: Record<string, any>) => unknown,
         {
           url: currentTarget.fullPath,
@@ -712,19 +825,27 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
         currentTarget,
         from,
       )
+      if (isNavigationFailure(result)) {
+        return createNavigationRunResult(currentMode, from, currentTarget, result)
+      }
+      return createNavigationRunResult(currentMode, from, currentTarget)
     }
   }
 
   async function push(to: RouteLocationRaw): Promise<void | NavigationFailure> {
     const from = snapshotRouteLocation(route)
     const target = resolveRouteLocation(to, from.path)
-    return navigateWithTarget('push', target, from)
+    const result = await navigateWithTarget('push', target, from)
+    await emitNavigationAfterEach(result)
+    return result.failure
   }
 
   async function replace(to: RouteLocationRaw): Promise<void | NavigationFailure> {
     const from = snapshotRouteLocation(route)
     const target = resolveRouteLocation(to, from.path)
-    return navigateWithTarget('replace', target, from)
+    const result = await navigateWithTarget('replace', target, from)
+    await emitNavigationAfterEach(result)
+    return result.failure
   }
 
   async function back(delta = 1): Promise<void | NavigationFailure> {
@@ -735,10 +856,15 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
       nativeRouter,
     })
     if (beforeEachResult.status === 'failure') {
-      return beforeEachResult.failure
+      const result = createNavigationRunResult('back', from, undefined, beforeEachResult.failure)
+      await emitNavigationAfterEach(result)
+      return result.failure
     }
     if (beforeEachResult.status === 'redirect') {
-      return Promise.resolve(
+      const result = createNavigationRunResult(
+        'back',
+        from,
+        undefined,
         createNavigationFailure(
           NavigationFailureType.aborted,
           undefined,
@@ -746,6 +872,8 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
           'Redirect is not supported in back navigation guards',
         ),
       )
+      await emitNavigationAfterEach(result)
+      return result.failure
     }
 
     const beforeResolveResult = await runNavigationGuards(beforeResolveGuards, {
@@ -754,10 +882,15 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
       nativeRouter,
     })
     if (beforeResolveResult.status === 'failure') {
-      return beforeResolveResult.failure
+      const result = createNavigationRunResult('back', from, undefined, beforeResolveResult.failure)
+      await emitNavigationAfterEach(result)
+      return result.failure
     }
     if (beforeResolveResult.status === 'redirect') {
-      return Promise.resolve(
+      const result = createNavigationRunResult(
+        'back',
+        from,
+        undefined,
         createNavigationFailure(
           NavigationFailureType.aborted,
           undefined,
@@ -765,8 +898,11 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
           'Redirect is not supported in back navigation guards',
         ),
       )
+      await emitNavigationAfterEach(result)
+      return result.failure
     }
-    return executeNavigationMethod(
+
+    const result = await executeNavigationMethod(
       nativeRouter.navigateBack as (options: Record<string, any>) => unknown,
       {
         delta,
@@ -774,6 +910,11 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
       undefined,
       from,
     )
+    const runResult = isNavigationFailure(result)
+      ? createNavigationRunResult('back', from, undefined, result)
+      : createNavigationRunResult('back', from)
+    await emitNavigationAfterEach(runResult)
+    return runResult.failure
   }
 
   return {
@@ -784,6 +925,7 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
     back,
     beforeEach,
     beforeResolve,
+    afterEach,
   }
 }
 
