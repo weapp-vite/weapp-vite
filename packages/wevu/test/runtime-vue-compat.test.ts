@@ -700,4 +700,90 @@ describe('runtime: vue compat helpers', () => {
       vi.useRealTimers()
     }
   })
+
+  it('usePageScrollThrottle honors maxWait when trailing is disabled', () => {
+    vi.useFakeTimers()
+    const calls: number[] = []
+
+    try {
+      defineComponent({
+        features: {
+          enableOnPageScroll: true,
+        },
+        setup() {
+          usePageScrollThrottle((opt) => {
+            calls.push(Number(opt?.scrollTop ?? -1))
+          }, {
+            interval: 200,
+            leading: false,
+            trailing: false,
+            maxWait: 120,
+          })
+          return {}
+        },
+      })
+
+      const opts = registeredComponents[0]
+      const inst: any = {
+        setData() {},
+        properties: {},
+      }
+      opts.lifetimes.created.call(inst)
+      opts.lifetimes.attached.call(inst)
+
+      opts.onPageScroll.call(inst, { scrollTop: 1 })
+      vi.advanceTimersByTime(40)
+      opts.onPageScroll.call(inst, { scrollTop: 2 })
+      vi.advanceTimersByTime(40)
+      opts.onPageScroll.call(inst, { scrollTop: 3 })
+      vi.advanceTimersByTime(40)
+
+      expect(calls).toEqual([3])
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('usePageScrollThrottle maxWait can force callback earlier than interval trailing window', () => {
+    vi.useFakeTimers()
+    const calls: number[] = []
+
+    try {
+      defineComponent({
+        features: {
+          enableOnPageScroll: true,
+        },
+        setup() {
+          usePageScrollThrottle((opt) => {
+            calls.push(Number(opt?.scrollTop ?? -1))
+          }, {
+            interval: 300,
+            leading: false,
+            trailing: true,
+            maxWait: 120,
+          })
+          return {}
+        },
+      })
+
+      const opts = registeredComponents[0]
+      const inst: any = {
+        setData() {},
+        properties: {},
+      }
+      opts.lifetimes.created.call(inst)
+      opts.lifetimes.attached.call(inst)
+
+      opts.onPageScroll.call(inst, { scrollTop: 1 })
+      vi.advanceTimersByTime(60)
+      opts.onPageScroll.call(inst, { scrollTop: 2 })
+      vi.advanceTimersByTime(60)
+
+      expect(calls).toEqual([2])
+    }
+    finally {
+      vi.useRealTimers()
+    }
+  })
 })
