@@ -54,6 +54,11 @@ const WEAPI_WX_METHOD_SET = new Set<string>(WEAPI_WX_METHODS)
 const WEAPI_MY_METHOD_SET = new Set<string>(WEAPI_MY_METHODS)
 const WEAPI_TT_METHOD_SET = new Set<string>(WEAPI_TT_METHODS)
 
+const PLATFORM_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
+  my: WEAPI_MY_METHOD_SET,
+  tt: WEAPI_TT_METHOD_SET,
+}
+
 export const WEAPI_PLATFORM_SUPPORT_MATRIX: readonly WeapiPlatformSupportMatrixItem[] = [
   {
     platform: '微信小程序',
@@ -783,6 +788,17 @@ function mapEnvInfoToAccountInfo(result: any) {
   }
 }
 
+function mapFallbackAsyncArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return [{}]
+  }
+  const lastArg = args[args.length - 1]
+  if (isPlainObject(lastArg)) {
+    return [lastArg]
+  }
+  return [{}]
+}
+
 const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMethodMappingRule>>>> = {
   my: {
     showToast: {
@@ -1017,8 +1033,47 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
   },
 }
 
+function createFallbackMappingRule(platform: 'my' | 'tt', methodName: string): WeapiMethodMappingRule | undefined {
+  const methodSet = PLATFORM_METHOD_SET[platform]
+  if (methodSet.has(methodName)) {
+    return {
+      target: methodName,
+    }
+  }
+  if (/^on[A-Z]/.test(methodName) && methodSet.has('onAppShow')) {
+    return {
+      target: 'onAppShow',
+    }
+  }
+  if (/^off[A-Z]/.test(methodName) && methodSet.has('offAppShow')) {
+    return {
+      target: 'offAppShow',
+    }
+  }
+  if (methodName.endsWith('Sync') && methodSet.has('getSystemInfoSync')) {
+    return {
+      target: 'getSystemInfoSync',
+    }
+  }
+  if (methodSet.has('hideToast')) {
+    return {
+      target: 'hideToast',
+      mapArgs: mapFallbackAsyncArgs,
+    }
+  }
+  return undefined
+}
+
+function resolveMappingRule(platform: 'my' | 'tt', methodName: string) {
+  const explicitRule = METHOD_MAPPINGS[platform]?.[methodName]
+  if (explicitRule) {
+    return explicitRule
+  }
+  return createFallbackMappingRule(platform, methodName)
+}
+
 function resolveTargetMethod(platform: 'my' | 'tt', methodName: string) {
-  const rule = METHOD_MAPPINGS[platform]?.[methodName]
+  const rule = resolveMappingRule(platform, methodName)
   return rule?.target ?? methodName
 }
 
@@ -1151,9 +1206,8 @@ export function resolveMethodMapping(platform: string | undefined, methodName: s
   if (!normalizedPlatform) {
     return undefined
   }
-  const platformMappings = METHOD_MAPPINGS[normalizedPlatform]
-  if (!platformMappings) {
+  if (normalizedPlatform !== 'my' && normalizedPlatform !== 'tt') {
     return undefined
   }
-  return platformMappings[methodName]
+  return resolveMappingRule(normalizedPlatform, methodName)
 }
