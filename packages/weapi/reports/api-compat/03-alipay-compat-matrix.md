@@ -2,484 +2,484 @@
 
 总计：479，支持：479，不支持：0
 
-| 微信 API                                      | 支付宝目标 API                       | 支持 | 策略                                                     |
-| --------------------------------------------- | ------------------------------------ | ---- | -------------------------------------------------------- |
-| `addCard`                                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `addFileToFavorites`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `addPaymentPassFinish`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `addPaymentPassGetCertificateData`            | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `addPhoneCalendar`                            | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `addPhoneContact`                             | `addPhoneContact`                    | ✅   | 直连 `my.addPhoneContact`                                |
-| `addPhoneRepeatCalendar`                      | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `addVideoToFavorites`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `arrayBufferToBase64`                         | `arrayBufferToBase64`                | ✅   | 直连 `my.arrayBufferToBase64`                            |
-| `authorize`                                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `authorizeForMiniProgram`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `authPrivateMessage`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `base64ToArrayBuffer`                         | `base64ToArrayBuffer`                | ✅   | 直连 `my.base64ToArrayBuffer`                            |
-| `batchGetStorage`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `batchGetStorageSync`                         | `getSystemInfoSync`                  | ✅   | 映射到 `my.getSystemInfoSync`                            |
-| `batchSetStorage`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `batchSetStorageSync`                         | `getSystemInfoSync`                  | ✅   | 映射到 `my.getSystemInfoSync`                            |
-| `bindEmployeeRelation`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `canAddSecureElementPass`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `cancelIdleCallback`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `canIUse`                                     | `canIUse`                            | ✅   | 直连 `my.canIUse`                                        |
-| `canvasGetImageData`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `canvasPutImageData`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `canvasToTempFilePath`                        | `canvasToTempFilePath`               | ✅   | 直连 `my.canvasToTempFilePath`                           |
-| `checkDeviceSupportHevc`                      | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `checkEmployeeRelation`                       | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `checkIsAddedToMyMiniProgram`                 | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `checkIsOpenAccessibility`                    | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `checkIsPictureInPictureActive`               | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `checkIsSoterEnrolledInDevice`                | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `checkIsSupportSoterAuthentication`           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `checkSession`                                | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `chooseAddress`                               | `getAddress`                         | ✅   | 映射到 `my.getAddress`                                   |
-| `chooseContact`                               | `chooseContact`                      | ✅   | 直连 `my.chooseContact`                                  |
-| `chooseImage`                                 | `chooseImage`                        | ✅   | 返回值 `apFilePaths` 映射到 `tempFilePaths`              |
-| `chooseInvoice`                               | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `chooseInvoiceTitle`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `chooseLicensePlate`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `chooseLocation`                              | `chooseLocation`                     | ✅   | 直连 `my.chooseLocation`                                 |
-| `chooseMedia`                                 | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `chooseMessageFile`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `choosePoi`                                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `chooseVideo`                                 | `chooseVideo`                        | ✅   | 直连 `my.chooseVideo`                                    |
-| `clearStorage`                                | `clearStorage`                       | ✅   | 直连 `my.clearStorage`                                   |
-| `clearStorageSync`                            | `clearStorageSync`                   | ✅   | 直连 `my.clearStorageSync`                               |
-| `closeBLEConnection`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `closeBluetoothAdapter`                       | `closeBluetoothAdapter`              | ✅   | 直连 `my.closeBluetoothAdapter`                          |
-| `closeSocket`                                 | `closeSocket`                        | ✅   | 直连 `my.closeSocket`                                    |
-| `compressImage`                               | `compressImage`                      | ✅   | 直连 `my.compressImage`                                  |
-| `compressVideo`                               | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `connectSocket`                               | `connectSocket`                      | ✅   | 直连 `my.connectSocket`                                  |
-| `connectWifi`                                 | `connectWifi`                        | ✅   | 直连 `my.connectWifi`                                    |
-| `createAnimation`                             | `createAnimation`                    | ✅   | 直连 `my.createAnimation`                                |
-| `createAudioContext`                          | `createInnerAudioContext`            | ✅   | 映射到 `my.createInnerAudioContext`                      |
-| `createBLEConnection`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createBLEPeripheralServer`                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createBufferURL`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createCacheManager`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createCameraContext`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createCanvasContext`                         | `createCanvasContext`                | ✅   | 直连 `my.createCanvasContext`                            |
-| `createGlobalPayment`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createInferenceSession`                      | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createInnerAudioContext`                     | `createInnerAudioContext`            | ✅   | 直连 `my.createInnerAudioContext`                        |
-| `createIntersectionObserver`                  | `createIntersectionObserver`         | ✅   | 直连 `my.createIntersectionObserver`                     |
-| `createInterstitialAd`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createLivePlayerContext`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createLivePusherContext`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createMapContext`                            | `createMapContext`                   | ✅   | 直连 `my.createMapContext`                               |
-| `createMediaAudioPlayer`                      | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createMediaContainer`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createMediaRecorder`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createOffscreenCanvas`                       | `createOffscreenCanvas`              | ✅   | 直连 `my.createOffscreenCanvas`                          |
-| `createRewardedVideoAd`                       | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createSelectorQuery`                         | `createSelectorQuery`                | ✅   | 直连 `my.createSelectorQuery`                            |
-| `createTCPSocket`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createUDPSocket`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createVideoContext`                          | `createVideoContext`                 | ✅   | 直连 `my.createVideoContext`                             |
-| `createVideoDecoder`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createVKSession`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `createWebAudioContext`                       | `createInnerAudioContext`            | ✅   | 映射到 `my.createInnerAudioContext`                      |
-| `createWorker`                                | `createWorker`                       | ✅   | 直连 `my.createWorker`                                   |
-| `cropImage`                                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `disableAlertBeforeUnload`                    | `disableAlertBeforeUnload`           | ✅   | 直连 `my.disableAlertBeforeUnload`                       |
-| `downloadFile`                                | `downloadFile`                       | ✅   | 直连 `my.downloadFile`                                   |
-| `editImage`                                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `enableAlertBeforeUnload`                     | `enableAlertBeforeUnload`            | ✅   | 直连 `my.enableAlertBeforeUnload`                        |
-| `exitMiniProgram`                             | `exitMiniProgram`                    | ✅   | 直连 `my.exitMiniProgram`                                |
-| `exitVoIPChat`                                | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `faceDetect`                                  | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getAccountInfoSync`                          | `getAccountInfoSync`                 | ✅   | 直连 `my.getAccountInfoSync`                             |
-| `getApiCategory`                              | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getAppAuthorizeSetting`                      | `getAppAuthorizeSetting`             | ✅   | 直连 `my.getAppAuthorizeSetting`                         |
-| `getAppBaseInfo`                              | `getAppBaseInfo`                     | ✅   | 直连 `my.getAppBaseInfo`                                 |
-| `getAvailableAudioSources`                    | `getAvailableAudioSources`           | ✅   | 直连 `my.getAvailableAudioSources`                       |
-| `getBackgroundAudioManager`                   | `getBackgroundAudioManager`          | ✅   | 直连 `my.getBackgroundAudioManager`                      |
-| `getBackgroundAudioPlayerState`               | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getBackgroundFetchData`                      | `getBackgroundFetchData`             | ✅   | 直连 `my.getBackgroundFetchData`                         |
-| `getBackgroundFetchToken`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getBatteryInfo`                              | `getBatteryInfo`                     | ✅   | 直连 `my.getBatteryInfo`                                 |
-| `getBatteryInfoSync`                          | `getBatteryInfoSync`                 | ✅   | 直连 `my.getBatteryInfoSync`                             |
-| `getBeacons`                                  | `getBeacons`                         | ✅   | 直连 `my.getBeacons`                                     |
-| `getBLEDeviceCharacteristics`                 | `getBLEDeviceCharacteristics`        | ✅   | 直连 `my.getBLEDeviceCharacteristics`                    |
-| `getBLEDeviceRSSI`                            | `getBLEDeviceRSSI`                   | ✅   | 直连 `my.getBLEDeviceRSSI`                               |
-| `getBLEDeviceServices`                        | `getBLEDeviceServices`               | ✅   | 直连 `my.getBLEDeviceServices`                           |
-| `getBLEMTU`                                   | `getBLEMTU`                          | ✅   | 直连 `my.getBLEMTU`                                      |
-| `getBluetoothAdapterState`                    | `getBluetoothAdapterState`           | ✅   | 直连 `my.getBluetoothAdapterState`                       |
-| `getBluetoothDevices`                         | `getBluetoothDevices`                | ✅   | 直连 `my.getBluetoothDevices`                            |
-| `getChannelsLiveInfo`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getChannelsLiveNoticeInfo`                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getChannelsShareKey`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getChatToolInfo`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getClipboardData`                            | `getClipboard`                       | ✅   | 转调 `my.getClipboard` 并映射 `text` → `data`            |
-| `getCommonConfig`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getConnectedBluetoothDevices`                | `getConnectedBluetoothDevices`       | ✅   | 直连 `my.getConnectedBluetoothDevices`                   |
-| `getConnectedWifi`                            | `getConnectedWifi`                   | ✅   | 直连 `my.getConnectedWifi`                               |
-| `getDeviceBenchmarkInfo`                      | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getDeviceInfo`                               | `getSystemInfo`                      | ✅   | 映射到 `my.getSystemInfo`，并提取设备字段                |
-| `getDeviceVoIPList`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getEnterOptionsSync`                         | `getEnterOptionsSync`                | ✅   | 直连 `my.getEnterOptionsSync`                            |
-| `getExptInfoSync`                             | `getSystemInfoSync`                  | ✅   | 映射到 `my.getSystemInfoSync`                            |
-| `getExtConfig`                                | `getExtConfig`                       | ✅   | 直连 `my.getExtConfig`                                   |
-| `getExtConfigSync`                            | `getExtConfigSync`                   | ✅   | 直连 `my.getExtConfigSync`                               |
-| `getFileSystemManager`                        | `getFileSystemManager`               | ✅   | 直连 `my.getFileSystemManager`                           |
-| `getFuzzyLocation`                            | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getGroupEnterInfo`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getHCEState`                                 | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getImageInfo`                                | `getImageInfo`                       | ✅   | 直连 `my.getImageInfo`                                   |
-| `getInferenceEnvInfo`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getLaunchOptionsSync`                        | `getLaunchOptionsSync`               | ✅   | 直连 `my.getLaunchOptionsSync`                           |
-| `getLocalIPAddress`                           | `getLocalIPAddress`                  | ✅   | 直连 `my.getLocalIPAddress`                              |
-| `getLocation`                                 | `getLocation`                        | ✅   | 直连 `my.getLocation`                                    |
-| `getLogManager`                               | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect`    | ✅   | 直连 `my.getMenuButtonBoundingClientRect`                |
-| `getNetworkType`                              | `getNetworkType`                     | ✅   | 直连 `my.getNetworkType`                                 |
-| `getNFCAdapter`                               | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getPerformance`                              | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getPrivacySetting`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getRandomValues`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getRealtimeLogManager`                       | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getRecorderManager`                          | `getRecorderManager`                 | ✅   | 直连 `my.getRecorderManager`                             |
-| `getRendererUserAgent`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getScreenBrightness`                         | `getScreenBrightness`                | ✅   | 直连 `my.getScreenBrightness`                            |
-| `getScreenRecordingState`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getSecureElementPasses`                      | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getSelectedTextRange`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getSetting`                                  | `getSetting`                         | ✅   | 直连 `my.getSetting`                                     |
-| `getShareInfo`                                | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getShowSplashAdStatus`                       | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getSkylineInfo`                              | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getSkylineInfoSync`                          | `getSystemInfoSync`                  | ✅   | 映射到 `my.getSystemInfoSync`                            |
-| `getStorage`                                  | `getStorage`                         | ✅   | 直连 `my.getStorage`                                     |
-| `getStorageInfo`                              | `getStorageInfo`                     | ✅   | 直连 `my.getStorageInfo`                                 |
-| `getStorageInfoSync`                          | `getStorageInfoSync`                 | ✅   | 直连 `my.getStorageInfoSync`                             |
-| `getStorageSync`                              | `getStorageSync`                     | ✅   | 直连 `my.getStorageSync`                                 |
-| `getSystemInfo`                               | `getSystemInfo`                      | ✅   | 直连 `my.getSystemInfo`                                  |
-| `getSystemInfoAsync`                          | `getSystemInfo`                      | ✅   | 映射到 `my.getSystemInfo`                                |
-| `getSystemInfoSync`                           | `getSystemInfoSync`                  | ✅   | 直连 `my.getSystemInfoSync`                              |
-| `getSystemSetting`                            | `getSystemSetting`                   | ✅   | 直连 `my.getSystemSetting`                               |
-| `getUpdateManager`                            | `getUpdateManager`                   | ✅   | 直连 `my.getUpdateManager`                               |
-| `getUserCryptoManager`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getUserInfo`                                 | `getOpenUserInfo`                    | ✅   | 映射到 `my.getOpenUserInfo`                              |
-| `getUserProfile`                              | `getOpenUserInfo`                    | ✅   | 映射到 `my.getOpenUserInfo`                              |
-| `getVideoInfo`                                | `getVideoInfo`                       | ✅   | 直连 `my.getVideoInfo`                                   |
-| `getWeRunData`                                | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `getWifiList`                                 | `getWifiList`                        | ✅   | 直连 `my.getWifiList`                                    |
-| `getWindowInfo`                               | `getWindowInfo`                      | ✅   | 直连 `my.getWindowInfo`                                  |
-| `getXrFrameSystem`                            | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `hideHomeButton`                              | `hideBackHome`                       | ✅   | 映射到 `my.hideBackHome`                                 |
-| `hideKeyboard`                                | `hideKeyboard`                       | ✅   | 直连 `my.hideKeyboard`                                   |
-| `hideLoading`                                 | `hideLoading`                        | ✅   | 直连 `my.hideLoading`                                    |
-| `hideNavigationBarLoading`                    | `hideNavigationBarLoading`           | ✅   | 直连 `my.hideNavigationBarLoading`                       |
-| `hideShareMenu`                               | `hideShareMenu`                      | ✅   | 直连 `my.hideShareMenu`                                  |
-| `hideTabBar`                                  | `hideTabBar`                         | ✅   | 直连 `my.hideTabBar`                                     |
-| `hideTabBarRedDot`                            | `hideTabBarRedDot`                   | ✅   | 直连 `my.hideTabBarRedDot`                               |
-| `hideToast`                                   | `hideToast`                          | ✅   | 直连 `my.hideToast`                                      |
-| `initFaceDetect`                              | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `isBluetoothDevicePaired`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `isVKSupport`                                 | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `join1v1Chat`                                 | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `joinVoIPChat`                                | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `loadBuiltInFontFace`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `loadFontFace`                                | `loadFontFace`                       | ✅   | 直连 `my.loadFontFace`                                   |
-| `login`                                       | `getAuthCode`                        | ✅   | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段          |
-| `makeBluetoothPair`                           | `makeBluetoothPair`                  | ✅   | 直连 `my.makeBluetoothPair`                              |
-| `makePhoneCall`                               | `makePhoneCall`                      | ✅   | 直连 `my.makePhoneCall`                                  |
-| `navigateBack`                                | `navigateBack`                       | ✅   | 直连 `my.navigateBack`                                   |
-| `navigateBackMiniProgram`                     | `navigateBackMiniProgram`            | ✅   | 直连 `my.navigateBackMiniProgram`                        |
-| `navigateTo`                                  | `navigateTo`                         | ✅   | 直连 `my.navigateTo`                                     |
-| `navigateToMiniProgram`                       | `navigateToMiniProgram`              | ✅   | 直连 `my.navigateToMiniProgram`                          |
-| `nextTick`                                    | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `notifyBLECharacteristicValueChange`          | `notifyBLECharacteristicValueChange` | ✅   | 直连 `my.notifyBLECharacteristicValueChange`             |
-| `notifyGroupMembers`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `offAccelerometerChange`                      | `offAccelerometerChange`             | ✅   | 直连 `my.offAccelerometerChange`                         |
-| `offAfterPageLoad`                            | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offAfterPageUnload`                          | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offApiCategoryChange`                        | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offAppHide`                                  | `offAppHide`                         | ✅   | 直连 `my.offAppHide`                                     |
-| `offAppRoute`                                 | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offAppRouteDone`                             | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offAppShow`                                  | `offAppShow`                         | ✅   | 直连 `my.offAppShow`                                     |
-| `offAudioInterruptionBegin`                   | `offAudioInterruptionBegin`          | ✅   | 直连 `my.offAudioInterruptionBegin`                      |
-| `offAudioInterruptionEnd`                     | `offAudioInterruptionEnd`            | ✅   | 直连 `my.offAudioInterruptionEnd`                        |
-| `offBatteryInfoChange`                        | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offBeaconServiceChange`                      | `offBeaconServiceChange`             | ✅   | 直连 `my.offBeaconServiceChange`                         |
-| `offBeaconUpdate`                             | `offBeaconUpdate`                    | ✅   | 直连 `my.offBeaconUpdate`                                |
-| `offBeforeAppRoute`                           | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offBeforePageLoad`                           | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offBeforePageUnload`                         | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offBLECharacteristicValueChange`             | `offBLECharacteristicValueChange`    | ✅   | 直连 `my.offBLECharacteristicValueChange`                |
-| `offBLEConnectionStateChange`                 | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offBLEMTUChange`                             | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offBLEPeripheralConnectionStateChanged`      | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offBluetoothAdapterStateChange`              | `offBluetoothAdapterStateChange`     | ✅   | 直连 `my.offBluetoothAdapterStateChange`                 |
-| `offBluetoothDeviceFound`                     | `offBluetoothDeviceFound`            | ✅   | 直连 `my.offBluetoothDeviceFound`                        |
-| `offCompassChange`                            | `offCompassChange`                   | ✅   | 直连 `my.offCompassChange`                               |
-| `offCopyUrl`                                  | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offDeviceMotionChange`                       | `offDeviceMotionChange`              | ✅   | 直连 `my.offDeviceMotionChange`                          |
-| `offEmbeddedMiniProgramHeightChange`          | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offError`                                    | `offError`                           | ✅   | 直连 `my.offError`                                       |
-| `offGeneratePoster`                           | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offGetWifiList`                              | `offGetWifiList`                     | ✅   | 直连 `my.offGetWifiList`                                 |
-| `offGyroscopeChange`                          | `offGyroscopeChange`                 | ✅   | 直连 `my.offGyroscopeChange`                             |
-| `offHCEMessage`                               | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offKeyboardHeightChange`                     | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offKeyDown`                                  | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offKeyUp`                                    | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offLazyLoadError`                            | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offLocalServiceDiscoveryStop`                | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offLocalServiceFound`                        | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offLocalServiceLost`                         | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offLocalServiceResolveFail`                  | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offLocationChange`                           | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offLocationChangeError`                      | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offMemoryWarning`                            | `offMemoryWarning`                   | ✅   | 直连 `my.offMemoryWarning`                               |
-| `offMenuButtonBoundingClientRectWeightChange` | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offNetworkStatusChange`                      | `offNetworkStatusChange`             | ✅   | 直连 `my.offNetworkStatusChange`                         |
-| `offNetworkWeakChange`                        | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offOnUserTriggerTranslation`                 | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offPageNotFound`                             | `offPageNotFound`                    | ✅   | 直连 `my.offPageNotFound`                                |
-| `offParallelStateChange`                      | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offScreenRecordingStateChanged`              | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offThemeChange`                              | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offUnhandledRejection`                       | `offUnhandledRejection`              | ✅   | 直连 `my.offUnhandledRejection`                          |
-| `offUserCaptureScreen`                        | `offUserCaptureScreen`               | ✅   | 直连 `my.offUserCaptureScreen`                           |
-| `offVoIPChatInterrupted`                      | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offVoIPChatMembersChanged`                   | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offVoIPChatSpeakersChanged`                  | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offVoIPChatStateChanged`                     | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offVoIPVideoMembersChanged`                  | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offWifiConnected`                            | `offWifiConnected`                   | ✅   | 直连 `my.offWifiConnected`                               |
-| `offWifiConnectedWithPartialInfo`             | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offWindowResize`                             | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `offWindowStateChange`                        | `offAppShow`                         | ✅   | 映射到 `my.offAppShow`                                   |
-| `onAccelerometerChange`                       | `onAccelerometerChange`              | ✅   | 直连 `my.onAccelerometerChange`                          |
-| `onAfterPageLoad`                             | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onAfterPageUnload`                           | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onApiCategoryChange`                         | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onAppHide`                                   | `onAppHide`                          | ✅   | 直连 `my.onAppHide`                                      |
-| `onAppRoute`                                  | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onAppRouteDone`                              | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onAppShow`                                   | `onAppShow`                          | ✅   | 直连 `my.onAppShow`                                      |
-| `onAudioInterruptionBegin`                    | `onAudioInterruptionBegin`           | ✅   | 直连 `my.onAudioInterruptionBegin`                       |
-| `onAudioInterruptionEnd`                      | `onAudioInterruptionEnd`             | ✅   | 直连 `my.onAudioInterruptionEnd`                         |
-| `onBackgroundAudioPause`                      | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onBackgroundAudioPlay`                       | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onBackgroundAudioStop`                       | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onBackgroundFetchData`                       | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onBatteryInfoChange`                         | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onBeaconServiceChange`                       | `onBeaconServiceChange`              | ✅   | 直连 `my.onBeaconServiceChange`                          |
-| `onBeaconUpdate`                              | `onBeaconUpdate`                     | ✅   | 直连 `my.onBeaconUpdate`                                 |
-| `onBeforeAppRoute`                            | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onBeforePageLoad`                            | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onBeforePageUnload`                          | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onBLECharacteristicValueChange`              | `onBLECharacteristicValueChange`     | ✅   | 直连 `my.onBLECharacteristicValueChange`                 |
-| `onBLEConnectionStateChange`                  | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onBLEMTUChange`                              | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onBLEPeripheralConnectionStateChanged`       | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onBluetoothAdapterStateChange`               | `onBluetoothAdapterStateChange`      | ✅   | 直连 `my.onBluetoothAdapterStateChange`                  |
-| `onBluetoothDeviceFound`                      | `onBluetoothDeviceFound`             | ✅   | 直连 `my.onBluetoothDeviceFound`                         |
-| `onCompassChange`                             | `onCompassChange`                    | ✅   | 直连 `my.onCompassChange`                                |
-| `onCopyUrl`                                   | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onDeviceMotionChange`                        | `onDeviceMotionChange`               | ✅   | 直连 `my.onDeviceMotionChange`                           |
-| `onEmbeddedMiniProgramHeightChange`           | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onError`                                     | `onError`                            | ✅   | 直连 `my.onError`                                        |
-| `onGeneratePoster`                            | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onGetWifiList`                               | `onGetWifiList`                      | ✅   | 直连 `my.onGetWifiList`                                  |
-| `onGyroscopeChange`                           | `onGyroscopeChange`                  | ✅   | 直连 `my.onGyroscopeChange`                              |
-| `onHCEMessage`                                | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onKeyboardHeightChange`                      | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onKeyDown`                                   | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onKeyUp`                                     | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onLazyLoadError`                             | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onLocalServiceDiscoveryStop`                 | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onLocalServiceFound`                         | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onLocalServiceLost`                          | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onLocalServiceResolveFail`                   | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onLocationChange`                            | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onLocationChangeError`                       | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onMemoryWarning`                             | `onMemoryWarning`                    | ✅   | 直连 `my.onMemoryWarning`                                |
-| `onMenuButtonBoundingClientRectWeightChange`  | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onNeedPrivacyAuthorization`                  | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onNetworkStatusChange`                       | `onNetworkStatusChange`              | ✅   | 直连 `my.onNetworkStatusChange`                          |
-| `onNetworkWeakChange`                         | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onOnUserTriggerTranslation`                  | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onPageNotFound`                              | `onPageNotFound`                     | ✅   | 直连 `my.onPageNotFound`                                 |
-| `onParallelStateChange`                       | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onScreenRecordingStateChanged`               | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onSocketClose`                               | `onSocketClose`                      | ✅   | 直连 `my.onSocketClose`                                  |
-| `onSocketError`                               | `onSocketError`                      | ✅   | 直连 `my.onSocketError`                                  |
-| `onSocketMessage`                             | `onSocketMessage`                    | ✅   | 直连 `my.onSocketMessage`                                |
-| `onSocketOpen`                                | `onSocketOpen`                       | ✅   | 直连 `my.onSocketOpen`                                   |
-| `onThemeChange`                               | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onUnhandledRejection`                        | `onUnhandledRejection`               | ✅   | 直连 `my.onUnhandledRejection`                           |
-| `onUserCaptureScreen`                         | `onUserCaptureScreen`                | ✅   | 直连 `my.onUserCaptureScreen`                            |
-| `onVoIPChatInterrupted`                       | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onVoIPChatMembersChanged`                    | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onVoIPChatSpeakersChanged`                   | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onVoIPChatStateChanged`                      | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onVoIPVideoMembersChanged`                   | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onWifiConnected`                             | `onWifiConnected`                    | ✅   | 直连 `my.onWifiConnected`                                |
-| `onWifiConnectedWithPartialInfo`              | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onWindowResize`                              | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `onWindowStateChange`                         | `onAppShow`                          | ✅   | 映射到 `my.onAppShow`                                    |
-| `openAppAuthorizeSetting`                     | `openSetting`                        | ✅   | 映射到 `my.openSetting`                                  |
-| `openBluetoothAdapter`                        | `openBluetoothAdapter`               | ✅   | 直连 `my.openBluetoothAdapter`                           |
-| `openCard`                                    | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openChannelsActivity`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openChannelsEvent`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openChannelsLive`                            | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openChannelsLiveNoticeInfo`                  | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openChannelsUserProfile`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openChatTool`                                | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openCustomerServiceChat`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openDocument`                                | `openDocument`                       | ✅   | 直连 `my.openDocument`                                   |
-| `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`              | ✅   | 映射到 `my.navigateToMiniProgram`                        |
-| `openHKOfflinePayView`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openInquiriesTopic`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openLocation`                                | `openLocation`                       | ✅   | 直连 `my.openLocation`                                   |
-| `openOfficialAccountArticle`                  | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openOfficialAccountChat`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openOfficialAccountProfile`                  | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openPrivacyContract`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openSetting`                                 | `openSetting`                        | ✅   | 直连 `my.openSetting`                                    |
-| `openSingleStickerView`                       | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openStickerIPView`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openStickerSetView`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openStoreCouponDetail`                       | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openStoreOrderDetail`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openSystemBluetoothSetting`                  | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `openVideoEditor`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `pageScrollTo`                                | `pageScrollTo`                       | ✅   | 直连 `my.pageScrollTo`                                   |
-| `pauseBackgroundAudio`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `pauseVoice`                                  | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `playBackgroundAudio`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `playVoice`                                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `pluginLogin`                                 | `getAuthCode`                        | ✅   | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段          |
-| `postMessageToReferrerMiniProgram`            | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `postMessageToReferrerPage`                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `preDownloadSubpackage`                       | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `preloadAssets`                               | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `preloadSkylineView`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `preloadWebview`                              | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `previewImage`                                | `previewImage`                       | ✅   | 直连 `my.previewImage`                                   |
-| `previewMedia`                                | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `readBLECharacteristicValue`                  | `readBLECharacteristicValue`         | ✅   | 直连 `my.readBLECharacteristicValue`                     |
-| `redirectTo`                                  | `redirectTo`                         | ✅   | 直连 `my.redirectTo`                                     |
-| `reLaunch`                                    | `reLaunch`                           | ✅   | 直连 `my.reLaunch`                                       |
-| `removeSecureElementPass`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `removeStorage`                               | `removeStorage`                      | ✅   | 直连 `my.removeStorage`                                  |
-| `removeStorageSync`                           | `removeStorageSync`                  | ✅   | 直连 `my.removeStorageSync`                              |
-| `removeTabBarBadge`                           | `removeTabBarBadge`                  | ✅   | 直连 `my.removeTabBarBadge`                              |
-| `reportAnalytics`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `reportEvent`                                 | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `reportMonitor`                               | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `reportPerformance`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `request`                                     | `request`                            | ✅   | 直连 `my.request`                                        |
-| `requestCommonPayment`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `requestDeviceVoIP`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `requestIdleCallback`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `requestMerchantTransfer`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `requestOrderPayment`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `requestPayment`                              | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `requestPluginPayment`                        | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`            | ✅   | 映射到 `my.requestSubscribeMessage`                      |
-| `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`            | ✅   | 映射到 `my.requestSubscribeMessage`                      |
-| `requestSubscribeMessage`                     | `requestSubscribeMessage`            | ✅   | 直连 `my.requestSubscribeMessage`                        |
-| `requestVirtualPayment`                       | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `requirePrivacyAuthorize`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `reserveChannelsLive`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `restartMiniProgram`                          | `reLaunch`                           | ✅   | 映射到 `my.reLaunch`                                     |
-| `revokeBufferURL`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `rewriteRoute`                                | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `saveFileToDisk`                              | `saveFileToDisk`                     | ✅   | 直连 `my.saveFileToDisk`                                 |
-| `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`             | ✅   | 直连 `my.saveImageToPhotosAlbum`                         |
-| `saveVideoToPhotosAlbum`                      | `saveVideoToPhotosAlbum`             | ✅   | 直连 `my.saveVideoToPhotosAlbum`                         |
-| `scanCode`                                    | `scan`                               | ✅   | 映射到 `my.scan`                                         |
-| `seekBackgroundAudio`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `selectGroupMembers`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `sendHCEMessage`                              | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `sendSms`                                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `sendSocketMessage`                           | `sendSocketMessage`                  | ✅   | 直连 `my.sendSocketMessage`                              |
-| `setBackgroundColor`                          | `setBackgroundColor`                 | ✅   | 直连 `my.setBackgroundColor`                             |
-| `setBackgroundFetchToken`                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `setBackgroundTextStyle`                      | `setBackgroundTextStyle`             | ✅   | 直连 `my.setBackgroundTextStyle`                         |
-| `setBLEMTU`                                   | `setBLEMTU`                          | ✅   | 直连 `my.setBLEMTU`                                      |
-| `setClipboardData`                            | `setClipboard`                       | ✅   | 转调 `my.setClipboard` 并映射 `data` → `text`            |
-| `setEnable1v1Chat`                            | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `setEnableDebug`                              | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `setInnerAudioOption`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `setKeepScreenOn`                             | `setKeepScreenOn`                    | ✅   | 直连 `my.setKeepScreenOn`                                |
-| `setNavigationBarColor`                       | `setNavigationBarColor`              | ✅   | 直连 `my.setNavigationBarColor`                          |
-| `setNavigationBarTitle`                       | `setNavigationBarTitle`              | ✅   | 直连 `my.setNavigationBarTitle`                          |
-| `setScreenBrightness`                         | `setScreenBrightness`                | ✅   | 直连 `my.setScreenBrightness`                            |
-| `setStorage`                                  | `setStorage`                         | ✅   | 直连 `my.setStorage`                                     |
-| `setStorageSync`                              | `setStorageSync`                     | ✅   | 直连 `my.setStorageSync`                                 |
-| `setTabBarBadge`                              | `setTabBarBadge`                     | ✅   | 直连 `my.setTabBarBadge`                                 |
-| `setTabBarItem`                               | `setTabBarItem`                      | ✅   | 直连 `my.setTabBarItem`                                  |
-| `setTabBarStyle`                              | `setTabBarStyle`                     | ✅   | 直连 `my.setTabBarStyle`                                 |
-| `setTopBarText`                               | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `setVisualEffectOnCapture`                    | `setVisualEffectOnCapture`           | ✅   | 直连 `my.setVisualEffectOnCapture`                       |
-| `setWifiList`                                 | `setWifiList`                        | ✅   | 直连 `my.setWifiList`                                    |
-| `setWindowSize`                               | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `shareAppMessageToGroup`                      | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `shareEmojiToGroup`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `shareFileMessage`                            | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `shareFileToGroup`                            | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `shareImageToGroup`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `shareToOfficialAccount`                      | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `shareToWeRun`                                | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `shareVideoMessage`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `shareVideoToGroup`                           | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `showActionSheet`                             | `showActionSheet`                    | ✅   | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐      |
-| `showLoading`                                 | `showLoading`                        | ✅   | `title` 映射到 `content` 后调用 `my.showLoading`         |
-| `showModal`                                   | `confirm`                            | ✅   | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果         |
-| `showNavigationBarLoading`                    | `showNavigationBarLoading`           | ✅   | 直连 `my.showNavigationBarLoading`                       |
-| `showRedPackage`                              | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `showShareImageMenu`                          | `showSharePanel`                     | ✅   | 映射到 `my.showSharePanel`                               |
-| `showShareMenu`                               | `showShareMenu`                      | ✅   | 直连 `my.showShareMenu`                                  |
-| `showTabBar`                                  | `showTabBar`                         | ✅   | 直连 `my.showTabBar`                                     |
-| `showTabBarRedDot`                            | `showTabBarRedDot`                   | ✅   | 直连 `my.showTabBarRedDot`                               |
-| `showToast`                                   | `showToast`                          | ✅   | `title/icon` 映射到 `content/type` 后调用 `my.showToast` |
-| `startAccelerometer`                          | `startAccelerometer`                 | ✅   | 直连 `my.startAccelerometer`                             |
-| `startBeaconDiscovery`                        | `startBeaconDiscovery`               | ✅   | 直连 `my.startBeaconDiscovery`                           |
-| `startBluetoothDevicesDiscovery`              | `startBluetoothDevicesDiscovery`     | ✅   | 直连 `my.startBluetoothDevicesDiscovery`                 |
-| `startCompass`                                | `startCompass`                       | ✅   | 直连 `my.startCompass`                                   |
-| `startDeviceMotionListening`                  | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `startGyroscope`                              | `startGyroscope`                     | ✅   | 直连 `my.startGyroscope`                                 |
-| `startHCE`                                    | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `startLocalServiceDiscovery`                  | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `startLocationUpdate`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `startLocationUpdateBackground`               | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `startPullDownRefresh`                        | `startPullDownRefresh`               | ✅   | 直连 `my.startPullDownRefresh`                           |
-| `startRecord`                                 | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `startSoterAuthentication`                    | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `startWifi`                                   | `startWifi`                          | ✅   | 直连 `my.startWifi`                                      |
-| `stopAccelerometer`                           | `stopAccelerometer`                  | ✅   | 直连 `my.stopAccelerometer`                              |
-| `stopBackgroundAudio`                         | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `stopBeaconDiscovery`                         | `stopBeaconDiscovery`                | ✅   | 直连 `my.stopBeaconDiscovery`                            |
-| `stopBluetoothDevicesDiscovery`               | `stopBluetoothDevicesDiscovery`      | ✅   | 直连 `my.stopBluetoothDevicesDiscovery`                  |
-| `stopCompass`                                 | `stopCompass`                        | ✅   | 直连 `my.stopCompass`                                    |
-| `stopDeviceMotionListening`                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `stopFaceDetect`                              | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `stopGyroscope`                               | `stopGyroscope`                      | ✅   | 直连 `my.stopGyroscope`                                  |
-| `stopHCE`                                     | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `stopLocalServiceDiscovery`                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `stopLocationUpdate`                          | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `stopPullDownRefresh`                         | `stopPullDownRefresh`                | ✅   | 直连 `my.stopPullDownRefresh`                            |
-| `stopRecord`                                  | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `stopVoice`                                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `stopWifi`                                    | `stopWifi`                           | ✅   | 直连 `my.stopWifi`                                       |
-| `subscribeVoIPVideoMembers`                   | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `switchTab`                                   | `switchTab`                          | ✅   | 直连 `my.switchTab`                                      |
-| `updateShareMenu`                             | `showSharePanel`                     | ✅   | 映射到 `my.showSharePanel`                               |
-| `updateVoIPChatMuteConfig`                    | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `updateWeChatApp`                             | `hideToast`                          | ✅   | 映射到 `my.hideToast`                                    |
-| `uploadFile`                                  | `uploadFile`                         | ✅   | 直连 `my.uploadFile`                                     |
-| `vibrateLong`                                 | `vibrateLong`                        | ✅   | 直连 `my.vibrateLong`                                    |
-| `vibrateShort`                                | `vibrateShort`                       | ✅   | 直连 `my.vibrateShort`                                   |
-| `writeBLECharacteristicValue`                 | `writeBLECharacteristicValue`        | ✅   | 直连 `my.writeBLECharacteristicValue`                    |
+| 微信 API                                      | 支付宝目标 API                       | 支持 | 支持级别   | 语义对齐 | 策略                                                     |
+| --------------------------------------------- | ------------------------------------ | ---- | ---------- | -------- | -------------------------------------------------------- |
+| `addCard`                                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `addFileToFavorites`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `addPaymentPassFinish`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `addPaymentPassGetCertificateData`            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `addPhoneCalendar`                            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `addPhoneContact`                             | `addPhoneContact`                    | ✅   | `native`   | ✅       | 直连 `my.addPhoneContact`                                |
+| `addPhoneRepeatCalendar`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `addVideoToFavorites`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `arrayBufferToBase64`                         | `arrayBufferToBase64`                | ✅   | `native`   | ✅       | 直连 `my.arrayBufferToBase64`                            |
+| `authorize`                                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `authorizeForMiniProgram`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `authPrivateMessage`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `base64ToArrayBuffer`                         | `base64ToArrayBuffer`                | ✅   | `native`   | ✅       | 直连 `my.base64ToArrayBuffer`                            |
+| `batchGetStorage`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `batchGetStorageSync`                         | `getSystemInfoSync`                  | ✅   | `fallback` | ❌       | 回退映射到 `my.getSystemInfoSync`（通用兜底）            |
+| `batchSetStorage`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `batchSetStorageSync`                         | `getSystemInfoSync`                  | ✅   | `fallback` | ❌       | 回退映射到 `my.getSystemInfoSync`（通用兜底）            |
+| `bindEmployeeRelation`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `canAddSecureElementPass`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `cancelIdleCallback`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `canIUse`                                     | `canIUse`                            | ✅   | `native`   | ✅       | 直连 `my.canIUse`                                        |
+| `canvasGetImageData`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `canvasPutImageData`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `canvasToTempFilePath`                        | `canvasToTempFilePath`               | ✅   | `native`   | ✅       | 直连 `my.canvasToTempFilePath`                           |
+| `checkDeviceSupportHevc`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `checkEmployeeRelation`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `checkIsAddedToMyMiniProgram`                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `checkIsOpenAccessibility`                    | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `checkIsPictureInPictureActive`               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `checkIsSoterEnrolledInDevice`                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `checkIsSupportSoterAuthentication`           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `checkSession`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `chooseAddress`                               | `getAddress`                         | ✅   | `mapped`   | ✅       | 映射到 `my.getAddress`                                   |
+| `chooseContact`                               | `chooseContact`                      | ✅   | `native`   | ✅       | 直连 `my.chooseContact`                                  |
+| `chooseImage`                                 | `chooseImage`                        | ✅   | `mapped`   | ✅       | 返回值 `apFilePaths` 映射到 `tempFilePaths`              |
+| `chooseInvoice`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `chooseInvoiceTitle`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `chooseLicensePlate`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `chooseLocation`                              | `chooseLocation`                     | ✅   | `native`   | ✅       | 直连 `my.chooseLocation`                                 |
+| `chooseMedia`                                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `chooseMessageFile`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `choosePoi`                                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `chooseVideo`                                 | `chooseVideo`                        | ✅   | `mapped`   | ✅       | 直连 `my.chooseVideo`                                    |
+| `clearStorage`                                | `clearStorage`                       | ✅   | `native`   | ✅       | 直连 `my.clearStorage`                                   |
+| `clearStorageSync`                            | `clearStorageSync`                   | ✅   | `native`   | ✅       | 直连 `my.clearStorageSync`                               |
+| `closeBLEConnection`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `closeBluetoothAdapter`                       | `closeBluetoothAdapter`              | ✅   | `native`   | ✅       | 直连 `my.closeBluetoothAdapter`                          |
+| `closeSocket`                                 | `closeSocket`                        | ✅   | `native`   | ✅       | 直连 `my.closeSocket`                                    |
+| `compressImage`                               | `compressImage`                      | ✅   | `native`   | ✅       | 直连 `my.compressImage`                                  |
+| `compressVideo`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `connectSocket`                               | `connectSocket`                      | ✅   | `native`   | ✅       | 直连 `my.connectSocket`                                  |
+| `connectWifi`                                 | `connectWifi`                        | ✅   | `native`   | ✅       | 直连 `my.connectWifi`                                    |
+| `createAnimation`                             | `createAnimation`                    | ✅   | `native`   | ✅       | 直连 `my.createAnimation`                                |
+| `createAudioContext`                          | `createInnerAudioContext`            | ✅   | `mapped`   | ✅       | 映射到 `my.createInnerAudioContext`                      |
+| `createBLEConnection`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createBLEPeripheralServer`                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createBufferURL`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createCacheManager`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createCameraContext`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createCanvasContext`                         | `createCanvasContext`                | ✅   | `native`   | ✅       | 直连 `my.createCanvasContext`                            |
+| `createGlobalPayment`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createInferenceSession`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createInnerAudioContext`                     | `createInnerAudioContext`            | ✅   | `native`   | ✅       | 直连 `my.createInnerAudioContext`                        |
+| `createIntersectionObserver`                  | `createIntersectionObserver`         | ✅   | `native`   | ✅       | 直连 `my.createIntersectionObserver`                     |
+| `createInterstitialAd`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createLivePlayerContext`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createLivePusherContext`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createMapContext`                            | `createMapContext`                   | ✅   | `native`   | ✅       | 直连 `my.createMapContext`                               |
+| `createMediaAudioPlayer`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createMediaContainer`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createMediaRecorder`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createOffscreenCanvas`                       | `createOffscreenCanvas`              | ✅   | `native`   | ✅       | 直连 `my.createOffscreenCanvas`                          |
+| `createRewardedVideoAd`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createSelectorQuery`                         | `createSelectorQuery`                | ✅   | `native`   | ✅       | 直连 `my.createSelectorQuery`                            |
+| `createTCPSocket`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createUDPSocket`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createVideoContext`                          | `createVideoContext`                 | ✅   | `native`   | ✅       | 直连 `my.createVideoContext`                             |
+| `createVideoDecoder`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createVKSession`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `createWebAudioContext`                       | `createInnerAudioContext`            | ✅   | `mapped`   | ✅       | 映射到 `my.createInnerAudioContext`                      |
+| `createWorker`                                | `createWorker`                       | ✅   | `native`   | ✅       | 直连 `my.createWorker`                                   |
+| `cropImage`                                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `disableAlertBeforeUnload`                    | `disableAlertBeforeUnload`           | ✅   | `native`   | ✅       | 直连 `my.disableAlertBeforeUnload`                       |
+| `downloadFile`                                | `downloadFile`                       | ✅   | `native`   | ✅       | 直连 `my.downloadFile`                                   |
+| `editImage`                                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `enableAlertBeforeUnload`                     | `enableAlertBeforeUnload`            | ✅   | `native`   | ✅       | 直连 `my.enableAlertBeforeUnload`                        |
+| `exitMiniProgram`                             | `exitMiniProgram`                    | ✅   | `native`   | ✅       | 直连 `my.exitMiniProgram`                                |
+| `exitVoIPChat`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `faceDetect`                                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getAccountInfoSync`                          | `getAccountInfoSync`                 | ✅   | `mapped`   | ✅       | 直连 `my.getAccountInfoSync`                             |
+| `getApiCategory`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getAppAuthorizeSetting`                      | `getAppAuthorizeSetting`             | ✅   | `mapped`   | ✅       | 直连 `my.getAppAuthorizeSetting`                         |
+| `getAppBaseInfo`                              | `getAppBaseInfo`                     | ✅   | `mapped`   | ✅       | 直连 `my.getAppBaseInfo`                                 |
+| `getAvailableAudioSources`                    | `getAvailableAudioSources`           | ✅   | `native`   | ✅       | 直连 `my.getAvailableAudioSources`                       |
+| `getBackgroundAudioManager`                   | `getBackgroundAudioManager`          | ✅   | `native`   | ✅       | 直连 `my.getBackgroundAudioManager`                      |
+| `getBackgroundAudioPlayerState`               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getBackgroundFetchData`                      | `getBackgroundFetchData`             | ✅   | `native`   | ✅       | 直连 `my.getBackgroundFetchData`                         |
+| `getBackgroundFetchToken`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getBatteryInfo`                              | `getBatteryInfo`                     | ✅   | `native`   | ✅       | 直连 `my.getBatteryInfo`                                 |
+| `getBatteryInfoSync`                          | `getBatteryInfoSync`                 | ✅   | `native`   | ✅       | 直连 `my.getBatteryInfoSync`                             |
+| `getBeacons`                                  | `getBeacons`                         | ✅   | `native`   | ✅       | 直连 `my.getBeacons`                                     |
+| `getBLEDeviceCharacteristics`                 | `getBLEDeviceCharacteristics`        | ✅   | `native`   | ✅       | 直连 `my.getBLEDeviceCharacteristics`                    |
+| `getBLEDeviceRSSI`                            | `getBLEDeviceRSSI`                   | ✅   | `native`   | ✅       | 直连 `my.getBLEDeviceRSSI`                               |
+| `getBLEDeviceServices`                        | `getBLEDeviceServices`               | ✅   | `native`   | ✅       | 直连 `my.getBLEDeviceServices`                           |
+| `getBLEMTU`                                   | `getBLEMTU`                          | ✅   | `native`   | ✅       | 直连 `my.getBLEMTU`                                      |
+| `getBluetoothAdapterState`                    | `getBluetoothAdapterState`           | ✅   | `native`   | ✅       | 直连 `my.getBluetoothAdapterState`                       |
+| `getBluetoothDevices`                         | `getBluetoothDevices`                | ✅   | `native`   | ✅       | 直连 `my.getBluetoothDevices`                            |
+| `getChannelsLiveInfo`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getChannelsLiveNoticeInfo`                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getChannelsShareKey`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getChatToolInfo`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getClipboardData`                            | `getClipboard`                       | ✅   | `mapped`   | ✅       | 转调 `my.getClipboard` 并映射 `text` → `data`            |
+| `getCommonConfig`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getConnectedBluetoothDevices`                | `getConnectedBluetoothDevices`       | ✅   | `native`   | ✅       | 直连 `my.getConnectedBluetoothDevices`                   |
+| `getConnectedWifi`                            | `getConnectedWifi`                   | ✅   | `native`   | ✅       | 直连 `my.getConnectedWifi`                               |
+| `getDeviceBenchmarkInfo`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getDeviceInfo`                               | `getSystemInfo`                      | ✅   | `mapped`   | ✅       | 映射到 `my.getSystemInfo`，并提取设备字段                |
+| `getDeviceVoIPList`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getEnterOptionsSync`                         | `getEnterOptionsSync`                | ✅   | `mapped`   | ✅       | 直连 `my.getEnterOptionsSync`                            |
+| `getExptInfoSync`                             | `getSystemInfoSync`                  | ✅   | `fallback` | ❌       | 回退映射到 `my.getSystemInfoSync`（通用兜底）            |
+| `getExtConfig`                                | `getExtConfig`                       | ✅   | `native`   | ✅       | 直连 `my.getExtConfig`                                   |
+| `getExtConfigSync`                            | `getExtConfigSync`                   | ✅   | `native`   | ✅       | 直连 `my.getExtConfigSync`                               |
+| `getFileSystemManager`                        | `getFileSystemManager`               | ✅   | `native`   | ✅       | 直连 `my.getFileSystemManager`                           |
+| `getFuzzyLocation`                            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getGroupEnterInfo`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getHCEState`                                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getImageInfo`                                | `getImageInfo`                       | ✅   | `native`   | ✅       | 直连 `my.getImageInfo`                                   |
+| `getInferenceEnvInfo`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getLaunchOptionsSync`                        | `getLaunchOptionsSync`               | ✅   | `native`   | ✅       | 直连 `my.getLaunchOptionsSync`                           |
+| `getLocalIPAddress`                           | `getLocalIPAddress`                  | ✅   | `native`   | ✅       | 直连 `my.getLocalIPAddress`                              |
+| `getLocation`                                 | `getLocation`                        | ✅   | `native`   | ✅       | 直连 `my.getLocation`                                    |
+| `getLogManager`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect`    | ✅   | `native`   | ✅       | 直连 `my.getMenuButtonBoundingClientRect`                |
+| `getNetworkType`                              | `getNetworkType`                     | ✅   | `native`   | ✅       | 直连 `my.getNetworkType`                                 |
+| `getNFCAdapter`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getPerformance`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getPrivacySetting`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getRandomValues`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getRealtimeLogManager`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getRecorderManager`                          | `getRecorderManager`                 | ✅   | `native`   | ✅       | 直连 `my.getRecorderManager`                             |
+| `getRendererUserAgent`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getScreenBrightness`                         | `getScreenBrightness`                | ✅   | `native`   | ✅       | 直连 `my.getScreenBrightness`                            |
+| `getScreenRecordingState`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getSecureElementPasses`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getSelectedTextRange`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getSetting`                                  | `getSetting`                         | ✅   | `native`   | ✅       | 直连 `my.getSetting`                                     |
+| `getShareInfo`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getShowSplashAdStatus`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getSkylineInfo`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getSkylineInfoSync`                          | `getSystemInfoSync`                  | ✅   | `fallback` | ❌       | 回退映射到 `my.getSystemInfoSync`（通用兜底）            |
+| `getStorage`                                  | `getStorage`                         | ✅   | `native`   | ✅       | 直连 `my.getStorage`                                     |
+| `getStorageInfo`                              | `getStorageInfo`                     | ✅   | `native`   | ✅       | 直连 `my.getStorageInfo`                                 |
+| `getStorageInfoSync`                          | `getStorageInfoSync`                 | ✅   | `native`   | ✅       | 直连 `my.getStorageInfoSync`                             |
+| `getStorageSync`                              | `getStorageSync`                     | ✅   | `native`   | ✅       | 直连 `my.getStorageSync`                                 |
+| `getSystemInfo`                               | `getSystemInfo`                      | ✅   | `native`   | ✅       | 直连 `my.getSystemInfo`                                  |
+| `getSystemInfoAsync`                          | `getSystemInfo`                      | ✅   | `mapped`   | ✅       | 映射到 `my.getSystemInfo`                                |
+| `getSystemInfoSync`                           | `getSystemInfoSync`                  | ✅   | `native`   | ✅       | 直连 `my.getSystemInfoSync`                              |
+| `getSystemSetting`                            | `getSystemSetting`                   | ✅   | `mapped`   | ✅       | 直连 `my.getSystemSetting`                               |
+| `getUpdateManager`                            | `getUpdateManager`                   | ✅   | `native`   | ✅       | 直连 `my.getUpdateManager`                               |
+| `getUserCryptoManager`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getUserInfo`                                 | `getOpenUserInfo`                    | ✅   | `mapped`   | ✅       | 映射到 `my.getOpenUserInfo`                              |
+| `getUserProfile`                              | `getOpenUserInfo`                    | ✅   | `mapped`   | ✅       | 映射到 `my.getOpenUserInfo`                              |
+| `getVideoInfo`                                | `getVideoInfo`                       | ✅   | `native`   | ✅       | 直连 `my.getVideoInfo`                                   |
+| `getWeRunData`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `getWifiList`                                 | `getWifiList`                        | ✅   | `native`   | ✅       | 直连 `my.getWifiList`                                    |
+| `getWindowInfo`                               | `getWindowInfo`                      | ✅   | `mapped`   | ✅       | 直连 `my.getWindowInfo`                                  |
+| `getXrFrameSystem`                            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `hideHomeButton`                              | `hideBackHome`                       | ✅   | `mapped`   | ✅       | 映射到 `my.hideBackHome`                                 |
+| `hideKeyboard`                                | `hideKeyboard`                       | ✅   | `native`   | ✅       | 直连 `my.hideKeyboard`                                   |
+| `hideLoading`                                 | `hideLoading`                        | ✅   | `native`   | ✅       | 直连 `my.hideLoading`                                    |
+| `hideNavigationBarLoading`                    | `hideNavigationBarLoading`           | ✅   | `native`   | ✅       | 直连 `my.hideNavigationBarLoading`                       |
+| `hideShareMenu`                               | `hideShareMenu`                      | ✅   | `native`   | ✅       | 直连 `my.hideShareMenu`                                  |
+| `hideTabBar`                                  | `hideTabBar`                         | ✅   | `native`   | ✅       | 直连 `my.hideTabBar`                                     |
+| `hideTabBarRedDot`                            | `hideTabBarRedDot`                   | ✅   | `native`   | ✅       | 直连 `my.hideTabBarRedDot`                               |
+| `hideToast`                                   | `hideToast`                          | ✅   | `native`   | ✅       | 直连 `my.hideToast`                                      |
+| `initFaceDetect`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `isBluetoothDevicePaired`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `isVKSupport`                                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `join1v1Chat`                                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `joinVoIPChat`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `loadBuiltInFontFace`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `loadFontFace`                                | `loadFontFace`                       | ✅   | `native`   | ✅       | 直连 `my.loadFontFace`                                   |
+| `login`                                       | `getAuthCode`                        | ✅   | `mapped`   | ✅       | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段          |
+| `makeBluetoothPair`                           | `makeBluetoothPair`                  | ✅   | `native`   | ✅       | 直连 `my.makeBluetoothPair`                              |
+| `makePhoneCall`                               | `makePhoneCall`                      | ✅   | `native`   | ✅       | 直连 `my.makePhoneCall`                                  |
+| `navigateBack`                                | `navigateBack`                       | ✅   | `native`   | ✅       | 直连 `my.navigateBack`                                   |
+| `navigateBackMiniProgram`                     | `navigateBackMiniProgram`            | ✅   | `native`   | ✅       | 直连 `my.navigateBackMiniProgram`                        |
+| `navigateTo`                                  | `navigateTo`                         | ✅   | `native`   | ✅       | 直连 `my.navigateTo`                                     |
+| `navigateToMiniProgram`                       | `navigateToMiniProgram`              | ✅   | `native`   | ✅       | 直连 `my.navigateToMiniProgram`                          |
+| `nextTick`                                    | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `notifyBLECharacteristicValueChange`          | `notifyBLECharacteristicValueChange` | ✅   | `native`   | ✅       | 直连 `my.notifyBLECharacteristicValueChange`             |
+| `notifyGroupMembers`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `offAccelerometerChange`                      | `offAccelerometerChange`             | ✅   | `native`   | ✅       | 直连 `my.offAccelerometerChange`                         |
+| `offAfterPageLoad`                            | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offAfterPageUnload`                          | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offApiCategoryChange`                        | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offAppHide`                                  | `offAppHide`                         | ✅   | `native`   | ✅       | 直连 `my.offAppHide`                                     |
+| `offAppRoute`                                 | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offAppRouteDone`                             | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offAppShow`                                  | `offAppShow`                         | ✅   | `native`   | ✅       | 直连 `my.offAppShow`                                     |
+| `offAudioInterruptionBegin`                   | `offAudioInterruptionBegin`          | ✅   | `native`   | ✅       | 直连 `my.offAudioInterruptionBegin`                      |
+| `offAudioInterruptionEnd`                     | `offAudioInterruptionEnd`            | ✅   | `native`   | ✅       | 直连 `my.offAudioInterruptionEnd`                        |
+| `offBatteryInfoChange`                        | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offBeaconServiceChange`                      | `offBeaconServiceChange`             | ✅   | `native`   | ✅       | 直连 `my.offBeaconServiceChange`                         |
+| `offBeaconUpdate`                             | `offBeaconUpdate`                    | ✅   | `native`   | ✅       | 直连 `my.offBeaconUpdate`                                |
+| `offBeforeAppRoute`                           | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offBeforePageLoad`                           | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offBeforePageUnload`                         | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offBLECharacteristicValueChange`             | `offBLECharacteristicValueChange`    | ✅   | `native`   | ✅       | 直连 `my.offBLECharacteristicValueChange`                |
+| `offBLEConnectionStateChange`                 | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offBLEMTUChange`                             | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offBLEPeripheralConnectionStateChanged`      | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offBluetoothAdapterStateChange`              | `offBluetoothAdapterStateChange`     | ✅   | `native`   | ✅       | 直连 `my.offBluetoothAdapterStateChange`                 |
+| `offBluetoothDeviceFound`                     | `offBluetoothDeviceFound`            | ✅   | `native`   | ✅       | 直连 `my.offBluetoothDeviceFound`                        |
+| `offCompassChange`                            | `offCompassChange`                   | ✅   | `native`   | ✅       | 直连 `my.offCompassChange`                               |
+| `offCopyUrl`                                  | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offDeviceMotionChange`                       | `offDeviceMotionChange`              | ✅   | `native`   | ✅       | 直连 `my.offDeviceMotionChange`                          |
+| `offEmbeddedMiniProgramHeightChange`          | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offError`                                    | `offError`                           | ✅   | `native`   | ✅       | 直连 `my.offError`                                       |
+| `offGeneratePoster`                           | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offGetWifiList`                              | `offGetWifiList`                     | ✅   | `native`   | ✅       | 直连 `my.offGetWifiList`                                 |
+| `offGyroscopeChange`                          | `offGyroscopeChange`                 | ✅   | `native`   | ✅       | 直连 `my.offGyroscopeChange`                             |
+| `offHCEMessage`                               | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offKeyboardHeightChange`                     | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offKeyDown`                                  | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offKeyUp`                                    | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offLazyLoadError`                            | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offLocalServiceDiscoveryStop`                | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offLocalServiceFound`                        | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offLocalServiceLost`                         | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offLocalServiceResolveFail`                  | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offLocationChange`                           | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offLocationChangeError`                      | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offMemoryWarning`                            | `offMemoryWarning`                   | ✅   | `native`   | ✅       | 直连 `my.offMemoryWarning`                               |
+| `offMenuButtonBoundingClientRectWeightChange` | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offNetworkStatusChange`                      | `offNetworkStatusChange`             | ✅   | `native`   | ✅       | 直连 `my.offNetworkStatusChange`                         |
+| `offNetworkWeakChange`                        | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offOnUserTriggerTranslation`                 | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offPageNotFound`                             | `offPageNotFound`                    | ✅   | `native`   | ✅       | 直连 `my.offPageNotFound`                                |
+| `offParallelStateChange`                      | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offScreenRecordingStateChanged`              | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offThemeChange`                              | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offUnhandledRejection`                       | `offUnhandledRejection`              | ✅   | `native`   | ✅       | 直连 `my.offUnhandledRejection`                          |
+| `offUserCaptureScreen`                        | `offUserCaptureScreen`               | ✅   | `native`   | ✅       | 直连 `my.offUserCaptureScreen`                           |
+| `offVoIPChatInterrupted`                      | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offVoIPChatMembersChanged`                   | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offVoIPChatSpeakersChanged`                  | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offVoIPChatStateChanged`                     | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offVoIPVideoMembersChanged`                  | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offWifiConnected`                            | `offWifiConnected`                   | ✅   | `native`   | ✅       | 直连 `my.offWifiConnected`                               |
+| `offWifiConnectedWithPartialInfo`             | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offWindowResize`                             | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `offWindowStateChange`                        | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                   |
+| `onAccelerometerChange`                       | `onAccelerometerChange`              | ✅   | `native`   | ✅       | 直连 `my.onAccelerometerChange`                          |
+| `onAfterPageLoad`                             | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onAfterPageUnload`                           | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onApiCategoryChange`                         | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onAppHide`                                   | `onAppHide`                          | ✅   | `native`   | ✅       | 直连 `my.onAppHide`                                      |
+| `onAppRoute`                                  | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onAppRouteDone`                              | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onAppShow`                                   | `onAppShow`                          | ✅   | `native`   | ✅       | 直连 `my.onAppShow`                                      |
+| `onAudioInterruptionBegin`                    | `onAudioInterruptionBegin`           | ✅   | `native`   | ✅       | 直连 `my.onAudioInterruptionBegin`                       |
+| `onAudioInterruptionEnd`                      | `onAudioInterruptionEnd`             | ✅   | `native`   | ✅       | 直连 `my.onAudioInterruptionEnd`                         |
+| `onBackgroundAudioPause`                      | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onBackgroundAudioPlay`                       | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onBackgroundAudioStop`                       | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onBackgroundFetchData`                       | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onBatteryInfoChange`                         | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onBeaconServiceChange`                       | `onBeaconServiceChange`              | ✅   | `native`   | ✅       | 直连 `my.onBeaconServiceChange`                          |
+| `onBeaconUpdate`                              | `onBeaconUpdate`                     | ✅   | `native`   | ✅       | 直连 `my.onBeaconUpdate`                                 |
+| `onBeforeAppRoute`                            | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onBeforePageLoad`                            | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onBeforePageUnload`                          | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onBLECharacteristicValueChange`              | `onBLECharacteristicValueChange`     | ✅   | `native`   | ✅       | 直连 `my.onBLECharacteristicValueChange`                 |
+| `onBLEConnectionStateChange`                  | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onBLEMTUChange`                              | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onBLEPeripheralConnectionStateChanged`       | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onBluetoothAdapterStateChange`               | `onBluetoothAdapterStateChange`      | ✅   | `native`   | ✅       | 直连 `my.onBluetoothAdapterStateChange`                  |
+| `onBluetoothDeviceFound`                      | `onBluetoothDeviceFound`             | ✅   | `native`   | ✅       | 直连 `my.onBluetoothDeviceFound`                         |
+| `onCompassChange`                             | `onCompassChange`                    | ✅   | `native`   | ✅       | 直连 `my.onCompassChange`                                |
+| `onCopyUrl`                                   | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onDeviceMotionChange`                        | `onDeviceMotionChange`               | ✅   | `native`   | ✅       | 直连 `my.onDeviceMotionChange`                           |
+| `onEmbeddedMiniProgramHeightChange`           | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onError`                                     | `onError`                            | ✅   | `native`   | ✅       | 直连 `my.onError`                                        |
+| `onGeneratePoster`                            | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onGetWifiList`                               | `onGetWifiList`                      | ✅   | `native`   | ✅       | 直连 `my.onGetWifiList`                                  |
+| `onGyroscopeChange`                           | `onGyroscopeChange`                  | ✅   | `native`   | ✅       | 直连 `my.onGyroscopeChange`                              |
+| `onHCEMessage`                                | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onKeyboardHeightChange`                      | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onKeyDown`                                   | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onKeyUp`                                     | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onLazyLoadError`                             | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onLocalServiceDiscoveryStop`                 | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onLocalServiceFound`                         | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onLocalServiceLost`                          | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onLocalServiceResolveFail`                   | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onLocationChange`                            | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onLocationChangeError`                       | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onMemoryWarning`                             | `onMemoryWarning`                    | ✅   | `native`   | ✅       | 直连 `my.onMemoryWarning`                                |
+| `onMenuButtonBoundingClientRectWeightChange`  | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onNeedPrivacyAuthorization`                  | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onNetworkStatusChange`                       | `onNetworkStatusChange`              | ✅   | `native`   | ✅       | 直连 `my.onNetworkStatusChange`                          |
+| `onNetworkWeakChange`                         | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onOnUserTriggerTranslation`                  | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onPageNotFound`                              | `onPageNotFound`                     | ✅   | `native`   | ✅       | 直连 `my.onPageNotFound`                                 |
+| `onParallelStateChange`                       | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onScreenRecordingStateChanged`               | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onSocketClose`                               | `onSocketClose`                      | ✅   | `native`   | ✅       | 直连 `my.onSocketClose`                                  |
+| `onSocketError`                               | `onSocketError`                      | ✅   | `native`   | ✅       | 直连 `my.onSocketError`                                  |
+| `onSocketMessage`                             | `onSocketMessage`                    | ✅   | `native`   | ✅       | 直连 `my.onSocketMessage`                                |
+| `onSocketOpen`                                | `onSocketOpen`                       | ✅   | `native`   | ✅       | 直连 `my.onSocketOpen`                                   |
+| `onThemeChange`                               | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onUnhandledRejection`                        | `onUnhandledRejection`               | ✅   | `native`   | ✅       | 直连 `my.onUnhandledRejection`                           |
+| `onUserCaptureScreen`                         | `onUserCaptureScreen`                | ✅   | `native`   | ✅       | 直连 `my.onUserCaptureScreen`                            |
+| `onVoIPChatInterrupted`                       | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onVoIPChatMembersChanged`                    | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onVoIPChatSpeakersChanged`                   | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onVoIPChatStateChanged`                      | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onVoIPVideoMembersChanged`                   | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onWifiConnected`                             | `onWifiConnected`                    | ✅   | `native`   | ✅       | 直连 `my.onWifiConnected`                                |
+| `onWifiConnectedWithPartialInfo`              | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onWindowResize`                              | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `onWindowStateChange`                         | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                    |
+| `openAppAuthorizeSetting`                     | `openSetting`                        | ✅   | `mapped`   | ✅       | 映射到 `my.openSetting`                                  |
+| `openBluetoothAdapter`                        | `openBluetoothAdapter`               | ✅   | `native`   | ✅       | 直连 `my.openBluetoothAdapter`                           |
+| `openCard`                                    | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openChannelsActivity`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openChannelsEvent`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openChannelsLive`                            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openChannelsLiveNoticeInfo`                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openChannelsUserProfile`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openChatTool`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openCustomerServiceChat`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openDocument`                                | `openDocument`                       | ✅   | `native`   | ✅       | 直连 `my.openDocument`                                   |
+| `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`              | ✅   | `mapped`   | ✅       | 映射到 `my.navigateToMiniProgram`                        |
+| `openHKOfflinePayView`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openInquiriesTopic`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openLocation`                                | `openLocation`                       | ✅   | `native`   | ✅       | 直连 `my.openLocation`                                   |
+| `openOfficialAccountArticle`                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openOfficialAccountChat`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openOfficialAccountProfile`                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openPrivacyContract`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openSetting`                                 | `openSetting`                        | ✅   | `native`   | ✅       | 直连 `my.openSetting`                                    |
+| `openSingleStickerView`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openStickerIPView`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openStickerSetView`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openStoreCouponDetail`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openStoreOrderDetail`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openSystemBluetoothSetting`                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `openVideoEditor`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `pageScrollTo`                                | `pageScrollTo`                       | ✅   | `native`   | ✅       | 直连 `my.pageScrollTo`                                   |
+| `pauseBackgroundAudio`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `pauseVoice`                                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `playBackgroundAudio`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `playVoice`                                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `pluginLogin`                                 | `getAuthCode`                        | ✅   | `mapped`   | ✅       | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段          |
+| `postMessageToReferrerMiniProgram`            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `postMessageToReferrerPage`                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `preDownloadSubpackage`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `preloadAssets`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `preloadSkylineView`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `preloadWebview`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `previewImage`                                | `previewImage`                       | ✅   | `native`   | ✅       | 直连 `my.previewImage`                                   |
+| `previewMedia`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `readBLECharacteristicValue`                  | `readBLECharacteristicValue`         | ✅   | `native`   | ✅       | 直连 `my.readBLECharacteristicValue`                     |
+| `redirectTo`                                  | `redirectTo`                         | ✅   | `native`   | ✅       | 直连 `my.redirectTo`                                     |
+| `reLaunch`                                    | `reLaunch`                           | ✅   | `native`   | ✅       | 直连 `my.reLaunch`                                       |
+| `removeSecureElementPass`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `removeStorage`                               | `removeStorage`                      | ✅   | `native`   | ✅       | 直连 `my.removeStorage`                                  |
+| `removeStorageSync`                           | `removeStorageSync`                  | ✅   | `native`   | ✅       | 直连 `my.removeStorageSync`                              |
+| `removeTabBarBadge`                           | `removeTabBarBadge`                  | ✅   | `native`   | ✅       | 直连 `my.removeTabBarBadge`                              |
+| `reportAnalytics`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `reportEvent`                                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `reportMonitor`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `reportPerformance`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `request`                                     | `request`                            | ✅   | `native`   | ✅       | 直连 `my.request`                                        |
+| `requestCommonPayment`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `requestDeviceVoIP`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `requestIdleCallback`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `requestMerchantTransfer`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `requestOrderPayment`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `requestPayment`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `requestPluginPayment`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`            | ✅   | `mapped`   | ✅       | 映射到 `my.requestSubscribeMessage`                      |
+| `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`            | ✅   | `mapped`   | ✅       | 映射到 `my.requestSubscribeMessage`                      |
+| `requestSubscribeMessage`                     | `requestSubscribeMessage`            | ✅   | `native`   | ✅       | 直连 `my.requestSubscribeMessage`                        |
+| `requestVirtualPayment`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `requirePrivacyAuthorize`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `reserveChannelsLive`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `restartMiniProgram`                          | `reLaunch`                           | ✅   | `mapped`   | ✅       | 映射到 `my.reLaunch`                                     |
+| `revokeBufferURL`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `rewriteRoute`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `saveFileToDisk`                              | `saveFileToDisk`                     | ✅   | `mapped`   | ✅       | 直连 `my.saveFileToDisk`                                 |
+| `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`             | ✅   | `native`   | ✅       | 直连 `my.saveImageToPhotosAlbum`                         |
+| `saveVideoToPhotosAlbum`                      | `saveVideoToPhotosAlbum`             | ✅   | `native`   | ✅       | 直连 `my.saveVideoToPhotosAlbum`                         |
+| `scanCode`                                    | `scan`                               | ✅   | `mapped`   | ✅       | 映射到 `my.scan`                                         |
+| `seekBackgroundAudio`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `selectGroupMembers`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `sendHCEMessage`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `sendSms`                                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `sendSocketMessage`                           | `sendSocketMessage`                  | ✅   | `native`   | ✅       | 直连 `my.sendSocketMessage`                              |
+| `setBackgroundColor`                          | `setBackgroundColor`                 | ✅   | `native`   | ✅       | 直连 `my.setBackgroundColor`                             |
+| `setBackgroundFetchToken`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `setBackgroundTextStyle`                      | `setBackgroundTextStyle`             | ✅   | `native`   | ✅       | 直连 `my.setBackgroundTextStyle`                         |
+| `setBLEMTU`                                   | `setBLEMTU`                          | ✅   | `native`   | ✅       | 直连 `my.setBLEMTU`                                      |
+| `setClipboardData`                            | `setClipboard`                       | ✅   | `mapped`   | ✅       | 转调 `my.setClipboard` 并映射 `data` → `text`            |
+| `setEnable1v1Chat`                            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `setEnableDebug`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `setInnerAudioOption`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `setKeepScreenOn`                             | `setKeepScreenOn`                    | ✅   | `native`   | ✅       | 直连 `my.setKeepScreenOn`                                |
+| `setNavigationBarColor`                       | `setNavigationBarColor`              | ✅   | `native`   | ✅       | 直连 `my.setNavigationBarColor`                          |
+| `setNavigationBarTitle`                       | `setNavigationBarTitle`              | ✅   | `native`   | ✅       | 直连 `my.setNavigationBarTitle`                          |
+| `setScreenBrightness`                         | `setScreenBrightness`                | ✅   | `native`   | ✅       | 直连 `my.setScreenBrightness`                            |
+| `setStorage`                                  | `setStorage`                         | ✅   | `native`   | ✅       | 直连 `my.setStorage`                                     |
+| `setStorageSync`                              | `setStorageSync`                     | ✅   | `native`   | ✅       | 直连 `my.setStorageSync`                                 |
+| `setTabBarBadge`                              | `setTabBarBadge`                     | ✅   | `native`   | ✅       | 直连 `my.setTabBarBadge`                                 |
+| `setTabBarItem`                               | `setTabBarItem`                      | ✅   | `native`   | ✅       | 直连 `my.setTabBarItem`                                  |
+| `setTabBarStyle`                              | `setTabBarStyle`                     | ✅   | `native`   | ✅       | 直连 `my.setTabBarStyle`                                 |
+| `setTopBarText`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `setVisualEffectOnCapture`                    | `setVisualEffectOnCapture`           | ✅   | `native`   | ✅       | 直连 `my.setVisualEffectOnCapture`                       |
+| `setWifiList`                                 | `setWifiList`                        | ✅   | `native`   | ✅       | 直连 `my.setWifiList`                                    |
+| `setWindowSize`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `shareAppMessageToGroup`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `shareEmojiToGroup`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `shareFileMessage`                            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `shareFileToGroup`                            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `shareImageToGroup`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `shareToOfficialAccount`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `shareToWeRun`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `shareVideoMessage`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `shareVideoToGroup`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `showActionSheet`                             | `showActionSheet`                    | ✅   | `mapped`   | ✅       | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐      |
+| `showLoading`                                 | `showLoading`                        | ✅   | `mapped`   | ✅       | `title` 映射到 `content` 后调用 `my.showLoading`         |
+| `showModal`                                   | `confirm`                            | ✅   | `mapped`   | ✅       | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果         |
+| `showNavigationBarLoading`                    | `showNavigationBarLoading`           | ✅   | `native`   | ✅       | 直连 `my.showNavigationBarLoading`                       |
+| `showRedPackage`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `showShareImageMenu`                          | `showSharePanel`                     | ✅   | `mapped`   | ✅       | 映射到 `my.showSharePanel`                               |
+| `showShareMenu`                               | `showShareMenu`                      | ✅   | `native`   | ✅       | 直连 `my.showShareMenu`                                  |
+| `showTabBar`                                  | `showTabBar`                         | ✅   | `native`   | ✅       | 直连 `my.showTabBar`                                     |
+| `showTabBarRedDot`                            | `showTabBarRedDot`                   | ✅   | `native`   | ✅       | 直连 `my.showTabBarRedDot`                               |
+| `showToast`                                   | `showToast`                          | ✅   | `mapped`   | ✅       | `title/icon` 映射到 `content/type` 后调用 `my.showToast` |
+| `startAccelerometer`                          | `startAccelerometer`                 | ✅   | `native`   | ✅       | 直连 `my.startAccelerometer`                             |
+| `startBeaconDiscovery`                        | `startBeaconDiscovery`               | ✅   | `native`   | ✅       | 直连 `my.startBeaconDiscovery`                           |
+| `startBluetoothDevicesDiscovery`              | `startBluetoothDevicesDiscovery`     | ✅   | `native`   | ✅       | 直连 `my.startBluetoothDevicesDiscovery`                 |
+| `startCompass`                                | `startCompass`                       | ✅   | `native`   | ✅       | 直连 `my.startCompass`                                   |
+| `startDeviceMotionListening`                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `startGyroscope`                              | `startGyroscope`                     | ✅   | `native`   | ✅       | 直连 `my.startGyroscope`                                 |
+| `startHCE`                                    | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `startLocalServiceDiscovery`                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `startLocationUpdate`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `startLocationUpdateBackground`               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `startPullDownRefresh`                        | `startPullDownRefresh`               | ✅   | `native`   | ✅       | 直连 `my.startPullDownRefresh`                           |
+| `startRecord`                                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `startSoterAuthentication`                    | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `startWifi`                                   | `startWifi`                          | ✅   | `native`   | ✅       | 直连 `my.startWifi`                                      |
+| `stopAccelerometer`                           | `stopAccelerometer`                  | ✅   | `native`   | ✅       | 直连 `my.stopAccelerometer`                              |
+| `stopBackgroundAudio`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `stopBeaconDiscovery`                         | `stopBeaconDiscovery`                | ✅   | `native`   | ✅       | 直连 `my.stopBeaconDiscovery`                            |
+| `stopBluetoothDevicesDiscovery`               | `stopBluetoothDevicesDiscovery`      | ✅   | `native`   | ✅       | 直连 `my.stopBluetoothDevicesDiscovery`                  |
+| `stopCompass`                                 | `stopCompass`                        | ✅   | `native`   | ✅       | 直连 `my.stopCompass`                                    |
+| `stopDeviceMotionListening`                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `stopFaceDetect`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `stopGyroscope`                               | `stopGyroscope`                      | ✅   | `native`   | ✅       | 直连 `my.stopGyroscope`                                  |
+| `stopHCE`                                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `stopLocalServiceDiscovery`                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `stopLocationUpdate`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `stopPullDownRefresh`                         | `stopPullDownRefresh`                | ✅   | `native`   | ✅       | 直连 `my.stopPullDownRefresh`                            |
+| `stopRecord`                                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `stopVoice`                                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `stopWifi`                                    | `stopWifi`                           | ✅   | `native`   | ✅       | 直连 `my.stopWifi`                                       |
+| `subscribeVoIPVideoMembers`                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `switchTab`                                   | `switchTab`                          | ✅   | `native`   | ✅       | 直连 `my.switchTab`                                      |
+| `updateShareMenu`                             | `showSharePanel`                     | ✅   | `mapped`   | ✅       | 映射到 `my.showSharePanel`                               |
+| `updateVoIPChatMuteConfig`                    | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `updateWeChatApp`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                    |
+| `uploadFile`                                  | `uploadFile`                         | ✅   | `native`   | ✅       | 直连 `my.uploadFile`                                     |
+| `vibrateLong`                                 | `vibrateLong`                        | ✅   | `native`   | ✅       | 直连 `my.vibrateLong`                                    |
+| `vibrateShort`                                | `vibrateShort`                       | ✅   | `native`   | ✅       | 直连 `my.vibrateShort`                                   |
+| `writeBLECharacteristicValue`                 | `writeBLECharacteristicValue`        | ✅   | `native`   | ✅       | 直连 `my.writeBLECharacteristicValue`                    |

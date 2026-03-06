@@ -514,6 +514,19 @@ export interface CreateWeapiOptions<TAdapter extends WeapiAdapter = WeapiCrossPl
    * @description 手动指定平台名称
    */
   platform?: string
+  /**
+   * @description 严格兼容模式：关闭通用 fallback，仅保留同名直连与显式映射
+   */
+  strictCompatibility?: boolean
+}
+
+export type WeapiSupportLevel = 'native' | 'mapped' | 'fallback' | 'unsupported'
+
+export interface WeapiMethodSupportQueryOptions {
+  /**
+   * @description 是否按语义对齐能力判断（仅 `native/mapped` 视为支持）
+   */
+  semantic?: boolean
 }
 
 export interface WeapiResolvedTarget {
@@ -537,6 +550,14 @@ export interface WeapiResolvedTarget {
    * @description 当前适配器上是否存在可调用的目标方法
    */
   supported: boolean
+  /**
+   * @description 当前支持级别：直连、显式映射、fallback 或不支持
+   */
+  supportLevel: WeapiSupportLevel
+  /**
+   * @description 是否语义对齐（仅 native/mapped 为 true）
+   */
+  semanticAligned: boolean
 }
 
 export type WeapiInstance<TAdapter extends WeapiAdapter = WeapiCrossPlatformRawAdapter> = WeapiPromisify<TAdapter> & TAdapter & WeapiMethodDocOverlay<TAdapter> & {
@@ -563,5 +584,5 @@ export type WeapiInstance<TAdapter extends WeapiAdapter = WeapiCrossPlatformRawA
   /**
    * @description 判断微信命名 API 在当前平台是否可调用
    */
-  supports: (method: string) => boolean
+  supports: (method: string, options?: WeapiMethodSupportQueryOptions) => boolean
 }

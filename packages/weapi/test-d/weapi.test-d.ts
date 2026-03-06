@@ -2,7 +2,9 @@ import type {
   WeapiCrossPlatformRawAdapter,
   WeapiDefaultInstance,
   WeapiDouyinRawAdapter,
+  WeapiMethodSupportQueryOptions,
   WeapiResolvedTarget,
+  WeapiSupportLevel,
 } from '@wevu/api'
 import { createWeapi, wpi } from '@wevu/api'
 import { expectType } from 'tsd'
@@ -30,6 +32,9 @@ expectType<WeapiDefaultInstance['showToast']>(wpi.showToast)
 expectType<WeapiDefaultInstance['confirm']>(wpi.confirm)
 expectType<WeapiResolvedTarget>(wpi.resolveTarget('showModal'))
 expectType<boolean>(wpi.supports('showModal'))
+expectType<boolean>(wpi.supports('showModal', { semantic: true } satisfies WeapiMethodSupportQueryOptions))
+expectType<WeapiSupportLevel>(wpi.resolveTarget('showModal').supportLevel)
+expectType<boolean>(wpi.resolveTarget('showModal').semanticAligned)
 
 expectType<WechatMiniprogram.SystemInfo>(wpi.getSystemInfoSync())
 expectType<WeapiDouyinRawAdapter>(tt)
@@ -63,6 +68,7 @@ interface CustomAdapter {
 }
 
 const custom = createWeapi<CustomAdapter>()
+const strictCustom = createWeapi<CustomAdapter>({ strictCompatibility: true })
 
 const fooPromise = custom.foo({})
 expectType<Promise<{ ok: true }>>(fooPromise)
@@ -76,3 +82,4 @@ expectType<number>(fooReturn)
 
 expectType<number>(custom.bazSync('ok'))
 expectType<void>(custom.onReady(() => {}))
+expectType<void>(strictCustom.onReady(() => {}))

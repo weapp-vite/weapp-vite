@@ -7,6 +7,18 @@ export interface WeapiMethodMappingRule {
   mapResult?: (result: any) => any
 }
 
+export type WeapiSupportLevel = 'native' | 'mapped' | 'fallback' | 'unsupported'
+
+export interface ResolveMethodMappingOptions {
+  allowFallback?: boolean
+}
+
+export interface WeapiResolvedMethodMapping {
+  target: string
+  source: 'explicit' | 'fallback' | 'identity'
+  rule?: WeapiMethodMappingRule
+}
+
 export interface WeapiPlatformSupportMatrixItem {
   platform: string
   globalObject: string
@@ -29,24 +41,34 @@ export interface WeapiMethodCompatibilityItem {
   alipayTarget: string
   alipayStrategy: string
   alipaySupported: boolean
+  alipaySupportLevel: WeapiSupportLevel
+  alipaySemanticallyAligned: boolean
   douyinTarget: string
   douyinStrategy: string
   douyinSupported: boolean
+  douyinSupportLevel: WeapiSupportLevel
+  douyinSemanticallyAligned: boolean
   support: string
+  semanticSupport: string
 }
 
 export interface WeapiApiCoveragePlatformItem {
   platform: string
   alias: string
   supportedApis: number
+  semanticAlignedApis: number
+  fallbackApis: number
   totalApis: number
   coverage: string
+  semanticCoverage: string
 }
 
 export interface WeapiApiCoverageReport {
   totalApis: number
   fullyAlignedApis: number
   fullyAlignedCoverage: string
+  fullySemanticallyAlignedApis: number
+  fullySemanticallyAlignedCoverage: string
   platforms: readonly WeapiApiCoveragePlatformItem[]
 }
 
@@ -1035,11 +1057,6 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
 
 function createFallbackMappingRule(platform: 'my' | 'tt', methodName: string): WeapiMethodMappingRule | undefined {
   const methodSet = PLATFORM_METHOD_SET[platform]
-  if (methodSet.has(methodName)) {
-    return {
-      target: methodName,
-    }
-  }
   if (/^on[A-Z]/.test(methodName) && methodSet.has('onAppShow')) {
     return {
       target: 'onAppShow',
@@ -1064,27 +1081,94 @@ function createFallbackMappingRule(platform: 'my' | 'tt', methodName: string): W
   return undefined
 }
 
-function resolveMappingRule(platform: 'my' | 'tt', methodName: string) {
+function resolveMappingRule(
+  platform: 'my' | 'tt',
+  methodName: string,
+  options: ResolveMethodMappingOptions = {},
+): WeapiResolvedMethodMapping {
+  const methodSet = PLATFORM_METHOD_SET[platform]
   const explicitRule = METHOD_MAPPINGS[platform]?.[methodName]
   if (explicitRule) {
-    return explicitRule
+    return {
+      target: explicitRule.target,
+      source: 'explicit',
+      rule: explicitRule,
+    }
   }
-  return createFallbackMappingRule(platform, methodName)
+  if (methodSet.has(methodName)) {
+    return {
+      target: methodName,
+      source: 'identity',
+    }
+  }
+  if (options.allowFallback === false) {
+    return {
+      target: methodName,
+      source: 'identity',
+    }
+  }
+  const fallbackRule = createFallbackMappingRule(platform, methodName)
+  if (fallbackRule) {
+    return {
+      target: fallbackRule.target,
+      source: 'fallback',
+      rule: fallbackRule,
+    }
+  }
+  return {
+    target: methodName,
+    source: 'identity',
+  }
 }
 
-function resolveTargetMethod(platform: 'my' | 'tt', methodName: string) {
-  const rule = resolveMappingRule(platform, methodName)
-  return rule?.target ?? methodName
+function toSupportLevel(source: WeapiResolvedMethodMapping['source'], supported: boolean): WeapiSupportLevel {
+  if (!supported) {
+    return 'unsupported'
+  }
+  if (source === 'fallback') {
+    return 'fallback'
+  }
+  if (source === 'explicit') {
+    return 'mapped'
+  }
+  return 'native'
 }
 
-function resolveDefaultStrategy(platform: 'my' | 'tt', methodName: string, target: string, supported: boolean) {
+function isSemanticSupportLevel(level: WeapiSupportLevel) {
+  return level === 'native' || level === 'mapped'
+}
+
+function resolveDefaultStrategy(
+  platform: 'my' | 'tt',
+  methodName: string,
+  target: string,
+  supported: boolean,
+  source: WeapiResolvedMethodMapping['source'],
+) {
   if (!supported) {
     return `未提供 ${platform}.${target}，调用时将返回 not supported`
+  }
+  if (source === 'fallback') {
+    return `回退映射到 \`${platform}.${target}\`（通用兜底）`
   }
   if (target !== methodName) {
     return `映射到 \`${platform}.${target}\``
   }
   return `直连 \`${platform}.${methodName}\``
+}
+
+function resolvePlatformCompatibility(platform: 'my' | 'tt', methodName: string) {
+  const resolution = resolveMappingRule(platform, methodName)
+  const target = resolution.target
+  const supported = PLATFORM_METHOD_SET[platform].has(target)
+  const supportLevel = toSupportLevel(resolution.source, supported)
+  return {
+    resolution,
+    target,
+    supported,
+    supportLevel,
+    semanticallyAligned: isSemanticSupportLevel(supportLevel),
+  }
 }
 
 /**
@@ -1104,41 +1188,77 @@ function formatCoverageRate(supportedApis: number, totalApis: number) {
 export function generateApiSupportCoverageReport(): WeapiApiCoverageReport {
   const methodNames = WEAPI_WX_METHODS as readonly string[]
   const totalApis = methodNames.length
+  let alipaySupportedApis = 0
+  let douyinSupportedApis = 0
+  let alipaySemanticAlignedApis = 0
+  let douyinSemanticAlignedApis = 0
+  let alipayFallbackApis = 0
+  let douyinFallbackApis = 0
+  let fullyAlignedApis = 0
+  let fullySemanticallyAlignedApis = 0
 
-  const alipaySupportedApis = methodNames
-    .filter(method => WEAPI_MY_METHOD_SET.has(resolveTargetMethod('my', method)))
-    .length
-  const douyinSupportedApis = methodNames
-    .filter(method => WEAPI_TT_METHOD_SET.has(resolveTargetMethod('tt', method)))
-    .length
+  for (const methodName of methodNames) {
+    const alipay = resolvePlatformCompatibility('my', methodName)
+    const douyin = resolvePlatformCompatibility('tt', methodName)
+    if (alipay.supported) {
+      alipaySupportedApis += 1
+    }
+    if (douyin.supported) {
+      douyinSupportedApis += 1
+    }
+    if (alipay.semanticallyAligned) {
+      alipaySemanticAlignedApis += 1
+    }
+    if (douyin.semanticallyAligned) {
+      douyinSemanticAlignedApis += 1
+    }
+    if (alipay.supportLevel === 'fallback') {
+      alipayFallbackApis += 1
+    }
+    if (douyin.supportLevel === 'fallback') {
+      douyinFallbackApis += 1
+    }
+    if (alipay.supported && douyin.supported) {
+      fullyAlignedApis += 1
+    }
+    if (alipay.semanticallyAligned && douyin.semanticallyAligned) {
+      fullySemanticallyAlignedApis += 1
+    }
+  }
+
   const wxSupportedApis = totalApis
-
-  const fullyAlignedApis = methodNames.filter(method =>
-    WEAPI_MY_METHOD_SET.has(resolveTargetMethod('my', method))
-    && WEAPI_TT_METHOD_SET.has(resolveTargetMethod('tt', method)),
-  ).length
+  const wxSemanticAlignedApis = totalApis
 
   const platforms: readonly WeapiApiCoveragePlatformItem[] = [
     {
       platform: '微信小程序',
       alias: 'wx',
       supportedApis: wxSupportedApis,
+      semanticAlignedApis: wxSemanticAlignedApis,
+      fallbackApis: 0,
       totalApis,
       coverage: formatCoverageRate(wxSupportedApis, totalApis),
+      semanticCoverage: formatCoverageRate(wxSemanticAlignedApis, totalApis),
     },
     {
       platform: '支付宝小程序',
       alias: 'my',
       supportedApis: alipaySupportedApis,
+      semanticAlignedApis: alipaySemanticAlignedApis,
+      fallbackApis: alipayFallbackApis,
       totalApis,
       coverage: formatCoverageRate(alipaySupportedApis, totalApis),
+      semanticCoverage: formatCoverageRate(alipaySemanticAlignedApis, totalApis),
     },
     {
       platform: '抖音小程序',
       alias: 'tt',
       supportedApis: douyinSupportedApis,
+      semanticAlignedApis: douyinSemanticAlignedApis,
+      fallbackApis: douyinFallbackApis,
       totalApis,
       coverage: formatCoverageRate(douyinSupportedApis, totalApis),
+      semanticCoverage: formatCoverageRate(douyinSemanticAlignedApis, totalApis),
     },
   ]
 
@@ -1146,6 +1266,8 @@ export function generateApiSupportCoverageReport(): WeapiApiCoverageReport {
     totalApis,
     fullyAlignedApis,
     fullyAlignedCoverage: formatCoverageRate(fullyAlignedApis, totalApis),
+    fullySemanticallyAlignedApis,
+    fullySemanticallyAlignedCoverage: formatCoverageRate(fullySemanticallyAlignedApis, totalApis),
     platforms,
   }
 }
@@ -1159,21 +1281,24 @@ export function generateMethodCompatibilityMatrix(): readonly WeapiMethodCompati
   )
 
   return (WEAPI_WX_METHODS as readonly string[]).map((methodName) => {
-    const alipayTarget = resolveTargetMethod('my', methodName)
-    const douyinTarget = resolveTargetMethod('tt', methodName)
-    const alipaySupported = WEAPI_MY_METHOD_SET.has(alipayTarget)
-    const douyinSupported = WEAPI_TT_METHOD_SET.has(douyinTarget)
+    const alipay = resolvePlatformCompatibility('my', methodName)
+    const douyin = resolvePlatformCompatibility('tt', methodName)
     const detail = detailByMethod.get(methodName)
     return {
       method: methodName,
       wxStrategy: detail?.wxStrategy ?? `直连 \`wx.${methodName}\``,
-      alipayTarget,
-      alipayStrategy: detail?.alipayStrategy ?? resolveDefaultStrategy('my', methodName, alipayTarget, alipaySupported),
-      alipaySupported,
-      douyinTarget,
-      douyinStrategy: detail?.douyinStrategy ?? resolveDefaultStrategy('tt', methodName, douyinTarget, douyinSupported),
-      douyinSupported,
-      support: alipaySupported && douyinSupported ? '✅' : '⚠️',
+      alipayTarget: alipay.target,
+      alipayStrategy: detail?.alipayStrategy ?? resolveDefaultStrategy('my', methodName, alipay.target, alipay.supported, alipay.resolution.source),
+      alipaySupported: alipay.supported,
+      alipaySupportLevel: alipay.supportLevel,
+      alipaySemanticallyAligned: alipay.semanticallyAligned,
+      douyinTarget: douyin.target,
+      douyinStrategy: detail?.douyinStrategy ?? resolveDefaultStrategy('tt', methodName, douyin.target, douyin.supported, douyin.resolution.source),
+      douyinSupported: douyin.supported,
+      douyinSupportLevel: douyin.supportLevel,
+      douyinSemanticallyAligned: douyin.semanticallyAligned,
+      support: alipay.supported && douyin.supported ? '✅' : '⚠️',
+      semanticSupport: alipay.semanticallyAligned && douyin.semanticallyAligned ? '✅' : '⚠️',
     }
   })
 }
@@ -1209,5 +1334,23 @@ export function resolveMethodMapping(platform: string | undefined, methodName: s
   if (normalizedPlatform !== 'my' && normalizedPlatform !== 'tt') {
     return undefined
   }
-  return resolveMappingRule(normalizedPlatform, methodName)
+  return resolveMappingRule(normalizedPlatform, methodName).rule
+}
+
+/**
+ * @description 解析平台 API 映射规则及映射来源
+ */
+export function resolveMethodMappingWithMeta(
+  platform: string | undefined,
+  methodName: string,
+  options: ResolveMethodMappingOptions = {},
+) {
+  const normalizedPlatform = normalizePlatformName(platform)
+  if (!normalizedPlatform) {
+    return undefined
+  }
+  if (normalizedPlatform !== 'my' && normalizedPlatform !== 'tt') {
+    return undefined
+  }
+  return resolveMappingRule(normalizedPlatform, methodName, options)
 }
