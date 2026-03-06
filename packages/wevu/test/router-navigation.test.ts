@@ -3,6 +3,7 @@ import {
   createNavigationFailure,
   isNavigationFailure,
   NavigationFailureType,
+  useRouter,
   useRouterNavigation,
 } from '@/router'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
@@ -23,6 +24,38 @@ describe('router navigation helpers', () => {
     expect(isNavigationFailure(failure, NavigationFailureType.cancelled)).toBe(true)
     expect(isNavigationFailure(failure, NavigationFailureType.aborted)).toBe(false)
     expect(isNavigationFailure(new Error('x'))).toBe(false)
+  })
+
+  it('keeps useRouterNavigation as backward-compatible alias', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const legacyRouter = useRouterNavigation()
+    const router = useRouter()
+
+    expect(typeof legacyRouter.push).toBe('function')
+    expect(typeof router.push).toBe('function')
+    expect(typeof legacyRouter.beforeEach).toBe('function')
+    expect(typeof router.beforeEach).toBe('function')
   })
 
   it('push resolves target with current route path and calls native navigateTo', async () => {
@@ -53,7 +86,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouterNavigation()
+    const router = useRouter()
     const result = await router.push('./detail?scene=1')
 
     expect(result).toBeUndefined()
@@ -89,7 +122,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouterNavigation()
+    const router = useRouter()
     const result = await router.replace('/pages/home/index?tab=all')
 
     expect(isNavigationFailure(result)).toBe(true)
@@ -125,7 +158,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouterNavigation()
+    const router = useRouter()
     const result = await router.back(2)
 
     expect(navigateBack).toHaveBeenCalledWith(expect.objectContaining({ delta: 2 }))
@@ -159,7 +192,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouterNavigation({
+    const router = useRouter({
       tabBarEntries: ['pages/home/index'],
     })
 
@@ -194,7 +227,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouterNavigation({
+    const router = useRouter({
       tabBarEntries: ['pages/home/index'],
     })
     const result = await router.push('/pages/home/index?from=profile')
@@ -229,7 +262,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouterNavigation()
+    const router = useRouter()
     const removeGuard = router.beforeEach(guard)
 
     const blocked = await router.push('/pages/detail/index')
@@ -270,7 +303,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouterNavigation()
+    const router = useRouter()
     router.beforeEach(() => '/pages/login/index?from=home')
 
     const result = await router.push('/pages/detail/index')
@@ -306,7 +339,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouterNavigation({
+    const router = useRouter({
       tabBarEntries: ['pages/home/index'],
     })
     router.beforeResolve(() => '/pages/home/index')
@@ -345,7 +378,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouterNavigation()
+    const router = useRouter()
     router.beforeEach(() => ({
       to: '/pages/login/index?from=home',
       replace: true,
@@ -382,7 +415,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouterNavigation({
+    const router = useRouter({
       maxRedirects: 1,
     })
     router.beforeEach(({ to }) => {
@@ -420,7 +453,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouterNavigation()
+    const router = useRouter()
     router.afterEach((context) => {
       contexts.push(context)
     })
@@ -472,7 +505,7 @@ describe('router navigation helpers', () => {
     ]
     ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
 
-    const router = useRouterNavigation()
+    const router = useRouter()
     expect(router.resolve('./detail').fullPath).toBe('/pages/home/detail')
 
     pages = [

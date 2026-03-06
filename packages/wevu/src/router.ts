@@ -10,7 +10,10 @@ import type {
 } from './runtime/types/props'
 import { reactive, readonly } from './reactivity'
 import { getCurrentSetupContext, onLoad, onRouteDone, onShow } from './runtime/hooks'
-import { usePageRouter, useRouter } from './runtime/vueCompat'
+import {
+  usePageRouter as useNativePageRouterInternal,
+  useRouter as useNativeRouterInternal,
+} from './runtime/vueCompat'
 
 export type LocationQueryValue = string | null
 export type LocationQueryValueRaw = LocationQueryValue | number | boolean | undefined
@@ -75,10 +78,15 @@ export interface NavigationAfterEachContext {
   readonly failure?: NavigationFailure
 }
 
-export interface UseRouterNavigationOptions {
+export interface UseRouterOptions {
   tabBarEntries?: readonly (TypedRouterTabBarUrl | string)[]
   maxRedirects?: number
 }
+
+/**
+ * @deprecated 请改用 `UseRouterOptions`
+ */
+export type UseRouterNavigationOptions = UseRouterOptions
 
 export interface RouterNavigation {
   readonly nativeRouter: SetupContextRouter
@@ -627,8 +635,32 @@ export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
   return readonly(routeState) as Readonly<RouteLocationNormalizedLoaded>
 }
 
-export function useRouterNavigation(options: UseRouterNavigationOptions = {}): RouterNavigation {
-  const nativeRouter = useRouter()
+/**
+ * @description 获取高阶路由导航器（对齐 Vue Router 心智）
+ */
+export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
+  return useRouterNavigation(options)
+}
+
+/**
+ * @description 获取当前组件路径语义的原生 Router
+ */
+export function useNativeRouter(): SetupContextRouter {
+  return useNativeRouterInternal()
+}
+
+/**
+ * @description 获取当前页面路径语义的原生 Page Router
+ */
+export function useNativePageRouter(): SetupContextRouter {
+  return useNativePageRouterInternal()
+}
+
+/**
+ * @deprecated 请改用 `useRouter()`
+ */
+export function useRouterNavigation(options: UseRouterOptions = {}): RouterNavigation {
+  const nativeRouter = useNativeRouter()
   const route = useRoute()
   const beforeEachGuards = new Set<NavigationGuard>()
   const beforeResolveGuards = new Set<NavigationGuard>()
@@ -939,4 +971,3 @@ export type {
   TypedRouterUrl,
   WevuTypedRouterRouteMap,
 }
-export { usePageRouter, useRouter }

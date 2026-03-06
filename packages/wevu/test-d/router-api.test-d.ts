@@ -6,7 +6,8 @@ import type {
   NavigationRedirect,
   RouteLocationNormalizedLoaded,
   RouterNavigation,
-  UseRouterNavigationOptions,
+  SetupContextRouter,
+  UseRouterOptions,
 } from 'wevu/router'
 import { expectType } from 'tsd'
 import {
@@ -16,7 +17,10 @@ import {
   parseQuery,
   resolveRouteLocation,
   stringifyQuery,
+  useNativePageRouter,
+  useNativeRouter,
   useRoute,
+  useRouter,
   useRouterNavigation,
 } from 'wevu/router'
 
@@ -37,11 +41,14 @@ expectType<RouteLocationNormalizedLoaded>(resolved)
 const route = useRoute()
 expectType<Readonly<RouteLocationNormalizedLoaded>>(route)
 
-const navigationOptions: UseRouterNavigationOptions = {
+const navigationOptions: UseRouterOptions = {
   tabBarEntries: ['pages/home/index'],
 }
-const navigation = useRouterNavigation(navigationOptions)
+const navigation = useRouter(navigationOptions)
 expectType<RouterNavigation>(navigation)
+expectType<RouterNavigation>(useRouterNavigation(navigationOptions))
+expectType<SetupContextRouter>(useNativeRouter())
+expectType<SetupContextRouter>(useNativePageRouter())
 
 const removeGuard = navigation.beforeEach((context: NavigationGuardContext) => {
   expectType<'push' | 'replace' | 'back'>(context.mode)
