@@ -15,6 +15,7 @@ keywords:
 本页用于快速排雷：哪些能力能用、有哪些限制来自小程序环境，以及哪些点最容易踩坑。
 
 - **运行环境**：Wevu 依赖 `Proxy` / `WeakMap` / `Symbol` 等能力，建议微信小程序基础库 ≥ 3.0.0；模板/样式/配置通常配合 Weapp-vite 构建产物使用。
+- **Router 基础库门槛**：`this.router / this.pageRouter` 原生能力从基础库 `2.16.1+` 可用；`useRouter()/usePageRouter()` 在低版本会自动回退到全局 `wx/my/tt` 路由方法。若需要跨版本路径基准稳定，优先绝对路径或优先 `usePageRouter()`。
 - **无 DOM/浏览器 API**：不要使用 `window`/`document`，请使用小程序原生能力（如 `wx.request`）。
 - **defineComponent 的前提**：`defineComponent()` 会直接调用全局 `Component()`，请确保代码在小程序运行时执行（或测试环境自行 stub）。
 - **createApp 的行为**：`createApp()` 只会在检测到全局 `App()` 时自动注册；否则仅返回运行时对象，适用于测试或自定义适配。

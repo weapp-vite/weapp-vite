@@ -105,13 +105,13 @@ keywords:
 
 - 类型入口：`WechatMiniprogram.Component.Router`
 - 用途：获取组件路径语义的路由器对象。
-- 说明：优先命中实例 `router`，低版本基础库回退到全局 `wx` 路由方法。
+- 说明：优先命中实例 `router`，然后回退 `pageRouter`，低版本基础库再降级到全局 `wx/my/tt` 路由方法。
 
 ### `usePageRouter()` {#usepagerouter}
 
 - 类型入口：`WechatMiniprogram.Component.Router`
 - 用途：获取页面路径语义的路由器对象。
-- 说明：优先命中实例 `pageRouter`，低版本基础库回退到全局 `wx` 路由方法。
+- 说明：优先命中实例 `pageRouter`，然后回退 `router`，低版本基础库再降级到全局 `wx/my/tt` 路由方法。
 
 ### `normalizeClass()` {#normalizeclass}
 

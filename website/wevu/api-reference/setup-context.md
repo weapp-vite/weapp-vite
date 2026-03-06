@@ -165,10 +165,26 @@ function patchRaw() {
 
 ## 5.1 路由辅助
 
-| API             | 类型入口 | 说明                                                                                                                                                        |
-| --------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useRouter`     | `Router` | 获取组件路径语义 Router。优先 `this.router`，再回退 `this.pageRouter`，低版本基础库降级到全局 `wx.*`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`。 |
-| `usePageRouter` | `Router` | 获取页面路径语义 Router。优先 `this.pageRouter`，再回退 `this.router`，低版本基础库降级到全局 `wx.*`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`。 |
+| API             | 类型入口 | 说明                                                                                                                                                            |
+| --------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useRouter`     | `Router` | 获取组件路径语义 Router。优先 `this.router`，再回退 `this.pageRouter`，低版本基础库降级到全局 `wx/my/tt`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`。 |
+| `usePageRouter` | `Router` | 获取页面路径语义 Router。优先 `this.pageRouter`，再回退 `this.router`，低版本基础库降级到全局 `wx/my/tt`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`。 |
+
+### 5.1.1 Router 语义矩阵
+
+Router 原生对象从微信基础库 `2.16.1+` 可用。`wevu` 会按顺序做能力回退，因此建议你在设计路由 API 时明确“语义优先级”：
+
+| 调用位置           | `useRouter()` 基准         | `usePageRouter()` 基准     |
+| ------------------ | -------------------------- | -------------------------- |
+| 页面 `setup()`     | 页面路径                   | 页面路径                   |
+| 组件 `setup()`     | 组件路径                   | 组件所在页面路径           |
+| 低版本全局回退场景 | 当前激活页（全局路由对象） | 当前激活页（全局路由对象） |
+
+### 5.1.2 兼容建议
+
+- 需要跨版本基路径稳定时，优先 `usePageRouter()`。
+- 只在“组件目录相对路径”是业务需求时使用 `useRouter()`。
+- 对低版本必须一致的路由，优先绝对路径（`/pages/**`、`/packageA/pages/**`）。
 
 ## 5.2 可见性监听辅助
 
