@@ -280,6 +280,13 @@ export type SetupContextNativeInstance = InternalRuntimeState & {
   setData: (payload: Record<string, any>, callback?: () => void) => void | Promise<void> | undefined
 
   /**
+   * 监听组件更新性能统计（不可用时返回 undefined）
+   */
+  setUpdatePerformanceListener: (
+    listener?: ((result: Record<string, any>) => void),
+  ) => void | undefined
+
+  /**
    * 相对于当前组件路径的 Router（基础库 2.16.1+）。
    * 低版本基础库可能不存在，建议优先使用 `useRouter()` 获取带降级能力的路由对象。
    */

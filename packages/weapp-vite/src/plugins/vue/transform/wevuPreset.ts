@@ -8,6 +8,7 @@ const PERFORMANCE_PRESET_DEFAULTS: WevuDefaults = {
     setData: {
       strategy: 'patch',
       suspendWhenHidden: true,
+      diagnostics: 'fallback',
       highFrequencyWarning: {
         enabled: true,
         devOnly: true,
@@ -18,6 +19,7 @@ const PERFORMANCE_PRESET_DEFAULTS: WevuDefaults = {
     setData: {
       strategy: 'patch',
       suspendWhenHidden: true,
+      diagnostics: 'fallback',
       highFrequencyWarning: {
         enabled: true,
         devOnly: true,
