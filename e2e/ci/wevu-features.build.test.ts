@@ -186,11 +186,14 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(useSlotsFeatureWxml).toContain('id="slots-summary"')
 
     expect(useModelPageWxml).toContain('<UseModelFeature')
-    expect(useModelPageWxml).toContain('model-value="{{modelValue}}"')
+    expect(useModelPageWxml).toContain('model-value="{{childModelValue}}"')
     expect(useModelPageWxml).toContain('bind:update:modelValue="__weapp_vite_inline"')
     expect(useModelPageWxml).toContain('bindtap="setParentAlpha"')
     expect(useModelPageWxml).toContain('bindtap="setParentBeta"')
     expect(useModelPageJs).toContain('_runE2E')
+    expect(useModelPageJs).toContain('childModelValue')
+    expect(useModelPageJs).toContain('normalizeModelValue')
+    expect(useModelPageJs).toContain('_runNullGuardE2E')
     expect(useModelFeatureWxml).toContain('id="model-inner-value"')
     expect(useModelFeatureWxml).toContain('bindtap="__weapp_vite_inline"')
 
