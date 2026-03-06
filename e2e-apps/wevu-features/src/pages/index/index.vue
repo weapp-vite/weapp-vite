@@ -36,6 +36,12 @@ const featureList = [
     summary: '展示原生组件通过 usingComponents 引入 Vue 组件',
     path: '/pages/native-uses-vue/index',
   },
+  {
+    key: 'router-stability',
+    title: 'router stability',
+    summary: '展示 wx/pageRouter/router 在相对路径上的基路径差异',
+    path: '/pages/router-stability/index',
+  },
 ] as const
 </script>
 
