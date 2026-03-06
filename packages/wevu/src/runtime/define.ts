@@ -204,8 +204,13 @@ export function defineComponent(
  * @param options 组件选项，可能包含小程序特有的 properties
  * @internal
  */
-export function createWevuComponent<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(
-  options: DefineComponentOptions<ComponentPropsOptions, D, C, M> & { properties?: WechatMiniprogram.Component.PropertyOption },
+export function createWevuComponent<
+  P extends ComponentPropsOptions = ComponentPropsOptions,
+  D extends object = Record<string, any>,
+  C extends ComputedDefinitions = ComputedDefinitions,
+  M extends MethodDefinitions = MethodDefinitions,
+>(
+  options: DefineComponentOptions<P, D, C, M> & { properties?: WechatMiniprogram.Component.PropertyOption },
 ): void {
   ensureScopedSlotComponentGlobal()
   const {
