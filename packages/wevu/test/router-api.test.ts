@@ -34,12 +34,16 @@ describe('router api', () => {
       path: 'pages/home/detail',
       fullPath: '/pages/home/detail?scene=1',
       query: { scene: '1' },
+      hash: '',
+      params: {},
     })
 
     expect(resolveRouteLocation('../list', 'pages/home/index')).toEqual({
       path: 'pages/list',
       fullPath: '/pages/list',
       query: {},
+      hash: '',
+      params: {},
     })
 
     expect(resolveRouteLocation({
@@ -55,6 +59,30 @@ describe('router api', () => {
       query: {
         from: 'demo',
         keep: null,
+      },
+      hash: '',
+      params: {},
+    })
+
+    expect(resolveRouteLocation({
+      fullPath: '/pages/post/index?from=home#comment',
+      name: 'post-detail',
+      params: {
+        id: 1,
+        tags: ['a', true],
+        skip: undefined,
+      },
+    })).toEqual({
+      path: 'pages/post/index',
+      fullPath: '/pages/post/index?from=home#comment',
+      query: {
+        from: 'home',
+      },
+      hash: '#comment',
+      name: 'post-detail',
+      params: {
+        id: '1',
+        tags: ['a', 'true'],
       },
     })
   })
@@ -87,6 +115,9 @@ describe('router api', () => {
       query: {
         tab: 'all',
       },
+      hash: '',
+      params: {},
+      name: undefined,
     })
 
     callHookList(instance, 'onLoad', [{ tab: 'new', scene: 1 }])
@@ -112,6 +143,9 @@ describe('router api', () => {
       query: {
         from: 'mine',
       },
+      hash: '',
+      params: {},
+      name: undefined,
     })
 
     pages = [

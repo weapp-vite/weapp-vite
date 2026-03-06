@@ -63,6 +63,44 @@ describe('router navigation helpers', () => {
     }))
   })
 
+  it('keeps hash in route resolution but strips hash for native navigation url', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter()
+    const resolved = router.resolve('./detail?scene=1#comment')
+    expect(resolved.fullPath).toBe('/pages/home/detail?scene=1#comment')
+    expect(resolved.hash).toBe('#comment')
+
+    const result = await router.push('./detail?scene=1#comment')
+    expect(result).toBeUndefined()
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/home/detail?scene=1',
+    }))
+  })
+
   it('replace returns duplicated failure when navigating to same location', async () => {
     const redirectTo = vi.fn()
     const instance = {

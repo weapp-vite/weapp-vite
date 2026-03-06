@@ -19,17 +19,27 @@ export type LocationQueryValue = string | null
 export type LocationQueryValueRaw = LocationQueryValue | number | boolean | undefined
 export type LocationQuery = Record<string, LocationQueryValue | LocationQueryValue[]>
 export type LocationQueryRaw = Record<string, LocationQueryValueRaw | LocationQueryValueRaw[]>
+export type RouteParamValue = string
+export type RouteParamValueRaw = RouteParamValue | number | boolean | null | undefined
+export type RouteParams = Record<string, RouteParamValue | RouteParamValue[]>
+export type RouteParamsRaw = Record<string, RouteParamValueRaw | RouteParamValueRaw[]>
 
 export type RouteLocationRaw = string | {
   path?: string
   fullPath?: string
   query?: LocationQueryRaw
+  hash?: string
+  name?: string
+  params?: RouteParamsRaw
 }
 
 export interface RouteLocationNormalizedLoaded {
   path: string
   fullPath: string
   query: LocationQuery
+  hash: string
+  name?: string
+  params: RouteParams
 }
 
 export const NavigationFailureType = {
@@ -147,6 +157,19 @@ function pushQueryValue(target: LocationQuery, key: string, value: LocationQuery
   target[key] = [previous, value]
 }
 
+function pushRouteParamValue(target: RouteParams, key: string, value: RouteParamValue) {
+  const previous = target[key]
+  if (previous === undefined) {
+    target[key] = value
+    return
+  }
+  if (Array.isArray(previous)) {
+    previous.push(value)
+    return
+  }
+  target[key] = [previous, value]
+}
+
 function normalizeQueryValue(value: LocationQueryValueRaw): LocationQueryValue | undefined {
   if (value === undefined) {
     return undefined
@@ -176,6 +199,41 @@ function normalizeQuery(query: LocationQueryRaw | LocationQuery): LocationQuery 
     }
   }
   return normalized
+}
+
+function normalizeRouteParamValue(value: RouteParamValueRaw): RouteParamValue | undefined {
+  if (value === undefined || value === null) {
+    return undefined
+  }
+  return String(value)
+}
+
+function normalizeRouteParams(params: RouteParamsRaw | RouteParams): RouteParams {
+  const normalized: RouteParams = {}
+  for (const key of Object.keys(params)) {
+    const rawValue = (params as Record<string, RouteParamValueRaw | RouteParamValueRaw[]>)[key]
+    if (Array.isArray(rawValue)) {
+      for (const item of rawValue) {
+        const next = normalizeRouteParamValue(item)
+        if (next !== undefined) {
+          pushRouteParamValue(normalized, key, next)
+        }
+      }
+      continue
+    }
+    const next = normalizeRouteParamValue(rawValue)
+    if (next !== undefined) {
+      pushRouteParamValue(normalized, key, next)
+    }
+  }
+  return normalized
+}
+
+function normalizeHash(rawHash?: string): string {
+  if (!rawHash) {
+    return ''
+  }
+  return rawHash.startsWith('#') ? rawHash : `#${rawHash}`
 }
 
 export function parseQuery(search: string): LocationQuery {
@@ -290,34 +348,51 @@ function resolvePath(path: string, currentPath: string): string {
   return normalizePathSegments(path).join('/')
 }
 
-function parsePathInput(input: string): { path: string, query: LocationQuery } {
+function parsePathInput(input: string): { path: string, query: LocationQuery, hash: string } {
   const hashIndex = input.indexOf('#')
   const withoutHash = hashIndex >= 0 ? input.slice(0, hashIndex) : input
+  const hash = hashIndex >= 0 ? normalizeHash(input.slice(hashIndex + 1)) : ''
   const queryIndex = withoutHash.indexOf('?')
 
   if (queryIndex < 0) {
     return {
       path: withoutHash,
       query: {},
+      hash,
     }
   }
 
   return {
     path: withoutHash.slice(0, queryIndex),
     query: parseQuery(withoutHash.slice(queryIndex + 1)),
+    hash,
   }
 }
 
-function createRouteLocation(path: string, query: LocationQuery): RouteLocationNormalizedLoaded {
+function createRouteLocation(
+  path: string,
+  query: LocationQuery,
+  hash = '',
+  name?: string,
+  params: RouteParams = {},
+): RouteLocationNormalizedLoaded {
   const normalizedPath = resolvePath(path, '')
   const queryString = stringifyQuery(query)
   const fullPathBase = normalizedPath ? `/${normalizedPath}` : '/'
-
-  return {
+  const normalizedHash = normalizeHash(hash)
+  const fullPath = queryString ? `${fullPathBase}?${queryString}` : fullPathBase
+  const location: RouteLocationNormalizedLoaded = {
     path: normalizedPath,
-    fullPath: queryString ? `${fullPathBase}?${queryString}` : fullPathBase,
+    fullPath: normalizedHash ? `${fullPath}${normalizedHash}` : fullPath,
     query,
+    hash: normalizedHash,
+    params,
   }
+  if (name !== undefined) {
+    location.name = name
+  }
+
+  return location
 }
 
 function getCurrentMiniProgramPage(): MiniProgramPageLike | undefined {
@@ -352,7 +427,7 @@ function resolveCurrentRoute(queryOverride?: LocationQueryRaw): RouteLocationNor
 
   const querySource = queryOverride ?? ((currentPage.options ?? {}) as LocationQueryRaw)
   const query = normalizeQuery(querySource)
-  return createRouteLocation(rawPath, query)
+  return createRouteLocation(rawPath, query, '', undefined, {})
 }
 
 function cloneLocationQuery(query: LocationQuery): LocationQuery {
@@ -364,16 +439,37 @@ function cloneLocationQuery(query: LocationQuery): LocationQuery {
   return cloned
 }
 
+function cloneRouteParams(params: RouteParams): RouteParams {
+  const cloned: RouteParams = {}
+  for (const key of Object.keys(params)) {
+    const value = params[key]
+    cloned[key] = Array.isArray(value) ? value.slice() : value
+  }
+  return cloned
+}
+
 function snapshotRouteLocation(route: RouteLocationNormalizedLoaded): RouteLocationNormalizedLoaded {
-  return {
+  const snapshot: RouteLocationNormalizedLoaded = {
     path: route.path,
     fullPath: route.fullPath,
     query: cloneLocationQuery(route.query),
+    hash: route.hash,
+    params: cloneRouteParams(route.params),
   }
+  if (route.name !== undefined) {
+    snapshot.name = route.name
+  }
+  return snapshot
 }
 
 function createAbsoluteRoutePath(path: string): string {
   return path ? `/${path}` : '/'
+}
+
+function createNativeRouteUrl(target: RouteLocationNormalizedLoaded): string {
+  const basePath = createAbsoluteRoutePath(target.path)
+  const queryString = stringifyQuery(target.query)
+  return queryString ? `${basePath}?${queryString}` : basePath
 }
 
 function hasLocationQuery(query: LocationQuery): boolean {
@@ -472,7 +568,12 @@ function isRouteLocationRawCandidate(value: unknown): value is RouteLocationRaw 
     return false
   }
   const candidate = value as Record<string, unknown>
-  return 'path' in candidate || 'fullPath' in candidate || 'query' in candidate
+  return 'path' in candidate
+    || 'fullPath' in candidate
+    || 'query' in candidate
+    || 'hash' in candidate
+    || 'name' in candidate
+    || 'params' in candidate
 }
 
 async function runNavigationGuards(
@@ -650,7 +751,7 @@ export function resolveRouteLocation(to: RouteLocationRaw, currentPath = ''): Ro
   if (typeof to === 'string') {
     const parsed = parsePathInput(to)
     const path = resolvePath(parsed.path, currentPath)
-    return createRouteLocation(path, parsed.query)
+    return createRouteLocation(path, parsed.query, parsed.hash)
   }
 
   const parsedFromFullPath = typeof to.fullPath === 'string'
@@ -662,8 +763,13 @@ export function resolveRouteLocation(to: RouteLocationRaw, currentPath = ''): Ro
   const query = to.query
     ? normalizeQuery(to.query)
     : parsedFromFullPath?.query ?? {}
+  const hash = normalizeHash(to.hash ?? parsedFromFullPath?.hash)
+  const name = typeof to.name === 'string' ? to.name : undefined
+  const params = to.params
+    ? normalizeRouteParams(to.params)
+    : {}
 
-  return createRouteLocation(path, query)
+  return createRouteLocation(path, query, hash, name, params)
 }
 
 export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
@@ -676,6 +782,9 @@ export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
     path: currentRoute.path,
     fullPath: currentRoute.fullPath,
     query: currentRoute.query,
+    hash: currentRoute.hash,
+    params: currentRoute.params,
+    name: currentRoute.name,
   })
 
   function syncRoute(queryOverride?: LocationQueryRaw) {
@@ -683,6 +792,9 @@ export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
     routeState.path = nextRoute.path
     routeState.fullPath = nextRoute.fullPath
     routeState.query = nextRoute.query
+    routeState.hash = nextRoute.hash
+    routeState.params = nextRoute.params
+    routeState.name = nextRoute.name
   }
 
   onLoad((query) => {
@@ -943,7 +1055,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       const result = await executeNavigationMethod(
         nativeMethod as (options: Record<string, any>) => unknown,
         {
-          url: currentTarget.fullPath,
+          url: createNativeRouteUrl(currentTarget),
         },
         currentTarget,
         from,
