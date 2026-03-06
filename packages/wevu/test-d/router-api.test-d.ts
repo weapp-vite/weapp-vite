@@ -22,7 +22,6 @@ import {
   useNativeRouter,
   useRoute,
   useRouter,
-  useRouterNavigation,
 } from 'wevu/router'
 
 const parsed = parseQuery('?foo=1&flag')
@@ -47,7 +46,6 @@ const navigationOptions: UseRouterOptions = {
 }
 const navigation = useRouter(navigationOptions)
 expectType<RouterNavigation>(navigation)
-expectType<RouterNavigation>(useRouterNavigation(navigationOptions))
 expectType<SetupContextRouter>(useNativeRouter())
 expectType<SetupContextRouter>(useNativePageRouter())
 

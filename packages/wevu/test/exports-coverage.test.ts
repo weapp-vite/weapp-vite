@@ -140,7 +140,6 @@ describe('export barrels', () => {
       useNativePageRouter: expect.any(Function),
       useNativeRouter: expect.any(Function),
       useRoute: expect.any(Function),
-      useRouterNavigation: expect.any(Function),
       useRouter: expect.any(Function),
     })
     expect(reactivity).toBeTruthy()
