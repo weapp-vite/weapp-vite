@@ -1,6 +1,20 @@
-import type { LocationQuery, RouteLocationNormalizedLoaded } from 'wevu/router'
+import type {
+  LocationQuery,
+  NavigationFailure,
+  RouteLocationNormalizedLoaded,
+  RouterNavigation,
+} from 'wevu/router'
 import { expectType } from 'tsd'
-import { parseQuery, resolveRouteLocation, stringifyQuery, useRoute } from 'wevu/router'
+import {
+  createNavigationFailure,
+  isNavigationFailure,
+  NavigationFailureType,
+  parseQuery,
+  resolveRouteLocation,
+  stringifyQuery,
+  useRoute,
+  useRouterNavigation,
+} from 'wevu/router'
 
 const parsed = parseQuery('?foo=1&flag')
 expectType<LocationQuery>(parsed)
@@ -18,3 +32,10 @@ expectType<RouteLocationNormalizedLoaded>(resolved)
 
 const route = useRoute()
 expectType<Readonly<RouteLocationNormalizedLoaded>>(route)
+
+const navigation = useRouterNavigation()
+expectType<RouterNavigation>(navigation)
+
+const failure = createNavigationFailure(NavigationFailureType.cancelled)
+expectType<NavigationFailure>(failure)
+expectType<boolean>(isNavigationFailure(failure))

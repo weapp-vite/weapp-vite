@@ -29,6 +29,31 @@ export interface RouteLocationNormalizedLoaded {
   query: LocationQuery
 }
 
+export const NavigationFailureType = {
+  unknown: 1,
+  aborted: 4,
+  cancelled: 8,
+  duplicated: 16,
+} as const
+
+export type NavigationFailureTypeValue = (typeof NavigationFailureType)[keyof typeof NavigationFailureType]
+
+export interface NavigationFailure extends Error {
+  readonly __wevuNavigationFailure: true
+  readonly type: NavigationFailureTypeValue
+  readonly to?: RouteLocationNormalizedLoaded
+  readonly from?: RouteLocationNormalizedLoaded
+  readonly cause?: unknown
+}
+
+export interface RouterNavigation {
+  readonly nativeRouter: SetupContextRouter
+  resolve: (to: RouteLocationRaw) => RouteLocationNormalizedLoaded
+  push: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
+  replace: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
+  back: (delta?: number) => Promise<void | NavigationFailure>
+}
+
 interface MiniProgramPageLike {
   route?: string
   __route__?: string
@@ -85,6 +110,67 @@ function normalizeQuery(query: LocationQueryRaw | LocationQuery): LocationQuery 
     }
   }
   return normalized
+}
+
+export function parseQuery(search: string): LocationQuery {
+  const normalizedSearch = search.startsWith('?') ? search.slice(1) : search
+  const query: LocationQuery = {}
+
+  if (!normalizedSearch) {
+    return query
+  }
+
+  for (const segment of normalizedSearch.split('&')) {
+    if (!segment) {
+      continue
+    }
+
+    const equalIndex = segment.indexOf('=')
+    const rawKey = equalIndex >= 0 ? segment.slice(0, equalIndex) : segment
+    if (!rawKey) {
+      continue
+    }
+
+    const key = decodeQuerySegment(rawKey)
+    const value = equalIndex >= 0
+      ? decodeQuerySegment(segment.slice(equalIndex + 1))
+      : null
+
+    pushQueryValue(query, key, value)
+  }
+
+  return query
+}
+
+export function stringifyQuery(query: LocationQueryRaw | LocationQuery = {}): string {
+  const normalizedQuery = normalizeQuery(query)
+  const segments: string[] = []
+
+  for (const key of Object.keys(normalizedQuery)) {
+    const encodedKey = encodeQuerySegment(key)
+    const rawValue = normalizedQuery[key]
+
+    if (Array.isArray(rawValue)) {
+      for (const item of rawValue) {
+        if (item === null) {
+          segments.push(encodedKey)
+        }
+        else {
+          segments.push(`${encodedKey}=${encodeQuerySegment(item)}`)
+        }
+      }
+      continue
+    }
+
+    if (rawValue === null) {
+      segments.push(encodedKey)
+      continue
+    }
+
+    segments.push(`${encodedKey}=${encodeQuerySegment(rawValue)}`)
+  }
+
+  return segments.join('&')
 }
 
 function normalizePathSegments(path: string): string[] {
@@ -203,65 +289,119 @@ function resolveCurrentRoute(queryOverride?: LocationQueryRaw): RouteLocationNor
   return createRouteLocation(rawPath, query)
 }
 
-export function parseQuery(search: string): LocationQuery {
-  const normalizedSearch = search.startsWith('?') ? search.slice(1) : search
-  const query: LocationQuery = {}
-
-  if (!normalizedSearch) {
-    return query
+function cloneLocationQuery(query: LocationQuery): LocationQuery {
+  const cloned: LocationQuery = {}
+  for (const key of Object.keys(query)) {
+    const value = query[key]
+    cloned[key] = Array.isArray(value) ? value.slice() : value
   }
-
-  for (const segment of normalizedSearch.split('&')) {
-    if (!segment) {
-      continue
-    }
-
-    const equalIndex = segment.indexOf('=')
-    const rawKey = equalIndex >= 0 ? segment.slice(0, equalIndex) : segment
-    if (!rawKey) {
-      continue
-    }
-
-    const key = decodeQuerySegment(rawKey)
-    const value = equalIndex >= 0
-      ? decodeQuerySegment(segment.slice(equalIndex + 1))
-      : null
-
-    pushQueryValue(query, key, value)
-  }
-
-  return query
+  return cloned
 }
 
-export function stringifyQuery(query: LocationQueryRaw | LocationQuery = {}): string {
-  const normalizedQuery = normalizeQuery(query)
-  const segments: string[] = []
-
-  for (const key of Object.keys(normalizedQuery)) {
-    const encodedKey = encodeQuerySegment(key)
-    const rawValue = normalizedQuery[key]
-
-    if (Array.isArray(rawValue)) {
-      for (const item of rawValue) {
-        if (item === null) {
-          segments.push(encodedKey)
-        }
-        else {
-          segments.push(`${encodedKey}=${encodeQuerySegment(item)}`)
-        }
-      }
-      continue
-    }
-
-    if (rawValue === null) {
-      segments.push(encodedKey)
-      continue
-    }
-
-    segments.push(`${encodedKey}=${encodeQuerySegment(rawValue)}`)
+function snapshotRouteLocation(route: RouteLocationNormalizedLoaded): RouteLocationNormalizedLoaded {
+  return {
+    path: route.path,
+    fullPath: route.fullPath,
+    query: cloneLocationQuery(route.query),
   }
+}
 
-  return segments.join('&')
+function normalizeNavigationErrorMessage(error: unknown): string {
+  if (typeof error === 'string') {
+    return error
+  }
+  if (error && typeof error === 'object') {
+    const message = (error as Record<string, unknown>).errMsg
+    if (typeof message === 'string') {
+      return message
+    }
+    if (error instanceof Error) {
+      return error.message
+    }
+  }
+  return ''
+}
+
+function resolveNavigationFailureType(error: unknown): NavigationFailureTypeValue {
+  const normalizedMessage = normalizeNavigationErrorMessage(error).toLowerCase()
+  if (/already|same|duplicat|重复/.test(normalizedMessage)) {
+    return NavigationFailureType.duplicated
+  }
+  if (/cancel|取消/.test(normalizedMessage)) {
+    return NavigationFailureType.cancelled
+  }
+  if (/abort|interrupt|中断/.test(normalizedMessage)) {
+    return NavigationFailureType.aborted
+  }
+  return NavigationFailureType.unknown
+}
+
+export function createNavigationFailure(
+  type: NavigationFailureTypeValue,
+  to?: RouteLocationNormalizedLoaded,
+  from?: RouteLocationNormalizedLoaded,
+  cause?: unknown,
+): NavigationFailure {
+  const message = normalizeNavigationErrorMessage(cause) || 'Navigation failed'
+  const error = new Error(message) as NavigationFailure
+  ;(error as { __wevuNavigationFailure: true }).__wevuNavigationFailure = true
+  ;(error as { type: NavigationFailureTypeValue }).type = type
+  ;(error as { to?: RouteLocationNormalizedLoaded }).to = to
+  ;(error as { from?: RouteLocationNormalizedLoaded }).from = from
+  ;(error as { cause?: unknown }).cause = cause
+  return error
+}
+
+export function isNavigationFailure(error: unknown, type?: NavigationFailureTypeValue): error is NavigationFailure {
+  if (!error || typeof error !== 'object') {
+    return false
+  }
+  const navigationError = error as Partial<NavigationFailure>
+  if (navigationError.__wevuNavigationFailure !== true) {
+    return false
+  }
+  if (type === undefined) {
+    return true
+  }
+  return navigationError.type === type
+}
+
+function executeNavigationMethod(
+  method: (options: Record<string, any>) => unknown,
+  options: Record<string, any>,
+  to?: RouteLocationNormalizedLoaded,
+  from?: RouteLocationNormalizedLoaded,
+): Promise<void | NavigationFailure> {
+  return new Promise((resolve) => {
+    let settled = false
+    const finalize = (result?: void | NavigationFailure) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      resolve(result)
+    }
+
+    try {
+      const maybePromise = method({
+        ...options,
+        success: () => finalize(),
+        fail: (error: unknown) => {
+          finalize(createNavigationFailure(resolveNavigationFailureType(error), to, from, error))
+        },
+      })
+
+      if (maybePromise && typeof (maybePromise as PromiseLike<unknown>).then === 'function') {
+        ;(maybePromise as PromiseLike<unknown>).then(
+          () => finalize(),
+          error => finalize(createNavigationFailure(resolveNavigationFailureType(error), to, from, error)),
+        )
+      }
+    }
+    catch (error) {
+      finalize(createNavigationFailure(resolveNavigationFailureType(error), to, from, error))
+    }
+  })
 }
 
 export function resolveRouteLocation(to: RouteLocationRaw, currentPath = ''): RouteLocationNormalizedLoaded {
@@ -314,6 +454,81 @@ export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
   })
 
   return readonly(routeState) as Readonly<RouteLocationNormalizedLoaded>
+}
+
+export function useRouterNavigation(): RouterNavigation {
+  const nativeRouter = useRouter()
+  const route = useRoute()
+
+  function resolve(to: RouteLocationRaw): RouteLocationNormalizedLoaded {
+    return resolveRouteLocation(to, route.path)
+  }
+
+  function push(to: RouteLocationRaw): Promise<void | NavigationFailure> {
+    const from = snapshotRouteLocation(route)
+    const target = resolveRouteLocation(to, from.path)
+    if (target.fullPath === from.fullPath) {
+      return Promise.resolve(
+        createNavigationFailure(
+          NavigationFailureType.duplicated,
+          target,
+          from,
+          'Avoided redundant navigation to current location',
+        ),
+      )
+    }
+    return executeNavigationMethod(
+      nativeRouter.navigateTo as (options: Record<string, any>) => unknown,
+      {
+        url: target.fullPath,
+      },
+      target,
+      from,
+    )
+  }
+
+  function replace(to: RouteLocationRaw): Promise<void | NavigationFailure> {
+    const from = snapshotRouteLocation(route)
+    const target = resolveRouteLocation(to, from.path)
+    if (target.fullPath === from.fullPath) {
+      return Promise.resolve(
+        createNavigationFailure(
+          NavigationFailureType.duplicated,
+          target,
+          from,
+          'Avoided redundant navigation to current location',
+        ),
+      )
+    }
+    return executeNavigationMethod(
+      nativeRouter.redirectTo as (options: Record<string, any>) => unknown,
+      {
+        url: target.fullPath,
+      },
+      target,
+      from,
+    )
+  }
+
+  function back(delta = 1): Promise<void | NavigationFailure> {
+    const from = snapshotRouteLocation(route)
+    return executeNavigationMethod(
+      nativeRouter.navigateBack as (options: Record<string, any>) => unknown,
+      {
+        delta,
+      },
+      undefined,
+      from,
+    )
+  }
+
+  return {
+    nativeRouter,
+    resolve,
+    push,
+    replace,
+    back,
+  }
 }
 
 export type {
