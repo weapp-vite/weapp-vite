@@ -135,6 +135,8 @@ onShow(() => {})
 
       expect(transformed?.code).toContain('setWevuDefaults')
       expect(transformed?.code).toContain('suspendWhenHidden')
+      expect(transformed?.code).toContain('diagnostics')
+      expect(transformed?.code).toContain('fallback')
       expect(transformed?.code).toContain('highFrequencyWarning')
       expect(transformed?.code).toContain('strategy')
       expect(transformed?.code).toContain('patch')

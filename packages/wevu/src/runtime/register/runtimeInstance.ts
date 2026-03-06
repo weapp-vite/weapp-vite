@@ -99,8 +99,8 @@ function normalizeEmitPayload(args: any[]): { detail: any, options: TriggerEvent
   }
 }
 
-type SetupInstanceMethodName = 'triggerEvent' | 'createSelectorQuery' | 'createIntersectionObserver' | 'setData'
-const setupInstanceMethodNames: SetupInstanceMethodName[] = ['triggerEvent', 'createSelectorQuery', 'createIntersectionObserver', 'setData']
+type SetupInstanceMethodName = 'triggerEvent' | 'createSelectorQuery' | 'createIntersectionObserver' | 'setData' | 'setUpdatePerformanceListener'
+const setupInstanceMethodNames: SetupInstanceMethodName[] = ['triggerEvent', 'createSelectorQuery', 'createIntersectionObserver', 'setData', 'setUpdatePerformanceListener']
 const SETUP_CONTEXT_INSTANCE_KEY = '__wevuSetupContextInstance'
 
 function resolveRuntimeNativeMethodOwner(
@@ -256,6 +256,18 @@ function ensureSetupContextInstance(
     }
     return result
   })
+
+  defineSetupInstanceMethod(
+    setupInstanceBridge,
+    'setUpdatePerformanceListener',
+    (listener?: ((result: Record<string, any>) => void)) => {
+      const nativeOwner = resolveSetupBridgeOwner('setUpdatePerformanceListener')
+      if (nativeOwner && typeof (nativeOwner as any).setUpdatePerformanceListener === 'function') {
+        return (nativeOwner as any).setUpdatePerformanceListener(listener)
+      }
+      return undefined
+    },
+  )
 
   const setupInstance = safeMarkNoSetData(new Proxy(setupInstanceBridge, {
     get(bridgeTarget, key, receiver) {

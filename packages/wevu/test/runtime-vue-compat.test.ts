@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, mergeModels, useAttrs, useBindModel, useIntersectionObserver, useModel, useNativeInstance, usePageRouter, useRouter, useSlots } from '@/index'
+import { defineComponent, mergeModels, useAttrs, useBindModel, useIntersectionObserver, useModel, useNativeInstance, usePageRouter, useRouter, useSlots, useUpdatePerformanceListener } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -19,7 +19,7 @@ describe('runtime: vue compat helpers', () => {
     expect(mergeModels(null as any, { a: 1 })).toEqual({ a: 1 })
   })
 
-  it('useAttrs/useSlots/useModel/useNativeInstance/useIntersectionObserver/useRouter/usePageRouter throw when called outside setup', () => {
+  it('useAttrs/useSlots/useModel/useNativeInstance/useIntersectionObserver/useRouter/usePageRouter/useUpdatePerformanceListener throw when called outside setup', () => {
     expect(() => useAttrs()).toThrow()
     expect(() => useSlots()).toThrow()
     expect(() => useModel({}, 'modelValue')).toThrow()
@@ -27,6 +27,7 @@ describe('runtime: vue compat helpers', () => {
     expect(() => useIntersectionObserver()).toThrow()
     expect(() => useRouter()).toThrow()
     expect(() => usePageRouter()).toThrow()
+    expect(() => useUpdatePerformanceListener(() => {})).toThrow()
   })
 
   it('useAttrs/useSlots expose setup context values, useModel emits update event', () => {
@@ -543,5 +544,50 @@ describe('runtime: vue compat helpers', () => {
 
     expect(wxCreateIntersectionObserver).toHaveBeenCalledWith(inst, {})
     expect(disconnect).toHaveBeenCalledTimes(1)
+  })
+
+  it('useUpdatePerformanceListener registers and auto clears on teardown', () => {
+    const listener = vi.fn()
+    const setUpdatePerformanceListener = vi.fn()
+
+    defineComponent({
+      setup() {
+        const stop = useUpdatePerformanceListener(listener)
+        expect(typeof stop).toBe('function')
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      setUpdatePerformanceListener,
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+    opts.lifetimes.detached.call(inst)
+    opts.lifetimes.detached.call(inst)
+
+    expect(setUpdatePerformanceListener).toHaveBeenCalledTimes(2)
+    expect(setUpdatePerformanceListener).toHaveBeenNthCalledWith(1, listener)
+    expect(setUpdatePerformanceListener).toHaveBeenNthCalledWith(2, undefined)
+  })
+
+  it('useUpdatePerformanceListener throws when native API is unavailable', () => {
+    defineComponent({
+      setup() {
+        expect(() => useUpdatePerformanceListener(() => {})).toThrow('当前实例不支持 setUpdatePerformanceListener')
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
   })
 })

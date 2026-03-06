@@ -173,6 +173,7 @@ type RuntimeApiName
     | 'useRouter'
     | 'useSlots'
     | 'useTemplateRef'
+    | 'useUpdatePerformanceListener'
     | 'watch'
     | 'watchEffect'
 

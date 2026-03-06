@@ -44,9 +44,11 @@ describe('wevu performance preset', () => {
     } as any)
 
     expect(resolved?.app?.setData?.suspendWhenHidden).toBe(true)
+    expect(resolved?.app?.setData?.diagnostics).toBe('fallback')
     expect(resolved?.app?.setData?.strategy).toBe('diff')
     expect(resolved?.app?.setData?.highFrequencyWarning).toBeTruthy()
     expect(resolved?.component?.setData?.strategy).toBe('patch')
+    expect(resolved?.component?.setData?.diagnostics).toBe('fallback')
     expect(resolved?.component?.setData?.includeComputed).toBe(false)
   })
 })

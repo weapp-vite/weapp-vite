@@ -48,6 +48,7 @@ import {
   useNativeInstance,
   usePageRouter,
   useRouter,
+  useUpdatePerformanceListener,
 
 } from '@/index'
 
@@ -121,6 +122,7 @@ defineComponent({
     expectType<WechatMiniprogram.SelectorQuery | undefined>(ctx.instance.createSelectorQuery())
     expectType<WechatMiniprogram.IntersectionObserver | undefined>(ctx.instance.createIntersectionObserver())
     expectType<void | Promise<void> | undefined>(ctx.instance.setData({ count: props.count }))
+    expectType<void | undefined>(ctx.instance.setUpdatePerformanceListener(() => {}))
     expectAssignable<SetupContextRouter | undefined>(ctx.instance.router)
     expectAssignable<SetupContextRouter | undefined>(ctx.instance.pageRouter)
     ctx.expose({ a: 1 })
@@ -171,6 +173,8 @@ defineComponent({
     pageRouter.navigateBack({ delta: 1 })
     const io = useIntersectionObserver()
     expectType<WechatMiniprogram.IntersectionObserver>(io)
+    const stopPerfListen = useUpdatePerformanceListener((_result) => {})
+    expectType<() => void>(stopPerfListen)
     return {}
   },
 })

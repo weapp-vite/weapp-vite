@@ -9,6 +9,7 @@ export * from './provide'
 export * from './register'
 export * from './template'
 export * from './types'
+export * from './updatePerformance'
 export {
   mergeModels,
   useAttrs,

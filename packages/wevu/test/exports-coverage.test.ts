@@ -115,6 +115,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'useRouter',
   'useSlots',
   'useTemplateRef',
+  'useUpdatePerformanceListener',
   'watch',
   'watchEffect',
 ] as const
