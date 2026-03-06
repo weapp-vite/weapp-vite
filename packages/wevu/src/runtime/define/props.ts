@@ -1,13 +1,48 @@
 import type { ComponentPropsOptions } from '../types'
 
+const NATIVE_PROPERTY_TYPE_MAP = new Map<unknown, WechatMiniprogram.Component.ShortProperty | null>([
+  [String, String],
+  [Number, Number],
+  [Boolean, Boolean],
+  [Object, Object],
+  [Array, Array],
+  ['String', String],
+  ['Number', Number],
+  ['Boolean', Boolean],
+  ['Object', Object],
+  ['Array', Array],
+  [null, null],
+  ['null', null],
+  ['Null', null],
+])
+
+function toNativePropertyType(candidate: unknown) {
+  return NATIVE_PROPERTY_TYPE_MAP.get(candidate)
+}
+
 function normalizeTypeCandidates(raw: unknown) {
-  if (Array.isArray(raw)) {
-    return raw.filter(item => item !== undefined)
-  }
   if (raw === undefined) {
     return []
   }
-  return [raw]
+  const source = Array.isArray(raw) ? raw : [raw]
+  const normalized: Array<WechatMiniprogram.Component.ShortProperty | null> = []
+  source.forEach((item) => {
+    const mapped = toNativePropertyType(item)
+    if (mapped === undefined) {
+      return
+    }
+    if (!normalized.includes(mapped)) {
+      normalized.push(mapped)
+    }
+  })
+  const requiredNativeTypes = normalized.filter((item): item is WechatMiniprogram.Component.ShortProperty => item !== null)
+  if (requiredNativeTypes.length > 0) {
+    return requiredNativeTypes
+  }
+  if (normalized.includes(null)) {
+    return [null]
+  }
+  return [null]
 }
 
 function applyTypeOptions(target: Record<string, any>, rawType: unknown) {
@@ -86,7 +121,7 @@ export function normalizeProps(
         applyTypeOptions(propOptions, (definition as any).type)
       }
       if (Array.isArray((definition as any).optionalTypes)) {
-        const optionalTypes = (definition as any).optionalTypes.filter((item: unknown) => item !== undefined)
+        const optionalTypes = (definition as any).optionalTypes.map((item: unknown) => toNativePropertyType(item)).filter((item): item is WechatMiniprogram.Component.ShortProperty => item !== undefined && item !== null)
         if (optionalTypes.length > 0) {
           const existingOptionalTypes = Array.isArray(propOptions.optionalTypes)
             ? propOptions.optionalTypes as any[]
