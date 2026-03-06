@@ -9,4 +9,19 @@ export * from './provide'
 export * from './register'
 export * from './template'
 export * from './types'
-export * from './vueCompat'
+export {
+  mergeModels,
+  useAttrs,
+  useBindModel,
+  useModel,
+  useNativeInstance,
+  usePageRouter,
+  useRouter,
+  useSlots,
+  useTemplateRef,
+} from './vueCompat'
+export type {
+  ModelModifiers,
+  TemplateRef,
+  UseModelOptions,
+} from './vueCompat'

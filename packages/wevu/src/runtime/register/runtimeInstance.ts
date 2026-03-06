@@ -28,6 +28,8 @@ type AdapterWithSetData = Required<MiniProgramAdapter> & {
   __wevu_enableSetData?: () => void
   __wevu_setVisibility?: (visible: boolean) => void
 }
+type NativeSetData = (payload: Record<string, any>) => void | Promise<void> | undefined
+
 type RuntimeSetupFunction<
   D extends object,
   C extends ComputedDefinitions,
@@ -362,7 +364,7 @@ function resolveNativeSetData(instance: InternalRuntimeState) {
     ? setupInstance.setData
     : undefined
   if (typeof setupOverride === 'function' && !isNativeBridgeMethod(setupOverride)) {
-    return setupOverride as (payload: Record<string, any>) => unknown
+    return setupOverride as NativeSetData
   }
 
   const candidate = (instance as any).setData
@@ -372,7 +374,7 @@ function resolveNativeSetData(instance: InternalRuntimeState) {
   if (isNativeBridgeMethod(candidate)) {
     return undefined
   }
-  return candidate as (payload: Record<string, any>) => unknown
+  return candidate as NativeSetData
 }
 
 function getRuntimeOwnerLabel(instance: InternalRuntimeState) {
@@ -389,7 +391,7 @@ function getRuntimeOwnerLabel(instance: InternalRuntimeState) {
 
 function callNativeSetData(
   instance: InternalRuntimeState,
-  setData: (payload: Record<string, any>) => unknown,
+  setData: NativeSetData,
   payload: Record<string, any>,
 ) {
   try {
