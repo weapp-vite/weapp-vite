@@ -25,11 +25,12 @@ export type RouteParams = Record<string, RouteParamValue | RouteParamValue[]>
 export type RouteParamsRaw = Record<string, RouteParamValueRaw | RouteParamValueRaw[]>
 export type RouteQueryParser = (search: string) => LocationQueryRaw | LocationQuery
 export type RouteQueryStringifier = (query: LocationQueryRaw | LocationQuery) => string
+export type RouteMeta = Record<string, unknown>
 export interface NamedRouteRecord {
   name: string
   path: string
 }
-export type NamedRoutes = Readonly<Record<string, string>> | readonly NamedRouteRecord[]
+export type NamedRoutes = Readonly<Record<string, string>> | readonly RouteRecordRaw[]
 
 export type RouteLocationRaw = string | {
   path?: string
@@ -46,6 +47,7 @@ export interface RouteLocationNormalizedLoaded {
   query: LocationQuery
   hash: string
   name?: string
+  meta?: RouteMeta
   params: RouteParams
 }
 
@@ -70,6 +72,15 @@ export type NavigationMode = 'push' | 'replace' | 'back'
 export interface NavigationRedirect {
   to: RouteLocationRaw
   replace?: boolean
+}
+export type RouteRecordRedirect = RouteLocationRaw | NavigationRedirect | ((
+  to: RouteLocationNormalizedLoaded,
+  from: RouteLocationNormalizedLoaded,
+) => RouteLocationRaw | NavigationRedirect | Promise<RouteLocationRaw | NavigationRedirect>)
+export interface RouteRecordRaw extends NamedRouteRecord {
+  meta?: RouteMeta
+  beforeEnter?: NavigationGuard | readonly NavigationGuard[]
+  redirect?: RouteRecordRedirect
 }
 
 export type NavigationGuardResult = void | boolean | NavigationFailure | RouteLocationRaw | NavigationRedirect
@@ -135,8 +146,8 @@ export interface RouterNavigation {
   replace: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
   back: (delta?: number) => Promise<void | NavigationFailure>
   hasRoute: (name: string) => boolean
-  getRoutes: () => readonly NamedRouteRecord[]
-  addRoute: (route: NamedRouteRecord) => () => void
+  getRoutes: () => readonly RouteRecordRaw[]
+  addRoute: (route: RouteRecordRaw) => () => void
   removeRoute: (name: string) => void
   beforeEach: (guard: NavigationGuard) => () => void
   beforeResolve: (guard: NavigationGuard) => () => void
@@ -155,8 +166,16 @@ interface RouteResolveCodec {
   stringifyQuery: RouteQueryStringifier
 }
 
+interface RouteRecordNormalized {
+  name: string
+  path: string
+  meta?: RouteMeta
+  beforeEnterGuards: readonly NavigationGuard[]
+  redirect?: RouteRecordRedirect
+}
+
 interface NamedRouteLookup {
-  pathByName: Map<string, string>
+  recordByName: Map<string, RouteRecordNormalized>
   nameByStaticPath: Map<string, string>
 }
 
@@ -386,23 +405,51 @@ function isDynamicRoutePath(path: string): boolean {
   return /(?:^|\/):/.test(path)
 }
 
-function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): Array<[string, string]> {
+function normalizeBeforeEnterGuards(beforeEnter?: RouteRecordRaw['beforeEnter']): readonly NavigationGuard[] {
+  if (!beforeEnter) {
+    return []
+  }
+  if (Array.isArray(beforeEnter)) {
+    return beforeEnter
+  }
+  return [beforeEnter]
+}
+
+function normalizeRouteRecordRaw(route: RouteRecordRaw): RouteRecordNormalized | undefined {
+  const routeName = route.name.trim()
+  if (!routeName) {
+    return undefined
+  }
+
+  const normalizedPath = resolvePath(route.path, '')
+  if (!normalizedPath) {
+    return undefined
+  }
+
+  return {
+    name: routeName,
+    path: normalizedPath,
+    meta: route.meta,
+    beforeEnterGuards: normalizeBeforeEnterGuards(route.beforeEnter),
+    redirect: route.redirect,
+  }
+}
+
+function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): RouteRecordRaw[] {
   if (!namedRoutes) {
     return []
   }
 
   if (Array.isArray(namedRoutes)) {
-    return namedRoutes
-      .filter((item): item is NamedRouteRecord => {
-        return Boolean(
-          item
-          && typeof item.name === 'string'
-          && item.name
-          && typeof item.path === 'string'
-          && item.path,
-        )
-      })
-      .map(item => [item.name, item.path])
+    return namedRoutes.filter((item): item is RouteRecordRaw => {
+      return Boolean(
+        item
+        && typeof item.name === 'string'
+        && item.name
+        && typeof item.path === 'string'
+        && item.path,
+      )
+    })
   }
 
   return Object.entries(namedRoutes)
@@ -410,32 +457,33 @@ function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): Array<[string, s
       const [name, path] = entry
       return Boolean(name && typeof path === 'string' && path)
     })
+    .map(([name, path]) => ({ name, path }))
 }
 
-function createNamedRouteNameByStaticPath(pathByName: ReadonlyMap<string, string>): Map<string, string> {
+function createNamedRouteNameByStaticPath(recordByName: ReadonlyMap<string, RouteRecordNormalized>): Map<string, string> {
   const nameByStaticPath = new Map<string, string>()
-  for (const [name, normalizedPath] of pathByName.entries()) {
-    if (!isDynamicRoutePath(normalizedPath) && !nameByStaticPath.has(normalizedPath)) {
-      nameByStaticPath.set(normalizedPath, name)
+  for (const [name, record] of recordByName.entries()) {
+    if (!isDynamicRoutePath(record.path) && !nameByStaticPath.has(record.path)) {
+      nameByStaticPath.set(record.path, name)
     }
   }
   return nameByStaticPath
 }
 
 function createNamedRouteLookup(namedRoutes?: NamedRoutes): NamedRouteLookup {
-  const pathByName = new Map<string, string>()
+  const recordByName = new Map<string, RouteRecordNormalized>()
 
-  for (const [name, path] of normalizeNamedRouteEntries(namedRoutes)) {
-    const normalizedPath = resolvePath(path, '')
-    if (!normalizedPath) {
+  for (const routeRecord of normalizeNamedRouteEntries(namedRoutes)) {
+    const normalizedRecord = normalizeRouteRecordRaw(routeRecord)
+    if (!normalizedRecord) {
       continue
     }
-    pathByName.set(name, normalizedPath)
+    recordByName.set(normalizedRecord.name, normalizedRecord)
   }
 
   return {
-    pathByName,
-    nameByStaticPath: createNamedRouteNameByStaticPath(pathByName),
+    recordByName,
+    nameByStaticPath: createNamedRouteNameByStaticPath(recordByName),
   }
 }
 
@@ -528,21 +576,48 @@ function resolveNamedRouteLocation(
     return to
   }
 
-  const pathTemplate = lookup.pathByName.get(routeName)
-  if (!pathTemplate) {
+  const routeRecord = lookup.recordByName.get(routeName)
+  if (!routeRecord) {
     throw new Error(`Named route "${routeName}" is not defined in useRouter({ namedRoutes })`)
   }
 
   const params = to.params
     ? normalizeRouteParams(to.params)
     : {}
-  const resolvedPath = resolveNamedRoutePath(pathTemplate, params, routeName)
+  const resolvedPath = resolveNamedRoutePath(routeRecord.path, params, routeName)
 
   return {
     ...to,
     path: resolvedPath ? `/${resolvedPath}` : '/',
     params,
   }
+}
+
+function cloneRouteMeta(meta?: RouteMeta): RouteMeta | undefined {
+  if (!meta) {
+    return undefined
+  }
+  return {
+    ...meta,
+  }
+}
+
+function resolveMatchedRouteRecord(
+  target: RouteLocationNormalizedLoaded,
+  lookup: NamedRouteLookup,
+): RouteRecordNormalized | undefined {
+  if (target.name) {
+    const byName = lookup.recordByName.get(target.name)
+    if (byName) {
+      return byName
+    }
+  }
+
+  const staticNamedRoute = lookup.nameByStaticPath.get(target.path)
+  if (!staticNamedRoute) {
+    return undefined
+  }
+  return lookup.recordByName.get(staticNamedRoute)
 }
 
 function parsePathInput(
@@ -656,6 +731,9 @@ function snapshotRouteLocation(route: RouteLocationNormalizedLoaded): RouteLocat
     query: cloneLocationQuery(route.query),
     hash: route.hash,
     params: cloneRouteParams(route.params),
+  }
+  if (route.meta !== undefined) {
+    snapshot.meta = cloneRouteMeta(route.meta)
   }
   if (route.name !== undefined) {
     snapshot.name = route.name
@@ -995,6 +1073,9 @@ export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
     params: currentRoute.params,
     name: currentRoute.name,
   })
+  if (currentRoute.meta !== undefined) {
+    routeState.meta = currentRoute.meta
+  }
 
   function syncRoute(queryOverride?: LocationQueryRaw) {
     const nextRoute = resolveCurrentRoute(queryOverride)
@@ -1002,6 +1083,12 @@ export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
     routeState.fullPath = nextRoute.fullPath
     routeState.query = nextRoute.query
     routeState.hash = nextRoute.hash
+    if (nextRoute.meta === undefined) {
+      delete (routeState as Partial<RouteLocationNormalizedLoaded>).meta
+    }
+    else {
+      routeState.meta = nextRoute.meta
+    }
     routeState.params = nextRoute.params
     routeState.name = nextRoute.name
   }
@@ -1061,10 +1148,13 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       ? to
       : resolveNamedRouteLocation(to, namedRouteLookup)
     const resolved = resolveRouteLocation(rawTo, currentPath, routeResolveCodec)
-    if (resolved.name === undefined) {
-      const inferredName = namedRouteLookup.nameByStaticPath.get(resolved.path)
-      if (inferredName !== undefined) {
-        resolved.name = inferredName
+    const matchedRecord = resolveMatchedRouteRecord(resolved, namedRouteLookup)
+    if (matchedRecord) {
+      if (resolved.name === undefined) {
+        resolved.name = matchedRecord.name
+      }
+      if (matchedRecord.meta !== undefined) {
+        resolved.meta = cloneRouteMeta(matchedRecord.meta)
       }
     }
     return resolved
@@ -1075,42 +1165,75 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   }
 
   function hasRoute(name: string): boolean {
-    return namedRouteLookup.pathByName.has(name)
+    return namedRouteLookup.recordByName.has(name)
   }
 
-  function getRoutes(): readonly NamedRouteRecord[] {
-    return Array.from(namedRouteLookup.pathByName.entries()).map(([name, normalizedPath]) => ({
-      name,
-      path: normalizedPath ? `/${normalizedPath}` : '/',
-    }))
+  function normalizeRouteRecordForOutput(record: RouteRecordNormalized): RouteRecordRaw {
+    const normalizedRoute: RouteRecordRaw = {
+      name: record.name,
+      path: record.path ? `/${record.path}` : '/',
+    }
+    if (record.meta !== undefined) {
+      normalizedRoute.meta = cloneRouteMeta(record.meta)
+    }
+    if (record.beforeEnterGuards.length === 1) {
+      normalizedRoute.beforeEnter = record.beforeEnterGuards[0]
+    }
+    else if (record.beforeEnterGuards.length > 1) {
+      normalizedRoute.beforeEnter = record.beforeEnterGuards.slice()
+    }
+    if (record.redirect !== undefined) {
+      normalizedRoute.redirect = record.redirect
+    }
+    return normalizedRoute
   }
 
-  function addRoute(route: NamedRouteRecord): () => void {
-    const routeName = route.name.trim()
-    if (!routeName) {
-      throw new Error('Route name is required when adding a named route')
-    }
+  function getRoutes(): readonly RouteRecordRaw[] {
+    return Array.from(namedRouteLookup.recordByName.values()).map(normalizeRouteRecordForOutput)
+  }
 
-    const normalizedPath = resolvePath(route.path, '')
-    if (!normalizedPath) {
-      throw new Error(`Route path is required for named route "${routeName}"`)
+  function addRoute(route: RouteRecordRaw): () => void {
+    const normalizedRoute = normalizeRouteRecordRaw(route)
+    if (!normalizedRoute) {
+      throw new Error('Route name and path are required when adding a named route')
     }
-
-    namedRouteLookup.pathByName.set(routeName, normalizedPath)
-    namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.pathByName)
+    namedRouteLookup.recordByName.set(normalizedRoute.name, normalizedRoute)
+    namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.recordByName)
 
     return () => {
-      const currentPath = namedRouteLookup.pathByName.get(routeName)
-      if (currentPath === normalizedPath) {
-        namedRouteLookup.pathByName.delete(routeName)
-        namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.pathByName)
+      const currentRoute = namedRouteLookup.recordByName.get(normalizedRoute.name)
+      if (currentRoute === normalizedRoute) {
+        namedRouteLookup.recordByName.delete(normalizedRoute.name)
+        namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.recordByName)
       }
     }
   }
 
   function removeRoute(name: string): void {
-    if (namedRouteLookup.pathByName.delete(name)) {
-      namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.pathByName)
+    if (namedRouteLookup.recordByName.delete(name)) {
+      namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.recordByName)
+    }
+  }
+
+  async function resolveRouteRecordRedirect(
+    redirect: RouteRecordRedirect,
+    to: RouteLocationNormalizedLoaded,
+    from: RouteLocationNormalizedLoaded,
+  ): Promise<{ target: RouteLocationNormalizedLoaded, replace?: boolean }> {
+    const redirectResult = typeof redirect === 'function'
+      ? await redirect(to, from)
+      : redirect
+
+    if (isNavigationRedirectCandidate(redirectResult)) {
+      return {
+        target: resolveWithCodec(redirectResult.to, to.path),
+        replace: redirectResult.replace,
+      }
+    }
+
+    return {
+      target: resolveWithCodec(redirectResult, to.path),
+      replace: true,
     }
   }
 
@@ -1285,6 +1408,64 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
             return createNavigationRunResult(currentMode, from, currentTarget, createTooManyRedirectsFailure(currentTarget, from))
           }
           continue
+        }
+      }
+
+      const routeRecord = resolveMatchedRouteRecord(currentTarget, namedRouteLookup)
+      if (routeRecord?.redirect !== undefined) {
+        let redirectedByRecord: { target: RouteLocationNormalizedLoaded, replace?: boolean }
+        try {
+          redirectedByRecord = await resolveRouteRecordRedirect(routeRecord.redirect, currentTarget, from)
+        }
+        catch (error) {
+          return createNavigationRunResult(
+            currentMode,
+            from,
+            currentTarget,
+            createNavigationFailure(NavigationFailureType.aborted, currentTarget, from, error),
+          )
+        }
+
+        const redirectedMode = redirectedByRecord.replace === false ? 'push' : 'replace'
+        const redirectedTarget = redirectedByRecord.target
+        if (redirectedTarget.fullPath !== currentTarget.fullPath || redirectedMode !== currentMode) {
+          currentTarget = redirectedTarget
+          currentMode = redirectedMode
+          redirectCount += 1
+          if (redirectCount > maxRedirects) {
+            return createNavigationRunResult(currentMode, from, currentTarget, createTooManyRedirectsFailure(currentTarget, from))
+          }
+          continue
+        }
+      }
+
+      if (routeRecord && routeRecord.beforeEnterGuards.length > 0) {
+        const beforeEnterResult = await runNavigationGuards(new Set(routeRecord.beforeEnterGuards), {
+          mode: currentMode,
+          to: currentTarget,
+          from,
+          nativeRouter,
+        }, resolveWithCodec)
+
+        if (beforeEnterResult.status === 'failure') {
+          return createNavigationRunResult(currentMode, from, currentTarget, beforeEnterResult.failure)
+        }
+        if (beforeEnterResult.status === 'redirect') {
+          const redirectedTarget = beforeEnterResult.target
+          const redirectedMode = beforeEnterResult.replace === true
+            ? 'replace'
+            : beforeEnterResult.replace === false
+              ? 'push'
+              : currentMode
+          if (redirectedTarget.fullPath !== currentTarget.fullPath || redirectedMode !== currentMode) {
+            currentTarget = redirectedTarget
+            currentMode = redirectedMode
+            redirectCount += 1
+            if (redirectCount > maxRedirects) {
+              return createNavigationRunResult(currentMode, from, currentTarget, createTooManyRedirectsFailure(currentTarget, from))
+            }
+            continue
+          }
         }
       }
 

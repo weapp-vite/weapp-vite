@@ -295,6 +295,50 @@ describe('router navigation helpers', () => {
     expect(router.resolve('/pages/home/index').name).toBe('home')
   })
 
+  it('resolves route meta from matched route records', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'dashboard',
+          path: '/pages/dashboard/index',
+          meta: {
+            requiresAuth: true,
+            layout: 'admin',
+          },
+        },
+      ],
+    })
+
+    const resolved = router.resolve('/pages/dashboard/index')
+    expect(resolved.name).toBe('dashboard')
+    expect(resolved.meta).toEqual({
+      requiresAuth: true,
+      layout: 'admin',
+    })
+  })
+
   it('returns unknown navigation failure for invalid named route targets', async () => {
     const instance = {
       __wevu: {},
@@ -432,6 +476,100 @@ describe('router navigation helpers', () => {
     expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
       url: '/pages/post/9/index?from=guard',
     }))
+  })
+
+  it('supports route record beforeEnter guards', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const beforeEnter = vi.fn(() => '/pages/login/index?from=before-enter')
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'protected',
+          path: '/pages/protected/index',
+          beforeEnter,
+        },
+      ],
+    })
+
+    const result = await router.push({
+      name: 'protected',
+    })
+    expect(result).toBeUndefined()
+    expect(beforeEnter).toHaveBeenCalledTimes(1)
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/login/index?from=before-enter',
+    }))
+  })
+
+  it('supports route record redirect before navigation', async () => {
+    const navigateTo = vi.fn()
+    const redirectTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo,
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'legacy-home',
+          path: '/pages/legacy/index',
+          redirect: '/pages/new/index?from=legacy',
+        },
+      ],
+    })
+
+    const result = await router.push({
+      name: 'legacy-home',
+    })
+    expect(result).toBeUndefined()
+    expect(redirectTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/new/index?from=legacy',
+    }))
+    expect(navigateTo).not.toHaveBeenCalled()
   })
 
   it('supports adding and removing named routes at runtime', async () => {
