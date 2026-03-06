@@ -9,6 +9,7 @@ import logger from '../logger'
 import { getReadFileCheckMtime } from '../utils/cachePolicy'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 import { toAbsoluteId } from '../utils/toAbsoluteId'
+import { collectOnPageScrollPerformanceWarnings } from './performance/onPageScrollDiagnostics'
 import { readFile as readFileCached } from './utils/cache'
 import { createViteResolverAdapter } from './utils/viteResolverAdapter'
 
@@ -68,6 +69,10 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
 
       if (!(await pageMatcher.isPageFile(filename))) {
         return null
+      }
+
+      for (const warning of collectOnPageScrollPerformanceWarnings(code, filename)) {
+        logger.warn(warning)
       }
 
       const result = await injectWevuPageFeaturesInJsWithResolver(code, {
