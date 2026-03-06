@@ -121,7 +121,7 @@ export function normalizeProps(
         applyTypeOptions(propOptions, (definition as any).type)
       }
       if (Array.isArray((definition as any).optionalTypes)) {
-        const optionalTypes = (definition as any).optionalTypes.map((item: unknown) => toNativePropertyType(item)).filter((item): item is WechatMiniprogram.Component.ShortProperty => item !== undefined && item !== null)
+        const optionalTypes = (definition as any).optionalTypes.map((item: unknown) => toNativePropertyType(item)).filter((item: unknown): item is WechatMiniprogram.Component.ShortProperty => item !== undefined && item !== null)
         if (optionalTypes.length > 0) {
           const existingOptionalTypes = Array.isArray(propOptions.optionalTypes)
             ? propOptions.optionalTypes as any[]

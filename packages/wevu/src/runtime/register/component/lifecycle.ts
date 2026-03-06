@@ -69,8 +69,9 @@ function ensureWxPatched() {
     wxGlobal.pageScrollTo = function pageScrollToPatched(options: any, ...rest: any[]) {
       const result = rawPageScrollTo.apply(this, [options, ...rest])
       if (currentPageInstance) {
-        runInPageScrollHook(currentPageInstance, () => {
-          callHookList(currentPageInstance, 'onPageScroll', [options ?? {}])
+        const pageInstance = currentPageInstance
+        runInPageScrollHook(pageInstance, () => {
+          callHookList(pageInstance, 'onPageScroll', [options ?? {}])
         })
       }
       return result

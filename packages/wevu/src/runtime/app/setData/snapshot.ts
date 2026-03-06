@@ -13,7 +13,7 @@ export function cloneSnapshotValue<T>(value: T): T {
     return value
   }
   const out: Record<string, any> = Object.create(null)
-  for (const key of Object.keys(value)) {
+  for (const key of Object.keys(value as Record<string, any>)) {
     out[key] = cloneSnapshotValue((value as Record<string, any>)[key])
   }
   return out as T
