@@ -166,6 +166,8 @@ export interface RouterNavigation {
   push: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
   replace: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
   back: (delta?: number) => Promise<void | NavigationFailure>
+  go: (delta: number) => Promise<void | NavigationFailure>
+  forward: () => Promise<void | NavigationFailure>
   hasRoute: (name: string) => boolean
   getRoutes: () => readonly RouteRecordRaw[]
   addRoute: (route: RouteRecordRaw) => () => void
@@ -1424,6 +1426,15 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     )
   }
 
+  function createForwardNotSupportedFailure(from: RouteLocationNormalizedLoaded): NavigationFailure {
+    return createNavigationFailure(
+      NavigationFailureType.aborted,
+      undefined,
+      from,
+      'Forward navigation is not supported in mini-program router',
+    )
+  }
+
   function createNavigationRunResult(
     mode: NavigationMode,
     from: RouteLocationNormalizedLoaded,
@@ -1756,12 +1767,37 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     return settleNavigationResult(runResult)
   }
 
+  async function go(delta: number): Promise<void | NavigationFailure> {
+    if (delta < 0) {
+      return back(Math.abs(delta))
+    }
+
+    if (delta === 0) {
+      return undefined
+    }
+
+    const from = snapshotRouteLocation(route)
+    const result = createNavigationRunResult(
+      'back',
+      from,
+      undefined,
+      createForwardNotSupportedFailure(from),
+    )
+    return settleNavigationResult(result)
+  }
+
+  async function forward(): Promise<void | NavigationFailure> {
+    return go(1)
+  }
+
   return {
     nativeRouter,
     resolve,
     push,
     replace,
     back,
+    go,
+    forward,
     hasRoute,
     getRoutes,
     addRoute,
