@@ -209,20 +209,27 @@ export interface WevuTypedRouterRouteMap {}
 type ResolveTypedRouterEntries = WevuTypedRouterRouteMap extends { entries: infer Entries }
   ? Extract<Entries, string>
   : string
+type ResolveTypedRouterTabBarEntries = WevuTypedRouterRouteMap extends { tabBarEntries: infer Entries }
+  ? Extract<Entries, string>
+  : ResolveTypedRouterEntries
 
 type RelativeRouterUrl = `./${string}` | `../${string}`
-type AbsoluteRouterUrl<Path extends string>
+type AbsoluteRouterPath<Path extends string>
   = | Path
     | `/${Path}`
+type AbsoluteRouterUrl<Path extends string>
+  = | AbsoluteRouterPath<Path>
     | `${Path}?${string}`
     | `/${Path}?${string}`
 
 type RouterUrl<Path extends string> = string extends Path ? string : AbsoluteRouterUrl<Path> | RelativeRouterUrl
+type RouterPathUrl<Path extends string> = string extends Path ? string : AbsoluteRouterPath<Path>
 
 export type TypedRouterUrl = RouterUrl<ResolveTypedRouterEntries>
+export type TypedRouterTabBarUrl = RouterPathUrl<ResolveTypedRouterTabBarEntries>
 
 export type RouterSwitchTabOption = Omit<WechatMiniprogram.SwitchTabOption, 'url'> & {
-  url: TypedRouterUrl
+  url: TypedRouterTabBarUrl
 }
 
 export type RouterReLaunchOption = Omit<WechatMiniprogram.ReLaunchOption, 'url'> & {
