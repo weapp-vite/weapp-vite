@@ -244,6 +244,114 @@ describe('router navigation helpers', () => {
     expect(navigateTo).toHaveBeenCalledTimes(1)
   })
 
+  it('beforeEach supports redirect result', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouterNavigation()
+    router.beforeEach(() => '/pages/login/index?from=home')
+
+    const result = await router.push('/pages/detail/index')
+    expect(result).toBeUndefined()
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/login/index?from=home',
+    }))
+  })
+
+  it('beforeResolve redirect can dispatch to switchTab for tabBar routes', async () => {
+    const switchTab = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab,
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/profile/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouterNavigation({
+      tabBarEntries: ['pages/home/index'],
+    })
+    router.beforeResolve(() => '/pages/home/index')
+
+    const result = await router.push('/pages/detail/index')
+    expect(result).toBeUndefined()
+    expect(switchTab).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/home/index',
+    }))
+  })
+
+  it('returns aborted failure when guard redirects exceed maxRedirects', async () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouterNavigation({
+      maxRedirects: 1,
+    })
+    router.beforeEach(({ to }) => {
+      return to?.path === 'pages/a/index' ? '/pages/b/index' : '/pages/a/index'
+    })
+
+    const result = await router.push('/pages/detail/index')
+    expect(isNavigationFailure(result, NavigationFailureType.aborted)).toBe(true)
+  })
+
   it('resolve uses latest route state after route hooks update', () => {
     const instance = {
       __wevu: {},

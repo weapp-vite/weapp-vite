@@ -47,7 +47,7 @@ export interface NavigationFailure extends Error {
 }
 
 export type NavigationMode = 'push' | 'replace' | 'back'
-export type NavigationGuardResult = void | boolean | NavigationFailure
+export type NavigationGuardResult = void | boolean | NavigationFailure | RouteLocationRaw
 export type NavigationGuard = (
   context: NavigationGuardContext,
 ) => NavigationGuardResult | Promise<NavigationGuardResult>
@@ -61,6 +61,7 @@ export interface NavigationGuardContext {
 
 export interface UseRouterNavigationOptions {
   tabBarEntries?: readonly (TypedRouterTabBarUrl | string)[]
+  maxRedirects?: number
 }
 
 export interface RouterNavigation {
@@ -70,6 +71,7 @@ export interface RouterNavigation {
   replace: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
   back: (delta?: number) => Promise<void | NavigationFailure>
   beforeEach: (guard: NavigationGuard) => () => void
+  beforeResolve: (guard: NavigationGuard) => () => void
 }
 
 interface MiniProgramPageLike {
@@ -392,29 +394,83 @@ export function isNavigationFailure(error: unknown, type?: NavigationFailureType
   return navigationError.type === type
 }
 
+interface GuardPipelineContinue {
+  status: 'continue'
+}
+
+interface GuardPipelineFailure {
+  status: 'failure'
+  failure: NavigationFailure
+}
+
+interface GuardPipelineRedirect {
+  status: 'redirect'
+  target: RouteLocationNormalizedLoaded
+}
+
+type GuardPipelineResult = GuardPipelineContinue | GuardPipelineFailure | GuardPipelineRedirect
+
+function isRouteLocationRawCandidate(value: unknown): value is RouteLocationRaw {
+  if (typeof value === 'string') {
+    return true
+  }
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const candidate = value as Record<string, unknown>
+  return 'path' in candidate || 'fullPath' in candidate || 'query' in candidate
+}
+
 async function runNavigationGuards(
   guards: ReadonlySet<NavigationGuard>,
   context: NavigationGuardContext,
-): Promise<void | NavigationFailure> {
+): Promise<GuardPipelineResult> {
   for (const guard of guards) {
     try {
       const result = await guard(context)
       if (isNavigationFailure(result)) {
-        return result
+        return {
+          status: 'failure',
+          failure: result,
+        }
       }
       if (result === false) {
-        return createNavigationFailure(
-          NavigationFailureType.aborted,
-          context.to,
-          context.from,
-          'Navigation aborted by guard',
-        )
+        return {
+          status: 'failure',
+          failure: createNavigationFailure(
+            NavigationFailureType.aborted,
+            context.to,
+            context.from,
+            'Navigation aborted by guard',
+          ),
+        }
+      }
+      if (isRouteLocationRawCandidate(result)) {
+        if (!context.to) {
+          return {
+            status: 'failure',
+            failure: createNavigationFailure(
+              NavigationFailureType.aborted,
+              context.to,
+              context.from,
+              'Redirect is not supported in back navigation guards',
+            ),
+          }
+        }
+        return {
+          status: 'redirect',
+          target: resolveRouteLocation(result, context.to.path),
+        }
       }
     }
     catch (error) {
-      return createNavigationFailure(NavigationFailureType.aborted, context.to, context.from, error)
+      return {
+        status: 'failure',
+        failure: createNavigationFailure(NavigationFailureType.aborted, context.to, context.from, error),
+      }
     }
   }
+  return { status: 'continue' }
 }
 
 function executeNavigationMethod(
@@ -510,7 +566,9 @@ export function useRoute(): Readonly<RouteLocationNormalizedLoaded> {
 export function useRouterNavigation(options: UseRouterNavigationOptions = {}): RouterNavigation {
   const nativeRouter = useRouter()
   const route = useRoute()
-  const navigationGuards = new Set<NavigationGuard>()
+  const beforeEachGuards = new Set<NavigationGuard>()
+  const beforeResolveGuards = new Set<NavigationGuard>()
+  const maxRedirects = options.maxRedirects ?? 10
   const tabBarPathSet = new Set(
     (options.tabBarEntries ?? [])
       .map(path => resolvePath(path, ''))
@@ -526,137 +584,187 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
   }
 
   function beforeEach(guard: NavigationGuard): () => void {
-    navigationGuards.add(guard)
+    beforeEachGuards.add(guard)
     return () => {
-      navigationGuards.delete(guard)
+      beforeEachGuards.delete(guard)
+    }
+  }
+
+  function beforeResolve(guard: NavigationGuard): () => void {
+    beforeResolveGuards.add(guard)
+    return () => {
+      beforeResolveGuards.delete(guard)
+    }
+  }
+
+  function createDuplicatedFailure(target: RouteLocationNormalizedLoaded, from: RouteLocationNormalizedLoaded): NavigationFailure {
+    return createNavigationFailure(
+      NavigationFailureType.duplicated,
+      target,
+      from,
+      'Avoided redundant navigation to current location',
+    )
+  }
+
+  function createTabBarQueryFailure(target: RouteLocationNormalizedLoaded, from: RouteLocationNormalizedLoaded): NavigationFailure {
+    return createNavigationFailure(
+      NavigationFailureType.aborted,
+      target,
+      from,
+      'switchTab does not support query parameters',
+    )
+  }
+
+  function createTooManyRedirectsFailure(target: RouteLocationNormalizedLoaded, from: RouteLocationNormalizedLoaded): NavigationFailure {
+    return createNavigationFailure(
+      NavigationFailureType.aborted,
+      target,
+      from,
+      `Navigation redirected more than ${maxRedirects} times`,
+    )
+  }
+
+  async function navigateWithTarget(
+    mode: Exclude<NavigationMode, 'back'>,
+    target: RouteLocationNormalizedLoaded,
+    from: RouteLocationNormalizedLoaded,
+  ): Promise<void | NavigationFailure> {
+    let currentTarget = target
+    let redirectCount = 0
+
+    while (true) {
+      const tabBarTarget = isTabBarTarget(currentTarget)
+      const duplicated = tabBarTarget
+        ? currentTarget.path === from.path
+        : currentTarget.fullPath === from.fullPath
+      if (duplicated) {
+        return createDuplicatedFailure(currentTarget, from)
+      }
+
+      if (tabBarTarget && hasLocationQuery(currentTarget.query)) {
+        return createTabBarQueryFailure(currentTarget, from)
+      }
+
+      const beforeEachResult = await runNavigationGuards(beforeEachGuards, {
+        mode,
+        to: currentTarget,
+        from,
+        nativeRouter,
+      })
+
+      if (beforeEachResult.status === 'failure') {
+        return beforeEachResult.failure
+      }
+      if (beforeEachResult.status === 'redirect') {
+        const redirectedTarget = beforeEachResult.target
+        if (redirectedTarget.fullPath !== currentTarget.fullPath) {
+          currentTarget = redirectedTarget
+          redirectCount += 1
+          if (redirectCount > maxRedirects) {
+            return createTooManyRedirectsFailure(currentTarget, from)
+          }
+          continue
+        }
+      }
+
+      const beforeResolveResult = await runNavigationGuards(beforeResolveGuards, {
+        mode,
+        to: currentTarget,
+        from,
+        nativeRouter,
+      })
+
+      if (beforeResolveResult.status === 'failure') {
+        return beforeResolveResult.failure
+      }
+      if (beforeResolveResult.status === 'redirect') {
+        const redirectedTarget = beforeResolveResult.target
+        if (redirectedTarget.fullPath !== currentTarget.fullPath) {
+          currentTarget = redirectedTarget
+          redirectCount += 1
+          if (redirectCount > maxRedirects) {
+            return createTooManyRedirectsFailure(currentTarget, from)
+          }
+          continue
+        }
+      }
+
+      if (tabBarTarget) {
+        return executeNavigationMethod(
+          nativeRouter.switchTab as (options: Record<string, any>) => unknown,
+          {
+            url: createAbsoluteRoutePath(currentTarget.path),
+          },
+          currentTarget,
+          from,
+        )
+      }
+
+      const nativeMethod = mode === 'push'
+        ? nativeRouter.navigateTo
+        : nativeRouter.redirectTo
+
+      return executeNavigationMethod(
+        nativeMethod as (options: Record<string, any>) => unknown,
+        {
+          url: currentTarget.fullPath,
+        },
+        currentTarget,
+        from,
+      )
     }
   }
 
   async function push(to: RouteLocationRaw): Promise<void | NavigationFailure> {
     const from = snapshotRouteLocation(route)
     const target = resolveRouteLocation(to, from.path)
-    const tabBarTarget = isTabBarTarget(target)
-    const duplicated = tabBarTarget ? target.path === from.path : target.fullPath === from.fullPath
-    if (duplicated) {
-      return Promise.resolve(
-        createNavigationFailure(
-          NavigationFailureType.duplicated,
-          target,
-          from,
-          'Avoided redundant navigation to current location',
-        ),
-      )
-    }
-
-    if (tabBarTarget && hasLocationQuery(target.query)) {
-      return Promise.resolve(
-        createNavigationFailure(
-          NavigationFailureType.aborted,
-          target,
-          from,
-          'switchTab does not support query parameters',
-        ),
-      )
-    }
-
-    const guardResult = await runNavigationGuards(navigationGuards, {
-      mode: 'push',
-      to: target,
-      from,
-      nativeRouter,
-    })
-    if (guardResult) {
-      return guardResult
-    }
-
-    if (tabBarTarget) {
-      return executeNavigationMethod(
-        nativeRouter.switchTab as (options: Record<string, any>) => unknown,
-        {
-          url: createAbsoluteRoutePath(target.path),
-        },
-        target,
-        from,
-      )
-    }
-
-    return executeNavigationMethod(
-      nativeRouter.navigateTo as (options: Record<string, any>) => unknown,
-      {
-        url: target.fullPath,
-      },
-      target,
-      from,
-    )
+    return navigateWithTarget('push', target, from)
   }
 
   async function replace(to: RouteLocationRaw): Promise<void | NavigationFailure> {
     const from = snapshotRouteLocation(route)
     const target = resolveRouteLocation(to, from.path)
-    const tabBarTarget = isTabBarTarget(target)
-    const duplicated = tabBarTarget ? target.path === from.path : target.fullPath === from.fullPath
-    if (duplicated) {
-      return Promise.resolve(
-        createNavigationFailure(
-          NavigationFailureType.duplicated,
-          target,
-          from,
-          'Avoided redundant navigation to current location',
-        ),
-      )
-    }
-
-    if (tabBarTarget && hasLocationQuery(target.query)) {
-      return Promise.resolve(
-        createNavigationFailure(
-          NavigationFailureType.aborted,
-          target,
-          from,
-          'switchTab does not support query parameters',
-        ),
-      )
-    }
-
-    const guardResult = await runNavigationGuards(navigationGuards, {
-      mode: 'replace',
-      to: target,
-      from,
-      nativeRouter,
-    })
-    if (guardResult) {
-      return guardResult
-    }
-
-    if (tabBarTarget) {
-      return executeNavigationMethod(
-        nativeRouter.switchTab as (options: Record<string, any>) => unknown,
-        {
-          url: createAbsoluteRoutePath(target.path),
-        },
-        target,
-        from,
-      )
-    }
-
-    return executeNavigationMethod(
-      nativeRouter.redirectTo as (options: Record<string, any>) => unknown,
-      {
-        url: target.fullPath,
-      },
-      target,
-      from,
-    )
+    return navigateWithTarget('replace', target, from)
   }
 
   async function back(delta = 1): Promise<void | NavigationFailure> {
     const from = snapshotRouteLocation(route)
-    const guardResult = await runNavigationGuards(navigationGuards, {
+    const beforeEachResult = await runNavigationGuards(beforeEachGuards, {
       mode: 'back',
       from,
       nativeRouter,
     })
-    if (guardResult) {
-      return guardResult
+    if (beforeEachResult.status === 'failure') {
+      return beforeEachResult.failure
+    }
+    if (beforeEachResult.status === 'redirect') {
+      return Promise.resolve(
+        createNavigationFailure(
+          NavigationFailureType.aborted,
+          undefined,
+          from,
+          'Redirect is not supported in back navigation guards',
+        ),
+      )
+    }
+
+    const beforeResolveResult = await runNavigationGuards(beforeResolveGuards, {
+      mode: 'back',
+      from,
+      nativeRouter,
+    })
+    if (beforeResolveResult.status === 'failure') {
+      return beforeResolveResult.failure
+    }
+    if (beforeResolveResult.status === 'redirect') {
+      return Promise.resolve(
+        createNavigationFailure(
+          NavigationFailureType.aborted,
+          undefined,
+          from,
+          'Redirect is not supported in back navigation guards',
+        ),
+      )
     }
     return executeNavigationMethod(
       nativeRouter.navigateBack as (options: Record<string, any>) => unknown,
@@ -675,6 +783,7 @@ export function useRouterNavigation(options: UseRouterNavigationOptions = {}): R
     replace,
     back,
     beforeEach,
+    beforeResolve,
   }
 }
 
