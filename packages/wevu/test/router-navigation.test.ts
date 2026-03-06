@@ -790,6 +790,99 @@ describe('router navigation helpers', () => {
     expect(isNavigationFailure(result, NavigationFailureType.cancelled)).toBe(true)
   })
 
+  it('go with negative delta delegates to back navigation', async () => {
+    const navigateBack = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack,
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter()
+    const result = await router.go(-3)
+    expect(result).toBeUndefined()
+    expect(navigateBack).toHaveBeenCalledWith(expect.objectContaining({ delta: 3 }))
+  })
+
+  it('go with zero delta is a no-op', async () => {
+    const navigateBack = vi.fn()
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack,
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter()
+    const result = await router.go(0)
+    expect(result).toBeUndefined()
+    expect(navigateBack).not.toHaveBeenCalled()
+  })
+
+  it('forward returns aborted failure because mini-program router does not support it', async () => {
+    const navigateBack = vi.fn()
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack,
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter()
+    const result = await router.forward()
+    expect(isNavigationFailure(result, NavigationFailureType.aborted)).toBe(true)
+    expect(result?.message).toContain('Forward navigation is not supported')
+    expect(navigateBack).not.toHaveBeenCalled()
+  })
+
   it('push auto-switches to tabBar entries', async () => {
     const switchTab = vi.fn((options: any) => {
       options.success?.({})
