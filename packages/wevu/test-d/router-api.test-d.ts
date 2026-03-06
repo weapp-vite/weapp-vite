@@ -1,5 +1,6 @@
 import type {
   LocationQuery,
+  NamedRouteRecord,
   NavigationAfterEachContext,
   NavigationErrorContext,
   NavigationFailure,
@@ -73,6 +74,8 @@ const navigation = useRouter(navigationOptions)
 expectType<RouterNavigation>(navigation)
 expectType<SetupContextRouter>(useNativeRouter())
 expectType<SetupContextRouter>(useNativePageRouter())
+expectType<boolean>(navigation.hasRoute('home'))
+expectType<readonly NamedRouteRecord[]>(navigation.getRoutes())
 
 const resolvedByName = navigation.resolve({
   name: 'post-detail',

@@ -340,6 +340,100 @@ describe('router navigation helpers', () => {
     })
   })
 
+  it('provides hasRoute and getRoutes for named route introspection', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: {
+        'home': '/pages/home/index',
+        'post-detail': '/pages/post/:id/index',
+      },
+    })
+
+    expect(router.hasRoute('home')).toBe(true)
+    expect(router.hasRoute('post-detail')).toBe(true)
+    expect(router.hasRoute('unknown')).toBe(false)
+    expect(router.getRoutes()).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home/index',
+      },
+      {
+        name: 'post-detail',
+        path: '/pages/post/:id/index',
+      },
+    ])
+  })
+
+  it('supports guard redirect with named route target', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: {
+        'home': '/pages/home/index',
+        'post-detail': '/pages/post/:id/index',
+      },
+    })
+    router.beforeEach(() => ({
+      name: 'post-detail',
+      params: {
+        id: 9,
+      },
+      query: {
+        from: 'guard',
+      },
+    }))
+
+    const result = await router.push('/pages/detail/index')
+    expect(result).toBeUndefined()
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/post/9/index?from=guard',
+    }))
+  })
+
   it('replace returns duplicated failure when navigating to same location', async () => {
     const redirectTo = vi.fn()
     const instance = {
