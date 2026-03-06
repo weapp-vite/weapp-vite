@@ -20,6 +20,10 @@ function escapeRegExp(input: string) {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+function normalizeRoutePath(routePath: string) {
+  return routePath.replace(/^\/+/, '')
+}
+
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -50,32 +54,51 @@ async function waitForWxmlContains(page: any, text: string, timeoutMs = 15_000) 
 }
 
 async function relaunchPage(miniProgram: any, route: string, readyText: string) {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const page = await miniProgram.reLaunch(route)
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let page: any = null
+    try {
+      page = await miniProgram.reLaunch(route)
+    }
+    catch {
+      await delay(280)
+      continue
+    }
     if (!page) {
+      await delay(220)
       continue
     }
     const ready = await waitForWxmlContains(page, readyText)
     if (ready) {
       return page
     }
+    await delay(220)
   }
   return null
 }
 
 async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, timeoutMs = 15_000) {
+  const normalizedExpectedPath = normalizeRoutePath(expectedPath)
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
-    const page = await miniProgram.currentPage()
-    if (page?.path === expectedPath) {
-      return page
+    try {
+      const page = await miniProgram.currentPage()
+      if (normalizeRoutePath(page?.path ?? '') === normalizedExpectedPath) {
+        return page
+      }
+      if (typeof page?.waitFor === 'function') {
+        try {
+          await page.waitFor(220)
+          continue
+        }
+        catch {
+          // 页面对象短暂失效时降级为 sleep，避免中断轮询。
+        }
+      }
     }
-    if (typeof page?.waitFor === 'function') {
-      await page.waitFor(220)
+    catch {
+      // currentPage 在路由切换窗口可能发生 transport timeout，继续轮询。
     }
-    else {
-      await delay(220)
-    }
+    await delay(220)
   }
   return null
 }
@@ -94,7 +117,13 @@ async function waitForRouteWithMarker(miniProgram: any, expectedPath: string, ma
 
 async function resolveSelectorById(page: any, id: string) {
   const directSelector = `#${id}`
-  const directElement = await page.$(directSelector)
+  let directElement: any = null
+  try {
+    directElement = await page.$(directSelector)
+  }
+  catch {
+    // automator 在页面切换瞬态可能抛 timeout，继续走 wxml 兜底解析。
+  }
   if (directElement) {
     return directSelector
   }
@@ -125,10 +154,21 @@ async function readStyleValue(page: any, selector: string) {
 }
 
 async function tapControlUntil(page: any, tapSelector: string, checker: () => Promise<boolean>) {
-  let controlElement = await page.$(tapSelector)
+  let controlElement: any = null
+  try {
+    controlElement = await page.$(tapSelector)
+  }
+  catch {
+    // 页面切换瞬态可能导致查询超时，继续执行备用选择器查询。
+  }
   if (!controlElement && tapSelector.startsWith('#')) {
     const scopedSelector = `[id="${tapSelector.slice(1)}"]`
-    controlElement = await page.$(scopedSelector)
+    try {
+      controlElement = await page.$(scopedSelector)
+    }
+    catch {
+      // 交给后续的找不到元素报错统一处理。
+    }
   }
   if (!controlElement) {
     throw new Error(`Failed to find tap element: ${tapSelector}`)
@@ -563,78 +603,110 @@ describe.sequential('e2e app: wevu-features', () => {
     }
   })
 
-  it('preserves Router relative-path semantics across page and component contexts', async () => {
+  async function enterRouterSubPage(miniProgram: any) {
+    const indexPage = await relaunchPage(miniProgram, '/pages/router-stability/index', 'router stability (page context)')
+    if (!indexPage) {
+      throw new Error('Failed to launch router-stability index page')
+    }
+
+    const openSubSelector = await resolveSelectorById(indexPage, 'router-open-sub')
+    const opened = await tapControlUntil(indexPage, openSubSelector, async () => {
+      const currentPage = await waitForCurrentPagePath(miniProgram, '/pages/router-stability/sub/index', 1200)
+      return Boolean(currentPage)
+    })
+    if (!opened) {
+      throw new Error('Failed to enter router-stability sub page from index page')
+    }
+
+    const subPage = await waitForRouteWithMarker(miniProgram, '/pages/router-stability/sub/index', 'router stability (sub page)')
+    if (!subPage) {
+      throw new Error('Failed to confirm router-stability sub page readiness')
+    }
+    return subPage
+  }
+
+  async function assertRouterActionRoute(
+    miniProgram: any,
+    actionId: string,
+    expectedPath: string,
+    markerText: string,
+  ) {
+    async function runStep<T>(label: string, task: () => Promise<T>) {
+      try {
+        return await task()
+      }
+      catch (error) {
+        const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+        throw new Error(`[router-assert:${actionId}:${label}] ${reason}`)
+      }
+    }
+
+    const subPage = await runStep('enter-sub', () => enterRouterSubPage(miniProgram))
+    const selector = await runStep('resolve-action-selector', () => resolveSelectorById(subPage, actionId))
+    const triggered = await runStep('tap-action', () => tapControlUntil(subPage, selector, async () => {
+      const currentPage = await waitForCurrentPagePath(miniProgram, expectedPath, 1200)
+      return Boolean(currentPage)
+    }))
+    expect(triggered).toBe(true)
+
+    const targetPage = await runStep('wait-target-page', () => waitForRouteWithMarker(miniProgram, expectedPath, markerText))
+    expect(targetPage).toBeTruthy()
+  }
+
+  it('resolves previous-page wx.navigateTo relative route using active page base path', async () => {
     const miniProgram = await getSharedMiniProgram()
-
     try {
-      const indexPage = await relaunchPage(miniProgram, '/pages/router-stability/index', 'router stability (page context)')
-      if (!indexPage) {
-        throw new Error('Failed to launch router-stability index page')
-      }
-
-      await indexPage.callMethod('openSubPage')
-      const subPage = await waitForRouteWithMarker(miniProgram, '/pages/router-stability/sub/index', 'router stability (sub page)')
-      if (!subPage) {
-        throw new Error('Failed to enter router-stability sub page')
-      }
-
-      await subPage.callMethod('callPrevWxFromIndex')
-      const wxTargetPage = await waitForRouteWithMarker(
+      await assertRouterActionRoute(
         miniProgram,
+        'router-sub-call-prev-wx',
         '/pages/router-stability/sub/target/index',
         'route=pages/router-stability/sub/target/index source=wx-from-index',
       )
-      if (!wxTargetPage) {
-        throw new Error('Failed to navigate to sub target via wx relative route')
-      }
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
 
-      await wxTargetPage.callMethod('goBack')
-      const subAfterWxBack = await waitForRouteWithMarker(miniProgram, '/pages/router-stability/sub/index', 'router stability (sub page)')
-      if (!subAfterWxBack) {
-        throw new Error('Failed to navigate back to sub page after wx target')
-      }
-
-      await subAfterWxBack.callMethod('callPrevPageRouterFromIndex')
-      const pageRouterTargetPage = await waitForRouteWithMarker(
+  it('resolves previous-page pageRouter.navigateTo relative route using original page base path', async () => {
+    const miniProgram = await getSharedMiniProgram()
+    try {
+      await assertRouterActionRoute(
         miniProgram,
+        'router-sub-call-prev-page-router',
         '/pages/router-stability/target/index',
         'route=pages/router-stability/target/index source=page-router-from-index',
       )
-      if (!pageRouterTargetPage) {
-        throw new Error('Failed to navigate to index target via pageRouter relative route')
-      }
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
 
-      await pageRouterTargetPage.callMethod('goBack')
-      const subAfterPageRouterBack = await waitForRouteWithMarker(miniProgram, '/pages/router-stability/sub/index', 'router stability (sub page)')
-      if (!subAfterPageRouterBack) {
-        throw new Error('Failed to navigate back to sub page after pageRouter target')
-      }
-
-      await subAfterPageRouterBack.callMethod('runComponentRouterFromProbe')
-      const componentRouterTargetPage = await waitForRouteWithMarker(
+  it('resolves component this.router.navigateTo relative route using component base path', async () => {
+    const miniProgram = await getSharedMiniProgram()
+    try {
+      await assertRouterActionRoute(
         miniProgram,
+        'router-sub-call-component-router',
         '/components/router-origin-probe/target/index',
         'route=components/router-origin-probe/target/index source=component-router',
       )
-      if (!componentRouterTargetPage) {
-        throw new Error('Failed to navigate to component target via this.router relative route')
-      }
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
 
-      await componentRouterTargetPage.callMethod('goBack')
-      const subAfterComponentRouterBack = await waitForRouteWithMarker(miniProgram, '/pages/router-stability/sub/index', 'router stability (sub page)')
-      if (!subAfterComponentRouterBack) {
-        throw new Error('Failed to navigate back to sub page after component router target')
-      }
-
-      await subAfterComponentRouterBack.callMethod('runComponentPageRouterFromProbe')
-      const componentPageRouterTargetPage = await waitForRouteWithMarker(
+  it('resolves component this.pageRouter.navigateTo relative route using host page base path', async () => {
+    const miniProgram = await getSharedMiniProgram()
+    try {
+      await assertRouterActionRoute(
         miniProgram,
+        'router-sub-call-component-page-router',
         '/pages/router-stability/sub/target/index',
         'route=pages/router-stability/sub/target/index source=component-page-router',
       )
-      if (!componentPageRouterTargetPage) {
-        throw new Error('Failed to navigate to sub target via this.pageRouter relative route')
-      }
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
