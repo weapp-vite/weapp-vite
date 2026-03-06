@@ -57,10 +57,15 @@ export interface NavigationRedirect {
 
 export type NavigationGuardResult = void | boolean | NavigationFailure | RouteLocationRaw | NavigationRedirect
 export type NavigationGuard = (
-  context: NavigationGuardContext,
+  to: RouteLocationNormalizedLoaded | undefined,
+  from: RouteLocationNormalizedLoaded,
+  context?: NavigationGuardContext,
 ) => NavigationGuardResult | Promise<NavigationGuardResult>
 export type NavigationAfterEach = (
-  context: NavigationAfterEachContext,
+  to: RouteLocationNormalizedLoaded | undefined,
+  from: RouteLocationNormalizedLoaded,
+  failure?: NavigationFailure,
+  context?: NavigationAfterEachContext,
 ) => void | Promise<void>
 
 export interface NavigationGuardContext {
@@ -469,7 +474,7 @@ async function runNavigationGuards(
 ): Promise<GuardPipelineResult> {
   for (const guard of guards) {
     try {
-      const result = await guard(context)
+      const result = await guard(context.to, context.from, context)
       if (isNavigationFailure(result)) {
         return {
           status: 'failure',
@@ -584,7 +589,7 @@ async function runAfterEachHooks(
 ) {
   for (const hook of hooks) {
     try {
-      await hook(context)
+      await hook(context.to, context.from, context.failure, context)
     }
     catch {
       // 忽略 afterEach hook 的异常，避免影响导航主流程。

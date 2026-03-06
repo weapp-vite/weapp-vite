@@ -385,7 +385,7 @@ describe('router navigation helpers', () => {
     const router = useRouter({
       maxRedirects: 1,
     })
-    router.beforeEach(({ to }) => {
+    router.beforeEach((to) => {
       return to?.path === 'pages/a/index' ? '/pages/b/index' : '/pages/a/index'
     })
 
@@ -397,7 +397,7 @@ describe('router navigation helpers', () => {
     const navigateTo = vi.fn((options: any) => {
       options.success?.({})
     })
-    const contexts: any[] = []
+    const calls: any[] = []
     const instance = {
       __wevu: {},
       __wevuHooks: {},
@@ -421,8 +421,8 @@ describe('router navigation helpers', () => {
     ])
 
     const router = useRouter()
-    router.afterEach((context) => {
-      contexts.push(context)
+    router.afterEach((to, from, failure, context) => {
+      calls.push({ to, from, failure, context })
     })
 
     const duplicated = await router.push('/pages/home/index')
@@ -431,18 +431,18 @@ describe('router navigation helpers', () => {
     const success = await router.push('/pages/detail/index')
     expect(success).toBeUndefined()
 
-    expect(contexts).toHaveLength(2)
-    expect(contexts[0]).toMatchObject({
-      mode: 'push',
+    expect(calls).toHaveLength(2)
+    expect(calls[0]).toMatchObject({
       from: { path: 'pages/home/index' },
       to: { path: 'pages/home/index' },
       failure: { type: NavigationFailureType.duplicated },
+      context: { mode: 'push' },
     })
-    expect(contexts[1]).toMatchObject({
-      mode: 'push',
+    expect(calls[1]).toMatchObject({
       from: { path: 'pages/home/index' },
       to: { path: 'pages/detail/index' },
       failure: undefined,
+      context: { mode: 'push' },
     })
   })
 

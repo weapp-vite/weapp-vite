@@ -49,16 +49,18 @@ expectType<RouterNavigation>(navigation)
 expectType<SetupContextRouter>(useNativeRouter())
 expectType<SetupContextRouter>(useNativePageRouter())
 
-const removeGuard = navigation.beforeEach((context: NavigationGuardContext) => {
-  expectType<'push' | 'replace' | 'back'>(context.mode)
-  expectType<RouteLocationNormalizedLoaded | undefined>(context.to)
-  expectType<RouteLocationNormalizedLoaded>(context.from)
+const removeGuard = navigation.beforeEach((to, from, context) => {
+  expectType<RouteLocationNormalizedLoaded | undefined>(to)
+  expectType<RouteLocationNormalizedLoaded>(from)
+  expectType<NavigationGuardContext | undefined>(context)
   return true
 })
 expectType<() => void>(removeGuard)
 
-const removeResolveGuard = navigation.beforeResolve((context: NavigationGuardContext) => {
-  expectType<RouteLocationNormalizedLoaded | undefined>(context.to)
+const removeResolveGuard = navigation.beforeResolve((to, from, context) => {
+  expectType<RouteLocationNormalizedLoaded | undefined>(to)
+  expectType<RouteLocationNormalizedLoaded>(from)
+  expectType<NavigationGuardContext | undefined>(context)
   return {
     to: '/pages/login/index?from=guard',
     replace: true,
@@ -66,11 +68,11 @@ const removeResolveGuard = navigation.beforeResolve((context: NavigationGuardCon
 })
 expectType<() => void>(removeResolveGuard)
 
-const removeAfterEach = navigation.afterEach((context: NavigationAfterEachContext) => {
-  expectType<'push' | 'replace' | 'back'>(context.mode)
-  expectType<RouteLocationNormalizedLoaded | undefined>(context.to)
-  expectType<RouteLocationNormalizedLoaded>(context.from)
-  expectType<NavigationFailure | undefined>(context.failure)
+const removeAfterEach = navigation.afterEach((to, from, failure, context) => {
+  expectType<RouteLocationNormalizedLoaded | undefined>(to)
+  expectType<RouteLocationNormalizedLoaded>(from)
+  expectType<NavigationFailure | undefined>(failure)
+  expectType<NavigationAfterEachContext | undefined>(context)
 })
 expectType<() => void>(removeAfterEach)
 
