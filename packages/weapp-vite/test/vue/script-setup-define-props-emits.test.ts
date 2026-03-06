@@ -115,4 +115,27 @@ const props = defineProps<{
     expect(result.script).toMatch(/literalUnion:\s*\{\s*type:\s*\[\s*String,\s*Number\s*\]/)
     expect(result.script).toMatch(/multiNative:\s*\{\s*type:\s*\[\s*String,\s*Number,\s*Boolean,\s*Object,\s*Array\s*\]/)
   })
+
+  it('expands optional literal and non-native unions from defineProps generic', async () => {
+    const source = `
+<template>
+  <view>{{ optLiteral }} {{ optDateOrString }} {{ optDateOnly }} {{ optLiteralOrNumber }}</view>
+</template>
+
+<script setup lang="ts">
+const props = defineProps<{
+  optLiteral?: 'a' | 'b'
+  optDateOrString?: Date | string
+  optDateOnly?: Date
+  optLiteralOrNumber?: 'a' | 'b' | number
+}>()
+</script>
+`
+    const result = await compileVueFile(source, 'test.vue')
+
+    expect(result.script).toMatch(/optLiteral:\s*\{\s*type:\s*String,\s*required:\s*false\s*\}/)
+    expect(result.script).toMatch(/optDateOrString:\s*\{\s*type:\s*\[\s*(?:String,\s*Date|Date,\s*String)\s*\],\s*required:\s*false\s*\}/)
+    expect(result.script).toMatch(/optDateOnly:\s*\{\s*type:\s*Date,\s*required:\s*false\s*\}/)
+    expect(result.script).toMatch(/optLiteralOrNumber:\s*\{\s*type:\s*\[\s*String,\s*Number\s*\],\s*required:\s*false\s*\}/)
+  })
 })
