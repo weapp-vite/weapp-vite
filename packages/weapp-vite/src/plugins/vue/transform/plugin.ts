@@ -9,6 +9,7 @@ import logger from '../../../logger'
 import { normalizeWatchPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { toAbsoluteId } from '../../../utils/toAbsoluteId'
+import { collectOnPageScrollPerformanceWarnings } from '../../performance/onPageScrollDiagnostics'
 import { readFile as readFileCached } from '../../utils/cache'
 import { getSfcCheckMtime, readAndParseSfc } from '../../utils/vueSfc'
 import { createPageEntryMatcher } from '../../wevu'
@@ -260,6 +261,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
 
         if (isPage && result.script) {
+          for (const warning of collectOnPageScrollPerformanceWarnings(result.script, filename)) {
+            logger.warn(warning)
+          }
           const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, result.script, filename, {
             checkMtime: configService.isDev,
           })

@@ -658,6 +658,28 @@ describe('vue transform plugin', () => {
     options.autoUsingComponents.warn('noop')
   })
 
+  it('transform() warns for onPageScroll performance risks in page scripts', async () => {
+    createPageEntryMatcherMock.mockReturnValue({
+      markDirty: vi.fn(),
+      isPageFile: vi.fn(async () => true),
+    })
+    compileVueFileMock.mockResolvedValue({
+      script: `import { onPageScroll } from 'wevu'
+onPageScroll(() => {
+  this.setData({ top: 1 })
+})`,
+      meta: {},
+    })
+    injectPageFeaturesMock.mockResolvedValue({ transformed: false, code: 'export default {}' })
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const plugin = createVueTransformPlugin(createCtx() as any)
+
+    await plugin.transform!.call({}, await fs.readFile(vuePath!, 'utf8'), vuePath!)
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('onPageScroll(...) 内调用 setData'))
+  })
+
   it('transform() resolver returns undefined when autoImportService is missing', async () => {
     compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
 
