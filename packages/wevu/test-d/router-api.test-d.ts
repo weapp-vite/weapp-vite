@@ -38,6 +38,17 @@ expectType<string>(serialized)
 const resolved = resolveRouteLocation('./detail?tab=all', 'pages/home/index')
 expectType<RouteLocationNormalizedLoaded>(resolved)
 
+const resolvedWithMeta = resolveRouteLocation({
+  path: '/pages/post/index',
+  hash: 'comment',
+  name: 'post-detail',
+  params: {
+    id: 1,
+    tags: ['news', true],
+  },
+})
+expectType<RouteLocationNormalizedLoaded>(resolvedWithMeta)
+
 const route = useRoute()
 expectType<Readonly<RouteLocationNormalizedLoaded>>(route)
 
