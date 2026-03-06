@@ -36,8 +36,10 @@ describe('runtime: define helpers', () => {
     const props = {
       name: String,
       count: { type: Number, default: 2 },
-      status: { type: Number, optionalTypes: [String, Object], observer: statusObserver, value: 0 },
+      status: { type: Number, optionalTypes: [String, Date, Object], observer: statusObserver, value: 0 },
       mode: [String, Number],
+      mixedInvalid: [Date, String, Number],
+      createdAt: Date,
       anyValue: null,
       withOptionalOnly: { optionalTypes: [Boolean] },
       demoModifiers: {},
@@ -51,6 +53,9 @@ describe('runtime: define helpers', () => {
     expect(result.properties.status.observer).toBe(statusObserver)
     expect(result.properties.mode.type).toBe(String)
     expect(result.properties.mode.optionalTypes).toEqual([Number])
+    expect(result.properties.mixedInvalid.type).toBe(String)
+    expect(result.properties.mixedInvalid.optionalTypes).toEqual([Number])
+    expect(result.properties.createdAt.type).toBeNull()
     expect(result.properties.anyValue.type).toBeNull()
     expect(result.properties.withOptionalOnly.type).toBeNull()
     expect(result.properties.withOptionalOnly.optionalTypes).toEqual([Boolean])
