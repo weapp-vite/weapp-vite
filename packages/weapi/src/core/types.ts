@@ -181,13 +181,13 @@ interface WeapiCrossPlatformMethodDocs {
   chooseImage: WeapiCrossPlatformAdapter['chooseImage']
 
   /**
-   * 保存文件。
+   * 保存文件（跨端扩展，微信 typings 未声明同名 API）。
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
-   * | 微信 | 直连 `wx.saveFile` | ✅ |
-   * | 支付宝 | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | ✅ |
-   * | 抖音 | 直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath` | ✅ |
+   * | 微信 | 微信当前 typings 未声明同名 API，保留为跨端扩展能力 | ⚠️ |
+   * | 支付宝 | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | ⚠️ |
+   * | 抖音 | 直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath` | ⚠️ |
    */
   saveFile: WeapiCrossPlatformAdapter['saveFile']
 

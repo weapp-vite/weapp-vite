@@ -1,6 +1,26 @@
-import type { WeapiDefaultInstance, WeapiDouyinRawAdapter } from '@wevu/api'
+import type {
+  WeapiCrossPlatformRawAdapter,
+  WeapiDefaultInstance,
+  WeapiDouyinRawAdapter,
+} from '@wevu/api'
 import { createWeapi, wpi } from '@wevu/api'
 import { expectType } from 'tsd'
+
+type AssertTrue<T extends true> = T
+type IsNever<T> = [T] extends [never] ? true : false
+type ExtractMethodKeys<T> = Extract<{
+  [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never
+}[keyof T], string>
+
+type WxMethodKeys = ExtractMethodKeys<WechatMiniprogram.Wx>
+type MyMethodKeys = ExtractMethodKeys<typeof my>
+type TtMethodKeys = ExtractMethodKeys<typeof tt>
+type WeapiDefaultKeys = Extract<keyof WeapiDefaultInstance, string>
+type WeapiRawKeys = Extract<keyof WeapiCrossPlatformRawAdapter, string>
+
+type _wxMethodCoverage = AssertTrue<IsNever<Exclude<WxMethodKeys, WeapiDefaultKeys>>>
+type _myMethodCoverage = AssertTrue<IsNever<Exclude<MyMethodKeys, WeapiRawKeys>>>
+type _ttMethodCoverage = AssertTrue<IsNever<Exclude<TtMethodKeys, WeapiRawKeys>>>
 
 expectType<string | undefined>(wpi.platform)
 expectType<WeapiDefaultInstance>(wpi)

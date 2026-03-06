@@ -1,3 +1,4 @@
+import { WEAPI_MY_METHODS, WEAPI_TT_METHODS, WEAPI_WX_METHODS } from './apiCatalog'
 import { isPlainObject } from './utils.ts'
 
 export interface WeapiMethodMappingRule {
@@ -22,6 +23,18 @@ export interface WeapiMethodSupportMatrixItem {
   support: string
 }
 
+export interface WeapiMethodCompatibilityItem {
+  method: string
+  wxStrategy: string
+  alipayTarget: string
+  alipayStrategy: string
+  alipaySupported: boolean
+  douyinTarget: string
+  douyinStrategy: string
+  douyinSupported: boolean
+  support: string
+}
+
 export interface WeapiApiCoveragePlatformItem {
   platform: string
   alias: string
@@ -36,6 +49,10 @@ export interface WeapiApiCoverageReport {
   fullyAlignedCoverage: string
   platforms: readonly WeapiApiCoveragePlatformItem[]
 }
+
+const WEAPI_WX_METHOD_SET = new Set<string>(WEAPI_WX_METHODS)
+const WEAPI_MY_METHOD_SET = new Set<string>(WEAPI_MY_METHODS)
+const WEAPI_TT_METHOD_SET = new Set<string>(WEAPI_TT_METHODS)
 
 export const WEAPI_PLATFORM_SUPPORT_MATRIX: readonly WeapiPlatformSupportMatrixItem[] = [
   {
@@ -107,11 +124,11 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
   },
   {
     method: 'saveFile',
-    description: '保存文件。',
-    wxStrategy: '直连 `wx.saveFile`',
+    description: '保存文件（跨端扩展，微信 typings 未声明同名 API）。',
+    wxStrategy: '微信当前 typings 未声明同名 API，保留为跨端扩展能力',
     alipayStrategy: '请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath`',
     douyinStrategy: '直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath`',
-    support: '✅',
+    support: '⚠️',
   },
   {
     method: 'setClipboardData',
@@ -488,6 +505,21 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
   },
 }
 
+function resolveTargetMethod(platform: 'my' | 'tt', methodName: string) {
+  const rule = METHOD_MAPPINGS[platform]?.[methodName]
+  return rule?.target ?? methodName
+}
+
+function resolveDefaultStrategy(platform: 'my' | 'tt', methodName: string, target: string, supported: boolean) {
+  if (!supported) {
+    return `未提供 ${platform}.${target}，调用时将返回 not supported`
+  }
+  if (target !== methodName) {
+    return `映射到 \`${platform}.${target}\``
+  }
+  return `直连 \`${platform}.${methodName}\``
+}
+
 /**
  * @description 校验文档矩阵与实际映射规则是否保持一致
  */
@@ -503,15 +535,20 @@ function formatCoverageRate(supportedApis: number, totalApis: number) {
  * @description 生成 API 支持覆盖率报告
  */
 export function generateApiSupportCoverageReport(): WeapiApiCoverageReport {
-  const methodNames = WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method)
+  const methodNames = WEAPI_WX_METHODS as readonly string[]
   const totalApis = methodNames.length
 
-  const alipaySupportedApis = methodNames.filter(method => Boolean(METHOD_MAPPINGS.my?.[method])).length
-  const douyinSupportedApis = methodNames.filter(method => Boolean(METHOD_MAPPINGS.tt?.[method])).length
+  const alipaySupportedApis = methodNames
+    .filter(method => WEAPI_MY_METHOD_SET.has(resolveTargetMethod('my', method)))
+    .length
+  const douyinSupportedApis = methodNames
+    .filter(method => WEAPI_TT_METHOD_SET.has(resolveTargetMethod('tt', method)))
+    .length
   const wxSupportedApis = totalApis
 
   const fullyAlignedApis = methodNames.filter(method =>
-    method in (METHOD_MAPPINGS.my ?? {}) && method in (METHOD_MAPPINGS.tt ?? {}),
+    WEAPI_MY_METHOD_SET.has(resolveTargetMethod('my', method))
+    && WEAPI_TT_METHOD_SET.has(resolveTargetMethod('tt', method)),
   ).length
 
   const platforms: readonly WeapiApiCoveragePlatformItem[] = [
@@ -546,6 +583,34 @@ export function generateApiSupportCoverageReport(): WeapiApiCoverageReport {
   }
 }
 
+/**
+ * @description 生成微信命名下的全量跨平台兼容矩阵
+ */
+export function generateMethodCompatibilityMatrix(): readonly WeapiMethodCompatibilityItem[] {
+  const detailByMethod = new Map<string, WeapiMethodSupportMatrixItem>(
+    WEAPI_METHOD_SUPPORT_MATRIX.map(item => [item.method, item]),
+  )
+
+  return (WEAPI_WX_METHODS as readonly string[]).map((methodName) => {
+    const alipayTarget = resolveTargetMethod('my', methodName)
+    const douyinTarget = resolveTargetMethod('tt', methodName)
+    const alipaySupported = WEAPI_MY_METHOD_SET.has(alipayTarget)
+    const douyinSupported = WEAPI_TT_METHOD_SET.has(douyinTarget)
+    const detail = detailByMethod.get(methodName)
+    return {
+      method: methodName,
+      wxStrategy: detail?.wxStrategy ?? `直连 \`wx.${methodName}\``,
+      alipayTarget,
+      alipayStrategy: detail?.alipayStrategy ?? resolveDefaultStrategy('my', methodName, alipayTarget, alipaySupported),
+      alipaySupported,
+      douyinTarget,
+      douyinStrategy: detail?.douyinStrategy ?? resolveDefaultStrategy('tt', methodName, douyinTarget, douyinSupported),
+      douyinSupported,
+      support: alipaySupported && douyinSupported ? '✅' : '⚠️',
+    }
+  })
+}
+
 export function validateSupportMatrixConsistency() {
   const mappedMethods = new Set(Object.keys(METHOD_MAPPINGS.my ?? {}))
   const douyinMappedMethods = new Set(Object.keys(METHOD_MAPPINGS.tt ?? {}))
@@ -554,11 +619,15 @@ export function validateSupportMatrixConsistency() {
   const missingMappings = Array.from(documentedMethods).filter(method => !mappedMethods.has(method))
   const missingDouyinMappings = Array.from(mappedMethods).filter(method => !douyinMappedMethods.has(method))
   const extraDouyinMappings = Array.from(douyinMappedMethods).filter(method => !mappedMethods.has(method))
+  const missingCatalogMethods = Array.from(documentedMethods).filter(method =>
+    !WEAPI_WX_METHOD_SET.has(method) && !WEAPI_MY_METHOD_SET.has(method) && !WEAPI_TT_METHOD_SET.has(method),
+  )
   return {
     missingDocs,
     missingMappings,
     missingDouyinMappings,
     extraDouyinMappings,
+    missingCatalogMethods,
   }
 }
 

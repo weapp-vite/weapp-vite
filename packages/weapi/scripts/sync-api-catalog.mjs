@@ -1,0 +1,263 @@
+import fs from 'node:fs/promises'
+import { createRequire } from 'node:module'
+import path from 'node:path'
+import process from 'node:process'
+import ts from 'typescript'
+
+const ROOT_DIR = path.resolve(import.meta.dirname, '..')
+const OUTPUT_FILE = path.join(ROOT_DIR, 'src/core/apiCatalog.ts')
+const VIRTUAL_ENTRY = '/virtual/weapi-api-catalog-entry.ts'
+const require = createRequire(import.meta.url)
+
+const TYPE_REFERENCE_SOURCE = `
+declare const __wx: WechatMiniprogram.Wx
+
+declare const __my: typeof my
+
+declare const __tt: typeof tt
+`
+
+function parseArgs() {
+  return {
+    check: process.argv.includes('--check'),
+  }
+}
+
+function uniqueSorted(names) {
+  return [...new Set(names)].sort((a, b) => a.localeCompare(b))
+}
+
+function formatLiteralList(values) {
+  return values.map(item => `  '${item}',`).join('\n')
+}
+
+function normalizeLineEndings(text) {
+  return text.replace(/\r\n/g, '\n')
+}
+
+function isTextEquivalent(a, b) {
+  return normalizeLineEndings(a) === normalizeLineEndings(b)
+}
+
+function getTypePackageVersion(packageName) {
+  const packageJsonPath = require.resolve(`${packageName}/package.json`, { paths: [ROOT_DIR] })
+  const packageJson = require(packageJsonPath)
+  return String(packageJson.version)
+}
+
+function createProgram() {
+  const wxDtsPath = require.resolve('miniprogram-api-typings/types/wx/index.d.ts', { paths: [ROOT_DIR] })
+  const myDtsPath = require.resolve('@mini-types/alipay/types/index.d.ts', { paths: [ROOT_DIR] })
+  const ttDtsPath = require.resolve('@douyin-microapp/typings/index.d.ts', { paths: [ROOT_DIR] })
+
+  const compilerOptions = {
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    strict: true,
+    skipLibCheck: true,
+    lib: ['lib.es2022.d.ts'],
+    types: ['miniprogram-api-typings', '@mini-types/alipay', '@douyin-microapp/typings'],
+  }
+
+  const host = ts.createCompilerHost(compilerOptions)
+
+  host.getSourceFile = (fileName, languageVersion) => {
+    if (fileName === VIRTUAL_ENTRY) {
+      return ts.createSourceFile(fileName, TYPE_REFERENCE_SOURCE, languageVersion, true, ts.ScriptKind.TS)
+    }
+    const text = ts.sys.readFile(fileName)
+    if (text == null) {
+      return undefined
+    }
+    return ts.createSourceFile(fileName, text, languageVersion, true)
+  }
+
+  host.readFile = (fileName) => {
+    if (fileName === VIRTUAL_ENTRY) {
+      return TYPE_REFERENCE_SOURCE
+    }
+    return ts.sys.readFile(fileName)
+  }
+
+  host.fileExists = (fileName) => {
+    if (fileName === VIRTUAL_ENTRY) {
+      return true
+    }
+    return ts.sys.fileExists(fileName)
+  }
+
+  return ts.createProgram([VIRTUAL_ENTRY, wxDtsPath, myDtsPath, ttDtsPath], compilerOptions, host)
+}
+
+function getVariableType(program, checker, variableName) {
+  const sourceFile = program.getSourceFile(VIRTUAL_ENTRY)
+  if (!sourceFile) {
+    throw new Error('无法读取虚拟类型入口文件')
+  }
+
+  let resolvedSymbol
+
+  ts.forEachChild(sourceFile, (node) => {
+    if (!ts.isVariableStatement(node)) {
+      return
+    }
+    for (const declaration of node.declarationList.declarations) {
+      if (!ts.isIdentifier(declaration.name)) {
+        continue
+      }
+      if (declaration.name.text !== variableName) {
+        continue
+      }
+      resolvedSymbol = checker.getSymbolAtLocation(declaration.name)
+    }
+  })
+
+  if (!resolvedSymbol || !resolvedSymbol.valueDeclaration) {
+    throw new Error(`无法解析变量类型：${variableName}`)
+  }
+
+  return checker.getTypeOfSymbolAtLocation(resolvedSymbol, resolvedSymbol.valueDeclaration)
+}
+
+function collectApiMembers(checker, containerType) {
+  const methods = []
+  const nonFunctionMembers = []
+
+  for (const property of checker.getPropertiesOfType(containerType)) {
+    const name = property.getName()
+    if (name.startsWith('__@')) {
+      continue
+    }
+
+    const declaration = property.valueDeclaration ?? property.declarations?.[0]
+    if (!declaration) {
+      continue
+    }
+
+    const propertyType = checker.getTypeOfSymbolAtLocation(property, declaration)
+    const callSignatures = checker.getSignaturesOfType(propertyType, ts.SignatureKind.Call)
+
+    if (callSignatures.length > 0) {
+      methods.push(name)
+      continue
+    }
+
+    nonFunctionMembers.push(name)
+  }
+
+  return {
+    methods: uniqueSorted(methods),
+    nonFunctionMembers: uniqueSorted(nonFunctionMembers),
+  }
+}
+
+function generateSource(data) {
+  const wxMethodLines = formatLiteralList(data.wx.methods)
+  const wxMemberLines = formatLiteralList(data.wx.nonFunctionMembers)
+  const myMethodLines = formatLiteralList(data.my.methods)
+  const myMemberLines = formatLiteralList(data.my.nonFunctionMembers)
+  const ttMethodLines = formatLiteralList(data.tt.methods)
+  const ttMemberLines = formatLiteralList(data.tt.nonFunctionMembers)
+
+  return `/**
+ * @description 三端 API 名单（由 typings 自动提取，请勿手工修改）
+ * @generated by scripts/sync-api-catalog.mjs
+ */
+export const WEAPI_TYPE_SOURCES = {
+  wx: {
+    package: 'miniprogram-api-typings',
+    version: '${data.versions.wx}',
+  },
+  my: {
+    package: '@mini-types/alipay',
+    version: '${data.versions.my}',
+  },
+  tt: {
+    package: '@douyin-microapp/typings',
+    version: '${data.versions.tt}',
+  },
+} as const
+
+export const WEAPI_WX_METHODS = [
+${wxMethodLines}
+] as const
+
+export const WEAPI_WX_NON_FUNCTION_MEMBERS = [
+${wxMemberLines}
+] as const
+
+export const WEAPI_MY_METHODS = [
+${myMethodLines}
+] as const
+
+export const WEAPI_MY_NON_FUNCTION_MEMBERS = [
+${myMemberLines}
+] as const
+
+export const WEAPI_TT_METHODS = [
+${ttMethodLines}
+] as const
+
+export const WEAPI_TT_NON_FUNCTION_MEMBERS = [
+${ttMemberLines}
+] as const
+
+export type WeapiWxMethodName = (typeof WEAPI_WX_METHODS)[number]
+export type WeapiMyMethodName = (typeof WEAPI_MY_METHODS)[number]
+export type WeapiTtMethodName = (typeof WEAPI_TT_METHODS)[number]
+`
+}
+
+async function run() {
+  const { check } = parseArgs()
+  const program = createProgram()
+  const checker = program.getTypeChecker()
+
+  const diagnostics = ts.getPreEmitDiagnostics(program)
+  if (diagnostics.length > 0) {
+    const formatted = ts.formatDiagnosticsWithColorAndContext(diagnostics, {
+      getCanonicalFileName: fileName => fileName,
+      getCurrentDirectory: () => ROOT_DIR,
+      getNewLine: () => '\n',
+    })
+    throw new Error(`类型提取失败：\n${formatted}`)
+  }
+
+  const wxType = getVariableType(program, checker, '__wx')
+  const myType = getVariableType(program, checker, '__my')
+  const ttType = getVariableType(program, checker, '__tt')
+
+  const wx = collectApiMembers(checker, wxType)
+  const my = collectApiMembers(checker, myType)
+  const tt = collectApiMembers(checker, ttType)
+
+  const sourceText = generateSource({
+    versions: {
+      wx: getTypePackageVersion('miniprogram-api-typings'),
+      my: getTypePackageVersion('@mini-types/alipay'),
+      tt: getTypePackageVersion('@douyin-microapp/typings'),
+    },
+    wx,
+    my,
+    tt,
+  })
+
+  const original = await fs.readFile(OUTPUT_FILE, 'utf8').catch(() => '')
+  if (check) {
+    if (!isTextEquivalent(original, sourceText)) {
+      throw new Error('API 清单未同步，请先运行 pnpm --filter @wevu/api catalog:sync')
+    }
+    return
+  }
+
+  if (!isTextEquivalent(original, sourceText)) {
+    await fs.writeFile(OUTPUT_FILE, sourceText)
+  }
+}
+
+run().catch((error) => {
+  console.error('[weapi-api-catalog] sync failed')
+  console.error(error)
+  process.exitCode = 1
+})
