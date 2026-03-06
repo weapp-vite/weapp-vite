@@ -106,13 +106,16 @@ defineExpose({ onSubmit })
 
 ## 3. 模板和 class/style 工具
 
-| API              | 类型入口                           | 说明                                    |
-| ---------------- | ---------------------------------- | --------------------------------------- |
-| `useAttrs`       | `SetupContext`                     | 获取 attrs（透传属性）。                |
-| `useSlots`       | `TemplateRefs`                     | 获取 slots。                            |
-| `useTemplateRef` | `TemplateRef` / `TemplateRefValue` | 获取模板 `ref` 对应实例。               |
-| `normalizeClass` | `string`                           | 归一化 class 输入（对象/数组/字符串）。 |
-| `normalizeStyle` | `Record<string, string>`           | 归一化 style 输入。                     |
+| API                 | 类型入口                           | 说明                                      |
+| ------------------- | ---------------------------------- | ----------------------------------------- |
+| `useAttrs`          | `SetupContext`                     | 获取 attrs（透传属性）。                  |
+| `useSlots`          | `TemplateRefs`                     | 获取 slots。                              |
+| `useTemplateRef`    | `TemplateRef` / `TemplateRefValue` | 获取模板 `ref` 对应实例。                 |
+| `useNativeInstance` | `SetupContextNativeInstance`       | 访问 setup 绑定的原生实例。               |
+| `useRouter`         | `Router`                           | 组件路径语义 Router（低版本降级到全局）。 |
+| `usePageRouter`     | `Router`                           | 页面路径语义 Router（低版本降级到全局）。 |
+| `normalizeClass`    | `string`                           | 归一化 class 输入（对象/数组/字符串）。   |
+| `normalizeStyle`    | `Record<string, string>`           | 归一化 style 输入。                       |
 
 ### 模板工具示例（script setup）
 

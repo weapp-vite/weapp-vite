@@ -51,6 +51,18 @@ keywords:
 - 用途：获取当前 setup 对应的原生实例。
 - 源码：`runtime/vueCompat.ts`。
 
+### `useRouter()` {#userouter}
+
+- 用途：获取当前组件路径语义的 Router 对象。
+- 行为：优先使用 `this.router`；不可用时回退 `this.pageRouter`；低版本基础库（`< 2.16.1`）再回退全局 `wx.*` 路由方法。
+- 源码：`runtime/vueCompat.ts`。
+
+### `usePageRouter()` {#usepagerouter}
+
+- 用途：获取当前页面路径语义的 Router 对象。
+- 行为：优先使用 `this.pageRouter`；不可用时回退 `this.router`；低版本基础库（`< 2.16.1`）再回退全局 `wx.*` 路由方法。
+- 源码：`runtime/vueCompat.ts`。
+
 ### `useBindModel()` {#usebindmodel}
 
 - 用途：创建绑定 payload（`value + onXxx`）辅助函数。
@@ -146,5 +158,33 @@ io
   <view id="ad-banner">
     banner visible: {{ visible }}
   </view>
+</template>
+```
+
+### Router 示例
+
+```vue
+<script setup lang="ts">
+import { usePageRouter, useRouter } from 'wevu'
+
+const router = useRouter()
+const pageRouter = usePageRouter()
+
+function gotoFromComponent() {
+  router.navigateTo({ url: './detail' })
+}
+
+function gotoFromPage() {
+  pageRouter.navigateTo({ url: './detail' })
+}
+</script>
+
+<template>
+  <button @tap="gotoFromComponent">
+    component router
+  </button>
+  <button @tap="gotoFromPage">
+    page router
+  </button>
 </template>
 ```

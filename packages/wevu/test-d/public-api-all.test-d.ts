@@ -167,6 +167,8 @@ type RuntimeApiName
     | 'useIntersectionObserver'
     | 'useModel'
     | 'useNativeInstance'
+    | 'usePageRouter'
+    | 'useRouter'
     | 'useSlots'
     | 'useTemplateRef'
     | 'watch'

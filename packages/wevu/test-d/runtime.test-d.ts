@@ -39,6 +39,8 @@ import {
   setWevuDefaults,
   useIntersectionObserver,
   useNativeInstance,
+  usePageRouter,
+  useRouter,
 
 } from '@/index'
 
@@ -112,6 +114,8 @@ defineComponent({
     expectType<WechatMiniprogram.SelectorQuery | undefined>(ctx.instance.createSelectorQuery())
     expectType<WechatMiniprogram.IntersectionObserver | undefined>(ctx.instance.createIntersectionObserver())
     expectType<void | Promise<void> | undefined>(ctx.instance.setData({ count: props.count }))
+    expectType<WechatMiniprogram.Component.Router | undefined>(ctx.instance.router)
+    expectType<WechatMiniprogram.Component.Router | undefined>(ctx.instance.pageRouter)
     ctx.expose({ a: 1 })
     const model = ctx.bindModel<number>('path')
     expectType<number>(model.value)
@@ -152,6 +156,12 @@ defineComponent({
     onDeactivated(() => {})
     const nativeInstance = useNativeInstance()
     expectType<void>(nativeInstance.triggerEvent('from-helper', { ok: true }))
+    const router = useRouter()
+    const pageRouter = usePageRouter()
+    expectType<WechatMiniprogram.Component.Router>(router)
+    expectType<WechatMiniprogram.Component.Router>(pageRouter)
+    expectType<void>(router.navigateTo({ url: '/pages/demo/index' }))
+    expectType<void>(pageRouter.navigateBack({ delta: 1 }))
     const io = useIntersectionObserver()
     expectType<WechatMiniprogram.IntersectionObserver>(io)
     return {}

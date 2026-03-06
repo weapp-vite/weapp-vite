@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, mergeModels, useAttrs, useBindModel, useIntersectionObserver, useModel, useNativeInstance, useSlots } from '@/index'
+import { defineComponent, mergeModels, useAttrs, useBindModel, useIntersectionObserver, useModel, useNativeInstance, usePageRouter, useRouter, useSlots } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 
@@ -17,12 +17,14 @@ describe('runtime: vue compat helpers', () => {
     expect(mergeModels(null as any, { a: 1 })).toEqual({ a: 1 })
   })
 
-  it('useAttrs/useSlots/useModel/useNativeInstance/useIntersectionObserver throw when called outside setup', () => {
+  it('useAttrs/useSlots/useModel/useNativeInstance/useIntersectionObserver/useRouter/usePageRouter throw when called outside setup', () => {
     expect(() => useAttrs()).toThrow()
     expect(() => useSlots()).toThrow()
     expect(() => useModel({}, 'modelValue')).toThrow()
     expect(() => useNativeInstance()).toThrow()
     expect(() => useIntersectionObserver()).toThrow()
+    expect(() => useRouter()).toThrow()
+    expect(() => usePageRouter()).toThrow()
   })
 
   it('useAttrs/useSlots expose setup context values, useModel emits update event', () => {
@@ -204,6 +206,102 @@ describe('runtime: vue compat helpers', () => {
     expect(createSelectorQuery).toHaveBeenCalledTimes(2)
     expect(createIntersectionObserver).toHaveBeenCalledTimes(2)
     expect(setData.mock.calls.some(call => call?.[0]?.fromSetupInstance === true)).toBe(true)
+  })
+
+  it('useRouter/usePageRouter prefer native router and pageRouter', () => {
+    const componentRouter = {
+      switchTab: vi.fn(),
+      reLaunch: vi.fn(),
+      redirectTo: vi.fn(),
+      navigateTo: vi.fn(),
+      navigateBack: vi.fn(),
+    }
+    const pageRouter = {
+      switchTab: vi.fn(),
+      reLaunch: vi.fn(),
+      redirectTo: vi.fn(),
+      navigateTo: vi.fn(),
+      navigateBack: vi.fn(),
+    }
+
+    defineComponent({
+      setup() {
+        const router = useRouter()
+        const hostPageRouter = usePageRouter()
+        expect(router).toBe(componentRouter)
+        expect(hostPageRouter).toBe(pageRouter)
+        router.navigateTo({ url: './from-component' })
+        hostPageRouter.navigateTo({ url: './from-page' })
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      properties: {},
+      router: componentRouter,
+      pageRouter,
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(componentRouter.navigateTo).toHaveBeenCalledWith({ url: './from-component' })
+    expect(pageRouter.navigateTo).toHaveBeenCalledWith({ url: './from-page' })
+  })
+
+  it('useRouter/usePageRouter fallback to global route methods when instance router is unavailable', () => {
+    const wxNavigateTo = vi.fn()
+    const wxRedirectTo = vi.fn()
+    const wxSwitchTab = vi.fn()
+    const wxReLaunch = vi.fn()
+    const wxNavigateBack = vi.fn()
+    ;(globalThis as any).wx = {
+      switchTab: wxSwitchTab,
+      reLaunch: wxReLaunch,
+      redirectTo: wxRedirectTo,
+      navigateTo: wxNavigateTo,
+      navigateBack: wxNavigateBack,
+    }
+
+    defineComponent({
+      setup() {
+        const router = useRouter()
+        const pageRouter = usePageRouter()
+        router.navigateTo({ url: '/pages/a/index' })
+        pageRouter.redirectTo({ url: '/pages/b/index' })
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    expect(wxNavigateTo).toHaveBeenCalledWith({ url: '/pages/a/index' })
+    expect(wxRedirectTo).toHaveBeenCalledWith({ url: '/pages/b/index' })
+  })
+
+  it('useRouter/usePageRouter throw when Router and fallback route methods are both unavailable', () => {
+    defineComponent({
+      setup() {
+        expect(() => useRouter()).toThrow('当前运行环境不支持 Router')
+        expect(() => usePageRouter()).toThrow('当前运行环境不支持 Router')
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    const inst: any = {
+      setData() {},
+      properties: {},
+    }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
   })
 
   it('useIntersectionObserver auto disconnects on teardown', () => {

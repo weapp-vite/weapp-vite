@@ -111,6 +111,8 @@ const ROOT_RUNTIME_EXPORTS = [
   'useIntersectionObserver',
   'useModel',
   'useNativeInstance',
+  'usePageRouter',
+  'useRouter',
   'useSlots',
   'useTemplateRef',
   'watch',
