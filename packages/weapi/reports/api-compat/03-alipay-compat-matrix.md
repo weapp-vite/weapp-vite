@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：207，不支持：272
+总计：479，支持：210，不支持：269
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | --------------------------------------------------------------------------------- |
@@ -120,7 +120,7 @@
 | `getConnectedBluetoothDevices`                | `getConnectedBluetoothDevices`                | ✅   | 直连 `my.getConnectedBluetoothDevices`                                            |
 | `getConnectedWifi`                            | `getConnectedWifi`                            | ✅   | 直连 `my.getConnectedWifi`                                                        |
 | `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`                      | ❌   | 未提供 my.getDeviceBenchmarkInfo，调用时将返回 not supported                      |
-| `getDeviceInfo`                               | `getDeviceInfo`                               | ❌   | 未提供 my.getDeviceInfo，调用时将返回 not supported                               |
+| `getDeviceInfo`                               | `getSystemInfo`                               | ✅   | 映射到 `my.getSystemInfo`，并提取设备字段                                         |
 | `getDeviceVoIPList`                           | `getDeviceVoIPList`                           | ❌   | 未提供 my.getDeviceVoIPList，调用时将返回 not supported                           |
 | `getEnterOptionsSync`                         | `getEnterOptionsSync`                         | ✅   | 直连 `my.getEnterOptionsSync`                                                     |
 | `getExptInfoSync`                             | `getExptInfoSync`                             | ❌   | 未提供 my.getExptInfoSync，调用时将返回 not supported                             |
@@ -171,7 +171,7 @@
 | `getWifiList`                                 | `getWifiList`                                 | ✅   | 直连 `my.getWifiList`                                                             |
 | `getWindowInfo`                               | `getWindowInfo`                               | ✅   | 直连 `my.getWindowInfo`                                                           |
 | `getXrFrameSystem`                            | `getXrFrameSystem`                            | ❌   | 未提供 my.getXrFrameSystem，调用时将返回 not supported                            |
-| `hideHomeButton`                              | `hideHomeButton`                              | ❌   | 未提供 my.hideHomeButton，调用时将返回 not supported                              |
+| `hideHomeButton`                              | `hideBackHome`                                | ✅   | 映射到 `my.hideBackHome`                                                          |
 | `hideKeyboard`                                | `hideKeyboard`                                | ✅   | 直连 `my.hideKeyboard`                                                            |
 | `hideLoading`                                 | `hideLoading`                                 | ✅   | 直连 `my.hideLoading`                                                             |
 | `hideNavigationBarLoading`                    | `hideNavigationBarLoading`                    | ✅   | 直连 `my.hideNavigationBarLoading`                                                |
@@ -186,7 +186,7 @@
 | `joinVoIPChat`                                | `joinVoIPChat`                                | ❌   | 未提供 my.joinVoIPChat，调用时将返回 not supported                                |
 | `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ❌   | 未提供 my.loadBuiltInFontFace，调用时将返回 not supported                         |
 | `loadFontFace`                                | `loadFontFace`                                | ✅   | 直连 `my.loadFontFace`                                                            |
-| `login`                                       | `login`                                       | ❌   | 未提供 my.login，调用时将返回 not supported                                       |
+| `login`                                       | `getAuthCode`                                 | ✅   | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段                                   |
 | `makeBluetoothPair`                           | `makeBluetoothPair`                           | ✅   | 直连 `my.makeBluetoothPair`                                                       |
 | `makePhoneCall`                               | `makePhoneCall`                               | ✅   | 直连 `my.makePhoneCall`                                                           |
 | `navigateBack`                                | `navigateBack`                                | ✅   | 直连 `my.navigateBack`                                                            |

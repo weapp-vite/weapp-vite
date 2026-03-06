@@ -279,6 +279,42 @@ describe('weapi', () => {
     expect(result).toMatchObject({ text: 'copied', data: 'copied' })
   })
 
+  it('maps login to getAuthCode for alipay', async () => {
+    const getAuthCode = vi.fn((options: any) => {
+      options.success?.({ authCode: 'auth-code-1' })
+    })
+    const api = createWeapi({
+      adapter: {
+        getAuthCode,
+      },
+      platform: 'alipay',
+    })
+
+    const result = await api.login()
+
+    expect(getAuthCode).toHaveBeenCalledWith(expect.any(Object))
+    expect(result).toMatchObject({
+      authCode: 'auth-code-1',
+      code: 'auth-code-1',
+    })
+  })
+
+  it('maps hideHomeButton to hideBackHome for alipay', async () => {
+    const hideBackHome = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const api = createWeapi({
+      adapter: {
+        hideBackHome,
+      },
+      platform: 'alipay',
+    })
+
+    await api.hideHomeButton()
+
+    expect(hideBackHome).toHaveBeenCalledWith(expect.any(Object))
+  })
+
   it('normalizes platform alias for createWeapi', () => {
     const api = createWeapi({
       adapter: {},
@@ -320,6 +356,157 @@ describe('weapi', () => {
     expect(result).toMatchObject({
       index: 1,
       tapIndex: 1,
+    })
+  })
+
+  it('maps chooseVideo to chooseMedia for douyin', async () => {
+    const chooseMedia = vi.fn((options: any) => {
+      options.success?.({
+        tempFiles: [
+          {
+            tempFilePath: '/tmp/video.mp4',
+            size: 123,
+            duration: 8,
+            width: 720,
+            height: 1280,
+            mediaType: 'video',
+          },
+        ],
+      })
+    })
+    const api = createWeapi({
+      adapter: {
+        chooseMedia,
+      },
+      platform: 'tt',
+    })
+
+    const result = await api.chooseVideo({
+      compressed: false,
+      camera: 'back',
+      sourceType: ['camera'],
+    })
+
+    expect(chooseMedia).toHaveBeenCalledWith(expect.objectContaining({
+      mediaType: ['video'],
+      count: 1,
+      sizeType: ['original'],
+      camera: 'back',
+      sourceType: ['camera'],
+    }))
+    expect(result).toMatchObject({
+      tempFilePath: '/tmp/video.mp4',
+      size: 123,
+      duration: 8,
+      width: 720,
+      height: 1280,
+    })
+  })
+
+  it('maps getWindowInfo to getSystemInfo for douyin', async () => {
+    const getSystemInfo = vi.fn((options: any) => {
+      options.success?.({
+        pixelRatio: 2,
+        screenWidth: 1080,
+        screenHeight: 1920,
+        windowWidth: 360,
+        windowHeight: 640,
+        statusBarHeight: 24,
+        safeArea: {
+          top: 24,
+          left: 0,
+          right: 360,
+          bottom: 640,
+          width: 360,
+          height: 616,
+        },
+      })
+    })
+    const api = createWeapi({
+      adapter: {
+        getSystemInfo,
+      },
+      platform: 'tt',
+    })
+
+    const result = await api.getWindowInfo()
+
+    expect(getSystemInfo).toHaveBeenCalledWith(expect.any(Object))
+    expect(result).toMatchObject({
+      pixelRatio: 2,
+      screenWidth: 1080,
+      screenHeight: 1920,
+      windowWidth: 360,
+      windowHeight: 640,
+      statusBarHeight: 24,
+    })
+  })
+
+  it.each([
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('maps getDeviceInfo via getSystemInfo for $platform', async ({ platform }) => {
+    const getSystemInfo = vi.fn((options: any) => {
+      options.success?.({
+        brand: 'demo-brand',
+        model: 'demo-model',
+        system: 'OS 1.0',
+        platform: 'android',
+        benchmarkLevel: 20,
+      })
+    })
+    const api = createWeapi({
+      adapter: {
+        getSystemInfo,
+      },
+      platform,
+    })
+
+    const result = await api.getDeviceInfo()
+
+    expect(getSystemInfo).toHaveBeenCalledWith(expect.any(Object))
+    expect(result).toMatchObject({
+      brand: 'demo-brand',
+      model: 'demo-model',
+      system: 'OS 1.0',
+      platform: 'android',
+      benchmarkLevel: 20,
+    })
+  })
+
+  it('maps getAccountInfoSync to getEnvInfoSync for douyin', () => {
+    const getEnvInfoSync = vi.fn(() => ({
+      microapp: {
+        appId: 'tt123',
+        envType: 'release',
+        mpVersion: '1.2.3',
+      },
+      plugin: {
+        appId: 'plugin123',
+        version: '0.0.1',
+      },
+      common: {},
+    }))
+    const api = createWeapi({
+      adapter: {
+        getEnvInfoSync,
+      },
+      platform: 'tt',
+    })
+
+    const result = api.getAccountInfoSync()
+
+    expect(getEnvInfoSync).toHaveBeenCalledTimes(1)
+    expect(result).toMatchObject({
+      miniProgram: {
+        appId: 'tt123',
+        envVersion: 'release',
+        version: '1.2.3',
+      },
+      plugin: {
+        appId: 'plugin123',
+        version: '0.0.1',
+      },
     })
   })
 
@@ -519,6 +706,7 @@ describe('weapi', () => {
       { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'openAppAuthorizeSetting', my: 'openSetting', tt: 'openSetting' },
       { method: 'pluginLogin', my: 'getAuthCode', tt: 'login' },
+      { method: 'login', my: 'getAuthCode', tt: 'login' },
       { method: 'requestSubscribeDeviceMessage', my: 'requestSubscribeMessage', tt: 'requestSubscribeMessage' },
       { method: 'requestSubscribeEmployeeMessage', my: 'requestSubscribeMessage', tt: 'requestSubscribeMessage' },
       { method: 'restartMiniProgram', my: 'reLaunch', tt: 'reLaunch' },
@@ -533,6 +721,11 @@ describe('weapi', () => {
       { method: 'getUserInfo', my: 'getOpenUserInfo', tt: 'getUserInfo' },
       { method: 'getAppAuthorizeSetting', my: 'getAppAuthorizeSetting', tt: 'getSetting' },
       { method: 'getAppBaseInfo', my: 'getAppBaseInfo', tt: 'getEnvInfoSync' },
+      { method: 'chooseVideo', my: 'chooseVideo', tt: 'chooseMedia' },
+      { method: 'hideHomeButton', my: 'hideBackHome', tt: 'hideHomeButton' },
+      { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getSystemInfo' },
+      { method: 'getDeviceInfo', my: 'getSystemInfo', tt: 'getSystemInfo' },
+      { method: 'getAccountInfoSync', my: 'getAccountInfoSync', tt: 'getEnvInfoSync' },
     ] as const
 
     for (const item of expectedMappings) {
@@ -597,6 +790,12 @@ describe('weapi', () => {
       'getUserInfo',
       'getAppAuthorizeSetting',
       'getAppBaseInfo',
+      'login',
+      'chooseVideo',
+      'hideHomeButton',
+      'getWindowInfo',
+      'getDeviceInfo',
+      'getAccountInfoSync',
     ]))
   })
 })
