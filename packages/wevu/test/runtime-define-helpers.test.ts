@@ -79,6 +79,35 @@ describe('runtime: define helpers', () => {
     expect(result.properties.multiNative.optionalTypes).toEqual([Number, Boolean, Object, Array])
   })
 
+  it('normalizes optional union edge cases into native properties', () => {
+    const result = normalizeProps({ data: () => ({}) }, {
+      optLiteral: { type: String, required: false },
+      optDateOrString: { type: [Date, String], required: false },
+      optDateOnly: { type: Date, required: false },
+      optLiteralOrNumber: { type: [String, Number], required: false },
+      optNullableString: { type: [String, null], required: false },
+      optAllInvalid: { type: [Date, Map, Set], required: false },
+      optDuplicate: {
+        type: [String, String, Number, String],
+        optionalTypes: [Number, Date, String, Number],
+      },
+    })
+
+    expect(result.properties.optLiteral.type).toBe(String)
+    expect(result.properties.optLiteral.optionalTypes).toBeUndefined()
+    expect(result.properties.optDateOrString.type).toBe(String)
+    expect(result.properties.optDateOrString.optionalTypes).toBeUndefined()
+    expect(result.properties.optDateOnly.type).toBeNull()
+    expect(result.properties.optLiteralOrNumber.type).toBe(String)
+    expect(result.properties.optLiteralOrNumber.optionalTypes).toEqual([Number])
+    expect(result.properties.optNullableString.type).toBe(String)
+    expect(result.properties.optNullableString.optionalTypes).toBeUndefined()
+    expect(result.properties.optAllInvalid.type).toBeNull()
+    expect(result.properties.optAllInvalid.optionalTypes).toBeUndefined()
+    expect(result.properties.optDuplicate.type).toBe(String)
+    expect(result.properties.optDuplicate.optionalTypes).toEqual([Number])
+  })
+
   it('creates scoped slot options with inline args parsing', () => {
     const options = createScopedSlotOptions({ computed: { foo: () => 1 } })
     expect(options.computed).toBeTruthy()
