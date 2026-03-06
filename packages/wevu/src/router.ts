@@ -11,8 +11,8 @@ import type {
 import { reactive, readonly } from './reactivity'
 import { getCurrentSetupContext, onLoad, onRouteDone, onShow } from './runtime/hooks'
 import {
-  usePageRouter as useNativePageRouterInternal,
-  useRouter as useNativeRouterInternal,
+  useNativePageRouter as useNativePageRouterInternal,
+  useNativeRouter as useNativeRouterInternal,
 } from './runtime/vueCompat'
 
 export type LocationQueryValue = string | null

@@ -73,7 +73,7 @@ function createGlobalRouterFallback(): RuntimeRouter | undefined {
 function useRuntimeRouterByAccessor(
   primaryAccessor: RuntimeRouterAccessor,
   fallbackAccessor: RuntimeRouterAccessor,
-  helperName: 'useRouter' | 'usePageRouter',
+  helperName: 'useNativeRouter' | 'useNativePageRouter',
 ): RuntimeRouter {
   const ctx = getCurrentSetupContext<any>()
   if (!ctx?.instance) {
@@ -100,25 +100,31 @@ function useRuntimeRouterByAccessor(
 }
 
 /**
- * 在 setup 中获取与当前组件路径语义一致的 Router 对象。
+ * 在 setup 中获取与当前组件路径语义一致的原生 Router 对象。
  *
  * - 优先使用实例上的 `this.router`（组件路径语义）。
  * - 不可用时回退到 `this.pageRouter`。
  * - 低版本基础库再回退到全局 `wx.*` 路由方法。
+ *
+ * 如需更贴近 Vue Router 的高阶能力（导航守卫、失败类型、统一解析），
+ * 推荐改用 `wevu/router` 子入口的 `useRouter()`。
  */
-export function useRouter(): RuntimeRouter {
-  return useRuntimeRouterByAccessor('router', 'pageRouter', 'useRouter')
+export function useNativeRouter(): RuntimeRouter {
+  return useRuntimeRouterByAccessor('router', 'pageRouter', 'useNativeRouter')
 }
 
 /**
- * 在 setup 中获取与当前页面路径语义一致的 Router 对象。
+ * 在 setup 中获取与当前页面路径语义一致的原生 Router 对象。
  *
  * - 优先使用实例上的 `this.pageRouter`（页面路径语义）。
  * - 不可用时回退到 `this.router`。
  * - 低版本基础库再回退到全局 `wx.*` 路由方法。
+ *
+ * 如需更贴近 Vue Router 的高阶能力（导航守卫、失败类型、统一解析），
+ * 推荐改用 `wevu/router` 子入口的 `useRouter()`。
  */
-export function usePageRouter(): RuntimeRouter {
-  return useRuntimeRouterByAccessor('pageRouter', 'router', 'usePageRouter')
+export function useNativePageRouter(): RuntimeRouter {
+  return useRuntimeRouterByAccessor('pageRouter', 'router', 'useNativePageRouter')
 }
 
 type TemplateRefMap = Map<string, Ref<any>>
