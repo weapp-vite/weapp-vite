@@ -1,13 +1,13 @@
 import type { WeapiMethodSupportMatrixItem } from '../types'
-import { WEAPI_METHOD_SUPPORT_MATRIX_PART_1 } from './methodMatrixPart1'
-import { WEAPI_METHOD_SUPPORT_MATRIX_PART_2 } from './methodMatrixPart2'
-import { WEAPI_METHOD_SUPPORT_MATRIX_PART_3 } from './methodMatrixPart3'
-import { WEAPI_METHOD_SUPPORT_MATRIX_PART_4 } from './methodMatrixPart4'
-import { WEAPI_METHOD_SUPPORT_MATRIX_PART_5 } from './methodMatrixPart5'
-import { WEAPI_METHOD_SUPPORT_MATRIX_PART_6 } from './methodMatrixPart6'
-import { WEAPI_METHOD_SUPPORT_MATRIX_PART_7 } from './methodMatrixPart7'
-import { WEAPI_METHOD_SUPPORT_MATRIX_PART_8 } from './methodMatrixPart8'
-import { WEAPI_METHOD_SUPPORT_MATRIX_PART_9 } from './methodMatrixPart9'
+import { WEAPI_METHOD_SUPPORT_MATRIX_PART_4 } from './methodMatrixAddPhoneContactToOpenOfficialAccountChat'
+import { WEAPI_METHOD_SUPPORT_MATRIX_PART_9 } from './methodMatrixCreateMediaContainerToSetInnerAudioOption'
+import { WEAPI_METHOD_SUPPORT_MATRIX_PART_6 } from './methodMatrixCropImageToStartHCE'
+import { WEAPI_METHOD_SUPPORT_MATRIX_PART_3 } from './methodMatrixGetLogManagerToAddPhoneCalendar'
+import { WEAPI_METHOD_SUPPORT_MATRIX_PART_5 } from './methodMatrixOpenOfficialAccountProfileToCreateBLEConnection'
+import { WEAPI_METHOD_SUPPORT_MATRIX_PART_2 } from './methodMatrixRequestSubscribeEmployeeMessageToGetBatteryInfoSync'
+import { WEAPI_METHOD_SUPPORT_MATRIX_PART_1 } from './methodMatrixShowToastToRequestSubscribeDeviceMessage'
+import { WEAPI_METHOD_SUPPORT_MATRIX_PART_7 } from './methodMatrixStartLocalServiceDiscoveryToUpdateVoIPChatMuteConfig'
+import { WEAPI_METHOD_SUPPORT_MATRIX_PART_8 } from './methodMatrixUpdateWeChatAppToCreateMediaAudioPlayer'
 
 export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[] = [
   ...WEAPI_METHOD_SUPPORT_MATRIX_PART_1,

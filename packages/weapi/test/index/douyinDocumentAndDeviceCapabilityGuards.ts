@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart11Tests() {
+export function registerWeapiIndexDouyinDocumentAndDeviceCapabilityGuardsTests() {
   it('treats openDocument as unsupported for douyin when adapter method is missing', async () => {
     const api = createWeapi({
       adapter: {},

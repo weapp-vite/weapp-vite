@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart12Tests() {
+export function registerWeapiIndexDouyinBaseInfoAndRewardedAdGuardsTests() {
   it('treats getAppBaseInfo/getAccountInfoSync as unsupported for douyin without strict-equivalent api', async () => {
     const getEnvInfoSync = vi.fn()
     const api = createWeapi({

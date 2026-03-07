@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart10Tests() {
+export function registerWeapiIndexDouyinStrictModeAndActionSheetCasesTests() {
   it.each([
     'checkIsSoterEnrolledInDevice',
     'checkIsSupportSoterAuthentication',

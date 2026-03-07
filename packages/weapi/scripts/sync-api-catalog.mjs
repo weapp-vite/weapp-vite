@@ -41,6 +41,23 @@ function chunkArray(values, size) {
   return chunks
 }
 
+function toPascalCaseIdentifier(value) {
+  const sanitized = String(value).replace(/[^a-z0-9]/gi, '')
+  if (!sanitized) {
+    return 'Unknown'
+  }
+  return `${sanitized[0].toUpperCase()}${sanitized.slice(1)}`
+}
+
+function getChunkFileSuffix(chunkValues) {
+  if (chunkValues.length === 0) {
+    return 'UnknownToUnknown'
+  }
+  const first = toPascalCaseIdentifier(chunkValues[0])
+  const last = toPascalCaseIdentifier(chunkValues[chunkValues.length - 1])
+  return `${first}To${last}`
+}
+
 function formatMethodModule({
   exportName,
   values,
@@ -94,7 +111,8 @@ function generateMethodModuleFiles({
   for (let index = 0; index < chunks.length; index += 1) {
     const partIndex = index + 1
     const partConstName = `${exportName}_PART_${partIndex}`
-    const partFileName = `${filePrefix}Part${partIndex}.ts`
+    const partFileSuffix = getChunkFileSuffix(chunks[index])
+    const partFileName = `${filePrefix}${partFileSuffix}.ts`
     const partFilePath = path.join(OUTPUT_DIR, partFileName)
     const partFile = `/**
  * @description 三端 API 名单（由 typings 自动提取，请勿手工修改）
@@ -105,7 +123,7 @@ ${formatLiteralList(chunks[index])}
 ] as const
 `
     files.set(partFilePath, partFile)
-    partImports.push(`import { ${partConstName} } from './${filePrefix}Part${partIndex}'`)
+    partImports.push(`import { ${partConstName} } from './${filePrefix}${partFileSuffix}'`)
     mergeLines.push(`  ...${partConstName},`)
   }
 

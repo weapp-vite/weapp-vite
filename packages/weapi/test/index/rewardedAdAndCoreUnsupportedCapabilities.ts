@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart7Tests() {
+export function registerWeapiIndexRewardedAdAndCoreUnsupportedCapabilitiesTests() {
   it('maps rewarded ad api to strict-equivalent alipay target and keeps live contexts unsupported', async () => {
     const rewardedAd = {
       load: vi.fn(),

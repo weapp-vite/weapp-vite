@@ -5,7 +5,7 @@ import {
 } from '@/core/methodMapping'
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart13Tests() {
+export function registerWeapiIndexDouyinResultMappingAndCoverageTests() {
   const douyinPromiseCases = [
     {
       name: 'chooseImage tempFilePaths string to array',

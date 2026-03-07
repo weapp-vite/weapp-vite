@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart2Tests() {
+export function registerWeapiIndexAlipayModalAndBiometricMappingsTests() {
   it('maps showModal to confirm for alipay', async () => {
     const confirm = vi.fn((options: any) => {
       options.success?.({ confirm: false })
