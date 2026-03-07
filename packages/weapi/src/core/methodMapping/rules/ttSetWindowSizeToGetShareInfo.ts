@@ -1,6 +1,6 @@
 import type { WeapiMethodMappingRule } from '../types'
 
-export const TT_METHOD_MAPPINGS_PART_3: Readonly<Record<string, WeapiMethodMappingRule>> = {
+export const TT_METHOD_MAPPINGS_SET_WINDOW_SIZE_TO_GET_SHARE_INFO: Readonly<Record<string, WeapiMethodMappingRule>> = {
   setWindowSize: {
     target: 'setWindowSize',
   },

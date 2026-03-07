@@ -1,6 +1,6 @@
 import type { WeapiMethodSupportMatrixItem } from '../types'
 
-export const WEAPI_METHOD_SUPPORT_MATRIX_PART_4: readonly WeapiMethodSupportMatrixItem[] = [
+export const WEAPI_METHOD_SUPPORT_MATRIX_ADD_PHONE_CONTACT_TO_OPEN_OFFICIAL_ACCOUNT_CHAT: readonly WeapiMethodSupportMatrixItem[] = [
   {
     method: 'addPhoneContact',
     description: '添加手机联系人。',

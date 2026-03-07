@@ -1,6 +1,6 @@
 import type { WeapiMethodMappingRule } from '../types'
 
-export const TT_METHOD_MAPPINGS_PART_2: Readonly<Record<string, WeapiMethodMappingRule>> = {
+export const TT_METHOD_MAPPINGS_CANVAS_GET_IMAGE_DATA_TO_SET_TOP_BAR_TEXT: Readonly<Record<string, WeapiMethodMappingRule>> = {
   canvasGetImageData: {
     target: 'canvasGetImageData',
   },

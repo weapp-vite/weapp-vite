@@ -1,6 +1,6 @@
 import type { WeapiMethodMappingRule } from '../types'
 
-export const TT_METHOD_MAPPINGS_PART_4: Readonly<Record<string, WeapiMethodMappingRule>> = {
+export const TT_METHOD_MAPPINGS_JOIN_VO_IPCHAT_TO_OFF_BLECONNECTION_STATE_CHANGE: Readonly<Record<string, WeapiMethodMappingRule>> = {
   joinVoIPChat: {
     target: 'joinVoIPChat',
   },

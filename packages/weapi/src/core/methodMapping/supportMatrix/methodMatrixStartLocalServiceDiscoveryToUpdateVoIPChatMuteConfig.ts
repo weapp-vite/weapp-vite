@@ -1,6 +1,6 @@
 import type { WeapiMethodSupportMatrixItem } from '../types'
 
-export const WEAPI_METHOD_SUPPORT_MATRIX_PART_7: readonly WeapiMethodSupportMatrixItem[] = [
+export const WEAPI_METHOD_SUPPORT_MATRIX_START_LOCAL_SERVICE_DISCOVERY_TO_UPDATE_VO_IPCHAT_MUTE_CONFIG: readonly WeapiMethodSupportMatrixItem[] = [
   {
     method: 'startLocalServiceDiscovery',
     description: '开始本地服务发现。',

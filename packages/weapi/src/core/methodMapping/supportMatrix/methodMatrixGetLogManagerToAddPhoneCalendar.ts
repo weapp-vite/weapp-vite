@@ -1,6 +1,6 @@
 import type { WeapiMethodSupportMatrixItem } from '../types'
 
-export const WEAPI_METHOD_SUPPORT_MATRIX_PART_3: readonly WeapiMethodSupportMatrixItem[] = [
+export const WEAPI_METHOD_SUPPORT_MATRIX_GET_LOG_MANAGER_TO_ADD_PHONE_CALENDAR: readonly WeapiMethodSupportMatrixItem[] = [
   {
     method: 'getLogManager',
     description: '获取日志管理器实例。',

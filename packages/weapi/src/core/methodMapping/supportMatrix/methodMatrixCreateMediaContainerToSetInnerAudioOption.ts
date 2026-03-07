@@ -1,6 +1,6 @@
 import type { WeapiMethodSupportMatrixItem } from '../types'
 
-export const WEAPI_METHOD_SUPPORT_MATRIX_PART_9: readonly WeapiMethodSupportMatrixItem[] = [
+export const WEAPI_METHOD_SUPPORT_MATRIX_CREATE_MEDIA_CONTAINER_TO_SET_INNER_AUDIO_OPTION: readonly WeapiMethodSupportMatrixItem[] = [
   {
     method: 'createMediaContainer',
     description: '创建媒体容器实例。',

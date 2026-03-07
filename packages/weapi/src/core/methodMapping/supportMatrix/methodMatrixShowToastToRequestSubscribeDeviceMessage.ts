@@ -1,6 +1,6 @@
 import type { WeapiMethodSupportMatrixItem } from '../types'
 
-export const WEAPI_METHOD_SUPPORT_MATRIX_PART_1: readonly WeapiMethodSupportMatrixItem[] = [
+export const WEAPI_METHOD_SUPPORT_MATRIX_SHOW_TOAST_TO_REQUEST_SUBSCRIBE_DEVICE_MESSAGE: readonly WeapiMethodSupportMatrixItem[] = [
   {
     method: 'showToast',
     description: '显示消息提示框。',
