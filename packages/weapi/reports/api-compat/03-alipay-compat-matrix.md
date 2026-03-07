@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：238，不支持：241
+总计：479，支持：229，不支持：250
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -17,13 +17,13 @@
 | `authorizeForMiniProgram`                     | `authorizeForMiniProgram`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `authPrivateMessage`                          | `authPrivateMessage`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `base64ToArrayBuffer`                         | `base64ToArrayBuffer`                         | ✅   | `native`      | ✅       | 直连 `my.base64ToArrayBuffer`                                                     |
-| `batchGetStorage`                             | `batchGetStorage`                             | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `my.getStorage`                                           |
-| `batchGetStorageSync`                         | `batchGetStorageSync`                         | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `my.getStorageSync`                                       |
-| `batchSetStorage`                             | `batchSetStorage`                             | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `my.setStorage`                                           |
-| `batchSetStorageSync`                         | `batchSetStorageSync`                         | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `my.setStorageSync`                                       |
+| `batchGetStorage`                             | `batchGetStorage`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `batchGetStorageSync`                         | `batchGetStorageSync`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `batchSetStorage`                             | `batchSetStorage`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `batchSetStorageSync`                         | `batchSetStorageSync`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `bindEmployeeRelation`                        | `bindEmployeeRelation`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `canAddSecureElementPass`                     | `canAddSecureElementPass`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `cancelIdleCallback`                          | `cancelIdleCallback`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `cancelIdleCallback`                          | `cancelIdleCallback`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `canIUse`                                     | `canIUse`                                     | ✅   | `native`      | ✅       | 直连 `my.canIUse`                                                                 |
 | `canvasGetImageData`                          | `canvasGetImageData`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `canvasPutImageData`                          | `canvasPutImageData`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -62,7 +62,7 @@
 | `createBLEPeripheralServer`                   | `createBLEPeripheralServer`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createBufferURL`                             | `createBufferURL`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createCacheManager`                          | `createCacheManager`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `createCameraContext`                         | `createCameraContext`                         | ✅   | `mapped`      | ✅       | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`）            |
+| `createCameraContext`                         | `createCameraContext`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createCanvasContext`                         | `createCanvasContext`                         | ✅   | `native`      | ✅       | 直连 `my.createCanvasContext`                                                     |
 | `createGlobalPayment`                         | `createGlobalPayment`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createInferenceSession`                      | `createInferenceSession`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -82,7 +82,7 @@
 | `createUDPSocket`                             | `createUDPSocket`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createVideoContext`                          | `createVideoContext`                          | ✅   | `native`      | ✅       | 直连 `my.createVideoContext`                                                      |
 | `createVideoDecoder`                          | `createVideoDecoder`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `createVKSession`                             | `createVKSession`                             | ✅   | `mapped`      | ✅       | 使用内置 VKSession shim（对齐 `start/stop/destroy`）                              |
+| `createVKSession`                             | `createVKSession`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createWebAudioContext`                       | `createInnerAudioContext`                     | ✅   | `mapped`      | ✅       | 映射到 `my.createInnerAudioContext`                                               |
 | `createWorker`                                | `createWorker`                                | ✅   | `native`      | ✅       | 直连 `my.createWorker`                                                            |
 | `cropImage`                                   | `cropImage`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -135,7 +135,7 @@
 | `getLaunchOptionsSync`                        | `getLaunchOptionsSync`                        | ✅   | `native`      | ✅       | 直连 `my.getLaunchOptionsSync`                                                    |
 | `getLocalIPAddress`                           | `getLocalIPAddress`                           | ✅   | `native`      | ✅       | 直连 `my.getLocalIPAddress`                                                       |
 | `getLocation`                                 | `getLocation`                                 | ✅   | `native`      | ✅       | 直连 `my.getLocation`                                                             |
-| `getLogManager`                               | `getLogManager`                               | ✅   | `mapped`      | ✅       | 使用内置日志 shim（对齐 `log/info/warn/error`）                                   |
+| `getLogManager`                               | `getLogManager`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect`             | ✅   | `native`      | ✅       | 直连 `my.getMenuButtonBoundingClientRect`                                         |
 | `getNetworkType`                              | `getNetworkType`                              | ✅   | `mapped`      | ✅       | 直连 `my.getNetworkType`                                                          |
 | `getNFCAdapter`                               | `getNFCAdapter`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -193,7 +193,7 @@
 | `navigateBackMiniProgram`                     | `navigateBackMiniProgram`                     | ✅   | `native`      | ✅       | 直连 `my.navigateBackMiniProgram`                                                 |
 | `navigateTo`                                  | `navigateTo`                                  | ✅   | `native`      | ✅       | 直连 `my.navigateTo`                                                              |
 | `navigateToMiniProgram`                       | `navigateToMiniProgram`                       | ✅   | `native`      | ✅       | 直连 `my.navigateToMiniProgram`                                                   |
-| `nextTick`                                    | `nextTick`                                    | ✅   | `mapped`      | ✅       | 使用内置 microtask shim 调度回调                                                  |
+| `nextTick`                                    | `nextTick`                                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `notifyBLECharacteristicValueChange`          | `notifyBLECharacteristicValueChange`          | ✅   | `native`      | ✅       | 直连 `my.notifyBLECharacteristicValueChange`                                      |
 | `notifyGroupMembers`                          | `notifyGroupMembers`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `offAccelerometerChange`                      | `offAccelerometerChange`                      | ✅   | `native`      | ✅       | 直连 `my.offAccelerometerChange`                                                  |

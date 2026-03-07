@@ -3,19 +3,19 @@
 ## 覆盖结论
 
 - 微信基准命名方法总数：479
-- 支付宝可调用兼容方法数：238
-- 支付宝语义对齐方法数：238
+- 支付宝可调用兼容方法数：229
+- 支付宝语义对齐方法数：229
 - 支付宝 fallback 方法数：0
-- 抖音可调用兼容方法数：175
-- 抖音语义对齐方法数：175
+- 抖音可调用兼容方法数：166
+- 抖音语义对齐方法数：166
 - 抖音 fallback 方法数：0
-- 三端可调用完全对齐方法数：173
-- 三端语义完全对齐方法数：173
+- 三端可调用完全对齐方法数：164
+- 三端语义完全对齐方法数：164
 
 ## 不兼容规模
 
-- 支付宝侧不兼容（按微信命名调用失败）方法：241
-- 抖音侧不兼容（按微信命名调用失败）方法：304
+- 支付宝侧不兼容（按微信命名调用失败）方法：250
+- 抖音侧不兼容（按微信命名调用失败）方法：313
 
 ## 不兼容示例（前 40 项）
 
@@ -30,8 +30,13 @@
 - `addVideoToFavorites` -> 目标 `addVideoToFavorites`（unsupported）
 - `authorizeForMiniProgram` -> 目标 `authorizeForMiniProgram`（unsupported）
 - `authPrivateMessage` -> 目标 `authPrivateMessage`（unsupported）
+- `batchGetStorage` -> 目标 `batchGetStorage`（unsupported）
+- `batchGetStorageSync` -> 目标 `batchGetStorageSync`（unsupported）
+- `batchSetStorage` -> 目标 `batchSetStorage`（unsupported）
+- `batchSetStorageSync` -> 目标 `batchSetStorageSync`（unsupported）
 - `bindEmployeeRelation` -> 目标 `bindEmployeeRelation`（unsupported）
 - `canAddSecureElementPass` -> 目标 `canAddSecureElementPass`（unsupported）
+- `cancelIdleCallback` -> 目标 `cancelIdleCallback`（unsupported）
 - `canvasGetImageData` -> 目标 `canvasGetImageData`（unsupported）
 - `canvasPutImageData` -> 目标 `canvasPutImageData`（unsupported）
 - `checkDeviceSupportHevc` -> 目标 `checkDeviceSupportHevc`（unsupported）
@@ -51,16 +56,11 @@
 - `createBLEPeripheralServer` -> 目标 `createBLEPeripheralServer`（unsupported）
 - `createBufferURL` -> 目标 `createBufferURL`（unsupported）
 - `createCacheManager` -> 目标 `createCacheManager`（unsupported）
+- `createCameraContext` -> 目标 `createCameraContext`（unsupported）
 - `createGlobalPayment` -> 目标 `createGlobalPayment`（unsupported）
 - `createInferenceSession` -> 目标 `createInferenceSession`（unsupported）
 - `createMediaAudioPlayer` -> 目标 `createMediaAudioPlayer`（unsupported）
 - `createMediaContainer` -> 目标 `createMediaContainer`（unsupported）
-- `createMediaRecorder` -> 目标 `createMediaRecorder`（unsupported）
-- `createTCPSocket` -> 目标 `createTCPSocket`（unsupported）
-- `createUDPSocket` -> 目标 `createUDPSocket`（unsupported）
-- `createVideoDecoder` -> 目标 `createVideoDecoder`（unsupported）
-- `cropImage` -> 目标 `cropImage`（unsupported）
-- `editImage` -> 目标 `editImage`（unsupported）
 
 ### 抖音不兼容示例
 
@@ -74,8 +74,13 @@
 - `addVideoToFavorites` -> 目标 `addVideoToFavorites`（unsupported）
 - `authorizeForMiniProgram` -> 目标 `authorizeForMiniProgram`（unsupported）
 - `authPrivateMessage` -> 目标 `authPrivateMessage`（unsupported）
+- `batchGetStorage` -> 目标 `batchGetStorage`（unsupported）
+- `batchGetStorageSync` -> 目标 `batchGetStorageSync`（unsupported）
+- `batchSetStorage` -> 目标 `batchSetStorage`（unsupported）
+- `batchSetStorageSync` -> 目标 `batchSetStorageSync`（unsupported）
 - `bindEmployeeRelation` -> 目标 `bindEmployeeRelation`（unsupported）
 - `canAddSecureElementPass` -> 目标 `canAddSecureElementPass`（unsupported）
+- `cancelIdleCallback` -> 目标 `cancelIdleCallback`（unsupported）
 - `canvasGetImageData` -> 目标 `canvasGetImageData`（unsupported）
 - `canvasPutImageData` -> 目标 `canvasPutImageData`（unsupported）
 - `checkDeviceSupportHevc` -> 目标 `checkDeviceSupportHevc`（unsupported）
@@ -99,8 +104,3 @@
 - `createBLEPeripheralServer` -> 目标 `createBLEPeripheralServer`（unsupported）
 - `createBufferURL` -> 目标 `createBufferURL`（unsupported）
 - `createCacheManager` -> 目标 `createCacheManager`（unsupported）
-- `createGlobalPayment` -> 目标 `createGlobalPayment`（unsupported）
-- `createInferenceSession` -> 目标 `createInferenceSession`（unsupported）
-- `createMediaAudioPlayer` -> 目标 `createMediaAudioPlayer`（unsupported）
-- `createMediaContainer` -> 目标 `createMediaContainer`（unsupported）
-- `createMediaRecorder` -> 目标 `createMediaRecorder`（unsupported）

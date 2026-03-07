@@ -105,42 +105,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
   let syntheticWindowResizeSnapshot: string | undefined
   const syntheticMemoryWarningListeners = new Set<(result: any) => void>()
   let syntheticMemoryWarningBridgeReady = false
-  const syntheticStorage = new Map<string, any>()
-  const syntheticLogManager = {
-    log: (..._args: unknown[]) => {},
-    info: (..._args: unknown[]) => {},
-    warn: (..._args: unknown[]) => {},
-    error: (..._args: unknown[]) => {},
-    debug: (..._args: unknown[]) => {},
-    setFilterMsg: (_msg: string) => {},
-    addFilterMsg: (_msg: string) => {},
-  }
-  const syntheticVKSession = {
-    start: () => Promise.resolve({ errMsg: 'VKSession.start:ok' }),
-    stop: () => Promise.resolve({ errMsg: 'VKSession.stop:ok' }),
-    destroy: () => {},
-    addAnchors: () => Promise.resolve({ errMsg: 'VKSession.addAnchors:ok' }),
-    removeAnchors: () => Promise.resolve({ errMsg: 'VKSession.removeAnchors:ok' }),
-    clearAnchors: () => Promise.resolve({ errMsg: 'VKSession.clearAnchors:ok' }),
-    hitTest: () => Promise.resolve([]),
-    requestAnimationFrame: (_callback: (...args: any[]) => void) => 0,
-    cancelAnimationFrame: (_id: number) => {},
-  }
-  const syntheticCameraContext = {
-    takePhoto: (_options?: Record<string, any>) => Promise.resolve({
-      tempImagePath: '',
-      errMsg: 'takePhoto:ok',
-    }),
-    startRecord: (_options?: Record<string, any>) => Promise.resolve({
-      errMsg: 'startRecord:ok',
-    }),
-    stopRecord: (_options?: Record<string, any>) => Promise.resolve({
-      tempThumbPath: '',
-      tempVideoPath: '',
-      errMsg: 'stopRecord:ok',
-    }),
-    onCameraFrame: (_callback: (...args: any[]) => void) => {},
-  }
   const resolveAdapter = () => {
     if (adapter) {
       return adapter
@@ -256,32 +220,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         result: undefined,
       }
     }
-    const toArray = <T>(value: unknown): T[] => Array.isArray(value) ? value as T[] : []
-    const resolveBatchSetEntries = (value: unknown) => {
-      if (!isPlainObject(value)) {
-        return []
-      }
-      const keyValueList = toArray<Record<string, any>>(value.keyValueList)
-      if (keyValueList.length > 0) {
-        return keyValueList
-      }
-      const dataList = toArray<Record<string, any>>(value.dataList)
-      if (dataList.length > 0) {
-        return dataList
-      }
-      return []
-    }
-    const resolveBatchGetKeys = (value: unknown) => {
-      if (!isPlainObject(value)) {
-        return []
-      }
-      const keyList = toArray<string>(value.keyList)
-      if (keyList.length > 0) {
-        return keyList.filter((item): item is string => typeof item === 'string')
-      }
-      const keys = toArray<string>(value.keys)
-      return keys.filter((item): item is string => typeof item === 'string')
-    }
     const invokeSyntheticAsyncSuccess = (payload: Record<string, any>) => {
       const lastArg = args.length > 0 ? args[args.length - 1] : undefined
       if (hasCallbacks(lastArg)) {
@@ -291,112 +229,12 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
       }
       return Promise.resolve(payload)
     }
-    if (methodName === 'nextTick') {
-      const callback = typeof args[0] === 'function' ? args[0] as () => void : undefined
-      if (callback) {
-        Promise.resolve().then(() => callback())
-      }
-      return {
-        handled: true as const,
-        result: undefined,
-      }
-    }
-    if (methodName === 'getLogManager') {
-      return {
-        handled: true as const,
-        result: syntheticLogManager,
-      }
-    }
-    if (methodName === 'createVKSession') {
-      return {
-        handled: true as const,
-        result: syntheticVKSession,
-      }
-    }
-    if (methodName === 'createCameraContext') {
-      return {
-        handled: true as const,
-        result: syntheticCameraContext,
-      }
-    }
-    if (methodName === 'cancelIdleCallback') {
-      return {
-        handled: true as const,
-        result: undefined,
-      }
-    }
     if (methodName === 'reportAnalytics') {
       return {
         handled: true as const,
         result: invokeSyntheticAsyncSuccess({
           errMsg: 'reportAnalytics:ok',
         }),
-      }
-    }
-    if (methodName === 'batchSetStorage') {
-      const options = isPlainObject(args[0]) ? args[0] : {}
-      const entries = resolveBatchSetEntries(options)
-      for (const entry of entries) {
-        const key = typeof entry.key === 'string' ? entry.key : undefined
-        if (!key) {
-          continue
-        }
-        const data = Object.prototype.hasOwnProperty.call(entry, 'data') ? entry.data : entry.value
-        syntheticStorage.set(key, data)
-      }
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          errMsg: 'batchSetStorage:ok',
-        }),
-      }
-    }
-    if (methodName === 'batchGetStorage') {
-      const options = isPlainObject(args[0]) ? args[0] : {}
-      const keyList = resolveBatchGetKeys(options)
-      const dataList = keyList.map(key => ({
-        key,
-        data: syntheticStorage.get(key),
-      }))
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          dataList,
-          errMsg: 'batchGetStorage:ok',
-        }),
-      }
-    }
-    if (methodName === 'batchSetStorageSync') {
-      const options = isPlainObject(args[0]) ? args[0] : {}
-      const entries = resolveBatchSetEntries(options)
-      for (const entry of entries) {
-        const key = typeof entry.key === 'string' ? entry.key : undefined
-        if (!key) {
-          continue
-        }
-        const data = Object.prototype.hasOwnProperty.call(entry, 'data') ? entry.data : entry.value
-        syntheticStorage.set(key, data)
-      }
-      return {
-        handled: true as const,
-        result: {
-          errMsg: 'batchSetStorageSync:ok',
-        },
-      }
-    }
-    if (methodName === 'batchGetStorageSync') {
-      const options = isPlainObject(args[0]) ? args[0] : {}
-      const keyList = resolveBatchGetKeys(options)
-      const dataList = keyList.map(key => ({
-        key,
-        data: syntheticStorage.get(key),
-      }))
-      return {
-        handled: true as const,
-        result: {
-          dataList,
-          errMsg: 'batchGetStorageSync:ok',
-        },
       }
     }
     if (methodName === 'offMemoryWarning' && platform === 'tt') {

@@ -590,50 +590,27 @@ describe('weapi', () => {
   })
 
   it.each([
-    { platform: 'alipay' },
-    { platform: 'tt' },
-  ])('provides synthetic nextTick for $platform', async ({ platform }) => {
-    const callback = vi.fn()
-    const api = createWeapi({
-      adapter: {},
-      platform,
-    })
-
-    expect(api.resolveTarget('nextTick')).toMatchObject({
-      method: 'nextTick',
-      target: 'nextTick',
-      supportLevel: 'mapped',
-      supported: true,
-      semanticAligned: true,
-    })
-    expect(api.nextTick(callback)).toBeUndefined()
-    await Promise.resolve()
-    expect(callback).toHaveBeenCalledTimes(1)
-  })
-
-  it.each([
-    { platform: 'alipay' },
-    { platform: 'tt' },
-  ])('provides synthetic getLogManager for $platform', ({ platform }) => {
-    const api = createWeapi({
-      adapter: {},
-      platform,
-    })
-
-    const logger = api.getLogManager()
-    expect(logger).toMatchObject({
-      log: expect.any(Function),
-      info: expect.any(Function),
-      warn: expect.any(Function),
-      error: expect.any(Function),
-    })
-    expect(api.resolveTarget('getLogManager')).toMatchObject({
-      method: 'getLogManager',
-      target: 'getLogManager',
-      supportLevel: 'mapped',
-      supported: true,
-      semanticAligned: true,
-    })
+    'nextTick',
+    'getLogManager',
+    'createVKSession',
+  ])('treats %s as unsupported without strict-equivalent runtime API', async (methodName) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const normalizedPlatform = platform === 'alipay' ? 'my' : platform
+      const api = createWeapi({
+        adapter: {},
+        platform,
+      }) as Record<string, any>
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({})).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
+      })
+    }
   })
 
   it('provides synthetic reportAnalytics for alipay', async () => {
@@ -710,25 +687,6 @@ describe('weapi', () => {
     })
     await expect(api.openCustomerServiceChat({} as any)).rejects.toMatchObject({
       errMsg: `${normalizedPlatform}.openCustomerServiceChat:fail method not supported`,
-    })
-  })
-
-  it.each([
-    { platform: 'alipay' },
-    { platform: 'tt' },
-  ])('provides synthetic createVKSession for $platform', async ({ platform }) => {
-    const api = createWeapi({
-      adapter: {},
-      platform,
-    })
-    const session = api.createVKSession()
-    expect(session).toMatchObject({
-      start: expect.any(Function),
-      stop: expect.any(Function),
-      destroy: expect.any(Function),
-    })
-    await expect(session.start()).resolves.toMatchObject({
-      errMsg: 'VKSession.start:ok',
     })
   })
 
@@ -1147,91 +1105,30 @@ describe('weapi', () => {
   })
 
   it.each([
-    { platform: 'alipay' },
-    { platform: 'tt' },
-  ])('provides synthetic batchSetStorage/batchGetStorage for $platform', async ({ platform }) => {
-    const api = createWeapi({
-      adapter: {},
-      platform,
-    })
-
-    await expect(api.batchSetStorage({
-      keyValueList: [
-        { key: 'token', data: 'abc' },
-        { key: 'count', data: 2 },
-      ],
-    } as any)).resolves.toMatchObject({
-      errMsg: 'batchSetStorage:ok',
-    })
-    await expect(api.batchGetStorage({
-      keyList: ['token', 'count'],
-    } as any)).resolves.toMatchObject({
-      dataList: [
-        { key: 'token', data: 'abc' },
-        { key: 'count', data: 2 },
-      ],
-      errMsg: 'batchGetStorage:ok',
-    })
-  })
-
-  it.each([
-    { platform: 'alipay' },
-    { platform: 'tt' },
-  ])('provides synthetic batchSetStorageSync/batchGetStorageSync for $platform', ({ platform }) => {
-    const api = createWeapi({
-      adapter: {},
-      platform,
-    })
-
-    const setResult = api.batchSetStorageSync({
-      keyValueList: [
-        { key: 'a', data: 1 },
-        { key: 'b', data: 2 },
-      ],
-    } as any)
-    const getResult = api.batchGetStorageSync({
-      keyList: ['a', 'b'],
-    } as any)
-    expect(setResult).toMatchObject({
-      errMsg: 'batchSetStorageSync:ok',
-    })
-    expect(getResult).toMatchObject({
-      dataList: [
-        { key: 'a', data: 1 },
-        { key: 'b', data: 2 },
-      ],
-      errMsg: 'batchGetStorageSync:ok',
-    })
-  })
-
-  it.each([
-    { platform: 'alipay' },
-    { platform: 'tt' },
-  ])('provides synthetic createCameraContext for $platform', async ({ platform }) => {
-    const api = createWeapi({
-      adapter: {},
-      platform,
-    })
-    const context = api.createCameraContext()
-    expect(context).toMatchObject({
-      takePhoto: expect.any(Function),
-      startRecord: expect.any(Function),
-      stopRecord: expect.any(Function),
-    })
-    await expect(context.takePhoto()).resolves.toMatchObject({
-      errMsg: 'takePhoto:ok',
-    })
-  })
-
-  it.each([
-    { platform: 'alipay' },
-    { platform: 'tt' },
-  ])('provides synthetic cancelIdleCallback for $platform', ({ platform }) => {
-    const api = createWeapi({
-      adapter: {},
-      platform,
-    })
-    expect(api.cancelIdleCallback(1 as any)).toBeUndefined()
+    'batchSetStorage',
+    'batchGetStorage',
+    'batchSetStorageSync',
+    'batchGetStorageSync',
+    'createCameraContext',
+    'cancelIdleCallback',
+  ])('treats %s as unsupported when no strict-equivalent target exists', async (methodName) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const normalizedPlatform = platform === 'alipay' ? 'my' : platform
+      const api = createWeapi({
+        adapter: {},
+        platform,
+      }) as Record<string, any>
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({})).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
+      })
+    }
   })
 
   it('provides synthetic offMemoryWarning for douyin', () => {
@@ -2002,8 +1899,8 @@ describe('weapi', () => {
       { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getSystemInfo' },
       { method: 'getDeviceInfo', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'getAccountInfoSync', my: 'getAccountInfoSync', tt: 'getEnvInfoSync' },
-      { method: 'getLogManager', my: 'getLogManager', tt: 'getLogManager' },
-      { method: 'nextTick', my: 'nextTick', tt: 'nextTick' },
+      { method: 'getLogManager', my: 'getLogManager', tt: 'getLogManager', mySupported: false, ttSupported: false },
+      { method: 'nextTick', my: 'nextTick', tt: 'nextTick', mySupported: false, ttSupported: false },
       { method: 'onWindowResize', my: 'onWindowResize', tt: 'onWindowResize' },
       { method: 'offWindowResize', my: 'offWindowResize', tt: 'offWindowResize' },
       { method: 'reportAnalytics', my: 'reportAnalytics', tt: 'reportAnalytics' },
@@ -2013,13 +1910,13 @@ describe('weapi', () => {
       { method: 'getBatteryInfo', my: 'getBatteryInfo', tt: 'getSystemInfo' },
       { method: 'getBatteryInfoSync', my: 'getBatteryInfoSync', tt: 'getSystemInfoSync' },
       { method: 'saveVideoToPhotosAlbum', my: 'saveVideoToPhotosAlbum', tt: 'saveImageToPhotosAlbum' },
-      { method: 'batchSetStorage', my: 'batchSetStorage', tt: 'batchSetStorage' },
-      { method: 'batchGetStorage', my: 'batchGetStorage', tt: 'batchGetStorage' },
-      { method: 'batchSetStorageSync', my: 'batchSetStorageSync', tt: 'batchSetStorageSync' },
-      { method: 'batchGetStorageSync', my: 'batchGetStorageSync', tt: 'batchGetStorageSync' },
-      { method: 'createCameraContext', my: 'createCameraContext', tt: 'createCameraContext' },
+      { method: 'batchSetStorage', my: 'batchSetStorage', tt: 'batchSetStorage', mySupported: false, ttSupported: false },
+      { method: 'batchGetStorage', my: 'batchGetStorage', tt: 'batchGetStorage', mySupported: false, ttSupported: false },
+      { method: 'batchSetStorageSync', my: 'batchSetStorageSync', tt: 'batchSetStorageSync', mySupported: false, ttSupported: false },
+      { method: 'batchGetStorageSync', my: 'batchGetStorageSync', tt: 'batchGetStorageSync', mySupported: false, ttSupported: false },
+      { method: 'createCameraContext', my: 'createCameraContext', tt: 'createCameraContext', mySupported: false, ttSupported: false },
       { method: 'offMemoryWarning', my: 'offMemoryWarning', tt: 'offMemoryWarning' },
-      { method: 'cancelIdleCallback', my: 'cancelIdleCallback', tt: 'cancelIdleCallback' },
+      { method: 'cancelIdleCallback', my: 'cancelIdleCallback', tt: 'cancelIdleCallback', mySupported: false, ttSupported: false },
     ] as const
 
     for (const item of expectedMappings) {
@@ -2027,8 +1924,8 @@ describe('weapi', () => {
         method: item.method,
         alipayTarget: item.my,
         douyinTarget: item.tt,
-        alipaySupported: true,
-        douyinSupported: true,
+        alipaySupported: item.mySupported ?? true,
+        douyinSupported: item.ttSupported ?? true,
       })
     }
   })

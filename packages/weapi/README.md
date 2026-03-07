@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 238 | 238 | 0 | 479 | 49.69% | 49.69% |
-| 抖音小程序 (`tt`) | 175 | 175 | 0 | 479 | 36.53% | 36.53% |
-| 三端可调用完全对齐 (wx/my/tt) | 173 | - | - | 479 | 36.12% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 173 | - | 479 | - | 36.12% |
+| 支付宝小程序 (`my`) | 229 | 229 | 0 | 479 | 47.81% | 47.81% |
+| 抖音小程序 (`tt`) | 166 | 166 | 0 | 479 | 34.66% | 34.66% |
+| 三端可调用完全对齐 (wx/my/tt) | 164 | - | - | 479 | 34.24% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 164 | - | 479 | - | 34.24% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -100,26 +100,26 @@
 | `getNetworkType` | 获取网络类型。 | 直连 `wx.getNetworkType` | 直连 `my.getNetworkType` | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType` | ⚠️ |
 | `getBatteryInfo` | 异步获取电量信息。 | 直连 `wx.getBatteryInfo` | 直连 `my.getBatteryInfo` | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging` | ⚠️ |
 | `getBatteryInfoSync` | 同步获取电量信息。 | 直连 `wx.getBatteryInfoSync` | 直连 `my.getBatteryInfoSync` | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging` | ⚠️ |
-| `getLogManager` | 获取日志管理器实例。 | 直连 `wx.getLogManager` | 使用内置日志 shim（对齐 `log/info/warn/error`） | 使用内置日志 shim（对齐 `log/info/warn/error`） | ⚠️ |
-| `nextTick` | 延迟到下一个 UI 更新时机执行回调。 | 直连 `wx.nextTick` | 使用内置 microtask shim 调度回调 | 使用内置 microtask shim 调度回调 | ⚠️ |
+| `getLogManager` | 获取日志管理器实例。 | 直连 `wx.getLogManager` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `nextTick` | 延迟到下一个 UI 更新时机执行回调。 | 直连 `wx.nextTick` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `onWindowResize` | 监听窗口尺寸变化事件。 | 直连 `wx.onWindowResize` | 使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听 | 直连 `tt.onWindowResize` | ⚠️ |
 | `offWindowResize` | 取消监听窗口尺寸变化事件。 | 直连 `wx.offWindowResize` | 使用内置 shim，移除 `onWindowResize` 注册回调 | 直连 `tt.offWindowResize` | ⚠️ |
 | `reportAnalytics` | 上报分析数据。 | 直连 `wx.reportAnalytics` | 使用内置 no-op shim（保持调用不抛错） | 直连 `tt.reportAnalytics` | ⚠️ |
 | `openCustomerServiceChat` | 打开客服会话。 | 直连 `wx.openCustomerServiceChat` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `createVKSession` | 创建视觉识别会话。 | 直连 `wx.createVKSession` | 使用内置 VKSession shim（对齐 `start/stop/destroy`） | 使用内置 VKSession shim（对齐 `start/stop/destroy`） | ⚠️ |
+| `createVKSession` | 创建视觉识别会话。 | 直连 `wx.createVKSession` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `compressVideo` | 压缩视频文件。 | 直连 `wx.compressVideo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openVideoEditor` | 打开视频编辑器。 | 直连 `wx.openVideoEditor` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getShareInfo` | 获取转发详细信息。 | 直连 `wx.getShareInfo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `joinVoIPChat` | 加入音视频通话。 | 直连 `wx.joinVoIPChat` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openDocument` | 打开文档。 | 直连 `wx.openDocument` | 直连 `my.openDocument` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `saveVideoToPhotosAlbum` | 保存视频到系统相册。 | 直连 `wx.saveVideoToPhotosAlbum` | 直连 `my.saveVideoToPhotosAlbum` | 映射到 `tt.saveImageToPhotosAlbum` | ⚠️ |
-| `batchSetStorage` | 批量异步写入缓存。 | 直连 `wx.batchSetStorage` | 使用内置 shim，逐项转调 `my.setStorage` | 使用内置 shim，逐项转调 `tt.setStorage` | ⚠️ |
-| `batchGetStorage` | 批量异步读取缓存。 | 直连 `wx.batchGetStorage` | 使用内置 shim，逐项转调 `my.getStorage` | 使用内置 shim，逐项转调 `tt.getStorage` | ⚠️ |
-| `batchSetStorageSync` | 批量同步写入缓存。 | 直连 `wx.batchSetStorageSync` | 使用内置 shim，逐项转调 `my.setStorageSync` | 使用内置 shim，逐项转调 `tt.setStorageSync` | ⚠️ |
-| `batchGetStorageSync` | 批量同步读取缓存。 | 直连 `wx.batchGetStorageSync` | 使用内置 shim，逐项转调 `my.getStorageSync` | 使用内置 shim，逐项转调 `tt.getStorageSync` | ⚠️ |
-| `createCameraContext` | 创建相机上下文对象。 | 直连 `wx.createCameraContext` | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） | ⚠️ |
+| `batchSetStorage` | 批量异步写入缓存。 | 直连 `wx.batchSetStorage` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `batchGetStorage` | 批量异步读取缓存。 | 直连 `wx.batchGetStorage` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `batchSetStorageSync` | 批量同步写入缓存。 | 直连 `wx.batchSetStorageSync` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `batchGetStorageSync` | 批量同步读取缓存。 | 直连 `wx.batchGetStorageSync` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createCameraContext` | 创建相机上下文对象。 | 直连 `wx.createCameraContext` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `offMemoryWarning` | 取消内存不足告警监听。 | 直连 `wx.offMemoryWarning` | 直连 `my.offMemoryWarning` | 使用内置 shim，配合 `tt.onMemoryWarning` 实现监听解绑 | ⚠️ |
-| `cancelIdleCallback` | 取消空闲回调。 | 直连 `wx.cancelIdleCallback` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `cancelIdleCallback` | 取消空闲回调。 | 直连 `wx.cancelIdleCallback` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `onBLEConnectionStateChange` | 监听 BLE 连接状态变化。 | 直连 `wx.onBLEConnectionStateChange` | 映射到 `my.onBLEConnectionStateChanged` | 抖音无同等 API，调用时报 not supported | ⚠️ |
 | `offBLEConnectionStateChange` | 取消监听 BLE 连接状态变化。 | 直连 `wx.offBLEConnectionStateChange` | 映射到 `my.offBLEConnectionStateChanged` | 抖音无同等 API，调用时报 not supported | ⚠️ |
 | `addCard` | 添加微信卡券。 | 直连 `wx.addCard` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
