@@ -357,6 +357,48 @@ describe('router navigation helpers', () => {
     })
   })
 
+  it('infers name and params for dynamic route path resolution', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: {
+        'post-detail': '/pages/post/:id/index',
+      },
+    })
+
+    const resolved = router.resolve('/pages/post/123/index')
+    expect(resolved.name).toBe('post-detail')
+    expect(resolved.params).toEqual({
+      id: '123',
+    })
+    expect(resolved.matched).toEqual([
+      {
+        name: 'post-detail',
+        path: '/pages/post/:id/index',
+      },
+    ])
+  })
+
   it('returns unknown navigation failure for invalid named route targets', async () => {
     const instance = {
       __wevu: {},
@@ -627,6 +669,57 @@ describe('router navigation helpers', () => {
     expect(beforeEnter).toHaveBeenCalledTimes(1)
     expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
       url: '/pages/login/index?from=before-enter',
+    }))
+  })
+
+  it('matches dynamic route records for path-based beforeEnter navigation', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const beforeEnter = vi.fn((to) => {
+      expect(to?.params).toEqual({
+        id: '42',
+      })
+      return '/pages/login/index?from=dynamic-path'
+    })
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'post-detail',
+          path: '/pages/post/:id/index',
+          beforeEnter,
+        },
+      ],
+    })
+
+    const result = await router.push('/pages/post/42/index')
+    expect(result).toBeUndefined()
+    expect(beforeEnter).toHaveBeenCalledTimes(1)
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/login/index?from=dynamic-path',
     }))
   })
 
