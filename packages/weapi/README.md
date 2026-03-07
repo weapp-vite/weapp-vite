@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 210 | 269 | 479 | 100.00% | 43.84% |
-| 抖音小程序 (`tt`) | 478 | 149 | 329 | 479 | 99.79% | 31.11% |
+| 支付宝小程序 (`my`) | 479 | 216 | 263 | 479 | 100.00% | 45.09% |
+| 抖音小程序 (`tt`) | 478 | 153 | 325 | 479 | 99.79% | 31.94% |
 | 三端可调用完全对齐 (wx/my/tt) | 478 | - | - | 479 | 99.79% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 139 | - | 479 | - | 29.02% |
+| 三端语义完全对齐 (wx/my/tt) | - | 145 | - | 479 | - | 30.27% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -61,10 +61,16 @@
 | `openAppAuthorizeSetting` | 打开小程序授权设置页。 | 直连 `wx.openAppAuthorizeSetting` | 映射到 `my.openSetting` | 映射到 `tt.openSetting` | ⚠️ |
 | `pluginLogin` | 插件登录。 | 直连 `wx.pluginLogin` | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段 | 映射到 `tt.login` | ⚠️ |
 | `login` | 登录。 | 直连 `wx.login` | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段 | 直连 `tt.login` | ⚠️ |
+| `authorize` | 提前向用户发起授权请求。 | 直连 `wx.authorize` | 映射到 `my.getAuthCode`，并对齐 `scope` -> `scopes` 参数 | 直连 `tt.authorize` | ⚠️ |
+| `checkSession` | 检查登录态是否过期。 | 直连 `wx.checkSession` | 映射到 `my.getAuthCode`，按成功结果对齐 `checkSession:ok` | 直连 `tt.checkSession` | ⚠️ |
 | `requestSubscribeDeviceMessage` | 请求订阅设备消息。 | 直连 `wx.requestSubscribeDeviceMessage` | 映射到 `my.requestSubscribeMessage` | 映射到 `tt.requestSubscribeMessage` | ⚠️ |
 | `requestSubscribeEmployeeMessage` | 请求订阅员工消息。 | 直连 `wx.requestSubscribeEmployeeMessage` | 映射到 `my.requestSubscribeMessage` | 映射到 `tt.requestSubscribeMessage` | ⚠️ |
 | `restartMiniProgram` | 重启小程序。 | 直连 `wx.restartMiniProgram` | 映射到 `my.reLaunch` | 映射到 `tt.reLaunch` | ⚠️ |
 | `scanCode` | 扫码。 | 直连 `wx.scanCode` | 映射到 `my.scan` | 直连 `tt.scanCode` | ✅ |
+| `requestPayment` | 发起支付。 | 直连 `wx.requestPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+| `requestOrderPayment` | 发起订单支付。 | 直连 `wx.requestOrderPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+| `requestPluginPayment` | 发起插件支付。 | 直连 `wx.requestPluginPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+| `requestVirtualPayment` | 发起虚拟支付。 | 直连 `wx.requestVirtualPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
 | `showShareImageMenu` | 显示分享图片菜单。 | 直连 `wx.showShareImageMenu` | 映射到 `my.showSharePanel` | 映射到 `tt.showShareMenu` | ⚠️ |
 | `updateShareMenu` | 更新分享菜单配置。 | 直连 `wx.updateShareMenu` | 映射到 `my.showSharePanel` | 映射到 `tt.showShareMenu` | ⚠️ |
 | `openEmbeddedMiniProgram` | 打开嵌入式小程序。 | 直连 `wx.openEmbeddedMiniProgram` | 映射到 `my.navigateToMiniProgram` | 映射到 `tt.navigateToMiniProgram` | ⚠️ |

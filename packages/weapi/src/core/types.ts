@@ -291,6 +291,28 @@ interface WeapiCrossPlatformMethodDocs {
   login: WeapiCrossPlatformAdapter['login']
 
   /**
+   * 提前向用户发起授权请求。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.authorize` | ⚠️ |
+   * | 支付宝 | 映射到 `my.getAuthCode`，并对齐 `scope` -> `scopes` 参数 | ⚠️ |
+   * | 抖音 | 直连 `tt.authorize` | ⚠️ |
+   */
+  authorize: WeapiCrossPlatformAdapter['authorize']
+
+  /**
+   * 检查登录态是否过期。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.checkSession` | ⚠️ |
+   * | 支付宝 | 映射到 `my.getAuthCode`，按成功结果对齐 `checkSession:ok` | ⚠️ |
+   * | 抖音 | 直连 `tt.checkSession` | ⚠️ |
+   */
+  checkSession: WeapiCrossPlatformAdapter['checkSession']
+
+  /**
    * 请求订阅设备消息。
    *
    * | 平台 | 对齐策略 | 支持度 |
@@ -333,6 +355,50 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 直连 `tt.scanCode` | ✅ |
    */
   scanCode: WeapiCrossPlatformAdapter['scanCode']
+
+  /**
+   * 发起支付。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.requestPayment` | ⚠️ |
+   * | 支付宝 | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | ⚠️ |
+   * | 抖音 | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+   */
+  requestPayment: WeapiCrossPlatformAdapter['requestPayment']
+
+  /**
+   * 发起订单支付。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.requestOrderPayment` | ⚠️ |
+   * | 支付宝 | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | ⚠️ |
+   * | 抖音 | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+   */
+  requestOrderPayment: WeapiCrossPlatformAdapter['requestOrderPayment']
+
+  /**
+   * 发起插件支付。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.requestPluginPayment` | ⚠️ |
+   * | 支付宝 | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | ⚠️ |
+   * | 抖音 | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+   */
+  requestPluginPayment: WeapiCrossPlatformAdapter['requestPluginPayment']
+
+  /**
+   * 发起虚拟支付。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.requestVirtualPayment` | ⚠️ |
+   * | 支付宝 | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | ⚠️ |
+   * | 抖音 | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+   */
+  requestVirtualPayment: WeapiCrossPlatformAdapter['requestVirtualPayment']
 
   /**
    * 显示分享图片菜单。

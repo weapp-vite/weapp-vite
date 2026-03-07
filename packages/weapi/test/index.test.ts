@@ -352,6 +352,51 @@ describe('weapi', () => {
     })
   })
 
+  it('maps authorize scope to getAuthCode scopes for alipay', async () => {
+    const getAuthCode = vi.fn((options: any) => {
+      options.success?.({ authCode: 'auth-code-2' })
+    })
+    const api = createWeapi({
+      adapter: {
+        getAuthCode,
+      },
+      platform: 'alipay',
+    })
+
+    const result = await api.authorize({ scope: 'scope.userInfo' } as any)
+
+    expect(getAuthCode).toHaveBeenCalledWith(expect.objectContaining({
+      scope: 'scope.userInfo',
+      scopes: ['scope.userInfo'],
+    }))
+    expect(result).toMatchObject({
+      authCode: 'auth-code-2',
+      code: 'auth-code-2',
+    })
+  })
+
+  it('maps checkSession to getAuthCode for alipay', async () => {
+    const getAuthCode = vi.fn((options: any) => {
+      options.success?.({ authCode: 'auth-code-3' })
+    })
+    const api = createWeapi({
+      adapter: {
+        getAuthCode,
+      },
+      platform: 'alipay',
+    })
+
+    const result = await api.checkSession()
+
+    expect(getAuthCode).toHaveBeenCalledWith(expect.objectContaining({
+      scopes: ['auth_base'],
+    }))
+    expect(result).toMatchObject({
+      authCode: 'auth-code-3',
+      errMsg: 'checkSession:ok',
+    })
+  })
+
   it('maps hideHomeButton to hideBackHome for alipay', async () => {
     const hideBackHome = vi.fn((options: any) => {
       options.success?.({})
@@ -366,6 +411,29 @@ describe('weapi', () => {
     await api.hideHomeButton()
 
     expect(hideBackHome).toHaveBeenCalledWith(expect.any(Object))
+  })
+
+  it('maps requestPayment family to tradePay for alipay', async () => {
+    const tradePay = vi.fn((options: any) => {
+      options.success?.({ resultCode: '9000' })
+    })
+    const api = createWeapi({
+      adapter: {
+        tradePay,
+      },
+      platform: 'alipay',
+    })
+
+    await api.requestPayment({ package: 'prepay=1' } as any)
+    await api.requestOrderPayment({ package: 'prepay=2' } as any)
+    await api.requestPluginPayment({ package: 'prepay=3' } as any)
+    await api.requestVirtualPayment({ package: 'prepay=4' } as any)
+
+    expect(tradePay).toHaveBeenCalledTimes(4)
+    expect(tradePay).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      package: 'prepay=1',
+      orderStr: 'prepay=1',
+    }))
   })
 
   it('normalizes platform alias for createWeapi', () => {
@@ -561,6 +629,29 @@ describe('weapi', () => {
         version: '0.0.1',
       },
     })
+  })
+
+  it('maps requestPayment family to pay for douyin', async () => {
+    const pay = vi.fn((options: any) => {
+      options.success?.({ code: 0 })
+    })
+    const api = createWeapi({
+      adapter: {
+        pay,
+      },
+      platform: 'tt',
+    })
+
+    await api.requestPayment({ package: 'order-info-1' } as any)
+    await api.requestOrderPayment({ package: 'order-info-2' } as any)
+    await api.requestPluginPayment({ package: 'order-info-3' } as any)
+    await api.requestVirtualPayment({ package: 'order-info-4' } as any)
+
+    expect(pay).toHaveBeenCalledTimes(4)
+    expect(pay).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      package: 'order-info-1',
+      orderInfo: 'order-info-1',
+    }))
   })
 
   const douyinPromiseCases = [
@@ -776,10 +867,16 @@ describe('weapi', () => {
       { method: 'openAppAuthorizeSetting', my: 'openSetting', tt: 'openSetting' },
       { method: 'pluginLogin', my: 'getAuthCode', tt: 'login' },
       { method: 'login', my: 'getAuthCode', tt: 'login' },
+      { method: 'authorize', my: 'getAuthCode', tt: 'authorize' },
+      { method: 'checkSession', my: 'getAuthCode', tt: 'checkSession' },
       { method: 'requestSubscribeDeviceMessage', my: 'requestSubscribeMessage', tt: 'requestSubscribeMessage' },
       { method: 'requestSubscribeEmployeeMessage', my: 'requestSubscribeMessage', tt: 'requestSubscribeMessage' },
       { method: 'restartMiniProgram', my: 'reLaunch', tt: 'reLaunch' },
       { method: 'scanCode', my: 'scan', tt: 'scanCode' },
+      { method: 'requestPayment', my: 'tradePay', tt: 'pay' },
+      { method: 'requestOrderPayment', my: 'tradePay', tt: 'pay' },
+      { method: 'requestPluginPayment', my: 'tradePay', tt: 'pay' },
+      { method: 'requestVirtualPayment', my: 'tradePay', tt: 'pay' },
       { method: 'showShareImageMenu', my: 'showSharePanel', tt: 'showShareMenu' },
       { method: 'updateShareMenu', my: 'showSharePanel', tt: 'showShareMenu' },
       { method: 'openEmbeddedMiniProgram', my: 'navigateToMiniProgram', tt: 'navigateToMiniProgram' },

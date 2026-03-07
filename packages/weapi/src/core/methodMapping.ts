@@ -230,6 +230,22 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     support: '⚠️',
   },
   {
+    method: 'authorize',
+    description: '提前向用户发起授权请求。',
+    wxStrategy: '直连 `wx.authorize`',
+    alipayStrategy: '映射到 `my.getAuthCode`，并对齐 `scope` -> `scopes` 参数',
+    douyinStrategy: '直连 `tt.authorize`',
+    support: '⚠️',
+  },
+  {
+    method: 'checkSession',
+    description: '检查登录态是否过期。',
+    wxStrategy: '直连 `wx.checkSession`',
+    alipayStrategy: '映射到 `my.getAuthCode`，按成功结果对齐 `checkSession:ok`',
+    douyinStrategy: '直连 `tt.checkSession`',
+    support: '⚠️',
+  },
+  {
     method: 'requestSubscribeDeviceMessage',
     description: '请求订阅设备消息。',
     wxStrategy: '直连 `wx.requestSubscribeDeviceMessage`',
@@ -260,6 +276,38 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     alipayStrategy: '映射到 `my.scan`',
     douyinStrategy: '直连 `tt.scanCode`',
     support: '✅',
+  },
+  {
+    method: 'requestPayment',
+    description: '发起支付。',
+    wxStrategy: '直连 `wx.requestPayment`',
+    alipayStrategy: '映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`',
+    douyinStrategy: '映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`',
+    support: '⚠️',
+  },
+  {
+    method: 'requestOrderPayment',
+    description: '发起订单支付。',
+    wxStrategy: '直连 `wx.requestOrderPayment`',
+    alipayStrategy: '映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`',
+    douyinStrategy: '映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`',
+    support: '⚠️',
+  },
+  {
+    method: 'requestPluginPayment',
+    description: '发起插件支付。',
+    wxStrategy: '直连 `wx.requestPluginPayment`',
+    alipayStrategy: '映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`',
+    douyinStrategy: '映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`',
+    support: '⚠️',
+  },
+  {
+    method: 'requestVirtualPayment',
+    description: '发起虚拟支付。',
+    wxStrategy: '直连 `wx.requestVirtualPayment`',
+    alipayStrategy: '映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`',
+    douyinStrategy: '映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`',
+    support: '⚠️',
   },
   {
     method: 'showShareImageMenu',
@@ -683,6 +731,101 @@ function mapAuthCodeResult(result: any) {
   return result
 }
 
+function mapAuthorizeArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return [{}]
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return [...nextArgs, {}]
+  }
+  const nextOptions = {
+    ...lastArg,
+  } as Record<string, any>
+  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'scopes') && typeof nextOptions.scope === 'string' && nextOptions.scope) {
+    nextOptions.scopes = [nextOptions.scope]
+  }
+  nextArgs[lastIndex] = nextOptions
+  return nextArgs
+}
+
+function mapCheckSessionArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return [{
+      scopes: ['auth_base'],
+    }]
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return [
+      ...nextArgs,
+      {
+        scopes: ['auth_base'],
+      },
+    ]
+  }
+  const nextOptions = {
+    ...lastArg,
+  } as Record<string, any>
+  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'scopes')) {
+    nextOptions.scopes = ['auth_base']
+  }
+  nextArgs[lastIndex] = nextOptions
+  return nextArgs
+}
+
+function mapCheckSessionResult(result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  if (Object.prototype.hasOwnProperty.call(result, 'errMsg')) {
+    return result
+  }
+  return {
+    ...result,
+    errMsg: 'checkSession:ok',
+  }
+}
+
+function mapPaymentArgs(args: unknown[], target: 'orderStr' | 'orderInfo') {
+  if (args.length === 0) {
+    return [{}]
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return [...nextArgs, {}]
+  }
+  const nextOptions = {
+    ...lastArg,
+  } as Record<string, any>
+  if (!Object.prototype.hasOwnProperty.call(nextOptions, target)) {
+    const packageValue = typeof nextOptions.package === 'string' && nextOptions.package
+      ? nextOptions.package
+      : typeof nextOptions.prepayId === 'string' && nextOptions.prepayId
+        ? nextOptions.prepayId
+        : undefined
+    if (packageValue) {
+      nextOptions[target] = packageValue
+    }
+  }
+  nextArgs[lastIndex] = nextOptions
+  return nextArgs
+}
+
+function mapTradePayArgs(args: unknown[]) {
+  return mapPaymentArgs(args, 'orderStr')
+}
+
+function mapDouyinPayArgs(args: unknown[]) {
+  return mapPaymentArgs(args, 'orderInfo')
+}
+
 function mapChooseVideoArgs(args: unknown[]) {
   const nextArgs = [...args]
   if (nextArgs.length === 0 || !isPlainObject(nextArgs[nextArgs.length - 1])) {
@@ -881,6 +1024,16 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getAuthCode',
       mapResult: mapAuthCodeResult,
     },
+    authorize: {
+      target: 'getAuthCode',
+      mapArgs: mapAuthorizeArgs,
+      mapResult: mapAuthCodeResult,
+    },
+    checkSession: {
+      target: 'getAuthCode',
+      mapArgs: mapCheckSessionArgs,
+      mapResult: mapCheckSessionResult,
+    },
     requestSubscribeDeviceMessage: {
       target: 'requestSubscribeMessage',
     },
@@ -892,6 +1045,22 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     scanCode: {
       target: 'scan',
+    },
+    requestPayment: {
+      target: 'tradePay',
+      mapArgs: mapTradePayArgs,
+    },
+    requestOrderPayment: {
+      target: 'tradePay',
+      mapArgs: mapTradePayArgs,
+    },
+    requestPluginPayment: {
+      target: 'tradePay',
+      mapArgs: mapTradePayArgs,
+    },
+    requestVirtualPayment: {
+      target: 'tradePay',
+      mapArgs: mapTradePayArgs,
     },
     showShareImageMenu: {
       target: 'showSharePanel',
@@ -990,6 +1159,12 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     login: {
       target: 'login',
     },
+    authorize: {
+      target: 'authorize',
+    },
+    checkSession: {
+      target: 'checkSession',
+    },
     requestSubscribeDeviceMessage: {
       target: 'requestSubscribeMessage',
     },
@@ -1001,6 +1176,22 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     scanCode: {
       target: 'scanCode',
+    },
+    requestPayment: {
+      target: 'pay',
+      mapArgs: mapDouyinPayArgs,
+    },
+    requestOrderPayment: {
+      target: 'pay',
+      mapArgs: mapDouyinPayArgs,
+    },
+    requestPluginPayment: {
+      target: 'pay',
+      mapArgs: mapDouyinPayArgs,
+    },
+    requestVirtualPayment: {
+      target: 'pay',
+      mapArgs: mapDouyinPayArgs,
     },
     showShareImageMenu: {
       target: 'showShareMenu',
