@@ -18,7 +18,7 @@ describe('auto-routes', () => {
       expect(await fs.pathExists(typedRouterPath)).toBe(true)
       const typedRouterContent = await fs.readFile(typedRouterPath, 'utf8')
       expect(typedRouterContent).toContain('"pages/index/index"')
-      expect(typedRouterContent).toContain('declare module \'wevu\'')
+      expect(typedRouterContent).toContain('declare module \'wevu/router\'')
       expect(typedRouterContent).toContain('WevuTypedRouterRouteMap')
 
       const snapshot = autoRoutesService.getSnapshot()

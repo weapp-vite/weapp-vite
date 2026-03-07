@@ -22,7 +22,7 @@ describe('createTypedRouterDefinition', () => {
     expect(dts).toContain('export type AutoRoutesUrl = AutoRoutesAbsoluteUrl<AutoRouteEntry> | AutoRoutesRelativeUrl;')
     expect(dts).toContain('export interface AutoRoutesWxRouter {')
     expect(dts).toContain('export const wxRouter: AutoRoutesWxRouter;')
-    expect(dts).toContain('declare module \'wevu\' {')
+    expect(dts).toContain('declare module \'wevu/router\' {')
     expect(dts).toContain('interface WevuTypedRouterRouteMap {')
     expect(dts).toContain('entries: import(\'weapp-vite/auto-routes\').AutoRoutesEntries[number];')
   })
