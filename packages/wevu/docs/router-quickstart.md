@@ -28,6 +28,12 @@ const router = useRouter({
 })
 ```
 
+如果你有“应用启动后再执行业务跳转”的流程，可以先等待：
+
+```ts
+await router.isReady()
+```
+
 ## 2. 使用 currentRoute
 
 ```ts

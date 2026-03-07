@@ -166,6 +166,7 @@ export interface RouterNavigation {
   readonly nativeRouter: SetupContextRouter
   readonly currentRoute: Readonly<RouteLocationNormalizedLoaded>
   resolve: (to: RouteLocationRaw) => RouteLocationNormalizedLoaded
+  isReady: () => Promise<void>
   push: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
   replace: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
   back: (delta?: number) => Promise<void | NavigationFailure>
@@ -1292,6 +1293,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     parseQuery: options.parseQuery ?? parseQuery,
     stringifyQuery: options.stringifyQuery ?? stringifyQuery,
   }
+  const readyPromise = Promise.resolve()
   const namedRouteLookup = createNamedRouteLookup(options.namedRoutes)
   const tabBarPathSet = new Set(
     (options.tabBarEntries ?? [])
@@ -1323,6 +1325,10 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
 
   function resolve(to: RouteLocationRaw): RouteLocationNormalizedLoaded {
     return resolveWithCodec(to, route.path)
+  }
+
+  function isReady(): Promise<void> {
+    return readyPromise
   }
 
   function hasRoute(name: string): boolean {
@@ -1849,6 +1855,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     nativeRouter,
     currentRoute: route,
     resolve,
+    isReady,
     push,
     replace,
     back,
