@@ -14,8 +14,8 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  195 |
-| 支付宝语义对齐方法数             |  195 |
+| 支付宝可按微信命名调用的方法数   |  197 |
+| 支付宝语义对齐方法数             |  197 |
 | 支付宝 fallback 方法数           |    0 |
 | 抖音可按微信命名调用的方法数     |  129 |
 | 抖音语义对齐方法数               |  129 |
@@ -28,7 +28,7 @@
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           195 |             195 |               0 |      479 |       40.71% |         40.71% |
+| 支付宝小程序 (`my`)           |           197 |             197 |               0 |      479 |       41.13% |         41.13% |
 | 抖音小程序 (`tt`)             |           129 |             129 |               0 |      479 |       26.93% |         26.93% |
 | 三端可调用完全对齐 (wx/my/tt) |           113 |               - |               - |      479 |       23.59% |              - |
 | 三端语义完全对齐 (wx/my/tt)   |             - |             113 |               - |      479 |            - |         23.59% |
@@ -132,8 +132,8 @@
 | `checkIsAddedToMyMiniProgram`       | 直连 `wx.checkIsAddedToMyMiniProgram`               | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
 | `checkIsOpenAccessibility`          | 直连 `wx.checkIsOpenAccessibility`                  | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
 | `checkIsPictureInPictureActive`     | 直连 `wx.checkIsPictureInPictureActive`             | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
-| `checkIsSoterEnrolledInDevice`      | 直连 `wx.checkIsSoterEnrolledInDevice`              | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
-| `checkIsSupportSoterAuthentication` | 直连 `wx.checkIsSupportSoterAuthentication`         | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
+| `checkIsSoterEnrolledInDevice`      | 直连 `wx.checkIsSoterEnrolledInDevice`              | 映射到 `my.checkIsIfaaEnrolledInDevice`，`speech` 模式按 unsupported 报错                                     | 无同等 API，调用时按 unsupported 报错                             |
+| `checkIsSupportSoterAuthentication` | 直连 `wx.checkIsSupportSoterAuthentication`         | 映射到 `my.checkIsSupportIfaaAuthentication`                                                                  | 无同等 API，调用时按 unsupported 报错                             |
 | `openCard`                          | 直连 `wx.openCard`                                  | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
 | `openChannelsActivity`              | 直连 `wx.openChannelsActivity`                      | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
 | `openChannelsEvent`                 | 直连 `wx.openChannelsEvent`                         | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |

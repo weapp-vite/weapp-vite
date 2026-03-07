@@ -35,7 +35,7 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 195 | 195 | 0 | 479 | 40.71% | 40.71% |
+| 支付宝小程序 (`my`) | 197 | 197 | 0 | 479 | 41.13% | 41.13% |
 | 抖音小程序 (`tt`) | 129 | 129 | 0 | 479 | 26.93% | 26.93% |
 | 三端可调用完全对齐 (wx/my/tt) | 113 | - | - | 479 | 23.59% | - |
 | 三端语义完全对齐 (wx/my/tt) | - | 113 | - | 479 | - | 23.59% |
@@ -141,8 +141,8 @@
 | `checkIsAddedToMyMiniProgram` | 检测是否已添加到我的小程序。 | 直连 `wx.checkIsAddedToMyMiniProgram` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `checkIsOpenAccessibility` | 检测系统无障碍是否开启。 | 直连 `wx.checkIsOpenAccessibility` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `checkIsPictureInPictureActive` | 检测是否处于画中画状态。 | 直连 `wx.checkIsPictureInPictureActive` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `checkIsSoterEnrolledInDevice` | 检测设备是否录入 SOTER 信息。 | 直连 `wx.checkIsSoterEnrolledInDevice` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `checkIsSupportSoterAuthentication` | 检测设备是否支持 SOTER 生物认证。 | 直连 `wx.checkIsSupportSoterAuthentication` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `checkIsSoterEnrolledInDevice` | 检测设备是否录入 SOTER 信息。 | 直连 `wx.checkIsSoterEnrolledInDevice` | 映射到 `my.checkIsIfaaEnrolledInDevice`，`speech` 模式按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `checkIsSupportSoterAuthentication` | 检测设备是否支持 SOTER 生物认证。 | 直连 `wx.checkIsSupportSoterAuthentication` | 映射到 `my.checkIsSupportIfaaAuthentication` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openCard` | 打开卡券详情。 | 直连 `wx.openCard` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openChannelsActivity` | 打开视频号活动页。 | 直连 `wx.openChannelsActivity` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openChannelsEvent` | 打开视频号活动详情。 | 直连 `wx.openChannelsEvent` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
