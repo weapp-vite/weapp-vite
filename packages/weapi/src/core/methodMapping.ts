@@ -218,7 +218,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '获取视频详细信息。',
     wxStrategy: '直连 `wx.getVideoInfo`',
     alipayStrategy: '直连 `my.getVideoInfo`',
-    douyinStrategy: '映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2192,26 +2192,6 @@ function mapCreateRewardedAdArgs(args: unknown[]) {
   return [adUnitId, ...restArgs]
 }
 
-function mapGetVideoInfoArgs(args: unknown[]) {
-  if (args.length === 0) {
-    return [{}]
-  }
-  const nextArgs = [...args]
-  const lastIndex = nextArgs.length - 1
-  const lastArg = nextArgs[lastIndex]
-  if (!isPlainObject(lastArg)) {
-    return [...nextArgs, {}]
-  }
-  const nextOptions = {
-    ...lastArg,
-  } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'filePath') && typeof nextOptions.src === 'string' && nextOptions.src) {
-    nextOptions.filePath = nextOptions.src
-  }
-  nextArgs[lastIndex] = nextOptions
-  return nextArgs
-}
-
 function mapDouyinSaveFileResult(result: any) {
   if (!isPlainObject(result)) {
     return result
@@ -3416,8 +3396,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'createLivePusherContext',
     },
     getVideoInfo: {
-      target: 'getFileInfo',
-      mapArgs: mapGetVideoInfoArgs,
+      target: 'getVideoInfo',
     },
     saveFile: {
       target: 'saveFile',

@@ -1619,7 +1619,7 @@ describe('weapi', () => {
     expect(previewImage).not.toHaveBeenCalled()
   })
 
-  it('maps getVideoInfo to getFileInfo for douyin', async () => {
+  it('treats getVideoInfo as unsupported for douyin without strict-equivalent api', async () => {
     const getFileInfo = vi.fn((options: any) => {
       options.success?.({ size: 1024 })
     })
@@ -1630,13 +1630,17 @@ describe('weapi', () => {
       platform: 'tt',
     })
 
-    const result = await api.getVideoInfo({ src: '/tmp/demo.mp4' } as any)
-
-    expect(getFileInfo).toHaveBeenCalledWith(expect.objectContaining({
-      src: '/tmp/demo.mp4',
-      filePath: '/tmp/demo.mp4',
-    }))
-    expect(result).toMatchObject({ size: 1024 })
+    expect(api.resolveTarget('getVideoInfo')).toMatchObject({
+      method: 'getVideoInfo',
+      target: 'getVideoInfo',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.getVideoInfo({ src: '/tmp/demo.mp4' } as any)).rejects.toMatchObject({
+      errMsg: 'tt.getVideoInfo:fail method not supported',
+    })
+    expect(getFileInfo).not.toHaveBeenCalled()
   })
 
   it('maps interstitial and live-player context apis for douyin', async () => {
@@ -1920,7 +1924,7 @@ describe('weapi', () => {
       { method: 'createRewardedVideoAd', my: 'createRewardedAd', tt: 'createRewardedVideoAd', ttSupported: false },
       { method: 'createLivePlayerContext', my: 'createLivePlayerContext', tt: 'createLivePlayerContext', mySupported: false },
       { method: 'createLivePusherContext', my: 'createLivePusherContext', tt: 'createLivePusherContext', mySupported: false, ttSupported: false },
-      { method: 'getVideoInfo', my: 'getVideoInfo', tt: 'getFileInfo' },
+      { method: 'getVideoInfo', my: 'getVideoInfo', tt: 'getVideoInfo', ttSupported: false },
       { method: 'showShareImageMenu', my: 'showSharePanel', tt: 'showShareMenu' },
       { method: 'updateShareMenu', my: 'showSharePanel', tt: 'showShareMenu' },
       { method: 'openEmbeddedMiniProgram', my: 'navigateToMiniProgram', tt: 'navigateToMiniProgram' },

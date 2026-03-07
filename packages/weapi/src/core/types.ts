@@ -275,7 +275,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getVideoInfo` | ⚠️ |
    * | 支付宝 | 直连 `my.getVideoInfo` | ⚠️ |
-   * | 抖音 | 映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getVideoInfo: WeapiCrossPlatformAdapter['getVideoInfo']
 
