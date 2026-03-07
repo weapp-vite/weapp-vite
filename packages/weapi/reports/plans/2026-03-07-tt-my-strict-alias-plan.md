@@ -86,10 +86,16 @@
 - `tt.getEnterOptionsSync` 不映射 `tt.getLaunchOptionsSync`
 - `tt.getAccountInfoSync` 不映射 `tt.getEnvInfoSync`
 - `my/tt.requestSubscribeDeviceMessage|requestSubscribeEmployeeMessage` 不映射 `requestSubscribeMessage`
-- `my.createBLEConnection|closeBLEConnection` 不映射 `connectBLEDevice|disconnectBLEDevice`
 - `my/tt.createAudioContext|createWebAudioContext` 不映射 `createInnerAudioContext`
 - `my/tt.onNetworkWeakChange|offNetworkWeakChange` 不映射 `onNetworkStatusChange|offNetworkStatusChange`
 - `my/tt.getBackgroundFetchToken` 不映射 `getBackgroundFetchData`
+
+4. 批次 D：已完成支付宝 BLE 严格等价映射。
+
+- `my.connectBLEDevice` 映射承接 `wx.createBLEConnection`。
+- `my.disconnectBLEDevice` 映射承接 `wx.closeBLEConnection`。
+- 入参 `deviceId/timeout` 可直接对齐，返回结果 `error|errorCode/errorMessage` 已规范化为 `errCode/errMsg`。
+- 抖音侧仍保持 unsupported（无同等 API）。
 
 ## 5. 每批固定验证清单
 

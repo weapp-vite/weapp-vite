@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：198，不支持：281
+总计：479，支持：200，不支持：279
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                                                          |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
@@ -49,7 +49,7 @@
 | `chooseVideo`                                 | `chooseVideo`                                 | ✅   | `mapped`      | ✅       | 直连 `my.chooseVideo`                                                                                         |
 | `clearStorage`                                | `clearStorage`                                | ✅   | `native`      | ✅       | 直连 `my.clearStorage`                                                                                        |
 | `clearStorageSync`                            | `clearStorageSync`                            | ✅   | `native`      | ✅       | 直连 `my.clearStorageSync`                                                                                    |
-| `closeBLEConnection`                          | `closeBLEConnection`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
+| `closeBLEConnection`                          | `disconnectBLEDevice`                         | ✅   | `mapped`      | ✅       | `deviceId` 对齐后映射到 `my.disconnectBLEDevice`，并将 `errorCode/errorMessage` 映射为 `errCode/errMsg`       |
 | `closeBluetoothAdapter`                       | `closeBluetoothAdapter`                       | ✅   | `native`      | ✅       | 直连 `my.closeBluetoothAdapter`                                                                               |
 | `closeSocket`                                 | `closeSocket`                                 | ✅   | `native`      | ✅       | 直连 `my.closeSocket`                                                                                         |
 | `compressImage`                               | `compressImage`                               | ✅   | `native`      | ✅       | 直连 `my.compressImage`                                                                                       |
@@ -58,7 +58,7 @@
 | `connectWifi`                                 | `connectWifi`                                 | ✅   | `native`      | ✅       | 直连 `my.connectWifi`                                                                                         |
 | `createAnimation`                             | `createAnimation`                             | ✅   | `native`      | ✅       | 直连 `my.createAnimation`                                                                                     |
 | `createAudioContext`                          | `createAudioContext`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
-| `createBLEConnection`                         | `createBLEConnection`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
+| `createBLEConnection`                         | `connectBLEDevice`                            | ✅   | `mapped`      | ✅       | `deviceId/timeout` 对齐后映射到 `my.connectBLEDevice`，并将 `error/errorMessage` 映射为 `errCode/errMsg`      |
 | `createBLEPeripheralServer`                   | `createBLEPeripheralServer`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `createBufferURL`                             | `createBufferURL`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `createCacheManager`                          | `createCacheManager`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |

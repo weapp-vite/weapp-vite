@@ -3,8 +3,8 @@
 ## 覆盖结论
 
 - 微信基准命名方法总数：479
-- 支付宝可调用兼容方法数：198
-- 支付宝语义对齐方法数：198
+- 支付宝可调用兼容方法数：200
+- 支付宝语义对齐方法数：200
 - 支付宝 fallback 方法数：0
 - 抖音可调用兼容方法数：133
 - 抖音语义对齐方法数：133
@@ -14,7 +14,7 @@
 
 ## 不兼容规模
 
-- 支付宝侧不兼容（按微信命名调用失败）方法：281
+- 支付宝侧不兼容（按微信命名调用失败）方法：279
 - 抖音侧不兼容（按微信命名调用失败）方法：346
 
 ## 不兼容示例（前 40 项）
@@ -53,14 +53,14 @@
 - `chooseMedia` -> 目标 `chooseMedia`（unsupported）
 - `chooseMessageFile` -> 目标 `chooseMessageFile`（unsupported）
 - `choosePoi` -> 目标 `choosePoi`（unsupported）
-- `closeBLEConnection` -> 目标 `closeBLEConnection`（unsupported）
 - `compressVideo` -> 目标 `compressVideo`（unsupported）
 - `createAudioContext` -> 目标 `createAudioContext`（unsupported）
-- `createBLEConnection` -> 目标 `createBLEConnection`（unsupported）
 - `createBLEPeripheralServer` -> 目标 `createBLEPeripheralServer`（unsupported）
 - `createBufferURL` -> 目标 `createBufferURL`（unsupported）
 - `createCacheManager` -> 目标 `createCacheManager`（unsupported）
 - `createCameraContext` -> 目标 `createCameraContext`（unsupported）
+- `createGlobalPayment` -> 目标 `createGlobalPayment`（unsupported）
+- `createInferenceSession` -> 目标 `createInferenceSession`（unsupported）
 
 ### 抖音不兼容示例
 
