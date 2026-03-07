@@ -982,6 +982,7 @@ describe('weapi', () => {
   it.each([
     'createAudioContext',
     'createWebAudioContext',
+    'pluginLogin',
     'showShareImageMenu',
     'updateShareMenu',
     'openSystemBluetoothSetting',
@@ -1906,7 +1907,7 @@ describe('weapi', () => {
       { method: 'createWebAudioContext', my: 'createWebAudioContext', tt: 'createWebAudioContext', mySupported: false, ttSupported: false },
       { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'openAppAuthorizeSetting', my: 'openSetting', tt: 'openSetting' },
-      { method: 'pluginLogin', my: 'getAuthCode', tt: 'login' },
+      { method: 'pluginLogin', my: 'pluginLogin', tt: 'pluginLogin', mySupported: false, ttSupported: false },
       { method: 'login', my: 'getAuthCode', tt: 'login' },
       { method: 'authorize', my: 'getAuthCode', tt: 'authorize' },
       { method: 'checkSession', my: 'getAuthCode', tt: 'checkSession' },

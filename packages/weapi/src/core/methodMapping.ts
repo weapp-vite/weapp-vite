@@ -289,8 +289,8 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'pluginLogin',
     description: '插件登录。',
     wxStrategy: '直连 `wx.pluginLogin`',
-    alipayStrategy: '映射到 `my.getAuthCode`，并对齐返回 `code` 字段',
-    douyinStrategy: '映射到 `tt.login`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2663,8 +2663,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'openSetting',
     },
     pluginLogin: {
-      target: 'getAuthCode',
-      mapResult: mapAuthCodeResult,
+      target: 'pluginLogin',
     },
     login: {
       target: 'getAuthCode',
@@ -3368,7 +3367,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'openSetting',
     },
     pluginLogin: {
-      target: 'login',
+      target: 'pluginLogin',
     },
     login: {
       target: 'login',
