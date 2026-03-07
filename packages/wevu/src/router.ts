@@ -2001,7 +2001,9 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
         }
       }
 
-      const routeRecord = resolveMatchedRouteRecord(currentTarget, namedRouteLookup)?.record
+      const matchedRouteResult = resolveMatchedRouteRecord(currentTarget, namedRouteLookup)
+      const routeRecord = matchedRouteResult?.record
+      const matchedRouteRecords = matchedRouteResult?.matchedRecords ?? []
       if (routeRecord?.redirect !== undefined) {
         let redirectedByRecord: { target: RouteLocationNormalizedLoaded, replace?: boolean }
         try {
@@ -2030,8 +2032,12 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
         }
       }
 
-      if (routeRecord && routeRecord.beforeEnterGuards.length > 0) {
-        const beforeEnterResult = await runNavigationGuards(new Set(routeRecord.beforeEnterGuards), {
+      let redirectedByBeforeEnter = false
+      for (const matchedRouteRecord of matchedRouteRecords) {
+        if (matchedRouteRecord.beforeEnterGuards.length === 0) {
+          continue
+        }
+        const beforeEnterResult = await runNavigationGuards(new Set(matchedRouteRecord.beforeEnterGuards), {
           mode: currentMode,
           to: currentTarget,
           from,
@@ -2056,9 +2062,13 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
             if (redirectCount > maxRedirects) {
               return createNavigationRunResult(currentMode, from, currentTarget, createTooManyRedirectsFailure(currentTarget, from))
             }
-            continue
+            redirectedByBeforeEnter = true
+            break
           }
         }
+      }
+      if (redirectedByBeforeEnter) {
+        continue
       }
 
       const beforeResolveResult = await runNavigationGuards(beforeResolveGuards, {
