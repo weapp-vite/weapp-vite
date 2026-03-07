@@ -278,6 +278,30 @@ describe('weapi', () => {
     })
   })
 
+  it('treats chooseAddress as unsupported for alipay without strict-equivalent api', async () => {
+    const getAddress = vi.fn((options: any) => {
+      options.success?.({ provinceName: 'Zhejiang' })
+    })
+    const api = createWeapi({
+      adapter: {
+        getAddress,
+      },
+      platform: 'alipay',
+    })
+
+    expect(api.resolveTarget('chooseAddress')).toMatchObject({
+      method: 'chooseAddress',
+      target: 'chooseAddress',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.chooseAddress()).rejects.toMatchObject({
+      errMsg: 'my.chooseAddress:fail method not supported',
+    })
+    expect(getAddress).not.toHaveBeenCalled()
+  })
+
   it('treats chooseMedia as unsupported for alipay without strict-equivalent api', async () => {
     const chooseImage = vi.fn()
     const api = createWeapi({
@@ -1902,7 +1926,7 @@ describe('weapi', () => {
 
   it('keeps top high-frequency alias mappings in sync', () => {
     const expectedMappings = [
-      { method: 'chooseAddress', my: 'getAddress', tt: 'chooseAddress' },
+      { method: 'chooseAddress', my: 'chooseAddress', tt: 'chooseAddress', mySupported: false },
       { method: 'createAudioContext', my: 'createAudioContext', tt: 'createAudioContext', mySupported: false, ttSupported: false },
       { method: 'createWebAudioContext', my: 'createWebAudioContext', tt: 'createWebAudioContext', mySupported: false, ttSupported: false },
       { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },

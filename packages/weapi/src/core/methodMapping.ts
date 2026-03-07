@@ -249,7 +249,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'chooseAddress',
     description: '选择收货地址。',
     wxStrategy: '直连 `wx.chooseAddress`',
-    alipayStrategy: '映射到 `my.getAddress`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.chooseAddress`',
     support: '⚠️',
   },
@@ -2648,7 +2648,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       mapResult: mapClipboardResult,
     },
     chooseAddress: {
-      target: 'getAddress',
+      target: 'chooseAddress',
     },
     createAudioContext: {
       target: 'createAudioContext',

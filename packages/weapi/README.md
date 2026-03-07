@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 214 | 214 | 0 | 479 | 44.68% | 44.68% |
+| 支付宝小程序 (`my`) | 213 | 213 | 0 | 479 | 44.47% | 44.47% |
 | 抖音小程序 (`tt`) | 152 | 152 | 0 | 479 | 31.73% | 31.73% |
-| 三端可调用完全对齐 (wx/my/tt) | 144 | - | - | 479 | 30.06% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 144 | - | 479 | - | 30.06% |
+| 三端可调用完全对齐 (wx/my/tt) | 143 | - | - | 479 | 29.85% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 143 | - | 479 | - | 29.85% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -63,7 +63,7 @@
 | `saveFile` | 保存文件（跨端扩展，微信 typings 未声明同名 API）。 | 微信当前 typings 未声明同名 API，保留为跨端扩展能力 | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | 直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath` | ⚠️ |
 | `setClipboardData` | 设置剪贴板内容。 | 直连 `wx.setClipboardData` | 转调 `my.setClipboard` 并映射 `data` → `text` | 直连 `tt.setClipboardData` | ✅ |
 | `getClipboardData` | 获取剪贴板内容。 | 直连 `wx.getClipboardData` | 转调 `my.getClipboard` 并映射 `text` → `data` | 直连 `tt.getClipboardData` | ✅ |
-| `chooseAddress` | 选择收货地址。 | 直连 `wx.chooseAddress` | 映射到 `my.getAddress` | 直连 `tt.chooseAddress` | ⚠️ |
+| `chooseAddress` | 选择收货地址。 | 直连 `wx.chooseAddress` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.chooseAddress` | ⚠️ |
 | `createAudioContext` | 创建音频上下文。 | 直连 `wx.createAudioContext` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createWebAudioContext` | 创建 WebAudio 上下文。 | 直连 `wx.createWebAudioContext` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getSystemInfoAsync` | 异步获取系统信息。 | 直连 `wx.getSystemInfoAsync` | 映射到 `my.getSystemInfo` | 映射到 `tt.getSystemInfo` | ✅ |

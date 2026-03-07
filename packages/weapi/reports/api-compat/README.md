@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  214 |
-| 支付宝语义对齐方法数             |  214 |
+| 支付宝可按微信命名调用的方法数   |  213 |
+| 支付宝语义对齐方法数             |  213 |
 | 支付宝 fallback 方法数           |    0 |
 | 抖音可按微信命名调用的方法数     |  152 |
 | 抖音语义对齐方法数               |  152 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  144 |
-| 三端语义完全对齐方法数           |  144 |
+| 三端可调用完全对齐方法数         |  143 |
+| 三端语义完全对齐方法数           |  143 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           214 |             214 |               0 |      479 |       44.68% |         44.68% |
+| 支付宝小程序 (`my`)           |           213 |             213 |               0 |      479 |       44.47% |         44.47% |
 | 抖音小程序 (`tt`)             |           152 |             152 |               0 |      479 |       31.73% |         31.73% |
-| 三端可调用完全对齐 (wx/my/tt) |           144 |               - |               - |      479 |       30.06% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             144 |               - |      479 |            - |         30.06% |
+| 三端可调用完全对齐 (wx/my/tt) |           143 |               - |               - |      479 |       29.85% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             143 |               - |      479 |            - |         29.85% |
 
 ## 核心差异映射（手工规则）
 
@@ -54,7 +54,7 @@
 | `saveFile`                          | 微信当前 typings 未声明同名 API，保留为跨端扩展能力 | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | 直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath`      |
 | `setClipboardData`                  | 直连 `wx.setClipboardData`                          | 转调 `my.setClipboard` 并映射 `data` → `text`                      | 直连 `tt.setClipboardData`                                            |
 | `getClipboardData`                  | 直连 `wx.getClipboardData`                          | 转调 `my.getClipboard` 并映射 `text` → `data`                      | 直连 `tt.getClipboardData`                                            |
-| `chooseAddress`                     | 直连 `wx.chooseAddress`                             | 映射到 `my.getAddress`                                             | 直连 `tt.chooseAddress`                                               |
+| `chooseAddress`                     | 直连 `wx.chooseAddress`                             | 无同等 API，调用时按 unsupported 报错                              | 直连 `tt.chooseAddress`                                               |
 | `createAudioContext`                | 直连 `wx.createAudioContext`                        | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `createWebAudioContext`             | 直连 `wx.createWebAudioContext`                     | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `getSystemInfoAsync`                | 直连 `wx.getSystemInfoAsync`                        | 映射到 `my.getSystemInfo`                                          | 映射到 `tt.getSystemInfo`                                             |
