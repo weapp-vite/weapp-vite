@@ -14,8 +14,8 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  213 |
-| 支付宝语义对齐方法数             |  213 |
+| 支付宝可按微信命名调用的方法数   |  212 |
+| 支付宝语义对齐方法数             |  212 |
 | 支付宝 fallback 方法数           |    0 |
 | 抖音可按微信命名调用的方法数     |  152 |
 | 抖音语义对齐方法数               |  152 |
@@ -28,7 +28,7 @@
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           213 |             213 |               0 |      479 |       44.47% |         44.47% |
+| 支付宝小程序 (`my`)           |           212 |             212 |               0 |      479 |       44.26% |         44.26% |
 | 抖音小程序 (`tt`)             |           152 |             152 |               0 |      479 |       31.73% |         31.73% |
 | 三端可调用完全对齐 (wx/my/tt) |           143 |               - |               - |      479 |       29.85% |              - |
 | 三端语义完全对齐 (wx/my/tt)   |             - |             143 |               - |      479 |            - |         29.85% |
@@ -47,7 +47,7 @@
 | `getFuzzyLocation`                  | 直连 `wx.getFuzzyLocation`                          | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `previewMedia`                      | 直连 `wx.previewMedia`                              | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `createInterstitialAd`              | 直连 `wx.createInterstitialAd`                      | 无同等 API，调用时按 unsupported 报错                              | 直连 `tt.createInterstitialAd`                                        |
-| `createRewardedVideoAd`             | 直连 `wx.createRewardedVideoAd`                     | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                | 无同等 API，调用时按 unsupported 报错                                 |
+| `createRewardedVideoAd`             | 直连 `wx.createRewardedVideoAd`                     | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `createLivePlayerContext`           | 直连 `wx.createLivePlayerContext`                   | 无同等 API，调用时按 unsupported 报错                              | 直连 `tt.createLivePlayerContext`                                     |
 | `createLivePusherContext`           | 直连 `wx.createLivePusherContext`                   | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `getVideoInfo`                      | 直连 `wx.getVideoInfo`                              | 直连 `my.getVideoInfo`                                             | 无同等 API，调用时按 unsupported 报错                                 |

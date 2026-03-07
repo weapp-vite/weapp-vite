@@ -193,7 +193,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'createRewardedVideoAd',
     description: '创建激励视频广告实例。',
     wxStrategy: '直连 `wx.createRewardedVideoAd`',
-    alipayStrategy: '映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
@@ -2173,25 +2173,6 @@ function mapSaveFileResult(result: any) {
   return result
 }
 
-function mapCreateRewardedAdArgs(args: unknown[]) {
-  if (args.length === 0) {
-    return args
-  }
-  const firstArg = args[0]
-  if (typeof firstArg === 'string' && firstArg) {
-    return args
-  }
-  if (!isPlainObject(firstArg)) {
-    return args
-  }
-  const adUnitId = typeof firstArg.adUnitId === 'string' ? firstArg.adUnitId : undefined
-  if (!adUnitId) {
-    return args
-  }
-  const restArgs = args.slice(1)
-  return [adUnitId, ...restArgs]
-}
-
 function mapDouyinSaveFileResult(result: any) {
   if (!isPlainObject(result)) {
     return result
@@ -2622,8 +2603,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'createInterstitialAd',
     },
     createRewardedVideoAd: {
-      target: 'createRewardedAd',
-      mapArgs: mapCreateRewardedAdArgs,
+      target: 'createRewardedVideoAd',
     },
     createLivePlayerContext: {
       target: 'createLivePlayerContext',

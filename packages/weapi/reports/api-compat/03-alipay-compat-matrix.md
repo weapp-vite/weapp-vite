@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：213，不支持：266
+总计：479，支持：212，不支持：267
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -76,7 +76,7 @@
 | `createMediaContainer`                        | `createMediaContainer`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createMediaRecorder`                         | `createMediaRecorder`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createOffscreenCanvas`                       | `createOffscreenCanvas`                       | ✅   | `native`      | ✅       | 直连 `my.createOffscreenCanvas`                                                   |
-| `createRewardedVideoAd`                       | `createRewardedAd`                            | ✅   | `mapped`      | ✅       | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                               |
+| `createRewardedVideoAd`                       | `createRewardedVideoAd`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createSelectorQuery`                         | `createSelectorQuery`                         | ✅   | `native`      | ✅       | 直连 `my.createSelectorQuery`                                                     |
 | `createTCPSocket`                             | `createTCPSocket`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createUDPSocket`                             | `createUDPSocket`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
