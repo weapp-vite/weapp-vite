@@ -35,7 +35,7 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 213 | 213 | 0 | 479 | 44.47% | 44.47% |
+| 支付宝小程序 (`my`) | 212 | 212 | 0 | 479 | 44.26% | 44.26% |
 | 抖音小程序 (`tt`) | 152 | 152 | 0 | 479 | 31.73% | 31.73% |
 | 三端可调用完全对齐 (wx/my/tt) | 143 | - | - | 479 | 29.85% | - |
 | 三端语义完全对齐 (wx/my/tt) | - | 143 | - | 479 | - | 29.85% |
@@ -56,7 +56,7 @@
 | `getFuzzyLocation` | 获取模糊地理位置。 | 直连 `wx.getFuzzyLocation` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `previewMedia` | 预览图片和视频。 | 直连 `wx.previewMedia` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createInterstitialAd` | 创建插屏广告实例。 | 直连 `wx.createInterstitialAd` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.createInterstitialAd` | ⚠️ |
-| `createRewardedVideoAd` | 创建激励视频广告实例。 | 直连 `wx.createRewardedVideoAd` | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createRewardedVideoAd` | 创建激励视频广告实例。 | 直连 `wx.createRewardedVideoAd` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createLivePlayerContext` | 创建直播播放器上下文。 | 直连 `wx.createLivePlayerContext` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.createLivePlayerContext` | ⚠️ |
 | `createLivePusherContext` | 创建直播推流上下文。 | 直连 `wx.createLivePusherContext` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getVideoInfo` | 获取视频详细信息。 | 直连 `wx.getVideoInfo` | 直连 `my.getVideoInfo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |

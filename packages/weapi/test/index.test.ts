@@ -580,7 +580,7 @@ describe('weapi', () => {
     expect(previewImage).not.toHaveBeenCalled()
   })
 
-  it('maps rewarded ad api for alipay and treats live contexts as unsupported', async () => {
+  it('treats rewarded ad api and live contexts as unsupported for alipay', async () => {
     const createRewardedAd = vi.fn(() => ({ show: vi.fn() }))
     const createVideoContext = vi.fn(() => ({ play: vi.fn() }))
     const api = createWeapi({
@@ -591,9 +591,17 @@ describe('weapi', () => {
       platform: 'alipay',
     }) as Record<string, any>
 
-    api.createRewardedVideoAd({ adUnitId: 'adunit-2' })
-
-    expect(createRewardedAd).toHaveBeenNthCalledWith(1, 'adunit-2', expect.any(Object))
+    expect(api.resolveTarget('createRewardedVideoAd')).toMatchObject({
+      method: 'createRewardedVideoAd',
+      target: 'createRewardedVideoAd',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.createRewardedVideoAd({ adUnitId: 'adunit-2' } as any)).rejects.toMatchObject({
+      errMsg: 'my.createRewardedVideoAd:fail method not supported',
+    })
+    expect(createRewardedAd).not.toHaveBeenCalled()
     expect(createVideoContext).not.toHaveBeenCalled()
 
     expect(api.resolveTarget('createInterstitialAd')).toMatchObject({
@@ -1945,7 +1953,7 @@ describe('weapi', () => {
       { method: 'requestVirtualPayment', my: 'tradePay', tt: 'pay' },
       { method: 'previewMedia', my: 'previewMedia', tt: 'previewMedia', mySupported: false, ttSupported: false },
       { method: 'createInterstitialAd', my: 'createInterstitialAd', tt: 'createInterstitialAd', mySupported: false },
-      { method: 'createRewardedVideoAd', my: 'createRewardedAd', tt: 'createRewardedVideoAd', ttSupported: false },
+      { method: 'createRewardedVideoAd', my: 'createRewardedVideoAd', tt: 'createRewardedVideoAd', mySupported: false, ttSupported: false },
       { method: 'createLivePlayerContext', my: 'createLivePlayerContext', tt: 'createLivePlayerContext', mySupported: false },
       { method: 'createLivePusherContext', my: 'createLivePusherContext', tt: 'createLivePusherContext', mySupported: false, ttSupported: false },
       { method: 'getVideoInfo', my: 'getVideoInfo', tt: 'getVideoInfo', ttSupported: false },
