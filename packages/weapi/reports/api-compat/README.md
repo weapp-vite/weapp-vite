@@ -15,23 +15,23 @@
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
 | 支付宝可按微信命名调用的方法数   |  479 |
-| 支付宝语义对齐方法数             |  261 |
-| 支付宝 fallback 方法数           |  218 |
+| 支付宝语义对齐方法数             |  278 |
+| 支付宝 fallback 方法数           |  201 |
 | 抖音可按微信命名调用的方法数     |  479 |
-| 抖音语义对齐方法数               |  203 |
-| 抖音 fallback 方法数             |  276 |
+| 抖音语义对齐方法数               |  220 |
+| 抖音 fallback 方法数             |  259 |
 | 三端可调用完全对齐方法数         |  479 |
-| 三端语义完全对齐方法数           |  201 |
+| 三端语义完全对齐方法数           |  218 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           479 |             261 |             218 |      479 |      100.00% |         54.49% |
-| 抖音小程序 (`tt`)             |           479 |             203 |             276 |      479 |      100.00% |         42.38% |
+| 支付宝小程序 (`my`)           |           479 |             278 |             201 |      479 |      100.00% |         58.04% |
+| 抖音小程序 (`tt`)             |           479 |             220 |             259 |      479 |      100.00% |         45.93% |
 | 三端可调用完全对齐 (wx/my/tt) |           479 |               - |               - |      479 |      100.00% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             201 |               - |      479 |            - |         41.96% |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             218 |               - |      479 |            - |         45.51% |
 
 ## 核心差异映射（手工规则）
 
@@ -132,6 +132,23 @@
 | `checkIsPictureInPictureActive`     | 直连 `wx.checkIsPictureInPictureActive`             | 使用内置 shim，返回未激活                                              | 使用内置 shim，返回未激活                                              |
 | `checkIsSoterEnrolledInDevice`      | 直连 `wx.checkIsSoterEnrolledInDevice`              | 使用内置 shim，返回未录入                                              | 使用内置 shim，返回未录入                                              |
 | `checkIsSupportSoterAuthentication` | 直连 `wx.checkIsSupportSoterAuthentication`         | 使用内置 shim，返回默认不支持                                          | 使用内置 shim，返回默认不支持                                          |
+| `openCard`                          | 直连 `wx.openCard`                                  | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChannelsActivity`              | 直连 `wx.openChannelsActivity`                      | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChannelsEvent`                 | 直连 `wx.openChannelsEvent`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChannelsLive`                  | 直连 `wx.openChannelsLive`                          | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChannelsLiveNoticeInfo`        | 直连 `wx.openChannelsLiveNoticeInfo`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChannelsUserProfile`           | 直连 `wx.openChannelsUserProfile`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChatTool`                      | 直连 `wx.openChatTool`                              | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openHKOfflinePayView`              | 直连 `wx.openHKOfflinePayView`                      | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openInquiriesTopic`                | 直连 `wx.openInquiriesTopic`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openOfficialAccountArticle`        | 直连 `wx.openOfficialAccountArticle`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openOfficialAccountChat`           | 直连 `wx.openOfficialAccountChat`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openOfficialAccountProfile`        | 直连 `wx.openOfficialAccountProfile`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openPrivacyContract`               | 直连 `wx.openPrivacyContract`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openSystemBluetoothSetting`        | 直连 `wx.openSystemBluetoothSetting`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `reportEvent`                       | 直连 `wx.reportEvent`                               | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `reportMonitor`                     | 直连 `wx.reportMonitor`                             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `reportPerformance`                 | 直连 `wx.reportPerformance`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 
 ## 已执行验证
 

@@ -1169,6 +1169,193 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 使用内置 shim，返回默认不支持 | ⚠️ |
    */
   checkIsSupportSoterAuthentication: WeapiCrossPlatformAdapter['checkIsSupportSoterAuthentication']
+
+  /**
+   * 打开卡券详情。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openCard` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openCard: WeapiCrossPlatformAdapter['openCard']
+
+  /**
+   * 打开视频号活动页。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openChannelsActivity` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openChannelsActivity: WeapiCrossPlatformAdapter['openChannelsActivity']
+
+  /**
+   * 打开视频号活动详情。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openChannelsEvent` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openChannelsEvent: WeapiCrossPlatformAdapter['openChannelsEvent']
+
+  /**
+   * 打开视频号直播。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openChannelsLive` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openChannelsLive: WeapiCrossPlatformAdapter['openChannelsLive']
+
+  /**
+   * 打开视频号直播预告详情。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openChannelsLiveNoticeInfo` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openChannelsLiveNoticeInfo: WeapiCrossPlatformAdapter['openChannelsLiveNoticeInfo']
+
+  /**
+   * 打开视频号用户主页。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openChannelsUserProfile` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openChannelsUserProfile: WeapiCrossPlatformAdapter['openChannelsUserProfile']
+
+  /**
+   * 打开客服工具页。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openChatTool` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openChatTool: WeapiCrossPlatformAdapter['openChatTool']
+
+  /**
+   * 打开香港线下支付视图。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openHKOfflinePayView` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openHKOfflinePayView: WeapiCrossPlatformAdapter['openHKOfflinePayView']
+
+  /**
+   * 打开询价话题。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openInquiriesTopic` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openInquiriesTopic: WeapiCrossPlatformAdapter['openInquiriesTopic']
+
+  /**
+   * 打开公众号文章。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openOfficialAccountArticle` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openOfficialAccountArticle: WeapiCrossPlatformAdapter['openOfficialAccountArticle']
+
+  /**
+   * 打开公众号会话。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openOfficialAccountChat` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openOfficialAccountChat: WeapiCrossPlatformAdapter['openOfficialAccountChat']
+
+  /**
+   * 打开公众号主页。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openOfficialAccountProfile` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openOfficialAccountProfile: WeapiCrossPlatformAdapter['openOfficialAccountProfile']
+
+  /**
+   * 打开隐私协议页面。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openPrivacyContract` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openPrivacyContract: WeapiCrossPlatformAdapter['openPrivacyContract']
+
+  /**
+   * 打开系统蓝牙设置页面。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openSystemBluetoothSetting` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openSystemBluetoothSetting: WeapiCrossPlatformAdapter['openSystemBluetoothSetting']
+
+  /**
+   * 上报事件埋点。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.reportEvent` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  reportEvent: WeapiCrossPlatformAdapter['reportEvent']
+
+  /**
+   * 上报监控数据。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.reportMonitor` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  reportMonitor: WeapiCrossPlatformAdapter['reportMonitor']
+
+  /**
+   * 上报性能数据。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.reportPerformance` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  reportPerformance: WeapiCrossPlatformAdapter['reportPerformance']
   // @generated weapi-method-docs:end
 }
 

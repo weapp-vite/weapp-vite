@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 261 | 218 | 479 | 100.00% | 54.49% |
-| 抖音小程序 (`tt`) | 479 | 203 | 276 | 479 | 100.00% | 42.38% |
+| 支付宝小程序 (`my`) | 479 | 278 | 201 | 479 | 100.00% | 58.04% |
+| 抖音小程序 (`tt`) | 479 | 220 | 259 | 479 | 100.00% | 45.93% |
 | 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 201 | - | 479 | - | 41.96% |
+| 三端语义完全对齐 (wx/my/tt) | - | 218 | - | 479 | - | 45.51% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -141,6 +141,23 @@
 | `checkIsPictureInPictureActive` | 检测是否处于画中画状态。 | 直连 `wx.checkIsPictureInPictureActive` | 使用内置 shim，返回未激活 | 使用内置 shim，返回未激活 | ⚠️ |
 | `checkIsSoterEnrolledInDevice` | 检测设备是否录入 SOTER 信息。 | 直连 `wx.checkIsSoterEnrolledInDevice` | 使用内置 shim，返回未录入 | 使用内置 shim，返回未录入 | ⚠️ |
 | `checkIsSupportSoterAuthentication` | 检测设备是否支持 SOTER 生物认证。 | 直连 `wx.checkIsSupportSoterAuthentication` | 使用内置 shim，返回默认不支持 | 使用内置 shim，返回默认不支持 | ⚠️ |
+| `openCard` | 打开卡券详情。 | 直连 `wx.openCard` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openChannelsActivity` | 打开视频号活动页。 | 直连 `wx.openChannelsActivity` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openChannelsEvent` | 打开视频号活动详情。 | 直连 `wx.openChannelsEvent` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openChannelsLive` | 打开视频号直播。 | 直连 `wx.openChannelsLive` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openChannelsLiveNoticeInfo` | 打开视频号直播预告详情。 | 直连 `wx.openChannelsLiveNoticeInfo` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openChannelsUserProfile` | 打开视频号用户主页。 | 直连 `wx.openChannelsUserProfile` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openChatTool` | 打开客服工具页。 | 直连 `wx.openChatTool` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openHKOfflinePayView` | 打开香港线下支付视图。 | 直连 `wx.openHKOfflinePayView` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openInquiriesTopic` | 打开询价话题。 | 直连 `wx.openInquiriesTopic` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openOfficialAccountArticle` | 打开公众号文章。 | 直连 `wx.openOfficialAccountArticle` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openOfficialAccountChat` | 打开公众号会话。 | 直连 `wx.openOfficialAccountChat` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openOfficialAccountProfile` | 打开公众号主页。 | 直连 `wx.openOfficialAccountProfile` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openPrivacyContract` | 打开隐私协议页面。 | 直连 `wx.openPrivacyContract` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openSystemBluetoothSetting` | 打开系统蓝牙设置页面。 | 直连 `wx.openSystemBluetoothSetting` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `reportEvent` | 上报事件埋点。 | 直连 `wx.reportEvent` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `reportMonitor` | 上报监控数据。 | 直连 `wx.reportMonitor` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `reportPerformance` | 上报性能数据。 | 直连 `wx.reportPerformance` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 

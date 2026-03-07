@@ -329,30 +329,30 @@
 | `onWindowStateChange`                         | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                                  |
 | `openAppAuthorizeSetting`                     | `openSetting`                        | ✅   | `mapped`   | ✅       | 映射到 `my.openSetting`                                                |
 | `openBluetoothAdapter`                        | `openBluetoothAdapter`               | ✅   | `native`   | ✅       | 直连 `my.openBluetoothAdapter`                                         |
-| `openCard`                                    | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openChannelsActivity`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openChannelsEvent`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openChannelsLive`                            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openChannelsLiveNoticeInfo`                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openChannelsUserProfile`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openChatTool`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `openCard`                                    | `openCard`                           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChannelsActivity`                        | `openChannelsActivity`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChannelsEvent`                           | `openChannelsEvent`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChannelsLive`                            | `openChannelsLive`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChannelsLiveNoticeInfo`                  | `openChannelsLiveNoticeInfo`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChannelsUserProfile`                     | `openChannelsUserProfile`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openChatTool`                                | `openChatTool`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `openCustomerServiceChat`                     | `openCustomerServiceChat`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `openDocument`                                | `openDocument`                       | ✅   | `mapped`   | ✅       | 直连 `my.openDocument`                                                 |
 | `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`              | ✅   | `mapped`   | ✅       | 映射到 `my.navigateToMiniProgram`                                      |
-| `openHKOfflinePayView`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openInquiriesTopic`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `openHKOfflinePayView`                        | `openHKOfflinePayView`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openInquiriesTopic`                          | `openInquiriesTopic`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `openLocation`                                | `openLocation`                       | ✅   | `native`   | ✅       | 直连 `my.openLocation`                                                 |
-| `openOfficialAccountArticle`                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openOfficialAccountChat`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openOfficialAccountProfile`                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openPrivacyContract`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `openOfficialAccountArticle`                  | `openOfficialAccountArticle`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openOfficialAccountChat`                     | `openOfficialAccountChat`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openOfficialAccountProfile`                  | `openOfficialAccountProfile`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openPrivacyContract`                         | `openPrivacyContract`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `openSetting`                                 | `openSetting`                        | ✅   | `native`   | ✅       | 直连 `my.openSetting`                                                  |
 | `openSingleStickerView`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
 | `openStickerIPView`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
 | `openStickerSetView`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
 | `openStoreCouponDetail`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
 | `openStoreOrderDetail`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openSystemBluetoothSetting`                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `openSystemBluetoothSetting`                  | `openSystemBluetoothSetting`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `openVideoEditor`                             | `openVideoEditor`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `pageScrollTo`                                | `pageScrollTo`                       | ✅   | `native`   | ✅       | 直连 `my.pageScrollTo`                                                 |
 | `pauseBackgroundAudio`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
@@ -376,9 +376,9 @@
 | `removeStorageSync`                           | `removeStorageSync`                  | ✅   | `native`   | ✅       | 直连 `my.removeStorageSync`                                            |
 | `removeTabBarBadge`                           | `removeTabBarBadge`                  | ✅   | `native`   | ✅       | 直连 `my.removeTabBarBadge`                                            |
 | `reportAnalytics`                             | `reportAnalytics`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `reportEvent`                                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `reportMonitor`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `reportPerformance`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `reportEvent`                                 | `reportEvent`                        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `reportMonitor`                               | `reportMonitor`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `reportPerformance`                           | `reportPerformance`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `request`                                     | `request`                            | ✅   | `native`   | ✅       | 直连 `my.request`                                                      |
 | `requestCommonPayment`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
 | `requestDeviceVoIP`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
