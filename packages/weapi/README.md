@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 271 | 271 | 0 | 479 | 56.58% | 56.58% |
-| 抖音小程序 (`tt`) | 209 | 209 | 0 | 479 | 43.63% | 43.63% |
-| 三端可调用完全对齐 (wx/my/tt) | 207 | - | - | 479 | 43.22% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 207 | - | 479 | - | 43.22% |
+| 支付宝小程序 (`my`) | 251 | 251 | 0 | 479 | 52.40% | 52.40% |
+| 抖音小程序 (`tt`) | 189 | 189 | 0 | 479 | 39.46% | 39.46% |
+| 三端可调用完全对齐 (wx/my/tt) | 187 | - | - | 479 | 39.04% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 187 | - | 479 | - | 39.04% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -122,18 +122,18 @@
 | `cancelIdleCallback` | 取消空闲回调。 | 直连 `wx.cancelIdleCallback` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `onBLEConnectionStateChange` | 监听 BLE 连接状态变化。 | 直连 `wx.onBLEConnectionStateChange` | 映射到 `my.onBLEConnectionStateChanged` | 抖音无同等 API，调用时报 not supported | ⚠️ |
 | `offBLEConnectionStateChange` | 取消监听 BLE 连接状态变化。 | 直连 `wx.offBLEConnectionStateChange` | 映射到 `my.offBLEConnectionStateChanged` | 抖音无同等 API，调用时报 not supported | ⚠️ |
-| `addCard` | 添加微信卡券。 | 直连 `wx.addCard` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `addFileToFavorites` | 添加文件到收藏。 | 直连 `wx.addFileToFavorites` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `addPaymentPassFinish` | 添加支付 pass 完成回调。 | 直连 `wx.addPaymentPassFinish` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `addPaymentPassGetCertificateData` | 添加支付 pass 证书数据回调。 | 直连 `wx.addPaymentPassGetCertificateData` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `addPhoneCalendar` | 添加日历事件。 | 直连 `wx.addPhoneCalendar` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `addCard` | 添加微信卡券。 | 直连 `wx.addCard` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `addFileToFavorites` | 添加文件到收藏。 | 直连 `wx.addFileToFavorites` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `addPaymentPassFinish` | 添加支付 pass 完成回调。 | 直连 `wx.addPaymentPassFinish` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `addPaymentPassGetCertificateData` | 添加支付 pass 证书数据回调。 | 直连 `wx.addPaymentPassGetCertificateData` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `addPhoneCalendar` | 添加日历事件。 | 直连 `wx.addPhoneCalendar` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `addPhoneContact` | 添加手机联系人。 | 直连 `wx.addPhoneContact` | 直连 `my.addPhoneContact` | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `addPhoneRepeatCalendar` | 添加重复日历事件。 | 直连 `wx.addPhoneRepeatCalendar` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `addVideoToFavorites` | 添加视频到收藏。 | 直连 `wx.addVideoToFavorites` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `authorizeForMiniProgram` | 获取小程序授权码。 | 直连 `wx.authorizeForMiniProgram` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `authPrivateMessage` | 校验私密消息。 | 直连 `wx.authPrivateMessage` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `bindEmployeeRelation` | 绑定员工关系。 | 直连 `wx.bindEmployeeRelation` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `canAddSecureElementPass` | 检测是否可添加安全元素卡片。 | 直连 `wx.canAddSecureElementPass` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `addPhoneRepeatCalendar` | 添加重复日历事件。 | 直连 `wx.addPhoneRepeatCalendar` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `addVideoToFavorites` | 添加视频到收藏。 | 直连 `wx.addVideoToFavorites` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `authorizeForMiniProgram` | 获取小程序授权码。 | 直连 `wx.authorizeForMiniProgram` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `authPrivateMessage` | 校验私密消息。 | 直连 `wx.authPrivateMessage` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `bindEmployeeRelation` | 绑定员工关系。 | 直连 `wx.bindEmployeeRelation` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `canAddSecureElementPass` | 检测是否可添加安全元素卡片。 | 直连 `wx.canAddSecureElementPass` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `canvasGetImageData` | 获取 canvas 区域像素数据。 | 直连 `wx.canvasGetImageData` | 使用内置 shim，返回空像素数据结构 | 使用内置 shim，返回空像素数据结构 | ⚠️ |
 | `canvasPutImageData` | 将像素数据绘制到 canvas。 | 直连 `wx.canvasPutImageData` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `checkDeviceSupportHevc` | 检测设备是否支持 HEVC 解码。 | 直连 `wx.checkDeviceSupportHevc` | 使用内置 shim，返回默认不支持 | 使用内置 shim，返回默认不支持 | ⚠️ |
@@ -143,15 +143,15 @@
 | `checkIsPictureInPictureActive` | 检测是否处于画中画状态。 | 直连 `wx.checkIsPictureInPictureActive` | 使用内置 shim，返回未激活 | 使用内置 shim，返回未激活 | ⚠️ |
 | `checkIsSoterEnrolledInDevice` | 检测设备是否录入 SOTER 信息。 | 直连 `wx.checkIsSoterEnrolledInDevice` | 使用内置 shim，返回未录入 | 使用内置 shim，返回未录入 | ⚠️ |
 | `checkIsSupportSoterAuthentication` | 检测设备是否支持 SOTER 生物认证。 | 直连 `wx.checkIsSupportSoterAuthentication` | 使用内置 shim，返回默认不支持 | 使用内置 shim，返回默认不支持 | ⚠️ |
-| `openCard` | 打开卡券详情。 | 直连 `wx.openCard` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openChannelsActivity` | 打开视频号活动页。 | 直连 `wx.openChannelsActivity` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openChannelsEvent` | 打开视频号活动详情。 | 直连 `wx.openChannelsEvent` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openChannelsLive` | 打开视频号直播。 | 直连 `wx.openChannelsLive` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openChannelsLiveNoticeInfo` | 打开视频号直播预告详情。 | 直连 `wx.openChannelsLiveNoticeInfo` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openChannelsUserProfile` | 打开视频号用户主页。 | 直连 `wx.openChannelsUserProfile` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openChatTool` | 打开客服工具页。 | 直连 `wx.openChatTool` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openHKOfflinePayView` | 打开香港线下支付视图。 | 直连 `wx.openHKOfflinePayView` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openInquiriesTopic` | 打开询价话题。 | 直连 `wx.openInquiriesTopic` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openCard` | 打开卡券详情。 | 直连 `wx.openCard` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openChannelsActivity` | 打开视频号活动页。 | 直连 `wx.openChannelsActivity` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openChannelsEvent` | 打开视频号活动详情。 | 直连 `wx.openChannelsEvent` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openChannelsLive` | 打开视频号直播。 | 直连 `wx.openChannelsLive` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openChannelsLiveNoticeInfo` | 打开视频号直播预告详情。 | 直连 `wx.openChannelsLiveNoticeInfo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openChannelsUserProfile` | 打开视频号用户主页。 | 直连 `wx.openChannelsUserProfile` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openChatTool` | 打开客服工具页。 | 直连 `wx.openChatTool` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openHKOfflinePayView` | 打开香港线下支付视图。 | 直连 `wx.openHKOfflinePayView` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openInquiriesTopic` | 打开询价话题。 | 直连 `wx.openInquiriesTopic` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openOfficialAccountArticle` | 打开公众号文章。 | 直连 `wx.openOfficialAccountArticle` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `openOfficialAccountChat` | 打开公众号会话。 | 直连 `wx.openOfficialAccountChat` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `openOfficialAccountProfile` | 打开公众号主页。 | 直连 `wx.openOfficialAccountProfile` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
