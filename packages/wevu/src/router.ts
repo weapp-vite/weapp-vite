@@ -219,6 +219,11 @@ interface NamedRoutePathResolveResult {
   consumedKeys: ReadonlySet<string>
 }
 
+interface MatchedRouteRecordResolveResult {
+  record: RouteRecordNormalized
+  params?: RouteParams
+}
+
 function decodeQuerySegment(value: string): string {
   return decodeURIComponent(value.replace(/\+/g, ' '))
 }
@@ -548,6 +553,15 @@ function stringifyPathParamSegment(value: RouteParamValue): string {
   return encodeURIComponent(value)
 }
 
+function decodeRouteParamSegment(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  }
+  catch {
+    return value
+  }
+}
+
 function resolveNamedRoutePath(pathTemplate: string, params: RouteParams, routeName: string): NamedRoutePathResolveResult {
   const resolvedSegments: string[] = []
   const consumedKeys = new Set<string>()
@@ -751,22 +765,155 @@ function createRedirectedFromSnapshot(route: RouteLocationNormalizedLoaded): Rou
   return snapshot
 }
 
+function splitRoutePathSegments(path: string): string[] {
+  return path.split('/').filter(Boolean)
+}
+
+function buildRouteParamsFromMatch(matchValues: ReadonlyMap<string, string[]>): RouteParams {
+  const params: RouteParams = {}
+  for (const [key, values] of matchValues.entries()) {
+    if (values.length === 0) {
+      continue
+    }
+    params[key] = values.length === 1 ? values[0] : values
+  }
+  return params
+}
+
+function matchRoutePathParams(pathTemplate: string, targetPath: string): RouteParams | undefined {
+  const templateSegments = splitRoutePathSegments(pathTemplate)
+  const targetSegments = splitRoutePathSegments(targetPath)
+  const matchedValues = new Map<string, string[]>()
+
+  const pushValue = (key: string, value: string) => {
+    const previous = matchedValues.get(key)
+    if (previous) {
+      previous.push(value)
+      return
+    }
+    matchedValues.set(key, [value])
+  }
+
+  const popValue = (key: string) => {
+    const previous = matchedValues.get(key)
+    if (!previous || previous.length === 0) {
+      return
+    }
+    previous.pop()
+    if (previous.length === 0) {
+      matchedValues.delete(key)
+    }
+  }
+
+  const consumeRepeatableToken = (key: string, startIndex: number, count: number): () => void => {
+    for (let index = 0; index < count; index += 1) {
+      pushValue(key, decodeRouteParamSegment(targetSegments[startIndex + index]))
+    }
+    return () => {
+      for (let index = 0; index < count; index += 1) {
+        popValue(key)
+      }
+    }
+  }
+
+  const matchRecursively = (templateIndex: number, targetIndex: number): boolean => {
+    if (templateIndex >= templateSegments.length) {
+      return targetIndex >= targetSegments.length
+    }
+
+    const templateSegment = templateSegments[templateIndex]
+    const token = parsePathParamToken(templateSegment)
+    if (!token) {
+      if (targetIndex >= targetSegments.length || templateSegment !== targetSegments[targetIndex]) {
+        return false
+      }
+      return matchRecursively(templateIndex + 1, targetIndex + 1)
+    }
+
+    if (token.modifier === '') {
+      if (targetIndex >= targetSegments.length) {
+        return false
+      }
+      pushValue(token.key, decodeRouteParamSegment(targetSegments[targetIndex]))
+      const matched = matchRecursively(templateIndex + 1, targetIndex + 1)
+      if (!matched) {
+        popValue(token.key)
+      }
+      return matched
+    }
+
+    if (token.modifier === '?') {
+      if (targetIndex < targetSegments.length) {
+        pushValue(token.key, decodeRouteParamSegment(targetSegments[targetIndex]))
+        const consumeMatched = matchRecursively(templateIndex + 1, targetIndex + 1)
+        if (consumeMatched) {
+          return true
+        }
+        popValue(token.key)
+      }
+      return matchRecursively(templateIndex + 1, targetIndex)
+    }
+
+    const minimumCount = token.modifier === '+' ? 1 : 0
+    const maximumCount = targetSegments.length - targetIndex
+
+    for (let count = maximumCount; count >= minimumCount; count -= 1) {
+      const rollback = consumeRepeatableToken(token.key, targetIndex, count)
+      const matched = matchRecursively(templateIndex + 1, targetIndex + count)
+      if (matched) {
+        return true
+      }
+      rollback()
+    }
+
+    return false
+  }
+
+  if (!matchRecursively(0, 0)) {
+    return undefined
+  }
+
+  return buildRouteParamsFromMatch(matchedValues)
+}
+
 function resolveMatchedRouteRecord(
   target: RouteLocationNormalizedLoaded,
   lookup: NamedRouteLookup,
-): RouteRecordNormalized | undefined {
+): MatchedRouteRecordResolveResult | undefined {
   if (target.name) {
     const byName = lookup.recordByName.get(target.name)
     if (byName) {
-      return byName
+      return {
+        record: byName,
+      }
     }
   }
 
   const staticNamedRoute = lookup.nameByStaticPath.get(target.path)
-  if (!staticNamedRoute) {
-    return undefined
+  if (staticNamedRoute) {
+    const record = lookup.recordByName.get(staticNamedRoute)
+    if (record) {
+      return {
+        record,
+      }
+    }
   }
-  return lookup.recordByName.get(staticNamedRoute)
+
+  for (const record of lookup.recordByName.values()) {
+    if (!isDynamicRoutePath(record.path)) {
+      continue
+    }
+    const matchedParams = matchRoutePathParams(record.path, target.path)
+    if (!matchedParams) {
+      continue
+    }
+    return {
+      record,
+      params: matchedParams,
+    }
+  }
+
+  return undefined
 }
 
 function parsePathInput(
@@ -1317,13 +1464,17 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       : resolveNamedRouteLocation(to, namedRouteLookup, paramsMode)
     const resolved = resolveRouteLocation(rawTo, currentPath, routeResolveCodec)
     resolved.href = resolved.fullPath
-    const matchedRecord = resolveMatchedRouteRecord(resolved, namedRouteLookup)
-    if (matchedRecord) {
+    const matchedResult = resolveMatchedRouteRecord(resolved, namedRouteLookup)
+    if (matchedResult) {
+      const matchedRecord = matchedResult.record
       if (resolved.name === undefined) {
         resolved.name = matchedRecord.name
       }
       if (matchedRecord.meta !== undefined) {
         resolved.meta = cloneRouteMeta(matchedRecord.meta)
+      }
+      if (matchedResult.params && Object.keys(resolved.params).length === 0) {
+        resolved.params = cloneRouteParams(matchedResult.params)
       }
       resolved.matched = [normalizeRouteRecordMatched(matchedRecord)]
     }
@@ -1616,7 +1767,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
         }
       }
 
-      const routeRecord = resolveMatchedRouteRecord(currentTarget, namedRouteLookup)
+      const routeRecord = resolveMatchedRouteRecord(currentTarget, namedRouteLookup)?.record
       if (routeRecord?.redirect !== undefined) {
         let redirectedByRecord: { target: RouteLocationNormalizedLoaded, replace?: boolean }
         try {
