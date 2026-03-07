@@ -449,9 +449,9 @@ interface WeapiCrossPlatformMethodDocs {
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
-   * | 微信 | 直连 `wx.scanCode` | ✅ |
-   * | 支付宝 | 映射到 `my.scan` | ✅ |
-   * | 抖音 | 直连 `tt.scanCode` | ✅ |
+   * | 微信 | 直连 `wx.scanCode` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 直连 `tt.scanCode` | ⚠️ |
    */
   scanCode: WeapiCrossPlatformAdapter['scanCode']
 
