@@ -17,11 +17,11 @@
 | 支付宝可按微信命名调用的方法数   |  204 |
 | 支付宝语义对齐方法数             |  204 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  146 |
-| 抖音语义对齐方法数               |  146 |
+| 抖音可按微信命名调用的方法数     |  144 |
+| 抖音语义对齐方法数               |  144 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  134 |
-| 三端语义完全对齐方法数           |  134 |
+| 三端可调用完全对齐方法数         |  132 |
+| 三端语义完全对齐方法数           |  132 |
 
 ## 覆盖率
 
@@ -29,9 +29,9 @@
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
 | 支付宝小程序 (`my`)           |           204 |             204 |               0 |      479 |       42.59% |         42.59% |
-| 抖音小程序 (`tt`)             |           146 |             146 |               0 |      479 |       30.48% |         30.48% |
-| 三端可调用完全对齐 (wx/my/tt) |           134 |               - |               - |      479 |       27.97% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             134 |               - |      479 |            - |         27.97% |
+| 抖音小程序 (`tt`)             |           144 |             144 |               0 |      479 |       30.06% |         30.06% |
+| 三端可调用完全对齐 (wx/my/tt) |           132 |               - |               - |      479 |       27.56% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             132 |               - |      479 |            - |         27.56% |
 
 ## 核心差异映射（手工规则）
 
@@ -76,10 +76,10 @@
 | `openEmbeddedMiniProgram`           | 直连 `wx.openEmbeddedMiniProgram`                   | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `saveFileToDisk`                    | 直连 `wx.saveFileToDisk`                            | 直连 `my.saveFileToDisk`                                           | 无同等 API，调用时按 unsupported 报错                                 |
 | `getEnterOptionsSync`               | 直连 `wx.getEnterOptionsSync`                       | 直连 `my.getEnterOptionsSync`                                      | 映射到 `tt.getLaunchOptionsSync`                                      |
-| `getSystemSetting`                  | 直连 `wx.getSystemSetting`                          | 直连 `my.getSystemSetting`                                         | 映射到 `tt.getSetting`                                                |
+| `getSystemSetting`                  | 直连 `wx.getSystemSetting`                          | 直连 `my.getSystemSetting`                                         | 无同等 API，调用时按 unsupported 报错                                 |
 | `getUserProfile`                    | 直连 `wx.getUserProfile`                            | 映射到 `my.getOpenUserInfo`                                        | 直连 `tt.getUserProfile`                                              |
 | `getUserInfo`                       | 直连 `wx.getUserInfo`                               | 映射到 `my.getOpenUserInfo`                                        | 直连 `tt.getUserInfo`                                                 |
-| `getAppAuthorizeSetting`            | 直连 `wx.getAppAuthorizeSetting`                    | 直连 `my.getAppAuthorizeSetting`                                   | 映射到 `tt.getSetting`                                                |
+| `getAppAuthorizeSetting`            | 直连 `wx.getAppAuthorizeSetting`                    | 直连 `my.getAppAuthorizeSetting`                                   | 无同等 API，调用时按 unsupported 报错                                 |
 | `getAppBaseInfo`                    | 直连 `wx.getAppBaseInfo`                            | 直连 `my.getAppBaseInfo`                                           | 映射到 `tt.getEnvInfoSync`                                            |
 | `chooseVideo`                       | 直连 `wx.chooseVideo`                               | 直连 `my.chooseVideo`                                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `hideHomeButton`                    | 直连 `wx.hideHomeButton`                            | 映射到 `my.hideBackHome`                                           | 直连 `tt.hideHomeButton`                                              |

@@ -426,7 +426,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '获取系统设置。',
     wxStrategy: '直连 `wx.getSystemSetting`',
     alipayStrategy: '直连 `my.getSystemSetting`',
-    douyinStrategy: '映射到 `tt.getSetting`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -450,7 +450,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '获取 App 授权设置。',
     wxStrategy: '直连 `wx.getAppAuthorizeSetting`',
     alipayStrategy: '直连 `my.getAppAuthorizeSetting`',
-    douyinStrategy: '映射到 `tt.getSetting`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -3281,7 +3281,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getLaunchOptionsSync',
     },
     getSystemSetting: {
-      target: 'getSetting',
+      target: 'getSystemSetting',
     },
     getUserProfile: {
       target: 'getUserProfile',
@@ -3290,7 +3290,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getUserInfo',
     },
     getAppAuthorizeSetting: {
-      target: 'getSetting',
+      target: 'getAppAuthorizeSetting',
     },
     getAppBaseInfo: {
       target: 'getEnvInfoSync',

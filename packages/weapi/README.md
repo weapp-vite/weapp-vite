@@ -36,9 +36,9 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
 | 支付宝小程序 (`my`) | 204 | 204 | 0 | 479 | 42.59% | 42.59% |
-| 抖音小程序 (`tt`) | 146 | 146 | 0 | 479 | 30.48% | 30.48% |
-| 三端可调用完全对齐 (wx/my/tt) | 134 | - | - | 479 | 27.97% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 134 | - | 479 | - | 27.97% |
+| 抖音小程序 (`tt`) | 144 | 144 | 0 | 479 | 30.06% | 30.06% |
+| 三端可调用完全对齐 (wx/my/tt) | 132 | - | - | 479 | 27.56% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 132 | - | 479 | - | 27.56% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -85,10 +85,10 @@
 | `openEmbeddedMiniProgram` | 打开嵌入式小程序。 | 直连 `wx.openEmbeddedMiniProgram` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `saveFileToDisk` | 保存文件到磁盘。 | 直连 `wx.saveFileToDisk` | 直连 `my.saveFileToDisk` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getEnterOptionsSync` | 获取启动参数（同步）。 | 直连 `wx.getEnterOptionsSync` | 直连 `my.getEnterOptionsSync` | 映射到 `tt.getLaunchOptionsSync` | ⚠️ |
-| `getSystemSetting` | 获取系统设置。 | 直连 `wx.getSystemSetting` | 直连 `my.getSystemSetting` | 映射到 `tt.getSetting` | ⚠️ |
+| `getSystemSetting` | 获取系统设置。 | 直连 `wx.getSystemSetting` | 直连 `my.getSystemSetting` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getUserProfile` | 获取用户资料。 | 直连 `wx.getUserProfile` | 映射到 `my.getOpenUserInfo` | 直连 `tt.getUserProfile` | ⚠️ |
 | `getUserInfo` | 获取用户信息。 | 直连 `wx.getUserInfo` | 映射到 `my.getOpenUserInfo` | 直连 `tt.getUserInfo` | ⚠️ |
-| `getAppAuthorizeSetting` | 获取 App 授权设置。 | 直连 `wx.getAppAuthorizeSetting` | 直连 `my.getAppAuthorizeSetting` | 映射到 `tt.getSetting` | ⚠️ |
+| `getAppAuthorizeSetting` | 获取 App 授权设置。 | 直连 `wx.getAppAuthorizeSetting` | 直连 `my.getAppAuthorizeSetting` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getAppBaseInfo` | 获取 App 基础信息。 | 直连 `wx.getAppBaseInfo` | 直连 `my.getAppBaseInfo` | 映射到 `tt.getEnvInfoSync` | ⚠️ |
 | `chooseVideo` | 选择视频。 | 直连 `wx.chooseVideo` | 直连 `my.chooseVideo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `hideHomeButton` | 隐藏返回首页按钮。 | 直连 `wx.hideHomeButton` | 映射到 `my.hideBackHome` | 直连 `tt.hideHomeButton` | ✅ |
