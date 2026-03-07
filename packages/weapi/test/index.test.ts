@@ -96,17 +96,17 @@ describe('weapi', () => {
       platform: 'my',
     })
 
-    expect(api.resolveTarget('canvasGetImageData')).toMatchObject({
-      method: 'canvasGetImageData',
+    expect(api.resolveTarget('chooseInvoice')).toMatchObject({
+      method: 'chooseInvoice',
       target: 'hideToast',
       supportLevel: 'fallback',
       supported: true,
       semanticAligned: false,
     })
-    expect(api.supports('canvasGetImageData')).toBe(true)
-    expect(api.supports('canvasGetImageData', { semantic: true })).toBe(false)
+    expect(api.supports('chooseInvoice')).toBe(true)
+    expect(api.supports('chooseInvoice', { semantic: true })).toBe(false)
 
-    await api.canvasGetImageData()
+    await api.chooseInvoice()
     expect(hideToast).toHaveBeenCalledWith(expect.any(Object))
   })
 
@@ -120,18 +120,18 @@ describe('weapi', () => {
       strictCompatibility: true,
     }) as Record<string, any>
 
-    expect(api.resolveTarget('canvasGetImageData')).toMatchObject({
-      method: 'canvasGetImageData',
-      target: 'canvasGetImageData',
+    expect(api.resolveTarget('chooseInvoice')).toMatchObject({
+      method: 'chooseInvoice',
+      target: 'chooseInvoice',
       mapped: false,
       supported: false,
       supportLevel: 'unsupported',
       semanticAligned: false,
     })
-    expect(api.supports('canvasGetImageData')).toBe(false)
+    expect(api.supports('chooseInvoice')).toBe(false)
 
-    await expect(api.canvasGetImageData()).rejects.toMatchObject({
-      errMsg: 'my.canvasGetImageData:fail method not supported',
+    await expect(api.chooseInvoice()).rejects.toMatchObject({
+      errMsg: 'my.chooseInvoice:fail method not supported',
     })
     expect(hideToast).not.toHaveBeenCalled()
   })
@@ -779,6 +779,52 @@ describe('weapi', () => {
       })
       await expect(api[methodName]({})).resolves.toMatchObject({
         errMsg: `${methodName}:ok`,
+      })
+    }
+  })
+
+  it.each([
+    { method: 'canvasGetImageData' },
+    { method: 'canvasPutImageData' },
+  ])('provides synthetic canvas shim for $method on alipay and douyin', async ({ method }) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const api = createWeapi({
+        adapter: {},
+        platform,
+      }) as Record<string, any>
+      const result = await api[method]({
+        canvasId: 'demo',
+      })
+      expect(result).toMatchObject({
+        errMsg: `${method}:ok`,
+      })
+      if (method === 'canvasGetImageData') {
+        expect(result).toMatchObject({
+          data: [],
+          width: 0,
+          height: 0,
+        })
+      }
+    }
+  })
+
+  it.each([
+    { method: 'checkDeviceSupportHevc', expected: { isSupport: false } },
+    { method: 'checkEmployeeRelation', expected: { isBound: false } },
+    { method: 'checkIsAddedToMyMiniProgram', expected: { added: false } },
+    { method: 'checkIsOpenAccessibility', expected: { openAccessibility: false } },
+    { method: 'checkIsPictureInPictureActive', expected: { active: false } },
+    { method: 'checkIsSoterEnrolledInDevice', expected: { isEnrolled: false } },
+    { method: 'checkIsSupportSoterAuthentication', expected: { supportMode: [] } },
+  ])('provides synthetic check shim for $method on alipay and douyin', async ({ expected, method }) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const api = createWeapi({
+        adapter: {},
+        platform,
+      }) as Record<string, any>
+      await expect(api[method]({})).resolves.toMatchObject({
+        ...expected,
+        errMsg: `${method}:ok`,
       })
     }
   })
@@ -1555,6 +1601,15 @@ describe('weapi', () => {
       { method: 'authPrivateMessage', my: 'authPrivateMessage', tt: 'authPrivateMessage' },
       { method: 'bindEmployeeRelation', my: 'bindEmployeeRelation', tt: 'bindEmployeeRelation' },
       { method: 'canAddSecureElementPass', my: 'canAddSecureElementPass', tt: 'canAddSecureElementPass' },
+      { method: 'canvasGetImageData', my: 'canvasGetImageData', tt: 'canvasGetImageData' },
+      { method: 'canvasPutImageData', my: 'canvasPutImageData', tt: 'canvasPutImageData' },
+      { method: 'checkDeviceSupportHevc', my: 'checkDeviceSupportHevc', tt: 'checkDeviceSupportHevc' },
+      { method: 'checkEmployeeRelation', my: 'checkEmployeeRelation', tt: 'checkEmployeeRelation' },
+      { method: 'checkIsAddedToMyMiniProgram', my: 'checkIsAddedToMyMiniProgram', tt: 'checkIsAddedToMyMiniProgram' },
+      { method: 'checkIsOpenAccessibility', my: 'checkIsOpenAccessibility', tt: 'checkIsOpenAccessibility' },
+      { method: 'checkIsPictureInPictureActive', my: 'checkIsPictureInPictureActive', tt: 'checkIsPictureInPictureActive' },
+      { method: 'checkIsSoterEnrolledInDevice', my: 'checkIsSoterEnrolledInDevice', tt: 'checkIsSoterEnrolledInDevice' },
+      { method: 'checkIsSupportSoterAuthentication', my: 'checkIsSupportSoterAuthentication', tt: 'checkIsSupportSoterAuthentication' },
       { method: 'openCustomerServiceChat', my: 'openCustomerServiceChat', tt: 'openCustomerServiceChat' },
       { method: 'createVKSession', my: 'createVKSession', tt: 'createVKSession' },
       { method: 'compressVideo', my: 'compressVideo', tt: 'compressVideo' },
@@ -1670,6 +1725,15 @@ describe('weapi', () => {
       'authPrivateMessage',
       'bindEmployeeRelation',
       'canAddSecureElementPass',
+      'canvasGetImageData',
+      'canvasPutImageData',
+      'checkDeviceSupportHevc',
+      'checkEmployeeRelation',
+      'checkIsAddedToMyMiniProgram',
+      'checkIsOpenAccessibility',
+      'checkIsPictureInPictureActive',
+      'checkIsSoterEnrolledInDevice',
+      'checkIsSupportSoterAuthentication',
       'openCustomerServiceChat',
       'createVKSession',
       'compressVideo',

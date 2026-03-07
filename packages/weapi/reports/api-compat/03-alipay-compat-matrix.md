@@ -25,16 +25,16 @@
 | `canAddSecureElementPass`                     | `canAddSecureElementPass`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `cancelIdleCallback`                          | `cancelIdleCallback`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `canIUse`                                     | `canIUse`                            | ✅   | `native`   | ✅       | 直连 `my.canIUse`                                                      |
-| `canvasGetImageData`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `canvasPutImageData`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `canvasGetImageData`                          | `canvasGetImageData`                 | ✅   | `mapped`   | ✅       | 使用内置 shim，返回空像素数据结构                                      |
+| `canvasPutImageData`                          | `canvasPutImageData`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `canvasToTempFilePath`                        | `canvasToTempFilePath`               | ✅   | `native`   | ✅       | 直连 `my.canvasToTempFilePath`                                         |
-| `checkDeviceSupportHevc`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `checkEmployeeRelation`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `checkIsAddedToMyMiniProgram`                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `checkIsOpenAccessibility`                    | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `checkIsPictureInPictureActive`               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `checkIsSoterEnrolledInDevice`                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `checkIsSupportSoterAuthentication`           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `checkDeviceSupportHevc`                      | `checkDeviceSupportHevc`             | ✅   | `mapped`   | ✅       | 使用内置 shim，返回默认不支持                                          |
+| `checkEmployeeRelation`                       | `checkEmployeeRelation`              | ✅   | `mapped`   | ✅       | 使用内置 shim，返回未绑定                                              |
+| `checkIsAddedToMyMiniProgram`                 | `checkIsAddedToMyMiniProgram`        | ✅   | `mapped`   | ✅       | 使用内置 shim，返回未添加                                              |
+| `checkIsOpenAccessibility`                    | `checkIsOpenAccessibility`           | ✅   | `mapped`   | ✅       | 使用内置 shim，返回未开启                                              |
+| `checkIsPictureInPictureActive`               | `checkIsPictureInPictureActive`      | ✅   | `mapped`   | ✅       | 使用内置 shim，返回未激活                                              |
+| `checkIsSoterEnrolledInDevice`                | `checkIsSoterEnrolledInDevice`       | ✅   | `mapped`   | ✅       | 使用内置 shim，返回未录入                                              |
+| `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication`  | ✅   | `mapped`   | ✅       | 使用内置 shim，返回默认不支持                                          |
 | `checkSession`                                | `getAuthCode`                        | ✅   | `mapped`   | ✅       | 映射到 `my.getAuthCode`，按成功结果对齐 `checkSession:ok`              |
 | `chooseAddress`                               | `getAddress`                         | ✅   | `mapped`   | ✅       | 映射到 `my.getAddress`                                                 |
 | `chooseContact`                               | `chooseContact`                      | ✅   | `native`   | ✅       | 直连 `my.chooseContact`                                                |
