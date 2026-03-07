@@ -1,7 +1,7 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import path from 'pathe'
-import { normalizeWatchPath, toPosixPath } from '../utils/path'
+import { normalizePath, normalizeWatchPath, toPosixPath } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 
 const AUTO_ROUTES_ID = 'weapp-vite/auto-routes'
@@ -65,16 +65,14 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       return false
     }
 
-    const normalized = path.isAbsolute(pathWithoutQuery)
-      ? pathWithoutQuery
-      : path.resolve(configService.cwd, pathWithoutQuery)
-
-    if (!normalized.startsWith(configService.absoluteSrcRoot)) {
-      return false
-    }
-
-    const relative = toPosixPath(path.relative(configService.absoluteSrcRoot, normalized))
-    if (!relative || relative.startsWith('..')) {
+    const normalizedSrcRoot = normalizePath(configService.absoluteSrcRoot)
+    const normalizedCandidate = normalizePath(
+      path.isAbsolute(pathWithoutQuery)
+        ? pathWithoutQuery
+        : path.resolve(configService.cwd, pathWithoutQuery),
+    )
+    const relative = toPosixPath(path.relative(normalizedSrcRoot, normalizedCandidate))
+    if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
       return false
     }
 

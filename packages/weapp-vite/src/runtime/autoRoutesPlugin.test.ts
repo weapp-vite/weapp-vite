@@ -129,6 +129,28 @@ describe('createAutoRoutesService', () => {
     ]))
   })
 
+  it('matches and handles route changes from Windows-style absolute paths', async () => {
+    const ctx = createContext()
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    const subPackagePage = path.join(srcRoot, 'packageB', 'pages', 'dog.ts')
+    await fs.ensureDir(path.dirname(subPackagePage))
+    await fs.writeFile(subPackagePage, '// subpackage page', 'utf8')
+
+    const windowsStylePath = subPackagePage.replace(/\//g, '\\')
+    expect(service.isRouteFile(windowsStylePath)).toBe(true)
+
+    await service.handleFileChange(windowsStylePath, 'create')
+
+    const snapshot = service.getSnapshot()
+    expect(snapshot.entries).toEqual(expect.arrayContaining([
+      'pages/index/index',
+      'packageB/pages/dog',
+    ]))
+  })
+
   it('reacts to style file additions and deletions', async () => {
     const ctx = createContext()
     const service = createAutoRoutesService(ctx)
