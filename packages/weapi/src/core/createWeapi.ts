@@ -195,14 +195,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     'preloadSkylineView',
     'preloadWebview',
     'removeSecureElementPass',
-    'loadBuiltInFontFace',
-    'notifyGroupMembers',
-    'requestIdleCallback',
-    'revokeBufferURL',
-    'rewriteRoute',
-    'seekBackgroundAudio',
-    'setEnableDebug',
-    'setInnerAudioOption',
   ])
   const syntheticCheckPayloadByMethod: Readonly<Record<string, Record<string, any>>> = {
     checkDeviceSupportHevc: { isSupport: false },

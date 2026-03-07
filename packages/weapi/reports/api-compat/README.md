@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  299 |
-| 支付宝语义对齐方法数             |  299 |
+| 支付宝可按微信命名调用的方法数   |  291 |
+| 支付宝语义对齐方法数             |  291 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  237 |
-| 抖音语义对齐方法数               |  237 |
+| 抖音可按微信命名调用的方法数     |  229 |
+| 抖音语义对齐方法数               |  229 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  235 |
-| 三端语义完全对齐方法数           |  235 |
+| 三端可调用完全对齐方法数         |  227 |
+| 三端语义完全对齐方法数           |  227 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           299 |             299 |               0 |      479 |       62.42% |         62.42% |
-| 抖音小程序 (`tt`)             |           237 |             237 |               0 |      479 |       49.48% |         49.48% |
-| 三端可调用完全对齐 (wx/my/tt) |           235 |               - |               - |      479 |       49.06% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             235 |               - |      479 |            - |         49.06% |
+| 支付宝小程序 (`my`)           |           291 |             291 |               0 |      479 |       60.75% |         60.75% |
+| 抖音小程序 (`tt`)             |           229 |             229 |               0 |      479 |       47.81% |         47.81% |
+| 三端可调用完全对齐 (wx/my/tt) |           227 |               - |               - |      479 |       47.39% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             227 |               - |      479 |            - |         47.39% |
 
 ## 核心差异映射（手工规则）
 
@@ -258,14 +258,14 @@
 | `createTCPSocket`                   | 直连 `wx.createTCPSocket`                           | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `createUDPSocket`                   | 直连 `wx.createUDPSocket`                           | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `createVideoDecoder`                | 直连 `wx.createVideoDecoder`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
-| `loadBuiltInFontFace`               | 直连 `wx.loadBuiltInFontFace`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `notifyGroupMembers`                | 直连 `wx.notifyGroupMembers`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `requestIdleCallback`               | 直连 `wx.requestIdleCallback`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `revokeBufferURL`                   | 直连 `wx.revokeBufferURL`                           | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `rewriteRoute`                      | 直连 `wx.rewriteRoute`                              | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `seekBackgroundAudio`               | 直连 `wx.seekBackgroundAudio`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setEnableDebug`                    | 直连 `wx.setEnableDebug`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setInnerAudioOption`               | 直连 `wx.setInnerAudioOption`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `loadBuiltInFontFace`               | 直连 `wx.loadBuiltInFontFace`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `notifyGroupMembers`                | 直连 `wx.notifyGroupMembers`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `requestIdleCallback`               | 直连 `wx.requestIdleCallback`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `revokeBufferURL`                   | 直连 `wx.revokeBufferURL`                           | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `rewriteRoute`                      | 直连 `wx.rewriteRoute`                              | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `seekBackgroundAudio`               | 直连 `wx.seekBackgroundAudio`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `setEnableDebug`                    | 直连 `wx.setEnableDebug`                            | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `setInnerAudioOption`               | 直连 `wx.setInnerAudioOption`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 
 ## 已执行验证
 

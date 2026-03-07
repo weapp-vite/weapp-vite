@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 299 | 299 | 0 | 479 | 62.42% | 62.42% |
-| 抖音小程序 (`tt`) | 237 | 237 | 0 | 479 | 49.48% | 49.48% |
-| 三端可调用完全对齐 (wx/my/tt) | 235 | - | - | 479 | 49.06% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 235 | - | 479 | - | 49.06% |
+| 支付宝小程序 (`my`) | 291 | 291 | 0 | 479 | 60.75% | 60.75% |
+| 抖音小程序 (`tt`) | 229 | 229 | 0 | 479 | 47.81% | 47.81% |
+| 三端可调用完全对齐 (wx/my/tt) | 227 | - | - | 479 | 47.39% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 227 | - | 479 | - | 47.39% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -267,14 +267,14 @@
 | `createTCPSocket` | 创建 TCP Socket。 | 直连 `wx.createTCPSocket` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createUDPSocket` | 创建 UDP Socket。 | 直连 `wx.createUDPSocket` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createVideoDecoder` | 创建视频解码器。 | 直连 `wx.createVideoDecoder` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `loadBuiltInFontFace` | 加载内置字体。 | 直连 `wx.loadBuiltInFontFace` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `notifyGroupMembers` | 通知群成员。 | 直连 `wx.notifyGroupMembers` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `requestIdleCallback` | 空闲时回调请求。 | 直连 `wx.requestIdleCallback` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `revokeBufferURL` | 释放缓冲区 URL。 | 直连 `wx.revokeBufferURL` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `rewriteRoute` | 重写路由规则。 | 直连 `wx.rewriteRoute` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `seekBackgroundAudio` | 调整后台音频播放进度。 | 直连 `wx.seekBackgroundAudio` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `setEnableDebug` | 设置调试开关。 | 直连 `wx.setEnableDebug` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `setInnerAudioOption` | 设置内部音频选项。 | 直连 `wx.setInnerAudioOption` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `loadBuiltInFontFace` | 加载内置字体。 | 直连 `wx.loadBuiltInFontFace` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `notifyGroupMembers` | 通知群成员。 | 直连 `wx.notifyGroupMembers` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `requestIdleCallback` | 空闲时回调请求。 | 直连 `wx.requestIdleCallback` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `revokeBufferURL` | 释放缓冲区 URL。 | 直连 `wx.revokeBufferURL` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `rewriteRoute` | 重写路由规则。 | 直连 `wx.rewriteRoute` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `seekBackgroundAudio` | 调整后台音频播放进度。 | 直连 `wx.seekBackgroundAudio` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `setEnableDebug` | 设置调试开关。 | 直连 `wx.setEnableDebug` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `setInnerAudioOption` | 设置内部音频选项。 | 直连 `wx.setInnerAudioOption` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 

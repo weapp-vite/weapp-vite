@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：299，不支持：180
+总计：479，支持：291，不支持：188
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -184,7 +184,7 @@
 | `isVKSupport`                                 | `isVKSupport`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `join1v1Chat`                                 | `join1v1Chat`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `joinVoIPChat`                                | `joinVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `loadFontFace`                                | `loadFontFace`                                | ✅   | `native`      | ✅       | 直连 `my.loadFontFace`                                                            |
 | `login`                                       | `getAuthCode`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段                                   |
 | `makeBluetoothPair`                           | `makeBluetoothPair`                           | ✅   | `native`      | ✅       | 直连 `my.makeBluetoothPair`                                                       |
@@ -195,7 +195,7 @@
 | `navigateToMiniProgram`                       | `navigateToMiniProgram`                       | ✅   | `native`      | ✅       | 直连 `my.navigateToMiniProgram`                                                   |
 | `nextTick`                                    | `nextTick`                                    | ✅   | `mapped`      | ✅       | 使用内置 microtask shim 调度回调                                                  |
 | `notifyBLECharacteristicValueChange`          | `notifyBLECharacteristicValueChange`          | ✅   | `native`      | ✅       | 直连 `my.notifyBLECharacteristicValueChange`                                      |
-| `notifyGroupMembers`                          | `notifyGroupMembers`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `notifyGroupMembers`                          | `notifyGroupMembers`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `offAccelerometerChange`                      | `offAccelerometerChange`                      | ✅   | `native`      | ✅       | 直连 `my.offAccelerometerChange`                                                  |
 | `offAfterPageLoad`                            | `offAfterPageLoad`                            | ❌   | `unsupported` | ❌       | 未提供 my.offAfterPageLoad，调用时将返回 not supported                            |
 | `offAfterPageUnload`                          | `offAfterPageUnload`                          | ❌   | `unsupported` | ❌       | 未提供 my.offAfterPageUnload，调用时将返回 not supported                          |
@@ -382,7 +382,7 @@
 | `request`                                     | `request`                                     | ✅   | `native`      | ✅       | 直连 `my.request`                                                                 |
 | `requestCommonPayment`                        | `requestCommonPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `requestIdleCallback`                         | `requestIdleCallback`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `requestIdleCallback`                         | `requestIdleCallback`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestMerchantTransfer`                     | `requestMerchantTransfer`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestOrderPayment`                         | `tradePay`                                    | ✅   | `mapped`      | ✅       | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`                           |
 | `requestPayment`                              | `tradePay`                                    | ✅   | `mapped`      | ✅       | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`                           |
@@ -394,13 +394,13 @@
 | `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `reserveChannelsLive`                         | `reserveChannelsLive`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `restartMiniProgram`                          | `reLaunch`                                    | ✅   | `mapped`      | ✅       | 映射到 `my.reLaunch`                                                              |
-| `revokeBufferURL`                             | `revokeBufferURL`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `rewriteRoute`                                | `rewriteRoute`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `revokeBufferURL`                             | `revokeBufferURL`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `rewriteRoute`                                | `rewriteRoute`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `saveFileToDisk`                              | `saveFileToDisk`                              | ✅   | `mapped`      | ✅       | 直连 `my.saveFileToDisk`                                                          |
 | `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `native`      | ✅       | 直连 `my.saveImageToPhotosAlbum`                                                  |
 | `saveVideoToPhotosAlbum`                      | `saveVideoToPhotosAlbum`                      | ✅   | `mapped`      | ✅       | 直连 `my.saveVideoToPhotosAlbum`                                                  |
 | `scanCode`                                    | `scan`                                        | ✅   | `mapped`      | ✅       | 映射到 `my.scan`                                                                  |
-| `seekBackgroundAudio`                         | `seekBackgroundAudio`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `seekBackgroundAudio`                         | `seekBackgroundAudio`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `selectGroupMembers`                          | `selectGroupMembers`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `sendHCEMessage`                              | `sendHCEMessage`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `sendSms`                                     | `sendSms`                                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -411,8 +411,8 @@
 | `setBLEMTU`                                   | `setBLEMTU`                                   | ✅   | `native`      | ✅       | 直连 `my.setBLEMTU`                                                               |
 | `setClipboardData`                            | `setClipboard`                                | ✅   | `mapped`      | ✅       | 转调 `my.setClipboard` 并映射 `data` → `text`                                     |
 | `setEnable1v1Chat`                            | `setEnable1v1Chat`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `setEnableDebug`                              | `setEnableDebug`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `setInnerAudioOption`                         | `setInnerAudioOption`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `setEnableDebug`                              | `setEnableDebug`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `setInnerAudioOption`                         | `setInnerAudioOption`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `setKeepScreenOn`                             | `setKeepScreenOn`                             | ✅   | `native`      | ✅       | 直连 `my.setKeepScreenOn`                                                         |
 | `setNavigationBarColor`                       | `setNavigationBarColor`                       | ✅   | `native`      | ✅       | 直连 `my.setNavigationBarColor`                                                   |
 | `setNavigationBarTitle`                       | `setNavigationBarTitle`                       | ✅   | `native`      | ✅       | 直连 `my.setNavigationBarTitle`                                                   |
