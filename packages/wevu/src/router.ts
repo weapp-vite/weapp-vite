@@ -906,6 +906,33 @@ function mergeMatchedRouteMeta(matchedRecords: readonly RouteRecordNormalized[])
   return mergedRouteMeta
 }
 
+function collectRouteNamesForRemoval(
+  routeName: string,
+  recordByName: ReadonlyMap<string, RouteRecordNormalized>,
+): Set<string> {
+  const namesToRemove = new Set<string>()
+  if (!recordByName.has(routeName)) {
+    return namesToRemove
+  }
+
+  namesToRemove.add(routeName)
+  let expanded = true
+  while (expanded) {
+    expanded = false
+    for (const [name, record] of recordByName.entries()) {
+      if (!record.parentName || namesToRemove.has(name)) {
+        continue
+      }
+      if (namesToRemove.has(record.parentName)) {
+        namesToRemove.add(name)
+        expanded = true
+      }
+    }
+  }
+
+  return namesToRemove
+}
+
 function buildRouteParamsFromMatch(matchValues: ReadonlyMap<string, string[]>): RouteParams {
   const params: RouteParams = {}
   for (const [key, values] of matchValues.entries()) {
@@ -1711,7 +1738,16 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   }
 
   function removeRoute(name: string): void {
-    if (namedRouteLookup.recordByName.delete(name)) {
+    const namesToRemove = collectRouteNamesForRemoval(name, namedRouteLookup.recordByName)
+    if (namesToRemove.size === 0) {
+      return
+    }
+
+    let changed = false
+    for (const routeName of namesToRemove) {
+      changed = namedRouteLookup.recordByName.delete(routeName) || changed
+    }
+    if (changed) {
       namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.recordByName)
     }
   }
