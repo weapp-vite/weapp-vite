@@ -401,8 +401,8 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'openEmbeddedMiniProgram',
     description: '打开嵌入式小程序。',
     wxStrategy: '直连 `wx.openEmbeddedMiniProgram`',
-    alipayStrategy: '映射到 `my.navigateToMiniProgram`',
-    douyinStrategy: '映射到 `tt.navigateToMiniProgram`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2616,7 +2616,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'updateShareMenu',
     },
     openEmbeddedMiniProgram: {
-      target: 'navigateToMiniProgram',
+      target: 'openEmbeddedMiniProgram',
     },
     saveFileToDisk: {
       target: 'saveFileToDisk',
@@ -3315,7 +3315,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'updateShareMenu',
     },
     openEmbeddedMiniProgram: {
-      target: 'navigateToMiniProgram',
+      target: 'openEmbeddedMiniProgram',
     },
     saveFileToDisk: {
       target: 'saveFile',

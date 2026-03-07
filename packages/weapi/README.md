@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 209 | 209 | 0 | 479 | 43.63% | 43.63% |
-| 抖音小程序 (`tt`) | 152 | 152 | 0 | 479 | 31.73% | 31.73% |
-| 三端可调用完全对齐 (wx/my/tt) | 140 | - | - | 479 | 29.23% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 140 | - | 479 | - | 29.23% |
+| 支付宝小程序 (`my`) | 208 | 208 | 0 | 479 | 43.42% | 43.42% |
+| 抖音小程序 (`tt`) | 151 | 151 | 0 | 479 | 31.52% | 31.52% |
+| 三端可调用完全对齐 (wx/my/tt) | 139 | - | - | 479 | 29.02% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 139 | - | 479 | - | 29.02% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -82,7 +82,7 @@
 | `requestVirtualPayment` | 发起虚拟支付。 | 直连 `wx.requestVirtualPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
 | `showShareImageMenu` | 显示分享图片菜单。 | 直连 `wx.showShareImageMenu` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `updateShareMenu` | 更新分享菜单配置。 | 直连 `wx.updateShareMenu` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `openEmbeddedMiniProgram` | 打开嵌入式小程序。 | 直连 `wx.openEmbeddedMiniProgram` | 映射到 `my.navigateToMiniProgram` | 映射到 `tt.navigateToMiniProgram` | ⚠️ |
+| `openEmbeddedMiniProgram` | 打开嵌入式小程序。 | 直连 `wx.openEmbeddedMiniProgram` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `saveFileToDisk` | 保存文件到磁盘。 | 直连 `wx.saveFileToDisk` | 直连 `my.saveFileToDisk` | 映射到 `tt.saveFile` | ⚠️ |
 | `getEnterOptionsSync` | 获取启动参数（同步）。 | 直连 `wx.getEnterOptionsSync` | 直连 `my.getEnterOptionsSync` | 映射到 `tt.getLaunchOptionsSync` | ⚠️ |
 | `getSystemSetting` | 获取系统设置。 | 直连 `wx.getSystemSetting` | 直连 `my.getSystemSetting` | 映射到 `tt.getSetting` | ⚠️ |

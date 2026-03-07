@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：152，不支持：327
+总计：479，支持：151，不支持：328
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -338,7 +338,7 @@
 | `openChatTool`                                | `openChatTool`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openDocument`                                | `openDocument`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`                       | ✅   | `mapped`      | ✅       | 映射到 `tt.navigateToMiniProgram`                                                 |
+| `openEmbeddedMiniProgram`                     | `openEmbeddedMiniProgram`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openInquiriesTopic`                          | `openInquiriesTopic`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openLocation`                                | `openLocation`                                | ✅   | `native`      | ✅       | 直连 `tt.openLocation`                                                            |

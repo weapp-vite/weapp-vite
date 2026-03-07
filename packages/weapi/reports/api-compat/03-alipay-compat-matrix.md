@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：209，不支持：270
+总计：479，支持：208，不支持：271
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -338,7 +338,7 @@
 | `openChatTool`                                | `openChatTool`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openDocument`                                | `openDocument`                                | ✅   | `mapped`      | ✅       | 直连 `my.openDocument`                                                            |
-| `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`                       | ✅   | `mapped`      | ✅       | 映射到 `my.navigateToMiniProgram`                                                 |
+| `openEmbeddedMiniProgram`                     | `openEmbeddedMiniProgram`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openInquiriesTopic`                          | `openInquiriesTopic`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openLocation`                                | `openLocation`                                | ✅   | `native`      | ✅       | 直连 `my.openLocation`                                                            |
