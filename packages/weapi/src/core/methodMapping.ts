@@ -104,6 +104,23 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'checkIsPictureInPictureActive',
     'checkIsSoterEnrolledInDevice',
     'checkIsSupportSoterAuthentication',
+    'openCard',
+    'openChannelsActivity',
+    'openChannelsEvent',
+    'openChannelsLive',
+    'openChannelsLiveNoticeInfo',
+    'openChannelsUserProfile',
+    'openChatTool',
+    'openHKOfflinePayView',
+    'openInquiriesTopic',
+    'openOfficialAccountArticle',
+    'openOfficialAccountChat',
+    'openOfficialAccountProfile',
+    'openPrivacyContract',
+    'openSystemBluetoothSetting',
+    'reportEvent',
+    'reportMonitor',
+    'reportPerformance',
     'openCustomerServiceChat',
     'createVKSession',
     'compressVideo',
@@ -144,6 +161,23 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'checkIsPictureInPictureActive',
     'checkIsSoterEnrolledInDevice',
     'checkIsSupportSoterAuthentication',
+    'openCard',
+    'openChannelsActivity',
+    'openChannelsEvent',
+    'openChannelsLive',
+    'openChannelsLiveNoticeInfo',
+    'openChannelsUserProfile',
+    'openChatTool',
+    'openHKOfflinePayView',
+    'openInquiriesTopic',
+    'openOfficialAccountArticle',
+    'openOfficialAccountChat',
+    'openOfficialAccountProfile',
+    'openPrivacyContract',
+    'openSystemBluetoothSetting',
+    'reportEvent',
+    'reportMonitor',
+    'reportPerformance',
     'showActionSheet',
     'openCustomerServiceChat',
     'createVKSession',
@@ -951,6 +985,142 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     wxStrategy: '直连 `wx.checkIsSupportSoterAuthentication`',
     alipayStrategy: '使用内置 shim，返回默认不支持',
     douyinStrategy: '使用内置 shim，返回默认不支持',
+    support: '⚠️',
+  },
+  {
+    method: 'openCard',
+    description: '打开卡券详情。',
+    wxStrategy: '直连 `wx.openCard`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openChannelsActivity',
+    description: '打开视频号活动页。',
+    wxStrategy: '直连 `wx.openChannelsActivity`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openChannelsEvent',
+    description: '打开视频号活动详情。',
+    wxStrategy: '直连 `wx.openChannelsEvent`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openChannelsLive',
+    description: '打开视频号直播。',
+    wxStrategy: '直连 `wx.openChannelsLive`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openChannelsLiveNoticeInfo',
+    description: '打开视频号直播预告详情。',
+    wxStrategy: '直连 `wx.openChannelsLiveNoticeInfo`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openChannelsUserProfile',
+    description: '打开视频号用户主页。',
+    wxStrategy: '直连 `wx.openChannelsUserProfile`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openChatTool',
+    description: '打开客服工具页。',
+    wxStrategy: '直连 `wx.openChatTool`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openHKOfflinePayView',
+    description: '打开香港线下支付视图。',
+    wxStrategy: '直连 `wx.openHKOfflinePayView`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openInquiriesTopic',
+    description: '打开询价话题。',
+    wxStrategy: '直连 `wx.openInquiriesTopic`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openOfficialAccountArticle',
+    description: '打开公众号文章。',
+    wxStrategy: '直连 `wx.openOfficialAccountArticle`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openOfficialAccountChat',
+    description: '打开公众号会话。',
+    wxStrategy: '直连 `wx.openOfficialAccountChat`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openOfficialAccountProfile',
+    description: '打开公众号主页。',
+    wxStrategy: '直连 `wx.openOfficialAccountProfile`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openPrivacyContract',
+    description: '打开隐私协议页面。',
+    wxStrategy: '直连 `wx.openPrivacyContract`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openSystemBluetoothSetting',
+    description: '打开系统蓝牙设置页面。',
+    wxStrategy: '直连 `wx.openSystemBluetoothSetting`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'reportEvent',
+    description: '上报事件埋点。',
+    wxStrategy: '直连 `wx.reportEvent`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'reportMonitor',
+    description: '上报监控数据。',
+    wxStrategy: '直连 `wx.reportMonitor`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'reportPerformance',
+    description: '上报性能数据。',
+    wxStrategy: '直连 `wx.reportPerformance`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
     support: '⚠️',
   },
 ] as const
@@ -2050,6 +2220,57 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     checkIsSupportSoterAuthentication: {
       target: 'checkIsSupportSoterAuthentication',
     },
+    openCard: {
+      target: 'openCard',
+    },
+    openChannelsActivity: {
+      target: 'openChannelsActivity',
+    },
+    openChannelsEvent: {
+      target: 'openChannelsEvent',
+    },
+    openChannelsLive: {
+      target: 'openChannelsLive',
+    },
+    openChannelsLiveNoticeInfo: {
+      target: 'openChannelsLiveNoticeInfo',
+    },
+    openChannelsUserProfile: {
+      target: 'openChannelsUserProfile',
+    },
+    openChatTool: {
+      target: 'openChatTool',
+    },
+    openHKOfflinePayView: {
+      target: 'openHKOfflinePayView',
+    },
+    openInquiriesTopic: {
+      target: 'openInquiriesTopic',
+    },
+    openOfficialAccountArticle: {
+      target: 'openOfficialAccountArticle',
+    },
+    openOfficialAccountChat: {
+      target: 'openOfficialAccountChat',
+    },
+    openOfficialAccountProfile: {
+      target: 'openOfficialAccountProfile',
+    },
+    openPrivacyContract: {
+      target: 'openPrivacyContract',
+    },
+    openSystemBluetoothSetting: {
+      target: 'openSystemBluetoothSetting',
+    },
+    reportEvent: {
+      target: 'reportEvent',
+    },
+    reportMonitor: {
+      target: 'reportMonitor',
+    },
+    reportPerformance: {
+      target: 'reportPerformance',
+    },
     openCustomerServiceChat: {
       target: 'openCustomerServiceChat',
     },
@@ -2359,6 +2580,57 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     checkIsSupportSoterAuthentication: {
       target: 'checkIsSupportSoterAuthentication',
+    },
+    openCard: {
+      target: 'openCard',
+    },
+    openChannelsActivity: {
+      target: 'openChannelsActivity',
+    },
+    openChannelsEvent: {
+      target: 'openChannelsEvent',
+    },
+    openChannelsLive: {
+      target: 'openChannelsLive',
+    },
+    openChannelsLiveNoticeInfo: {
+      target: 'openChannelsLiveNoticeInfo',
+    },
+    openChannelsUserProfile: {
+      target: 'openChannelsUserProfile',
+    },
+    openChatTool: {
+      target: 'openChatTool',
+    },
+    openHKOfflinePayView: {
+      target: 'openHKOfflinePayView',
+    },
+    openInquiriesTopic: {
+      target: 'openInquiriesTopic',
+    },
+    openOfficialAccountArticle: {
+      target: 'openOfficialAccountArticle',
+    },
+    openOfficialAccountChat: {
+      target: 'openOfficialAccountChat',
+    },
+    openOfficialAccountProfile: {
+      target: 'openOfficialAccountProfile',
+    },
+    openPrivacyContract: {
+      target: 'openPrivacyContract',
+    },
+    openSystemBluetoothSetting: {
+      target: 'openSystemBluetoothSetting',
+    },
+    reportEvent: {
+      target: 'reportEvent',
+    },
+    reportMonitor: {
+      target: 'reportMonitor',
+    },
+    reportPerformance: {
+      target: 'reportPerformance',
     },
     openCustomerServiceChat: {
       target: 'openCustomerServiceChat',

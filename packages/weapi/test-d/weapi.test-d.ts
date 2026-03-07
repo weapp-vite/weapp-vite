@@ -54,6 +54,23 @@ expectType<WeapiDefaultInstance['checkIsOpenAccessibility']>(wpi.checkIsOpenAcce
 expectType<WeapiDefaultInstance['checkIsPictureInPictureActive']>(wpi.checkIsPictureInPictureActive)
 expectType<WeapiDefaultInstance['checkIsSoterEnrolledInDevice']>(wpi.checkIsSoterEnrolledInDevice)
 expectType<WeapiDefaultInstance['checkIsSupportSoterAuthentication']>(wpi.checkIsSupportSoterAuthentication)
+expectType<WeapiDefaultInstance['openCard']>(wpi.openCard)
+expectType<WeapiDefaultInstance['openChannelsActivity']>(wpi.openChannelsActivity)
+expectType<WeapiDefaultInstance['openChannelsEvent']>(wpi.openChannelsEvent)
+expectType<WeapiDefaultInstance['openChannelsLive']>(wpi.openChannelsLive)
+expectType<WeapiDefaultInstance['openChannelsLiveNoticeInfo']>(wpi.openChannelsLiveNoticeInfo)
+expectType<WeapiDefaultInstance['openChannelsUserProfile']>(wpi.openChannelsUserProfile)
+expectType<WeapiDefaultInstance['openChatTool']>(wpi.openChatTool)
+expectType<WeapiDefaultInstance['openHKOfflinePayView']>(wpi.openHKOfflinePayView)
+expectType<WeapiDefaultInstance['openInquiriesTopic']>(wpi.openInquiriesTopic)
+expectType<WeapiDefaultInstance['openOfficialAccountArticle']>(wpi.openOfficialAccountArticle)
+expectType<WeapiDefaultInstance['openOfficialAccountChat']>(wpi.openOfficialAccountChat)
+expectType<WeapiDefaultInstance['openOfficialAccountProfile']>(wpi.openOfficialAccountProfile)
+expectType<WeapiDefaultInstance['openPrivacyContract']>(wpi.openPrivacyContract)
+expectType<WeapiDefaultInstance['openSystemBluetoothSetting']>(wpi.openSystemBluetoothSetting)
+expectType<WeapiDefaultInstance['reportEvent']>(wpi.reportEvent)
+expectType<WeapiDefaultInstance['reportMonitor']>(wpi.reportMonitor)
+expectType<WeapiDefaultInstance['reportPerformance']>(wpi.reportPerformance)
 
 const requestTask = wpi.request({
   url: 'https://example.com',
