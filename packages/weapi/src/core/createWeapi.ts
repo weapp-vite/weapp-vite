@@ -103,6 +103,9 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
   const syntheticWindowResizeListeners = new Set<(result: any) => void>()
   let syntheticWindowResizeBridgeReady = false
   let syntheticWindowResizeSnapshot: string | undefined
+  const syntheticMemoryWarningListeners = new Set<(result: any) => void>()
+  let syntheticMemoryWarningBridgeReady = false
+  const syntheticStorage = new Map<string, any>()
   const syntheticLogManager = {
     log: (..._args: unknown[]) => {},
     info: (..._args: unknown[]) => {},
@@ -122,6 +125,21 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     hitTest: () => Promise.resolve([]),
     requestAnimationFrame: (_callback: (...args: any[]) => void) => 0,
     cancelAnimationFrame: (_id: number) => {},
+  }
+  const syntheticCameraContext = {
+    takePhoto: (_options?: Record<string, any>) => Promise.resolve({
+      tempImagePath: '',
+      errMsg: 'takePhoto:ok',
+    }),
+    startRecord: (_options?: Record<string, any>) => Promise.resolve({
+      errMsg: 'startRecord:ok',
+    }),
+    stopRecord: (_options?: Record<string, any>) => Promise.resolve({
+      tempThumbPath: '',
+      tempVideoPath: '',
+      errMsg: 'stopRecord:ok',
+    }),
+    onCameraFrame: (_callback: (...args: any[]) => void) => {},
   }
 
   const mapSyntheticActionSheetResult = (result: any, itemList: readonly string[]) => {
@@ -182,6 +200,12 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     }
   }
 
+  const emitSyntheticMemoryWarning = (result: any) => {
+    for (const listener of syntheticMemoryWarningListeners) {
+      listener(result)
+    }
+  }
+
   const ensureSyntheticWindowResizeBridge = () => {
     if (syntheticWindowResizeBridgeReady) {
       return
@@ -220,6 +244,21 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     })
   }
 
+  const ensureSyntheticMemoryWarningBridge = () => {
+    if (syntheticMemoryWarningBridgeReady) {
+      return
+    }
+    const runtimeAdapter = resolveAdapter() as Record<string, any> | undefined
+    const onMemoryWarning = runtimeAdapter?.onMemoryWarning
+    if (typeof onMemoryWarning !== 'function') {
+      return
+    }
+    syntheticMemoryWarningBridgeReady = true
+    onMemoryWarning((result: any) => {
+      emitSyntheticMemoryWarning(result)
+    })
+  }
+
   const invokeSyntheticMethod = (
     platform: string | undefined,
     methodName: string,
@@ -230,6 +269,32 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         handled: false as const,
         result: undefined,
       }
+    }
+    const toArray = <T>(value: unknown): T[] => Array.isArray(value) ? value as T[] : []
+    const resolveBatchSetEntries = (value: unknown) => {
+      if (!isPlainObject(value)) {
+        return []
+      }
+      const keyValueList = toArray<Record<string, any>>(value.keyValueList)
+      if (keyValueList.length > 0) {
+        return keyValueList
+      }
+      const dataList = toArray<Record<string, any>>(value.dataList)
+      if (dataList.length > 0) {
+        return dataList
+      }
+      return []
+    }
+    const resolveBatchGetKeys = (value: unknown) => {
+      if (!isPlainObject(value)) {
+        return []
+      }
+      const keyList = toArray<string>(value.keyList)
+      if (keyList.length > 0) {
+        return keyList.filter((item): item is string => typeof item === 'string')
+      }
+      const keys = toArray<string>(value.keys)
+      return keys.filter((item): item is string => typeof item === 'string')
     }
     const invokeSyntheticAsyncSuccess = (payload: Record<string, any>) => {
       const lastArg = args.length > 0 ? args[args.length - 1] : undefined
@@ -312,6 +377,18 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         result: syntheticVKSession,
       }
     }
+    if (methodName === 'createCameraContext') {
+      return {
+        handled: true as const,
+        result: syntheticCameraContext,
+      }
+    }
+    if (methodName === 'cancelIdleCallback') {
+      return {
+        handled: true as const,
+        result: undefined,
+      }
+    }
     if (methodName === 'reportAnalytics') {
       return {
         handled: true as const,
@@ -376,6 +453,96 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         result: invokeSyntheticAsyncSuccess({
           errMsg: 'openDocument:ok',
         }),
+      }
+    }
+    if (methodName === 'batchSetStorage') {
+      const options = isPlainObject(args[0]) ? args[0] : {}
+      const entries = resolveBatchSetEntries(options)
+      for (const entry of entries) {
+        const key = typeof entry.key === 'string' ? entry.key : undefined
+        if (!key) {
+          continue
+        }
+        const data = Object.prototype.hasOwnProperty.call(entry, 'data') ? entry.data : entry.value
+        syntheticStorage.set(key, data)
+      }
+      return {
+        handled: true as const,
+        result: invokeSyntheticAsyncSuccess({
+          errMsg: 'batchSetStorage:ok',
+        }),
+      }
+    }
+    if (methodName === 'batchGetStorage') {
+      const options = isPlainObject(args[0]) ? args[0] : {}
+      const keyList = resolveBatchGetKeys(options)
+      const dataList = keyList.map(key => ({
+        key,
+        data: syntheticStorage.get(key),
+      }))
+      return {
+        handled: true as const,
+        result: invokeSyntheticAsyncSuccess({
+          dataList,
+          errMsg: 'batchGetStorage:ok',
+        }),
+      }
+    }
+    if (methodName === 'batchSetStorageSync') {
+      const options = isPlainObject(args[0]) ? args[0] : {}
+      const entries = resolveBatchSetEntries(options)
+      for (const entry of entries) {
+        const key = typeof entry.key === 'string' ? entry.key : undefined
+        if (!key) {
+          continue
+        }
+        const data = Object.prototype.hasOwnProperty.call(entry, 'data') ? entry.data : entry.value
+        syntheticStorage.set(key, data)
+      }
+      return {
+        handled: true as const,
+        result: {
+          errMsg: 'batchSetStorageSync:ok',
+        },
+      }
+    }
+    if (methodName === 'batchGetStorageSync') {
+      const options = isPlainObject(args[0]) ? args[0] : {}
+      const keyList = resolveBatchGetKeys(options)
+      const dataList = keyList.map(key => ({
+        key,
+        data: syntheticStorage.get(key),
+      }))
+      return {
+        handled: true as const,
+        result: {
+          dataList,
+          errMsg: 'batchGetStorageSync:ok',
+        },
+      }
+    }
+    if (methodName === 'offMemoryWarning' && platform === 'tt') {
+      const callback = typeof args[0] === 'function' ? args[0] as (result: any) => void : undefined
+      if (callback) {
+        syntheticMemoryWarningListeners.delete(callback)
+      }
+      else {
+        syntheticMemoryWarningListeners.clear()
+      }
+      return {
+        handled: true as const,
+        result: undefined,
+      }
+    }
+    if (methodName === 'onMemoryWarning' && platform === 'tt') {
+      const callback = typeof args[0] === 'function' ? args[0] as (result: any) => void : undefined
+      if (callback) {
+        syntheticMemoryWarningListeners.add(callback)
+      }
+      ensureSyntheticMemoryWarningBridge()
+      return {
+        handled: true as const,
+        result: undefined,
       }
     }
     if (methodName === 'onWindowResize' && platform === 'my') {
@@ -512,6 +679,14 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
           ? (runtimeAdapter as Record<string, any>)[methodName]
           : undefined
         const runtimeArgs = mappingRule?.mapArgs ? mappingRule.mapArgs(args) : args
+        const preferSynthetic = platform === 'tt'
+          && (prop === 'onMemoryWarning' || prop === 'offMemoryWarning')
+        if (preferSynthetic) {
+          const syntheticResult = invokeSyntheticMethod(platform, prop as string, runtimeArgs)
+          if (syntheticResult.handled) {
+            return syntheticResult.result
+          }
+        }
         if (typeof runtimeMethod !== 'function') {
           const syntheticResult = invokeSyntheticMethod(platform, prop as string, runtimeArgs)
           if (syntheticResult.handled) {

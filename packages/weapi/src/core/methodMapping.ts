@@ -89,6 +89,12 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'openVideoEditor',
     'getShareInfo',
     'joinVoIPChat',
+    'batchSetStorage',
+    'batchGetStorage',
+    'batchSetStorageSync',
+    'batchGetStorageSync',
+    'createCameraContext',
+    'cancelIdleCallback',
     'nextTick',
     'getLogManager',
     'reportAnalytics',
@@ -104,6 +110,14 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'getShareInfo',
     'joinVoIPChat',
     'openDocument',
+    'batchSetStorage',
+    'batchGetStorage',
+    'batchSetStorageSync',
+    'batchGetStorageSync',
+    'createCameraContext',
+    'onMemoryWarning',
+    'offMemoryWarning',
+    'cancelIdleCallback',
     'nextTick',
     'getLogManager',
   ]),
@@ -671,6 +685,62 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     wxStrategy: '直连 `wx.saveVideoToPhotosAlbum`',
     alipayStrategy: '直连 `my.saveVideoToPhotosAlbum`',
     douyinStrategy: '映射到 `tt.saveImageToPhotosAlbum`',
+    support: '⚠️',
+  },
+  {
+    method: 'batchSetStorage',
+    description: '批量异步写入缓存。',
+    wxStrategy: '直连 `wx.batchSetStorage`',
+    alipayStrategy: '使用内置 shim，逐项转调 `my.setStorage`',
+    douyinStrategy: '使用内置 shim，逐项转调 `tt.setStorage`',
+    support: '⚠️',
+  },
+  {
+    method: 'batchGetStorage',
+    description: '批量异步读取缓存。',
+    wxStrategy: '直连 `wx.batchGetStorage`',
+    alipayStrategy: '使用内置 shim，逐项转调 `my.getStorage`',
+    douyinStrategy: '使用内置 shim，逐项转调 `tt.getStorage`',
+    support: '⚠️',
+  },
+  {
+    method: 'batchSetStorageSync',
+    description: '批量同步写入缓存。',
+    wxStrategy: '直连 `wx.batchSetStorageSync`',
+    alipayStrategy: '使用内置 shim，逐项转调 `my.setStorageSync`',
+    douyinStrategy: '使用内置 shim，逐项转调 `tt.setStorageSync`',
+    support: '⚠️',
+  },
+  {
+    method: 'batchGetStorageSync',
+    description: '批量同步读取缓存。',
+    wxStrategy: '直连 `wx.batchGetStorageSync`',
+    alipayStrategy: '使用内置 shim，逐项转调 `my.getStorageSync`',
+    douyinStrategy: '使用内置 shim，逐项转调 `tt.getStorageSync`',
+    support: '⚠️',
+  },
+  {
+    method: 'createCameraContext',
+    description: '创建相机上下文对象。',
+    wxStrategy: '直连 `wx.createCameraContext`',
+    alipayStrategy: '使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`）',
+    douyinStrategy: '使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`）',
+    support: '⚠️',
+  },
+  {
+    method: 'offMemoryWarning',
+    description: '取消内存不足告警监听。',
+    wxStrategy: '直连 `wx.offMemoryWarning`',
+    alipayStrategy: '直连 `my.offMemoryWarning`',
+    douyinStrategy: '使用内置 shim，配合 `tt.onMemoryWarning` 实现监听解绑',
+    support: '⚠️',
+  },
+  {
+    method: 'cancelIdleCallback',
+    description: '取消空闲回调。',
+    wxStrategy: '直连 `wx.cancelIdleCallback`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
     support: '⚠️',
   },
 ] as const
@@ -1731,6 +1801,27 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     saveVideoToPhotosAlbum: {
       target: 'saveVideoToPhotosAlbum',
     },
+    batchSetStorage: {
+      target: 'batchSetStorage',
+    },
+    batchGetStorage: {
+      target: 'batchGetStorage',
+    },
+    batchSetStorageSync: {
+      target: 'batchSetStorageSync',
+    },
+    batchGetStorageSync: {
+      target: 'batchGetStorageSync',
+    },
+    createCameraContext: {
+      target: 'createCameraContext',
+    },
+    offMemoryWarning: {
+      target: 'offMemoryWarning',
+    },
+    cancelIdleCallback: {
+      target: 'cancelIdleCallback',
+    },
   },
   tt: {
     showToast: {
@@ -1956,6 +2047,27 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     saveVideoToPhotosAlbum: {
       target: 'saveImageToPhotosAlbum',
+    },
+    batchSetStorage: {
+      target: 'batchSetStorage',
+    },
+    batchGetStorage: {
+      target: 'batchGetStorage',
+    },
+    batchSetStorageSync: {
+      target: 'batchSetStorageSync',
+    },
+    batchGetStorageSync: {
+      target: 'batchGetStorageSync',
+    },
+    createCameraContext: {
+      target: 'createCameraContext',
+    },
+    offMemoryWarning: {
+      target: 'offMemoryWarning',
+    },
+    cancelIdleCallback: {
+      target: 'cancelIdleCallback',
     },
   },
 }

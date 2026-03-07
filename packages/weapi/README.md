@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 235 | 244 | 479 | 100.00% | 49.06% |
-| 抖音小程序 (`tt`) | 479 | 175 | 304 | 479 | 100.00% | 36.53% |
+| 支付宝小程序 (`my`) | 479 | 241 | 238 | 479 | 100.00% | 50.31% |
+| 抖音小程序 (`tt`) | 479 | 182 | 297 | 479 | 100.00% | 38.00% |
 | 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 173 | - | 479 | - | 36.12% |
+| 三端语义完全对齐 (wx/my/tt) | - | 180 | - | 479 | - | 37.58% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -113,6 +113,13 @@
 | `joinVoIPChat` | 加入音视频通话。 | 直连 `wx.joinVoIPChat` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `openDocument` | 打开文档。 | 直连 `wx.openDocument` | 直连 `my.openDocument` | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `saveVideoToPhotosAlbum` | 保存视频到系统相册。 | 直连 `wx.saveVideoToPhotosAlbum` | 直连 `my.saveVideoToPhotosAlbum` | 映射到 `tt.saveImageToPhotosAlbum` | ⚠️ |
+| `batchSetStorage` | 批量异步写入缓存。 | 直连 `wx.batchSetStorage` | 使用内置 shim，逐项转调 `my.setStorage` | 使用内置 shim，逐项转调 `tt.setStorage` | ⚠️ |
+| `batchGetStorage` | 批量异步读取缓存。 | 直连 `wx.batchGetStorage` | 使用内置 shim，逐项转调 `my.getStorage` | 使用内置 shim，逐项转调 `tt.getStorage` | ⚠️ |
+| `batchSetStorageSync` | 批量同步写入缓存。 | 直连 `wx.batchSetStorageSync` | 使用内置 shim，逐项转调 `my.setStorageSync` | 使用内置 shim，逐项转调 `tt.setStorageSync` | ⚠️ |
+| `batchGetStorageSync` | 批量同步读取缓存。 | 直连 `wx.batchGetStorageSync` | 使用内置 shim，逐项转调 `my.getStorageSync` | 使用内置 shim，逐项转调 `tt.getStorageSync` | ⚠️ |
+| `createCameraContext` | 创建相机上下文对象。 | 直连 `wx.createCameraContext` | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） | ⚠️ |
+| `offMemoryWarning` | 取消内存不足告警监听。 | 直连 `wx.offMemoryWarning` | 直连 `my.offMemoryWarning` | 使用内置 shim，配合 `tt.onMemoryWarning` 实现监听解绑 | ⚠️ |
+| `cancelIdleCallback` | 取消空闲回调。 | 直连 `wx.cancelIdleCallback` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 
