@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：310，不支持：169
+总计：479，支持：299，不支持：180
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -59,29 +59,29 @@
 | `createAnimation`                             | `createAnimation`                             | ✅   | `native`      | ✅       | 直连 `my.createAnimation`                                                         |
 | `createAudioContext`                          | `createInnerAudioContext`                     | ✅   | `mapped`      | ✅       | 映射到 `my.createInnerAudioContext`                                               |
 | `createBLEConnection`                         | `createBLEConnection`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `createBLEPeripheralServer`                   | `createBLEPeripheralServer`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `createBufferURL`                             | `createBufferURL`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `createCacheManager`                          | `createCacheManager`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createBLEPeripheralServer`                   | `createBLEPeripheralServer`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `createBufferURL`                             | `createBufferURL`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `createCacheManager`                          | `createCacheManager`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createCameraContext`                         | `createCameraContext`                         | ✅   | `mapped`      | ✅       | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`）            |
 | `createCanvasContext`                         | `createCanvasContext`                         | ✅   | `native`      | ✅       | 直连 `my.createCanvasContext`                                                     |
-| `createGlobalPayment`                         | `createGlobalPayment`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `createInferenceSession`                      | `createInferenceSession`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createGlobalPayment`                         | `createGlobalPayment`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `createInferenceSession`                      | `createInferenceSession`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createInnerAudioContext`                     | `createInnerAudioContext`                     | ✅   | `native`      | ✅       | 直连 `my.createInnerAudioContext`                                                 |
 | `createIntersectionObserver`                  | `createIntersectionObserver`                  | ✅   | `native`      | ✅       | 直连 `my.createIntersectionObserver`                                              |
 | `createInterstitialAd`                        | `createRewardedAd`                            | ✅   | `mapped`      | ✅       | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                               |
 | `createLivePlayerContext`                     | `createVideoContext`                          | ✅   | `mapped`      | ✅       | 映射到 `my.createVideoContext`                                                    |
 | `createLivePusherContext`                     | `createVideoContext`                          | ✅   | `mapped`      | ✅       | 映射到 `my.createVideoContext`                                                    |
 | `createMapContext`                            | `createMapContext`                            | ✅   | `native`      | ✅       | 直连 `my.createMapContext`                                                        |
-| `createMediaAudioPlayer`                      | `createMediaAudioPlayer`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `createMediaContainer`                        | `createMediaContainer`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `createMediaRecorder`                         | `createMediaRecorder`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createMediaAudioPlayer`                      | `createMediaAudioPlayer`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `createMediaContainer`                        | `createMediaContainer`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `createMediaRecorder`                         | `createMediaRecorder`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createOffscreenCanvas`                       | `createOffscreenCanvas`                       | ✅   | `native`      | ✅       | 直连 `my.createOffscreenCanvas`                                                   |
 | `createRewardedVideoAd`                       | `createRewardedAd`                            | ✅   | `mapped`      | ✅       | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                               |
 | `createSelectorQuery`                         | `createSelectorQuery`                         | ✅   | `native`      | ✅       | 直连 `my.createSelectorQuery`                                                     |
-| `createTCPSocket`                             | `createTCPSocket`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `createUDPSocket`                             | `createUDPSocket`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createTCPSocket`                             | `createTCPSocket`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `createUDPSocket`                             | `createUDPSocket`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createVideoContext`                          | `createVideoContext`                          | ✅   | `native`      | ✅       | 直连 `my.createVideoContext`                                                      |
-| `createVideoDecoder`                          | `createVideoDecoder`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createVideoDecoder`                          | `createVideoDecoder`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createVKSession`                             | `createVKSession`                             | ✅   | `mapped`      | ✅       | 使用内置 VKSession shim（对齐 `start/stop/destroy`）                              |
 | `createWebAudioContext`                       | `createInnerAudioContext`                     | ✅   | `mapped`      | ✅       | 映射到 `my.createInnerAudioContext`                                               |
 | `createWorker`                                | `createWorker`                                | ✅   | `native`      | ✅       | 直连 `my.createWorker`                                                            |

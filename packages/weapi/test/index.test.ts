@@ -948,6 +948,38 @@ describe('weapi', () => {
   })
 
   it.each([
+    'createBLEPeripheralServer',
+    'createBufferURL',
+    'createCacheManager',
+    'createGlobalPayment',
+    'createInferenceSession',
+    'createMediaAudioPlayer',
+    'createMediaContainer',
+    'createMediaRecorder',
+    'createTCPSocket',
+    'createUDPSocket',
+    'createVideoDecoder',
+  ])('treats %s as unsupported when adapter method is absent', async (methodName) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const normalizedPlatform = platform === 'alipay' ? 'my' : platform
+      const api = createWeapi({
+        adapter: {},
+        platform,
+      }) as Record<string, any>
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({})).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
+      })
+    }
+  })
+
+  it.each([
     'addCard',
     'addFileToFavorites',
     'addPaymentPassFinish',
@@ -993,17 +1025,6 @@ describe('weapi', () => {
     'preloadSkylineView',
     'preloadWebview',
     'removeSecureElementPass',
-    'createBLEPeripheralServer',
-    'createBufferURL',
-    'createCacheManager',
-    'createGlobalPayment',
-    'createInferenceSession',
-    'createMediaAudioPlayer',
-    'createMediaContainer',
-    'createMediaRecorder',
-    'createTCPSocket',
-    'createUDPSocket',
-    'createVideoDecoder',
     'loadBuiltInFontFace',
     'notifyGroupMembers',
     'requestIdleCallback',

@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 310 | 310 | 0 | 479 | 64.72% | 64.72% |
-| 抖音小程序 (`tt`) | 248 | 248 | 0 | 479 | 51.77% | 51.77% |
-| 三端可调用完全对齐 (wx/my/tt) | 246 | - | - | 479 | 51.36% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 246 | - | 479 | - | 51.36% |
+| 支付宝小程序 (`my`) | 299 | 299 | 0 | 479 | 62.42% | 62.42% |
+| 抖音小程序 (`tt`) | 237 | 237 | 0 | 479 | 49.48% | 49.48% |
+| 三端可调用完全对齐 (wx/my/tt) | 235 | - | - | 479 | 49.06% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 235 | - | 479 | - | 49.06% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -256,17 +256,17 @@
 | `getXrFrameSystem` | 获取 XR 框架系统对象。 | 直连 `wx.getXrFrameSystem` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `isBluetoothDevicePaired` | 判断蓝牙设备是否已配对。 | 直连 `wx.isBluetoothDevicePaired` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `isVKSupport` | 判断是否支持视觉识别能力。 | 直连 `wx.isVKSupport` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `createBLEPeripheralServer` | 创建 BLE 外设服务实例。 | 直连 `wx.createBLEPeripheralServer` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `createBufferURL` | 创建缓冲区 URL。 | 直连 `wx.createBufferURL` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `createCacheManager` | 创建缓存管理器。 | 直连 `wx.createCacheManager` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `createGlobalPayment` | 创建全局支付对象。 | 直连 `wx.createGlobalPayment` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `createInferenceSession` | 创建推理会话。 | 直连 `wx.createInferenceSession` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `createMediaAudioPlayer` | 创建媒体音频播放器。 | 直连 `wx.createMediaAudioPlayer` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `createMediaContainer` | 创建媒体容器实例。 | 直连 `wx.createMediaContainer` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `createMediaRecorder` | 创建媒体录制器。 | 直连 `wx.createMediaRecorder` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `createTCPSocket` | 创建 TCP Socket。 | 直连 `wx.createTCPSocket` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `createUDPSocket` | 创建 UDP Socket。 | 直连 `wx.createUDPSocket` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `createVideoDecoder` | 创建视频解码器。 | 直连 `wx.createVideoDecoder` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createBLEPeripheralServer` | 创建 BLE 外设服务实例。 | 直连 `wx.createBLEPeripheralServer` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createBufferURL` | 创建缓冲区 URL。 | 直连 `wx.createBufferURL` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createCacheManager` | 创建缓存管理器。 | 直连 `wx.createCacheManager` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createGlobalPayment` | 创建全局支付对象。 | 直连 `wx.createGlobalPayment` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createInferenceSession` | 创建推理会话。 | 直连 `wx.createInferenceSession` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createMediaAudioPlayer` | 创建媒体音频播放器。 | 直连 `wx.createMediaAudioPlayer` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createMediaContainer` | 创建媒体容器实例。 | 直连 `wx.createMediaContainer` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createMediaRecorder` | 创建媒体录制器。 | 直连 `wx.createMediaRecorder` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createTCPSocket` | 创建 TCP Socket。 | 直连 `wx.createTCPSocket` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createUDPSocket` | 创建 UDP Socket。 | 直连 `wx.createUDPSocket` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createVideoDecoder` | 创建视频解码器。 | 直连 `wx.createVideoDecoder` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `loadBuiltInFontFace` | 加载内置字体。 | 直连 `wx.loadBuiltInFontFace` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `notifyGroupMembers` | 通知群成员。 | 直连 `wx.notifyGroupMembers` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `requestIdleCallback` | 空闲时回调请求。 | 直连 `wx.requestIdleCallback` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
