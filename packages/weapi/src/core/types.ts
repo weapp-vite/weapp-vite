@@ -616,7 +616,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.chooseVideo` | ⚠️ |
    * | 支付宝 | 直连 `my.chooseVideo` | ⚠️ |
-   * | 抖音 | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   chooseVideo: WeapiCrossPlatformAdapter['chooseVideo']
 

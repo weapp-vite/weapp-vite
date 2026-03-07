@@ -6,16 +6,16 @@
 - 支付宝可调用兼容方法数：217
 - 支付宝语义对齐方法数：217
 - 支付宝 fallback 方法数：0
-- 抖音可调用兼容方法数：156
-- 抖音语义对齐方法数：156
+- 抖音可调用兼容方法数：155
+- 抖音语义对齐方法数：155
 - 抖音 fallback 方法数：0
-- 三端可调用完全对齐方法数：148
-- 三端语义完全对齐方法数：148
+- 三端可调用完全对齐方法数：147
+- 三端语义完全对齐方法数：147
 
 ## 不兼容规模
 
 - 支付宝侧不兼容（按微信命名调用失败）方法：262
-- 抖音侧不兼容（按微信命名调用失败）方法：323
+- 抖音侧不兼容（按微信命名调用失败）方法：324
 
 ## 不兼容示例（前 40 项）
 
@@ -96,6 +96,7 @@
 - `chooseLicensePlate` -> 目标 `chooseLicensePlate`（unsupported）
 - `chooseMessageFile` -> 目标 `chooseMessageFile`（unsupported）
 - `choosePoi` -> 目标 `choosePoi`（unsupported）
+- `chooseVideo` -> 目标 `chooseVideo`（unsupported）
 - `closeBLEConnection` -> 目标 `closeBLEConnection`（unsupported）
 - `closeBluetoothAdapter` -> 目标 `closeBluetoothAdapter`（unsupported）
 - `closeSocket` -> 目标 `closeSocket`（unsupported）
@@ -103,4 +104,3 @@
 - `connectWifi` -> 目标 `connectWifi`（unsupported）
 - `createBLEConnection` -> 目标 `createBLEConnection`（unsupported）
 - `createBLEPeripheralServer` -> 目标 `createBLEPeripheralServer`（unsupported）
-- `createBufferURL` -> 目标 `createBufferURL`（unsupported）

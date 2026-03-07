@@ -1331,7 +1331,7 @@ describe('weapi', () => {
     expect(saveImageToPhotosAlbum).not.toHaveBeenCalled()
   })
 
-  it('maps chooseVideo to chooseMedia for douyin', async () => {
+  it('treats chooseVideo as unsupported for douyin without strict-equivalent api', async () => {
     const chooseMedia = vi.fn((options: any) => {
       options.success?.({
         tempFiles: [
@@ -1353,26 +1353,21 @@ describe('weapi', () => {
       platform: 'tt',
     })
 
-    const result = await api.chooseVideo({
+    expect(api.resolveTarget('chooseVideo')).toMatchObject({
+      method: 'chooseVideo',
+      target: 'chooseVideo',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.chooseVideo({
       compressed: false,
       camera: 'back',
       sourceType: ['camera'],
+    })).rejects.toMatchObject({
+      errMsg: 'tt.chooseVideo:fail method not supported',
     })
-
-    expect(chooseMedia).toHaveBeenCalledWith(expect.objectContaining({
-      mediaType: ['video'],
-      count: 1,
-      sizeType: ['original'],
-      camera: 'back',
-      sourceType: ['camera'],
-    }))
-    expect(result).toMatchObject({
-      tempFilePath: '/tmp/video.mp4',
-      size: 123,
-      duration: 8,
-      width: 720,
-      height: 1280,
-    })
+    expect(chooseMedia).not.toHaveBeenCalled()
   })
 
   it('maps getWindowInfo to getSystemInfo for douyin', async () => {
@@ -1937,7 +1932,7 @@ describe('weapi', () => {
       { method: 'getUserInfo', my: 'getOpenUserInfo', tt: 'getUserInfo' },
       { method: 'getAppAuthorizeSetting', my: 'getAppAuthorizeSetting', tt: 'getSetting' },
       { method: 'getAppBaseInfo', my: 'getAppBaseInfo', tt: 'getEnvInfoSync' },
-      { method: 'chooseVideo', my: 'chooseVideo', tt: 'chooseMedia' },
+      { method: 'chooseVideo', my: 'chooseVideo', tt: 'chooseVideo', ttSupported: false },
       { method: 'chooseMedia', my: 'chooseMedia', tt: 'chooseMedia', mySupported: false },
       { method: 'chooseMessageFile', my: 'chooseMessageFile', tt: 'chooseMessageFile', mySupported: false, ttSupported: false },
       { method: 'getFuzzyLocation', my: 'getFuzzyLocation', tt: 'getFuzzyLocation', mySupported: false, ttSupported: false },
