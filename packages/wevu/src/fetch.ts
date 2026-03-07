@@ -28,8 +28,19 @@ interface RequestLikeInput {
 }
 
 type WevuFetchInput = string | URL | RequestLikeInput
+type WxRequestMethod = NonNullable<WechatMiniprogram.RequestOption['method']>
 
 const hasOwn = Object.prototype.hasOwnProperty
+const REQUEST_METHODS: ReadonlyArray<WxRequestMethod> = [
+  'GET',
+  'HEAD',
+  'OPTIONS',
+  'POST',
+  'PUT',
+  'DELETE',
+  'TRACE',
+  'CONNECT',
+]
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -44,8 +55,12 @@ function createAbortError() {
   return error
 }
 
-function normalizeMethod(method?: string) {
-  return (method ?? 'GET').toUpperCase()
+function normalizeMethod(method?: string): WxRequestMethod {
+  const normalized = (method ?? 'GET').toUpperCase()
+  if (REQUEST_METHODS.includes(normalized as WxRequestMethod)) {
+    return normalized as WxRequestMethod
+  }
+  return 'GET'
 }
 
 function setHeader(target: HeaderMap, key: string, value: unknown) {
@@ -131,8 +146,14 @@ function cloneBuffer(buffer: ArrayBuffer) {
   return buffer.slice(0)
 }
 
+function cloneViewBuffer(view: ArrayBufferView) {
+  const copied = new Uint8Array(view.byteLength)
+  copied.set(new Uint8Array(view.buffer, view.byteOffset, view.byteLength))
+  return copied.buffer
+}
+
 function isRequestLikeInput(input: unknown): input is RequestLikeInput {
-  return isObject(input) && typeof (input as RequestLikeInput).url === 'string'
+  return isObject(input) && typeof input.url === 'string'
 }
 
 async function extractRequestBodyFromInput(input: RequestLikeInput | undefined) {
@@ -173,7 +194,7 @@ async function normalizeRequestBody(body: unknown, headers: HeaderMap) {
   }
   if (ArrayBuffer.isView(body)) {
     const view = body as ArrayBufferView
-    return view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength)
+    return cloneViewBuffer(view)
   }
   if (typeof Blob !== 'undefined' && body instanceof Blob) {
     if (body.type && !hasHeader(headers, 'content-type')) {
@@ -228,7 +249,7 @@ function readResponseDataAsArrayBuffer(data: unknown): Promise<ArrayBuffer> {
   }
   if (ArrayBuffer.isView(data)) {
     const view = data as ArrayBufferView
-    return Promise.resolve(view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength))
+    return Promise.resolve(cloneViewBuffer(view))
   }
   if (typeof data === 'string') {
     return Promise.resolve(encodeText(data))
@@ -406,9 +427,14 @@ class WevuResponseFallback {
 
 function createFetchResponse(data: unknown, status: number, headers: HeaderMap, url: string): Response {
   if (typeof Response === 'function') {
-    const nativeBody = typeof data === 'string' || data instanceof ArrayBuffer || ArrayBuffer.isView(data)
-      ? data
-      : JSON.stringify(data ?? '')
+    const nativeBody: BodyInit | null
+      = typeof data === 'string'
+        ? data
+        : data instanceof ArrayBuffer
+          ? data
+          : ArrayBuffer.isView(data)
+            ? cloneViewBuffer(data as ArrayBufferView)
+            : JSON.stringify(data ?? '')
     const normalizedStatus = Number.isFinite(status) && status >= 200 && status <= 599 ? status : 200
     try {
       return new Response(nativeBody, {
@@ -425,6 +451,10 @@ function createFetchResponse(data: unknown, status: number, headers: HeaderMap, 
     status,
     url,
   }) as unknown as Response
+}
+
+function isRequestTask(value: unknown): value is WechatMiniprogram.RequestTask {
+  return isObject(value) && typeof value.abort === 'function'
 }
 
 /**
@@ -459,7 +489,7 @@ export function fetch(input: WevuFetchInput, init?: WevuFetchInit): Promise<Resp
         }
       }
 
-      const requestTask = wpi.request({
+      const requestResult = wpi.request({
         url: meta.url,
         method: meta.method,
         header: meta.headers,
@@ -488,7 +518,8 @@ export function fetch(input: WevuFetchInput, init?: WevuFetchInit): Promise<Resp
             : String(err)
           reject(new TypeError(message))
         },
-      }) as WechatMiniprogram.RequestTask | undefined
+      })
+      const requestTask = isRequestTask(requestResult) ? requestResult : undefined
     })
   })
 }
