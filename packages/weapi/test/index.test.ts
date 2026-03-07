@@ -897,28 +897,56 @@ describe('weapi', () => {
     expect(openSetting).not.toHaveBeenCalled()
   })
 
-  it.each([
-    { platform: 'alipay', normalizedPlatform: 'my' },
-  ])('treats getSystemInfoAsync as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
-    const getSystemInfo = vi.fn()
+  it('maps getSystemInfoAsync to strict-equivalent getSystemInfo for alipay', async () => {
+    const getSystemInfo = vi.fn((options: any) => {
+      options.success?.({
+        platform: 'android',
+        brand: 'alipay',
+      })
+    })
     const api = createWeapi({
       adapter: {
         getSystemInfo,
       },
-      platform,
+      platform: 'alipay',
     }) as Record<string, any>
 
     expect(api.resolveTarget('getSystemInfoAsync')).toMatchObject({
       method: 'getSystemInfoAsync',
-      target: 'getSystemInfoAsync',
+      target: 'getSystemInfo',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+
+    const result = await api.getSystemInfoAsync()
+    expect(getSystemInfo).toHaveBeenCalledTimes(1)
+    expect(result).toMatchObject({
+      platform: 'android',
+      brand: 'alipay',
+    })
+  })
+
+  it('treats getSystemInfoAsync as unsupported for alipay when mapped target is missing', async () => {
+    const getSystemInfoSync = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        getSystemInfoSync,
+      },
+      platform: 'alipay',
+    }) as Record<string, any>
+
+    expect(api.resolveTarget('getSystemInfoAsync')).toMatchObject({
+      method: 'getSystemInfoAsync',
+      target: 'getSystemInfo',
       supportLevel: 'unsupported',
       supported: false,
       semanticAligned: false,
     })
     await expect(api.getSystemInfoAsync()).rejects.toMatchObject({
-      errMsg: `${normalizedPlatform}.getSystemInfoAsync:fail method not supported`,
+      errMsg: 'my.getSystemInfoAsync:fail method not supported',
     })
-    expect(getSystemInfo).not.toHaveBeenCalled()
+    expect(getSystemInfoSync).not.toHaveBeenCalled()
   })
 
   it('maps getSystemInfoAsync to strict-equivalent getSystemInfo for douyin', async () => {
@@ -2693,7 +2721,7 @@ describe('weapi', () => {
       { method: 'chooseAddress', my: 'chooseAddress', tt: 'chooseAddress', mySupported: false },
       { method: 'createAudioContext', my: 'createAudioContext', tt: 'createAudioContext', mySupported: false, ttSupported: false },
       { method: 'createWebAudioContext', my: 'createWebAudioContext', tt: 'createWebAudioContext', mySupported: false, ttSupported: false },
-      { method: 'getSystemInfoAsync', my: 'getSystemInfoAsync', tt: 'getSystemInfo', mySupported: false },
+      { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'openAppAuthorizeSetting', my: 'openAppAuthorizeSetting', tt: 'openAppAuthorizeSetting', mySupported: false, ttSupported: false },
       { method: 'pluginLogin', my: 'pluginLogin', tt: 'pluginLogin', mySupported: false, ttSupported: false },
       { method: 'login', my: 'login', tt: 'login', mySupported: false },

@@ -95,6 +95,7 @@
 - `my.connectBLEDevice` 映射承接 `wx.createBLEConnection`。
 - `my.disconnectBLEDevice` 映射承接 `wx.closeBLEConnection`。
 - 入参 `deviceId/timeout` 可直接对齐，返回结果 `error|errorCode/errorMessage` 已规范化为 `errCode/errMsg`。
+- `my.getSystemInfo` 映射承接 `wx.getSystemInfoAsync`。
 - 抖音侧仍保持 unsupported（无同等 API）。
 
 ## 5. 每批固定验证清单

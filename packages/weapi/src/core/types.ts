@@ -351,7 +351,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getSystemInfoAsync` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 支付宝 | 映射到 `my.getSystemInfo` | ⚠️ |
    * | 抖音 | 映射到 `tt.getSystemInfo` | ⚠️ |
    */
   getSystemInfoAsync: WeapiCrossPlatformAdapter['getSystemInfoAsync']
