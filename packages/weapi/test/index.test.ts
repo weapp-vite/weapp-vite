@@ -507,10 +507,8 @@ describe('weapi', () => {
     expect(hideBackHome).toHaveBeenCalledWith(expect.any(Object))
   })
 
-  it('maps requestPayment family to tradePay for alipay', async () => {
-    const tradePay = vi.fn((options: any) => {
-      options.success?.({ resultCode: '9000' })
-    })
+  it('treats requestPayment family as unsupported for alipay', async () => {
+    const tradePay = vi.fn()
     const api = createWeapi({
       adapter: {
         tradePay,
@@ -518,16 +516,70 @@ describe('weapi', () => {
       platform: 'alipay',
     })
 
-    await api.requestPayment({ package: 'prepay=1' } as any)
-    await api.requestOrderPayment({ package: 'prepay=2' } as any)
-    await api.requestPluginPayment({ package: 'prepay=3' } as any)
-    await api.requestVirtualPayment({ package: 'prepay=4' } as any)
+    for (const methodName of ['requestPayment', 'requestOrderPayment', 'requestPluginPayment', 'requestVirtualPayment'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({ package: 'prepay=1' })).rejects.toMatchObject({
+        errMsg: `my.${methodName}:fail method not supported`,
+      })
+    }
 
-    expect(tradePay).toHaveBeenCalledTimes(4)
-    expect(tradePay).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      package: 'prepay=1',
-      orderStr: 'prepay=1',
-    }))
+    expect(tradePay).not.toHaveBeenCalled()
+  })
+
+  it('treats requestPayment family as unsupported for douyin', async () => {
+    const pay = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        pay,
+      },
+      platform: 'tt',
+    })
+
+    for (const methodName of ['requestPayment', 'requestOrderPayment', 'requestPluginPayment', 'requestVirtualPayment'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({ package: 'order-info-1' })).rejects.toMatchObject({
+        errMsg: `tt.${methodName}:fail method not supported`,
+      })
+    }
+
+    expect(pay).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'requestPayment',
+    'requestOrderPayment',
+    'requestPluginPayment',
+    'requestVirtualPayment',
+  ])('treats %s as unsupported in strict compatibility mode', async (methodName) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const normalizedPlatform = platform === 'alipay' ? 'my' : platform
+      const api = createWeapi({
+        adapter: {},
+        platform,
+      }) as Record<string, any>
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({ package: 'test' })).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
+      })
+    }
   })
 
   it('treats previewMedia as unsupported for alipay without strict-equivalent api', async () => {
@@ -1580,29 +1632,6 @@ describe('weapi', () => {
     })
   })
 
-  it('maps requestPayment family to pay for douyin', async () => {
-    const pay = vi.fn((options: any) => {
-      options.success?.({ code: 0 })
-    })
-    const api = createWeapi({
-      adapter: {
-        pay,
-      },
-      platform: 'tt',
-    })
-
-    await api.requestPayment({ package: 'order-info-1' } as any)
-    await api.requestOrderPayment({ package: 'order-info-2' } as any)
-    await api.requestPluginPayment({ package: 'order-info-3' } as any)
-    await api.requestVirtualPayment({ package: 'order-info-4' } as any)
-
-    expect(pay).toHaveBeenCalledTimes(4)
-    expect(pay).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      package: 'order-info-1',
-      orderInfo: 'order-info-1',
-    }))
-  })
-
   it('treats previewMedia as unsupported for douyin without strict-equivalent api', async () => {
     const previewImage = vi.fn((options: any) => {
       options.success?.({ errMsg: 'previewImage:ok' })
@@ -1928,10 +1957,10 @@ describe('weapi', () => {
       { method: 'requestSubscribeEmployeeMessage', my: 'requestSubscribeMessage', tt: 'requestSubscribeMessage' },
       { method: 'restartMiniProgram', my: 'reLaunch', tt: 'reLaunch' },
       { method: 'scanCode', my: 'scan', tt: 'scanCode' },
-      { method: 'requestPayment', my: 'tradePay', tt: 'pay' },
-      { method: 'requestOrderPayment', my: 'tradePay', tt: 'pay' },
-      { method: 'requestPluginPayment', my: 'tradePay', tt: 'pay' },
-      { method: 'requestVirtualPayment', my: 'tradePay', tt: 'pay' },
+      { method: 'requestPayment', my: 'requestPayment', tt: 'requestPayment', mySupported: false, ttSupported: false },
+      { method: 'requestOrderPayment', my: 'requestOrderPayment', tt: 'requestOrderPayment', mySupported: false, ttSupported: false },
+      { method: 'requestPluginPayment', my: 'requestPluginPayment', tt: 'requestPluginPayment', mySupported: false, ttSupported: false },
+      { method: 'requestVirtualPayment', my: 'requestVirtualPayment', tt: 'requestVirtualPayment', mySupported: false, ttSupported: false },
       { method: 'previewMedia', my: 'previewMedia', tt: 'previewMedia', mySupported: false, ttSupported: false },
       { method: 'createInterstitialAd', my: 'createInterstitialAd', tt: 'createInterstitialAd', mySupported: false },
       { method: 'createRewardedVideoAd', my: 'createRewardedVideoAd', tt: 'createRewardedVideoAd', mySupported: false, ttSupported: false },

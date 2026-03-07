@@ -353,32 +353,32 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'requestPayment',
     description: '发起支付。',
     wxStrategy: '直连 `wx.requestPayment`',
-    alipayStrategy: '映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`',
-    douyinStrategy: '映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
     method: 'requestOrderPayment',
     description: '发起订单支付。',
     wxStrategy: '直连 `wx.requestOrderPayment`',
-    alipayStrategy: '映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`',
-    douyinStrategy: '映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
     method: 'requestPluginPayment',
     description: '发起插件支付。',
     wxStrategy: '直连 `wx.requestPluginPayment`',
-    alipayStrategy: '映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`',
-    douyinStrategy: '映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
     method: 'requestVirtualPayment',
     description: '发起虚拟支付。',
     wxStrategy: '直连 `wx.requestVirtualPayment`',
-    alipayStrategy: '映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`',
-    douyinStrategy: '映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2230,41 +2230,6 @@ function mapClipboardResult(result: any) {
   return result
 }
 
-function mapPaymentArgs(args: unknown[], target: 'orderStr' | 'orderInfo') {
-  if (args.length === 0) {
-    return [{}]
-  }
-  const nextArgs = [...args]
-  const lastIndex = nextArgs.length - 1
-  const lastArg = nextArgs[lastIndex]
-  if (!isPlainObject(lastArg)) {
-    return [...nextArgs, {}]
-  }
-  const nextOptions = {
-    ...lastArg,
-  } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, target)) {
-    const packageValue = typeof nextOptions.package === 'string' && nextOptions.package
-      ? nextOptions.package
-      : typeof nextOptions.prepayId === 'string' && nextOptions.prepayId
-        ? nextOptions.prepayId
-        : undefined
-    if (packageValue) {
-      nextOptions[target] = packageValue
-    }
-  }
-  nextArgs[lastIndex] = nextOptions
-  return nextArgs
-}
-
-function mapTradePayArgs(args: unknown[]) {
-  return mapPaymentArgs(args, 'orderStr')
-}
-
-function mapDouyinPayArgs(args: unknown[]) {
-  return mapPaymentArgs(args, 'orderInfo')
-}
-
 function resolveFilePaths(result: any): string[] {
   if (!isPlainObject(result)) {
     return []
@@ -2594,20 +2559,16 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'scan',
     },
     requestPayment: {
-      target: 'tradePay',
-      mapArgs: mapTradePayArgs,
+      target: 'requestPayment',
     },
     requestOrderPayment: {
-      target: 'tradePay',
-      mapArgs: mapTradePayArgs,
+      target: 'requestOrderPayment',
     },
     requestPluginPayment: {
-      target: 'tradePay',
-      mapArgs: mapTradePayArgs,
+      target: 'requestPluginPayment',
     },
     requestVirtualPayment: {
-      target: 'tradePay',
-      mapArgs: mapTradePayArgs,
+      target: 'requestVirtualPayment',
     },
     showShareImageMenu: {
       target: 'showShareImageMenu',
@@ -3293,20 +3254,16 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'scanCode',
     },
     requestPayment: {
-      target: 'pay',
-      mapArgs: mapDouyinPayArgs,
+      target: 'requestPayment',
     },
     requestOrderPayment: {
-      target: 'pay',
-      mapArgs: mapDouyinPayArgs,
+      target: 'requestOrderPayment',
     },
     requestPluginPayment: {
-      target: 'pay',
-      mapArgs: mapDouyinPayArgs,
+      target: 'requestPluginPayment',
     },
     requestVirtualPayment: {
-      target: 'pay',
-      mapArgs: mapDouyinPayArgs,
+      target: 'requestVirtualPayment',
     },
     showShareImageMenu: {
       target: 'showShareImageMenu',

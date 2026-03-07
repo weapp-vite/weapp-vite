@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  208 |
-| 支付宝语义对齐方法数             |  208 |
+| 支付宝可按微信命名调用的方法数   |  204 |
+| 支付宝语义对齐方法数             |  204 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  151 |
-| 抖音语义对齐方法数               |  151 |
+| 抖音可按微信命名调用的方法数     |  147 |
+| 抖音语义对齐方法数               |  147 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  139 |
-| 三端语义完全对齐方法数           |  139 |
+| 三端可调用完全对齐方法数         |  135 |
+| 三端语义完全对齐方法数           |  135 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           208 |             208 |               0 |      479 |       43.42% |         43.42% |
-| 抖音小程序 (`tt`)             |           151 |             151 |               0 |      479 |       31.52% |         31.52% |
-| 三端可调用完全对齐 (wx/my/tt) |           139 |               - |               - |      479 |       29.02% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             139 |               - |      479 |            - |         29.02% |
+| 支付宝小程序 (`my`)           |           204 |             204 |               0 |      479 |       42.59% |         42.59% |
+| 抖音小程序 (`tt`)             |           147 |             147 |               0 |      479 |       30.69% |         30.69% |
+| 三端可调用完全对齐 (wx/my/tt) |           135 |               - |               - |      479 |       28.18% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             135 |               - |      479 |            - |         28.18% |
 
 ## 核心差异映射（手工规则）
 
@@ -67,10 +67,10 @@
 | `requestSubscribeEmployeeMessage`   | 直连 `wx.requestSubscribeEmployeeMessage`           | 映射到 `my.requestSubscribeMessage`                                | 映射到 `tt.requestSubscribeMessage`                                   |
 | `restartMiniProgram`                | 直连 `wx.restartMiniProgram`                        | 映射到 `my.reLaunch`                                               | 映射到 `tt.reLaunch`                                                  |
 | `scanCode`                          | 直连 `wx.scanCode`                                  | 映射到 `my.scan`                                                   | 直连 `tt.scanCode`                                                    |
-| `requestPayment`                    | 直连 `wx.requestPayment`                            | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`            | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                   |
-| `requestOrderPayment`               | 直连 `wx.requestOrderPayment`                       | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`            | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                   |
-| `requestPluginPayment`              | 直连 `wx.requestPluginPayment`                      | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`            | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                   |
-| `requestVirtualPayment`             | 直连 `wx.requestVirtualPayment`                     | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`            | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                   |
+| `requestPayment`                    | 直连 `wx.requestPayment`                            | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
+| `requestOrderPayment`               | 直连 `wx.requestOrderPayment`                       | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
+| `requestPluginPayment`              | 直连 `wx.requestPluginPayment`                      | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
+| `requestVirtualPayment`             | 直连 `wx.requestVirtualPayment`                     | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `showShareImageMenu`                | 直连 `wx.showShareImageMenu`                        | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `updateShareMenu`                   | 直连 `wx.updateShareMenu`                           | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `openEmbeddedMiniProgram`           | 直连 `wx.openEmbeddedMiniProgram`                   | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |

@@ -461,8 +461,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.requestPayment` | ⚠️ |
-   * | 支付宝 | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | ⚠️ |
-   * | 抖音 | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   requestPayment: WeapiCrossPlatformAdapter['requestPayment']
 
@@ -472,8 +472,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.requestOrderPayment` | ⚠️ |
-   * | 支付宝 | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | ⚠️ |
-   * | 抖音 | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   requestOrderPayment: WeapiCrossPlatformAdapter['requestOrderPayment']
 
@@ -483,8 +483,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.requestPluginPayment` | ⚠️ |
-   * | 支付宝 | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | ⚠️ |
-   * | 抖音 | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   requestPluginPayment: WeapiCrossPlatformAdapter['requestPluginPayment']
 
@@ -494,8 +494,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.requestVirtualPayment` | ⚠️ |
-   * | 支付宝 | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | ⚠️ |
-   * | 抖音 | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   requestVirtualPayment: WeapiCrossPlatformAdapter['requestVirtualPayment']
 
