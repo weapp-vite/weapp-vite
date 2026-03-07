@@ -542,21 +542,32 @@ function normalizeNamedRouteEntries(
   }
 
   if (Array.isArray(namedRoutes)) {
-    return flattenNamedRouteRecords(namedRoutes, undefined, undefined, [], source)
+    return flattenNamedRouteRecords(namedRoutes, undefined, undefined, [], source, source)
   }
 
-  return Object.entries(namedRoutes)
-    .filter((entry): entry is [string, string] => {
-      const [name, path] = entry
-      return Boolean(name && typeof path === 'string' && path)
-    })
-    .map(([name, path]) => ({
+  const normalizedEntries: FlattenedRouteRecordSeed[] = []
+  for (const [rawName, rawPath] of Object.entries(namedRoutes)) {
+    const routeName = typeof rawName === 'string'
+      ? rawName.trim()
+      : ''
+    if (!routeName) {
+      warnRouteConfig(`ignored route record at ${source}: route name is required`)
+      continue
+    }
+    if (typeof rawPath !== 'string' || !rawPath) {
+      warnRouteConfig(`ignored route record "${routeName}" at ${source}: route path is required`)
+      continue
+    }
+    normalizedEntries.push({
       route: {
-        name: name.trim(),
-        path,
+        name: routeName,
+        path: rawPath,
       },
       source,
-    }))
+    })
+  }
+
+  return normalizedEntries
 }
 
 function resolveRouteOptionEntries(options: UseRouterOptions): FlattenedRouteRecordSeed[] {
@@ -612,22 +623,54 @@ function flattenNamedRouteRecords(
   parentName?: string,
   parentAliasPaths: readonly string[] = [],
   source?: RouteOptionSource,
+  pathPrefix = 'namedRoutes',
+  ancestorRecords: ReadonlySet<RouteRecordRaw> = new Set<RouteRecordRaw>(),
 ): FlattenedRouteRecordSeed[] {
   const flattenedRecords: FlattenedRouteRecordSeed[] = []
 
-  for (const record of records) {
+  for (const [index, record] of records.entries()) {
+    const routeConfigPath = `${pathPrefix}[${index}]`
+    if (ancestorRecords.has(record)) {
+      warnRouteConfig(`ignored route record at ${routeConfigPath}: detected circular children reference`)
+      continue
+    }
+
     const routeName = typeof record?.name === 'string'
       ? record.name.trim()
       : ''
-    if (!routeName || typeof record.path !== 'string' || !record.path) {
+    if (!routeName) {
+      warnRouteConfig(`ignored route record at ${routeConfigPath}: route name is required`)
+      continue
+    }
+    if (typeof record.path !== 'string' || !record.path) {
+      warnRouteConfig(`ignored route record "${routeName}" at ${routeConfigPath}: route path is required`)
       continue
     }
 
     const normalizedPath = normalizeNestedRoutePath(record.path, parentPath)
-    const normalizedDirectAliasPaths = normalizeAliasInputList(record.alias)
-      .map(aliasPath => normalizeNestedRoutePath(aliasPath, parentPath))
-      .filter(Boolean)
-      .filter(aliasPath => aliasPath !== normalizedPath)
+    const normalizedDirectAliasPaths: string[] = []
+    const directAliasByNormalizedPath = new Map<string, string>()
+    for (const rawAliasPath of normalizeAliasInputList(record.alias)) {
+      const normalizedAliasPath = normalizeNestedRoutePath(rawAliasPath, parentPath)
+      if (!normalizedAliasPath) {
+        continue
+      }
+      if (normalizedAliasPath === normalizedPath) {
+        warnRouteConfig(`ignored alias "${createAbsoluteRoutePath(normalizedAliasPath)}" for route "${routeName}" at ${routeConfigPath}: alias is same as route path`)
+        continue
+      }
+
+      const duplicateAliasPath = directAliasByNormalizedPath.get(normalizedAliasPath)
+      if (duplicateAliasPath) {
+        warnRouteConfig(
+          `ignored duplicate alias "${createAbsoluteRoutePath(normalizedAliasPath)}" for route "${routeName}" at ${routeConfigPath}: already declared by "${duplicateAliasPath}"`,
+        )
+        continue
+      }
+
+      directAliasByNormalizedPath.set(normalizedAliasPath, rawAliasPath)
+      normalizedDirectAliasPaths.push(normalizedAliasPath)
+    }
     const normalizedInheritedAliasPaths = record.path.startsWith('/')
       ? []
       : parentAliasPaths
@@ -651,7 +694,19 @@ function flattenNamedRouteRecords(
     })
 
     if (Array.isArray(record.children) && record.children.length > 0) {
-      flattenedRecords.push(...flattenNamedRouteRecords(record.children, normalizedPath, routeName, normalizedAliasPaths, source))
+      const nextAncestorRecords = new Set(ancestorRecords)
+      nextAncestorRecords.add(record)
+      flattenedRecords.push(
+        ...flattenNamedRouteRecords(
+          record.children,
+          normalizedPath,
+          routeName,
+          normalizedAliasPaths,
+          source,
+          `${routeConfigPath}.children`,
+          nextAncestorRecords,
+        ),
+      )
     }
   }
 
@@ -1909,6 +1964,8 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       parentRouteRecord?.path,
       parentRouteName,
       parentRouteRecord?.aliasPaths,
+      undefined,
+      'addRoute',
     )
     if (routeRecords.length === 0) {
       throw new Error('Route name and path are required when adding a named route')
