@@ -434,6 +434,60 @@ describe('weapi', () => {
     expect(getAddress).not.toHaveBeenCalled()
   })
 
+  it('treats getWeRunData as unsupported for alipay without strict-equivalent api', async () => {
+    const getRunData = vi.fn((options: any) => {
+      options.success?.({ response: '{}' })
+    })
+    const api = createWeapi({
+      adapter: {
+        getRunData,
+      },
+      platform: 'alipay',
+    })
+
+    expect(api.resolveTarget('getWeRunData')).toMatchObject({
+      method: 'getWeRunData',
+      target: 'getWeRunData',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.getWeRunData({
+      tempFilePath: '/tmp/demo',
+    } as any)).rejects.toMatchObject({
+      errMsg: 'my.getWeRunData:fail method not supported',
+    })
+    expect(getRunData).not.toHaveBeenCalled()
+  })
+
+  it('treats startSoterAuthentication as unsupported for alipay without strict-equivalent api', async () => {
+    const startIfaaAuthentication = vi.fn((options: any) => {
+      options.success?.({ resultJSONSignature: '{}' })
+    })
+    const api = createWeapi({
+      adapter: {
+        startIfaaAuthentication,
+      },
+      platform: 'alipay',
+    })
+
+    expect(api.resolveTarget('startSoterAuthentication')).toMatchObject({
+      method: 'startSoterAuthentication',
+      target: 'startSoterAuthentication',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.startSoterAuthentication({
+      requestAuthModes: ['fingerPrint'],
+      challenge: 'challenge',
+      authContent: 'auth',
+    } as any)).rejects.toMatchObject({
+      errMsg: 'my.startSoterAuthentication:fail method not supported',
+    })
+    expect(startIfaaAuthentication).not.toHaveBeenCalled()
+  })
+
   it('treats chooseMedia as unsupported for alipay without strict-equivalent api', async () => {
     const chooseImage = vi.fn()
     const api = createWeapi({
@@ -845,6 +899,57 @@ describe('weapi', () => {
       errMsg: 'my.scanCode:fail method not supported',
     })
     expect(scan).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { platform: 'alipay', normalizedPlatform: 'my' },
+    { platform: 'tt', normalizedPlatform: 'tt' },
+  ])('treats showShareImageMenu as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
+    const showShareMenu = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        showShareMenu,
+      },
+      platform,
+    }) as Record<string, any>
+
+    expect(api.resolveTarget('showShareImageMenu')).toMatchObject({
+      method: 'showShareImageMenu',
+      target: 'showShareImageMenu',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.showShareImageMenu({
+      path: '/tmp/share.jpg',
+    })).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.showShareImageMenu:fail method not supported`,
+    })
+    expect(showShareMenu).not.toHaveBeenCalled()
+  })
+
+  it('treats openChannelsUserProfile as unsupported for douyin without strict-equivalent api', async () => {
+    const openAwemeUserProfile = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        openAwemeUserProfile,
+      },
+      platform: 'tt',
+    }) as Record<string, any>
+
+    expect(api.resolveTarget('openChannelsUserProfile')).toMatchObject({
+      method: 'openChannelsUserProfile',
+      target: 'openChannelsUserProfile',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.openChannelsUserProfile({
+      finderUserName: 'demo',
+    })).rejects.toMatchObject({
+      errMsg: 'tt.openChannelsUserProfile:fail method not supported',
+    })
+    expect(openAwemeUserProfile).not.toHaveBeenCalled()
   })
 
   it('treats requestPayment family as unsupported for alipay', async () => {
