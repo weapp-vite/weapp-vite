@@ -1,3 +1,5 @@
+import type { WeapiCrossPlatformAdapter } from '../types'
+
 export interface WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOption {
   /**
    * 创建视频解码器。

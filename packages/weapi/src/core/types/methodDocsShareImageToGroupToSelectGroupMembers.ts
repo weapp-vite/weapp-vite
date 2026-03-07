@@ -1,3 +1,5 @@
+import type { WeapiCrossPlatformAdapter } from '../types'
+
 export interface WeapiCrossPlatformMethodDocsShareImageToGroupToSelectGroupMembers {
   /**
    * 分享图片到群。

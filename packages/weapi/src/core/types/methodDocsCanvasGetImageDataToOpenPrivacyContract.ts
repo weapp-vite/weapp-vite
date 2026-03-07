@@ -1,3 +1,5 @@
+import type { WeapiCrossPlatformAdapter } from '../types'
+
 export interface WeapiCrossPlatformMethodDocsCanvasGetImageDataToOpenPrivacyContract {
   /**
    * 获取 canvas 区域像素数据。

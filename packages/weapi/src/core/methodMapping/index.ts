@@ -3,6 +3,7 @@ import type {
   WeapiApiCoveragePlatformItem,
   WeapiApiCoverageReport,
   WeapiMethodCompatibilityItem,
+  WeapiMethodMappingRule,
   WeapiMethodSupportMatrixItem,
   WeapiResolvedMethodMapping,
 } from './types'
@@ -41,7 +42,7 @@ const PLATFORM_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
   tt: WEAPI_TT_METHOD_SET,
 }
 
-function createFallbackMappingRule(platform: 'my' | 'tt', methodName: string) {
+function createFallbackMappingRule(platform: 'my' | 'tt', methodName: string): WeapiMethodMappingRule | undefined {
   void platform
   void methodName
   return undefined

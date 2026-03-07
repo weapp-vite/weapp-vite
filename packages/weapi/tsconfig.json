@@ -6,10 +6,17 @@
       "@/*": [
         "src/*"
       ]
-    }
+    },
+    "types": [
+      "node",
+      "vitest/globals",
+      "vue/jsx",
+      "miniprogram-api-typings",
+      "@mini-types/alipay",
+      "@douyin-microapp/typings"
+    ]
   },
   "include": [
-    "src",
-    "test"
+    "src"
   ]
 }
