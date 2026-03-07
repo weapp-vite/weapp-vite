@@ -66,7 +66,9 @@ export declare function defineOptions<
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
->(options?: ScriptSetupDefineOptions<D, C, M>): void
+>(options?: ScriptSetupDefineOptions<D, C, M> & {
+  options?: WechatMiniprogram.Component.ComponentOptions
+}): void
 
 /**
  * defineSlots 声明 slots 类型（仅类型层）。
