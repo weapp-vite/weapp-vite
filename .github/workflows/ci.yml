@@ -85,6 +85,15 @@ jobs:
           pnpm --filter @wevu/api catalog:check
           pnpm --filter @wevu/api docs:check
 
+      - name: Validate weapi static guards
+        run: |
+          pnpm --filter @wevu/api lint
+          pnpm --filter @wevu/api typecheck
+          pnpm --filter @wevu/api typecheck:test
+          pnpm --filter @wevu/api structure:check
+          pnpm --filter @wevu/api strict-alias:check
+          pnpm --filter @wevu/api coverage:check
+
       - name: Validate weapi tests
         run: |
           pnpm --filter @wevu/api test

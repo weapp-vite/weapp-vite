@@ -18,4 +18,4 @@
 ## 后续建议
 
 1. 若需继续提升覆盖率，优先补充“同能力异名 API”映射（按业务优先级增量添加）。
-2. 将 `scripts/sync-api-catalog.mjs` 和本报告生成流程纳入 CI，避免 typings 升级后报告滞后。
+2. 持续维护 `strict-alias:check` 与 `coverage:check` 门禁阈值；如发生有意变更，请同步更新阈值与报告。

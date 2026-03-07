@@ -78,6 +78,10 @@ function replaceBetween(content: string, marker: Marker, inner: string) {
   return `${before}\n${inner}\n${after}`
 }
 
+function hasMarker(content: string, marker: Marker) {
+  return content.includes(marker.start) && content.includes(marker.end)
+}
+
 function formatTsdocPlatformMatrix(indent: string, withAlignment: boolean) {
   const header = withAlignment
     ? `${indent}* | 平台 | 全局对象 | 类型来源 | 对齐状态 |`
@@ -181,8 +185,9 @@ async function syncTypeSources(check: boolean) {
   const declarationPath = path.join(ROOT_DIR, 'types/index.d.ts')
 
   const typesSourceOriginal = await fs.readFile(typesSourcePath, 'utf8')
-  const methodsDoc = formatMethodDocs('  ')
-  const typesWithMethods = replaceBetween(typesSourceOriginal, TYPES_METHOD_DOC_MARKER, methodsDoc)
+  const typesWithMethods = hasMarker(typesSourceOriginal, TYPES_METHOD_DOC_MARKER)
+    ? replaceBetween(typesSourceOriginal, TYPES_METHOD_DOC_MARKER, formatMethodDocs('  '))
+    : typesSourceOriginal
   const typesNext = replacePlatformMatrixInComment(typesWithMethods, PLATFORM_MATRIX_MARKER, true)
 
   const indexSourceOriginal = await fs.readFile(indexSourcePath, 'utf8')

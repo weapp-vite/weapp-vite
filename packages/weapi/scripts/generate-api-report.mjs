@@ -27,6 +27,39 @@ function formatBool(value) {
   return value ? '✅' : '❌'
 }
 
+function formatCoverageRate(supportedApis, totalApis) {
+  if (totalApis <= 0) {
+    return '0.00%'
+  }
+  return `${((supportedApis / totalApis) * 100).toFixed(2)}%`
+}
+
+function createIntersectionCoverageReport(matrix) {
+  const myMethodSet = new Set(WEAPI_MY_METHODS)
+  const ttMethodSet = new Set(WEAPI_TT_METHODS)
+  const intersectionMethods = WEAPI_WX_METHODS.filter(method =>
+    myMethodSet.has(method) && ttMethodSet.has(method),
+  )
+  const intersectionMethodSet = new Set(intersectionMethods)
+  const intersectionRows = matrix.filter(item => intersectionMethodSet.has(item.method))
+  const fullyAlignedApis = intersectionRows.filter(
+    item => item.alipaySupported && item.douyinSupported,
+  ).length
+  const fullySemanticallyAlignedApis = intersectionRows.filter(
+    item => item.alipaySemanticallyAligned && item.douyinSemanticallyAligned,
+  ).length
+  return {
+    totalApis: intersectionMethods.length,
+    fullyAlignedApis,
+    fullyAlignedCoverage: formatCoverageRate(fullyAlignedApis, intersectionMethods.length),
+    fullySemanticallyAlignedApis,
+    fullySemanticallyAlignedCoverage: formatCoverageRate(
+      fullySemanticallyAlignedApis,
+      intersectionMethods.length,
+    ),
+  }
+}
+
 async function writeReportFile(fileName, content) {
   const filePath = path.join(reportDir, fileName)
   const config = await prettier.resolveConfig(filePath)
@@ -53,6 +86,7 @@ async function run() {
   const douyinFallbackMethods = matrix.filter(item => item.douyinSupportLevel === 'fallback')
   const fullyAlignedMethods = matrix.filter(item => item.alipaySupported && item.douyinSupported)
   const fullySemanticAlignedMethods = matrix.filter(item => item.alipaySemanticallyAligned && item.douyinSemanticallyAligned)
+  const intersectionCoverage = createIntersectionCoverageReport(matrix)
   const wxMethodSet = new Set(WEAPI_WX_METHODS)
   const myOnlyMethods = WEAPI_MY_METHODS.filter(method => !wxMethodSet.has(method))
   const ttOnlyMethods = WEAPI_TT_METHODS.filter(method => !wxMethodSet.has(method))
@@ -86,6 +120,9 @@ async function run() {
 | 抖音 fallback 方法数 | ${douyinFallbackMethods.length} |
 | 三端可调用完全对齐方法数 | ${fullyAlignedMethods.length} |
 | 三端语义完全对齐方法数 | ${fullySemanticAlignedMethods.length} |
+| 三端命名交集方法数（wx∩my∩tt） | ${intersectionCoverage.totalApis} |
+| 三端命名交集可调用完全对齐方法数 | ${intersectionCoverage.fullyAlignedApis} |
+| 三端命名交集语义完全对齐方法数 | ${intersectionCoverage.fullySemanticallyAlignedApis} |
 
 ## 覆盖率
 
@@ -94,6 +131,8 @@ async function run() {
 ${report.platforms.map(item => `| ${item.platform} (\`${item.alias}\`) | ${item.supportedApis} | ${item.semanticAlignedApis} | ${item.fallbackApis} | ${item.totalApis} | ${item.coverage} | ${item.semanticCoverage} |`).join('\n')}
 | 三端可调用完全对齐 (wx/my/tt) | ${report.fullyAlignedApis} | - | - | ${report.totalApis} | ${report.fullyAlignedCoverage} | - |
 | 三端语义完全对齐 (wx/my/tt) | - | ${report.fullySemanticallyAlignedApis} | - | ${report.totalApis} | - | ${report.fullySemanticallyAlignedCoverage} |
+| 三端命名交集可调用完全对齐 (wx∩my∩tt) | ${intersectionCoverage.fullyAlignedApis} | - | - | ${intersectionCoverage.totalApis} | ${intersectionCoverage.fullyAlignedCoverage} | - |
+| 三端命名交集语义完全对齐 (wx∩my∩tt) | - | ${intersectionCoverage.fullySemanticallyAlignedApis} | - | ${intersectionCoverage.totalApis} | - | ${intersectionCoverage.fullySemanticallyAlignedCoverage} |
 
 ## 核心差异映射（手工规则）
 
@@ -131,6 +170,11 @@ ${WEAPI_METHOD_SUPPORT_MATRIX.map(item => `| \`${item.method}\` | ${escapePipe(i
 - 抖音 fallback 方法数：${douyinFallbackMethods.length}
 - 三端可调用完全对齐方法数：${fullyAlignedMethods.length}
 - 三端语义完全对齐方法数：${fullySemanticAlignedMethods.length}
+- 三端命名交集方法数（wx∩my∩tt）：${intersectionCoverage.totalApis}
+- 三端命名交集可调用完全对齐方法数：${intersectionCoverage.fullyAlignedApis}
+- 三端命名交集可调用覆盖率：${intersectionCoverage.fullyAlignedCoverage}
+- 三端命名交集语义完全对齐方法数：${intersectionCoverage.fullySemanticallyAlignedApis}
+- 三端命名交集语义对齐覆盖率：${intersectionCoverage.fullySemanticallyAlignedCoverage}
 
 ## 不兼容规模
 
@@ -197,7 +241,7 @@ ${coreMethodsNotInWx.length > 0 ? coreMethodsNotInWx.map(item => `  - \`${item}\
 ## 后续建议
 
 1. 若需继续提升覆盖率，优先补充“同能力异名 API”映射（按业务优先级增量添加）。
-2. 将 \`scripts/sync-api-catalog.mjs\` 和本报告生成流程纳入 CI，避免 typings 升级后报告滞后。
+2. 持续维护 \`strict-alias:check\` 与 \`coverage:check\` 门禁阈值；如发生有意变更，请同步更新阈值与报告。
 `
 
   const platformOnlyMethods = `
