@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：268，不支持：211
+总计：479，支持：248，不支持：231
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -99,7 +99,7 @@
 | `getAppBaseInfo`                              | `getEnvInfoSync`                              | ✅   | `mapped`      | ✅       | 映射到 `tt.getEnvInfoSync`                                                        |
 | `getAvailableAudioSources`                    | `getAvailableAudioSources`                    | ❌   | `unsupported` | ❌       | 未提供 tt.getAvailableAudioSources，调用时将返回 not supported                    |
 | `getBackgroundAudioManager`                   | `getBackgroundAudioManager`                   | ✅   | `native`      | ✅       | 直连 `tt.getBackgroundAudioManager`                                               |
-| `getBackgroundAudioPlayerState`               | `getBackgroundAudioPlayerState`               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getBackgroundAudioPlayerState`               | `getBackgroundAudioPlayerState`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getBackgroundFetchData`                      | `getBackgroundFetchData`                      | ❌   | `unsupported` | ❌       | 未提供 tt.getBackgroundFetchData，调用时将返回 not supported                      |
 | `getBackgroundFetchToken`                     | `getBackgroundFetchToken`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getBatteryInfo`                              | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging`                                |
@@ -119,9 +119,9 @@
 | `getCommonConfig`                             | `getCommonConfig`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getConnectedBluetoothDevices`                | `getConnectedBluetoothDevices`                | ❌   | `unsupported` | ❌       | 未提供 tt.getConnectedBluetoothDevices，调用时将返回 not supported                |
 | `getConnectedWifi`                            | `getConnectedWifi`                            | ✅   | `native`      | ✅       | 直连 `tt.getConnectedWifi`                                                        |
-| `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getDeviceInfo`                               | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，并提取设备字段                                         |
-| `getDeviceVoIPList`                           | `getDeviceVoIPList`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getDeviceVoIPList`                           | `getDeviceVoIPList`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getEnterOptionsSync`                         | `getLaunchOptionsSync`                        | ✅   | `mapped`      | ✅       | 映射到 `tt.getLaunchOptionsSync`                                                  |
 | `getExptInfoSync`                             | `getExptInfoSync`                             | ❌   | `unsupported` | ❌       | 未提供 tt.getExptInfoSync，调用时将返回 not supported                             |
 | `getExtConfig`                                | `getExtConfig`                                | ✅   | `native`      | ✅       | 直连 `tt.getExtConfig`                                                            |
@@ -129,30 +129,30 @@
 | `getFileSystemManager`                        | `getFileSystemManager`                        | ✅   | `native`      | ✅       | 直连 `tt.getFileSystemManager`                                                    |
 | `getFuzzyLocation`                            | `getLocation`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.getLocation`                                                           |
 | `getGroupEnterInfo`                           | `getGroupEnterInfo`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getHCEState`                                 | `getHCEState`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getHCEState`                                 | `getHCEState`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getImageInfo`                                | `getImageInfo`                                | ✅   | `native`      | ✅       | 直连 `tt.getImageInfo`                                                            |
-| `getInferenceEnvInfo`                         | `getInferenceEnvInfo`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getInferenceEnvInfo`                         | `getInferenceEnvInfo`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getLaunchOptionsSync`                        | `getLaunchOptionsSync`                        | ✅   | `native`      | ✅       | 直连 `tt.getLaunchOptionsSync`                                                    |
 | `getLocalIPAddress`                           | `getLocalIPAddress`                           | ❌   | `unsupported` | ❌       | 未提供 tt.getLocalIPAddress，调用时将返回 not supported                           |
 | `getLocation`                                 | `getLocation`                                 | ✅   | `native`      | ✅       | 直连 `tt.getLocation`                                                             |
 | `getLogManager`                               | `getLogManager`                               | ✅   | `mapped`      | ✅       | 使用内置日志 shim（对齐 `log/info/warn/error`）                                   |
 | `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect`             | ✅   | `native`      | ✅       | 直连 `tt.getMenuButtonBoundingClientRect`                                         |
 | `getNetworkType`                              | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType`                                 |
-| `getNFCAdapter`                               | `getNFCAdapter`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `getPerformance`                              | `getPerformance`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getNFCAdapter`                               | `getNFCAdapter`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getPerformance`                              | `getPerformance`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getPrivacySetting`                           | `getPrivacySetting`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getRandomValues`                             | `getRandomValues`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `getRealtimeLogManager`                       | `getRealtimeLogManager`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getRandomValues`                             | `getRandomValues`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getRealtimeLogManager`                       | `getRealtimeLogManager`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getRecorderManager`                          | `getRecorderManager`                          | ✅   | `native`      | ✅       | 直连 `tt.getRecorderManager`                                                      |
-| `getRendererUserAgent`                        | `getRendererUserAgent`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getRendererUserAgent`                        | `getRendererUserAgent`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getScreenBrightness`                         | `getScreenBrightness`                         | ✅   | `native`      | ✅       | 直连 `tt.getScreenBrightness`                                                     |
-| `getScreenRecordingState`                     | `getScreenRecordingState`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `getSecureElementPasses`                      | `getSecureElementPasses`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `getSelectedTextRange`                        | `getSelectedTextRange`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getScreenRecordingState`                     | `getScreenRecordingState`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getSecureElementPasses`                      | `getSecureElementPasses`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getSelectedTextRange`                        | `getSelectedTextRange`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getSetting`                                  | `getSetting`                                  | ✅   | `native`      | ✅       | 直连 `tt.getSetting`                                                              |
 | `getShareInfo`                                | `getShareInfo`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getShowSplashAdStatus`                       | `getShowSplashAdStatus`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `getSkylineInfo`                              | `getSkylineInfo`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getShowSplashAdStatus`                       | `getShowSplashAdStatus`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getSkylineInfo`                              | `getSkylineInfo`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getSkylineInfoSync`                          | `getSkylineInfoSync`                          | ❌   | `unsupported` | ❌       | 未提供 tt.getSkylineInfoSync，调用时将返回 not supported                          |
 | `getStorage`                                  | `getStorage`                                  | ✅   | `native`      | ✅       | 直连 `tt.getStorage`                                                              |
 | `getStorageInfo`                              | `getStorageInfo`                              | ✅   | `native`      | ✅       | 直连 `tt.getStorageInfo`                                                          |
@@ -163,14 +163,14 @@
 | `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfoSync`                                                       |
 | `getSystemSetting`                            | `getSetting`                                  | ✅   | `mapped`      | ✅       | 映射到 `tt.getSetting`                                                            |
 | `getUpdateManager`                            | `getUpdateManager`                            | ✅   | `native`      | ✅       | 直连 `tt.getUpdateManager`                                                        |
-| `getUserCryptoManager`                        | `getUserCryptoManager`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getUserCryptoManager`                        | `getUserCryptoManager`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getUserInfo`                                 | `getUserInfo`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.getUserInfo`                                                             |
 | `getUserProfile`                              | `getUserProfile`                              | ✅   | `mapped`      | ✅       | 直连 `tt.getUserProfile`                                                          |
 | `getVideoInfo`                                | `getFileInfo`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath`                             |
-| `getWeRunData`                                | `getWeRunData`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getWeRunData`                                | `getWeRunData`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getWifiList`                                 | `getWifiList`                                 | ✅   | `native`      | ✅       | 直连 `tt.getWifiList`                                                             |
 | `getWindowInfo`                               | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，并提取窗口字段                                         |
-| `getXrFrameSystem`                            | `getXrFrameSystem`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getXrFrameSystem`                            | `getXrFrameSystem`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `hideHomeButton`                              | `hideHomeButton`                              | ✅   | `mapped`      | ✅       | 直连 `tt.hideHomeButton`                                                          |
 | `hideKeyboard`                                | `hideKeyboard`                                | ✅   | `native`      | ✅       | 直连 `tt.hideKeyboard`                                                            |
 | `hideLoading`                                 | `hideLoading`                                 | ✅   | `native`      | ✅       | 直连 `tt.hideLoading`                                                             |
@@ -180,8 +180,8 @@
 | `hideTabBarRedDot`                            | `hideTabBarRedDot`                            | ✅   | `native`      | ✅       | 直连 `tt.hideTabBarRedDot`                                                        |
 | `hideToast`                                   | `hideToast`                                   | ✅   | `native`      | ✅       | 直连 `tt.hideToast`                                                               |
 | `initFaceDetect`                              | `initFaceDetect`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `isBluetoothDevicePaired`                     | `isBluetoothDevicePaired`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `isVKSupport`                                 | `isVKSupport`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `isBluetoothDevicePaired`                     | `isBluetoothDevicePaired`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `isVKSupport`                                 | `isVKSupport`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `join1v1Chat`                                 | `join1v1Chat`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `joinVoIPChat`                                | `joinVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |

@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：330，不支持：149
+总计：479，支持：310，不支持：169
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -99,7 +99,7 @@
 | `getAppBaseInfo`                              | `getAppBaseInfo`                              | ✅   | `mapped`      | ✅       | 直连 `my.getAppBaseInfo`                                                          |
 | `getAvailableAudioSources`                    | `getAvailableAudioSources`                    | ✅   | `native`      | ✅       | 直连 `my.getAvailableAudioSources`                                                |
 | `getBackgroundAudioManager`                   | `getBackgroundAudioManager`                   | ✅   | `native`      | ✅       | 直连 `my.getBackgroundAudioManager`                                               |
-| `getBackgroundAudioPlayerState`               | `getBackgroundAudioPlayerState`               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getBackgroundAudioPlayerState`               | `getBackgroundAudioPlayerState`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getBackgroundFetchData`                      | `getBackgroundFetchData`                      | ✅   | `native`      | ✅       | 直连 `my.getBackgroundFetchData`                                                  |
 | `getBackgroundFetchToken`                     | `getBackgroundFetchToken`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getBatteryInfo`                              | `getBatteryInfo`                              | ✅   | `mapped`      | ✅       | 直连 `my.getBatteryInfo`                                                          |
@@ -119,9 +119,9 @@
 | `getCommonConfig`                             | `getCommonConfig`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getConnectedBluetoothDevices`                | `getConnectedBluetoothDevices`                | ✅   | `native`      | ✅       | 直连 `my.getConnectedBluetoothDevices`                                            |
 | `getConnectedWifi`                            | `getConnectedWifi`                            | ✅   | `native`      | ✅       | 直连 `my.getConnectedWifi`                                                        |
-| `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getDeviceInfo`                               | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `my.getSystemInfo`，并提取设备字段                                         |
-| `getDeviceVoIPList`                           | `getDeviceVoIPList`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getDeviceVoIPList`                           | `getDeviceVoIPList`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getEnterOptionsSync`                         | `getEnterOptionsSync`                         | ✅   | `mapped`      | ✅       | 直连 `my.getEnterOptionsSync`                                                     |
 | `getExptInfoSync`                             | `getExptInfoSync`                             | ❌   | `unsupported` | ❌       | 未提供 my.getExptInfoSync，调用时将返回 not supported                             |
 | `getExtConfig`                                | `getExtConfig`                                | ✅   | `native`      | ✅       | 直连 `my.getExtConfig`                                                            |
@@ -129,30 +129,30 @@
 | `getFileSystemManager`                        | `getFileSystemManager`                        | ✅   | `native`      | ✅       | 直连 `my.getFileSystemManager`                                                    |
 | `getFuzzyLocation`                            | `getLocation`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.getLocation`                                                           |
 | `getGroupEnterInfo`                           | `getGroupEnterInfo`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getHCEState`                                 | `getHCEState`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getHCEState`                                 | `getHCEState`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getImageInfo`                                | `getImageInfo`                                | ✅   | `native`      | ✅       | 直连 `my.getImageInfo`                                                            |
-| `getInferenceEnvInfo`                         | `getInferenceEnvInfo`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getInferenceEnvInfo`                         | `getInferenceEnvInfo`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getLaunchOptionsSync`                        | `getLaunchOptionsSync`                        | ✅   | `native`      | ✅       | 直连 `my.getLaunchOptionsSync`                                                    |
 | `getLocalIPAddress`                           | `getLocalIPAddress`                           | ✅   | `native`      | ✅       | 直连 `my.getLocalIPAddress`                                                       |
 | `getLocation`                                 | `getLocation`                                 | ✅   | `native`      | ✅       | 直连 `my.getLocation`                                                             |
 | `getLogManager`                               | `getLogManager`                               | ✅   | `mapped`      | ✅       | 使用内置日志 shim（对齐 `log/info/warn/error`）                                   |
 | `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect`             | ✅   | `native`      | ✅       | 直连 `my.getMenuButtonBoundingClientRect`                                         |
 | `getNetworkType`                              | `getNetworkType`                              | ✅   | `mapped`      | ✅       | 直连 `my.getNetworkType`                                                          |
-| `getNFCAdapter`                               | `getNFCAdapter`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `getPerformance`                              | `getPerformance`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getNFCAdapter`                               | `getNFCAdapter`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getPerformance`                              | `getPerformance`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getPrivacySetting`                           | `getPrivacySetting`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getRandomValues`                             | `getRandomValues`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `getRealtimeLogManager`                       | `getRealtimeLogManager`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getRandomValues`                             | `getRandomValues`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getRealtimeLogManager`                       | `getRealtimeLogManager`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getRecorderManager`                          | `getRecorderManager`                          | ✅   | `native`      | ✅       | 直连 `my.getRecorderManager`                                                      |
-| `getRendererUserAgent`                        | `getRendererUserAgent`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getRendererUserAgent`                        | `getRendererUserAgent`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getScreenBrightness`                         | `getScreenBrightness`                         | ✅   | `native`      | ✅       | 直连 `my.getScreenBrightness`                                                     |
-| `getScreenRecordingState`                     | `getScreenRecordingState`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `getSecureElementPasses`                      | `getSecureElementPasses`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `getSelectedTextRange`                        | `getSelectedTextRange`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getScreenRecordingState`                     | `getScreenRecordingState`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getSecureElementPasses`                      | `getSecureElementPasses`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getSelectedTextRange`                        | `getSelectedTextRange`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getSetting`                                  | `getSetting`                                  | ✅   | `native`      | ✅       | 直连 `my.getSetting`                                                              |
 | `getShareInfo`                                | `getShareInfo`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getShowSplashAdStatus`                       | `getShowSplashAdStatus`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `getSkylineInfo`                              | `getSkylineInfo`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getShowSplashAdStatus`                       | `getShowSplashAdStatus`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getSkylineInfo`                              | `getSkylineInfo`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getSkylineInfoSync`                          | `getSkylineInfoSync`                          | ❌   | `unsupported` | ❌       | 未提供 my.getSkylineInfoSync，调用时将返回 not supported                          |
 | `getStorage`                                  | `getStorage`                                  | ✅   | `native`      | ✅       | 直连 `my.getStorage`                                                              |
 | `getStorageInfo`                              | `getStorageInfo`                              | ✅   | `native`      | ✅       | 直连 `my.getStorageInfo`                                                          |
@@ -163,14 +163,14 @@
 | `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | `native`      | ✅       | 直连 `my.getSystemInfoSync`                                                       |
 | `getSystemSetting`                            | `getSystemSetting`                            | ✅   | `mapped`      | ✅       | 直连 `my.getSystemSetting`                                                        |
 | `getUpdateManager`                            | `getUpdateManager`                            | ✅   | `native`      | ✅       | 直连 `my.getUpdateManager`                                                        |
-| `getUserCryptoManager`                        | `getUserCryptoManager`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getUserCryptoManager`                        | `getUserCryptoManager`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getUserInfo`                                 | `getOpenUserInfo`                             | ✅   | `mapped`      | ✅       | 映射到 `my.getOpenUserInfo`                                                       |
 | `getUserProfile`                              | `getOpenUserInfo`                             | ✅   | `mapped`      | ✅       | 映射到 `my.getOpenUserInfo`                                                       |
 | `getVideoInfo`                                | `getVideoInfo`                                | ✅   | `mapped`      | ✅       | 直连 `my.getVideoInfo`                                                            |
-| `getWeRunData`                                | `getWeRunData`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getWeRunData`                                | `getWeRunData`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getWifiList`                                 | `getWifiList`                                 | ✅   | `native`      | ✅       | 直连 `my.getWifiList`                                                             |
 | `getWindowInfo`                               | `getWindowInfo`                               | ✅   | `mapped`      | ✅       | 直连 `my.getWindowInfo`                                                           |
-| `getXrFrameSystem`                            | `getXrFrameSystem`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getXrFrameSystem`                            | `getXrFrameSystem`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `hideHomeButton`                              | `hideBackHome`                                | ✅   | `mapped`      | ✅       | 映射到 `my.hideBackHome`                                                          |
 | `hideKeyboard`                                | `hideKeyboard`                                | ✅   | `native`      | ✅       | 直连 `my.hideKeyboard`                                                            |
 | `hideLoading`                                 | `hideLoading`                                 | ✅   | `native`      | ✅       | 直连 `my.hideLoading`                                                             |
@@ -180,8 +180,8 @@
 | `hideTabBarRedDot`                            | `hideTabBarRedDot`                            | ✅   | `native`      | ✅       | 直连 `my.hideTabBarRedDot`                                                        |
 | `hideToast`                                   | `hideToast`                                   | ✅   | `native`      | ✅       | 直连 `my.hideToast`                                                               |
 | `initFaceDetect`                              | `initFaceDetect`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `isBluetoothDevicePaired`                     | `isBluetoothDevicePaired`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `isVKSupport`                                 | `isVKSupport`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `isBluetoothDevicePaired`                     | `isBluetoothDevicePaired`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `isVKSupport`                                 | `isVKSupport`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `join1v1Chat`                                 | `join1v1Chat`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `joinVoIPChat`                                | `joinVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
