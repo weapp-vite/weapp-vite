@@ -59,29 +59,29 @@
 | `createAnimation`                             | `createAnimation`                    | ✅   | `native`   | ✅       | 直连 `my.createAnimation`                                              |
 | `createAudioContext`                          | `createInnerAudioContext`            | ✅   | `mapped`   | ✅       | 映射到 `my.createInnerAudioContext`                                    |
 | `createBLEConnection`                         | `createBLEConnection`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createBLEPeripheralServer`                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `createBufferURL`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `createCacheManager`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `createBLEPeripheralServer`                   | `createBLEPeripheralServer`          | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `createBufferURL`                             | `createBufferURL`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `createCacheManager`                          | `createCacheManager`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `createCameraContext`                         | `createCameraContext`                | ✅   | `mapped`   | ✅       | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） |
 | `createCanvasContext`                         | `createCanvasContext`                | ✅   | `native`   | ✅       | 直连 `my.createCanvasContext`                                          |
-| `createGlobalPayment`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `createInferenceSession`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `createGlobalPayment`                         | `createGlobalPayment`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `createInferenceSession`                      | `createInferenceSession`             | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `createInnerAudioContext`                     | `createInnerAudioContext`            | ✅   | `native`   | ✅       | 直连 `my.createInnerAudioContext`                                      |
 | `createIntersectionObserver`                  | `createIntersectionObserver`         | ✅   | `native`   | ✅       | 直连 `my.createIntersectionObserver`                                   |
 | `createInterstitialAd`                        | `createRewardedAd`                   | ✅   | `mapped`   | ✅       | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                    |
 | `createLivePlayerContext`                     | `createVideoContext`                 | ✅   | `mapped`   | ✅       | 映射到 `my.createVideoContext`                                         |
 | `createLivePusherContext`                     | `createVideoContext`                 | ✅   | `mapped`   | ✅       | 映射到 `my.createVideoContext`                                         |
 | `createMapContext`                            | `createMapContext`                   | ✅   | `native`   | ✅       | 直连 `my.createMapContext`                                             |
-| `createMediaAudioPlayer`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `createMediaContainer`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `createMediaRecorder`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `createMediaAudioPlayer`                      | `createMediaAudioPlayer`             | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `createMediaContainer`                        | `createMediaContainer`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `createMediaRecorder`                         | `createMediaRecorder`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `createOffscreenCanvas`                       | `createOffscreenCanvas`              | ✅   | `native`   | ✅       | 直连 `my.createOffscreenCanvas`                                        |
 | `createRewardedVideoAd`                       | `createRewardedAd`                   | ✅   | `mapped`   | ✅       | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                    |
 | `createSelectorQuery`                         | `createSelectorQuery`                | ✅   | `native`   | ✅       | 直连 `my.createSelectorQuery`                                          |
-| `createTCPSocket`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `createUDPSocket`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `createTCPSocket`                             | `createTCPSocket`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `createUDPSocket`                             | `createUDPSocket`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `createVideoContext`                          | `createVideoContext`                 | ✅   | `native`   | ✅       | 直连 `my.createVideoContext`                                           |
-| `createVideoDecoder`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `createVideoDecoder`                          | `createVideoDecoder`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `createVKSession`                             | `createVKSession`                    | ✅   | `mapped`   | ✅       | 使用内置 VKSession shim（对齐 `start/stop/destroy`）                   |
 | `createWebAudioContext`                       | `createInnerAudioContext`            | ✅   | `mapped`   | ✅       | 映射到 `my.createInnerAudioContext`                                    |
 | `createWorker`                                | `createWorker`                       | ✅   | `native`   | ✅       | 直连 `my.createWorker`                                                 |
@@ -184,7 +184,7 @@
 | `isVKSupport`                                 | `isVKSupport`                        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `join1v1Chat`                                 | `join1v1Chat`                        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `joinVoIPChat`                                | `joinVoIPChat`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `loadBuiltInFontFace`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `loadFontFace`                                | `loadFontFace`                       | ✅   | `native`   | ✅       | 直连 `my.loadFontFace`                                                 |
 | `login`                                       | `getAuthCode`                        | ✅   | `mapped`   | ✅       | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段                        |
 | `makeBluetoothPair`                           | `makeBluetoothPair`                  | ✅   | `native`   | ✅       | 直连 `my.makeBluetoothPair`                                            |
@@ -195,7 +195,7 @@
 | `navigateToMiniProgram`                       | `navigateToMiniProgram`              | ✅   | `native`   | ✅       | 直连 `my.navigateToMiniProgram`                                        |
 | `nextTick`                                    | `nextTick`                           | ✅   | `mapped`   | ✅       | 使用内置 microtask shim 调度回调                                       |
 | `notifyBLECharacteristicValueChange`          | `notifyBLECharacteristicValueChange` | ✅   | `native`   | ✅       | 直连 `my.notifyBLECharacteristicValueChange`                           |
-| `notifyGroupMembers`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `notifyGroupMembers`                          | `notifyGroupMembers`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `offAccelerometerChange`                      | `offAccelerometerChange`             | ✅   | `native`   | ✅       | 直连 `my.offAccelerometerChange`                                       |
 | `offAfterPageLoad`                            | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                                 |
 | `offAfterPageUnload`                          | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                                 |
@@ -382,7 +382,7 @@
 | `request`                                     | `request`                            | ✅   | `native`   | ✅       | 直连 `my.request`                                                      |
 | `requestCommonPayment`                        | `requestCommonPayment`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `requestIdleCallback`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `requestIdleCallback`                         | `requestIdleCallback`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `requestMerchantTransfer`                     | `requestMerchantTransfer`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `requestOrderPayment`                         | `tradePay`                           | ✅   | `mapped`   | ✅       | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`                |
 | `requestPayment`                              | `tradePay`                           | ✅   | `mapped`   | ✅       | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`                |
@@ -394,13 +394,13 @@
 | `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `reserveChannelsLive`                         | `reserveChannelsLive`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `restartMiniProgram`                          | `reLaunch`                           | ✅   | `mapped`   | ✅       | 映射到 `my.reLaunch`                                                   |
-| `revokeBufferURL`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `rewriteRoute`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `revokeBufferURL`                             | `revokeBufferURL`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `rewriteRoute`                                | `rewriteRoute`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `saveFileToDisk`                              | `saveFileToDisk`                     | ✅   | `mapped`   | ✅       | 直连 `my.saveFileToDisk`                                               |
 | `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`             | ✅   | `native`   | ✅       | 直连 `my.saveImageToPhotosAlbum`                                       |
 | `saveVideoToPhotosAlbum`                      | `saveVideoToPhotosAlbum`             | ✅   | `mapped`   | ✅       | 直连 `my.saveVideoToPhotosAlbum`                                       |
 | `scanCode`                                    | `scan`                               | ✅   | `mapped`   | ✅       | 映射到 `my.scan`                                                       |
-| `seekBackgroundAudio`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `seekBackgroundAudio`                         | `seekBackgroundAudio`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `selectGroupMembers`                          | `selectGroupMembers`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `sendHCEMessage`                              | `sendHCEMessage`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `sendSms`                                     | `sendSms`                            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
@@ -411,8 +411,8 @@
 | `setBLEMTU`                                   | `setBLEMTU`                          | ✅   | `native`   | ✅       | 直连 `my.setBLEMTU`                                                    |
 | `setClipboardData`                            | `setClipboard`                       | ✅   | `mapped`   | ✅       | 转调 `my.setClipboard` 并映射 `data` → `text`                          |
 | `setEnable1v1Chat`                            | `setEnable1v1Chat`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setEnableDebug`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `setInnerAudioOption`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `setEnableDebug`                              | `setEnableDebug`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `setInnerAudioOption`                         | `setInnerAudioOption`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `setKeepScreenOn`                             | `setKeepScreenOn`                    | ✅   | `native`   | ✅       | 直连 `my.setKeepScreenOn`                                              |
 | `setNavigationBarColor`                       | `setNavigationBarColor`              | ✅   | `native`   | ✅       | 直连 `my.setNavigationBarColor`                                        |
 | `setNavigationBarTitle`                       | `setNavigationBarTitle`              | ✅   | `native`   | ✅       | 直连 `my.setNavigationBarTitle`                                        |

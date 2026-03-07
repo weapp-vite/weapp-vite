@@ -2412,6 +2412,215 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
    */
   isVKSupport: WeapiCrossPlatformAdapter['isVKSupport']
+
+  /**
+   * 创建 BLE 外设服务实例。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createBLEPeripheralServer` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  createBLEPeripheralServer: WeapiCrossPlatformAdapter['createBLEPeripheralServer']
+
+  /**
+   * 创建缓冲区 URL。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createBufferURL` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  createBufferURL: WeapiCrossPlatformAdapter['createBufferURL']
+
+  /**
+   * 创建缓存管理器。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createCacheManager` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  createCacheManager: WeapiCrossPlatformAdapter['createCacheManager']
+
+  /**
+   * 创建全局支付对象。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createGlobalPayment` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  createGlobalPayment: WeapiCrossPlatformAdapter['createGlobalPayment']
+
+  /**
+   * 创建推理会话。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createInferenceSession` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  createInferenceSession: WeapiCrossPlatformAdapter['createInferenceSession']
+
+  /**
+   * 创建媒体音频播放器。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createMediaAudioPlayer` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  createMediaAudioPlayer: WeapiCrossPlatformAdapter['createMediaAudioPlayer']
+
+  /**
+   * 创建媒体容器实例。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createMediaContainer` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  createMediaContainer: WeapiCrossPlatformAdapter['createMediaContainer']
+
+  /**
+   * 创建媒体录制器。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createMediaRecorder` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  createMediaRecorder: WeapiCrossPlatformAdapter['createMediaRecorder']
+
+  /**
+   * 创建 TCP Socket。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createTCPSocket` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  createTCPSocket: WeapiCrossPlatformAdapter['createTCPSocket']
+
+  /**
+   * 创建 UDP Socket。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createUDPSocket` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  createUDPSocket: WeapiCrossPlatformAdapter['createUDPSocket']
+
+  /**
+   * 创建视频解码器。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createVideoDecoder` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  createVideoDecoder: WeapiCrossPlatformAdapter['createVideoDecoder']
+
+  /**
+   * 加载内置字体。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.loadBuiltInFontFace` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  loadBuiltInFontFace: WeapiCrossPlatformAdapter['loadBuiltInFontFace']
+
+  /**
+   * 通知群成员。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.notifyGroupMembers` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  notifyGroupMembers: WeapiCrossPlatformAdapter['notifyGroupMembers']
+
+  /**
+   * 空闲时回调请求。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.requestIdleCallback` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  requestIdleCallback: WeapiCrossPlatformAdapter['requestIdleCallback']
+
+  /**
+   * 释放缓冲区 URL。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.revokeBufferURL` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  revokeBufferURL: WeapiCrossPlatformAdapter['revokeBufferURL']
+
+  /**
+   * 重写路由规则。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.rewriteRoute` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  rewriteRoute: WeapiCrossPlatformAdapter['rewriteRoute']
+
+  /**
+   * 调整后台音频播放进度。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.seekBackgroundAudio` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  seekBackgroundAudio: WeapiCrossPlatformAdapter['seekBackgroundAudio']
+
+  /**
+   * 设置调试开关。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.setEnableDebug` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  setEnableDebug: WeapiCrossPlatformAdapter['setEnableDebug']
+
+  /**
+   * 设置内部音频选项。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.setInnerAudioOption` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  setInnerAudioOption: WeapiCrossPlatformAdapter['setInnerAudioOption']
   // @generated weapi-method-docs:end
 }
 

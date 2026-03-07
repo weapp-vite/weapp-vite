@@ -217,6 +217,25 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'getXrFrameSystem',
     'isBluetoothDevicePaired',
     'isVKSupport',
+    'createBLEPeripheralServer',
+    'createBufferURL',
+    'createCacheManager',
+    'createGlobalPayment',
+    'createInferenceSession',
+    'createMediaAudioPlayer',
+    'createMediaContainer',
+    'createMediaRecorder',
+    'createTCPSocket',
+    'createUDPSocket',
+    'createVideoDecoder',
+    'loadBuiltInFontFace',
+    'notifyGroupMembers',
+    'requestIdleCallback',
+    'revokeBufferURL',
+    'rewriteRoute',
+    'seekBackgroundAudio',
+    'setEnableDebug',
+    'setInnerAudioOption',
     'openCustomerServiceChat',
     'createVKSession',
     'compressVideo',
@@ -370,6 +389,25 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'getXrFrameSystem',
     'isBluetoothDevicePaired',
     'isVKSupport',
+    'createBLEPeripheralServer',
+    'createBufferURL',
+    'createCacheManager',
+    'createGlobalPayment',
+    'createInferenceSession',
+    'createMediaAudioPlayer',
+    'createMediaContainer',
+    'createMediaRecorder',
+    'createTCPSocket',
+    'createUDPSocket',
+    'createVideoDecoder',
+    'loadBuiltInFontFace',
+    'notifyGroupMembers',
+    'requestIdleCallback',
+    'revokeBufferURL',
+    'rewriteRoute',
+    'seekBackgroundAudio',
+    'setEnableDebug',
+    'setInnerAudioOption',
     'showActionSheet',
     'openCustomerServiceChat',
     'createVKSession',
@@ -2083,6 +2121,158 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
     support: '⚠️',
   },
+  {
+    method: 'createBLEPeripheralServer',
+    description: '创建 BLE 外设服务实例。',
+    wxStrategy: '直连 `wx.createBLEPeripheralServer`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'createBufferURL',
+    description: '创建缓冲区 URL。',
+    wxStrategy: '直连 `wx.createBufferURL`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'createCacheManager',
+    description: '创建缓存管理器。',
+    wxStrategy: '直连 `wx.createCacheManager`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'createGlobalPayment',
+    description: '创建全局支付对象。',
+    wxStrategy: '直连 `wx.createGlobalPayment`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'createInferenceSession',
+    description: '创建推理会话。',
+    wxStrategy: '直连 `wx.createInferenceSession`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'createMediaAudioPlayer',
+    description: '创建媒体音频播放器。',
+    wxStrategy: '直连 `wx.createMediaAudioPlayer`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'createMediaContainer',
+    description: '创建媒体容器实例。',
+    wxStrategy: '直连 `wx.createMediaContainer`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'createMediaRecorder',
+    description: '创建媒体录制器。',
+    wxStrategy: '直连 `wx.createMediaRecorder`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'createTCPSocket',
+    description: '创建 TCP Socket。',
+    wxStrategy: '直连 `wx.createTCPSocket`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'createUDPSocket',
+    description: '创建 UDP Socket。',
+    wxStrategy: '直连 `wx.createUDPSocket`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'createVideoDecoder',
+    description: '创建视频解码器。',
+    wxStrategy: '直连 `wx.createVideoDecoder`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'loadBuiltInFontFace',
+    description: '加载内置字体。',
+    wxStrategy: '直连 `wx.loadBuiltInFontFace`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'notifyGroupMembers',
+    description: '通知群成员。',
+    wxStrategy: '直连 `wx.notifyGroupMembers`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'requestIdleCallback',
+    description: '空闲时回调请求。',
+    wxStrategy: '直连 `wx.requestIdleCallback`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'revokeBufferURL',
+    description: '释放缓冲区 URL。',
+    wxStrategy: '直连 `wx.revokeBufferURL`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'rewriteRoute',
+    description: '重写路由规则。',
+    wxStrategy: '直连 `wx.rewriteRoute`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'seekBackgroundAudio',
+    description: '调整后台音频播放进度。',
+    wxStrategy: '直连 `wx.seekBackgroundAudio`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'setEnableDebug',
+    description: '设置调试开关。',
+    wxStrategy: '直连 `wx.setEnableDebug`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'setInnerAudioOption',
+    description: '设置内部音频选项。',
+    wxStrategy: '直连 `wx.setInnerAudioOption`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
 ] as const
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
@@ -3459,6 +3649,63 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     isVKSupport: {
       target: 'isVKSupport',
     },
+    createBLEPeripheralServer: {
+      target: 'createBLEPeripheralServer',
+    },
+    createBufferURL: {
+      target: 'createBufferURL',
+    },
+    createCacheManager: {
+      target: 'createCacheManager',
+    },
+    createGlobalPayment: {
+      target: 'createGlobalPayment',
+    },
+    createInferenceSession: {
+      target: 'createInferenceSession',
+    },
+    createMediaAudioPlayer: {
+      target: 'createMediaAudioPlayer',
+    },
+    createMediaContainer: {
+      target: 'createMediaContainer',
+    },
+    createMediaRecorder: {
+      target: 'createMediaRecorder',
+    },
+    createTCPSocket: {
+      target: 'createTCPSocket',
+    },
+    createUDPSocket: {
+      target: 'createUDPSocket',
+    },
+    createVideoDecoder: {
+      target: 'createVideoDecoder',
+    },
+    loadBuiltInFontFace: {
+      target: 'loadBuiltInFontFace',
+    },
+    notifyGroupMembers: {
+      target: 'notifyGroupMembers',
+    },
+    requestIdleCallback: {
+      target: 'requestIdleCallback',
+    },
+    revokeBufferURL: {
+      target: 'revokeBufferURL',
+    },
+    rewriteRoute: {
+      target: 'rewriteRoute',
+    },
+    seekBackgroundAudio: {
+      target: 'seekBackgroundAudio',
+    },
+    setEnableDebug: {
+      target: 'setEnableDebug',
+    },
+    setInnerAudioOption: {
+      target: 'setInnerAudioOption',
+    },
     shareAppMessageToGroup: {
       target: 'shareAppMessageToGroup',
     },
@@ -4107,6 +4354,63 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     isVKSupport: {
       target: 'isVKSupport',
+    },
+    createBLEPeripheralServer: {
+      target: 'createBLEPeripheralServer',
+    },
+    createBufferURL: {
+      target: 'createBufferURL',
+    },
+    createCacheManager: {
+      target: 'createCacheManager',
+    },
+    createGlobalPayment: {
+      target: 'createGlobalPayment',
+    },
+    createInferenceSession: {
+      target: 'createInferenceSession',
+    },
+    createMediaAudioPlayer: {
+      target: 'createMediaAudioPlayer',
+    },
+    createMediaContainer: {
+      target: 'createMediaContainer',
+    },
+    createMediaRecorder: {
+      target: 'createMediaRecorder',
+    },
+    createTCPSocket: {
+      target: 'createTCPSocket',
+    },
+    createUDPSocket: {
+      target: 'createUDPSocket',
+    },
+    createVideoDecoder: {
+      target: 'createVideoDecoder',
+    },
+    loadBuiltInFontFace: {
+      target: 'loadBuiltInFontFace',
+    },
+    notifyGroupMembers: {
+      target: 'notifyGroupMembers',
+    },
+    requestIdleCallback: {
+      target: 'requestIdleCallback',
+    },
+    revokeBufferURL: {
+      target: 'revokeBufferURL',
+    },
+    rewriteRoute: {
+      target: 'rewriteRoute',
+    },
+    seekBackgroundAudio: {
+      target: 'seekBackgroundAudio',
+    },
+    setEnableDebug: {
+      target: 'setEnableDebug',
+    },
+    setInnerAudioOption: {
+      target: 'setInnerAudioOption',
     },
     shareAppMessageToGroup: {
       target: 'shareAppMessageToGroup',
