@@ -473,9 +473,9 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'hideHomeButton',
     description: '隐藏返回首页按钮。',
     wxStrategy: '直连 `wx.hideHomeButton`',
-    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    alipayStrategy: '映射到 `my.hideBackHome`',
     douyinStrategy: '直连 `tt.hideHomeButton`',
-    support: '⚠️',
+    support: '✅',
   },
   {
     method: 'getWindowInfo',
@@ -2543,7 +2543,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'chooseVideo',
     },
     hideHomeButton: {
-      target: 'hideHomeButton',
+      target: 'hideBackHome',
     },
     getWindowInfo: {
       target: 'getWindowInfo',

@@ -783,7 +783,7 @@ describe('weapi', () => {
     })
   })
 
-  it('treats hideHomeButton as unsupported for alipay without strict-equivalent api', async () => {
+  it('maps hideHomeButton to hideBackHome for alipay', async () => {
     const hideBackHome = vi.fn((options: any) => {
       options.success?.({})
     })
@@ -796,7 +796,25 @@ describe('weapi', () => {
 
     expect(api.resolveTarget('hideHomeButton')).toMatchObject({
       method: 'hideHomeButton',
-      target: 'hideHomeButton',
+      target: 'hideBackHome',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+    await expect(api.hideHomeButton()).resolves.toEqual({})
+    expect(hideBackHome).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats hideHomeButton as unsupported for alipay when hideBackHome is unavailable', async () => {
+    const hideBackHome = vi.fn()
+    const api = createWeapi({
+      adapter: {},
+      platform: 'alipay',
+    })
+
+    expect(api.resolveTarget('hideHomeButton')).toMatchObject({
+      method: 'hideHomeButton',
+      target: 'hideBackHome',
       supportLevel: 'unsupported',
       supported: false,
       semanticAligned: false,
@@ -2398,7 +2416,7 @@ describe('weapi', () => {
       { method: 'chooseMedia', my: 'chooseMedia', tt: 'chooseMedia', mySupported: false },
       { method: 'chooseMessageFile', my: 'chooseMessageFile', tt: 'chooseMessageFile', mySupported: false, ttSupported: false },
       { method: 'getFuzzyLocation', my: 'getFuzzyLocation', tt: 'getFuzzyLocation', mySupported: false, ttSupported: false },
-      { method: 'hideHomeButton', my: 'hideHomeButton', tt: 'hideHomeButton', mySupported: false },
+      { method: 'hideHomeButton', my: 'hideBackHome', tt: 'hideHomeButton' },
       { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getWindowInfo', ttSupported: false },
       { method: 'getDeviceInfo', my: 'getDeviceInfo', tt: 'getDeviceInfo', mySupported: false, ttSupported: false },
       { method: 'getAccountInfoSync', my: 'getAccountInfoSync', tt: 'getAccountInfoSync', ttSupported: false },
