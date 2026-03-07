@@ -1752,6 +1752,226 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
    */
   join1v1Chat: WeapiCrossPlatformAdapter['join1v1Chat']
+
+  /**
+   * 分享到群聊会话。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.shareAppMessageToGroup` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  shareAppMessageToGroup: WeapiCrossPlatformAdapter['shareAppMessageToGroup']
+
+  /**
+   * 分享到群聊表情。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.shareEmojiToGroup` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  shareEmojiToGroup: WeapiCrossPlatformAdapter['shareEmojiToGroup']
+
+  /**
+   * 分享文件消息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.shareFileMessage` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  shareFileMessage: WeapiCrossPlatformAdapter['shareFileMessage']
+
+  /**
+   * 分享文件到群。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.shareFileToGroup` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  shareFileToGroup: WeapiCrossPlatformAdapter['shareFileToGroup']
+
+  /**
+   * 分享图片到群。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.shareImageToGroup` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  shareImageToGroup: WeapiCrossPlatformAdapter['shareImageToGroup']
+
+  /**
+   * 分享至公众号。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.shareToOfficialAccount` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  shareToOfficialAccount: WeapiCrossPlatformAdapter['shareToOfficialAccount']
+
+  /**
+   * 分享至微信运动。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.shareToWeRun` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  shareToWeRun: WeapiCrossPlatformAdapter['shareToWeRun']
+
+  /**
+   * 分享视频消息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.shareVideoMessage` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  shareVideoMessage: WeapiCrossPlatformAdapter['shareVideoMessage']
+
+  /**
+   * 分享视频到群。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.shareVideoToGroup` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  shareVideoToGroup: WeapiCrossPlatformAdapter['shareVideoToGroup']
+
+  /**
+   * 展示红包组件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.showRedPackage` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  showRedPackage: WeapiCrossPlatformAdapter['showRedPackage']
+
+  /**
+   * 开始监听设备方向变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.startDeviceMotionListening` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  startDeviceMotionListening: WeapiCrossPlatformAdapter['startDeviceMotionListening']
+
+  /**
+   * 启动 HCE 功能。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.startHCE` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  startHCE: WeapiCrossPlatformAdapter['startHCE']
+
+  /**
+   * 开始本地服务发现。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.startLocalServiceDiscovery` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  startLocalServiceDiscovery: WeapiCrossPlatformAdapter['startLocalServiceDiscovery']
+
+  /**
+   * 开始持续定位。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.startLocationUpdate` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  startLocationUpdate: WeapiCrossPlatformAdapter['startLocationUpdate']
+
+  /**
+   * 开始后台持续定位。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.startLocationUpdateBackground` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  startLocationUpdateBackground: WeapiCrossPlatformAdapter['startLocationUpdateBackground']
+
+  /**
+   * 开始录音。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.startRecord` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  startRecord: WeapiCrossPlatformAdapter['startRecord']
+
+  /**
+   * 开始 SOTER 认证。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.startSoterAuthentication` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  startSoterAuthentication: WeapiCrossPlatformAdapter['startSoterAuthentication']
+
+  /**
+   * 停止后台音频。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.stopBackgroundAudio` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  stopBackgroundAudio: WeapiCrossPlatformAdapter['stopBackgroundAudio']
+
+  /**
+   * 停止监听设备方向变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.stopDeviceMotionListening` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  stopDeviceMotionListening: WeapiCrossPlatformAdapter['stopDeviceMotionListening']
+
+  /**
+   * 停止人脸检测。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.stopFaceDetect` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  stopFaceDetect: WeapiCrossPlatformAdapter['stopFaceDetect']
   // @generated weapi-method-docs:end
 }
 

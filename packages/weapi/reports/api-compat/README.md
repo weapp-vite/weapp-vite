@@ -15,23 +15,23 @@
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
 | 支付宝可按微信命名调用的方法数   |  479 |
-| 支付宝语义对齐方法数             |  314 |
-| 支付宝 fallback 方法数           |  165 |
+| 支付宝语义对齐方法数             |  334 |
+| 支付宝 fallback 方法数           |  145 |
 | 抖音可按微信命名调用的方法数     |  479 |
-| 抖音语义对齐方法数               |  256 |
-| 抖音 fallback 方法数             |  223 |
+| 抖音语义对齐方法数               |  276 |
+| 抖音 fallback 方法数             |  203 |
 | 三端可调用完全对齐方法数         |  479 |
-| 三端语义完全对齐方法数           |  254 |
+| 三端语义完全对齐方法数           |  274 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           479 |             314 |             165 |      479 |      100.00% |         65.55% |
-| 抖音小程序 (`tt`)             |           479 |             256 |             223 |      479 |      100.00% |         53.44% |
+| 支付宝小程序 (`my`)           |           479 |             334 |             145 |      479 |      100.00% |         69.73% |
+| 抖音小程序 (`tt`)             |           479 |             276 |             203 |      479 |      100.00% |         57.62% |
 | 三端可调用完全对齐 (wx/my/tt) |           479 |               - |               - |      479 |      100.00% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             254 |               - |      479 |            - |         53.03% |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             274 |               - |      479 |            - |         57.20% |
 
 ## 核心差异映射（手工规则）
 
@@ -185,6 +185,26 @@
 | `getPrivacySetting`                 | 直连 `wx.getPrivacySetting`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `initFaceDetect`                    | 直连 `wx.initFaceDetect`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `join1v1Chat`                       | 直连 `wx.join1v1Chat`                               | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareAppMessageToGroup`            | 直连 `wx.shareAppMessageToGroup`                    | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareEmojiToGroup`                 | 直连 `wx.shareEmojiToGroup`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareFileMessage`                  | 直连 `wx.shareFileMessage`                          | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareFileToGroup`                  | 直连 `wx.shareFileToGroup`                          | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareImageToGroup`                 | 直连 `wx.shareImageToGroup`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareToOfficialAccount`            | 直连 `wx.shareToOfficialAccount`                    | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareToWeRun`                      | 直连 `wx.shareToWeRun`                              | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareVideoMessage`                 | 直连 `wx.shareVideoMessage`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareVideoToGroup`                 | 直连 `wx.shareVideoToGroup`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `showRedPackage`                    | 直连 `wx.showRedPackage`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `startDeviceMotionListening`        | 直连 `wx.startDeviceMotionListening`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `startHCE`                          | 直连 `wx.startHCE`                                  | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `startLocalServiceDiscovery`        | 直连 `wx.startLocalServiceDiscovery`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `startLocationUpdate`               | 直连 `wx.startLocationUpdate`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `startLocationUpdateBackground`     | 直连 `wx.startLocationUpdateBackground`             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `startRecord`                       | 直连 `wx.startRecord`                               | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `startSoterAuthentication`          | 直连 `wx.startSoterAuthentication`                  | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopBackgroundAudio`               | 直连 `wx.stopBackgroundAudio`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopDeviceMotionListening`         | 直连 `wx.stopDeviceMotionListening`                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopFaceDetect`                    | 直连 `wx.stopFaceDetect`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 
 ## 已执行验证
 
