@@ -1,485 +1,485 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：479，不支持：0
+总计：479，支持：335，不支持：144
 
-| 微信 API                                      | 抖音目标 API                        | 支持 | 支持级别   | 语义对齐 | 策略                                                                   |
-| --------------------------------------------- | ----------------------------------- | ---- | ---------- | -------- | ---------------------------------------------------------------------- |
-| `addCard`                                     | `addCard`                           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `addFileToFavorites`                          | `addFileToFavorites`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `addPaymentPassFinish`                        | `addPaymentPassFinish`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `addPaymentPassGetCertificateData`            | `addPaymentPassGetCertificateData`  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `addPhoneCalendar`                            | `addPhoneCalendar`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `addPhoneContact`                             | `addPhoneContact`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `addPhoneRepeatCalendar`                      | `addPhoneRepeatCalendar`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `addVideoToFavorites`                         | `addVideoToFavorites`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `arrayBufferToBase64`                         | `arrayBufferToBase64`               | ✅   | `native`   | ✅       | 直连 `tt.arrayBufferToBase64`                                          |
-| `authorize`                                   | `authorize`                         | ✅   | `mapped`   | ✅       | 直连 `tt.authorize`                                                    |
-| `authorizeForMiniProgram`                     | `authorizeForMiniProgram`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `authPrivateMessage`                          | `authPrivateMessage`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `base64ToArrayBuffer`                         | `base64ToArrayBuffer`               | ✅   | `native`   | ✅       | 直连 `tt.base64ToArrayBuffer`                                          |
-| `batchGetStorage`                             | `batchGetStorage`                   | ✅   | `mapped`   | ✅       | 使用内置 shim，逐项转调 `tt.getStorage`                                |
-| `batchGetStorageSync`                         | `batchGetStorageSync`               | ✅   | `mapped`   | ✅       | 使用内置 shim，逐项转调 `tt.getStorageSync`                            |
-| `batchSetStorage`                             | `batchSetStorage`                   | ✅   | `mapped`   | ✅       | 使用内置 shim，逐项转调 `tt.setStorage`                                |
-| `batchSetStorageSync`                         | `batchSetStorageSync`               | ✅   | `mapped`   | ✅       | 使用内置 shim，逐项转调 `tt.setStorageSync`                            |
-| `bindEmployeeRelation`                        | `bindEmployeeRelation`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `canAddSecureElementPass`                     | `canAddSecureElementPass`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `cancelIdleCallback`                          | `cancelIdleCallback`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `canIUse`                                     | `canIUse`                           | ✅   | `native`   | ✅       | 直连 `tt.canIUse`                                                      |
-| `canvasGetImageData`                          | `canvasGetImageData`                | ✅   | `mapped`   | ✅       | 使用内置 shim，返回空像素数据结构                                      |
-| `canvasPutImageData`                          | `canvasPutImageData`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `canvasToTempFilePath`                        | `canvasToTempFilePath`              | ✅   | `native`   | ✅       | 直连 `tt.canvasToTempFilePath`                                         |
-| `checkDeviceSupportHevc`                      | `checkDeviceSupportHevc`            | ✅   | `mapped`   | ✅       | 使用内置 shim，返回默认不支持                                          |
-| `checkEmployeeRelation`                       | `checkEmployeeRelation`             | ✅   | `mapped`   | ✅       | 使用内置 shim，返回未绑定                                              |
-| `checkIsAddedToMyMiniProgram`                 | `checkIsAddedToMyMiniProgram`       | ✅   | `mapped`   | ✅       | 使用内置 shim，返回未添加                                              |
-| `checkIsOpenAccessibility`                    | `checkIsOpenAccessibility`          | ✅   | `mapped`   | ✅       | 使用内置 shim，返回未开启                                              |
-| `checkIsPictureInPictureActive`               | `checkIsPictureInPictureActive`     | ✅   | `mapped`   | ✅       | 使用内置 shim，返回未激活                                              |
-| `checkIsSoterEnrolledInDevice`                | `checkIsSoterEnrolledInDevice`      | ✅   | `mapped`   | ✅       | 使用内置 shim，返回未录入                                              |
-| `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication` | ✅   | `mapped`   | ✅       | 使用内置 shim，返回默认不支持                                          |
-| `checkSession`                                | `checkSession`                      | ✅   | `mapped`   | ✅       | 直连 `tt.checkSession`                                                 |
-| `chooseAddress`                               | `chooseAddress`                     | ✅   | `mapped`   | ✅       | 直连 `tt.chooseAddress`                                                |
-| `chooseContact`                               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `chooseImage`                                 | `chooseImage`                       | ✅   | `mapped`   | ✅       | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底           |
-| `chooseInvoice`                               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `chooseInvoiceTitle`                          | `chooseInvoiceTitle`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `chooseLicensePlate`                          | `chooseLicensePlate`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `chooseLocation`                              | `chooseLocation`                    | ✅   | `native`   | ✅       | 直连 `tt.chooseLocation`                                               |
-| `chooseMedia`                                 | `chooseMedia`                       | ✅   | `mapped`   | ✅       | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType`      |
-| `chooseMessageFile`                           | `chooseImage`                       | ✅   | `mapped`   | ✅       | 映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name`                |
-| `choosePoi`                                   | `choosePoi`                         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `chooseVideo`                                 | `chooseMedia`                       | ✅   | `mapped`   | ✅       | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构       |
-| `clearStorage`                                | `clearStorage`                      | ✅   | `native`   | ✅       | 直连 `tt.clearStorage`                                                 |
-| `clearStorageSync`                            | `clearStorageSync`                  | ✅   | `native`   | ✅       | 直连 `tt.clearStorageSync`                                             |
-| `closeBLEConnection`                          | `closeBLEConnection`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `closeBluetoothAdapter`                       | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `closeSocket`                                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `compressImage`                               | `compressImage`                     | ✅   | `native`   | ✅       | 直连 `tt.compressImage`                                                |
-| `compressVideo`                               | `compressVideo`                     | ✅   | `mapped`   | ✅       | 使用内置 shim（回传原始文件路径）                                      |
-| `connectSocket`                               | `connectSocket`                     | ✅   | `native`   | ✅       | 直连 `tt.connectSocket`                                                |
-| `connectWifi`                                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `createAnimation`                             | `createAnimation`                   | ✅   | `native`   | ✅       | 直连 `tt.createAnimation`                                              |
-| `createAudioContext`                          | `createInnerAudioContext`           | ✅   | `mapped`   | ✅       | 映射到 `tt.createInnerAudioContext`                                    |
-| `createBLEConnection`                         | `createBLEConnection`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createBLEPeripheralServer`                   | `createBLEPeripheralServer`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createBufferURL`                             | `createBufferURL`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createCacheManager`                          | `createCacheManager`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createCameraContext`                         | `createCameraContext`               | ✅   | `mapped`   | ✅       | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） |
-| `createCanvasContext`                         | `createCanvasContext`               | ✅   | `native`   | ✅       | 直连 `tt.createCanvasContext`                                          |
-| `createGlobalPayment`                         | `createGlobalPayment`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createInferenceSession`                      | `createInferenceSession`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createInnerAudioContext`                     | `createInnerAudioContext`           | ✅   | `native`   | ✅       | 直连 `tt.createInnerAudioContext`                                      |
-| `createIntersectionObserver`                  | `createIntersectionObserver`        | ✅   | `native`   | ✅       | 直连 `tt.createIntersectionObserver`                                   |
-| `createInterstitialAd`                        | `createInterstitialAd`              | ✅   | `mapped`   | ✅       | 直连 `tt.createInterstitialAd`                                         |
-| `createLivePlayerContext`                     | `createLivePlayerContext`           | ✅   | `mapped`   | ✅       | 直连 `tt.createLivePlayerContext`                                      |
-| `createLivePusherContext`                     | `createVideoContext`                | ✅   | `mapped`   | ✅       | 映射到 `tt.createVideoContext`                                         |
-| `createMapContext`                            | `createMapContext`                  | ✅   | `native`   | ✅       | 直连 `tt.createMapContext`                                             |
-| `createMediaAudioPlayer`                      | `createMediaAudioPlayer`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createMediaContainer`                        | `createMediaContainer`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createMediaRecorder`                         | `createMediaRecorder`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createOffscreenCanvas`                       | `createOffscreenCanvas`             | ✅   | `native`   | ✅       | 直连 `tt.createOffscreenCanvas`                                        |
-| `createRewardedVideoAd`                       | `createInterstitialAd`              | ✅   | `mapped`   | ✅       | 映射到 `tt.createInterstitialAd`                                       |
-| `createSelectorQuery`                         | `createSelectorQuery`               | ✅   | `native`   | ✅       | 直连 `tt.createSelectorQuery`                                          |
-| `createTCPSocket`                             | `createTCPSocket`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createUDPSocket`                             | `createUDPSocket`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createVideoContext`                          | `createVideoContext`                | ✅   | `native`   | ✅       | 直连 `tt.createVideoContext`                                           |
-| `createVideoDecoder`                          | `createVideoDecoder`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createVKSession`                             | `createVKSession`                   | ✅   | `mapped`   | ✅       | 使用内置 VKSession shim（对齐 `start/stop/destroy`）                   |
-| `createWebAudioContext`                       | `createInnerAudioContext`           | ✅   | `mapped`   | ✅       | 映射到 `tt.createInnerAudioContext`                                    |
-| `createWorker`                                | `createWorker`                      | ✅   | `native`   | ✅       | 直连 `tt.createWorker`                                                 |
-| `cropImage`                                   | `cropImage`                         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `disableAlertBeforeUnload`                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `downloadFile`                                | `downloadFile`                      | ✅   | `native`   | ✅       | 直连 `tt.downloadFile`                                                 |
-| `editImage`                                   | `editImage`                         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `enableAlertBeforeUnload`                     | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `exitMiniProgram`                             | `exitMiniProgram`                   | ✅   | `native`   | ✅       | 直连 `tt.exitMiniProgram`                                              |
-| `exitVoIPChat`                                | `exitVoIPChat`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `faceDetect`                                  | `faceDetect`                        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getAccountInfoSync`                          | `getEnvInfoSync`                    | ✅   | `mapped`   | ✅       | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构                         |
-| `getApiCategory`                              | `getApiCategory`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getAppAuthorizeSetting`                      | `getSetting`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.getSetting`                                                 |
-| `getAppBaseInfo`                              | `getEnvInfoSync`                    | ✅   | `mapped`   | ✅       | 映射到 `tt.getEnvInfoSync`                                             |
-| `getAvailableAudioSources`                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getBackgroundAudioManager`                   | `getBackgroundAudioManager`         | ✅   | `native`   | ✅       | 直连 `tt.getBackgroundAudioManager`                                    |
-| `getBackgroundAudioPlayerState`               | `getBackgroundAudioPlayerState`     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getBackgroundFetchData`                      | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getBackgroundFetchToken`                     | `getBackgroundFetchToken`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getBatteryInfo`                              | `getSystemInfo`                     | ✅   | `mapped`   | ✅       | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging`                     |
-| `getBatteryInfoSync`                          | `getSystemInfoSync`                 | ✅   | `mapped`   | ✅       | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging`                 |
-| `getBeacons`                                  | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getBLEDeviceCharacteristics`                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getBLEDeviceRSSI`                            | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getBLEDeviceServices`                        | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getBLEMTU`                                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getBluetoothAdapterState`                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getBluetoothDevices`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getChannelsLiveInfo`                         | `getChannelsLiveInfo`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getChannelsLiveNoticeInfo`                   | `getChannelsLiveNoticeInfo`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getChannelsShareKey`                         | `getChannelsShareKey`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getChatToolInfo`                             | `getChatToolInfo`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getClipboardData`                            | `getClipboardData`                  | ✅   | `mapped`   | ✅       | 直连 `tt.getClipboardData`                                             |
-| `getCommonConfig`                             | `getCommonConfig`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getConnectedBluetoothDevices`                | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getConnectedWifi`                            | `getConnectedWifi`                  | ✅   | `native`   | ✅       | 直连 `tt.getConnectedWifi`                                             |
-| `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getDeviceInfo`                               | `getSystemInfo`                     | ✅   | `mapped`   | ✅       | 映射到 `tt.getSystemInfo`，并提取设备字段                              |
-| `getDeviceVoIPList`                           | `getDeviceVoIPList`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getEnterOptionsSync`                         | `getLaunchOptionsSync`              | ✅   | `mapped`   | ✅       | 映射到 `tt.getLaunchOptionsSync`                                       |
-| `getExptInfoSync`                             | `getSystemInfoSync`                 | ✅   | `fallback` | ❌       | 回退映射到 `tt.getSystemInfoSync`（通用兜底）                          |
-| `getExtConfig`                                | `getExtConfig`                      | ✅   | `native`   | ✅       | 直连 `tt.getExtConfig`                                                 |
-| `getExtConfigSync`                            | `getExtConfigSync`                  | ✅   | `native`   | ✅       | 直连 `tt.getExtConfigSync`                                             |
-| `getFileSystemManager`                        | `getFileSystemManager`              | ✅   | `native`   | ✅       | 直连 `tt.getFileSystemManager`                                         |
-| `getFuzzyLocation`                            | `getLocation`                       | ✅   | `mapped`   | ✅       | 映射到 `tt.getLocation`                                                |
-| `getGroupEnterInfo`                           | `getGroupEnterInfo`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getHCEState`                                 | `getHCEState`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getImageInfo`                                | `getImageInfo`                      | ✅   | `native`   | ✅       | 直连 `tt.getImageInfo`                                                 |
-| `getInferenceEnvInfo`                         | `getInferenceEnvInfo`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getLaunchOptionsSync`                        | `getLaunchOptionsSync`              | ✅   | `native`   | ✅       | 直连 `tt.getLaunchOptionsSync`                                         |
-| `getLocalIPAddress`                           | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getLocation`                                 | `getLocation`                       | ✅   | `native`   | ✅       | 直连 `tt.getLocation`                                                  |
-| `getLogManager`                               | `getLogManager`                     | ✅   | `mapped`   | ✅       | 使用内置日志 shim（对齐 `log/info/warn/error`）                        |
-| `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect`   | ✅   | `native`   | ✅       | 直连 `tt.getMenuButtonBoundingClientRect`                              |
-| `getNetworkType`                              | `getSystemInfo`                     | ✅   | `mapped`   | ✅       | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType`                      |
-| `getNFCAdapter`                               | `getNFCAdapter`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getPerformance`                              | `getPerformance`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getPrivacySetting`                           | `getPrivacySetting`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getRandomValues`                             | `getRandomValues`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getRealtimeLogManager`                       | `getRealtimeLogManager`             | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getRecorderManager`                          | `getRecorderManager`                | ✅   | `native`   | ✅       | 直连 `tt.getRecorderManager`                                           |
-| `getRendererUserAgent`                        | `getRendererUserAgent`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getScreenBrightness`                         | `getScreenBrightness`               | ✅   | `native`   | ✅       | 直连 `tt.getScreenBrightness`                                          |
-| `getScreenRecordingState`                     | `getScreenRecordingState`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getSecureElementPasses`                      | `getSecureElementPasses`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getSelectedTextRange`                        | `getSelectedTextRange`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getSetting`                                  | `getSetting`                        | ✅   | `native`   | ✅       | 直连 `tt.getSetting`                                                   |
-| `getShareInfo`                                | `getShareInfo`                      | ✅   | `mapped`   | ✅       | 使用内置 shim（补齐 `encryptedData/iv`）                               |
-| `getShowSplashAdStatus`                       | `getShowSplashAdStatus`             | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getSkylineInfo`                              | `getSkylineInfo`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getSkylineInfoSync`                          | `getSystemInfoSync`                 | ✅   | `fallback` | ❌       | 回退映射到 `tt.getSystemInfoSync`（通用兜底）                          |
-| `getStorage`                                  | `getStorage`                        | ✅   | `native`   | ✅       | 直连 `tt.getStorage`                                                   |
-| `getStorageInfo`                              | `getStorageInfo`                    | ✅   | `native`   | ✅       | 直连 `tt.getStorageInfo`                                               |
-| `getStorageInfoSync`                          | `getStorageInfoSync`                | ✅   | `native`   | ✅       | 直连 `tt.getStorageInfoSync`                                           |
-| `getStorageSync`                              | `getStorageSync`                    | ✅   | `native`   | ✅       | 直连 `tt.getStorageSync`                                               |
-| `getSystemInfo`                               | `getSystemInfo`                     | ✅   | `native`   | ✅       | 直连 `tt.getSystemInfo`                                                |
-| `getSystemInfoAsync`                          | `getSystemInfo`                     | ✅   | `mapped`   | ✅       | 映射到 `tt.getSystemInfo`                                              |
-| `getSystemInfoSync`                           | `getSystemInfoSync`                 | ✅   | `native`   | ✅       | 直连 `tt.getSystemInfoSync`                                            |
-| `getSystemSetting`                            | `getSetting`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.getSetting`                                                 |
-| `getUpdateManager`                            | `getUpdateManager`                  | ✅   | `native`   | ✅       | 直连 `tt.getUpdateManager`                                             |
-| `getUserCryptoManager`                        | `getUserCryptoManager`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getUserInfo`                                 | `getUserInfo`                       | ✅   | `mapped`   | ✅       | 直连 `tt.getUserInfo`                                                  |
-| `getUserProfile`                              | `getUserProfile`                    | ✅   | `mapped`   | ✅       | 直连 `tt.getUserProfile`                                               |
-| `getVideoInfo`                                | `getFileInfo`                       | ✅   | `mapped`   | ✅       | 映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath`                  |
-| `getWeRunData`                                | `getWeRunData`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getWifiList`                                 | `getWifiList`                       | ✅   | `native`   | ✅       | 直连 `tt.getWifiList`                                                  |
-| `getWindowInfo`                               | `getSystemInfo`                     | ✅   | `mapped`   | ✅       | 映射到 `tt.getSystemInfo`，并提取窗口字段                              |
-| `getXrFrameSystem`                            | `getXrFrameSystem`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `hideHomeButton`                              | `hideHomeButton`                    | ✅   | `mapped`   | ✅       | 直连 `tt.hideHomeButton`                                               |
-| `hideKeyboard`                                | `hideKeyboard`                      | ✅   | `native`   | ✅       | 直连 `tt.hideKeyboard`                                                 |
-| `hideLoading`                                 | `hideLoading`                       | ✅   | `native`   | ✅       | 直连 `tt.hideLoading`                                                  |
-| `hideNavigationBarLoading`                    | `hideNavigationBarLoading`          | ✅   | `native`   | ✅       | 直连 `tt.hideNavigationBarLoading`                                     |
-| `hideShareMenu`                               | `hideShareMenu`                     | ✅   | `native`   | ✅       | 直连 `tt.hideShareMenu`                                                |
-| `hideTabBar`                                  | `hideTabBar`                        | ✅   | `native`   | ✅       | 直连 `tt.hideTabBar`                                                   |
-| `hideTabBarRedDot`                            | `hideTabBarRedDot`                  | ✅   | `native`   | ✅       | 直连 `tt.hideTabBarRedDot`                                             |
-| `hideToast`                                   | `hideToast`                         | ✅   | `native`   | ✅       | 直连 `tt.hideToast`                                                    |
-| `initFaceDetect`                              | `initFaceDetect`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `isBluetoothDevicePaired`                     | `isBluetoothDevicePaired`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `isVKSupport`                                 | `isVKSupport`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `join1v1Chat`                                 | `join1v1Chat`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `joinVoIPChat`                                | `joinVoIPChat`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `loadBuiltInFontFace`                         | `loadBuiltInFontFace`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `loadFontFace`                                | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `login`                                       | `login`                             | ✅   | `mapped`   | ✅       | 直连 `tt.login`                                                        |
-| `makeBluetoothPair`                           | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `makePhoneCall`                               | `makePhoneCall`                     | ✅   | `native`   | ✅       | 直连 `tt.makePhoneCall`                                                |
-| `navigateBack`                                | `navigateBack`                      | ✅   | `native`   | ✅       | 直连 `tt.navigateBack`                                                 |
-| `navigateBackMiniProgram`                     | `navigateBackMiniProgram`           | ✅   | `native`   | ✅       | 直连 `tt.navigateBackMiniProgram`                                      |
-| `navigateTo`                                  | `navigateTo`                        | ✅   | `native`   | ✅       | 直连 `tt.navigateTo`                                                   |
-| `navigateToMiniProgram`                       | `navigateToMiniProgram`             | ✅   | `native`   | ✅       | 直连 `tt.navigateToMiniProgram`                                        |
-| `nextTick`                                    | `nextTick`                          | ✅   | `mapped`   | ✅       | 使用内置 microtask shim 调度回调                                       |
-| `notifyBLECharacteristicValueChange`          | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `notifyGroupMembers`                          | `notifyGroupMembers`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `offAccelerometerChange`                      | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offAfterPageLoad`                            | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offAfterPageUnload`                          | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offApiCategoryChange`                        | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offAppHide`                                  | `offAppHide`                        | ✅   | `native`   | ✅       | 直连 `tt.offAppHide`                                                   |
-| `offAppRoute`                                 | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offAppRouteDone`                             | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offAppShow`                                  | `offAppShow`                        | ✅   | `native`   | ✅       | 直连 `tt.offAppShow`                                                   |
-| `offAudioInterruptionBegin`                   | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offAudioInterruptionEnd`                     | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offBatteryInfoChange`                        | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offBeaconServiceChange`                      | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offBeaconUpdate`                             | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offBeforeAppRoute`                           | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offBeforePageLoad`                           | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offBeforePageUnload`                         | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offBLECharacteristicValueChange`             | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offBLEConnectionStateChange`                 | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offBLEMTUChange`                             | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offBLEPeripheralConnectionStateChanged`      | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offBluetoothAdapterStateChange`              | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offBluetoothDeviceFound`                     | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offCompassChange`                            | `offCompassChange`                  | ✅   | `native`   | ✅       | 直连 `tt.offCompassChange`                                             |
-| `offCopyUrl`                                  | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offDeviceMotionChange`                       | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offEmbeddedMiniProgramHeightChange`          | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offError`                                    | `offError`                          | ✅   | `native`   | ✅       | 直连 `tt.offError`                                                     |
-| `offGeneratePoster`                           | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offGetWifiList`                              | `offGetWifiList`                    | ✅   | `native`   | ✅       | 直连 `tt.offGetWifiList`                                               |
-| `offGyroscopeChange`                          | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offHCEMessage`                               | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offKeyboardHeightChange`                     | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offKeyDown`                                  | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offKeyUp`                                    | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offLazyLoadError`                            | `offLazyLoadError`                  | ✅   | `native`   | ✅       | 直连 `tt.offLazyLoadError`                                             |
-| `offLocalServiceDiscoveryStop`                | `offAppShow`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
-| `offLocalServiceFound`                        | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offLocalServiceLost`                         | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offLocalServiceResolveFail`                  | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offLocationChange`                           | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offLocationChangeError`                      | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offMemoryWarning`                            | `offMemoryWarning`                  | ✅   | `mapped`   | ✅       | 使用内置 shim，配合 `tt.onMemoryWarning` 实现监听解绑                  |
-| `offMenuButtonBoundingClientRectWeightChange` | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offNetworkStatusChange`                      | `offNetworkStatusChange`            | ✅   | `native`   | ✅       | 直连 `tt.offNetworkStatusChange`                                       |
-| `offNetworkWeakChange`                        | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offOnUserTriggerTranslation`                 | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offPageNotFound`                             | `offPageNotFound`                   | ✅   | `native`   | ✅       | 直连 `tt.offPageNotFound`                                              |
-| `offParallelStateChange`                      | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offScreenRecordingStateChanged`              | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offThemeChange`                              | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offUnhandledRejection`                       | `offUnhandledRejection`             | ✅   | `native`   | ✅       | 直连 `tt.offUnhandledRejection`                                        |
-| `offUserCaptureScreen`                        | `offUserCaptureScreen`              | ✅   | `native`   | ✅       | 直连 `tt.offUserCaptureScreen`                                         |
-| `offVoIPChatInterrupted`                      | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offVoIPChatMembersChanged`                   | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offVoIPChatSpeakersChanged`                  | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offVoIPChatStateChanged`                     | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offVoIPVideoMembersChanged`                  | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offWifiConnected`                            | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offWifiConnectedWithPartialInfo`             | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `offWindowResize`                             | `offWindowResize`                   | ✅   | `mapped`   | ✅       | 直连 `tt.offWindowResize`                                              |
-| `offWindowStateChange`                        | `offAppShow`                        | ✅   | `fallback` | ❌       | 回退映射到 `tt.offAppShow`（通用兜底）                                 |
-| `onAccelerometerChange`                       | `onAccelerometerChange`             | ✅   | `native`   | ✅       | 直连 `tt.onAccelerometerChange`                                        |
-| `onAfterPageLoad`                             | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onAfterPageUnload`                           | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onApiCategoryChange`                         | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onAppHide`                                   | `onAppHide`                         | ✅   | `native`   | ✅       | 直连 `tt.onAppHide`                                                    |
-| `onAppRoute`                                  | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onAppRouteDone`                              | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onAppShow`                                   | `onAppShow`                         | ✅   | `native`   | ✅       | 直连 `tt.onAppShow`                                                    |
-| `onAudioInterruptionBegin`                    | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onAudioInterruptionEnd`                      | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onBackgroundAudioPause`                      | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onBackgroundAudioPlay`                       | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onBackgroundAudioStop`                       | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onBackgroundFetchData`                       | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onBatteryInfoChange`                         | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onBeaconServiceChange`                       | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onBeaconUpdate`                              | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onBeforeAppRoute`                            | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onBeforePageLoad`                            | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onBeforePageUnload`                          | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onBLECharacteristicValueChange`              | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onBLEConnectionStateChange`                  | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onBLEMTUChange`                              | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onBLEPeripheralConnectionStateChanged`       | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onBluetoothAdapterStateChange`               | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onBluetoothDeviceFound`                      | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onCompassChange`                             | `onCompassChange`                   | ✅   | `native`   | ✅       | 直连 `tt.onCompassChange`                                              |
-| `onCopyUrl`                                   | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onDeviceMotionChange`                        | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onEmbeddedMiniProgramHeightChange`           | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onError`                                     | `onError`                           | ✅   | `native`   | ✅       | 直连 `tt.onError`                                                      |
-| `onGeneratePoster`                            | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onGetWifiList`                               | `onGetWifiList`                     | ✅   | `native`   | ✅       | 直连 `tt.onGetWifiList`                                                |
-| `onGyroscopeChange`                           | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onHCEMessage`                                | `onAppShow`                         | ✅   | `mapped`   | ✅       | 映射到 `tt.onAppShow`（近似事件回调）                                  |
-| `onKeyboardHeightChange`                      | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onKeyDown`                                   | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onKeyUp`                                     | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onLazyLoadError`                             | `onLazyLoadError`                   | ✅   | `native`   | ✅       | 直连 `tt.onLazyLoadError`                                              |
-| `onLocalServiceDiscoveryStop`                 | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onLocalServiceFound`                         | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onLocalServiceLost`                          | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onLocalServiceResolveFail`                   | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onLocationChange`                            | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onLocationChangeError`                       | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onMemoryWarning`                             | `onMemoryWarning`                   | ✅   | `native`   | ✅       | 直连 `tt.onMemoryWarning`                                              |
-| `onMenuButtonBoundingClientRectWeightChange`  | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onNeedPrivacyAuthorization`                  | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onNetworkStatusChange`                       | `onNetworkStatusChange`             | ✅   | `native`   | ✅       | 直连 `tt.onNetworkStatusChange`                                        |
-| `onNetworkWeakChange`                         | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onOnUserTriggerTranslation`                  | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onPageNotFound`                              | `onPageNotFound`                    | ✅   | `native`   | ✅       | 直连 `tt.onPageNotFound`                                               |
-| `onParallelStateChange`                       | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onScreenRecordingStateChanged`               | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onSocketClose`                               | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onSocketError`                               | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onSocketMessage`                             | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onSocketOpen`                                | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onThemeChange`                               | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onUnhandledRejection`                        | `onUnhandledRejection`              | ✅   | `native`   | ✅       | 直连 `tt.onUnhandledRejection`                                         |
-| `onUserCaptureScreen`                         | `onUserCaptureScreen`               | ✅   | `native`   | ✅       | 直连 `tt.onUserCaptureScreen`                                          |
-| `onVoIPChatInterrupted`                       | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onVoIPChatMembersChanged`                    | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onVoIPChatSpeakersChanged`                   | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onVoIPChatStateChanged`                      | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onVoIPVideoMembersChanged`                   | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onWifiConnected`                             | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onWifiConnectedWithPartialInfo`              | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `onWindowResize`                              | `onWindowResize`                    | ✅   | `mapped`   | ✅       | 直连 `tt.onWindowResize`                                               |
-| `onWindowStateChange`                         | `onAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.onAppShow`（通用兜底）                                  |
-| `openAppAuthorizeSetting`                     | `openSetting`                       | ✅   | `mapped`   | ✅       | 映射到 `tt.openSetting`                                                |
-| `openBluetoothAdapter`                        | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `openCard`                                    | `openCard`                          | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openChannelsActivity`                        | `openChannelsActivity`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openChannelsEvent`                           | `openChannelsEvent`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openChannelsLive`                            | `openChannelsLive`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openChannelsLiveNoticeInfo`                  | `openChannelsLiveNoticeInfo`        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openChannelsUserProfile`                     | `openChannelsUserProfile`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openChatTool`                                | `openChatTool`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openCustomerServiceChat`                     | `openCustomerServiceChat`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openDocument`                                | `openDocument`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`             | ✅   | `mapped`   | ✅       | 映射到 `tt.navigateToMiniProgram`                                      |
-| `openHKOfflinePayView`                        | `openHKOfflinePayView`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openInquiriesTopic`                          | `openInquiriesTopic`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openLocation`                                | `openLocation`                      | ✅   | `native`   | ✅       | 直连 `tt.openLocation`                                                 |
-| `openOfficialAccountArticle`                  | `openOfficialAccountArticle`        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openOfficialAccountChat`                     | `openOfficialAccountChat`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openOfficialAccountProfile`                  | `openOfficialAccountProfile`        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openPrivacyContract`                         | `openPrivacyContract`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openSetting`                                 | `openSetting`                       | ✅   | `native`   | ✅       | 直连 `tt.openSetting`                                                  |
-| `openSingleStickerView`                       | `openSingleStickerView`             | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openStickerIPView`                           | `openStickerIPView`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openStickerSetView`                          | `openStickerSetView`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openStoreCouponDetail`                       | `openStoreCouponDetail`             | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openStoreOrderDetail`                        | `openStoreOrderDetail`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openSystemBluetoothSetting`                  | `openSystemBluetoothSetting`        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openVideoEditor`                             | `openVideoEditor`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `pageScrollTo`                                | `pageScrollTo`                      | ✅   | `native`   | ✅       | 直连 `tt.pageScrollTo`                                                 |
-| `pauseBackgroundAudio`                        | `pauseBackgroundAudio`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `pauseVoice`                                  | `pauseVoice`                        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `playBackgroundAudio`                         | `playBackgroundAudio`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `playVoice`                                   | `playVoice`                         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `pluginLogin`                                 | `login`                             | ✅   | `mapped`   | ✅       | 映射到 `tt.login`                                                      |
-| `postMessageToReferrerMiniProgram`            | `postMessageToReferrerMiniProgram`  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `postMessageToReferrerPage`                   | `postMessageToReferrerPage`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `preDownloadSubpackage`                       | `preDownloadSubpackage`             | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `preloadAssets`                               | `preloadAssets`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `preloadSkylineView`                          | `preloadSkylineView`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `preloadWebview`                              | `preloadWebview`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `previewImage`                                | `previewImage`                      | ✅   | `native`   | ✅       | 直连 `tt.previewImage`                                                 |
-| `previewMedia`                                | `previewImage`                      | ✅   | `mapped`   | ✅       | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls`             |
-| `readBLECharacteristicValue`                  | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `redirectTo`                                  | `redirectTo`                        | ✅   | `native`   | ✅       | 直连 `tt.redirectTo`                                                   |
-| `reLaunch`                                    | `reLaunch`                          | ✅   | `native`   | ✅       | 直连 `tt.reLaunch`                                                     |
-| `removeSecureElementPass`                     | `removeSecureElementPass`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `removeStorage`                               | `removeStorage`                     | ✅   | `native`   | ✅       | 直连 `tt.removeStorage`                                                |
-| `removeStorageSync`                           | `removeStorageSync`                 | ✅   | `native`   | ✅       | 直连 `tt.removeStorageSync`                                            |
-| `removeTabBarBadge`                           | `removeTabBarBadge`                 | ✅   | `native`   | ✅       | 直连 `tt.removeTabBarBadge`                                            |
-| `reportAnalytics`                             | `reportAnalytics`                   | ✅   | `mapped`   | ✅       | 直连 `tt.reportAnalytics`                                              |
-| `reportEvent`                                 | `reportEvent`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `reportMonitor`                               | `reportMonitor`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `reportPerformance`                           | `reportPerformance`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `request`                                     | `request`                           | ✅   | `native`   | ✅       | 直连 `tt.request`                                                      |
-| `requestCommonPayment`                        | `requestCommonPayment`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `requestDeviceVoIP`                           | `requestDeviceVoIP`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `requestIdleCallback`                         | `requestIdleCallback`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `requestMerchantTransfer`                     | `requestMerchantTransfer`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `requestOrderPayment`                         | `pay`                               | ✅   | `mapped`   | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                    |
-| `requestPayment`                              | `pay`                               | ✅   | `mapped`   | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                    |
-| `requestPluginPayment`                        | `pay`                               | ✅   | `mapped`   | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                    |
-| `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`           | ✅   | `mapped`   | ✅       | 映射到 `tt.requestSubscribeMessage`                                    |
-| `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`           | ✅   | `mapped`   | ✅       | 映射到 `tt.requestSubscribeMessage`                                    |
-| `requestSubscribeMessage`                     | `requestSubscribeMessage`           | ✅   | `native`   | ✅       | 直连 `tt.requestSubscribeMessage`                                      |
-| `requestVirtualPayment`                       | `pay`                               | ✅   | `mapped`   | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                    |
-| `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `reserveChannelsLive`                         | `reserveChannelsLive`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `restartMiniProgram`                          | `reLaunch`                          | ✅   | `mapped`   | ✅       | 映射到 `tt.reLaunch`                                                   |
-| `revokeBufferURL`                             | `revokeBufferURL`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `rewriteRoute`                                | `rewriteRoute`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `saveFileToDisk`                              | `saveFile`                          | ✅   | `mapped`   | ✅       | 映射到 `tt.saveFile`                                                   |
-| `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`            | ✅   | `native`   | ✅       | 直连 `tt.saveImageToPhotosAlbum`                                       |
-| `saveVideoToPhotosAlbum`                      | `saveImageToPhotosAlbum`            | ✅   | `mapped`   | ✅       | 映射到 `tt.saveImageToPhotosAlbum`                                     |
-| `scanCode`                                    | `scanCode`                          | ✅   | `mapped`   | ✅       | 直连 `tt.scanCode`                                                     |
-| `seekBackgroundAudio`                         | `seekBackgroundAudio`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `selectGroupMembers`                          | `selectGroupMembers`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `sendHCEMessage`                              | `sendHCEMessage`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `sendSms`                                     | `sendSms`                           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `sendSocketMessage`                           | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `setBackgroundColor`                          | `setNavigationBarColor`             | ✅   | `mapped`   | ✅       | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor`   |
-| `setBackgroundFetchToken`                     | `setBackgroundFetchToken`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setBackgroundTextStyle`                      | `setNavigationBarColor`             | ✅   | `mapped`   | ✅       | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor`  |
-| `setBLEMTU`                                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `setClipboardData`                            | `setClipboardData`                  | ✅   | `mapped`   | ✅       | 直连 `tt.setClipboardData`                                             |
-| `setEnable1v1Chat`                            | `setEnable1v1Chat`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setEnableDebug`                              | `setEnableDebug`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setInnerAudioOption`                         | `setInnerAudioOption`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setKeepScreenOn`                             | `setKeepScreenOn`                   | ✅   | `native`   | ✅       | 直连 `tt.setKeepScreenOn`                                              |
-| `setNavigationBarColor`                       | `setNavigationBarColor`             | ✅   | `native`   | ✅       | 直连 `tt.setNavigationBarColor`                                        |
-| `setNavigationBarTitle`                       | `setNavigationBarTitle`             | ✅   | `native`   | ✅       | 直连 `tt.setNavigationBarTitle`                                        |
-| `setScreenBrightness`                         | `setScreenBrightness`               | ✅   | `native`   | ✅       | 直连 `tt.setScreenBrightness`                                          |
-| `setStorage`                                  | `setStorage`                        | ✅   | `native`   | ✅       | 直连 `tt.setStorage`                                                   |
-| `setStorageSync`                              | `setStorageSync`                    | ✅   | `native`   | ✅       | 直连 `tt.setStorageSync`                                               |
-| `setTabBarBadge`                              | `setTabBarBadge`                    | ✅   | `native`   | ✅       | 直连 `tt.setTabBarBadge`                                               |
-| `setTabBarItem`                               | `setTabBarItem`                     | ✅   | `native`   | ✅       | 直连 `tt.setTabBarItem`                                                |
-| `setTabBarStyle`                              | `setTabBarStyle`                    | ✅   | `native`   | ✅       | 直连 `tt.setTabBarStyle`                                               |
-| `setTopBarText`                               | `setTopBarText`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setVisualEffectOnCapture`                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `setWifiList`                                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `setWindowSize`                               | `setWindowSize`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareAppMessageToGroup`                      | `shareAppMessageToGroup`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareEmojiToGroup`                           | `shareEmojiToGroup`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareFileMessage`                            | `shareFileMessage`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareFileToGroup`                            | `shareFileToGroup`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareImageToGroup`                           | `shareImageToGroup`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareToOfficialAccount`                      | `shareToOfficialAccount`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareToWeRun`                                | `shareToWeRun`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareVideoMessage`                           | `shareVideoMessage`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareVideoToGroup`                           | `shareVideoToGroup`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `showActionSheet`                             | `showActionSheet`                   | ✅   | `mapped`   | ✅       | 优先直连 `tt.showActionSheet`；缺失时降级到 `tt.showModal` shim        |
-| `showLoading`                                 | `showLoading`                       | ✅   | `mapped`   | ✅       | 直连 `tt.showLoading`                                                  |
-| `showModal`                                   | `showModal`                         | ✅   | `mapped`   | ✅       | 直连 `tt.showModal`                                                    |
-| `showNavigationBarLoading`                    | `showNavigationBarLoading`          | ✅   | `native`   | ✅       | 直连 `tt.showNavigationBarLoading`                                     |
-| `showRedPackage`                              | `showRedPackage`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `showShareImageMenu`                          | `showShareMenu`                     | ✅   | `mapped`   | ✅       | 映射到 `tt.showShareMenu`                                              |
-| `showShareMenu`                               | `showShareMenu`                     | ✅   | `native`   | ✅       | 直连 `tt.showShareMenu`                                                |
-| `showTabBar`                                  | `showTabBar`                        | ✅   | `native`   | ✅       | 直连 `tt.showTabBar`                                                   |
-| `showTabBarRedDot`                            | `showTabBarRedDot`                  | ✅   | `native`   | ✅       | 直连 `tt.showTabBarRedDot`                                             |
-| `showToast`                                   | `showToast`                         | ✅   | `mapped`   | ✅       | `icon=error` 映射为 `fail` 后调用 `tt.showToast`                       |
-| `startAccelerometer`                          | `startAccelerometer`                | ✅   | `native`   | ✅       | 直连 `tt.startAccelerometer`                                           |
-| `startBeaconDiscovery`                        | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `startBluetoothDevicesDiscovery`              | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `startCompass`                                | `startCompass`                      | ✅   | `native`   | ✅       | 直连 `tt.startCompass`                                                 |
-| `startDeviceMotionListening`                  | `startDeviceMotionListening`        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startGyroscope`                              | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `startHCE`                                    | `startHCE`                          | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startLocalServiceDiscovery`                  | `startLocalServiceDiscovery`        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startLocationUpdate`                         | `startLocationUpdate`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startLocationUpdateBackground`               | `startLocationUpdateBackground`     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startPullDownRefresh`                        | `startPullDownRefresh`              | ✅   | `native`   | ✅       | 直连 `tt.startPullDownRefresh`                                         |
-| `startRecord`                                 | `startRecord`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startSoterAuthentication`                    | `startSoterAuthentication`          | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startWifi`                                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `stopAccelerometer`                           | `stopAccelerometer`                 | ✅   | `native`   | ✅       | 直连 `tt.stopAccelerometer`                                            |
-| `stopBackgroundAudio`                         | `stopBackgroundAudio`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopBeaconDiscovery`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `stopBluetoothDevicesDiscovery`               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `stopCompass`                                 | `stopCompass`                       | ✅   | `native`   | ✅       | 直连 `tt.stopCompass`                                                  |
-| `stopDeviceMotionListening`                   | `stopDeviceMotionListening`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopFaceDetect`                              | `stopFaceDetect`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopGyroscope`                               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `stopHCE`                                     | `stopHCE`                           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopLocalServiceDiscovery`                   | `stopLocalServiceDiscovery`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopLocationUpdate`                          | `stopLocationUpdate`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopPullDownRefresh`                         | `stopPullDownRefresh`               | ✅   | `native`   | ✅       | 直连 `tt.stopPullDownRefresh`                                          |
-| `stopRecord`                                  | `stopRecord`                        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopVoice`                                   | `stopVoice`                         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopWifi`                                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `subscribeVoIPVideoMembers`                   | `subscribeVoIPVideoMembers`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `switchTab`                                   | `switchTab`                         | ✅   | `native`   | ✅       | 直连 `tt.switchTab`                                                    |
-| `updateShareMenu`                             | `showShareMenu`                     | ✅   | `mapped`   | ✅       | 映射到 `tt.showShareMenu`                                              |
-| `updateVoIPChatMuteConfig`                    | `updateVoIPChatMuteConfig`          | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `updateWeChatApp`                             | `updateWeChatApp`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `uploadFile`                                  | `uploadFile`                        | ✅   | `native`   | ✅       | 直连 `tt.uploadFile`                                                   |
-| `vibrateLong`                                 | `vibrateLong`                       | ✅   | `native`   | ✅       | 直连 `tt.vibrateLong`                                                  |
-| `vibrateShort`                                | `vibrateShort`                      | ✅   | `native`   | ✅       | 直连 `tt.vibrateShort`                                                 |
-| `writeBLECharacteristicValue`                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
+| --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
+| `addCard`                                     | `addCard`                                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `addFileToFavorites`                          | `addFileToFavorites`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `addPaymentPassFinish`                        | `addPaymentPassFinish`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `addPaymentPassGetCertificateData`            | `addPaymentPassGetCertificateData`            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `addPhoneCalendar`                            | `addPhoneCalendar`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `addPhoneContact`                             | `addPhoneContact`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `addPhoneRepeatCalendar`                      | `addPhoneRepeatCalendar`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `addVideoToFavorites`                         | `addVideoToFavorites`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `arrayBufferToBase64`                         | `arrayBufferToBase64`                         | ✅   | `native`      | ✅       | 直连 `tt.arrayBufferToBase64`                                                     |
+| `authorize`                                   | `authorize`                                   | ✅   | `mapped`      | ✅       | 直连 `tt.authorize`                                                               |
+| `authorizeForMiniProgram`                     | `authorizeForMiniProgram`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `authPrivateMessage`                          | `authPrivateMessage`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `base64ToArrayBuffer`                         | `base64ToArrayBuffer`                         | ✅   | `native`      | ✅       | 直连 `tt.base64ToArrayBuffer`                                                     |
+| `batchGetStorage`                             | `batchGetStorage`                             | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `tt.getStorage`                                           |
+| `batchGetStorageSync`                         | `batchGetStorageSync`                         | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `tt.getStorageSync`                                       |
+| `batchSetStorage`                             | `batchSetStorage`                             | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `tt.setStorage`                                           |
+| `batchSetStorageSync`                         | `batchSetStorageSync`                         | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `tt.setStorageSync`                                       |
+| `bindEmployeeRelation`                        | `bindEmployeeRelation`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `canAddSecureElementPass`                     | `canAddSecureElementPass`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `cancelIdleCallback`                          | `cancelIdleCallback`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `canIUse`                                     | `canIUse`                                     | ✅   | `native`      | ✅       | 直连 `tt.canIUse`                                                                 |
+| `canvasGetImageData`                          | `canvasGetImageData`                          | ✅   | `mapped`      | ✅       | 使用内置 shim，返回空像素数据结构                                                 |
+| `canvasPutImageData`                          | `canvasPutImageData`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `canvasToTempFilePath`                        | `canvasToTempFilePath`                        | ✅   | `native`      | ✅       | 直连 `tt.canvasToTempFilePath`                                                    |
+| `checkDeviceSupportHevc`                      | `checkDeviceSupportHevc`                      | ✅   | `mapped`      | ✅       | 使用内置 shim，返回默认不支持                                                     |
+| `checkEmployeeRelation`                       | `checkEmployeeRelation`                       | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未绑定                                                         |
+| `checkIsAddedToMyMiniProgram`                 | `checkIsAddedToMyMiniProgram`                 | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未添加                                                         |
+| `checkIsOpenAccessibility`                    | `checkIsOpenAccessibility`                    | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未开启                                                         |
+| `checkIsPictureInPictureActive`               | `checkIsPictureInPictureActive`               | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未激活                                                         |
+| `checkIsSoterEnrolledInDevice`                | `checkIsSoterEnrolledInDevice`                | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未录入                                                         |
+| `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication`           | ✅   | `mapped`      | ✅       | 使用内置 shim，返回默认不支持                                                     |
+| `checkSession`                                | `checkSession`                                | ✅   | `mapped`      | ✅       | 直连 `tt.checkSession`                                                            |
+| `chooseAddress`                               | `chooseAddress`                               | ✅   | `mapped`      | ✅       | 直连 `tt.chooseAddress`                                                           |
+| `chooseContact`                               | `chooseContact`                               | ❌   | `unsupported` | ❌       | 未提供 tt.chooseContact，调用时将返回 not supported                               |
+| `chooseImage`                                 | `chooseImage`                                 | ✅   | `mapped`      | ✅       | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底                      |
+| `chooseInvoice`                               | `chooseInvoice`                               | ❌   | `unsupported` | ❌       | 未提供 tt.chooseInvoice，调用时将返回 not supported                               |
+| `chooseInvoiceTitle`                          | `chooseInvoiceTitle`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `chooseLicensePlate`                          | `chooseLicensePlate`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `chooseLocation`                              | `chooseLocation`                              | ✅   | `native`      | ✅       | 直连 `tt.chooseLocation`                                                          |
+| `chooseMedia`                                 | `chooseMedia`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType`                 |
+| `chooseMessageFile`                           | `chooseImage`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name`                           |
+| `choosePoi`                                   | `choosePoi`                                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `chooseVideo`                                 | `chooseMedia`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构                  |
+| `clearStorage`                                | `clearStorage`                                | ✅   | `native`      | ✅       | 直连 `tt.clearStorage`                                                            |
+| `clearStorageSync`                            | `clearStorageSync`                            | ✅   | `native`      | ✅       | 直连 `tt.clearStorageSync`                                                        |
+| `closeBLEConnection`                          | `closeBLEConnection`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `closeBluetoothAdapter`                       | `closeBluetoothAdapter`                       | ❌   | `unsupported` | ❌       | 未提供 tt.closeBluetoothAdapter，调用时将返回 not supported                       |
+| `closeSocket`                                 | `closeSocket`                                 | ❌   | `unsupported` | ❌       | 未提供 tt.closeSocket，调用时将返回 not supported                                 |
+| `compressImage`                               | `compressImage`                               | ✅   | `native`      | ✅       | 直连 `tt.compressImage`                                                           |
+| `compressVideo`                               | `compressVideo`                               | ✅   | `mapped`      | ✅       | 使用内置 shim（回传原始文件路径）                                                 |
+| `connectSocket`                               | `connectSocket`                               | ✅   | `native`      | ✅       | 直连 `tt.connectSocket`                                                           |
+| `connectWifi`                                 | `connectWifi`                                 | ❌   | `unsupported` | ❌       | 未提供 tt.connectWifi，调用时将返回 not supported                                 |
+| `createAnimation`                             | `createAnimation`                             | ✅   | `native`      | ✅       | 直连 `tt.createAnimation`                                                         |
+| `createAudioContext`                          | `createInnerAudioContext`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.createInnerAudioContext`                                               |
+| `createBLEConnection`                         | `createBLEConnection`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createBLEPeripheralServer`                   | `createBLEPeripheralServer`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createBufferURL`                             | `createBufferURL`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createCacheManager`                          | `createCacheManager`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createCameraContext`                         | `createCameraContext`                         | ✅   | `mapped`      | ✅       | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`）            |
+| `createCanvasContext`                         | `createCanvasContext`                         | ✅   | `native`      | ✅       | 直连 `tt.createCanvasContext`                                                     |
+| `createGlobalPayment`                         | `createGlobalPayment`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createInferenceSession`                      | `createInferenceSession`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createInnerAudioContext`                     | `createInnerAudioContext`                     | ✅   | `native`      | ✅       | 直连 `tt.createInnerAudioContext`                                                 |
+| `createIntersectionObserver`                  | `createIntersectionObserver`                  | ✅   | `native`      | ✅       | 直连 `tt.createIntersectionObserver`                                              |
+| `createInterstitialAd`                        | `createInterstitialAd`                        | ✅   | `mapped`      | ✅       | 直连 `tt.createInterstitialAd`                                                    |
+| `createLivePlayerContext`                     | `createLivePlayerContext`                     | ✅   | `mapped`      | ✅       | 直连 `tt.createLivePlayerContext`                                                 |
+| `createLivePusherContext`                     | `createVideoContext`                          | ✅   | `mapped`      | ✅       | 映射到 `tt.createVideoContext`                                                    |
+| `createMapContext`                            | `createMapContext`                            | ✅   | `native`      | ✅       | 直连 `tt.createMapContext`                                                        |
+| `createMediaAudioPlayer`                      | `createMediaAudioPlayer`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createMediaContainer`                        | `createMediaContainer`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createMediaRecorder`                         | `createMediaRecorder`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createOffscreenCanvas`                       | `createOffscreenCanvas`                       | ✅   | `native`      | ✅       | 直连 `tt.createOffscreenCanvas`                                                   |
+| `createRewardedVideoAd`                       | `createInterstitialAd`                        | ✅   | `mapped`      | ✅       | 映射到 `tt.createInterstitialAd`                                                  |
+| `createSelectorQuery`                         | `createSelectorQuery`                         | ✅   | `native`      | ✅       | 直连 `tt.createSelectorQuery`                                                     |
+| `createTCPSocket`                             | `createTCPSocket`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createUDPSocket`                             | `createUDPSocket`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createVideoContext`                          | `createVideoContext`                          | ✅   | `native`      | ✅       | 直连 `tt.createVideoContext`                                                      |
+| `createVideoDecoder`                          | `createVideoDecoder`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `createVKSession`                             | `createVKSession`                             | ✅   | `mapped`      | ✅       | 使用内置 VKSession shim（对齐 `start/stop/destroy`）                              |
+| `createWebAudioContext`                       | `createInnerAudioContext`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.createInnerAudioContext`                                               |
+| `createWorker`                                | `createWorker`                                | ✅   | `native`      | ✅       | 直连 `tt.createWorker`                                                            |
+| `cropImage`                                   | `cropImage`                                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `disableAlertBeforeUnload`                    | `disableAlertBeforeUnload`                    | ❌   | `unsupported` | ❌       | 未提供 tt.disableAlertBeforeUnload，调用时将返回 not supported                    |
+| `downloadFile`                                | `downloadFile`                                | ✅   | `native`      | ✅       | 直连 `tt.downloadFile`                                                            |
+| `editImage`                                   | `editImage`                                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `enableAlertBeforeUnload`                     | `enableAlertBeforeUnload`                     | ❌   | `unsupported` | ❌       | 未提供 tt.enableAlertBeforeUnload，调用时将返回 not supported                     |
+| `exitMiniProgram`                             | `exitMiniProgram`                             | ✅   | `native`      | ✅       | 直连 `tt.exitMiniProgram`                                                         |
+| `exitVoIPChat`                                | `exitVoIPChat`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `faceDetect`                                  | `faceDetect`                                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getAccountInfoSync`                          | `getEnvInfoSync`                              | ✅   | `mapped`      | ✅       | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构                                    |
+| `getApiCategory`                              | `getApiCategory`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getAppAuthorizeSetting`                      | `getSetting`                                  | ✅   | `mapped`      | ✅       | 映射到 `tt.getSetting`                                                            |
+| `getAppBaseInfo`                              | `getEnvInfoSync`                              | ✅   | `mapped`      | ✅       | 映射到 `tt.getEnvInfoSync`                                                        |
+| `getAvailableAudioSources`                    | `getAvailableAudioSources`                    | ❌   | `unsupported` | ❌       | 未提供 tt.getAvailableAudioSources，调用时将返回 not supported                    |
+| `getBackgroundAudioManager`                   | `getBackgroundAudioManager`                   | ✅   | `native`      | ✅       | 直连 `tt.getBackgroundAudioManager`                                               |
+| `getBackgroundAudioPlayerState`               | `getBackgroundAudioPlayerState`               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getBackgroundFetchData`                      | `getBackgroundFetchData`                      | ❌   | `unsupported` | ❌       | 未提供 tt.getBackgroundFetchData，调用时将返回 not supported                      |
+| `getBackgroundFetchToken`                     | `getBackgroundFetchToken`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getBatteryInfo`                              | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging`                                |
+| `getBatteryInfoSync`                          | `getSystemInfoSync`                           | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging`                            |
+| `getBeacons`                                  | `getBeacons`                                  | ❌   | `unsupported` | ❌       | 未提供 tt.getBeacons，调用时将返回 not supported                                  |
+| `getBLEDeviceCharacteristics`                 | `getBLEDeviceCharacteristics`                 | ❌   | `unsupported` | ❌       | 未提供 tt.getBLEDeviceCharacteristics，调用时将返回 not supported                 |
+| `getBLEDeviceRSSI`                            | `getBLEDeviceRSSI`                            | ❌   | `unsupported` | ❌       | 未提供 tt.getBLEDeviceRSSI，调用时将返回 not supported                            |
+| `getBLEDeviceServices`                        | `getBLEDeviceServices`                        | ❌   | `unsupported` | ❌       | 未提供 tt.getBLEDeviceServices，调用时将返回 not supported                        |
+| `getBLEMTU`                                   | `getBLEMTU`                                   | ❌   | `unsupported` | ❌       | 未提供 tt.getBLEMTU，调用时将返回 not supported                                   |
+| `getBluetoothAdapterState`                    | `getBluetoothAdapterState`                    | ❌   | `unsupported` | ❌       | 未提供 tt.getBluetoothAdapterState，调用时将返回 not supported                    |
+| `getBluetoothDevices`                         | `getBluetoothDevices`                         | ❌   | `unsupported` | ❌       | 未提供 tt.getBluetoothDevices，调用时将返回 not supported                         |
+| `getChannelsLiveInfo`                         | `getChannelsLiveInfo`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getChannelsLiveNoticeInfo`                   | `getChannelsLiveNoticeInfo`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getChannelsShareKey`                         | `getChannelsShareKey`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getChatToolInfo`                             | `getChatToolInfo`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getClipboardData`                            | `getClipboardData`                            | ✅   | `mapped`      | ✅       | 直连 `tt.getClipboardData`                                                        |
+| `getCommonConfig`                             | `getCommonConfig`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getConnectedBluetoothDevices`                | `getConnectedBluetoothDevices`                | ❌   | `unsupported` | ❌       | 未提供 tt.getConnectedBluetoothDevices，调用时将返回 not supported                |
+| `getConnectedWifi`                            | `getConnectedWifi`                            | ✅   | `native`      | ✅       | 直连 `tt.getConnectedWifi`                                                        |
+| `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getDeviceInfo`                               | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，并提取设备字段                                         |
+| `getDeviceVoIPList`                           | `getDeviceVoIPList`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getEnterOptionsSync`                         | `getLaunchOptionsSync`                        | ✅   | `mapped`      | ✅       | 映射到 `tt.getLaunchOptionsSync`                                                  |
+| `getExptInfoSync`                             | `getExptInfoSync`                             | ❌   | `unsupported` | ❌       | 未提供 tt.getExptInfoSync，调用时将返回 not supported                             |
+| `getExtConfig`                                | `getExtConfig`                                | ✅   | `native`      | ✅       | 直连 `tt.getExtConfig`                                                            |
+| `getExtConfigSync`                            | `getExtConfigSync`                            | ✅   | `native`      | ✅       | 直连 `tt.getExtConfigSync`                                                        |
+| `getFileSystemManager`                        | `getFileSystemManager`                        | ✅   | `native`      | ✅       | 直连 `tt.getFileSystemManager`                                                    |
+| `getFuzzyLocation`                            | `getLocation`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.getLocation`                                                           |
+| `getGroupEnterInfo`                           | `getGroupEnterInfo`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getHCEState`                                 | `getHCEState`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getImageInfo`                                | `getImageInfo`                                | ✅   | `native`      | ✅       | 直连 `tt.getImageInfo`                                                            |
+| `getInferenceEnvInfo`                         | `getInferenceEnvInfo`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getLaunchOptionsSync`                        | `getLaunchOptionsSync`                        | ✅   | `native`      | ✅       | 直连 `tt.getLaunchOptionsSync`                                                    |
+| `getLocalIPAddress`                           | `getLocalIPAddress`                           | ❌   | `unsupported` | ❌       | 未提供 tt.getLocalIPAddress，调用时将返回 not supported                           |
+| `getLocation`                                 | `getLocation`                                 | ✅   | `native`      | ✅       | 直连 `tt.getLocation`                                                             |
+| `getLogManager`                               | `getLogManager`                               | ✅   | `mapped`      | ✅       | 使用内置日志 shim（对齐 `log/info/warn/error`）                                   |
+| `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect`             | ✅   | `native`      | ✅       | 直连 `tt.getMenuButtonBoundingClientRect`                                         |
+| `getNetworkType`                              | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType`                                 |
+| `getNFCAdapter`                               | `getNFCAdapter`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getPerformance`                              | `getPerformance`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getPrivacySetting`                           | `getPrivacySetting`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getRandomValues`                             | `getRandomValues`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getRealtimeLogManager`                       | `getRealtimeLogManager`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getRecorderManager`                          | `getRecorderManager`                          | ✅   | `native`      | ✅       | 直连 `tt.getRecorderManager`                                                      |
+| `getRendererUserAgent`                        | `getRendererUserAgent`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getScreenBrightness`                         | `getScreenBrightness`                         | ✅   | `native`      | ✅       | 直连 `tt.getScreenBrightness`                                                     |
+| `getScreenRecordingState`                     | `getScreenRecordingState`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getSecureElementPasses`                      | `getSecureElementPasses`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getSelectedTextRange`                        | `getSelectedTextRange`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getSetting`                                  | `getSetting`                                  | ✅   | `native`      | ✅       | 直连 `tt.getSetting`                                                              |
+| `getShareInfo`                                | `getShareInfo`                                | ✅   | `mapped`      | ✅       | 使用内置 shim（补齐 `encryptedData/iv`）                                          |
+| `getShowSplashAdStatus`                       | `getShowSplashAdStatus`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getSkylineInfo`                              | `getSkylineInfo`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getSkylineInfoSync`                          | `getSkylineInfoSync`                          | ❌   | `unsupported` | ❌       | 未提供 tt.getSkylineInfoSync，调用时将返回 not supported                          |
+| `getStorage`                                  | `getStorage`                                  | ✅   | `native`      | ✅       | 直连 `tt.getStorage`                                                              |
+| `getStorageInfo`                              | `getStorageInfo`                              | ✅   | `native`      | ✅       | 直连 `tt.getStorageInfo`                                                          |
+| `getStorageInfoSync`                          | `getStorageInfoSync`                          | ✅   | `native`      | ✅       | 直连 `tt.getStorageInfoSync`                                                      |
+| `getStorageSync`                              | `getStorageSync`                              | ✅   | `native`      | ✅       | 直连 `tt.getStorageSync`                                                          |
+| `getSystemInfo`                               | `getSystemInfo`                               | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfo`                                                           |
+| `getSystemInfoAsync`                          | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`                                                         |
+| `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfoSync`                                                       |
+| `getSystemSetting`                            | `getSetting`                                  | ✅   | `mapped`      | ✅       | 映射到 `tt.getSetting`                                                            |
+| `getUpdateManager`                            | `getUpdateManager`                            | ✅   | `native`      | ✅       | 直连 `tt.getUpdateManager`                                                        |
+| `getUserCryptoManager`                        | `getUserCryptoManager`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getUserInfo`                                 | `getUserInfo`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.getUserInfo`                                                             |
+| `getUserProfile`                              | `getUserProfile`                              | ✅   | `mapped`      | ✅       | 直连 `tt.getUserProfile`                                                          |
+| `getVideoInfo`                                | `getFileInfo`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath`                             |
+| `getWeRunData`                                | `getWeRunData`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `getWifiList`                                 | `getWifiList`                                 | ✅   | `native`      | ✅       | 直连 `tt.getWifiList`                                                             |
+| `getWindowInfo`                               | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，并提取窗口字段                                         |
+| `getXrFrameSystem`                            | `getXrFrameSystem`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `hideHomeButton`                              | `hideHomeButton`                              | ✅   | `mapped`      | ✅       | 直连 `tt.hideHomeButton`                                                          |
+| `hideKeyboard`                                | `hideKeyboard`                                | ✅   | `native`      | ✅       | 直连 `tt.hideKeyboard`                                                            |
+| `hideLoading`                                 | `hideLoading`                                 | ✅   | `native`      | ✅       | 直连 `tt.hideLoading`                                                             |
+| `hideNavigationBarLoading`                    | `hideNavigationBarLoading`                    | ✅   | `native`      | ✅       | 直连 `tt.hideNavigationBarLoading`                                                |
+| `hideShareMenu`                               | `hideShareMenu`                               | ✅   | `native`      | ✅       | 直连 `tt.hideShareMenu`                                                           |
+| `hideTabBar`                                  | `hideTabBar`                                  | ✅   | `native`      | ✅       | 直连 `tt.hideTabBar`                                                              |
+| `hideTabBarRedDot`                            | `hideTabBarRedDot`                            | ✅   | `native`      | ✅       | 直连 `tt.hideTabBarRedDot`                                                        |
+| `hideToast`                                   | `hideToast`                                   | ✅   | `native`      | ✅       | 直连 `tt.hideToast`                                                               |
+| `initFaceDetect`                              | `initFaceDetect`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `isBluetoothDevicePaired`                     | `isBluetoothDevicePaired`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `isVKSupport`                                 | `isVKSupport`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `join1v1Chat`                                 | `join1v1Chat`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `joinVoIPChat`                                | `joinVoIPChat`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `loadFontFace`                                | `loadFontFace`                                | ❌   | `unsupported` | ❌       | 未提供 tt.loadFontFace，调用时将返回 not supported                                |
+| `login`                                       | `login`                                       | ✅   | `mapped`      | ✅       | 直连 `tt.login`                                                                   |
+| `makeBluetoothPair`                           | `makeBluetoothPair`                           | ❌   | `unsupported` | ❌       | 未提供 tt.makeBluetoothPair，调用时将返回 not supported                           |
+| `makePhoneCall`                               | `makePhoneCall`                               | ✅   | `native`      | ✅       | 直连 `tt.makePhoneCall`                                                           |
+| `navigateBack`                                | `navigateBack`                                | ✅   | `native`      | ✅       | 直连 `tt.navigateBack`                                                            |
+| `navigateBackMiniProgram`                     | `navigateBackMiniProgram`                     | ✅   | `native`      | ✅       | 直连 `tt.navigateBackMiniProgram`                                                 |
+| `navigateTo`                                  | `navigateTo`                                  | ✅   | `native`      | ✅       | 直连 `tt.navigateTo`                                                              |
+| `navigateToMiniProgram`                       | `navigateToMiniProgram`                       | ✅   | `native`      | ✅       | 直连 `tt.navigateToMiniProgram`                                                   |
+| `nextTick`                                    | `nextTick`                                    | ✅   | `mapped`      | ✅       | 使用内置 microtask shim 调度回调                                                  |
+| `notifyBLECharacteristicValueChange`          | `notifyBLECharacteristicValueChange`          | ❌   | `unsupported` | ❌       | 未提供 tt.notifyBLECharacteristicValueChange，调用时将返回 not supported          |
+| `notifyGroupMembers`                          | `notifyGroupMembers`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `offAccelerometerChange`                      | `offAccelerometerChange`                      | ❌   | `unsupported` | ❌       | 未提供 tt.offAccelerometerChange，调用时将返回 not supported                      |
+| `offAfterPageLoad`                            | `offAfterPageLoad`                            | ❌   | `unsupported` | ❌       | 未提供 tt.offAfterPageLoad，调用时将返回 not supported                            |
+| `offAfterPageUnload`                          | `offAfterPageUnload`                          | ❌   | `unsupported` | ❌       | 未提供 tt.offAfterPageUnload，调用时将返回 not supported                          |
+| `offApiCategoryChange`                        | `offApiCategoryChange`                        | ❌   | `unsupported` | ❌       | 未提供 tt.offApiCategoryChange，调用时将返回 not supported                        |
+| `offAppHide`                                  | `offAppHide`                                  | ✅   | `native`      | ✅       | 直连 `tt.offAppHide`                                                              |
+| `offAppRoute`                                 | `offAppRoute`                                 | ❌   | `unsupported` | ❌       | 未提供 tt.offAppRoute，调用时将返回 not supported                                 |
+| `offAppRouteDone`                             | `offAppRouteDone`                             | ❌   | `unsupported` | ❌       | 未提供 tt.offAppRouteDone，调用时将返回 not supported                             |
+| `offAppShow`                                  | `offAppShow`                                  | ✅   | `native`      | ✅       | 直连 `tt.offAppShow`                                                              |
+| `offAudioInterruptionBegin`                   | `offAudioInterruptionBegin`                   | ❌   | `unsupported` | ❌       | 未提供 tt.offAudioInterruptionBegin，调用时将返回 not supported                   |
+| `offAudioInterruptionEnd`                     | `offAudioInterruptionEnd`                     | ❌   | `unsupported` | ❌       | 未提供 tt.offAudioInterruptionEnd，调用时将返回 not supported                     |
+| `offBatteryInfoChange`                        | `offBatteryInfoChange`                        | ❌   | `unsupported` | ❌       | 未提供 tt.offBatteryInfoChange，调用时将返回 not supported                        |
+| `offBeaconServiceChange`                      | `offBeaconServiceChange`                      | ❌   | `unsupported` | ❌       | 未提供 tt.offBeaconServiceChange，调用时将返回 not supported                      |
+| `offBeaconUpdate`                             | `offBeaconUpdate`                             | ❌   | `unsupported` | ❌       | 未提供 tt.offBeaconUpdate，调用时将返回 not supported                             |
+| `offBeforeAppRoute`                           | `offBeforeAppRoute`                           | ❌   | `unsupported` | ❌       | 未提供 tt.offBeforeAppRoute，调用时将返回 not supported                           |
+| `offBeforePageLoad`                           | `offBeforePageLoad`                           | ❌   | `unsupported` | ❌       | 未提供 tt.offBeforePageLoad，调用时将返回 not supported                           |
+| `offBeforePageUnload`                         | `offBeforePageUnload`                         | ❌   | `unsupported` | ❌       | 未提供 tt.offBeforePageUnload，调用时将返回 not supported                         |
+| `offBLECharacteristicValueChange`             | `offBLECharacteristicValueChange`             | ❌   | `unsupported` | ❌       | 未提供 tt.offBLECharacteristicValueChange，调用时将返回 not supported             |
+| `offBLEConnectionStateChange`                 | `offBLEConnectionStateChange`                 | ❌   | `unsupported` | ❌       | 未提供 tt.offBLEConnectionStateChange，调用时将返回 not supported                 |
+| `offBLEMTUChange`                             | `offBLEMTUChange`                             | ❌   | `unsupported` | ❌       | 未提供 tt.offBLEMTUChange，调用时将返回 not supported                             |
+| `offBLEPeripheralConnectionStateChanged`      | `offBLEPeripheralConnectionStateChanged`      | ❌   | `unsupported` | ❌       | 未提供 tt.offBLEPeripheralConnectionStateChanged，调用时将返回 not supported      |
+| `offBluetoothAdapterStateChange`              | `offBluetoothAdapterStateChange`              | ❌   | `unsupported` | ❌       | 未提供 tt.offBluetoothAdapterStateChange，调用时将返回 not supported              |
+| `offBluetoothDeviceFound`                     | `offBluetoothDeviceFound`                     | ❌   | `unsupported` | ❌       | 未提供 tt.offBluetoothDeviceFound，调用时将返回 not supported                     |
+| `offCompassChange`                            | `offCompassChange`                            | ✅   | `native`      | ✅       | 直连 `tt.offCompassChange`                                                        |
+| `offCopyUrl`                                  | `offCopyUrl`                                  | ❌   | `unsupported` | ❌       | 未提供 tt.offCopyUrl，调用时将返回 not supported                                  |
+| `offDeviceMotionChange`                       | `offDeviceMotionChange`                       | ❌   | `unsupported` | ❌       | 未提供 tt.offDeviceMotionChange，调用时将返回 not supported                       |
+| `offEmbeddedMiniProgramHeightChange`          | `offEmbeddedMiniProgramHeightChange`          | ❌   | `unsupported` | ❌       | 未提供 tt.offEmbeddedMiniProgramHeightChange，调用时将返回 not supported          |
+| `offError`                                    | `offError`                                    | ✅   | `native`      | ✅       | 直连 `tt.offError`                                                                |
+| `offGeneratePoster`                           | `offGeneratePoster`                           | ❌   | `unsupported` | ❌       | 未提供 tt.offGeneratePoster，调用时将返回 not supported                           |
+| `offGetWifiList`                              | `offGetWifiList`                              | ✅   | `native`      | ✅       | 直连 `tt.offGetWifiList`                                                          |
+| `offGyroscopeChange`                          | `offGyroscopeChange`                          | ❌   | `unsupported` | ❌       | 未提供 tt.offGyroscopeChange，调用时将返回 not supported                          |
+| `offHCEMessage`                               | `offHCEMessage`                               | ❌   | `unsupported` | ❌       | 未提供 tt.offHCEMessage，调用时将返回 not supported                               |
+| `offKeyboardHeightChange`                     | `offKeyboardHeightChange`                     | ❌   | `unsupported` | ❌       | 未提供 tt.offKeyboardHeightChange，调用时将返回 not supported                     |
+| `offKeyDown`                                  | `offKeyDown`                                  | ❌   | `unsupported` | ❌       | 未提供 tt.offKeyDown，调用时将返回 not supported                                  |
+| `offKeyUp`                                    | `offKeyUp`                                    | ❌   | `unsupported` | ❌       | 未提供 tt.offKeyUp，调用时将返回 not supported                                    |
+| `offLazyLoadError`                            | `offLazyLoadError`                            | ✅   | `native`      | ✅       | 直连 `tt.offLazyLoadError`                                                        |
+| `offLocalServiceDiscoveryStop`                | `offLocalServiceDiscoveryStop`                | ❌   | `unsupported` | ❌       | 未提供 tt.offLocalServiceDiscoveryStop，调用时将返回 not supported                |
+| `offLocalServiceFound`                        | `offLocalServiceFound`                        | ❌   | `unsupported` | ❌       | 未提供 tt.offLocalServiceFound，调用时将返回 not supported                        |
+| `offLocalServiceLost`                         | `offLocalServiceLost`                         | ❌   | `unsupported` | ❌       | 未提供 tt.offLocalServiceLost，调用时将返回 not supported                         |
+| `offLocalServiceResolveFail`                  | `offLocalServiceResolveFail`                  | ❌   | `unsupported` | ❌       | 未提供 tt.offLocalServiceResolveFail，调用时将返回 not supported                  |
+| `offLocationChange`                           | `offLocationChange`                           | ❌   | `unsupported` | ❌       | 未提供 tt.offLocationChange，调用时将返回 not supported                           |
+| `offLocationChangeError`                      | `offLocationChangeError`                      | ❌   | `unsupported` | ❌       | 未提供 tt.offLocationChangeError，调用时将返回 not supported                      |
+| `offMemoryWarning`                            | `offMemoryWarning`                            | ✅   | `mapped`      | ✅       | 使用内置 shim，配合 `tt.onMemoryWarning` 实现监听解绑                             |
+| `offMenuButtonBoundingClientRectWeightChange` | `offMenuButtonBoundingClientRectWeightChange` | ❌   | `unsupported` | ❌       | 未提供 tt.offMenuButtonBoundingClientRectWeightChange，调用时将返回 not supported |
+| `offNetworkStatusChange`                      | `offNetworkStatusChange`                      | ✅   | `native`      | ✅       | 直连 `tt.offNetworkStatusChange`                                                  |
+| `offNetworkWeakChange`                        | `offNetworkWeakChange`                        | ❌   | `unsupported` | ❌       | 未提供 tt.offNetworkWeakChange，调用时将返回 not supported                        |
+| `offOnUserTriggerTranslation`                 | `offOnUserTriggerTranslation`                 | ❌   | `unsupported` | ❌       | 未提供 tt.offOnUserTriggerTranslation，调用时将返回 not supported                 |
+| `offPageNotFound`                             | `offPageNotFound`                             | ✅   | `native`      | ✅       | 直连 `tt.offPageNotFound`                                                         |
+| `offParallelStateChange`                      | `offParallelStateChange`                      | ❌   | `unsupported` | ❌       | 未提供 tt.offParallelStateChange，调用时将返回 not supported                      |
+| `offScreenRecordingStateChanged`              | `offScreenRecordingStateChanged`              | ❌   | `unsupported` | ❌       | 未提供 tt.offScreenRecordingStateChanged，调用时将返回 not supported              |
+| `offThemeChange`                              | `offThemeChange`                              | ❌   | `unsupported` | ❌       | 未提供 tt.offThemeChange，调用时将返回 not supported                              |
+| `offUnhandledRejection`                       | `offUnhandledRejection`                       | ✅   | `native`      | ✅       | 直连 `tt.offUnhandledRejection`                                                   |
+| `offUserCaptureScreen`                        | `offUserCaptureScreen`                        | ✅   | `native`      | ✅       | 直连 `tt.offUserCaptureScreen`                                                    |
+| `offVoIPChatInterrupted`                      | `offVoIPChatInterrupted`                      | ❌   | `unsupported` | ❌       | 未提供 tt.offVoIPChatInterrupted，调用时将返回 not supported                      |
+| `offVoIPChatMembersChanged`                   | `offVoIPChatMembersChanged`                   | ❌   | `unsupported` | ❌       | 未提供 tt.offVoIPChatMembersChanged，调用时将返回 not supported                   |
+| `offVoIPChatSpeakersChanged`                  | `offVoIPChatSpeakersChanged`                  | ❌   | `unsupported` | ❌       | 未提供 tt.offVoIPChatSpeakersChanged，调用时将返回 not supported                  |
+| `offVoIPChatStateChanged`                     | `offVoIPChatStateChanged`                     | ❌   | `unsupported` | ❌       | 未提供 tt.offVoIPChatStateChanged，调用时将返回 not supported                     |
+| `offVoIPVideoMembersChanged`                  | `offVoIPVideoMembersChanged`                  | ❌   | `unsupported` | ❌       | 未提供 tt.offVoIPVideoMembersChanged，调用时将返回 not supported                  |
+| `offWifiConnected`                            | `offWifiConnected`                            | ❌   | `unsupported` | ❌       | 未提供 tt.offWifiConnected，调用时将返回 not supported                            |
+| `offWifiConnectedWithPartialInfo`             | `offWifiConnectedWithPartialInfo`             | ❌   | `unsupported` | ❌       | 未提供 tt.offWifiConnectedWithPartialInfo，调用时将返回 not supported             |
+| `offWindowResize`                             | `offWindowResize`                             | ✅   | `mapped`      | ✅       | 直连 `tt.offWindowResize`                                                         |
+| `offWindowStateChange`                        | `offWindowStateChange`                        | ❌   | `unsupported` | ❌       | 未提供 tt.offWindowStateChange，调用时将返回 not supported                        |
+| `onAccelerometerChange`                       | `onAccelerometerChange`                       | ✅   | `native`      | ✅       | 直连 `tt.onAccelerometerChange`                                                   |
+| `onAfterPageLoad`                             | `onAfterPageLoad`                             | ❌   | `unsupported` | ❌       | 未提供 tt.onAfterPageLoad，调用时将返回 not supported                             |
+| `onAfterPageUnload`                           | `onAfterPageUnload`                           | ❌   | `unsupported` | ❌       | 未提供 tt.onAfterPageUnload，调用时将返回 not supported                           |
+| `onApiCategoryChange`                         | `onApiCategoryChange`                         | ❌   | `unsupported` | ❌       | 未提供 tt.onApiCategoryChange，调用时将返回 not supported                         |
+| `onAppHide`                                   | `onAppHide`                                   | ✅   | `native`      | ✅       | 直连 `tt.onAppHide`                                                               |
+| `onAppRoute`                                  | `onAppRoute`                                  | ❌   | `unsupported` | ❌       | 未提供 tt.onAppRoute，调用时将返回 not supported                                  |
+| `onAppRouteDone`                              | `onAppRouteDone`                              | ❌   | `unsupported` | ❌       | 未提供 tt.onAppRouteDone，调用时将返回 not supported                              |
+| `onAppShow`                                   | `onAppShow`                                   | ✅   | `native`      | ✅       | 直连 `tt.onAppShow`                                                               |
+| `onAudioInterruptionBegin`                    | `onAudioInterruptionBegin`                    | ❌   | `unsupported` | ❌       | 未提供 tt.onAudioInterruptionBegin，调用时将返回 not supported                    |
+| `onAudioInterruptionEnd`                      | `onAudioInterruptionEnd`                      | ❌   | `unsupported` | ❌       | 未提供 tt.onAudioInterruptionEnd，调用时将返回 not supported                      |
+| `onBackgroundAudioPause`                      | `onBackgroundAudioPause`                      | ❌   | `unsupported` | ❌       | 未提供 tt.onBackgroundAudioPause，调用时将返回 not supported                      |
+| `onBackgroundAudioPlay`                       | `onBackgroundAudioPlay`                       | ❌   | `unsupported` | ❌       | 未提供 tt.onBackgroundAudioPlay，调用时将返回 not supported                       |
+| `onBackgroundAudioStop`                       | `onBackgroundAudioStop`                       | ❌   | `unsupported` | ❌       | 未提供 tt.onBackgroundAudioStop，调用时将返回 not supported                       |
+| `onBackgroundFetchData`                       | `onBackgroundFetchData`                       | ❌   | `unsupported` | ❌       | 未提供 tt.onBackgroundFetchData，调用时将返回 not supported                       |
+| `onBatteryInfoChange`                         | `onBatteryInfoChange`                         | ❌   | `unsupported` | ❌       | 未提供 tt.onBatteryInfoChange，调用时将返回 not supported                         |
+| `onBeaconServiceChange`                       | `onBeaconServiceChange`                       | ❌   | `unsupported` | ❌       | 未提供 tt.onBeaconServiceChange，调用时将返回 not supported                       |
+| `onBeaconUpdate`                              | `onBeaconUpdate`                              | ❌   | `unsupported` | ❌       | 未提供 tt.onBeaconUpdate，调用时将返回 not supported                              |
+| `onBeforeAppRoute`                            | `onBeforeAppRoute`                            | ❌   | `unsupported` | ❌       | 未提供 tt.onBeforeAppRoute，调用时将返回 not supported                            |
+| `onBeforePageLoad`                            | `onBeforePageLoad`                            | ❌   | `unsupported` | ❌       | 未提供 tt.onBeforePageLoad，调用时将返回 not supported                            |
+| `onBeforePageUnload`                          | `onBeforePageUnload`                          | ❌   | `unsupported` | ❌       | 未提供 tt.onBeforePageUnload，调用时将返回 not supported                          |
+| `onBLECharacteristicValueChange`              | `onBLECharacteristicValueChange`              | ❌   | `unsupported` | ❌       | 未提供 tt.onBLECharacteristicValueChange，调用时将返回 not supported              |
+| `onBLEConnectionStateChange`                  | `onBLEConnectionStateChange`                  | ❌   | `unsupported` | ❌       | 未提供 tt.onBLEConnectionStateChange，调用时将返回 not supported                  |
+| `onBLEMTUChange`                              | `onBLEMTUChange`                              | ❌   | `unsupported` | ❌       | 未提供 tt.onBLEMTUChange，调用时将返回 not supported                              |
+| `onBLEPeripheralConnectionStateChanged`       | `onBLEPeripheralConnectionStateChanged`       | ❌   | `unsupported` | ❌       | 未提供 tt.onBLEPeripheralConnectionStateChanged，调用时将返回 not supported       |
+| `onBluetoothAdapterStateChange`               | `onBluetoothAdapterStateChange`               | ❌   | `unsupported` | ❌       | 未提供 tt.onBluetoothAdapterStateChange，调用时将返回 not supported               |
+| `onBluetoothDeviceFound`                      | `onBluetoothDeviceFound`                      | ❌   | `unsupported` | ❌       | 未提供 tt.onBluetoothDeviceFound，调用时将返回 not supported                      |
+| `onCompassChange`                             | `onCompassChange`                             | ✅   | `native`      | ✅       | 直连 `tt.onCompassChange`                                                         |
+| `onCopyUrl`                                   | `onCopyUrl`                                   | ❌   | `unsupported` | ❌       | 未提供 tt.onCopyUrl，调用时将返回 not supported                                   |
+| `onDeviceMotionChange`                        | `onDeviceMotionChange`                        | ❌   | `unsupported` | ❌       | 未提供 tt.onDeviceMotionChange，调用时将返回 not supported                        |
+| `onEmbeddedMiniProgramHeightChange`           | `onEmbeddedMiniProgramHeightChange`           | ❌   | `unsupported` | ❌       | 未提供 tt.onEmbeddedMiniProgramHeightChange，调用时将返回 not supported           |
+| `onError`                                     | `onError`                                     | ✅   | `native`      | ✅       | 直连 `tt.onError`                                                                 |
+| `onGeneratePoster`                            | `onGeneratePoster`                            | ❌   | `unsupported` | ❌       | 未提供 tt.onGeneratePoster，调用时将返回 not supported                            |
+| `onGetWifiList`                               | `onGetWifiList`                               | ✅   | `native`      | ✅       | 直连 `tt.onGetWifiList`                                                           |
+| `onGyroscopeChange`                           | `onGyroscopeChange`                           | ❌   | `unsupported` | ❌       | 未提供 tt.onGyroscopeChange，调用时将返回 not supported                           |
+| `onHCEMessage`                                | `onHCEMessage`                                | ❌   | `unsupported` | ❌       | 未提供 tt.onHCEMessage，调用时将返回 not supported                                |
+| `onKeyboardHeightChange`                      | `onKeyboardHeightChange`                      | ❌   | `unsupported` | ❌       | 未提供 tt.onKeyboardHeightChange，调用时将返回 not supported                      |
+| `onKeyDown`                                   | `onKeyDown`                                   | ❌   | `unsupported` | ❌       | 未提供 tt.onKeyDown，调用时将返回 not supported                                   |
+| `onKeyUp`                                     | `onKeyUp`                                     | ❌   | `unsupported` | ❌       | 未提供 tt.onKeyUp，调用时将返回 not supported                                     |
+| `onLazyLoadError`                             | `onLazyLoadError`                             | ✅   | `native`      | ✅       | 直连 `tt.onLazyLoadError`                                                         |
+| `onLocalServiceDiscoveryStop`                 | `onLocalServiceDiscoveryStop`                 | ❌   | `unsupported` | ❌       | 未提供 tt.onLocalServiceDiscoveryStop，调用时将返回 not supported                 |
+| `onLocalServiceFound`                         | `onLocalServiceFound`                         | ❌   | `unsupported` | ❌       | 未提供 tt.onLocalServiceFound，调用时将返回 not supported                         |
+| `onLocalServiceLost`                          | `onLocalServiceLost`                          | ❌   | `unsupported` | ❌       | 未提供 tt.onLocalServiceLost，调用时将返回 not supported                          |
+| `onLocalServiceResolveFail`                   | `onLocalServiceResolveFail`                   | ❌   | `unsupported` | ❌       | 未提供 tt.onLocalServiceResolveFail，调用时将返回 not supported                   |
+| `onLocationChange`                            | `onLocationChange`                            | ❌   | `unsupported` | ❌       | 未提供 tt.onLocationChange，调用时将返回 not supported                            |
+| `onLocationChangeError`                       | `onLocationChangeError`                       | ❌   | `unsupported` | ❌       | 未提供 tt.onLocationChangeError，调用时将返回 not supported                       |
+| `onMemoryWarning`                             | `onMemoryWarning`                             | ✅   | `native`      | ✅       | 直连 `tt.onMemoryWarning`                                                         |
+| `onMenuButtonBoundingClientRectWeightChange`  | `onMenuButtonBoundingClientRectWeightChange`  | ❌   | `unsupported` | ❌       | 未提供 tt.onMenuButtonBoundingClientRectWeightChange，调用时将返回 not supported  |
+| `onNeedPrivacyAuthorization`                  | `onNeedPrivacyAuthorization`                  | ❌   | `unsupported` | ❌       | 未提供 tt.onNeedPrivacyAuthorization，调用时将返回 not supported                  |
+| `onNetworkStatusChange`                       | `onNetworkStatusChange`                       | ✅   | `native`      | ✅       | 直连 `tt.onNetworkStatusChange`                                                   |
+| `onNetworkWeakChange`                         | `onNetworkWeakChange`                         | ❌   | `unsupported` | ❌       | 未提供 tt.onNetworkWeakChange，调用时将返回 not supported                         |
+| `onOnUserTriggerTranslation`                  | `onOnUserTriggerTranslation`                  | ❌   | `unsupported` | ❌       | 未提供 tt.onOnUserTriggerTranslation，调用时将返回 not supported                  |
+| `onPageNotFound`                              | `onPageNotFound`                              | ✅   | `native`      | ✅       | 直连 `tt.onPageNotFound`                                                          |
+| `onParallelStateChange`                       | `onParallelStateChange`                       | ❌   | `unsupported` | ❌       | 未提供 tt.onParallelStateChange，调用时将返回 not supported                       |
+| `onScreenRecordingStateChanged`               | `onScreenRecordingStateChanged`               | ❌   | `unsupported` | ❌       | 未提供 tt.onScreenRecordingStateChanged，调用时将返回 not supported               |
+| `onSocketClose`                               | `onSocketClose`                               | ❌   | `unsupported` | ❌       | 未提供 tt.onSocketClose，调用时将返回 not supported                               |
+| `onSocketError`                               | `onSocketError`                               | ❌   | `unsupported` | ❌       | 未提供 tt.onSocketError，调用时将返回 not supported                               |
+| `onSocketMessage`                             | `onSocketMessage`                             | ❌   | `unsupported` | ❌       | 未提供 tt.onSocketMessage，调用时将返回 not supported                             |
+| `onSocketOpen`                                | `onSocketOpen`                                | ❌   | `unsupported` | ❌       | 未提供 tt.onSocketOpen，调用时将返回 not supported                                |
+| `onThemeChange`                               | `onThemeChange`                               | ❌   | `unsupported` | ❌       | 未提供 tt.onThemeChange，调用时将返回 not supported                               |
+| `onUnhandledRejection`                        | `onUnhandledRejection`                        | ✅   | `native`      | ✅       | 直连 `tt.onUnhandledRejection`                                                    |
+| `onUserCaptureScreen`                         | `onUserCaptureScreen`                         | ✅   | `native`      | ✅       | 直连 `tt.onUserCaptureScreen`                                                     |
+| `onVoIPChatInterrupted`                       | `onVoIPChatInterrupted`                       | ❌   | `unsupported` | ❌       | 未提供 tt.onVoIPChatInterrupted，调用时将返回 not supported                       |
+| `onVoIPChatMembersChanged`                    | `onVoIPChatMembersChanged`                    | ❌   | `unsupported` | ❌       | 未提供 tt.onVoIPChatMembersChanged，调用时将返回 not supported                    |
+| `onVoIPChatSpeakersChanged`                   | `onVoIPChatSpeakersChanged`                   | ❌   | `unsupported` | ❌       | 未提供 tt.onVoIPChatSpeakersChanged，调用时将返回 not supported                   |
+| `onVoIPChatStateChanged`                      | `onVoIPChatStateChanged`                      | ❌   | `unsupported` | ❌       | 未提供 tt.onVoIPChatStateChanged，调用时将返回 not supported                      |
+| `onVoIPVideoMembersChanged`                   | `onVoIPVideoMembersChanged`                   | ❌   | `unsupported` | ❌       | 未提供 tt.onVoIPVideoMembersChanged，调用时将返回 not supported                   |
+| `onWifiConnected`                             | `onWifiConnected`                             | ❌   | `unsupported` | ❌       | 未提供 tt.onWifiConnected，调用时将返回 not supported                             |
+| `onWifiConnectedWithPartialInfo`              | `onWifiConnectedWithPartialInfo`              | ❌   | `unsupported` | ❌       | 未提供 tt.onWifiConnectedWithPartialInfo，调用时将返回 not supported              |
+| `onWindowResize`                              | `onWindowResize`                              | ✅   | `mapped`      | ✅       | 直连 `tt.onWindowResize`                                                          |
+| `onWindowStateChange`                         | `onWindowStateChange`                         | ❌   | `unsupported` | ❌       | 未提供 tt.onWindowStateChange，调用时将返回 not supported                         |
+| `openAppAuthorizeSetting`                     | `openSetting`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.openSetting`                                                           |
+| `openBluetoothAdapter`                        | `openBluetoothAdapter`                        | ❌   | `unsupported` | ❌       | 未提供 tt.openBluetoothAdapter，调用时将返回 not supported                        |
+| `openCard`                                    | `openCard`                                    | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openChannelsActivity`                        | `openChannelsActivity`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openChannelsEvent`                           | `openChannelsEvent`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openChannelsLive`                            | `openChannelsLive`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openChannelsLiveNoticeInfo`                  | `openChannelsLiveNoticeInfo`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openChannelsUserProfile`                     | `openChannelsUserProfile`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openChatTool`                                | `openChatTool`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openDocument`                                | `openDocument`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`                       | ✅   | `mapped`      | ✅       | 映射到 `tt.navigateToMiniProgram`                                                 |
+| `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openInquiriesTopic`                          | `openInquiriesTopic`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openLocation`                                | `openLocation`                                | ✅   | `native`      | ✅       | 直连 `tt.openLocation`                                                            |
+| `openOfficialAccountArticle`                  | `openOfficialAccountArticle`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openOfficialAccountChat`                     | `openOfficialAccountChat`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openOfficialAccountProfile`                  | `openOfficialAccountProfile`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openPrivacyContract`                         | `openPrivacyContract`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openSetting`                                 | `openSetting`                                 | ✅   | `native`      | ✅       | 直连 `tt.openSetting`                                                             |
+| `openSingleStickerView`                       | `openSingleStickerView`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openStickerIPView`                           | `openStickerIPView`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openStickerSetView`                          | `openStickerSetView`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openStoreCouponDetail`                       | `openStoreCouponDetail`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openStoreOrderDetail`                        | `openStoreOrderDetail`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openSystemBluetoothSetting`                  | `openSystemBluetoothSetting`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openVideoEditor`                             | `openVideoEditor`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `pageScrollTo`                                | `pageScrollTo`                                | ✅   | `native`      | ✅       | 直连 `tt.pageScrollTo`                                                            |
+| `pauseBackgroundAudio`                        | `pauseBackgroundAudio`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `pauseVoice`                                  | `pauseVoice`                                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `playBackgroundAudio`                         | `playBackgroundAudio`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `playVoice`                                   | `playVoice`                                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `pluginLogin`                                 | `login`                                       | ✅   | `mapped`      | ✅       | 映射到 `tt.login`                                                                 |
+| `postMessageToReferrerMiniProgram`            | `postMessageToReferrerMiniProgram`            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `postMessageToReferrerPage`                   | `postMessageToReferrerPage`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `preDownloadSubpackage`                       | `preDownloadSubpackage`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `preloadAssets`                               | `preloadAssets`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `preloadSkylineView`                          | `preloadSkylineView`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `preloadWebview`                              | `preloadWebview`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `previewImage`                                | `previewImage`                                | ✅   | `native`      | ✅       | 直连 `tt.previewImage`                                                            |
+| `previewMedia`                                | `previewImage`                                | ✅   | `mapped`      | ✅       | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls`                        |
+| `readBLECharacteristicValue`                  | `readBLECharacteristicValue`                  | ❌   | `unsupported` | ❌       | 未提供 tt.readBLECharacteristicValue，调用时将返回 not supported                  |
+| `redirectTo`                                  | `redirectTo`                                  | ✅   | `native`      | ✅       | 直连 `tt.redirectTo`                                                              |
+| `reLaunch`                                    | `reLaunch`                                    | ✅   | `native`      | ✅       | 直连 `tt.reLaunch`                                                                |
+| `removeSecureElementPass`                     | `removeSecureElementPass`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `removeStorage`                               | `removeStorage`                               | ✅   | `native`      | ✅       | 直连 `tt.removeStorage`                                                           |
+| `removeStorageSync`                           | `removeStorageSync`                           | ✅   | `native`      | ✅       | 直连 `tt.removeStorageSync`                                                       |
+| `removeTabBarBadge`                           | `removeTabBarBadge`                           | ✅   | `native`      | ✅       | 直连 `tt.removeTabBarBadge`                                                       |
+| `reportAnalytics`                             | `reportAnalytics`                             | ✅   | `mapped`      | ✅       | 直连 `tt.reportAnalytics`                                                         |
+| `reportEvent`                                 | `reportEvent`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `reportMonitor`                               | `reportMonitor`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `reportPerformance`                           | `reportPerformance`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `request`                                     | `request`                                     | ✅   | `native`      | ✅       | 直连 `tt.request`                                                                 |
+| `requestCommonPayment`                        | `requestCommonPayment`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `requestIdleCallback`                         | `requestIdleCallback`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `requestMerchantTransfer`                     | `requestMerchantTransfer`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `requestOrderPayment`                         | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
+| `requestPayment`                              | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
+| `requestPluginPayment`                        | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
+| `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.requestSubscribeMessage`                                               |
+| `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.requestSubscribeMessage`                                               |
+| `requestSubscribeMessage`                     | `requestSubscribeMessage`                     | ✅   | `native`      | ✅       | 直连 `tt.requestSubscribeMessage`                                                 |
+| `requestVirtualPayment`                       | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
+| `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `reserveChannelsLive`                         | `reserveChannelsLive`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `restartMiniProgram`                          | `reLaunch`                                    | ✅   | `mapped`      | ✅       | 映射到 `tt.reLaunch`                                                              |
+| `revokeBufferURL`                             | `revokeBufferURL`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `rewriteRoute`                                | `rewriteRoute`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `saveFileToDisk`                              | `saveFile`                                    | ✅   | `mapped`      | ✅       | 映射到 `tt.saveFile`                                                              |
+| `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `native`      | ✅       | 直连 `tt.saveImageToPhotosAlbum`                                                  |
+| `saveVideoToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `mapped`      | ✅       | 映射到 `tt.saveImageToPhotosAlbum`                                                |
+| `scanCode`                                    | `scanCode`                                    | ✅   | `mapped`      | ✅       | 直连 `tt.scanCode`                                                                |
+| `seekBackgroundAudio`                         | `seekBackgroundAudio`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `selectGroupMembers`                          | `selectGroupMembers`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `sendHCEMessage`                              | `sendHCEMessage`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `sendSms`                                     | `sendSms`                                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `sendSocketMessage`                           | `sendSocketMessage`                           | ❌   | `unsupported` | ❌       | 未提供 tt.sendSocketMessage，调用时将返回 not supported                           |
+| `setBackgroundColor`                          | `setNavigationBarColor`                       | ✅   | `mapped`      | ✅       | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor`              |
+| `setBackgroundFetchToken`                     | `setBackgroundFetchToken`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `setBackgroundTextStyle`                      | `setNavigationBarColor`                       | ✅   | `mapped`      | ✅       | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor`             |
+| `setBLEMTU`                                   | `setBLEMTU`                                   | ❌   | `unsupported` | ❌       | 未提供 tt.setBLEMTU，调用时将返回 not supported                                   |
+| `setClipboardData`                            | `setClipboardData`                            | ✅   | `mapped`      | ✅       | 直连 `tt.setClipboardData`                                                        |
+| `setEnable1v1Chat`                            | `setEnable1v1Chat`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `setEnableDebug`                              | `setEnableDebug`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `setInnerAudioOption`                         | `setInnerAudioOption`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `setKeepScreenOn`                             | `setKeepScreenOn`                             | ✅   | `native`      | ✅       | 直连 `tt.setKeepScreenOn`                                                         |
+| `setNavigationBarColor`                       | `setNavigationBarColor`                       | ✅   | `native`      | ✅       | 直连 `tt.setNavigationBarColor`                                                   |
+| `setNavigationBarTitle`                       | `setNavigationBarTitle`                       | ✅   | `native`      | ✅       | 直连 `tt.setNavigationBarTitle`                                                   |
+| `setScreenBrightness`                         | `setScreenBrightness`                         | ✅   | `native`      | ✅       | 直连 `tt.setScreenBrightness`                                                     |
+| `setStorage`                                  | `setStorage`                                  | ✅   | `native`      | ✅       | 直连 `tt.setStorage`                                                              |
+| `setStorageSync`                              | `setStorageSync`                              | ✅   | `native`      | ✅       | 直连 `tt.setStorageSync`                                                          |
+| `setTabBarBadge`                              | `setTabBarBadge`                              | ✅   | `native`      | ✅       | 直连 `tt.setTabBarBadge`                                                          |
+| `setTabBarItem`                               | `setTabBarItem`                               | ✅   | `native`      | ✅       | 直连 `tt.setTabBarItem`                                                           |
+| `setTabBarStyle`                              | `setTabBarStyle`                              | ✅   | `native`      | ✅       | 直连 `tt.setTabBarStyle`                                                          |
+| `setTopBarText`                               | `setTopBarText`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `setVisualEffectOnCapture`                    | `setVisualEffectOnCapture`                    | ❌   | `unsupported` | ❌       | 未提供 tt.setVisualEffectOnCapture，调用时将返回 not supported                    |
+| `setWifiList`                                 | `setWifiList`                                 | ❌   | `unsupported` | ❌       | 未提供 tt.setWifiList，调用时将返回 not supported                                 |
+| `setWindowSize`                               | `setWindowSize`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `shareAppMessageToGroup`                      | `shareAppMessageToGroup`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `shareEmojiToGroup`                           | `shareEmojiToGroup`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `shareFileMessage`                            | `shareFileMessage`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `shareFileToGroup`                            | `shareFileToGroup`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `shareImageToGroup`                           | `shareImageToGroup`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `shareToOfficialAccount`                      | `shareToOfficialAccount`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `shareToWeRun`                                | `shareToWeRun`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `shareVideoMessage`                           | `shareVideoMessage`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `shareVideoToGroup`                           | `shareVideoToGroup`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `showActionSheet`                             | `showActionSheet`                             | ✅   | `mapped`      | ✅       | 优先直连 `tt.showActionSheet`；缺失时降级到 `tt.showModal` shim                   |
+| `showLoading`                                 | `showLoading`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.showLoading`                                                             |
+| `showModal`                                   | `showModal`                                   | ✅   | `mapped`      | ✅       | 直连 `tt.showModal`                                                               |
+| `showNavigationBarLoading`                    | `showNavigationBarLoading`                    | ✅   | `native`      | ✅       | 直连 `tt.showNavigationBarLoading`                                                |
+| `showRedPackage`                              | `showRedPackage`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `showShareImageMenu`                          | `showShareMenu`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.showShareMenu`                                                         |
+| `showShareMenu`                               | `showShareMenu`                               | ✅   | `native`      | ✅       | 直连 `tt.showShareMenu`                                                           |
+| `showTabBar`                                  | `showTabBar`                                  | ✅   | `native`      | ✅       | 直连 `tt.showTabBar`                                                              |
+| `showTabBarRedDot`                            | `showTabBarRedDot`                            | ✅   | `native`      | ✅       | 直连 `tt.showTabBarRedDot`                                                        |
+| `showToast`                                   | `showToast`                                   | ✅   | `mapped`      | ✅       | `icon=error` 映射为 `fail` 后调用 `tt.showToast`                                  |
+| `startAccelerometer`                          | `startAccelerometer`                          | ✅   | `native`      | ✅       | 直连 `tt.startAccelerometer`                                                      |
+| `startBeaconDiscovery`                        | `startBeaconDiscovery`                        | ❌   | `unsupported` | ❌       | 未提供 tt.startBeaconDiscovery，调用时将返回 not supported                        |
+| `startBluetoothDevicesDiscovery`              | `startBluetoothDevicesDiscovery`              | ❌   | `unsupported` | ❌       | 未提供 tt.startBluetoothDevicesDiscovery，调用时将返回 not supported              |
+| `startCompass`                                | `startCompass`                                | ✅   | `native`      | ✅       | 直连 `tt.startCompass`                                                            |
+| `startDeviceMotionListening`                  | `startDeviceMotionListening`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `startGyroscope`                              | `startGyroscope`                              | ❌   | `unsupported` | ❌       | 未提供 tt.startGyroscope，调用时将返回 not supported                              |
+| `startHCE`                                    | `startHCE`                                    | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `startLocalServiceDiscovery`                  | `startLocalServiceDiscovery`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `startLocationUpdate`                         | `startLocationUpdate`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `startLocationUpdateBackground`               | `startLocationUpdateBackground`               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `startPullDownRefresh`                        | `startPullDownRefresh`                        | ✅   | `native`      | ✅       | 直连 `tt.startPullDownRefresh`                                                    |
+| `startRecord`                                 | `startRecord`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `startSoterAuthentication`                    | `startSoterAuthentication`                    | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `startWifi`                                   | `startWifi`                                   | ❌   | `unsupported` | ❌       | 未提供 tt.startWifi，调用时将返回 not supported                                   |
+| `stopAccelerometer`                           | `stopAccelerometer`                           | ✅   | `native`      | ✅       | 直连 `tt.stopAccelerometer`                                                       |
+| `stopBackgroundAudio`                         | `stopBackgroundAudio`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopBeaconDiscovery`                         | `stopBeaconDiscovery`                         | ❌   | `unsupported` | ❌       | 未提供 tt.stopBeaconDiscovery，调用时将返回 not supported                         |
+| `stopBluetoothDevicesDiscovery`               | `stopBluetoothDevicesDiscovery`               | ❌   | `unsupported` | ❌       | 未提供 tt.stopBluetoothDevicesDiscovery，调用时将返回 not supported               |
+| `stopCompass`                                 | `stopCompass`                                 | ✅   | `native`      | ✅       | 直连 `tt.stopCompass`                                                             |
+| `stopDeviceMotionListening`                   | `stopDeviceMotionListening`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopFaceDetect`                              | `stopFaceDetect`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopGyroscope`                               | `stopGyroscope`                               | ❌   | `unsupported` | ❌       | 未提供 tt.stopGyroscope，调用时将返回 not supported                               |
+| `stopHCE`                                     | `stopHCE`                                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopLocalServiceDiscovery`                   | `stopLocalServiceDiscovery`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopLocationUpdate`                          | `stopLocationUpdate`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopPullDownRefresh`                         | `stopPullDownRefresh`                         | ✅   | `native`      | ✅       | 直连 `tt.stopPullDownRefresh`                                                     |
+| `stopRecord`                                  | `stopRecord`                                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopVoice`                                   | `stopVoice`                                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopWifi`                                    | `stopWifi`                                    | ❌   | `unsupported` | ❌       | 未提供 tt.stopWifi，调用时将返回 not supported                                    |
+| `subscribeVoIPVideoMembers`                   | `subscribeVoIPVideoMembers`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `switchTab`                                   | `switchTab`                                   | ✅   | `native`      | ✅       | 直连 `tt.switchTab`                                                               |
+| `updateShareMenu`                             | `showShareMenu`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.showShareMenu`                                                         |
+| `updateVoIPChatMuteConfig`                    | `updateVoIPChatMuteConfig`                    | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `updateWeChatApp`                             | `updateWeChatApp`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `uploadFile`                                  | `uploadFile`                                  | ✅   | `native`      | ✅       | 直连 `tt.uploadFile`                                                              |
+| `vibrateLong`                                 | `vibrateLong`                                 | ✅   | `native`      | ✅       | 直连 `tt.vibrateLong`                                                             |
+| `vibrateShort`                                | `vibrateShort`                                | ✅   | `native`      | ✅       | 直连 `tt.vibrateShort`                                                            |
+| `writeBLECharacteristicValue`                 | `writeBLECharacteristicValue`                 | ❌   | `unsupported` | ❌       | 未提供 tt.writeBLECharacteristicValue，调用时将返回 not supported                 |

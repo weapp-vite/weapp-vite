@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 433 | 46 | 479 | 100.00% | 90.40% |
-| 抖音小程序 (`tt`) | 479 | 375 | 104 | 479 | 100.00% | 78.29% |
-| 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 373 | - | 479 | - | 77.87% |
+| 支付宝小程序 (`my`) | 393 | 393 | 0 | 479 | 82.05% | 82.05% |
+| 抖音小程序 (`tt`) | 335 | 335 | 0 | 479 | 69.94% | 69.94% |
+| 三端可调用完全对齐 (wx/my/tt) | 333 | - | - | 479 | 69.52% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 333 | - | 479 | - | 69.52% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -273,46 +273,6 @@
 | `seekBackgroundAudio` | 调整后台音频播放进度。 | 直连 `wx.seekBackgroundAudio` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `setEnableDebug` | 设置调试开关。 | 直连 `wx.setEnableDebug` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `setInnerAudioOption` | 设置内部音频选项。 | 直连 `wx.setInnerAudioOption` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `onAfterPageLoad` | 监听页面加载完成。 | 直连 `wx.onAfterPageLoad` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onAfterPageUnload` | 监听页面卸载完成。 | 直连 `wx.onAfterPageUnload` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onApiCategoryChange` | 监听 API 分类变更。 | 直连 `wx.onApiCategoryChange` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onAppRoute` | 监听路由开始。 | 直连 `wx.onAppRoute` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onAppRouteDone` | 监听路由结束。 | 直连 `wx.onAppRouteDone` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onBackgroundAudioPause` | 监听后台音频暂停。 | 直连 `wx.onBackgroundAudioPause` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onBackgroundAudioPlay` | 监听后台音频播放。 | 直连 `wx.onBackgroundAudioPlay` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onBackgroundAudioStop` | 监听后台音频停止。 | 直连 `wx.onBackgroundAudioStop` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onBackgroundFetchData` | 监听后台拉取数据。 | 直连 `wx.onBackgroundFetchData` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onBatteryInfoChange` | 监听电池信息变化。 | 直连 `wx.onBatteryInfoChange` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `offAfterPageLoad` | 取消监听页面加载完成。 | 直连 `wx.offAfterPageLoad` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offAfterPageUnload` | 取消监听页面卸载完成。 | 直连 `wx.offAfterPageUnload` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offApiCategoryChange` | 取消监听 API 分类变更。 | 直连 `wx.offApiCategoryChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offAppRoute` | 取消监听路由开始。 | 直连 `wx.offAppRoute` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offAppRouteDone` | 取消监听路由结束。 | 直连 `wx.offAppRouteDone` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offBatteryInfoChange` | 取消监听电池信息变化。 | 直连 `wx.offBatteryInfoChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offBeforeAppRoute` | 取消监听路由前事件。 | 直连 `wx.offBeforeAppRoute` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offBeforePageLoad` | 取消监听页面加载前事件。 | 直连 `wx.offBeforePageLoad` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offBeforePageUnload` | 取消监听页面卸载前事件。 | 直连 `wx.offBeforePageUnload` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offBLEConnectionStateChange` | 取消监听 BLE 连接状态变化。 | 直连 `wx.offBLEConnectionStateChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `onBeforeAppRoute` | 监听路由前事件。 | 直连 `wx.onBeforeAppRoute` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onBeforePageLoad` | 监听页面加载前事件。 | 直连 `wx.onBeforePageLoad` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onBeforePageUnload` | 监听页面卸载前事件。 | 直连 `wx.onBeforePageUnload` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onBLEConnectionStateChange` | 监听 BLE 连接状态变化。 | 直连 `wx.onBLEConnectionStateChange` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onBLEMTUChange` | 监听 BLE MTU 变化。 | 直连 `wx.onBLEMTUChange` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onBLEPeripheralConnectionStateChanged` | 监听 BLE 外设连接状态变化。 | 直连 `wx.onBLEPeripheralConnectionStateChanged` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onCopyUrl` | 监听复制链接事件。 | 直连 `wx.onCopyUrl` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onEmbeddedMiniProgramHeightChange` | 监听半屏小程序高度变化。 | 直连 `wx.onEmbeddedMiniProgramHeightChange` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onGeneratePoster` | 监听海报生成事件。 | 直连 `wx.onGeneratePoster` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `onHCEMessage` | 监听 HCE 消息。 | 直连 `wx.onHCEMessage` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
-| `offBLEMTUChange` | 取消监听 BLE MTU 变化。 | 直连 `wx.offBLEMTUChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offBLEPeripheralConnectionStateChanged` | 取消监听 BLE 外设连接状态变化。 | 直连 `wx.offBLEPeripheralConnectionStateChanged` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offCopyUrl` | 取消监听复制链接事件。 | 直连 `wx.offCopyUrl` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offEmbeddedMiniProgramHeightChange` | 取消监听半屏小程序高度变化。 | 直连 `wx.offEmbeddedMiniProgramHeightChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offGeneratePoster` | 取消监听海报生成事件。 | 直连 `wx.offGeneratePoster` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offHCEMessage` | 取消监听 HCE 消息。 | 直连 `wx.offHCEMessage` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offKeyboardHeightChange` | 取消监听键盘高度变化。 | 直连 `wx.offKeyboardHeightChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offKeyDown` | 取消监听按键按下。 | 直连 `wx.offKeyDown` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offKeyUp` | 取消监听按键抬起。 | 直连 `wx.offKeyUp` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
-| `offLocalServiceDiscoveryStop` | 取消监听本地服务发现停止。 | 直连 `wx.offLocalServiceDiscoveryStop` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 
