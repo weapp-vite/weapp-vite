@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：247，不支持：232
+总计：479，支持：238，不支持：241
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -25,16 +25,16 @@
 | `canAddSecureElementPass`                     | `canAddSecureElementPass`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `cancelIdleCallback`                          | `cancelIdleCallback`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `canIUse`                                     | `canIUse`                                     | ✅   | `native`      | ✅       | 直连 `my.canIUse`                                                                 |
-| `canvasGetImageData`                          | `canvasGetImageData`                          | ✅   | `mapped`      | ✅       | 使用内置 shim，返回空像素数据结构                                                 |
-| `canvasPutImageData`                          | `canvasPutImageData`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `canvasGetImageData`                          | `canvasGetImageData`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `canvasPutImageData`                          | `canvasPutImageData`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `canvasToTempFilePath`                        | `canvasToTempFilePath`                        | ✅   | `native`      | ✅       | 直连 `my.canvasToTempFilePath`                                                    |
-| `checkDeviceSupportHevc`                      | `checkDeviceSupportHevc`                      | ✅   | `mapped`      | ✅       | 使用内置 shim，返回默认不支持                                                     |
-| `checkEmployeeRelation`                       | `checkEmployeeRelation`                       | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未绑定                                                         |
-| `checkIsAddedToMyMiniProgram`                 | `checkIsAddedToMyMiniProgram`                 | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未添加                                                         |
-| `checkIsOpenAccessibility`                    | `checkIsOpenAccessibility`                    | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未开启                                                         |
-| `checkIsPictureInPictureActive`               | `checkIsPictureInPictureActive`               | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未激活                                                         |
-| `checkIsSoterEnrolledInDevice`                | `checkIsSoterEnrolledInDevice`                | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未录入                                                         |
-| `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication`           | ✅   | `mapped`      | ✅       | 使用内置 shim，返回默认不支持                                                     |
+| `checkDeviceSupportHevc`                      | `checkDeviceSupportHevc`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkEmployeeRelation`                       | `checkEmployeeRelation`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkIsAddedToMyMiniProgram`                 | `checkIsAddedToMyMiniProgram`                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkIsOpenAccessibility`                    | `checkIsOpenAccessibility`                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkIsPictureInPictureActive`               | `checkIsPictureInPictureActive`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkIsSoterEnrolledInDevice`                | `checkIsSoterEnrolledInDevice`                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication`           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `checkSession`                                | `getAuthCode`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.getAuthCode`，按成功结果对齐 `checkSession:ok`                         |
 | `chooseAddress`                               | `getAddress`                                  | ✅   | `mapped`      | ✅       | 映射到 `my.getAddress`                                                            |
 | `chooseContact`                               | `chooseContact`                               | ✅   | `native`      | ✅       | 直连 `my.chooseContact`                                                           |

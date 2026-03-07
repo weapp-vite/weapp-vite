@@ -141,26 +141,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     }),
     onCameraFrame: (_callback: (...args: any[]) => void) => {},
   }
-  const syntheticNoopMethodSet = new Set([
-    'canvasPutImageData',
-    'checkDeviceSupportHevc',
-    'checkEmployeeRelation',
-    'checkIsAddedToMyMiniProgram',
-    'checkIsOpenAccessibility',
-    'checkIsPictureInPictureActive',
-    'checkIsSoterEnrolledInDevice',
-    'checkIsSupportSoterAuthentication',
-  ])
-  const syntheticCheckPayloadByMethod: Readonly<Record<string, Record<string, any>>> = {
-    checkDeviceSupportHevc: { isSupport: false },
-    checkEmployeeRelation: { isBound: false },
-    checkIsAddedToMyMiniProgram: { added: false },
-    checkIsOpenAccessibility: { openAccessibility: false },
-    checkIsPictureInPictureActive: { active: false },
-    checkIsSoterEnrolledInDevice: { isEnrolled: false },
-    checkIsSupportSoterAuthentication: { supportMode: [] },
-  }
-
   const resolveAdapter = () => {
     if (adapter) {
       return adapter
@@ -343,34 +323,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
       return {
         handled: true as const,
         result: undefined,
-      }
-    }
-    if (methodName === 'canvasGetImageData') {
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          data: [],
-          width: 0,
-          height: 0,
-          errMsg: 'canvasGetImageData:ok',
-        }),
-      }
-    }
-    if (Object.prototype.hasOwnProperty.call(syntheticCheckPayloadByMethod, methodName)) {
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          ...syntheticCheckPayloadByMethod[methodName],
-          errMsg: `${methodName}:ok`,
-        }),
-      }
-    }
-    if (syntheticNoopMethodSet.has(methodName)) {
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          errMsg: `${methodName}:ok`,
-        }),
       }
     }
     if (methodName === 'reportAnalytics') {

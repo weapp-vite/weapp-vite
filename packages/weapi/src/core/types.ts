@@ -1099,8 +1099,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.canvasGetImageData` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，返回空像素数据结构 | ⚠️ |
-   * | 抖音 | 使用内置 shim，返回空像素数据结构 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   canvasGetImageData: WeapiCrossPlatformAdapter['canvasGetImageData']
 
@@ -1110,8 +1110,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.canvasPutImageData` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   canvasPutImageData: WeapiCrossPlatformAdapter['canvasPutImageData']
 
@@ -1121,8 +1121,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.checkDeviceSupportHevc` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，返回默认不支持 | ⚠️ |
-   * | 抖音 | 使用内置 shim，返回默认不支持 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   checkDeviceSupportHevc: WeapiCrossPlatformAdapter['checkDeviceSupportHevc']
 
@@ -1132,8 +1132,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.checkEmployeeRelation` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，返回未绑定 | ⚠️ |
-   * | 抖音 | 使用内置 shim，返回未绑定 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   checkEmployeeRelation: WeapiCrossPlatformAdapter['checkEmployeeRelation']
 
@@ -1143,8 +1143,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.checkIsAddedToMyMiniProgram` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，返回未添加 | ⚠️ |
-   * | 抖音 | 使用内置 shim，返回未添加 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   checkIsAddedToMyMiniProgram: WeapiCrossPlatformAdapter['checkIsAddedToMyMiniProgram']
 
@@ -1154,8 +1154,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.checkIsOpenAccessibility` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，返回未开启 | ⚠️ |
-   * | 抖音 | 使用内置 shim，返回未开启 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   checkIsOpenAccessibility: WeapiCrossPlatformAdapter['checkIsOpenAccessibility']
 
@@ -1165,8 +1165,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.checkIsPictureInPictureActive` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，返回未激活 | ⚠️ |
-   * | 抖音 | 使用内置 shim，返回未激活 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   checkIsPictureInPictureActive: WeapiCrossPlatformAdapter['checkIsPictureInPictureActive']
 
@@ -1176,8 +1176,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.checkIsSoterEnrolledInDevice` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，返回未录入 | ⚠️ |
-   * | 抖音 | 使用内置 shim，返回未录入 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   checkIsSoterEnrolledInDevice: WeapiCrossPlatformAdapter['checkIsSoterEnrolledInDevice']
 
@@ -1187,8 +1187,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.checkIsSupportSoterAuthentication` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，返回默认不支持 | ⚠️ |
-   * | 抖音 | 使用内置 shim，返回默认不支持 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   checkIsSupportSoterAuthentication: WeapiCrossPlatformAdapter['checkIsSupportSoterAuthentication']
 

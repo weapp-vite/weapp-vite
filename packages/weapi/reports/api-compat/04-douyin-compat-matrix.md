@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：184，不支持：295
+总计：479，支持：175，不支持：304
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -25,16 +25,16 @@
 | `canAddSecureElementPass`                     | `canAddSecureElementPass`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `cancelIdleCallback`                          | `cancelIdleCallback`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `canIUse`                                     | `canIUse`                                     | ✅   | `native`      | ✅       | 直连 `tt.canIUse`                                                                 |
-| `canvasGetImageData`                          | `canvasGetImageData`                          | ✅   | `mapped`      | ✅       | 使用内置 shim，返回空像素数据结构                                                 |
-| `canvasPutImageData`                          | `canvasPutImageData`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `canvasGetImageData`                          | `canvasGetImageData`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `canvasPutImageData`                          | `canvasPutImageData`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `canvasToTempFilePath`                        | `canvasToTempFilePath`                        | ✅   | `native`      | ✅       | 直连 `tt.canvasToTempFilePath`                                                    |
-| `checkDeviceSupportHevc`                      | `checkDeviceSupportHevc`                      | ✅   | `mapped`      | ✅       | 使用内置 shim，返回默认不支持                                                     |
-| `checkEmployeeRelation`                       | `checkEmployeeRelation`                       | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未绑定                                                         |
-| `checkIsAddedToMyMiniProgram`                 | `checkIsAddedToMyMiniProgram`                 | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未添加                                                         |
-| `checkIsOpenAccessibility`                    | `checkIsOpenAccessibility`                    | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未开启                                                         |
-| `checkIsPictureInPictureActive`               | `checkIsPictureInPictureActive`               | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未激活                                                         |
-| `checkIsSoterEnrolledInDevice`                | `checkIsSoterEnrolledInDevice`                | ✅   | `mapped`      | ✅       | 使用内置 shim，返回未录入                                                         |
-| `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication`           | ✅   | `mapped`      | ✅       | 使用内置 shim，返回默认不支持                                                     |
+| `checkDeviceSupportHevc`                      | `checkDeviceSupportHevc`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkEmployeeRelation`                       | `checkEmployeeRelation`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkIsAddedToMyMiniProgram`                 | `checkIsAddedToMyMiniProgram`                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkIsOpenAccessibility`                    | `checkIsOpenAccessibility`                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkIsPictureInPictureActive`               | `checkIsPictureInPictureActive`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkIsSoterEnrolledInDevice`                | `checkIsSoterEnrolledInDevice`                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication`           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `checkSession`                                | `checkSession`                                | ✅   | `mapped`      | ✅       | 直连 `tt.checkSession`                                                            |
 | `chooseAddress`                               | `chooseAddress`                               | ✅   | `mapped`      | ✅       | 直连 `tt.chooseAddress`                                                           |
 | `chooseContact`                               | `chooseContact`                               | ❌   | `unsupported` | ❌       | 未提供 tt.chooseContact，调用时将返回 not supported                               |
