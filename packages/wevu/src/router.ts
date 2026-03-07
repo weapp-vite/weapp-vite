@@ -2002,12 +2002,15 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       }
 
       const matchedRouteResult = resolveMatchedRouteRecord(currentTarget, namedRouteLookup)
-      const routeRecord = matchedRouteResult?.record
       const matchedRouteRecords = matchedRouteResult?.matchedRecords ?? []
-      if (routeRecord?.redirect !== undefined) {
+      let redirectedByRouteRecord = false
+      for (const matchedRouteRecord of matchedRouteRecords) {
+        if (matchedRouteRecord.redirect === undefined) {
+          continue
+        }
         let redirectedByRecord: { target: RouteLocationNormalizedLoaded, replace?: boolean }
         try {
-          redirectedByRecord = await resolveRouteRecordRedirect(routeRecord.redirect, currentTarget, from)
+          redirectedByRecord = await resolveRouteRecordRedirect(matchedRouteRecord.redirect, currentTarget, from)
         }
         catch (error) {
           return createNavigationRunResult(
@@ -2028,8 +2031,12 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
           if (redirectCount > maxRedirects) {
             return createNavigationRunResult(currentMode, from, currentTarget, createTooManyRedirectsFailure(currentTarget, from))
           }
-          continue
+          redirectedByRouteRecord = true
+          break
         }
+      }
+      if (redirectedByRouteRecord) {
+        continue
       }
 
       let redirectedByBeforeEnter = false

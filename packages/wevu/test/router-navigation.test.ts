@@ -1138,6 +1138,61 @@ describe('router navigation helpers', () => {
     }))
   })
 
+  it('applies parent route redirect before nested child guards', async () => {
+    const navigateTo = vi.fn()
+    const redirectTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo,
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const childBeforeEnter = vi.fn()
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'home',
+          path: '/pages/home',
+          redirect: '/pages/login/index?from=parent-record',
+          children: [
+            {
+              name: 'home-detail',
+              path: 'detail/:id',
+              beforeEnter: childBeforeEnter,
+            },
+          ],
+        },
+      ],
+    })
+
+    const result = await router.push('/pages/home/detail/8')
+    expect(result).toBeUndefined()
+    expect(childBeforeEnter).not.toHaveBeenCalled()
+    expect(redirectTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/login/index?from=parent-record',
+    }))
+    expect(navigateTo).not.toHaveBeenCalled()
+  })
+
   it('supports route record redirect before navigation', async () => {
     const navigateTo = vi.fn()
     const redirectTo = vi.fn((options: any) => {
