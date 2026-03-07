@@ -680,8 +680,16 @@ function warnRouteConfig(message: string): void {
   console.warn(`[wevu/router] ${message}`)
 }
 
+function formatRoutePathForWarning(path: string): string {
+  const normalizedPath = resolvePath(path, '')
+  if (!normalizedPath) {
+    return '/'
+  }
+  return createAbsoluteRoutePath(normalizedPath)
+}
+
 function warnDuplicateRouteEntries(routeEntries: readonly FlattenedRouteRecordSeed[]): void {
-  const latestSourceByName = new Map<string, RouteOptionSource>()
+  const latestRouteInfoByName = new Map<string, { source: RouteOptionSource, path: string }>()
   const duplicateMessages: string[] = []
 
   for (const routeEntry of routeEntries) {
@@ -691,11 +699,15 @@ function warnDuplicateRouteEntries(routeEntries: readonly FlattenedRouteRecordSe
     }
 
     const currentSource = routeEntry.source ?? 'namedRoutes'
-    const previousSource = latestSourceByName.get(routeName)
-    if (previousSource) {
-      duplicateMessages.push(`"${routeName}" (${previousSource} -> ${currentSource})`)
+    const currentPath = formatRoutePathForWarning(routeEntry.route.path)
+    const previousInfo = latestRouteInfoByName.get(routeName)
+    if (previousInfo) {
+      duplicateMessages.push(`"${routeName}" (${previousInfo.source}:${previousInfo.path} -> ${currentSource}:${currentPath})`)
     }
-    latestSourceByName.set(routeName, currentSource)
+    latestRouteInfoByName.set(routeName, {
+      source: currentSource,
+      path: currentPath,
+    })
   }
 
   if (duplicateMessages.length === 0) {
@@ -1913,7 +1925,9 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
         for (const routeName of namesToRemove) {
           namedRouteLookup.recordByName.delete(routeName)
         }
-        warnRouteConfig(`addRoute() replaced existing route "${normalizedRoute.name}" and removed ${namesToRemove.size - 1} nested route(s)`)
+        warnRouteConfig(
+          `addRoute() replaced existing route "${normalizedRoute.name}" (${createAbsoluteRoutePath(existingRoute.path)} -> ${createAbsoluteRoutePath(normalizedRoute.path)}) and removed ${namesToRemove.size - 1} nested route(s)`,
+        )
       }
       namedRouteLookup.recordByName.set(normalizedRoute.name, normalizedRoute)
       addedRoutes.push(normalizedRoute)

@@ -971,7 +971,7 @@ describe('router navigation helpers', () => {
     }).fullPath).toBe('/pages/home/from-named-routes')
     expect(warn).toHaveBeenCalledTimes(1)
     expect(warn.mock.calls[0]?.[0]).toContain('duplicate route names detected')
-    expect(warn.mock.calls[0]?.[0]).toContain('"home" (routes -> namedRoutes)')
+    expect(warn.mock.calls[0]?.[0]).toContain('"home" (routes:/pages/home/from-routes -> namedRoutes:/pages/home/from-named-routes)')
     warn.mockRestore()
   })
 
@@ -1858,7 +1858,7 @@ describe('router navigation helpers', () => {
     expect(router.resolve({
       name: 'home',
     }).fullPath).toBe('/pages/dashboard')
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('replaced existing route "home" and removed 1 nested route(s)'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('replaced existing route "home" (/pages/home -> /pages/dashboard) and removed 1 nested route(s)'))
     warn.mockRestore()
   })
 
@@ -1903,7 +1903,135 @@ describe('router navigation helpers', () => {
 
     expect(router.resolve('/pages/home/index').name).toBeUndefined()
     expect(router.resolve('/pages/home/new-index').name).toBe('home')
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('replaced existing route "home" and removed 0 nested route(s)'))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('replaced existing route "home" (/pages/home/index -> /pages/home/new-index) and removed 0 nested route(s)'))
+    warn.mockRestore()
+  })
+
+  it('addRoute replacement updates alias and beforeEnter chains for new records', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const beforeEnterOld = vi.fn(() => '/pages/login/index?from=old')
+    const beforeEnterNew = vi.fn(() => '/pages/login/index?from=new')
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home',
+          alias: '/pages/member',
+          beforeEnter: beforeEnterOld,
+          children: [
+            {
+              name: 'home-detail',
+              path: 'detail/:id',
+            },
+          ],
+        },
+      ],
+    })
+
+    router.addRoute({
+      name: 'home',
+      path: '/pages/dashboard',
+      alias: '/pages/admin',
+      beforeEnter: beforeEnterNew,
+      children: [
+        {
+          name: 'home-settings',
+          path: 'settings',
+        },
+      ],
+    })
+
+    expect(router.hasRoute('home-detail')).toBe(false)
+    expect(router.hasRoute('home-settings')).toBe(true)
+    expect(router.resolve('/pages/member/detail/1').name).toBeUndefined()
+    expect(router.resolve('/pages/admin/settings').name).toBe('home-settings')
+    await expect(router.push('/pages/admin/settings')).resolves.toBeUndefined()
+    expect(beforeEnterOld).not.toHaveBeenCalled()
+    expect(beforeEnterNew).toHaveBeenCalledTimes(1)
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/login/index?from=new',
+    }))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('replaced existing route "home" (/pages/home -> /pages/dashboard) and removed 1 nested route(s)'))
+    warn.mockRestore()
+  })
+
+  it('addRoute replacement refreshes redirect and alias resolution', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const redirectTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo,
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: 'legacy',
+          path: '/pages/legacy/index',
+          alias: '/pages/legacy/alias',
+          redirect: '/pages/login/index?from=old',
+        },
+      ],
+    })
+
+    router.addRoute({
+      name: 'legacy',
+      path: '/pages/new/index',
+      alias: '/pages/new/alias',
+      redirect: '/pages/login/index?from=new',
+    })
+
+    expect(router.resolve('/pages/legacy/alias').name).toBeUndefined()
+    expect(router.resolve('/pages/new/alias').name).toBe('legacy')
+    await expect(router.push('/pages/new/alias')).resolves.toBeUndefined()
+    expect(redirectTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/login/index?from=new',
+    }))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('replaced existing route "legacy" (/pages/legacy/index -> /pages/new/index) and removed 0 nested route(s)'))
     warn.mockRestore()
   })
 
