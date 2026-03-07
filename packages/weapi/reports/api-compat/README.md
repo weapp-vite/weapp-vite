@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  247 |
-| 支付宝语义对齐方法数             |  247 |
+| 支付宝可按微信命名调用的方法数   |  238 |
+| 支付宝语义对齐方法数             |  238 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  184 |
-| 抖音语义对齐方法数               |  184 |
+| 抖音可按微信命名调用的方法数     |  175 |
+| 抖音语义对齐方法数               |  175 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  182 |
-| 三端语义完全对齐方法数           |  182 |
+| 三端可调用完全对齐方法数         |  173 |
+| 三端语义完全对齐方法数           |  173 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           247 |             247 |               0 |      479 |       51.57% |         51.57% |
-| 抖音小程序 (`tt`)             |           184 |             184 |               0 |      479 |       38.41% |         38.41% |
-| 三端可调用完全对齐 (wx/my/tt) |           182 |               - |               - |      479 |       38.00% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             182 |               - |      479 |            - |         38.00% |
+| 支付宝小程序 (`my`)           |           238 |             238 |               0 |      479 |       49.69% |         49.69% |
+| 抖音小程序 (`tt`)             |           175 |             175 |               0 |      479 |       36.53% |         36.53% |
+| 三端可调用完全对齐 (wx/my/tt) |           173 |               - |               - |      479 |       36.12% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             173 |               - |      479 |            - |         36.12% |
 
 ## 核心差异映射（手工规则）
 
@@ -125,15 +125,15 @@
 | `authPrivateMessage`                | 直连 `wx.authPrivateMessage`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `bindEmployeeRelation`              | 直连 `wx.bindEmployeeRelation`                      | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `canAddSecureElementPass`           | 直连 `wx.canAddSecureElementPass`                   | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
-| `canvasGetImageData`                | 直连 `wx.canvasGetImageData`                        | 使用内置 shim，返回空像素数据结构                                      | 使用内置 shim，返回空像素数据结构                                      |
-| `canvasPutImageData`                | 直连 `wx.canvasPutImageData`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `checkDeviceSupportHevc`            | 直连 `wx.checkDeviceSupportHevc`                    | 使用内置 shim，返回默认不支持                                          | 使用内置 shim，返回默认不支持                                          |
-| `checkEmployeeRelation`             | 直连 `wx.checkEmployeeRelation`                     | 使用内置 shim，返回未绑定                                              | 使用内置 shim，返回未绑定                                              |
-| `checkIsAddedToMyMiniProgram`       | 直连 `wx.checkIsAddedToMyMiniProgram`               | 使用内置 shim，返回未添加                                              | 使用内置 shim，返回未添加                                              |
-| `checkIsOpenAccessibility`          | 直连 `wx.checkIsOpenAccessibility`                  | 使用内置 shim，返回未开启                                              | 使用内置 shim，返回未开启                                              |
-| `checkIsPictureInPictureActive`     | 直连 `wx.checkIsPictureInPictureActive`             | 使用内置 shim，返回未激活                                              | 使用内置 shim，返回未激活                                              |
-| `checkIsSoterEnrolledInDevice`      | 直连 `wx.checkIsSoterEnrolledInDevice`              | 使用内置 shim，返回未录入                                              | 使用内置 shim，返回未录入                                              |
-| `checkIsSupportSoterAuthentication` | 直连 `wx.checkIsSupportSoterAuthentication`         | 使用内置 shim，返回默认不支持                                          | 使用内置 shim，返回默认不支持                                          |
+| `canvasGetImageData`                | 直连 `wx.canvasGetImageData`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `canvasPutImageData`                | 直连 `wx.canvasPutImageData`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `checkDeviceSupportHevc`            | 直连 `wx.checkDeviceSupportHevc`                    | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `checkEmployeeRelation`             | 直连 `wx.checkEmployeeRelation`                     | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `checkIsAddedToMyMiniProgram`       | 直连 `wx.checkIsAddedToMyMiniProgram`               | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `checkIsOpenAccessibility`          | 直连 `wx.checkIsOpenAccessibility`                  | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `checkIsPictureInPictureActive`     | 直连 `wx.checkIsPictureInPictureActive`             | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `checkIsSoterEnrolledInDevice`      | 直连 `wx.checkIsSoterEnrolledInDevice`              | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `checkIsSupportSoterAuthentication` | 直连 `wx.checkIsSupportSoterAuthentication`         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `openCard`                          | 直连 `wx.openCard`                                  | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `openChannelsActivity`              | 直连 `wx.openChannelsActivity`                      | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `openChannelsEvent`                 | 直连 `wx.openChannelsEvent`                         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |

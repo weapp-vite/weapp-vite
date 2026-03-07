@@ -1117,47 +1117,31 @@ describe('weapi', () => {
   })
 
   it.each([
-    { method: 'canvasGetImageData' },
-    { method: 'canvasPutImageData' },
-  ])('provides synthetic canvas shim for $method on alipay and douyin', async ({ method }) => {
+    'canvasGetImageData',
+    'canvasPutImageData',
+    'checkDeviceSupportHevc',
+    'checkEmployeeRelation',
+    'checkIsAddedToMyMiniProgram',
+    'checkIsOpenAccessibility',
+    'checkIsPictureInPictureActive',
+    'checkIsSoterEnrolledInDevice',
+    'checkIsSupportSoterAuthentication',
+  ])('treats %s as unsupported when no strict-equivalent target exists', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
+      const normalizedPlatform = platform === 'alipay' ? 'my' : platform
       const api = createWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
-      const result = await api[method]({
-        canvasId: 'demo',
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
       })
-      expect(result).toMatchObject({
-        errMsg: `${method}:ok`,
-      })
-      if (method === 'canvasGetImageData') {
-        expect(result).toMatchObject({
-          data: [],
-          width: 0,
-          height: 0,
-        })
-      }
-    }
-  })
-
-  it.each([
-    { method: 'checkDeviceSupportHevc', expected: { isSupport: false } },
-    { method: 'checkEmployeeRelation', expected: { isBound: false } },
-    { method: 'checkIsAddedToMyMiniProgram', expected: { added: false } },
-    { method: 'checkIsOpenAccessibility', expected: { openAccessibility: false } },
-    { method: 'checkIsPictureInPictureActive', expected: { active: false } },
-    { method: 'checkIsSoterEnrolledInDevice', expected: { isEnrolled: false } },
-    { method: 'checkIsSupportSoterAuthentication', expected: { supportMode: [] } },
-  ])('provides synthetic check shim for $method on alipay and douyin', async ({ expected, method }) => {
-    for (const platform of ['alipay', 'tt'] as const) {
-      const api = createWeapi({
-        adapter: {},
-        platform,
-      }) as Record<string, any>
-      await expect(api[method]({})).resolves.toMatchObject({
-        ...expected,
-        errMsg: `${method}:ok`,
+      await expect(api[methodName]({})).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
       })
     }
   })
