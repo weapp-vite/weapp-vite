@@ -613,7 +613,7 @@ describe('weapi', () => {
     }
   })
 
-  it('provides synthetic reportAnalytics for alipay', async () => {
+  it('treats reportAnalytics as unsupported for alipay when method is missing', async () => {
     const api = createWeapi({
       adapter: {},
       platform: 'alipay',
@@ -622,51 +622,41 @@ describe('weapi', () => {
     expect(api.resolveTarget('reportAnalytics')).toMatchObject({
       method: 'reportAnalytics',
       target: 'reportAnalytics',
-      supportLevel: 'mapped',
-      supported: true,
-      semanticAligned: true,
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
-    await expect(api.reportAnalytics('event_name', { from: 'test' } as any)).resolves.toMatchObject({
-      errMsg: 'reportAnalytics:ok',
+    await expect(api.reportAnalytics('event_name', { from: 'test' } as any)).rejects.toMatchObject({
+      errMsg: 'my.reportAnalytics:fail method not supported',
     })
   })
 
-  it('provides synthetic onWindowResize/offWindowResize for alipay', () => {
-    let appShowListener: (() => void) | undefined
-    const getWindowInfo = vi.fn((options: any) => {
-      const sequence = [
-        { windowWidth: 320, windowHeight: 568 },
-        { windowWidth: 360, windowHeight: 640 },
-        { windowWidth: 375, windowHeight: 667 },
-      ]
-      const index = Math.min(getWindowInfo.mock.calls.length - 1, sequence.length - 1)
-      options.success?.(sequence[index])
-    })
-    const onAppShow = vi.fn((listener: () => void) => {
-      appShowListener = listener
-    })
-    const callback = vi.fn()
+  it('treats onWindowResize/offWindowResize as unsupported for alipay when method is missing', async () => {
     const api = createWeapi({
-      adapter: {
-        onAppShow,
-        getWindowInfo,
-      },
+      adapter: {},
       platform: 'alipay',
     })
 
-    expect(api.onWindowResize(callback)).toBeUndefined()
-    expect(onAppShow).toHaveBeenCalledTimes(1)
-    appShowListener?.()
-    expect(callback).toHaveBeenCalledTimes(0)
-    appShowListener?.()
-    expect(callback).toHaveBeenCalledTimes(1)
-    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
-      windowWidth: 360,
-      windowHeight: 640,
-    }))
-    expect(api.offWindowResize(callback)).toBeUndefined()
-    appShowListener?.()
-    expect(callback).toHaveBeenCalledTimes(1)
+    expect(api.resolveTarget('onWindowResize')).toMatchObject({
+      method: 'onWindowResize',
+      target: 'onWindowResize',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    expect(api.resolveTarget('offWindowResize')).toMatchObject({
+      method: 'offWindowResize',
+      target: 'offWindowResize',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.onWindowResize(vi.fn() as any)).rejects.toMatchObject({
+      errMsg: 'my.onWindowResize:fail method not supported',
+    })
+    await expect(api.offWindowResize(vi.fn() as any)).rejects.toMatchObject({
+      errMsg: 'my.offWindowResize:fail method not supported',
+    })
   })
 
   it.each([
@@ -1131,26 +1121,22 @@ describe('weapi', () => {
     }
   })
 
-  it('provides synthetic offMemoryWarning for douyin', () => {
-    let memoryWarningListener: ((res: any) => void) | undefined
-    const onMemoryWarning = vi.fn((listener: (res: any) => void) => {
-      memoryWarningListener = listener
-    })
-    const callback = vi.fn()
+  it('treats offMemoryWarning as unsupported for douyin when method is missing', async () => {
     const api = createWeapi({
-      adapter: {
-        onMemoryWarning,
-      },
+      adapter: {},
       platform: 'tt',
     })
 
-    api.onMemoryWarning(callback)
-    expect(onMemoryWarning).toHaveBeenCalledTimes(1)
-    memoryWarningListener?.({ level: 10 })
-    expect(callback).toHaveBeenCalledTimes(1)
-    expect(api.offMemoryWarning(callback)).toBeUndefined()
-    memoryWarningListener?.({ level: 5 })
-    expect(callback).toHaveBeenCalledTimes(1)
+    expect(api.resolveTarget('offMemoryWarning')).toMatchObject({
+      method: 'offMemoryWarning',
+      target: 'offMemoryWarning',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.offMemoryWarning(vi.fn() as any)).rejects.toMatchObject({
+      errMsg: 'tt.offMemoryWarning:fail method not supported',
+    })
   })
 
   it.each([
@@ -1901,9 +1887,9 @@ describe('weapi', () => {
       { method: 'getAccountInfoSync', my: 'getAccountInfoSync', tt: 'getEnvInfoSync' },
       { method: 'getLogManager', my: 'getLogManager', tt: 'getLogManager', mySupported: false, ttSupported: false },
       { method: 'nextTick', my: 'nextTick', tt: 'nextTick', mySupported: false, ttSupported: false },
-      { method: 'onWindowResize', my: 'onWindowResize', tt: 'onWindowResize' },
-      { method: 'offWindowResize', my: 'offWindowResize', tt: 'offWindowResize' },
-      { method: 'reportAnalytics', my: 'reportAnalytics', tt: 'reportAnalytics' },
+      { method: 'onWindowResize', my: 'onWindowResize', tt: 'onWindowResize', mySupported: false },
+      { method: 'offWindowResize', my: 'offWindowResize', tt: 'offWindowResize', mySupported: false },
+      { method: 'reportAnalytics', my: 'reportAnalytics', tt: 'reportAnalytics', mySupported: false },
       { method: 'setBackgroundColor', my: 'setBackgroundColor', tt: 'setNavigationBarColor' },
       { method: 'setBackgroundTextStyle', my: 'setBackgroundTextStyle', tt: 'setNavigationBarColor' },
       { method: 'getNetworkType', my: 'getNetworkType', tt: 'getSystemInfo' },
@@ -1915,7 +1901,7 @@ describe('weapi', () => {
       { method: 'batchSetStorageSync', my: 'batchSetStorageSync', tt: 'batchSetStorageSync', mySupported: false, ttSupported: false },
       { method: 'batchGetStorageSync', my: 'batchGetStorageSync', tt: 'batchGetStorageSync', mySupported: false, ttSupported: false },
       { method: 'createCameraContext', my: 'createCameraContext', tt: 'createCameraContext', mySupported: false, ttSupported: false },
-      { method: 'offMemoryWarning', my: 'offMemoryWarning', tt: 'offMemoryWarning' },
+      { method: 'offMemoryWarning', my: 'offMemoryWarning', tt: 'offMemoryWarning', ttSupported: false },
       { method: 'cancelIdleCallback', my: 'cancelIdleCallback', tt: 'cancelIdleCallback', mySupported: false, ttSupported: false },
     ] as const
 

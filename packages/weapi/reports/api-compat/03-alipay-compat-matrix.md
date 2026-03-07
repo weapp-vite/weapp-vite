@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：229，不支持：250
+总计：479，支持：226，不支持：253
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -255,7 +255,7 @@
 | `offVoIPVideoMembersChanged`                  | `offVoIPVideoMembersChanged`                  | ❌   | `unsupported` | ❌       | 未提供 my.offVoIPVideoMembersChanged，调用时将返回 not supported                  |
 | `offWifiConnected`                            | `offWifiConnected`                            | ✅   | `native`      | ✅       | 直连 `my.offWifiConnected`                                                        |
 | `offWifiConnectedWithPartialInfo`             | `offWifiConnectedWithPartialInfo`             | ❌   | `unsupported` | ❌       | 未提供 my.offWifiConnectedWithPartialInfo，调用时将返回 not supported             |
-| `offWindowResize`                             | `offWindowResize`                             | ✅   | `mapped`      | ✅       | 使用内置 shim，移除 `onWindowResize` 注册回调                                     |
+| `offWindowResize`                             | `offWindowResize`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `offWindowStateChange`                        | `offWindowStateChange`                        | ❌   | `unsupported` | ❌       | 未提供 my.offWindowStateChange，调用时将返回 not supported                        |
 | `onAccelerometerChange`                       | `onAccelerometerChange`                       | ✅   | `native`      | ✅       | 直连 `my.onAccelerometerChange`                                                   |
 | `onAfterPageLoad`                             | `onAfterPageLoad`                             | ❌   | `unsupported` | ❌       | 未提供 my.onAfterPageLoad，调用时将返回 not supported                             |
@@ -325,7 +325,7 @@
 | `onVoIPVideoMembersChanged`                   | `onVoIPVideoMembersChanged`                   | ❌   | `unsupported` | ❌       | 未提供 my.onVoIPVideoMembersChanged，调用时将返回 not supported                   |
 | `onWifiConnected`                             | `onWifiConnected`                             | ✅   | `native`      | ✅       | 直连 `my.onWifiConnected`                                                         |
 | `onWifiConnectedWithPartialInfo`              | `onWifiConnectedWithPartialInfo`              | ❌   | `unsupported` | ❌       | 未提供 my.onWifiConnectedWithPartialInfo，调用时将返回 not supported              |
-| `onWindowResize`                              | `onWindowResize`                              | ✅   | `mapped`      | ✅       | 使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听                    |
+| `onWindowResize`                              | `onWindowResize`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `onWindowStateChange`                         | `onWindowStateChange`                         | ❌   | `unsupported` | ❌       | 未提供 my.onWindowStateChange，调用时将返回 not supported                         |
 | `openAppAuthorizeSetting`                     | `openSetting`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.openSetting`                                                           |
 | `openBluetoothAdapter`                        | `openBluetoothAdapter`                        | ✅   | `native`      | ✅       | 直连 `my.openBluetoothAdapter`                                                    |
@@ -375,7 +375,7 @@
 | `removeStorage`                               | `removeStorage`                               | ✅   | `native`      | ✅       | 直连 `my.removeStorage`                                                           |
 | `removeStorageSync`                           | `removeStorageSync`                           | ✅   | `native`      | ✅       | 直连 `my.removeStorageSync`                                                       |
 | `removeTabBarBadge`                           | `removeTabBarBadge`                           | ✅   | `native`      | ✅       | 直连 `my.removeTabBarBadge`                                                       |
-| `reportAnalytics`                             | `reportAnalytics`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `reportAnalytics`                             | `reportAnalytics`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `reportEvent`                                 | `reportEvent`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `reportMonitor`                               | `reportMonitor`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `reportPerformance`                           | `reportPerformance`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
