@@ -258,7 +258,60 @@ describe('weapi', () => {
     expect(result).toMatchObject({
       confirm: false,
       cancel: true,
+      content: '',
     })
+  })
+
+  it('treats showModal as unsupported for alipay when showCancel is false', async () => {
+    const confirm = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        confirm,
+      },
+      platform: 'alipay',
+    })
+
+    await expect(api.showModal({
+      title: '提示',
+      content: '仅确定按钮',
+      showCancel: false,
+    })).rejects.toMatchObject({
+      errMsg: 'my.showModal:fail method not supported',
+    })
+
+    expect(confirm).not.toHaveBeenCalled()
+  })
+
+  it('calls fail/complete when alipay showModal uses unsupported editable options', () => {
+    const confirm = vi.fn()
+    const fail = vi.fn()
+    const complete = vi.fn()
+    const success = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        confirm,
+      },
+      platform: 'alipay',
+    })
+
+    const result = api.showModal({
+      title: '请输入',
+      editable: true,
+      placeholderText: '请输入内容',
+      success,
+      fail,
+      complete,
+    })
+
+    expect(result).toBeUndefined()
+    expect(success).not.toHaveBeenCalled()
+    expect(fail).toHaveBeenCalledWith(expect.objectContaining({
+      errMsg: 'my.showModal:fail method not supported',
+    }))
+    expect(complete).toHaveBeenCalledWith(expect.objectContaining({
+      errMsg: 'my.showModal:fail method not supported',
+    }))
+    expect(confirm).not.toHaveBeenCalled()
   })
 
   it('maps chooseImage result from apFilePaths to tempFilePaths', async () => {
