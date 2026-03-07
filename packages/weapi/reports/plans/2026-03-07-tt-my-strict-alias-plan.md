@@ -127,6 +127,10 @@
 - 已补充事件类误映射防回归：
 - `tt.offMemoryWarning` 缺失时不得回退到 `onMemoryWarning`。
 - `my/tt` 的 `on/offAppRoute` 与 `on/offAppRouteDone` 缺失时不得回退到 `on/offAppShow`。
+- 已补充 Wi-Fi / 通讯录相关误映射防回归：
+- `tt.onWifiConnected` / `tt.offWifiConnected` / `tt.setWifiList` 缺失时不得回退到 `onGetWifiList` / `offGetWifiList` / `getConnectedWifi` / `getWifiList`。
+- `tt.chooseContact` 缺失时不得回退到 `chooseAddress`。
+- `my.addPhoneCalendar` 缺失时不得回退到 `addPhoneContact`。
 
 ## 5. 每批固定验证清单
 
