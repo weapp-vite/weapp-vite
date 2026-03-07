@@ -77,6 +77,7 @@ const navigation = useRouter(navigationOptions)
 expectType<RouterNavigation>(navigation)
 expectType<SetupContextRouter>(useNativeRouter())
 expectType<SetupContextRouter>(useNativePageRouter())
+expectType<Readonly<RouteLocationNormalizedLoaded>>(navigation.currentRoute)
 expectType<boolean>(navigation.hasRoute('home'))
 expectType<readonly RouteRecordRaw[]>(navigation.getRoutes())
 const removeDynamicRoute = navigation.addRoute({
