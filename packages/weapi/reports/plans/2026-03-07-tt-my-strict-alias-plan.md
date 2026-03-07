@@ -98,6 +98,14 @@
 - `my.getSystemInfo` 映射承接 `wx.getSystemInfoAsync`。
 - 抖音侧仍保持 unsupported（无同等 API）。
 
+5. 截至当前版本的剩余“近名候选”（全部已锁定 unsupported）
+
+- `my.getWeRunData` vs `my.getRunData`
+- `my.showShareImageMenu` vs `my.showShareMenu`
+- `my.startSoterAuthentication` vs `my.startIfaaAuthentication`
+- `tt.openChannelsUserProfile` vs `tt.openAwemeUserProfile`
+- `tt.showShareImageMenu` vs `tt.showShareMenu`
+
 ## 5. 每批固定验证清单
 
 1. `pnpm --filter @wevu/api test`
