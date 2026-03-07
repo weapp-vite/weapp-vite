@@ -80,6 +80,32 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+function normalizeRoutePath(routePath: string) {
+  return routePath.replace(/^\/+/, '')
+}
+
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, timeoutMs = 12_000) {
+  const normalizedExpectedPath = normalizeRoutePath(expectedPath)
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    try {
+      const page = await miniProgram.currentPage()
+      if (normalizeRoutePath(page?.path ?? '') === normalizedExpectedPath) {
+        return page
+      }
+    }
+    catch {
+      // 页面切换时 currentPage 可能短暂失败，继续轮询。
+    }
+    await delay(220)
+  }
+  return null
+}
+
 function expectPropsProbeCase(
   wxml: string,
   options: { caseId: string, boolText: 'true' | 'false', strText: string },
@@ -831,9 +857,10 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageWxml).toContain('issue-320 router override + alias + redirect')
     expect(issuePageWxml).toContain('ready for runtime e2e')
     expect(issuePageJs).toContain('_runE2E')
+    expect(issuePageJs).toContain('runRedirectNavigationE2E')
     expect(issuePageJs).toContain('issue320-legacy')
     expect(issuePageJs).toContain('/pages/issue-320/new-alias')
-    expect(issuePageJs).toContain('/pages/issue-320/index?from=override')
+    expect(issuePageJs).toContain('/pages/issue-309/index?from=issue320-override')
 
     const miniProgram = await getSharedMiniProgram()
 
@@ -851,7 +878,7 @@ describe.sequential('e2e app: github-issues', () => {
       expect(runtimeResult?.newAliasName).toBe('issue320-legacy')
       expect(runtimeResult?.oldAliasName).toBe('')
       expect(runtimeResult?.matchedAliasPath).toBe('/pages/issue-320/new-alias')
-      expect(runtimeResult?.redirect).toBe('/pages/issue-320/index?from=override')
+      expect(runtimeResult?.redirect).toBe('/pages/issue-309/index?from=issue320-override')
       expect(runtimeResult?.alias).toBe('/pages/issue-320/new-alias')
       expect(runtimeResult?.hasLegacyRoute).toBe(true)
 
@@ -862,9 +889,21 @@ describe.sequential('e2e app: github-issues', () => {
       expect(renderedWxml).toContain('data-new-alias-name="issue320-legacy"')
       expect(renderedWxml).toContain('data-old-alias-name=""')
       expect(renderedWxml).toContain('data-matched-alias-path="/pages/issue-320/new-alias"')
-      expect(renderedWxml).toContain('data-redirect="/pages/issue-320/index?from=override"')
+      expect(renderedWxml).toContain('data-redirect="/pages/issue-309/index?from=issue320-override"')
       expect(renderedWxml).toContain('data-alias="/pages/issue-320/new-alias"')
       expect(renderedWxml).toContain('data-has-legacy-route="yes"')
+
+      const navigationResult = await issuePage.callMethod('runRedirectNavigationE2E')
+      expect(navigationResult?.ok).toBe(true)
+
+      const redirectedPage = await waitForCurrentPagePath(miniProgram, '/pages/issue-309/index')
+      if (!redirectedPage) {
+        throw new Error('Failed to wait issue-320 redirect target page')
+      }
+      await redirectedPage.waitFor(400)
+      const redirectedWxml = await readPageWxml(redirectedPage)
+      expect(redirectedWxml).toContain('issue-309 onLoad hook')
+      expect(redirectedWxml).toContain('loadCount:')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)

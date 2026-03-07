@@ -34,17 +34,28 @@ const report = ref({
   hasLegacyRoute: false,
 })
 
-function _runE2E() {
-  const beforeRoute = router.resolve({
-    name: 'issue320-legacy',
-  })
+let hasOverrideApplied = false
+
+function applyOverrideRoute() {
+  if (hasOverrideApplied) {
+    return
+  }
 
   router.addRoute({
     name: 'issue320-legacy',
     path: '/pages/issue-320/new',
     alias: '/pages/issue-320/new-alias',
-    redirect: '/pages/issue-320/index?from=override',
+    redirect: '/pages/issue-309/index?from=issue320-override',
   })
+  hasOverrideApplied = true
+}
+
+function _runE2E() {
+  const beforeRoute = router.resolve({
+    name: 'issue320-legacy',
+  })
+
+  applyOverrideRoute()
 
   const overriddenRoute = router.resolve({
     name: 'issue320-legacy',
@@ -66,7 +77,7 @@ function _runE2E() {
       && resolvedByOldAlias.name === undefined
       && (resolvedByNewAlias.matched?.[0]?.aliasPath ?? '') === '/pages/issue-320/new-alias'
       && currentAlias === '/pages/issue-320/new-alias'
-      && currentRedirect === '/pages/issue-320/index?from=override'
+      && currentRedirect === '/pages/issue-309/index?from=issue320-override'
       && router.hasRoute('issue320-legacy'),
     beforePath: beforeRoute.path,
     overriddenPath: overriddenRoute.path,
@@ -80,6 +91,14 @@ function _runE2E() {
 
   report.value = nextReport
   return nextReport
+}
+
+async function runRedirectNavigationE2E() {
+  applyOverrideRoute()
+  const result = await router.push({ name: 'issue320-legacy' })
+  return {
+    ok: result === undefined,
+  }
 }
 </script>
 
@@ -105,6 +124,13 @@ function _runE2E() {
       :data-has-legacy-route="report.hasLegacyRoute ? 'yes' : 'no'"
     >
       ready for runtime e2e
+    </view>
+
+    <view
+      class="issue320-nav-trigger"
+      @tap="runRedirectNavigationE2E"
+    >
+      run redirect navigation e2e
     </view>
   </view>
 </template>
@@ -138,6 +164,15 @@ function _runE2E() {
   font-size: 24rpx;
   color: #0f172a;
   background: #e2e8f0;
+  border-radius: 12rpx;
+}
+
+.issue320-nav-trigger {
+  padding: 12rpx 16rpx;
+  margin-top: 14rpx;
+  font-size: 24rpx;
+  color: #fff;
+  background: #0f766e;
   border-radius: 12rpx;
 }
 </style>
