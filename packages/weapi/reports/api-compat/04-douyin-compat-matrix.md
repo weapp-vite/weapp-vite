@@ -380,10 +380,10 @@
 | `reportMonitor`                               | `reportMonitor`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `reportPerformance`                           | `reportPerformance`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `request`                                     | `request`                           | ✅   | `native`   | ✅       | 直连 `tt.request`                                                      |
-| `requestCommonPayment`                        | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `requestDeviceVoIP`                           | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `requestCommonPayment`                        | `requestCommonPayment`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `requestDeviceVoIP`                           | `requestDeviceVoIP`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `requestIdleCallback`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `requestMerchantTransfer`                     | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `requestMerchantTransfer`                     | `requestMerchantTransfer`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `requestOrderPayment`                         | `pay`                               | ✅   | `mapped`   | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                    |
 | `requestPayment`                              | `pay`                               | ✅   | `mapped`   | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                    |
 | `requestPluginPayment`                        | `pay`                               | ✅   | `mapped`   | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                    |
@@ -391,8 +391,8 @@
 | `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`           | ✅   | `mapped`   | ✅       | 映射到 `tt.requestSubscribeMessage`                                    |
 | `requestSubscribeMessage`                     | `requestSubscribeMessage`           | ✅   | `native`   | ✅       | 直连 `tt.requestSubscribeMessage`                                      |
 | `requestVirtualPayment`                       | `pay`                               | ✅   | `mapped`   | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                    |
-| `requirePrivacyAuthorize`                     | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `reserveChannelsLive`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `reserveChannelsLive`                         | `reserveChannelsLive`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `restartMiniProgram`                          | `reLaunch`                          | ✅   | `mapped`   | ✅       | 映射到 `tt.reLaunch`                                                   |
 | `revokeBufferURL`                             | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `rewriteRoute`                                | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
@@ -401,16 +401,16 @@
 | `saveVideoToPhotosAlbum`                      | `saveImageToPhotosAlbum`            | ✅   | `mapped`   | ✅       | 映射到 `tt.saveImageToPhotosAlbum`                                     |
 | `scanCode`                                    | `scanCode`                          | ✅   | `mapped`   | ✅       | 直连 `tt.scanCode`                                                     |
 | `seekBackgroundAudio`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `selectGroupMembers`                          | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `sendHCEMessage`                              | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `sendSms`                                     | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `selectGroupMembers`                          | `selectGroupMembers`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `sendHCEMessage`                              | `sendHCEMessage`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `sendSms`                                     | `sendSms`                           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `sendSocketMessage`                           | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `setBackgroundColor`                          | `setNavigationBarColor`             | ✅   | `mapped`   | ✅       | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor`   |
-| `setBackgroundFetchToken`                     | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `setBackgroundFetchToken`                     | `setBackgroundFetchToken`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `setBackgroundTextStyle`                      | `setNavigationBarColor`             | ✅   | `mapped`   | ✅       | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor`  |
 | `setBLEMTU`                                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `setClipboardData`                            | `setClipboardData`                  | ✅   | `mapped`   | ✅       | 直连 `tt.setClipboardData`                                             |
-| `setEnable1v1Chat`                            | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `setEnable1v1Chat`                            | `setEnable1v1Chat`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `setEnableDebug`                              | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `setInnerAudioOption`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `setKeepScreenOn`                             | `setKeepScreenOn`                   | ✅   | `native`   | ✅       | 直连 `tt.setKeepScreenOn`                                              |
@@ -422,10 +422,10 @@
 | `setTabBarBadge`                              | `setTabBarBadge`                    | ✅   | `native`   | ✅       | 直连 `tt.setTabBarBadge`                                               |
 | `setTabBarItem`                               | `setTabBarItem`                     | ✅   | `native`   | ✅       | 直连 `tt.setTabBarItem`                                                |
 | `setTabBarStyle`                              | `setTabBarStyle`                    | ✅   | `native`   | ✅       | 直连 `tt.setTabBarStyle`                                               |
-| `setTopBarText`                               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `setTopBarText`                               | `setTopBarText`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `setVisualEffectOnCapture`                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `setWifiList`                                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `setWindowSize`                               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `setWindowSize`                               | `setWindowSize`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `shareAppMessageToGroup`                      | `shareAppMessageToGroup`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `shareEmojiToGroup`                           | `shareEmojiToGroup`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `shareFileMessage`                            | `shareFileMessage`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
@@ -467,18 +467,18 @@
 | `stopDeviceMotionListening`                   | `stopDeviceMotionListening`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `stopFaceDetect`                              | `stopFaceDetect`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `stopGyroscope`                               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `stopHCE`                                     | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `stopLocalServiceDiscovery`                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `stopLocationUpdate`                          | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `stopHCE`                                     | `stopHCE`                           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopLocalServiceDiscovery`                   | `stopLocalServiceDiscovery`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopLocationUpdate`                          | `stopLocationUpdate`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `stopPullDownRefresh`                         | `stopPullDownRefresh`               | ✅   | `native`   | ✅       | 直连 `tt.stopPullDownRefresh`                                          |
-| `stopRecord`                                  | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `stopVoice`                                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `stopRecord`                                  | `stopRecord`                        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopVoice`                                   | `stopVoice`                         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `stopWifi`                                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `subscribeVoIPVideoMembers`                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `subscribeVoIPVideoMembers`                   | `subscribeVoIPVideoMembers`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `switchTab`                                   | `switchTab`                         | ✅   | `native`   | ✅       | 直连 `tt.switchTab`                                                    |
 | `updateShareMenu`                             | `showShareMenu`                     | ✅   | `mapped`   | ✅       | 映射到 `tt.showShareMenu`                                              |
-| `updateVoIPChatMuteConfig`                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `updateWeChatApp`                             | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `updateVoIPChatMuteConfig`                    | `updateVoIPChatMuteConfig`          | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `updateWeChatApp`                             | `updateWeChatApp`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `uploadFile`                                  | `uploadFile`                        | ✅   | `native`   | ✅       | 直连 `tt.uploadFile`                                                   |
 | `vibrateLong`                                 | `vibrateLong`                       | ✅   | `native`   | ✅       | 直连 `tt.vibrateLong`                                                  |
 | `vibrateShort`                                | `vibrateShort`                      | ✅   | `native`   | ✅       | 直连 `tt.vibrateShort`                                                 |
