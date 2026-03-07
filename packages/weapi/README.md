@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 251 | 251 | 0 | 479 | 52.40% | 52.40% |
-| 抖音小程序 (`tt`) | 189 | 189 | 0 | 479 | 39.46% | 39.46% |
-| 三端可调用完全对齐 (wx/my/tt) | 187 | - | - | 479 | 39.04% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 187 | - | 479 | - | 39.04% |
+| 支付宝小程序 (`my`) | 247 | 247 | 0 | 479 | 51.57% | 51.57% |
+| 抖音小程序 (`tt`) | 184 | 184 | 0 | 479 | 38.41% | 38.41% |
+| 三端可调用完全对齐 (wx/my/tt) | 182 | - | - | 479 | 38.00% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 182 | - | 479 | - | 38.00% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -127,7 +127,7 @@
 | `addPaymentPassFinish` | 添加支付 pass 完成回调。 | 直连 `wx.addPaymentPassFinish` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `addPaymentPassGetCertificateData` | 添加支付 pass 证书数据回调。 | 直连 `wx.addPaymentPassGetCertificateData` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `addPhoneCalendar` | 添加日历事件。 | 直连 `wx.addPhoneCalendar` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `addPhoneContact` | 添加手机联系人。 | 直连 `wx.addPhoneContact` | 直连 `my.addPhoneContact` | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `addPhoneContact` | 添加手机联系人。 | 直连 `wx.addPhoneContact` | 直连 `my.addPhoneContact` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `addPhoneRepeatCalendar` | 添加重复日历事件。 | 直连 `wx.addPhoneRepeatCalendar` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `addVideoToFavorites` | 添加视频到收藏。 | 直连 `wx.addVideoToFavorites` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `authorizeForMiniProgram` | 获取小程序授权码。 | 直连 `wx.authorizeForMiniProgram` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
@@ -152,10 +152,10 @@
 | `openChatTool` | 打开客服工具页。 | 直连 `wx.openChatTool` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openHKOfflinePayView` | 打开香港线下支付视图。 | 直连 `wx.openHKOfflinePayView` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openInquiriesTopic` | 打开询价话题。 | 直连 `wx.openInquiriesTopic` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `openOfficialAccountArticle` | 打开公众号文章。 | 直连 `wx.openOfficialAccountArticle` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openOfficialAccountChat` | 打开公众号会话。 | 直连 `wx.openOfficialAccountChat` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openOfficialAccountProfile` | 打开公众号主页。 | 直连 `wx.openOfficialAccountProfile` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openPrivacyContract` | 打开隐私协议页面。 | 直连 `wx.openPrivacyContract` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openOfficialAccountArticle` | 打开公众号文章。 | 直连 `wx.openOfficialAccountArticle` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openOfficialAccountChat` | 打开公众号会话。 | 直连 `wx.openOfficialAccountChat` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openOfficialAccountProfile` | 打开公众号主页。 | 直连 `wx.openOfficialAccountProfile` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openPrivacyContract` | 打开隐私协议页面。 | 直连 `wx.openPrivacyContract` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openSystemBluetoothSetting` | 打开系统蓝牙设置页面。 | 直连 `wx.openSystemBluetoothSetting` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `reportEvent` | 上报事件埋点。 | 直连 `wx.reportEvent` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `reportMonitor` | 上报监控数据。 | 直连 `wx.reportMonitor` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |

@@ -142,7 +142,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     onCameraFrame: (_callback: (...args: any[]) => void) => {},
   }
   const syntheticNoopMethodSet = new Set([
-    'addPhoneContact',
     'canvasPutImageData',
     'checkDeviceSupportHevc',
     'checkEmployeeRelation',
@@ -151,10 +150,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     'checkIsPictureInPictureActive',
     'checkIsSoterEnrolledInDevice',
     'checkIsSupportSoterAuthentication',
-    'openOfficialAccountArticle',
-    'openOfficialAccountChat',
-    'openOfficialAccountProfile',
-    'openPrivacyContract',
   ])
   const syntheticCheckPayloadByMethod: Readonly<Record<string, Record<string, any>>> = {
     checkDeviceSupportHevc: { isSupport: false },

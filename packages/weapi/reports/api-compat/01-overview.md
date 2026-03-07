@@ -3,19 +3,19 @@
 ## 覆盖结论
 
 - 微信基准命名方法总数：479
-- 支付宝可调用兼容方法数：251
-- 支付宝语义对齐方法数：251
+- 支付宝可调用兼容方法数：247
+- 支付宝语义对齐方法数：247
 - 支付宝 fallback 方法数：0
-- 抖音可调用兼容方法数：189
-- 抖音语义对齐方法数：189
+- 抖音可调用兼容方法数：184
+- 抖音语义对齐方法数：184
 - 抖音 fallback 方法数：0
-- 三端可调用完全对齐方法数：187
-- 三端语义完全对齐方法数：187
+- 三端可调用完全对齐方法数：182
+- 三端语义完全对齐方法数：182
 
 ## 不兼容规模
 
-- 支付宝侧不兼容（按微信命名调用失败）方法：228
-- 抖音侧不兼容（按微信命名调用失败）方法：290
+- 支付宝侧不兼容（按微信命名调用失败）方法：232
+- 抖音侧不兼容（按微信命名调用失败）方法：295
 
 ## 不兼容示例（前 40 项）
 
@@ -69,6 +69,7 @@
 - `addPaymentPassFinish` -> 目标 `addPaymentPassFinish`（unsupported）
 - `addPaymentPassGetCertificateData` -> 目标 `addPaymentPassGetCertificateData`（unsupported）
 - `addPhoneCalendar` -> 目标 `addPhoneCalendar`（unsupported）
+- `addPhoneContact` -> 目标 `addPhoneContact`（unsupported）
 - `addPhoneRepeatCalendar` -> 目标 `addPhoneRepeatCalendar`（unsupported）
 - `addVideoToFavorites` -> 目标 `addVideoToFavorites`（unsupported）
 - `authorizeForMiniProgram` -> 目标 `authorizeForMiniProgram`（unsupported）
@@ -103,4 +104,3 @@
 - `enableAlertBeforeUnload` -> 目标 `enableAlertBeforeUnload`（unsupported）
 - `exitVoIPChat` -> 目标 `exitVoIPChat`（unsupported）
 - `faceDetect` -> 目标 `faceDetect`（unsupported）
-- `getApiCategory` -> 目标 `getApiCategory`（unsupported）

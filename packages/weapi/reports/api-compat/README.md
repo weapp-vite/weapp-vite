@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  251 |
-| 支付宝语义对齐方法数             |  251 |
+| 支付宝可按微信命名调用的方法数   |  247 |
+| 支付宝语义对齐方法数             |  247 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  189 |
-| 抖音语义对齐方法数               |  189 |
+| 抖音可按微信命名调用的方法数     |  184 |
+| 抖音语义对齐方法数               |  184 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  187 |
-| 三端语义完全对齐方法数           |  187 |
+| 三端可调用完全对齐方法数         |  182 |
+| 三端语义完全对齐方法数           |  182 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           251 |             251 |               0 |      479 |       52.40% |         52.40% |
-| 抖音小程序 (`tt`)             |           189 |             189 |               0 |      479 |       39.46% |         39.46% |
-| 三端可调用完全对齐 (wx/my/tt) |           187 |               - |               - |      479 |       39.04% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             187 |               - |      479 |            - |         39.04% |
+| 支付宝小程序 (`my`)           |           247 |             247 |               0 |      479 |       51.57% |         51.57% |
+| 抖音小程序 (`tt`)             |           184 |             184 |               0 |      479 |       38.41% |         38.41% |
+| 三端可调用完全对齐 (wx/my/tt) |           182 |               - |               - |      479 |       38.00% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             182 |               - |      479 |            - |         38.00% |
 
 ## 核心差异映射（手工规则）
 
@@ -118,7 +118,7 @@
 | `addPaymentPassFinish`              | 直连 `wx.addPaymentPassFinish`                      | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `addPaymentPassGetCertificateData`  | 直连 `wx.addPaymentPassGetCertificateData`          | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `addPhoneCalendar`                  | 直连 `wx.addPhoneCalendar`                          | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
-| `addPhoneContact`                   | 直连 `wx.addPhoneContact`                           | 直连 `my.addPhoneContact`                                              | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `addPhoneContact`                   | 直连 `wx.addPhoneContact`                           | 直连 `my.addPhoneContact`                                              | 无同等 API，调用时按 unsupported 报错                                  |
 | `addPhoneRepeatCalendar`            | 直连 `wx.addPhoneRepeatCalendar`                    | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `addVideoToFavorites`               | 直连 `wx.addVideoToFavorites`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `authorizeForMiniProgram`           | 直连 `wx.authorizeForMiniProgram`                   | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
@@ -143,10 +143,10 @@
 | `openChatTool`                      | 直连 `wx.openChatTool`                              | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `openHKOfflinePayView`              | 直连 `wx.openHKOfflinePayView`                      | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `openInquiriesTopic`                | 直连 `wx.openInquiriesTopic`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
-| `openOfficialAccountArticle`        | 直连 `wx.openOfficialAccountArticle`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openOfficialAccountChat`           | 直连 `wx.openOfficialAccountChat`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openOfficialAccountProfile`        | 直连 `wx.openOfficialAccountProfile`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openPrivacyContract`               | 直连 `wx.openPrivacyContract`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openOfficialAccountArticle`        | 直连 `wx.openOfficialAccountArticle`                | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `openOfficialAccountChat`           | 直连 `wx.openOfficialAccountChat`                   | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `openOfficialAccountProfile`        | 直连 `wx.openOfficialAccountProfile`                | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `openPrivacyContract`               | 直连 `wx.openPrivacyContract`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `openSystemBluetoothSetting`        | 直连 `wx.openSystemBluetoothSetting`                | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `reportEvent`                       | 直连 `wx.reportEvent`                               | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `reportMonitor`                     | 直连 `wx.reportMonitor`                             | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
