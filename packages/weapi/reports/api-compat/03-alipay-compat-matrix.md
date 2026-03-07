@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：215，不支持：264
+总计：479，支持：214，不支持：265
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -359,7 +359,7 @@
 | `pauseVoice`                                  | `pauseVoice`                                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `playBackgroundAudio`                         | `playBackgroundAudio`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `playVoice`                                   | `playVoice`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `pluginLogin`                                 | `getAuthCode`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段                                   |
+| `pluginLogin`                                 | `pluginLogin`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `postMessageToReferrerMiniProgram`            | `postMessageToReferrerMiniProgram`            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `postMessageToReferrerPage`                   | `postMessageToReferrerPage`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `preDownloadSubpackage`                       | `preDownloadSubpackage`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

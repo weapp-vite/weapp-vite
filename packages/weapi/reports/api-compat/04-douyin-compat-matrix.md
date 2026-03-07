@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：153，不支持：326
+总计：479，支持：152，不支持：327
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -359,7 +359,7 @@
 | `pauseVoice`                                  | `pauseVoice`                                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `playBackgroundAudio`                         | `playBackgroundAudio`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `playVoice`                                   | `playVoice`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `pluginLogin`                                 | `login`                                       | ✅   | `mapped`      | ✅       | 映射到 `tt.login`                                                                 |
+| `pluginLogin`                                 | `pluginLogin`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `postMessageToReferrerMiniProgram`            | `postMessageToReferrerMiniProgram`            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `postMessageToReferrerPage`                   | `postMessageToReferrerPage`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `preDownloadSubpackage`                       | `preDownloadSubpackage`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 215 | 215 | 0 | 479 | 44.89% | 44.89% |
-| 抖音小程序 (`tt`) | 153 | 153 | 0 | 479 | 31.94% | 31.94% |
-| 三端可调用完全对齐 (wx/my/tt) | 145 | - | - | 479 | 30.27% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 145 | - | 479 | - | 30.27% |
+| 支付宝小程序 (`my`) | 214 | 214 | 0 | 479 | 44.68% | 44.68% |
+| 抖音小程序 (`tt`) | 152 | 152 | 0 | 479 | 31.73% | 31.73% |
+| 三端可调用完全对齐 (wx/my/tt) | 144 | - | - | 479 | 30.06% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 144 | - | 479 | - | 30.06% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -68,7 +68,7 @@
 | `createWebAudioContext` | 创建 WebAudio 上下文。 | 直连 `wx.createWebAudioContext` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getSystemInfoAsync` | 异步获取系统信息。 | 直连 `wx.getSystemInfoAsync` | 映射到 `my.getSystemInfo` | 映射到 `tt.getSystemInfo` | ✅ |
 | `openAppAuthorizeSetting` | 打开小程序授权设置页。 | 直连 `wx.openAppAuthorizeSetting` | 映射到 `my.openSetting` | 映射到 `tt.openSetting` | ⚠️ |
-| `pluginLogin` | 插件登录。 | 直连 `wx.pluginLogin` | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段 | 映射到 `tt.login` | ⚠️ |
+| `pluginLogin` | 插件登录。 | 直连 `wx.pluginLogin` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `login` | 登录。 | 直连 `wx.login` | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段 | 直连 `tt.login` | ⚠️ |
 | `authorize` | 提前向用户发起授权请求。 | 直连 `wx.authorize` | 映射到 `my.getAuthCode`，并对齐 `scope` -> `scopes` 参数 | 直连 `tt.authorize` | ⚠️ |
 | `checkSession` | 检查登录态是否过期。 | 直连 `wx.checkSession` | 映射到 `my.getAuthCode`，按成功结果对齐 `checkSession:ok` | 直连 `tt.checkSession` | ⚠️ |
