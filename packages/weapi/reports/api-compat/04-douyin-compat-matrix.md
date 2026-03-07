@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：162，不支持：317
+总计：479，支持：161，不支持：318
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -44,7 +44,7 @@
 | `chooseLicensePlate`                          | `chooseLicensePlate`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `chooseLocation`                              | `chooseLocation`                              | ✅   | `native`      | ✅       | 直连 `tt.chooseLocation`                                                          |
 | `chooseMedia`                                 | `chooseMedia`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType`                 |
-| `chooseMessageFile`                           | `chooseImage`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name`                           |
+| `chooseMessageFile`                           | `chooseMessageFile`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `choosePoi`                                   | `choosePoi`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `chooseVideo`                                 | `chooseMedia`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构                  |
 | `clearStorage`                                | `clearStorage`                                | ✅   | `native`      | ✅       | 直连 `tt.clearStorage`                                                            |

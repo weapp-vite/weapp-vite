@@ -186,7 +186,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.chooseMedia` | ⚠️ |
-   * | 支付宝 | 映射到 `my.chooseImage`，并补齐 `tempFiles[].tempFilePath/fileType` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    * | 抖音 | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType` | ⚠️ |
    */
   chooseMedia: WeapiCrossPlatformAdapter['chooseMedia']
@@ -197,8 +197,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.chooseMessageFile` | ⚠️ |
-   * | 支付宝 | 映射到 `my.chooseImage`，并补齐 `tempFiles[].path/name` | ⚠️ |
-   * | 抖音 | 映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   chooseMessageFile: WeapiCrossPlatformAdapter['chooseMessageFile']
 

@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 225 | 225 | 0 | 479 | 46.97% | 46.97% |
-| 抖音小程序 (`tt`) | 162 | 162 | 0 | 479 | 33.82% | 33.82% |
-| 三端可调用完全对齐 (wx/my/tt) | 156 | - | - | 479 | 32.57% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 156 | - | 479 | - | 32.57% |
+| 支付宝小程序 (`my`) | 223 | 223 | 0 | 479 | 46.56% | 46.56% |
+| 抖音小程序 (`tt`) | 161 | 161 | 0 | 479 | 33.61% | 33.61% |
+| 三端可调用完全对齐 (wx/my/tt) | 154 | - | - | 479 | 32.15% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 154 | - | 479 | - | 32.15% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -51,8 +51,8 @@
 | `showActionSheet` | 显示操作菜单。 | 直连 `wx.showActionSheet` | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | 直连 `tt.showActionSheet`；缺失时按 unsupported 报错 | ⚠️ |
 | `showModal` | 显示模态弹窗。 | 直连 `wx.showModal` | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果 | 直连 `tt.showModal` | ✅ |
 | `chooseImage` | 选择图片。 | 直连 `wx.chooseImage` | 返回值 `apFilePaths` 映射到 `tempFilePaths` | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底 | ✅ |
-| `chooseMedia` | 选择图片或视频。 | 直连 `wx.chooseMedia` | 映射到 `my.chooseImage`，并补齐 `tempFiles[].tempFilePath/fileType` | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType` | ⚠️ |
-| `chooseMessageFile` | 选择会话文件。 | 直连 `wx.chooseMessageFile` | 映射到 `my.chooseImage`，并补齐 `tempFiles[].path/name` | 映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name` | ⚠️ |
+| `chooseMedia` | 选择图片或视频。 | 直连 `wx.chooseMedia` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType` | ⚠️ |
+| `chooseMessageFile` | 选择会话文件。 | 直连 `wx.chooseMessageFile` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getFuzzyLocation` | 获取模糊地理位置。 | 直连 `wx.getFuzzyLocation` | 映射到 `my.getLocation` | 映射到 `tt.getLocation` | ⚠️ |
 | `previewMedia` | 预览图片和视频。 | 直连 `wx.previewMedia` | 映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls` | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls` | ⚠️ |
 | `createInterstitialAd` | 创建插屏广告实例。 | 直连 `wx.createInterstitialAd` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.createInterstitialAd` | ⚠️ |
