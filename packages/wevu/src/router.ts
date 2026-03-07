@@ -552,10 +552,44 @@ function normalizeNestedRoutePath(path: string, parentPath?: string): string {
   return resolvePath(`${createAbsoluteRoutePath(parentPath)}/${path}`, '')
 }
 
+function normalizeAliasInputList(alias: RouteRecordRaw['alias']): string[] {
+  if (!alias) {
+    return []
+  }
+  if (Array.isArray(alias)) {
+    return alias.filter((item): item is string => typeof item === 'string' && item.length > 0)
+  }
+  return typeof alias === 'string' && alias.length > 0
+    ? [alias]
+    : []
+}
+
+function mergeAliasPaths(aliasPaths: readonly string[]): string[] {
+  const mergedAliasPaths: string[] = []
+  for (const aliasPath of aliasPaths) {
+    if (!aliasPath || mergedAliasPaths.includes(aliasPath)) {
+      continue
+    }
+    mergedAliasPaths.push(aliasPath)
+  }
+  return mergedAliasPaths
+}
+
+function createRouteRecordAliasValue(aliasPaths: readonly string[]): RouteRecordRaw['alias'] {
+  if (aliasPaths.length === 0) {
+    return undefined
+  }
+  if (aliasPaths.length === 1) {
+    return createAbsoluteRoutePath(aliasPaths[0])
+  }
+  return aliasPaths.map(aliasPath => createAbsoluteRoutePath(aliasPath))
+}
+
 function flattenNamedRouteRecords(
   records: readonly RouteRecordRaw[],
   parentPath?: string,
   parentName?: string,
+  parentAliasPaths: readonly string[] = [],
 ): FlattenedRouteRecordSeed[] {
   const flattenedRecords: FlattenedRouteRecordSeed[] = []
 
@@ -568,10 +602,25 @@ function flattenNamedRouteRecords(
     }
 
     const normalizedPath = normalizeNestedRoutePath(record.path, parentPath)
+    const normalizedDirectAliasPaths = normalizeAliasInputList(record.alias)
+      .map(aliasPath => normalizeNestedRoutePath(aliasPath, parentPath))
+      .filter(Boolean)
+      .filter(aliasPath => aliasPath !== normalizedPath)
+    const normalizedInheritedAliasPaths = record.path.startsWith('/')
+      ? []
+      : parentAliasPaths
+          .map(parentAliasPath => normalizeNestedRoutePath(record.path, parentAliasPath))
+          .filter(Boolean)
+          .filter(aliasPath => aliasPath !== normalizedPath)
+    const normalizedAliasPaths = mergeAliasPaths([
+      ...normalizedDirectAliasPaths,
+      ...normalizedInheritedAliasPaths,
+    ])
     const normalizedRecord: RouteRecordRaw = {
       ...record,
       name: routeName,
       path: normalizedPath ? createAbsoluteRoutePath(normalizedPath) : '/',
+      alias: createRouteRecordAliasValue(normalizedAliasPaths),
     }
     flattenedRecords.push({
       route: normalizedRecord,
@@ -579,7 +628,7 @@ function flattenNamedRouteRecords(
     })
 
     if (Array.isArray(record.children) && record.children.length > 0) {
-      flattenedRecords.push(...flattenNamedRouteRecords(record.children, normalizedPath, routeName))
+      flattenedRecords.push(...flattenNamedRouteRecords(record.children, normalizedPath, routeName, normalizedAliasPaths))
     }
   }
 
@@ -1735,6 +1784,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       [route],
       parentRouteRecord?.path,
       parentRouteName,
+      parentRouteRecord?.aliasPaths,
     )
     if (routeRecords.length === 0) {
       throw new Error('Route name and path are required when adding a named route')
