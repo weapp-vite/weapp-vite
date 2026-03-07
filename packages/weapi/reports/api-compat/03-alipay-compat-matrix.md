@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：198，不支持：281
+总计：479，支持：197，不支持：282
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -327,7 +327,7 @@
 | `onWifiConnectedWithPartialInfo`              | `onWifiConnectedWithPartialInfo`              | ❌   | `unsupported` | ❌       | 未提供 my.onWifiConnectedWithPartialInfo，调用时将返回 not supported              |
 | `onWindowResize`                              | `onWindowResize`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `onWindowStateChange`                         | `onWindowStateChange`                         | ❌   | `unsupported` | ❌       | 未提供 my.onWindowStateChange，调用时将返回 not supported                         |
-| `openAppAuthorizeSetting`                     | `openSetting`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.openSetting`                                                           |
+| `openAppAuthorizeSetting`                     | `openAppAuthorizeSetting`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openBluetoothAdapter`                        | `openBluetoothAdapter`                        | ✅   | `native`      | ✅       | 直连 `my.openBluetoothAdapter`                                                    |
 | `openCard`                                    | `openCard`                                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openChannelsActivity`                        | `openChannelsActivity`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

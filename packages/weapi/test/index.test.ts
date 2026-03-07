@@ -572,6 +572,31 @@ describe('weapi', () => {
     expect(reLaunch).not.toHaveBeenCalled()
   })
 
+  it.each([
+    { platform: 'alipay', normalizedPlatform: 'my' },
+    { platform: 'tt', normalizedPlatform: 'tt' },
+  ])('treats openAppAuthorizeSetting as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
+    const openSetting = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        openSetting,
+      },
+      platform,
+    }) as Record<string, any>
+
+    expect(api.resolveTarget('openAppAuthorizeSetting')).toMatchObject({
+      method: 'openAppAuthorizeSetting',
+      target: 'openAppAuthorizeSetting',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.openAppAuthorizeSetting()).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.openAppAuthorizeSetting:fail method not supported`,
+    })
+    expect(openSetting).not.toHaveBeenCalled()
+  })
+
   it('maps hideHomeButton to hideBackHome for alipay', async () => {
     const hideBackHome = vi.fn((options: any) => {
       options.success?.({})
@@ -2055,7 +2080,7 @@ describe('weapi', () => {
       { method: 'createAudioContext', my: 'createAudioContext', tt: 'createAudioContext', mySupported: false, ttSupported: false },
       { method: 'createWebAudioContext', my: 'createWebAudioContext', tt: 'createWebAudioContext', mySupported: false, ttSupported: false },
       { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
-      { method: 'openAppAuthorizeSetting', my: 'openSetting', tt: 'openSetting' },
+      { method: 'openAppAuthorizeSetting', my: 'openAppAuthorizeSetting', tt: 'openAppAuthorizeSetting', mySupported: false, ttSupported: false },
       { method: 'pluginLogin', my: 'pluginLogin', tt: 'pluginLogin', mySupported: false, ttSupported: false },
       { method: 'login', my: 'login', tt: 'login', mySupported: false },
       { method: 'authorize', my: 'authorize', tt: 'authorize', mySupported: false },

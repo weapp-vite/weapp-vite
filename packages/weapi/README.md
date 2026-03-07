@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 198 | 198 | 0 | 479 | 41.34% | 41.34% |
-| 抖音小程序 (`tt`) | 132 | 132 | 0 | 479 | 27.56% | 27.56% |
-| 三端可调用完全对齐 (wx/my/tt) | 118 | - | - | 479 | 24.63% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 118 | - | 479 | - | 24.63% |
+| 支付宝小程序 (`my`) | 197 | 197 | 0 | 479 | 41.13% | 41.13% |
+| 抖音小程序 (`tt`) | 131 | 131 | 0 | 479 | 27.35% | 27.35% |
+| 三端可调用完全对齐 (wx/my/tt) | 117 | - | - | 479 | 24.43% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 117 | - | 479 | - | 24.43% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -67,7 +67,7 @@
 | `createAudioContext` | 创建音频上下文。 | 直连 `wx.createAudioContext` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createWebAudioContext` | 创建 WebAudio 上下文。 | 直连 `wx.createWebAudioContext` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getSystemInfoAsync` | 异步获取系统信息。 | 直连 `wx.getSystemInfoAsync` | 映射到 `my.getSystemInfo` | 映射到 `tt.getSystemInfo` | ✅ |
-| `openAppAuthorizeSetting` | 打开小程序授权设置页。 | 直连 `wx.openAppAuthorizeSetting` | 映射到 `my.openSetting` | 映射到 `tt.openSetting` | ⚠️ |
+| `openAppAuthorizeSetting` | 打开小程序授权设置页。 | 直连 `wx.openAppAuthorizeSetting` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `pluginLogin` | 插件登录。 | 直连 `wx.pluginLogin` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `login` | 登录。 | 直连 `wx.login` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.login` | ⚠️ |
 | `authorize` | 提前向用户发起授权请求。 | 直连 `wx.authorize` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.authorize` | ⚠️ |
