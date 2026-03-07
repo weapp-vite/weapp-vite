@@ -36,21 +36,41 @@ const report = ref({
 
 let hasOverrideApplied = false
 
+const legacyRouteRecord = {
+  name: 'issue320-legacy',
+  path: '/pages/issue-320/legacy',
+  alias: '/pages/issue-320/legacy-alias',
+  redirect: '/pages/issue-320/index?from=legacy',
+} as const
+
+const overriddenRouteRecord = {
+  name: 'issue320-legacy',
+  path: '/pages/issue-320/new',
+  alias: '/pages/issue-320/new-alias',
+  redirect: '/pages/issue-309/index?from=issue320-override',
+} as const
+
+function resetLegacyRoute() {
+  router.addRoute({
+    ...legacyRouteRecord,
+  })
+  hasOverrideApplied = false
+}
+
 function applyOverrideRoute() {
   if (hasOverrideApplied) {
     return
   }
 
   router.addRoute({
-    name: 'issue320-legacy',
-    path: '/pages/issue-320/new',
-    alias: '/pages/issue-320/new-alias',
-    redirect: '/pages/issue-309/index?from=issue320-override',
+    ...overriddenRouteRecord,
   })
   hasOverrideApplied = true
 }
 
 function _runE2E() {
+  resetLegacyRoute()
+
   const beforeRoute = router.resolve({
     name: 'issue320-legacy',
   })
