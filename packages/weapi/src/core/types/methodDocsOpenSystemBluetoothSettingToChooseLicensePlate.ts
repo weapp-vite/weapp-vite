@@ -1,4 +1,4 @@
-export interface WeapiCrossPlatformMethodDocsPart6 {
+export interface WeapiCrossPlatformMethodDocsOpenSystemBluetoothSettingToChooseLicensePlate {
   /**
    * 打开系统蓝牙设置页面。
    *

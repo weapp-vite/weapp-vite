@@ -1,4 +1,4 @@
-export interface WeapiCrossPlatformMethodDocsPart7 {
+export interface WeapiCrossPlatformMethodDocsChoosePoiToShareFileToGroup {
   /**
    * 选择兴趣点 POI。
    *

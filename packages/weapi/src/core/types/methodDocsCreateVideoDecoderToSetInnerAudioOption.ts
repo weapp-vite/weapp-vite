@@ -1,4 +1,4 @@
-export interface WeapiCrossPlatformMethodDocsPart11 {
+export interface WeapiCrossPlatformMethodDocsCreateVideoDecoderToSetInnerAudioOption {
   /**
    * 创建视频解码器。
    *

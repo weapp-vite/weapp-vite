@@ -1,4 +1,4 @@
-export interface WeapiCrossPlatformMethodDocsPart9 {
+export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
   /**
    * 发送 HCE 消息。
    *

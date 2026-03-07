@@ -1,4 +1,4 @@
-export interface WeapiCrossPlatformMethodDocsPart10 {
+export interface WeapiCrossPlatformMethodDocsGetRealtimeLogManagerToCreateUDPSocket {
   /**
    * 获取实时日志管理器。
    *

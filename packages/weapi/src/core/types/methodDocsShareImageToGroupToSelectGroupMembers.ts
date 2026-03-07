@@ -1,4 +1,4 @@
-export interface WeapiCrossPlatformMethodDocsPart8 {
+export interface WeapiCrossPlatformMethodDocsShareImageToGroupToSelectGroupMembers {
   /**
    * 分享图片到群。
    *
