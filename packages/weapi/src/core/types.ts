@@ -181,6 +181,72 @@ interface WeapiCrossPlatformMethodDocs {
   chooseImage: WeapiCrossPlatformAdapter['chooseImage']
 
   /**
+   * 预览图片和视频。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.previewMedia` | ⚠️ |
+   * | 支付宝 | 映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls` | ⚠️ |
+   * | 抖音 | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls` | ⚠️ |
+   */
+  previewMedia: WeapiCrossPlatformAdapter['previewMedia']
+
+  /**
+   * 创建插屏广告实例。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createInterstitialAd` | ⚠️ |
+   * | 支付宝 | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId` | ⚠️ |
+   * | 抖音 | 直连 `tt.createInterstitialAd` | ⚠️ |
+   */
+  createInterstitialAd: WeapiCrossPlatformAdapter['createInterstitialAd']
+
+  /**
+   * 创建激励视频广告实例。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createRewardedVideoAd` | ⚠️ |
+   * | 支付宝 | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId` | ⚠️ |
+   * | 抖音 | 映射到 `tt.createInterstitialAd` | ⚠️ |
+   */
+  createRewardedVideoAd: WeapiCrossPlatformAdapter['createRewardedVideoAd']
+
+  /**
+   * 创建直播播放器上下文。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createLivePlayerContext` | ⚠️ |
+   * | 支付宝 | 映射到 `my.createVideoContext` | ⚠️ |
+   * | 抖音 | 直连 `tt.createLivePlayerContext` | ⚠️ |
+   */
+  createLivePlayerContext: WeapiCrossPlatformAdapter['createLivePlayerContext']
+
+  /**
+   * 创建直播推流上下文。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createLivePusherContext` | ⚠️ |
+   * | 支付宝 | 映射到 `my.createVideoContext` | ⚠️ |
+   * | 抖音 | 映射到 `tt.createVideoContext` | ⚠️ |
+   */
+  createLivePusherContext: WeapiCrossPlatformAdapter['createLivePusherContext']
+
+  /**
+   * 获取视频详细信息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getVideoInfo` | ⚠️ |
+   * | 支付宝 | 直连 `my.getVideoInfo` | ⚠️ |
+   * | 抖音 | 映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath` | ⚠️ |
+   */
+  getVideoInfo: WeapiCrossPlatformAdapter['getVideoInfo']
+
+  /**
    * 保存文件（跨端扩展，微信 typings 未声明同名 API）。
    *
    * | 平台 | 对齐策略 | 支持度 |

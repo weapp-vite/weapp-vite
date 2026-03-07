@@ -68,15 +68,15 @@
 | `createInferenceSession`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `createInnerAudioContext`                     | `createInnerAudioContext`         | ✅   | `native`      | ✅       | 直连 `tt.createInnerAudioContext`                                |
 | `createIntersectionObserver`                  | `createIntersectionObserver`      | ✅   | `native`      | ✅       | 直连 `tt.createIntersectionObserver`                             |
-| `createInterstitialAd`                        | `createInterstitialAd`            | ✅   | `native`      | ✅       | 直连 `tt.createInterstitialAd`                                   |
-| `createLivePlayerContext`                     | `createLivePlayerContext`         | ✅   | `native`      | ✅       | 直连 `tt.createLivePlayerContext`                                |
-| `createLivePusherContext`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createInterstitialAd`                        | `createInterstitialAd`            | ✅   | `mapped`      | ✅       | 直连 `tt.createInterstitialAd`                                   |
+| `createLivePlayerContext`                     | `createLivePlayerContext`         | ✅   | `mapped`      | ✅       | 直连 `tt.createLivePlayerContext`                                |
+| `createLivePusherContext`                     | `createVideoContext`              | ✅   | `mapped`      | ✅       | 映射到 `tt.createVideoContext`                                   |
 | `createMapContext`                            | `createMapContext`                | ✅   | `native`      | ✅       | 直连 `tt.createMapContext`                                       |
 | `createMediaAudioPlayer`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `createMediaContainer`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `createMediaRecorder`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `createOffscreenCanvas`                       | `createOffscreenCanvas`           | ✅   | `native`      | ✅       | 直连 `tt.createOffscreenCanvas`                                  |
-| `createRewardedVideoAd`                       | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `createRewardedVideoAd`                       | `createInterstitialAd`            | ✅   | `mapped`      | ✅       | 映射到 `tt.createInterstitialAd`                                 |
 | `createSelectorQuery`                         | `createSelectorQuery`             | ✅   | `native`      | ✅       | 直连 `tt.createSelectorQuery`                                    |
 | `createTCPSocket`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `createUDPSocket`                             | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
@@ -166,7 +166,7 @@
 | `getUserCryptoManager`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `getUserInfo`                                 | `getUserInfo`                     | ✅   | `mapped`      | ✅       | 直连 `tt.getUserInfo`                                            |
 | `getUserProfile`                              | `getUserProfile`                  | ✅   | `mapped`      | ✅       | 直连 `tt.getUserProfile`                                         |
-| `getVideoInfo`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `getVideoInfo`                                | `getFileInfo`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath`            |
 | `getWeRunData`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `getWifiList`                                 | `getWifiList`                     | ✅   | `native`      | ✅       | 直连 `tt.getWifiList`                                            |
 | `getWindowInfo`                               | `getSystemInfo`                   | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，并提取窗口字段                        |
@@ -367,7 +367,7 @@
 | `preloadSkylineView`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `preloadWebview`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `previewImage`                                | `previewImage`                    | ✅   | `native`      | ✅       | 直连 `tt.previewImage`                                           |
-| `previewMedia`                                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `previewMedia`                                | `previewImage`                    | ✅   | `mapped`      | ✅       | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls`       |
 | `readBLECharacteristicValue`                  | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `redirectTo`                                  | `redirectTo`                      | ✅   | `native`      | ✅       | 直连 `tt.redirectTo`                                             |
 | `reLaunch`                                    | `reLaunch`                        | ✅   | `native`      | ✅       | 直连 `tt.reLaunch`                                               |
