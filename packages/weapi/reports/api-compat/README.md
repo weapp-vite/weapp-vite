@@ -17,11 +17,11 @@
 | 支付宝可按微信命名调用的方法数   |  201 |
 | 支付宝语义对齐方法数             |  201 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  142 |
-| 抖音语义对齐方法数               |  142 |
+| 抖音可按微信命名调用的方法数     |  140 |
+| 抖音语义对齐方法数               |  140 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  128 |
-| 三端语义完全对齐方法数           |  128 |
+| 三端可调用完全对齐方法数         |  126 |
+| 三端语义完全对齐方法数           |  126 |
 
 ## 覆盖率
 
@@ -29,9 +29,9 @@
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
 | 支付宝小程序 (`my`)           |           201 |             201 |               0 |      479 |       41.96% |         41.96% |
-| 抖音小程序 (`tt`)             |           142 |             142 |               0 |      479 |       29.65% |         29.65% |
-| 三端可调用完全对齐 (wx/my/tt) |           128 |               - |               - |      479 |       26.72% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             128 |               - |      479 |            - |         26.72% |
+| 抖音小程序 (`tt`)             |           140 |             140 |               0 |      479 |       29.23% |         29.23% |
+| 三端可调用完全对齐 (wx/my/tt) |           126 |               - |               - |      479 |       26.30% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             126 |               - |      479 |            - |         26.30% |
 
 ## 核心差异映射（手工规则）
 
@@ -80,12 +80,12 @@
 | `getUserProfile`                    | 直连 `wx.getUserProfile`                            | 无同等 API，调用时按 unsupported 报错                              | 直连 `tt.getUserProfile`                                              |
 | `getUserInfo`                       | 直连 `wx.getUserInfo`                               | 无同等 API，调用时按 unsupported 报错                              | 直连 `tt.getUserInfo`                                                 |
 | `getAppAuthorizeSetting`            | 直连 `wx.getAppAuthorizeSetting`                    | 直连 `my.getAppAuthorizeSetting`                                   | 无同等 API，调用时按 unsupported 报错                                 |
-| `getAppBaseInfo`                    | 直连 `wx.getAppBaseInfo`                            | 直连 `my.getAppBaseInfo`                                           | 映射到 `tt.getEnvInfoSync`                                            |
+| `getAppBaseInfo`                    | 直连 `wx.getAppBaseInfo`                            | 直连 `my.getAppBaseInfo`                                           | 无同等 API，调用时按 unsupported 报错                                 |
 | `chooseVideo`                       | 直连 `wx.chooseVideo`                               | 直连 `my.chooseVideo`                                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `hideHomeButton`                    | 直连 `wx.hideHomeButton`                            | 映射到 `my.hideBackHome`                                           | 直连 `tt.hideHomeButton`                                              |
 | `getWindowInfo`                     | 直连 `wx.getWindowInfo`                             | 直连 `my.getWindowInfo`                                            | 无同等 API，调用时按 unsupported 报错                                 |
 | `getDeviceInfo`                     | 直连 `wx.getDeviceInfo`                             | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
-| `getAccountInfoSync`                | 直连 `wx.getAccountInfoSync`                        | 直连 `my.getAccountInfoSync`                                       | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构                        |
+| `getAccountInfoSync`                | 直连 `wx.getAccountInfoSync`                        | 直连 `my.getAccountInfoSync`                                       | 无同等 API，调用时按 unsupported 报错                                 |
 | `setBackgroundColor`                | 直连 `wx.setBackgroundColor`                        | 直连 `my.setBackgroundColor`                                       | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor`  |
 | `setBackgroundTextStyle`            | 直连 `wx.setBackgroundTextStyle`                    | 直连 `my.setBackgroundTextStyle`                                   | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor` |
 | `getNetworkType`                    | 直连 `wx.getNetworkType`                            | 直连 `my.getNetworkType`                                           | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType`                     |

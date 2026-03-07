@@ -605,7 +605,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getAppBaseInfo` | ⚠️ |
    * | 支付宝 | 直连 `my.getAppBaseInfo` | ⚠️ |
-   * | 抖音 | 映射到 `tt.getEnvInfoSync` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getAppBaseInfo: WeapiCrossPlatformAdapter['getAppBaseInfo']
 
@@ -660,7 +660,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getAccountInfoSync` | ⚠️ |
    * | 支付宝 | 直连 `my.getAccountInfoSync` | ⚠️ |
-   * | 抖音 | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getAccountInfoSync: WeapiCrossPlatformAdapter['getAccountInfoSync']
 

@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：142，不支持：337
+总计：479，支持：140，不支持：339
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -93,10 +93,10 @@
 | `exitMiniProgram`                             | `exitMiniProgram`                             | ✅   | `native`      | ✅       | 直连 `tt.exitMiniProgram`                                                         |
 | `exitVoIPChat`                                | `exitVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `faceDetect`                                  | `faceDetect`                                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getAccountInfoSync`                          | `getEnvInfoSync`                              | ✅   | `mapped`      | ✅       | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构                                    |
+| `getAccountInfoSync`                          | `getAccountInfoSync`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getApiCategory`                              | `getApiCategory`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getAppAuthorizeSetting`                      | `getAppAuthorizeSetting`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getAppBaseInfo`                              | `getEnvInfoSync`                              | ✅   | `mapped`      | ✅       | 映射到 `tt.getEnvInfoSync`                                                        |
+| `getAppBaseInfo`                              | `getAppBaseInfo`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getAvailableAudioSources`                    | `getAvailableAudioSources`                    | ❌   | `unsupported` | ❌       | 未提供 tt.getAvailableAudioSources，调用时将返回 not supported                    |
 | `getBackgroundAudioManager`                   | `getBackgroundAudioManager`                   | ✅   | `native`      | ✅       | 直连 `tt.getBackgroundAudioManager`                                               |
 | `getBackgroundAudioPlayerState`               | `getBackgroundAudioPlayerState`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
