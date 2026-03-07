@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 212 | 212 | 0 | 479 | 44.26% | 44.26% |
+| 支付宝小程序 (`my`) | 209 | 209 | 0 | 479 | 43.63% | 43.63% |
 | 抖音小程序 (`tt`) | 152 | 152 | 0 | 479 | 31.73% | 31.73% |
-| 三端可调用完全对齐 (wx/my/tt) | 143 | - | - | 479 | 29.85% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 143 | - | 479 | - | 29.85% |
+| 三端可调用完全对齐 (wx/my/tt) | 140 | - | - | 479 | 29.23% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 140 | - | 479 | - | 29.23% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -69,9 +69,9 @@
 | `getSystemInfoAsync` | 异步获取系统信息。 | 直连 `wx.getSystemInfoAsync` | 映射到 `my.getSystemInfo` | 映射到 `tt.getSystemInfo` | ✅ |
 | `openAppAuthorizeSetting` | 打开小程序授权设置页。 | 直连 `wx.openAppAuthorizeSetting` | 映射到 `my.openSetting` | 映射到 `tt.openSetting` | ⚠️ |
 | `pluginLogin` | 插件登录。 | 直连 `wx.pluginLogin` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `login` | 登录。 | 直连 `wx.login` | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段 | 直连 `tt.login` | ⚠️ |
-| `authorize` | 提前向用户发起授权请求。 | 直连 `wx.authorize` | 映射到 `my.getAuthCode`，并对齐 `scope` -> `scopes` 参数 | 直连 `tt.authorize` | ⚠️ |
-| `checkSession` | 检查登录态是否过期。 | 直连 `wx.checkSession` | 映射到 `my.getAuthCode`，按成功结果对齐 `checkSession:ok` | 直连 `tt.checkSession` | ⚠️ |
+| `login` | 登录。 | 直连 `wx.login` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.login` | ⚠️ |
+| `authorize` | 提前向用户发起授权请求。 | 直连 `wx.authorize` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.authorize` | ⚠️ |
+| `checkSession` | 检查登录态是否过期。 | 直连 `wx.checkSession` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.checkSession` | ⚠️ |
 | `requestSubscribeDeviceMessage` | 请求订阅设备消息。 | 直连 `wx.requestSubscribeDeviceMessage` | 映射到 `my.requestSubscribeMessage` | 映射到 `tt.requestSubscribeMessage` | ⚠️ |
 | `requestSubscribeEmployeeMessage` | 请求订阅员工消息。 | 直连 `wx.requestSubscribeEmployeeMessage` | 映射到 `my.requestSubscribeMessage` | 映射到 `tt.requestSubscribeMessage` | ⚠️ |
 | `restartMiniProgram` | 重启小程序。 | 直连 `wx.restartMiniProgram` | 映射到 `my.reLaunch` | 映射到 `tt.reLaunch` | ⚠️ |

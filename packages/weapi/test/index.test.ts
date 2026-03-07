@@ -446,10 +446,8 @@ describe('weapi', () => {
     expect(result).toMatchObject({ text: 'copied', data: 'copied' })
   })
 
-  it('maps login to getAuthCode for alipay', async () => {
-    const getAuthCode = vi.fn((options: any) => {
-      options.success?.({ authCode: 'auth-code-1' })
-    })
+  it('treats login, authorize and checkSession as unsupported for alipay', async () => {
+    const getAuthCode = vi.fn()
     const api = createWeapi({
       adapter: {
         getAuthCode,
@@ -457,58 +455,40 @@ describe('weapi', () => {
       platform: 'alipay',
     })
 
-    const result = await api.login()
-
-    expect(getAuthCode).toHaveBeenCalledWith(expect.any(Object))
-    expect(result).toMatchObject({
-      authCode: 'auth-code-1',
-      code: 'auth-code-1',
+    expect(api.resolveTarget('login')).toMatchObject({
+      method: 'login',
+      target: 'login',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
-  })
-
-  it('maps authorize scope to getAuthCode scopes for alipay', async () => {
-    const getAuthCode = vi.fn((options: any) => {
-      options.success?.({ authCode: 'auth-code-2' })
-    })
-    const api = createWeapi({
-      adapter: {
-        getAuthCode,
-      },
-      platform: 'alipay',
+    await expect(api.login()).rejects.toMatchObject({
+      errMsg: 'my.login:fail method not supported',
     })
 
-    const result = await api.authorize({ scope: 'scope.userInfo' } as any)
-
-    expect(getAuthCode).toHaveBeenCalledWith(expect.objectContaining({
-      scope: 'scope.userInfo',
-      scopes: ['scope.userInfo'],
-    }))
-    expect(result).toMatchObject({
-      authCode: 'auth-code-2',
-      code: 'auth-code-2',
+    expect(api.resolveTarget('authorize')).toMatchObject({
+      method: 'authorize',
+      target: 'authorize',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
-  })
-
-  it('maps checkSession to getAuthCode for alipay', async () => {
-    const getAuthCode = vi.fn((options: any) => {
-      options.success?.({ authCode: 'auth-code-3' })
-    })
-    const api = createWeapi({
-      adapter: {
-        getAuthCode,
-      },
-      platform: 'alipay',
+    await expect(api.authorize({ scope: 'scope.userInfo' } as any)).rejects.toMatchObject({
+      errMsg: 'my.authorize:fail method not supported',
     })
 
-    const result = await api.checkSession()
-
-    expect(getAuthCode).toHaveBeenCalledWith(expect.objectContaining({
-      scopes: ['auth_base'],
-    }))
-    expect(result).toMatchObject({
-      authCode: 'auth-code-3',
-      errMsg: 'checkSession:ok',
+    expect(api.resolveTarget('checkSession')).toMatchObject({
+      method: 'checkSession',
+      target: 'checkSession',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
+    await expect(api.checkSession()).rejects.toMatchObject({
+      errMsg: 'my.checkSession:fail method not supported',
+    })
+
+    expect(getAuthCode).not.toHaveBeenCalled()
   })
 
   it('maps hideHomeButton to hideBackHome for alipay', async () => {
@@ -1940,9 +1920,9 @@ describe('weapi', () => {
       { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'openAppAuthorizeSetting', my: 'openSetting', tt: 'openSetting' },
       { method: 'pluginLogin', my: 'pluginLogin', tt: 'pluginLogin', mySupported: false, ttSupported: false },
-      { method: 'login', my: 'getAuthCode', tt: 'login' },
-      { method: 'authorize', my: 'getAuthCode', tt: 'authorize' },
-      { method: 'checkSession', my: 'getAuthCode', tt: 'checkSession' },
+      { method: 'login', my: 'login', tt: 'login', mySupported: false },
+      { method: 'authorize', my: 'authorize', tt: 'authorize', mySupported: false },
+      { method: 'checkSession', my: 'checkSession', tt: 'checkSession', mySupported: false },
       { method: 'requestSubscribeDeviceMessage', my: 'requestSubscribeMessage', tt: 'requestSubscribeMessage' },
       { method: 'requestSubscribeEmployeeMessage', my: 'requestSubscribeMessage', tt: 'requestSubscribeMessage' },
       { method: 'restartMiniProgram', my: 'reLaunch', tt: 'reLaunch' },
