@@ -78,7 +78,7 @@ const router = useRouter({
 
 如果你已有历史配置，也可以继续使用 `namedRoutes`（对象 map/数组都支持）；推荐在迭代中逐步迁移到 `routes` 写法以对齐 Vue Router 心智。
 
-当同时传入 `routes` 与 `namedRoutes` 且存在同名记录时，`namedRoutes` 会覆盖前者，运行时会输出一次告警，帮助你在迁移期排查配置冲突。
+当同时传入 `routes` 与 `namedRoutes` 且存在同名记录时，`namedRoutes` 会覆盖前者，运行时会输出一次告警，并附带来源与路径变化（例如 `routes:/old -> namedRoutes:/new`），帮助你在迁移期排查配置冲突。
 
 兼容策略建议：
 
