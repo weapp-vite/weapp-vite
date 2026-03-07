@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：308，不支持：171
+总计：479，支持：288，不支持：191
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -426,20 +426,20 @@
 | `setVisualEffectOnCapture`                    | `setVisualEffectOnCapture`                    | ❌   | `unsupported` | ❌       | 未提供 tt.setVisualEffectOnCapture，调用时将返回 not supported                    |
 | `setWifiList`                                 | `setWifiList`                                 | ❌   | `unsupported` | ❌       | 未提供 tt.setWifiList，调用时将返回 not supported                                 |
 | `setWindowSize`                               | `setWindowSize`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `shareAppMessageToGroup`                      | `shareAppMessageToGroup`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `shareEmojiToGroup`                           | `shareEmojiToGroup`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `shareFileMessage`                            | `shareFileMessage`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `shareFileToGroup`                            | `shareFileToGroup`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `shareImageToGroup`                           | `shareImageToGroup`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `shareToOfficialAccount`                      | `shareToOfficialAccount`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `shareToWeRun`                                | `shareToWeRun`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `shareVideoMessage`                           | `shareVideoMessage`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `shareVideoToGroup`                           | `shareVideoToGroup`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `shareAppMessageToGroup`                      | `shareAppMessageToGroup`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `shareEmojiToGroup`                           | `shareEmojiToGroup`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `shareFileMessage`                            | `shareFileMessage`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `shareFileToGroup`                            | `shareFileToGroup`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `shareImageToGroup`                           | `shareImageToGroup`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `shareToOfficialAccount`                      | `shareToOfficialAccount`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `shareToWeRun`                                | `shareToWeRun`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `shareVideoMessage`                           | `shareVideoMessage`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `shareVideoToGroup`                           | `shareVideoToGroup`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `showActionSheet`                             | `showActionSheet`                             | ❌   | `unsupported` | ❌       | 直连 `tt.showActionSheet`；缺失时按 unsupported 报错                              |
 | `showLoading`                                 | `showLoading`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.showLoading`                                                             |
 | `showModal`                                   | `showModal`                                   | ✅   | `mapped`      | ✅       | 直连 `tt.showModal`                                                               |
 | `showNavigationBarLoading`                    | `showNavigationBarLoading`                    | ✅   | `native`      | ✅       | 直连 `tt.showNavigationBarLoading`                                                |
-| `showRedPackage`                              | `showRedPackage`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `showRedPackage`                              | `showRedPackage`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `showShareImageMenu`                          | `showShareMenu`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.showShareMenu`                                                         |
 | `showShareMenu`                               | `showShareMenu`                               | ✅   | `native`      | ✅       | 直连 `tt.showShareMenu`                                                           |
 | `showTabBar`                                  | `showTabBar`                                  | ✅   | `native`      | ✅       | 直连 `tt.showTabBar`                                                              |
@@ -449,23 +449,23 @@
 | `startBeaconDiscovery`                        | `startBeaconDiscovery`                        | ❌   | `unsupported` | ❌       | 未提供 tt.startBeaconDiscovery，调用时将返回 not supported                        |
 | `startBluetoothDevicesDiscovery`              | `startBluetoothDevicesDiscovery`              | ❌   | `unsupported` | ❌       | 未提供 tt.startBluetoothDevicesDiscovery，调用时将返回 not supported              |
 | `startCompass`                                | `startCompass`                                | ✅   | `native`      | ✅       | 直连 `tt.startCompass`                                                            |
-| `startDeviceMotionListening`                  | `startDeviceMotionListening`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `startDeviceMotionListening`                  | `startDeviceMotionListening`                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `startGyroscope`                              | `startGyroscope`                              | ❌   | `unsupported` | ❌       | 未提供 tt.startGyroscope，调用时将返回 not supported                              |
-| `startHCE`                                    | `startHCE`                                    | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `startLocalServiceDiscovery`                  | `startLocalServiceDiscovery`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `startLocationUpdate`                         | `startLocationUpdate`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `startLocationUpdateBackground`               | `startLocationUpdateBackground`               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `startHCE`                                    | `startHCE`                                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `startLocalServiceDiscovery`                  | `startLocalServiceDiscovery`                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `startLocationUpdate`                         | `startLocationUpdate`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `startLocationUpdateBackground`               | `startLocationUpdateBackground`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `startPullDownRefresh`                        | `startPullDownRefresh`                        | ✅   | `native`      | ✅       | 直连 `tt.startPullDownRefresh`                                                    |
-| `startRecord`                                 | `startRecord`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `startSoterAuthentication`                    | `startSoterAuthentication`                    | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `startRecord`                                 | `startRecord`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `startSoterAuthentication`                    | `startSoterAuthentication`                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `startWifi`                                   | `startWifi`                                   | ❌   | `unsupported` | ❌       | 未提供 tt.startWifi，调用时将返回 not supported                                   |
 | `stopAccelerometer`                           | `stopAccelerometer`                           | ✅   | `native`      | ✅       | 直连 `tt.stopAccelerometer`                                                       |
-| `stopBackgroundAudio`                         | `stopBackgroundAudio`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopBackgroundAudio`                         | `stopBackgroundAudio`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `stopBeaconDiscovery`                         | `stopBeaconDiscovery`                         | ❌   | `unsupported` | ❌       | 未提供 tt.stopBeaconDiscovery，调用时将返回 not supported                         |
 | `stopBluetoothDevicesDiscovery`               | `stopBluetoothDevicesDiscovery`               | ❌   | `unsupported` | ❌       | 未提供 tt.stopBluetoothDevicesDiscovery，调用时将返回 not supported               |
 | `stopCompass`                                 | `stopCompass`                                 | ✅   | `native`      | ✅       | 直连 `tt.stopCompass`                                                             |
-| `stopDeviceMotionListening`                   | `stopDeviceMotionListening`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `stopFaceDetect`                              | `stopFaceDetect`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopDeviceMotionListening`                   | `stopDeviceMotionListening`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `stopFaceDetect`                              | `stopFaceDetect`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `stopGyroscope`                               | `stopGyroscope`                               | ❌   | `unsupported` | ❌       | 未提供 tt.stopGyroscope，调用时将返回 not supported                               |
 | `stopHCE`                                     | `stopHCE`                                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `stopLocalServiceDiscovery`                   | `stopLocalServiceDiscovery`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |

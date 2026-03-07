@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  370 |
-| 支付宝语义对齐方法数             |  370 |
+| 支付宝可按微信命名调用的方法数   |  350 |
+| 支付宝语义对齐方法数             |  350 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  308 |
-| 抖音语义对齐方法数               |  308 |
+| 抖音可按微信命名调用的方法数     |  288 |
+| 抖音语义对齐方法数               |  288 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  306 |
-| 三端语义完全对齐方法数           |  306 |
+| 三端可调用完全对齐方法数         |  286 |
+| 三端语义完全对齐方法数           |  286 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           370 |             370 |               0 |      479 |       77.24% |         77.24% |
-| 抖音小程序 (`tt`)             |           308 |             308 |               0 |      479 |       64.30% |         64.30% |
-| 三端可调用完全对齐 (wx/my/tt) |           306 |               - |               - |      479 |       63.88% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             306 |               - |      479 |            - |         63.88% |
+| 支付宝小程序 (`my`)           |           350 |             350 |               0 |      479 |       73.07% |         73.07% |
+| 抖音小程序 (`tt`)             |           288 |             288 |               0 |      479 |       60.13% |         60.13% |
+| 三端可调用完全对齐 (wx/my/tt) |           286 |               - |               - |      479 |       59.71% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             286 |               - |      479 |            - |         59.71% |
 
 ## 核心差异映射（手工规则）
 
@@ -187,26 +187,26 @@
 | `getPrivacySetting`                 | 直连 `wx.getPrivacySetting`                         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `initFaceDetect`                    | 直连 `wx.initFaceDetect`                            | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `join1v1Chat`                       | 直连 `wx.join1v1Chat`                               | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
-| `shareAppMessageToGroup`            | 直连 `wx.shareAppMessageToGroup`                    | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareEmojiToGroup`                 | 直连 `wx.shareEmojiToGroup`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareFileMessage`                  | 直连 `wx.shareFileMessage`                          | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareFileToGroup`                  | 直连 `wx.shareFileToGroup`                          | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareImageToGroup`                 | 直连 `wx.shareImageToGroup`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareToOfficialAccount`            | 直连 `wx.shareToOfficialAccount`                    | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareToWeRun`                      | 直连 `wx.shareToWeRun`                              | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareVideoMessage`                 | 直连 `wx.shareVideoMessage`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `shareVideoToGroup`                 | 直连 `wx.shareVideoToGroup`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `showRedPackage`                    | 直连 `wx.showRedPackage`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startDeviceMotionListening`        | 直连 `wx.startDeviceMotionListening`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startHCE`                          | 直连 `wx.startHCE`                                  | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startLocalServiceDiscovery`        | 直连 `wx.startLocalServiceDiscovery`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startLocationUpdate`               | 直连 `wx.startLocationUpdate`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startLocationUpdateBackground`     | 直连 `wx.startLocationUpdateBackground`             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startRecord`                       | 直连 `wx.startRecord`                               | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `startSoterAuthentication`          | 直连 `wx.startSoterAuthentication`                  | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopBackgroundAudio`               | 直连 `wx.stopBackgroundAudio`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopDeviceMotionListening`         | 直连 `wx.stopDeviceMotionListening`                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopFaceDetect`                    | 直连 `wx.stopFaceDetect`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareAppMessageToGroup`            | 直连 `wx.shareAppMessageToGroup`                    | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `shareEmojiToGroup`                 | 直连 `wx.shareEmojiToGroup`                         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `shareFileMessage`                  | 直连 `wx.shareFileMessage`                          | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `shareFileToGroup`                  | 直连 `wx.shareFileToGroup`                          | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `shareImageToGroup`                 | 直连 `wx.shareImageToGroup`                         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `shareToOfficialAccount`            | 直连 `wx.shareToOfficialAccount`                    | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `shareToWeRun`                      | 直连 `wx.shareToWeRun`                              | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `shareVideoMessage`                 | 直连 `wx.shareVideoMessage`                         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `shareVideoToGroup`                 | 直连 `wx.shareVideoToGroup`                         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `showRedPackage`                    | 直连 `wx.showRedPackage`                            | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `startDeviceMotionListening`        | 直连 `wx.startDeviceMotionListening`                | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `startHCE`                          | 直连 `wx.startHCE`                                  | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `startLocalServiceDiscovery`        | 直连 `wx.startLocalServiceDiscovery`                | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `startLocationUpdate`               | 直连 `wx.startLocationUpdate`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `startLocationUpdateBackground`     | 直连 `wx.startLocationUpdateBackground`             | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `startRecord`                       | 直连 `wx.startRecord`                               | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `startSoterAuthentication`          | 直连 `wx.startSoterAuthentication`                  | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `stopBackgroundAudio`               | 直连 `wx.stopBackgroundAudio`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `stopDeviceMotionListening`         | 直连 `wx.stopDeviceMotionListening`                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `stopFaceDetect`                    | 直连 `wx.stopFaceDetect`                            | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `requestCommonPayment`              | 直连 `wx.requestCommonPayment`                      | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `requestDeviceVoIP`                 | 直连 `wx.requestDeviceVoIP`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `requestMerchantTransfer`           | 直连 `wx.requestMerchantTransfer`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |

@@ -825,6 +825,47 @@ describe('weapi', () => {
   })
 
   it.each([
+    'shareAppMessageToGroup',
+    'shareEmojiToGroup',
+    'shareFileMessage',
+    'shareFileToGroup',
+    'shareImageToGroup',
+    'shareToOfficialAccount',
+    'shareToWeRun',
+    'shareVideoMessage',
+    'shareVideoToGroup',
+    'showRedPackage',
+    'startDeviceMotionListening',
+    'startHCE',
+    'startLocalServiceDiscovery',
+    'startLocationUpdate',
+    'startLocationUpdateBackground',
+    'startRecord',
+    'startSoterAuthentication',
+    'stopBackgroundAudio',
+    'stopDeviceMotionListening',
+    'stopFaceDetect',
+  ])('treats %s as unsupported in strict mode when adapter method is missing', async (methodName) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const normalizedPlatform = platform === 'alipay' ? 'my' : platform
+      const api = createWeapi({
+        adapter: {},
+        platform,
+      }) as Record<string, any>
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({})).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
+      })
+    }
+  })
+
+  it.each([
     'addCard',
     'addFileToFavorites',
     'addPaymentPassFinish',
@@ -870,26 +911,6 @@ describe('weapi', () => {
     'preloadSkylineView',
     'preloadWebview',
     'removeSecureElementPass',
-    'shareAppMessageToGroup',
-    'shareEmojiToGroup',
-    'shareFileMessage',
-    'shareFileToGroup',
-    'shareImageToGroup',
-    'shareToOfficialAccount',
-    'shareToWeRun',
-    'shareVideoMessage',
-    'shareVideoToGroup',
-    'showRedPackage',
-    'startDeviceMotionListening',
-    'startHCE',
-    'startLocalServiceDiscovery',
-    'startLocationUpdate',
-    'startLocationUpdateBackground',
-    'startRecord',
-    'startSoterAuthentication',
-    'stopBackgroundAudio',
-    'stopDeviceMotionListening',
-    'stopFaceDetect',
     'requestCommonPayment',
     'requestDeviceVoIP',
     'requestMerchantTransfer',
