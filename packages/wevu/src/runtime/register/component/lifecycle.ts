@@ -1,126 +1,10 @@
 import type { ComponentPropsOptions, ComputedDefinitions, DefineComponentOptions, InternalRuntimeState, MethodDefinitions, RuntimeApp } from '../../types'
 import type { WatchMap } from '../watch'
-import { callHookList, callHookReturn } from '../../hooks'
-import { getMiniProgramGlobalObject } from '../../platform'
+import { callHookList } from '../../hooks'
 import { scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
-
-let wxPatched = false
-let currentPageInstance: InternalRuntimeState | undefined
-const PAGE_SCROLL_HOOK_DEPTH_KEY = '__wevuPageScrollHookDepth'
-
-function runInPageScrollHook<T>(
-  target: InternalRuntimeState,
-  task: () => T,
-): T {
-  const currentDepth = Number((target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 0)
-  ;(target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] = currentDepth + 1
-  try {
-    return task()
-  }
-  finally {
-    const nextDepth = Number((target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] ?? 1) - 1
-    if (nextDepth <= 0) {
-      delete (target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY]
-    }
-    else {
-      ;(target as any)[PAGE_SCROLL_HOOK_DEPTH_KEY] = nextDepth
-    }
-  }
-}
-
-function resolvePageOptions(target: InternalRuntimeState) {
-  const direct = (target as any).options
-  if (direct && typeof direct === 'object') {
-    return direct
-  }
-  if (typeof getCurrentPages === 'function') {
-    const pages = getCurrentPages()
-    const page = Array.isArray(pages) ? pages[pages.length - 1] : undefined
-    const options = page && typeof page === 'object' ? (page as any).options : undefined
-    if (options && typeof options === 'object') {
-      return options
-    }
-  }
-  return {}
-}
-
-function ensureWxPatched() {
-  if (wxPatched) {
-    return
-  }
-  wxPatched = true
-  const wxGlobal = getMiniProgramGlobalObject()
-  if (!wxGlobal || typeof wxGlobal !== 'object') {
-    return
-  }
-  const rawStartPullDownRefresh = wxGlobal.startPullDownRefresh as ((...args: any[]) => any) | undefined
-  if (typeof rawStartPullDownRefresh === 'function') {
-    wxGlobal.startPullDownRefresh = function startPullDownRefreshPatched(...args: any[]) {
-      const result = rawStartPullDownRefresh.apply(this, args)
-      if (currentPageInstance) {
-        callHookList(currentPageInstance, 'onPullDownRefresh', [])
-      }
-      return result
-    }
-  }
-  const rawPageScrollTo = wxGlobal.pageScrollTo as ((...args: any[]) => any) | undefined
-  if (typeof rawPageScrollTo === 'function') {
-    wxGlobal.pageScrollTo = function pageScrollToPatched(options: any, ...rest: any[]) {
-      const result = rawPageScrollTo.apply(this, [options, ...rest])
-      if (currentPageInstance) {
-        const pageInstance = currentPageInstance
-        runInPageScrollHook(pageInstance, () => {
-          callHookList(pageInstance, 'onPageScroll', [options ?? {}])
-        })
-      }
-      return result
-    }
-  }
-}
-
-function ensurePageShareMenus(options: {
-  enableOnShareAppMessage: boolean
-  enableOnShareTimeline: boolean
-}) {
-  const { enableOnShareAppMessage, enableOnShareTimeline } = options
-  if (!enableOnShareAppMessage && !enableOnShareTimeline) {
-    return
-  }
-
-  const wxGlobal = getMiniProgramGlobalObject()
-  if (!wxGlobal || typeof wxGlobal.showShareMenu !== 'function') {
-    return
-  }
-
-  const showMenu = (payload: {
-    menus: Array<'shareAppMessage' | 'shareTimeline'>
-    withShareTicket?: boolean
-  }) => {
-    try {
-      wxGlobal.showShareMenu(payload as any)
-    }
-    catch {
-      // 忽略平台差异导致的菜单能力异常，避免影响页面主流程
-    }
-  }
-
-  // 官方要求：展示 shareTimeline 时必须同时展示 shareAppMessage
-  const shouldShowShareAppMessage = enableOnShareAppMessage || enableOnShareTimeline
-  if (!shouldShowShareAppMessage) {
-    return
-  }
-
-  const menus: Array<'shareAppMessage' | 'shareTimeline'> = ['shareAppMessage']
-  if (enableOnShareTimeline) {
-    menus.push('shareTimeline')
-  }
-
-  showMenu({
-    withShareTicket: true,
-    menus,
-  })
-}
+import { attachOptionalPageLifecycleHooks } from './lifecycle/optionalHooks'
+import { bindCurrentPageInstance, ensurePageShareMenus, ensureWxPatched, releaseCurrentPageInstance, resolvePageOptions } from './lifecycle/platform'
 
 export function createPageLifecycleHooks<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   runtimeApp: RuntimeApp<D, C, M>
@@ -209,8 +93,8 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       }
     },
     onUnload(this: InternalRuntimeState, ...args: any[]) {
-      if (isPage && currentPageInstance === this) {
-        currentPageInstance = undefined
+      if (isPage) {
+        releaseCurrentPageInstance(this)
       }
       teardownRuntimeInstance(this)
       if (typeof userOnUnload === 'function') {
@@ -220,8 +104,7 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
     onShow(this: InternalRuntimeState, ...args: any[]) {
       if (isPage) {
         ensureWxPatched()
-        // eslint-disable-next-line ts/no-this-alias
-        currentPageInstance = this
+        bindCurrentPageInstance(this)
         if (!(this as any).__wevuOnLoadCalled) {
           pageLifecycleHooks.onLoad.call(this, resolvePageOptions(this))
         }
@@ -238,8 +121,8 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
       }
     },
     onHide(this: InternalRuntimeState, ...args: any[]) {
-      if (isPage && currentPageInstance === this) {
-        currentPageInstance = undefined
+      if (isPage) {
+        releaseCurrentPageInstance(this)
       }
       setRuntimeSetDataVisibility(this, false)
       callHookList(this, 'onHide', args)
@@ -285,100 +168,29 @@ export function createPageLifecycleHooks<D extends object, C extends ComputedDef
     },
   }
 
-  if (enableOnSaveExitState) {
-    pageLifecycleHooks.onSaveExitState = function onSaveExitState(this: InternalRuntimeState, ...args: any[]) {
-      const ret = callHookReturn(this, 'onSaveExitState', args)
-      if (ret !== undefined) {
-        return ret
-      }
-      return effectiveOnSaveExitState.apply(this, args)
-    }
-  }
-  if (enableOnPullDownRefresh) {
-    pageLifecycleHooks.onPullDownRefresh = function onPullDownRefresh(this: InternalRuntimeState, ...args: any[]) {
-      callHookList(this, 'onPullDownRefresh', args)
-      if (!hasHook(this, 'onPullDownRefresh')) {
-        return effectiveOnPullDownRefresh.apply(this, args)
-      }
-    }
-  }
-  if (enableOnReachBottom) {
-    pageLifecycleHooks.onReachBottom = function onReachBottom(this: InternalRuntimeState, ...args: any[]) {
-      callHookList(this, 'onReachBottom', args)
-      if (!hasHook(this, 'onReachBottom')) {
-        return effectiveOnReachBottom.apply(this, args)
-      }
-    }
-  }
-  if (enableOnPageScroll) {
-    pageLifecycleHooks.onPageScroll = function onPageScroll(this: InternalRuntimeState, ...args: any[]) {
-      return runInPageScrollHook(this, () => {
-        callHookList(this, 'onPageScroll', args)
-        if (!hasHook(this, 'onPageScroll')) {
-          return effectiveOnPageScroll.apply(this, args)
-        }
-      })
-    }
-  }
-  if (enableOnRouteDone) {
-    pageLifecycleHooks.onRouteDone = function onRouteDone(this: InternalRuntimeState, ...args: any[]) {
-      if ((this as any).__wevuRouteDoneInTick) {
-        return
-      }
-      ;(this as any).__wevuRouteDoneInTick = true
-      Promise.resolve().then(() => {
-        ;(this as any).__wevuRouteDoneInTick = false
-      })
-      ;(this as any).__wevuRouteDoneCalled = true
-      callHookList(this, 'onRouteDone', args)
-      if (!hasHook(this, 'onRouteDone')) {
-        return effectiveOnRouteDone.apply(this, args)
-      }
-    }
-  }
-  if (enableOnTabItemTap) {
-    pageLifecycleHooks.onTabItemTap = function onTabItemTap(this: InternalRuntimeState, ...args: any[]) {
-      callHookList(this, 'onTabItemTap', args)
-      if (!hasHook(this, 'onTabItemTap')) {
-        return effectiveOnTabItemTap.apply(this, args)
-      }
-    }
-  }
-  if (enableOnResize) {
-    pageLifecycleHooks.onResize = function onResize(this: InternalRuntimeState, ...args: any[]) {
-      callHookList(this, 'onResize', args)
-      if (!hasHook(this, 'onResize')) {
-        return effectiveOnResize.apply(this, args)
-      }
-    }
-  }
-  if (enableOnShareAppMessage) {
-    pageLifecycleHooks.onShareAppMessage = function onShareAppMessage(this: InternalRuntimeState, ...args: any[]) {
-      const ret = callHookReturn(this, 'onShareAppMessage', args)
-      if (ret !== undefined) {
-        return ret
-      }
-      return effectiveOnShareAppMessage.apply(this, args)
-    }
-  }
-  if (enableOnShareTimeline) {
-    pageLifecycleHooks.onShareTimeline = function onShareTimeline(this: InternalRuntimeState, ...args: any[]) {
-      const ret = callHookReturn(this, 'onShareTimeline', args)
-      if (ret !== undefined) {
-        return ret
-      }
-      return effectiveOnShareTimeline.apply(this, args)
-    }
-  }
-  if (enableOnAddToFavorites) {
-    pageLifecycleHooks.onAddToFavorites = function onAddToFavorites(this: InternalRuntimeState, ...args: any[]) {
-      const ret = callHookReturn(this, 'onAddToFavorites', args)
-      if (ret !== undefined) {
-        return ret
-      }
-      return effectiveOnAddToFavorites.apply(this, args)
-    }
-  }
+  attachOptionalPageLifecycleHooks(pageLifecycleHooks, {
+    enableOnSaveExitState,
+    enableOnPullDownRefresh,
+    enableOnReachBottom,
+    enableOnPageScroll,
+    enableOnRouteDone,
+    enableOnTabItemTap,
+    enableOnResize,
+    enableOnShareAppMessage,
+    enableOnShareTimeline,
+    enableOnAddToFavorites,
+    effectiveOnSaveExitState,
+    effectiveOnPullDownRefresh,
+    effectiveOnReachBottom,
+    effectiveOnPageScroll,
+    effectiveOnRouteDone,
+    effectiveOnTabItemTap,
+    effectiveOnResize,
+    effectiveOnShareAppMessage,
+    effectiveOnShareTimeline,
+    effectiveOnAddToFavorites,
+    hasHook,
+  })
 
   return pageLifecycleHooks
 }

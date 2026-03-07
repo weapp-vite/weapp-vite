@@ -1,0 +1,292 @@
+import type { MutationRecord, WatchOptions, WatchStopHandle } from '../../reactivity'
+import type {
+  AppConfig,
+  ComputedDefinitions,
+  CreateAppOptions,
+  ExtractComputed,
+  MethodDefinitions,
+  MiniProgramAdapter,
+  RuntimeInstance,
+  SetDataDebugInfo,
+} from '../types'
+import { addMutationRecorder, effect, isReactive, isRef, prelinkReactiveTree, reactive, removeMutationRecorder, shallowReactive, stop, toRaw, touchReactive, watch } from '../../reactivity'
+import { clearPatchIndices } from '../../reactivity/reactive'
+import { queueJob } from '../../scheduler'
+import { createBindModel } from '../bindModel'
+import { createRuntimeContext } from './context'
+import { createDiagnosticsLogger } from './diagnostics'
+import { createSetDataScheduler } from './setData/scheduler'
+import { resolveSetDataOptions } from './setDataOptions'
+
+function createWatchStopHandle(cleanup: () => void, baseHandle?: WatchStopHandle): WatchStopHandle {
+  const stopHandle = (() => {
+    cleanup()
+  }) as WatchStopHandle
+  stopHandle.stop = () => stopHandle()
+  stopHandle.pause = () => {
+    baseHandle?.pause?.()
+  }
+  stopHandle.resume = () => {
+    baseHandle?.resume?.()
+  }
+  return stopHandle
+}
+
+type RuntimeInstanceWithSetupMethodsVersion<
+  D extends object,
+  C extends ComputedDefinitions,
+  M extends MethodDefinitions,
+> = RuntimeInstance<D, C, M> & {
+  __wevu_touchSetupMethodsVersion?: () => void
+}
+
+export function createRuntimeMount<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
+  data: CreateAppOptions<D, C, M>['data']
+  resolvedComputed: C
+  resolvedMethods: M
+  appConfig: AppConfig
+  setDataOptions: CreateAppOptions<D, C, M>['setData']
+}) {
+  const {
+    data,
+    resolvedComputed,
+    resolvedMethods,
+    appConfig,
+    setDataOptions,
+  } = options
+
+  return (adapter?: MiniProgramAdapter): RuntimeInstance<D, C, M> => {
+    const dataFn = data ?? (() => ({}) as D)
+    const rawState = dataFn()
+    // 预置 props 容器，确保编译器生成的 this.__wevuProps 回退表达式
+    // 在 computed 首次求值阶段即可建立响应式依赖。
+    if (rawState && typeof rawState === 'object' && !Object.prototype.hasOwnProperty.call(rawState as object, '__wevuProps')) {
+      try {
+        Object.defineProperty(rawState as object, '__wevuProps', {
+          value: shallowReactive(Object.create(null)),
+          configurable: true,
+          enumerable: false,
+          writable: false,
+        })
+      }
+      catch {
+        // 若 data 返回对象不可扩展，则跳过预置，后续由 mount 阶段兜底注入。
+      }
+    }
+    const state = reactive(rawState)
+    const computedDefs = resolvedComputed
+    const methodDefs = resolvedMethods
+
+    let mounted = true
+    const stopHandles: WatchStopHandle[] = []
+
+    const {
+      includeComputed,
+      setDataStrategy,
+      maxPatchKeys,
+      maxPayloadBytes,
+      mergeSiblingThreshold,
+      mergeSiblingMaxInflationRatio,
+      mergeSiblingMaxParentBytes,
+      mergeSiblingSkipArray,
+      computedCompare,
+      computedCompareMaxDepth,
+      computedCompareMaxKeys,
+      prelinkMaxDepth,
+      prelinkMaxKeys,
+      debug,
+      diagnostics,
+      debugWhen,
+      debugSampleRate,
+      elevateTopKeyThreshold,
+      toPlainMaxDepth,
+      toPlainMaxKeys,
+      shouldIncludeKey,
+    } = resolveSetDataOptions(setDataOptions)
+    const diagnosticsLogger = createDiagnosticsLogger(diagnostics)
+    const mergedDebug = (debug || diagnosticsLogger)
+      ? (info: SetDataDebugInfo) => {
+          if (typeof debug === 'function') {
+            debug(info)
+          }
+          diagnosticsLogger?.(info)
+        }
+      : undefined
+    const mergedDebugWhen = diagnostics === 'always'
+      ? 'always'
+      : debugWhen
+
+    const {
+      boundMethods,
+      computedRefs,
+      computedSetters,
+      dirtyComputedKeys,
+      computedProxy,
+      publicInstance,
+      touchSetupMethodsVersion,
+    } = createRuntimeContext({
+      state,
+      computedDefs,
+      methodDefs,
+      appConfig,
+      includeComputed,
+      setDataStrategy,
+    })
+
+    const currentAdapter = adapter ?? { setData: () => {} }
+    const stateRootRaw = toRaw(state as any) as object
+    let tracker: ReturnType<typeof effect> | undefined
+    const scheduler = createSetDataScheduler({
+      state: state as any,
+      computedRefs,
+      dirtyComputedKeys,
+      includeComputed,
+      setDataStrategy,
+      computedCompare,
+      computedCompareMaxDepth,
+      computedCompareMaxKeys,
+      currentAdapter,
+      shouldIncludeKey,
+      maxPatchKeys,
+      maxPayloadBytes,
+      mergeSiblingThreshold,
+      mergeSiblingMaxInflationRatio,
+      mergeSiblingMaxParentBytes,
+      mergeSiblingSkipArray,
+      elevateTopKeyThreshold,
+      toPlainMaxDepth,
+      toPlainMaxKeys,
+      debug: mergedDebug,
+      debugWhen: mergedDebugWhen,
+      debugSampleRate,
+      runTracker: () => tracker?.(),
+      isMounted: () => mounted,
+    })
+    const job = () => scheduler.job(stateRootRaw)
+    const mutationRecorder = (record: MutationRecord) => scheduler.mutationRecorder(record, stateRootRaw)
+
+    tracker = effect(
+      () => {
+        // 通过根版本信号跟踪任意状态变化
+        touchReactive(state as any)
+        // __wevuProps / __wevuAttrs 是非枚举属性，需显式跟踪，
+        // 否则 props/attrs 更新不会触发 setData 调度。
+        const runtimeProps = (state as any).__wevuProps
+        if (isReactive(runtimeProps)) {
+          touchReactive(runtimeProps as any)
+        }
+        const runtimeAttrs = (state as any).__wevuAttrs
+        if (isReactive(runtimeAttrs)) {
+          touchReactive(runtimeAttrs as any)
+        }
+        // 在 setup 返回的 ref/computedRef 变更不会提升 reactive 根版本：
+        // 这里额外读取其 `.value` 以建立依赖，从而触发 diff + setData 更新。
+        Object.keys(state as any).forEach((key) => {
+          const v = (state as any)[key]
+          if (isRef(v)) {
+            const inner = v.value
+            if (isReactive(inner)) {
+              // setup 返回的 ref 若持有对象/数组，需要额外订阅其版本号；
+              // 否则仅修改 inner 字段（如 items.value[0].quantity）不会触发调度。
+              touchReactive(inner as any)
+            }
+          }
+          else if (isReactive(v)) {
+            // 让 effect 订阅 setup 返回的浅/深响应式对象的“版本号”，
+            // 以捕获从外部直接修改其字段（例如 props 同步）导致的变更。
+            touchReactive(v as any)
+          }
+        })
+      },
+      {
+        lazy: true,
+        scheduler: () => queueJob(job),
+      },
+    )
+
+    job()
+
+    stopHandles.push(createWatchStopHandle(() => stop(tracker)))
+    if (setDataStrategy === 'patch') {
+      prelinkReactiveTree(state as any, { shouldIncludeTopKey: shouldIncludeKey, maxDepth: prelinkMaxDepth, maxKeys: prelinkMaxKeys })
+      addMutationRecorder(mutationRecorder)
+      stopHandles.push(createWatchStopHandle(() => removeMutationRecorder(mutationRecorder)))
+      stopHandles.push(createWatchStopHandle(() => clearPatchIndices(state as any)))
+    }
+
+    function registerWatch<T>(
+      source: (() => T) | Record<string, any>,
+      cb: (value: T, oldValue: T) => void,
+      watchOptions?: WatchOptions,
+    ): WatchStopHandle {
+      const stopHandle = watch(source as any, (value: T, oldValue: T) => cb(value, oldValue), watchOptions)
+      stopHandles.push(stopHandle)
+      return createWatchStopHandle(() => {
+        stopHandle()
+        const index = stopHandles.indexOf(stopHandle)
+        if (index >= 0) {
+          stopHandles.splice(index, 1)
+        }
+      }, stopHandle)
+    }
+
+    const bindModel = createBindModel(
+      publicInstance as any,
+      state as any,
+      computedRefs,
+      computedSetters,
+    )
+
+    const unmount = () => {
+      if (!mounted) {
+        return
+      }
+      mounted = false
+      stopHandles.forEach((handle) => {
+        try {
+          handle()
+        }
+        catch {
+          // 卸载阶段忽略 stop 抛错，确保其余清理继续
+        }
+      })
+      stopHandles.length = 0
+    }
+
+    const runtimeInstance: RuntimeInstance<D, C, M> = {
+      get state() {
+        return state
+      },
+      get proxy() {
+        return publicInstance
+      },
+      get methods() {
+        return boundMethods
+      },
+      get computed() {
+        return computedProxy as Readonly<ExtractComputed<C>>
+      },
+      get adapter() {
+        return currentAdapter
+      },
+      bindModel,
+      watch: registerWatch,
+      snapshot: () => scheduler.snapshot(),
+      unmount,
+    }
+
+    try {
+      Object.defineProperty(runtimeInstance, '__wevu_touchSetupMethodsVersion', {
+        value: touchSetupMethodsVersion,
+        configurable: true,
+        enumerable: false,
+        writable: false,
+      })
+    }
+    catch {
+      ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_touchSetupMethodsVersion = touchSetupMethodsVersion
+    }
+
+    return runtimeInstance
+  }
+}
