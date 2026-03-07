@@ -129,6 +129,7 @@ router.clearRoutes()
 
 - `addRoute()` 若遇到同名路由，会覆盖旧记录并自动清理旧记录下的子路由链。
 - 初始化阶段如果 `routes` 与 `namedRoutes` 出现同名记录，会告警提示“后者覆盖前者”，并带上来源与路径变化信息（如 `routes:/a -> namedRoutes:/b`）。
+- 初始化时若路由记录存在空 `name/path`、重复 `alias` 或循环 `children` 引用，会输出告警并跳过无效部分，避免隐式异常。
 
 ## 6. 导航 API 行为
 

@@ -975,6 +975,165 @@ describe('router navigation helpers', () => {
     warn.mockRestore()
   })
 
+  it('warns and skips route records with missing name or path', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: '',
+          path: '/pages/invalid/name',
+        } as any,
+        {
+          name: 'invalid-path',
+          path: '',
+        } as any,
+        {
+          name: 'valid-route',
+          path: '/pages/valid/index',
+        },
+      ],
+      namedRoutes: {
+        '': '/pages/empty-name/index',
+        'invalid-map-path': '',
+        'valid-map-route': '/pages/valid-map/index',
+      } as any,
+    })
+
+    expect(router.hasRoute('valid-route')).toBe(true)
+    expect(router.hasRoute('valid-map-route')).toBe(true)
+    expect(router.hasRoute('invalid-path')).toBe(false)
+    expect(warn.mock.calls.map(call => String(call[0]))).toEqual(expect.arrayContaining([
+      expect.stringContaining('ignored route record at routes[0]: route name is required'),
+      expect.stringContaining('ignored route record "invalid-path" at routes[1]: route path is required'),
+      expect.stringContaining('ignored route record at namedRoutes: route name is required'),
+      expect.stringContaining('ignored route record "invalid-map-path" at namedRoutes: route path is required'),
+    ]))
+    warn.mockRestore()
+  })
+
+  it('warns and normalizes duplicate alias declarations', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: 'alias-home',
+          path: '/pages/home/index',
+          alias: [
+            '/pages/home/index',
+            '/pages/home/alias',
+            '/pages/home/alias',
+          ],
+        },
+      ],
+    })
+
+    expect(router.getRoutes()).toEqual([
+      {
+        name: 'alias-home',
+        path: '/pages/home/index',
+        alias: '/pages/home/alias',
+      },
+    ])
+    expect(warn.mock.calls.map(call => String(call[0]))).toEqual(expect.arrayContaining([
+      expect.stringContaining('ignored alias "/pages/home/index" for route "alias-home" at routes[0]: alias is same as route path'),
+      expect.stringContaining('ignored duplicate alias "/pages/home/alias" for route "alias-home" at routes[0]'),
+    ]))
+    warn.mockRestore()
+  })
+
+  it('warns and skips circular children references in route records', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const circularRoute: any = {
+      name: 'home',
+      path: '/pages/home',
+    }
+    circularRoute.children = [
+      circularRoute,
+      {
+        name: 'home-child',
+        path: 'child',
+      },
+    ]
+
+    const router = useRouter({
+      routes: [circularRoute],
+    })
+
+    expect(router.hasRoute('home')).toBe(true)
+    expect(router.hasRoute('home-child')).toBe(true)
+    expect(router.resolve('/pages/home/child').name).toBe('home-child')
+    expect(warn.mock.calls.map(call => String(call[0]))).toEqual(expect.arrayContaining([
+      expect.stringContaining('ignored route record at routes[0].children[0]: detected circular children reference'),
+    ]))
+    warn.mockRestore()
+  })
+
   it('uses the overriding route guard when routes and namedRoutes overlap', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const navigateTo = vi.fn((options: any) => {
