@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 226 | 226 | 0 | 479 | 47.18% | 47.18% |
-| 抖音小程序 (`tt`) | 163 | 163 | 0 | 479 | 34.03% | 34.03% |
-| 三端可调用完全对齐 (wx/my/tt) | 158 | - | - | 479 | 32.99% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 158 | - | 479 | - | 32.99% |
+| 支付宝小程序 (`my`) | 225 | 225 | 0 | 479 | 46.97% | 46.97% |
+| 抖音小程序 (`tt`) | 162 | 162 | 0 | 479 | 33.82% | 33.82% |
+| 三端可调用完全对齐 (wx/my/tt) | 156 | - | - | 479 | 32.57% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 156 | - | 479 | - | 32.57% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -55,10 +55,10 @@
 | `chooseMessageFile` | 选择会话文件。 | 直连 `wx.chooseMessageFile` | 映射到 `my.chooseImage`，并补齐 `tempFiles[].path/name` | 映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name` | ⚠️ |
 | `getFuzzyLocation` | 获取模糊地理位置。 | 直连 `wx.getFuzzyLocation` | 映射到 `my.getLocation` | 映射到 `tt.getLocation` | ⚠️ |
 | `previewMedia` | 预览图片和视频。 | 直连 `wx.previewMedia` | 映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls` | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls` | ⚠️ |
-| `createInterstitialAd` | 创建插屏广告实例。 | 直连 `wx.createInterstitialAd` | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId` | 直连 `tt.createInterstitialAd` | ⚠️ |
+| `createInterstitialAd` | 创建插屏广告实例。 | 直连 `wx.createInterstitialAd` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.createInterstitialAd` | ⚠️ |
 | `createRewardedVideoAd` | 创建激励视频广告实例。 | 直连 `wx.createRewardedVideoAd` | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createLivePlayerContext` | 创建直播播放器上下文。 | 直连 `wx.createLivePlayerContext` | 映射到 `my.createVideoContext` | 直连 `tt.createLivePlayerContext` | ⚠️ |
-| `createLivePusherContext` | 创建直播推流上下文。 | 直连 `wx.createLivePusherContext` | 映射到 `my.createVideoContext` | 映射到 `tt.createVideoContext` | ⚠️ |
+| `createLivePusherContext` | 创建直播推流上下文。 | 直连 `wx.createLivePusherContext` | 映射到 `my.createVideoContext` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getVideoInfo` | 获取视频详细信息。 | 直连 `wx.getVideoInfo` | 直连 `my.getVideoInfo` | 映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath` | ⚠️ |
 | `saveFile` | 保存文件（跨端扩展，微信 typings 未声明同名 API）。 | 微信当前 typings 未声明同名 API，保留为跨端扩展能力 | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | 直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath` | ⚠️ |
 | `setClipboardData` | 设置剪贴板内容。 | 直连 `wx.setClipboardData` | 转调 `my.setClipboard` 并映射 `data` → `text` | 直连 `tt.setClipboardData` | ✅ |

@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：226，不支持：253
+总计：479，支持：225，不支持：254
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -68,7 +68,7 @@
 | `createInferenceSession`                      | `createInferenceSession`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createInnerAudioContext`                     | `createInnerAudioContext`                     | ✅   | `native`      | ✅       | 直连 `my.createInnerAudioContext`                                                 |
 | `createIntersectionObserver`                  | `createIntersectionObserver`                  | ✅   | `native`      | ✅       | 直连 `my.createIntersectionObserver`                                              |
-| `createInterstitialAd`                        | `createRewardedAd`                            | ✅   | `mapped`      | ✅       | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                               |
+| `createInterstitialAd`                        | `createInterstitialAd`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createLivePlayerContext`                     | `createVideoContext`                          | ✅   | `mapped`      | ✅       | 映射到 `my.createVideoContext`                                                    |
 | `createLivePusherContext`                     | `createVideoContext`                          | ✅   | `mapped`      | ✅       | 映射到 `my.createVideoContext`                                                    |
 | `createMapContext`                            | `createMapContext`                            | ✅   | `native`      | ✅       | 直连 `my.createMapContext`                                                        |
