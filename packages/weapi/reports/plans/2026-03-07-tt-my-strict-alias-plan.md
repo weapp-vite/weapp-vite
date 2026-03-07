@@ -106,6 +106,12 @@
 - `tt.openChannelsUserProfile` vs `tt.openAwemeUserProfile`
 - `tt.showShareImageMenu` vs `tt.showShareMenu`
 
+6. 自动复筛结论（2026-03-08）
+
+- 已对当前 unsupported 清单执行“名称相似度 + 类型双向可赋值 + 人工语义复核”组合筛选。
+- 结果：除第 5 节候选外，未发现新的可证明“严格等价异名映射”项。
+- 噪声候选示例：`on/offBLEPeripheralConnectionStateChanged` 与 `on/offBLEConnectionStateChanged` 名称近似，但外围设备与中心设备事件语义不同，已按非严格等价处理并以单测锁定 unsupported。
+
 ## 5. 每批固定验证清单
 
 1. `pnpm --filter @wevu/api test`
