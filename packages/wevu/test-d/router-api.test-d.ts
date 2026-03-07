@@ -89,6 +89,12 @@ const removeDynamicRoute = navigation.addRoute({
   name: 'dynamic-post',
   path: '/pages/post/:id/index',
   alias: ['/pages/article/:id/index'],
+  children: [
+    {
+      name: 'dynamic-post-reply',
+      path: 'reply/:replyId',
+    },
+  ],
   meta: {
     requiresAuth: true,
   },

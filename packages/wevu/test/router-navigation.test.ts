@@ -450,6 +450,72 @@ describe('router navigation helpers', () => {
     ])
   })
 
+  it('supports nested route records by flattening children paths', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'home',
+          path: '/pages/home',
+          children: [
+            {
+              name: 'home-detail',
+              path: 'detail/:id',
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(router.hasRoute('home')).toBe(true)
+    expect(router.hasRoute('home-detail')).toBe(true)
+    expect(router.getRoutes()).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home',
+      },
+      {
+        name: 'home-detail',
+        path: '/pages/home/detail/:id',
+      },
+    ])
+
+    const resolvedByName = router.resolve({
+      name: 'home-detail',
+      params: {
+        id: 3,
+      },
+    })
+    expect(resolvedByName.fullPath).toBe('/pages/home/detail/3')
+
+    const resolvedByPath = router.resolve('/pages/home/detail/3')
+    expect(resolvedByPath.name).toBe('home-detail')
+    expect(resolvedByPath.params).toEqual({
+      id: '3',
+    })
+  })
+
   it('returns unknown navigation failure for invalid named route targets', async () => {
     const instance = {
       __wevu: {},
@@ -827,6 +893,64 @@ describe('router navigation helpers', () => {
     }))
   })
 
+  it('matches nested child route records for path-based beforeEnter navigation', async () => {
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const beforeEnter = vi.fn((to) => {
+      expect(to?.name).toBe('home-detail')
+      expect(to?.params).toEqual({
+        id: '7',
+      })
+      return '/pages/login/index?from=nested-child'
+    })
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'home',
+          path: '/pages/home',
+          children: [
+            {
+              name: 'home-detail',
+              path: 'detail/:id',
+              beforeEnter,
+            },
+          ],
+        },
+      ],
+    })
+
+    const result = await router.push('/pages/home/detail/7')
+    expect(result).toBeUndefined()
+    expect(beforeEnter).toHaveBeenCalledTimes(1)
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/login/index?from=nested-child',
+    }))
+  })
+
   it('supports route record redirect before navigation', async () => {
     const navigateTo = vi.fn()
     const redirectTo = vi.fn((options: any) => {
@@ -1003,6 +1127,50 @@ describe('router navigation helpers', () => {
     expect(router.hasRoute('dynamic-post')).toBe(true)
     router.removeRoute('dynamic-post')
     expect(router.hasRoute('dynamic-post')).toBe(false)
+  })
+
+  it('supports adding and removing nested routes at runtime', async () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter()
+    const removeNestedRoutes = router.addRoute({
+      name: 'home',
+      path: '/pages/home',
+      children: [
+        {
+          name: 'home-detail',
+          path: 'detail/:id',
+        },
+      ],
+    })
+
+    expect(router.hasRoute('home')).toBe(true)
+    expect(router.hasRoute('home-detail')).toBe(true)
+    expect(router.resolve('/pages/home/detail/9').name).toBe('home-detail')
+
+    removeNestedRoutes()
+    expect(router.hasRoute('home')).toBe(false)
+    expect(router.hasRoute('home-detail')).toBe(false)
   })
 
   it('supports clearing all named routes at runtime', async () => {
