@@ -2192,6 +2192,226 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
    */
   updateWeChatApp: WeapiCrossPlatformAdapter['updateWeChatApp']
+
+  /**
+   * 获取后台音频播放状态。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getBackgroundAudioPlayerState` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getBackgroundAudioPlayerState: WeapiCrossPlatformAdapter['getBackgroundAudioPlayerState']
+
+  /**
+   * 获取设备性能评估信息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getDeviceBenchmarkInfo` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getDeviceBenchmarkInfo: WeapiCrossPlatformAdapter['getDeviceBenchmarkInfo']
+
+  /**
+   * 获取设备 VoIP 列表。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getDeviceVoIPList` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getDeviceVoIPList: WeapiCrossPlatformAdapter['getDeviceVoIPList']
+
+  /**
+   * 获取 HCE 状态。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getHCEState` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getHCEState: WeapiCrossPlatformAdapter['getHCEState']
+
+  /**
+   * 获取推理环境信息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getInferenceEnvInfo` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getInferenceEnvInfo: WeapiCrossPlatformAdapter['getInferenceEnvInfo']
+
+  /**
+   * 获取 NFC 适配器。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getNFCAdapter` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getNFCAdapter: WeapiCrossPlatformAdapter['getNFCAdapter']
+
+  /**
+   * 获取性能对象。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getPerformance` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getPerformance: WeapiCrossPlatformAdapter['getPerformance']
+
+  /**
+   * 获取随机值。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getRandomValues` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getRandomValues: WeapiCrossPlatformAdapter['getRandomValues']
+
+  /**
+   * 获取实时日志管理器。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getRealtimeLogManager` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getRealtimeLogManager: WeapiCrossPlatformAdapter['getRealtimeLogManager']
+
+  /**
+   * 获取渲染层 UserAgent。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getRendererUserAgent` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getRendererUserAgent: WeapiCrossPlatformAdapter['getRendererUserAgent']
+
+  /**
+   * 获取录屏状态。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getScreenRecordingState` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getScreenRecordingState: WeapiCrossPlatformAdapter['getScreenRecordingState']
+
+  /**
+   * 获取安全元素卡片列表。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getSecureElementPasses` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getSecureElementPasses: WeapiCrossPlatformAdapter['getSecureElementPasses']
+
+  /**
+   * 获取已选中文本范围。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getSelectedTextRange` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getSelectedTextRange: WeapiCrossPlatformAdapter['getSelectedTextRange']
+
+  /**
+   * 获取开屏广告展示状态。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getShowSplashAdStatus` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getShowSplashAdStatus: WeapiCrossPlatformAdapter['getShowSplashAdStatus']
+
+  /**
+   * 获取 Skyline 信息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getSkylineInfo` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getSkylineInfo: WeapiCrossPlatformAdapter['getSkylineInfo']
+
+  /**
+   * 获取用户加密管理器。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getUserCryptoManager` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getUserCryptoManager: WeapiCrossPlatformAdapter['getUserCryptoManager']
+
+  /**
+   * 获取微信运动数据。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getWeRunData` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getWeRunData: WeapiCrossPlatformAdapter['getWeRunData']
+
+  /**
+   * 获取 XR 框架系统对象。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getXrFrameSystem` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  getXrFrameSystem: WeapiCrossPlatformAdapter['getXrFrameSystem']
+
+  /**
+   * 判断蓝牙设备是否已配对。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.isBluetoothDevicePaired` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  isBluetoothDevicePaired: WeapiCrossPlatformAdapter['isBluetoothDevicePaired']
+
+  /**
+   * 判断是否支持视觉识别能力。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.isVKSupport` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  isVKSupport: WeapiCrossPlatformAdapter['isVKSupport']
   // @generated weapi-method-docs:end
 }
 

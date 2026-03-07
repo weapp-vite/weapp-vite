@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 354 | 125 | 479 | 100.00% | 73.90% |
-| 抖音小程序 (`tt`) | 479 | 296 | 183 | 479 | 100.00% | 61.80% |
+| 支付宝小程序 (`my`) | 479 | 374 | 105 | 479 | 100.00% | 78.08% |
+| 抖音小程序 (`tt`) | 479 | 316 | 163 | 479 | 100.00% | 65.97% |
 | 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 294 | - | 479 | - | 61.38% |
+| 三端语义完全对齐 (wx/my/tt) | - | 314 | - | 479 | - | 65.55% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -234,6 +234,26 @@
 | `subscribeVoIPVideoMembers` | 订阅 VoIP 视频成员变化。 | 直连 `wx.subscribeVoIPVideoMembers` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `updateVoIPChatMuteConfig` | 更新 VoIP 静音配置。 | 直连 `wx.updateVoIPChatMuteConfig` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `updateWeChatApp` | 拉起微信升级流程。 | 直连 `wx.updateWeChatApp` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getBackgroundAudioPlayerState` | 获取后台音频播放状态。 | 直连 `wx.getBackgroundAudioPlayerState` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getDeviceBenchmarkInfo` | 获取设备性能评估信息。 | 直连 `wx.getDeviceBenchmarkInfo` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getDeviceVoIPList` | 获取设备 VoIP 列表。 | 直连 `wx.getDeviceVoIPList` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getHCEState` | 获取 HCE 状态。 | 直连 `wx.getHCEState` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getInferenceEnvInfo` | 获取推理环境信息。 | 直连 `wx.getInferenceEnvInfo` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getNFCAdapter` | 获取 NFC 适配器。 | 直连 `wx.getNFCAdapter` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getPerformance` | 获取性能对象。 | 直连 `wx.getPerformance` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getRandomValues` | 获取随机值。 | 直连 `wx.getRandomValues` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getRealtimeLogManager` | 获取实时日志管理器。 | 直连 `wx.getRealtimeLogManager` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getRendererUserAgent` | 获取渲染层 UserAgent。 | 直连 `wx.getRendererUserAgent` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getScreenRecordingState` | 获取录屏状态。 | 直连 `wx.getScreenRecordingState` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getSecureElementPasses` | 获取安全元素卡片列表。 | 直连 `wx.getSecureElementPasses` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getSelectedTextRange` | 获取已选中文本范围。 | 直连 `wx.getSelectedTextRange` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getShowSplashAdStatus` | 获取开屏广告展示状态。 | 直连 `wx.getShowSplashAdStatus` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getSkylineInfo` | 获取 Skyline 信息。 | 直连 `wx.getSkylineInfo` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getUserCryptoManager` | 获取用户加密管理器。 | 直连 `wx.getUserCryptoManager` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getWeRunData` | 获取微信运动数据。 | 直连 `wx.getWeRunData` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `getXrFrameSystem` | 获取 XR 框架系统对象。 | 直连 `wx.getXrFrameSystem` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `isBluetoothDevicePaired` | 判断蓝牙设备是否已配对。 | 直连 `wx.isBluetoothDevicePaired` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `isVKSupport` | 判断是否支持视觉识别能力。 | 直连 `wx.isVKSupport` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 

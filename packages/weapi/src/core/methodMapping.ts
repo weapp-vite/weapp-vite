@@ -197,6 +197,26 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'subscribeVoIPVideoMembers',
     'updateVoIPChatMuteConfig',
     'updateWeChatApp',
+    'getBackgroundAudioPlayerState',
+    'getDeviceBenchmarkInfo',
+    'getDeviceVoIPList',
+    'getHCEState',
+    'getInferenceEnvInfo',
+    'getNFCAdapter',
+    'getPerformance',
+    'getRandomValues',
+    'getRealtimeLogManager',
+    'getRendererUserAgent',
+    'getScreenRecordingState',
+    'getSecureElementPasses',
+    'getSelectedTextRange',
+    'getShowSplashAdStatus',
+    'getSkylineInfo',
+    'getUserCryptoManager',
+    'getWeRunData',
+    'getXrFrameSystem',
+    'isBluetoothDevicePaired',
+    'isVKSupport',
     'openCustomerServiceChat',
     'createVKSession',
     'compressVideo',
@@ -330,6 +350,26 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'subscribeVoIPVideoMembers',
     'updateVoIPChatMuteConfig',
     'updateWeChatApp',
+    'getBackgroundAudioPlayerState',
+    'getDeviceBenchmarkInfo',
+    'getDeviceVoIPList',
+    'getHCEState',
+    'getInferenceEnvInfo',
+    'getNFCAdapter',
+    'getPerformance',
+    'getRandomValues',
+    'getRealtimeLogManager',
+    'getRendererUserAgent',
+    'getScreenRecordingState',
+    'getSecureElementPasses',
+    'getSelectedTextRange',
+    'getShowSplashAdStatus',
+    'getSkylineInfo',
+    'getUserCryptoManager',
+    'getWeRunData',
+    'getXrFrameSystem',
+    'isBluetoothDevicePaired',
+    'isVKSupport',
     'showActionSheet',
     'openCustomerServiceChat',
     'createVKSession',
@@ -1883,6 +1923,166 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
     support: '⚠️',
   },
+  {
+    method: 'getBackgroundAudioPlayerState',
+    description: '获取后台音频播放状态。',
+    wxStrategy: '直连 `wx.getBackgroundAudioPlayerState`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getDeviceBenchmarkInfo',
+    description: '获取设备性能评估信息。',
+    wxStrategy: '直连 `wx.getDeviceBenchmarkInfo`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getDeviceVoIPList',
+    description: '获取设备 VoIP 列表。',
+    wxStrategy: '直连 `wx.getDeviceVoIPList`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getHCEState',
+    description: '获取 HCE 状态。',
+    wxStrategy: '直连 `wx.getHCEState`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getInferenceEnvInfo',
+    description: '获取推理环境信息。',
+    wxStrategy: '直连 `wx.getInferenceEnvInfo`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getNFCAdapter',
+    description: '获取 NFC 适配器。',
+    wxStrategy: '直连 `wx.getNFCAdapter`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getPerformance',
+    description: '获取性能对象。',
+    wxStrategy: '直连 `wx.getPerformance`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getRandomValues',
+    description: '获取随机值。',
+    wxStrategy: '直连 `wx.getRandomValues`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getRealtimeLogManager',
+    description: '获取实时日志管理器。',
+    wxStrategy: '直连 `wx.getRealtimeLogManager`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getRendererUserAgent',
+    description: '获取渲染层 UserAgent。',
+    wxStrategy: '直连 `wx.getRendererUserAgent`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getScreenRecordingState',
+    description: '获取录屏状态。',
+    wxStrategy: '直连 `wx.getScreenRecordingState`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getSecureElementPasses',
+    description: '获取安全元素卡片列表。',
+    wxStrategy: '直连 `wx.getSecureElementPasses`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getSelectedTextRange',
+    description: '获取已选中文本范围。',
+    wxStrategy: '直连 `wx.getSelectedTextRange`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getShowSplashAdStatus',
+    description: '获取开屏广告展示状态。',
+    wxStrategy: '直连 `wx.getShowSplashAdStatus`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getSkylineInfo',
+    description: '获取 Skyline 信息。',
+    wxStrategy: '直连 `wx.getSkylineInfo`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getUserCryptoManager',
+    description: '获取用户加密管理器。',
+    wxStrategy: '直连 `wx.getUserCryptoManager`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getWeRunData',
+    description: '获取微信运动数据。',
+    wxStrategy: '直连 `wx.getWeRunData`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getXrFrameSystem',
+    description: '获取 XR 框架系统对象。',
+    wxStrategy: '直连 `wx.getXrFrameSystem`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'isBluetoothDevicePaired',
+    description: '判断蓝牙设备是否已配对。',
+    wxStrategy: '直连 `wx.isBluetoothDevicePaired`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'isVKSupport',
+    description: '判断是否支持视觉识别能力。',
+    wxStrategy: '直连 `wx.isVKSupport`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
 ] as const
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
@@ -3199,6 +3399,66 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     updateWeChatApp: {
       target: 'updateWeChatApp',
     },
+    getBackgroundAudioPlayerState: {
+      target: 'getBackgroundAudioPlayerState',
+    },
+    getDeviceBenchmarkInfo: {
+      target: 'getDeviceBenchmarkInfo',
+    },
+    getDeviceVoIPList: {
+      target: 'getDeviceVoIPList',
+    },
+    getHCEState: {
+      target: 'getHCEState',
+    },
+    getInferenceEnvInfo: {
+      target: 'getInferenceEnvInfo',
+    },
+    getNFCAdapter: {
+      target: 'getNFCAdapter',
+    },
+    getPerformance: {
+      target: 'getPerformance',
+    },
+    getRandomValues: {
+      target: 'getRandomValues',
+    },
+    getRealtimeLogManager: {
+      target: 'getRealtimeLogManager',
+    },
+    getRendererUserAgent: {
+      target: 'getRendererUserAgent',
+    },
+    getScreenRecordingState: {
+      target: 'getScreenRecordingState',
+    },
+    getSecureElementPasses: {
+      target: 'getSecureElementPasses',
+    },
+    getSelectedTextRange: {
+      target: 'getSelectedTextRange',
+    },
+    getShowSplashAdStatus: {
+      target: 'getShowSplashAdStatus',
+    },
+    getSkylineInfo: {
+      target: 'getSkylineInfo',
+    },
+    getUserCryptoManager: {
+      target: 'getUserCryptoManager',
+    },
+    getWeRunData: {
+      target: 'getWeRunData',
+    },
+    getXrFrameSystem: {
+      target: 'getXrFrameSystem',
+    },
+    isBluetoothDevicePaired: {
+      target: 'isBluetoothDevicePaired',
+    },
+    isVKSupport: {
+      target: 'isVKSupport',
+    },
     shareAppMessageToGroup: {
       target: 'shareAppMessageToGroup',
     },
@@ -3787,6 +4047,66 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     updateWeChatApp: {
       target: 'updateWeChatApp',
+    },
+    getBackgroundAudioPlayerState: {
+      target: 'getBackgroundAudioPlayerState',
+    },
+    getDeviceBenchmarkInfo: {
+      target: 'getDeviceBenchmarkInfo',
+    },
+    getDeviceVoIPList: {
+      target: 'getDeviceVoIPList',
+    },
+    getHCEState: {
+      target: 'getHCEState',
+    },
+    getInferenceEnvInfo: {
+      target: 'getInferenceEnvInfo',
+    },
+    getNFCAdapter: {
+      target: 'getNFCAdapter',
+    },
+    getPerformance: {
+      target: 'getPerformance',
+    },
+    getRandomValues: {
+      target: 'getRandomValues',
+    },
+    getRealtimeLogManager: {
+      target: 'getRealtimeLogManager',
+    },
+    getRendererUserAgent: {
+      target: 'getRendererUserAgent',
+    },
+    getScreenRecordingState: {
+      target: 'getScreenRecordingState',
+    },
+    getSecureElementPasses: {
+      target: 'getSecureElementPasses',
+    },
+    getSelectedTextRange: {
+      target: 'getSelectedTextRange',
+    },
+    getShowSplashAdStatus: {
+      target: 'getShowSplashAdStatus',
+    },
+    getSkylineInfo: {
+      target: 'getSkylineInfo',
+    },
+    getUserCryptoManager: {
+      target: 'getUserCryptoManager',
+    },
+    getWeRunData: {
+      target: 'getWeRunData',
+    },
+    getXrFrameSystem: {
+      target: 'getXrFrameSystem',
+    },
+    isBluetoothDevicePaired: {
+      target: 'isBluetoothDevicePaired',
+    },
+    isVKSupport: {
+      target: 'isVKSupport',
     },
     shareAppMessageToGroup: {
       target: 'shareAppMessageToGroup',
