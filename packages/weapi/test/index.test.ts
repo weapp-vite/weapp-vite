@@ -980,6 +980,8 @@ describe('weapi', () => {
   })
 
   it.each([
+    'createAudioContext',
+    'createWebAudioContext',
     'showShareImageMenu',
     'updateShareMenu',
     'openSystemBluetoothSetting',
@@ -1900,8 +1902,8 @@ describe('weapi', () => {
   it('keeps top high-frequency alias mappings in sync', () => {
     const expectedMappings = [
       { method: 'chooseAddress', my: 'getAddress', tt: 'chooseAddress' },
-      { method: 'createAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
-      { method: 'createWebAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
+      { method: 'createAudioContext', my: 'createAudioContext', tt: 'createAudioContext', mySupported: false, ttSupported: false },
+      { method: 'createWebAudioContext', my: 'createWebAudioContext', tt: 'createWebAudioContext', mySupported: false, ttSupported: false },
       { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'openAppAuthorizeSetting', my: 'openSetting', tt: 'openSetting' },
       { method: 'pluginLogin', my: 'getAuthCode', tt: 'login' },

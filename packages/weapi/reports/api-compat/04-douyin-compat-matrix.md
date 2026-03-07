@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：155，不支持：324
+总计：479，支持：153，不支持：326
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -57,7 +57,7 @@
 | `connectSocket`                               | `connectSocket`                               | ✅   | `native`      | ✅       | 直连 `tt.connectSocket`                                                           |
 | `connectWifi`                                 | `connectWifi`                                 | ❌   | `unsupported` | ❌       | 未提供 tt.connectWifi，调用时将返回 not supported                                 |
 | `createAnimation`                             | `createAnimation`                             | ✅   | `native`      | ✅       | 直连 `tt.createAnimation`                                                         |
-| `createAudioContext`                          | `createInnerAudioContext`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.createInnerAudioContext`                                               |
+| `createAudioContext`                          | `createAudioContext`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createBLEConnection`                         | `createBLEConnection`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createBLEPeripheralServer`                   | `createBLEPeripheralServer`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createBufferURL`                             | `createBufferURL`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -83,7 +83,7 @@
 | `createVideoContext`                          | `createVideoContext`                          | ✅   | `native`      | ✅       | 直连 `tt.createVideoContext`                                                      |
 | `createVideoDecoder`                          | `createVideoDecoder`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createVKSession`                             | `createVKSession`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `createWebAudioContext`                       | `createInnerAudioContext`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.createInnerAudioContext`                                               |
+| `createWebAudioContext`                       | `createWebAudioContext`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createWorker`                                | `createWorker`                                | ✅   | `native`      | ✅       | 直连 `tt.createWorker`                                                            |
 | `cropImage`                                   | `cropImage`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `disableAlertBeforeUnload`                    | `disableAlertBeforeUnload`                    | ❌   | `unsupported` | ❌       | 未提供 tt.disableAlertBeforeUnload，调用时将返回 not supported                    |
