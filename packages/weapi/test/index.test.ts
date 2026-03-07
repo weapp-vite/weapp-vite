@@ -1910,6 +1910,37 @@ describe('weapi', () => {
   })
 
   it.each([
+    { platform: 'alipay', normalizedPlatform: 'my' },
+    { platform: 'tt', normalizedPlatform: 'tt' },
+  ])('treats on/offBLEPeripheralConnectionStateChanged as unsupported for $platform without aliasing ble connection change events', async ({ platform, normalizedPlatform }) => {
+    const onBLEConnectionStateChanged = vi.fn()
+    const offBLEConnectionStateChanged = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        onBLEConnectionStateChanged,
+        offBLEConnectionStateChanged,
+      },
+      platform,
+    }) as Record<string, any>
+
+    for (const methodName of ['onBLEPeripheralConnectionStateChanged', 'offBLEPeripheralConnectionStateChanged'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName](vi.fn())).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
+      })
+    }
+
+    expect(onBLEConnectionStateChanged).not.toHaveBeenCalled()
+    expect(offBLEConnectionStateChanged).not.toHaveBeenCalled()
+  })
+
+  it.each([
     'batchSetStorage',
     'batchGetStorage',
     'batchSetStorageSync',
