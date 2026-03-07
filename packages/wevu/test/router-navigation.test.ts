@@ -1065,6 +1065,33 @@ describe('router navigation helpers', () => {
     expect(router.currentRoute.path).toBe('pages/profile/index')
   })
 
+  it('isReady resolves immediately for mini-program router', async () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter()
+    await expect(router.isReady()).resolves.toBeUndefined()
+  })
+
   it('push auto-switches to tabBar entries', async () => {
     const switchTab = vi.fn((options: any) => {
       options.success?.({})
