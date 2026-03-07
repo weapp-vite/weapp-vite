@@ -3,11 +3,10 @@ title: API 参考
 description: Wevu API 参考首页。按 Vue API 风格提供分组导航，先定位能力域，再跳转到对应 API 分页。
 sidebar: false
 keywords:
-  - Wevu
+  - wevu
   - api
   - reference
   - vue-style
-  - 指南
 ---
 
 # Wevu API 参考
