@@ -17,8 +17,8 @@
 | 支付宝可按微信命名调用的方法数   |  197 |
 | 支付宝语义对齐方法数             |  197 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  132 |
-| 抖音语义对齐方法数               |  132 |
+| 抖音可按微信命名调用的方法数     |  133 |
+| 抖音语义对齐方法数               |  133 |
 | 抖音 fallback 方法数             |    0 |
 | 三端可调用完全对齐方法数         |  115 |
 | 三端语义完全对齐方法数           |  115 |
@@ -29,7 +29,7 @@
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
 | 支付宝小程序 (`my`)           |           197 |             197 |               0 |      479 |       41.13% |         41.13% |
-| 抖音小程序 (`tt`)             |           132 |             132 |               0 |      479 |       27.56% |         27.56% |
+| 抖音小程序 (`tt`)             |           133 |             133 |               0 |      479 |       27.77% |         27.77% |
 | 三端可调用完全对齐 (wx/my/tt) |           115 |               - |               - |      479 |       24.01% |              - |
 | 三端语义完全对齐 (wx/my/tt)   |             - |             115 |               - |      479 |            - |         24.01% |
 
@@ -57,7 +57,7 @@
 | `chooseAddress`                     | 直连 `wx.chooseAddress`                             | 无同等 API，调用时按 unsupported 报错                                                                         | 直连 `tt.chooseAddress`                                           |
 | `createAudioContext`                | 直连 `wx.createAudioContext`                        | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
 | `createWebAudioContext`             | 直连 `wx.createWebAudioContext`                     | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
-| `getSystemInfoAsync`                | 直连 `wx.getSystemInfoAsync`                        | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
+| `getSystemInfoAsync`                | 直连 `wx.getSystemInfoAsync`                        | 无同等 API，调用时按 unsupported 报错                                                                         | 映射到 `tt.getSystemInfo`                                         |
 | `openAppAuthorizeSetting`           | 直连 `wx.openAppAuthorizeSetting`                   | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
 | `pluginLogin`                       | 直连 `wx.pluginLogin`                               | 无同等 API，调用时按 unsupported 报错                                                                         | 无同等 API，调用时按 unsupported 报错                             |
 | `login`                             | 直连 `wx.login`                                     | 无同等 API，调用时按 unsupported 报错                                                                         | 直连 `tt.login`                                                   |
