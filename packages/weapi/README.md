@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 219 | 219 | 0 | 479 | 45.72% | 45.72% |
-| 抖音小程序 (`tt`) | 158 | 158 | 0 | 479 | 32.99% | 32.99% |
-| 三端可调用完全对齐 (wx/my/tt) | 150 | - | - | 479 | 31.32% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 150 | - | 479 | - | 31.32% |
+| 支付宝小程序 (`my`) | 217 | 217 | 0 | 479 | 45.30% | 45.30% |
+| 抖音小程序 (`tt`) | 156 | 156 | 0 | 479 | 32.57% | 32.57% |
+| 三端可调用完全对齐 (wx/my/tt) | 148 | - | - | 479 | 30.90% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 148 | - | 479 | - | 30.90% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -80,8 +80,8 @@
 | `requestOrderPayment` | 发起订单支付。 | 直连 `wx.requestOrderPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
 | `requestPluginPayment` | 发起插件支付。 | 直连 `wx.requestPluginPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
 | `requestVirtualPayment` | 发起虚拟支付。 | 直连 `wx.requestVirtualPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
-| `showShareImageMenu` | 显示分享图片菜单。 | 直连 `wx.showShareImageMenu` | 映射到 `my.showSharePanel` | 映射到 `tt.showShareMenu` | ⚠️ |
-| `updateShareMenu` | 更新分享菜单配置。 | 直连 `wx.updateShareMenu` | 映射到 `my.showSharePanel` | 映射到 `tt.showShareMenu` | ⚠️ |
+| `showShareImageMenu` | 显示分享图片菜单。 | 直连 `wx.showShareImageMenu` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `updateShareMenu` | 更新分享菜单配置。 | 直连 `wx.updateShareMenu` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openEmbeddedMiniProgram` | 打开嵌入式小程序。 | 直连 `wx.openEmbeddedMiniProgram` | 映射到 `my.navigateToMiniProgram` | 映射到 `tt.navigateToMiniProgram` | ⚠️ |
 | `saveFileToDisk` | 保存文件到磁盘。 | 直连 `wx.saveFileToDisk` | 直连 `my.saveFileToDisk` | 映射到 `tt.saveFile` | ⚠️ |
 | `getEnterOptionsSync` | 获取启动参数（同步）。 | 直连 `wx.getEnterOptionsSync` | 直连 `my.getEnterOptionsSync` | 映射到 `tt.getLaunchOptionsSync` | ⚠️ |
