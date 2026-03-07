@@ -100,21 +100,37 @@
 
 ## 抖音独有（相对微信命名）
 
-总计：36
+总计：55
 
+- `applyEcCoupon`
+- `applyRefund`
 - `canIPutStuffOverComponent`
+- `checkFollowAwemeState`
 - `checkFollowState`
+- `completePaySync`
+- `completeRefundSync`
+- `continueToPay`
+- `createBytennEngineContext`
 - `createCloud`
+- `createMerchantOrder`
+- `createOrder`
+- `createRefundOrder`
+- `createRtcRoomContext`
+- `createStickerManager`
 - `followAwemeUser`
 - `followOfficialAccount`
 - `getAnalysisInfo`
+- `getCustomButtonBoundingClientRect`
 - `getEnvInfoSync`
 - `getFileInfo`
 - `getLiveUserInfo`
 - `getMenuButtonLayout`
+- `getMicroappInfo`
+- `getRefundOrder`
 - `getRoomInfo`
 - `getSavedFileList`
 - `getSelfCommentCountDuringPluginRunning`
+- `getShopRecordToken`
 - `getSidebarActivity`
 - `hideInteractionBar`
 - `isFollowingAnchor`
@@ -124,12 +140,14 @@
 - `onReceiveSpecifiedComment`
 - `openAwemeUserProfile`
 - `pay`
+- `preloadDrawAd`
 - `prerenderVideo`
 - `removeSavedFile`
 - `saveFile`
 - `showDouyinOpenAuth`
 - `showFavoriteGuide`
 - `showInteractionBar`
+- `submitEcCustomGoods`
 - `subscribeAudiencesFollowAction`
 - `subscribeSpecifiedContentComment`
 - `subscribeSpecifiedUserComment`
@@ -137,4 +155,5 @@
 - `unsubscribeAllSpecifiedUserComment`
 - `unsubscribeAudiencesFollowAction`
 - `updateExitGuideWindowInfo`
+- `updateShopMemberPoints`
 - `updateSidebarActivity`

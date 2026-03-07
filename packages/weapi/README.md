@@ -36,9 +36,9 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
 | 支付宝小程序 (`my`) | 197 | 197 | 0 | 479 | 41.13% | 41.13% |
-| 抖音小程序 (`tt`) | 129 | 129 | 0 | 479 | 26.93% | 26.93% |
-| 三端可调用完全对齐 (wx/my/tt) | 113 | - | - | 479 | 23.59% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 113 | - | 479 | - | 23.59% |
+| 抖音小程序 (`tt`) | 132 | 132 | 0 | 479 | 27.56% | 27.56% |
+| 三端可调用完全对齐 (wx/my/tt) | 115 | - | - | 479 | 24.01% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 115 | - | 479 | - | 24.01% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -48,7 +48,7 @@
 | --- | --- | --- | --- | --- | --- |
 | `showToast` | 显示消息提示框。 | 直连 `wx.showToast` | `title/icon` 映射到 `content/type` 后调用 `my.showToast` | `icon=error` 映射为 `fail` 后调用 `tt.showToast` | ✅ |
 | `showLoading` | 显示 loading 提示框。 | 直连 `wx.showLoading` | `title` 映射到 `content` 后调用 `my.showLoading` | 直连 `tt.showLoading` | ✅ |
-| `showActionSheet` | 显示操作菜单。 | 直连 `wx.showActionSheet` | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | 直连 `tt.showActionSheet`；缺失时按 unsupported 报错 | ⚠️ |
+| `showActionSheet` | 显示操作菜单。 | 直连 `wx.showActionSheet` | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | 直连 `tt.showActionSheet`；缺失时按 unsupported 报错 | ✅ |
 | `showModal` | 显示模态弹窗。 | 直连 `wx.showModal` | 调用 `my.confirm` 并对齐按钮字段与 `cancel/content`；`showCancel=false`、`editable` 等场景按 unsupported 报错 | 直连 `tt.showModal` | ⚠️ |
 | `chooseImage` | 选择图片。 | 直连 `wx.chooseImage` | 返回值 `apFilePaths` 映射到 `tempFilePaths` | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底 | ✅ |
 | `chooseMedia` | 选择图片或视频。 | 直连 `wx.chooseMedia` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType` | ⚠️ |
@@ -56,7 +56,7 @@
 | `getFuzzyLocation` | 获取模糊地理位置。 | 直连 `wx.getFuzzyLocation` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `previewMedia` | 预览图片和视频。 | 直连 `wx.previewMedia` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createInterstitialAd` | 创建插屏广告实例。 | 直连 `wx.createInterstitialAd` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.createInterstitialAd` | ⚠️ |
-| `createRewardedVideoAd` | 创建激励视频广告实例。 | 直连 `wx.createRewardedVideoAd` | 映射到 `my.createRewardedAd`，并将 `load/show/destroy` 参数对齐为微信调用方式 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createRewardedVideoAd` | 创建激励视频广告实例。 | 直连 `wx.createRewardedVideoAd` | 映射到 `my.createRewardedAd`，并将 `load/show/destroy` 参数对齐为微信调用方式 | 直连 `tt.createRewardedVideoAd` | ⚠️ |
 | `createLivePlayerContext` | 创建直播播放器上下文。 | 直连 `wx.createLivePlayerContext` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.createLivePlayerContext` | ⚠️ |
 | `createLivePusherContext` | 创建直播推流上下文。 | 直连 `wx.createLivePusherContext` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getVideoInfo` | 获取视频详细信息。 | 直连 `wx.getVideoInfo` | 直连 `my.getVideoInfo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
@@ -263,7 +263,7 @@
 | `createInferenceSession` | 创建推理会话。 | 直连 `wx.createInferenceSession` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createMediaAudioPlayer` | 创建媒体音频播放器。 | 直连 `wx.createMediaAudioPlayer` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createMediaContainer` | 创建媒体容器实例。 | 直连 `wx.createMediaContainer` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `createMediaRecorder` | 创建媒体录制器。 | 直连 `wx.createMediaRecorder` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createMediaRecorder` | 创建媒体录制器。 | 直连 `wx.createMediaRecorder` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.createMediaRecorder` | ⚠️ |
 | `createTCPSocket` | 创建 TCP Socket。 | 直连 `wx.createTCPSocket` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createUDPSocket` | 创建 UDP Socket。 | 直连 `wx.createUDPSocket` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createVideoDecoder` | 创建视频解码器。 | 直连 `wx.createVideoDecoder` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |

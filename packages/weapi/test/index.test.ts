@@ -2351,7 +2351,7 @@ describe('weapi', () => {
       { method: 'requestVirtualPayment', my: 'requestVirtualPayment', tt: 'requestVirtualPayment', mySupported: false, ttSupported: false },
       { method: 'previewMedia', my: 'previewMedia', tt: 'previewMedia', mySupported: false, ttSupported: false },
       { method: 'createInterstitialAd', my: 'createInterstitialAd', tt: 'createInterstitialAd', mySupported: false },
-      { method: 'createRewardedVideoAd', my: 'createRewardedAd', tt: 'createRewardedVideoAd', ttSupported: false },
+      { method: 'createRewardedVideoAd', my: 'createRewardedAd', tt: 'createRewardedVideoAd' },
       { method: 'createLivePlayerContext', my: 'createLivePlayerContext', tt: 'createLivePlayerContext', mySupported: false },
       { method: 'createLivePusherContext', my: 'createLivePusherContext', tt: 'createLivePusherContext', mySupported: false, ttSupported: false },
       { method: 'getVideoInfo', my: 'getVideoInfo', tt: 'getVideoInfo', ttSupported: false },
