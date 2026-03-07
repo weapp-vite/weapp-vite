@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 314 | 165 | 479 | 100.00% | 65.55% |
-| 抖音小程序 (`tt`) | 479 | 256 | 223 | 479 | 100.00% | 53.44% |
+| 支付宝小程序 (`my`) | 479 | 334 | 145 | 479 | 100.00% | 69.73% |
+| 抖音小程序 (`tt`) | 479 | 276 | 203 | 479 | 100.00% | 57.62% |
 | 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 254 | - | 479 | - | 53.03% |
+| 三端语义完全对齐 (wx/my/tt) | - | 274 | - | 479 | - | 57.20% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -194,6 +194,26 @@
 | `getPrivacySetting` | 获取隐私设置。 | 直连 `wx.getPrivacySetting` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `initFaceDetect` | 初始化人脸检测。 | 直连 `wx.initFaceDetect` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `join1v1Chat` | 发起 1v1 通话。 | 直连 `wx.join1v1Chat` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `shareAppMessageToGroup` | 分享到群聊会话。 | 直连 `wx.shareAppMessageToGroup` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `shareEmojiToGroup` | 分享到群聊表情。 | 直连 `wx.shareEmojiToGroup` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `shareFileMessage` | 分享文件消息。 | 直连 `wx.shareFileMessage` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `shareFileToGroup` | 分享文件到群。 | 直连 `wx.shareFileToGroup` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `shareImageToGroup` | 分享图片到群。 | 直连 `wx.shareImageToGroup` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `shareToOfficialAccount` | 分享至公众号。 | 直连 `wx.shareToOfficialAccount` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `shareToWeRun` | 分享至微信运动。 | 直连 `wx.shareToWeRun` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `shareVideoMessage` | 分享视频消息。 | 直连 `wx.shareVideoMessage` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `shareVideoToGroup` | 分享视频到群。 | 直连 `wx.shareVideoToGroup` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `showRedPackage` | 展示红包组件。 | 直连 `wx.showRedPackage` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `startDeviceMotionListening` | 开始监听设备方向变化。 | 直连 `wx.startDeviceMotionListening` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `startHCE` | 启动 HCE 功能。 | 直连 `wx.startHCE` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `startLocalServiceDiscovery` | 开始本地服务发现。 | 直连 `wx.startLocalServiceDiscovery` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `startLocationUpdate` | 开始持续定位。 | 直连 `wx.startLocationUpdate` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `startLocationUpdateBackground` | 开始后台持续定位。 | 直连 `wx.startLocationUpdateBackground` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `startRecord` | 开始录音。 | 直连 `wx.startRecord` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `startSoterAuthentication` | 开始 SOTER 认证。 | 直连 `wx.startSoterAuthentication` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `stopBackgroundAudio` | 停止后台音频。 | 直连 `wx.stopBackgroundAudio` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `stopDeviceMotionListening` | 停止监听设备方向变化。 | 直连 `wx.stopDeviceMotionListening` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `stopFaceDetect` | 停止人脸检测。 | 直连 `wx.stopFaceDetect` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 

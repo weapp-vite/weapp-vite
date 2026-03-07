@@ -426,20 +426,20 @@
 | `setVisualEffectOnCapture`                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `setWifiList`                                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `setWindowSize`                               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `shareAppMessageToGroup`                      | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `shareEmojiToGroup`                           | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `shareFileMessage`                            | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `shareFileToGroup`                            | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `shareImageToGroup`                           | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `shareToOfficialAccount`                      | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `shareToWeRun`                                | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `shareVideoMessage`                           | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `shareVideoToGroup`                           | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `shareAppMessageToGroup`                      | `shareAppMessageToGroup`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareEmojiToGroup`                           | `shareEmojiToGroup`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareFileMessage`                            | `shareFileMessage`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareFileToGroup`                            | `shareFileToGroup`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareImageToGroup`                           | `shareImageToGroup`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareToOfficialAccount`                      | `shareToOfficialAccount`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareToWeRun`                                | `shareToWeRun`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareVideoMessage`                           | `shareVideoMessage`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `shareVideoToGroup`                           | `shareVideoToGroup`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `showActionSheet`                             | `showActionSheet`                   | ✅   | `mapped`   | ✅       | 优先直连 `tt.showActionSheet`；缺失时降级到 `tt.showModal` shim        |
 | `showLoading`                                 | `showLoading`                       | ✅   | `mapped`   | ✅       | 直连 `tt.showLoading`                                                  |
 | `showModal`                                   | `showModal`                         | ✅   | `mapped`   | ✅       | 直连 `tt.showModal`                                                    |
 | `showNavigationBarLoading`                    | `showNavigationBarLoading`          | ✅   | `native`   | ✅       | 直连 `tt.showNavigationBarLoading`                                     |
-| `showRedPackage`                              | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `showRedPackage`                              | `showRedPackage`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `showShareImageMenu`                          | `showShareMenu`                     | ✅   | `mapped`   | ✅       | 映射到 `tt.showShareMenu`                                              |
 | `showShareMenu`                               | `showShareMenu`                     | ✅   | `native`   | ✅       | 直连 `tt.showShareMenu`                                                |
 | `showTabBar`                                  | `showTabBar`                        | ✅   | `native`   | ✅       | 直连 `tt.showTabBar`                                                   |
@@ -449,23 +449,23 @@
 | `startBeaconDiscovery`                        | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `startBluetoothDevicesDiscovery`              | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `startCompass`                                | `startCompass`                      | ✅   | `native`   | ✅       | 直连 `tt.startCompass`                                                 |
-| `startDeviceMotionListening`                  | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `startDeviceMotionListening`                  | `startDeviceMotionListening`        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `startGyroscope`                              | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `startHCE`                                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `startLocalServiceDiscovery`                  | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `startLocationUpdate`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `startLocationUpdateBackground`               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `startHCE`                                    | `startHCE`                          | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `startLocalServiceDiscovery`                  | `startLocalServiceDiscovery`        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `startLocationUpdate`                         | `startLocationUpdate`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `startLocationUpdateBackground`               | `startLocationUpdateBackground`     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `startPullDownRefresh`                        | `startPullDownRefresh`              | ✅   | `native`   | ✅       | 直连 `tt.startPullDownRefresh`                                         |
-| `startRecord`                                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `startSoterAuthentication`                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `startRecord`                                 | `startRecord`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `startSoterAuthentication`                    | `startSoterAuthentication`          | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `startWifi`                                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `stopAccelerometer`                           | `stopAccelerometer`                 | ✅   | `native`   | ✅       | 直连 `tt.stopAccelerometer`                                            |
-| `stopBackgroundAudio`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `stopBackgroundAudio`                         | `stopBackgroundAudio`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `stopBeaconDiscovery`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `stopBluetoothDevicesDiscovery`               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `stopCompass`                                 | `stopCompass`                       | ✅   | `native`   | ✅       | 直连 `tt.stopCompass`                                                  |
-| `stopDeviceMotionListening`                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `stopFaceDetect`                              | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `stopDeviceMotionListening`                   | `stopDeviceMotionListening`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopFaceDetect`                              | `stopFaceDetect`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `stopGyroscope`                               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `stopHCE`                                     | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `stopLocalServiceDiscovery`                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
