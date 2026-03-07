@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：140，不支持：339
+总计：479，支持：137，不支持：342
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -102,8 +102,8 @@
 | `getBackgroundAudioPlayerState`               | `getBackgroundAudioPlayerState`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getBackgroundFetchData`                      | `getBackgroundFetchData`                      | ❌   | `unsupported` | ❌       | 未提供 tt.getBackgroundFetchData，调用时将返回 not supported                      |
 | `getBackgroundFetchToken`                     | `getBackgroundFetchToken`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getBatteryInfo`                              | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging`                                |
-| `getBatteryInfoSync`                          | `getSystemInfoSync`                           | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging`                            |
+| `getBatteryInfo`                              | `getBatteryInfo`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getBatteryInfoSync`                          | `getBatteryInfoSync`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getBeacons`                                  | `getBeacons`                                  | ❌   | `unsupported` | ❌       | 未提供 tt.getBeacons，调用时将返回 not supported                                  |
 | `getBLEDeviceCharacteristics`                 | `getBLEDeviceCharacteristics`                 | ❌   | `unsupported` | ❌       | 未提供 tt.getBLEDeviceCharacteristics，调用时将返回 not supported                 |
 | `getBLEDeviceRSSI`                            | `getBLEDeviceRSSI`                            | ❌   | `unsupported` | ❌       | 未提供 tt.getBLEDeviceRSSI，调用时将返回 not supported                            |
@@ -137,7 +137,7 @@
 | `getLocation`                                 | `getLocation`                                 | ✅   | `native`      | ✅       | 直连 `tt.getLocation`                                                             |
 | `getLogManager`                               | `getLogManager`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect`             | ✅   | `native`      | ✅       | 直连 `tt.getMenuButtonBoundingClientRect`                                         |
-| `getNetworkType`                              | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType`                                 |
+| `getNetworkType`                              | `getNetworkType`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getNFCAdapter`                               | `getNFCAdapter`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getPerformance`                              | `getPerformance`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getPrivacySetting`                           | `getPrivacySetting`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

@@ -522,7 +522,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '获取网络类型。',
     wxStrategy: '直连 `wx.getNetworkType`',
     alipayStrategy: '直连 `my.getNetworkType`',
-    douyinStrategy: '映射到 `tt.getSystemInfo`，兜底补齐 `networkType`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -530,7 +530,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '异步获取电量信息。',
     wxStrategy: '直连 `wx.getBatteryInfo`',
     alipayStrategy: '直连 `my.getBatteryInfo`',
-    douyinStrategy: '映射到 `tt.getSystemInfo`，补齐 `level/isCharging`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -538,7 +538,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '同步获取电量信息。',
     wxStrategy: '直连 `wx.getBatteryInfoSync`',
     alipayStrategy: '直连 `my.getBatteryInfoSync`',
-    douyinStrategy: '映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2346,44 +2346,6 @@ function mapSetBackgroundTextStyleToNavigationBarArgs(args: unknown[]) {
   return nextArgs
 }
 
-function mapSystemInfoToNetworkType(result: any) {
-  if (!isPlainObject(result)) {
-    return result
-  }
-  if (typeof result.networkType === 'string' && result.networkType) {
-    return result
-  }
-  if (result.isConnected === false) {
-    return {
-      ...result,
-      networkType: 'none',
-    }
-  }
-  return {
-    ...result,
-    networkType: 'unknown',
-  }
-}
-
-function mapSystemInfoToBatteryInfo(result: any) {
-  if (!isPlainObject(result)) {
-    return result
-  }
-  const nextResult: Record<string, any> = { ...result }
-  if (typeof nextResult.level !== 'number') {
-    const batteryValue = typeof nextResult.battery === 'number'
-      ? nextResult.battery
-      : undefined
-    if (typeof batteryValue === 'number') {
-      nextResult.level = batteryValue > 1 ? Math.round(batteryValue) : Math.round(batteryValue * 100)
-    }
-  }
-  if (typeof nextResult.isCharging !== 'boolean' && typeof nextResult.charging === 'boolean') {
-    nextResult.isCharging = nextResult.charging
-  }
-  return nextResult
-}
-
 const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMethodMappingRule>>>> = {
   my: {
     showToast: {
@@ -3247,16 +3209,13 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       mapArgs: mapSetBackgroundTextStyleToNavigationBarArgs,
     },
     getNetworkType: {
-      target: 'getSystemInfo',
-      mapResult: mapSystemInfoToNetworkType,
+      target: 'getNetworkType',
     },
     getBatteryInfo: {
-      target: 'getSystemInfo',
-      mapResult: mapSystemInfoToBatteryInfo,
+      target: 'getBatteryInfo',
     },
     getBatteryInfoSync: {
-      target: 'getSystemInfoSync',
-      mapResult: mapSystemInfoToBatteryInfo,
+      target: 'getBatteryInfoSync',
     },
     getLogManager: {
       target: 'getLogManager',

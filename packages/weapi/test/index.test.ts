@@ -1518,12 +1518,8 @@ describe('weapi', () => {
     }))
   })
 
-  it('maps getNetworkType to getSystemInfo for douyin', async () => {
-    const getSystemInfo = vi.fn((options: any) => {
-      options.success?.({
-        isConnected: false,
-      })
-    })
+  it('treats getNetworkType as unsupported for douyin without strict-equivalent api', async () => {
+    const getSystemInfo = vi.fn()
     const api = createWeapi({
       adapter: {
         getSystemInfo,
@@ -1531,25 +1527,22 @@ describe('weapi', () => {
       platform: 'tt',
     })
 
-    const result = await api.getNetworkType()
-    expect(getSystemInfo).toHaveBeenCalledWith(expect.any(Object))
-    expect(result).toMatchObject({
-      isConnected: false,
-      networkType: 'none',
+    expect(api.resolveTarget('getNetworkType')).toMatchObject({
+      method: 'getNetworkType',
+      target: 'getNetworkType',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
+    await expect(api.getNetworkType()).rejects.toMatchObject({
+      errMsg: 'tt.getNetworkType:fail method not supported',
+    })
+    expect(getSystemInfo).not.toHaveBeenCalled()
   })
 
-  it('maps getBatteryInfo and getBatteryInfoSync via system info for douyin', async () => {
-    const getSystemInfo = vi.fn((options: any) => {
-      options.success?.({
-        battery: 0.56,
-        charging: true,
-      })
-    })
-    const getSystemInfoSync = vi.fn(() => ({
-      battery: 80,
-      charging: false,
-    }))
+  it('treats getBatteryInfo/getBatteryInfoSync as unsupported for douyin without strict-equivalent api', async () => {
+    const getSystemInfo = vi.fn()
+    const getSystemInfoSync = vi.fn()
     const api = createWeapi({
       adapter: {
         getSystemInfo,
@@ -1558,20 +1551,42 @@ describe('weapi', () => {
       platform: 'tt',
     })
 
-    const asyncResult = await api.getBatteryInfo()
-    const syncResult = api.getBatteryInfoSync()
+    for (const methodName of ['getBatteryInfo', 'getBatteryInfoSync'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]()).rejects.toMatchObject({
+        errMsg: `tt.${methodName}:fail method not supported`,
+      })
+    }
 
-    expect(getSystemInfo).toHaveBeenCalledWith(expect.any(Object))
-    expect(getSystemInfoSync).toHaveBeenCalledTimes(1)
-    expect(asyncResult).toMatchObject({
-      battery: 0.56,
-      level: 56,
-      isCharging: true,
+    expect(getSystemInfo).not.toHaveBeenCalled()
+    expect(getSystemInfoSync).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'getNetworkType',
+    'getBatteryInfo',
+    'getBatteryInfoSync',
+  ])('treats %s as unsupported in strict compatibility mode', async (methodName) => {
+    const api = createWeapi({
+      adapter: {},
+      platform: 'tt',
     })
-    expect(syncResult).toMatchObject({
-      battery: 80,
-      level: 80,
-      isCharging: false,
+
+    expect(api.resolveTarget(methodName)).toMatchObject({
+      method: methodName,
+      target: methodName,
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api[methodName]()).rejects.toMatchObject({
+      errMsg: `tt.${methodName}:fail method not supported`,
     })
   })
 
@@ -2034,9 +2049,9 @@ describe('weapi', () => {
       { method: 'reportAnalytics', my: 'reportAnalytics', tt: 'reportAnalytics', mySupported: false },
       { method: 'setBackgroundColor', my: 'setBackgroundColor', tt: 'setNavigationBarColor' },
       { method: 'setBackgroundTextStyle', my: 'setBackgroundTextStyle', tt: 'setNavigationBarColor' },
-      { method: 'getNetworkType', my: 'getNetworkType', tt: 'getSystemInfo' },
-      { method: 'getBatteryInfo', my: 'getBatteryInfo', tt: 'getSystemInfo' },
-      { method: 'getBatteryInfoSync', my: 'getBatteryInfoSync', tt: 'getSystemInfoSync' },
+      { method: 'getNetworkType', my: 'getNetworkType', tt: 'getNetworkType', ttSupported: false },
+      { method: 'getBatteryInfo', my: 'getBatteryInfo', tt: 'getBatteryInfo', ttSupported: false },
+      { method: 'getBatteryInfoSync', my: 'getBatteryInfoSync', tt: 'getBatteryInfoSync', ttSupported: false },
       { method: 'saveVideoToPhotosAlbum', my: 'saveVideoToPhotosAlbum', tt: 'saveVideoToPhotosAlbum', ttSupported: false },
       { method: 'batchSetStorage', my: 'batchSetStorage', tt: 'batchSetStorage', mySupported: false, ttSupported: false },
       { method: 'batchGetStorage', my: 'batchGetStorage', tt: 'batchGetStorage', mySupported: false, ttSupported: false },
