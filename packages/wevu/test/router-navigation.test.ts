@@ -1911,6 +1911,87 @@ describe('router navigation helpers', () => {
     expect(router.hasRoute('home-detail')).toBe(false)
   })
 
+  it('addRoute throws for missing route name or path', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home',
+        },
+      ],
+    })
+
+    expect(() => router.addRoute({
+      name: '',
+      path: '/pages/missing-name/index',
+    } as any)).toThrowError('Route name is required when adding a named route')
+    expect(() => router.addRoute({
+      name: 'missing-path',
+      path: '',
+    } as any)).toThrowError('Route path is required when adding named route "missing-path"')
+    expect(() => router.addRoute('home', {
+      name: '',
+      path: 'settings',
+    } as any)).toThrowError('Route name is required when adding a named route')
+  })
+
+  it('addRoute throws for circular children references', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter()
+    const circularRoute: any = {
+      name: 'circular-home',
+      path: '/pages/circular/home',
+    }
+    circularRoute.children = [circularRoute]
+
+    expect(() => router.addRoute(circularRoute)).toThrowError(
+      'Circular children reference detected when adding named route "circular-home"',
+    )
+  })
+
   it('supports addRoute(parentName, route) with relative child path', () => {
     const instance = {
       __wevu: {},
