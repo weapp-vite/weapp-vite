@@ -1096,8 +1096,9 @@ describe('weapi', () => {
     'openOfficialAccountChat',
     'openOfficialAccountProfile',
     'openPrivacyContract',
-  ])('provides synthetic no-op mapping for %s on alipay and douyin', async (methodName) => {
+  ])('treats %s as unsupported without strict-equivalent runtime API', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
+      const normalizedPlatform = platform === 'alipay' ? 'my' : platform
       const api = createWeapi({
         adapter: {},
         platform,
@@ -1105,12 +1106,12 @@ describe('weapi', () => {
       expect(api.resolveTarget(methodName)).toMatchObject({
         method: methodName,
         target: methodName,
-        supportLevel: 'mapped',
-        supported: true,
-        semanticAligned: true,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
       })
-      await expect(api[methodName]({})).resolves.toMatchObject({
-        errMsg: `${methodName}:ok`,
+      await expect(api[methodName]({})).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
       })
     }
   })

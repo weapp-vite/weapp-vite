@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：251，不支持：228
+总计：479，支持：247，不支持：232
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -342,10 +342,10 @@
 | `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openInquiriesTopic`                          | `openInquiriesTopic`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openLocation`                                | `openLocation`                                | ✅   | `native`      | ✅       | 直连 `my.openLocation`                                                            |
-| `openOfficialAccountArticle`                  | `openOfficialAccountArticle`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openOfficialAccountChat`                     | `openOfficialAccountChat`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openOfficialAccountProfile`                  | `openOfficialAccountProfile`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openPrivacyContract`                         | `openPrivacyContract`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openOfficialAccountArticle`                  | `openOfficialAccountArticle`                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openOfficialAccountChat`                     | `openOfficialAccountChat`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openOfficialAccountProfile`                  | `openOfficialAccountProfile`                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openPrivacyContract`                         | `openPrivacyContract`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openSetting`                                 | `openSetting`                                 | ✅   | `native`      | ✅       | 直连 `my.openSetting`                                                             |
 | `openSingleStickerView`                       | `openSingleStickerView`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openStickerIPView`                           | `openStickerIPView`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

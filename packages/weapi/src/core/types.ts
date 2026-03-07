@@ -1023,7 +1023,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.addPhoneContact` | ⚠️ |
    * | 支付宝 | 直连 `my.addPhoneContact` | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   addPhoneContact: WeapiCrossPlatformAdapter['addPhoneContact']
 
@@ -1297,8 +1297,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.openOfficialAccountArticle` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   openOfficialAccountArticle: WeapiCrossPlatformAdapter['openOfficialAccountArticle']
 
@@ -1308,8 +1308,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.openOfficialAccountChat` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   openOfficialAccountChat: WeapiCrossPlatformAdapter['openOfficialAccountChat']
 
@@ -1319,8 +1319,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.openOfficialAccountProfile` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   openOfficialAccountProfile: WeapiCrossPlatformAdapter['openOfficialAccountProfile']
 
@@ -1330,8 +1330,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.openPrivacyContract` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   openPrivacyContract: WeapiCrossPlatformAdapter['openPrivacyContract']
 
