@@ -107,10 +107,16 @@ const remove = router.addRoute({
   redirect: '/pages/home/index?from=legacy',
 })
 
+const removeChild = router.addRoute('home', {
+  name: 'home-settings',
+  path: 'settings',
+})
+
 console.log(router.hasRoute('legacy-home'))
 console.log(router.getRoutes())
 
 remove()
+removeChild()
 router.removeRoute('legacy-home')
 router.clearRoutes()
 ```
