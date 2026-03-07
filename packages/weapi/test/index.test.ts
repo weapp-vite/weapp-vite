@@ -597,7 +597,7 @@ describe('weapi', () => {
     expect(openSetting).not.toHaveBeenCalled()
   })
 
-  it('maps hideHomeButton to hideBackHome for alipay', async () => {
+  it('treats hideHomeButton as unsupported for alipay without strict-equivalent api', async () => {
     const hideBackHome = vi.fn((options: any) => {
       options.success?.({})
     })
@@ -608,9 +608,17 @@ describe('weapi', () => {
       platform: 'alipay',
     })
 
-    await api.hideHomeButton()
-
-    expect(hideBackHome).toHaveBeenCalledWith(expect.any(Object))
+    expect(api.resolveTarget('hideHomeButton')).toMatchObject({
+      method: 'hideHomeButton',
+      target: 'hideHomeButton',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.hideHomeButton()).rejects.toMatchObject({
+      errMsg: 'my.hideHomeButton:fail method not supported',
+    })
+    expect(hideBackHome).not.toHaveBeenCalled()
   })
 
   it('treats requestPayment family as unsupported for alipay', async () => {
@@ -2113,7 +2121,7 @@ describe('weapi', () => {
       { method: 'chooseMedia', my: 'chooseMedia', tt: 'chooseMedia', mySupported: false },
       { method: 'chooseMessageFile', my: 'chooseMessageFile', tt: 'chooseMessageFile', mySupported: false, ttSupported: false },
       { method: 'getFuzzyLocation', my: 'getFuzzyLocation', tt: 'getFuzzyLocation', mySupported: false, ttSupported: false },
-      { method: 'hideHomeButton', my: 'hideBackHome', tt: 'hideHomeButton' },
+      { method: 'hideHomeButton', my: 'hideHomeButton', tt: 'hideHomeButton', mySupported: false },
       { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getWindowInfo', ttSupported: false },
       { method: 'getDeviceInfo', my: 'getDeviceInfo', tt: 'getDeviceInfo', mySupported: false, ttSupported: false },
       { method: 'getAccountInfoSync', my: 'getAccountInfoSync', tt: 'getAccountInfoSync', ttSupported: false },
