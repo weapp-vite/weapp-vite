@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：208，不支持：271
+总计：479，支持：204，不支持：275
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -384,13 +384,13 @@
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestIdleCallback`                         | `requestIdleCallback`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestMerchantTransfer`                     | `requestMerchantTransfer`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `requestOrderPayment`                         | `tradePay`                                    | ✅   | `mapped`      | ✅       | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`                           |
-| `requestPayment`                              | `tradePay`                                    | ✅   | `mapped`      | ✅       | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`                           |
-| `requestPluginPayment`                        | `tradePay`                                    | ✅   | `mapped`      | ✅       | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`                           |
+| `requestOrderPayment`                         | `requestOrderPayment`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `requestPayment`                              | `requestPayment`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `requestPluginPayment`                        | `requestPluginPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`                     | ✅   | `mapped`      | ✅       | 映射到 `my.requestSubscribeMessage`                                               |
 | `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`                     | ✅   | `mapped`      | ✅       | 映射到 `my.requestSubscribeMessage`                                               |
 | `requestSubscribeMessage`                     | `requestSubscribeMessage`                     | ✅   | `native`      | ✅       | 直连 `my.requestSubscribeMessage`                                                 |
-| `requestVirtualPayment`                       | `tradePay`                                    | ✅   | `mapped`      | ✅       | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr`                           |
+| `requestVirtualPayment`                       | `requestVirtualPayment`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `reserveChannelsLive`                         | `reserveChannelsLive`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `restartMiniProgram`                          | `reLaunch`                                    | ✅   | `mapped`      | ✅       | 映射到 `my.reLaunch`                                                              |

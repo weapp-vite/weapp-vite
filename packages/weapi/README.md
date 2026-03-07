@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 208 | 208 | 0 | 479 | 43.42% | 43.42% |
-| 抖音小程序 (`tt`) | 151 | 151 | 0 | 479 | 31.52% | 31.52% |
-| 三端可调用完全对齐 (wx/my/tt) | 139 | - | - | 479 | 29.02% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 139 | - | 479 | - | 29.02% |
+| 支付宝小程序 (`my`) | 204 | 204 | 0 | 479 | 42.59% | 42.59% |
+| 抖音小程序 (`tt`) | 147 | 147 | 0 | 479 | 30.69% | 30.69% |
+| 三端可调用完全对齐 (wx/my/tt) | 135 | - | - | 479 | 28.18% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 135 | - | 479 | - | 28.18% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -76,10 +76,10 @@
 | `requestSubscribeEmployeeMessage` | 请求订阅员工消息。 | 直连 `wx.requestSubscribeEmployeeMessage` | 映射到 `my.requestSubscribeMessage` | 映射到 `tt.requestSubscribeMessage` | ⚠️ |
 | `restartMiniProgram` | 重启小程序。 | 直连 `wx.restartMiniProgram` | 映射到 `my.reLaunch` | 映射到 `tt.reLaunch` | ⚠️ |
 | `scanCode` | 扫码。 | 直连 `wx.scanCode` | 映射到 `my.scan` | 直连 `tt.scanCode` | ✅ |
-| `requestPayment` | 发起支付。 | 直连 `wx.requestPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
-| `requestOrderPayment` | 发起订单支付。 | 直连 `wx.requestOrderPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
-| `requestPluginPayment` | 发起插件支付。 | 直连 `wx.requestPluginPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
-| `requestVirtualPayment` | 发起虚拟支付。 | 直连 `wx.requestVirtualPayment` | 映射到 `my.tradePay`，并将微信支付参数对齐到 `orderStr` | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo` | ⚠️ |
+| `requestPayment` | 发起支付。 | 直连 `wx.requestPayment` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `requestOrderPayment` | 发起订单支付。 | 直连 `wx.requestOrderPayment` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `requestPluginPayment` | 发起插件支付。 | 直连 `wx.requestPluginPayment` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `requestVirtualPayment` | 发起虚拟支付。 | 直连 `wx.requestVirtualPayment` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `showShareImageMenu` | 显示分享图片菜单。 | 直连 `wx.showShareImageMenu` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `updateShareMenu` | 更新分享菜单配置。 | 直连 `wx.updateShareMenu` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openEmbeddedMiniProgram` | 打开嵌入式小程序。 | 直连 `wx.openEmbeddedMiniProgram` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |

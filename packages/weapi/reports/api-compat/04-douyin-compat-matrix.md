@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：151，不支持：328
+总计：479，支持：147，不支持：332
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -384,13 +384,13 @@
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestIdleCallback`                         | `requestIdleCallback`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestMerchantTransfer`                     | `requestMerchantTransfer`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `requestOrderPayment`                         | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
-| `requestPayment`                              | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
-| `requestPluginPayment`                        | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
+| `requestOrderPayment`                         | `requestOrderPayment`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `requestPayment`                              | `requestPayment`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `requestPluginPayment`                        | `requestPluginPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.requestSubscribeMessage`                                               |
 | `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.requestSubscribeMessage`                                               |
 | `requestSubscribeMessage`                     | `requestSubscribeMessage`                     | ✅   | `native`      | ✅       | 直连 `tt.requestSubscribeMessage`                                                 |
-| `requestVirtualPayment`                       | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
+| `requestVirtualPayment`                       | `requestVirtualPayment`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `reserveChannelsLive`                         | `reserveChannelsLive`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `restartMiniProgram`                          | `reLaunch`                                    | ✅   | `mapped`      | ✅       | 映射到 `tt.reLaunch`                                                              |
