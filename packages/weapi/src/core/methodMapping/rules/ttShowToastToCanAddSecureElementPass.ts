@@ -1,7 +1,7 @@
 import type { WeapiMethodMappingRule } from '../types'
 import { mapActionSheetResult, mapChooseMediaResultFromImage, mapDouyinChooseImageResult, mapDouyinSaveFileResult, mapDouyinToastArgs } from './helpers'
 
-export const TT_METHOD_MAPPINGS_PART_1: Readonly<Record<string, WeapiMethodMappingRule>> = {
+export const TT_METHOD_MAPPINGS_SHOW_TOAST_TO_CAN_ADD_SECURE_ELEMENT_PASS: Readonly<Record<string, WeapiMethodMappingRule>> = {
   showToast: {
     target: 'showToast',
     mapArgs: mapDouyinToastArgs,

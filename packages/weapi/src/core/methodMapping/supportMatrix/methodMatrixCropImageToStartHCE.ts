@@ -1,6 +1,6 @@
 import type { WeapiMethodSupportMatrixItem } from '../types'
 
-export const WEAPI_METHOD_SUPPORT_MATRIX_PART_6: readonly WeapiMethodSupportMatrixItem[] = [
+export const WEAPI_METHOD_SUPPORT_MATRIX_CROP_IMAGE_TO_START_HCE: readonly WeapiMethodSupportMatrixItem[] = [
   {
     method: 'cropImage',
     description: '裁剪图片。',

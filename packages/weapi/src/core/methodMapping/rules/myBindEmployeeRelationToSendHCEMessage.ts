@@ -1,7 +1,7 @@
 import type { WeapiMethodMappingRule } from '../types'
 import { mapCheckIsSoterEnrolledInDeviceArgs, mapCloseBleConnectionResult, mapCreateBleConnectionResult, mapSoterCheckResult } from './helpers'
 
-export const MY_METHOD_MAPPINGS_PART_2: Readonly<Record<string, WeapiMethodMappingRule>> = {
+export const MY_METHOD_MAPPINGS_BIND_EMPLOYEE_RELATION_TO_SEND_HCEMESSAGE: Readonly<Record<string, WeapiMethodMappingRule>> = {
   bindEmployeeRelation: {
     target: 'bindEmployeeRelation',
   },

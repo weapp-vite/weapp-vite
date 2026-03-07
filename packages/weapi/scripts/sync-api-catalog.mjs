@@ -58,6 +58,24 @@ function getChunkFileSuffix(chunkValues) {
   return `${first}To${last}`
 }
 
+function toUpperSnakeIdentifier(value) {
+  const normalized = String(value)
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[^a-z0-9]+/gi, '_')
+    .replace(/^_+|_+$/g, '')
+    .toUpperCase()
+  return normalized || 'UNKNOWN'
+}
+
+function getChunkConstSuffix(chunkValues) {
+  if (chunkValues.length === 0) {
+    return 'UNKNOWN_TO_UNKNOWN'
+  }
+  const first = toUpperSnakeIdentifier(chunkValues[0])
+  const last = toUpperSnakeIdentifier(chunkValues[chunkValues.length - 1])
+  return `${first}_TO_${last}`
+}
+
 function formatMethodModule({
   exportName,
   values,
@@ -73,7 +91,7 @@ ${formatLiteralList(values)}
 ] as const
 `
   }
-  const partConstNames = chunks.map((_, index) => `${exportName}_PART_${index + 1}`)
+  const partConstNames = chunks.map(chunkValues => `${exportName}_${getChunkConstSuffix(chunkValues)}`)
   const partSources = chunks.map((chunkValues, index) => `const ${partConstNames[index]} = [
 ${formatLiteralList(chunkValues)}
 ] as const`).join('\n\n')
@@ -109,9 +127,8 @@ function generateMethodModuleFiles({
   const mergeLines = []
 
   for (let index = 0; index < chunks.length; index += 1) {
-    const partIndex = index + 1
-    const partConstName = `${exportName}_PART_${partIndex}`
     const partFileSuffix = getChunkFileSuffix(chunks[index])
+    const partConstName = `${exportName}_${getChunkConstSuffix(chunks[index])}`
     const partFileName = `${filePrefix}${partFileSuffix}.ts`
     const partFilePath = path.join(OUTPUT_DIR, partFileName)
     const partFile = `/**

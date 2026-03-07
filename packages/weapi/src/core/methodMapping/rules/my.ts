@@ -1,12 +1,12 @@
 import type { WeapiMethodMappingRule } from '../types'
-import { MY_METHOD_MAPPINGS_PART_2 } from './myBindEmployeeRelationToSendHCEMessage'
-import { MY_METHOD_MAPPINGS_PART_4 } from './myCreateVKSessionToOffBLEConnectionStateChange'
-import { MY_METHOD_MAPPINGS_PART_3 } from './mySendSmsToOpenCustomerServiceChat'
-import { MY_METHOD_MAPPINGS_PART_1 } from './myShowToastToAuthPrivateMessage'
+import { MY_METHOD_MAPPINGS_BIND_EMPLOYEE_RELATION_TO_SEND_HCEMESSAGE } from './myBindEmployeeRelationToSendHCEMessage'
+import { MY_METHOD_MAPPINGS_CREATE_VKSESSION_TO_OFF_BLECONNECTION_STATE_CHANGE } from './myCreateVKSessionToOffBLEConnectionStateChange'
+import { MY_METHOD_MAPPINGS_SEND_SMS_TO_OPEN_CUSTOMER_SERVICE_CHAT } from './mySendSmsToOpenCustomerServiceChat'
+import { MY_METHOD_MAPPINGS_SHOW_TOAST_TO_AUTH_PRIVATE_MESSAGE } from './myShowToastToAuthPrivateMessage'
 
 export const MY_METHOD_MAPPINGS: Readonly<Record<string, WeapiMethodMappingRule>> = {
-  ...MY_METHOD_MAPPINGS_PART_1,
-  ...MY_METHOD_MAPPINGS_PART_2,
-  ...MY_METHOD_MAPPINGS_PART_3,
-  ...MY_METHOD_MAPPINGS_PART_4,
+  ...MY_METHOD_MAPPINGS_SHOW_TOAST_TO_AUTH_PRIVATE_MESSAGE,
+  ...MY_METHOD_MAPPINGS_BIND_EMPLOYEE_RELATION_TO_SEND_HCEMESSAGE,
+  ...MY_METHOD_MAPPINGS_SEND_SMS_TO_OPEN_CUSTOMER_SERVICE_CHAT,
+  ...MY_METHOD_MAPPINGS_CREATE_VKSESSION_TO_OFF_BLECONNECTION_STATE_CHANGE,
 }

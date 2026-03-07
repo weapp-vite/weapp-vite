@@ -1,6 +1,6 @@
 import type { WeapiMethodMappingRule } from '../types'
 
-export const MY_METHOD_MAPPINGS_PART_3: Readonly<Record<string, WeapiMethodMappingRule>> = {
+export const MY_METHOD_MAPPINGS_SEND_SMS_TO_OPEN_CUSTOMER_SERVICE_CHAT: Readonly<Record<string, WeapiMethodMappingRule>> = {
   sendSms: {
     target: 'sendSms',
   },

@@ -1,6 +1,6 @@
 import type { WeapiMethodSupportMatrixItem } from '../types'
 
-export const WEAPI_METHOD_SUPPORT_MATRIX_PART_5: readonly WeapiMethodSupportMatrixItem[] = [
+export const WEAPI_METHOD_SUPPORT_MATRIX_OPEN_OFFICIAL_ACCOUNT_PROFILE_TO_CREATE_BLECONNECTION: readonly WeapiMethodSupportMatrixItem[] = [
   {
     method: 'openOfficialAccountProfile',
     description: '打开公众号主页。',

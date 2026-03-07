@@ -1,6 +1,6 @@
 import type { WeapiMethodSupportMatrixItem } from '../types'
 
-export const WEAPI_METHOD_SUPPORT_MATRIX_PART_2: readonly WeapiMethodSupportMatrixItem[] = [
+export const WEAPI_METHOD_SUPPORT_MATRIX_REQUEST_SUBSCRIBE_EMPLOYEE_MESSAGE_TO_GET_BATTERY_INFO_SYNC: readonly WeapiMethodSupportMatrixItem[] = [
   {
     method: 'requestSubscribeEmployeeMessage',
     description: '请求订阅员工消息。',

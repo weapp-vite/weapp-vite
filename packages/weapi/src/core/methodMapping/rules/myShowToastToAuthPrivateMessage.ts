@@ -1,7 +1,7 @@
 import type { WeapiMethodMappingRule } from '../types'
 import { mapActionSheetArgs, mapActionSheetResult, mapChooseImageResult, mapClipboardResult, mapCreateRewardedVideoAdArgs, mapLoadingArgs, mapModalArgs, mapModalResult, mapRewardedAdInstance, mapSaveFileArgs, mapSaveFileResult, mapSetClipboardArgs, mapToastArgs } from './helpers'
 
-export const MY_METHOD_MAPPINGS_PART_1: Readonly<Record<string, WeapiMethodMappingRule>> = {
+export const MY_METHOD_MAPPINGS_SHOW_TOAST_TO_AUTH_PRIVATE_MESSAGE: Readonly<Record<string, WeapiMethodMappingRule>> = {
   showToast: {
     target: 'showToast',
     mapArgs: mapToastArgs,

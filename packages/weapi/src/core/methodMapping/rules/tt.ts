@@ -1,12 +1,12 @@
 import type { WeapiMethodMappingRule } from '../types'
-import { TT_METHOD_MAPPINGS_PART_2 } from './ttCanvasGetImageDataToSetTopBarText'
-import { TT_METHOD_MAPPINGS_PART_4 } from './ttJoinVoIPChatToOffBLEConnectionStateChange'
-import { TT_METHOD_MAPPINGS_PART_3 } from './ttSetWindowSizeToGetShareInfo'
-import { TT_METHOD_MAPPINGS_PART_1 } from './ttShowToastToCanAddSecureElementPass'
+import { TT_METHOD_MAPPINGS_CANVAS_GET_IMAGE_DATA_TO_SET_TOP_BAR_TEXT } from './ttCanvasGetImageDataToSetTopBarText'
+import { TT_METHOD_MAPPINGS_JOIN_VO_IPCHAT_TO_OFF_BLECONNECTION_STATE_CHANGE } from './ttJoinVoIPChatToOffBLEConnectionStateChange'
+import { TT_METHOD_MAPPINGS_SET_WINDOW_SIZE_TO_GET_SHARE_INFO } from './ttSetWindowSizeToGetShareInfo'
+import { TT_METHOD_MAPPINGS_SHOW_TOAST_TO_CAN_ADD_SECURE_ELEMENT_PASS } from './ttShowToastToCanAddSecureElementPass'
 
 export const TT_METHOD_MAPPINGS: Readonly<Record<string, WeapiMethodMappingRule>> = {
-  ...TT_METHOD_MAPPINGS_PART_1,
-  ...TT_METHOD_MAPPINGS_PART_2,
-  ...TT_METHOD_MAPPINGS_PART_3,
-  ...TT_METHOD_MAPPINGS_PART_4,
+  ...TT_METHOD_MAPPINGS_SHOW_TOAST_TO_CAN_ADD_SECURE_ELEMENT_PASS,
+  ...TT_METHOD_MAPPINGS_CANVAS_GET_IMAGE_DATA_TO_SET_TOP_BAR_TEXT,
+  ...TT_METHOD_MAPPINGS_SET_WINDOW_SIZE_TO_GET_SHARE_INFO,
+  ...TT_METHOD_MAPPINGS_JOIN_VO_IPCHAT_TO_OFF_BLECONNECTION_STATE_CHANGE,
 }

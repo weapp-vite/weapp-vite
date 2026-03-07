@@ -1,6 +1,6 @@
 import type { WeapiMethodMappingRule } from '../types'
 
-export const MY_METHOD_MAPPINGS_PART_4: Readonly<Record<string, WeapiMethodMappingRule>> = {
+export const MY_METHOD_MAPPINGS_CREATE_VKSESSION_TO_OFF_BLECONNECTION_STATE_CHANGE: Readonly<Record<string, WeapiMethodMappingRule>> = {
   createVKSession: {
     target: 'createVKSession',
   },

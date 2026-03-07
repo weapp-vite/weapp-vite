@@ -1,6 +1,6 @@
 import type { WeapiMethodSupportMatrixItem } from '../types'
 
-export const WEAPI_METHOD_SUPPORT_MATRIX_PART_8: readonly WeapiMethodSupportMatrixItem[] = [
+export const WEAPI_METHOD_SUPPORT_MATRIX_UPDATE_WE_CHAT_APP_TO_CREATE_MEDIA_AUDIO_PLAYER: readonly WeapiMethodSupportMatrixItem[] = [
   {
     method: 'updateWeChatApp',
     description: '拉起微信升级流程。',
