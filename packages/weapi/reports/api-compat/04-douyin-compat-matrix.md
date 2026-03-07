@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：334，不支持：145
+总计：479，支持：328，不支持：151
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -53,7 +53,7 @@
 | `closeBluetoothAdapter`                       | `closeBluetoothAdapter`                       | ❌   | `unsupported` | ❌       | 未提供 tt.closeBluetoothAdapter，调用时将返回 not supported                       |
 | `closeSocket`                                 | `closeSocket`                                 | ❌   | `unsupported` | ❌       | 未提供 tt.closeSocket，调用时将返回 not supported                                 |
 | `compressImage`                               | `compressImage`                               | ✅   | `native`      | ✅       | 直连 `tt.compressImage`                                                           |
-| `compressVideo`                               | `compressVideo`                               | ✅   | `mapped`      | ✅       | 使用内置 shim（回传原始文件路径）                                                 |
+| `compressVideo`                               | `compressVideo`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `connectSocket`                               | `connectSocket`                               | ✅   | `native`      | ✅       | 直连 `tt.connectSocket`                                                           |
 | `connectWifi`                                 | `connectWifi`                                 | ❌   | `unsupported` | ❌       | 未提供 tt.connectWifi，调用时将返回 not supported                                 |
 | `createAnimation`                             | `createAnimation`                             | ✅   | `native`      | ✅       | 直连 `tt.createAnimation`                                                         |
@@ -150,7 +150,7 @@
 | `getSecureElementPasses`                      | `getSecureElementPasses`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `getSelectedTextRange`                        | `getSelectedTextRange`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `getSetting`                                  | `getSetting`                                  | ✅   | `native`      | ✅       | 直连 `tt.getSetting`                                                              |
-| `getShareInfo`                                | `getShareInfo`                                | ✅   | `mapped`      | ✅       | 使用内置 shim（补齐 `encryptedData/iv`）                                          |
+| `getShareInfo`                                | `getShareInfo`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getShowSplashAdStatus`                       | `getShowSplashAdStatus`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `getSkylineInfo`                              | `getSkylineInfo`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `getSkylineInfoSync`                          | `getSkylineInfoSync`                          | ❌   | `unsupported` | ❌       | 未提供 tt.getSkylineInfoSync，调用时将返回 not supported                          |
@@ -183,7 +183,7 @@
 | `isBluetoothDevicePaired`                     | `isBluetoothDevicePaired`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `isVKSupport`                                 | `isVKSupport`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `join1v1Chat`                                 | `join1v1Chat`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `joinVoIPChat`                                | `joinVoIPChat`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `joinVoIPChat`                                | `joinVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `loadFontFace`                                | `loadFontFace`                                | ❌   | `unsupported` | ❌       | 未提供 tt.loadFontFace，调用时将返回 not supported                                |
 | `login`                                       | `login`                                       | ✅   | `mapped`      | ✅       | 直连 `tt.login`                                                                   |
@@ -336,8 +336,8 @@
 | `openChannelsLiveNoticeInfo`                  | `openChannelsLiveNoticeInfo`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openChannelsUserProfile`                     | `openChannelsUserProfile`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openChatTool`                                | `openChatTool`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openDocument`                                | `openDocument`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openDocument`                                | `openDocument`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`                       | ✅   | `mapped`      | ✅       | 映射到 `tt.navigateToMiniProgram`                                                 |
 | `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openInquiriesTopic`                          | `openInquiriesTopic`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
@@ -353,7 +353,7 @@
 | `openStoreCouponDetail`                       | `openStoreCouponDetail`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openStoreOrderDetail`                        | `openStoreOrderDetail`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openSystemBluetoothSetting`                  | `openSystemBluetoothSetting`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openVideoEditor`                             | `openVideoEditor`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openVideoEditor`                             | `openVideoEditor`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `pageScrollTo`                                | `pageScrollTo`                                | ✅   | `native`      | ✅       | 直连 `tt.pageScrollTo`                                                            |
 | `pauseBackgroundAudio`                        | `pauseBackgroundAudio`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `pauseVoice`                                  | `pauseVoice`                                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |

@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  395 |
-| 支付宝语义对齐方法数             |  395 |
+| 支付宝可按微信命名调用的方法数   |  390 |
+| 支付宝语义对齐方法数             |  390 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  334 |
-| 抖音语义对齐方法数               |  334 |
+| 抖音可按微信命名调用的方法数     |  328 |
+| 抖音语义对齐方法数               |  328 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  332 |
-| 三端语义完全对齐方法数           |  332 |
+| 三端可调用完全对齐方法数         |  326 |
+| 三端语义完全对齐方法数           |  326 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           395 |             395 |               0 |      479 |       82.46% |         82.46% |
-| 抖音小程序 (`tt`)             |           334 |             334 |               0 |      479 |       69.73% |         69.73% |
-| 三端可调用完全对齐 (wx/my/tt) |           332 |               - |               - |      479 |       69.31% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             332 |               - |      479 |            - |         69.31% |
+| 支付宝小程序 (`my`)           |           390 |             390 |               0 |      479 |       81.42% |         81.42% |
+| 抖音小程序 (`tt`)             |           328 |             328 |               0 |      479 |       68.48% |         68.48% |
+| 三端可调用完全对齐 (wx/my/tt) |           326 |               - |               - |      479 |       68.06% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             326 |               - |      479 |            - |         68.06% |
 
 ## 核心差异映射（手工规则）
 
@@ -96,13 +96,13 @@
 | `onWindowResize`                    | 直连 `wx.onWindowResize`                            | 使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听         | 直连 `tt.onWindowResize`                                               |
 | `offWindowResize`                   | 直连 `wx.offWindowResize`                           | 使用内置 shim，移除 `onWindowResize` 注册回调                          | 直连 `tt.offWindowResize`                                              |
 | `reportAnalytics`                   | 直连 `wx.reportAnalytics`                           | 使用内置 no-op shim（保持调用不抛错）                                  | 直连 `tt.reportAnalytics`                                              |
-| `openCustomerServiceChat`           | 直连 `wx.openCustomerServiceChat`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openCustomerServiceChat`           | 直连 `wx.openCustomerServiceChat`                   | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `createVKSession`                   | 直连 `wx.createVKSession`                           | 使用内置 VKSession shim（对齐 `start/stop/destroy`）                   | 使用内置 VKSession shim（对齐 `start/stop/destroy`）                   |
-| `compressVideo`                     | 直连 `wx.compressVideo`                             | 使用内置 shim（回传原始文件路径）                                      | 使用内置 shim（回传原始文件路径）                                      |
-| `openVideoEditor`                   | 直连 `wx.openVideoEditor`                           | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getShareInfo`                      | 直连 `wx.getShareInfo`                              | 使用内置 shim（补齐 `encryptedData/iv`）                               | 使用内置 shim（补齐 `encryptedData/iv`）                               |
-| `joinVoIPChat`                      | 直连 `wx.joinVoIPChat`                              | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openDocument`                      | 直连 `wx.openDocument`                              | 直连 `my.openDocument`                                                 | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `compressVideo`                     | 直连 `wx.compressVideo`                             | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `openVideoEditor`                   | 直连 `wx.openVideoEditor`                           | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `getShareInfo`                      | 直连 `wx.getShareInfo`                              | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `joinVoIPChat`                      | 直连 `wx.joinVoIPChat`                              | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `openDocument`                      | 直连 `wx.openDocument`                              | 直连 `my.openDocument`                                                 | 无同等 API，调用时按 unsupported 报错                                  |
 | `saveVideoToPhotosAlbum`            | 直连 `wx.saveVideoToPhotosAlbum`                    | 直连 `my.saveVideoToPhotosAlbum`                                       | 映射到 `tt.saveImageToPhotosAlbum`                                     |
 | `batchSetStorage`                   | 直连 `wx.batchSetStorage`                           | 使用内置 shim，逐项转调 `my.setStorage`                                | 使用内置 shim，逐项转调 `tt.setStorage`                                |
 | `batchGetStorage`                   | 直连 `wx.batchGetStorage`                           | 使用内置 shim，逐项转调 `my.getStorage`                                | 使用内置 shim，逐项转调 `tt.getStorage`                                |

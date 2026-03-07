@@ -525,64 +525,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         }),
       }
     }
-    if (methodName === 'openCustomerServiceChat') {
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          errMsg: 'openCustomerServiceChat:ok',
-        }),
-      }
-    }
-    if (methodName === 'compressVideo') {
-      const options = isPlainObject(args[0]) ? args[0] : {}
-      const source = typeof options.src === 'string' && options.src
-        ? options.src
-        : typeof options.tempFilePath === 'string' && options.tempFilePath
-          ? options.tempFilePath
-          : ''
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          ...options,
-          tempFilePath: source,
-          errMsg: 'compressVideo:ok',
-        }),
-      }
-    }
-    if (methodName === 'openVideoEditor') {
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          errMsg: 'openVideoEditor:ok',
-        }),
-      }
-    }
-    if (methodName === 'getShareInfo') {
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          encryptedData: '',
-          iv: '',
-          errMsg: 'getShareInfo:ok',
-        }),
-      }
-    }
-    if (methodName === 'joinVoIPChat') {
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          errMsg: 'joinVoIPChat:ok',
-        }),
-      }
-    }
-    if (methodName === 'openDocument' && platform === 'tt') {
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          errMsg: 'openDocument:ok',
-        }),
-      }
-    }
     if (methodName === 'batchSetStorage') {
       const options = isPlainObject(args[0]) ? args[0] : {}
       const entries = resolveBatchSetEntries(options)

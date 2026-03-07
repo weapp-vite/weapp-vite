@@ -695,7 +695,8 @@ describe('weapi', () => {
   it.each([
     { platform: 'alipay' },
     { platform: 'tt' },
-  ])('provides synthetic openCustomerServiceChat for $platform', async ({ platform }) => {
+  ])('treats openCustomerServiceChat as unsupported for $platform', async ({ platform }) => {
+    const normalizedPlatform = platform === 'alipay' ? 'my' : platform
     const api = createWeapi({
       adapter: {},
       platform,
@@ -703,12 +704,12 @@ describe('weapi', () => {
     expect(api.resolveTarget('openCustomerServiceChat')).toMatchObject({
       method: 'openCustomerServiceChat',
       target: 'openCustomerServiceChat',
-      supportLevel: 'mapped',
-      supported: true,
-      semanticAligned: true,
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
-    await expect(api.openCustomerServiceChat({} as any)).resolves.toMatchObject({
-      errMsg: 'openCustomerServiceChat:ok',
+    await expect(api.openCustomerServiceChat({} as any)).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.openCustomerServiceChat:fail method not supported`,
     })
   })
 
@@ -734,22 +735,51 @@ describe('weapi', () => {
   it.each([
     { platform: 'alipay' },
     { platform: 'tt' },
-  ])('provides synthetic compressVideo/getShareInfo/joinVoIPChat for $platform', async ({ platform }) => {
+  ])('treats compressVideo/openVideoEditor/getShareInfo/joinVoIPChat as unsupported for $platform', async ({ platform }) => {
+    const normalizedPlatform = platform === 'alipay' ? 'my' : platform
     const api = createWeapi({
       adapter: {},
       platform,
     })
-    await expect(api.compressVideo({ src: '/tmp/demo.mp4' } as any)).resolves.toMatchObject({
-      tempFilePath: '/tmp/demo.mp4',
-      errMsg: 'compressVideo:ok',
+    expect(api.resolveTarget('compressVideo')).toMatchObject({
+      method: 'compressVideo',
+      target: 'compressVideo',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
-    await expect(api.getShareInfo({} as any)).resolves.toMatchObject({
-      encryptedData: '',
-      iv: '',
-      errMsg: 'getShareInfo:ok',
+    expect(api.resolveTarget('getShareInfo')).toMatchObject({
+      method: 'getShareInfo',
+      target: 'getShareInfo',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
-    await expect(api.joinVoIPChat({} as any)).resolves.toMatchObject({
-      errMsg: 'joinVoIPChat:ok',
+    expect(api.resolveTarget('openVideoEditor')).toMatchObject({
+      method: 'openVideoEditor',
+      target: 'openVideoEditor',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    expect(api.resolveTarget('joinVoIPChat')).toMatchObject({
+      method: 'joinVoIPChat',
+      target: 'joinVoIPChat',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.compressVideo({ src: '/tmp/demo.mp4' } as any)).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.compressVideo:fail method not supported`,
+    })
+    await expect(api.getShareInfo({} as any)).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.getShareInfo:fail method not supported`,
+    })
+    await expect(api.openVideoEditor({} as any)).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.openVideoEditor:fail method not supported`,
+    })
+    await expect(api.joinVoIPChat({} as any)).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.joinVoIPChat:fail method not supported`,
     })
   })
 
@@ -1204,7 +1234,7 @@ describe('weapi', () => {
     expect(showModal).not.toHaveBeenCalled()
   })
 
-  it('provides synthetic openDocument for douyin when missing', async () => {
+  it('treats openDocument as unsupported for douyin when adapter method is missing', async () => {
     const api = createWeapi({
       adapter: {},
       platform: 'tt',
@@ -1212,12 +1242,12 @@ describe('weapi', () => {
     expect(api.resolveTarget('openDocument')).toMatchObject({
       method: 'openDocument',
       target: 'openDocument',
-      supportLevel: 'mapped',
-      supported: true,
-      semanticAligned: true,
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
-    await expect(api.openDocument({ filePath: '/tmp/a.pdf' } as any)).resolves.toMatchObject({
-      errMsg: 'openDocument:ok',
+    await expect(api.openDocument({ filePath: '/tmp/a.pdf' } as any)).rejects.toMatchObject({
+      errMsg: 'tt.openDocument:fail method not supported',
     })
   })
 
