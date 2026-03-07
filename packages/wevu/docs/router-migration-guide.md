@@ -108,3 +108,7 @@ const router = useRouter({
 - 守卫逻辑不再分散在业务代码里
 - 已在核心流程启用 `paramsMode: 'strict'`
 - 已补充失败场景测试（重复跳转、无效参数、重定向链路）
+
+## 6. 进展追踪
+
+- 对齐进展与剩余风险请参考：`packages/wevu/docs/router-alignment-progress.md`
