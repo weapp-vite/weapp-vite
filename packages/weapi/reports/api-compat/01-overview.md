@@ -3,19 +3,19 @@
 ## 覆盖结论
 
 - 微信基准命名方法总数：479
-- 支付宝可调用兼容方法数：310
-- 支付宝语义对齐方法数：310
+- 支付宝可调用兼容方法数：299
+- 支付宝语义对齐方法数：299
 - 支付宝 fallback 方法数：0
-- 抖音可调用兼容方法数：248
-- 抖音语义对齐方法数：248
+- 抖音可调用兼容方法数：237
+- 抖音语义对齐方法数：237
 - 抖音 fallback 方法数：0
-- 三端可调用完全对齐方法数：246
-- 三端语义完全对齐方法数：246
+- 三端可调用完全对齐方法数：235
+- 三端语义完全对齐方法数：235
 
 ## 不兼容规模
 
-- 支付宝侧不兼容（按微信命名调用失败）方法：169
-- 抖音侧不兼容（按微信命名调用失败）方法：231
+- 支付宝侧不兼容（按微信命名调用失败）方法：180
+- 抖音侧不兼容（按微信命名调用失败）方法：242
 
 ## 不兼容示例（前 40 项）
 
@@ -28,6 +28,17 @@
 - `closeBLEConnection` -> 目标 `closeBLEConnection`（unsupported）
 - `compressVideo` -> 目标 `compressVideo`（unsupported）
 - `createBLEConnection` -> 目标 `createBLEConnection`（unsupported）
+- `createBLEPeripheralServer` -> 目标 `createBLEPeripheralServer`（unsupported）
+- `createBufferURL` -> 目标 `createBufferURL`（unsupported）
+- `createCacheManager` -> 目标 `createCacheManager`（unsupported）
+- `createGlobalPayment` -> 目标 `createGlobalPayment`（unsupported）
+- `createInferenceSession` -> 目标 `createInferenceSession`（unsupported）
+- `createMediaAudioPlayer` -> 目标 `createMediaAudioPlayer`（unsupported）
+- `createMediaContainer` -> 目标 `createMediaContainer`（unsupported）
+- `createMediaRecorder` -> 目标 `createMediaRecorder`（unsupported）
+- `createTCPSocket` -> 目标 `createTCPSocket`（unsupported）
+- `createUDPSocket` -> 目标 `createUDPSocket`（unsupported）
+- `createVideoDecoder` -> 目标 `createVideoDecoder`（unsupported）
 - `cropImage` -> 目标 `cropImage`（unsupported）
 - `editImage` -> 目标 `editImage`（unsupported）
 - `exitVoIPChat` -> 目标 `exitVoIPChat`（unsupported）
@@ -50,17 +61,6 @@
 - `getPerformance` -> 目标 `getPerformance`（unsupported）
 - `getPrivacySetting` -> 目标 `getPrivacySetting`（unsupported）
 - `getRandomValues` -> 目标 `getRandomValues`（unsupported）
-- `getRealtimeLogManager` -> 目标 `getRealtimeLogManager`（unsupported）
-- `getRendererUserAgent` -> 目标 `getRendererUserAgent`（unsupported）
-- `getScreenRecordingState` -> 目标 `getScreenRecordingState`（unsupported）
-- `getSecureElementPasses` -> 目标 `getSecureElementPasses`（unsupported）
-- `getSelectedTextRange` -> 目标 `getSelectedTextRange`（unsupported）
-- `getShareInfo` -> 目标 `getShareInfo`（unsupported）
-- `getShowSplashAdStatus` -> 目标 `getShowSplashAdStatus`（unsupported）
-- `getSkylineInfo` -> 目标 `getSkylineInfo`（unsupported）
-- `getSkylineInfoSync` -> 目标 `getSkylineInfoSync`（unsupported）
-- `getUserCryptoManager` -> 目标 `getUserCryptoManager`（unsupported）
-- `getWeRunData` -> 目标 `getWeRunData`（unsupported）
 
 ### 抖音不兼容示例
 
@@ -75,6 +75,17 @@
 - `compressVideo` -> 目标 `compressVideo`（unsupported）
 - `connectWifi` -> 目标 `connectWifi`（unsupported）
 - `createBLEConnection` -> 目标 `createBLEConnection`（unsupported）
+- `createBLEPeripheralServer` -> 目标 `createBLEPeripheralServer`（unsupported）
+- `createBufferURL` -> 目标 `createBufferURL`（unsupported）
+- `createCacheManager` -> 目标 `createCacheManager`（unsupported）
+- `createGlobalPayment` -> 目标 `createGlobalPayment`（unsupported）
+- `createInferenceSession` -> 目标 `createInferenceSession`（unsupported）
+- `createMediaAudioPlayer` -> 目标 `createMediaAudioPlayer`（unsupported）
+- `createMediaContainer` -> 目标 `createMediaContainer`（unsupported）
+- `createMediaRecorder` -> 目标 `createMediaRecorder`（unsupported）
+- `createTCPSocket` -> 目标 `createTCPSocket`（unsupported）
+- `createUDPSocket` -> 目标 `createUDPSocket`（unsupported）
+- `createVideoDecoder` -> 目标 `createVideoDecoder`（unsupported）
 - `cropImage` -> 目标 `cropImage`（unsupported）
 - `disableAlertBeforeUnload` -> 目标 `disableAlertBeforeUnload`（unsupported）
 - `editImage` -> 目标 `editImage`（unsupported）
@@ -93,14 +104,3 @@
 - `getBLEMTU` -> 目标 `getBLEMTU`（unsupported）
 - `getBluetoothAdapterState` -> 目标 `getBluetoothAdapterState`（unsupported）
 - `getBluetoothDevices` -> 目标 `getBluetoothDevices`（unsupported）
-- `getChannelsLiveInfo` -> 目标 `getChannelsLiveInfo`（unsupported）
-- `getChannelsLiveNoticeInfo` -> 目标 `getChannelsLiveNoticeInfo`（unsupported）
-- `getChannelsShareKey` -> 目标 `getChannelsShareKey`（unsupported）
-- `getChatToolInfo` -> 目标 `getChatToolInfo`（unsupported）
-- `getCommonConfig` -> 目标 `getCommonConfig`（unsupported）
-- `getConnectedBluetoothDevices` -> 目标 `getConnectedBluetoothDevices`（unsupported）
-- `getDeviceBenchmarkInfo` -> 目标 `getDeviceBenchmarkInfo`（unsupported）
-- `getDeviceVoIPList` -> 目标 `getDeviceVoIPList`（unsupported）
-- `getExptInfoSync` -> 目标 `getExptInfoSync`（unsupported）
-- `getGroupEnterInfo` -> 目标 `getGroupEnterInfo`（unsupported）
-- `getHCEState` -> 目标 `getHCEState`（unsupported）
