@@ -519,6 +519,34 @@ describe('weapi', () => {
     expect(getOpenUserInfo).not.toHaveBeenCalled()
   })
 
+  it.each([
+    { platform: 'alipay', normalizedPlatform: 'my' },
+    { platform: 'tt', normalizedPlatform: 'tt' },
+  ])('treats requestSubscribe*Message as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
+    const requestSubscribeMessage = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        requestSubscribeMessage,
+      },
+      platform,
+    }) as Record<string, any>
+
+    for (const methodName of ['requestSubscribeDeviceMessage', 'requestSubscribeEmployeeMessage'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({ tmplIds: ['t1'] })).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
+      })
+    }
+
+    expect(requestSubscribeMessage).not.toHaveBeenCalled()
+  })
+
   it('maps hideHomeButton to hideBackHome for alipay', async () => {
     const hideBackHome = vi.fn((options: any) => {
       options.success?.({})
@@ -2007,8 +2035,8 @@ describe('weapi', () => {
       { method: 'login', my: 'login', tt: 'login', mySupported: false },
       { method: 'authorize', my: 'authorize', tt: 'authorize', mySupported: false },
       { method: 'checkSession', my: 'checkSession', tt: 'checkSession', mySupported: false },
-      { method: 'requestSubscribeDeviceMessage', my: 'requestSubscribeMessage', tt: 'requestSubscribeMessage' },
-      { method: 'requestSubscribeEmployeeMessage', my: 'requestSubscribeMessage', tt: 'requestSubscribeMessage' },
+      { method: 'requestSubscribeDeviceMessage', my: 'requestSubscribeDeviceMessage', tt: 'requestSubscribeDeviceMessage', mySupported: false, ttSupported: false },
+      { method: 'requestSubscribeEmployeeMessage', my: 'requestSubscribeEmployeeMessage', tt: 'requestSubscribeEmployeeMessage', mySupported: false, ttSupported: false },
       { method: 'restartMiniProgram', my: 'reLaunch', tt: 'reLaunch' },
       { method: 'scanCode', my: 'scan', tt: 'scanCode' },
       { method: 'requestPayment', my: 'requestPayment', tt: 'requestPayment', mySupported: false, ttSupported: false },

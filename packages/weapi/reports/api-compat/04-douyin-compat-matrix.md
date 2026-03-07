@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：135，不支持：344
+总计：479，支持：133，不支持：346
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -387,8 +387,8 @@
 | `requestOrderPayment`                         | `requestOrderPayment`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestPayment`                              | `requestPayment`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestPluginPayment`                        | `requestPluginPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.requestSubscribeMessage`                                               |
-| `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.requestSubscribeMessage`                                               |
+| `requestSubscribeDeviceMessage`               | `requestSubscribeDeviceMessage`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `requestSubscribeEmployeeMessage`             | `requestSubscribeEmployeeMessage`             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestSubscribeMessage`                     | `requestSubscribeMessage`                     | ✅   | `native`      | ✅       | 直连 `tt.requestSubscribeMessage`                                                 |
 | `requestVirtualPayment`                       | `requestVirtualPayment`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
