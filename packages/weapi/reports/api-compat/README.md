@@ -15,23 +15,23 @@
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
 | 支付宝可按微信命名调用的方法数   |  479 |
-| 支付宝语义对齐方法数             |  334 |
-| 支付宝 fallback 方法数           |  145 |
+| 支付宝语义对齐方法数             |  354 |
+| 支付宝 fallback 方法数           |  125 |
 | 抖音可按微信命名调用的方法数     |  479 |
-| 抖音语义对齐方法数               |  276 |
-| 抖音 fallback 方法数             |  203 |
+| 抖音语义对齐方法数               |  296 |
+| 抖音 fallback 方法数             |  183 |
 | 三端可调用完全对齐方法数         |  479 |
-| 三端语义完全对齐方法数           |  274 |
+| 三端语义完全对齐方法数           |  294 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           479 |             334 |             145 |      479 |      100.00% |         69.73% |
-| 抖音小程序 (`tt`)             |           479 |             276 |             203 |      479 |      100.00% |         57.62% |
+| 支付宝小程序 (`my`)           |           479 |             354 |             125 |      479 |      100.00% |         73.90% |
+| 抖音小程序 (`tt`)             |           479 |             296 |             183 |      479 |      100.00% |         61.80% |
 | 三端可调用完全对齐 (wx/my/tt) |           479 |               - |               - |      479 |      100.00% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             274 |               - |      479 |            - |         57.20% |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             294 |               - |      479 |            - |         61.38% |
 
 ## 核心差异映射（手工规则）
 
@@ -205,6 +205,26 @@
 | `stopBackgroundAudio`               | 直连 `wx.stopBackgroundAudio`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `stopDeviceMotionListening`         | 直连 `wx.stopDeviceMotionListening`                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `stopFaceDetect`                    | 直连 `wx.stopFaceDetect`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `requestCommonPayment`              | 直连 `wx.requestCommonPayment`                      | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `requestDeviceVoIP`                 | 直连 `wx.requestDeviceVoIP`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `requestMerchantTransfer`           | 直连 `wx.requestMerchantTransfer`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `requirePrivacyAuthorize`           | 直连 `wx.requirePrivacyAuthorize`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `reserveChannelsLive`               | 直连 `wx.reserveChannelsLive`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `selectGroupMembers`                | 直连 `wx.selectGroupMembers`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `sendHCEMessage`                    | 直连 `wx.sendHCEMessage`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `sendSms`                           | 直连 `wx.sendSms`                                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `setBackgroundFetchToken`           | 直连 `wx.setBackgroundFetchToken`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `setEnable1v1Chat`                  | 直连 `wx.setEnable1v1Chat`                          | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `setTopBarText`                     | 直连 `wx.setTopBarText`                             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `setWindowSize`                     | 直连 `wx.setWindowSize`                             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopHCE`                           | 直连 `wx.stopHCE`                                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopLocalServiceDiscovery`         | 直连 `wx.stopLocalServiceDiscovery`                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopLocationUpdate`                | 直连 `wx.stopLocationUpdate`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopRecord`                        | 直连 `wx.stopRecord`                                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `stopVoice`                         | 直连 `wx.stopVoice`                                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `subscribeVoIPVideoMembers`         | 直连 `wx.subscribeVoIPVideoMembers`                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `updateVoIPChatMuteConfig`          | 直连 `wx.updateVoIPChatMuteConfig`                  | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `updateWeChatApp`                   | 直连 `wx.updateWeChatApp`                           | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 
 ## 已执行验证
 

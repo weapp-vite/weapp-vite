@@ -177,6 +177,26 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'stopBackgroundAudio',
     'stopDeviceMotionListening',
     'stopFaceDetect',
+    'requestCommonPayment',
+    'requestDeviceVoIP',
+    'requestMerchantTransfer',
+    'requirePrivacyAuthorize',
+    'reserveChannelsLive',
+    'selectGroupMembers',
+    'sendHCEMessage',
+    'sendSms',
+    'setBackgroundFetchToken',
+    'setEnable1v1Chat',
+    'setTopBarText',
+    'setWindowSize',
+    'stopHCE',
+    'stopLocalServiceDiscovery',
+    'stopLocationUpdate',
+    'stopRecord',
+    'stopVoice',
+    'subscribeVoIPVideoMembers',
+    'updateVoIPChatMuteConfig',
+    'updateWeChatApp',
     'openCustomerServiceChat',
     'createVKSession',
     'compressVideo',
@@ -290,6 +310,26 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'stopBackgroundAudio',
     'stopDeviceMotionListening',
     'stopFaceDetect',
+    'requestCommonPayment',
+    'requestDeviceVoIP',
+    'requestMerchantTransfer',
+    'requirePrivacyAuthorize',
+    'reserveChannelsLive',
+    'selectGroupMembers',
+    'sendHCEMessage',
+    'sendSms',
+    'setBackgroundFetchToken',
+    'setEnable1v1Chat',
+    'setTopBarText',
+    'setWindowSize',
+    'stopHCE',
+    'stopLocalServiceDiscovery',
+    'stopLocationUpdate',
+    'stopRecord',
+    'stopVoice',
+    'subscribeVoIPVideoMembers',
+    'updateVoIPChatMuteConfig',
+    'updateWeChatApp',
     'showActionSheet',
     'openCustomerServiceChat',
     'createVKSession',
@@ -1683,6 +1723,166 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
     support: '⚠️',
   },
+  {
+    method: 'requestCommonPayment',
+    description: '发起通用支付请求。',
+    wxStrategy: '直连 `wx.requestCommonPayment`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'requestDeviceVoIP',
+    description: '请求设备 VoIP 能力。',
+    wxStrategy: '直连 `wx.requestDeviceVoIP`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'requestMerchantTransfer',
+    description: '发起商家转账请求。',
+    wxStrategy: '直连 `wx.requestMerchantTransfer`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'requirePrivacyAuthorize',
+    description: '请求隐私授权。',
+    wxStrategy: '直连 `wx.requirePrivacyAuthorize`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'reserveChannelsLive',
+    description: '预约视频号直播。',
+    wxStrategy: '直连 `wx.reserveChannelsLive`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'selectGroupMembers',
+    description: '选择群成员。',
+    wxStrategy: '直连 `wx.selectGroupMembers`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'sendHCEMessage',
+    description: '发送 HCE 消息。',
+    wxStrategy: '直连 `wx.sendHCEMessage`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'sendSms',
+    description: '发送短信。',
+    wxStrategy: '直连 `wx.sendSms`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'setBackgroundFetchToken',
+    description: '设置后台拉取 token。',
+    wxStrategy: '直连 `wx.setBackgroundFetchToken`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'setEnable1v1Chat',
+    description: '设置 1v1 通话可用状态。',
+    wxStrategy: '直连 `wx.setEnable1v1Chat`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'setTopBarText',
+    description: '设置顶栏文本。',
+    wxStrategy: '直连 `wx.setTopBarText`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'setWindowSize',
+    description: '设置窗口尺寸。',
+    wxStrategy: '直连 `wx.setWindowSize`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'stopHCE',
+    description: '停止 HCE 功能。',
+    wxStrategy: '直连 `wx.stopHCE`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'stopLocalServiceDiscovery',
+    description: '停止本地服务发现。',
+    wxStrategy: '直连 `wx.stopLocalServiceDiscovery`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'stopLocationUpdate',
+    description: '停止持续定位。',
+    wxStrategy: '直连 `wx.stopLocationUpdate`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'stopRecord',
+    description: '停止录音。',
+    wxStrategy: '直连 `wx.stopRecord`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'stopVoice',
+    description: '停止播放语音。',
+    wxStrategy: '直连 `wx.stopVoice`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'subscribeVoIPVideoMembers',
+    description: '订阅 VoIP 视频成员变化。',
+    wxStrategy: '直连 `wx.subscribeVoIPVideoMembers`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'updateVoIPChatMuteConfig',
+    description: '更新 VoIP 静音配置。',
+    wxStrategy: '直连 `wx.updateVoIPChatMuteConfig`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'updateWeChatApp',
+    description: '拉起微信升级流程。',
+    wxStrategy: '直连 `wx.updateWeChatApp`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
 ] as const
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
@@ -2939,6 +3139,66 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     join1v1Chat: {
       target: 'join1v1Chat',
     },
+    requestCommonPayment: {
+      target: 'requestCommonPayment',
+    },
+    requestDeviceVoIP: {
+      target: 'requestDeviceVoIP',
+    },
+    requestMerchantTransfer: {
+      target: 'requestMerchantTransfer',
+    },
+    requirePrivacyAuthorize: {
+      target: 'requirePrivacyAuthorize',
+    },
+    reserveChannelsLive: {
+      target: 'reserveChannelsLive',
+    },
+    selectGroupMembers: {
+      target: 'selectGroupMembers',
+    },
+    sendHCEMessage: {
+      target: 'sendHCEMessage',
+    },
+    sendSms: {
+      target: 'sendSms',
+    },
+    setBackgroundFetchToken: {
+      target: 'setBackgroundFetchToken',
+    },
+    setEnable1v1Chat: {
+      target: 'setEnable1v1Chat',
+    },
+    setTopBarText: {
+      target: 'setTopBarText',
+    },
+    setWindowSize: {
+      target: 'setWindowSize',
+    },
+    stopHCE: {
+      target: 'stopHCE',
+    },
+    stopLocalServiceDiscovery: {
+      target: 'stopLocalServiceDiscovery',
+    },
+    stopLocationUpdate: {
+      target: 'stopLocationUpdate',
+    },
+    stopRecord: {
+      target: 'stopRecord',
+    },
+    stopVoice: {
+      target: 'stopVoice',
+    },
+    subscribeVoIPVideoMembers: {
+      target: 'subscribeVoIPVideoMembers',
+    },
+    updateVoIPChatMuteConfig: {
+      target: 'updateVoIPChatMuteConfig',
+    },
+    updateWeChatApp: {
+      target: 'updateWeChatApp',
+    },
     shareAppMessageToGroup: {
       target: 'shareAppMessageToGroup',
     },
@@ -3467,6 +3727,66 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     join1v1Chat: {
       target: 'join1v1Chat',
+    },
+    requestCommonPayment: {
+      target: 'requestCommonPayment',
+    },
+    requestDeviceVoIP: {
+      target: 'requestDeviceVoIP',
+    },
+    requestMerchantTransfer: {
+      target: 'requestMerchantTransfer',
+    },
+    requirePrivacyAuthorize: {
+      target: 'requirePrivacyAuthorize',
+    },
+    reserveChannelsLive: {
+      target: 'reserveChannelsLive',
+    },
+    selectGroupMembers: {
+      target: 'selectGroupMembers',
+    },
+    sendHCEMessage: {
+      target: 'sendHCEMessage',
+    },
+    sendSms: {
+      target: 'sendSms',
+    },
+    setBackgroundFetchToken: {
+      target: 'setBackgroundFetchToken',
+    },
+    setEnable1v1Chat: {
+      target: 'setEnable1v1Chat',
+    },
+    setTopBarText: {
+      target: 'setTopBarText',
+    },
+    setWindowSize: {
+      target: 'setWindowSize',
+    },
+    stopHCE: {
+      target: 'stopHCE',
+    },
+    stopLocalServiceDiscovery: {
+      target: 'stopLocalServiceDiscovery',
+    },
+    stopLocationUpdate: {
+      target: 'stopLocationUpdate',
+    },
+    stopRecord: {
+      target: 'stopRecord',
+    },
+    stopVoice: {
+      target: 'stopVoice',
+    },
+    subscribeVoIPVideoMembers: {
+      target: 'subscribeVoIPVideoMembers',
+    },
+    updateVoIPChatMuteConfig: {
+      target: 'updateVoIPChatMuteConfig',
+    },
+    updateWeChatApp: {
+      target: 'updateWeChatApp',
     },
     shareAppMessageToGroup: {
       target: 'shareAppMessageToGroup',

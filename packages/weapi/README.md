@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 334 | 145 | 479 | 100.00% | 69.73% |
-| 抖音小程序 (`tt`) | 479 | 276 | 203 | 479 | 100.00% | 57.62% |
+| 支付宝小程序 (`my`) | 479 | 354 | 125 | 479 | 100.00% | 73.90% |
+| 抖音小程序 (`tt`) | 479 | 296 | 183 | 479 | 100.00% | 61.80% |
 | 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 274 | - | 479 | - | 57.20% |
+| 三端语义完全对齐 (wx/my/tt) | - | 294 | - | 479 | - | 61.38% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -214,6 +214,26 @@
 | `stopBackgroundAudio` | 停止后台音频。 | 直连 `wx.stopBackgroundAudio` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `stopDeviceMotionListening` | 停止监听设备方向变化。 | 直连 `wx.stopDeviceMotionListening` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `stopFaceDetect` | 停止人脸检测。 | 直连 `wx.stopFaceDetect` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `requestCommonPayment` | 发起通用支付请求。 | 直连 `wx.requestCommonPayment` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `requestDeviceVoIP` | 请求设备 VoIP 能力。 | 直连 `wx.requestDeviceVoIP` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `requestMerchantTransfer` | 发起商家转账请求。 | 直连 `wx.requestMerchantTransfer` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `requirePrivacyAuthorize` | 请求隐私授权。 | 直连 `wx.requirePrivacyAuthorize` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `reserveChannelsLive` | 预约视频号直播。 | 直连 `wx.reserveChannelsLive` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `selectGroupMembers` | 选择群成员。 | 直连 `wx.selectGroupMembers` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `sendHCEMessage` | 发送 HCE 消息。 | 直连 `wx.sendHCEMessage` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `sendSms` | 发送短信。 | 直连 `wx.sendSms` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `setBackgroundFetchToken` | 设置后台拉取 token。 | 直连 `wx.setBackgroundFetchToken` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `setEnable1v1Chat` | 设置 1v1 通话可用状态。 | 直连 `wx.setEnable1v1Chat` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `setTopBarText` | 设置顶栏文本。 | 直连 `wx.setTopBarText` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `setWindowSize` | 设置窗口尺寸。 | 直连 `wx.setWindowSize` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `stopHCE` | 停止 HCE 功能。 | 直连 `wx.stopHCE` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `stopLocalServiceDiscovery` | 停止本地服务发现。 | 直连 `wx.stopLocalServiceDiscovery` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `stopLocationUpdate` | 停止持续定位。 | 直连 `wx.stopLocationUpdate` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `stopRecord` | 停止录音。 | 直连 `wx.stopRecord` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `stopVoice` | 停止播放语音。 | 直连 `wx.stopVoice` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `subscribeVoIPVideoMembers` | 订阅 VoIP 视频成员变化。 | 直连 `wx.subscribeVoIPVideoMembers` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `updateVoIPChatMuteConfig` | 更新 VoIP 静音配置。 | 直连 `wx.updateVoIPChatMuteConfig` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `updateWeChatApp` | 拉起微信升级流程。 | 直连 `wx.updateWeChatApp` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 
