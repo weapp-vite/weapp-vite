@@ -1287,7 +1287,7 @@ describe('weapi', () => {
     })
   })
 
-  it('maps saveVideoToPhotosAlbum to saveImageToPhotosAlbum for douyin', async () => {
+  it('treats saveVideoToPhotosAlbum as unsupported for douyin without strict-equivalent api', async () => {
     const saveImageToPhotosAlbum = vi.fn((options: any) => {
       options.success?.({ errMsg: 'saveImageToPhotosAlbum:ok' })
     })
@@ -1298,15 +1298,12 @@ describe('weapi', () => {
       platform: 'tt',
     })
 
-    const result = await api.saveVideoToPhotosAlbum({
+    await expect(api.saveVideoToPhotosAlbum({
       filePath: '/tmp/demo.mp4',
-    } as any)
-    expect(saveImageToPhotosAlbum).toHaveBeenCalledWith(expect.objectContaining({
-      filePath: '/tmp/demo.mp4',
-    }))
-    expect(result).toMatchObject({
-      errMsg: 'saveImageToPhotosAlbum:ok',
+    } as any)).rejects.toMatchObject({
+      errMsg: 'tt.saveVideoToPhotosAlbum:fail method not supported',
     })
+    expect(saveImageToPhotosAlbum).not.toHaveBeenCalled()
   })
 
   it('maps chooseVideo to chooseMedia for douyin', async () => {
@@ -1614,7 +1611,7 @@ describe('weapi', () => {
     expect(result).toMatchObject({ size: 1024 })
   })
 
-  it('maps ad and live context apis for douyin', () => {
+  it('maps interstitial and live context apis for douyin', () => {
     const createInterstitialAd = vi.fn(() => ({ show: vi.fn() }))
     const createLivePlayerContext = vi.fn(() => ({ play: vi.fn() }))
     const createVideoContext = vi.fn(() => ({ play: vi.fn() }))
@@ -1628,14 +1625,33 @@ describe('weapi', () => {
     }) as Record<string, any>
 
     api.createInterstitialAd({ adUnitId: 'tt-ad-1' })
-    api.createRewardedVideoAd({ adUnitId: 'tt-ad-2' })
     api.createLivePlayerContext('tt-live-player')
     api.createLivePusherContext('tt-live-pusher')
 
     expect(createInterstitialAd).toHaveBeenNthCalledWith(1, expect.objectContaining({ adUnitId: 'tt-ad-1' }))
-    expect(createInterstitialAd).toHaveBeenNthCalledWith(2, expect.objectContaining({ adUnitId: 'tt-ad-2' }))
     expect(createLivePlayerContext).toHaveBeenNthCalledWith(1, 'tt-live-player', expect.any(Object))
     expect(createVideoContext).toHaveBeenNthCalledWith(1, 'tt-live-pusher', expect.any(Object))
+  })
+
+  it('treats createRewardedVideoAd as unsupported for douyin without strict-equivalent api', async () => {
+    const createInterstitialAd = vi.fn(() => ({ show: vi.fn() }))
+    const api = createWeapi({
+      adapter: {
+        createInterstitialAd,
+      },
+      platform: 'tt',
+    })
+    expect(api.resolveTarget('createRewardedVideoAd')).toMatchObject({
+      method: 'createRewardedVideoAd',
+      target: 'createRewardedVideoAd',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.createRewardedVideoAd({ adUnitId: 'tt-ad-2' } as any)).rejects.toMatchObject({
+      errMsg: 'tt.createRewardedVideoAd:fail method not supported',
+    })
+    expect(createInterstitialAd).not.toHaveBeenCalled()
   })
 
   const douyinPromiseCases = [
@@ -1863,7 +1879,7 @@ describe('weapi', () => {
       { method: 'requestVirtualPayment', my: 'tradePay', tt: 'pay' },
       { method: 'previewMedia', my: 'previewImage', tt: 'previewImage' },
       { method: 'createInterstitialAd', my: 'createRewardedAd', tt: 'createInterstitialAd' },
-      { method: 'createRewardedVideoAd', my: 'createRewardedAd', tt: 'createInterstitialAd' },
+      { method: 'createRewardedVideoAd', my: 'createRewardedAd', tt: 'createRewardedVideoAd', ttSupported: false },
       { method: 'createLivePlayerContext', my: 'createVideoContext', tt: 'createLivePlayerContext' },
       { method: 'createLivePusherContext', my: 'createVideoContext', tt: 'createVideoContext' },
       { method: 'getVideoInfo', my: 'getVideoInfo', tt: 'getFileInfo' },
@@ -1895,7 +1911,7 @@ describe('weapi', () => {
       { method: 'getNetworkType', my: 'getNetworkType', tt: 'getSystemInfo' },
       { method: 'getBatteryInfo', my: 'getBatteryInfo', tt: 'getSystemInfo' },
       { method: 'getBatteryInfoSync', my: 'getBatteryInfoSync', tt: 'getSystemInfoSync' },
-      { method: 'saveVideoToPhotosAlbum', my: 'saveVideoToPhotosAlbum', tt: 'saveImageToPhotosAlbum' },
+      { method: 'saveVideoToPhotosAlbum', my: 'saveVideoToPhotosAlbum', tt: 'saveVideoToPhotosAlbum', ttSupported: false },
       { method: 'batchSetStorage', my: 'batchSetStorage', tt: 'batchSetStorage', mySupported: false, ttSupported: false },
       { method: 'batchGetStorage', my: 'batchGetStorage', tt: 'batchGetStorage', mySupported: false, ttSupported: false },
       { method: 'batchSetStorageSync', my: 'batchSetStorageSync', tt: 'batchSetStorageSync', mySupported: false, ttSupported: false },
