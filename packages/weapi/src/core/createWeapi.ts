@@ -7,7 +7,7 @@ import type {
   WeapiResolvedTarget,
 } from './types'
 import { detectGlobalAdapter } from './adapter'
-import { isSyntheticMethodSupported, resolveMethodMappingWithMeta } from './methodMapping'
+import { resolveMethodMappingWithMeta } from './methodMapping'
 import { createNotSupportedError, hasCallbacks, isPlainObject, shouldSkipPromise } from './utils'
 
 const INTERNAL_KEYS = new Set<PropertyKey>([
@@ -100,11 +100,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
   let platformName: string | undefined = normalizePlatformName(options.platform)
   const allowFallback = false
   const cache = new Map<PropertyKey, any>()
-  const syntheticWindowResizeListeners = new Set<(result: any) => void>()
-  let syntheticWindowResizeBridgeReady = false
-  let syntheticWindowResizeSnapshot: string | undefined
-  const syntheticMemoryWarningListeners = new Set<(result: any) => void>()
-  let syntheticMemoryWarningBridgeReady = false
   const resolveAdapter = () => {
     if (adapter) {
       return adapter
@@ -137,160 +132,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     return platformName
   }
 
-  const hasSyntheticSupport = (platform: string | undefined, methodName: string) => {
-    if (platform !== 'my' && platform !== 'tt') {
-      return false
-    }
-    return isSyntheticMethodSupported(platform, methodName)
-  }
-
-  const emitSyntheticWindowResize = (result: any) => {
-    for (const listener of syntheticWindowResizeListeners) {
-      listener(result)
-    }
-  }
-
-  const emitSyntheticMemoryWarning = (result: any) => {
-    for (const listener of syntheticMemoryWarningListeners) {
-      listener(result)
-    }
-  }
-
-  const ensureSyntheticWindowResizeBridge = () => {
-    if (syntheticWindowResizeBridgeReady) {
-      return
-    }
-    const runtimeAdapter = resolveAdapter() as Record<string, any> | undefined
-    const onAppShow = runtimeAdapter?.onAppShow
-    if (typeof onAppShow !== 'function') {
-      return
-    }
-    syntheticWindowResizeBridgeReady = true
-    onAppShow(() => {
-      const currentAdapter = resolveAdapter() as Record<string, any> | undefined
-      const getWindowInfo = currentAdapter?.getWindowInfo
-      if (typeof getWindowInfo !== 'function') {
-        return
-      }
-      getWindowInfo({
-        success: (result: any) => {
-          const nextSnapshot = JSON.stringify({
-            pixelRatio: result?.pixelRatio,
-            screenHeight: result?.screenHeight,
-            screenWidth: result?.screenWidth,
-            windowHeight: result?.windowHeight,
-            windowWidth: result?.windowWidth,
-          })
-          if (syntheticWindowResizeSnapshot === undefined) {
-            syntheticWindowResizeSnapshot = nextSnapshot
-            return
-          }
-          if (syntheticWindowResizeSnapshot !== nextSnapshot) {
-            syntheticWindowResizeSnapshot = nextSnapshot
-            emitSyntheticWindowResize(result)
-          }
-        },
-      })
-    })
-  }
-
-  const ensureSyntheticMemoryWarningBridge = () => {
-    if (syntheticMemoryWarningBridgeReady) {
-      return
-    }
-    const runtimeAdapter = resolveAdapter() as Record<string, any> | undefined
-    const onMemoryWarning = runtimeAdapter?.onMemoryWarning
-    if (typeof onMemoryWarning !== 'function') {
-      return
-    }
-    syntheticMemoryWarningBridgeReady = true
-    onMemoryWarning((result: any) => {
-      emitSyntheticMemoryWarning(result)
-    })
-  }
-
-  const invokeSyntheticMethod = (
-    platform: string | undefined,
-    methodName: string,
-    args: unknown[],
-  ) => {
-    if (!hasSyntheticSupport(platform, methodName)) {
-      return {
-        handled: false as const,
-        result: undefined,
-      }
-    }
-    const invokeSyntheticAsyncSuccess = (payload: Record<string, any>) => {
-      const lastArg = args.length > 0 ? args[args.length - 1] : undefined
-      if (hasCallbacks(lastArg)) {
-        lastArg.success?.(payload)
-        lastArg.complete?.(payload)
-        return undefined
-      }
-      return Promise.resolve(payload)
-    }
-    if (methodName === 'reportAnalytics') {
-      return {
-        handled: true as const,
-        result: invokeSyntheticAsyncSuccess({
-          errMsg: 'reportAnalytics:ok',
-        }),
-      }
-    }
-    if (methodName === 'offMemoryWarning' && platform === 'tt') {
-      const callback = typeof args[0] === 'function' ? args[0] as (result: any) => void : undefined
-      if (callback) {
-        syntheticMemoryWarningListeners.delete(callback)
-      }
-      else {
-        syntheticMemoryWarningListeners.clear()
-      }
-      return {
-        handled: true as const,
-        result: undefined,
-      }
-    }
-    if (methodName === 'onMemoryWarning' && platform === 'tt') {
-      const callback = typeof args[0] === 'function' ? args[0] as (result: any) => void : undefined
-      if (callback) {
-        syntheticMemoryWarningListeners.add(callback)
-      }
-      ensureSyntheticMemoryWarningBridge()
-      return {
-        handled: true as const,
-        result: undefined,
-      }
-    }
-    if (methodName === 'onWindowResize' && platform === 'my') {
-      const callback = typeof args[0] === 'function' ? args[0] as (result: any) => void : undefined
-      if (callback) {
-        syntheticWindowResizeListeners.add(callback)
-      }
-      ensureSyntheticWindowResizeBridge()
-      return {
-        handled: true as const,
-        result: undefined,
-      }
-    }
-    if (methodName === 'offWindowResize' && platform === 'my') {
-      const callback = typeof args[0] === 'function' ? args[0] as (result: any) => void : undefined
-      if (callback) {
-        syntheticWindowResizeListeners.delete(callback)
-      }
-      else {
-        syntheticWindowResizeListeners.clear()
-      }
-      return {
-        handled: true as const,
-        result: undefined,
-      }
-    }
-    return {
-      handled: false as const,
-      result: undefined,
-    }
-  }
-
   const resolveTarget = (methodName: string): WeapiResolvedTarget => {
     const runtimeAdapter = resolveAdapter()
     const platform = getPlatform()
@@ -300,7 +141,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
       ? (runtimeAdapter as Record<string, any>)[target]
       : undefined
     const supported = typeof targetMethod === 'function'
-      || hasSyntheticSupport(platform, methodName)
     const supportLevel = !supported
       ? 'unsupported'
       : mappingInfo?.source === 'fallback'
@@ -374,8 +214,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         : undefined
       const methodName = mappingRule?.target ?? (prop as string)
       const value = (currentAdapter as Record<string, any>)[methodName]
-      const syntheticSupported = typeof prop === 'string' && hasSyntheticSupport(platform, prop)
-      if (typeof value !== 'function' && !syntheticSupported) {
+      if (typeof value !== 'function') {
         if (value === undefined && typeof prop === 'string') {
           const missing = (...args: unknown[]) => callMissingApi(prop, getPlatform(), args)
           cache.set(prop, missing)
@@ -395,19 +234,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
           ? (runtimeAdapter as Record<string, any>)[methodName]
           : undefined
         const runtimeArgs = mappingRule?.mapArgs ? mappingRule.mapArgs(args) : args
-        const preferSynthetic = platform === 'tt'
-          && (prop === 'onMemoryWarning' || prop === 'offMemoryWarning')
-        if (preferSynthetic) {
-          const syntheticResult = invokeSyntheticMethod(platform, prop as string, runtimeArgs)
-          if (syntheticResult.handled) {
-            return syntheticResult.result
-          }
-        }
         if (typeof runtimeMethod !== 'function') {
-          const syntheticResult = invokeSyntheticMethod(platform, prop as string, runtimeArgs)
-          if (syntheticResult.handled) {
-            return syntheticResult.result
-          }
           return callMissingApi(prop as string, getPlatform(), args)
         }
         if (shouldSkipPromise(prop as string)) {

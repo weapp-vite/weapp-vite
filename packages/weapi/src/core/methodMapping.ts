@@ -82,15 +82,8 @@ const PLATFORM_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
 }
 
 const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
-  my: new Set([
-    'reportAnalytics',
-    'onWindowResize',
-    'offWindowResize',
-  ]),
-  tt: new Set([
-    'onMemoryWarning',
-    'offMemoryWarning',
-  ]),
+  my: new Set([]),
+  tt: new Set([]),
 }
 
 export const WEAPI_PLATFORM_SUPPORT_MATRIX: readonly WeapiPlatformSupportMatrixItem[] = [
@@ -573,7 +566,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'onWindowResize',
     description: '监听窗口尺寸变化事件。',
     wxStrategy: '直连 `wx.onWindowResize`',
-    alipayStrategy: '使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.onWindowResize`',
     support: '⚠️',
   },
@@ -581,7 +574,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'offWindowResize',
     description: '取消监听窗口尺寸变化事件。',
     wxStrategy: '直连 `wx.offWindowResize`',
-    alipayStrategy: '使用内置 shim，移除 `onWindowResize` 注册回调',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.offWindowResize`',
     support: '⚠️',
   },
@@ -589,7 +582,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'reportAnalytics',
     description: '上报分析数据。',
     wxStrategy: '直连 `wx.reportAnalytics`',
-    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.reportAnalytics`',
     support: '⚠️',
   },
@@ -702,7 +695,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '取消内存不足告警监听。',
     wxStrategy: '直连 `wx.offMemoryWarning`',
     alipayStrategy: '直连 `my.offMemoryWarning`',
-    douyinStrategy: '使用内置 shim，配合 `tt.onMemoryWarning` 实现监听解绑',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {

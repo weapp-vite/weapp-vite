@@ -747,7 +747,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.onWindowResize` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    * | 抖音 | 直连 `tt.onWindowResize` | ⚠️ |
    */
   onWindowResize: WeapiCrossPlatformAdapter['onWindowResize']
@@ -758,7 +758,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.offWindowResize` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，移除 `onWindowResize` 注册回调 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    * | 抖音 | 直连 `tt.offWindowResize` | ⚠️ |
    */
   offWindowResize: WeapiCrossPlatformAdapter['offWindowResize']
@@ -769,7 +769,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.reportAnalytics` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    * | 抖音 | 直连 `tt.reportAnalytics` | ⚠️ |
    */
   reportAnalytics: WeapiCrossPlatformAdapter['reportAnalytics']
@@ -924,7 +924,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.offMemoryWarning` | ⚠️ |
    * | 支付宝 | 直连 `my.offMemoryWarning` | ⚠️ |
-   * | 抖音 | 使用内置 shim，配合 `tt.onMemoryWarning` 实现监听解绑 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   offMemoryWarning: WeapiCrossPlatformAdapter['offMemoryWarning']
 

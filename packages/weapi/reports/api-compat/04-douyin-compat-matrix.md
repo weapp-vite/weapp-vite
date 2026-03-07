@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：166，不支持：313
+总计：479，支持：165，不支持：314
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -237,7 +237,7 @@
 | `offLocalServiceResolveFail`                  | `offLocalServiceResolveFail`                  | ❌   | `unsupported` | ❌       | 未提供 tt.offLocalServiceResolveFail，调用时将返回 not supported                  |
 | `offLocationChange`                           | `offLocationChange`                           | ❌   | `unsupported` | ❌       | 未提供 tt.offLocationChange，调用时将返回 not supported                           |
 | `offLocationChangeError`                      | `offLocationChangeError`                      | ❌   | `unsupported` | ❌       | 未提供 tt.offLocationChangeError，调用时将返回 not supported                      |
-| `offMemoryWarning`                            | `offMemoryWarning`                            | ✅   | `mapped`      | ✅       | 使用内置 shim，配合 `tt.onMemoryWarning` 实现监听解绑                             |
+| `offMemoryWarning`                            | `offMemoryWarning`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `offMenuButtonBoundingClientRectWeightChange` | `offMenuButtonBoundingClientRectWeightChange` | ❌   | `unsupported` | ❌       | 未提供 tt.offMenuButtonBoundingClientRectWeightChange，调用时将返回 not supported |
 | `offNetworkStatusChange`                      | `offNetworkStatusChange`                      | ✅   | `native`      | ✅       | 直连 `tt.offNetworkStatusChange`                                                  |
 | `offNetworkWeakChange`                        | `offNetworkWeakChange`                        | ❌   | `unsupported` | ❌       | 未提供 tt.offNetworkWeakChange，调用时将返回 not supported                        |
