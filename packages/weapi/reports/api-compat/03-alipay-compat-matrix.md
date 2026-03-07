@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：219，不支持：260
+总计：479，支持：217，不支持：262
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -440,7 +440,7 @@
 | `showModal`                                   | `confirm`                                     | ✅   | `mapped`      | ✅       | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果                                  |
 | `showNavigationBarLoading`                    | `showNavigationBarLoading`                    | ✅   | `native`      | ✅       | 直连 `my.showNavigationBarLoading`                                                |
 | `showRedPackage`                              | `showRedPackage`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `showShareImageMenu`                          | `showSharePanel`                              | ✅   | `mapped`      | ✅       | 映射到 `my.showSharePanel`                                                        |
+| `showShareImageMenu`                          | `showShareImageMenu`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `showShareMenu`                               | `showShareMenu`                               | ✅   | `native`      | ✅       | 直连 `my.showShareMenu`                                                           |
 | `showTabBar`                                  | `showTabBar`                                  | ✅   | `native`      | ✅       | 直连 `my.showTabBar`                                                              |
 | `showTabBarRedDot`                            | `showTabBarRedDot`                            | ✅   | `native`      | ✅       | 直连 `my.showTabBarRedDot`                                                        |
@@ -476,7 +476,7 @@
 | `stopWifi`                                    | `stopWifi`                                    | ✅   | `native`      | ✅       | 直连 `my.stopWifi`                                                                |
 | `subscribeVoIPVideoMembers`                   | `subscribeVoIPVideoMembers`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `switchTab`                                   | `switchTab`                                   | ✅   | `native`      | ✅       | 直连 `my.switchTab`                                                               |
-| `updateShareMenu`                             | `showSharePanel`                              | ✅   | `mapped`      | ✅       | 映射到 `my.showSharePanel`                                                        |
+| `updateShareMenu`                             | `updateShareMenu`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `updateVoIPChatMuteConfig`                    | `updateVoIPChatMuteConfig`                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `updateWeChatApp`                             | `updateWeChatApp`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `uploadFile`                                  | `uploadFile`                                  | ✅   | `native`      | ✅       | 直连 `my.uploadFile`                                                              |

@@ -505,8 +505,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.showShareImageMenu` | ⚠️ |
-   * | 支付宝 | 映射到 `my.showSharePanel` | ⚠️ |
-   * | 抖音 | 映射到 `tt.showShareMenu` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   showShareImageMenu: WeapiCrossPlatformAdapter['showShareImageMenu']
 
@@ -516,8 +516,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.updateShareMenu` | ⚠️ |
-   * | 支付宝 | 映射到 `my.showSharePanel` | ⚠️ |
-   * | 抖音 | 映射到 `tt.showShareMenu` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   updateShareMenu: WeapiCrossPlatformAdapter['updateShareMenu']
 

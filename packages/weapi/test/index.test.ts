@@ -980,6 +980,8 @@ describe('weapi', () => {
   })
 
   it.each([
+    'showShareImageMenu',
+    'updateShareMenu',
     'openSystemBluetoothSetting',
     'reportEvent',
     'reportMonitor',
@@ -1925,8 +1927,8 @@ describe('weapi', () => {
       { method: 'createLivePlayerContext', my: 'createLivePlayerContext', tt: 'createLivePlayerContext', mySupported: false },
       { method: 'createLivePusherContext', my: 'createLivePusherContext', tt: 'createLivePusherContext', mySupported: false, ttSupported: false },
       { method: 'getVideoInfo', my: 'getVideoInfo', tt: 'getVideoInfo', ttSupported: false },
-      { method: 'showShareImageMenu', my: 'showSharePanel', tt: 'showShareMenu' },
-      { method: 'updateShareMenu', my: 'showSharePanel', tt: 'showShareMenu' },
+      { method: 'showShareImageMenu', my: 'showShareImageMenu', tt: 'showShareImageMenu', mySupported: false, ttSupported: false },
+      { method: 'updateShareMenu', my: 'updateShareMenu', tt: 'updateShareMenu', mySupported: false, ttSupported: false },
       { method: 'openEmbeddedMiniProgram', my: 'navigateToMiniProgram', tt: 'navigateToMiniProgram' },
       { method: 'saveFileToDisk', my: 'saveFileToDisk', tt: 'saveFile' },
       { method: 'getEnterOptionsSync', my: 'getEnterOptionsSync', tt: 'getLaunchOptionsSync' },

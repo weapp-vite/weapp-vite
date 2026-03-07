@@ -385,16 +385,16 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'showShareImageMenu',
     description: '显示分享图片菜单。',
     wxStrategy: '直连 `wx.showShareImageMenu`',
-    alipayStrategy: '映射到 `my.showSharePanel`',
-    douyinStrategy: '映射到 `tt.showShareMenu`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
     method: 'updateShareMenu',
     description: '更新分享菜单配置。',
     wxStrategy: '直连 `wx.updateShareMenu`',
-    alipayStrategy: '映射到 `my.showSharePanel`',
-    douyinStrategy: '映射到 `tt.showShareMenu`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2765,10 +2765,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       mapArgs: mapTradePayArgs,
     },
     showShareImageMenu: {
-      target: 'showSharePanel',
+      target: 'showShareImageMenu',
     },
     updateShareMenu: {
-      target: 'showSharePanel',
+      target: 'updateShareMenu',
     },
     openEmbeddedMiniProgram: {
       target: 'navigateToMiniProgram',
@@ -3464,10 +3464,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       mapArgs: mapDouyinPayArgs,
     },
     showShareImageMenu: {
-      target: 'showShareMenu',
+      target: 'showShareImageMenu',
     },
     updateShareMenu: {
-      target: 'showShareMenu',
+      target: 'updateShareMenu',
     },
     openEmbeddedMiniProgram: {
       target: 'navigateToMiniProgram',

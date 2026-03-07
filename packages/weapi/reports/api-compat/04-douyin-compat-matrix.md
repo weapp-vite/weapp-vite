@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：158，不支持：321
+总计：479，支持：156，不支持：323
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -440,7 +440,7 @@
 | `showModal`                                   | `showModal`                                   | ✅   | `mapped`      | ✅       | 直连 `tt.showModal`                                                               |
 | `showNavigationBarLoading`                    | `showNavigationBarLoading`                    | ✅   | `native`      | ✅       | 直连 `tt.showNavigationBarLoading`                                                |
 | `showRedPackage`                              | `showRedPackage`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `showShareImageMenu`                          | `showShareMenu`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.showShareMenu`                                                         |
+| `showShareImageMenu`                          | `showShareImageMenu`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `showShareMenu`                               | `showShareMenu`                               | ✅   | `native`      | ✅       | 直连 `tt.showShareMenu`                                                           |
 | `showTabBar`                                  | `showTabBar`                                  | ✅   | `native`      | ✅       | 直连 `tt.showTabBar`                                                              |
 | `showTabBarRedDot`                            | `showTabBarRedDot`                            | ✅   | `native`      | ✅       | 直连 `tt.showTabBarRedDot`                                                        |
@@ -476,7 +476,7 @@
 | `stopWifi`                                    | `stopWifi`                                    | ❌   | `unsupported` | ❌       | 未提供 tt.stopWifi，调用时将返回 not supported                                    |
 | `subscribeVoIPVideoMembers`                   | `subscribeVoIPVideoMembers`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `switchTab`                                   | `switchTab`                                   | ✅   | `native`      | ✅       | 直连 `tt.switchTab`                                                               |
-| `updateShareMenu`                             | `showShareMenu`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.showShareMenu`                                                         |
+| `updateShareMenu`                             | `updateShareMenu`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `updateVoIPChatMuteConfig`                    | `updateVoIPChatMuteConfig`                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `updateWeChatApp`                             | `updateWeChatApp`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `uploadFile`                                  | `uploadFile`                                  | ✅   | `native`      | ✅       | 直连 `tt.uploadFile`                                                              |
