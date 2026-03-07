@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：129，不支持：350
+总计：479，支持：132，不支持：347
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -74,9 +74,9 @@
 | `createMapContext`                            | `createMapContext`                            | ✅   | `native`      | ✅       | 直连 `tt.createMapContext`                                                        |
 | `createMediaAudioPlayer`                      | `createMediaAudioPlayer`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createMediaContainer`                        | `createMediaContainer`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `createMediaRecorder`                         | `createMediaRecorder`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `createMediaRecorder`                         | `createMediaRecorder`                         | ✅   | `mapped`      | ✅       | 直连 `tt.createMediaRecorder`                                                     |
 | `createOffscreenCanvas`                       | `createOffscreenCanvas`                       | ✅   | `native`      | ✅       | 直连 `tt.createOffscreenCanvas`                                                   |
-| `createRewardedVideoAd`                       | `createRewardedVideoAd`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `createRewardedVideoAd`                       | `createRewardedVideoAd`                       | ✅   | `mapped`      | ✅       | 直连 `tt.createRewardedVideoAd`                                                   |
 | `createSelectorQuery`                         | `createSelectorQuery`                         | ✅   | `native`      | ✅       | 直连 `tt.createSelectorQuery`                                                     |
 | `createTCPSocket`                             | `createTCPSocket`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createUDPSocket`                             | `createUDPSocket`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -435,7 +435,7 @@
 | `shareToWeRun`                                | `shareToWeRun`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `shareVideoMessage`                           | `shareVideoMessage`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `shareVideoToGroup`                           | `shareVideoToGroup`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `showActionSheet`                             | `showActionSheet`                             | ❌   | `unsupported` | ❌       | 直连 `tt.showActionSheet`；缺失时按 unsupported 报错                              |
+| `showActionSheet`                             | `showActionSheet`                             | ✅   | `mapped`      | ✅       | 直连 `tt.showActionSheet`；缺失时按 unsupported 报错                              |
 | `showLoading`                                 | `showLoading`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.showLoading`                                                             |
 | `showModal`                                   | `showModal`                                   | ✅   | `mapped`      | ✅       | 直连 `tt.showModal`                                                               |
 | `showNavigationBarLoading`                    | `showNavigationBarLoading`                    | ✅   | `native`      | ✅       | 直连 `tt.showNavigationBarLoading`                                                |

@@ -209,6 +209,73 @@ export type WeapiTtMethodName = (typeof WEAPI_TT_METHODS)[number]
 `
 }
 
+function isExportedNode(node) {
+  return Array.isArray(node.modifiers) && node.modifiers.some(modifier => modifier.kind === ts.SyntaxKind.ExportKeyword)
+}
+
+function isDouyinCallableTypeNode(typeNode) {
+  if (ts.isTypeReferenceNode(typeNode)) {
+    const typeName = typeNode.typeName.getText()
+    return typeName === 'AsyncAPI' || typeName === 'SyncAPI' || typeName === 'AsyncAPIWithHandler'
+  }
+  if (ts.isFunctionTypeNode(typeNode)) {
+    return true
+  }
+  if (ts.isTypeLiteralNode(typeNode)) {
+    return typeNode.members.some(member => ts.isCallSignatureDeclaration(member))
+  }
+  return false
+}
+
+async function collectDtsFiles(directory) {
+  const files = []
+  const entries = await fs.readdir(directory, { withFileTypes: true })
+  for (const entry of entries) {
+    const fullPath = path.join(directory, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...await collectDtsFiles(fullPath))
+      continue
+    }
+    if (!entry.isFile() || !entry.name.endsWith('.d.ts')) {
+      continue
+    }
+    files.push(fullPath)
+  }
+  return files
+}
+
+async function collectDouyinSupplementMethods() {
+  const packageJsonPath = require.resolve('@douyin-microapp/typings/package.json', { paths: [ROOT_DIR] })
+  const packageRoot = path.dirname(packageJsonPath)
+  const apiDir = path.join(packageRoot, 'api')
+  const dtsFiles = await collectDtsFiles(apiDir)
+  const methodNames = new Set()
+
+  for (const filePath of dtsFiles) {
+    const sourceText = await fs.readFile(filePath, 'utf8')
+    const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+    for (const statement of sourceFile.statements) {
+      if (ts.isVariableStatement(statement) && isExportedNode(statement)) {
+        for (const declaration of statement.declarationList.declarations) {
+          if (!ts.isIdentifier(declaration.name) || !declaration.type) {
+            continue
+          }
+          if (!isDouyinCallableTypeNode(declaration.type)) {
+            continue
+          }
+          methodNames.add(declaration.name.text)
+        }
+        continue
+      }
+      if (ts.isFunctionDeclaration(statement) && isExportedNode(statement) && statement.name) {
+        methodNames.add(statement.name.text)
+      }
+    }
+  }
+
+  return uniqueSorted([...methodNames])
+}
+
 async function run() {
   const { check } = parseArgs()
   const program = createProgram()
@@ -230,7 +297,15 @@ async function run() {
 
   const wx = collectApiMembers(checker, wxType)
   const my = collectApiMembers(checker, myType)
-  const tt = collectApiMembers(checker, ttType)
+  const ttBase = collectApiMembers(checker, ttType)
+  const ttSupplementMethods = await collectDouyinSupplementMethods()
+  const tt = {
+    methods: uniqueSorted([
+      ...ttBase.methods,
+      ...ttSupplementMethods,
+    ]),
+    nonFunctionMembers: ttBase.nonFunctionMembers,
+  }
 
   const sourceText = generateSource({
     versions: {

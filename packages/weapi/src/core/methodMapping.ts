@@ -131,7 +131,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     wxStrategy: '直连 `wx.showActionSheet`',
     alipayStrategy: '`itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐',
     douyinStrategy: '直连 `tt.showActionSheet`；缺失时按 unsupported 报错',
-    support: '⚠️',
+    support: '✅',
   },
   {
     method: 'showModal',
@@ -194,7 +194,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '创建激励视频广告实例。',
     wxStrategy: '直连 `wx.createRewardedVideoAd`',
     alipayStrategy: '映射到 `my.createRewardedAd`，并将 `load/show/destroy` 参数对齐为微信调用方式',
-    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '直连 `tt.createRewardedVideoAd`',
     support: '⚠️',
   },
   {
@@ -1850,7 +1850,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '创建媒体录制器。',
     wxStrategy: '直连 `wx.createMediaRecorder`',
     alipayStrategy: '无同等 API，调用时按 unsupported 报错',
-    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '直连 `tt.createMediaRecorder`',
     support: '⚠️',
   },
   {

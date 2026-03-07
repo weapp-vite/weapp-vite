@@ -152,9 +152,9 @@ interface WeapiCrossPlatformMethodDocs {
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
-   * | 微信 | 直连 `wx.showActionSheet` | ⚠️ |
-   * | 支付宝 | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | ⚠️ |
-   * | 抖音 | 直连 `tt.showActionSheet`；缺失时按 unsupported 报错 | ⚠️ |
+   * | 微信 | 直连 `wx.showActionSheet` | ✅ |
+   * | 支付宝 | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | ✅ |
+   * | 抖音 | 直连 `tt.showActionSheet`；缺失时按 unsupported 报错 | ✅ |
    */
   showActionSheet: WeapiCrossPlatformAdapter['showActionSheet']
 
@@ -242,7 +242,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.createRewardedVideoAd` | ⚠️ |
    * | 支付宝 | 映射到 `my.createRewardedAd`，并将 `load/show/destroy` 参数对齐为微信调用方式 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 直连 `tt.createRewardedVideoAd` | ⚠️ |
    */
   createRewardedVideoAd: WeapiCrossPlatformAdapter['createRewardedVideoAd']
 
@@ -2519,7 +2519,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.createMediaRecorder` | ⚠️ |
    * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 直连 `tt.createMediaRecorder` | ⚠️ |
    */
   createMediaRecorder: WeapiCrossPlatformAdapter['createMediaRecorder']
 
