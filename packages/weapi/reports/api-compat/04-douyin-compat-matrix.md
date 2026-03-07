@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：237，不支持：242
+总计：479，支持：229，不支持：250
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -184,7 +184,7 @@
 | `isVKSupport`                                 | `isVKSupport`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `join1v1Chat`                                 | `join1v1Chat`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `joinVoIPChat`                                | `joinVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `loadFontFace`                                | `loadFontFace`                                | ❌   | `unsupported` | ❌       | 未提供 tt.loadFontFace，调用时将返回 not supported                                |
 | `login`                                       | `login`                                       | ✅   | `mapped`      | ✅       | 直连 `tt.login`                                                                   |
 | `makeBluetoothPair`                           | `makeBluetoothPair`                           | ❌   | `unsupported` | ❌       | 未提供 tt.makeBluetoothPair，调用时将返回 not supported                           |
@@ -195,7 +195,7 @@
 | `navigateToMiniProgram`                       | `navigateToMiniProgram`                       | ✅   | `native`      | ✅       | 直连 `tt.navigateToMiniProgram`                                                   |
 | `nextTick`                                    | `nextTick`                                    | ✅   | `mapped`      | ✅       | 使用内置 microtask shim 调度回调                                                  |
 | `notifyBLECharacteristicValueChange`          | `notifyBLECharacteristicValueChange`          | ❌   | `unsupported` | ❌       | 未提供 tt.notifyBLECharacteristicValueChange，调用时将返回 not supported          |
-| `notifyGroupMembers`                          | `notifyGroupMembers`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `notifyGroupMembers`                          | `notifyGroupMembers`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `offAccelerometerChange`                      | `offAccelerometerChange`                      | ❌   | `unsupported` | ❌       | 未提供 tt.offAccelerometerChange，调用时将返回 not supported                      |
 | `offAfterPageLoad`                            | `offAfterPageLoad`                            | ❌   | `unsupported` | ❌       | 未提供 tt.offAfterPageLoad，调用时将返回 not supported                            |
 | `offAfterPageUnload`                          | `offAfterPageUnload`                          | ❌   | `unsupported` | ❌       | 未提供 tt.offAfterPageUnload，调用时将返回 not supported                          |
@@ -382,7 +382,7 @@
 | `request`                                     | `request`                                     | ✅   | `native`      | ✅       | 直连 `tt.request`                                                                 |
 | `requestCommonPayment`                        | `requestCommonPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `requestIdleCallback`                         | `requestIdleCallback`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `requestIdleCallback`                         | `requestIdleCallback`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestMerchantTransfer`                     | `requestMerchantTransfer`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestOrderPayment`                         | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
 | `requestPayment`                              | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
@@ -394,13 +394,13 @@
 | `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `reserveChannelsLive`                         | `reserveChannelsLive`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `restartMiniProgram`                          | `reLaunch`                                    | ✅   | `mapped`      | ✅       | 映射到 `tt.reLaunch`                                                              |
-| `revokeBufferURL`                             | `revokeBufferURL`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `rewriteRoute`                                | `rewriteRoute`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `revokeBufferURL`                             | `revokeBufferURL`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `rewriteRoute`                                | `rewriteRoute`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `saveFileToDisk`                              | `saveFile`                                    | ✅   | `mapped`      | ✅       | 映射到 `tt.saveFile`                                                              |
 | `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `native`      | ✅       | 直连 `tt.saveImageToPhotosAlbum`                                                  |
 | `saveVideoToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `mapped`      | ✅       | 映射到 `tt.saveImageToPhotosAlbum`                                                |
 | `scanCode`                                    | `scanCode`                                    | ✅   | `mapped`      | ✅       | 直连 `tt.scanCode`                                                                |
-| `seekBackgroundAudio`                         | `seekBackgroundAudio`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `seekBackgroundAudio`                         | `seekBackgroundAudio`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `selectGroupMembers`                          | `selectGroupMembers`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `sendHCEMessage`                              | `sendHCEMessage`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `sendSms`                                     | `sendSms`                                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -411,8 +411,8 @@
 | `setBLEMTU`                                   | `setBLEMTU`                                   | ❌   | `unsupported` | ❌       | 未提供 tt.setBLEMTU，调用时将返回 not supported                                   |
 | `setClipboardData`                            | `setClipboardData`                            | ✅   | `mapped`      | ✅       | 直连 `tt.setClipboardData`                                                        |
 | `setEnable1v1Chat`                            | `setEnable1v1Chat`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `setEnableDebug`                              | `setEnableDebug`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `setInnerAudioOption`                         | `setInnerAudioOption`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `setEnableDebug`                              | `setEnableDebug`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `setInnerAudioOption`                         | `setInnerAudioOption`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `setKeepScreenOn`                             | `setKeepScreenOn`                             | ✅   | `native`      | ✅       | 直连 `tt.setKeepScreenOn`                                                         |
 | `setNavigationBarColor`                       | `setNavigationBarColor`                       | ✅   | `native`      | ✅       | 直连 `tt.setNavigationBarColor`                                                   |
 | `setNavigationBarTitle`                       | `setNavigationBarTitle`                       | ✅   | `native`      | ✅       | 直连 `tt.setNavigationBarTitle`                                                   |

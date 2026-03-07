@@ -2562,8 +2562,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.loadBuiltInFontFace` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   loadBuiltInFontFace: WeapiCrossPlatformAdapter['loadBuiltInFontFace']
 
@@ -2573,8 +2573,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.notifyGroupMembers` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   notifyGroupMembers: WeapiCrossPlatformAdapter['notifyGroupMembers']
 
@@ -2584,8 +2584,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.requestIdleCallback` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   requestIdleCallback: WeapiCrossPlatformAdapter['requestIdleCallback']
 
@@ -2595,8 +2595,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.revokeBufferURL` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   revokeBufferURL: WeapiCrossPlatformAdapter['revokeBufferURL']
 
@@ -2606,8 +2606,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.rewriteRoute` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   rewriteRoute: WeapiCrossPlatformAdapter['rewriteRoute']
 
@@ -2617,8 +2617,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.seekBackgroundAudio` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   seekBackgroundAudio: WeapiCrossPlatformAdapter['seekBackgroundAudio']
 
@@ -2628,8 +2628,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.setEnableDebug` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   setEnableDebug: WeapiCrossPlatformAdapter['setEnableDebug']
 
@@ -2639,8 +2639,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.setInnerAudioOption` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   setInnerAudioOption: WeapiCrossPlatformAdapter['setInnerAudioOption']
   // @generated weapi-method-docs:end
