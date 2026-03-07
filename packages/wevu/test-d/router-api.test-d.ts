@@ -126,6 +126,8 @@ expectType<RouteLocationNormalizedLoaded>(resolvedByName)
 expectType<string | undefined>(resolvedByName.name)
 expectType<string | undefined>(resolvedByName.href)
 expectType<readonly RouteRecordMatched[] | undefined>(resolvedByName.matched)
+const firstMatchedRecord = resolvedByName.matched?.[0]
+expectType<string | undefined>(firstMatchedRecord?.aliasPath)
 expectType<RouteLocationRedirectedFrom | undefined>(resolvedByName.redirectedFrom)
 
 const removeGuard = navigation.beforeEach((to, from, context) => {

@@ -92,6 +92,7 @@ export interface RouteRecordRaw extends NamedRouteRecord {
 export interface RouteRecordMatched {
   name: string
   path: string
+  aliasPath?: string
   meta?: RouteMeta
 }
 
@@ -231,6 +232,7 @@ interface FlattenedRouteRecordSeed {
 interface MatchedRouteRecordResolveResult {
   record: RouteRecordNormalized
   matchedRecords: readonly RouteRecordNormalized[]
+  matchedPath?: string
   params?: RouteParams
 }
 
@@ -775,10 +777,19 @@ function cloneRouteMeta(meta?: RouteMeta): RouteMeta | undefined {
   }
 }
 
-function normalizeRouteRecordMatched(record: RouteRecordNormalized): RouteRecordMatched {
+function normalizeRouteRecordMatched(
+  record: RouteRecordNormalized,
+  matchedPath?: string,
+): RouteRecordMatched {
   const matchedRecord: RouteRecordMatched = {
     name: record.name,
     path: record.path ? `/${record.path}` : '/',
+  }
+  const normalizedMatchedPath = typeof matchedPath === 'string' && matchedPath
+    ? createAbsoluteRoutePath(resolvePath(matchedPath, ''))
+    : undefined
+  if (normalizedMatchedPath && normalizedMatchedPath !== matchedRecord.path) {
+    matchedRecord.aliasPath = normalizedMatchedPath
   }
   if (record.meta !== undefined) {
     matchedRecord.meta = cloneRouteMeta(record.meta)
@@ -793,6 +804,7 @@ function cloneRouteRecordMatchedList(matched?: readonly RouteRecordMatched[]): R
   return matched.map(record => ({
     name: record.name,
     path: record.path,
+    aliasPath: record.aliasPath,
     meta: cloneRouteMeta(record.meta),
   }))
 }
@@ -1022,6 +1034,7 @@ function resolveMatchedRouteRecord(
       return {
         record,
         matchedRecords: resolveMatchedRouteRecordChain(record, lookup),
+        matchedPath: target.path,
       }
     }
   }
@@ -1038,6 +1051,7 @@ function resolveMatchedRouteRecord(
       return {
         record,
         matchedRecords: resolveMatchedRouteRecordChain(record, lookup),
+        matchedPath: routePath,
         params: matchedParams,
       }
     }
@@ -1607,7 +1621,12 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       if (matchedResult.params && Object.keys(resolved.params).length === 0) {
         resolved.params = cloneRouteParams(matchedResult.params)
       }
-      resolved.matched = matchedResult.matchedRecords.map(normalizeRouteRecordMatched)
+      resolved.matched = matchedResult.matchedRecords.map((record, index, records) => {
+        const leafMatchedPath = index === records.length - 1
+          ? matchedResult.matchedPath
+          : undefined
+        return normalizeRouteRecordMatched(record, leafMatchedPath)
+      })
     }
     else {
       resolved.matched = []
