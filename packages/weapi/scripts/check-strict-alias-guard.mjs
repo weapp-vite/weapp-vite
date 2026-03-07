@@ -1,45 +1,10 @@
 import process from 'node:process'
 import { generateMethodCompatibilityMatrix } from '../src/core/methodMapping.ts'
-
-const STRICT_RENAMED_ALLOWLIST = {
-  my: [
-    'checkIsSoterEnrolledInDevice->checkIsIfaaEnrolledInDevice',
-    'checkIsSupportSoterAuthentication->checkIsSupportIfaaAuthentication',
-    'closeBLEConnection->disconnectBLEDevice',
-    'createBLEConnection->connectBLEDevice',
-    'createRewardedVideoAd->createRewardedAd',
-    'getClipboardData->getClipboard',
-    'getSystemInfoAsync->getSystemInfo',
-    'hideHomeButton->hideBackHome',
-    'offBLEConnectionStateChange->offBLEConnectionStateChanged',
-    'onBLEConnectionStateChange->onBLEConnectionStateChanged',
-    'setClipboardData->setClipboard',
-    'showModal->confirm',
-  ].sort(),
-  tt: [
-    'getSystemInfoAsync->getSystemInfo',
-  ].sort(),
-}
-
-function collectRenamedMappings(matrix, platform) {
-  return matrix
-    .filter(item => platform === 'my' ? item.alipayTarget !== item.method : item.douyinTarget !== item.method)
-    .map(item => platform === 'my'
-      ? `${item.method}->${item.alipayTarget}`
-      : `${item.method}->${item.douyinTarget}`)
-    .sort()
-}
-
-function diffRenamedMappings(actual, expected) {
-  const actualSet = new Set(actual)
-  const expectedSet = new Set(expected)
-  const missing = expected.filter(item => !actualSet.has(item))
-  const unexpected = actual.filter(item => !expectedSet.has(item))
-  return {
-    missing,
-    unexpected,
-  }
-}
+import {
+  collectRenamedMappings,
+  diffRenamedMappings,
+  STRICT_RENAMED_ALLOWLIST,
+} from '../src/core/strictAliasPolicy.ts'
 
 function run() {
   const matrix = generateMethodCompatibilityMatrix()

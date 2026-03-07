@@ -6,6 +6,7 @@ import {
   WEAPI_METHOD_SUPPORT_MATRIX,
   WEAPI_PLATFORM_SUPPORT_MATRIX,
 } from '@/core/methodMapping'
+import { collectRenamedMappings, STRICT_RENAMED_ALLOWLIST } from '@/core/strictAliasPolicy'
 import { createWeapi } from '@/index'
 
 describe('weapi', () => {
@@ -2963,32 +2964,11 @@ describe('weapi', () => {
 
   it('keeps renamed targets on strict-equivalent allowlists', () => {
     const compatibilityMatrix = generateMethodCompatibilityMatrix()
-    const alipayRenamedTargets = compatibilityMatrix
-      .filter(item => item.alipayTarget !== item.method)
-      .map(item => `${item.method}->${item.alipayTarget}`)
-      .sort()
-    const douyinRenamedTargets = compatibilityMatrix
-      .filter(item => item.douyinTarget !== item.method)
-      .map(item => `${item.method}->${item.douyinTarget}`)
-      .sort()
+    const alipayRenamedTargets = collectRenamedMappings(compatibilityMatrix, 'my')
+    const douyinRenamedTargets = collectRenamedMappings(compatibilityMatrix, 'tt')
 
-    expect(alipayRenamedTargets).toEqual([
-      'checkIsSoterEnrolledInDevice->checkIsIfaaEnrolledInDevice',
-      'checkIsSupportSoterAuthentication->checkIsSupportIfaaAuthentication',
-      'closeBLEConnection->disconnectBLEDevice',
-      'createBLEConnection->connectBLEDevice',
-      'createRewardedVideoAd->createRewardedAd',
-      'getClipboardData->getClipboard',
-      'getSystemInfoAsync->getSystemInfo',
-      'hideHomeButton->hideBackHome',
-      'offBLEConnectionStateChange->offBLEConnectionStateChanged',
-      'onBLEConnectionStateChange->onBLEConnectionStateChanged',
-      'setClipboardData->setClipboard',
-      'showModal->confirm',
-    ])
-    expect(douyinRenamedTargets).toEqual([
-      'getSystemInfoAsync->getSystemInfo',
-    ])
+    expect(alipayRenamedTargets).toEqual(STRICT_RENAMED_ALLOWLIST.my)
+    expect(douyinRenamedTargets).toEqual(STRICT_RENAMED_ALLOWLIST.tt)
 
     for (const item of compatibilityMatrix) {
       if (item.alipayTarget !== item.method) {
