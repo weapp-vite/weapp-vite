@@ -100,6 +100,7 @@ describe('cli parsing', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.stubEnv('CI', '')
+    vi.stubEnv('WEAPP_IDE_CLI_LANG', 'zh')
     cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(mockCwd)
     originalStdinIsTTY = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
     Object.defineProperty(process.stdin, 'isTTY', {
