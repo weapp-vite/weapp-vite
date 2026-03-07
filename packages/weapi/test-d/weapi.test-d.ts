@@ -239,6 +239,19 @@ const saveFilePromise = wpi.saveFile({
 })
 expectType<ReturnType<WeapiDefaultInstance['saveFile']>>(saveFilePromise)
 
+const createBleConnectionPromise = wpi.createBLEConnection({
+  deviceId: 'device-id',
+})
+expectType<Promise<WechatMiniprogram.BluetoothError>>(createBleConnectionPromise)
+
+const closeBleConnectionPromise = wpi.closeBLEConnection({
+  deviceId: 'device-id',
+})
+expectType<Promise<WechatMiniprogram.BluetoothError>>(closeBleConnectionPromise)
+
+const getSystemInfoAsyncPromise = wpi.getSystemInfoAsync()
+expectType<Promise<void>>(getSystemInfoAsyncPromise)
+
 const clipboardPromise = wpi.getClipboardData()
 expectType<Promise<WechatMiniprogram.GetClipboardDataSuccessCallbackOption>>(clipboardPromise)
 
