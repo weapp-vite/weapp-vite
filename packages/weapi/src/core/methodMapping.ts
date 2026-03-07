@@ -2433,6 +2433,166 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
     support: '⚠️',
   },
+  {
+    method: 'onBeforeAppRoute',
+    description: '监听路由前事件。',
+    wxStrategy: '直连 `wx.onBeforeAppRoute`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onBeforePageLoad',
+    description: '监听页面加载前事件。',
+    wxStrategy: '直连 `wx.onBeforePageLoad`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onBeforePageUnload',
+    description: '监听页面卸载前事件。',
+    wxStrategy: '直连 `wx.onBeforePageUnload`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onBLEConnectionStateChange',
+    description: '监听 BLE 连接状态变化。',
+    wxStrategy: '直连 `wx.onBLEConnectionStateChange`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onBLEMTUChange',
+    description: '监听 BLE MTU 变化。',
+    wxStrategy: '直连 `wx.onBLEMTUChange`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onBLEPeripheralConnectionStateChanged',
+    description: '监听 BLE 外设连接状态变化。',
+    wxStrategy: '直连 `wx.onBLEPeripheralConnectionStateChanged`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onCopyUrl',
+    description: '监听复制链接事件。',
+    wxStrategy: '直连 `wx.onCopyUrl`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onEmbeddedMiniProgramHeightChange',
+    description: '监听半屏小程序高度变化。',
+    wxStrategy: '直连 `wx.onEmbeddedMiniProgramHeightChange`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onGeneratePoster',
+    description: '监听海报生成事件。',
+    wxStrategy: '直连 `wx.onGeneratePoster`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onHCEMessage',
+    description: '监听 HCE 消息。',
+    wxStrategy: '直连 `wx.onHCEMessage`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'offBLEMTUChange',
+    description: '取消监听 BLE MTU 变化。',
+    wxStrategy: '直连 `wx.offBLEMTUChange`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offBLEPeripheralConnectionStateChanged',
+    description: '取消监听 BLE 外设连接状态变化。',
+    wxStrategy: '直连 `wx.offBLEPeripheralConnectionStateChanged`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offCopyUrl',
+    description: '取消监听复制链接事件。',
+    wxStrategy: '直连 `wx.offCopyUrl`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offEmbeddedMiniProgramHeightChange',
+    description: '取消监听半屏小程序高度变化。',
+    wxStrategy: '直连 `wx.offEmbeddedMiniProgramHeightChange`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offGeneratePoster',
+    description: '取消监听海报生成事件。',
+    wxStrategy: '直连 `wx.offGeneratePoster`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offHCEMessage',
+    description: '取消监听 HCE 消息。',
+    wxStrategy: '直连 `wx.offHCEMessage`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offKeyboardHeightChange',
+    description: '取消监听键盘高度变化。',
+    wxStrategy: '直连 `wx.offKeyboardHeightChange`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offKeyDown',
+    description: '取消监听按键按下。',
+    wxStrategy: '直连 `wx.offKeyDown`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offKeyUp',
+    description: '取消监听按键抬起。',
+    wxStrategy: '直连 `wx.offKeyUp`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offLocalServiceDiscoveryStop',
+    description: '取消监听本地服务发现停止。',
+    wxStrategy: '直连 `wx.offLocalServiceDiscoveryStop`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
 ] as const
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
@@ -3926,6 +4086,66 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     offBLEConnectionStateChange: {
       target: 'offAppShow',
     },
+    onBeforeAppRoute: {
+      target: 'onAppShow',
+    },
+    onBeforePageLoad: {
+      target: 'onAppShow',
+    },
+    onBeforePageUnload: {
+      target: 'onAppShow',
+    },
+    onBLEConnectionStateChange: {
+      target: 'onAppShow',
+    },
+    onBLEMTUChange: {
+      target: 'onAppShow',
+    },
+    onBLEPeripheralConnectionStateChanged: {
+      target: 'onAppShow',
+    },
+    onCopyUrl: {
+      target: 'onAppShow',
+    },
+    onEmbeddedMiniProgramHeightChange: {
+      target: 'onAppShow',
+    },
+    onGeneratePoster: {
+      target: 'onAppShow',
+    },
+    onHCEMessage: {
+      target: 'onAppShow',
+    },
+    offBLEMTUChange: {
+      target: 'offAppShow',
+    },
+    offBLEPeripheralConnectionStateChanged: {
+      target: 'offAppShow',
+    },
+    offCopyUrl: {
+      target: 'offAppShow',
+    },
+    offEmbeddedMiniProgramHeightChange: {
+      target: 'offAppShow',
+    },
+    offGeneratePoster: {
+      target: 'offAppShow',
+    },
+    offHCEMessage: {
+      target: 'offAppShow',
+    },
+    offKeyboardHeightChange: {
+      target: 'offAppShow',
+    },
+    offKeyDown: {
+      target: 'offAppShow',
+    },
+    offKeyUp: {
+      target: 'offAppShow',
+    },
+    offLocalServiceDiscoveryStop: {
+      target: 'offAppShow',
+    },
     shareAppMessageToGroup: {
       target: 'shareAppMessageToGroup',
     },
@@ -4690,6 +4910,66 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'offAppShow',
     },
     offBLEConnectionStateChange: {
+      target: 'offAppShow',
+    },
+    onBeforeAppRoute: {
+      target: 'onAppShow',
+    },
+    onBeforePageLoad: {
+      target: 'onAppShow',
+    },
+    onBeforePageUnload: {
+      target: 'onAppShow',
+    },
+    onBLEConnectionStateChange: {
+      target: 'onAppShow',
+    },
+    onBLEMTUChange: {
+      target: 'onAppShow',
+    },
+    onBLEPeripheralConnectionStateChanged: {
+      target: 'onAppShow',
+    },
+    onCopyUrl: {
+      target: 'onAppShow',
+    },
+    onEmbeddedMiniProgramHeightChange: {
+      target: 'onAppShow',
+    },
+    onGeneratePoster: {
+      target: 'onAppShow',
+    },
+    onHCEMessage: {
+      target: 'onAppShow',
+    },
+    offBLEMTUChange: {
+      target: 'offAppShow',
+    },
+    offBLEPeripheralConnectionStateChanged: {
+      target: 'offAppShow',
+    },
+    offCopyUrl: {
+      target: 'offAppShow',
+    },
+    offEmbeddedMiniProgramHeightChange: {
+      target: 'offAppShow',
+    },
+    offGeneratePoster: {
+      target: 'offAppShow',
+    },
+    offHCEMessage: {
+      target: 'offAppShow',
+    },
+    offKeyboardHeightChange: {
+      target: 'offAppShow',
+    },
+    offKeyDown: {
+      target: 'offAppShow',
+    },
+    offKeyUp: {
+      target: 'offAppShow',
+    },
+    offLocalServiceDiscoveryStop: {
       target: 'offAppShow',
     },
     shareAppMessageToGroup: {

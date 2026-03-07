@@ -2841,6 +2841,226 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
    */
   offBLEConnectionStateChange: WeapiCrossPlatformAdapter['offBLEConnectionStateChange']
+
+  /**
+   * 监听路由前事件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onBeforeAppRoute` | ⚠️ |
+   * | 支付宝 | 映射到 `my.onAppShow`（近似事件回调） | ⚠️ |
+   * | 抖音 | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+   */
+  onBeforeAppRoute: WeapiCrossPlatformAdapter['onBeforeAppRoute']
+
+  /**
+   * 监听页面加载前事件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onBeforePageLoad` | ⚠️ |
+   * | 支付宝 | 映射到 `my.onAppShow`（近似事件回调） | ⚠️ |
+   * | 抖音 | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+   */
+  onBeforePageLoad: WeapiCrossPlatformAdapter['onBeforePageLoad']
+
+  /**
+   * 监听页面卸载前事件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onBeforePageUnload` | ⚠️ |
+   * | 支付宝 | 映射到 `my.onAppShow`（近似事件回调） | ⚠️ |
+   * | 抖音 | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+   */
+  onBeforePageUnload: WeapiCrossPlatformAdapter['onBeforePageUnload']
+
+  /**
+   * 监听 BLE 连接状态变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onBLEConnectionStateChange` | ⚠️ |
+   * | 支付宝 | 映射到 `my.onAppShow`（近似事件回调） | ⚠️ |
+   * | 抖音 | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+   */
+  onBLEConnectionStateChange: WeapiCrossPlatformAdapter['onBLEConnectionStateChange']
+
+  /**
+   * 监听 BLE MTU 变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onBLEMTUChange` | ⚠️ |
+   * | 支付宝 | 映射到 `my.onAppShow`（近似事件回调） | ⚠️ |
+   * | 抖音 | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+   */
+  onBLEMTUChange: WeapiCrossPlatformAdapter['onBLEMTUChange']
+
+  /**
+   * 监听 BLE 外设连接状态变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onBLEPeripheralConnectionStateChanged` | ⚠️ |
+   * | 支付宝 | 映射到 `my.onAppShow`（近似事件回调） | ⚠️ |
+   * | 抖音 | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+   */
+  onBLEPeripheralConnectionStateChanged: WeapiCrossPlatformAdapter['onBLEPeripheralConnectionStateChanged']
+
+  /**
+   * 监听复制链接事件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onCopyUrl` | ⚠️ |
+   * | 支付宝 | 映射到 `my.onAppShow`（近似事件回调） | ⚠️ |
+   * | 抖音 | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+   */
+  onCopyUrl: WeapiCrossPlatformAdapter['onCopyUrl']
+
+  /**
+   * 监听半屏小程序高度变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onEmbeddedMiniProgramHeightChange` | ⚠️ |
+   * | 支付宝 | 映射到 `my.onAppShow`（近似事件回调） | ⚠️ |
+   * | 抖音 | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+   */
+  onEmbeddedMiniProgramHeightChange: WeapiCrossPlatformAdapter['onEmbeddedMiniProgramHeightChange']
+
+  /**
+   * 监听海报生成事件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onGeneratePoster` | ⚠️ |
+   * | 支付宝 | 映射到 `my.onAppShow`（近似事件回调） | ⚠️ |
+   * | 抖音 | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+   */
+  onGeneratePoster: WeapiCrossPlatformAdapter['onGeneratePoster']
+
+  /**
+   * 监听 HCE 消息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onHCEMessage` | ⚠️ |
+   * | 支付宝 | 映射到 `my.onAppShow`（近似事件回调） | ⚠️ |
+   * | 抖音 | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+   */
+  onHCEMessage: WeapiCrossPlatformAdapter['onHCEMessage']
+
+  /**
+   * 取消监听 BLE MTU 变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offBLEMTUChange` | ⚠️ |
+   * | 支付宝 | 映射到 `my.offAppShow`（近似事件回调解绑） | ⚠️ |
+   * | 抖音 | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+   */
+  offBLEMTUChange: WeapiCrossPlatformAdapter['offBLEMTUChange']
+
+  /**
+   * 取消监听 BLE 外设连接状态变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offBLEPeripheralConnectionStateChanged` | ⚠️ |
+   * | 支付宝 | 映射到 `my.offAppShow`（近似事件回调解绑） | ⚠️ |
+   * | 抖音 | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+   */
+  offBLEPeripheralConnectionStateChanged: WeapiCrossPlatformAdapter['offBLEPeripheralConnectionStateChanged']
+
+  /**
+   * 取消监听复制链接事件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offCopyUrl` | ⚠️ |
+   * | 支付宝 | 映射到 `my.offAppShow`（近似事件回调解绑） | ⚠️ |
+   * | 抖音 | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+   */
+  offCopyUrl: WeapiCrossPlatformAdapter['offCopyUrl']
+
+  /**
+   * 取消监听半屏小程序高度变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offEmbeddedMiniProgramHeightChange` | ⚠️ |
+   * | 支付宝 | 映射到 `my.offAppShow`（近似事件回调解绑） | ⚠️ |
+   * | 抖音 | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+   */
+  offEmbeddedMiniProgramHeightChange: WeapiCrossPlatformAdapter['offEmbeddedMiniProgramHeightChange']
+
+  /**
+   * 取消监听海报生成事件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offGeneratePoster` | ⚠️ |
+   * | 支付宝 | 映射到 `my.offAppShow`（近似事件回调解绑） | ⚠️ |
+   * | 抖音 | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+   */
+  offGeneratePoster: WeapiCrossPlatformAdapter['offGeneratePoster']
+
+  /**
+   * 取消监听 HCE 消息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offHCEMessage` | ⚠️ |
+   * | 支付宝 | 映射到 `my.offAppShow`（近似事件回调解绑） | ⚠️ |
+   * | 抖音 | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+   */
+  offHCEMessage: WeapiCrossPlatformAdapter['offHCEMessage']
+
+  /**
+   * 取消监听键盘高度变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offKeyboardHeightChange` | ⚠️ |
+   * | 支付宝 | 映射到 `my.offAppShow`（近似事件回调解绑） | ⚠️ |
+   * | 抖音 | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+   */
+  offKeyboardHeightChange: WeapiCrossPlatformAdapter['offKeyboardHeightChange']
+
+  /**
+   * 取消监听按键按下。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offKeyDown` | ⚠️ |
+   * | 支付宝 | 映射到 `my.offAppShow`（近似事件回调解绑） | ⚠️ |
+   * | 抖音 | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+   */
+  offKeyDown: WeapiCrossPlatformAdapter['offKeyDown']
+
+  /**
+   * 取消监听按键抬起。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offKeyUp` | ⚠️ |
+   * | 支付宝 | 映射到 `my.offAppShow`（近似事件回调解绑） | ⚠️ |
+   * | 抖音 | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+   */
+  offKeyUp: WeapiCrossPlatformAdapter['offKeyUp']
+
+  /**
+   * 取消监听本地服务发现停止。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offLocalServiceDiscoveryStop` | ⚠️ |
+   * | 支付宝 | 映射到 `my.offAppShow`（近似事件回调解绑） | ⚠️ |
+   * | 抖音 | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+   */
+  offLocalServiceDiscoveryStop: WeapiCrossPlatformAdapter['offLocalServiceDiscoveryStop']
   // @generated weapi-method-docs:end
 }
 

@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 413 | 66 | 479 | 100.00% | 86.22% |
-| 抖音小程序 (`tt`) | 479 | 355 | 124 | 479 | 100.00% | 74.11% |
+| 支付宝小程序 (`my`) | 479 | 433 | 46 | 479 | 100.00% | 90.40% |
+| 抖音小程序 (`tt`) | 479 | 375 | 104 | 479 | 100.00% | 78.29% |
 | 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 353 | - | 479 | - | 73.70% |
+| 三端语义完全对齐 (wx/my/tt) | - | 373 | - | 479 | - | 77.87% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -293,6 +293,26 @@
 | `offBeforePageLoad` | 取消监听页面加载前事件。 | 直连 `wx.offBeforePageLoad` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
 | `offBeforePageUnload` | 取消监听页面卸载前事件。 | 直连 `wx.offBeforePageUnload` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
 | `offBLEConnectionStateChange` | 取消监听 BLE 连接状态变化。 | 直连 `wx.offBLEConnectionStateChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `onBeforeAppRoute` | 监听路由前事件。 | 直连 `wx.onBeforeAppRoute` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onBeforePageLoad` | 监听页面加载前事件。 | 直连 `wx.onBeforePageLoad` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onBeforePageUnload` | 监听页面卸载前事件。 | 直连 `wx.onBeforePageUnload` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onBLEConnectionStateChange` | 监听 BLE 连接状态变化。 | 直连 `wx.onBLEConnectionStateChange` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onBLEMTUChange` | 监听 BLE MTU 变化。 | 直连 `wx.onBLEMTUChange` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onBLEPeripheralConnectionStateChanged` | 监听 BLE 外设连接状态变化。 | 直连 `wx.onBLEPeripheralConnectionStateChanged` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onCopyUrl` | 监听复制链接事件。 | 直连 `wx.onCopyUrl` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onEmbeddedMiniProgramHeightChange` | 监听半屏小程序高度变化。 | 直连 `wx.onEmbeddedMiniProgramHeightChange` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onGeneratePoster` | 监听海报生成事件。 | 直连 `wx.onGeneratePoster` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onHCEMessage` | 监听 HCE 消息。 | 直连 `wx.onHCEMessage` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `offBLEMTUChange` | 取消监听 BLE MTU 变化。 | 直连 `wx.offBLEMTUChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offBLEPeripheralConnectionStateChanged` | 取消监听 BLE 外设连接状态变化。 | 直连 `wx.offBLEPeripheralConnectionStateChanged` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offCopyUrl` | 取消监听复制链接事件。 | 直连 `wx.offCopyUrl` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offEmbeddedMiniProgramHeightChange` | 取消监听半屏小程序高度变化。 | 直连 `wx.offEmbeddedMiniProgramHeightChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offGeneratePoster` | 取消监听海报生成事件。 | 直连 `wx.offGeneratePoster` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offHCEMessage` | 取消监听 HCE 消息。 | 直连 `wx.offHCEMessage` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offKeyboardHeightChange` | 取消监听键盘高度变化。 | 直连 `wx.offKeyboardHeightChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offKeyDown` | 取消监听按键按下。 | 直连 `wx.offKeyDown` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offKeyUp` | 取消监听按键抬起。 | 直连 `wx.offKeyUp` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offLocalServiceDiscoveryStop` | 取消监听本地服务发现停止。 | 直连 `wx.offLocalServiceDiscoveryStop` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 
