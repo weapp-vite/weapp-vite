@@ -62,6 +62,12 @@ expectType<'loose' | 'strict'>(paramsMode)
 const navigationOptions: UseRouterOptions = {
   tabBarEntries: ['pages/home/index'],
   paramsMode: 'strict',
+  routes: [
+    {
+      name: 'home',
+      path: '/pages/home/index',
+    },
+  ],
   namedRoutes: {
     'home': '/pages/home/index',
     'post-detail': '/pages/post/:id/index',
@@ -81,6 +87,7 @@ const navigation = useRouter(navigationOptions)
 expectType<RouterNavigation>(navigation)
 expectType<AddRoute>(navigation.addRoute)
 expectType<Readonly<UseRouterOptions>>(navigation.options)
+expectType<readonly RouteRecordRaw[] | undefined>(navigation.options.routes)
 expectType<void>(navigation.install())
 expectType<SetupContextRouter>(useNativeRouter())
 expectType<SetupContextRouter>(useNativePageRouter())

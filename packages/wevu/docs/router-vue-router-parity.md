@@ -7,7 +7,7 @@
 | API               | Vue Router 4                         | wevu/router                               | 状态      | 说明                                                                                                                                   |
 | ----------------- | ------------------------------------ | ----------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `currentRoute`    | `Ref<RouteLocationNormalizedLoaded>` | `Readonly<RouteLocationNormalizedLoaded>` | 部分对齐  | `wevu` 下通过页面生命周期同步更新，不暴露 `Ref` 容器。                                                                                 |
-| `options`         | `RouterOptions`                      | `Readonly<UseRouterOptions>`              | 部分对齐  | 提供初始化快照，便于读取 `paramsMode/maxRedirects/namedRoutes/tabBarEntries`。                                                         |
+| `options`         | `RouterOptions`                      | `Readonly<UseRouterOptions>`              | 部分对齐  | 提供初始化快照，便于读取 `paramsMode/maxRedirects/routes/namedRoutes/tabBarEntries`。                                                  |
 | `resolve(to)`     | 支持                                 | 支持                                      | 已对齐    | 额外提供 `href/matched/redirectedFrom` 调试字段；`children` 场景下 `matched` 返回父子链，alias 命中时叶子 `matched` 会带 `aliasPath`。 |
 | `isReady()`       | 支持                                 | 支持                                      | 已对齐    | 小程序运行时下 Promise 立即 resolve。                                                                                                  |
 | `push(to)`        | 支持                                 | 支持                                      | 已对齐    | 导航失败语义通过 `NavigationFailure` 对齐。                                                                                            |
@@ -28,15 +28,15 @@
 
 ## 2. 路由记录与守卫
 
-| 能力                | Vue Router 4 | wevu/router | 状态     | 说明                                                                                           |
-| ------------------- | ------------ | ----------- | -------- | ---------------------------------------------------------------------------------------------- |
-| 命名路由            | 支持         | 支持        | 已对齐   | 支持 `name + params + query` 导航。                                                            |
-| 路径参数（`?/*/+`） | 支持         | 支持        | 已对齐   | 支持可选/重复参数解析。                                                                        |
-| `meta`              | 支持         | 支持        | 已对齐   | `resolve()` 结果会带上匹配记录的 `meta`。                                                      |
-| `beforeEnter`       | 支持         | 支持        | 已对齐   | 支持单个或数组守卫；`children` 场景按父到子链路依次执行，父级重定向会中断后续子守卫。          |
-| `redirect`          | 支持         | 支持        | 已对齐   | 支持字符串/对象/函数，并保留 `redirectedFrom`；`children` 场景会先处理父链路 `redirect`。      |
-| 嵌套路由 `children` | 支持         | 支持        | 部分对齐 | 支持在 `namedRoutes` 中声明 `children` 并展平成可匹配记录；不提供 Vue Web 的嵌套视图渲染语义。 |
-| `alias`             | 支持         | 支持        | 已对齐   | 支持记录级 `alias`，并在 `children` 场景下自动级联父级 alias，匹配与守卫链路均可用。           |
+| 能力                | Vue Router 4 | wevu/router | 状态     | 说明                                                                                                  |
+| ------------------- | ------------ | ----------- | -------- | ----------------------------------------------------------------------------------------------------- |
+| 命名路由            | 支持         | 支持        | 已对齐   | 支持 `name + params + query` 导航。                                                                   |
+| 路径参数（`?/*/+`） | 支持         | 支持        | 已对齐   | 支持可选/重复参数解析。                                                                               |
+| `meta`              | 支持         | 支持        | 已对齐   | `resolve()` 结果会带上匹配记录的 `meta`。                                                             |
+| `beforeEnter`       | 支持         | 支持        | 已对齐   | 支持单个或数组守卫；`children` 场景按父到子链路依次执行，父级重定向会中断后续子守卫。                 |
+| `redirect`          | 支持         | 支持        | 已对齐   | 支持字符串/对象/函数，并保留 `redirectedFrom`；`children` 场景会先处理父链路 `redirect`。             |
+| 嵌套路由 `children` | 支持         | 支持        | 部分对齐 | 支持在 `routes/namedRoutes` 中声明 `children` 并展平成可匹配记录；不提供 Vue Web 的嵌套视图渲染语义。 |
+| `alias`             | 支持         | 支持        | 已对齐   | 支持记录级 `alias`，并在 `children` 场景下自动级联父级 alias，匹配与守卫链路均可用。                  |
 
 ## 3. 平台差异（必须认知）
 
@@ -47,6 +47,6 @@
 ## 4. 迁移建议
 
 1. 先使用 `useRouter({ paramsMode: 'loose' })` 平滑接管。
-2. 把高频路径迁移到 `namedRoutes`，逐步替换字符串拼接。
+2. 把高频路径迁移到 `routes`（或兼容入口 `namedRoutes`），逐步替换字符串拼接。
 3. 守卫逻辑优先收敛到 `beforeEach/beforeResolve/beforeEnter`。
 4. 核心流程切换到 `paramsMode: 'strict'`，及时暴露历史参数问题。

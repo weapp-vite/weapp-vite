@@ -820,6 +820,114 @@ describe('router navigation helpers', () => {
     ])
   })
 
+  it('supports Vue Router style routes option for route introspection', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home/index',
+        },
+        {
+          name: 'post-detail',
+          path: '/pages/post/:id/index',
+        },
+      ],
+    })
+
+    expect(router.hasRoute('home')).toBe(true)
+    expect(router.hasRoute('post-detail')).toBe(true)
+    expect(router.getRoutes()).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home/index',
+      },
+      {
+        name: 'post-detail',
+        path: '/pages/post/:id/index',
+      },
+    ])
+    expect(router.options.routes).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home/index',
+      },
+      {
+        name: 'post-detail',
+        path: '/pages/post/:id/index',
+      },
+    ])
+    expect(router.options.namedRoutes).toEqual(router.options.routes)
+  })
+
+  it('gives namedRoutes higher precedence when routes and namedRoutes overlap', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home/from-routes',
+        },
+      ],
+      namedRoutes: {
+        home: '/pages/home/from-named-routes',
+      },
+    })
+
+    const resolvedByName = router.resolve({
+      name: 'home',
+    })
+    expect(resolvedByName.fullPath).toBe('/pages/home/from-named-routes')
+    expect(router.getRoutes()).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home/from-named-routes',
+      },
+    ])
+  })
+
   it('supports guard redirect with named route target', async () => {
     const navigateTo = vi.fn((options: any) => {
       options.success?.({})
@@ -2002,6 +2110,12 @@ describe('router navigation helpers', () => {
 
     expect(router.options).toMatchObject({
       tabBarEntries: ['/pages/home/index'],
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home/index',
+        },
+      ],
       namedRoutes: [
         {
           name: 'home',
@@ -2018,6 +2132,12 @@ describe('router navigation helpers', () => {
       path: '/pages/post/:id/index',
     })
     expect(router.options.namedRoutes).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home/index',
+      },
+    ])
+    expect(router.options.routes).toEqual([
       {
         name: 'home',
         path: '/pages/home/index',
