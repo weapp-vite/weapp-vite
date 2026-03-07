@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：217，不支持：262
+总计：479，支持：215，不支持：264
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -57,7 +57,7 @@
 | `connectSocket`                               | `connectSocket`                               | ✅   | `native`      | ✅       | 直连 `my.connectSocket`                                                           |
 | `connectWifi`                                 | `connectWifi`                                 | ✅   | `native`      | ✅       | 直连 `my.connectWifi`                                                             |
 | `createAnimation`                             | `createAnimation`                             | ✅   | `native`      | ✅       | 直连 `my.createAnimation`                                                         |
-| `createAudioContext`                          | `createInnerAudioContext`                     | ✅   | `mapped`      | ✅       | 映射到 `my.createInnerAudioContext`                                               |
+| `createAudioContext`                          | `createAudioContext`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createBLEConnection`                         | `createBLEConnection`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createBLEPeripheralServer`                   | `createBLEPeripheralServer`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createBufferURL`                             | `createBufferURL`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -83,7 +83,7 @@
 | `createVideoContext`                          | `createVideoContext`                          | ✅   | `native`      | ✅       | 直连 `my.createVideoContext`                                                      |
 | `createVideoDecoder`                          | `createVideoDecoder`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createVKSession`                             | `createVKSession`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `createWebAudioContext`                       | `createInnerAudioContext`                     | ✅   | `mapped`      | ✅       | 映射到 `my.createInnerAudioContext`                                               |
+| `createWebAudioContext`                       | `createWebAudioContext`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createWorker`                                | `createWorker`                                | ✅   | `native`      | ✅       | 直连 `my.createWorker`                                                            |
 | `cropImage`                                   | `cropImage`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `disableAlertBeforeUnload`                    | `disableAlertBeforeUnload`                    | ✅   | `native`      | ✅       | 直连 `my.disableAlertBeforeUnload`                                                |

@@ -257,16 +257,16 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'createAudioContext',
     description: '创建音频上下文。',
     wxStrategy: '直连 `wx.createAudioContext`',
-    alipayStrategy: '映射到 `my.createInnerAudioContext`',
-    douyinStrategy: '映射到 `tt.createInnerAudioContext`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
     method: 'createWebAudioContext',
     description: '创建 WebAudio 上下文。',
     wxStrategy: '直连 `wx.createWebAudioContext`',
-    alipayStrategy: '映射到 `my.createInnerAudioContext`',
-    douyinStrategy: '映射到 `tt.createInnerAudioContext`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2651,10 +2651,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getAddress',
     },
     createAudioContext: {
-      target: 'createInnerAudioContext',
+      target: 'createAudioContext',
     },
     createWebAudioContext: {
-      target: 'createInnerAudioContext',
+      target: 'createWebAudioContext',
     },
     getSystemInfoAsync: {
       target: 'getSystemInfo',
@@ -3356,10 +3356,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'chooseAddress',
     },
     createAudioContext: {
-      target: 'createInnerAudioContext',
+      target: 'createAudioContext',
     },
     createWebAudioContext: {
-      target: 'createInnerAudioContext',
+      target: 'createWebAudioContext',
     },
     getSystemInfoAsync: {
       target: 'getSystemInfo',
