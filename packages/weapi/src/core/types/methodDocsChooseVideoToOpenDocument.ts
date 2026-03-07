@@ -1,4 +1,4 @@
-export interface WeapiCrossPlatformMethodDocsPart3 {
+export interface WeapiCrossPlatformMethodDocsChooseVideoToOpenDocument {
   /**
    * 选择视频。
    *

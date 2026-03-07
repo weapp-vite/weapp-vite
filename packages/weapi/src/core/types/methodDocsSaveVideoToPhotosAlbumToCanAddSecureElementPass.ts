@@ -1,4 +1,4 @@
-export interface WeapiCrossPlatformMethodDocsPart4 {
+export interface WeapiCrossPlatformMethodDocsSaveVideoToPhotosAlbumToCanAddSecureElementPass {
   /**
    * 保存视频到系统相册。
    *

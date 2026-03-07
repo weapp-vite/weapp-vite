@@ -1,4 +1,4 @@
-export interface WeapiCrossPlatformMethodDocsPart2 {
+export interface WeapiCrossPlatformMethodDocsPluginLoginToGetAppBaseInfo {
   /**
    * 插件登录。
    *

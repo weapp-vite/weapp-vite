@@ -1,4 +1,4 @@
-export interface WeapiCrossPlatformMethodDocsPart5 {
+export interface WeapiCrossPlatformMethodDocsCanvasGetImageDataToOpenPrivacyContract {
   /**
    * 获取 canvas 区域像素数据。
    *
