@@ -201,7 +201,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'createLivePlayerContext',
     description: '创建直播播放器上下文。',
     wxStrategy: '直连 `wx.createLivePlayerContext`',
-    alipayStrategy: '映射到 `my.createVideoContext`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.createLivePlayerContext`',
     support: '⚠️',
   },
@@ -209,7 +209,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'createLivePusherContext',
     description: '创建直播推流上下文。',
     wxStrategy: '直连 `wx.createLivePusherContext`',
-    alipayStrategy: '映射到 `my.createVideoContext`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
@@ -2739,10 +2739,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       mapArgs: mapCreateRewardedAdArgs,
     },
     createLivePlayerContext: {
-      target: 'createVideoContext',
+      target: 'createLivePlayerContext',
     },
     createLivePusherContext: {
-      target: 'createVideoContext',
+      target: 'createLivePusherContext',
     },
     getVideoInfo: {
       target: 'getVideoInfo',

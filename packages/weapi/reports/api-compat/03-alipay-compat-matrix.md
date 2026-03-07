@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：223，不支持：256
+总计：479，支持：221，不支持：258
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -69,8 +69,8 @@
 | `createInnerAudioContext`                     | `createInnerAudioContext`                     | ✅   | `native`      | ✅       | 直连 `my.createInnerAudioContext`                                                 |
 | `createIntersectionObserver`                  | `createIntersectionObserver`                  | ✅   | `native`      | ✅       | 直连 `my.createIntersectionObserver`                                              |
 | `createInterstitialAd`                        | `createInterstitialAd`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `createLivePlayerContext`                     | `createVideoContext`                          | ✅   | `mapped`      | ✅       | 映射到 `my.createVideoContext`                                                    |
-| `createLivePusherContext`                     | `createVideoContext`                          | ✅   | `mapped`      | ✅       | 映射到 `my.createVideoContext`                                                    |
+| `createLivePlayerContext`                     | `createLivePlayerContext`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `createLivePusherContext`                     | `createLivePusherContext`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createMapContext`                            | `createMapContext`                            | ✅   | `native`      | ✅       | 直连 `my.createMapContext`                                                        |
 | `createMediaAudioPlayer`                      | `createMediaAudioPlayer`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createMediaContainer`                        | `createMediaContainer`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

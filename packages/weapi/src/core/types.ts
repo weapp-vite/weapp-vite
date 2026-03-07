@@ -252,7 +252,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.createLivePlayerContext` | ⚠️ |
-   * | 支付宝 | 映射到 `my.createVideoContext` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    * | 抖音 | 直连 `tt.createLivePlayerContext` | ⚠️ |
    */
   createLivePlayerContext: WeapiCrossPlatformAdapter['createLivePlayerContext']
@@ -263,7 +263,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.createLivePusherContext` | ⚠️ |
-   * | 支付宝 | 映射到 `my.createVideoContext` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   createLivePusherContext: WeapiCrossPlatformAdapter['createLivePusherContext']

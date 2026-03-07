@@ -547,7 +547,7 @@ describe('weapi', () => {
     }))
   })
 
-  it('maps rewarded ad and live context apis for alipay', async () => {
+  it('maps rewarded ad api for alipay and treats live contexts as unsupported', async () => {
     const createRewardedAd = vi.fn(() => ({ show: vi.fn() }))
     const createVideoContext = vi.fn(() => ({ play: vi.fn() }))
     const api = createWeapi({
@@ -559,12 +559,9 @@ describe('weapi', () => {
     }) as Record<string, any>
 
     api.createRewardedVideoAd({ adUnitId: 'adunit-2' })
-    api.createLivePlayerContext('live-player')
-    api.createLivePusherContext('live-pusher')
 
     expect(createRewardedAd).toHaveBeenNthCalledWith(1, 'adunit-2', expect.any(Object))
-    expect(createVideoContext).toHaveBeenNthCalledWith(1, 'live-player', expect.any(Object))
-    expect(createVideoContext).toHaveBeenNthCalledWith(2, 'live-pusher', expect.any(Object))
+    expect(createVideoContext).not.toHaveBeenCalled()
 
     expect(api.resolveTarget('createInterstitialAd')).toMatchObject({
       method: 'createInterstitialAd',
@@ -575,6 +572,26 @@ describe('weapi', () => {
     })
     await expect(api.createInterstitialAd({ adUnitId: 'adunit-1' })).rejects.toMatchObject({
       errMsg: 'my.createInterstitialAd:fail method not supported',
+    })
+    expect(api.resolveTarget('createLivePlayerContext')).toMatchObject({
+      method: 'createLivePlayerContext',
+      target: 'createLivePlayerContext',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    expect(api.resolveTarget('createLivePusherContext')).toMatchObject({
+      method: 'createLivePusherContext',
+      target: 'createLivePusherContext',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.createLivePlayerContext('live-player' as any)).rejects.toMatchObject({
+      errMsg: 'my.createLivePlayerContext:fail method not supported',
+    })
+    await expect(api.createLivePusherContext('live-pusher' as any)).rejects.toMatchObject({
+      errMsg: 'my.createLivePusherContext:fail method not supported',
     })
   })
 
@@ -1887,8 +1904,8 @@ describe('weapi', () => {
       { method: 'previewMedia', my: 'previewImage', tt: 'previewImage' },
       { method: 'createInterstitialAd', my: 'createInterstitialAd', tt: 'createInterstitialAd', mySupported: false },
       { method: 'createRewardedVideoAd', my: 'createRewardedAd', tt: 'createRewardedVideoAd', ttSupported: false },
-      { method: 'createLivePlayerContext', my: 'createVideoContext', tt: 'createLivePlayerContext' },
-      { method: 'createLivePusherContext', my: 'createVideoContext', tt: 'createLivePusherContext', ttSupported: false },
+      { method: 'createLivePlayerContext', my: 'createLivePlayerContext', tt: 'createLivePlayerContext', mySupported: false },
+      { method: 'createLivePusherContext', my: 'createLivePusherContext', tt: 'createLivePusherContext', mySupported: false, ttSupported: false },
       { method: 'getVideoInfo', my: 'getVideoInfo', tt: 'getFileInfo' },
       { method: 'showShareImageMenu', my: 'showSharePanel', tt: 'showShareMenu' },
       { method: 'updateShareMenu', my: 'showSharePanel', tt: 'showShareMenu' },
