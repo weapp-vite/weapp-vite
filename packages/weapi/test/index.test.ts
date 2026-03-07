@@ -943,6 +943,43 @@ describe('weapi', () => {
   it.each([
     { platform: 'alipay', normalizedPlatform: 'my' },
     { platform: 'tt', normalizedPlatform: 'tt' },
+  ])('treats on/offWifiConnectedWithPartialInfo as unsupported for $platform without aliasing non-partial wifi events', async ({ platform, normalizedPlatform }) => {
+    const onWifiConnected = vi.fn()
+    const offWifiConnected = vi.fn()
+    const onGetWifiList = vi.fn()
+    const offGetWifiList = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        onWifiConnected,
+        offWifiConnected,
+        onGetWifiList,
+        offGetWifiList,
+      },
+      platform,
+    }) as Record<string, any>
+
+    for (const methodName of ['onWifiConnectedWithPartialInfo', 'offWifiConnectedWithPartialInfo'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName](vi.fn())).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
+      })
+    }
+
+    expect(onWifiConnected).not.toHaveBeenCalled()
+    expect(offWifiConnected).not.toHaveBeenCalled()
+    expect(onGetWifiList).not.toHaveBeenCalled()
+    expect(offGetWifiList).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { platform: 'alipay', normalizedPlatform: 'my' },
+    { platform: 'tt', normalizedPlatform: 'tt' },
   ])('treats restartMiniProgram as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
     const reLaunch = vi.fn()
     const api = createWeapi({
