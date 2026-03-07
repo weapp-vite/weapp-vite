@@ -72,6 +72,7 @@ console.log(router.options.namedRoutes)
 ```
 
 其中 `routes` 是推荐入口，`namedRoutes` 保留用于兼容旧写法。
+`router.options` 是初始化快照（运行时冻结，非响应式），不会随着 `addRoute/removeRoute/clearRoutes` 实时变化；动态路由请使用 `router.getRoutes()` 读取当前状态。
 
 ## 3. 命名路由导航
 

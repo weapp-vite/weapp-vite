@@ -80,6 +80,13 @@ const router = useRouter({
 
 当同时传入 `routes` 与 `namedRoutes` 且存在同名记录时，`namedRoutes` 会覆盖前者，运行时会输出一次告警，帮助你在迁移期排查配置冲突。
 
+兼容策略建议：
+
+1. 新增路由统一写到 `routes`。
+2. 历史模块保留 `namedRoutes`，按业务域逐步迁移。
+3. 每次迁移后观察冲突告警，确保无同名覆盖残留。
+4. 清理完成后移除 `namedRoutes` 配置入口。
+
 ## 4. 常见迁移问题
 
 ### Q1：为什么 `forward()` 失败？
@@ -97,7 +104,7 @@ const router = useRouter({
 ## 5. 验收清单
 
 - 所有业务跳转都走 `wevu/router` 子入口
-- 高频路径已迁移到命名路由
+- 高频路径已迁移到 `routes`（兼容阶段允许 `namedRoutes`）
 - 守卫逻辑不再分散在业务代码里
 - 已在核心流程启用 `paramsMode: 'strict'`
 - 已补充失败场景测试（重复跳转、无效参数、重定向链路）

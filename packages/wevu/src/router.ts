@@ -886,6 +886,61 @@ function cloneRouteMeta(meta?: RouteMeta): RouteMeta | undefined {
   }
 }
 
+function freezeRouteRecordRawSnapshot(routeRecord: RouteRecordRaw): Readonly<RouteRecordRaw> {
+  const snapshot: RouteRecordRaw = {
+    name: routeRecord.name,
+    path: routeRecord.path,
+  }
+
+  if (routeRecord.meta !== undefined) {
+    snapshot.meta = cloneRouteMeta(routeRecord.meta)
+  }
+  if (Array.isArray(routeRecord.alias)) {
+    snapshot.alias = Object.freeze(routeRecord.alias.slice())
+  }
+  else if (routeRecord.alias !== undefined) {
+    snapshot.alias = routeRecord.alias
+  }
+  if (Array.isArray(routeRecord.beforeEnter)) {
+    snapshot.beforeEnter = Object.freeze(routeRecord.beforeEnter.slice())
+  }
+  else if (routeRecord.beforeEnter !== undefined) {
+    snapshot.beforeEnter = routeRecord.beforeEnter
+  }
+  if (routeRecord.redirect !== undefined) {
+    snapshot.redirect = routeRecord.redirect
+  }
+
+  return Object.freeze(snapshot)
+}
+
+function createRouterOptionsSnapshot(
+  normalizedTabBarEntries: readonly string[],
+  normalizedNamedRoutes: readonly RouteRecordRaw[],
+  paramsMode: RouteParamsMode,
+  maxRedirects: number,
+  routeResolveCodec: RouteResolveCodec,
+  rejectOnError: boolean,
+): Readonly<UseRouterOptions> {
+  const tabBarEntriesSnapshot = Object.freeze(
+    normalizedTabBarEntries.map(path => createAbsoluteRoutePath(path)),
+  )
+  const routesSnapshot = Object.freeze(
+    normalizedNamedRoutes.map(freezeRouteRecordRawSnapshot),
+  ) as readonly RouteRecordRaw[]
+
+  return Object.freeze({
+    tabBarEntries: tabBarEntriesSnapshot,
+    routes: routesSnapshot,
+    namedRoutes: routesSnapshot,
+    paramsMode,
+    maxRedirects,
+    parseQuery: routeResolveCodec.parseQuery,
+    stringifyQuery: routeResolveCodec.stringifyQuery,
+    rejectOnError,
+  })
+}
+
 function normalizeRouteRecordMatched(
   record: RouteRecordNormalized,
   matchedPath?: string,
@@ -1731,16 +1786,14 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     .filter(Boolean)
   const tabBarPathSet = new Set(normalizedTabBarEntries)
   const normalizedNamedRoutes = Array.from(namedRouteLookup.recordByName.values()).map(normalizeRouteRecordForOutput)
-  const routerOptions: Readonly<UseRouterOptions> = {
-    tabBarEntries: normalizedTabBarEntries.map(path => createAbsoluteRoutePath(path)),
-    routes: normalizedNamedRoutes,
-    namedRoutes: normalizedNamedRoutes,
+  const routerOptions = createRouterOptionsSnapshot(
+    normalizedTabBarEntries,
+    normalizedNamedRoutes,
     paramsMode,
     maxRedirects,
-    parseQuery: routeResolveCodec.parseQuery,
-    stringifyQuery: routeResolveCodec.stringifyQuery,
+    routeResolveCodec,
     rejectOnError,
-  }
+  )
 
   function resolveWithCodec(to: RouteLocationRaw, currentPath: string): RouteLocationNormalizedLoaded {
     const rawTo = typeof to === 'string'
