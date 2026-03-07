@@ -17,11 +17,11 @@
 | 支付宝可按微信命名调用的方法数   |  195 |
 | 支付宝语义对齐方法数             |  195 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  131 |
-| 抖音语义对齐方法数               |  131 |
+| 抖音可按微信命名调用的方法数     |  130 |
+| 抖音语义对齐方法数               |  130 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  115 |
-| 三端语义完全对齐方法数           |  115 |
+| 三端可调用完全对齐方法数         |  114 |
+| 三端语义完全对齐方法数           |  114 |
 
 ## 覆盖率
 
@@ -29,9 +29,9 @@
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
 | 支付宝小程序 (`my`)           |           195 |             195 |               0 |      479 |       40.71% |         40.71% |
-| 抖音小程序 (`tt`)             |           131 |             131 |               0 |      479 |       27.35% |         27.35% |
-| 三端可调用完全对齐 (wx/my/tt) |           115 |               - |               - |      479 |       24.01% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             115 |               - |      479 |            - |         24.01% |
+| 抖音小程序 (`tt`)             |           130 |             130 |               0 |      479 |       27.14% |         27.14% |
+| 三端可调用完全对齐 (wx/my/tt) |           114 |               - |               - |      479 |       23.80% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             114 |               - |      479 |            - |         23.80% |
 
 ## 核心差异映射（手工规则）
 
@@ -75,7 +75,7 @@
 | `updateShareMenu`                   | 直连 `wx.updateShareMenu`                           | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                             |
 | `openEmbeddedMiniProgram`           | 直连 `wx.openEmbeddedMiniProgram`                   | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                             |
 | `saveFileToDisk`                    | 直连 `wx.saveFileToDisk`                            | 直连 `my.saveFileToDisk`                                           | 无同等 API，调用时按 unsupported 报错                             |
-| `getEnterOptionsSync`               | 直连 `wx.getEnterOptionsSync`                       | 直连 `my.getEnterOptionsSync`                                      | 映射到 `tt.getLaunchOptionsSync`                                  |
+| `getEnterOptionsSync`               | 直连 `wx.getEnterOptionsSync`                       | 直连 `my.getEnterOptionsSync`                                      | 无同等 API，调用时按 unsupported 报错                             |
 | `getSystemSetting`                  | 直连 `wx.getSystemSetting`                          | 直连 `my.getSystemSetting`                                         | 无同等 API，调用时按 unsupported 报错                             |
 | `getUserProfile`                    | 直连 `wx.getUserProfile`                            | 无同等 API，调用时按 unsupported 报错                              | 直连 `tt.getUserProfile`                                          |
 | `getUserInfo`                       | 直连 `wx.getUserInfo`                               | 无同等 API，调用时按 unsupported 报错                              | 直连 `tt.getUserInfo`                                             |

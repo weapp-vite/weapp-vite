@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：131，不支持：348
+总计：479，支持：130，不支持：349
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -122,7 +122,7 @@
 | `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getDeviceInfo`                               | `getDeviceInfo`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getDeviceVoIPList`                           | `getDeviceVoIPList`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getEnterOptionsSync`                         | `getLaunchOptionsSync`                        | ✅   | `mapped`      | ✅       | 映射到 `tt.getLaunchOptionsSync`                                                  |
+| `getEnterOptionsSync`                         | `getEnterOptionsSync`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getExptInfoSync`                             | `getExptInfoSync`                             | ❌   | `unsupported` | ❌       | 未提供 tt.getExptInfoSync，调用时将返回 not supported                             |
 | `getExtConfig`                                | `getExtConfig`                                | ✅   | `native`      | ✅       | 直连 `tt.getExtConfig`                                                            |
 | `getExtConfigSync`                            | `getExtConfigSync`                            | ✅   | `native`      | ✅       | 直连 `tt.getExtConfigSync`                                                        |
