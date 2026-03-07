@@ -151,6 +151,13 @@ export type NavigationErrorHandler = (
 
 export interface UseRouterOptions {
   tabBarEntries?: readonly (TypedRouterTabBarUrl | string)[]
+  /**
+   * Vue Router 对齐入口：推荐使用 `routes`
+   */
+  routes?: readonly RouteRecordRaw[]
+  /**
+   * 兼容入口：支持对象 map 或路由记录数组
+   */
   namedRoutes?: NamedRoutes
   paramsMode?: RouteParamsMode
   maxRedirects?: number
@@ -545,6 +552,13 @@ function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): FlattenedRouteRe
     }))
 }
 
+function resolveRouteOptionEntries(options: UseRouterOptions): FlattenedRouteRecordSeed[] {
+  return [
+    ...normalizeNamedRouteEntries(options.routes),
+    ...normalizeNamedRouteEntries(options.namedRoutes),
+  ]
+}
+
 function normalizeNestedRoutePath(path: string, parentPath?: string): string {
   if (!parentPath || path.startsWith('/')) {
     return resolvePath(path, '')
@@ -650,10 +664,10 @@ function createNamedRouteNameByStaticPath(recordByName: ReadonlyMap<string, Rout
   return nameByStaticPath
 }
 
-function createNamedRouteLookup(namedRoutes?: NamedRoutes): NamedRouteLookup {
+function createNamedRouteLookup(routeEntries: readonly FlattenedRouteRecordSeed[]): NamedRouteLookup {
   const recordByName = new Map<string, RouteRecordNormalized>()
 
-  for (const routeRecord of normalizeNamedRouteEntries(namedRoutes)) {
+  for (const routeRecord of routeEntries) {
     const normalizedRecord = normalizeRouteRecordRaw(routeRecord.route, routeRecord.parentName)
     if (!normalizedRecord) {
       continue
@@ -804,7 +818,7 @@ function resolveNamedRouteLocation(
 
   const routeRecord = lookup.recordByName.get(routeName)
   if (!routeRecord) {
-    throw new Error(`Named route "${routeName}" is not defined in useRouter({ namedRoutes })`)
+    throw new Error(`Named route "${routeName}" is not defined in useRouter({ routes | namedRoutes })`)
   }
 
   const params = to.params
@@ -1668,14 +1682,17 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     stringifyQuery: options.stringifyQuery ?? stringifyQuery,
   }
   const readyPromise = Promise.resolve()
-  const namedRouteLookup = createNamedRouteLookup(options.namedRoutes)
+  const routeEntries = resolveRouteOptionEntries(options)
+  const namedRouteLookup = createNamedRouteLookup(routeEntries)
   const normalizedTabBarEntries = (options.tabBarEntries ?? [])
     .map(path => resolvePath(path, ''))
     .filter(Boolean)
   const tabBarPathSet = new Set(normalizedTabBarEntries)
+  const normalizedNamedRoutes = Array.from(namedRouteLookup.recordByName.values()).map(normalizeRouteRecordForOutput)
   const routerOptions: Readonly<UseRouterOptions> = {
     tabBarEntries: normalizedTabBarEntries.map(path => createAbsoluteRoutePath(path)),
-    namedRoutes: Array.from(namedRouteLookup.recordByName.values()).map(normalizeRouteRecordForOutput),
+    routes: normalizedNamedRoutes,
+    namedRoutes: normalizedNamedRoutes,
     paramsMode,
     maxRedirects,
     parseQuery: routeResolveCodec.parseQuery,
@@ -1777,7 +1794,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       ? namedRouteLookup.recordByName.get(parentRouteName)
       : undefined
     if (parentRouteName && !parentRouteRecord) {
-      throw new Error(`Parent route "${parentRouteName}" is not defined in useRouter({ namedRoutes })`)
+      throw new Error(`Parent route "${parentRouteName}" is not defined in useRouter({ routes | namedRoutes })`)
     }
 
     const routeRecords = flattenNamedRouteRecords(

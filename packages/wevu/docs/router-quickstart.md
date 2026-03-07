@@ -9,7 +9,7 @@ import { useRouter } from 'wevu/router'
 
 const router = useRouter({
   paramsMode: 'strict',
-  namedRoutes: [
+  routes: [
     {
       name: 'home',
       path: '/pages/home/index',
@@ -32,7 +32,7 @@ const router = useRouter({
 
 ```ts
 const router = useRouter({
-  namedRoutes: [
+  routes: [
     {
       name: 'home',
       path: '/pages/home',
@@ -67,8 +67,11 @@ console.log(router.currentRoute.query)
 
 ```ts
 console.log(router.options.paramsMode)
+console.log(router.options.routes)
 console.log(router.options.namedRoutes)
 ```
+
+其中 `routes` 是推荐入口，`namedRoutes` 保留用于兼容旧写法。
 
 ## 3. 命名路由导航
 

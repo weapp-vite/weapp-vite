@@ -38,7 +38,7 @@ const router = useRouter({
 
 ```ts
 const router = useRouter({
-  namedRoutes: [
+  routes: [
     { name: 'home', path: '/pages/home/index' },
     { name: 'post-detail', path: '/pages/post/:id/index' },
   ],
@@ -51,7 +51,7 @@ const router = useRouter({
 
 ```ts
 const router = useRouter({
-  namedRoutes: [
+  routes: [
     {
       name: 'dashboard',
       path: '/pages/dashboard/index',
@@ -68,13 +68,15 @@ const router = useRouter({
 ```ts
 const router = useRouter({
   paramsMode: 'strict',
-  namedRoutes: {
-    'post-detail': '/pages/post/:id/index',
-  },
+  routes: [
+    { name: 'post-detail', path: '/pages/post/:id/index' },
+  ],
 })
 ```
 
 切 `strict` 后，如果还存在多余参数，会得到明确失败提示，可逐步修正。
+
+如果你已有历史配置，也可以继续使用 `namedRoutes`（对象 map/数组都支持）；推荐在迭代中逐步迁移到 `routes` 写法以对齐 Vue Router 心智。
 
 ## 4. 常见迁移问题
 
