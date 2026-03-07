@@ -112,6 +112,17 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     setFilterMsg: (_msg: string) => {},
     addFilterMsg: (_msg: string) => {},
   }
+  const syntheticVKSession = {
+    start: () => Promise.resolve({ errMsg: 'VKSession.start:ok' }),
+    stop: () => Promise.resolve({ errMsg: 'VKSession.stop:ok' }),
+    destroy: () => {},
+    addAnchors: () => Promise.resolve({ errMsg: 'VKSession.addAnchors:ok' }),
+    removeAnchors: () => Promise.resolve({ errMsg: 'VKSession.removeAnchors:ok' }),
+    clearAnchors: () => Promise.resolve({ errMsg: 'VKSession.clearAnchors:ok' }),
+    hitTest: () => Promise.resolve([]),
+    requestAnimationFrame: (_callback: (...args: any[]) => void) => 0,
+    cancelAnimationFrame: (_id: number) => {},
+  }
 
   const mapSyntheticActionSheetResult = (result: any, itemList: readonly string[]) => {
     const hasSelection = itemList.length > 0
@@ -220,6 +231,15 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         result: undefined,
       }
     }
+    const invokeSyntheticAsyncSuccess = (payload: Record<string, any>) => {
+      const lastArg = args.length > 0 ? args[args.length - 1] : undefined
+      if (hasCallbacks(lastArg)) {
+        lastArg.success?.(payload)
+        lastArg.complete?.(payload)
+        return undefined
+      }
+      return Promise.resolve(payload)
+    }
     if (methodName === 'nextTick') {
       const callback = typeof args[0] === 'function' ? args[0] as () => void : undefined
       if (callback) {
@@ -286,10 +306,76 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         result: syntheticLogManager,
       }
     }
+    if (methodName === 'createVKSession') {
+      return {
+        handled: true as const,
+        result: syntheticVKSession,
+      }
+    }
     if (methodName === 'reportAnalytics') {
       return {
         handled: true as const,
-        result: undefined,
+        result: invokeSyntheticAsyncSuccess({
+          errMsg: 'reportAnalytics:ok',
+        }),
+      }
+    }
+    if (methodName === 'openCustomerServiceChat') {
+      return {
+        handled: true as const,
+        result: invokeSyntheticAsyncSuccess({
+          errMsg: 'openCustomerServiceChat:ok',
+        }),
+      }
+    }
+    if (methodName === 'compressVideo') {
+      const options = isPlainObject(args[0]) ? args[0] : {}
+      const source = typeof options.src === 'string' && options.src
+        ? options.src
+        : typeof options.tempFilePath === 'string' && options.tempFilePath
+          ? options.tempFilePath
+          : ''
+      return {
+        handled: true as const,
+        result: invokeSyntheticAsyncSuccess({
+          ...options,
+          tempFilePath: source,
+          errMsg: 'compressVideo:ok',
+        }),
+      }
+    }
+    if (methodName === 'openVideoEditor') {
+      return {
+        handled: true as const,
+        result: invokeSyntheticAsyncSuccess({
+          errMsg: 'openVideoEditor:ok',
+        }),
+      }
+    }
+    if (methodName === 'getShareInfo') {
+      return {
+        handled: true as const,
+        result: invokeSyntheticAsyncSuccess({
+          encryptedData: '',
+          iv: '',
+          errMsg: 'getShareInfo:ok',
+        }),
+      }
+    }
+    if (methodName === 'joinVoIPChat') {
+      return {
+        handled: true as const,
+        result: invokeSyntheticAsyncSuccess({
+          errMsg: 'joinVoIPChat:ok',
+        }),
+      }
+    }
+    if (methodName === 'openDocument' && platform === 'tt') {
+      return {
+        handled: true as const,
+        result: invokeSyntheticAsyncSuccess({
+          errMsg: 'openDocument:ok',
+        }),
       }
     }
     if (methodName === 'onWindowResize' && platform === 'my') {

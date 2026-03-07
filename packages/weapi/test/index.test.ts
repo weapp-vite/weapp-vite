@@ -96,17 +96,17 @@ describe('weapi', () => {
       platform: 'my',
     })
 
-    expect(api.resolveTarget('openCustomerServiceChat')).toMatchObject({
-      method: 'openCustomerServiceChat',
+    expect(api.resolveTarget('addCard')).toMatchObject({
+      method: 'addCard',
       target: 'hideToast',
       supportLevel: 'fallback',
       supported: true,
       semanticAligned: false,
     })
-    expect(api.supports('openCustomerServiceChat')).toBe(true)
-    expect(api.supports('openCustomerServiceChat', { semantic: true })).toBe(false)
+    expect(api.supports('addCard')).toBe(true)
+    expect(api.supports('addCard', { semantic: true })).toBe(false)
 
-    await api.openCustomerServiceChat()
+    await api.addCard()
     expect(hideToast).toHaveBeenCalledWith(expect.any(Object))
   })
 
@@ -120,18 +120,18 @@ describe('weapi', () => {
       strictCompatibility: true,
     }) as Record<string, any>
 
-    expect(api.resolveTarget('openCustomerServiceChat')).toMatchObject({
-      method: 'openCustomerServiceChat',
-      target: 'openCustomerServiceChat',
+    expect(api.resolveTarget('addCard')).toMatchObject({
+      method: 'addCard',
+      target: 'addCard',
       mapped: false,
       supported: false,
       supportLevel: 'unsupported',
       semanticAligned: false,
     })
-    expect(api.supports('openCustomerServiceChat')).toBe(false)
+    expect(api.supports('addCard')).toBe(false)
 
-    await expect(api.openCustomerServiceChat()).rejects.toMatchObject({
-      errMsg: 'my.openCustomerServiceChat:fail method not supported',
+    await expect(api.addCard()).rejects.toMatchObject({
+      errMsg: 'my.addCard:fail method not supported',
     })
     expect(hideToast).not.toHaveBeenCalled()
   })
@@ -634,7 +634,7 @@ describe('weapi', () => {
     })
   })
 
-  it('provides synthetic reportAnalytics for alipay', () => {
+  it('provides synthetic reportAnalytics for alipay', async () => {
     const api = createWeapi({
       adapter: {},
       platform: 'alipay',
@@ -647,7 +647,9 @@ describe('weapi', () => {
       supported: true,
       semanticAligned: true,
     })
-    expect(api.reportAnalytics('event_name', { from: 'test' } as any)).toBeUndefined()
+    await expect(api.reportAnalytics('event_name', { from: 'test' } as any)).resolves.toMatchObject({
+      errMsg: 'reportAnalytics:ok',
+    })
   })
 
   it('provides synthetic onWindowResize/offWindowResize for alipay', () => {
@@ -686,6 +688,67 @@ describe('weapi', () => {
     expect(api.offWindowResize(callback)).toBeUndefined()
     appShowListener?.()
     expect(callback).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('provides synthetic openCustomerServiceChat for $platform', async ({ platform }) => {
+    const api = createWeapi({
+      adapter: {},
+      platform,
+    })
+    expect(api.resolveTarget('openCustomerServiceChat')).toMatchObject({
+      method: 'openCustomerServiceChat',
+      target: 'openCustomerServiceChat',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+    await expect(api.openCustomerServiceChat({} as any)).resolves.toMatchObject({
+      errMsg: 'openCustomerServiceChat:ok',
+    })
+  })
+
+  it.each([
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('provides synthetic createVKSession for $platform', async ({ platform }) => {
+    const api = createWeapi({
+      adapter: {},
+      platform,
+    })
+    const session = api.createVKSession()
+    expect(session).toMatchObject({
+      start: expect.any(Function),
+      stop: expect.any(Function),
+      destroy: expect.any(Function),
+    })
+    await expect(session.start()).resolves.toMatchObject({
+      errMsg: 'VKSession.start:ok',
+    })
+  })
+
+  it.each([
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('provides synthetic compressVideo/getShareInfo/joinVoIPChat for $platform', async ({ platform }) => {
+    const api = createWeapi({
+      adapter: {},
+      platform,
+    })
+    await expect(api.compressVideo({ src: '/tmp/demo.mp4' } as any)).resolves.toMatchObject({
+      tempFilePath: '/tmp/demo.mp4',
+      errMsg: 'compressVideo:ok',
+    })
+    await expect(api.getShareInfo({} as any)).resolves.toMatchObject({
+      encryptedData: '',
+      iv: '',
+      errMsg: 'getShareInfo:ok',
+    })
+    await expect(api.joinVoIPChat({} as any)).resolves.toMatchObject({
+      errMsg: 'joinVoIPChat:ok',
+    })
   })
 
   it('maps showToast icon error to fail for douyin', async () => {
@@ -757,6 +820,45 @@ describe('weapi', () => {
       tapIndex: 0,
       cancel: false,
       errMsg: 'showActionSheet:ok',
+    })
+  })
+
+  it('provides synthetic openDocument for douyin when missing', async () => {
+    const api = createWeapi({
+      adapter: {},
+      platform: 'tt',
+    })
+    expect(api.resolveTarget('openDocument')).toMatchObject({
+      method: 'openDocument',
+      target: 'openDocument',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+    await expect(api.openDocument({ filePath: '/tmp/a.pdf' } as any)).resolves.toMatchObject({
+      errMsg: 'openDocument:ok',
+    })
+  })
+
+  it('maps saveVideoToPhotosAlbum to saveImageToPhotosAlbum for douyin', async () => {
+    const saveImageToPhotosAlbum = vi.fn((options: any) => {
+      options.success?.({ errMsg: 'saveImageToPhotosAlbum:ok' })
+    })
+    const api = createWeapi({
+      adapter: {
+        saveImageToPhotosAlbum,
+      },
+      platform: 'tt',
+    })
+
+    const result = await api.saveVideoToPhotosAlbum({
+      filePath: '/tmp/demo.mp4',
+    } as any)
+    expect(saveImageToPhotosAlbum).toHaveBeenCalledWith(expect.objectContaining({
+      filePath: '/tmp/demo.mp4',
+    }))
+    expect(result).toMatchObject({
+      errMsg: 'saveImageToPhotosAlbum:ok',
     })
   })
 
@@ -1299,6 +1401,14 @@ describe('weapi', () => {
       { method: 'createAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
       { method: 'createWebAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
       { method: 'showActionSheet', my: 'showActionSheet', tt: 'showActionSheet' },
+      { method: 'openCustomerServiceChat', my: 'openCustomerServiceChat', tt: 'openCustomerServiceChat' },
+      { method: 'createVKSession', my: 'createVKSession', tt: 'createVKSession' },
+      { method: 'compressVideo', my: 'compressVideo', tt: 'compressVideo' },
+      { method: 'openVideoEditor', my: 'openVideoEditor', tt: 'openVideoEditor' },
+      { method: 'getShareInfo', my: 'getShareInfo', tt: 'getShareInfo' },
+      { method: 'joinVoIPChat', my: 'joinVoIPChat', tt: 'joinVoIPChat' },
+      { method: 'openDocument', my: 'openDocument', tt: 'openDocument' },
+      { method: 'saveVideoToPhotosAlbum', my: 'saveVideoToPhotosAlbum', tt: 'saveImageToPhotosAlbum' },
       { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'openAppAuthorizeSetting', my: 'openSetting', tt: 'openSetting' },
       { method: 'pluginLogin', my: 'getAuthCode', tt: 'login' },
@@ -1387,6 +1497,14 @@ describe('weapi', () => {
       'showLoading',
       'showActionSheet',
       'showModal',
+      'openCustomerServiceChat',
+      'createVKSession',
+      'compressVideo',
+      'openVideoEditor',
+      'getShareInfo',
+      'joinVoIPChat',
+      'openDocument',
+      'saveVideoToPhotosAlbum',
       'chooseImage',
       'chooseMedia',
       'chooseMessageFile',

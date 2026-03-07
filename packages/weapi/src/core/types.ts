@@ -773,6 +773,94 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 直连 `tt.reportAnalytics` | ⚠️ |
    */
   reportAnalytics: WeapiCrossPlatformAdapter['reportAnalytics']
+
+  /**
+   * 打开客服会话。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openCustomerServiceChat` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openCustomerServiceChat: WeapiCrossPlatformAdapter['openCustomerServiceChat']
+
+  /**
+   * 创建视觉识别会话。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createVKSession` | ⚠️ |
+   * | 支付宝 | 使用内置 VKSession shim（对齐 `start/stop/destroy`） | ⚠️ |
+   * | 抖音 | 使用内置 VKSession shim（对齐 `start/stop/destroy`） | ⚠️ |
+   */
+  createVKSession: WeapiCrossPlatformAdapter['createVKSession']
+
+  /**
+   * 压缩视频文件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.compressVideo` | ⚠️ |
+   * | 支付宝 | 使用内置 shim（回传原始文件路径） | ⚠️ |
+   * | 抖音 | 使用内置 shim（回传原始文件路径） | ⚠️ |
+   */
+  compressVideo: WeapiCrossPlatformAdapter['compressVideo']
+
+  /**
+   * 打开视频编辑器。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openVideoEditor` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openVideoEditor: WeapiCrossPlatformAdapter['openVideoEditor']
+
+  /**
+   * 获取转发详细信息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getShareInfo` | ⚠️ |
+   * | 支付宝 | 使用内置 shim（补齐 `encryptedData/iv`） | ⚠️ |
+   * | 抖音 | 使用内置 shim（补齐 `encryptedData/iv`） | ⚠️ |
+   */
+  getShareInfo: WeapiCrossPlatformAdapter['getShareInfo']
+
+  /**
+   * 加入音视频通话。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.joinVoIPChat` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  joinVoIPChat: WeapiCrossPlatformAdapter['joinVoIPChat']
+
+  /**
+   * 打开文档。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.openDocument` | ⚠️ |
+   * | 支付宝 | 直连 `my.openDocument` | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  openDocument: WeapiCrossPlatformAdapter['openDocument']
+
+  /**
+   * 保存视频到系统相册。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.saveVideoToPhotosAlbum` | ⚠️ |
+   * | 支付宝 | 直连 `my.saveVideoToPhotosAlbum` | ⚠️ |
+   * | 抖音 | 映射到 `tt.saveImageToPhotosAlbum` | ⚠️ |
+   */
+  saveVideoToPhotosAlbum: WeapiCrossPlatformAdapter['saveVideoToPhotosAlbum']
   // @generated weapi-method-docs:end
 }
 

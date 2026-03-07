@@ -83,6 +83,12 @@ const PLATFORM_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
 
 const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
   my: new Set([
+    'openCustomerServiceChat',
+    'createVKSession',
+    'compressVideo',
+    'openVideoEditor',
+    'getShareInfo',
+    'joinVoIPChat',
     'nextTick',
     'getLogManager',
     'reportAnalytics',
@@ -91,6 +97,13 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
   ]),
   tt: new Set([
     'showActionSheet',
+    'openCustomerServiceChat',
+    'createVKSession',
+    'compressVideo',
+    'openVideoEditor',
+    'getShareInfo',
+    'joinVoIPChat',
+    'openDocument',
     'nextTick',
     'getLogManager',
   ]),
@@ -594,6 +607,70 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     wxStrategy: '直连 `wx.reportAnalytics`',
     alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
     douyinStrategy: '直连 `tt.reportAnalytics`',
+    support: '⚠️',
+  },
+  {
+    method: 'openCustomerServiceChat',
+    description: '打开客服会话。',
+    wxStrategy: '直连 `wx.openCustomerServiceChat`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'createVKSession',
+    description: '创建视觉识别会话。',
+    wxStrategy: '直连 `wx.createVKSession`',
+    alipayStrategy: '使用内置 VKSession shim（对齐 `start/stop/destroy`）',
+    douyinStrategy: '使用内置 VKSession shim（对齐 `start/stop/destroy`）',
+    support: '⚠️',
+  },
+  {
+    method: 'compressVideo',
+    description: '压缩视频文件。',
+    wxStrategy: '直连 `wx.compressVideo`',
+    alipayStrategy: '使用内置 shim（回传原始文件路径）',
+    douyinStrategy: '使用内置 shim（回传原始文件路径）',
+    support: '⚠️',
+  },
+  {
+    method: 'openVideoEditor',
+    description: '打开视频编辑器。',
+    wxStrategy: '直连 `wx.openVideoEditor`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'getShareInfo',
+    description: '获取转发详细信息。',
+    wxStrategy: '直连 `wx.getShareInfo`',
+    alipayStrategy: '使用内置 shim（补齐 `encryptedData/iv`）',
+    douyinStrategy: '使用内置 shim（补齐 `encryptedData/iv`）',
+    support: '⚠️',
+  },
+  {
+    method: 'joinVoIPChat',
+    description: '加入音视频通话。',
+    wxStrategy: '直连 `wx.joinVoIPChat`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'openDocument',
+    description: '打开文档。',
+    wxStrategy: '直连 `wx.openDocument`',
+    alipayStrategy: '直连 `my.openDocument`',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'saveVideoToPhotosAlbum',
+    description: '保存视频到系统相册。',
+    wxStrategy: '直连 `wx.saveVideoToPhotosAlbum`',
+    alipayStrategy: '直连 `my.saveVideoToPhotosAlbum`',
+    douyinStrategy: '映射到 `tt.saveImageToPhotosAlbum`',
     support: '⚠️',
   },
 ] as const
@@ -1630,6 +1707,30 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     reportAnalytics: {
       target: 'reportAnalytics',
     },
+    openCustomerServiceChat: {
+      target: 'openCustomerServiceChat',
+    },
+    createVKSession: {
+      target: 'createVKSession',
+    },
+    compressVideo: {
+      target: 'compressVideo',
+    },
+    openVideoEditor: {
+      target: 'openVideoEditor',
+    },
+    getShareInfo: {
+      target: 'getShareInfo',
+    },
+    joinVoIPChat: {
+      target: 'joinVoIPChat',
+    },
+    openDocument: {
+      target: 'openDocument',
+    },
+    saveVideoToPhotosAlbum: {
+      target: 'saveVideoToPhotosAlbum',
+    },
   },
   tt: {
     showToast: {
@@ -1831,6 +1932,30 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     reportAnalytics: {
       target: 'reportAnalytics',
+    },
+    openCustomerServiceChat: {
+      target: 'openCustomerServiceChat',
+    },
+    createVKSession: {
+      target: 'createVKSession',
+    },
+    compressVideo: {
+      target: 'compressVideo',
+    },
+    openVideoEditor: {
+      target: 'openVideoEditor',
+    },
+    getShareInfo: {
+      target: 'getShareInfo',
+    },
+    joinVoIPChat: {
+      target: 'joinVoIPChat',
+    },
+    openDocument: {
+      target: 'openDocument',
+    },
+    saveVideoToPhotosAlbum: {
+      target: 'saveImageToPhotosAlbum',
     },
   },
 }
