@@ -133,13 +133,31 @@
 - `my.addPhoneCalendar` 缺失时不得回退到 `addPhoneContact`。
 - `my/tt` 的 `on/offWifiConnectedWithPartialInfo` 缺失时不得回退到 `on/offWifiConnected` 或 `on/offGetWifiList`。
 
+9. 门禁脚本接入（2026-03-08）
+
+- 已新增 `scripts/check-strict-alias-guard.mjs`，用于独立校验：
+- `my/tt` 异名映射是否严格匹配白名单（my 12 项、tt 1 项）。
+- 所有异名映射是否保持 `supportLevel=mapped` 且 `semanticAligned=true`。
+- fallback 映射数量是否为 `0`。
+- 已在 `package.json` 新增 `strict-alias:check`，并接入 `prebuild`，确保构建前自动执行门禁。
+
+10. 最新候选复筛（2026-03-08）
+
+- 已按“unsupported + 名称相似度 >= 0.75”重新扫描并人工复核，未发现新增可证明严格等价映射。
+- 本轮高相似但仍否决的代表项：
+- `tt.saveVideoToPhotosAlbum` vs `tt.saveImageToPhotosAlbum`（能力对象不同，视频/图片不可等价）。
+- `tt.getEnterOptionsSync` vs `tt.getLaunchOptionsSync`（冷启动/热启动语义差异）。
+- `tt.openChannelsUserProfile` vs `tt.openAwemeUserProfile`（业务域不同）。
+- `my.openAppAuthorizeSetting` vs `my.getAppAuthorizeSetting/openSetting`（语义锚点不一致）。
+
 ## 5. 每批固定验证清单
 
 1. `pnpm --filter @wevu/api test`
 2. `pnpm --filter @wevu/api test:types`
-3. `pnpm --filter @wevu/api docs:sync`
-4. `pnpm --filter @wevu/api report:api`
-5. `pnpm --filter @wevu/api lint`
-6. `pnpm --filter @wevu/api build`
-7. 新增 changeset（中文摘要）
-8. 仅提交 `packages/weapi` + `.changeset/*.md`
+3. `pnpm --filter @wevu/api strict-alias:check`
+4. `pnpm --filter @wevu/api docs:sync`
+5. `pnpm --filter @wevu/api report:api`
+6. `pnpm --filter @wevu/api lint`
+7. `pnpm --filter @wevu/api build`
+8. 新增 changeset（中文摘要）
+9. 仅提交 `packages/weapi` + `.changeset/*.md`
