@@ -105,45 +105,10 @@ async function dispatchRuntimeNavigation(
       if (typeof navigate !== 'function') {
         throw new TypeError(`[web-e2e] wx.${method} is unavailable in runtime`)
       }
-      await new Promise<void>((resolve, reject) => {
-        let settled = false
-        let timer: ReturnType<typeof setTimeout> | undefined
-        const finish = (action: () => void) => {
-          if (settled) {
-            return
-          }
-          settled = true
-          if (timer != null) {
-            clearTimeout(timer)
-          }
-          action()
-        }
-        timer = setTimeout(() => {
-          finish(() => reject(new Error(`[web-e2e] wx.${method} did not complete in time`)))
-        }, 10_000)
-
-        const onSuccess = () => {
-          finish(() => resolve())
-        }
-        const onFail = (error: any) => {
-          const message = typeof error?.errMsg === 'string'
-            ? error.errMsg
-            : JSON.stringify(error ?? null)
-          finish(() => reject(new Error(`[web-e2e] wx.${method} failed: ${message}`)))
-        }
-
-        try {
-          navigate({
-            ...payload,
-            success: onSuccess,
-            fail: onFail,
-          })
-        }
-        catch (error) {
-          const normalizedError = error instanceof Error ? error : new Error(String(error))
-          finish(() => reject(normalizedError))
-        }
-      })
+      const navigationResult = navigate(payload)
+      if (navigationResult && typeof (navigationResult as any).then === 'function') {
+        await navigationResult
+      }
     }, { method, payload })
   }
   catch (error) {

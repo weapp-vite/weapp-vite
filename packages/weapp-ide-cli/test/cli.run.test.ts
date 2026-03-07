@@ -530,7 +530,9 @@ describe('cli parsing', () => {
     })
 
     expect(waitForRetryKeypressMock).not.toHaveBeenCalled()
-    expect(loggerMock.error).toHaveBeenCalledWith('当前为非交互模式，检测到登录失效后直接失败。')
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.stringMatching(
+      /当前为非交互模式，检测到登录失效后直接失败。|Non-interactive mode enabled, failing immediately on login expiration\./,
+    ))
   })
 
   it('auto enables non-interactive mode in CI environment', async () => {
@@ -615,7 +617,7 @@ describe('cli parsing', () => {
     const { parse } = await loadRunModule()
 
     await expect(parse(['open', '--login-retry', 'twice'])).rejects.toThrow(
-      '不支持的 --login-retry 值: twice（仅支持 never/once/always）',
+      /不支持的 --login-retry 值: twice（仅支持 never\/once\/always）|Invalid --login-retry value: twice \(supported: never\/once\/always\)/,
     )
 
     expect(executeMock).not.toHaveBeenCalled()
@@ -625,7 +627,7 @@ describe('cli parsing', () => {
     const { parse } = await loadRunModule()
 
     await expect(parse(['open', '--login-retry-timeout', '0'])).rejects.toThrow(
-      '无效的 --login-retry-timeout 值: 0（必须为正整数）',
+      /无效的 --login-retry-timeout 值: 0（必须为正整数）|Invalid --login-retry-timeout value: 0 \(must be a positive integer\)/,
     )
 
     expect(executeMock).not.toHaveBeenCalled()
@@ -648,6 +650,8 @@ describe('cli parsing', () => {
 
     expect(formatRetryHotkeyPromptMock).toHaveBeenCalledWith(1234)
     expect(waitForRetryKeypressMock).toHaveBeenCalledWith({ timeoutMs: 1234 })
-    expect(loggerMock.error).toHaveBeenCalledWith('等待登录重试输入超时（1234ms），已自动取消。')
+    expect(loggerMock.error).toHaveBeenCalledWith(expect.stringMatching(
+      /等待登录重试输入超时（1234ms），已自动取消。|Retry prompt timed out \(1234ms\), canceled automatically\./,
+    ))
   })
 })
