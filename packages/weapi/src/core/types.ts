@@ -147,6 +147,19 @@ type WeapiMethodDocOverlay<TAdapter extends WeapiAdapter> = TAdapter extends Wea
   ? WeapiCrossPlatformMethodDocs
   : object
 
+export type WeapiNetworkOverflowPolicy = 'queue' | 'strict'
+
+export interface WeapiNetworkOptions {
+  /**
+   * @description 并发溢出策略：`queue` 为排队执行，`strict` 为超限立即失败
+   */
+  overflowPolicy?: WeapiNetworkOverflowPolicy
+  /**
+   * @description 队列模式下的最大排队数（默认 100）
+   */
+  maxQueueSize?: number
+}
+
 export interface CreateWeapiOptions<TAdapter extends WeapiAdapter = WeapiCrossPlatformRawAdapter> {
   /**
    * @description 手动指定平台适配器（优先级高于自动探测）
@@ -160,6 +173,10 @@ export interface CreateWeapiOptions<TAdapter extends WeapiAdapter = WeapiCrossPl
    * @description 严格兼容模式（兼容字段）：当前版本默认已关闭通用 fallback，该选项保留向后兼容
    */
   strictCompatibility?: boolean
+  /**
+   * @description 网络请求策略配置
+   */
+  network?: WeapiNetworkOptions
 }
 
 export type WeapiSupportLevel = 'native' | 'mapped' | 'fallback' | 'unsupported'

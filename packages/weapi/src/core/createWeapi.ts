@@ -47,7 +47,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
   let platformName: string | undefined = normalizePlatformName(options.platform)
   const allowFallback = false
   const cache = new Map<PropertyKey, any>()
-  const networkPolicy = createNetworkRequestPolicy(() => platformName)
+  const networkPolicy = createNetworkRequestPolicy(() => platformName, options.network)
   const resolveAdapter = () => {
     if (adapter) {
       return adapter
@@ -220,15 +220,9 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
             return callWithError(networkCall.blockedError, runtimeArgs)
           }
           const nextRuntimeArgs = networkCall?.args ?? runtimeArgs
-          try {
-            const result = runtimeMethod.apply(runtimeAdapter, nextRuntimeArgs)
-            networkCall?.onInvokeResult(result)
-            return mappingRule?.mapResult ? mappingRule.mapResult(result, nextRuntimeArgs) : result
-          }
-          catch (error) {
-            networkCall?.onInvokeError()
-            throw error
-          }
+          const invokeRuntime = () => runtimeMethod.apply(runtimeAdapter, nextRuntimeArgs)
+          const result = networkCall ? networkCall.invoke(invokeRuntime) : invokeRuntime()
+          return mappingRule?.mapResult ? mappingRule.mapResult(result, nextRuntimeArgs) : result
         }
         let networkCall: ReturnType<typeof networkPolicy.prepareCall> | undefined
         return callWithPromise(
@@ -248,11 +242,12 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
               }
               nextArgs.splice(0, nextArgs.length, ...(networkCall.args as unknown[]))
             },
-            onInvokeResult: (result) => {
-              networkCall?.onInvokeResult(result)
-            },
-            onInvokeError: () => {
-              networkCall?.onInvokeError()
+            invoke: (invoke) => {
+              if (networkCall) {
+                networkCall.invoke(invoke)
+                return
+              }
+              invoke()
             },
           },
         )
