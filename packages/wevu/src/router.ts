@@ -166,6 +166,7 @@ export interface RouterNavigation {
   readonly nativeRouter: SetupContextRouter
   readonly options: Readonly<UseRouterOptions>
   readonly currentRoute: Readonly<RouteLocationNormalizedLoaded>
+  install: (app?: unknown) => void
   resolve: (to: RouteLocationRaw) => RouteLocationNormalizedLoaded
   isReady: () => Promise<void>
   push: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
@@ -1336,6 +1337,9 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     return resolveWithCodec(to, route.path)
   }
 
+  function install(_app?: unknown): void {
+  }
+
   function isReady(): Promise<void> {
     return readyPromise
   }
@@ -1864,6 +1868,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     nativeRouter,
     options: routerOptions,
     currentRoute: route,
+    install,
     resolve,
     isReady,
     push,
