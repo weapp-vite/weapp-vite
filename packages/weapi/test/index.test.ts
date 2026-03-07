@@ -491,6 +491,34 @@ describe('weapi', () => {
     expect(getAuthCode).not.toHaveBeenCalled()
   })
 
+  it('treats getUserProfile/getUserInfo as unsupported for alipay without strict-equivalent api', async () => {
+    const getOpenUserInfo = vi.fn((options: any) => {
+      options.success?.({
+        nickName: 'demo',
+      })
+    })
+    const api = createWeapi({
+      adapter: {
+        getOpenUserInfo,
+      },
+      platform: 'alipay',
+    })
+
+    for (const methodName of ['getUserProfile', 'getUserInfo'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({ desc: 'need profile' } as any)).rejects.toMatchObject({
+        errMsg: `my.${methodName}:fail method not supported`,
+      })
+    }
+    expect(getOpenUserInfo).not.toHaveBeenCalled()
+  })
+
   it('maps hideHomeButton to hideBackHome for alipay', async () => {
     const hideBackHome = vi.fn((options: any) => {
       options.success?.({})
@@ -2023,8 +2051,8 @@ describe('weapi', () => {
       { method: 'saveFileToDisk', my: 'saveFileToDisk', tt: 'saveFileToDisk', ttSupported: false },
       { method: 'getEnterOptionsSync', my: 'getEnterOptionsSync', tt: 'getLaunchOptionsSync' },
       { method: 'getSystemSetting', my: 'getSystemSetting', tt: 'getSystemSetting', ttSupported: false },
-      { method: 'getUserProfile', my: 'getOpenUserInfo', tt: 'getUserProfile' },
-      { method: 'getUserInfo', my: 'getOpenUserInfo', tt: 'getUserInfo' },
+      { method: 'getUserProfile', my: 'getUserProfile', tt: 'getUserProfile', mySupported: false },
+      { method: 'getUserInfo', my: 'getUserInfo', tt: 'getUserInfo', mySupported: false },
       { method: 'getAppAuthorizeSetting', my: 'getAppAuthorizeSetting', tt: 'getAppAuthorizeSetting', ttSupported: false },
       { method: 'getAppBaseInfo', my: 'getAppBaseInfo', tt: 'getEnvInfoSync' },
       { method: 'chooseVideo', my: 'chooseVideo', tt: 'chooseVideo', ttSupported: false },

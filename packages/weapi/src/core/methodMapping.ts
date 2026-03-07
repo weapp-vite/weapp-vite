@@ -433,7 +433,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'getUserProfile',
     description: '获取用户资料。',
     wxStrategy: '直连 `wx.getUserProfile`',
-    alipayStrategy: '映射到 `my.getOpenUserInfo`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.getUserProfile`',
     support: '⚠️',
   },
@@ -441,7 +441,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'getUserInfo',
     description: '获取用户信息。',
     wxStrategy: '直连 `wx.getUserInfo`',
-    alipayStrategy: '映射到 `my.getOpenUserInfo`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.getUserInfo`',
     support: '⚠️',
   },
@@ -2589,10 +2589,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getSystemSetting',
     },
     getUserProfile: {
-      target: 'getOpenUserInfo',
+      target: 'getUserProfile',
     },
     getUserInfo: {
-      target: 'getOpenUserInfo',
+      target: 'getUserInfo',
     },
     getAppAuthorizeSetting: {
       target: 'getAppAuthorizeSetting',

@@ -571,7 +571,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getUserProfile` | ⚠️ |
-   * | 支付宝 | 映射到 `my.getOpenUserInfo` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    * | 抖音 | 直连 `tt.getUserProfile` | ⚠️ |
    */
   getUserProfile: WeapiCrossPlatformAdapter['getUserProfile']
@@ -582,7 +582,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getUserInfo` | ⚠️ |
-   * | 支付宝 | 映射到 `my.getOpenUserInfo` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    * | 抖音 | 直连 `tt.getUserInfo` | ⚠️ |
    */
   getUserInfo: WeapiCrossPlatformAdapter['getUserInfo']
