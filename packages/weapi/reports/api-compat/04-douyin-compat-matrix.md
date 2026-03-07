@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：229，不支持：250
+总计：479，支持：209，不支持：270
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -347,38 +347,38 @@
 | `openOfficialAccountProfile`                  | `openOfficialAccountProfile`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openPrivacyContract`                         | `openPrivacyContract`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openSetting`                                 | `openSetting`                                 | ✅   | `native`      | ✅       | 直连 `tt.openSetting`                                                             |
-| `openSingleStickerView`                       | `openSingleStickerView`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openStickerIPView`                           | `openStickerIPView`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openStickerSetView`                          | `openStickerSetView`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openStoreCouponDetail`                       | `openStoreCouponDetail`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openStoreOrderDetail`                        | `openStoreOrderDetail`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openSystemBluetoothSetting`                  | `openSystemBluetoothSetting`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openSingleStickerView`                       | `openSingleStickerView`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openStickerIPView`                           | `openStickerIPView`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openStickerSetView`                          | `openStickerSetView`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openStoreCouponDetail`                       | `openStoreCouponDetail`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openStoreOrderDetail`                        | `openStoreOrderDetail`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openSystemBluetoothSetting`                  | `openSystemBluetoothSetting`                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openVideoEditor`                             | `openVideoEditor`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `pageScrollTo`                                | `pageScrollTo`                                | ✅   | `native`      | ✅       | 直连 `tt.pageScrollTo`                                                            |
-| `pauseBackgroundAudio`                        | `pauseBackgroundAudio`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `pauseVoice`                                  | `pauseVoice`                                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `playBackgroundAudio`                         | `playBackgroundAudio`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `playVoice`                                   | `playVoice`                                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `pauseBackgroundAudio`                        | `pauseBackgroundAudio`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `pauseVoice`                                  | `pauseVoice`                                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `playBackgroundAudio`                         | `playBackgroundAudio`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `playVoice`                                   | `playVoice`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `pluginLogin`                                 | `login`                                       | ✅   | `mapped`      | ✅       | 映射到 `tt.login`                                                                 |
-| `postMessageToReferrerMiniProgram`            | `postMessageToReferrerMiniProgram`            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `postMessageToReferrerPage`                   | `postMessageToReferrerPage`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `preDownloadSubpackage`                       | `preDownloadSubpackage`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `preloadAssets`                               | `preloadAssets`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `preloadSkylineView`                          | `preloadSkylineView`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `preloadWebview`                              | `preloadWebview`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `postMessageToReferrerMiniProgram`            | `postMessageToReferrerMiniProgram`            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `postMessageToReferrerPage`                   | `postMessageToReferrerPage`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `preDownloadSubpackage`                       | `preDownloadSubpackage`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `preloadAssets`                               | `preloadAssets`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `preloadSkylineView`                          | `preloadSkylineView`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `preloadWebview`                              | `preloadWebview`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `previewImage`                                | `previewImage`                                | ✅   | `native`      | ✅       | 直连 `tt.previewImage`                                                            |
 | `previewMedia`                                | `previewImage`                                | ✅   | `mapped`      | ✅       | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls`                        |
 | `readBLECharacteristicValue`                  | `readBLECharacteristicValue`                  | ❌   | `unsupported` | ❌       | 未提供 tt.readBLECharacteristicValue，调用时将返回 not supported                  |
 | `redirectTo`                                  | `redirectTo`                                  | ✅   | `native`      | ✅       | 直连 `tt.redirectTo`                                                              |
 | `reLaunch`                                    | `reLaunch`                                    | ✅   | `native`      | ✅       | 直连 `tt.reLaunch`                                                                |
-| `removeSecureElementPass`                     | `removeSecureElementPass`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `removeSecureElementPass`                     | `removeSecureElementPass`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `removeStorage`                               | `removeStorage`                               | ✅   | `native`      | ✅       | 直连 `tt.removeStorage`                                                           |
 | `removeStorageSync`                           | `removeStorageSync`                           | ✅   | `native`      | ✅       | 直连 `tt.removeStorageSync`                                                       |
 | `removeTabBarBadge`                           | `removeTabBarBadge`                           | ✅   | `native`      | ✅       | 直连 `tt.removeTabBarBadge`                                                       |
 | `reportAnalytics`                             | `reportAnalytics`                             | ✅   | `mapped`      | ✅       | 直连 `tt.reportAnalytics`                                                         |
-| `reportEvent`                                 | `reportEvent`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `reportMonitor`                               | `reportMonitor`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `reportPerformance`                           | `reportPerformance`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `reportEvent`                                 | `reportEvent`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `reportMonitor`                               | `reportMonitor`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `reportPerformance`                           | `reportPerformance`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `request`                                     | `request`                                     | ✅   | `native`      | ✅       | 直连 `tt.request`                                                                 |
 | `requestCommonPayment`                        | `requestCommonPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

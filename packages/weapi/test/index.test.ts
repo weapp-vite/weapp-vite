@@ -1009,6 +1009,47 @@ describe('weapi', () => {
   })
 
   it.each([
+    'openSystemBluetoothSetting',
+    'reportEvent',
+    'reportMonitor',
+    'reportPerformance',
+    'openSingleStickerView',
+    'openStickerIPView',
+    'openStickerSetView',
+    'openStoreCouponDetail',
+    'openStoreOrderDetail',
+    'pauseBackgroundAudio',
+    'pauseVoice',
+    'playBackgroundAudio',
+    'playVoice',
+    'postMessageToReferrerMiniProgram',
+    'postMessageToReferrerPage',
+    'preDownloadSubpackage',
+    'preloadAssets',
+    'preloadSkylineView',
+    'preloadWebview',
+    'removeSecureElementPass',
+  ])('treats %s as unsupported in strict compatibility mode', async (methodName) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const normalizedPlatform = platform === 'alipay' ? 'my' : platform
+      const api = createWeapi({
+        adapter: {},
+        platform,
+      }) as Record<string, any>
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({})).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
+      })
+    }
+  })
+
+  it.each([
     'addCard',
     'addFileToFavorites',
     'addPaymentPassFinish',
@@ -1034,26 +1075,6 @@ describe('weapi', () => {
     'openOfficialAccountChat',
     'openOfficialAccountProfile',
     'openPrivacyContract',
-    'openSystemBluetoothSetting',
-    'reportEvent',
-    'reportMonitor',
-    'reportPerformance',
-    'openSingleStickerView',
-    'openStickerIPView',
-    'openStickerSetView',
-    'openStoreCouponDetail',
-    'openStoreOrderDetail',
-    'pauseBackgroundAudio',
-    'pauseVoice',
-    'playBackgroundAudio',
-    'playVoice',
-    'postMessageToReferrerMiniProgram',
-    'postMessageToReferrerPage',
-    'preDownloadSubpackage',
-    'preloadAssets',
-    'preloadSkylineView',
-    'preloadWebview',
-    'removeSecureElementPass',
   ])('provides synthetic no-op mapping for %s on alipay and douyin', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const api = createWeapi({

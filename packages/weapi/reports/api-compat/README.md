@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  291 |
-| 支付宝语义对齐方法数             |  291 |
+| 支付宝可按微信命名调用的方法数   |  271 |
+| 支付宝语义对齐方法数             |  271 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  229 |
-| 抖音语义对齐方法数               |  229 |
+| 抖音可按微信命名调用的方法数     |  209 |
+| 抖音语义对齐方法数               |  209 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  227 |
-| 三端语义完全对齐方法数           |  227 |
+| 三端可调用完全对齐方法数         |  207 |
+| 三端语义完全对齐方法数           |  207 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           291 |             291 |               0 |      479 |       60.75% |         60.75% |
-| 抖音小程序 (`tt`)             |           229 |             229 |               0 |      479 |       47.81% |         47.81% |
-| 三端可调用完全对齐 (wx/my/tt) |           227 |               - |               - |      479 |       47.39% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             227 |               - |      479 |            - |         47.39% |
+| 支付宝小程序 (`my`)           |           271 |             271 |               0 |      479 |       56.58% |         56.58% |
+| 抖音小程序 (`tt`)             |           209 |             209 |               0 |      479 |       43.63% |         43.63% |
+| 三端可调用完全对齐 (wx/my/tt) |           207 |               - |               - |      479 |       43.22% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             207 |               - |      479 |            - |         43.22% |
 
 ## 核心差异映射（手工规则）
 
@@ -147,26 +147,26 @@
 | `openOfficialAccountChat`           | 直连 `wx.openOfficialAccountChat`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `openOfficialAccountProfile`        | 直连 `wx.openOfficialAccountProfile`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `openPrivacyContract`               | 直连 `wx.openPrivacyContract`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openSystemBluetoothSetting`        | 直连 `wx.openSystemBluetoothSetting`                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `reportEvent`                       | 直连 `wx.reportEvent`                               | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `reportMonitor`                     | 直连 `wx.reportMonitor`                             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `reportPerformance`                 | 直连 `wx.reportPerformance`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openSingleStickerView`             | 直连 `wx.openSingleStickerView`                     | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openStickerIPView`                 | 直连 `wx.openStickerIPView`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openStickerSetView`                | 直连 `wx.openStickerSetView`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openStoreCouponDetail`             | 直连 `wx.openStoreCouponDetail`                     | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `openStoreOrderDetail`              | 直连 `wx.openStoreOrderDetail`                      | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `pauseBackgroundAudio`              | 直连 `wx.pauseBackgroundAudio`                      | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `pauseVoice`                        | 直连 `wx.pauseVoice`                                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `playBackgroundAudio`               | 直连 `wx.playBackgroundAudio`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `playVoice`                         | 直连 `wx.playVoice`                                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `postMessageToReferrerMiniProgram`  | 直连 `wx.postMessageToReferrerMiniProgram`          | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `postMessageToReferrerPage`         | 直连 `wx.postMessageToReferrerPage`                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `preDownloadSubpackage`             | 直连 `wx.preDownloadSubpackage`                     | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `preloadAssets`                     | 直连 `wx.preloadAssets`                             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `preloadSkylineView`                | 直连 `wx.preloadSkylineView`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `preloadWebview`                    | 直连 `wx.preloadWebview`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `removeSecureElementPass`           | 直连 `wx.removeSecureElementPass`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openSystemBluetoothSetting`        | 直连 `wx.openSystemBluetoothSetting`                | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `reportEvent`                       | 直连 `wx.reportEvent`                               | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `reportMonitor`                     | 直连 `wx.reportMonitor`                             | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `reportPerformance`                 | 直连 `wx.reportPerformance`                         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `openSingleStickerView`             | 直连 `wx.openSingleStickerView`                     | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `openStickerIPView`                 | 直连 `wx.openStickerIPView`                         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `openStickerSetView`                | 直连 `wx.openStickerSetView`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `openStoreCouponDetail`             | 直连 `wx.openStoreCouponDetail`                     | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `openStoreOrderDetail`              | 直连 `wx.openStoreOrderDetail`                      | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `pauseBackgroundAudio`              | 直连 `wx.pauseBackgroundAudio`                      | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `pauseVoice`                        | 直连 `wx.pauseVoice`                                | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `playBackgroundAudio`               | 直连 `wx.playBackgroundAudio`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `playVoice`                         | 直连 `wx.playVoice`                                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `postMessageToReferrerMiniProgram`  | 直连 `wx.postMessageToReferrerMiniProgram`          | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `postMessageToReferrerPage`         | 直连 `wx.postMessageToReferrerPage`                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `preDownloadSubpackage`             | 直连 `wx.preDownloadSubpackage`                     | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `preloadAssets`                     | 直连 `wx.preloadAssets`                             | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `preloadSkylineView`                | 直连 `wx.preloadSkylineView`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `preloadWebview`                    | 直连 `wx.preloadWebview`                            | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `removeSecureElementPass`           | 直连 `wx.removeSecureElementPass`                   | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `chooseInvoiceTitle`                | 直连 `wx.chooseInvoiceTitle`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `chooseLicensePlate`                | 直连 `wx.chooseLicensePlate`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `choosePoi`                         | 直连 `wx.choosePoi`                                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
