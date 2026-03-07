@@ -99,7 +99,7 @@
 | `getAppBaseInfo`                              | `getAppBaseInfo`                     | ✅   | `mapped`   | ✅       | 直连 `my.getAppBaseInfo`                                               |
 | `getAvailableAudioSources`                    | `getAvailableAudioSources`           | ✅   | `native`   | ✅       | 直连 `my.getAvailableAudioSources`                                     |
 | `getBackgroundAudioManager`                   | `getBackgroundAudioManager`          | ✅   | `native`   | ✅       | 直连 `my.getBackgroundAudioManager`                                    |
-| `getBackgroundAudioPlayerState`               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getBackgroundAudioPlayerState`               | `getBackgroundAudioPlayerState`      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getBackgroundFetchData`                      | `getBackgroundFetchData`             | ✅   | `native`   | ✅       | 直连 `my.getBackgroundFetchData`                                       |
 | `getBackgroundFetchToken`                     | `getBackgroundFetchToken`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getBatteryInfo`                              | `getBatteryInfo`                     | ✅   | `mapped`   | ✅       | 直连 `my.getBatteryInfo`                                               |
@@ -119,9 +119,9 @@
 | `getCommonConfig`                             | `getCommonConfig`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getConnectedBluetoothDevices`                | `getConnectedBluetoothDevices`       | ✅   | `native`   | ✅       | 直连 `my.getConnectedBluetoothDevices`                                 |
 | `getConnectedWifi`                            | `getConnectedWifi`                   | ✅   | `native`   | ✅       | 直连 `my.getConnectedWifi`                                             |
-| `getDeviceBenchmarkInfo`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`             | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getDeviceInfo`                               | `getSystemInfo`                      | ✅   | `mapped`   | ✅       | 映射到 `my.getSystemInfo`，并提取设备字段                              |
-| `getDeviceVoIPList`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getDeviceVoIPList`                           | `getDeviceVoIPList`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getEnterOptionsSync`                         | `getEnterOptionsSync`                | ✅   | `mapped`   | ✅       | 直连 `my.getEnterOptionsSync`                                          |
 | `getExptInfoSync`                             | `getSystemInfoSync`                  | ✅   | `fallback` | ❌       | 回退映射到 `my.getSystemInfoSync`（通用兜底）                          |
 | `getExtConfig`                                | `getExtConfig`                       | ✅   | `native`   | ✅       | 直连 `my.getExtConfig`                                                 |
@@ -129,30 +129,30 @@
 | `getFileSystemManager`                        | `getFileSystemManager`               | ✅   | `native`   | ✅       | 直连 `my.getFileSystemManager`                                         |
 | `getFuzzyLocation`                            | `getLocation`                        | ✅   | `mapped`   | ✅       | 映射到 `my.getLocation`                                                |
 | `getGroupEnterInfo`                           | `getGroupEnterInfo`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getHCEState`                                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getHCEState`                                 | `getHCEState`                        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getImageInfo`                                | `getImageInfo`                       | ✅   | `native`   | ✅       | 直连 `my.getImageInfo`                                                 |
-| `getInferenceEnvInfo`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getInferenceEnvInfo`                         | `getInferenceEnvInfo`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getLaunchOptionsSync`                        | `getLaunchOptionsSync`               | ✅   | `native`   | ✅       | 直连 `my.getLaunchOptionsSync`                                         |
 | `getLocalIPAddress`                           | `getLocalIPAddress`                  | ✅   | `native`   | ✅       | 直连 `my.getLocalIPAddress`                                            |
 | `getLocation`                                 | `getLocation`                        | ✅   | `native`   | ✅       | 直连 `my.getLocation`                                                  |
 | `getLogManager`                               | `getLogManager`                      | ✅   | `mapped`   | ✅       | 使用内置日志 shim（对齐 `log/info/warn/error`）                        |
 | `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect`    | ✅   | `native`   | ✅       | 直连 `my.getMenuButtonBoundingClientRect`                              |
 | `getNetworkType`                              | `getNetworkType`                     | ✅   | `mapped`   | ✅       | 直连 `my.getNetworkType`                                               |
-| `getNFCAdapter`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `getPerformance`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getNFCAdapter`                               | `getNFCAdapter`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `getPerformance`                              | `getPerformance`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getPrivacySetting`                           | `getPrivacySetting`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getRandomValues`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `getRealtimeLogManager`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getRandomValues`                             | `getRandomValues`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `getRealtimeLogManager`                       | `getRealtimeLogManager`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getRecorderManager`                          | `getRecorderManager`                 | ✅   | `native`   | ✅       | 直连 `my.getRecorderManager`                                           |
-| `getRendererUserAgent`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getRendererUserAgent`                        | `getRendererUserAgent`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getScreenBrightness`                         | `getScreenBrightness`                | ✅   | `native`   | ✅       | 直连 `my.getScreenBrightness`                                          |
-| `getScreenRecordingState`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `getSecureElementPasses`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `getSelectedTextRange`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getScreenRecordingState`                     | `getScreenRecordingState`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `getSecureElementPasses`                      | `getSecureElementPasses`             | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `getSelectedTextRange`                        | `getSelectedTextRange`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getSetting`                                  | `getSetting`                         | ✅   | `native`   | ✅       | 直连 `my.getSetting`                                                   |
 | `getShareInfo`                                | `getShareInfo`                       | ✅   | `mapped`   | ✅       | 使用内置 shim（补齐 `encryptedData/iv`）                               |
-| `getShowSplashAdStatus`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `getSkylineInfo`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getShowSplashAdStatus`                       | `getShowSplashAdStatus`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `getSkylineInfo`                              | `getSkylineInfo`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getSkylineInfoSync`                          | `getSystemInfoSync`                  | ✅   | `fallback` | ❌       | 回退映射到 `my.getSystemInfoSync`（通用兜底）                          |
 | `getStorage`                                  | `getStorage`                         | ✅   | `native`   | ✅       | 直连 `my.getStorage`                                                   |
 | `getStorageInfo`                              | `getStorageInfo`                     | ✅   | `native`   | ✅       | 直连 `my.getStorageInfo`                                               |
@@ -163,14 +163,14 @@
 | `getSystemInfoSync`                           | `getSystemInfoSync`                  | ✅   | `native`   | ✅       | 直连 `my.getSystemInfoSync`                                            |
 | `getSystemSetting`                            | `getSystemSetting`                   | ✅   | `mapped`   | ✅       | 直连 `my.getSystemSetting`                                             |
 | `getUpdateManager`                            | `getUpdateManager`                   | ✅   | `native`   | ✅       | 直连 `my.getUpdateManager`                                             |
-| `getUserCryptoManager`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getUserCryptoManager`                        | `getUserCryptoManager`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getUserInfo`                                 | `getOpenUserInfo`                    | ✅   | `mapped`   | ✅       | 映射到 `my.getOpenUserInfo`                                            |
 | `getUserProfile`                              | `getOpenUserInfo`                    | ✅   | `mapped`   | ✅       | 映射到 `my.getOpenUserInfo`                                            |
 | `getVideoInfo`                                | `getVideoInfo`                       | ✅   | `mapped`   | ✅       | 直连 `my.getVideoInfo`                                                 |
-| `getWeRunData`                                | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getWeRunData`                                | `getWeRunData`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getWifiList`                                 | `getWifiList`                        | ✅   | `native`   | ✅       | 直连 `my.getWifiList`                                                  |
 | `getWindowInfo`                               | `getWindowInfo`                      | ✅   | `mapped`   | ✅       | 直连 `my.getWindowInfo`                                                |
-| `getXrFrameSystem`                            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `getXrFrameSystem`                            | `getXrFrameSystem`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `hideHomeButton`                              | `hideBackHome`                       | ✅   | `mapped`   | ✅       | 映射到 `my.hideBackHome`                                               |
 | `hideKeyboard`                                | `hideKeyboard`                       | ✅   | `native`   | ✅       | 直连 `my.hideKeyboard`                                                 |
 | `hideLoading`                                 | `hideLoading`                        | ✅   | `native`   | ✅       | 直连 `my.hideLoading`                                                  |
@@ -180,8 +180,8 @@
 | `hideTabBarRedDot`                            | `hideTabBarRedDot`                   | ✅   | `native`   | ✅       | 直连 `my.hideTabBarRedDot`                                             |
 | `hideToast`                                   | `hideToast`                          | ✅   | `native`   | ✅       | 直连 `my.hideToast`                                                    |
 | `initFaceDetect`                              | `initFaceDetect`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `isBluetoothDevicePaired`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `isVKSupport`                                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `isBluetoothDevicePaired`                     | `isBluetoothDevicePaired`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `isVKSupport`                                 | `isVKSupport`                        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `join1v1Chat`                                 | `join1v1Chat`                        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `joinVoIPChat`                                | `joinVoIPChat`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `loadBuiltInFontFace`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
