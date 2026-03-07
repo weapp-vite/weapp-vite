@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：156，不支持：323
+总计：479，支持：155，不支持：324
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -46,7 +46,7 @@
 | `chooseMedia`                                 | `chooseMedia`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType`                 |
 | `chooseMessageFile`                           | `chooseMessageFile`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `choosePoi`                                   | `choosePoi`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `chooseVideo`                                 | `chooseMedia`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构                  |
+| `chooseVideo`                                 | `chooseVideo`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `clearStorage`                                | `clearStorage`                                | ✅   | `native`      | ✅       | 直连 `tt.clearStorage`                                                            |
 | `clearStorageSync`                            | `clearStorageSync`                            | ✅   | `native`      | ✅       | 直连 `tt.clearStorageSync`                                                        |
 | `closeBLEConnection`                          | `closeBLEConnection`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

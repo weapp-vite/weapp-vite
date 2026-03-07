@@ -17,11 +17,11 @@
 | 支付宝可按微信命名调用的方法数   |  217 |
 | 支付宝语义对齐方法数             |  217 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  156 |
-| 抖音语义对齐方法数               |  156 |
+| 抖音可按微信命名调用的方法数     |  155 |
+| 抖音语义对齐方法数               |  155 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  148 |
-| 三端语义完全对齐方法数           |  148 |
+| 三端可调用完全对齐方法数         |  147 |
+| 三端语义完全对齐方法数           |  147 |
 
 ## 覆盖率
 
@@ -29,9 +29,9 @@
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
 | 支付宝小程序 (`my`)           |           217 |             217 |               0 |      479 |       45.30% |         45.30% |
-| 抖音小程序 (`tt`)             |           156 |             156 |               0 |      479 |       32.57% |         32.57% |
-| 三端可调用完全对齐 (wx/my/tt) |           148 |               - |               - |      479 |       30.90% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             148 |               - |      479 |            - |         30.90% |
+| 抖音小程序 (`tt`)             |           155 |             155 |               0 |      479 |       32.36% |         32.36% |
+| 三端可调用完全对齐 (wx/my/tt) |           147 |               - |               - |      479 |       30.69% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             147 |               - |      479 |            - |         30.69% |
 
 ## 核心差异映射（手工规则）
 
@@ -81,7 +81,7 @@
 | `getUserInfo`                       | 直连 `wx.getUserInfo`                               | 映射到 `my.getOpenUserInfo`                                        | 直连 `tt.getUserInfo`                                                 |
 | `getAppAuthorizeSetting`            | 直连 `wx.getAppAuthorizeSetting`                    | 直连 `my.getAppAuthorizeSetting`                                   | 映射到 `tt.getSetting`                                                |
 | `getAppBaseInfo`                    | 直连 `wx.getAppBaseInfo`                            | 直连 `my.getAppBaseInfo`                                           | 映射到 `tt.getEnvInfoSync`                                            |
-| `chooseVideo`                       | 直连 `wx.chooseVideo`                               | 直连 `my.chooseVideo`                                              | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构      |
+| `chooseVideo`                       | 直连 `wx.chooseVideo`                               | 直连 `my.chooseVideo`                                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `hideHomeButton`                    | 直连 `wx.hideHomeButton`                            | 映射到 `my.hideBackHome`                                           | 直连 `tt.hideHomeButton`                                              |
 | `getWindowInfo`                     | 直连 `wx.getWindowInfo`                             | 直连 `my.getWindowInfo`                                            | 映射到 `tt.getSystemInfo`，并提取窗口字段                             |
 | `getDeviceInfo`                     | 直连 `wx.getDeviceInfo`                             | 映射到 `my.getSystemInfo`，并提取设备字段                          | 映射到 `tt.getSystemInfo`，并提取设备字段                             |

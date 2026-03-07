@@ -36,9 +36,9 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
 | 支付宝小程序 (`my`) | 217 | 217 | 0 | 479 | 45.30% | 45.30% |
-| 抖音小程序 (`tt`) | 156 | 156 | 0 | 479 | 32.57% | 32.57% |
-| 三端可调用完全对齐 (wx/my/tt) | 148 | - | - | 479 | 30.90% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 148 | - | 479 | - | 30.90% |
+| 抖音小程序 (`tt`) | 155 | 155 | 0 | 479 | 32.36% | 32.36% |
+| 三端可调用完全对齐 (wx/my/tt) | 147 | - | - | 479 | 30.69% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 147 | - | 479 | - | 30.69% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -90,7 +90,7 @@
 | `getUserInfo` | 获取用户信息。 | 直连 `wx.getUserInfo` | 映射到 `my.getOpenUserInfo` | 直连 `tt.getUserInfo` | ⚠️ |
 | `getAppAuthorizeSetting` | 获取 App 授权设置。 | 直连 `wx.getAppAuthorizeSetting` | 直连 `my.getAppAuthorizeSetting` | 映射到 `tt.getSetting` | ⚠️ |
 | `getAppBaseInfo` | 获取 App 基础信息。 | 直连 `wx.getAppBaseInfo` | 直连 `my.getAppBaseInfo` | 映射到 `tt.getEnvInfoSync` | ⚠️ |
-| `chooseVideo` | 选择视频。 | 直连 `wx.chooseVideo` | 直连 `my.chooseVideo` | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构 | ⚠️ |
+| `chooseVideo` | 选择视频。 | 直连 `wx.chooseVideo` | 直连 `my.chooseVideo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `hideHomeButton` | 隐藏返回首页按钮。 | 直连 `wx.hideHomeButton` | 映射到 `my.hideBackHome` | 直连 `tt.hideHomeButton` | ✅ |
 | `getWindowInfo` | 获取窗口信息。 | 直连 `wx.getWindowInfo` | 直连 `my.getWindowInfo` | 映射到 `tt.getSystemInfo`，并提取窗口字段 | ⚠️ |
 | `getDeviceInfo` | 获取设备基础信息。 | 直连 `wx.getDeviceInfo` | 映射到 `my.getSystemInfo`，并提取设备字段 | 映射到 `tt.getSystemInfo`，并提取设备字段 | ⚠️ |

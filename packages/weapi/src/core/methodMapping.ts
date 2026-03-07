@@ -466,7 +466,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '选择视频。',
     wxStrategy: '直连 `wx.chooseVideo`',
     alipayStrategy: '直连 `my.chooseVideo`',
-    douyinStrategy: '映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2357,62 +2357,6 @@ function mapDouyinPayArgs(args: unknown[]) {
   return mapPaymentArgs(args, 'orderInfo')
 }
 
-function mapChooseVideoArgs(args: unknown[]) {
-  const nextArgs = [...args]
-  if (nextArgs.length === 0 || !isPlainObject(nextArgs[nextArgs.length - 1])) {
-    nextArgs.push({})
-  }
-  const lastIndex = nextArgs.length - 1
-  const lastArg = nextArgs[lastIndex]
-  if (!isPlainObject(lastArg)) {
-    return nextArgs
-  }
-  const nextOptions = {
-    ...lastArg,
-  } as Record<string, any>
-  nextOptions.mediaType = ['video']
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'count')) {
-    nextOptions.count = 1
-  }
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'sizeType') && typeof nextOptions.compressed === 'boolean') {
-    nextOptions.sizeType = nextOptions.compressed ? ['compressed'] : ['original']
-  }
-  nextArgs[lastIndex] = nextOptions
-  return nextArgs
-}
-
-function mapChooseVideoResult(result: any) {
-  if (!isPlainObject(result)) {
-    return result
-  }
-  if (typeof result.tempFilePath === 'string' && result.tempFilePath) {
-    return result
-  }
-  if (!Array.isArray(result.tempFiles) || result.tempFiles.length === 0) {
-    return result
-  }
-  const firstItem = result.tempFiles[0]
-  if (!isPlainObject(firstItem)) {
-    return result
-  }
-  const tempFilePath = typeof firstItem.tempFilePath === 'string' && firstItem.tempFilePath
-    ? firstItem.tempFilePath
-    : typeof firstItem.filePath === 'string' && firstItem.filePath
-      ? firstItem.filePath
-      : undefined
-  if (!tempFilePath) {
-    return result
-  }
-  return {
-    ...result,
-    tempFilePath,
-    duration: typeof firstItem.duration === 'number' ? firstItem.duration : result.duration,
-    size: typeof firstItem.size === 'number' ? firstItem.size : result.size,
-    height: typeof firstItem.height === 'number' ? firstItem.height : result.height,
-    width: typeof firstItem.width === 'number' ? firstItem.width : result.width,
-  }
-}
-
 function resolveFilePaths(result: any): string[] {
   if (!isPlainObject(result)) {
     return []
@@ -3494,9 +3438,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getEnvInfoSync',
     },
     chooseVideo: {
-      target: 'chooseMedia',
-      mapArgs: mapChooseVideoArgs,
-      mapResult: mapChooseVideoResult,
+      target: 'chooseVideo',
     },
     hideHomeButton: {
       target: 'hideHomeButton',
