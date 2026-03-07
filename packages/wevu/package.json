@@ -62,6 +62,13 @@
         "default": "./dist/api.mjs"
       }
     },
+    "./fetch": {
+      "types": "./dist/fetch.d.mts",
+      "import": {
+        "types": "./dist/fetch.d.mts",
+        "default": "./dist/fetch.mjs"
+      }
+    },
     "./router": {
       "types": "./dist/router.d.mts",
       "import": {

@@ -64,6 +64,7 @@ type CompilerEntry = typeof import('wevu/compiler')
 type WevuJsxRuntime = typeof import('wevu/jsx-runtime')
 type WevuStoreEntry = typeof import('wevu/store')
 type WevuApiEntry = typeof import('wevu/api')
+type WevuFetchEntry = typeof import('wevu/fetch')
 type WevuRouterEntry = typeof import('wevu/router')
 
 type RuntimeApiName
@@ -207,6 +208,9 @@ expectType<WevuStoreEntry>(storeEntry)
 
 declare const apiEntry: WevuApiEntry
 expectType<WevuApiEntry>(apiEntry)
+
+declare const fetchEntry: WevuFetchEntry
+expectType<WevuFetchEntry>(fetchEntry)
 
 declare const routerEntry: WevuRouterEntry
 expectType<WevuRouterEntry>(routerEntry)

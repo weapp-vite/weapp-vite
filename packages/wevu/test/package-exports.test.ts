@@ -35,6 +35,18 @@ describe('package exports', () => {
     })
   })
 
+  it('declares fetch subpath export', () => {
+    const exportsField = readExports()
+
+    expect(exportsField['./fetch']).toEqual({
+      types: './dist/fetch.d.mts',
+      import: {
+        types: './dist/fetch.d.mts',
+        default: './dist/fetch.mjs',
+      },
+    })
+  })
+
   it('declares router subpath export', () => {
     const exportsField = readExports()
 
