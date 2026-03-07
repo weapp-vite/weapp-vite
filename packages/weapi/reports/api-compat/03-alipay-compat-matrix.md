@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：212，不支持：267
+总计：479，支持：209，不支持：270
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -13,7 +13,7 @@
 | `addPhoneRepeatCalendar`                      | `addPhoneRepeatCalendar`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `addVideoToFavorites`                         | `addVideoToFavorites`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `arrayBufferToBase64`                         | `arrayBufferToBase64`                         | ✅   | `native`      | ✅       | 直连 `my.arrayBufferToBase64`                                                     |
-| `authorize`                                   | `getAuthCode`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.getAuthCode`，并对齐 `scope` -> `scopes` 参数                          |
+| `authorize`                                   | `authorize`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `authorizeForMiniProgram`                     | `authorizeForMiniProgram`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `authPrivateMessage`                          | `authPrivateMessage`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `base64ToArrayBuffer`                         | `base64ToArrayBuffer`                         | ✅   | `native`      | ✅       | 直连 `my.base64ToArrayBuffer`                                                     |
@@ -35,7 +35,7 @@
 | `checkIsPictureInPictureActive`               | `checkIsPictureInPictureActive`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `checkIsSoterEnrolledInDevice`                | `checkIsSoterEnrolledInDevice`                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication`           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `checkSession`                                | `getAuthCode`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.getAuthCode`，按成功结果对齐 `checkSession:ok`                         |
+| `checkSession`                                | `checkSession`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `chooseAddress`                               | `chooseAddress`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `chooseContact`                               | `chooseContact`                               | ✅   | `native`      | ✅       | 直连 `my.chooseContact`                                                           |
 | `chooseImage`                                 | `chooseImage`                                 | ✅   | `mapped`      | ✅       | 返回值 `apFilePaths` 映射到 `tempFilePaths`                                       |
@@ -186,7 +186,7 @@
 | `joinVoIPChat`                                | `joinVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `loadFontFace`                                | `loadFontFace`                                | ✅   | `native`      | ✅       | 直连 `my.loadFontFace`                                                            |
-| `login`                                       | `getAuthCode`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段                                   |
+| `login`                                       | `login`                                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `makeBluetoothPair`                           | `makeBluetoothPair`                           | ✅   | `native`      | ✅       | 直连 `my.makeBluetoothPair`                                                       |
 | `makePhoneCall`                               | `makePhoneCall`                               | ✅   | `native`      | ✅       | 直连 `my.makePhoneCall`                                                           |
 | `navigateBack`                                | `navigateBack`                                | ✅   | `native`      | ✅       | 直连 `my.navigateBack`                                                            |

@@ -297,7 +297,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'login',
     description: '登录。',
     wxStrategy: '直连 `wx.login`',
-    alipayStrategy: '映射到 `my.getAuthCode`，并对齐返回 `code` 字段',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.login`',
     support: '⚠️',
   },
@@ -305,7 +305,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'authorize',
     description: '提前向用户发起授权请求。',
     wxStrategy: '直连 `wx.authorize`',
-    alipayStrategy: '映射到 `my.getAuthCode`，并对齐 `scope` -> `scopes` 参数',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.authorize`',
     support: '⚠️',
   },
@@ -313,7 +313,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'checkSession',
     description: '检查登录态是否过期。',
     wxStrategy: '直连 `wx.checkSession`',
-    alipayStrategy: '映射到 `my.getAuthCode`，按成功结果对齐 `checkSession:ok`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.checkSession`',
     support: '⚠️',
   },
@@ -2230,79 +2230,6 @@ function mapClipboardResult(result: any) {
   return result
 }
 
-function mapAuthCodeResult(result: any) {
-  if (!isPlainObject(result)) {
-    return result
-  }
-  if (!Object.prototype.hasOwnProperty.call(result, 'code') && typeof result.authCode === 'string' && result.authCode) {
-    return {
-      ...result,
-      code: result.authCode,
-    }
-  }
-  return result
-}
-
-function mapAuthorizeArgs(args: unknown[]) {
-  if (args.length === 0) {
-    return [{}]
-  }
-  const nextArgs = [...args]
-  const lastIndex = nextArgs.length - 1
-  const lastArg = nextArgs[lastIndex]
-  if (!isPlainObject(lastArg)) {
-    return [...nextArgs, {}]
-  }
-  const nextOptions = {
-    ...lastArg,
-  } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'scopes') && typeof nextOptions.scope === 'string' && nextOptions.scope) {
-    nextOptions.scopes = [nextOptions.scope]
-  }
-  nextArgs[lastIndex] = nextOptions
-  return nextArgs
-}
-
-function mapCheckSessionArgs(args: unknown[]) {
-  if (args.length === 0) {
-    return [{
-      scopes: ['auth_base'],
-    }]
-  }
-  const nextArgs = [...args]
-  const lastIndex = nextArgs.length - 1
-  const lastArg = nextArgs[lastIndex]
-  if (!isPlainObject(lastArg)) {
-    return [
-      ...nextArgs,
-      {
-        scopes: ['auth_base'],
-      },
-    ]
-  }
-  const nextOptions = {
-    ...lastArg,
-  } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'scopes')) {
-    nextOptions.scopes = ['auth_base']
-  }
-  nextArgs[lastIndex] = nextOptions
-  return nextArgs
-}
-
-function mapCheckSessionResult(result: any) {
-  if (!isPlainObject(result)) {
-    return result
-  }
-  if (Object.prototype.hasOwnProperty.call(result, 'errMsg')) {
-    return result
-  }
-  return {
-    ...result,
-    errMsg: 'checkSession:ok',
-  }
-}
-
 function mapPaymentArgs(args: unknown[], target: 'orderStr' | 'orderInfo') {
   if (args.length === 0) {
     return [{}]
@@ -2646,18 +2573,13 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'pluginLogin',
     },
     login: {
-      target: 'getAuthCode',
-      mapResult: mapAuthCodeResult,
+      target: 'login',
     },
     authorize: {
-      target: 'getAuthCode',
-      mapArgs: mapAuthorizeArgs,
-      mapResult: mapAuthCodeResult,
+      target: 'authorize',
     },
     checkSession: {
-      target: 'getAuthCode',
-      mapArgs: mapCheckSessionArgs,
-      mapResult: mapCheckSessionResult,
+      target: 'checkSession',
     },
     requestSubscribeDeviceMessage: {
       target: 'requestSubscribeMessage',

@@ -384,7 +384,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.login` | ⚠️ |
-   * | 支付宝 | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    * | 抖音 | 直连 `tt.login` | ⚠️ |
    */
   login: WeapiCrossPlatformAdapter['login']
@@ -395,7 +395,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.authorize` | ⚠️ |
-   * | 支付宝 | 映射到 `my.getAuthCode`，并对齐 `scope` -> `scopes` 参数 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    * | 抖音 | 直连 `tt.authorize` | ⚠️ |
    */
   authorize: WeapiCrossPlatformAdapter['authorize']
@@ -406,7 +406,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.checkSession` | ⚠️ |
-   * | 支付宝 | 映射到 `my.getAuthCode`，按成功结果对齐 `checkSession:ok` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    * | 抖音 | 直连 `tt.checkSession` | ⚠️ |
    */
   checkSession: WeapiCrossPlatformAdapter['checkSession']
