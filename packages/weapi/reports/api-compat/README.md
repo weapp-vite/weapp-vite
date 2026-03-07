@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  220 |
-| 支付宝语义对齐方法数             |  220 |
+| 支付宝可按微信命名调用的方法数   |  219 |
+| 支付宝语义对齐方法数             |  219 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  160 |
-| 抖音语义对齐方法数               |  160 |
+| 抖音可按微信命名调用的方法数     |  159 |
+| 抖音语义对齐方法数               |  159 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  152 |
-| 三端语义完全对齐方法数           |  152 |
+| 三端可调用完全对齐方法数         |  151 |
+| 三端语义完全对齐方法数           |  151 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           220 |             220 |               0 |      479 |       45.93% |         45.93% |
-| 抖音小程序 (`tt`)             |           160 |             160 |               0 |      479 |       33.40% |         33.40% |
-| 三端可调用完全对齐 (wx/my/tt) |           152 |               - |               - |      479 |       31.73% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             152 |               - |      479 |            - |         31.73% |
+| 支付宝小程序 (`my`)           |           219 |             219 |               0 |      479 |       45.72% |         45.72% |
+| 抖音小程序 (`tt`)             |           159 |             159 |               0 |      479 |       33.19% |         33.19% |
+| 三端可调用完全对齐 (wx/my/tt) |           151 |               - |               - |      479 |       31.52% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             151 |               - |      479 |            - |         31.52% |
 
 ## 核心差异映射（手工规则）
 
@@ -45,7 +45,7 @@
 | `chooseMedia`                       | 直连 `wx.chooseMedia`                               | 无同等 API，调用时按 unsupported 报错                              | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType`     |
 | `chooseMessageFile`                 | 直连 `wx.chooseMessageFile`                         | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `getFuzzyLocation`                  | 直连 `wx.getFuzzyLocation`                          | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
-| `previewMedia`                      | 直连 `wx.previewMedia`                              | 映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls`         | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls`            |
+| `previewMedia`                      | 直连 `wx.previewMedia`                              | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `createInterstitialAd`              | 直连 `wx.createInterstitialAd`                      | 无同等 API，调用时按 unsupported 报错                              | 直连 `tt.createInterstitialAd`                                        |
 | `createRewardedVideoAd`             | 直连 `wx.createRewardedVideoAd`                     | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                | 无同等 API，调用时按 unsupported 报错                                 |
 | `createLivePlayerContext`           | 直连 `wx.createLivePlayerContext`                   | 无同等 API，调用时按 unsupported 报错                              | 直连 `tt.createLivePlayerContext`                                     |

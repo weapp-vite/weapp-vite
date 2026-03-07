@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：160，不支持：319
+总计：479，支持：159，不支持：320
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -367,7 +367,7 @@
 | `preloadSkylineView`                          | `preloadSkylineView`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `preloadWebview`                              | `preloadWebview`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `previewImage`                                | `previewImage`                                | ✅   | `native`      | ✅       | 直连 `tt.previewImage`                                                            |
-| `previewMedia`                                | `previewImage`                                | ✅   | `mapped`      | ✅       | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls`                        |
+| `previewMedia`                                | `previewMedia`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `readBLECharacteristicValue`                  | `readBLECharacteristicValue`                  | ❌   | `unsupported` | ❌       | 未提供 tt.readBLECharacteristicValue，调用时将返回 not supported                  |
 | `redirectTo`                                  | `redirectTo`                                  | ✅   | `native`      | ✅       | 直连 `tt.redirectTo`                                                              |
 | `reLaunch`                                    | `reLaunch`                                    | ✅   | `native`      | ✅       | 直连 `tt.reLaunch`                                                                |
