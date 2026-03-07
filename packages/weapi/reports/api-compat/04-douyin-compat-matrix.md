@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：165，不支持：314
+总计：479，支持：163，不支持：316
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -76,7 +76,7 @@
 | `createMediaContainer`                        | `createMediaContainer`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createMediaRecorder`                         | `createMediaRecorder`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createOffscreenCanvas`                       | `createOffscreenCanvas`                       | ✅   | `native`      | ✅       | 直连 `tt.createOffscreenCanvas`                                                   |
-| `createRewardedVideoAd`                       | `createInterstitialAd`                        | ✅   | `mapped`      | ✅       | 映射到 `tt.createInterstitialAd`                                                  |
+| `createRewardedVideoAd`                       | `createRewardedVideoAd`                       | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createSelectorQuery`                         | `createSelectorQuery`                         | ✅   | `native`      | ✅       | 直连 `tt.createSelectorQuery`                                                     |
 | `createTCPSocket`                             | `createTCPSocket`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createUDPSocket`                             | `createUDPSocket`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -398,7 +398,7 @@
 | `rewriteRoute`                                | `rewriteRoute`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `saveFileToDisk`                              | `saveFile`                                    | ✅   | `mapped`      | ✅       | 映射到 `tt.saveFile`                                                              |
 | `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `native`      | ✅       | 直连 `tt.saveImageToPhotosAlbum`                                                  |
-| `saveVideoToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `mapped`      | ✅       | 映射到 `tt.saveImageToPhotosAlbum`                                                |
+| `saveVideoToPhotosAlbum`                      | `saveVideoToPhotosAlbum`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `scanCode`                                    | `scanCode`                                    | ✅   | `mapped`      | ✅       | 直连 `tt.scanCode`                                                                |
 | `seekBackgroundAudio`                         | `seekBackgroundAudio`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `selectGroupMembers`                          | `selectGroupMembers`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

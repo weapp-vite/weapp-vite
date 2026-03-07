@@ -81,11 +81,6 @@ const PLATFORM_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
   tt: WEAPI_TT_METHOD_SET,
 }
 
-const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
-  my: new Set([]),
-  tt: new Set([]),
-}
-
 export const WEAPI_PLATFORM_SUPPORT_MATRIX: readonly WeapiPlatformSupportMatrixItem[] = [
   {
     platform: '微信小程序',
@@ -199,7 +194,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '创建激励视频广告实例。',
     wxStrategy: '直连 `wx.createRewardedVideoAd`',
     alipayStrategy: '映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`',
-    douyinStrategy: '映射到 `tt.createInterstitialAd`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -647,7 +642,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '保存视频到系统相册。',
     wxStrategy: '直连 `wx.saveVideoToPhotosAlbum`',
     alipayStrategy: '直连 `my.saveVideoToPhotosAlbum`',
-    douyinStrategy: '映射到 `tt.saveImageToPhotosAlbum`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -3519,7 +3514,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'createInterstitialAd',
     },
     createRewardedVideoAd: {
-      target: 'createInterstitialAd',
+      target: 'createRewardedVideoAd',
     },
     createLivePlayerContext: {
       target: 'createLivePlayerContext',
@@ -4162,7 +4157,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'openDocument',
     },
     saveVideoToPhotosAlbum: {
-      target: 'saveImageToPhotosAlbum',
+      target: 'saveVideoToPhotosAlbum',
     },
     batchSetStorage: {
       target: 'batchSetStorage',
@@ -4192,13 +4187,6 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'offBLEConnectionStateChange',
     },
   },
-}
-
-/**
- * @description 判断方法是否由 weapi 内置 synthetic 能力支持
- */
-export function isSyntheticMethodSupported(platform: 'my' | 'tt', methodName: string) {
-  return SYNTHETIC_SUPPORT_METHOD_SET[platform].has(methodName)
 }
 
 function createFallbackMappingRule(platform: 'my' | 'tt', methodName: string): WeapiMethodMappingRule | undefined {
@@ -4287,7 +4275,6 @@ function resolvePlatformCompatibility(platform: 'my' | 'tt', methodName: string)
   const resolution = resolveMappingRule(platform, methodName)
   const target = resolution.target
   const supported = PLATFORM_METHOD_SET[platform].has(target)
-    || isSyntheticMethodSupported(platform, methodName)
   const supportLevel = toSupportLevel(resolution.source, supported)
   return {
     resolution,

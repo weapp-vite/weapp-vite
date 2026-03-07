@@ -242,7 +242,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.createRewardedVideoAd` | ⚠️ |
    * | 支付宝 | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId` | ⚠️ |
-   * | 抖音 | 映射到 `tt.createInterstitialAd` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   createRewardedVideoAd: WeapiCrossPlatformAdapter['createRewardedVideoAd']
 
@@ -858,7 +858,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.saveVideoToPhotosAlbum` | ⚠️ |
    * | 支付宝 | 直连 `my.saveVideoToPhotosAlbum` | ⚠️ |
-   * | 抖音 | 映射到 `tt.saveImageToPhotosAlbum` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   saveVideoToPhotosAlbum: WeapiCrossPlatformAdapter['saveVideoToPhotosAlbum']
 

@@ -17,11 +17,11 @@
 | 支付宝可按微信命名调用的方法数   |  226 |
 | 支付宝语义对齐方法数             |  226 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  165 |
-| 抖音语义对齐方法数               |  165 |
+| 抖音可按微信命名调用的方法数     |  163 |
+| 抖音语义对齐方法数               |  163 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  160 |
-| 三端语义完全对齐方法数           |  160 |
+| 三端可调用完全对齐方法数         |  158 |
+| 三端语义完全对齐方法数           |  158 |
 
 ## 覆盖率
 
@@ -29,9 +29,9 @@
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
 | 支付宝小程序 (`my`)           |           226 |             226 |               0 |      479 |       47.18% |         47.18% |
-| 抖音小程序 (`tt`)             |           165 |             165 |               0 |      479 |       34.45% |         34.45% |
-| 三端可调用完全对齐 (wx/my/tt) |           160 |               - |               - |      479 |       33.40% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             160 |               - |      479 |            - |         33.40% |
+| 抖音小程序 (`tt`)             |           163 |             163 |               0 |      479 |       34.03% |         34.03% |
+| 三端可调用完全对齐 (wx/my/tt) |           158 |               - |               - |      479 |       32.99% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             158 |               - |      479 |            - |         32.99% |
 
 ## 核心差异映射（手工规则）
 
@@ -47,7 +47,7 @@
 | `getFuzzyLocation`                  | 直连 `wx.getFuzzyLocation`                          | 映射到 `my.getLocation`                                             | 映射到 `tt.getLocation`                                               |
 | `previewMedia`                      | 直连 `wx.previewMedia`                              | 映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls`          | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls`            |
 | `createInterstitialAd`              | 直连 `wx.createInterstitialAd`                      | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                 | 直连 `tt.createInterstitialAd`                                        |
-| `createRewardedVideoAd`             | 直连 `wx.createRewardedVideoAd`                     | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                 | 映射到 `tt.createInterstitialAd`                                      |
+| `createRewardedVideoAd`             | 直连 `wx.createRewardedVideoAd`                     | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                 | 无同等 API，调用时按 unsupported 报错                                 |
 | `createLivePlayerContext`           | 直连 `wx.createLivePlayerContext`                   | 映射到 `my.createVideoContext`                                      | 直连 `tt.createLivePlayerContext`                                     |
 | `createLivePusherContext`           | 直连 `wx.createLivePusherContext`                   | 映射到 `my.createVideoContext`                                      | 映射到 `tt.createVideoContext`                                        |
 | `getVideoInfo`                      | 直连 `wx.getVideoInfo`                              | 直连 `my.getVideoInfo`                                              | 映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath`                 |
@@ -103,7 +103,7 @@
 | `getShareInfo`                      | 直连 `wx.getShareInfo`                              | 无同等 API，调用时按 unsupported 报错                               | 无同等 API，调用时按 unsupported 报错                                 |
 | `joinVoIPChat`                      | 直连 `wx.joinVoIPChat`                              | 无同等 API，调用时按 unsupported 报错                               | 无同等 API，调用时按 unsupported 报错                                 |
 | `openDocument`                      | 直连 `wx.openDocument`                              | 直连 `my.openDocument`                                              | 无同等 API，调用时按 unsupported 报错                                 |
-| `saveVideoToPhotosAlbum`            | 直连 `wx.saveVideoToPhotosAlbum`                    | 直连 `my.saveVideoToPhotosAlbum`                                    | 映射到 `tt.saveImageToPhotosAlbum`                                    |
+| `saveVideoToPhotosAlbum`            | 直连 `wx.saveVideoToPhotosAlbum`                    | 直连 `my.saveVideoToPhotosAlbum`                                    | 无同等 API，调用时按 unsupported 报错                                 |
 | `batchSetStorage`                   | 直连 `wx.batchSetStorage`                           | 无同等 API，调用时按 unsupported 报错                               | 无同等 API，调用时按 unsupported 报错                                 |
 | `batchGetStorage`                   | 直连 `wx.batchGetStorage`                           | 无同等 API，调用时按 unsupported 报错                               | 无同等 API，调用时按 unsupported 报错                                 |
 | `batchSetStorageSync`               | 直连 `wx.batchSetStorageSync`                       | 无同等 API，调用时按 unsupported 报错                               | 无同等 API，调用时按 unsupported 报错                                 |
