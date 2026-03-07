@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：393，不支持：86
+总计：479，支持：395，不支持：84
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -213,7 +213,7 @@
 | `offBeforePageLoad`                           | `offBeforePageLoad`                           | ❌   | `unsupported` | ❌       | 未提供 my.offBeforePageLoad，调用时将返回 not supported                           |
 | `offBeforePageUnload`                         | `offBeforePageUnload`                         | ❌   | `unsupported` | ❌       | 未提供 my.offBeforePageUnload，调用时将返回 not supported                         |
 | `offBLECharacteristicValueChange`             | `offBLECharacteristicValueChange`             | ✅   | `native`      | ✅       | 直连 `my.offBLECharacteristicValueChange`                                         |
-| `offBLEConnectionStateChange`                 | `offBLEConnectionStateChange`                 | ❌   | `unsupported` | ❌       | 未提供 my.offBLEConnectionStateChange，调用时将返回 not supported                 |
+| `offBLEConnectionStateChange`                 | `offBLEConnectionStateChanged`                | ✅   | `mapped`      | ✅       | 映射到 `my.offBLEConnectionStateChanged`                                          |
 | `offBLEMTUChange`                             | `offBLEMTUChange`                             | ❌   | `unsupported` | ❌       | 未提供 my.offBLEMTUChange，调用时将返回 not supported                             |
 | `offBLEPeripheralConnectionStateChanged`      | `offBLEPeripheralConnectionStateChanged`      | ❌   | `unsupported` | ❌       | 未提供 my.offBLEPeripheralConnectionStateChanged，调用时将返回 not supported      |
 | `offBluetoothAdapterStateChange`              | `offBluetoothAdapterStateChange`              | ✅   | `native`      | ✅       | 直连 `my.offBluetoothAdapterStateChange`                                          |
@@ -278,7 +278,7 @@
 | `onBeforePageLoad`                            | `onBeforePageLoad`                            | ❌   | `unsupported` | ❌       | 未提供 my.onBeforePageLoad，调用时将返回 not supported                            |
 | `onBeforePageUnload`                          | `onBeforePageUnload`                          | ❌   | `unsupported` | ❌       | 未提供 my.onBeforePageUnload，调用时将返回 not supported                          |
 | `onBLECharacteristicValueChange`              | `onBLECharacteristicValueChange`              | ✅   | `native`      | ✅       | 直连 `my.onBLECharacteristicValueChange`                                          |
-| `onBLEConnectionStateChange`                  | `onBLEConnectionStateChange`                  | ❌   | `unsupported` | ❌       | 未提供 my.onBLEConnectionStateChange，调用时将返回 not supported                  |
+| `onBLEConnectionStateChange`                  | `onBLEConnectionStateChanged`                 | ✅   | `mapped`      | ✅       | 映射到 `my.onBLEConnectionStateChanged`                                           |
 | `onBLEMTUChange`                              | `onBLEMTUChange`                              | ❌   | `unsupported` | ❌       | 未提供 my.onBLEMTUChange，调用时将返回 not supported                              |
 | `onBLEPeripheralConnectionStateChanged`       | `onBLEPeripheralConnectionStateChanged`       | ❌   | `unsupported` | ❌       | 未提供 my.onBLEPeripheralConnectionStateChanged，调用时将返回 not supported       |
 | `onBluetoothAdapterStateChange`               | `onBluetoothAdapterStateChange`               | ✅   | `native`      | ✅       | 直连 `my.onBluetoothAdapterStateChange`                                           |

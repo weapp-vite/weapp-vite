@@ -14,8 +14,8 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  393 |
-| 支付宝语义对齐方法数             |  393 |
+| 支付宝可按微信命名调用的方法数   |  395 |
+| 支付宝语义对齐方法数             |  395 |
 | 支付宝 fallback 方法数           |    0 |
 | 抖音可按微信命名调用的方法数     |  335 |
 | 抖音语义对齐方法数               |  335 |
@@ -28,7 +28,7 @@
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           393 |             393 |               0 |      479 |       82.05% |         82.05% |
+| 支付宝小程序 (`my`)           |           395 |             395 |               0 |      479 |       82.46% |         82.46% |
 | 抖音小程序 (`tt`)             |           335 |             335 |               0 |      479 |       69.94% |         69.94% |
 | 三端可调用完全对齐 (wx/my/tt) |           333 |               - |               - |      479 |       69.52% |              - |
 | 三端语义完全对齐 (wx/my/tt)   |             - |             333 |               - |      479 |            - |         69.52% |
@@ -111,6 +111,8 @@
 | `createCameraContext`               | 直连 `wx.createCameraContext`                       | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） |
 | `offMemoryWarning`                  | 直连 `wx.offMemoryWarning`                          | 直连 `my.offMemoryWarning`                                             | 使用内置 shim，配合 `tt.onMemoryWarning` 实现监听解绑                  |
 | `cancelIdleCallback`                | 直连 `wx.cancelIdleCallback`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `onBLEConnectionStateChange`        | 直连 `wx.onBLEConnectionStateChange`                | 映射到 `my.onBLEConnectionStateChanged`                                | 抖音无同等 API，调用时报 not supported                                 |
+| `offBLEConnectionStateChange`       | 直连 `wx.offBLEConnectionStateChange`               | 映射到 `my.offBLEConnectionStateChanged`                               | 抖音无同等 API，调用时报 not supported                                 |
 | `addCard`                           | 直连 `wx.addCard`                                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `addFileToFavorites`                | 直连 `wx.addFileToFavorites`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `addPaymentPassFinish`              | 直连 `wx.addPaymentPassFinish`                      | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |

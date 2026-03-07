@@ -213,7 +213,7 @@
 | `offBeforePageLoad`                           | `offBeforePageLoad`                           | ❌   | `unsupported` | ❌       | 未提供 tt.offBeforePageLoad，调用时将返回 not supported                           |
 | `offBeforePageUnload`                         | `offBeforePageUnload`                         | ❌   | `unsupported` | ❌       | 未提供 tt.offBeforePageUnload，调用时将返回 not supported                         |
 | `offBLECharacteristicValueChange`             | `offBLECharacteristicValueChange`             | ❌   | `unsupported` | ❌       | 未提供 tt.offBLECharacteristicValueChange，调用时将返回 not supported             |
-| `offBLEConnectionStateChange`                 | `offBLEConnectionStateChange`                 | ❌   | `unsupported` | ❌       | 未提供 tt.offBLEConnectionStateChange，调用时将返回 not supported                 |
+| `offBLEConnectionStateChange`                 | `offBLEConnectionStateChange`                 | ❌   | `unsupported` | ❌       | 抖音无同等 API，调用时报 not supported                                            |
 | `offBLEMTUChange`                             | `offBLEMTUChange`                             | ❌   | `unsupported` | ❌       | 未提供 tt.offBLEMTUChange，调用时将返回 not supported                             |
 | `offBLEPeripheralConnectionStateChanged`      | `offBLEPeripheralConnectionStateChanged`      | ❌   | `unsupported` | ❌       | 未提供 tt.offBLEPeripheralConnectionStateChanged，调用时将返回 not supported      |
 | `offBluetoothAdapterStateChange`              | `offBluetoothAdapterStateChange`              | ❌   | `unsupported` | ❌       | 未提供 tt.offBluetoothAdapterStateChange，调用时将返回 not supported              |
@@ -278,7 +278,7 @@
 | `onBeforePageLoad`                            | `onBeforePageLoad`                            | ❌   | `unsupported` | ❌       | 未提供 tt.onBeforePageLoad，调用时将返回 not supported                            |
 | `onBeforePageUnload`                          | `onBeforePageUnload`                          | ❌   | `unsupported` | ❌       | 未提供 tt.onBeforePageUnload，调用时将返回 not supported                          |
 | `onBLECharacteristicValueChange`              | `onBLECharacteristicValueChange`              | ❌   | `unsupported` | ❌       | 未提供 tt.onBLECharacteristicValueChange，调用时将返回 not supported              |
-| `onBLEConnectionStateChange`                  | `onBLEConnectionStateChange`                  | ❌   | `unsupported` | ❌       | 未提供 tt.onBLEConnectionStateChange，调用时将返回 not supported                  |
+| `onBLEConnectionStateChange`                  | `onBLEConnectionStateChange`                  | ❌   | `unsupported` | ❌       | 抖音无同等 API，调用时报 not supported                                            |
 | `onBLEMTUChange`                              | `onBLEMTUChange`                              | ❌   | `unsupported` | ❌       | 未提供 tt.onBLEMTUChange，调用时将返回 not supported                              |
 | `onBLEPeripheralConnectionStateChanged`       | `onBLEPeripheralConnectionStateChanged`       | ❌   | `unsupported` | ❌       | 未提供 tt.onBLEPeripheralConnectionStateChanged，调用时将返回 not supported       |
 | `onBluetoothAdapterStateChange`               | `onBluetoothAdapterStateChange`               | ❌   | `unsupported` | ❌       | 未提供 tt.onBluetoothAdapterStateChange，调用时将返回 not supported               |

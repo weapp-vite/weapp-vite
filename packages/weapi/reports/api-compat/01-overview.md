@@ -3,8 +3,8 @@
 ## 覆盖结论
 
 - 微信基准命名方法总数：479
-- 支付宝可调用兼容方法数：393
-- 支付宝语义对齐方法数：393
+- 支付宝可调用兼容方法数：395
+- 支付宝语义对齐方法数：395
 - 支付宝 fallback 方法数：0
 - 抖音可调用兼容方法数：335
 - 抖音语义对齐方法数：335
@@ -14,7 +14,7 @@
 
 ## 不兼容规模
 
-- 支付宝侧不兼容（按微信命名调用失败）方法：86
+- 支付宝侧不兼容（按微信命名调用失败）方法：84
 - 抖音侧不兼容（按微信命名调用失败）方法：144
 
 ## 不兼容示例（前 40 项）
@@ -33,7 +33,6 @@
 - `offBeforeAppRoute` -> 目标 `offBeforeAppRoute`（unsupported）
 - `offBeforePageLoad` -> 目标 `offBeforePageLoad`（unsupported）
 - `offBeforePageUnload` -> 目标 `offBeforePageUnload`（unsupported）
-- `offBLEConnectionStateChange` -> 目标 `offBLEConnectionStateChange`（unsupported）
 - `offBLEMTUChange` -> 目标 `offBLEMTUChange`（unsupported）
 - `offBLEPeripheralConnectionStateChanged` -> 目标 `offBLEPeripheralConnectionStateChanged`（unsupported）
 - `offCopyUrl` -> 目标 `offCopyUrl`（unsupported）
@@ -61,6 +60,7 @@
 - `offVoIPChatSpeakersChanged` -> 目标 `offVoIPChatSpeakersChanged`（unsupported）
 - `offVoIPChatStateChanged` -> 目标 `offVoIPChatStateChanged`（unsupported）
 - `offVoIPVideoMembersChanged` -> 目标 `offVoIPVideoMembersChanged`（unsupported）
+- `offWifiConnectedWithPartialInfo` -> 目标 `offWifiConnectedWithPartialInfo`（unsupported）
 
 ### 抖音不兼容示例
 

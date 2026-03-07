@@ -1106,6 +1106,40 @@ describe('weapi', () => {
     }
   })
 
+  it('maps BLE connection state event aliases to alipay changed suffix methods', () => {
+    const onBLEConnectionStateChanged = vi.fn()
+    const offBLEConnectionStateChanged = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        onBLEConnectionStateChanged,
+        offBLEConnectionStateChanged,
+      },
+      platform: 'alipay',
+    }) as Record<string, any>
+
+    const listener = vi.fn()
+    expect(api.resolveTarget('onBLEConnectionStateChange')).toMatchObject({
+      method: 'onBLEConnectionStateChange',
+      target: 'onBLEConnectionStateChanged',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+    expect(api.resolveTarget('offBLEConnectionStateChange')).toMatchObject({
+      method: 'offBLEConnectionStateChange',
+      target: 'offBLEConnectionStateChanged',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+
+    api.onBLEConnectionStateChange(listener)
+    api.offBLEConnectionStateChange(listener)
+
+    expect(onBLEConnectionStateChanged).toHaveBeenCalledWith(listener)
+    expect(offBLEConnectionStateChanged).toHaveBeenCalledWith(listener)
+  })
+
   it('maps showToast icon error to fail for douyin', async () => {
     const showToast = vi.fn((options: any) => {
       options.success?.({ errMsg: 'showToast:ok' })
@@ -1903,6 +1937,8 @@ describe('weapi', () => {
       'createCameraContext',
       'offMemoryWarning',
       'cancelIdleCallback',
+      'onBLEConnectionStateChange',
+      'offBLEConnectionStateChange',
     ]))
   })
 })
