@@ -7,6 +7,7 @@ import type {
   NavigationRedirect,
   RouteLocationNormalizedLoaded,
   RouteLocationRedirectedFrom,
+  RouteParamsMode,
   RouteRecordMatched,
   RouteRecordRaw,
   RouterNavigation,
@@ -54,6 +55,8 @@ expectType<RouteLocationNormalizedLoaded>(resolvedWithMeta)
 
 const route = useRoute()
 expectType<Readonly<RouteLocationNormalizedLoaded>>(route)
+const paramsMode: RouteParamsMode = 'strict'
+expectType<'loose' | 'strict'>(paramsMode)
 
 const navigationOptions: UseRouterOptions = {
   tabBarEntries: ['pages/home/index'],

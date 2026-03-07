@@ -11,7 +11,7 @@
 | `wevu/jsx-runtime` | `./jsx-runtime` |            1 |                  1 |              0 | [查看](wevu-jsx-runtime.md) |
 | `wevu/store`       | `./store`       |           11 |                  8 |              3 | [查看](wevu-store.md)       |
 | `wevu/api`         | `./api`         |            0 |                  0 |              0 | [查看](wevu-api.md)         |
-| `wevu/router`      | `./router`      |           50 |                 40 |             10 | [查看](wevu-router.md)      |
+| `wevu/router`      | `./router`      |           51 |                 41 |             10 | [查看](wevu-router.md)      |
 
 ## 文档列表
 
