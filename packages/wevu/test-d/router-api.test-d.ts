@@ -78,6 +78,7 @@ const navigationOptions: UseRouterOptions = {
 }
 const navigation = useRouter(navigationOptions)
 expectType<RouterNavigation>(navigation)
+expectType<Readonly<UseRouterOptions>>(navigation.options)
 expectType<SetupContextRouter>(useNativeRouter())
 expectType<SetupContextRouter>(useNativePageRouter())
 expectType<Readonly<RouteLocationNormalizedLoaded>>(navigation.currentRoute)

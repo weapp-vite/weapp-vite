@@ -164,6 +164,7 @@ export interface UseRouterOptions {
 
 export interface RouterNavigation {
   readonly nativeRouter: SetupContextRouter
+  readonly options: Readonly<UseRouterOptions>
   readonly currentRoute: Readonly<RouteLocationNormalizedLoaded>
   resolve: (to: RouteLocationRaw) => RouteLocationNormalizedLoaded
   isReady: () => Promise<void>
@@ -1295,11 +1296,19 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   }
   const readyPromise = Promise.resolve()
   const namedRouteLookup = createNamedRouteLookup(options.namedRoutes)
-  const tabBarPathSet = new Set(
-    (options.tabBarEntries ?? [])
-      .map(path => resolvePath(path, ''))
-      .filter(Boolean),
-  )
+  const normalizedTabBarEntries = (options.tabBarEntries ?? [])
+    .map(path => resolvePath(path, ''))
+    .filter(Boolean)
+  const tabBarPathSet = new Set(normalizedTabBarEntries)
+  const routerOptions: Readonly<UseRouterOptions> = {
+    tabBarEntries: normalizedTabBarEntries.map(path => createAbsoluteRoutePath(path)),
+    namedRoutes: Array.from(namedRouteLookup.recordByName.values()).map(normalizeRouteRecordForOutput),
+    paramsMode,
+    maxRedirects,
+    parseQuery: routeResolveCodec.parseQuery,
+    stringifyQuery: routeResolveCodec.stringifyQuery,
+    rejectOnError,
+  }
 
   function resolveWithCodec(to: RouteLocationRaw, currentPath: string): RouteLocationNormalizedLoaded {
     const rawTo = typeof to === 'string'
@@ -1853,6 +1862,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
 
   return {
     nativeRouter,
+    options: routerOptions,
     currentRoute: route,
     resolve,
     isReady,

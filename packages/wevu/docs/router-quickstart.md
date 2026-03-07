@@ -44,6 +44,13 @@ console.log(router.currentRoute.query)
 
 `currentRoute` 与页面路由生命周期同步更新，适合页面状态展示和调试。
 
+如果你需要读取初始化配置，也可以使用：
+
+```ts
+console.log(router.options.paramsMode)
+console.log(router.options.namedRoutes)
+```
+
 ## 3. 命名路由导航
 
 ```ts
