@@ -84,6 +84,7 @@ console.log(resolved.redirectedFrom)
 const remove = router.addRoute({
   name: 'legacy-home',
   path: '/pages/legacy/index',
+  alias: '/pages/legacy/alias-index',
   redirect: '/pages/home/index?from=legacy',
 })
 

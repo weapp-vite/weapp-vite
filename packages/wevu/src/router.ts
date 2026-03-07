@@ -83,6 +83,7 @@ export type RouteRecordRedirect = RouteLocationRaw | NavigationRedirect | ((
 ) => RouteLocationRaw | NavigationRedirect | Promise<RouteLocationRaw | NavigationRedirect>)
 export interface RouteRecordRaw extends NamedRouteRecord {
   meta?: RouteMeta
+  alias?: string | readonly string[]
   beforeEnter?: NavigationGuard | readonly NavigationGuard[]
   redirect?: RouteRecordRedirect
 }
@@ -199,6 +200,7 @@ interface RouteResolveCodec {
 interface RouteRecordNormalized {
   name: string
   path: string
+  aliasPaths: readonly string[]
   meta?: RouteMeta
   beforeEnterGuards: readonly NavigationGuard[]
   redirect?: RouteRecordRedirect
@@ -465,14 +467,44 @@ function normalizeRouteRecordRaw(route: RouteRecordRaw): RouteRecordNormalized |
   if (!normalizedPath) {
     return undefined
   }
+  const aliasPaths = normalizeRouteRecordAliasPaths(route.alias, normalizedPath)
 
   return {
     name: routeName,
     path: normalizedPath,
+    aliasPaths,
     meta: route.meta,
     beforeEnterGuards: normalizeBeforeEnterGuards(route.beforeEnter),
     redirect: route.redirect,
   }
+}
+
+function normalizeRouteRecordAliasPaths(
+  alias: RouteRecordRaw['alias'],
+  normalizedPath: string,
+): readonly string[] {
+  if (!alias) {
+    return []
+  }
+  const aliasList = Array.isArray(alias)
+    ? alias
+    : [alias]
+
+  const normalizedAliasPaths: string[] = []
+  for (const aliasPath of aliasList) {
+    if (typeof aliasPath !== 'string') {
+      continue
+    }
+    const normalizedAliasPath = resolvePath(aliasPath, '')
+    if (!normalizedAliasPath || normalizedAliasPath === normalizedPath) {
+      continue
+    }
+    if (!normalizedAliasPaths.includes(normalizedAliasPath)) {
+      normalizedAliasPaths.push(normalizedAliasPath)
+    }
+  }
+
+  return normalizedAliasPaths
 }
 
 function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): RouteRecordRaw[] {
@@ -505,6 +537,11 @@ function createNamedRouteNameByStaticPath(recordByName: ReadonlyMap<string, Rout
   for (const [name, record] of recordByName.entries()) {
     if (!isDynamicRoutePath(record.path) && !nameByStaticPath.has(record.path)) {
       nameByStaticPath.set(record.path, name)
+    }
+    for (const aliasPath of record.aliasPaths) {
+      if (!isDynamicRoutePath(aliasPath) && !nameByStaticPath.has(aliasPath)) {
+        nameByStaticPath.set(aliasPath, name)
+      }
     }
   }
   return nameByStaticPath
@@ -769,6 +806,10 @@ function splitRoutePathSegments(path: string): string[] {
   return path.split('/').filter(Boolean)
 }
 
+function listRouteRecordMatchPaths(record: RouteRecordNormalized): readonly string[] {
+  return [record.path, ...record.aliasPaths]
+}
+
 function buildRouteParamsFromMatch(matchValues: ReadonlyMap<string, string[]>): RouteParams {
   const params: RouteParams = {}
   for (const [key, values] of matchValues.entries()) {
@@ -900,16 +941,18 @@ function resolveMatchedRouteRecord(
   }
 
   for (const record of lookup.recordByName.values()) {
-    if (!isDynamicRoutePath(record.path)) {
-      continue
-    }
-    const matchedParams = matchRoutePathParams(record.path, target.path)
-    if (!matchedParams) {
-      continue
-    }
-    return {
-      record,
-      params: matchedParams,
+    for (const routePath of listRouteRecordMatchPaths(record)) {
+      if (!isDynamicRoutePath(routePath)) {
+        continue
+      }
+      const matchedParams = matchRoutePathParams(routePath, target.path)
+      if (!matchedParams) {
+        continue
+      }
+      return {
+        record,
+        params: matchedParams,
+      }
     }
   }
 
@@ -1506,6 +1549,12 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     }
     if (record.meta !== undefined) {
       normalizedRoute.meta = cloneRouteMeta(record.meta)
+    }
+    if (record.aliasPaths.length === 1) {
+      normalizedRoute.alias = createAbsoluteRoutePath(record.aliasPaths[0])
+    }
+    else if (record.aliasPaths.length > 1) {
+      normalizedRoute.alias = record.aliasPaths.map(aliasPath => createAbsoluteRoutePath(aliasPath))
     }
     if (record.beforeEnterGuards.length === 1) {
       normalizedRoute.beforeEnter = record.beforeEnterGuards[0]
