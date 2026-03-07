@@ -336,7 +336,8 @@ describe('weapi', () => {
   it.each([
     { platform: 'alipay' },
     { platform: 'tt' },
-  ])('maps getFuzzyLocation to getLocation for $platform', async ({ platform }) => {
+  ])('treats getFuzzyLocation as unsupported for $platform without strict-equivalent api', async ({ platform }) => {
+    const normalizedPlatform = platform === 'alipay' ? 'my' : platform
     const getLocation = vi.fn((options: any) => {
       options.success?.({
         latitude: 30.2741,
@@ -350,16 +351,19 @@ describe('weapi', () => {
       platform,
     })
 
-    const result = await api.getFuzzyLocation({
-      type: 'wgs84',
-    } as any)
-    expect(getLocation).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'wgs84',
-    }))
-    expect(result).toMatchObject({
-      latitude: 30.2741,
-      longitude: 120.1551,
+    expect(api.resolveTarget('getFuzzyLocation')).toMatchObject({
+      method: 'getFuzzyLocation',
+      target: 'getFuzzyLocation',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
+    await expect(api.getFuzzyLocation({
+      type: 'wgs84',
+    } as any)).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.getFuzzyLocation:fail method not supported`,
+    })
+    expect(getLocation).not.toHaveBeenCalled()
   })
 
   it('maps saveFile args and result for alipay', async () => {
@@ -1920,7 +1924,7 @@ describe('weapi', () => {
       { method: 'chooseVideo', my: 'chooseVideo', tt: 'chooseMedia' },
       { method: 'chooseMedia', my: 'chooseMedia', tt: 'chooseMedia', mySupported: false },
       { method: 'chooseMessageFile', my: 'chooseMessageFile', tt: 'chooseMessageFile', mySupported: false, ttSupported: false },
-      { method: 'getFuzzyLocation', my: 'getLocation', tt: 'getLocation' },
+      { method: 'getFuzzyLocation', my: 'getFuzzyLocation', tt: 'getFuzzyLocation', mySupported: false, ttSupported: false },
       { method: 'hideHomeButton', my: 'hideBackHome', tt: 'hideHomeButton' },
       { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getSystemInfo' },
       { method: 'getDeviceInfo', my: 'getSystemInfo', tt: 'getSystemInfo' },

@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：161，不支持：318
+总计：479，支持：160，不支持：319
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -127,7 +127,7 @@
 | `getExtConfig`                                | `getExtConfig`                                | ✅   | `native`      | ✅       | 直连 `tt.getExtConfig`                                                            |
 | `getExtConfigSync`                            | `getExtConfigSync`                            | ✅   | `native`      | ✅       | 直连 `tt.getExtConfigSync`                                                        |
 | `getFileSystemManager`                        | `getFileSystemManager`                        | ✅   | `native`      | ✅       | 直连 `tt.getFileSystemManager`                                                    |
-| `getFuzzyLocation`                            | `getLocation`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.getLocation`                                                           |
+| `getFuzzyLocation`                            | `getFuzzyLocation`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getGroupEnterInfo`                           | `getGroupEnterInfo`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getHCEState`                                 | `getHCEState`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getImageInfo`                                | `getImageInfo`                                | ✅   | `native`      | ✅       | 直连 `tt.getImageInfo`                                                            |
