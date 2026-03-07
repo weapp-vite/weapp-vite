@@ -15,23 +15,23 @@
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
 | 支付宝可按微信命名调用的方法数   |  479 |
-| 支付宝语义对齐方法数             |  278 |
-| 支付宝 fallback 方法数           |  201 |
+| 支付宝语义对齐方法数             |  294 |
+| 支付宝 fallback 方法数           |  185 |
 | 抖音可按微信命名调用的方法数     |  479 |
-| 抖音语义对齐方法数               |  220 |
-| 抖音 fallback 方法数             |  259 |
+| 抖音语义对齐方法数               |  236 |
+| 抖音 fallback 方法数             |  243 |
 | 三端可调用完全对齐方法数         |  479 |
-| 三端语义完全对齐方法数           |  218 |
+| 三端语义完全对齐方法数           |  234 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           479 |             278 |             201 |      479 |      100.00% |         58.04% |
-| 抖音小程序 (`tt`)             |           479 |             220 |             259 |      479 |      100.00% |         45.93% |
+| 支付宝小程序 (`my`)           |           479 |             294 |             185 |      479 |      100.00% |         61.38% |
+| 抖音小程序 (`tt`)             |           479 |             236 |             243 |      479 |      100.00% |         49.27% |
 | 三端可调用完全对齐 (wx/my/tt) |           479 |               - |               - |      479 |      100.00% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             218 |               - |      479 |            - |         45.51% |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             234 |               - |      479 |            - |         48.85% |
 
 ## 核心差异映射（手工规则）
 
@@ -149,6 +149,22 @@
 | `reportEvent`                       | 直连 `wx.reportEvent`                               | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `reportMonitor`                     | 直连 `wx.reportMonitor`                             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `reportPerformance`                 | 直连 `wx.reportPerformance`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openSingleStickerView`             | 直连 `wx.openSingleStickerView`                     | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openStickerIPView`                 | 直连 `wx.openStickerIPView`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openStickerSetView`                | 直连 `wx.openStickerSetView`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openStoreCouponDetail`             | 直连 `wx.openStoreCouponDetail`                     | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openStoreOrderDetail`              | 直连 `wx.openStoreOrderDetail`                      | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `pauseBackgroundAudio`              | 直连 `wx.pauseBackgroundAudio`                      | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `pauseVoice`                        | 直连 `wx.pauseVoice`                                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `playBackgroundAudio`               | 直连 `wx.playBackgroundAudio`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `playVoice`                         | 直连 `wx.playVoice`                                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `postMessageToReferrerMiniProgram`  | 直连 `wx.postMessageToReferrerMiniProgram`          | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `postMessageToReferrerPage`         | 直连 `wx.postMessageToReferrerPage`                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `preDownloadSubpackage`             | 直连 `wx.preDownloadSubpackage`                     | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `preloadAssets`                     | 直连 `wx.preloadAssets`                             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `preloadSkylineView`                | 直连 `wx.preloadSkylineView`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `preloadWebview`                    | 直连 `wx.preloadWebview`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `removeSecureElementPass`           | 直连 `wx.removeSecureElementPass`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 
 ## 已执行验证
 
