@@ -1055,7 +1055,6 @@ describe('weapi', () => {
     'addPaymentPassFinish',
     'addPaymentPassGetCertificateData',
     'addPhoneCalendar',
-    'addPhoneContact',
     'addPhoneRepeatCalendar',
     'addVideoToFavorites',
     'authorizeForMiniProgram',
@@ -1071,6 +1070,28 @@ describe('weapi', () => {
     'openChatTool',
     'openHKOfflinePayView',
     'openInquiriesTopic',
+  ])('treats %s as unsupported when no strict-equivalent target exists', async (methodName) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const normalizedPlatform = platform === 'alipay' ? 'my' : platform
+      const api = createWeapi({
+        adapter: {},
+        platform,
+      }) as Record<string, any>
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({})).rejects.toMatchObject({
+        errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
+      })
+    }
+  })
+
+  it.each([
+    'addPhoneContact',
     'openOfficialAccountArticle',
     'openOfficialAccountChat',
     'openOfficialAccountProfile',

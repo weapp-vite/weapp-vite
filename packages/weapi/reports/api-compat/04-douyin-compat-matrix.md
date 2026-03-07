@@ -1,28 +1,28 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：209，不支持：270
+总计：479，支持：189，不支持：290
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
-| `addCard`                                     | `addCard`                                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `addFileToFavorites`                          | `addFileToFavorites`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `addPaymentPassFinish`                        | `addPaymentPassFinish`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `addPaymentPassGetCertificateData`            | `addPaymentPassGetCertificateData`            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `addPhoneCalendar`                            | `addPhoneCalendar`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `addCard`                                     | `addCard`                                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `addFileToFavorites`                          | `addFileToFavorites`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `addPaymentPassFinish`                        | `addPaymentPassFinish`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `addPaymentPassGetCertificateData`            | `addPaymentPassGetCertificateData`            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `addPhoneCalendar`                            | `addPhoneCalendar`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `addPhoneContact`                             | `addPhoneContact`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `addPhoneRepeatCalendar`                      | `addPhoneRepeatCalendar`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `addVideoToFavorites`                         | `addVideoToFavorites`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `addPhoneRepeatCalendar`                      | `addPhoneRepeatCalendar`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `addVideoToFavorites`                         | `addVideoToFavorites`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `arrayBufferToBase64`                         | `arrayBufferToBase64`                         | ✅   | `native`      | ✅       | 直连 `tt.arrayBufferToBase64`                                                     |
 | `authorize`                                   | `authorize`                                   | ✅   | `mapped`      | ✅       | 直连 `tt.authorize`                                                               |
-| `authorizeForMiniProgram`                     | `authorizeForMiniProgram`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `authPrivateMessage`                          | `authPrivateMessage`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `authorizeForMiniProgram`                     | `authorizeForMiniProgram`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `authPrivateMessage`                          | `authPrivateMessage`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `base64ToArrayBuffer`                         | `base64ToArrayBuffer`                         | ✅   | `native`      | ✅       | 直连 `tt.base64ToArrayBuffer`                                                     |
 | `batchGetStorage`                             | `batchGetStorage`                             | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `tt.getStorage`                                           |
 | `batchGetStorageSync`                         | `batchGetStorageSync`                         | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `tt.getStorageSync`                                       |
 | `batchSetStorage`                             | `batchSetStorage`                             | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `tt.setStorage`                                           |
 | `batchSetStorageSync`                         | `batchSetStorageSync`                         | ✅   | `mapped`      | ✅       | 使用内置 shim，逐项转调 `tt.setStorageSync`                                       |
-| `bindEmployeeRelation`                        | `bindEmployeeRelation`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `canAddSecureElementPass`                     | `canAddSecureElementPass`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `bindEmployeeRelation`                        | `bindEmployeeRelation`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `canAddSecureElementPass`                     | `canAddSecureElementPass`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `cancelIdleCallback`                          | `cancelIdleCallback`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `canIUse`                                     | `canIUse`                                     | ✅   | `native`      | ✅       | 直连 `tt.canIUse`                                                                 |
 | `canvasGetImageData`                          | `canvasGetImageData`                          | ✅   | `mapped`      | ✅       | 使用内置 shim，返回空像素数据结构                                                 |
@@ -329,18 +329,18 @@
 | `onWindowStateChange`                         | `onWindowStateChange`                         | ❌   | `unsupported` | ❌       | 未提供 tt.onWindowStateChange，调用时将返回 not supported                         |
 | `openAppAuthorizeSetting`                     | `openSetting`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.openSetting`                                                           |
 | `openBluetoothAdapter`                        | `openBluetoothAdapter`                        | ❌   | `unsupported` | ❌       | 未提供 tt.openBluetoothAdapter，调用时将返回 not supported                        |
-| `openCard`                                    | `openCard`                                    | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openChannelsActivity`                        | `openChannelsActivity`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openChannelsEvent`                           | `openChannelsEvent`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openChannelsLive`                            | `openChannelsLive`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openChannelsLiveNoticeInfo`                  | `openChannelsLiveNoticeInfo`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openChannelsUserProfile`                     | `openChannelsUserProfile`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openChatTool`                                | `openChatTool`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openCard`                                    | `openCard`                                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openChannelsActivity`                        | `openChannelsActivity`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openChannelsEvent`                           | `openChannelsEvent`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openChannelsLive`                            | `openChannelsLive`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openChannelsLiveNoticeInfo`                  | `openChannelsLiveNoticeInfo`                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openChannelsUserProfile`                     | `openChannelsUserProfile`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openChatTool`                                | `openChatTool`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openDocument`                                | `openDocument`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`                       | ✅   | `mapped`      | ✅       | 映射到 `tt.navigateToMiniProgram`                                                 |
-| `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openInquiriesTopic`                          | `openInquiriesTopic`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `openInquiriesTopic`                          | `openInquiriesTopic`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openLocation`                                | `openLocation`                                | ✅   | `native`      | ✅       | 直连 `tt.openLocation`                                                            |
 | `openOfficialAccountArticle`                  | `openOfficialAccountArticle`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openOfficialAccountChat`                     | `openOfficialAccountChat`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
