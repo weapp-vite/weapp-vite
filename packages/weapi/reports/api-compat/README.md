@@ -17,11 +17,11 @@
 | 支付宝可按微信命名调用的方法数   |  201 |
 | 支付宝语义对齐方法数             |  201 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  140 |
-| 抖音语义对齐方法数               |  140 |
+| 抖音可按微信命名调用的方法数     |  137 |
+| 抖音语义对齐方法数               |  137 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  126 |
-| 三端语义完全对齐方法数           |  126 |
+| 三端可调用完全对齐方法数         |  123 |
+| 三端语义完全对齐方法数           |  123 |
 
 ## 覆盖率
 
@@ -29,9 +29,9 @@
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
 | 支付宝小程序 (`my`)           |           201 |             201 |               0 |      479 |       41.96% |         41.96% |
-| 抖音小程序 (`tt`)             |           140 |             140 |               0 |      479 |       29.23% |         29.23% |
-| 三端可调用完全对齐 (wx/my/tt) |           126 |               - |               - |      479 |       26.30% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             126 |               - |      479 |            - |         26.30% |
+| 抖音小程序 (`tt`)             |           137 |             137 |               0 |      479 |       28.60% |         28.60% |
+| 三端可调用完全对齐 (wx/my/tt) |           123 |               - |               - |      479 |       25.68% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             123 |               - |      479 |            - |         25.68% |
 
 ## 核心差异映射（手工规则）
 
@@ -88,9 +88,9 @@
 | `getAccountInfoSync`                | 直连 `wx.getAccountInfoSync`                        | 直连 `my.getAccountInfoSync`                                       | 无同等 API，调用时按 unsupported 报错                                 |
 | `setBackgroundColor`                | 直连 `wx.setBackgroundColor`                        | 直连 `my.setBackgroundColor`                                       | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor`  |
 | `setBackgroundTextStyle`            | 直连 `wx.setBackgroundTextStyle`                    | 直连 `my.setBackgroundTextStyle`                                   | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor` |
-| `getNetworkType`                    | 直连 `wx.getNetworkType`                            | 直连 `my.getNetworkType`                                           | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType`                     |
-| `getBatteryInfo`                    | 直连 `wx.getBatteryInfo`                            | 直连 `my.getBatteryInfo`                                           | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging`                    |
-| `getBatteryInfoSync`                | 直连 `wx.getBatteryInfoSync`                        | 直连 `my.getBatteryInfoSync`                                       | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging`                |
+| `getNetworkType`                    | 直连 `wx.getNetworkType`                            | 直连 `my.getNetworkType`                                           | 无同等 API，调用时按 unsupported 报错                                 |
+| `getBatteryInfo`                    | 直连 `wx.getBatteryInfo`                            | 直连 `my.getBatteryInfo`                                           | 无同等 API，调用时按 unsupported 报错                                 |
+| `getBatteryInfoSync`                | 直连 `wx.getBatteryInfoSync`                        | 直连 `my.getBatteryInfoSync`                                       | 无同等 API，调用时按 unsupported 报错                                 |
 | `getLogManager`                     | 直连 `wx.getLogManager`                             | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `nextTick`                          | 直连 `wx.nextTick`                                  | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `onWindowResize`                    | 直连 `wx.onWindowResize`                            | 无同等 API，调用时按 unsupported 报错                              | 直连 `tt.onWindowResize`                                              |

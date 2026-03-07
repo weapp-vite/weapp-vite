@@ -36,9 +36,9 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
 | 支付宝小程序 (`my`) | 201 | 201 | 0 | 479 | 41.96% | 41.96% |
-| 抖音小程序 (`tt`) | 140 | 140 | 0 | 479 | 29.23% | 29.23% |
-| 三端可调用完全对齐 (wx/my/tt) | 126 | - | - | 479 | 26.30% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 126 | - | 479 | - | 26.30% |
+| 抖音小程序 (`tt`) | 137 | 137 | 0 | 479 | 28.60% | 28.60% |
+| 三端可调用完全对齐 (wx/my/tt) | 123 | - | - | 479 | 25.68% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 123 | - | 479 | - | 25.68% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -97,9 +97,9 @@
 | `getAccountInfoSync` | 同步获取当前账号信息。 | 直连 `wx.getAccountInfoSync` | 直连 `my.getAccountInfoSync` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `setBackgroundColor` | 动态设置窗口背景色。 | 直连 `wx.setBackgroundColor` | 直连 `my.setBackgroundColor` | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor` | ⚠️ |
 | `setBackgroundTextStyle` | 动态设置下拉背景字体样式。 | 直连 `wx.setBackgroundTextStyle` | 直连 `my.setBackgroundTextStyle` | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor` | ⚠️ |
-| `getNetworkType` | 获取网络类型。 | 直连 `wx.getNetworkType` | 直连 `my.getNetworkType` | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType` | ⚠️ |
-| `getBatteryInfo` | 异步获取电量信息。 | 直连 `wx.getBatteryInfo` | 直连 `my.getBatteryInfo` | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging` | ⚠️ |
-| `getBatteryInfoSync` | 同步获取电量信息。 | 直连 `wx.getBatteryInfoSync` | 直连 `my.getBatteryInfoSync` | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging` | ⚠️ |
+| `getNetworkType` | 获取网络类型。 | 直连 `wx.getNetworkType` | 直连 `my.getNetworkType` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getBatteryInfo` | 异步获取电量信息。 | 直连 `wx.getBatteryInfo` | 直连 `my.getBatteryInfo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getBatteryInfoSync` | 同步获取电量信息。 | 直连 `wx.getBatteryInfoSync` | 直连 `my.getBatteryInfoSync` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getLogManager` | 获取日志管理器实例。 | 直连 `wx.getLogManager` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `nextTick` | 延迟到下一个 UI 更新时机执行回调。 | 直连 `wx.nextTick` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `onWindowResize` | 监听窗口尺寸变化事件。 | 直连 `wx.onWindowResize` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.onWindowResize` | ⚠️ |

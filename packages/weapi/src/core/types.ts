@@ -693,7 +693,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getNetworkType` | ⚠️ |
    * | 支付宝 | 直连 `my.getNetworkType` | ⚠️ |
-   * | 抖音 | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getNetworkType: WeapiCrossPlatformAdapter['getNetworkType']
 
@@ -704,7 +704,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getBatteryInfo` | ⚠️ |
    * | 支付宝 | 直连 `my.getBatteryInfo` | ⚠️ |
-   * | 抖音 | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getBatteryInfo: WeapiCrossPlatformAdapter['getBatteryInfo']
 
@@ -715,7 +715,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getBatteryInfoSync` | ⚠️ |
    * | 支付宝 | 直连 `my.getBatteryInfoSync` | ⚠️ |
-   * | 抖音 | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getBatteryInfoSync: WeapiCrossPlatformAdapter['getBatteryInfoSync']
 
