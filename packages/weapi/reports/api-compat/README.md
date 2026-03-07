@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  202 |
-| 支付宝语义对齐方法数             |  202 |
+| 支付宝可按微信命名调用的方法数   |  201 |
+| 支付宝语义对齐方法数             |  201 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  144 |
-| 抖音语义对齐方法数               |  144 |
+| 抖音可按微信命名调用的方法数     |  142 |
+| 抖音语义对齐方法数               |  142 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  130 |
-| 三端语义完全对齐方法数           |  130 |
+| 三端可调用完全对齐方法数         |  128 |
+| 三端语义完全对齐方法数           |  128 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           202 |             202 |               0 |      479 |       42.17% |         42.17% |
-| 抖音小程序 (`tt`)             |           144 |             144 |               0 |      479 |       30.06% |         30.06% |
-| 三端可调用完全对齐 (wx/my/tt) |           130 |               - |               - |      479 |       27.14% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             130 |               - |      479 |            - |         27.14% |
+| 支付宝小程序 (`my`)           |           201 |             201 |               0 |      479 |       41.96% |         41.96% |
+| 抖音小程序 (`tt`)             |           142 |             142 |               0 |      479 |       29.65% |         29.65% |
+| 三端可调用完全对齐 (wx/my/tt) |           128 |               - |               - |      479 |       26.72% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             128 |               - |      479 |            - |         26.72% |
 
 ## 核心差异映射（手工规则）
 
@@ -83,8 +83,8 @@
 | `getAppBaseInfo`                    | 直连 `wx.getAppBaseInfo`                            | 直连 `my.getAppBaseInfo`                                           | 映射到 `tt.getEnvInfoSync`                                            |
 | `chooseVideo`                       | 直连 `wx.chooseVideo`                               | 直连 `my.chooseVideo`                                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `hideHomeButton`                    | 直连 `wx.hideHomeButton`                            | 映射到 `my.hideBackHome`                                           | 直连 `tt.hideHomeButton`                                              |
-| `getWindowInfo`                     | 直连 `wx.getWindowInfo`                             | 直连 `my.getWindowInfo`                                            | 映射到 `tt.getSystemInfo`，并提取窗口字段                             |
-| `getDeviceInfo`                     | 直连 `wx.getDeviceInfo`                             | 映射到 `my.getSystemInfo`，并提取设备字段                          | 映射到 `tt.getSystemInfo`，并提取设备字段                             |
+| `getWindowInfo`                     | 直连 `wx.getWindowInfo`                             | 直连 `my.getWindowInfo`                                            | 无同等 API，调用时按 unsupported 报错                                 |
+| `getDeviceInfo`                     | 直连 `wx.getDeviceInfo`                             | 无同等 API，调用时按 unsupported 报错                              | 无同等 API，调用时按 unsupported 报错                                 |
 | `getAccountInfoSync`                | 直连 `wx.getAccountInfoSync`                        | 直连 `my.getAccountInfoSync`                                       | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构                        |
 | `setBackgroundColor`                | 直连 `wx.setBackgroundColor`                        | 直连 `my.setBackgroundColor`                                       | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor`  |
 | `setBackgroundTextStyle`            | 直连 `wx.setBackgroundTextStyle`                    | 直连 `my.setBackgroundTextStyle`                                   | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor` |

@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：144，不支持：335
+总计：479，支持：142，不支持：337
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -120,7 +120,7 @@
 | `getConnectedBluetoothDevices`                | `getConnectedBluetoothDevices`                | ❌   | `unsupported` | ❌       | 未提供 tt.getConnectedBluetoothDevices，调用时将返回 not supported                |
 | `getConnectedWifi`                            | `getConnectedWifi`                            | ✅   | `native`      | ✅       | 直连 `tt.getConnectedWifi`                                                        |
 | `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getDeviceInfo`                               | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，并提取设备字段                                         |
+| `getDeviceInfo`                               | `getDeviceInfo`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getDeviceVoIPList`                           | `getDeviceVoIPList`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getEnterOptionsSync`                         | `getLaunchOptionsSync`                        | ✅   | `mapped`      | ✅       | 映射到 `tt.getLaunchOptionsSync`                                                  |
 | `getExptInfoSync`                             | `getExptInfoSync`                             | ❌   | `unsupported` | ❌       | 未提供 tt.getExptInfoSync，调用时将返回 not supported                             |
@@ -169,7 +169,7 @@
 | `getVideoInfo`                                | `getVideoInfo`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getWeRunData`                                | `getWeRunData`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getWifiList`                                 | `getWifiList`                                 | ✅   | `native`      | ✅       | 直连 `tt.getWifiList`                                                             |
-| `getWindowInfo`                               | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，并提取窗口字段                                         |
+| `getWindowInfo`                               | `getWindowInfo`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getXrFrameSystem`                            | `getXrFrameSystem`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `hideHomeButton`                              | `hideHomeButton`                              | ✅   | `mapped`      | ✅       | 直连 `tt.hideHomeButton`                                                          |
 | `hideKeyboard`                                | `hideKeyboard`                                | ✅   | `native`      | ✅       | 直连 `tt.hideKeyboard`                                                            |
