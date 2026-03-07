@@ -154,7 +154,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.showActionSheet` | ✅ |
    * | 支付宝 | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | ✅ |
-   * | 抖音 | 直连 `tt.showActionSheet`，并兼容 `index` → `tapIndex` | ✅ |
+   * | 抖音 | 优先直连 `tt.showActionSheet`；缺失时降级到 `tt.showModal` shim | ✅ |
    */
   showActionSheet: WeapiCrossPlatformAdapter['showActionSheet']
 
@@ -201,6 +201,17 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name` | ⚠️ |
    */
   chooseMessageFile: WeapiCrossPlatformAdapter['chooseMessageFile']
+
+  /**
+   * 获取模糊地理位置。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getFuzzyLocation` | ⚠️ |
+   * | 支付宝 | 映射到 `my.getLocation` | ⚠️ |
+   * | 抖音 | 映射到 `tt.getLocation` | ⚠️ |
+   */
+  getFuzzyLocation: WeapiCrossPlatformAdapter['getFuzzyLocation']
 
   /**
    * 预览图片和视频。
@@ -707,6 +718,61 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging` | ⚠️ |
    */
   getBatteryInfoSync: WeapiCrossPlatformAdapter['getBatteryInfoSync']
+
+  /**
+   * 获取日志管理器实例。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getLogManager` | ⚠️ |
+   * | 支付宝 | 使用内置日志 shim（对齐 `log/info/warn/error`） | ⚠️ |
+   * | 抖音 | 使用内置日志 shim（对齐 `log/info/warn/error`） | ⚠️ |
+   */
+  getLogManager: WeapiCrossPlatformAdapter['getLogManager']
+
+  /**
+   * 延迟到下一个 UI 更新时机执行回调。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.nextTick` | ⚠️ |
+   * | 支付宝 | 使用内置 microtask shim 调度回调 | ⚠️ |
+   * | 抖音 | 使用内置 microtask shim 调度回调 | ⚠️ |
+   */
+  nextTick: WeapiCrossPlatformAdapter['nextTick']
+
+  /**
+   * 监听窗口尺寸变化事件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onWindowResize` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听 | ⚠️ |
+   * | 抖音 | 直连 `tt.onWindowResize` | ⚠️ |
+   */
+  onWindowResize: WeapiCrossPlatformAdapter['onWindowResize']
+
+  /**
+   * 取消监听窗口尺寸变化事件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offWindowResize` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，移除 `onWindowResize` 注册回调 | ⚠️ |
+   * | 抖音 | 直连 `tt.offWindowResize` | ⚠️ |
+   */
+  offWindowResize: WeapiCrossPlatformAdapter['offWindowResize']
+
+  /**
+   * 上报分析数据。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.reportAnalytics` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 直连 `tt.reportAnalytics` | ⚠️ |
+   */
+  reportAnalytics: WeapiCrossPlatformAdapter['reportAnalytics']
   // @generated weapi-method-docs:end
 }
 

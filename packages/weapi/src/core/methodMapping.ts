@@ -81,6 +81,21 @@ const PLATFORM_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
   tt: WEAPI_TT_METHOD_SET,
 }
 
+const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
+  my: new Set([
+    'nextTick',
+    'getLogManager',
+    'reportAnalytics',
+    'onWindowResize',
+    'offWindowResize',
+  ]),
+  tt: new Set([
+    'showActionSheet',
+    'nextTick',
+    'getLogManager',
+  ]),
+}
+
 export const WEAPI_PLATFORM_SUPPORT_MATRIX: readonly WeapiPlatformSupportMatrixItem[] = [
   {
     platform: '微信小程序',
@@ -130,7 +145,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '显示操作菜单。',
     wxStrategy: '直连 `wx.showActionSheet`',
     alipayStrategy: '`itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐',
-    douyinStrategy: '直连 `tt.showActionSheet`，并兼容 `index` → `tapIndex`',
+    douyinStrategy: '优先直连 `tt.showActionSheet`；缺失时降级到 `tt.showModal` shim',
     support: '✅',
   },
   {
@@ -163,6 +178,14 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     wxStrategy: '直连 `wx.chooseMessageFile`',
     alipayStrategy: '映射到 `my.chooseImage`，并补齐 `tempFiles[].path/name`',
     douyinStrategy: '映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name`',
+    support: '⚠️',
+  },
+  {
+    method: 'getFuzzyLocation',
+    description: '获取模糊地理位置。',
+    wxStrategy: '直连 `wx.getFuzzyLocation`',
+    alipayStrategy: '映射到 `my.getLocation`',
+    douyinStrategy: '映射到 `tt.getLocation`',
     support: '⚠️',
   },
   {
@@ -531,6 +554,46 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     wxStrategy: '直连 `wx.getBatteryInfoSync`',
     alipayStrategy: '直连 `my.getBatteryInfoSync`',
     douyinStrategy: '映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging`',
+    support: '⚠️',
+  },
+  {
+    method: 'getLogManager',
+    description: '获取日志管理器实例。',
+    wxStrategy: '直连 `wx.getLogManager`',
+    alipayStrategy: '使用内置日志 shim（对齐 `log/info/warn/error`）',
+    douyinStrategy: '使用内置日志 shim（对齐 `log/info/warn/error`）',
+    support: '⚠️',
+  },
+  {
+    method: 'nextTick',
+    description: '延迟到下一个 UI 更新时机执行回调。',
+    wxStrategy: '直连 `wx.nextTick`',
+    alipayStrategy: '使用内置 microtask shim 调度回调',
+    douyinStrategy: '使用内置 microtask shim 调度回调',
+    support: '⚠️',
+  },
+  {
+    method: 'onWindowResize',
+    description: '监听窗口尺寸变化事件。',
+    wxStrategy: '直连 `wx.onWindowResize`',
+    alipayStrategy: '使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听',
+    douyinStrategy: '直连 `tt.onWindowResize`',
+    support: '⚠️',
+  },
+  {
+    method: 'offWindowResize',
+    description: '取消监听窗口尺寸变化事件。',
+    wxStrategy: '直连 `wx.offWindowResize`',
+    alipayStrategy: '使用内置 shim，移除 `onWindowResize` 注册回调',
+    douyinStrategy: '直连 `tt.offWindowResize`',
+    support: '⚠️',
+  },
+  {
+    method: 'reportAnalytics',
+    description: '上报分析数据。',
+    wxStrategy: '直连 `wx.reportAnalytics`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '直连 `tt.reportAnalytics`',
     support: '⚠️',
   },
 ] as const
@@ -1393,6 +1456,9 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       mapArgs: mapChooseMessageFileArgs,
       mapResult: mapChooseMessageFileResult,
     },
+    getFuzzyLocation: {
+      target: 'getLocation',
+    },
     previewMedia: {
       target: 'previewImage',
       mapArgs: mapPreviewMediaArgs,
@@ -1549,6 +1615,21 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     getBatteryInfoSync: {
       target: 'getBatteryInfoSync',
     },
+    getLogManager: {
+      target: 'getLogManager',
+    },
+    nextTick: {
+      target: 'nextTick',
+    },
+    onWindowResize: {
+      target: 'onWindowResize',
+    },
+    offWindowResize: {
+      target: 'offWindowResize',
+    },
+    reportAnalytics: {
+      target: 'reportAnalytics',
+    },
   },
   tt: {
     showToast: {
@@ -1577,6 +1658,9 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'chooseImage',
       mapArgs: mapChooseMessageFileArgs,
       mapResult: mapChooseMessageFileResult,
+    },
+    getFuzzyLocation: {
+      target: 'getLocation',
     },
     previewMedia: {
       target: 'previewImage',
@@ -1733,7 +1817,29 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getSystemInfoSync',
       mapResult: mapSystemInfoToBatteryInfo,
     },
+    getLogManager: {
+      target: 'getLogManager',
+    },
+    nextTick: {
+      target: 'nextTick',
+    },
+    onWindowResize: {
+      target: 'onWindowResize',
+    },
+    offWindowResize: {
+      target: 'offWindowResize',
+    },
+    reportAnalytics: {
+      target: 'reportAnalytics',
+    },
   },
+}
+
+/**
+ * @description 判断方法是否由 weapi 内置 synthetic 能力支持
+ */
+export function isSyntheticMethodSupported(platform: 'my' | 'tt', methodName: string) {
+  return SYNTHETIC_SUPPORT_METHOD_SET[platform].has(methodName)
 }
 
 function createFallbackMappingRule(platform: 'my' | 'tt', methodName: string): WeapiMethodMappingRule | undefined {
@@ -1842,6 +1948,7 @@ function resolvePlatformCompatibility(platform: 'my' | 'tt', methodName: string)
   const resolution = resolveMappingRule(platform, methodName)
   const target = resolution.target
   const supported = PLATFORM_METHOD_SET[platform].has(target)
+    || isSyntheticMethodSupported(platform, methodName)
   const supportLevel = toSupportLevel(resolution.source, supported)
   return {
     resolution,

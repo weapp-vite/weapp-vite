@@ -96,17 +96,17 @@ describe('weapi', () => {
       platform: 'my',
     })
 
-    expect(api.resolveTarget('nextTick')).toMatchObject({
-      method: 'nextTick',
+    expect(api.resolveTarget('openCustomerServiceChat')).toMatchObject({
+      method: 'openCustomerServiceChat',
       target: 'hideToast',
       supportLevel: 'fallback',
       supported: true,
       semanticAligned: false,
     })
-    expect(api.supports('nextTick')).toBe(true)
-    expect(api.supports('nextTick', { semantic: true })).toBe(false)
+    expect(api.supports('openCustomerServiceChat')).toBe(true)
+    expect(api.supports('openCustomerServiceChat', { semantic: true })).toBe(false)
 
-    await api.nextTick()
+    await api.openCustomerServiceChat()
     expect(hideToast).toHaveBeenCalledWith(expect.any(Object))
   })
 
@@ -120,18 +120,18 @@ describe('weapi', () => {
       strictCompatibility: true,
     }) as Record<string, any>
 
-    expect(api.resolveTarget('nextTick')).toMatchObject({
-      method: 'nextTick',
-      target: 'nextTick',
+    expect(api.resolveTarget('openCustomerServiceChat')).toMatchObject({
+      method: 'openCustomerServiceChat',
+      target: 'openCustomerServiceChat',
       mapped: false,
       supported: false,
       supportLevel: 'unsupported',
       semanticAligned: false,
     })
-    expect(api.supports('nextTick')).toBe(false)
+    expect(api.supports('openCustomerServiceChat')).toBe(false)
 
-    await expect(api.nextTick()).rejects.toMatchObject({
-      errMsg: 'my.nextTick:fail method not supported',
+    await expect(api.openCustomerServiceChat()).rejects.toMatchObject({
+      errMsg: 'my.openCustomerServiceChat:fail method not supported',
     })
     expect(hideToast).not.toHaveBeenCalled()
   })
@@ -340,6 +340,35 @@ describe('weapi', () => {
           name: expect.stringMatching(/^file-[ab]\.png$/),
         }),
       ],
+    })
+  })
+
+  it.each([
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('maps getFuzzyLocation to getLocation for $platform', async ({ platform }) => {
+    const getLocation = vi.fn((options: any) => {
+      options.success?.({
+        latitude: 30.2741,
+        longitude: 120.1551,
+      })
+    })
+    const api = createWeapi({
+      adapter: {
+        getLocation,
+      },
+      platform,
+    })
+
+    const result = await api.getFuzzyLocation({
+      type: 'wgs84',
+    } as any)
+    expect(getLocation).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'wgs84',
+    }))
+    expect(result).toMatchObject({
+      latitude: 30.2741,
+      longitude: 120.1551,
     })
   })
 
@@ -558,6 +587,107 @@ describe('weapi', () => {
     expect(api.platform).toBe('tt')
   })
 
+  it.each([
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('provides synthetic nextTick for $platform', async ({ platform }) => {
+    const callback = vi.fn()
+    const api = createWeapi({
+      adapter: {},
+      platform,
+    })
+
+    expect(api.resolveTarget('nextTick')).toMatchObject({
+      method: 'nextTick',
+      target: 'nextTick',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+    expect(api.nextTick(callback)).toBeUndefined()
+    await Promise.resolve()
+    expect(callback).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('provides synthetic getLogManager for $platform', ({ platform }) => {
+    const api = createWeapi({
+      adapter: {},
+      platform,
+    })
+
+    const logger = api.getLogManager()
+    expect(logger).toMatchObject({
+      log: expect.any(Function),
+      info: expect.any(Function),
+      warn: expect.any(Function),
+      error: expect.any(Function),
+    })
+    expect(api.resolveTarget('getLogManager')).toMatchObject({
+      method: 'getLogManager',
+      target: 'getLogManager',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+  })
+
+  it('provides synthetic reportAnalytics for alipay', () => {
+    const api = createWeapi({
+      adapter: {},
+      platform: 'alipay',
+    })
+
+    expect(api.resolveTarget('reportAnalytics')).toMatchObject({
+      method: 'reportAnalytics',
+      target: 'reportAnalytics',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+    expect(api.reportAnalytics('event_name', { from: 'test' } as any)).toBeUndefined()
+  })
+
+  it('provides synthetic onWindowResize/offWindowResize for alipay', () => {
+    let appShowListener: (() => void) | undefined
+    const getWindowInfo = vi.fn((options: any) => {
+      const sequence = [
+        { windowWidth: 320, windowHeight: 568 },
+        { windowWidth: 360, windowHeight: 640 },
+        { windowWidth: 375, windowHeight: 667 },
+      ]
+      const index = Math.min(getWindowInfo.mock.calls.length - 1, sequence.length - 1)
+      options.success?.(sequence[index])
+    })
+    const onAppShow = vi.fn((listener: () => void) => {
+      appShowListener = listener
+    })
+    const callback = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        onAppShow,
+        getWindowInfo,
+      },
+      platform: 'alipay',
+    })
+
+    expect(api.onWindowResize(callback)).toBeUndefined()
+    expect(onAppShow).toHaveBeenCalledTimes(1)
+    appShowListener?.()
+    expect(callback).toHaveBeenCalledTimes(0)
+    appShowListener?.()
+    expect(callback).toHaveBeenCalledTimes(1)
+    expect(callback).toHaveBeenCalledWith(expect.objectContaining({
+      windowWidth: 360,
+      windowHeight: 640,
+    }))
+    expect(api.offWindowResize(callback)).toBeUndefined()
+    appShowListener?.()
+    expect(callback).toHaveBeenCalledTimes(1)
+  })
+
   it('maps showToast icon error to fail for douyin', async () => {
     const showToast = vi.fn((options: any) => {
       options.success?.({ errMsg: 'showToast:ok' })
@@ -591,6 +721,42 @@ describe('weapi', () => {
     expect(result).toMatchObject({
       index: 1,
       tapIndex: 1,
+    })
+  })
+
+  it('falls back to showModal when douyin showActionSheet is missing', async () => {
+    const showModal = vi.fn((options: any) => {
+      options.success?.({ confirm: true })
+    })
+    const api = createWeapi({
+      adapter: {
+        showModal,
+      },
+      platform: 'tt',
+    })
+
+    expect(api.resolveTarget('showActionSheet')).toMatchObject({
+      method: 'showActionSheet',
+      target: 'showActionSheet',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+
+    const result = await api.showActionSheet({
+      itemList: ['复制链接', '打开页面'],
+      title: '操作',
+    })
+    expect(showModal).toHaveBeenCalledWith(expect.objectContaining({
+      title: '操作',
+      content: '1. 复制链接\n2. 打开页面',
+      showCancel: true,
+    }))
+    expect(result).toMatchObject({
+      index: 0,
+      tapIndex: 0,
+      cancel: false,
+      errMsg: 'showActionSheet:ok',
     })
   })
 
@@ -1132,6 +1298,7 @@ describe('weapi', () => {
       { method: 'chooseAddress', my: 'getAddress', tt: 'chooseAddress' },
       { method: 'createAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
       { method: 'createWebAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
+      { method: 'showActionSheet', my: 'showActionSheet', tt: 'showActionSheet' },
       { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'openAppAuthorizeSetting', my: 'openSetting', tt: 'openSetting' },
       { method: 'pluginLogin', my: 'getAuthCode', tt: 'login' },
@@ -1165,10 +1332,16 @@ describe('weapi', () => {
       { method: 'chooseVideo', my: 'chooseVideo', tt: 'chooseMedia' },
       { method: 'chooseMedia', my: 'chooseImage', tt: 'chooseMedia' },
       { method: 'chooseMessageFile', my: 'chooseImage', tt: 'chooseImage' },
+      { method: 'getFuzzyLocation', my: 'getLocation', tt: 'getLocation' },
       { method: 'hideHomeButton', my: 'hideBackHome', tt: 'hideHomeButton' },
       { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getSystemInfo' },
       { method: 'getDeviceInfo', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'getAccountInfoSync', my: 'getAccountInfoSync', tt: 'getEnvInfoSync' },
+      { method: 'getLogManager', my: 'getLogManager', tt: 'getLogManager' },
+      { method: 'nextTick', my: 'nextTick', tt: 'nextTick' },
+      { method: 'onWindowResize', my: 'onWindowResize', tt: 'onWindowResize' },
+      { method: 'offWindowResize', my: 'offWindowResize', tt: 'offWindowResize' },
+      { method: 'reportAnalytics', my: 'reportAnalytics', tt: 'reportAnalytics' },
       { method: 'setBackgroundColor', my: 'setBackgroundColor', tt: 'setNavigationBarColor' },
       { method: 'setBackgroundTextStyle', my: 'setBackgroundTextStyle', tt: 'setNavigationBarColor' },
       { method: 'getNetworkType', my: 'getNetworkType', tt: 'getSystemInfo' },
@@ -1217,6 +1390,7 @@ describe('weapi', () => {
       'chooseImage',
       'chooseMedia',
       'chooseMessageFile',
+      'getFuzzyLocation',
       'saveFile',
       'setClipboardData',
       'getClipboardData',
@@ -1246,6 +1420,11 @@ describe('weapi', () => {
       'getWindowInfo',
       'getDeviceInfo',
       'getAccountInfoSync',
+      'getLogManager',
+      'nextTick',
+      'onWindowResize',
+      'offWindowResize',
+      'reportAnalytics',
       'setBackgroundColor',
       'setBackgroundTextStyle',
       'getNetworkType',

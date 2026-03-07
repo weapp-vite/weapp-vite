@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 223 | 256 | 479 | 100.00% | 46.56% |
-| 抖音小程序 (`tt`) | 478 | 163 | 315 | 479 | 99.79% | 34.03% |
-| 三端可调用完全对齐 (wx/my/tt) | 478 | - | - | 479 | 99.79% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 158 | - | 479 | - | 32.99% |
+| 支付宝小程序 (`my`) | 479 | 229 | 250 | 479 | 100.00% | 47.81% |
+| 抖音小程序 (`tt`) | 479 | 167 | 312 | 479 | 100.00% | 34.86% |
+| 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 165 | - | 479 | - | 34.45% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -48,11 +48,12 @@
 | --- | --- | --- | --- | --- | --- |
 | `showToast` | 显示消息提示框。 | 直连 `wx.showToast` | `title/icon` 映射到 `content/type` 后调用 `my.showToast` | `icon=error` 映射为 `fail` 后调用 `tt.showToast` | ✅ |
 | `showLoading` | 显示 loading 提示框。 | 直连 `wx.showLoading` | `title` 映射到 `content` 后调用 `my.showLoading` | 直连 `tt.showLoading` | ✅ |
-| `showActionSheet` | 显示操作菜单。 | 直连 `wx.showActionSheet` | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | 直连 `tt.showActionSheet`，并兼容 `index` → `tapIndex` | ✅ |
+| `showActionSheet` | 显示操作菜单。 | 直连 `wx.showActionSheet` | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | 优先直连 `tt.showActionSheet`；缺失时降级到 `tt.showModal` shim | ✅ |
 | `showModal` | 显示模态弹窗。 | 直连 `wx.showModal` | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果 | 直连 `tt.showModal` | ✅ |
 | `chooseImage` | 选择图片。 | 直连 `wx.chooseImage` | 返回值 `apFilePaths` 映射到 `tempFilePaths` | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底 | ✅ |
 | `chooseMedia` | 选择图片或视频。 | 直连 `wx.chooseMedia` | 映射到 `my.chooseImage`，并补齐 `tempFiles[].tempFilePath/fileType` | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType` | ⚠️ |
 | `chooseMessageFile` | 选择会话文件。 | 直连 `wx.chooseMessageFile` | 映射到 `my.chooseImage`，并补齐 `tempFiles[].path/name` | 映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name` | ⚠️ |
+| `getFuzzyLocation` | 获取模糊地理位置。 | 直连 `wx.getFuzzyLocation` | 映射到 `my.getLocation` | 映射到 `tt.getLocation` | ⚠️ |
 | `previewMedia` | 预览图片和视频。 | 直连 `wx.previewMedia` | 映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls` | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls` | ⚠️ |
 | `createInterstitialAd` | 创建插屏广告实例。 | 直连 `wx.createInterstitialAd` | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId` | 直连 `tt.createInterstitialAd` | ⚠️ |
 | `createRewardedVideoAd` | 创建激励视频广告实例。 | 直连 `wx.createRewardedVideoAd` | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId` | 映射到 `tt.createInterstitialAd` | ⚠️ |
@@ -99,6 +100,11 @@
 | `getNetworkType` | 获取网络类型。 | 直连 `wx.getNetworkType` | 直连 `my.getNetworkType` | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType` | ⚠️ |
 | `getBatteryInfo` | 异步获取电量信息。 | 直连 `wx.getBatteryInfo` | 直连 `my.getBatteryInfo` | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging` | ⚠️ |
 | `getBatteryInfoSync` | 同步获取电量信息。 | 直连 `wx.getBatteryInfoSync` | 直连 `my.getBatteryInfoSync` | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging` | ⚠️ |
+| `getLogManager` | 获取日志管理器实例。 | 直连 `wx.getLogManager` | 使用内置日志 shim（对齐 `log/info/warn/error`） | 使用内置日志 shim（对齐 `log/info/warn/error`） | ⚠️ |
+| `nextTick` | 延迟到下一个 UI 更新时机执行回调。 | 直连 `wx.nextTick` | 使用内置 microtask shim 调度回调 | 使用内置 microtask shim 调度回调 | ⚠️ |
+| `onWindowResize` | 监听窗口尺寸变化事件。 | 直连 `wx.onWindowResize` | 使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听 | 直连 `tt.onWindowResize` | ⚠️ |
+| `offWindowResize` | 取消监听窗口尺寸变化事件。 | 直连 `wx.offWindowResize` | 使用内置 shim，移除 `onWindowResize` 注册回调 | 直连 `tt.offWindowResize` | ⚠️ |
+| `reportAnalytics` | 上报分析数据。 | 直连 `wx.reportAnalytics` | 使用内置 no-op shim（保持调用不抛错） | 直连 `tt.reportAnalytics` | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 
