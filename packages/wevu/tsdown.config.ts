@@ -7,6 +7,7 @@ export default defineConfig({
     './src/jsx-runtime',
     './src/store',
     './src/api',
+    './src/fetch',
     './src/router',
   ],
   format: ['esm'],
