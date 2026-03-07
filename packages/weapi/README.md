@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 201 | 201 | 0 | 479 | 41.96% | 41.96% |
-| 抖音小程序 (`tt`) | 135 | 135 | 0 | 479 | 28.18% | 28.18% |
-| 三端可调用完全对齐 (wx/my/tt) | 121 | - | - | 479 | 25.26% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 121 | - | 479 | - | 25.26% |
+| 支付宝小程序 (`my`) | 199 | 199 | 0 | 479 | 41.54% | 41.54% |
+| 抖音小程序 (`tt`) | 133 | 133 | 0 | 479 | 27.77% | 27.77% |
+| 三端可调用完全对齐 (wx/my/tt) | 119 | - | - | 479 | 24.84% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 119 | - | 479 | - | 24.84% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -72,8 +72,8 @@
 | `login` | 登录。 | 直连 `wx.login` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.login` | ⚠️ |
 | `authorize` | 提前向用户发起授权请求。 | 直连 `wx.authorize` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.authorize` | ⚠️ |
 | `checkSession` | 检查登录态是否过期。 | 直连 `wx.checkSession` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.checkSession` | ⚠️ |
-| `requestSubscribeDeviceMessage` | 请求订阅设备消息。 | 直连 `wx.requestSubscribeDeviceMessage` | 映射到 `my.requestSubscribeMessage` | 映射到 `tt.requestSubscribeMessage` | ⚠️ |
-| `requestSubscribeEmployeeMessage` | 请求订阅员工消息。 | 直连 `wx.requestSubscribeEmployeeMessage` | 映射到 `my.requestSubscribeMessage` | 映射到 `tt.requestSubscribeMessage` | ⚠️ |
+| `requestSubscribeDeviceMessage` | 请求订阅设备消息。 | 直连 `wx.requestSubscribeDeviceMessage` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `requestSubscribeEmployeeMessage` | 请求订阅员工消息。 | 直连 `wx.requestSubscribeEmployeeMessage` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `restartMiniProgram` | 重启小程序。 | 直连 `wx.restartMiniProgram` | 映射到 `my.reLaunch` | 映射到 `tt.reLaunch` | ⚠️ |
 | `scanCode` | 扫码。 | 直连 `wx.scanCode` | 映射到 `my.scan` | 直连 `tt.scanCode` | ✅ |
 | `requestPayment` | 发起支付。 | 直连 `wx.requestPayment` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |

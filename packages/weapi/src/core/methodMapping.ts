@@ -321,16 +321,16 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'requestSubscribeDeviceMessage',
     description: '请求订阅设备消息。',
     wxStrategy: '直连 `wx.requestSubscribeDeviceMessage`',
-    alipayStrategy: '映射到 `my.requestSubscribeMessage`',
-    douyinStrategy: '映射到 `tt.requestSubscribeMessage`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
     method: 'requestSubscribeEmployeeMessage',
     description: '请求订阅员工消息。',
     wxStrategy: '直连 `wx.requestSubscribeEmployeeMessage`',
-    alipayStrategy: '映射到 `my.requestSubscribeMessage`',
-    douyinStrategy: '映射到 `tt.requestSubscribeMessage`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2380,10 +2380,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'checkSession',
     },
     requestSubscribeDeviceMessage: {
-      target: 'requestSubscribeMessage',
+      target: 'requestSubscribeDeviceMessage',
     },
     requestSubscribeEmployeeMessage: {
-      target: 'requestSubscribeMessage',
+      target: 'requestSubscribeEmployeeMessage',
     },
     restartMiniProgram: {
       target: 'reLaunch',
@@ -3074,10 +3074,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'checkSession',
     },
     requestSubscribeDeviceMessage: {
-      target: 'requestSubscribeMessage',
+      target: 'requestSubscribeDeviceMessage',
     },
     requestSubscribeEmployeeMessage: {
-      target: 'requestSubscribeMessage',
+      target: 'requestSubscribeEmployeeMessage',
     },
     restartMiniProgram: {
       target: 'reLaunch',
