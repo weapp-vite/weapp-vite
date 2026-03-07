@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart8Tests() {
+export function registerWeapiIndexMissingAdapterMethodUnsupportedCasesTests() {
   it.each([
     'chooseInvoiceTitle',
     'chooseLicensePlate',

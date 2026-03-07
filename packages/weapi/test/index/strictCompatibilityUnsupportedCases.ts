@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart9Tests() {
+export function registerWeapiIndexStrictCompatibilityUnsupportedCasesTests() {
   it.each([
     'createAudioContext',
     'createWebAudioContext',

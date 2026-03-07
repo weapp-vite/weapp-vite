@@ -6,7 +6,7 @@ import {
 } from '@/core/methodMapping'
 import { collectRenamedMappings, STRICT_RENAMED_ALLOWLIST } from '@/core/strictAliasPolicy'
 
-export function registerWeapiIndexPart14Tests() {
+export function registerWeapiIndexAliasPolicyAndMatrixConsistencyTests() {
   it('keeps top high-frequency alias mappings in sync', () => {
     const expectedMappings = [
       { method: 'chooseAddress', my: 'chooseAddress', tt: 'chooseAddress', mySupported: false },

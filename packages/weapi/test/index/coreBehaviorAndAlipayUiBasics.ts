@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart1Tests() {
+export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
   it('promisifies when no callbacks provided', async () => {
     interface RequestOptions {
       url?: string

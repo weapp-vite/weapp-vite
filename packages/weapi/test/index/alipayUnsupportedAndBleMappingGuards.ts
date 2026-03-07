@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart3Tests() {
+export function registerWeapiIndexAlipayUnsupportedAndBleMappingGuardsTests() {
   it('treats startSoterAuthentication as unsupported for alipay without strict-equivalent api', async () => {
     const startIfaaAuthentication = vi.fn((options: any) => {
       options.success?.({ resultJSONSignature: '{}' })

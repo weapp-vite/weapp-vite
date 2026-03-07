@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart5Tests() {
+export function registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests() {
   it('treats chooseContact as unsupported for douyin without aliasing chooseAddress', async () => {
     const chooseAddress = vi.fn((options: any) => {
       options.success?.({

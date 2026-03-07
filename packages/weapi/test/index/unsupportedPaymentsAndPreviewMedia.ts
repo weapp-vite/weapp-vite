@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart6Tests() {
+export function registerWeapiIndexUnsupportedPaymentsAndPreviewMediaTests() {
   it('treats scanCode as unsupported for alipay without strict-equivalent api', async () => {
     const scan = vi.fn()
     const api = createWeapi({

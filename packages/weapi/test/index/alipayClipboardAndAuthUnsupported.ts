@@ -1,6 +1,6 @@
 import { createWeapi } from '@/index'
 
-export function registerWeapiIndexPart4Tests() {
+export function registerWeapiIndexAlipayClipboardAndAuthUnsupportedTests() {
   it('maps saveFile args and result for alipay', async () => {
     const saveFile = vi.fn((options: any) => {
       options.success?.({ apFilePath: '/store/demo.png' })

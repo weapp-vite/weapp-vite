@@ -1,8 +1,8 @@
 import type { WeapiMethodMappingRule } from '../types'
-import { TT_METHOD_MAPPINGS_PART_1 } from './ttPart1'
-import { TT_METHOD_MAPPINGS_PART_2 } from './ttPart2'
-import { TT_METHOD_MAPPINGS_PART_3 } from './ttPart3'
-import { TT_METHOD_MAPPINGS_PART_4 } from './ttPart4'
+import { TT_METHOD_MAPPINGS_PART_2 } from './ttCanvasGetImageDataToSetTopBarText'
+import { TT_METHOD_MAPPINGS_PART_4 } from './ttJoinVoIPChatToOffBLEConnectionStateChange'
+import { TT_METHOD_MAPPINGS_PART_3 } from './ttSetWindowSizeToGetShareInfo'
+import { TT_METHOD_MAPPINGS_PART_1 } from './ttShowToastToCanAddSecureElementPass'
 
 export const TT_METHOD_MAPPINGS: Readonly<Record<string, WeapiMethodMappingRule>> = {
   ...TT_METHOD_MAPPINGS_PART_1,
