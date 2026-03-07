@@ -150,6 +150,22 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     support: '✅',
   },
   {
+    method: 'chooseMedia',
+    description: '选择图片或视频。',
+    wxStrategy: '直连 `wx.chooseMedia`',
+    alipayStrategy: '映射到 `my.chooseImage`，并补齐 `tempFiles[].tempFilePath/fileType`',
+    douyinStrategy: '直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType`',
+    support: '⚠️',
+  },
+  {
+    method: 'chooseMessageFile',
+    description: '选择会话文件。',
+    wxStrategy: '直连 `wx.chooseMessageFile`',
+    alipayStrategy: '映射到 `my.chooseImage`，并补齐 `tempFiles[].path/name`',
+    douyinStrategy: '映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name`',
+    support: '⚠️',
+  },
+  {
     method: 'previewMedia',
     description: '预览图片和视频。',
     wxStrategy: '直连 `wx.previewMedia`',
@@ -475,6 +491,46 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     wxStrategy: '直连 `wx.getAccountInfoSync`',
     alipayStrategy: '直连 `my.getAccountInfoSync`',
     douyinStrategy: '映射到 `tt.getEnvInfoSync`，并对齐账号字段结构',
+    support: '⚠️',
+  },
+  {
+    method: 'setBackgroundColor',
+    description: '动态设置窗口背景色。',
+    wxStrategy: '直连 `wx.setBackgroundColor`',
+    alipayStrategy: '直连 `my.setBackgroundColor`',
+    douyinStrategy: '映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor`',
+    support: '⚠️',
+  },
+  {
+    method: 'setBackgroundTextStyle',
+    description: '动态设置下拉背景字体样式。',
+    wxStrategy: '直连 `wx.setBackgroundTextStyle`',
+    alipayStrategy: '直连 `my.setBackgroundTextStyle`',
+    douyinStrategy: '映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor`',
+    support: '⚠️',
+  },
+  {
+    method: 'getNetworkType',
+    description: '获取网络类型。',
+    wxStrategy: '直连 `wx.getNetworkType`',
+    alipayStrategy: '直连 `my.getNetworkType`',
+    douyinStrategy: '映射到 `tt.getSystemInfo`，兜底补齐 `networkType`',
+    support: '⚠️',
+  },
+  {
+    method: 'getBatteryInfo',
+    description: '异步获取电量信息。',
+    wxStrategy: '直连 `wx.getBatteryInfo`',
+    alipayStrategy: '直连 `my.getBatteryInfo`',
+    douyinStrategy: '映射到 `tt.getSystemInfo`，补齐 `level/isCharging`',
+    support: '⚠️',
+  },
+  {
+    method: 'getBatteryInfoSync',
+    description: '同步获取电量信息。',
+    wxStrategy: '直连 `wx.getBatteryInfoSync`',
+    alipayStrategy: '直连 `my.getBatteryInfoSync`',
+    douyinStrategy: '映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging`',
     support: '⚠️',
   },
 ] as const
@@ -1005,6 +1061,222 @@ function mapChooseVideoResult(result: any) {
   }
 }
 
+function resolveFilePaths(result: any): string[] {
+  if (!isPlainObject(result)) {
+    return []
+  }
+  if (typeof result.tempFilePaths === 'string' && result.tempFilePaths) {
+    return [result.tempFilePaths]
+  }
+  if (Array.isArray(result.tempFilePaths)) {
+    return result.tempFilePaths.filter((item: unknown): item is string => typeof item === 'string' && item.length > 0)
+  }
+  if (Array.isArray(result.apFilePaths)) {
+    return result.apFilePaths.filter((item: unknown): item is string => typeof item === 'string' && item.length > 0)
+  }
+  if (Array.isArray(result.tempFiles)) {
+    return result.tempFiles
+      .map((item: unknown) => {
+        if (!isPlainObject(item)) {
+          return undefined
+        }
+        if (typeof item.tempFilePath === 'string' && item.tempFilePath) {
+          return item.tempFilePath
+        }
+        if (typeof item.path === 'string' && item.path) {
+          return item.path
+        }
+        if (typeof item.filePath === 'string' && item.filePath) {
+          return item.filePath
+        }
+        return undefined
+      })
+      .filter((item): item is string => typeof item === 'string')
+  }
+  return []
+}
+
+function mapChooseMediaArgsToChooseImage(args: unknown[]) {
+  if (args.length === 0) {
+    return [{}]
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return [...nextArgs, {}]
+  }
+  const nextOptions = { ...lastArg } as Record<string, any>
+  nextOptions.mediaType = ['image']
+  nextArgs[lastIndex] = nextOptions
+  return nextArgs
+}
+
+function mapChooseMediaResultFromImage(result: any) {
+  const normalized = mapChooseImageResult(result)
+  if (!isPlainObject(normalized)) {
+    return normalized
+  }
+  if (Array.isArray(normalized.tempFiles) && normalized.tempFiles.length > 0) {
+    return normalized
+  }
+  const tempFilePaths = resolveFilePaths(normalized)
+  if (tempFilePaths.length === 0) {
+    return normalized
+  }
+  return {
+    ...normalized,
+    tempFilePaths,
+    tempFiles: tempFilePaths.map(tempFilePath => ({
+      tempFilePath,
+      fileType: 'image',
+    })),
+    type: 'image',
+  }
+}
+
+function resolveFileName(filePath: string) {
+  const normalized = filePath.split('?')[0]
+  const segments = normalized.split('/')
+  return segments[segments.length - 1] || 'file'
+}
+
+function mapChooseMessageFileArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return [{}]
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return [...nextArgs, {}]
+  }
+  const nextOptions = { ...lastArg } as Record<string, any>
+  nextArgs[lastIndex] = nextOptions
+  return nextArgs
+}
+
+function mapChooseMessageFileResult(result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  if (Array.isArray(result.tempFiles) && result.tempFiles.length > 0) {
+    return result
+  }
+  const normalized = mapChooseImageResult(result)
+  if (!isPlainObject(normalized)) {
+    return normalized
+  }
+  const tempFilePaths = resolveFilePaths(normalized)
+  if (tempFilePaths.length === 0) {
+    return normalized
+  }
+  return {
+    ...normalized,
+    tempFilePaths,
+    tempFiles: tempFilePaths.map(path => ({
+      path,
+      name: resolveFileName(path),
+    })),
+  }
+}
+
+function resolveFrontColorFromTextStyle(value: unknown) {
+  if (value === 'light') {
+    return '#ffffff'
+  }
+  if (value === 'dark') {
+    return '#000000'
+  }
+  return undefined
+}
+
+function mapSetBackgroundColorToNavigationBarArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return [{}]
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return [...nextArgs, {}]
+  }
+  const nextOptions = { ...lastArg } as Record<string, any>
+  if (typeof nextOptions.backgroundColor !== 'string' || !nextOptions.backgroundColor) {
+    if (typeof nextOptions.backgroundColorTop === 'string' && nextOptions.backgroundColorTop) {
+      nextOptions.backgroundColor = nextOptions.backgroundColorTop
+    }
+    else if (typeof nextOptions.backgroundColorBottom === 'string' && nextOptions.backgroundColorBottom) {
+      nextOptions.backgroundColor = nextOptions.backgroundColorBottom
+    }
+  }
+  if (typeof nextOptions.frontColor !== 'string' || !nextOptions.frontColor) {
+    const frontColor = resolveFrontColorFromTextStyle(nextOptions.textStyle)
+    if (frontColor) {
+      nextOptions.frontColor = frontColor
+    }
+  }
+  nextArgs[lastIndex] = nextOptions
+  return nextArgs
+}
+
+function mapSetBackgroundTextStyleToNavigationBarArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return [{}]
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return [...nextArgs, {}]
+  }
+  const nextOptions = { ...lastArg } as Record<string, any>
+  const frontColor = resolveFrontColorFromTextStyle(nextOptions.textStyle)
+  if (frontColor) {
+    nextOptions.frontColor = frontColor
+  }
+  nextArgs[lastIndex] = nextOptions
+  return nextArgs
+}
+
+function mapSystemInfoToNetworkType(result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  if (typeof result.networkType === 'string' && result.networkType) {
+    return result
+  }
+  if (result.isConnected === false) {
+    return {
+      ...result,
+      networkType: 'none',
+    }
+  }
+  return {
+    ...result,
+    networkType: 'unknown',
+  }
+}
+
+function mapSystemInfoToBatteryInfo(result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  const nextResult: Record<string, any> = { ...result }
+  if (typeof nextResult.level !== 'number') {
+    const batteryValue = typeof nextResult.battery === 'number'
+      ? nextResult.battery
+      : undefined
+    if (typeof batteryValue === 'number') {
+      nextResult.level = batteryValue > 1 ? Math.round(batteryValue) : Math.round(batteryValue * 100)
+    }
+  }
+  if (typeof nextResult.isCharging !== 'boolean' && typeof nextResult.charging === 'boolean') {
+    nextResult.isCharging = nextResult.charging
+  }
+  return nextResult
+}
+
 function mapSystemInfoToWindowInfo(result: any) {
   if (!isPlainObject(result)) {
     return result
@@ -1110,6 +1382,16 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     chooseImage: {
       target: 'chooseImage',
       mapResult: mapChooseImageResult,
+    },
+    chooseMedia: {
+      target: 'chooseImage',
+      mapArgs: mapChooseMediaArgsToChooseImage,
+      mapResult: mapChooseMediaResultFromImage,
+    },
+    chooseMessageFile: {
+      target: 'chooseImage',
+      mapArgs: mapChooseMessageFileArgs,
+      mapResult: mapChooseMessageFileResult,
     },
     previewMedia: {
       target: 'previewImage',
@@ -1252,6 +1534,21 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     getAccountInfoSync: {
       target: 'getAccountInfoSync',
     },
+    setBackgroundColor: {
+      target: 'setBackgroundColor',
+    },
+    setBackgroundTextStyle: {
+      target: 'setBackgroundTextStyle',
+    },
+    getNetworkType: {
+      target: 'getNetworkType',
+    },
+    getBatteryInfo: {
+      target: 'getBatteryInfo',
+    },
+    getBatteryInfoSync: {
+      target: 'getBatteryInfoSync',
+    },
   },
   tt: {
     showToast: {
@@ -1271,6 +1568,15 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     chooseImage: {
       target: 'chooseImage',
       mapResult: mapDouyinChooseImageResult,
+    },
+    chooseMedia: {
+      target: 'chooseMedia',
+      mapResult: mapChooseMediaResultFromImage,
+    },
+    chooseMessageFile: {
+      target: 'chooseImage',
+      mapArgs: mapChooseMessageFileArgs,
+      mapResult: mapChooseMessageFileResult,
     },
     previewMedia: {
       target: 'previewImage',
@@ -1406,6 +1712,26 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     getAccountInfoSync: {
       target: 'getEnvInfoSync',
       mapResult: mapEnvInfoToAccountInfo,
+    },
+    setBackgroundColor: {
+      target: 'setNavigationBarColor',
+      mapArgs: mapSetBackgroundColorToNavigationBarArgs,
+    },
+    setBackgroundTextStyle: {
+      target: 'setNavigationBarColor',
+      mapArgs: mapSetBackgroundTextStyleToNavigationBarArgs,
+    },
+    getNetworkType: {
+      target: 'getSystemInfo',
+      mapResult: mapSystemInfoToNetworkType,
+    },
+    getBatteryInfo: {
+      target: 'getSystemInfo',
+      mapResult: mapSystemInfoToBatteryInfo,
+    },
+    getBatteryInfoSync: {
+      target: 'getSystemInfoSync',
+      mapResult: mapSystemInfoToBatteryInfo,
     },
   },
 }

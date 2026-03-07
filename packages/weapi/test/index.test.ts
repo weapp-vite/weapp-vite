@@ -276,6 +276,73 @@ describe('weapi', () => {
     })
   })
 
+  it('maps chooseMedia to chooseImage for alipay', async () => {
+    const chooseImage = vi.fn((options: any) => {
+      options.success?.({
+        apFilePaths: ['/tmp/media-a.png', '/tmp/media-b.png'],
+      })
+    })
+    const api = createWeapi({
+      adapter: {
+        chooseImage,
+      },
+      platform: 'alipay',
+    })
+
+    const result = await api.chooseMedia({
+      count: 2,
+      mediaType: ['image'],
+      sourceType: ['album'],
+    } as any)
+
+    expect(chooseImage).toHaveBeenCalledWith(expect.objectContaining({
+      count: 2,
+      mediaType: ['image'],
+      sourceType: ['album'],
+    }))
+    expect(result).toMatchObject({
+      tempFilePaths: ['/tmp/media-a.png', '/tmp/media-b.png'],
+      tempFiles: [
+        { tempFilePath: '/tmp/media-a.png', fileType: 'image' },
+        { tempFilePath: '/tmp/media-b.png', fileType: 'image' },
+      ],
+      type: 'image',
+    })
+  })
+
+  it.each([
+    { platform: 'alipay', response: { apFilePaths: ['/tmp/file-a.png'] } },
+    { platform: 'tt', response: { tempFilePaths: '/tmp/file-b.png' } },
+  ])('maps chooseMessageFile to chooseImage for $platform', async ({ platform, response }) => {
+    const chooseImage = vi.fn((options: any) => {
+      options.success?.(response)
+    })
+    const api = createWeapi({
+      adapter: {
+        chooseImage,
+      },
+      platform,
+    })
+
+    const result = await api.chooseMessageFile({
+      count: 1,
+      type: 'file',
+    } as any)
+
+    expect(chooseImage).toHaveBeenCalledWith(expect.objectContaining({
+      count: 1,
+      type: 'file',
+    }))
+    expect(result).toMatchObject({
+      tempFiles: [
+        expect.objectContaining({
+          path: expect.stringContaining('/tmp/file-'),
+          name: expect.stringMatching(/^file-[ab]\.png$/),
+        }),
+      ],
+    })
+  })
+
   it('maps saveFile args and result for alipay', async () => {
     const saveFile = vi.fn((options: any) => {
       options.success?.({ apFilePath: '/store/demo.png' })
@@ -607,6 +674,93 @@ describe('weapi', () => {
       windowWidth: 360,
       windowHeight: 640,
       statusBarHeight: 24,
+    })
+  })
+
+  it('maps setBackgroundColor and setBackgroundTextStyle to setNavigationBarColor for douyin', async () => {
+    const setNavigationBarColor = vi.fn((options: any) => {
+      options.success?.({ errMsg: 'setNavigationBarColor:ok' })
+    })
+    const api = createWeapi({
+      adapter: {
+        setNavigationBarColor,
+      },
+      platform: 'tt',
+    })
+
+    await api.setBackgroundColor({
+      backgroundColorTop: '#112233',
+      textStyle: 'light',
+    } as any)
+    await api.setBackgroundTextStyle({
+      textStyle: 'dark',
+    } as any)
+
+    expect(setNavigationBarColor).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      backgroundColorTop: '#112233',
+      backgroundColor: '#112233',
+      frontColor: '#ffffff',
+    }))
+    expect(setNavigationBarColor).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      textStyle: 'dark',
+      frontColor: '#000000',
+    }))
+  })
+
+  it('maps getNetworkType to getSystemInfo for douyin', async () => {
+    const getSystemInfo = vi.fn((options: any) => {
+      options.success?.({
+        isConnected: false,
+      })
+    })
+    const api = createWeapi({
+      adapter: {
+        getSystemInfo,
+      },
+      platform: 'tt',
+    })
+
+    const result = await api.getNetworkType()
+    expect(getSystemInfo).toHaveBeenCalledWith(expect.any(Object))
+    expect(result).toMatchObject({
+      isConnected: false,
+      networkType: 'none',
+    })
+  })
+
+  it('maps getBatteryInfo and getBatteryInfoSync via system info for douyin', async () => {
+    const getSystemInfo = vi.fn((options: any) => {
+      options.success?.({
+        battery: 0.56,
+        charging: true,
+      })
+    })
+    const getSystemInfoSync = vi.fn(() => ({
+      battery: 80,
+      charging: false,
+    }))
+    const api = createWeapi({
+      adapter: {
+        getSystemInfo,
+        getSystemInfoSync,
+      },
+      platform: 'tt',
+    })
+
+    const asyncResult = await api.getBatteryInfo()
+    const syncResult = api.getBatteryInfoSync()
+
+    expect(getSystemInfo).toHaveBeenCalledWith(expect.any(Object))
+    expect(getSystemInfoSync).toHaveBeenCalledTimes(1)
+    expect(asyncResult).toMatchObject({
+      battery: 0.56,
+      level: 56,
+      isCharging: true,
+    })
+    expect(syncResult).toMatchObject({
+      battery: 80,
+      level: 80,
+      isCharging: false,
     })
   })
 
@@ -1009,10 +1163,17 @@ describe('weapi', () => {
       { method: 'getAppAuthorizeSetting', my: 'getAppAuthorizeSetting', tt: 'getSetting' },
       { method: 'getAppBaseInfo', my: 'getAppBaseInfo', tt: 'getEnvInfoSync' },
       { method: 'chooseVideo', my: 'chooseVideo', tt: 'chooseMedia' },
+      { method: 'chooseMedia', my: 'chooseImage', tt: 'chooseMedia' },
+      { method: 'chooseMessageFile', my: 'chooseImage', tt: 'chooseImage' },
       { method: 'hideHomeButton', my: 'hideBackHome', tt: 'hideHomeButton' },
       { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getSystemInfo' },
       { method: 'getDeviceInfo', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'getAccountInfoSync', my: 'getAccountInfoSync', tt: 'getEnvInfoSync' },
+      { method: 'setBackgroundColor', my: 'setBackgroundColor', tt: 'setNavigationBarColor' },
+      { method: 'setBackgroundTextStyle', my: 'setBackgroundTextStyle', tt: 'setNavigationBarColor' },
+      { method: 'getNetworkType', my: 'getNetworkType', tt: 'getSystemInfo' },
+      { method: 'getBatteryInfo', my: 'getBatteryInfo', tt: 'getSystemInfo' },
+      { method: 'getBatteryInfoSync', my: 'getBatteryInfoSync', tt: 'getSystemInfoSync' },
     ] as const
 
     for (const item of expectedMappings) {
@@ -1054,6 +1215,8 @@ describe('weapi', () => {
       'showActionSheet',
       'showModal',
       'chooseImage',
+      'chooseMedia',
+      'chooseMessageFile',
       'saveFile',
       'setClipboardData',
       'getClipboardData',
@@ -1083,6 +1246,11 @@ describe('weapi', () => {
       'getWindowInfo',
       'getDeviceInfo',
       'getAccountInfoSync',
+      'setBackgroundColor',
+      'setBackgroundTextStyle',
+      'getNetworkType',
+      'getBatteryInfo',
+      'getBatteryInfoSync',
     ]))
   })
 })
