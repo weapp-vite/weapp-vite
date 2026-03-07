@@ -451,6 +451,75 @@ describe('router navigation helpers', () => {
     ])
   })
 
+  it('matches nested child route records through inherited parent alias paths', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'home',
+          path: '/pages/home',
+          alias: '/pages/admin',
+          children: [
+            {
+              name: 'home-detail',
+              path: 'detail/:id',
+            },
+          ],
+        },
+      ],
+    })
+
+    const resolved = router.resolve('/pages/admin/detail/42')
+    expect(resolved.name).toBe('home-detail')
+    expect(resolved.params).toEqual({
+      id: '42',
+    })
+    expect(resolved.matched).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home',
+      },
+      {
+        name: 'home-detail',
+        path: '/pages/home/detail/:id',
+        aliasPath: '/pages/admin/detail/:id',
+      },
+    ])
+    expect(router.getRoutes()).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home',
+        alias: '/pages/admin',
+      },
+      {
+        name: 'home-detail',
+        path: '/pages/home/detail/:id',
+        alias: '/pages/admin/detail/:id',
+      },
+    ])
+  })
+
   it('supports nested route records by flattening children paths', () => {
     const instance = {
       __wevu: {},
@@ -1468,6 +1537,74 @@ describe('router navigation helpers', () => {
     removeChildRoute()
     expect(router.hasRoute('home-settings')).toBe(false)
     expect(router.hasRoute('home')).toBe(true)
+  })
+
+  it('inherits parent alias paths for addRoute(parentName, route) children', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'home',
+          path: '/pages/home',
+          alias: '/pages/admin',
+        },
+      ],
+    })
+
+    router.addRoute('home', {
+      name: 'home-log',
+      path: 'log/:day',
+    })
+
+    const resolved = router.resolve('/pages/admin/log/2026-03-07')
+    expect(resolved.name).toBe('home-log')
+    expect(resolved.params).toEqual({
+      day: '2026-03-07',
+    })
+    expect(resolved.matched).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home',
+      },
+      {
+        name: 'home-log',
+        path: '/pages/home/log/:day',
+        aliasPath: '/pages/admin/log/:day',
+      },
+    ])
+    expect(router.getRoutes()).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home',
+        alias: '/pages/admin',
+      },
+      {
+        name: 'home-log',
+        path: '/pages/home/log/:day',
+        alias: '/pages/admin/log/:day',
+      },
+    ])
   })
 
   it('removeRoute removes nested child route records together', () => {

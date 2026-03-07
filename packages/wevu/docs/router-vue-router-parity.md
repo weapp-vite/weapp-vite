@@ -36,7 +36,7 @@
 | `beforeEnter`       | 支持         | 支持        | 已对齐   | 支持单个或数组守卫；`children` 场景按父到子链路依次执行，父级重定向会中断后续子守卫。          |
 | `redirect`          | 支持         | 支持        | 已对齐   | 支持字符串/对象/函数，并保留 `redirectedFrom`；`children` 场景会先处理父链路 `redirect`。      |
 | 嵌套路由 `children` | 支持         | 支持        | 部分对齐 | 支持在 `namedRoutes` 中声明 `children` 并展平成可匹配记录；不提供 Vue Web 的嵌套视图渲染语义。 |
-| `alias`             | 支持         | 支持        | 部分对齐 | 支持记录级 `alias` 路径匹配与守卫触发；不支持 `children` 级联场景。                            |
+| `alias`             | 支持         | 支持        | 已对齐   | 支持记录级 `alias`，并在 `children` 场景下自动级联父级 alias，匹配与守卫链路均可用。           |
 
 ## 3. 平台差异（必须认知）
 
