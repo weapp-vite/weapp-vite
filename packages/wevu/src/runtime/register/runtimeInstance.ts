@@ -5,36 +5,32 @@ import type {
   DefineComponentOptions,
   InternalRuntimeState,
   MethodDefinitions,
-  MiniProgramAdapter,
   RuntimeApp,
   RuntimeInstance,
-  SetupContextNativeInstance,
 } from '../types'
-import type { SetupInstanceMethodName } from './runtimeInstance/setupContext'
+import type { AdapterWithSetData } from './runtimeInstance/utils'
 import type { WatchMap } from './watch'
-import { isReactive, shallowReactive, toRaw } from '../../reactivity'
-import { callHookList, setCurrentInstance, setCurrentSetupContext } from '../hooks'
-import { isNativeBridgeMethod } from '../nativeBridge'
+import { callHookList } from '../hooks'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
+import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
 import {
   createNoopWatchStopHandle,
-  createSetupSlotsFallback,
-  ensureSetupContextInstance,
-  normalizeEmitPayload,
   safeMarkNoSetData,
-
-  setupInstanceMethodNames,
 } from './runtimeInstance/setupContext'
-import { createSetDataHighFrequencyWarningMonitor } from './setDataFrequencyWarning'
-import { runSetupFunction } from './setup'
-import { registerWatches } from './watch'
+import { runRuntimeSetupPhase } from './runtimeInstance/setupPhase'
+import {
 
-type AdapterWithSetData = Required<MiniProgramAdapter> & {
-  __wevu_enableSetData?: () => void
-  __wevu_setVisibility?: (visible: boolean) => void
-}
-type NativeSetData = (payload: Record<string, any>) => void | Promise<void> | undefined
+  attachNativeInstanceRef,
+  attachRuntimeInstance,
+  attachRuntimeProxyProps,
+  attachRuntimeRef,
+  callNativeSetData,
+  resolveNativeSetData,
+  syncRuntimeProps,
+} from './runtimeInstance/utils'
+import { createSetDataHighFrequencyWarningMonitor } from './setDataFrequencyWarning'
+import { registerWatches } from './watch'
 
 type RuntimeSetupFunction<
   D extends object,
@@ -42,131 +38,6 @@ type RuntimeSetupFunction<
   M extends MethodDefinitions,
 > = DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
   | DefineAppOptions<D, C, M>['setup']
-
-const SETUP_CONTEXT_INSTANCE_KEY = '__wevuSetupContextInstance'
-
-function attachRuntimeProxyProps(state: Record<string, any>, props: Record<string, any>) {
-  try {
-    Object.defineProperty(state, '__wevuProps', {
-      value: props,
-      configurable: true,
-      enumerable: false,
-      writable: false,
-    })
-  }
-  catch {
-    ;(state as any).__wevuProps = props
-  }
-}
-
-function attachNativeInstanceRef(state: Record<string, any>, instance: InternalRuntimeState) {
-  try {
-    Object.defineProperty(state, '__wevuNativeInstance', {
-      value: instance,
-      configurable: true,
-      enumerable: false,
-      writable: true,
-    })
-  }
-  catch {
-    ;(state as any).__wevuNativeInstance = instance
-  }
-}
-
-function attachRuntimeRef(state: Record<string, any>, runtime: RuntimeInstance<any, any, any>) {
-  try {
-    Object.defineProperty(state, '__wevuRuntime', {
-      value: runtime,
-      configurable: true,
-      enumerable: false,
-      writable: true,
-    })
-  }
-  catch {
-    ;(state as any).__wevuRuntime = runtime
-  }
-}
-
-function attachRuntimeInstance(runtime: RuntimeInstance<any, any, any>, instance: InternalRuntimeState) {
-  try {
-    Object.defineProperty(runtime as Record<string, any>, 'instance', {
-      value: instance,
-      configurable: true,
-      enumerable: false,
-      writable: true,
-    })
-  }
-  catch {
-    try {
-      ;(runtime as Record<string, any>).instance = instance
-    }
-    catch {
-      // 忽略冻结对象写入失败
-    }
-  }
-}
-
-function resolveNativeSetData(instance: InternalRuntimeState) {
-  const setupInstance = (instance as any)[SETUP_CONTEXT_INSTANCE_KEY] as SetupContextNativeInstance | undefined
-  const setupOverride = setupInstance && typeof setupInstance.setData === 'function'
-    ? setupInstance.setData
-    : undefined
-  if (typeof setupOverride === 'function' && !isNativeBridgeMethod(setupOverride)) {
-    return setupOverride as NativeSetData
-  }
-
-  const candidate = (instance as any).setData
-  if (typeof candidate !== 'function') {
-    return undefined
-  }
-  if (isNativeBridgeMethod(candidate)) {
-    return undefined
-  }
-  return candidate as NativeSetData
-}
-
-function getRuntimeOwnerLabel(instance: InternalRuntimeState) {
-  const route = (instance as any).route
-  if (typeof route === 'string' && route) {
-    return route
-  }
-  const is = (instance as any).is
-  if (typeof is === 'string' && is) {
-    return is
-  }
-  return 'unknown'
-}
-
-function callNativeSetData(
-  instance: InternalRuntimeState,
-  setData: NativeSetData,
-  payload: Record<string, any>,
-) {
-  try {
-    return setData.call(instance, payload)
-  }
-  catch (error) {
-    const owner = getRuntimeOwnerLabel(instance)
-    throw new Error(`[wevu] setData failed (${owner}): ${error instanceof Error ? error.message : String(error)}`)
-  }
-}
-
-function syncRuntimeProps(props: Record<string, any>, mpProperties: Record<string, any>) {
-  const currentKeys = Object.keys(props)
-  for (const key of currentKeys) {
-    if (!Object.prototype.hasOwnProperty.call(mpProperties, key)) {
-      try {
-        delete props[key]
-      }
-      catch {
-        // 忽略异常
-      }
-    }
-  }
-  for (const [key, value] of Object.entries(mpProperties)) {
-    props[key] = value
-  }
-}
 
 /**
  * 挂载运行时实例（框架内部注册流程使用）。
@@ -344,201 +215,20 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
   }
 
   if (setup) {
-    // 从小程序 properties 提取 props 供 setup 使用，并复用 runtime state 上的 props 容器，
-    // 避免 computed 首次求值早于 setup 时丢失依赖。
-    const mpProperties = ((target as any).properties || {}) as Record<string, any>
-    const runtimeProps = runtimeState && typeof runtimeState === 'object'
-      ? ((runtimeState as any).__wevuProps as Record<string, any> | undefined)
-      : undefined
-    const props = runtimeProps && typeof runtimeProps === 'object'
-      ? runtimeProps
-      : shallowReactive({}) as Record<string, any>
-    syncRuntimeProps(props, mpProperties)
-    if (runtimeState && typeof runtimeState === 'object') {
-      attachRuntimeProxyProps(runtimeState as Record<string, any>, props)
-    }
-    try {
-      Object.defineProperty(target, '__wevuProps', {
-        value: props,
-        configurable: true,
-        enumerable: false,
-        writable: false,
-      })
-    }
-    catch {
-      ;(target as any).__wevuProps = props
-    }
-
-    // 与 Vue 3 对齐：attrs = 非 props 的 attributes。
-    // 在小程序场景中，attrs 来源于 instance.properties 中“未声明在 props/properties 的字段”。
-    const attrs = shallowReactive(Object.create(null)) as Record<string, any>
-    const declaredPropKeys = new Set(
-      Array.isArray((target as any).__wevuPropKeys)
-        ? ((target as any).__wevuPropKeys as string[])
-        : [],
-    )
-    const hasRuntimeStateKey = (key: string) => {
-      return runtimeState != null
-        && typeof runtimeState === 'object'
-        && Object.prototype.hasOwnProperty.call(runtimeState as Record<string, unknown>, key)
-    }
-    const syncAttrsFromProperties = () => {
-      const next = ((target as any).properties && typeof (target as any).properties === 'object')
-        ? ((target as any).properties as Record<string, unknown>)
-        : undefined
-
-      for (const existingKey of Object.keys(attrs)) {
-        if (
-          !next
-          || !Object.prototype.hasOwnProperty.call(next, existingKey)
-          || declaredPropKeys.has(existingKey)
-          || hasRuntimeStateKey(existingKey)
-        ) {
-          delete attrs[existingKey]
-        }
-      }
-
-      if (!next) {
-        return
-      }
-
-      for (const [key, value] of Object.entries(next)) {
-        if (declaredPropKeys.has(key) || hasRuntimeStateKey(key)) {
-          continue
-        }
-        attrs[key] = value
-      }
-    }
-    syncAttrsFromProperties()
-
-    try {
-      Object.defineProperty(target, '__wevuAttrs', {
-        value: attrs,
-        configurable: true,
-        enumerable: false,
-        writable: false,
-      })
-    }
-    catch {
-      ;(target as any).__wevuAttrs = attrs
-    }
-
-    const setupInstance = ensureSetupContextInstance(target, runtimeWithDefaults)
-
-    const context = safeMarkNoSetData({
-      // 与 Vue 3 对齐的 ctx.props
-      props,
-
-      // 现有运行时能力
-      runtime: runtimeWithDefaults,
-      state: runtimeState,
-      proxy: runtimeProxy,
-      bindModel: runtimeBindModel.bind(runtimeWithDefaults),
-      watch: runtimeWatch.bind(runtimeWithDefaults),
-      instance: setupInstance,
-
-      // 通过小程序 triggerEvent 派发事件，并兼容 Vue 3 的 emit(event, ...args) 形式。
-      emit: (event: string, ...args: any[]) => {
-        const { detail, options } = normalizeEmitPayload(args)
-        setupInstance.triggerEvent(event, detail, options)
-      },
-
-      // 与 Vue 3 对齐的 expose
-      expose: (exposed: Record<string, any>) => {
-        target.__wevuExposed = exposed
-      },
-
-      // 与 Vue 3 对齐的 attrs（小程序中为非 props 属性集合）
-      attrs,
-
-      // 与 Vue 3 对齐的 slots（小程序场景不提供可调用 slots 函数，兜底只读空对象）
-      slots: createSetupSlotsFallback(),
-    }) as any
-
-    // 仅在同步 setup 执行期间暴露 current instance
-    setCurrentInstance(target)
-    setCurrentSetupContext(context)
-    try {
-      const result = runSetupFunction(setup, props, context)
-      let methodsChanged = false
-      if (result && typeof result === 'object') {
-        const runtimeRawState = isReactive(runtime.state)
-          ? toRaw(runtime.state)
-          : runtime.state
-        Object.keys(result).forEach((key) => {
-          const val = (result as any)[key]
-          if (typeof val === 'function') {
-            ;(runtime.methods as any)[key] = (...args: any[]) => (val as any).apply((runtime as any).proxy, args)
-            methodsChanged = true
-          }
-          else {
-            if (declaredPropKeys.has(key)) {
-              let fallbackValue = val
-              try {
-                Object.defineProperty(runtimeRawState as Record<string, unknown>, key, {
-                  configurable: true,
-                  enumerable: false,
-                  get() {
-                    const propsSource = (runtimeRawState as any).__wevuProps
-                    if (propsSource && typeof propsSource === 'object' && Object.prototype.hasOwnProperty.call(propsSource, key)) {
-                      return (propsSource as any)[key]
-                    }
-                    return fallbackValue
-                  },
-                  set(next: unknown) {
-                    fallbackValue = next
-                    const propsSource = (runtimeRawState as any).__wevuProps
-                    if (!propsSource || typeof propsSource !== 'object') {
-                      return
-                    }
-                    try {
-                      ;(propsSource as any)[key] = next
-                    }
-                    catch {
-                      // 忽略异常
-                    }
-                  },
-                })
-              }
-              catch {
-                ;(runtime.state as any)[key] = val
-              }
-              return
-            }
-            ;(runtime.state as any)[key] = val
-          }
-        })
-      }
-      if (methodsChanged) {
-        ;(runtime as any).__wevu_touchSetupMethodsVersion?.()
-      }
-    }
-    finally {
-      setCurrentSetupContext(undefined)
-      setCurrentInstance(undefined)
-    }
+    runRuntimeSetupPhase({
+      target,
+      runtime,
+      runtimeWithDefaults,
+      runtimeState: runtimeState as Record<string, any>,
+      runtimeProxy: runtimeProxy as Record<string, any>,
+      setup,
+      syncRuntimeProps,
+      attachRuntimeProxyProps,
+    })
   }
 
   // 将 runtime.methods 透传到原生实例，供小程序事件处理直接调用
-  try {
-    const methods = (runtime.methods as unknown) as Record<string, any>
-    for (const name of Object.keys(methods)) {
-      if (setupInstanceMethodNames.includes(name as SetupInstanceMethodName)) {
-        continue
-      }
-      if (typeof (target as any)[name] !== 'function') {
-        ;(target as any)[name] = function bridged(this: any, ...args: any[]) {
-          const bound = (this.$wevu?.methods as any)?.[name]
-          if (typeof bound === 'function') {
-            return bound.apply(this.$wevu.proxy, args)
-          }
-        }
-      }
-    }
-  }
-  catch {
-    // 桥接过程中若发生错误（如目标被封装）则忽略，避免阻断后续流程
-  }
+  bridgeRuntimeMethodsToTarget(target, runtime)
 
   return runtime
 }
