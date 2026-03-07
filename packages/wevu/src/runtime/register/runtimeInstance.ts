@@ -1,4 +1,3 @@
-import type { WatchStopHandle } from '../../reactivity'
 import type {
   ComponentPropsOptions,
   ComputedDefinitions,
@@ -10,16 +9,23 @@ import type {
   RuntimeApp,
   RuntimeInstance,
   SetupContextNativeInstance,
-  TriggerEventOptions,
 } from '../types'
+import type { SetupInstanceMethodName } from './runtimeInstance/setupContext'
 import type { WatchMap } from './watch'
 import { isReactive, shallowReactive, toRaw } from '../../reactivity'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '../hooks'
-import { isNativeBridgeMethod, markNativeBridgeMethod } from '../nativeBridge'
-import { markNoSetData } from '../noSetData'
-import { getMiniProgramGlobalObject } from '../platform'
+import { isNativeBridgeMethod } from '../nativeBridge'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
+import {
+  createNoopWatchStopHandle,
+  createSetupSlotsFallback,
+  ensureSetupContextInstance,
+  normalizeEmitPayload,
+  safeMarkNoSetData,
+
+  setupInstanceMethodNames,
+} from './runtimeInstance/setupContext'
 import { createSetDataHighFrequencyWarningMonitor } from './setDataFrequencyWarning'
 import { runSetupFunction } from './setup'
 import { registerWatches } from './watch'
@@ -37,277 +43,7 @@ type RuntimeSetupFunction<
 > = DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
   | DefineAppOptions<D, C, M>['setup']
 
-function createSetupSlotsFallback() {
-  return Object.freeze(Object.create(null)) as Record<string, never>
-}
-
-function createNoopWatchStopHandle(): WatchStopHandle {
-  const stopHandle = (() => {}) as WatchStopHandle
-  stopHandle.stop = () => {}
-  stopHandle.pause = () => {}
-  stopHandle.resume = () => {}
-  return stopHandle
-}
-
-function safeMarkNoSetData<T extends object>(value: T): T {
-  try {
-    return markNoSetData(value)
-  }
-  catch {
-    return value
-  }
-}
-
-function isTriggerEventOptions(value: unknown): value is TriggerEventOptions {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return false
-  }
-  return (
-    Object.prototype.hasOwnProperty.call(value, 'bubbles')
-    || Object.prototype.hasOwnProperty.call(value, 'composed')
-    || Object.prototype.hasOwnProperty.call(value, 'capturePhase')
-  )
-}
-
-function normalizeEmitPayload(args: any[]): { detail: any, options: TriggerEventOptions | undefined } {
-  if (args.length === 0) {
-    return {
-      detail: undefined,
-      options: undefined,
-    }
-  }
-
-  if (args.length === 1) {
-    return {
-      detail: args[0],
-      options: undefined,
-    }
-  }
-
-  const maybeOptions = args[args.length - 1]
-  if (isTriggerEventOptions(maybeOptions)) {
-    const detailArgs = args.slice(0, -1)
-    return {
-      detail: detailArgs.length <= 1 ? detailArgs[0] : detailArgs,
-      options: maybeOptions,
-    }
-  }
-
-  return {
-    detail: args,
-    options: undefined,
-  }
-}
-
-type SetupInstanceMethodName = 'triggerEvent' | 'createSelectorQuery' | 'createIntersectionObserver' | 'setData' | 'setUpdatePerformanceListener'
-const setupInstanceMethodNames: SetupInstanceMethodName[] = ['triggerEvent', 'createSelectorQuery', 'createIntersectionObserver', 'setData', 'setUpdatePerformanceListener']
 const SETUP_CONTEXT_INSTANCE_KEY = '__wevuSetupContextInstance'
-
-function resolveRuntimeNativeMethodOwner(
-  runtime: RuntimeInstance<any, any, any>,
-  target: InternalRuntimeState,
-  methodName: SetupInstanceMethodName,
-) {
-  const runtimeState = runtime?.state
-  const runtimeRawState = runtimeState && typeof runtimeState === 'object'
-    ? toRaw(runtimeState as any)
-    : undefined
-  const runtimeProxy = runtime?.proxy as object | undefined
-  const isBridgeMethod = (candidate: object) => {
-    const candidateMethod = (candidate as any)[methodName]
-    if (typeof candidateMethod !== 'function') {
-      return false
-    }
-    if (isNativeBridgeMethod(candidateMethod)) {
-      return true
-    }
-    const targetMethod = (target as any)[methodName]
-    return typeof targetMethod === 'function' && candidateMethod === targetMethod
-  }
-  const isValidNativeCandidate = (candidate: unknown) => {
-    if (!candidate || typeof candidate !== 'object') {
-      return false
-    }
-    if (candidate === target || candidate === runtimeProxy) {
-      return false
-    }
-    if (isBridgeMethod(candidate)) {
-      return false
-    }
-    return typeof (candidate as any)[methodName] === 'function'
-  }
-  const nativeFromState = runtimeRawState ? (runtimeRawState as any).__wevuNativeInstance : undefined
-  if (isValidNativeCandidate(nativeFromState)) {
-    return nativeFromState as InternalRuntimeState
-  }
-
-  const runtimeInstance = (runtime as any)?.instance
-  if (isValidNativeCandidate(runtimeInstance)) {
-    return runtimeInstance as InternalRuntimeState
-  }
-  return undefined
-}
-
-function defineSetupInstanceMethod(
-  target: Record<string, any>,
-  methodName: SetupInstanceMethodName,
-  handler: (...args: any[]) => any,
-) {
-  markNativeBridgeMethod(handler)
-  try {
-    Object.defineProperty(target, methodName, {
-      value: handler,
-      configurable: true,
-      enumerable: false,
-      writable: true,
-    })
-  }
-  catch {
-    ;(target as any)[methodName] = handler
-  }
-}
-
-function ensureSetupContextInstance(
-  target: InternalRuntimeState,
-  runtime: RuntimeInstance<any, any, any>,
-) {
-  const maybeCached = (target as any)[SETUP_CONTEXT_INSTANCE_KEY]
-  if (maybeCached && typeof maybeCached === 'object') {
-    return maybeCached as SetupContextNativeInstance
-  }
-
-  const setupInstanceBridge: Record<string, any> = Object.create(null)
-  const resolveSetupBridgeOwner = (methodName: SetupInstanceMethodName) => {
-    const owner = resolveRuntimeNativeMethodOwner(runtime, target, methodName)
-    if (owner) {
-      return owner
-    }
-    const fallbackMethod = (target as any)[methodName]
-    if (typeof fallbackMethod === 'function' && !isNativeBridgeMethod(fallbackMethod)) {
-      return target
-    }
-    return undefined
-  }
-
-  defineSetupInstanceMethod(setupInstanceBridge, 'triggerEvent', (...args: [string, any?, TriggerEventOptions?]) => {
-    const [eventName, detail, options] = args
-    const nativeOwner = resolveSetupBridgeOwner('triggerEvent')
-    if (nativeOwner && typeof (nativeOwner as any).triggerEvent === 'function') {
-      if (args.length >= 3) {
-        ;(nativeOwner as any).triggerEvent(eventName, detail, options)
-      }
-      else {
-        ;(nativeOwner as any).triggerEvent(eventName, detail)
-      }
-    }
-  })
-
-  defineSetupInstanceMethod(setupInstanceBridge, 'createSelectorQuery', () => {
-    const nativeOwner = resolveSetupBridgeOwner('createSelectorQuery')
-    if (nativeOwner && typeof (nativeOwner as any).createSelectorQuery === 'function') {
-      return (nativeOwner as any).createSelectorQuery()
-    }
-
-    const miniProgramGlobal = getMiniProgramGlobalObject()
-    if (!miniProgramGlobal || typeof miniProgramGlobal.createSelectorQuery !== 'function') {
-      return undefined
-    }
-
-    const query = miniProgramGlobal.createSelectorQuery()
-    if (!query || typeof query.in !== 'function') {
-      return query
-    }
-
-    const scopedOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
-    return query.in(scopedOwner as any)
-  })
-
-  defineSetupInstanceMethod(
-    setupInstanceBridge,
-    'createIntersectionObserver',
-    (options?: WechatMiniprogram.CreateIntersectionObserverOption) => {
-      const nativeOwner = resolveSetupBridgeOwner('createIntersectionObserver')
-      if (nativeOwner && typeof (nativeOwner as any).createIntersectionObserver === 'function') {
-        return (nativeOwner as any).createIntersectionObserver(options ?? {})
-      }
-
-      const miniProgramGlobal = getMiniProgramGlobalObject()
-      if (!miniProgramGlobal || typeof miniProgramGlobal.createIntersectionObserver !== 'function') {
-        return undefined
-      }
-
-      const scopedOwner = resolveRuntimeNativeMethodOwner(runtime, target, 'setData') ?? target
-      return miniProgramGlobal.createIntersectionObserver(scopedOwner as any, options ?? {})
-    },
-  )
-
-  defineSetupInstanceMethod(setupInstanceBridge, 'setData', (payload: Record<string, any>, callback?: () => void) => {
-    const nativeOwner = resolveSetupBridgeOwner('setData')
-    if (nativeOwner && typeof (nativeOwner as any).setData === 'function') {
-      return (nativeOwner as any).setData(payload, callback)
-    }
-
-    const adapter = runtime?.adapter
-    const result = typeof adapter?.setData === 'function'
-      ? adapter.setData(payload)
-      : undefined
-    if (typeof callback === 'function') {
-      callback()
-    }
-    return result
-  })
-
-  defineSetupInstanceMethod(
-    setupInstanceBridge,
-    'setUpdatePerformanceListener',
-    (listener?: ((result: Record<string, any>) => void)) => {
-      const nativeOwner = resolveSetupBridgeOwner('setUpdatePerformanceListener')
-      if (nativeOwner && typeof (nativeOwner as any).setUpdatePerformanceListener === 'function') {
-        return (nativeOwner as any).setUpdatePerformanceListener(listener)
-      }
-      return undefined
-    },
-  )
-
-  const setupInstance = safeMarkNoSetData(new Proxy(setupInstanceBridge, {
-    get(bridgeTarget, key, receiver) {
-      if (Reflect.has(bridgeTarget, key)) {
-        return Reflect.get(bridgeTarget, key, receiver)
-      }
-      const value = (target as any)[key as any]
-      if (typeof value === 'function') {
-        return value.bind(target)
-      }
-      return value
-    },
-    has(bridgeTarget, key) {
-      return Reflect.has(bridgeTarget, key) || key in (target as any)
-    },
-    set(bridgeTarget, key, value) {
-      if (Reflect.has(bridgeTarget, key)) {
-        // 仅覆写 setup 暴露的 bridge 方法，避免回写原生实例引发递归调用。
-        ;(bridgeTarget as any)[key as any] = value
-        return true
-      }
-      ;(target as any)[key as any] = value
-      return true
-    },
-  }) as SetupContextNativeInstance)
-
-  try {
-    Object.defineProperty(target as Record<string, any>, SETUP_CONTEXT_INSTANCE_KEY, {
-      value: setupInstance,
-      configurable: true,
-      enumerable: false,
-      writable: true,
-    })
-  }
-  catch {
-    ;(target as any)[SETUP_CONTEXT_INSTANCE_KEY] = setupInstance
-  }
-
-  return setupInstance
-}
 
 function attachRuntimeProxyProps(state: Record<string, any>, props: Record<string, any>) {
   try {
