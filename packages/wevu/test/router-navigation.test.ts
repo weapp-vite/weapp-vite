@@ -1092,6 +1092,33 @@ describe('router navigation helpers', () => {
     await expect(router.isReady()).resolves.toBeUndefined()
   })
 
+  it('install is a no-op compatibility method', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter()
+    expect(() => router.install({})).not.toThrow()
+  })
+
   it('exposes normalized options snapshot', () => {
     const instance = {
       __wevu: {},
