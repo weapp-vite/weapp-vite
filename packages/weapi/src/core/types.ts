@@ -1176,7 +1176,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.checkIsSoterEnrolledInDevice` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 支付宝 | 映射到 `my.checkIsIfaaEnrolledInDevice`，`speech` 模式按 unsupported 报错 | ⚠️ |
    * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   checkIsSoterEnrolledInDevice: WeapiCrossPlatformAdapter['checkIsSoterEnrolledInDevice']
@@ -1187,7 +1187,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.checkIsSupportSoterAuthentication` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 支付宝 | 映射到 `my.checkIsSupportIfaaAuthentication` | ⚠️ |
    * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   checkIsSupportSoterAuthentication: WeapiCrossPlatformAdapter['checkIsSupportSoterAuthentication']

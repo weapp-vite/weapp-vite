@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：195，不支持：284
+总计：479，支持：197，不支持：282
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                                                          |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
@@ -33,8 +33,8 @@
 | `checkIsAddedToMyMiniProgram`                 | `checkIsAddedToMyMiniProgram`                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `checkIsOpenAccessibility`                    | `checkIsOpenAccessibility`                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `checkIsPictureInPictureActive`               | `checkIsPictureInPictureActive`               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
-| `checkIsSoterEnrolledInDevice`                | `checkIsSoterEnrolledInDevice`                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
-| `checkIsSupportSoterAuthentication`           | `checkIsSupportSoterAuthentication`           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
+| `checkIsSoterEnrolledInDevice`                | `checkIsIfaaEnrolledInDevice`                 | ✅   | `mapped`      | ✅       | 映射到 `my.checkIsIfaaEnrolledInDevice`，`speech` 模式按 unsupported 报错                                     |
+| `checkIsSupportSoterAuthentication`           | `checkIsSupportIfaaAuthentication`            | ✅   | `mapped`      | ✅       | 映射到 `my.checkIsSupportIfaaAuthentication`                                                                  |
 | `checkSession`                                | `checkSession`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `chooseAddress`                               | `chooseAddress`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                                                         |
 | `chooseContact`                               | `chooseContact`                               | ✅   | `native`      | ✅       | 直连 `my.chooseContact`                                                                                       |

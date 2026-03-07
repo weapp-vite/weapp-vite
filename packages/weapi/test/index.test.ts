@@ -331,6 +331,85 @@ describe('weapi', () => {
     })
   })
 
+  it('maps checkIsSoterEnrolledInDevice to strict-equivalent alipay ifaa api', async () => {
+    const checkIsIfaaEnrolledInDevice = vi.fn((options: any) => {
+      options.success?.({ isEnrolled: true, success: true })
+    })
+    const api = createWeapi({
+      adapter: {
+        checkIsIfaaEnrolledInDevice,
+      },
+      platform: 'alipay',
+    })
+
+    expect(api.resolveTarget('checkIsSoterEnrolledInDevice')).toMatchObject({
+      method: 'checkIsSoterEnrolledInDevice',
+      target: 'checkIsIfaaEnrolledInDevice',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+
+    const result = await api.checkIsSoterEnrolledInDevice({
+      checkAuthMode: 'fingerPrint',
+    } as any)
+
+    expect(checkIsIfaaEnrolledInDevice).toHaveBeenCalledWith(expect.objectContaining({
+      checkAuthMode: 'fingerPrint',
+    }))
+    expect(result).toMatchObject({
+      success: true,
+      isEnrolled: true,
+      errMsg: 'checkIsSoterEnrolledInDevice:ok',
+    })
+  })
+
+  it('treats speech mode as unsupported when mapping checkIsSoterEnrolledInDevice to alipay', async () => {
+    const checkIsIfaaEnrolledInDevice = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        checkIsIfaaEnrolledInDevice,
+      },
+      platform: 'alipay',
+    })
+
+    await expect(api.checkIsSoterEnrolledInDevice({
+      checkAuthMode: 'speech',
+    } as any)).rejects.toMatchObject({
+      errMsg: 'my.checkIsSoterEnrolledInDevice:fail method not supported',
+    })
+    expect(checkIsIfaaEnrolledInDevice).not.toHaveBeenCalled()
+  })
+
+  it('maps checkIsSupportSoterAuthentication to strict-equivalent alipay ifaa api', async () => {
+    const checkIsSupportIfaaAuthentication = vi.fn((options: any) => {
+      options.success?.({ supportMode: ['fingerPrint', 'facial'], success: true })
+    })
+    const api = createWeapi({
+      adapter: {
+        checkIsSupportIfaaAuthentication,
+      },
+      platform: 'alipay',
+    })
+
+    expect(api.resolveTarget('checkIsSupportSoterAuthentication')).toMatchObject({
+      method: 'checkIsSupportSoterAuthentication',
+      target: 'checkIsSupportIfaaAuthentication',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+
+    const result = await api.checkIsSupportSoterAuthentication()
+
+    expect(checkIsSupportIfaaAuthentication).toHaveBeenCalled()
+    expect(result).toMatchObject({
+      supportMode: ['fingerPrint', 'facial'],
+      success: true,
+      errMsg: 'checkIsSupportSoterAuthentication:ok',
+    })
+  })
+
   it('treats chooseAddress as unsupported for alipay without strict-equivalent api', async () => {
     const getAddress = vi.fn((options: any) => {
       options.success?.({ provinceName: 'Zhejiang' })
@@ -1404,8 +1483,6 @@ describe('weapi', () => {
     'checkIsAddedToMyMiniProgram',
     'checkIsOpenAccessibility',
     'checkIsPictureInPictureActive',
-    'checkIsSoterEnrolledInDevice',
-    'checkIsSupportSoterAuthentication',
   ])('treats %s as unsupported when no strict-equivalent target exists', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
@@ -1424,6 +1501,26 @@ describe('weapi', () => {
         errMsg: `${normalizedPlatform}.${methodName}:fail method not supported`,
       })
     }
+  })
+
+  it.each([
+    'checkIsSoterEnrolledInDevice',
+    'checkIsSupportSoterAuthentication',
+  ])('keeps %s unsupported for douyin in strict mode', async (methodName) => {
+    const api = createWeapi({
+      adapter: {},
+      platform: 'tt',
+    }) as Record<string, any>
+    expect(api.resolveTarget(methodName)).toMatchObject({
+      method: methodName,
+      target: methodName,
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api[methodName]({})).rejects.toMatchObject({
+      errMsg: `tt.${methodName}:fail method not supported`,
+    })
   })
 
   it.each([

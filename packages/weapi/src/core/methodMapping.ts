@@ -873,7 +873,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'checkIsSoterEnrolledInDevice',
     description: '检测设备是否录入 SOTER 信息。',
     wxStrategy: '直连 `wx.checkIsSoterEnrolledInDevice`',
-    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    alipayStrategy: '映射到 `my.checkIsIfaaEnrolledInDevice`，`speech` 模式按 unsupported 报错',
     douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
@@ -881,7 +881,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'checkIsSupportSoterAuthentication',
     description: '检测设备是否支持 SOTER 生物认证。',
     wxStrategy: '直连 `wx.checkIsSupportSoterAuthentication`',
-    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    alipayStrategy: '映射到 `my.checkIsSupportIfaaAuthentication`',
     douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
@@ -2235,6 +2235,35 @@ function mapRewardedAdInstance(result: any, args: unknown[] = []) {
   return nextRewardedAd
 }
 
+function mapCheckIsSoterEnrolledInDeviceArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return args
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return nextArgs
+  }
+  if (lastArg.checkAuthMode === 'speech') {
+    throw createNotSupportedError('checkIsSoterEnrolledInDevice', 'my')
+  }
+  return nextArgs
+}
+
+function mapSoterCheckResult(methodName: string, result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  if (Object.prototype.hasOwnProperty.call(result, 'errMsg')) {
+    return result
+  }
+  return {
+    ...result,
+    errMsg: `${methodName}:ok`,
+  }
+}
+
 function mapSaveFileResult(result: any) {
   if (!isPlainObject(result)) {
     return result
@@ -2613,10 +2642,13 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'checkIsPictureInPictureActive',
     },
     checkIsSoterEnrolledInDevice: {
-      target: 'checkIsSoterEnrolledInDevice',
+      target: 'checkIsIfaaEnrolledInDevice',
+      mapArgs: mapCheckIsSoterEnrolledInDeviceArgs,
+      mapResult: result => mapSoterCheckResult('checkIsSoterEnrolledInDevice', result),
     },
     checkIsSupportSoterAuthentication: {
-      target: 'checkIsSupportSoterAuthentication',
+      target: 'checkIsSupportIfaaAuthentication',
+      mapResult: result => mapSoterCheckResult('checkIsSupportSoterAuthentication', result),
     },
     openCard: {
       target: 'openCard',
