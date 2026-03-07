@@ -3,6 +3,7 @@ import { createNotSupportedError, hasCallbacks, isPlainObject } from './utils'
 
 export interface CallWithPromiseHooks {
   onOptions?: (options: Record<string, any>, nextArgs: unknown[]) => void
+  invoke?: (invoke: () => any) => void
   onInvokeResult?: (result: any) => void
   onInvokeError?: (error: unknown) => void
 }
@@ -61,8 +62,24 @@ export function callWithPromise(
     }
     try {
       hooks?.onOptions?.(options, nextArgs)
-      const invokeResult = method.apply(context, nextArgs)
-      hooks?.onInvokeResult?.(invokeResult)
+      const invoke = () => {
+        try {
+          const invokeResult = method.apply(context, nextArgs)
+          hooks?.onInvokeResult?.(invokeResult)
+          return invokeResult
+        }
+        catch (err) {
+          hooks?.onInvokeError?.(err)
+          reject(err)
+          return undefined
+        }
+      }
+      if (hooks?.invoke) {
+        hooks.invoke(invoke)
+      }
+      else {
+        invoke()
+      }
     }
     catch (err) {
       hooks?.onInvokeError?.(err)

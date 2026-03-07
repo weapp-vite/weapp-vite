@@ -263,6 +263,17 @@ interface CustomAdapter {
 
 const custom = createWeapi<CustomAdapter>()
 const strictCustom = createWeapi<CustomAdapter>({ strictCompatibility: true })
+const strictNetwork = createWeapi({
+  network: {
+    overflowPolicy: 'strict',
+    maxQueueSize: 32,
+  },
+})
+const queueNetwork = createWeapi({
+  network: {
+    overflowPolicy: 'queue',
+  },
+})
 
 const fooPromise = custom.foo({})
 expectType<Promise<{ ok: true }>>(fooPromise)
@@ -277,3 +288,5 @@ expectType<number>(fooReturn)
 expectType<number>(custom.bazSync('ok'))
 expectType<void>(custom.onReady(() => {}))
 expectType<void>(strictCustom.onReady(() => {}))
+expectType<string | undefined>(strictNetwork.platform)
+expectType<string | undefined>(queueNetwork.platform)

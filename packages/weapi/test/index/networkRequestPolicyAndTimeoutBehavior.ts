@@ -99,7 +99,58 @@ export function registerWeapiIndexNetworkRequestPolicyAndTimeoutBehaviorTests() 
     }))
   })
 
-  it('limits request/upload/download total concurrency to 10', () => {
+  it('queues request/upload/download calls when concurrency exceeds 10 by default', () => {
+    const pending: any[] = []
+    const request = vi.fn((options: any) => {
+      pending.push(options)
+    })
+    const overflowSuccess = vi.fn()
+    const api = createTestWeapi({
+      adapter: { request },
+      platform: 'wx',
+    })
+
+    for (let i = 0; i < 10; i += 1) {
+      api.request({ url: `https://example.com/${i}`, success() {} })
+    }
+    api.request({ url: 'https://example.com/overflow', success: overflowSuccess })
+    expect(request).toHaveBeenCalledTimes(10)
+
+    pending[0].success?.({ ok: true })
+    expect(request).toHaveBeenCalledTimes(11)
+    pending[10].success?.({ ok: 'overflow' })
+    expect(overflowSuccess).toHaveBeenCalledWith(expect.objectContaining({
+      ok: 'overflow',
+    }))
+  })
+
+  it('queues connectSocket calls when concurrency exceeds 5 by default', () => {
+    const pending: any[] = []
+    const connectSocket = vi.fn((options: any) => {
+      pending.push(options)
+      return {}
+    })
+    const overflowSuccess = vi.fn()
+    const api = createTestWeapi({
+      adapter: { connectSocket },
+      platform: 'wx',
+    })
+
+    for (let i = 0; i < 5; i += 1) {
+      api.connectSocket({ url: `wss://example.com/${i}`, success() {} })
+    }
+    api.connectSocket({ url: 'wss://example.com/overflow', success: overflowSuccess })
+    expect(connectSocket).toHaveBeenCalledTimes(5)
+
+    pending[0].success?.({ ok: true })
+    expect(connectSocket).toHaveBeenCalledTimes(6)
+    pending[5].success?.({ ok: 'overflow' })
+    expect(overflowSuccess).toHaveBeenCalledWith(expect.objectContaining({
+      ok: 'overflow',
+    }))
+  })
+
+  it('fails overflow request calls in strict overflow policy mode', () => {
     const pending: any[] = []
     const request = vi.fn((options: any) => {
       pending.push(options)
@@ -109,6 +160,9 @@ export function registerWeapiIndexNetworkRequestPolicyAndTimeoutBehaviorTests() 
     const api = createTestWeapi({
       adapter: { request },
       platform: 'wx',
+      network: {
+        overflowPolicy: 'strict',
+      },
     })
 
     for (let i = 0; i < 10; i += 1) {
@@ -122,40 +176,7 @@ export function registerWeapiIndexNetworkRequestPolicyAndTimeoutBehaviorTests() 
     expect(complete).toHaveBeenCalledWith(expect.objectContaining({
       errMsg: 'wx.request:fail exceed max concurrency limit 10',
     }))
-
-    for (const options of pending) {
-      options.success?.({ ok: true })
-    }
-  })
-
-  it('limits connectSocket concurrency to 5', () => {
-    const pending: any[] = []
-    const connectSocket = vi.fn((options: any) => {
-      pending.push(options)
-      return {}
-    })
-    const fail = vi.fn()
-    const complete = vi.fn()
-    const api = createTestWeapi({
-      adapter: { connectSocket },
-      platform: 'wx',
-    })
-
-    for (let i = 0; i < 5; i += 1) {
-      api.connectSocket({ url: `wss://example.com/${i}`, success() {} })
-    }
-    api.connectSocket({ url: 'wss://example.com/overflow', fail, complete })
-
-    expect(fail).toHaveBeenCalledWith(expect.objectContaining({
-      errMsg: 'wx.connectSocket:fail exceed max concurrency limit 5',
-    }))
-    expect(complete).toHaveBeenCalledWith(expect.objectContaining({
-      errMsg: 'wx.connectSocket:fail exceed max concurrency limit 5',
-    }))
-
-    for (const options of pending) {
-      options.success?.({ ok: true })
-    }
+    expect(request).toHaveBeenCalledTimes(10)
   })
 
   it('fails running request with interrupted after app goes background for 5s', async () => {
