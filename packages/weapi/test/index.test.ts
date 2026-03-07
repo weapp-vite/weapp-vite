@@ -826,8 +826,15 @@ describe('weapi', () => {
     expect(previewImage).not.toHaveBeenCalled()
   })
 
-  it('treats rewarded ad api and live contexts as unsupported for alipay', async () => {
-    const createRewardedAd = vi.fn(() => ({ show: vi.fn() }))
+  it('maps rewarded ad api to strict-equivalent alipay target and keeps live contexts unsupported', async () => {
+    const rewardedAd = {
+      load: vi.fn(),
+      show: vi.fn(),
+      destroy: vi.fn(),
+      onClose: vi.fn(),
+      offClose: vi.fn(),
+    }
+    const createRewardedAd = vi.fn(() => rewardedAd)
     const createVideoContext = vi.fn(() => ({ play: vi.fn() }))
     const api = createWeapi({
       adapter: {
@@ -839,15 +846,33 @@ describe('weapi', () => {
 
     expect(api.resolveTarget('createRewardedVideoAd')).toMatchObject({
       method: 'createRewardedVideoAd',
-      target: 'createRewardedVideoAd',
-      supportLevel: 'unsupported',
-      supported: false,
-      semanticAligned: false,
+      target: 'createRewardedAd',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
     })
-    await expect(api.createRewardedVideoAd({ adUnitId: 'adunit-2' } as any)).rejects.toMatchObject({
+    const rewarded = api.createRewardedVideoAd({ adUnitId: 'adunit-2' } as any)
+    rewarded.load()
+    rewarded.show({ from: 'test' })
+    rewarded.destroy()
+    expect(createRewardedAd).toHaveBeenCalledWith('adunit-2')
+    expect(rewardedAd.load).toHaveBeenCalledWith({
+      adUnitId: 'adunit-2',
+    })
+    expect(rewardedAd.show).toHaveBeenCalledWith({
+      adUnitId: 'adunit-2',
+      from: 'test',
+    })
+    expect(rewardedAd.destroy).toHaveBeenCalledWith({
+      adUnitId: 'adunit-2',
+    })
+
+    await expect(api.createRewardedVideoAd({
+      adUnitId: 'adunit-2',
+      multiton: true,
+    } as any)).rejects.toMatchObject({
       errMsg: 'my.createRewardedVideoAd:fail method not supported',
     })
-    expect(createRewardedAd).not.toHaveBeenCalled()
     expect(createVideoContext).not.toHaveBeenCalled()
 
     expect(api.resolveTarget('createInterstitialAd')).toMatchObject({
@@ -2229,7 +2254,7 @@ describe('weapi', () => {
       { method: 'requestVirtualPayment', my: 'requestVirtualPayment', tt: 'requestVirtualPayment', mySupported: false, ttSupported: false },
       { method: 'previewMedia', my: 'previewMedia', tt: 'previewMedia', mySupported: false, ttSupported: false },
       { method: 'createInterstitialAd', my: 'createInterstitialAd', tt: 'createInterstitialAd', mySupported: false },
-      { method: 'createRewardedVideoAd', my: 'createRewardedVideoAd', tt: 'createRewardedVideoAd', mySupported: false, ttSupported: false },
+      { method: 'createRewardedVideoAd', my: 'createRewardedAd', tt: 'createRewardedVideoAd', ttSupported: false },
       { method: 'createLivePlayerContext', my: 'createLivePlayerContext', tt: 'createLivePlayerContext', mySupported: false },
       { method: 'createLivePusherContext', my: 'createLivePusherContext', tt: 'createLivePusherContext', mySupported: false, ttSupported: false },
       { method: 'getVideoInfo', my: 'getVideoInfo', tt: 'getVideoInfo', ttSupported: false },

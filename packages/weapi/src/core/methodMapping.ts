@@ -4,7 +4,7 @@ import { createNotSupportedError, isPlainObject } from './utils.ts'
 export interface WeapiMethodMappingRule {
   target: string
   mapArgs?: (args: unknown[]) => unknown[]
-  mapResult?: (result: any) => any
+  mapResult?: (result: any, args?: unknown[]) => any
 }
 
 export type WeapiSupportLevel = 'native' | 'mapped' | 'fallback' | 'unsupported'
@@ -193,7 +193,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'createRewardedVideoAd',
     description: '创建激励视频广告实例。',
     wxStrategy: '直连 `wx.createRewardedVideoAd`',
-    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    alipayStrategy: '映射到 `my.createRewardedAd`，并将 `load/show/destroy` 参数对齐为微信调用方式',
     douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
@@ -2175,6 +2175,66 @@ function mapSaveFileArgs(args: unknown[]) {
   return nextArgs
 }
 
+function mapCreateRewardedVideoAdArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return args
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return nextArgs
+  }
+  if (Object.prototype.hasOwnProperty.call(lastArg, 'multiton') && lastArg.multiton === true) {
+    throw createNotSupportedError('createRewardedVideoAd', 'my')
+  }
+  if (Object.prototype.hasOwnProperty.call(lastArg, 'disableFallbackSharePage') && lastArg.disableFallbackSharePage === true) {
+    throw createNotSupportedError('createRewardedVideoAd', 'my')
+  }
+  const adUnitId = lastArg.adUnitId
+  if (typeof adUnitId === 'string' && adUnitId.length > 0) {
+    nextArgs[lastIndex] = adUnitId
+  }
+  return nextArgs
+}
+
+function mapRewardedAdInstance(result: any, args: unknown[] = []) {
+  if (typeof result !== 'object' || result === null) {
+    return result
+  }
+  const adUnitIdArg = args.length > 0 ? args[args.length - 1] : undefined
+  const adUnitId = typeof adUnitIdArg === 'string' ? adUnitIdArg : undefined
+  if (!adUnitId) {
+    return result
+  }
+  const rewardedAd = result as Record<string, any>
+  const wrapMethod = (name: 'destroy' | 'load' | 'show') => {
+    const method = rewardedAd[name]
+    if (typeof method !== 'function') {
+      return method
+    }
+    return (options?: unknown) => {
+      if (isPlainObject(options)) {
+        return method.call(rewardedAd, {
+          ...options,
+          adUnitId,
+        })
+      }
+      if (options === undefined) {
+        return method.call(rewardedAd, {
+          adUnitId,
+        })
+      }
+      return method.call(rewardedAd, options)
+    }
+  }
+  const nextRewardedAd = Object.create(rewardedAd) as Record<string, any>
+  nextRewardedAd.destroy = wrapMethod('destroy')
+  nextRewardedAd.load = wrapMethod('load')
+  nextRewardedAd.show = wrapMethod('show')
+  return nextRewardedAd
+}
+
 function mapSaveFileResult(result: any) {
   if (!isPlainObject(result)) {
     return result
@@ -2343,7 +2403,9 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'createInterstitialAd',
     },
     createRewardedVideoAd: {
-      target: 'createRewardedVideoAd',
+      target: 'createRewardedAd',
+      mapArgs: mapCreateRewardedVideoAdArgs,
+      mapResult: mapRewardedAdInstance,
     },
     createLivePlayerContext: {
       target: 'createLivePlayerContext',
