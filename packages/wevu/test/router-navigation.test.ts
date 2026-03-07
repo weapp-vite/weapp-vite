@@ -2403,6 +2403,18 @@ describe('router navigation helpers', () => {
         path: '/pages/home/index',
       },
     ])
+    expect(Object.isFrozen(router.options)).toBe(true)
+    expect(Object.isFrozen(router.options.routes)).toBe(true)
+    expect(Object.isFrozen(router.options.namedRoutes)).toBe(true)
+    expect(() => {
+      ;(router.options as any).maxRedirects = 99
+    }).toThrow(TypeError)
+    expect(() => {
+      ;(router.options.routes as any).push({
+        name: 'hacked',
+        path: '/pages/hacked/index',
+      })
+    }).toThrow(TypeError)
   })
 
   it('push auto-switches to tabBar entries', async () => {
