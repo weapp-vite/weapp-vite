@@ -98,7 +98,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
 ): WeapiInstance<TAdapter> {
   let adapter: TAdapter | undefined = options.adapter
   let platformName: string | undefined = normalizePlatformName(options.platform)
-  const allowFallback = options.strictCompatibility !== true
+  const allowFallback = false
   const cache = new Map<PropertyKey, any>()
   const syntheticWindowResizeListeners = new Set<(result: any) => void>()
   let syntheticWindowResizeBridgeReady = false
