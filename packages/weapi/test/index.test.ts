@@ -847,6 +847,99 @@ describe('weapi', () => {
     expect(requestSubscribeMessage).not.toHaveBeenCalled()
   })
 
+  it('treats addPhoneCalendar as unsupported for alipay without aliasing addPhoneContact', async () => {
+    const addPhoneContact = vi.fn((options: any) => {
+      options.success?.({ errMsg: 'addPhoneContact:ok' })
+    })
+    const api = createWeapi({
+      adapter: {
+        addPhoneContact,
+      },
+      platform: 'alipay',
+    }) as Record<string, any>
+
+    expect(api.resolveTarget('addPhoneCalendar')).toMatchObject({
+      method: 'addPhoneCalendar',
+      target: 'addPhoneCalendar',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.addPhoneCalendar({
+      title: 'demo',
+      startTime: Date.now(),
+      endTime: Date.now() + 3600000,
+    })).rejects.toMatchObject({
+      errMsg: 'my.addPhoneCalendar:fail method not supported',
+    })
+    expect(addPhoneContact).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'onWifiConnected',
+    'offWifiConnected',
+    'setWifiList',
+  ])('treats %s as unsupported for douyin without aliasing near wifi apis', async (methodName) => {
+    const onGetWifiList = vi.fn()
+    const offGetWifiList = vi.fn()
+    const getConnectedWifi = vi.fn()
+    const getWifiList = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        onGetWifiList,
+        offGetWifiList,
+        getConnectedWifi,
+        getWifiList,
+      },
+      platform: 'tt',
+    }) as Record<string, any>
+
+    expect(api.resolveTarget(methodName)).toMatchObject({
+      method: methodName,
+      target: methodName,
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+
+    const payload = methodName === 'setWifiList' ? { wifiList: [] } : vi.fn()
+    await expect(api[methodName](payload)).rejects.toMatchObject({
+      errMsg: `tt.${methodName}:fail method not supported`,
+    })
+
+    expect(onGetWifiList).not.toHaveBeenCalled()
+    expect(offGetWifiList).not.toHaveBeenCalled()
+    expect(getConnectedWifi).not.toHaveBeenCalled()
+    expect(getWifiList).not.toHaveBeenCalled()
+  })
+
+  it('treats chooseContact as unsupported for douyin without aliasing chooseAddress', async () => {
+    const chooseAddress = vi.fn((options: any) => {
+      options.success?.({
+        userName: 'demo',
+        telNumber: '13800000000',
+      })
+    })
+    const api = createWeapi({
+      adapter: {
+        chooseAddress,
+      },
+      platform: 'tt',
+    }) as Record<string, any>
+
+    expect(api.resolveTarget('chooseContact')).toMatchObject({
+      method: 'chooseContact',
+      target: 'chooseContact',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.chooseContact()).rejects.toMatchObject({
+      errMsg: 'tt.chooseContact:fail method not supported',
+    })
+    expect(chooseAddress).not.toHaveBeenCalled()
+  })
+
   it.each([
     { platform: 'alipay', normalizedPlatform: 'my' },
     { platform: 'tt', normalizedPlatform: 'tt' },
