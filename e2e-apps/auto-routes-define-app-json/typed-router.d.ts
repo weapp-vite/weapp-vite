@@ -60,7 +60,7 @@ declare module 'weapp-vite/auto-routes' {
     export default routes;
 }
 
-declare module 'wevu' {
+declare module 'wevu/router' {
     interface WevuTypedRouterRouteMap {
         entries: import('weapp-vite/auto-routes').AutoRoutesEntries[number];
     }
