@@ -29,6 +29,8 @@ export function shouldSkipPromise(name: string) {
   return isSyncMethod(name)
     || isEventMethod(name)
     || name === 'createVKSession'
+    || name === 'createCameraContext'
+    || name === 'cancelIdleCallback'
     || name === 'nextTick'
     || name === 'getLogManager'
     || name === 'reportAnalytics'

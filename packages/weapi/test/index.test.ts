@@ -751,6 +751,116 @@ describe('weapi', () => {
     })
   })
 
+  it.each([
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('provides synthetic batchSetStorage/batchGetStorage for $platform', async ({ platform }) => {
+    const api = createWeapi({
+      adapter: {},
+      platform,
+    })
+
+    await expect(api.batchSetStorage({
+      keyValueList: [
+        { key: 'token', data: 'abc' },
+        { key: 'count', data: 2 },
+      ],
+    } as any)).resolves.toMatchObject({
+      errMsg: 'batchSetStorage:ok',
+    })
+    await expect(api.batchGetStorage({
+      keyList: ['token', 'count'],
+    } as any)).resolves.toMatchObject({
+      dataList: [
+        { key: 'token', data: 'abc' },
+        { key: 'count', data: 2 },
+      ],
+      errMsg: 'batchGetStorage:ok',
+    })
+  })
+
+  it.each([
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('provides synthetic batchSetStorageSync/batchGetStorageSync for $platform', ({ platform }) => {
+    const api = createWeapi({
+      adapter: {},
+      platform,
+    })
+
+    const setResult = api.batchSetStorageSync({
+      keyValueList: [
+        { key: 'a', data: 1 },
+        { key: 'b', data: 2 },
+      ],
+    } as any)
+    const getResult = api.batchGetStorageSync({
+      keyList: ['a', 'b'],
+    } as any)
+    expect(setResult).toMatchObject({
+      errMsg: 'batchSetStorageSync:ok',
+    })
+    expect(getResult).toMatchObject({
+      dataList: [
+        { key: 'a', data: 1 },
+        { key: 'b', data: 2 },
+      ],
+      errMsg: 'batchGetStorageSync:ok',
+    })
+  })
+
+  it.each([
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('provides synthetic createCameraContext for $platform', async ({ platform }) => {
+    const api = createWeapi({
+      adapter: {},
+      platform,
+    })
+    const context = api.createCameraContext()
+    expect(context).toMatchObject({
+      takePhoto: expect.any(Function),
+      startRecord: expect.any(Function),
+      stopRecord: expect.any(Function),
+    })
+    await expect(context.takePhoto()).resolves.toMatchObject({
+      errMsg: 'takePhoto:ok',
+    })
+  })
+
+  it.each([
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('provides synthetic cancelIdleCallback for $platform', ({ platform }) => {
+    const api = createWeapi({
+      adapter: {},
+      platform,
+    })
+    expect(api.cancelIdleCallback(1 as any)).toBeUndefined()
+  })
+
+  it('provides synthetic offMemoryWarning for douyin', () => {
+    let memoryWarningListener: ((res: any) => void) | undefined
+    const onMemoryWarning = vi.fn((listener: (res: any) => void) => {
+      memoryWarningListener = listener
+    })
+    const callback = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        onMemoryWarning,
+      },
+      platform: 'tt',
+    })
+
+    api.onMemoryWarning(callback)
+    expect(onMemoryWarning).toHaveBeenCalledTimes(1)
+    memoryWarningListener?.({ level: 10 })
+    expect(callback).toHaveBeenCalledTimes(1)
+    expect(api.offMemoryWarning(callback)).toBeUndefined()
+    memoryWarningListener?.({ level: 5 })
+    expect(callback).toHaveBeenCalledTimes(1)
+  })
+
   it('maps showToast icon error to fail for douyin', async () => {
     const showToast = vi.fn((options: any) => {
       options.success?.({ errMsg: 'showToast:ok' })
@@ -1409,6 +1519,13 @@ describe('weapi', () => {
       { method: 'joinVoIPChat', my: 'joinVoIPChat', tt: 'joinVoIPChat' },
       { method: 'openDocument', my: 'openDocument', tt: 'openDocument' },
       { method: 'saveVideoToPhotosAlbum', my: 'saveVideoToPhotosAlbum', tt: 'saveImageToPhotosAlbum' },
+      { method: 'batchSetStorage', my: 'batchSetStorage', tt: 'batchSetStorage' },
+      { method: 'batchGetStorage', my: 'batchGetStorage', tt: 'batchGetStorage' },
+      { method: 'batchSetStorageSync', my: 'batchSetStorageSync', tt: 'batchSetStorageSync' },
+      { method: 'batchGetStorageSync', my: 'batchGetStorageSync', tt: 'batchGetStorageSync' },
+      { method: 'createCameraContext', my: 'createCameraContext', tt: 'createCameraContext' },
+      { method: 'offMemoryWarning', my: 'offMemoryWarning', tt: 'offMemoryWarning' },
+      { method: 'cancelIdleCallback', my: 'cancelIdleCallback', tt: 'cancelIdleCallback' },
       { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'openAppAuthorizeSetting', my: 'openSetting', tt: 'openSetting' },
       { method: 'pluginLogin', my: 'getAuthCode', tt: 'login' },
@@ -1505,6 +1622,13 @@ describe('weapi', () => {
       'joinVoIPChat',
       'openDocument',
       'saveVideoToPhotosAlbum',
+      'batchSetStorage',
+      'batchGetStorage',
+      'batchSetStorageSync',
+      'batchGetStorageSync',
+      'createCameraContext',
+      'offMemoryWarning',
+      'cancelIdleCallback',
       'chooseImage',
       'chooseMedia',
       'chooseMessageFile',

@@ -861,6 +861,83 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 映射到 `tt.saveImageToPhotosAlbum` | ⚠️ |
    */
   saveVideoToPhotosAlbum: WeapiCrossPlatformAdapter['saveVideoToPhotosAlbum']
+
+  /**
+   * 批量异步写入缓存。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.batchSetStorage` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，逐项转调 `my.setStorage` | ⚠️ |
+   * | 抖音 | 使用内置 shim，逐项转调 `tt.setStorage` | ⚠️ |
+   */
+  batchSetStorage: WeapiCrossPlatformAdapter['batchSetStorage']
+
+  /**
+   * 批量异步读取缓存。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.batchGetStorage` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，逐项转调 `my.getStorage` | ⚠️ |
+   * | 抖音 | 使用内置 shim，逐项转调 `tt.getStorage` | ⚠️ |
+   */
+  batchGetStorage: WeapiCrossPlatformAdapter['batchGetStorage']
+
+  /**
+   * 批量同步写入缓存。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.batchSetStorageSync` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，逐项转调 `my.setStorageSync` | ⚠️ |
+   * | 抖音 | 使用内置 shim，逐项转调 `tt.setStorageSync` | ⚠️ |
+   */
+  batchSetStorageSync: WeapiCrossPlatformAdapter['batchSetStorageSync']
+
+  /**
+   * 批量同步读取缓存。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.batchGetStorageSync` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，逐项转调 `my.getStorageSync` | ⚠️ |
+   * | 抖音 | 使用内置 shim，逐项转调 `tt.getStorageSync` | ⚠️ |
+   */
+  batchGetStorageSync: WeapiCrossPlatformAdapter['batchGetStorageSync']
+
+  /**
+   * 创建相机上下文对象。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.createCameraContext` | ⚠️ |
+   * | 支付宝 | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） | ⚠️ |
+   * | 抖音 | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） | ⚠️ |
+   */
+  createCameraContext: WeapiCrossPlatformAdapter['createCameraContext']
+
+  /**
+   * 取消内存不足告警监听。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offMemoryWarning` | ⚠️ |
+   * | 支付宝 | 直连 `my.offMemoryWarning` | ⚠️ |
+   * | 抖音 | 使用内置 shim，配合 `tt.onMemoryWarning` 实现监听解绑 | ⚠️ |
+   */
+  offMemoryWarning: WeapiCrossPlatformAdapter['offMemoryWarning']
+
+  /**
+   * 取消空闲回调。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.cancelIdleCallback` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  cancelIdleCallback: WeapiCrossPlatformAdapter['cancelIdleCallback']
   // @generated weapi-method-docs:end
 }
 
