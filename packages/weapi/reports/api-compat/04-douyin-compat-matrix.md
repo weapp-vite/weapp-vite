@@ -53,7 +53,7 @@
 | `closeBluetoothAdapter`                       | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `closeSocket`                                 | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `compressImage`                               | `compressImage`                   | ✅   | `native`   | ✅       | 直连 `tt.compressImage`                                               |
-| `compressVideo`                               | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
+| `compressVideo`                               | `compressVideo`                   | ✅   | `mapped`   | ✅       | 使用内置 shim（回传原始文件路径）                                     |
 | `connectSocket`                               | `connectSocket`                   | ✅   | `native`   | ✅       | 直连 `tt.connectSocket`                                               |
 | `connectWifi`                                 | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `createAnimation`                             | `createAnimation`                 | ✅   | `native`   | ✅       | 直连 `tt.createAnimation`                                             |
@@ -82,7 +82,7 @@
 | `createUDPSocket`                             | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `createVideoContext`                          | `createVideoContext`              | ✅   | `native`   | ✅       | 直连 `tt.createVideoContext`                                          |
 | `createVideoDecoder`                          | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
-| `createVKSession`                             | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
+| `createVKSession`                             | `createVKSession`                 | ✅   | `mapped`   | ✅       | 使用内置 VKSession shim（对齐 `start/stop/destroy`）                  |
 | `createWebAudioContext`                       | `createInnerAudioContext`         | ✅   | `mapped`   | ✅       | 映射到 `tt.createInnerAudioContext`                                   |
 | `createWorker`                                | `createWorker`                    | ✅   | `native`   | ✅       | 直连 `tt.createWorker`                                                |
 | `cropImage`                                   | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
@@ -150,7 +150,7 @@
 | `getSecureElementPasses`                      | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `getSelectedTextRange`                        | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `getSetting`                                  | `getSetting`                      | ✅   | `native`   | ✅       | 直连 `tt.getSetting`                                                  |
-| `getShareInfo`                                | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
+| `getShareInfo`                                | `getShareInfo`                    | ✅   | `mapped`   | ✅       | 使用内置 shim（补齐 `encryptedData/iv`）                              |
 | `getShowSplashAdStatus`                       | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `getSkylineInfo`                              | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `getSkylineInfoSync`                          | `getSystemInfoSync`               | ✅   | `fallback` | ❌       | 回退映射到 `tt.getSystemInfoSync`（通用兜底）                         |
@@ -183,7 +183,7 @@
 | `isBluetoothDevicePaired`                     | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `isVKSupport`                                 | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `join1v1Chat`                                 | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
-| `joinVoIPChat`                                | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
+| `joinVoIPChat`                                | `joinVoIPChat`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                 |
 | `loadBuiltInFontFace`                         | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `loadFontFace`                                | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `login`                                       | `login`                           | ✅   | `mapped`   | ✅       | 直连 `tt.login`                                                       |
@@ -336,8 +336,8 @@
 | `openChannelsLiveNoticeInfo`                  | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `openChannelsUserProfile`                     | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `openChatTool`                                | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
-| `openCustomerServiceChat`                     | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
-| `openDocument`                                | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
+| `openCustomerServiceChat`                     | `openCustomerServiceChat`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                 |
+| `openDocument`                                | `openDocument`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                 |
 | `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`           | ✅   | `mapped`   | ✅       | 映射到 `tt.navigateToMiniProgram`                                     |
 | `openHKOfflinePayView`                        | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `openInquiriesTopic`                          | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
@@ -353,7 +353,7 @@
 | `openStoreCouponDetail`                       | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `openStoreOrderDetail`                        | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `openSystemBluetoothSetting`                  | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
-| `openVideoEditor`                             | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
+| `openVideoEditor`                             | `openVideoEditor`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                 |
 | `pageScrollTo`                                | `pageScrollTo`                    | ✅   | `native`   | ✅       | 直连 `tt.pageScrollTo`                                                |
 | `pauseBackgroundAudio`                        | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `pauseVoice`                                  | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
@@ -398,7 +398,7 @@
 | `rewriteRoute`                                | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `saveFileToDisk`                              | `saveFile`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.saveFile`                                                  |
 | `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`          | ✅   | `native`   | ✅       | 直连 `tt.saveImageToPhotosAlbum`                                      |
-| `saveVideoToPhotosAlbum`                      | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
+| `saveVideoToPhotosAlbum`                      | `saveImageToPhotosAlbum`          | ✅   | `mapped`   | ✅       | 映射到 `tt.saveImageToPhotosAlbum`                                    |
 | `scanCode`                                    | `scanCode`                        | ✅   | `mapped`   | ✅       | 直连 `tt.scanCode`                                                    |
 | `seekBackgroundAudio`                         | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |
 | `selectGroupMembers`                          | `hideToast`                       | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                 |

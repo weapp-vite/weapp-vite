@@ -15,23 +15,23 @@
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
 | 支付宝可按微信命名调用的方法数   |  479 |
-| 支付宝语义对齐方法数             |  229 |
-| 支付宝 fallback 方法数           |  250 |
+| 支付宝语义对齐方法数             |  235 |
+| 支付宝 fallback 方法数           |  244 |
 | 抖音可按微信命名调用的方法数     |  479 |
-| 抖音语义对齐方法数               |  167 |
-| 抖音 fallback 方法数             |  312 |
+| 抖音语义对齐方法数               |  175 |
+| 抖音 fallback 方法数             |  304 |
 | 三端可调用完全对齐方法数         |  479 |
-| 三端语义完全对齐方法数           |  165 |
+| 三端语义完全对齐方法数           |  173 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           479 |             229 |             250 |      479 |      100.00% |         47.81% |
-| 抖音小程序 (`tt`)             |           479 |             167 |             312 |      479 |      100.00% |         34.86% |
+| 支付宝小程序 (`my`)           |           479 |             235 |             244 |      479 |      100.00% |         49.06% |
+| 抖音小程序 (`tt`)             |           479 |             175 |             304 |      479 |      100.00% |         36.53% |
 | 三端可调用完全对齐 (wx/my/tt) |           479 |               - |               - |      479 |      100.00% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             165 |               - |      479 |            - |         34.45% |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             173 |               - |      479 |            - |         36.12% |
 
 ## 核心差异映射（手工规则）
 
@@ -96,6 +96,14 @@
 | `onWindowResize`                  | 直连 `wx.onWindowResize`                            | 使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听      | 直连 `tt.onWindowResize`                                              |
 | `offWindowResize`                 | 直连 `wx.offWindowResize`                           | 使用内置 shim，移除 `onWindowResize` 注册回调                       | 直连 `tt.offWindowResize`                                             |
 | `reportAnalytics`                 | 直连 `wx.reportAnalytics`                           | 使用内置 no-op shim（保持调用不抛错）                               | 直连 `tt.reportAnalytics`                                             |
+| `openCustomerServiceChat`         | 直连 `wx.openCustomerServiceChat`                   | 使用内置 no-op shim（保持调用不抛错）                               | 使用内置 no-op shim（保持调用不抛错）                                 |
+| `createVKSession`                 | 直连 `wx.createVKSession`                           | 使用内置 VKSession shim（对齐 `start/stop/destroy`）                | 使用内置 VKSession shim（对齐 `start/stop/destroy`）                  |
+| `compressVideo`                   | 直连 `wx.compressVideo`                             | 使用内置 shim（回传原始文件路径）                                   | 使用内置 shim（回传原始文件路径）                                     |
+| `openVideoEditor`                 | 直连 `wx.openVideoEditor`                           | 使用内置 no-op shim（保持调用不抛错）                               | 使用内置 no-op shim（保持调用不抛错）                                 |
+| `getShareInfo`                    | 直连 `wx.getShareInfo`                              | 使用内置 shim（补齐 `encryptedData/iv`）                            | 使用内置 shim（补齐 `encryptedData/iv`）                              |
+| `joinVoIPChat`                    | 直连 `wx.joinVoIPChat`                              | 使用内置 no-op shim（保持调用不抛错）                               | 使用内置 no-op shim（保持调用不抛错）                                 |
+| `openDocument`                    | 直连 `wx.openDocument`                              | 直连 `my.openDocument`                                              | 使用内置 no-op shim（保持调用不抛错）                                 |
+| `saveVideoToPhotosAlbum`          | 直连 `wx.saveVideoToPhotosAlbum`                    | 直连 `my.saveVideoToPhotosAlbum`                                    | 映射到 `tt.saveImageToPhotosAlbum`                                    |
 
 ## 已执行验证
 
