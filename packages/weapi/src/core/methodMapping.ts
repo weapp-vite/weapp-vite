@@ -1177,7 +1177,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'closeBLEConnection',
     description: '断开低功耗蓝牙连接。',
     wxStrategy: '直连 `wx.closeBLEConnection`',
-    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    alipayStrategy: '`deviceId` 对齐后映射到 `my.disconnectBLEDevice`，并将 `errorCode/errorMessage` 映射为 `errCode/errMsg`',
     douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
@@ -1185,7 +1185,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'createBLEConnection',
     description: '创建低功耗蓝牙连接。',
     wxStrategy: '直连 `wx.createBLEConnection`',
-    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    alipayStrategy: '`deviceId/timeout` 对齐后映射到 `my.connectBLEDevice`，并将 `error/errorMessage` 映射为 `errCode/errMsg`',
     douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
@@ -2264,6 +2264,51 @@ function mapSoterCheckResult(methodName: string, result: any) {
   }
 }
 
+function toNumberCode(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) {
+      return parsed
+    }
+  }
+  return undefined
+}
+
+function mapBleConnectionResult(methodName: 'createBLEConnection' | 'closeBLEConnection', codeKey: 'error' | 'errorCode', result: any) {
+  if (!isPlainObject(result)) {
+    return result
+  }
+  const nextResult = {
+    ...result,
+  } as Record<string, any>
+  if (!Object.prototype.hasOwnProperty.call(nextResult, 'errCode')) {
+    const code = toNumberCode(nextResult[codeKey])
+    if (typeof code === 'number') {
+      nextResult.errCode = code
+    }
+  }
+  if (!Object.prototype.hasOwnProperty.call(nextResult, 'errMsg')) {
+    if (typeof nextResult.errorMessage === 'string' && nextResult.errorMessage.length > 0) {
+      nextResult.errMsg = nextResult.errorMessage
+    }
+    else if (nextResult.errCode === 0) {
+      nextResult.errMsg = `${methodName}:ok`
+    }
+  }
+  return nextResult
+}
+
+function mapCreateBleConnectionResult(result: any) {
+  return mapBleConnectionResult('createBLEConnection', 'error', result)
+}
+
+function mapCloseBleConnectionResult(result: any) {
+  return mapBleConnectionResult('closeBLEConnection', 'errorCode', result)
+}
+
 function mapSaveFileResult(result: any) {
   if (!isPlainObject(result)) {
     return result
@@ -2759,10 +2804,12 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'choosePoi',
     },
     closeBLEConnection: {
-      target: 'closeBLEConnection',
+      target: 'disconnectBLEDevice',
+      mapResult: mapCloseBleConnectionResult,
     },
     createBLEConnection: {
-      target: 'createBLEConnection',
+      target: 'connectBLEDevice',
+      mapResult: mapCreateBleConnectionResult,
     },
     cropImage: {
       target: 'cropImage',

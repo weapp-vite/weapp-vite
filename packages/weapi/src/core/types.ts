@@ -1594,7 +1594,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.closeBLEConnection` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 支付宝 | `deviceId` 对齐后映射到 `my.disconnectBLEDevice`，并将 `errorCode/errorMessage` 映射为 `errCode/errMsg` | ⚠️ |
    * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   closeBLEConnection: WeapiCrossPlatformAdapter['closeBLEConnection']
@@ -1605,7 +1605,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.createBLEConnection` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 支付宝 | `deviceId/timeout` 对齐后映射到 `my.connectBLEDevice`，并将 `error/errorMessage` 映射为 `errCode/errMsg` | ⚠️ |
    * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   createBLEConnection: WeapiCrossPlatformAdapter['createBLEConnection']

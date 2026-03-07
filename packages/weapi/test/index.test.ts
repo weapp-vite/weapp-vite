@@ -514,12 +514,12 @@ describe('weapi', () => {
     expect(chooseImage).not.toHaveBeenCalled()
   })
 
-  it('treats createBLEConnection/closeBLEConnection as unsupported for alipay without strict-equivalent api', async () => {
+  it('maps createBLEConnection/closeBLEConnection to strict-equivalent alipay ble methods', async () => {
     const connectBLEDevice = vi.fn((options: any) => {
-      options.success?.({ error: '0', errorMessage: 'ok' })
+      options.success?.({ error: '0', errorMessage: 'connect ok' })
     })
     const disconnectBLEDevice = vi.fn((options: any) => {
-      options.success?.({ errorCode: '0', errorMessage: 'ok' })
+      options.success?.({ errorCode: '0', errorMessage: 'disconnect ok' })
     })
     const api = createWeapi({
       adapter: {
@@ -530,18 +530,65 @@ describe('weapi', () => {
     }) as Record<string, any>
 
     for (const methodName of ['createBLEConnection', 'closeBLEConnection'] as const) {
+      const expectedTarget = methodName === 'createBLEConnection' ? 'connectBLEDevice' : 'disconnectBLEDevice'
       expect(api.resolveTarget(methodName)).toMatchObject({
         method: methodName,
-        target: methodName,
-        supportLevel: 'unsupported',
-        supported: false,
-        semanticAligned: false,
+        target: expectedTarget,
+        supportLevel: 'mapped',
+        supported: true,
+        semanticAligned: true,
       })
     }
 
     await expect(api.createBLEConnection({
       deviceId: 'dev-1',
       timeout: 1000,
+    })).resolves.toMatchObject({
+      error: '0',
+      errorMessage: 'connect ok',
+      errCode: 0,
+      errMsg: 'connect ok',
+    })
+    await expect(api.closeBLEConnection({
+      deviceId: 'dev-1',
+    })).resolves.toMatchObject({
+      errorCode: '0',
+      errorMessage: 'disconnect ok',
+      errCode: 0,
+      errMsg: 'disconnect ok',
+    })
+
+    expect(connectBLEDevice).toHaveBeenCalledWith(expect.objectContaining({
+      deviceId: 'dev-1',
+      timeout: 1000,
+    }))
+    expect(disconnectBLEDevice).toHaveBeenCalledWith(expect.objectContaining({
+      deviceId: 'dev-1',
+    }))
+  })
+
+  it('treats createBLEConnection/closeBLEConnection as unsupported for alipay when mapped target is missing', async () => {
+    const api = createWeapi({
+      adapter: {},
+      platform: 'alipay',
+    }) as Record<string, any>
+
+    expect(api.resolveTarget('createBLEConnection')).toMatchObject({
+      method: 'createBLEConnection',
+      target: 'connectBLEDevice',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    expect(api.resolveTarget('closeBLEConnection')).toMatchObject({
+      method: 'closeBLEConnection',
+      target: 'disconnectBLEDevice',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.createBLEConnection({
+      deviceId: 'dev-1',
     })).rejects.toMatchObject({
       errMsg: 'my.createBLEConnection:fail method not supported',
     })
@@ -550,7 +597,33 @@ describe('weapi', () => {
     })).rejects.toMatchObject({
       errMsg: 'my.closeBLEConnection:fail method not supported',
     })
+  })
 
+  it('treats createBLEConnection/closeBLEConnection as unsupported for douyin without strict-equivalent api', async () => {
+    const connectBLEDevice = vi.fn()
+    const disconnectBLEDevice = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        connectBLEDevice,
+        disconnectBLEDevice,
+      },
+      platform: 'tt',
+    }) as Record<string, any>
+
+    for (const methodName of ['createBLEConnection', 'closeBLEConnection'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({
+        deviceId: 'dev-1',
+      })).rejects.toMatchObject({
+        errMsg: `tt.${methodName}:fail method not supported`,
+      })
+    }
     expect(connectBLEDevice).not.toHaveBeenCalled()
     expect(disconnectBLEDevice).not.toHaveBeenCalled()
   })
@@ -1333,8 +1406,6 @@ describe('weapi', () => {
     'chooseInvoiceTitle',
     'chooseLicensePlate',
     'choosePoi',
-    'closeBLEConnection',
-    'createBLEConnection',
     'cropImage',
     'editImage',
     'exitVoIPChat',
@@ -2656,6 +2727,8 @@ describe('weapi', () => {
       { method: 'chooseMedia', my: 'chooseMedia', tt: 'chooseMedia', mySupported: false },
       { method: 'chooseMessageFile', my: 'chooseMessageFile', tt: 'chooseMessageFile', mySupported: false, ttSupported: false },
       { method: 'getFuzzyLocation', my: 'getFuzzyLocation', tt: 'getFuzzyLocation', mySupported: false, ttSupported: false },
+      { method: 'createBLEConnection', my: 'connectBLEDevice', tt: 'createBLEConnection', ttSupported: false },
+      { method: 'closeBLEConnection', my: 'disconnectBLEDevice', tt: 'closeBLEConnection', ttSupported: false },
       { method: 'hideHomeButton', my: 'hideBackHome', tt: 'hideHomeButton' },
       { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getWindowInfo', ttSupported: false },
       { method: 'getDeviceInfo', my: 'getDeviceInfo', tt: 'getDeviceInfo', mySupported: false, ttSupported: false },

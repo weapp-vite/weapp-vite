@@ -35,7 +35,7 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 198 | 198 | 0 | 479 | 41.34% | 41.34% |
+| 支付宝小程序 (`my`) | 200 | 200 | 0 | 479 | 41.75% | 41.75% |
 | 抖音小程序 (`tt`) | 133 | 133 | 0 | 479 | 27.77% | 27.77% |
 | 三端可调用完全对齐 (wx/my/tt) | 116 | - | - | 479 | 24.22% | - |
 | 三端语义完全对齐 (wx/my/tt) | - | 116 | - | 479 | - | 24.22% |
@@ -179,8 +179,8 @@
 | `chooseInvoiceTitle` | 选择发票抬头。 | 直连 `wx.chooseInvoiceTitle` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `chooseLicensePlate` | 选择车牌号。 | 直连 `wx.chooseLicensePlate` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `choosePoi` | 选择兴趣点 POI。 | 直连 `wx.choosePoi` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `closeBLEConnection` | 断开低功耗蓝牙连接。 | 直连 `wx.closeBLEConnection` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `createBLEConnection` | 创建低功耗蓝牙连接。 | 直连 `wx.createBLEConnection` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `closeBLEConnection` | 断开低功耗蓝牙连接。 | 直连 `wx.closeBLEConnection` | `deviceId` 对齐后映射到 `my.disconnectBLEDevice`，并将 `errorCode/errorMessage` 映射为 `errCode/errMsg` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createBLEConnection` | 创建低功耗蓝牙连接。 | 直连 `wx.createBLEConnection` | `deviceId/timeout` 对齐后映射到 `my.connectBLEDevice`，并将 `error/errorMessage` 映射为 `errCode/errMsg` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `cropImage` | 裁剪图片。 | 直连 `wx.cropImage` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `editImage` | 编辑图片。 | 直连 `wx.editImage` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `exitVoIPChat` | 退出音视频通话。 | 直连 `wx.exitVoIPChat` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
