@@ -47,11 +47,12 @@
     "catalog:sync": "node ./scripts/sync-api-catalog.mjs",
     "catalog:check": "node ./scripts/sync-api-catalog.mjs --check",
     "strict-alias:check": "node --import tsx ./scripts/check-strict-alias-guard.mjs",
+    "structure:check": "node ./scripts/check-structure-guard.mjs",
     "strict-alias:scan": "node --import tsx ./scripts/scan-strict-alias-candidates.mjs",
     "docs:sync": "node --import tsx ./scripts/sync-support-matrix.ts",
     "docs:check": "node --import tsx ./scripts/sync-support-matrix.ts --check",
     "report:api": "node --import tsx ./scripts/generate-api-report.mjs",
-    "prebuild": "pnpm run catalog:check && pnpm run docs:check && pnpm run strict-alias:check"
+    "prebuild": "pnpm run structure:check && pnpm run catalog:check && pnpm run docs:check && pnpm run strict-alias:check"
   },
   "dependencies": {
     "@douyin-microapp/typings": "^1.3.1",
