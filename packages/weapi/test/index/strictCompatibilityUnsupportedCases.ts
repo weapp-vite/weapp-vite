@@ -1,4 +1,4 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexStrictCompatibilityUnsupportedCasesTests() {
   it.each([
@@ -31,7 +31,7 @@ export function registerWeapiIndexStrictCompatibilityUnsupportedCasesTests() {
   ])('treats %s as unsupported in strict compatibility mode', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
@@ -57,7 +57,7 @@ export function registerWeapiIndexStrictCompatibilityUnsupportedCasesTests() {
       pause: vi.fn(),
       stop: vi.fn(),
     }))
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         createInnerAudioContext,
       },
@@ -86,7 +86,7 @@ export function registerWeapiIndexStrictCompatibilityUnsupportedCasesTests() {
   ])('treats on/offNetworkWeakChange as unsupported for $platform without aliasing on/offNetworkStatusChange', async ({ platform, normalizedPlatform }) => {
     const onNetworkStatusChange = vi.fn()
     const offNetworkStatusChange = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         onNetworkStatusChange,
         offNetworkStatusChange,
@@ -122,7 +122,7 @@ export function registerWeapiIndexStrictCompatibilityUnsupportedCasesTests() {
         timeStamp: Date.now(),
       })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getBackgroundFetchData,
       },
@@ -166,7 +166,7 @@ export function registerWeapiIndexStrictCompatibilityUnsupportedCasesTests() {
   ])('treats %s as unsupported when no strict-equivalent target exists', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
@@ -192,7 +192,7 @@ export function registerWeapiIndexStrictCompatibilityUnsupportedCasesTests() {
   ])('treats %s as unsupported without strict-equivalent runtime API', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
@@ -220,7 +220,7 @@ export function registerWeapiIndexStrictCompatibilityUnsupportedCasesTests() {
   ])('treats %s as unsupported when no strict-equivalent target exists', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>

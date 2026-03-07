@@ -1,9 +1,9 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexUnsupportedPaymentsAndPreviewMediaTests() {
   it('treats scanCode as unsupported for alipay without strict-equivalent api', async () => {
     const scan = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         scan,
       },
@@ -28,7 +28,7 @@ export function registerWeapiIndexUnsupportedPaymentsAndPreviewMediaTests() {
     { platform: 'tt', normalizedPlatform: 'tt' },
   ])('treats showShareImageMenu as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
     const showShareMenu = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         showShareMenu,
       },
@@ -52,7 +52,7 @@ export function registerWeapiIndexUnsupportedPaymentsAndPreviewMediaTests() {
 
   it('treats openChannelsUserProfile as unsupported for douyin without strict-equivalent api', async () => {
     const openAwemeUserProfile = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         openAwemeUserProfile,
       },
@@ -76,7 +76,7 @@ export function registerWeapiIndexUnsupportedPaymentsAndPreviewMediaTests() {
 
   it('treats requestPayment family as unsupported for alipay', async () => {
     const tradePay = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         tradePay,
       },
@@ -101,7 +101,7 @@ export function registerWeapiIndexUnsupportedPaymentsAndPreviewMediaTests() {
 
   it('treats requestPayment family as unsupported for douyin', async () => {
     const pay = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         pay,
       },
@@ -132,7 +132,7 @@ export function registerWeapiIndexUnsupportedPaymentsAndPreviewMediaTests() {
   ])('treats %s as unsupported in strict compatibility mode', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
@@ -153,7 +153,7 @@ export function registerWeapiIndexUnsupportedPaymentsAndPreviewMediaTests() {
     const previewImage = vi.fn((options: any) => {
       options.success?.({ errMsg: 'previewImage:ok' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         previewImage,
       },

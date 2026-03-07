@@ -1,8 +1,8 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexDouyinDocumentAndDeviceCapabilityGuardsTests() {
   it('treats openDocument as unsupported for douyin when adapter method is missing', async () => {
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {},
       platform: 'tt',
     })
@@ -22,7 +22,7 @@ export function registerWeapiIndexDouyinDocumentAndDeviceCapabilityGuardsTests()
     const saveImageToPhotosAlbum = vi.fn((options: any) => {
       options.success?.({ errMsg: 'saveImageToPhotosAlbum:ok' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         saveImageToPhotosAlbum,
       },
@@ -52,7 +52,7 @@ export function registerWeapiIndexDouyinDocumentAndDeviceCapabilityGuardsTests()
         ],
       })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         chooseMedia,
       },
@@ -78,7 +78,7 @@ export function registerWeapiIndexDouyinDocumentAndDeviceCapabilityGuardsTests()
 
   it('treats getWindowInfo as unsupported for douyin without strict-equivalent api', async () => {
     const getSystemInfo = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getSystemInfo,
       },
@@ -100,7 +100,7 @@ export function registerWeapiIndexDouyinDocumentAndDeviceCapabilityGuardsTests()
 
   it('treats setBackgroundColor/setBackgroundTextStyle as unsupported for douyin without strict-equivalent api', async () => {
     const setNavigationBarColor = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         setNavigationBarColor,
       },
@@ -127,7 +127,7 @@ export function registerWeapiIndexDouyinDocumentAndDeviceCapabilityGuardsTests()
 
   it('treats getNetworkType as unsupported for douyin without strict-equivalent api', async () => {
     const getSystemInfo = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getSystemInfo,
       },
@@ -150,7 +150,7 @@ export function registerWeapiIndexDouyinDocumentAndDeviceCapabilityGuardsTests()
   it('treats getBatteryInfo/getBatteryInfoSync as unsupported for douyin without strict-equivalent api', async () => {
     const getSystemInfo = vi.fn()
     const getSystemInfoSync = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getSystemInfo,
         getSystemInfoSync,
@@ -180,7 +180,7 @@ export function registerWeapiIndexDouyinDocumentAndDeviceCapabilityGuardsTests()
     'getBatteryInfo',
     'getBatteryInfoSync',
   ])('treats %s as unsupported in strict compatibility mode', async (methodName) => {
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {},
       platform: 'tt',
     })
@@ -202,7 +202,7 @@ export function registerWeapiIndexDouyinDocumentAndDeviceCapabilityGuardsTests()
     { platform: 'tt', normalizedPlatform: 'tt' },
   ])('treats getDeviceInfo as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
     const getSystemInfo = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getSystemInfo,
       },

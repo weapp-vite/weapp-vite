@@ -1,4 +1,4 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexMissingAdapterMethodUnsupportedCasesTests() {
   it.each([
@@ -23,7 +23,7 @@ export function registerWeapiIndexMissingAdapterMethodUnsupportedCasesTests() {
   ])('treats %s as unsupported when adapter method is missing', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
@@ -64,7 +64,7 @@ export function registerWeapiIndexMissingAdapterMethodUnsupportedCasesTests() {
   ])('treats %s as unsupported in strict mode when adapter method is missing', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
@@ -105,7 +105,7 @@ export function registerWeapiIndexMissingAdapterMethodUnsupportedCasesTests() {
   ])('treats %s as unsupported when adapter does not expose it', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
@@ -146,7 +146,7 @@ export function registerWeapiIndexMissingAdapterMethodUnsupportedCasesTests() {
   ])('treats %s as unsupported when no strict-equivalent api exists', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
@@ -178,7 +178,7 @@ export function registerWeapiIndexMissingAdapterMethodUnsupportedCasesTests() {
   ])('treats %s as unsupported when adapter method is absent', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
@@ -207,7 +207,7 @@ export function registerWeapiIndexMissingAdapterMethodUnsupportedCasesTests() {
   ])('treats %s as unsupported for alipay and douyin when method is missing', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>

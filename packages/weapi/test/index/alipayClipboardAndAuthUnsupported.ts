@@ -1,11 +1,11 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexAlipayClipboardAndAuthUnsupportedTests() {
   it('maps saveFile args and result for alipay', async () => {
     const saveFile = vi.fn((options: any) => {
       options.success?.({ apFilePath: '/store/demo.png' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         saveFile,
       },
@@ -28,7 +28,7 @@ export function registerWeapiIndexAlipayClipboardAndAuthUnsupportedTests() {
     const setClipboard = vi.fn((options: any) => {
       options.success?.({ errMsg: 'setClipboard:ok' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         setClipboard,
       },
@@ -44,7 +44,7 @@ export function registerWeapiIndexAlipayClipboardAndAuthUnsupportedTests() {
   })
 
   it('maps getClipboardData result from alipay text to data', async () => {
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getClipboard(options: any) {
           options.success?.({ text: 'copied' })
@@ -59,7 +59,7 @@ export function registerWeapiIndexAlipayClipboardAndAuthUnsupportedTests() {
 
   it('treats login, authorize and checkSession as unsupported for alipay', async () => {
     const getAuthCode = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getAuthCode,
       },
@@ -108,7 +108,7 @@ export function registerWeapiIndexAlipayClipboardAndAuthUnsupportedTests() {
         nickName: 'demo',
       })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getOpenUserInfo,
       },
@@ -135,7 +135,7 @@ export function registerWeapiIndexAlipayClipboardAndAuthUnsupportedTests() {
     { platform: 'tt', normalizedPlatform: 'tt' },
   ])('treats requestSubscribe*Message as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
     const requestSubscribeMessage = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         requestSubscribeMessage,
       },
@@ -162,7 +162,7 @@ export function registerWeapiIndexAlipayClipboardAndAuthUnsupportedTests() {
     const addPhoneContact = vi.fn((options: any) => {
       options.success?.({ errMsg: 'addPhoneContact:ok' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         addPhoneContact,
       },
@@ -195,7 +195,7 @@ export function registerWeapiIndexAlipayClipboardAndAuthUnsupportedTests() {
     const offGetWifiList = vi.fn()
     const getConnectedWifi = vi.fn()
     const getWifiList = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         onGetWifiList,
         offGetWifiList,

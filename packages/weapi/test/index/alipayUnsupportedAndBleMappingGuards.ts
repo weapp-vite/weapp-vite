@@ -1,11 +1,11 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexAlipayUnsupportedAndBleMappingGuardsTests() {
   it('treats startSoterAuthentication as unsupported for alipay without strict-equivalent api', async () => {
     const startIfaaAuthentication = vi.fn((options: any) => {
       options.success?.({ resultJSONSignature: '{}' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         startIfaaAuthentication,
       },
@@ -31,7 +31,7 @@ export function registerWeapiIndexAlipayUnsupportedAndBleMappingGuardsTests() {
 
   it('treats chooseMedia as unsupported for alipay without strict-equivalent api', async () => {
     const chooseImage = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         chooseImage,
       },
@@ -62,7 +62,7 @@ export function registerWeapiIndexAlipayUnsupportedAndBleMappingGuardsTests() {
     const disconnectBLEDevice = vi.fn((options: any) => {
       options.success?.({ errorCode: '0', errorMessage: 'disconnect ok' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         connectBLEDevice,
         disconnectBLEDevice,
@@ -109,7 +109,7 @@ export function registerWeapiIndexAlipayUnsupportedAndBleMappingGuardsTests() {
   })
 
   it('treats createBLEConnection/closeBLEConnection as unsupported for alipay when mapped target is missing', async () => {
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {},
       platform: 'alipay',
     }) as Record<string, any>
@@ -143,7 +143,7 @@ export function registerWeapiIndexAlipayUnsupportedAndBleMappingGuardsTests() {
   it('treats createBLEConnection/closeBLEConnection as unsupported for douyin without strict-equivalent api', async () => {
     const connectBLEDevice = vi.fn()
     const disconnectBLEDevice = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         connectBLEDevice,
         disconnectBLEDevice,
@@ -175,7 +175,7 @@ export function registerWeapiIndexAlipayUnsupportedAndBleMappingGuardsTests() {
   ])('treats chooseMessageFile as unsupported for $platform without strict-equivalent api', async ({ platform }) => {
     const normalizedPlatform = platform === 'alipay' ? 'my' : platform
     const chooseImage = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         chooseImage,
       },
@@ -209,7 +209,7 @@ export function registerWeapiIndexAlipayUnsupportedAndBleMappingGuardsTests() {
         longitude: 120.1551,
       })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getLocation,
       },

@@ -3,7 +3,7 @@ import {
   generateApiSupportCoverageReport,
   generateMethodCompatibilityMatrix,
 } from '@/core/methodMapping'
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexDouyinResultMappingAndCoverageTests() {
   const douyinPromiseCases = [
@@ -53,7 +53,7 @@ export function registerWeapiIndexDouyinResultMappingAndCoverageTests() {
     expectedResult,
     invoke,
   }) => {
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: createAdapter(),
       platform: 'tt',
     })
@@ -146,7 +146,7 @@ export function registerWeapiIndexDouyinResultMappingAndCoverageTests() {
   }) => {
     const success = vi.fn()
     const complete = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: createAdapter(),
       platform: 'tt',
     })

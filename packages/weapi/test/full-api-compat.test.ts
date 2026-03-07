@@ -7,7 +7,7 @@ import {
   WEAPI_WX_NON_FUNCTION_MEMBERS,
 } from '@/core/apiCatalog'
 import { resolveMethodMapping } from '@/core/methodMapping'
-import { createWeapi } from '@/index'
+import { createTestWeapi } from './helpers/createTestWeapi'
 
 interface MockAdapterBundle {
   adapter: Record<string, any>
@@ -48,7 +48,7 @@ describe('weapi full api compatibility', () => {
 
   it('routes all wx methods to wx adapter directly', () => {
     const { adapter, methodSpies } = createMockAdapter(WEAPI_WX_METHODS, WEAPI_WX_NON_FUNCTION_MEMBERS)
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter,
       platform: 'wx',
     }) as Record<string, any>
@@ -77,7 +77,7 @@ describe('weapi full api compatibility', () => {
 
   it('routes wx methods to alipay target methods and reports unsupported APIs', () => {
     const { adapter, methodSpies } = createMockAdapter(WEAPI_MY_METHODS, WEAPI_MY_NON_FUNCTION_MEMBERS)
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter,
       platform: 'my',
     }) as Record<string, any>
@@ -111,7 +111,7 @@ describe('weapi full api compatibility', () => {
 
   it('routes wx methods to douyin target methods and reports unsupported APIs', () => {
     const { adapter, methodSpies } = createMockAdapter(WEAPI_TT_METHODS, WEAPI_TT_NON_FUNCTION_MEMBERS)
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter,
       platform: 'tt',
     }) as Record<string, any>
@@ -145,7 +145,7 @@ describe('weapi full api compatibility', () => {
 
   it('supports all alipay-only methods on alipay adapter', () => {
     const { adapter, methodSpies } = createMockAdapter(WEAPI_MY_METHODS, WEAPI_MY_NON_FUNCTION_MEMBERS)
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter,
       platform: 'my',
     }) as Record<string, any>
@@ -165,7 +165,7 @@ describe('weapi full api compatibility', () => {
 
   it('supports all douyin-only methods on douyin adapter', () => {
     const { adapter, methodSpies } = createMockAdapter(WEAPI_TT_METHODS, WEAPI_TT_NON_FUNCTION_MEMBERS)
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter,
       platform: 'tt',
     }) as Record<string, any>

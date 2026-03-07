@@ -1,4 +1,4 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests() {
   it('treats chooseContact as unsupported for douyin without aliasing chooseAddress', async () => {
@@ -8,7 +8,7 @@ export function registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests() 
         telNumber: '13800000000',
       })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         chooseAddress,
       },
@@ -36,7 +36,7 @@ export function registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests() 
     const offWifiConnected = vi.fn()
     const onGetWifiList = vi.fn()
     const offGetWifiList = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         onWifiConnected,
         offWifiConnected,
@@ -70,7 +70,7 @@ export function registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests() 
     { platform: 'tt', normalizedPlatform: 'tt' },
   ])('treats restartMiniProgram as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
     const reLaunch = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         reLaunch,
       },
@@ -95,7 +95,7 @@ export function registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests() 
     { platform: 'tt', normalizedPlatform: 'tt' },
   ])('treats openAppAuthorizeSetting as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
     const openSetting = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         openSetting,
       },
@@ -122,7 +122,7 @@ export function registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests() 
         brand: 'alipay',
       })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getSystemInfo,
       },
@@ -147,7 +147,7 @@ export function registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests() 
 
   it('treats getSystemInfoAsync as unsupported for alipay when mapped target is missing', async () => {
     const getSystemInfoSync = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getSystemInfoSync,
       },
@@ -174,7 +174,7 @@ export function registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests() 
         brand: 'douyin',
       })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getSystemInfo,
       },
@@ -201,7 +201,7 @@ export function registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests() 
     const hideBackHome = vi.fn((options: any) => {
       options.success?.({})
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         hideBackHome,
       },
@@ -221,7 +221,7 @@ export function registerWeapiIndexCrossPlatformAliasAndSystemInfoMappingTests() 
 
   it('treats hideHomeButton as unsupported for alipay when hideBackHome is unavailable', async () => {
     const hideBackHome = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {},
       platform: 'alipay',
     })

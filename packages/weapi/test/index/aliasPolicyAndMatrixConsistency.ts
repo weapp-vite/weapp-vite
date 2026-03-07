@@ -6,9 +6,17 @@ import {
 } from '@/core/methodMapping'
 import { collectRenamedMappings, STRICT_RENAMED_ALLOWLIST } from '@/core/strictAliasPolicy'
 
+interface ExpectedMappingItem {
+  method: string
+  my: string
+  tt: string
+  mySupported?: boolean
+  ttSupported?: boolean
+}
+
 export function registerWeapiIndexAliasPolicyAndMatrixConsistencyTests() {
   it('keeps top high-frequency alias mappings in sync', () => {
-    const expectedMappings = [
+    const expectedMappings: readonly ExpectedMappingItem[] = [
       { method: 'chooseAddress', my: 'chooseAddress', tt: 'chooseAddress', mySupported: false },
       { method: 'createAudioContext', my: 'createAudioContext', tt: 'createAudioContext', mySupported: false, ttSupported: false },
       { method: 'createWebAudioContext', my: 'createWebAudioContext', tt: 'createWebAudioContext', mySupported: false, ttSupported: false },
@@ -70,7 +78,7 @@ export function registerWeapiIndexAliasPolicyAndMatrixConsistencyTests() {
       { method: 'createCameraContext', my: 'createCameraContext', tt: 'createCameraContext', mySupported: false, ttSupported: false },
       { method: 'offMemoryWarning', my: 'offMemoryWarning', tt: 'offMemoryWarning', ttSupported: false },
       { method: 'cancelIdleCallback', my: 'cancelIdleCallback', tt: 'cancelIdleCallback', mySupported: false, ttSupported: false },
-    ] as const
+    ]
 
     for (const item of expectedMappings) {
       expect(generateMethodCompatibilityMatrix().find(mapping => mapping.method === item.method)).toMatchObject({
