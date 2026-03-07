@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  350 |
-| 支付宝语义对齐方法数             |  350 |
+| 支付宝可按微信命名调用的方法数   |  330 |
+| 支付宝语义对齐方法数             |  330 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  288 |
-| 抖音语义对齐方法数               |  288 |
+| 抖音可按微信命名调用的方法数     |  268 |
+| 抖音语义对齐方法数               |  268 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  286 |
-| 三端语义完全对齐方法数           |  286 |
+| 三端可调用完全对齐方法数         |  266 |
+| 三端语义完全对齐方法数           |  266 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           350 |             350 |               0 |      479 |       73.07% |         73.07% |
-| 抖音小程序 (`tt`)             |           288 |             288 |               0 |      479 |       60.13% |         60.13% |
-| 三端可调用完全对齐 (wx/my/tt) |           286 |               - |               - |      479 |       59.71% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             286 |               - |      479 |            - |         59.71% |
+| 支付宝小程序 (`my`)           |           330 |             330 |               0 |      479 |       68.89% |         68.89% |
+| 抖音小程序 (`tt`)             |           268 |             268 |               0 |      479 |       55.95% |         55.95% |
+| 三端可调用完全对齐 (wx/my/tt) |           266 |               - |               - |      479 |       55.53% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             266 |               - |      479 |            - |         55.53% |
 
 ## 核心差异映射（手工规则）
 
@@ -207,26 +207,26 @@
 | `stopBackgroundAudio`               | 直连 `wx.stopBackgroundAudio`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `stopDeviceMotionListening`         | 直连 `wx.stopDeviceMotionListening`                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `stopFaceDetect`                    | 直连 `wx.stopFaceDetect`                            | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
-| `requestCommonPayment`              | 直连 `wx.requestCommonPayment`                      | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `requestDeviceVoIP`                 | 直连 `wx.requestDeviceVoIP`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `requestMerchantTransfer`           | 直连 `wx.requestMerchantTransfer`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `requirePrivacyAuthorize`           | 直连 `wx.requirePrivacyAuthorize`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `reserveChannelsLive`               | 直连 `wx.reserveChannelsLive`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `selectGroupMembers`                | 直连 `wx.selectGroupMembers`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `sendHCEMessage`                    | 直连 `wx.sendHCEMessage`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `sendSms`                           | 直连 `wx.sendSms`                                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setBackgroundFetchToken`           | 直连 `wx.setBackgroundFetchToken`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setEnable1v1Chat`                  | 直连 `wx.setEnable1v1Chat`                          | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setTopBarText`                     | 直连 `wx.setTopBarText`                             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `setWindowSize`                     | 直连 `wx.setWindowSize`                             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopHCE`                           | 直连 `wx.stopHCE`                                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopLocalServiceDiscovery`         | 直连 `wx.stopLocalServiceDiscovery`                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopLocationUpdate`                | 直连 `wx.stopLocationUpdate`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopRecord`                        | 直连 `wx.stopRecord`                                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `stopVoice`                         | 直连 `wx.stopVoice`                                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `subscribeVoIPVideoMembers`         | 直连 `wx.subscribeVoIPVideoMembers`                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `updateVoIPChatMuteConfig`          | 直连 `wx.updateVoIPChatMuteConfig`                  | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `updateWeChatApp`                   | 直连 `wx.updateWeChatApp`                           | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `requestCommonPayment`              | 直连 `wx.requestCommonPayment`                      | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `requestDeviceVoIP`                 | 直连 `wx.requestDeviceVoIP`                         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `requestMerchantTransfer`           | 直连 `wx.requestMerchantTransfer`                   | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `requirePrivacyAuthorize`           | 直连 `wx.requirePrivacyAuthorize`                   | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `reserveChannelsLive`               | 直连 `wx.reserveChannelsLive`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `selectGroupMembers`                | 直连 `wx.selectGroupMembers`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `sendHCEMessage`                    | 直连 `wx.sendHCEMessage`                            | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `sendSms`                           | 直连 `wx.sendSms`                                   | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `setBackgroundFetchToken`           | 直连 `wx.setBackgroundFetchToken`                   | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `setEnable1v1Chat`                  | 直连 `wx.setEnable1v1Chat`                          | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `setTopBarText`                     | 直连 `wx.setTopBarText`                             | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `setWindowSize`                     | 直连 `wx.setWindowSize`                             | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `stopHCE`                           | 直连 `wx.stopHCE`                                   | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `stopLocalServiceDiscovery`         | 直连 `wx.stopLocalServiceDiscovery`                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `stopLocationUpdate`                | 直连 `wx.stopLocationUpdate`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `stopRecord`                        | 直连 `wx.stopRecord`                                | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `stopVoice`                         | 直连 `wx.stopVoice`                                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `subscribeVoIPVideoMembers`         | 直连 `wx.subscribeVoIPVideoMembers`                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `updateVoIPChatMuteConfig`          | 直连 `wx.updateVoIPChatMuteConfig`                  | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `updateWeChatApp`                   | 直连 `wx.updateWeChatApp`                           | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `getBackgroundAudioPlayerState`     | 直连 `wx.getBackgroundAudioPlayerState`             | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getDeviceBenchmarkInfo`            | 直连 `wx.getDeviceBenchmarkInfo`                    | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getDeviceVoIPList`                 | 直连 `wx.getDeviceVoIPList`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
