@@ -21,6 +21,7 @@
 - [wevu-store.md](wevu-store.md)
 - [wevu-api.md](wevu-api.md)
 - [wevu-router.md](wevu-router.md)
+- [../router-usage-guide.md](../router-usage-guide.md)
 
 ## 说明
 
