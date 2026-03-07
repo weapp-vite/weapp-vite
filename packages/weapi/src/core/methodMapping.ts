@@ -169,8 +169,8 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'getFuzzyLocation',
     description: '获取模糊地理位置。',
     wxStrategy: '直连 `wx.getFuzzyLocation`',
-    alipayStrategy: '映射到 `my.getLocation`',
-    douyinStrategy: '映射到 `tt.getLocation`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2725,7 +2725,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'chooseMessageFile',
     },
     getFuzzyLocation: {
-      target: 'getLocation',
+      target: 'getFuzzyLocation',
     },
     previewMedia: {
       target: 'previewImage',
@@ -3435,7 +3435,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'chooseMessageFile',
     },
     getFuzzyLocation: {
-      target: 'getLocation',
+      target: 'getFuzzyLocation',
     },
     previewMedia: {
       target: 'previewImage',

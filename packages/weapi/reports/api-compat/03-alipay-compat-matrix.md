@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：221，不支持：258
+总计：479，支持：220，不支持：259
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -127,7 +127,7 @@
 | `getExtConfig`                                | `getExtConfig`                                | ✅   | `native`      | ✅       | 直连 `my.getExtConfig`                                                            |
 | `getExtConfigSync`                            | `getExtConfigSync`                            | ✅   | `native`      | ✅       | 直连 `my.getExtConfigSync`                                                        |
 | `getFileSystemManager`                        | `getFileSystemManager`                        | ✅   | `native`      | ✅       | 直连 `my.getFileSystemManager`                                                    |
-| `getFuzzyLocation`                            | `getLocation`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.getLocation`                                                           |
+| `getFuzzyLocation`                            | `getFuzzyLocation`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getGroupEnterInfo`                           | `getGroupEnterInfo`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getHCEState`                                 | `getHCEState`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getImageInfo`                                | `getImageInfo`                                | ✅   | `native`      | ✅       | 直连 `my.getImageInfo`                                                            |
