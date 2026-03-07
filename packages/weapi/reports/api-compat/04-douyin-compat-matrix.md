@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：163，不支持：316
+总计：479，支持：162，不支持：317
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -70,7 +70,7 @@
 | `createIntersectionObserver`                  | `createIntersectionObserver`                  | ✅   | `native`      | ✅       | 直连 `tt.createIntersectionObserver`                                              |
 | `createInterstitialAd`                        | `createInterstitialAd`                        | ✅   | `mapped`      | ✅       | 直连 `tt.createInterstitialAd`                                                    |
 | `createLivePlayerContext`                     | `createLivePlayerContext`                     | ✅   | `mapped`      | ✅       | 直连 `tt.createLivePlayerContext`                                                 |
-| `createLivePusherContext`                     | `createVideoContext`                          | ✅   | `mapped`      | ✅       | 映射到 `tt.createVideoContext`                                                    |
+| `createLivePusherContext`                     | `createLivePusherContext`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createMapContext`                            | `createMapContext`                            | ✅   | `native`      | ✅       | 直连 `tt.createMapContext`                                                        |
 | `createMediaAudioPlayer`                      | `createMediaAudioPlayer`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `createMediaContainer`                        | `createMediaContainer`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

@@ -3,19 +3,19 @@
 ## 覆盖结论
 
 - 微信基准命名方法总数：479
-- 支付宝可调用兼容方法数：226
-- 支付宝语义对齐方法数：226
+- 支付宝可调用兼容方法数：225
+- 支付宝语义对齐方法数：225
 - 支付宝 fallback 方法数：0
-- 抖音可调用兼容方法数：163
-- 抖音语义对齐方法数：163
+- 抖音可调用兼容方法数：162
+- 抖音语义对齐方法数：162
 - 抖音 fallback 方法数：0
-- 三端可调用完全对齐方法数：158
-- 三端语义完全对齐方法数：158
+- 三端可调用完全对齐方法数：156
+- 三端语义完全对齐方法数：156
 
 ## 不兼容规模
 
-- 支付宝侧不兼容（按微信命名调用失败）方法：253
-- 抖音侧不兼容（按微信命名调用失败）方法：316
+- 支付宝侧不兼容（按微信命名调用失败）方法：254
+- 抖音侧不兼容（按微信命名调用失败）方法：317
 
 ## 不兼容示例（前 40 项）
 
@@ -59,8 +59,8 @@
 - `createCameraContext` -> 目标 `createCameraContext`（unsupported）
 - `createGlobalPayment` -> 目标 `createGlobalPayment`（unsupported）
 - `createInferenceSession` -> 目标 `createInferenceSession`（unsupported）
+- `createInterstitialAd` -> 目标 `createInterstitialAd`（unsupported）
 - `createMediaAudioPlayer` -> 目标 `createMediaAudioPlayer`（unsupported）
-- `createMediaContainer` -> 目标 `createMediaContainer`（unsupported）
 
 ### 抖音不兼容示例
 

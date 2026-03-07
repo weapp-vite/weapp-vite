@@ -559,7 +559,7 @@ describe('weapi', () => {
     }))
   })
 
-  it('maps ad and live context apis for alipay', () => {
+  it('maps rewarded ad and live context apis for alipay', async () => {
     const createRewardedAd = vi.fn(() => ({ show: vi.fn() }))
     const createVideoContext = vi.fn(() => ({ play: vi.fn() }))
     const api = createWeapi({
@@ -570,15 +570,24 @@ describe('weapi', () => {
       platform: 'alipay',
     }) as Record<string, any>
 
-    api.createInterstitialAd({ adUnitId: 'adunit-1' })
     api.createRewardedVideoAd({ adUnitId: 'adunit-2' })
     api.createLivePlayerContext('live-player')
     api.createLivePusherContext('live-pusher')
 
-    expect(createRewardedAd).toHaveBeenNthCalledWith(1, 'adunit-1', expect.any(Object))
-    expect(createRewardedAd).toHaveBeenNthCalledWith(2, 'adunit-2', expect.any(Object))
+    expect(createRewardedAd).toHaveBeenNthCalledWith(1, 'adunit-2', expect.any(Object))
     expect(createVideoContext).toHaveBeenNthCalledWith(1, 'live-player', expect.any(Object))
     expect(createVideoContext).toHaveBeenNthCalledWith(2, 'live-pusher', expect.any(Object))
+
+    expect(api.resolveTarget('createInterstitialAd')).toMatchObject({
+      method: 'createInterstitialAd',
+      target: 'createInterstitialAd',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.createInterstitialAd({ adUnitId: 'adunit-1' })).rejects.toMatchObject({
+      errMsg: 'my.createInterstitialAd:fail method not supported',
+    })
   })
 
   it('normalizes platform alias for createWeapi', () => {
@@ -1611,7 +1620,7 @@ describe('weapi', () => {
     expect(result).toMatchObject({ size: 1024 })
   })
 
-  it('maps interstitial and live context apis for douyin', () => {
+  it('maps interstitial and live-player context apis for douyin', async () => {
     const createInterstitialAd = vi.fn(() => ({ show: vi.fn() }))
     const createLivePlayerContext = vi.fn(() => ({ play: vi.fn() }))
     const createVideoContext = vi.fn(() => ({ play: vi.fn() }))
@@ -1626,11 +1635,21 @@ describe('weapi', () => {
 
     api.createInterstitialAd({ adUnitId: 'tt-ad-1' })
     api.createLivePlayerContext('tt-live-player')
-    api.createLivePusherContext('tt-live-pusher')
 
     expect(createInterstitialAd).toHaveBeenNthCalledWith(1, expect.objectContaining({ adUnitId: 'tt-ad-1' }))
     expect(createLivePlayerContext).toHaveBeenNthCalledWith(1, 'tt-live-player', expect.any(Object))
-    expect(createVideoContext).toHaveBeenNthCalledWith(1, 'tt-live-pusher', expect.any(Object))
+    expect(createVideoContext).not.toHaveBeenCalled()
+
+    expect(api.resolveTarget('createLivePusherContext')).toMatchObject({
+      method: 'createLivePusherContext',
+      target: 'createLivePusherContext',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.createLivePusherContext('tt-live-pusher' as any)).rejects.toMatchObject({
+      errMsg: 'tt.createLivePusherContext:fail method not supported',
+    })
   })
 
   it('treats createRewardedVideoAd as unsupported for douyin without strict-equivalent api', async () => {
@@ -1878,10 +1897,10 @@ describe('weapi', () => {
       { method: 'requestPluginPayment', my: 'tradePay', tt: 'pay' },
       { method: 'requestVirtualPayment', my: 'tradePay', tt: 'pay' },
       { method: 'previewMedia', my: 'previewImage', tt: 'previewImage' },
-      { method: 'createInterstitialAd', my: 'createRewardedAd', tt: 'createInterstitialAd' },
+      { method: 'createInterstitialAd', my: 'createInterstitialAd', tt: 'createInterstitialAd', mySupported: false },
       { method: 'createRewardedVideoAd', my: 'createRewardedAd', tt: 'createRewardedVideoAd', ttSupported: false },
       { method: 'createLivePlayerContext', my: 'createVideoContext', tt: 'createLivePlayerContext' },
-      { method: 'createLivePusherContext', my: 'createVideoContext', tt: 'createVideoContext' },
+      { method: 'createLivePusherContext', my: 'createVideoContext', tt: 'createLivePusherContext', ttSupported: false },
       { method: 'getVideoInfo', my: 'getVideoInfo', tt: 'getFileInfo' },
       { method: 'showShareImageMenu', my: 'showSharePanel', tt: 'showShareMenu' },
       { method: 'updateShareMenu', my: 'showSharePanel', tt: 'showShareMenu' },

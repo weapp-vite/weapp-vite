@@ -185,7 +185,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'createInterstitialAd',
     description: '创建插屏广告实例。',
     wxStrategy: '直连 `wx.createInterstitialAd`',
-    alipayStrategy: '映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.createInterstitialAd`',
     support: '⚠️',
   },
@@ -210,7 +210,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '创建直播推流上下文。',
     wxStrategy: '直连 `wx.createLivePusherContext`',
     alipayStrategy: '映射到 `my.createVideoContext`',
-    douyinStrategy: '映射到 `tt.createVideoContext`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2798,8 +2798,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       mapArgs: mapPreviewMediaArgs,
     },
     createInterstitialAd: {
-      target: 'createRewardedAd',
-      mapArgs: mapCreateRewardedAdArgs,
+      target: 'createInterstitialAd',
     },
     createRewardedVideoAd: {
       target: 'createRewardedAd',
@@ -3520,7 +3519,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'createLivePlayerContext',
     },
     createLivePusherContext: {
-      target: 'createVideoContext',
+      target: 'createLivePusherContext',
     },
     getVideoInfo: {
       target: 'getFileInfo',
