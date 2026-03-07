@@ -84,6 +84,7 @@ export type RouteRecordRedirect = RouteLocationRaw | NavigationRedirect | ((
 export interface RouteRecordRaw extends NamedRouteRecord {
   meta?: RouteMeta
   alias?: string | readonly string[]
+  children?: readonly RouteRecordRaw[]
   beforeEnter?: NavigationGuard | readonly NavigationGuard[]
   redirect?: RouteRecordRedirect
 }
@@ -513,15 +514,7 @@ function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): RouteRecordRaw[]
   }
 
   if (Array.isArray(namedRoutes)) {
-    return namedRoutes.filter((item): item is RouteRecordRaw => {
-      return Boolean(
-        item
-        && typeof item.name === 'string'
-        && item.name
-        && typeof item.path === 'string'
-        && item.path,
-      )
-    })
+    return flattenNamedRouteRecords(namedRoutes)
   }
 
   return Object.entries(namedRoutes)
@@ -530,6 +523,39 @@ function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): RouteRecordRaw[]
       return Boolean(name && typeof path === 'string' && path)
     })
     .map(([name, path]) => ({ name, path }))
+}
+
+function normalizeNestedRoutePath(path: string, parentPath?: string): string {
+  if (!parentPath || path.startsWith('/')) {
+    return resolvePath(path, '')
+  }
+  return resolvePath(`${createAbsoluteRoutePath(parentPath)}/${path}`, '')
+}
+
+function flattenNamedRouteRecords(
+  records: readonly RouteRecordRaw[],
+  parentPath?: string,
+): RouteRecordRaw[] {
+  const flattenedRecords: RouteRecordRaw[] = []
+
+  for (const record of records) {
+    if (!record || typeof record.name !== 'string' || !record.name || typeof record.path !== 'string' || !record.path) {
+      continue
+    }
+
+    const normalizedPath = normalizeNestedRoutePath(record.path, parentPath)
+    const normalizedRecord: RouteRecordRaw = {
+      ...record,
+      path: normalizedPath ? createAbsoluteRoutePath(normalizedPath) : '/',
+    }
+    flattenedRecords.push(normalizedRecord)
+
+    if (Array.isArray(record.children) && record.children.length > 0) {
+      flattenedRecords.push(...flattenNamedRouteRecords(record.children, normalizedPath))
+    }
+  }
+
+  return flattenedRecords
 }
 
 function createNamedRouteNameByStaticPath(recordByName: ReadonlyMap<string, RouteRecordNormalized>): Map<string, string> {
@@ -1573,17 +1599,31 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   }
 
   function addRoute(route: RouteRecordRaw): () => void {
-    const normalizedRoute = normalizeRouteRecordRaw(route)
-    if (!normalizedRoute) {
+    const routeRecords = flattenNamedRouteRecords([route])
+    if (routeRecords.length === 0) {
       throw new Error('Route name and path are required when adding a named route')
     }
-    namedRouteLookup.recordByName.set(normalizedRoute.name, normalizedRoute)
+    const addedRoutes: RouteRecordNormalized[] = []
+    for (const routeRecord of routeRecords) {
+      const normalizedRoute = normalizeRouteRecordRaw(routeRecord)
+      if (!normalizedRoute) {
+        continue
+      }
+      namedRouteLookup.recordByName.set(normalizedRoute.name, normalizedRoute)
+      addedRoutes.push(normalizedRoute)
+    }
     namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.recordByName)
 
     return () => {
-      const currentRoute = namedRouteLookup.recordByName.get(normalizedRoute.name)
-      if (currentRoute === normalizedRoute) {
-        namedRouteLookup.recordByName.delete(normalizedRoute.name)
+      let changed = false
+      for (const addedRoute of addedRoutes) {
+        const currentRoute = namedRouteLookup.recordByName.get(addedRoute.name)
+        if (currentRoute === addedRoute) {
+          namedRouteLookup.recordByName.delete(addedRoute.name)
+          changed = true
+        }
+      }
+      if (changed) {
         namedRouteLookup.nameByStaticPath = createNamedRouteNameByStaticPath(namedRouteLookup.recordByName)
       }
     }

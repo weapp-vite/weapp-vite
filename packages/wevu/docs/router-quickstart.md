@@ -28,6 +28,25 @@ const router = useRouter({
 })
 ```
 
+如果你希望沿用 Vue Router 的树状写法，也可以声明 `children`（会在内部展平为可匹配记录）：
+
+```ts
+const router = useRouter({
+  namedRoutes: [
+    {
+      name: 'home',
+      path: '/pages/home',
+      children: [
+        {
+          name: 'home-detail',
+          path: 'detail/:id',
+        },
+      ],
+    },
+  ],
+})
+```
+
 如果你有“应用启动后再执行业务跳转”的流程，可以先等待：
 
 ```ts
