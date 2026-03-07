@@ -822,6 +822,55 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
+  it('issue #320: supports addRoute name override with alias and redirect replacement', async () => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-320/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-320/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-320 router override + alias + redirect')
+    expect(issuePageWxml).toContain('ready for runtime e2e')
+    expect(issuePageJs).toContain('_runE2E')
+    expect(issuePageJs).toContain('issue320-legacy')
+    expect(issuePageJs).toContain('/pages/issue-320/new-alias')
+    expect(issuePageJs).toContain('/pages/issue-320/index?from=override')
+
+    const miniProgram = await getSharedMiniProgram()
+
+    try {
+      const issuePage = await miniProgram.reLaunch('/pages/issue-320/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-320 page')
+      }
+      await issuePage.waitFor(500)
+
+      const runtimeResult = await issuePage.callMethod('_runE2E')
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.beforePath).toBe('/pages/issue-320/legacy')
+      expect(runtimeResult?.overriddenPath).toBe('/pages/issue-320/new')
+      expect(runtimeResult?.newAliasName).toBe('issue320-legacy')
+      expect(runtimeResult?.oldAliasName).toBe('')
+      expect(runtimeResult?.matchedAliasPath).toBe('/pages/issue-320/new-alias')
+      expect(runtimeResult?.redirect).toBe('/pages/issue-320/index?from=override')
+      expect(runtimeResult?.alias).toBe('/pages/issue-320/new-alias')
+      expect(runtimeResult?.hasLegacyRoute).toBe(true)
+
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toContain('data-ok="yes"')
+      expect(renderedWxml).toContain('data-before-path="/pages/issue-320/legacy"')
+      expect(renderedWxml).toContain('data-overridden-path="/pages/issue-320/new"')
+      expect(renderedWxml).toContain('data-new-alias-name="issue320-legacy"')
+      expect(renderedWxml).toContain('data-old-alias-name=""')
+      expect(renderedWxml).toContain('data-matched-alias-path="/pages/issue-320/new-alias"')
+      expect(renderedWxml).toContain('data-redirect="/pages/issue-320/index?from=override"')
+      expect(renderedWxml).toContain('data-alias="/pages/issue-320/new-alias"')
+      expect(renderedWxml).toContain('data-has-legacy-route="yes"')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('issue #317: loads duplicated shared chunks with localized runtime inside subpackages', async () => {
     const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
     const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
