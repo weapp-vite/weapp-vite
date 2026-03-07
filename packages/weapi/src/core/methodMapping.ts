@@ -281,8 +281,8 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'openAppAuthorizeSetting',
     description: '打开小程序授权设置页。',
     wxStrategy: '直连 `wx.openAppAuthorizeSetting`',
-    alipayStrategy: '映射到 `my.openSetting`',
-    douyinStrategy: '映射到 `tt.openSetting`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2365,7 +2365,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getSystemInfo',
     },
     openAppAuthorizeSetting: {
-      target: 'openSetting',
+      target: 'openAppAuthorizeSetting',
     },
     pluginLogin: {
       target: 'pluginLogin',
@@ -3059,7 +3059,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getSystemInfo',
     },
     openAppAuthorizeSetting: {
-      target: 'openSetting',
+      target: 'openAppAuthorizeSetting',
     },
     pluginLogin: {
       target: 'pluginLogin',
