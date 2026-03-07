@@ -547,6 +547,31 @@ describe('weapi', () => {
     expect(requestSubscribeMessage).not.toHaveBeenCalled()
   })
 
+  it.each([
+    { platform: 'alipay', normalizedPlatform: 'my' },
+    { platform: 'tt', normalizedPlatform: 'tt' },
+  ])('treats restartMiniProgram as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
+    const reLaunch = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        reLaunch,
+      },
+      platform,
+    }) as Record<string, any>
+
+    expect(api.resolveTarget('restartMiniProgram')).toMatchObject({
+      method: 'restartMiniProgram',
+      target: 'restartMiniProgram',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.restartMiniProgram()).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.restartMiniProgram:fail method not supported`,
+    })
+    expect(reLaunch).not.toHaveBeenCalled()
+  })
+
   it('maps hideHomeButton to hideBackHome for alipay', async () => {
     const hideBackHome = vi.fn((options: any) => {
       options.success?.({})
@@ -2037,7 +2062,7 @@ describe('weapi', () => {
       { method: 'checkSession', my: 'checkSession', tt: 'checkSession', mySupported: false },
       { method: 'requestSubscribeDeviceMessage', my: 'requestSubscribeDeviceMessage', tt: 'requestSubscribeDeviceMessage', mySupported: false, ttSupported: false },
       { method: 'requestSubscribeEmployeeMessage', my: 'requestSubscribeEmployeeMessage', tt: 'requestSubscribeEmployeeMessage', mySupported: false, ttSupported: false },
-      { method: 'restartMiniProgram', my: 'reLaunch', tt: 'reLaunch' },
+      { method: 'restartMiniProgram', my: 'restartMiniProgram', tt: 'restartMiniProgram', mySupported: false, ttSupported: false },
       { method: 'scanCode', my: 'scan', tt: 'scanCode' },
       { method: 'requestPayment', my: 'requestPayment', tt: 'requestPayment', mySupported: false, ttSupported: false },
       { method: 'requestOrderPayment', my: 'requestOrderPayment', tt: 'requestOrderPayment', mySupported: false, ttSupported: false },

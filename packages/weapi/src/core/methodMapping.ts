@@ -337,8 +337,8 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'restartMiniProgram',
     description: '重启小程序。',
     wxStrategy: '直连 `wx.restartMiniProgram`',
-    alipayStrategy: '映射到 `my.reLaunch`',
-    douyinStrategy: '映射到 `tt.reLaunch`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2386,7 +2386,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'requestSubscribeEmployeeMessage',
     },
     restartMiniProgram: {
-      target: 'reLaunch',
+      target: 'restartMiniProgram',
     },
     scanCode: {
       target: 'scan',
@@ -3080,7 +3080,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'requestSubscribeEmployeeMessage',
     },
     restartMiniProgram: {
-      target: 'reLaunch',
+      target: 'restartMiniProgram',
     },
     scanCode: {
       target: 'scanCode',
