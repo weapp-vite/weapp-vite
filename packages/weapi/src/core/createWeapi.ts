@@ -52,14 +52,14 @@ function callWithPromise(
   context: WeapiAdapter,
   method: (...args: any[]) => any,
   args: unknown[],
-  mapResult?: (result: any) => any,
+  mapResult?: (result: any, args?: unknown[]) => any,
 ) {
   return new Promise((resolve, reject) => {
     const { args: nextArgs, options } = resolveOptionsArg(args)
     let settled = false
     options.success = (res: any) => {
       settled = true
-      resolve(mapResult ? mapResult(res) : res)
+      resolve(mapResult ? mapResult(res, args) : res)
     }
     options.fail = (err: any) => {
       settled = true
@@ -67,7 +67,7 @@ function callWithPromise(
     }
     options.complete = (res: any) => {
       if (!settled) {
-        resolve(mapResult ? mapResult(res) : res)
+        resolve(mapResult ? mapResult(res, args) : res)
       }
     }
     try {
@@ -251,7 +251,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         }
         if (shouldSkipPromise(prop as string)) {
           const result = runtimeMethod.apply(runtimeAdapter, runtimeArgs)
-          return mappingRule?.mapResult ? mappingRule.mapResult(result) : result
+          return mappingRule?.mapResult ? mappingRule.mapResult(result, runtimeArgs) : result
         }
         const lastArg = runtimeArgs.length > 0 ? runtimeArgs[runtimeArgs.length - 1] : undefined
         if (hasCallbacks(lastArg)) {
@@ -260,14 +260,14 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
             const originalSuccess = options.success
             const originalComplete = options.complete
             options.success = (res: any) => {
-              originalSuccess?.(mappingRule.mapResult!(res))
+              originalSuccess?.(mappingRule.mapResult!(res, runtimeArgs))
             }
             options.complete = (res: any) => {
-              originalComplete?.(mappingRule.mapResult!(res))
+              originalComplete?.(mappingRule.mapResult!(res, runtimeArgs))
             }
           }
           const result = runtimeMethod.apply(runtimeAdapter, runtimeArgs)
-          return mappingRule?.mapResult ? mappingRule.mapResult(result) : result
+          return mappingRule?.mapResult ? mappingRule.mapResult(result, runtimeArgs) : result
         }
         return callWithPromise(runtimeAdapter as WeapiAdapter, runtimeMethod, runtimeArgs, mappingRule?.mapResult)
       }

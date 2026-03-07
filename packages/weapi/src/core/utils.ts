@@ -28,6 +28,8 @@ export function isEventMethod(name: string) {
 export function shouldSkipPromise(name: string) {
   return isSyncMethod(name)
     || isEventMethod(name)
+    || name === 'createInterstitialAd'
+    || name === 'createRewardedVideoAd'
     || name === 'createVKSession'
     || name === 'createCameraContext'
     || name === 'cancelIdleCallback'
