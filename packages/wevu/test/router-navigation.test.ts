@@ -439,6 +439,7 @@ describe('router navigation helpers', () => {
       {
         name: 'dashboard',
         path: '/pages/dashboard/index',
+        aliasPath: '/pages/admin/index',
       },
     ])
     expect(router.getRoutes()).toEqual([
@@ -941,6 +942,19 @@ describe('router navigation helpers', () => {
         },
       ],
     })
+
+    const resolved = router.resolve('/pages/article/42/index')
+    expect(resolved.name).toBe('post-detail')
+    expect(resolved.params).toEqual({
+      id: '42',
+    })
+    expect(resolved.matched).toEqual([
+      {
+        name: 'post-detail',
+        path: '/pages/post/:id/index',
+        aliasPath: '/pages/article/:id/index',
+      },
+    ])
 
     const result = await router.push('/pages/article/42/index')
     expect(result).toBeUndefined()
