@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 390 | 390 | 0 | 479 | 81.42% | 81.42% |
-| 抖音小程序 (`tt`) | 328 | 328 | 0 | 479 | 68.48% | 68.48% |
-| 三端可调用完全对齐 (wx/my/tt) | 326 | - | - | 479 | 68.06% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 326 | - | 479 | - | 68.06% |
+| 支付宝小程序 (`my`) | 370 | 370 | 0 | 479 | 77.24% | 77.24% |
+| 抖音小程序 (`tt`) | 308 | 308 | 0 | 479 | 64.30% | 64.30% |
+| 三端可调用完全对齐 (wx/my/tt) | 306 | - | - | 479 | 63.88% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 306 | - | 479 | - | 63.88% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -176,26 +176,26 @@
 | `preloadSkylineView` | 预加载 Skyline 视图。 | 直连 `wx.preloadSkylineView` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `preloadWebview` | 预加载 WebView 页面。 | 直连 `wx.preloadWebview` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `removeSecureElementPass` | 移除安全元素卡片。 | 直连 `wx.removeSecureElementPass` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `chooseInvoiceTitle` | 选择发票抬头。 | 直连 `wx.chooseInvoiceTitle` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `chooseLicensePlate` | 选择车牌号。 | 直连 `wx.chooseLicensePlate` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `choosePoi` | 选择兴趣点 POI。 | 直连 `wx.choosePoi` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `closeBLEConnection` | 断开低功耗蓝牙连接。 | 直连 `wx.closeBLEConnection` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `createBLEConnection` | 创建低功耗蓝牙连接。 | 直连 `wx.createBLEConnection` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `cropImage` | 裁剪图片。 | 直连 `wx.cropImage` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `editImage` | 编辑图片。 | 直连 `wx.editImage` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `exitVoIPChat` | 退出音视频通话。 | 直连 `wx.exitVoIPChat` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `faceDetect` | 人脸检测。 | 直连 `wx.faceDetect` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `getApiCategory` | 获取 API 分类信息。 | 直连 `wx.getApiCategory` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `getBackgroundFetchToken` | 获取后台拉取 token。 | 直连 `wx.getBackgroundFetchToken` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `getChannelsLiveInfo` | 获取视频号直播信息。 | 直连 `wx.getChannelsLiveInfo` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `getChannelsLiveNoticeInfo` | 获取视频号直播预告信息。 | 直连 `wx.getChannelsLiveNoticeInfo` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `getChannelsShareKey` | 获取视频号分享 key。 | 直连 `wx.getChannelsShareKey` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `getChatToolInfo` | 获取客服工具信息。 | 直连 `wx.getChatToolInfo` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `getCommonConfig` | 获取通用配置。 | 直连 `wx.getCommonConfig` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `getGroupEnterInfo` | 获取群聊进入信息。 | 直连 `wx.getGroupEnterInfo` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `getPrivacySetting` | 获取隐私设置。 | 直连 `wx.getPrivacySetting` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `initFaceDetect` | 初始化人脸检测。 | 直连 `wx.initFaceDetect` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `join1v1Chat` | 发起 1v1 通话。 | 直连 `wx.join1v1Chat` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `chooseInvoiceTitle` | 选择发票抬头。 | 直连 `wx.chooseInvoiceTitle` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `chooseLicensePlate` | 选择车牌号。 | 直连 `wx.chooseLicensePlate` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `choosePoi` | 选择兴趣点 POI。 | 直连 `wx.choosePoi` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `closeBLEConnection` | 断开低功耗蓝牙连接。 | 直连 `wx.closeBLEConnection` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `createBLEConnection` | 创建低功耗蓝牙连接。 | 直连 `wx.createBLEConnection` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `cropImage` | 裁剪图片。 | 直连 `wx.cropImage` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `editImage` | 编辑图片。 | 直连 `wx.editImage` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `exitVoIPChat` | 退出音视频通话。 | 直连 `wx.exitVoIPChat` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `faceDetect` | 人脸检测。 | 直连 `wx.faceDetect` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getApiCategory` | 获取 API 分类信息。 | 直连 `wx.getApiCategory` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getBackgroundFetchToken` | 获取后台拉取 token。 | 直连 `wx.getBackgroundFetchToken` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getChannelsLiveInfo` | 获取视频号直播信息。 | 直连 `wx.getChannelsLiveInfo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getChannelsLiveNoticeInfo` | 获取视频号直播预告信息。 | 直连 `wx.getChannelsLiveNoticeInfo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getChannelsShareKey` | 获取视频号分享 key。 | 直连 `wx.getChannelsShareKey` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getChatToolInfo` | 获取客服工具信息。 | 直连 `wx.getChatToolInfo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getCommonConfig` | 获取通用配置。 | 直连 `wx.getCommonConfig` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getGroupEnterInfo` | 获取群聊进入信息。 | 直连 `wx.getGroupEnterInfo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getPrivacySetting` | 获取隐私设置。 | 直连 `wx.getPrivacySetting` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `initFaceDetect` | 初始化人脸检测。 | 直连 `wx.initFaceDetect` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `join1v1Chat` | 发起 1v1 通话。 | 直连 `wx.join1v1Chat` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `shareAppMessageToGroup` | 分享到群聊会话。 | 直连 `wx.shareAppMessageToGroup` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `shareEmojiToGroup` | 分享到群聊表情。 | 直连 `wx.shareEmojiToGroup` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `shareFileMessage` | 分享文件消息。 | 直连 `wx.shareFileMessage` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |

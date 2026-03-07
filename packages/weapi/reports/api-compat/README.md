@@ -14,24 +14,24 @@
 | 抖音方法数                       |  165 |
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
-| 支付宝可按微信命名调用的方法数   |  390 |
-| 支付宝语义对齐方法数             |  390 |
+| 支付宝可按微信命名调用的方法数   |  370 |
+| 支付宝语义对齐方法数             |  370 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  328 |
-| 抖音语义对齐方法数               |  328 |
+| 抖音可按微信命名调用的方法数     |  308 |
+| 抖音语义对齐方法数               |  308 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  326 |
-| 三端语义完全对齐方法数           |  326 |
+| 三端可调用完全对齐方法数         |  306 |
+| 三端语义完全对齐方法数           |  306 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           390 |             390 |               0 |      479 |       81.42% |         81.42% |
-| 抖音小程序 (`tt`)             |           328 |             328 |               0 |      479 |       68.48% |         68.48% |
-| 三端可调用完全对齐 (wx/my/tt) |           326 |               - |               - |      479 |       68.06% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             326 |               - |      479 |            - |         68.06% |
+| 支付宝小程序 (`my`)           |           370 |             370 |               0 |      479 |       77.24% |         77.24% |
+| 抖音小程序 (`tt`)             |           308 |             308 |               0 |      479 |       64.30% |         64.30% |
+| 三端可调用完全对齐 (wx/my/tt) |           306 |               - |               - |      479 |       63.88% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             306 |               - |      479 |            - |         63.88% |
 
 ## 核心差异映射（手工规则）
 
@@ -167,26 +167,26 @@
 | `preloadSkylineView`                | 直连 `wx.preloadSkylineView`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `preloadWebview`                    | 直连 `wx.preloadWebview`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `removeSecureElementPass`           | 直连 `wx.removeSecureElementPass`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `chooseInvoiceTitle`                | 直连 `wx.chooseInvoiceTitle`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `chooseLicensePlate`                | 直连 `wx.chooseLicensePlate`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `choosePoi`                         | 直连 `wx.choosePoi`                                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `closeBLEConnection`                | 直连 `wx.closeBLEConnection`                        | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `createBLEConnection`               | 直连 `wx.createBLEConnection`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `cropImage`                         | 直连 `wx.cropImage`                                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `editImage`                         | 直连 `wx.editImage`                                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `exitVoIPChat`                      | 直连 `wx.exitVoIPChat`                              | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `faceDetect`                        | 直连 `wx.faceDetect`                                | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getApiCategory`                    | 直连 `wx.getApiCategory`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getBackgroundFetchToken`           | 直连 `wx.getBackgroundFetchToken`                   | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getChannelsLiveInfo`               | 直连 `wx.getChannelsLiveInfo`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getChannelsLiveNoticeInfo`         | 直连 `wx.getChannelsLiveNoticeInfo`                 | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getChannelsShareKey`               | 直连 `wx.getChannelsShareKey`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getChatToolInfo`                   | 直连 `wx.getChatToolInfo`                           | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getCommonConfig`                   | 直连 `wx.getCommonConfig`                           | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getGroupEnterInfo`                 | 直连 `wx.getGroupEnterInfo`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `getPrivacySetting`                 | 直连 `wx.getPrivacySetting`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `initFaceDetect`                    | 直连 `wx.initFaceDetect`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
-| `join1v1Chat`                       | 直连 `wx.join1v1Chat`                               | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `chooseInvoiceTitle`                | 直连 `wx.chooseInvoiceTitle`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `chooseLicensePlate`                | 直连 `wx.chooseLicensePlate`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `choosePoi`                         | 直连 `wx.choosePoi`                                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `closeBLEConnection`                | 直连 `wx.closeBLEConnection`                        | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `createBLEConnection`               | 直连 `wx.createBLEConnection`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `cropImage`                         | 直连 `wx.cropImage`                                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `editImage`                         | 直连 `wx.editImage`                                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `exitVoIPChat`                      | 直连 `wx.exitVoIPChat`                              | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `faceDetect`                        | 直连 `wx.faceDetect`                                | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `getApiCategory`                    | 直连 `wx.getApiCategory`                            | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `getBackgroundFetchToken`           | 直连 `wx.getBackgroundFetchToken`                   | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `getChannelsLiveInfo`               | 直连 `wx.getChannelsLiveInfo`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `getChannelsLiveNoticeInfo`         | 直连 `wx.getChannelsLiveNoticeInfo`                 | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `getChannelsShareKey`               | 直连 `wx.getChannelsShareKey`                       | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `getChatToolInfo`                   | 直连 `wx.getChatToolInfo`                           | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `getCommonConfig`                   | 直连 `wx.getCommonConfig`                           | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `getGroupEnterInfo`                 | 直连 `wx.getGroupEnterInfo`                         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `getPrivacySetting`                 | 直连 `wx.getPrivacySetting`                         | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `initFaceDetect`                    | 直连 `wx.initFaceDetect`                            | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
+| `join1v1Chat`                       | 直连 `wx.join1v1Chat`                               | 无同等 API，调用时按 unsupported 报错                                  | 无同等 API，调用时按 unsupported 报错                                  |
 | `shareAppMessageToGroup`            | 直连 `wx.shareAppMessageToGroup`                    | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `shareEmojiToGroup`                 | 直连 `wx.shareEmojiToGroup`                         | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `shareFileMessage`                  | 直连 `wx.shareFileMessage`                          | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
