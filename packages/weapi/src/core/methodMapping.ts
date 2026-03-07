@@ -482,15 +482,15 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '获取窗口信息。',
     wxStrategy: '直连 `wx.getWindowInfo`',
     alipayStrategy: '直连 `my.getWindowInfo`',
-    douyinStrategy: '映射到 `tt.getSystemInfo`，并提取窗口字段',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
     method: 'getDeviceInfo',
     description: '获取设备基础信息。',
     wxStrategy: '直连 `wx.getDeviceInfo`',
-    alipayStrategy: '映射到 `my.getSystemInfo`，并提取设备字段',
-    douyinStrategy: '映射到 `tt.getSystemInfo`，并提取设备字段',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2384,38 +2384,6 @@ function mapSystemInfoToBatteryInfo(result: any) {
   return nextResult
 }
 
-function mapSystemInfoToWindowInfo(result: any) {
-  if (!isPlainObject(result)) {
-    return result
-  }
-  return {
-    ...result,
-    pixelRatio: result.pixelRatio,
-    screenWidth: result.screenWidth,
-    screenHeight: result.screenHeight,
-    windowWidth: result.windowWidth,
-    windowHeight: result.windowHeight,
-    statusBarHeight: result.statusBarHeight,
-    safeArea: result.safeArea,
-    screenTop: result.screenTop,
-  }
-}
-
-function mapSystemInfoToDeviceInfo(result: any) {
-  if (!isPlainObject(result)) {
-    return result
-  }
-  return {
-    ...result,
-    brand: result.brand,
-    model: result.model,
-    system: result.system,
-    platform: result.platform,
-    benchmarkLevel: result.benchmarkLevel,
-    abi: result.abi,
-  }
-}
-
 function normalizeEnvVersion(value: unknown) {
   if (typeof value !== 'string' || !value) {
     return value
@@ -2610,8 +2578,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getWindowInfo',
     },
     getDeviceInfo: {
-      target: 'getSystemInfo',
-      mapResult: mapSystemInfoToDeviceInfo,
+      target: 'getDeviceInfo',
     },
     getAccountInfoSync: {
       target: 'getAccountInfoSync',
@@ -3302,12 +3269,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'hideHomeButton',
     },
     getWindowInfo: {
-      target: 'getSystemInfo',
-      mapResult: mapSystemInfoToWindowInfo,
+      target: 'getWindowInfo',
     },
     getDeviceInfo: {
-      target: 'getSystemInfo',
-      mapResult: mapSystemInfoToDeviceInfo,
+      target: 'getDeviceInfo',
     },
     getAccountInfoSync: {
       target: 'getEnvInfoSync',

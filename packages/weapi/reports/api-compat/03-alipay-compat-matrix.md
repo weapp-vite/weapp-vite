@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：202，不支持：277
+总计：479，支持：201，不支持：278
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -120,7 +120,7 @@
 | `getConnectedBluetoothDevices`                | `getConnectedBluetoothDevices`                | ✅   | `native`      | ✅       | 直连 `my.getConnectedBluetoothDevices`                                            |
 | `getConnectedWifi`                            | `getConnectedWifi`                            | ✅   | `native`      | ✅       | 直连 `my.getConnectedWifi`                                                        |
 | `getDeviceBenchmarkInfo`                      | `getDeviceBenchmarkInfo`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getDeviceInfo`                               | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `my.getSystemInfo`，并提取设备字段                                         |
+| `getDeviceInfo`                               | `getDeviceInfo`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getDeviceVoIPList`                           | `getDeviceVoIPList`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getEnterOptionsSync`                         | `getEnterOptionsSync`                         | ✅   | `mapped`      | ✅       | 直连 `my.getEnterOptionsSync`                                                     |
 | `getExptInfoSync`                             | `getExptInfoSync`                             | ❌   | `unsupported` | ❌       | 未提供 my.getExptInfoSync，调用时将返回 not supported                             |

@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 202 | 202 | 0 | 479 | 42.17% | 42.17% |
-| 抖音小程序 (`tt`) | 144 | 144 | 0 | 479 | 30.06% | 30.06% |
-| 三端可调用完全对齐 (wx/my/tt) | 130 | - | - | 479 | 27.14% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 130 | - | 479 | - | 27.14% |
+| 支付宝小程序 (`my`) | 201 | 201 | 0 | 479 | 41.96% | 41.96% |
+| 抖音小程序 (`tt`) | 142 | 142 | 0 | 479 | 29.65% | 29.65% |
+| 三端可调用完全对齐 (wx/my/tt) | 128 | - | - | 479 | 26.72% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 128 | - | 479 | - | 26.72% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -92,8 +92,8 @@
 | `getAppBaseInfo` | 获取 App 基础信息。 | 直连 `wx.getAppBaseInfo` | 直连 `my.getAppBaseInfo` | 映射到 `tt.getEnvInfoSync` | ⚠️ |
 | `chooseVideo` | 选择视频。 | 直连 `wx.chooseVideo` | 直连 `my.chooseVideo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `hideHomeButton` | 隐藏返回首页按钮。 | 直连 `wx.hideHomeButton` | 映射到 `my.hideBackHome` | 直连 `tt.hideHomeButton` | ✅ |
-| `getWindowInfo` | 获取窗口信息。 | 直连 `wx.getWindowInfo` | 直连 `my.getWindowInfo` | 映射到 `tt.getSystemInfo`，并提取窗口字段 | ⚠️ |
-| `getDeviceInfo` | 获取设备基础信息。 | 直连 `wx.getDeviceInfo` | 映射到 `my.getSystemInfo`，并提取设备字段 | 映射到 `tt.getSystemInfo`，并提取设备字段 | ⚠️ |
+| `getWindowInfo` | 获取窗口信息。 | 直连 `wx.getWindowInfo` | 直连 `my.getWindowInfo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getDeviceInfo` | 获取设备基础信息。 | 直连 `wx.getDeviceInfo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getAccountInfoSync` | 同步获取当前账号信息。 | 直连 `wx.getAccountInfoSync` | 直连 `my.getAccountInfoSync` | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构 | ⚠️ |
 | `setBackgroundColor` | 动态设置窗口背景色。 | 直连 `wx.setBackgroundColor` | 直连 `my.setBackgroundColor` | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor` | ⚠️ |
 | `setBackgroundTextStyle` | 动态设置下拉背景字体样式。 | 直连 `wx.setBackgroundTextStyle` | 直连 `my.setBackgroundTextStyle` | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor` | ⚠️ |

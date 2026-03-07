@@ -1466,25 +1466,8 @@ describe('weapi', () => {
     expect(chooseMedia).not.toHaveBeenCalled()
   })
 
-  it('maps getWindowInfo to getSystemInfo for douyin', async () => {
-    const getSystemInfo = vi.fn((options: any) => {
-      options.success?.({
-        pixelRatio: 2,
-        screenWidth: 1080,
-        screenHeight: 1920,
-        windowWidth: 360,
-        windowHeight: 640,
-        statusBarHeight: 24,
-        safeArea: {
-          top: 24,
-          left: 0,
-          right: 360,
-          bottom: 640,
-          width: 360,
-          height: 616,
-        },
-      })
-    })
+  it('treats getWindowInfo as unsupported for douyin without strict-equivalent api', async () => {
+    const getSystemInfo = vi.fn()
     const api = createWeapi({
       adapter: {
         getSystemInfo,
@@ -1492,17 +1475,17 @@ describe('weapi', () => {
       platform: 'tt',
     })
 
-    const result = await api.getWindowInfo()
-
-    expect(getSystemInfo).toHaveBeenCalledWith(expect.any(Object))
-    expect(result).toMatchObject({
-      pixelRatio: 2,
-      screenWidth: 1080,
-      screenHeight: 1920,
-      windowWidth: 360,
-      windowHeight: 640,
-      statusBarHeight: 24,
+    expect(api.resolveTarget('getWindowInfo')).toMatchObject({
+      method: 'getWindowInfo',
+      target: 'getWindowInfo',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
+    await expect(api.getWindowInfo()).rejects.toMatchObject({
+      errMsg: 'tt.getWindowInfo:fail method not supported',
+    })
+    expect(getSystemInfo).not.toHaveBeenCalled()
   })
 
   it('maps setBackgroundColor and setBackgroundTextStyle to setNavigationBarColor for douyin', async () => {
@@ -1593,18 +1576,10 @@ describe('weapi', () => {
   })
 
   it.each([
-    { platform: 'alipay' },
-    { platform: 'tt' },
-  ])('maps getDeviceInfo via getSystemInfo for $platform', async ({ platform }) => {
-    const getSystemInfo = vi.fn((options: any) => {
-      options.success?.({
-        brand: 'demo-brand',
-        model: 'demo-model',
-        system: 'OS 1.0',
-        platform: 'android',
-        benchmarkLevel: 20,
-      })
-    })
+    { platform: 'alipay', normalizedPlatform: 'my' },
+    { platform: 'tt', normalizedPlatform: 'tt' },
+  ])('treats getDeviceInfo as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
+    const getSystemInfo = vi.fn()
     const api = createWeapi({
       adapter: {
         getSystemInfo,
@@ -1612,16 +1587,17 @@ describe('weapi', () => {
       platform,
     })
 
-    const result = await api.getDeviceInfo()
-
-    expect(getSystemInfo).toHaveBeenCalledWith(expect.any(Object))
-    expect(result).toMatchObject({
-      brand: 'demo-brand',
-      model: 'demo-model',
-      system: 'OS 1.0',
-      platform: 'android',
-      benchmarkLevel: 20,
+    expect(api.resolveTarget('getDeviceInfo')).toMatchObject({
+      method: 'getDeviceInfo',
+      target: 'getDeviceInfo',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
+    await expect(api.getDeviceInfo()).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.getDeviceInfo:fail method not supported`,
+    })
+    expect(getSystemInfo).not.toHaveBeenCalled()
   })
 
   it('maps getAccountInfoSync to getEnvInfoSync for douyin', () => {
@@ -2060,8 +2036,8 @@ describe('weapi', () => {
       { method: 'chooseMessageFile', my: 'chooseMessageFile', tt: 'chooseMessageFile', mySupported: false, ttSupported: false },
       { method: 'getFuzzyLocation', my: 'getFuzzyLocation', tt: 'getFuzzyLocation', mySupported: false, ttSupported: false },
       { method: 'hideHomeButton', my: 'hideBackHome', tt: 'hideHomeButton' },
-      { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getSystemInfo' },
-      { method: 'getDeviceInfo', my: 'getSystemInfo', tt: 'getSystemInfo' },
+      { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getWindowInfo', ttSupported: false },
+      { method: 'getDeviceInfo', my: 'getDeviceInfo', tt: 'getDeviceInfo', mySupported: false, ttSupported: false },
       { method: 'getAccountInfoSync', my: 'getAccountInfoSync', tt: 'getEnvInfoSync' },
       { method: 'getLogManager', my: 'getLogManager', tt: 'getLogManager', mySupported: false, ttSupported: false },
       { method: 'nextTick', my: 'nextTick', tt: 'nextTick', mySupported: false, ttSupported: false },

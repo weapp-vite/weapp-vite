@@ -638,7 +638,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getWindowInfo` | ⚠️ |
    * | 支付宝 | 直连 `my.getWindowInfo` | ⚠️ |
-   * | 抖音 | 映射到 `tt.getSystemInfo`，并提取窗口字段 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getWindowInfo: WeapiCrossPlatformAdapter['getWindowInfo']
 
@@ -648,8 +648,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getDeviceInfo` | ⚠️ |
-   * | 支付宝 | 映射到 `my.getSystemInfo`，并提取设备字段 | ⚠️ |
-   * | 抖音 | 映射到 `tt.getSystemInfo`，并提取设备字段 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getDeviceInfo: WeapiCrossPlatformAdapter['getDeviceInfo']
 
