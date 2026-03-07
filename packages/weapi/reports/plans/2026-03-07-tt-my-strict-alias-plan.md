@@ -131,6 +131,7 @@
 - `tt.onWifiConnected` / `tt.offWifiConnected` / `tt.setWifiList` 缺失时不得回退到 `onGetWifiList` / `offGetWifiList` / `getConnectedWifi` / `getWifiList`。
 - `tt.chooseContact` 缺失时不得回退到 `chooseAddress`。
 - `my.addPhoneCalendar` 缺失时不得回退到 `addPhoneContact`。
+- `my/tt` 的 `on/offWifiConnectedWithPartialInfo` 缺失时不得回退到 `on/offWifiConnected` 或 `on/offGetWifiList`。
 
 ## 5. 每批固定验证清单
 
