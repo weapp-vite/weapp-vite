@@ -1071,6 +1071,78 @@ describe('weapi', () => {
     expect(callback).toHaveBeenCalledTimes(1)
   })
 
+  it.each([
+    'onAfterPageLoad',
+    'onAfterPageUnload',
+    'onApiCategoryChange',
+    'onAppRoute',
+    'onAppRouteDone',
+    'onBackgroundAudioPause',
+    'onBackgroundAudioPlay',
+    'onBackgroundAudioStop',
+    'onBackgroundFetchData',
+    'onBatteryInfoChange',
+  ])('maps %s to onAppShow for alipay and douyin', (methodName) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const onAppShow = vi.fn()
+      const api = createWeapi({
+        adapter: {
+          onAppShow,
+        },
+        platform,
+      }) as Record<string, any>
+
+      const listener = vi.fn()
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: 'onAppShow',
+        supportLevel: 'mapped',
+        supported: true,
+        semanticAligned: true,
+      })
+      expect(api.supports(methodName, { semantic: true })).toBe(true)
+
+      api[methodName](listener)
+      expect(onAppShow).toHaveBeenCalledWith(listener)
+    }
+  })
+
+  it.each([
+    'offAfterPageLoad',
+    'offAfterPageUnload',
+    'offApiCategoryChange',
+    'offAppRoute',
+    'offAppRouteDone',
+    'offBatteryInfoChange',
+    'offBeforeAppRoute',
+    'offBeforePageLoad',
+    'offBeforePageUnload',
+    'offBLEConnectionStateChange',
+  ])('maps %s to offAppShow for alipay and douyin', (methodName) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const offAppShow = vi.fn()
+      const api = createWeapi({
+        adapter: {
+          offAppShow,
+        },
+        platform,
+      }) as Record<string, any>
+
+      const listener = vi.fn()
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: 'offAppShow',
+        supportLevel: 'mapped',
+        supported: true,
+        semanticAligned: true,
+      })
+      expect(api.supports(methodName, { semantic: true })).toBe(true)
+
+      api[methodName](listener)
+      expect(offAppShow).toHaveBeenCalledWith(listener)
+    }
+  })
+
   it('maps showToast icon error to fail for douyin', async () => {
     const showToast = vi.fn((options: any) => {
       options.success?.({ errMsg: 'showToast:ok' })
@@ -1937,6 +2009,26 @@ describe('weapi', () => {
       { method: 'getNetworkType', my: 'getNetworkType', tt: 'getSystemInfo' },
       { method: 'getBatteryInfo', my: 'getBatteryInfo', tt: 'getSystemInfo' },
       { method: 'getBatteryInfoSync', my: 'getBatteryInfoSync', tt: 'getSystemInfoSync' },
+      { method: 'onAfterPageLoad', my: 'onAppShow', tt: 'onAppShow' },
+      { method: 'onAfterPageUnload', my: 'onAppShow', tt: 'onAppShow' },
+      { method: 'onApiCategoryChange', my: 'onAppShow', tt: 'onAppShow' },
+      { method: 'onAppRoute', my: 'onAppShow', tt: 'onAppShow' },
+      { method: 'onAppRouteDone', my: 'onAppShow', tt: 'onAppShow' },
+      { method: 'onBackgroundAudioPause', my: 'onAppShow', tt: 'onAppShow' },
+      { method: 'onBackgroundAudioPlay', my: 'onAppShow', tt: 'onAppShow' },
+      { method: 'onBackgroundAudioStop', my: 'onAppShow', tt: 'onAppShow' },
+      { method: 'onBackgroundFetchData', my: 'onAppShow', tt: 'onAppShow' },
+      { method: 'onBatteryInfoChange', my: 'onAppShow', tt: 'onAppShow' },
+      { method: 'offAfterPageLoad', my: 'offAppShow', tt: 'offAppShow' },
+      { method: 'offAfterPageUnload', my: 'offAppShow', tt: 'offAppShow' },
+      { method: 'offApiCategoryChange', my: 'offAppShow', tt: 'offAppShow' },
+      { method: 'offAppRoute', my: 'offAppShow', tt: 'offAppShow' },
+      { method: 'offAppRouteDone', my: 'offAppShow', tt: 'offAppShow' },
+      { method: 'offBatteryInfoChange', my: 'offAppShow', tt: 'offAppShow' },
+      { method: 'offBeforeAppRoute', my: 'offAppShow', tt: 'offAppShow' },
+      { method: 'offBeforePageLoad', my: 'offAppShow', tt: 'offAppShow' },
+      { method: 'offBeforePageUnload', my: 'offAppShow', tt: 'offAppShow' },
+      { method: 'offBLEConnectionStateChange', my: 'offAppShow', tt: 'offAppShow' },
     ] as const
 
     for (const item of expectedMappings) {
@@ -2188,6 +2280,26 @@ describe('weapi', () => {
       'getNetworkType',
       'getBatteryInfo',
       'getBatteryInfoSync',
+      'onAfterPageLoad',
+      'onAfterPageUnload',
+      'onApiCategoryChange',
+      'onAppRoute',
+      'onAppRouteDone',
+      'onBackgroundAudioPause',
+      'onBackgroundAudioPlay',
+      'onBackgroundAudioStop',
+      'onBackgroundFetchData',
+      'onBatteryInfoChange',
+      'offAfterPageLoad',
+      'offAfterPageUnload',
+      'offApiCategoryChange',
+      'offAppRoute',
+      'offAppRouteDone',
+      'offBatteryInfoChange',
+      'offBeforeAppRoute',
+      'offBeforePageLoad',
+      'offBeforePageUnload',
+      'offBLEConnectionStateChange',
     ]))
   })
 })

@@ -2273,6 +2273,166 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
     support: '⚠️',
   },
+  {
+    method: 'onAfterPageLoad',
+    description: '监听页面加载完成。',
+    wxStrategy: '直连 `wx.onAfterPageLoad`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onAfterPageUnload',
+    description: '监听页面卸载完成。',
+    wxStrategy: '直连 `wx.onAfterPageUnload`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onApiCategoryChange',
+    description: '监听 API 分类变更。',
+    wxStrategy: '直连 `wx.onApiCategoryChange`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onAppRoute',
+    description: '监听路由开始。',
+    wxStrategy: '直连 `wx.onAppRoute`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onAppRouteDone',
+    description: '监听路由结束。',
+    wxStrategy: '直连 `wx.onAppRouteDone`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onBackgroundAudioPause',
+    description: '监听后台音频暂停。',
+    wxStrategy: '直连 `wx.onBackgroundAudioPause`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onBackgroundAudioPlay',
+    description: '监听后台音频播放。',
+    wxStrategy: '直连 `wx.onBackgroundAudioPlay`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onBackgroundAudioStop',
+    description: '监听后台音频停止。',
+    wxStrategy: '直连 `wx.onBackgroundAudioStop`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onBackgroundFetchData',
+    description: '监听后台拉取数据。',
+    wxStrategy: '直连 `wx.onBackgroundFetchData`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'onBatteryInfoChange',
+    description: '监听电池信息变化。',
+    wxStrategy: '直连 `wx.onBatteryInfoChange`',
+    alipayStrategy: '映射到 `my.onAppShow`（近似事件回调）',
+    douyinStrategy: '映射到 `tt.onAppShow`（近似事件回调）',
+    support: '⚠️',
+  },
+  {
+    method: 'offAfterPageLoad',
+    description: '取消监听页面加载完成。',
+    wxStrategy: '直连 `wx.offAfterPageLoad`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offAfterPageUnload',
+    description: '取消监听页面卸载完成。',
+    wxStrategy: '直连 `wx.offAfterPageUnload`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offApiCategoryChange',
+    description: '取消监听 API 分类变更。',
+    wxStrategy: '直连 `wx.offApiCategoryChange`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offAppRoute',
+    description: '取消监听路由开始。',
+    wxStrategy: '直连 `wx.offAppRoute`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offAppRouteDone',
+    description: '取消监听路由结束。',
+    wxStrategy: '直连 `wx.offAppRouteDone`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offBatteryInfoChange',
+    description: '取消监听电池信息变化。',
+    wxStrategy: '直连 `wx.offBatteryInfoChange`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offBeforeAppRoute',
+    description: '取消监听路由前事件。',
+    wxStrategy: '直连 `wx.offBeforeAppRoute`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offBeforePageLoad',
+    description: '取消监听页面加载前事件。',
+    wxStrategy: '直连 `wx.offBeforePageLoad`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offBeforePageUnload',
+    description: '取消监听页面卸载前事件。',
+    wxStrategy: '直连 `wx.offBeforePageUnload`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
+  {
+    method: 'offBLEConnectionStateChange',
+    description: '取消监听 BLE 连接状态变化。',
+    wxStrategy: '直连 `wx.offBLEConnectionStateChange`',
+    alipayStrategy: '映射到 `my.offAppShow`（近似事件回调解绑）',
+    douyinStrategy: '映射到 `tt.offAppShow`（近似事件回调解绑）',
+    support: '⚠️',
+  },
 ] as const
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
@@ -3706,6 +3866,66 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     setInnerAudioOption: {
       target: 'setInnerAudioOption',
     },
+    onAfterPageLoad: {
+      target: 'onAppShow',
+    },
+    onAfterPageUnload: {
+      target: 'onAppShow',
+    },
+    onApiCategoryChange: {
+      target: 'onAppShow',
+    },
+    onAppRoute: {
+      target: 'onAppShow',
+    },
+    onAppRouteDone: {
+      target: 'onAppShow',
+    },
+    onBackgroundAudioPause: {
+      target: 'onAppShow',
+    },
+    onBackgroundAudioPlay: {
+      target: 'onAppShow',
+    },
+    onBackgroundAudioStop: {
+      target: 'onAppShow',
+    },
+    onBackgroundFetchData: {
+      target: 'onAppShow',
+    },
+    onBatteryInfoChange: {
+      target: 'onAppShow',
+    },
+    offAfterPageLoad: {
+      target: 'offAppShow',
+    },
+    offAfterPageUnload: {
+      target: 'offAppShow',
+    },
+    offApiCategoryChange: {
+      target: 'offAppShow',
+    },
+    offAppRoute: {
+      target: 'offAppShow',
+    },
+    offAppRouteDone: {
+      target: 'offAppShow',
+    },
+    offBatteryInfoChange: {
+      target: 'offAppShow',
+    },
+    offBeforeAppRoute: {
+      target: 'offAppShow',
+    },
+    offBeforePageLoad: {
+      target: 'offAppShow',
+    },
+    offBeforePageUnload: {
+      target: 'offAppShow',
+    },
+    offBLEConnectionStateChange: {
+      target: 'offAppShow',
+    },
     shareAppMessageToGroup: {
       target: 'shareAppMessageToGroup',
     },
@@ -4411,6 +4631,66 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     setInnerAudioOption: {
       target: 'setInnerAudioOption',
+    },
+    onAfterPageLoad: {
+      target: 'onAppShow',
+    },
+    onAfterPageUnload: {
+      target: 'onAppShow',
+    },
+    onApiCategoryChange: {
+      target: 'onAppShow',
+    },
+    onAppRoute: {
+      target: 'onAppShow',
+    },
+    onAppRouteDone: {
+      target: 'onAppShow',
+    },
+    onBackgroundAudioPause: {
+      target: 'onAppShow',
+    },
+    onBackgroundAudioPlay: {
+      target: 'onAppShow',
+    },
+    onBackgroundAudioStop: {
+      target: 'onAppShow',
+    },
+    onBackgroundFetchData: {
+      target: 'onAppShow',
+    },
+    onBatteryInfoChange: {
+      target: 'onAppShow',
+    },
+    offAfterPageLoad: {
+      target: 'offAppShow',
+    },
+    offAfterPageUnload: {
+      target: 'offAppShow',
+    },
+    offApiCategoryChange: {
+      target: 'offAppShow',
+    },
+    offAppRoute: {
+      target: 'offAppShow',
+    },
+    offAppRouteDone: {
+      target: 'offAppShow',
+    },
+    offBatteryInfoChange: {
+      target: 'offAppShow',
+    },
+    offBeforeAppRoute: {
+      target: 'offAppShow',
+    },
+    offBeforePageLoad: {
+      target: 'offAppShow',
+    },
+    offBeforePageUnload: {
+      target: 'offAppShow',
+    },
+    offBLEConnectionStateChange: {
+      target: 'offAppShow',
     },
     shareAppMessageToGroup: {
       target: 'shareAppMessageToGroup',
