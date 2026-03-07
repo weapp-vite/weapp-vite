@@ -743,6 +743,44 @@ function formatRoutePathForWarning(path: string): string {
   return createAbsoluteRoutePath(normalizedPath)
 }
 
+function hasCircularChildrenReference(
+  routeRecord: RouteRecordRaw,
+  ancestorRecords: ReadonlySet<RouteRecordRaw> = new Set<RouteRecordRaw>(),
+): boolean {
+  if (ancestorRecords.has(routeRecord)) {
+    return true
+  }
+
+  if (!Array.isArray(routeRecord.children) || routeRecord.children.length === 0) {
+    return false
+  }
+
+  const nextAncestorRecords = new Set(ancestorRecords)
+  nextAncestorRecords.add(routeRecord)
+  for (const childRecord of routeRecord.children) {
+    if (hasCircularChildrenReference(childRecord, nextAncestorRecords)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+function assertValidAddRouteInput(routeRecord: RouteRecordRaw): void {
+  const routeName = typeof routeRecord.name === 'string'
+    ? routeRecord.name.trim()
+    : ''
+  if (!routeName) {
+    throw new Error('Route name is required when adding a named route')
+  }
+  if (typeof routeRecord.path !== 'string' || !routeRecord.path) {
+    throw new Error(`Route path is required when adding named route "${routeName}"`)
+  }
+  if (hasCircularChildrenReference(routeRecord)) {
+    throw new Error(`Circular children reference detected when adding named route "${routeName}"`)
+  }
+}
+
 function warnDuplicateRouteEntries(routeEntries: readonly FlattenedRouteRecordSeed[]): void {
   const latestRouteInfoByName = new Map<string, { source: RouteOptionSource, path: string }>()
   const duplicateMessages: string[] = []
@@ -1948,6 +1986,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     if (!route) {
       throw new Error('Route record is required when adding a child route')
     }
+    assertValidAddRouteInput(route)
 
     const parentRouteName = typeof parentNameOrRoute === 'string'
       ? parentNameOrRoute
