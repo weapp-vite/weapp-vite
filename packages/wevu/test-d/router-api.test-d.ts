@@ -99,6 +99,7 @@ const removeDynamicRoute = navigation.addRoute({
 })
 expectType<() => void>(removeDynamicRoute)
 expectType<void>(navigation.removeRoute('dynamic-post'))
+expectType<void>(navigation.clearRoutes())
 expectType<Promise<void | NavigationFailure>>(navigation.go(-1))
 expectType<Promise<void | NavigationFailure>>(navigation.forward())
 

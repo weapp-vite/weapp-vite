@@ -808,6 +808,57 @@ describe('router navigation helpers', () => {
     expect(router.hasRoute('dynamic-post')).toBe(false)
   })
 
+  it('supports clearing all named routes at runtime', async () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: {
+        home: '/pages/home/index',
+      },
+    })
+
+    router.addRoute({
+      name: 'dynamic-post',
+      path: '/pages/post/:id/index',
+    })
+
+    expect(router.hasRoute('home')).toBe(true)
+    expect(router.hasRoute('dynamic-post')).toBe(true)
+    expect(router.resolve('/pages/home/index').name).toBe('home')
+
+    router.clearRoutes()
+
+    expect(router.hasRoute('home')).toBe(false)
+    expect(router.hasRoute('dynamic-post')).toBe(false)
+    expect(router.getRoutes()).toEqual([])
+    expect(router.resolve('/pages/home/index').name).toBeUndefined()
+
+    await expect(router.push({ name: 'home' })).rejects.toMatchObject({
+      type: NavigationFailureType.unknown,
+      message: expect.stringContaining('Named route "home"'),
+    })
+  })
+
   it('replace returns duplicated failure when navigating to same location', async () => {
     const redirectTo = vi.fn()
     const instance = {

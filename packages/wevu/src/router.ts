@@ -175,6 +175,7 @@ export interface RouterNavigation {
   getRoutes: () => readonly RouteRecordRaw[]
   addRoute: (route: RouteRecordRaw) => () => void
   removeRoute: (name: string) => void
+  clearRoutes: () => void
   beforeEach: (guard: NavigationGuard) => () => void
   beforeResolve: (guard: NavigationGuard) => () => void
   afterEach: (hook: NavigationAfterEach) => () => void
@@ -1375,6 +1376,11 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     }
   }
 
+  function clearRoutes(): void {
+    namedRouteLookup.recordByName.clear()
+    namedRouteLookup.nameByStaticPath.clear()
+  }
+
   async function resolveRouteRecordRedirect(
     redirect: RouteRecordRedirect,
     to: RouteLocationNormalizedLoaded,
@@ -1852,6 +1858,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     getRoutes,
     addRoute,
     removeRoute,
+    clearRoutes,
     beforeEach,
     beforeResolve,
     afterEach,

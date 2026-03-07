@@ -79,6 +79,7 @@ console.log(router.getRoutes())
 
 remove()
 router.removeRoute('legacy-home')
+router.clearRoutes()
 ```
 
 ## 6. 导航 API 行为
