@@ -73,6 +73,20 @@
 - `tt.getEnvInfoSync` 的 typings 无法严格证明 `miniProgram.envVersion` 与 `plugin` 子结构契约可对齐。
 - 按“仅严格等价可映射”规则，保持 `getAccountInfoSync` 在 tt 侧 unsupported。
 
+3. 批次 C：已完成“否决映射防回归”测试固化。
+
+- 已新增并通过单测，确保以下“同功能异名候选”保持 unsupported，且不会误调用近似 API：
+- `my.getWeRunData` 不映射 `my.getRunData`
+- `my.startSoterAuthentication` 不映射 `my.startIfaaAuthentication`
+- `my/tt.showShareImageMenu` 不映射 `showShareMenu`
+- `tt.openChannelsUserProfile` 不映射 `tt.openAwemeUserProfile`
+- 已有测试同时覆盖：
+- `my.chooseAddress` 不映射 `my.getAddress`
+- `my.scanCode` 不映射 `my.scan`
+- `tt.getEnterOptionsSync` 不映射 `tt.getLaunchOptionsSync`
+- `tt.getAccountInfoSync` 不映射 `tt.getEnvInfoSync`
+- `my/tt.requestSubscribeDeviceMessage|requestSubscribeEmployeeMessage` 不映射 `requestSubscribeMessage`
+
 ## 5. 每批固定验证清单
 
 1. `pnpm --filter @wevu/api test`
