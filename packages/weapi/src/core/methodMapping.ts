@@ -273,9 +273,9 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'getSystemInfoAsync',
     description: '异步获取系统信息。',
     wxStrategy: '直连 `wx.getSystemInfoAsync`',
-    alipayStrategy: '映射到 `my.getSystemInfo`',
-    douyinStrategy: '映射到 `tt.getSystemInfo`',
-    support: '✅',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
+    support: '⚠️',
   },
   {
     method: 'openAppAuthorizeSetting',
@@ -2362,7 +2362,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'createWebAudioContext',
     },
     getSystemInfoAsync: {
-      target: 'getSystemInfo',
+      target: 'getSystemInfoAsync',
     },
     openAppAuthorizeSetting: {
       target: 'openAppAuthorizeSetting',
@@ -3056,7 +3056,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'createWebAudioContext',
     },
     getSystemInfoAsync: {
-      target: 'getSystemInfo',
+      target: 'getSystemInfoAsync',
     },
     openAppAuthorizeSetting: {
       target: 'openAppAuthorizeSetting',

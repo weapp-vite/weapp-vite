@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：195，不支持：284
+总计：479，支持：194，不支持：285
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -159,7 +159,7 @@
 | `getStorageInfoSync`                          | `getStorageInfoSync`                          | ✅   | `native`      | ✅       | 直连 `my.getStorageInfoSync`                                                      |
 | `getStorageSync`                              | `getStorageSync`                              | ✅   | `native`      | ✅       | 直连 `my.getStorageSync`                                                          |
 | `getSystemInfo`                               | `getSystemInfo`                               | ✅   | `native`      | ✅       | 直连 `my.getSystemInfo`                                                           |
-| `getSystemInfoAsync`                          | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `my.getSystemInfo`                                                         |
+| `getSystemInfoAsync`                          | `getSystemInfoAsync`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | `native`      | ✅       | 直连 `my.getSystemInfoSync`                                                       |
 | `getSystemSetting`                            | `getSystemSetting`                            | ✅   | `mapped`      | ✅       | 直连 `my.getSystemSetting`                                                        |
 | `getUpdateManager`                            | `getUpdateManager`                            | ✅   | `native`      | ✅       | 直连 `my.getUpdateManager`                                                        |

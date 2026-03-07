@@ -597,6 +597,31 @@ describe('weapi', () => {
     expect(openSetting).not.toHaveBeenCalled()
   })
 
+  it.each([
+    { platform: 'alipay', normalizedPlatform: 'my' },
+    { platform: 'tt', normalizedPlatform: 'tt' },
+  ])('treats getSystemInfoAsync as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
+    const getSystemInfo = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        getSystemInfo,
+      },
+      platform,
+    }) as Record<string, any>
+
+    expect(api.resolveTarget('getSystemInfoAsync')).toMatchObject({
+      method: 'getSystemInfoAsync',
+      target: 'getSystemInfoAsync',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.getSystemInfoAsync()).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.getSystemInfoAsync:fail method not supported`,
+    })
+    expect(getSystemInfo).not.toHaveBeenCalled()
+  })
+
   it('treats hideHomeButton as unsupported for alipay without strict-equivalent api', async () => {
     const hideBackHome = vi.fn((options: any) => {
       options.success?.({})
@@ -2135,7 +2160,7 @@ describe('weapi', () => {
       { method: 'chooseAddress', my: 'chooseAddress', tt: 'chooseAddress', mySupported: false },
       { method: 'createAudioContext', my: 'createAudioContext', tt: 'createAudioContext', mySupported: false, ttSupported: false },
       { method: 'createWebAudioContext', my: 'createWebAudioContext', tt: 'createWebAudioContext', mySupported: false, ttSupported: false },
-      { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
+      { method: 'getSystemInfoAsync', my: 'getSystemInfoAsync', tt: 'getSystemInfoAsync', mySupported: false, ttSupported: false },
       { method: 'openAppAuthorizeSetting', my: 'openAppAuthorizeSetting', tt: 'openAppAuthorizeSetting', mySupported: false, ttSupported: false },
       { method: 'pluginLogin', my: 'pluginLogin', tt: 'pluginLogin', mySupported: false, ttSupported: false },
       { method: 'login', my: 'login', tt: 'login', mySupported: false },

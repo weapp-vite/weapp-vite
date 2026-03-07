@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：130，不支持：349
+总计：479，支持：129，不支持：350
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -159,7 +159,7 @@
 | `getStorageInfoSync`                          | `getStorageInfoSync`                          | ✅   | `native`      | ✅       | 直连 `tt.getStorageInfoSync`                                                      |
 | `getStorageSync`                              | `getStorageSync`                              | ✅   | `native`      | ✅       | 直连 `tt.getStorageSync`                                                          |
 | `getSystemInfo`                               | `getSystemInfo`                               | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfo`                                                           |
-| `getSystemInfoAsync`                          | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`                                                         |
+| `getSystemInfoAsync`                          | `getSystemInfoAsync`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfoSync`                                                       |
 | `getSystemSetting`                            | `getSystemSetting`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getUpdateManager`                            | `getUpdateManager`                            | ✅   | `native`      | ✅       | 直连 `tt.getUpdateManager`                                                        |
