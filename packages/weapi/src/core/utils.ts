@@ -26,7 +26,11 @@ export function isEventMethod(name: string) {
 }
 
 export function shouldSkipPromise(name: string) {
-  return isSyncMethod(name) || isEventMethod(name)
+  return isSyncMethod(name)
+    || isEventMethod(name)
+    || name === 'nextTick'
+    || name === 'getLogManager'
+    || name === 'reportAnalytics'
 }
 
 export function createNotSupportedError(methodName: string, platform?: string) {

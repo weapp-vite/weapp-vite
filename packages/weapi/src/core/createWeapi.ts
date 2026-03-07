@@ -7,7 +7,7 @@ import type {
   WeapiResolvedTarget,
 } from './types'
 import { detectGlobalAdapter } from './adapter'
-import { resolveMethodMappingWithMeta } from './methodMapping'
+import { isSyntheticMethodSupported, resolveMethodMappingWithMeta } from './methodMapping'
 import { createNotSupportedError, hasCallbacks, isPlainObject, shouldSkipPromise } from './utils'
 
 const INTERNAL_KEYS = new Set<PropertyKey>([
@@ -100,6 +100,31 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
   let platformName: string | undefined = normalizePlatformName(options.platform)
   const allowFallback = options.strictCompatibility !== true
   const cache = new Map<PropertyKey, any>()
+  const syntheticWindowResizeListeners = new Set<(result: any) => void>()
+  let syntheticWindowResizeBridgeReady = false
+  let syntheticWindowResizeSnapshot: string | undefined
+  const syntheticLogManager = {
+    log: (..._args: unknown[]) => {},
+    info: (..._args: unknown[]) => {},
+    warn: (..._args: unknown[]) => {},
+    error: (..._args: unknown[]) => {},
+    debug: (..._args: unknown[]) => {},
+    setFilterMsg: (_msg: string) => {},
+    addFilterMsg: (_msg: string) => {},
+  }
+
+  const mapSyntheticActionSheetResult = (result: any, itemList: readonly string[]) => {
+    const hasSelection = itemList.length > 0
+    const confirmed = Boolean(result?.confirm) && hasSelection
+    const index = confirmed ? 0 : -1
+    return {
+      ...(isPlainObject(result) ? result : {}),
+      index,
+      tapIndex: index,
+      cancel: !confirmed,
+      errMsg: confirmed ? 'showActionSheet:ok' : 'showActionSheet:fail cancel',
+    }
+  }
 
   const resolveAdapter = () => {
     if (adapter) {
@@ -133,6 +158,170 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     return platformName
   }
 
+  const hasSyntheticSupport = (platform: string | undefined, methodName: string) => {
+    if (platform !== 'my' && platform !== 'tt') {
+      return false
+    }
+    return isSyntheticMethodSupported(platform, methodName)
+  }
+
+  const emitSyntheticWindowResize = (result: any) => {
+    for (const listener of syntheticWindowResizeListeners) {
+      listener(result)
+    }
+  }
+
+  const ensureSyntheticWindowResizeBridge = () => {
+    if (syntheticWindowResizeBridgeReady) {
+      return
+    }
+    const runtimeAdapter = resolveAdapter() as Record<string, any> | undefined
+    const onAppShow = runtimeAdapter?.onAppShow
+    if (typeof onAppShow !== 'function') {
+      return
+    }
+    syntheticWindowResizeBridgeReady = true
+    onAppShow(() => {
+      const currentAdapter = resolveAdapter() as Record<string, any> | undefined
+      const getWindowInfo = currentAdapter?.getWindowInfo
+      if (typeof getWindowInfo !== 'function') {
+        return
+      }
+      getWindowInfo({
+        success: (result: any) => {
+          const nextSnapshot = JSON.stringify({
+            pixelRatio: result?.pixelRatio,
+            screenHeight: result?.screenHeight,
+            screenWidth: result?.screenWidth,
+            windowHeight: result?.windowHeight,
+            windowWidth: result?.windowWidth,
+          })
+          if (syntheticWindowResizeSnapshot === undefined) {
+            syntheticWindowResizeSnapshot = nextSnapshot
+            return
+          }
+          if (syntheticWindowResizeSnapshot !== nextSnapshot) {
+            syntheticWindowResizeSnapshot = nextSnapshot
+            emitSyntheticWindowResize(result)
+          }
+        },
+      })
+    })
+  }
+
+  const invokeSyntheticMethod = (
+    platform: string | undefined,
+    methodName: string,
+    args: unknown[],
+  ) => {
+    if (!hasSyntheticSupport(platform, methodName)) {
+      return {
+        handled: false as const,
+        result: undefined,
+      }
+    }
+    if (methodName === 'nextTick') {
+      const callback = typeof args[0] === 'function' ? args[0] as () => void : undefined
+      if (callback) {
+        Promise.resolve().then(() => callback())
+      }
+      return {
+        handled: true as const,
+        result: undefined,
+      }
+    }
+    if (methodName === 'showActionSheet' && platform === 'tt') {
+      const runtimeAdapter = resolveAdapter() as Record<string, any> | undefined
+      const showModal = runtimeAdapter?.showModal
+      if (typeof showModal !== 'function') {
+        return {
+          handled: false as const,
+          result: undefined,
+        }
+      }
+      const lastArg = args.length > 0 ? args[args.length - 1] : undefined
+      const originalOptions = isPlainObject(lastArg) ? lastArg as Record<string, any> : {}
+      const itemList = Array.isArray(originalOptions.itemList)
+        ? originalOptions.itemList.filter((item: unknown): item is string => typeof item === 'string')
+        : []
+      const content = itemList.length > 0
+        ? itemList.map((item, index) => `${index + 1}. ${item}`).join('\n')
+        : (typeof originalOptions.alertText === 'string' ? originalOptions.alertText : '')
+      const modalOptions: Record<string, any> = {
+        ...originalOptions,
+        title: typeof originalOptions.title === 'string' && originalOptions.title
+          ? originalOptions.title
+          : '请选择操作',
+        content,
+        showCancel: true,
+      }
+
+      if (hasCallbacks(originalOptions)) {
+        const originalSuccess = originalOptions.success
+        const originalComplete = originalOptions.complete
+        modalOptions.success = (result: any) => {
+          originalSuccess?.(mapSyntheticActionSheetResult(result, itemList))
+        }
+        modalOptions.complete = (result: any) => {
+          originalComplete?.(mapSyntheticActionSheetResult(result, itemList))
+        }
+        return {
+          handled: true as const,
+          result: showModal.call(runtimeAdapter, modalOptions),
+        }
+      }
+      return {
+        handled: true as const,
+        result: callWithPromise(
+          runtimeAdapter as WeapiAdapter,
+          showModal,
+          [modalOptions],
+          (result: any) => mapSyntheticActionSheetResult(result, itemList),
+        ),
+      }
+    }
+    if (methodName === 'getLogManager') {
+      return {
+        handled: true as const,
+        result: syntheticLogManager,
+      }
+    }
+    if (methodName === 'reportAnalytics') {
+      return {
+        handled: true as const,
+        result: undefined,
+      }
+    }
+    if (methodName === 'onWindowResize' && platform === 'my') {
+      const callback = typeof args[0] === 'function' ? args[0] as (result: any) => void : undefined
+      if (callback) {
+        syntheticWindowResizeListeners.add(callback)
+      }
+      ensureSyntheticWindowResizeBridge()
+      return {
+        handled: true as const,
+        result: undefined,
+      }
+    }
+    if (methodName === 'offWindowResize' && platform === 'my') {
+      const callback = typeof args[0] === 'function' ? args[0] as (result: any) => void : undefined
+      if (callback) {
+        syntheticWindowResizeListeners.delete(callback)
+      }
+      else {
+        syntheticWindowResizeListeners.clear()
+      }
+      return {
+        handled: true as const,
+        result: undefined,
+      }
+    }
+    return {
+      handled: false as const,
+      result: undefined,
+    }
+  }
+
   const resolveTarget = (methodName: string): WeapiResolvedTarget => {
     const runtimeAdapter = resolveAdapter()
     const platform = getPlatform()
@@ -142,6 +331,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
       ? (runtimeAdapter as Record<string, any>)[target]
       : undefined
     const supported = typeof targetMethod === 'function'
+      || hasSyntheticSupport(platform, methodName)
     const supportLevel = !supported
       ? 'unsupported'
       : mappingInfo?.source === 'fallback'
@@ -215,7 +405,8 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         : undefined
       const methodName = mappingRule?.target ?? (prop as string)
       const value = (currentAdapter as Record<string, any>)[methodName]
-      if (typeof value !== 'function') {
+      const syntheticSupported = typeof prop === 'string' && hasSyntheticSupport(platform, prop)
+      if (typeof value !== 'function' && !syntheticSupported) {
         if (value === undefined && typeof prop === 'string') {
           const missing = (...args: unknown[]) => callMissingApi(prop, getPlatform(), args)
           cache.set(prop, missing)
@@ -236,6 +427,10 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
           : undefined
         const runtimeArgs = mappingRule?.mapArgs ? mappingRule.mapArgs(args) : args
         if (typeof runtimeMethod !== 'function') {
+          const syntheticResult = invokeSyntheticMethod(platform, prop as string, runtimeArgs)
+          if (syntheticResult.handled) {
+            return syntheticResult.result
+          }
           return callMissingApi(prop as string, getPlatform(), args)
         }
         if (shouldSkipPromise(prop as string)) {

@@ -88,10 +88,13 @@ describe('weapi full api compatibility', () => {
       const success = vi.fn()
       const targetMethod = resolveMethodMapping('my', wxMethodName)?.target ?? wxMethodName
       const spy = methodSpies[targetMethod]
+      const supported = api.supports(wxMethodName)
       api[wxMethodName]({ success, fail, complete })
 
       if (spy) {
         expect(spy).toHaveBeenCalled()
+      }
+      if (supported) {
         expect(fail).not.toHaveBeenCalled()
       }
       else {
@@ -119,10 +122,13 @@ describe('weapi full api compatibility', () => {
       const success = vi.fn()
       const targetMethod = resolveMethodMapping('tt', wxMethodName)?.target ?? wxMethodName
       const spy = methodSpies[targetMethod]
+      const supported = api.supports(wxMethodName)
       api[wxMethodName]({ success, fail, complete })
 
       if (spy) {
         expect(spy).toHaveBeenCalled()
+      }
+      if (supported) {
         expect(fail).not.toHaveBeenCalled()
       }
       else {

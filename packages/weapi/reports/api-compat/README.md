@@ -15,23 +15,23 @@
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
 | 支付宝可按微信命名调用的方法数   |  479 |
-| 支付宝语义对齐方法数             |  223 |
-| 支付宝 fallback 方法数           |  256 |
-| 抖音可按微信命名调用的方法数     |  478 |
-| 抖音语义对齐方法数               |  163 |
-| 抖音 fallback 方法数             |  315 |
-| 三端可调用完全对齐方法数         |  478 |
-| 三端语义完全对齐方法数           |  158 |
+| 支付宝语义对齐方法数             |  229 |
+| 支付宝 fallback 方法数           |  250 |
+| 抖音可按微信命名调用的方法数     |  479 |
+| 抖音语义对齐方法数               |  167 |
+| 抖音 fallback 方法数             |  312 |
+| 三端可调用完全对齐方法数         |  479 |
+| 三端语义完全对齐方法数           |  165 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           479 |             223 |             256 |      479 |      100.00% |         46.56% |
-| 抖音小程序 (`tt`)             |           478 |             163 |             315 |      479 |       99.79% |         34.03% |
-| 三端可调用完全对齐 (wx/my/tt) |           478 |               - |               - |      479 |       99.79% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             158 |               - |      479 |            - |         32.99% |
+| 支付宝小程序 (`my`)           |           479 |             229 |             250 |      479 |      100.00% |         47.81% |
+| 抖音小程序 (`tt`)             |           479 |             167 |             312 |      479 |      100.00% |         34.86% |
+| 三端可调用完全对齐 (wx/my/tt) |           479 |               - |               - |      479 |      100.00% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             165 |               - |      479 |            - |         34.45% |
 
 ## 核心差异映射（手工规则）
 
@@ -39,11 +39,12 @@
 | --------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | `showToast`                       | 直连 `wx.showToast`                                 | `title/icon` 映射到 `content/type` 后调用 `my.showToast`            | `icon=error` 映射为 `fail` 后调用 `tt.showToast`                      |
 | `showLoading`                     | 直连 `wx.showLoading`                               | `title` 映射到 `content` 后调用 `my.showLoading`                    | 直连 `tt.showLoading`                                                 |
-| `showActionSheet`                 | 直连 `wx.showActionSheet`                           | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐                 | 直连 `tt.showActionSheet`，并兼容 `index` → `tapIndex`                |
+| `showActionSheet`                 | 直连 `wx.showActionSheet`                           | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐                 | 优先直连 `tt.showActionSheet`；缺失时降级到 `tt.showModal` shim       |
 | `showModal`                       | 直连 `wx.showModal`                                 | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果                    | 直连 `tt.showModal`                                                   |
 | `chooseImage`                     | 直连 `wx.chooseImage`                               | 返回值 `apFilePaths` 映射到 `tempFilePaths`                         | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底          |
 | `chooseMedia`                     | 直连 `wx.chooseMedia`                               | 映射到 `my.chooseImage`，并补齐 `tempFiles[].tempFilePath/fileType` | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType`     |
 | `chooseMessageFile`               | 直连 `wx.chooseMessageFile`                         | 映射到 `my.chooseImage`，并补齐 `tempFiles[].path/name`             | 映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name`               |
+| `getFuzzyLocation`                | 直连 `wx.getFuzzyLocation`                          | 映射到 `my.getLocation`                                             | 映射到 `tt.getLocation`                                               |
 | `previewMedia`                    | 直连 `wx.previewMedia`                              | 映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls`          | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls`            |
 | `createInterstitialAd`            | 直连 `wx.createInterstitialAd`                      | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                 | 直连 `tt.createInterstitialAd`                                        |
 | `createRewardedVideoAd`           | 直连 `wx.createRewardedVideoAd`                     | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`                 | 映射到 `tt.createInterstitialAd`                                      |
@@ -90,6 +91,11 @@
 | `getNetworkType`                  | 直连 `wx.getNetworkType`                            | 直连 `my.getNetworkType`                                            | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType`                     |
 | `getBatteryInfo`                  | 直连 `wx.getBatteryInfo`                            | 直连 `my.getBatteryInfo`                                            | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging`                    |
 | `getBatteryInfoSync`              | 直连 `wx.getBatteryInfoSync`                        | 直连 `my.getBatteryInfoSync`                                        | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging`                |
+| `getLogManager`                   | 直连 `wx.getLogManager`                             | 使用内置日志 shim（对齐 `log/info/warn/error`）                     | 使用内置日志 shim（对齐 `log/info/warn/error`）                       |
+| `nextTick`                        | 直连 `wx.nextTick`                                  | 使用内置 microtask shim 调度回调                                    | 使用内置 microtask shim 调度回调                                      |
+| `onWindowResize`                  | 直连 `wx.onWindowResize`                            | 使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听      | 直连 `tt.onWindowResize`                                              |
+| `offWindowResize`                 | 直连 `wx.offWindowResize`                           | 使用内置 shim，移除 `onWindowResize` 注册回调                       | 直连 `tt.offWindowResize`                                             |
+| `reportAnalytics`                 | 直连 `wx.reportAnalytics`                           | 使用内置 no-op shim（保持调用不抛错）                               | 直连 `tt.reportAnalytics`                                             |
 
 ## 已执行验证
 

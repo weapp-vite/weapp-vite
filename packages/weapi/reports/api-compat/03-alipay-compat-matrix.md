@@ -127,7 +127,7 @@
 | `getExtConfig`                                | `getExtConfig`                       | ✅   | `native`   | ✅       | 直连 `my.getExtConfig`                                              |
 | `getExtConfigSync`                            | `getExtConfigSync`                   | ✅   | `native`   | ✅       | 直连 `my.getExtConfigSync`                                          |
 | `getFileSystemManager`                        | `getFileSystemManager`               | ✅   | `native`   | ✅       | 直连 `my.getFileSystemManager`                                      |
-| `getFuzzyLocation`                            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                               |
+| `getFuzzyLocation`                            | `getLocation`                        | ✅   | `mapped`   | ✅       | 映射到 `my.getLocation`                                             |
 | `getGroupEnterInfo`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                               |
 | `getHCEState`                                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                               |
 | `getImageInfo`                                | `getImageInfo`                       | ✅   | `native`   | ✅       | 直连 `my.getImageInfo`                                              |
@@ -135,7 +135,7 @@
 | `getLaunchOptionsSync`                        | `getLaunchOptionsSync`               | ✅   | `native`   | ✅       | 直连 `my.getLaunchOptionsSync`                                      |
 | `getLocalIPAddress`                           | `getLocalIPAddress`                  | ✅   | `native`   | ✅       | 直连 `my.getLocalIPAddress`                                         |
 | `getLocation`                                 | `getLocation`                        | ✅   | `native`   | ✅       | 直连 `my.getLocation`                                               |
-| `getLogManager`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                               |
+| `getLogManager`                               | `getLogManager`                      | ✅   | `mapped`   | ✅       | 使用内置日志 shim（对齐 `log/info/warn/error`）                     |
 | `getMenuButtonBoundingClientRect`             | `getMenuButtonBoundingClientRect`    | ✅   | `native`   | ✅       | 直连 `my.getMenuButtonBoundingClientRect`                           |
 | `getNetworkType`                              | `getNetworkType`                     | ✅   | `mapped`   | ✅       | 直连 `my.getNetworkType`                                            |
 | `getNFCAdapter`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                               |
@@ -193,7 +193,7 @@
 | `navigateBackMiniProgram`                     | `navigateBackMiniProgram`            | ✅   | `native`   | ✅       | 直连 `my.navigateBackMiniProgram`                                   |
 | `navigateTo`                                  | `navigateTo`                         | ✅   | `native`   | ✅       | 直连 `my.navigateTo`                                                |
 | `navigateToMiniProgram`                       | `navigateToMiniProgram`              | ✅   | `native`   | ✅       | 直连 `my.navigateToMiniProgram`                                     |
-| `nextTick`                                    | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                               |
+| `nextTick`                                    | `nextTick`                           | ✅   | `mapped`   | ✅       | 使用内置 microtask shim 调度回调                                    |
 | `notifyBLECharacteristicValueChange`          | `notifyBLECharacteristicValueChange` | ✅   | `native`   | ✅       | 直连 `my.notifyBLECharacteristicValueChange`                        |
 | `notifyGroupMembers`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                               |
 | `offAccelerometerChange`                      | `offAccelerometerChange`             | ✅   | `native`   | ✅       | 直连 `my.offAccelerometerChange`                                    |
@@ -255,7 +255,7 @@
 | `offVoIPVideoMembersChanged`                  | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                              |
 | `offWifiConnected`                            | `offWifiConnected`                   | ✅   | `native`   | ✅       | 直连 `my.offWifiConnected`                                          |
 | `offWifiConnectedWithPartialInfo`             | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                              |
-| `offWindowResize`                             | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                              |
+| `offWindowResize`                             | `offWindowResize`                    | ✅   | `mapped`   | ✅       | 使用内置 shim，移除 `onWindowResize` 注册回调                       |
 | `offWindowStateChange`                        | `offAppShow`                         | ✅   | `fallback` | ❌       | 回退映射到 `my.offAppShow`（通用兜底）                              |
 | `onAccelerometerChange`                       | `onAccelerometerChange`              | ✅   | `native`   | ✅       | 直连 `my.onAccelerometerChange`                                     |
 | `onAfterPageLoad`                             | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                               |
@@ -325,7 +325,7 @@
 | `onVoIPVideoMembersChanged`                   | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                               |
 | `onWifiConnected`                             | `onWifiConnected`                    | ✅   | `native`   | ✅       | 直连 `my.onWifiConnected`                                           |
 | `onWifiConnectedWithPartialInfo`              | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                               |
-| `onWindowResize`                              | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                               |
+| `onWindowResize`                              | `onWindowResize`                     | ✅   | `mapped`   | ✅       | 使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听      |
 | `onWindowStateChange`                         | `onAppShow`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.onAppShow`（通用兜底）                               |
 | `openAppAuthorizeSetting`                     | `openSetting`                        | ✅   | `mapped`   | ✅       | 映射到 `my.openSetting`                                             |
 | `openBluetoothAdapter`                        | `openBluetoothAdapter`               | ✅   | `native`   | ✅       | 直连 `my.openBluetoothAdapter`                                      |
@@ -375,7 +375,7 @@
 | `removeStorage`                               | `removeStorage`                      | ✅   | `native`   | ✅       | 直连 `my.removeStorage`                                             |
 | `removeStorageSync`                           | `removeStorageSync`                  | ✅   | `native`   | ✅       | 直连 `my.removeStorageSync`                                         |
 | `removeTabBarBadge`                           | `removeTabBarBadge`                  | ✅   | `native`   | ✅       | 直连 `my.removeTabBarBadge`                                         |
-| `reportAnalytics`                             | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                               |
+| `reportAnalytics`                             | `reportAnalytics`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                               |
 | `reportEvent`                                 | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                               |
 | `reportMonitor`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                               |
 | `reportPerformance`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                               |
