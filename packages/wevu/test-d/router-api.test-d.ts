@@ -88,6 +88,7 @@ expectType<readonly RouteRecordRaw[]>(navigation.getRoutes())
 const removeDynamicRoute = navigation.addRoute({
   name: 'dynamic-post',
   path: '/pages/post/:id/index',
+  alias: ['/pages/article/:id/index'],
   meta: {
     requiresAuth: true,
   },
