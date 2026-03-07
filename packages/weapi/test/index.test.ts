@@ -1744,6 +1744,32 @@ describe('weapi', () => {
     expect(getEnvInfoSync).not.toHaveBeenCalled()
   })
 
+  it('treats getEnterOptionsSync as unsupported for douyin without strict-equivalent api', async () => {
+    const getLaunchOptionsSync = vi.fn(() => ({
+      path: 'pages/index/index',
+      query: {},
+      scene: 1001,
+    }))
+    const api = createWeapi({
+      adapter: {
+        getLaunchOptionsSync,
+      },
+      platform: 'tt',
+    })
+
+    expect(api.resolveTarget('getEnterOptionsSync')).toMatchObject({
+      method: 'getEnterOptionsSync',
+      target: 'getEnterOptionsSync',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.getEnterOptionsSync()).rejects.toMatchObject({
+      errMsg: 'tt.getEnterOptionsSync:fail method not supported',
+    })
+    expect(getLaunchOptionsSync).not.toHaveBeenCalled()
+  })
+
   it('treats previewMedia as unsupported for douyin without strict-equivalent api', async () => {
     const previewImage = vi.fn((options: any) => {
       options.success?.({ errMsg: 'previewImage:ok' })
@@ -2133,7 +2159,7 @@ describe('weapi', () => {
       { method: 'updateShareMenu', my: 'updateShareMenu', tt: 'updateShareMenu', mySupported: false, ttSupported: false },
       { method: 'openEmbeddedMiniProgram', my: 'openEmbeddedMiniProgram', tt: 'openEmbeddedMiniProgram', mySupported: false, ttSupported: false },
       { method: 'saveFileToDisk', my: 'saveFileToDisk', tt: 'saveFileToDisk', ttSupported: false },
-      { method: 'getEnterOptionsSync', my: 'getEnterOptionsSync', tt: 'getLaunchOptionsSync' },
+      { method: 'getEnterOptionsSync', my: 'getEnterOptionsSync', tt: 'getEnterOptionsSync', ttSupported: false },
       { method: 'getSystemSetting', my: 'getSystemSetting', tt: 'getSystemSetting', ttSupported: false },
       { method: 'getUserProfile', my: 'getUserProfile', tt: 'getUserProfile', mySupported: false },
       { method: 'getUserInfo', my: 'getUserInfo', tt: 'getUserInfo', mySupported: false },

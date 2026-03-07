@@ -418,7 +418,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '获取启动参数（同步）。',
     wxStrategy: '直连 `wx.getEnterOptionsSync`',
     alipayStrategy: '直连 `my.getEnterOptionsSync`',
-    douyinStrategy: '映射到 `tt.getLaunchOptionsSync`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -3110,7 +3110,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'saveFileToDisk',
     },
     getEnterOptionsSync: {
-      target: 'getLaunchOptionsSync',
+      target: 'getEnterOptionsSync',
     },
     getSystemSetting: {
       target: 'getSystemSetting',

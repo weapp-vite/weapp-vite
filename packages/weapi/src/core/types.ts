@@ -550,7 +550,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getEnterOptionsSync` | ⚠️ |
    * | 支付宝 | 直连 `my.getEnterOptionsSync` | ⚠️ |
-   * | 抖音 | 映射到 `tt.getLaunchOptionsSync` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getEnterOptionsSync: WeapiCrossPlatformAdapter['getEnterOptionsSync']
 

@@ -36,9 +36,9 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
 | 支付宝小程序 (`my`) | 195 | 195 | 0 | 479 | 40.71% | 40.71% |
-| 抖音小程序 (`tt`) | 131 | 131 | 0 | 479 | 27.35% | 27.35% |
-| 三端可调用完全对齐 (wx/my/tt) | 115 | - | - | 479 | 24.01% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 115 | - | 479 | - | 24.01% |
+| 抖音小程序 (`tt`) | 130 | 130 | 0 | 479 | 27.14% | 27.14% |
+| 三端可调用完全对齐 (wx/my/tt) | 114 | - | - | 479 | 23.80% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 114 | - | 479 | - | 23.80% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -84,7 +84,7 @@
 | `updateShareMenu` | 更新分享菜单配置。 | 直连 `wx.updateShareMenu` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `openEmbeddedMiniProgram` | 打开嵌入式小程序。 | 直连 `wx.openEmbeddedMiniProgram` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `saveFileToDisk` | 保存文件到磁盘。 | 直连 `wx.saveFileToDisk` | 直连 `my.saveFileToDisk` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `getEnterOptionsSync` | 获取启动参数（同步）。 | 直连 `wx.getEnterOptionsSync` | 直连 `my.getEnterOptionsSync` | 映射到 `tt.getLaunchOptionsSync` | ⚠️ |
+| `getEnterOptionsSync` | 获取启动参数（同步）。 | 直连 `wx.getEnterOptionsSync` | 直连 `my.getEnterOptionsSync` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getSystemSetting` | 获取系统设置。 | 直连 `wx.getSystemSetting` | 直连 `my.getSystemSetting` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getUserProfile` | 获取用户资料。 | 直连 `wx.getUserProfile` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.getUserProfile` | ⚠️ |
 | `getUserInfo` | 获取用户信息。 | 直连 `wx.getUserInfo` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.getUserInfo` | ⚠️ |
