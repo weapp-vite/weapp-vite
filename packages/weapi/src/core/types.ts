@@ -181,6 +181,28 @@ interface WeapiCrossPlatformMethodDocs {
   chooseImage: WeapiCrossPlatformAdapter['chooseImage']
 
   /**
+   * 选择图片或视频。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.chooseMedia` | ⚠️ |
+   * | 支付宝 | 映射到 `my.chooseImage`，并补齐 `tempFiles[].tempFilePath/fileType` | ⚠️ |
+   * | 抖音 | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType` | ⚠️ |
+   */
+  chooseMedia: WeapiCrossPlatformAdapter['chooseMedia']
+
+  /**
+   * 选择会话文件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.chooseMessageFile` | ⚠️ |
+   * | 支付宝 | 映射到 `my.chooseImage`，并补齐 `tempFiles[].path/name` | ⚠️ |
+   * | 抖音 | 映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name` | ⚠️ |
+   */
+  chooseMessageFile: WeapiCrossPlatformAdapter['chooseMessageFile']
+
+  /**
    * 预览图片和视频。
    *
    * | 平台 | 对齐策略 | 支持度 |
@@ -630,6 +652,61 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构 | ⚠️ |
    */
   getAccountInfoSync: WeapiCrossPlatformAdapter['getAccountInfoSync']
+
+  /**
+   * 动态设置窗口背景色。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.setBackgroundColor` | ⚠️ |
+   * | 支付宝 | 直连 `my.setBackgroundColor` | ⚠️ |
+   * | 抖音 | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor` | ⚠️ |
+   */
+  setBackgroundColor: WeapiCrossPlatformAdapter['setBackgroundColor']
+
+  /**
+   * 动态设置下拉背景字体样式。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.setBackgroundTextStyle` | ⚠️ |
+   * | 支付宝 | 直连 `my.setBackgroundTextStyle` | ⚠️ |
+   * | 抖音 | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor` | ⚠️ |
+   */
+  setBackgroundTextStyle: WeapiCrossPlatformAdapter['setBackgroundTextStyle']
+
+  /**
+   * 获取网络类型。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getNetworkType` | ⚠️ |
+   * | 支付宝 | 直连 `my.getNetworkType` | ⚠️ |
+   * | 抖音 | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType` | ⚠️ |
+   */
+  getNetworkType: WeapiCrossPlatformAdapter['getNetworkType']
+
+  /**
+   * 异步获取电量信息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getBatteryInfo` | ⚠️ |
+   * | 支付宝 | 直连 `my.getBatteryInfo` | ⚠️ |
+   * | 抖音 | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging` | ⚠️ |
+   */
+  getBatteryInfo: WeapiCrossPlatformAdapter['getBatteryInfo']
+
+  /**
+   * 同步获取电量信息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.getBatteryInfoSync` | ⚠️ |
+   * | 支付宝 | 直连 `my.getBatteryInfoSync` | ⚠️ |
+   * | 抖音 | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging` | ⚠️ |
+   */
+  getBatteryInfoSync: WeapiCrossPlatformAdapter['getBatteryInfoSync']
   // @generated weapi-method-docs:end
 }
 
