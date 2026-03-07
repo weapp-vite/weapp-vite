@@ -2823,6 +2823,47 @@ describe('weapi', () => {
     }
   })
 
+  it('keeps renamed targets on strict-equivalent allowlists', () => {
+    const compatibilityMatrix = generateMethodCompatibilityMatrix()
+    const alipayRenamedTargets = compatibilityMatrix
+      .filter(item => item.alipayTarget !== item.method)
+      .map(item => `${item.method}->${item.alipayTarget}`)
+      .sort()
+    const douyinRenamedTargets = compatibilityMatrix
+      .filter(item => item.douyinTarget !== item.method)
+      .map(item => `${item.method}->${item.douyinTarget}`)
+      .sort()
+
+    expect(alipayRenamedTargets).toEqual([
+      'checkIsSoterEnrolledInDevice->checkIsIfaaEnrolledInDevice',
+      'checkIsSupportSoterAuthentication->checkIsSupportIfaaAuthentication',
+      'closeBLEConnection->disconnectBLEDevice',
+      'createBLEConnection->connectBLEDevice',
+      'createRewardedVideoAd->createRewardedAd',
+      'getClipboardData->getClipboard',
+      'getSystemInfoAsync->getSystemInfo',
+      'hideHomeButton->hideBackHome',
+      'offBLEConnectionStateChange->offBLEConnectionStateChanged',
+      'onBLEConnectionStateChange->onBLEConnectionStateChanged',
+      'setClipboardData->setClipboard',
+      'showModal->confirm',
+    ])
+    expect(douyinRenamedTargets).toEqual([
+      'getSystemInfoAsync->getSystemInfo',
+    ])
+
+    for (const item of compatibilityMatrix) {
+      if (item.alipayTarget !== item.method) {
+        expect(item.alipaySupportLevel).toBe('mapped')
+        expect(item.alipaySemanticallyAligned).toBe(true)
+      }
+      if (item.douyinTarget !== item.method) {
+        expect(item.douyinSupportLevel).toBe('mapped')
+        expect(item.douyinSemanticallyAligned).toBe(true)
+      }
+    }
+  })
+
   it('keeps support matrix data in sync with mappings', () => {
     const {
       extraDouyinMappings,
