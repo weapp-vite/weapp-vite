@@ -1,5 +1,6 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import { describe, expect, it } from 'vitest'
+import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { collectAffectedEntries, refreshModuleGraph, refreshSharedChunkImporters } from './graph'
 
 function createChunk(fileName: string, overrides: Partial<OutputChunk> = {}): OutputChunk {
@@ -92,8 +93,9 @@ describe('core helpers graph', () => {
     }, state)
 
     expect(state.entryModuleIds).toEqual(new Set(['/project/src/entry.ts']))
+    const normalizedDynamicImporter = normalizeFsResolvedId('file:///project/src/dynamic.ts')
     expect(state.moduleImporters.get('/project/src/dep.ts')).toEqual(
-      new Set(['/project/src/entry.ts', '/project/src/dynamic.ts']),
+      new Set(['/project/src/entry.ts', normalizedDynamicImporter]),
     )
     expect(state.moduleImporters.has('/project/src/dynamic.ts')).toBe(false)
     expect(state.moduleImporters.has('\0virtual:skip')).toBe(false)
