@@ -458,7 +458,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '获取 App 基础信息。',
     wxStrategy: '直连 `wx.getAppBaseInfo`',
     alipayStrategy: '直连 `my.getAppBaseInfo`',
-    douyinStrategy: '映射到 `tt.getEnvInfoSync`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -498,7 +498,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '同步获取当前账号信息。',
     wxStrategy: '直连 `wx.getAccountInfoSync`',
     alipayStrategy: '直连 `my.getAccountInfoSync`',
-    douyinStrategy: '映射到 `tt.getEnvInfoSync`，并对齐账号字段结构',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2384,45 +2384,6 @@ function mapSystemInfoToBatteryInfo(result: any) {
   return nextResult
 }
 
-function normalizeEnvVersion(value: unknown) {
-  if (typeof value !== 'string' || !value) {
-    return value
-  }
-  const normalized = value.toLowerCase()
-  if (normalized.includes('release') || normalized.includes('prod')) {
-    return 'release'
-  }
-  if (normalized.includes('trial') || normalized.includes('preview') || normalized.includes('test')) {
-    return 'trial'
-  }
-  if (normalized.includes('develop') || normalized.includes('dev')) {
-    return 'develop'
-  }
-  return value
-}
-
-function mapEnvInfoToAccountInfo(result: any) {
-  if (!isPlainObject(result)) {
-    return result
-  }
-  const microapp = isPlainObject(result.microapp) ? result.microapp : {}
-  const plugin = isPlainObject(result.plugin) ? result.plugin : {}
-  const miniProgram = {
-    appId: typeof microapp.appId === 'string' ? microapp.appId : '',
-    envVersion: normalizeEnvVersion(microapp.envType),
-    version: typeof microapp.mpVersion === 'string' ? microapp.mpVersion : '',
-  }
-  const pluginInfo = {
-    appId: typeof plugin.appId === 'string' ? plugin.appId : '',
-    version: typeof plugin.version === 'string' ? plugin.version : '',
-  }
-  return {
-    ...result,
-    miniProgram,
-    plugin: pluginInfo,
-  }
-}
-
 const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMethodMappingRule>>>> = {
   my: {
     showToast: {
@@ -3260,7 +3221,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getAppAuthorizeSetting',
     },
     getAppBaseInfo: {
-      target: 'getEnvInfoSync',
+      target: 'getAppBaseInfo',
     },
     chooseVideo: {
       target: 'chooseVideo',
@@ -3275,8 +3236,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getDeviceInfo',
     },
     getAccountInfoSync: {
-      target: 'getEnvInfoSync',
-      mapResult: mapEnvInfoToAccountInfo,
+      target: 'getAccountInfoSync',
     },
     setBackgroundColor: {
       target: 'setNavigationBarColor',

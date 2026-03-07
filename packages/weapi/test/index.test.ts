@@ -1600,19 +1600,8 @@ describe('weapi', () => {
     expect(getSystemInfo).not.toHaveBeenCalled()
   })
 
-  it('maps getAccountInfoSync to getEnvInfoSync for douyin', () => {
-    const getEnvInfoSync = vi.fn(() => ({
-      microapp: {
-        appId: 'tt123',
-        envType: 'release',
-        mpVersion: '1.2.3',
-      },
-      plugin: {
-        appId: 'plugin123',
-        version: '0.0.1',
-      },
-      common: {},
-    }))
+  it('treats getAppBaseInfo/getAccountInfoSync as unsupported for douyin without strict-equivalent api', async () => {
+    const getEnvInfoSync = vi.fn()
     const api = createWeapi({
       adapter: {
         getEnvInfoSync,
@@ -1620,20 +1609,19 @@ describe('weapi', () => {
       platform: 'tt',
     })
 
-    const result = api.getAccountInfoSync()
-
-    expect(getEnvInfoSync).toHaveBeenCalledTimes(1)
-    expect(result).toMatchObject({
-      miniProgram: {
-        appId: 'tt123',
-        envVersion: 'release',
-        version: '1.2.3',
-      },
-      plugin: {
-        appId: 'plugin123',
-        version: '0.0.1',
-      },
-    })
+    for (const methodName of ['getAppBaseInfo', 'getAccountInfoSync'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]()).rejects.toMatchObject({
+        errMsg: `tt.${methodName}:fail method not supported`,
+      })
+    }
+    expect(getEnvInfoSync).not.toHaveBeenCalled()
   })
 
   it('treats previewMedia as unsupported for douyin without strict-equivalent api', async () => {
@@ -2030,7 +2018,7 @@ describe('weapi', () => {
       { method: 'getUserProfile', my: 'getUserProfile', tt: 'getUserProfile', mySupported: false },
       { method: 'getUserInfo', my: 'getUserInfo', tt: 'getUserInfo', mySupported: false },
       { method: 'getAppAuthorizeSetting', my: 'getAppAuthorizeSetting', tt: 'getAppAuthorizeSetting', ttSupported: false },
-      { method: 'getAppBaseInfo', my: 'getAppBaseInfo', tt: 'getEnvInfoSync' },
+      { method: 'getAppBaseInfo', my: 'getAppBaseInfo', tt: 'getAppBaseInfo', ttSupported: false },
       { method: 'chooseVideo', my: 'chooseVideo', tt: 'chooseVideo', ttSupported: false },
       { method: 'chooseMedia', my: 'chooseMedia', tt: 'chooseMedia', mySupported: false },
       { method: 'chooseMessageFile', my: 'chooseMessageFile', tt: 'chooseMessageFile', mySupported: false, ttSupported: false },
@@ -2038,7 +2026,7 @@ describe('weapi', () => {
       { method: 'hideHomeButton', my: 'hideBackHome', tt: 'hideHomeButton' },
       { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getWindowInfo', ttSupported: false },
       { method: 'getDeviceInfo', my: 'getDeviceInfo', tt: 'getDeviceInfo', mySupported: false, ttSupported: false },
-      { method: 'getAccountInfoSync', my: 'getAccountInfoSync', tt: 'getEnvInfoSync' },
+      { method: 'getAccountInfoSync', my: 'getAccountInfoSync', tt: 'getAccountInfoSync', ttSupported: false },
       { method: 'getLogManager', my: 'getLogManager', tt: 'getLogManager', mySupported: false, ttSupported: false },
       { method: 'nextTick', my: 'nextTick', tt: 'nextTick', mySupported: false, ttSupported: false },
       { method: 'onWindowResize', my: 'onWindowResize', tt: 'onWindowResize', mySupported: false },

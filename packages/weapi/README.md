@@ -36,9 +36,9 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
 | 支付宝小程序 (`my`) | 201 | 201 | 0 | 479 | 41.96% | 41.96% |
-| 抖音小程序 (`tt`) | 142 | 142 | 0 | 479 | 29.65% | 29.65% |
-| 三端可调用完全对齐 (wx/my/tt) | 128 | - | - | 479 | 26.72% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 128 | - | 479 | - | 26.72% |
+| 抖音小程序 (`tt`) | 140 | 140 | 0 | 479 | 29.23% | 29.23% |
+| 三端可调用完全对齐 (wx/my/tt) | 126 | - | - | 479 | 26.30% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 126 | - | 479 | - | 26.30% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -89,12 +89,12 @@
 | `getUserProfile` | 获取用户资料。 | 直连 `wx.getUserProfile` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.getUserProfile` | ⚠️ |
 | `getUserInfo` | 获取用户信息。 | 直连 `wx.getUserInfo` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.getUserInfo` | ⚠️ |
 | `getAppAuthorizeSetting` | 获取 App 授权设置。 | 直连 `wx.getAppAuthorizeSetting` | 直连 `my.getAppAuthorizeSetting` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `getAppBaseInfo` | 获取 App 基础信息。 | 直连 `wx.getAppBaseInfo` | 直连 `my.getAppBaseInfo` | 映射到 `tt.getEnvInfoSync` | ⚠️ |
+| `getAppBaseInfo` | 获取 App 基础信息。 | 直连 `wx.getAppBaseInfo` | 直连 `my.getAppBaseInfo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `chooseVideo` | 选择视频。 | 直连 `wx.chooseVideo` | 直连 `my.chooseVideo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `hideHomeButton` | 隐藏返回首页按钮。 | 直连 `wx.hideHomeButton` | 映射到 `my.hideBackHome` | 直连 `tt.hideHomeButton` | ✅ |
 | `getWindowInfo` | 获取窗口信息。 | 直连 `wx.getWindowInfo` | 直连 `my.getWindowInfo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getDeviceInfo` | 获取设备基础信息。 | 直连 `wx.getDeviceInfo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `getAccountInfoSync` | 同步获取当前账号信息。 | 直连 `wx.getAccountInfoSync` | 直连 `my.getAccountInfoSync` | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构 | ⚠️ |
+| `getAccountInfoSync` | 同步获取当前账号信息。 | 直连 `wx.getAccountInfoSync` | 直连 `my.getAccountInfoSync` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `setBackgroundColor` | 动态设置窗口背景色。 | 直连 `wx.setBackgroundColor` | 直连 `my.setBackgroundColor` | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor` | ⚠️ |
 | `setBackgroundTextStyle` | 动态设置下拉背景字体样式。 | 直连 `wx.setBackgroundTextStyle` | 直连 `my.setBackgroundTextStyle` | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor` | ⚠️ |
 | `getNetworkType` | 获取网络类型。 | 直连 `wx.getNetworkType` | 直连 `my.getNetworkType` | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType` | ⚠️ |
