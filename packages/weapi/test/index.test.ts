@@ -1176,7 +1176,7 @@ describe('weapi', () => {
     })
   })
 
-  it('falls back to showModal when douyin showActionSheet is missing', async () => {
+  it('treats douyin showActionSheet as unsupported when adapter method is missing', async () => {
     const showModal = vi.fn((options: any) => {
       options.success?.({ confirm: true })
     })
@@ -1190,26 +1190,18 @@ describe('weapi', () => {
     expect(api.resolveTarget('showActionSheet')).toMatchObject({
       method: 'showActionSheet',
       target: 'showActionSheet',
-      supportLevel: 'mapped',
-      supported: true,
-      semanticAligned: true,
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
 
-    const result = await api.showActionSheet({
+    await expect(api.showActionSheet({
       itemList: ['复制链接', '打开页面'],
       title: '操作',
+    })).rejects.toMatchObject({
+      errMsg: 'tt.showActionSheet:fail method not supported',
     })
-    expect(showModal).toHaveBeenCalledWith(expect.objectContaining({
-      title: '操作',
-      content: '1. 复制链接\n2. 打开页面',
-      showCancel: true,
-    }))
-    expect(result).toMatchObject({
-      index: 0,
-      tapIndex: 0,
-      cancel: false,
-      errMsg: 'showActionSheet:ok',
-    })
+    expect(showModal).not.toHaveBeenCalled()
   })
 
   it('provides synthetic openDocument for douyin when missing', async () => {
@@ -1789,7 +1781,6 @@ describe('weapi', () => {
       { method: 'chooseAddress', my: 'getAddress', tt: 'chooseAddress' },
       { method: 'createAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
       { method: 'createWebAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
-      { method: 'showActionSheet', my: 'showActionSheet', tt: 'showActionSheet' },
       { method: 'getSystemInfoAsync', my: 'getSystemInfo', tt: 'getSystemInfo' },
       { method: 'openAppAuthorizeSetting', my: 'openSetting', tt: 'openSetting' },
       { method: 'pluginLogin', my: 'getAuthCode', tt: 'login' },
