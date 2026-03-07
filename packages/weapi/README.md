@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 374 | 105 | 479 | 100.00% | 78.08% |
-| 抖音小程序 (`tt`) | 479 | 316 | 163 | 479 | 100.00% | 65.97% |
+| 支付宝小程序 (`my`) | 479 | 393 | 86 | 479 | 100.00% | 82.05% |
+| 抖音小程序 (`tt`) | 479 | 335 | 144 | 479 | 100.00% | 69.94% |
 | 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 314 | - | 479 | - | 65.55% |
+| 三端语义完全对齐 (wx/my/tt) | - | 333 | - | 479 | - | 69.52% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -254,6 +254,25 @@
 | `getXrFrameSystem` | 获取 XR 框架系统对象。 | 直连 `wx.getXrFrameSystem` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `isBluetoothDevicePaired` | 判断蓝牙设备是否已配对。 | 直连 `wx.isBluetoothDevicePaired` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `isVKSupport` | 判断是否支持视觉识别能力。 | 直连 `wx.isVKSupport` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createBLEPeripheralServer` | 创建 BLE 外设服务实例。 | 直连 `wx.createBLEPeripheralServer` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createBufferURL` | 创建缓冲区 URL。 | 直连 `wx.createBufferURL` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createCacheManager` | 创建缓存管理器。 | 直连 `wx.createCacheManager` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createGlobalPayment` | 创建全局支付对象。 | 直连 `wx.createGlobalPayment` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createInferenceSession` | 创建推理会话。 | 直连 `wx.createInferenceSession` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createMediaAudioPlayer` | 创建媒体音频播放器。 | 直连 `wx.createMediaAudioPlayer` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createMediaContainer` | 创建媒体容器实例。 | 直连 `wx.createMediaContainer` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createMediaRecorder` | 创建媒体录制器。 | 直连 `wx.createMediaRecorder` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createTCPSocket` | 创建 TCP Socket。 | 直连 `wx.createTCPSocket` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createUDPSocket` | 创建 UDP Socket。 | 直连 `wx.createUDPSocket` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `createVideoDecoder` | 创建视频解码器。 | 直连 `wx.createVideoDecoder` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `loadBuiltInFontFace` | 加载内置字体。 | 直连 `wx.loadBuiltInFontFace` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `notifyGroupMembers` | 通知群成员。 | 直连 `wx.notifyGroupMembers` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `requestIdleCallback` | 空闲时回调请求。 | 直连 `wx.requestIdleCallback` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `revokeBufferURL` | 释放缓冲区 URL。 | 直连 `wx.revokeBufferURL` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `rewriteRoute` | 重写路由规则。 | 直连 `wx.rewriteRoute` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `seekBackgroundAudio` | 调整后台音频播放进度。 | 直连 `wx.seekBackgroundAudio` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `setEnableDebug` | 设置调试开关。 | 直连 `wx.setEnableDebug` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `setInnerAudioOption` | 设置内部音频选项。 | 直连 `wx.setInnerAudioOption` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 
