@@ -24,6 +24,7 @@
 - [../router-usage-guide.md](../router-usage-guide.md)
 - [../router-quickstart.md](../router-quickstart.md)
 - [../router-migration-guide.md](../router-migration-guide.md)
+- [../router-vue-router-parity.md](../router-vue-router-parity.md)
 
 ## 说明
 
