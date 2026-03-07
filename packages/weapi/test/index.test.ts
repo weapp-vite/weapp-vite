@@ -526,7 +526,7 @@ describe('weapi', () => {
     }))
   })
 
-  it('maps previewMedia to previewImage for alipay', async () => {
+  it('treats previewMedia as unsupported for alipay without strict-equivalent api', async () => {
     const previewImage = vi.fn((options: any) => {
       options.success?.({ errMsg: 'previewImage:ok' })
     })
@@ -537,18 +537,23 @@ describe('weapi', () => {
       platform: 'alipay',
     })
 
-    await api.previewMedia({
+    expect(api.resolveTarget('previewMedia')).toMatchObject({
+      method: 'previewMedia',
+      target: 'previewMedia',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.previewMedia({
       sources: [
         { url: 'https://example.com/a.jpg', type: 'image' },
         { url: 'https://example.com/b.jpg', type: 'image' },
       ],
       current: 1,
-    } as any)
-
-    expect(previewImage).toHaveBeenCalledWith(expect.objectContaining({
-      urls: ['https://example.com/a.jpg', 'https://example.com/b.jpg'],
-      current: 'https://example.com/b.jpg',
-    }))
+    } as any)).rejects.toMatchObject({
+      errMsg: 'my.previewMedia:fail method not supported',
+    })
+    expect(previewImage).not.toHaveBeenCalled()
   })
 
   it('maps rewarded ad api for alipay and treats live contexts as unsupported', async () => {
@@ -1585,7 +1590,7 @@ describe('weapi', () => {
     }))
   })
 
-  it('maps previewMedia to previewImage for douyin', async () => {
+  it('treats previewMedia as unsupported for douyin without strict-equivalent api', async () => {
     const previewImage = vi.fn((options: any) => {
       options.success?.({ errMsg: 'previewImage:ok' })
     })
@@ -1596,17 +1601,22 @@ describe('weapi', () => {
       platform: 'tt',
     })
 
-    await api.previewMedia({
+    expect(api.resolveTarget('previewMedia')).toMatchObject({
+      method: 'previewMedia',
+      target: 'previewMedia',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.previewMedia({
       sources: [
         { url: 'https://example.com/c.jpg', type: 'image' },
       ],
       current: 0,
-    } as any)
-
-    expect(previewImage).toHaveBeenCalledWith(expect.objectContaining({
-      urls: ['https://example.com/c.jpg'],
-      current: 'https://example.com/c.jpg',
-    }))
+    } as any)).rejects.toMatchObject({
+      errMsg: 'tt.previewMedia:fail method not supported',
+    })
+    expect(previewImage).not.toHaveBeenCalled()
   })
 
   it('maps getVideoInfo to getFileInfo for douyin', async () => {
@@ -1905,7 +1915,7 @@ describe('weapi', () => {
       { method: 'requestOrderPayment', my: 'tradePay', tt: 'pay' },
       { method: 'requestPluginPayment', my: 'tradePay', tt: 'pay' },
       { method: 'requestVirtualPayment', my: 'tradePay', tt: 'pay' },
-      { method: 'previewMedia', my: 'previewImage', tt: 'previewImage' },
+      { method: 'previewMedia', my: 'previewMedia', tt: 'previewMedia', mySupported: false, ttSupported: false },
       { method: 'createInterstitialAd', my: 'createInterstitialAd', tt: 'createInterstitialAd', mySupported: false },
       { method: 'createRewardedVideoAd', my: 'createRewardedAd', tt: 'createRewardedVideoAd', ttSupported: false },
       { method: 'createLivePlayerContext', my: 'createLivePlayerContext', tt: 'createLivePlayerContext', mySupported: false },

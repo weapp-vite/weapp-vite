@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 220 | 220 | 0 | 479 | 45.93% | 45.93% |
-| 抖音小程序 (`tt`) | 160 | 160 | 0 | 479 | 33.40% | 33.40% |
-| 三端可调用完全对齐 (wx/my/tt) | 152 | - | - | 479 | 31.73% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 152 | - | 479 | - | 31.73% |
+| 支付宝小程序 (`my`) | 219 | 219 | 0 | 479 | 45.72% | 45.72% |
+| 抖音小程序 (`tt`) | 159 | 159 | 0 | 479 | 33.19% | 33.19% |
+| 三端可调用完全对齐 (wx/my/tt) | 151 | - | - | 479 | 31.52% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 151 | - | 479 | - | 31.52% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -54,7 +54,7 @@
 | `chooseMedia` | 选择图片或视频。 | 直连 `wx.chooseMedia` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType` | ⚠️ |
 | `chooseMessageFile` | 选择会话文件。 | 直连 `wx.chooseMessageFile` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getFuzzyLocation` | 获取模糊地理位置。 | 直连 `wx.getFuzzyLocation` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `previewMedia` | 预览图片和视频。 | 直连 `wx.previewMedia` | 映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls` | 映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls` | ⚠️ |
+| `previewMedia` | 预览图片和视频。 | 直连 `wx.previewMedia` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createInterstitialAd` | 创建插屏广告实例。 | 直连 `wx.createInterstitialAd` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.createInterstitialAd` | ⚠️ |
 | `createRewardedVideoAd` | 创建激励视频广告实例。 | 直连 `wx.createRewardedVideoAd` | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createLivePlayerContext` | 创建直播播放器上下文。 | 直连 `wx.createLivePlayerContext` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.createLivePlayerContext` | ⚠️ |

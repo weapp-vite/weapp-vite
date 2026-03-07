@@ -177,8 +177,8 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'previewMedia',
     description: '预览图片和视频。',
     wxStrategy: '直连 `wx.previewMedia`',
-    alipayStrategy: '映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls`',
-    douyinStrategy: '映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2103,42 +2103,6 @@ function mapChooseImageResult(result: any) {
   return result
 }
 
-function mapPreviewMediaArgs(args: unknown[]) {
-  if (args.length === 0) {
-    return [{}]
-  }
-  const nextArgs = [...args]
-  const lastIndex = nextArgs.length - 1
-  const lastArg = nextArgs[lastIndex]
-  if (!isPlainObject(lastArg)) {
-    return [...nextArgs, {}]
-  }
-  const nextOptions = {
-    ...lastArg,
-  } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'urls') && Array.isArray(nextOptions.sources)) {
-    const urls = nextOptions.sources
-      .map((item: unknown) => {
-        if (!isPlainObject(item)) {
-          return undefined
-        }
-        return typeof item.url === 'string' ? item.url : undefined
-      })
-      .filter((item): item is string => typeof item === 'string')
-    if (urls.length > 0) {
-      nextOptions.urls = urls
-    }
-  }
-  if (typeof nextOptions.current === 'number' && Array.isArray(nextOptions.urls)) {
-    const index = nextOptions.current
-    if (index >= 0 && index < nextOptions.urls.length) {
-      nextOptions.current = nextOptions.urls[index]
-    }
-  }
-  nextArgs[lastIndex] = nextOptions
-  return nextArgs
-}
-
 function mapDouyinChooseImageResult(result: any) {
   if (!isPlainObject(result)) {
     return result
@@ -2728,8 +2692,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getFuzzyLocation',
     },
     previewMedia: {
-      target: 'previewImage',
-      mapArgs: mapPreviewMediaArgs,
+      target: 'previewMedia',
     },
     createInterstitialAd: {
       target: 'createInterstitialAd',
@@ -3438,8 +3401,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getFuzzyLocation',
     },
     previewMedia: {
-      target: 'previewImage',
-      mapArgs: mapPreviewMediaArgs,
+      target: 'previewMedia',
     },
     createInterstitialAd: {
       target: 'createInterstitialAd',

@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：220，不支持：259
+总计：479，支持：219，不支持：260
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -367,7 +367,7 @@
 | `preloadSkylineView`                          | `preloadSkylineView`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `preloadWebview`                              | `preloadWebview`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `previewImage`                                | `previewImage`                                | ✅   | `native`      | ✅       | 直连 `my.previewImage`                                                            |
-| `previewMedia`                                | `previewImage`                                | ✅   | `mapped`      | ✅       | 映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls`                        |
+| `previewMedia`                                | `previewMedia`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `readBLECharacteristicValue`                  | `readBLECharacteristicValue`                  | ✅   | `native`      | ✅       | 直连 `my.readBLECharacteristicValue`                                              |
 | `redirectTo`                                  | `redirectTo`                                  | ✅   | `native`      | ✅       | 直连 `my.redirectTo`                                                              |
 | `reLaunch`                                    | `reLaunch`                                    | ✅   | `native`      | ✅       | 直连 `my.reLaunch`                                                                |
