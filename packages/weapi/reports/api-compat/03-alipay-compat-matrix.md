@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：204，不支持：275
+总计：479，支持：202，不支持：277
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -164,8 +164,8 @@
 | `getSystemSetting`                            | `getSystemSetting`                            | ✅   | `mapped`      | ✅       | 直连 `my.getSystemSetting`                                                        |
 | `getUpdateManager`                            | `getUpdateManager`                            | ✅   | `native`      | ✅       | 直连 `my.getUpdateManager`                                                        |
 | `getUserCryptoManager`                        | `getUserCryptoManager`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getUserInfo`                                 | `getOpenUserInfo`                             | ✅   | `mapped`      | ✅       | 映射到 `my.getOpenUserInfo`                                                       |
-| `getUserProfile`                              | `getOpenUserInfo`                             | ✅   | `mapped`      | ✅       | 映射到 `my.getOpenUserInfo`                                                       |
+| `getUserInfo`                                 | `getUserInfo`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `getUserProfile`                              | `getUserProfile`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getVideoInfo`                                | `getVideoInfo`                                | ✅   | `mapped`      | ✅       | 直连 `my.getVideoInfo`                                                            |
 | `getWeRunData`                                | `getWeRunData`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getWifiList`                                 | `getWifiList`                                 | ✅   | `native`      | ✅       | 直连 `my.getWifiList`                                                             |
