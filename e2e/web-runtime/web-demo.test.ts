@@ -99,15 +99,16 @@ async function dispatchRuntimeNavigation(
   payload: Record<string, unknown>,
 ) {
   try {
-    await page.evaluate(async ({ method, payload }) => {
+    await page.evaluate(({ method, payload }) => {
       const wxRuntime = (window as any).wx
       const navigate = wxRuntime?.[method]
       if (typeof navigate !== 'function') {
         throw new TypeError(`[web-e2e] wx.${method} is unavailable in runtime`)
       }
-      const navigationResult = navigate(payload)
-      if (navigationResult && typeof (navigationResult as any).then === 'function') {
-        await navigationResult
+      // 导航触发后立即返回，避免导航导致 evaluate 上下文销毁造成误判。
+      const navigationResult = navigate(payload) as any
+      if (navigationResult && typeof navigationResult.catch === 'function') {
+        navigationResult.catch(() => {})
       }
     }, { method, payload })
   }
