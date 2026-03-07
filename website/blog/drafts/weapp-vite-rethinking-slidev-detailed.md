@@ -1,6 +1,16 @@
 ---
 theme: seriph
 title: "Weapp-vite: 对小程序工程化的重新思考（案例演示完整版）"
+description: 面向分享场景的 Slidev 完整案例稿，覆盖 AI 协作、原子化样式、分包策略、HMR 与语法重写的可执行演示流程。
+keywords:
+  - Weapp-vite
+  - Slidev
+  - 小程序工程化
+  - AI
+  - weapp-tailwindcss
+  - 分包
+  - HMR
+  - Vue SFC
 info: |
   20-30 分钟 / 5 个完整案例
   每个案例均包含：演示步骤、配置、结果产出
