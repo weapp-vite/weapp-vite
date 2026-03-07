@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：137，不支持：342
+总计：479，支持：135，不支持：344
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -405,9 +405,9 @@
 | `sendHCEMessage`                              | `sendHCEMessage`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `sendSms`                                     | `sendSms`                                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `sendSocketMessage`                           | `sendSocketMessage`                           | ❌   | `unsupported` | ❌       | 未提供 tt.sendSocketMessage，调用时将返回 not supported                           |
-| `setBackgroundColor`                          | `setNavigationBarColor`                       | ✅   | `mapped`      | ✅       | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor`              |
+| `setBackgroundColor`                          | `setBackgroundColor`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `setBackgroundFetchToken`                     | `setBackgroundFetchToken`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `setBackgroundTextStyle`                      | `setNavigationBarColor`                       | ✅   | `mapped`      | ✅       | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor`             |
+| `setBackgroundTextStyle`                      | `setBackgroundTextStyle`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `setBLEMTU`                                   | `setBLEMTU`                                   | ❌   | `unsupported` | ❌       | 未提供 tt.setBLEMTU，调用时将返回 not supported                                   |
 | `setClipboardData`                            | `setClipboardData`                            | ✅   | `mapped`      | ✅       | 直连 `tt.setClipboardData`                                                        |
 | `setEnable1v1Chat`                            | `setEnable1v1Chat`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

@@ -506,7 +506,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '动态设置窗口背景色。',
     wxStrategy: '直连 `wx.setBackgroundColor`',
     alipayStrategy: '直连 `my.setBackgroundColor`',
-    douyinStrategy: '映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -514,7 +514,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '动态设置下拉背景字体样式。',
     wxStrategy: '直连 `wx.setBackgroundTextStyle`',
     alipayStrategy: '直连 `my.setBackgroundTextStyle`',
-    douyinStrategy: '映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2288,64 +2288,6 @@ function mapChooseMediaResultFromImage(result: any) {
   }
 }
 
-function resolveFrontColorFromTextStyle(value: unknown) {
-  if (value === 'light') {
-    return '#ffffff'
-  }
-  if (value === 'dark') {
-    return '#000000'
-  }
-  return undefined
-}
-
-function mapSetBackgroundColorToNavigationBarArgs(args: unknown[]) {
-  if (args.length === 0) {
-    return [{}]
-  }
-  const nextArgs = [...args]
-  const lastIndex = nextArgs.length - 1
-  const lastArg = nextArgs[lastIndex]
-  if (!isPlainObject(lastArg)) {
-    return [...nextArgs, {}]
-  }
-  const nextOptions = { ...lastArg } as Record<string, any>
-  if (typeof nextOptions.backgroundColor !== 'string' || !nextOptions.backgroundColor) {
-    if (typeof nextOptions.backgroundColorTop === 'string' && nextOptions.backgroundColorTop) {
-      nextOptions.backgroundColor = nextOptions.backgroundColorTop
-    }
-    else if (typeof nextOptions.backgroundColorBottom === 'string' && nextOptions.backgroundColorBottom) {
-      nextOptions.backgroundColor = nextOptions.backgroundColorBottom
-    }
-  }
-  if (typeof nextOptions.frontColor !== 'string' || !nextOptions.frontColor) {
-    const frontColor = resolveFrontColorFromTextStyle(nextOptions.textStyle)
-    if (frontColor) {
-      nextOptions.frontColor = frontColor
-    }
-  }
-  nextArgs[lastIndex] = nextOptions
-  return nextArgs
-}
-
-function mapSetBackgroundTextStyleToNavigationBarArgs(args: unknown[]) {
-  if (args.length === 0) {
-    return [{}]
-  }
-  const nextArgs = [...args]
-  const lastIndex = nextArgs.length - 1
-  const lastArg = nextArgs[lastIndex]
-  if (!isPlainObject(lastArg)) {
-    return [...nextArgs, {}]
-  }
-  const nextOptions = { ...lastArg } as Record<string, any>
-  const frontColor = resolveFrontColorFromTextStyle(nextOptions.textStyle)
-  if (frontColor) {
-    nextOptions.frontColor = frontColor
-  }
-  nextArgs[lastIndex] = nextOptions
-  return nextArgs
-}
-
 const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMethodMappingRule>>>> = {
   my: {
     showToast: {
@@ -3201,12 +3143,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'getAccountInfoSync',
     },
     setBackgroundColor: {
-      target: 'setNavigationBarColor',
-      mapArgs: mapSetBackgroundColorToNavigationBarArgs,
+      target: 'setBackgroundColor',
     },
     setBackgroundTextStyle: {
-      target: 'setNavigationBarColor',
-      mapArgs: mapSetBackgroundTextStyleToNavigationBarArgs,
+      target: 'setBackgroundTextStyle',
     },
     getNetworkType: {
       target: 'getNetworkType',

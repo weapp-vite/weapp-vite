@@ -671,7 +671,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.setBackgroundColor` | ⚠️ |
    * | 支付宝 | 直连 `my.setBackgroundColor` | ⚠️ |
-   * | 抖音 | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   setBackgroundColor: WeapiCrossPlatformAdapter['setBackgroundColor']
 
@@ -682,7 +682,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.setBackgroundTextStyle` | ⚠️ |
    * | 支付宝 | 直连 `my.setBackgroundTextStyle` | ⚠️ |
-   * | 抖音 | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   setBackgroundTextStyle: WeapiCrossPlatformAdapter['setBackgroundTextStyle']
 
