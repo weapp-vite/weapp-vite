@@ -164,6 +164,7 @@ export interface UseRouterOptions {
 
 export interface RouterNavigation {
   readonly nativeRouter: SetupContextRouter
+  readonly currentRoute: Readonly<RouteLocationNormalizedLoaded>
   resolve: (to: RouteLocationRaw) => RouteLocationNormalizedLoaded
   push: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
   replace: (to: RouteLocationRaw) => Promise<void | NavigationFailure>
@@ -1840,6 +1841,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
 
   return {
     nativeRouter,
+    currentRoute: route,
     resolve,
     push,
     replace,

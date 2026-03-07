@@ -970,6 +970,50 @@ describe('router navigation helpers', () => {
     expect(navigateBack).not.toHaveBeenCalled()
   })
 
+  it('exposes currentRoute on router and keeps it reactive with route hooks', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    let pages = [
+      {
+        route: 'pages/home/index',
+        options: {
+          tab: 'all',
+        },
+      },
+    ]
+    ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
+
+    const router = useRouter()
+    expect(router.currentRoute.fullPath).toBe('/pages/home/index?tab=all')
+    expect(router.currentRoute.path).toBe('pages/home/index')
+
+    pages = [
+      {
+        route: 'pages/profile/index',
+        options: {
+          from: 'mine',
+        },
+      },
+    ]
+
+    callHookList(instance, 'onShow')
+    expect(router.currentRoute.fullPath).toBe('/pages/profile/index?from=mine')
+    expect(router.currentRoute.path).toBe('pages/profile/index')
+  })
+
   it('push auto-switches to tabBar entries', async () => {
     const switchTab = vi.fn((options: any) => {
       options.success?.({})
