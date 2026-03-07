@@ -95,6 +95,15 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'authPrivateMessage',
     'bindEmployeeRelation',
     'canAddSecureElementPass',
+    'canvasGetImageData',
+    'canvasPutImageData',
+    'checkDeviceSupportHevc',
+    'checkEmployeeRelation',
+    'checkIsAddedToMyMiniProgram',
+    'checkIsOpenAccessibility',
+    'checkIsPictureInPictureActive',
+    'checkIsSoterEnrolledInDevice',
+    'checkIsSupportSoterAuthentication',
     'openCustomerServiceChat',
     'createVKSession',
     'compressVideo',
@@ -126,6 +135,15 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'authPrivateMessage',
     'bindEmployeeRelation',
     'canAddSecureElementPass',
+    'canvasGetImageData',
+    'canvasPutImageData',
+    'checkDeviceSupportHevc',
+    'checkEmployeeRelation',
+    'checkIsAddedToMyMiniProgram',
+    'checkIsOpenAccessibility',
+    'checkIsPictureInPictureActive',
+    'checkIsSoterEnrolledInDevice',
+    'checkIsSupportSoterAuthentication',
     'showActionSheet',
     'openCustomerServiceChat',
     'createVKSession',
@@ -861,6 +879,78 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     wxStrategy: '直连 `wx.canAddSecureElementPass`',
     alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
     douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'canvasGetImageData',
+    description: '获取 canvas 区域像素数据。',
+    wxStrategy: '直连 `wx.canvasGetImageData`',
+    alipayStrategy: '使用内置 shim，返回空像素数据结构',
+    douyinStrategy: '使用内置 shim，返回空像素数据结构',
+    support: '⚠️',
+  },
+  {
+    method: 'canvasPutImageData',
+    description: '将像素数据绘制到 canvas。',
+    wxStrategy: '直连 `wx.canvasPutImageData`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'checkDeviceSupportHevc',
+    description: '检测设备是否支持 HEVC 解码。',
+    wxStrategy: '直连 `wx.checkDeviceSupportHevc`',
+    alipayStrategy: '使用内置 shim，返回默认不支持',
+    douyinStrategy: '使用内置 shim，返回默认不支持',
+    support: '⚠️',
+  },
+  {
+    method: 'checkEmployeeRelation',
+    description: '查询员工关系绑定状态。',
+    wxStrategy: '直连 `wx.checkEmployeeRelation`',
+    alipayStrategy: '使用内置 shim，返回未绑定',
+    douyinStrategy: '使用内置 shim，返回未绑定',
+    support: '⚠️',
+  },
+  {
+    method: 'checkIsAddedToMyMiniProgram',
+    description: '检测是否已添加到我的小程序。',
+    wxStrategy: '直连 `wx.checkIsAddedToMyMiniProgram`',
+    alipayStrategy: '使用内置 shim，返回未添加',
+    douyinStrategy: '使用内置 shim，返回未添加',
+    support: '⚠️',
+  },
+  {
+    method: 'checkIsOpenAccessibility',
+    description: '检测系统无障碍是否开启。',
+    wxStrategy: '直连 `wx.checkIsOpenAccessibility`',
+    alipayStrategy: '使用内置 shim，返回未开启',
+    douyinStrategy: '使用内置 shim，返回未开启',
+    support: '⚠️',
+  },
+  {
+    method: 'checkIsPictureInPictureActive',
+    description: '检测是否处于画中画状态。',
+    wxStrategy: '直连 `wx.checkIsPictureInPictureActive`',
+    alipayStrategy: '使用内置 shim，返回未激活',
+    douyinStrategy: '使用内置 shim，返回未激活',
+    support: '⚠️',
+  },
+  {
+    method: 'checkIsSoterEnrolledInDevice',
+    description: '检测设备是否录入 SOTER 信息。',
+    wxStrategy: '直连 `wx.checkIsSoterEnrolledInDevice`',
+    alipayStrategy: '使用内置 shim，返回未录入',
+    douyinStrategy: '使用内置 shim，返回未录入',
+    support: '⚠️',
+  },
+  {
+    method: 'checkIsSupportSoterAuthentication',
+    description: '检测设备是否支持 SOTER 生物认证。',
+    wxStrategy: '直连 `wx.checkIsSupportSoterAuthentication`',
+    alipayStrategy: '使用内置 shim，返回默认不支持',
+    douyinStrategy: '使用内置 shim，返回默认不支持',
     support: '⚠️',
   },
 ] as const
@@ -1933,6 +2023,33 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     canAddSecureElementPass: {
       target: 'canAddSecureElementPass',
     },
+    canvasGetImageData: {
+      target: 'canvasGetImageData',
+    },
+    canvasPutImageData: {
+      target: 'canvasPutImageData',
+    },
+    checkDeviceSupportHevc: {
+      target: 'checkDeviceSupportHevc',
+    },
+    checkEmployeeRelation: {
+      target: 'checkEmployeeRelation',
+    },
+    checkIsAddedToMyMiniProgram: {
+      target: 'checkIsAddedToMyMiniProgram',
+    },
+    checkIsOpenAccessibility: {
+      target: 'checkIsOpenAccessibility',
+    },
+    checkIsPictureInPictureActive: {
+      target: 'checkIsPictureInPictureActive',
+    },
+    checkIsSoterEnrolledInDevice: {
+      target: 'checkIsSoterEnrolledInDevice',
+    },
+    checkIsSupportSoterAuthentication: {
+      target: 'checkIsSupportSoterAuthentication',
+    },
     openCustomerServiceChat: {
       target: 'openCustomerServiceChat',
     },
@@ -2215,6 +2332,33 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     canAddSecureElementPass: {
       target: 'canAddSecureElementPass',
+    },
+    canvasGetImageData: {
+      target: 'canvasGetImageData',
+    },
+    canvasPutImageData: {
+      target: 'canvasPutImageData',
+    },
+    checkDeviceSupportHevc: {
+      target: 'checkDeviceSupportHevc',
+    },
+    checkEmployeeRelation: {
+      target: 'checkEmployeeRelation',
+    },
+    checkIsAddedToMyMiniProgram: {
+      target: 'checkIsAddedToMyMiniProgram',
+    },
+    checkIsOpenAccessibility: {
+      target: 'checkIsOpenAccessibility',
+    },
+    checkIsPictureInPictureActive: {
+      target: 'checkIsPictureInPictureActive',
+    },
+    checkIsSoterEnrolledInDevice: {
+      target: 'checkIsSoterEnrolledInDevice',
+    },
+    checkIsSupportSoterAuthentication: {
+      target: 'checkIsSupportSoterAuthentication',
     },
     openCustomerServiceChat: {
       target: 'openCustomerServiceChat',

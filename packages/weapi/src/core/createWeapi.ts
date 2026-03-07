@@ -154,7 +154,24 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     'authPrivateMessage',
     'bindEmployeeRelation',
     'canAddSecureElementPass',
+    'canvasPutImageData',
+    'checkDeviceSupportHevc',
+    'checkEmployeeRelation',
+    'checkIsAddedToMyMiniProgram',
+    'checkIsOpenAccessibility',
+    'checkIsPictureInPictureActive',
+    'checkIsSoterEnrolledInDevice',
+    'checkIsSupportSoterAuthentication',
   ])
+  const syntheticCheckPayloadByMethod: Readonly<Record<string, Record<string, any>>> = {
+    checkDeviceSupportHevc: { isSupport: false },
+    checkEmployeeRelation: { isBound: false },
+    checkIsAddedToMyMiniProgram: { added: false },
+    checkIsOpenAccessibility: { openAccessibility: false },
+    checkIsPictureInPictureActive: { active: false },
+    checkIsSoterEnrolledInDevice: { isEnrolled: false },
+    checkIsSupportSoterAuthentication: { supportMode: [] },
+  }
 
   const mapSyntheticActionSheetResult = (result: any, itemList: readonly string[]) => {
     const hasSelection = itemList.length > 0
@@ -401,6 +418,26 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
       return {
         handled: true as const,
         result: undefined,
+      }
+    }
+    if (methodName === 'canvasGetImageData') {
+      return {
+        handled: true as const,
+        result: invokeSyntheticAsyncSuccess({
+          data: [],
+          width: 0,
+          height: 0,
+          errMsg: 'canvasGetImageData:ok',
+        }),
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(syntheticCheckPayloadByMethod, methodName)) {
+      return {
+        handled: true as const,
+        result: invokeSyntheticAsyncSuccess({
+          ...syntheticCheckPayloadByMethod[methodName],
+          errMsg: `${methodName}:ok`,
+        }),
       }
     }
     if (syntheticNoopMethodSet.has(methodName)) {

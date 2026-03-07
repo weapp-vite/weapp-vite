@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 252 | 227 | 479 | 100.00% | 52.61% |
-| 抖音小程序 (`tt`) | 479 | 194 | 285 | 479 | 100.00% | 40.50% |
+| 支付宝小程序 (`my`) | 479 | 261 | 218 | 479 | 100.00% | 54.49% |
+| 抖音小程序 (`tt`) | 479 | 203 | 276 | 479 | 100.00% | 42.38% |
 | 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 192 | - | 479 | - | 40.08% |
+| 三端语义完全对齐 (wx/my/tt) | - | 201 | - | 479 | - | 41.96% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -132,6 +132,15 @@
 | `authPrivateMessage` | 校验私密消息。 | 直连 `wx.authPrivateMessage` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `bindEmployeeRelation` | 绑定员工关系。 | 直连 `wx.bindEmployeeRelation` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `canAddSecureElementPass` | 检测是否可添加安全元素卡片。 | 直连 `wx.canAddSecureElementPass` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `canvasGetImageData` | 获取 canvas 区域像素数据。 | 直连 `wx.canvasGetImageData` | 使用内置 shim，返回空像素数据结构 | 使用内置 shim，返回空像素数据结构 | ⚠️ |
+| `canvasPutImageData` | 将像素数据绘制到 canvas。 | 直连 `wx.canvasPutImageData` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `checkDeviceSupportHevc` | 检测设备是否支持 HEVC 解码。 | 直连 `wx.checkDeviceSupportHevc` | 使用内置 shim，返回默认不支持 | 使用内置 shim，返回默认不支持 | ⚠️ |
+| `checkEmployeeRelation` | 查询员工关系绑定状态。 | 直连 `wx.checkEmployeeRelation` | 使用内置 shim，返回未绑定 | 使用内置 shim，返回未绑定 | ⚠️ |
+| `checkIsAddedToMyMiniProgram` | 检测是否已添加到我的小程序。 | 直连 `wx.checkIsAddedToMyMiniProgram` | 使用内置 shim，返回未添加 | 使用内置 shim，返回未添加 | ⚠️ |
+| `checkIsOpenAccessibility` | 检测系统无障碍是否开启。 | 直连 `wx.checkIsOpenAccessibility` | 使用内置 shim，返回未开启 | 使用内置 shim，返回未开启 | ⚠️ |
+| `checkIsPictureInPictureActive` | 检测是否处于画中画状态。 | 直连 `wx.checkIsPictureInPictureActive` | 使用内置 shim，返回未激活 | 使用内置 shim，返回未激活 | ⚠️ |
+| `checkIsSoterEnrolledInDevice` | 检测设备是否录入 SOTER 信息。 | 直连 `wx.checkIsSoterEnrolledInDevice` | 使用内置 shim，返回未录入 | 使用内置 shim，返回未录入 | ⚠️ |
+| `checkIsSupportSoterAuthentication` | 检测设备是否支持 SOTER 生物认证。 | 直连 `wx.checkIsSupportSoterAuthentication` | 使用内置 shim，返回默认不支持 | 使用内置 shim，返回默认不支持 | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 

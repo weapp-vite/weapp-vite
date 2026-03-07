@@ -45,6 +45,15 @@ const _requestPromise = wpi.request({
   url: 'https://example.com',
 })
 expectType<WeapiDefaultInstance['request']>(wpi.request)
+expectType<WeapiDefaultInstance['canvasGetImageData']>(wpi.canvasGetImageData)
+expectType<WeapiDefaultInstance['canvasPutImageData']>(wpi.canvasPutImageData)
+expectType<WeapiDefaultInstance['checkDeviceSupportHevc']>(wpi.checkDeviceSupportHevc)
+expectType<WeapiDefaultInstance['checkEmployeeRelation']>(wpi.checkEmployeeRelation)
+expectType<WeapiDefaultInstance['checkIsAddedToMyMiniProgram']>(wpi.checkIsAddedToMyMiniProgram)
+expectType<WeapiDefaultInstance['checkIsOpenAccessibility']>(wpi.checkIsOpenAccessibility)
+expectType<WeapiDefaultInstance['checkIsPictureInPictureActive']>(wpi.checkIsPictureInPictureActive)
+expectType<WeapiDefaultInstance['checkIsSoterEnrolledInDevice']>(wpi.checkIsSoterEnrolledInDevice)
+expectType<WeapiDefaultInstance['checkIsSupportSoterAuthentication']>(wpi.checkIsSupportSoterAuthentication)
 
 const requestTask = wpi.request({
   url: 'https://example.com',

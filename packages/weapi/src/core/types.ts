@@ -1070,6 +1070,105 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
    */
   canAddSecureElementPass: WeapiCrossPlatformAdapter['canAddSecureElementPass']
+
+  /**
+   * 获取 canvas 区域像素数据。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.canvasGetImageData` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，返回空像素数据结构 | ⚠️ |
+   * | 抖音 | 使用内置 shim，返回空像素数据结构 | ⚠️ |
+   */
+  canvasGetImageData: WeapiCrossPlatformAdapter['canvasGetImageData']
+
+  /**
+   * 将像素数据绘制到 canvas。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.canvasPutImageData` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  canvasPutImageData: WeapiCrossPlatformAdapter['canvasPutImageData']
+
+  /**
+   * 检测设备是否支持 HEVC 解码。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.checkDeviceSupportHevc` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，返回默认不支持 | ⚠️ |
+   * | 抖音 | 使用内置 shim，返回默认不支持 | ⚠️ |
+   */
+  checkDeviceSupportHevc: WeapiCrossPlatformAdapter['checkDeviceSupportHevc']
+
+  /**
+   * 查询员工关系绑定状态。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.checkEmployeeRelation` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，返回未绑定 | ⚠️ |
+   * | 抖音 | 使用内置 shim，返回未绑定 | ⚠️ |
+   */
+  checkEmployeeRelation: WeapiCrossPlatformAdapter['checkEmployeeRelation']
+
+  /**
+   * 检测是否已添加到我的小程序。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.checkIsAddedToMyMiniProgram` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，返回未添加 | ⚠️ |
+   * | 抖音 | 使用内置 shim，返回未添加 | ⚠️ |
+   */
+  checkIsAddedToMyMiniProgram: WeapiCrossPlatformAdapter['checkIsAddedToMyMiniProgram']
+
+  /**
+   * 检测系统无障碍是否开启。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.checkIsOpenAccessibility` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，返回未开启 | ⚠️ |
+   * | 抖音 | 使用内置 shim，返回未开启 | ⚠️ |
+   */
+  checkIsOpenAccessibility: WeapiCrossPlatformAdapter['checkIsOpenAccessibility']
+
+  /**
+   * 检测是否处于画中画状态。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.checkIsPictureInPictureActive` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，返回未激活 | ⚠️ |
+   * | 抖音 | 使用内置 shim，返回未激活 | ⚠️ |
+   */
+  checkIsPictureInPictureActive: WeapiCrossPlatformAdapter['checkIsPictureInPictureActive']
+
+  /**
+   * 检测设备是否录入 SOTER 信息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.checkIsSoterEnrolledInDevice` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，返回未录入 | ⚠️ |
+   * | 抖音 | 使用内置 shim，返回未录入 | ⚠️ |
+   */
+  checkIsSoterEnrolledInDevice: WeapiCrossPlatformAdapter['checkIsSoterEnrolledInDevice']
+
+  /**
+   * 检测设备是否支持 SOTER 生物认证。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.checkIsSupportSoterAuthentication` | ⚠️ |
+   * | 支付宝 | 使用内置 shim，返回默认不支持 | ⚠️ |
+   * | 抖音 | 使用内置 shim，返回默认不支持 | ⚠️ |
+   */
+  checkIsSupportSoterAuthentication: WeapiCrossPlatformAdapter['checkIsSupportSoterAuthentication']
   // @generated weapi-method-docs:end
 }
 
