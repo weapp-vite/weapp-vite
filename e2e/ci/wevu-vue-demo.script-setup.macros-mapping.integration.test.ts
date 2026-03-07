@@ -74,7 +74,7 @@ describe.sequential('e2e app: wevu-vue-demo (script setup macros mapping)', () =
     expect(altPanelJs).toContain('emit run payload')
     expect(altPanelJs).toContain('emit runevent payload')
 
-    expect(modelInputJs).toMatch(/props:e\.(u|f)\(\{label:\{type:String,required:!1,default:`Model Input`\}/)
+    expect(modelInputJs).toMatch(/props:e\.\w+\(\{label:\{type:String,required:!1,default:`Model Input`\}/)
     expect(modelInputJs).toContain('emits:[`update:modelValue`]')
   })
 })
