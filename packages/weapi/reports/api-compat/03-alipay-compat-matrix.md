@@ -347,31 +347,31 @@
 | `openOfficialAccountProfile`                  | `openOfficialAccountProfile`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `openPrivacyContract`                         | `openPrivacyContract`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `openSetting`                                 | `openSetting`                        | ✅   | `native`   | ✅       | 直连 `my.openSetting`                                                  |
-| `openSingleStickerView`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openStickerIPView`                           | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openStickerSetView`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openStoreCouponDetail`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `openStoreOrderDetail`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `openSingleStickerView`                       | `openSingleStickerView`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openStickerIPView`                           | `openStickerIPView`                  | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openStickerSetView`                          | `openStickerSetView`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openStoreCouponDetail`                       | `openStoreCouponDetail`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `openStoreOrderDetail`                        | `openStoreOrderDetail`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `openSystemBluetoothSetting`                  | `openSystemBluetoothSetting`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `openVideoEditor`                             | `openVideoEditor`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `pageScrollTo`                                | `pageScrollTo`                       | ✅   | `native`   | ✅       | 直连 `my.pageScrollTo`                                                 |
-| `pauseBackgroundAudio`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `pauseVoice`                                  | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `playBackgroundAudio`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `playVoice`                                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `pauseBackgroundAudio`                        | `pauseBackgroundAudio`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `pauseVoice`                                  | `pauseVoice`                         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `playBackgroundAudio`                         | `playBackgroundAudio`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `playVoice`                                   | `playVoice`                          | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `pluginLogin`                                 | `getAuthCode`                        | ✅   | `mapped`   | ✅       | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段                        |
-| `postMessageToReferrerMiniProgram`            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `postMessageToReferrerPage`                   | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `preDownloadSubpackage`                       | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `preloadAssets`                               | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `preloadSkylineView`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `preloadWebview`                              | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `postMessageToReferrerMiniProgram`            | `postMessageToReferrerMiniProgram`   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `postMessageToReferrerPage`                   | `postMessageToReferrerPage`          | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `preDownloadSubpackage`                       | `preDownloadSubpackage`              | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `preloadAssets`                               | `preloadAssets`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `preloadSkylineView`                          | `preloadSkylineView`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `preloadWebview`                              | `preloadWebview`                     | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `previewImage`                                | `previewImage`                       | ✅   | `native`   | ✅       | 直连 `my.previewImage`                                                 |
 | `previewMedia`                                | `previewImage`                       | ✅   | `mapped`   | ✅       | 映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls`             |
 | `readBLECharacteristicValue`                  | `readBLECharacteristicValue`         | ✅   | `native`   | ✅       | 直连 `my.readBLECharacteristicValue`                                   |
 | `redirectTo`                                  | `redirectTo`                         | ✅   | `native`   | ✅       | 直连 `my.redirectTo`                                                   |
 | `reLaunch`                                    | `reLaunch`                           | ✅   | `native`   | ✅       | 直连 `my.reLaunch`                                                     |
-| `removeSecureElementPass`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `removeSecureElementPass`                     | `removeSecureElementPass`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `removeStorage`                               | `removeStorage`                      | ✅   | `native`   | ✅       | 直连 `my.removeStorage`                                                |
 | `removeStorageSync`                           | `removeStorageSync`                  | ✅   | `native`   | ✅       | 直连 `my.removeStorageSync`                                            |
 | `removeTabBarBadge`                           | `removeTabBarBadge`                  | ✅   | `native`   | ✅       | 直连 `my.removeTabBarBadge`                                            |

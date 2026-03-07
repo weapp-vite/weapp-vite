@@ -71,6 +71,22 @@ expectType<WeapiDefaultInstance['openSystemBluetoothSetting']>(wpi.openSystemBlu
 expectType<WeapiDefaultInstance['reportEvent']>(wpi.reportEvent)
 expectType<WeapiDefaultInstance['reportMonitor']>(wpi.reportMonitor)
 expectType<WeapiDefaultInstance['reportPerformance']>(wpi.reportPerformance)
+expectType<WeapiDefaultInstance['openSingleStickerView']>(wpi.openSingleStickerView)
+expectType<WeapiDefaultInstance['openStickerIPView']>(wpi.openStickerIPView)
+expectType<WeapiDefaultInstance['openStickerSetView']>(wpi.openStickerSetView)
+expectType<WeapiDefaultInstance['openStoreCouponDetail']>(wpi.openStoreCouponDetail)
+expectType<WeapiDefaultInstance['openStoreOrderDetail']>(wpi.openStoreOrderDetail)
+expectType<WeapiDefaultInstance['pauseBackgroundAudio']>(wpi.pauseBackgroundAudio)
+expectType<WeapiDefaultInstance['pauseVoice']>(wpi.pauseVoice)
+expectType<WeapiDefaultInstance['playBackgroundAudio']>(wpi.playBackgroundAudio)
+expectType<WeapiDefaultInstance['playVoice']>(wpi.playVoice)
+expectType<WeapiDefaultInstance['postMessageToReferrerMiniProgram']>(wpi.postMessageToReferrerMiniProgram)
+expectType<WeapiDefaultInstance['postMessageToReferrerPage']>(wpi.postMessageToReferrerPage)
+expectType<WeapiDefaultInstance['preDownloadSubpackage']>(wpi.preDownloadSubpackage)
+expectType<WeapiDefaultInstance['preloadAssets']>(wpi.preloadAssets)
+expectType<WeapiDefaultInstance['preloadSkylineView']>(wpi.preloadSkylineView)
+expectType<WeapiDefaultInstance['preloadWebview']>(wpi.preloadWebview)
+expectType<WeapiDefaultInstance['removeSecureElementPass']>(wpi.removeSecureElementPass)
 
 const requestTask = wpi.request({
   url: 'https://example.com',
