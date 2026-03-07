@@ -124,6 +124,9 @@
 
 - 已增加矩阵级白名单测试，限定 `target !== method` 的异名映射仅允许当前可证明严格等价项（my 12 项 + tt 1 项）。
 - 已增加矩阵级断言：`my/tt` 两端 fallback 映射数必须恒为 `0`，防止重新引入“近名兜底映射”。
+- 已补充事件类误映射防回归：
+- `tt.offMemoryWarning` 缺失时不得回退到 `onMemoryWarning`。
+- `my/tt` 的 `on/offAppRoute` 与 `on/offAppRouteDone` 缺失时不得回退到 `on/offAppShow`。
 
 ## 5. 每批固定验证清单
 
