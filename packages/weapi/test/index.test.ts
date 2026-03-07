@@ -436,6 +436,53 @@ describe('weapi', () => {
     }))
   })
 
+  it('maps previewMedia to previewImage for alipay', async () => {
+    const previewImage = vi.fn((options: any) => {
+      options.success?.({ errMsg: 'previewImage:ok' })
+    })
+    const api = createWeapi({
+      adapter: {
+        previewImage,
+      },
+      platform: 'alipay',
+    })
+
+    await api.previewMedia({
+      sources: [
+        { url: 'https://example.com/a.jpg', type: 'image' },
+        { url: 'https://example.com/b.jpg', type: 'image' },
+      ],
+      current: 1,
+    } as any)
+
+    expect(previewImage).toHaveBeenCalledWith(expect.objectContaining({
+      urls: ['https://example.com/a.jpg', 'https://example.com/b.jpg'],
+      current: 'https://example.com/b.jpg',
+    }))
+  })
+
+  it('maps ad and live context apis for alipay', () => {
+    const createRewardedAd = vi.fn(() => ({ show: vi.fn() }))
+    const createVideoContext = vi.fn(() => ({ play: vi.fn() }))
+    const api = createWeapi({
+      adapter: {
+        createRewardedAd,
+        createVideoContext,
+      },
+      platform: 'alipay',
+    }) as Record<string, any>
+
+    api.createInterstitialAd({ adUnitId: 'adunit-1' })
+    api.createRewardedVideoAd({ adUnitId: 'adunit-2' })
+    api.createLivePlayerContext('live-player')
+    api.createLivePusherContext('live-pusher')
+
+    expect(createRewardedAd).toHaveBeenNthCalledWith(1, 'adunit-1', expect.any(Object))
+    expect(createRewardedAd).toHaveBeenNthCalledWith(2, 'adunit-2', expect.any(Object))
+    expect(createVideoContext).toHaveBeenNthCalledWith(1, 'live-player', expect.any(Object))
+    expect(createVideoContext).toHaveBeenNthCalledWith(2, 'live-pusher', expect.any(Object))
+  })
+
   it('normalizes platform alias for createWeapi', () => {
     const api = createWeapi({
       adapter: {},
@@ -652,6 +699,74 @@ describe('weapi', () => {
       package: 'order-info-1',
       orderInfo: 'order-info-1',
     }))
+  })
+
+  it('maps previewMedia to previewImage for douyin', async () => {
+    const previewImage = vi.fn((options: any) => {
+      options.success?.({ errMsg: 'previewImage:ok' })
+    })
+    const api = createWeapi({
+      adapter: {
+        previewImage,
+      },
+      platform: 'tt',
+    })
+
+    await api.previewMedia({
+      sources: [
+        { url: 'https://example.com/c.jpg', type: 'image' },
+      ],
+      current: 0,
+    } as any)
+
+    expect(previewImage).toHaveBeenCalledWith(expect.objectContaining({
+      urls: ['https://example.com/c.jpg'],
+      current: 'https://example.com/c.jpg',
+    }))
+  })
+
+  it('maps getVideoInfo to getFileInfo for douyin', async () => {
+    const getFileInfo = vi.fn((options: any) => {
+      options.success?.({ size: 1024 })
+    })
+    const api = createWeapi({
+      adapter: {
+        getFileInfo,
+      },
+      platform: 'tt',
+    })
+
+    const result = await api.getVideoInfo({ src: '/tmp/demo.mp4' } as any)
+
+    expect(getFileInfo).toHaveBeenCalledWith(expect.objectContaining({
+      src: '/tmp/demo.mp4',
+      filePath: '/tmp/demo.mp4',
+    }))
+    expect(result).toMatchObject({ size: 1024 })
+  })
+
+  it('maps ad and live context apis for douyin', () => {
+    const createInterstitialAd = vi.fn(() => ({ show: vi.fn() }))
+    const createLivePlayerContext = vi.fn(() => ({ play: vi.fn() }))
+    const createVideoContext = vi.fn(() => ({ play: vi.fn() }))
+    const api = createWeapi({
+      adapter: {
+        createInterstitialAd,
+        createLivePlayerContext,
+        createVideoContext,
+      },
+      platform: 'tt',
+    }) as Record<string, any>
+
+    api.createInterstitialAd({ adUnitId: 'tt-ad-1' })
+    api.createRewardedVideoAd({ adUnitId: 'tt-ad-2' })
+    api.createLivePlayerContext('tt-live-player')
+    api.createLivePusherContext('tt-live-pusher')
+
+    expect(createInterstitialAd).toHaveBeenNthCalledWith(1, expect.objectContaining({ adUnitId: 'tt-ad-1' }))
+    expect(createInterstitialAd).toHaveBeenNthCalledWith(2, expect.objectContaining({ adUnitId: 'tt-ad-2' }))
+    expect(createLivePlayerContext).toHaveBeenNthCalledWith(1, 'tt-live-player', expect.any(Object))
+    expect(createVideoContext).toHaveBeenNthCalledWith(1, 'tt-live-pusher', expect.any(Object))
   })
 
   const douyinPromiseCases = [
@@ -877,6 +992,12 @@ describe('weapi', () => {
       { method: 'requestOrderPayment', my: 'tradePay', tt: 'pay' },
       { method: 'requestPluginPayment', my: 'tradePay', tt: 'pay' },
       { method: 'requestVirtualPayment', my: 'tradePay', tt: 'pay' },
+      { method: 'previewMedia', my: 'previewImage', tt: 'previewImage' },
+      { method: 'createInterstitialAd', my: 'createRewardedAd', tt: 'createInterstitialAd' },
+      { method: 'createRewardedVideoAd', my: 'createRewardedAd', tt: 'createInterstitialAd' },
+      { method: 'createLivePlayerContext', my: 'createVideoContext', tt: 'createLivePlayerContext' },
+      { method: 'createLivePusherContext', my: 'createVideoContext', tt: 'createVideoContext' },
+      { method: 'getVideoInfo', my: 'getVideoInfo', tt: 'getFileInfo' },
       { method: 'showShareImageMenu', my: 'showSharePanel', tt: 'showShareMenu' },
       { method: 'updateShareMenu', my: 'showSharePanel', tt: 'showShareMenu' },
       { method: 'openEmbeddedMiniProgram', my: 'navigateToMiniProgram', tt: 'navigateToMiniProgram' },

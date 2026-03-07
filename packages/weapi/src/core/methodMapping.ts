@@ -150,6 +150,54 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     support: '✅',
   },
   {
+    method: 'previewMedia',
+    description: '预览图片和视频。',
+    wxStrategy: '直连 `wx.previewMedia`',
+    alipayStrategy: '映射到 `my.previewImage`，并将 `sources.url` 对齐到 `urls`',
+    douyinStrategy: '映射到 `tt.previewImage`，并将 `sources.url` 对齐到 `urls`',
+    support: '⚠️',
+  },
+  {
+    method: 'createInterstitialAd',
+    description: '创建插屏广告实例。',
+    wxStrategy: '直连 `wx.createInterstitialAd`',
+    alipayStrategy: '映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`',
+    douyinStrategy: '直连 `tt.createInterstitialAd`',
+    support: '⚠️',
+  },
+  {
+    method: 'createRewardedVideoAd',
+    description: '创建激励视频广告实例。',
+    wxStrategy: '直连 `wx.createRewardedVideoAd`',
+    alipayStrategy: '映射到 `my.createRewardedAd`，并对齐入参 `adUnitId`',
+    douyinStrategy: '映射到 `tt.createInterstitialAd`',
+    support: '⚠️',
+  },
+  {
+    method: 'createLivePlayerContext',
+    description: '创建直播播放器上下文。',
+    wxStrategy: '直连 `wx.createLivePlayerContext`',
+    alipayStrategy: '映射到 `my.createVideoContext`',
+    douyinStrategy: '直连 `tt.createLivePlayerContext`',
+    support: '⚠️',
+  },
+  {
+    method: 'createLivePusherContext',
+    description: '创建直播推流上下文。',
+    wxStrategy: '直连 `wx.createLivePusherContext`',
+    alipayStrategy: '映射到 `my.createVideoContext`',
+    douyinStrategy: '映射到 `tt.createVideoContext`',
+    support: '⚠️',
+  },
+  {
+    method: 'getVideoInfo',
+    description: '获取视频详细信息。',
+    wxStrategy: '直连 `wx.getVideoInfo`',
+    alipayStrategy: '直连 `my.getVideoInfo`',
+    douyinStrategy: '映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath`',
+    support: '⚠️',
+  },
+  {
     method: 'saveFile',
     description: '保存文件（跨端扩展，微信 typings 未声明同名 API）。',
     wxStrategy: '微信当前 typings 未声明同名 API，保留为跨端扩展能力',
@@ -591,6 +639,42 @@ function mapChooseImageResult(result: any) {
   return result
 }
 
+function mapPreviewMediaArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return [{}]
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return [...nextArgs, {}]
+  }
+  const nextOptions = {
+    ...lastArg,
+  } as Record<string, any>
+  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'urls') && Array.isArray(nextOptions.sources)) {
+    const urls = nextOptions.sources
+      .map((item: unknown) => {
+        if (!isPlainObject(item)) {
+          return undefined
+        }
+        return typeof item.url === 'string' ? item.url : undefined
+      })
+      .filter((item): item is string => typeof item === 'string')
+    if (urls.length > 0) {
+      nextOptions.urls = urls
+    }
+  }
+  if (typeof nextOptions.current === 'number' && Array.isArray(nextOptions.urls)) {
+    const index = nextOptions.current
+    if (index >= 0 && index < nextOptions.urls.length) {
+      nextOptions.current = nextOptions.urls[index]
+    }
+  }
+  nextArgs[lastIndex] = nextOptions
+  return nextArgs
+}
+
 function mapDouyinChooseImageResult(result: any) {
   if (!isPlainObject(result)) {
     return result
@@ -659,6 +743,45 @@ function mapSaveFileResult(result: any) {
     }
   }
   return result
+}
+
+function mapCreateRewardedAdArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return args
+  }
+  const firstArg = args[0]
+  if (typeof firstArg === 'string' && firstArg) {
+    return args
+  }
+  if (!isPlainObject(firstArg)) {
+    return args
+  }
+  const adUnitId = typeof firstArg.adUnitId === 'string' ? firstArg.adUnitId : undefined
+  if (!adUnitId) {
+    return args
+  }
+  const restArgs = args.slice(1)
+  return [adUnitId, ...restArgs]
+}
+
+function mapGetVideoInfoArgs(args: unknown[]) {
+  if (args.length === 0) {
+    return [{}]
+  }
+  const nextArgs = [...args]
+  const lastIndex = nextArgs.length - 1
+  const lastArg = nextArgs[lastIndex]
+  if (!isPlainObject(lastArg)) {
+    return [...nextArgs, {}]
+  }
+  const nextOptions = {
+    ...lastArg,
+  } as Record<string, any>
+  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'filePath') && typeof nextOptions.src === 'string' && nextOptions.src) {
+    nextOptions.filePath = nextOptions.src
+  }
+  nextArgs[lastIndex] = nextOptions
+  return nextArgs
 }
 
 function mapDouyinSaveFileResult(result: any) {
@@ -988,6 +1111,27 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'chooseImage',
       mapResult: mapChooseImageResult,
     },
+    previewMedia: {
+      target: 'previewImage',
+      mapArgs: mapPreviewMediaArgs,
+    },
+    createInterstitialAd: {
+      target: 'createRewardedAd',
+      mapArgs: mapCreateRewardedAdArgs,
+    },
+    createRewardedVideoAd: {
+      target: 'createRewardedAd',
+      mapArgs: mapCreateRewardedAdArgs,
+    },
+    createLivePlayerContext: {
+      target: 'createVideoContext',
+    },
+    createLivePusherContext: {
+      target: 'createVideoContext',
+    },
+    getVideoInfo: {
+      target: 'getVideoInfo',
+    },
     saveFile: {
       target: 'saveFile',
       mapArgs: mapSaveFileArgs,
@@ -1127,6 +1271,26 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     chooseImage: {
       target: 'chooseImage',
       mapResult: mapDouyinChooseImageResult,
+    },
+    previewMedia: {
+      target: 'previewImage',
+      mapArgs: mapPreviewMediaArgs,
+    },
+    createInterstitialAd: {
+      target: 'createInterstitialAd',
+    },
+    createRewardedVideoAd: {
+      target: 'createInterstitialAd',
+    },
+    createLivePlayerContext: {
+      target: 'createLivePlayerContext',
+    },
+    createLivePusherContext: {
+      target: 'createVideoContext',
+    },
+    getVideoInfo: {
+      target: 'getFileInfo',
+      mapArgs: mapGetVideoInfoArgs,
     },
     saveFile: {
       target: 'saveFile',
