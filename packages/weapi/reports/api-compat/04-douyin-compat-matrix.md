@@ -13,7 +13,7 @@
 | `addPhoneRepeatCalendar`                      | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `addVideoToFavorites`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `arrayBufferToBase64`                         | `arrayBufferToBase64`             | ✅   | `native`      | ✅       | 直连 `tt.arrayBufferToBase64`                                    |
-| `authorize`                                   | `authorize`                       | ✅   | `native`      | ✅       | 直连 `tt.authorize`                                              |
+| `authorize`                                   | `authorize`                       | ✅   | `mapped`      | ✅       | 直连 `tt.authorize`                                              |
 | `authorizeForMiniProgram`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `authPrivateMessage`                          | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `base64ToArrayBuffer`                         | `base64ToArrayBuffer`             | ✅   | `native`      | ✅       | 直连 `tt.base64ToArrayBuffer`                                    |
@@ -35,7 +35,7 @@
 | `checkIsPictureInPictureActive`               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `checkIsSoterEnrolledInDevice`                | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `checkIsSupportSoterAuthentication`           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
-| `checkSession`                                | `checkSession`                    | ✅   | `native`      | ✅       | 直连 `tt.checkSession`                                           |
+| `checkSession`                                | `checkSession`                    | ✅   | `mapped`      | ✅       | 直连 `tt.checkSession`                                           |
 | `chooseAddress`                               | `chooseAddress`                   | ✅   | `mapped`      | ✅       | 直连 `tt.chooseAddress`                                          |
 | `chooseContact`                               | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `chooseImage`                                 | `chooseImage`                     | ✅   | `mapped`      | ✅       | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底     |
@@ -384,13 +384,13 @@
 | `requestDeviceVoIP`                           | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `requestIdleCallback`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `requestMerchantTransfer`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
-| `requestOrderPayment`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
-| `requestPayment`                              | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
-| `requestPluginPayment`                        | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `requestOrderPayment`                         | `pay`                             | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`              |
+| `requestPayment`                              | `pay`                             | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`              |
+| `requestPluginPayment`                        | `pay`                             | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`              |
 | `requestSubscribeDeviceMessage`               | `requestSubscribeMessage`         | ✅   | `mapped`      | ✅       | 映射到 `tt.requestSubscribeMessage`                              |
 | `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`         | ✅   | `mapped`      | ✅       | 映射到 `tt.requestSubscribeMessage`                              |
 | `requestSubscribeMessage`                     | `requestSubscribeMessage`         | ✅   | `native`      | ✅       | 直连 `tt.requestSubscribeMessage`                                |
-| `requestVirtualPayment`                       | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
+| `requestVirtualPayment`                       | `pay`                             | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`              |
 | `requirePrivacyAuthorize`                     | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `reserveChannelsLive`                         | `hideToast`                       | ✅   | `fallback`    | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                            |
 | `restartMiniProgram`                          | `reLaunch`                        | ✅   | `mapped`      | ✅       | 映射到 `tt.reLaunch`                                             |
