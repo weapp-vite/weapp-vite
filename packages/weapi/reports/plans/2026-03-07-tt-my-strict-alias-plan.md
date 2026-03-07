@@ -144,6 +144,8 @@
 
 10. 最新候选复筛（2026-03-08）
 
+- 可执行命令：`pnpm --filter @wevu/api strict-alias:scan`
+- 自动报告：`reports/plans/strict-alias-candidates.md`
 - 已按“unsupported + 名称相似度 >= 0.75”重新扫描并人工复核，未发现新增可证明严格等价映射。
 - 本轮高相似但仍否决的代表项：
 - `tt.saveVideoToPhotosAlbum` vs `tt.saveImageToPhotosAlbum`（能力对象不同，视频/图片不可等价）。
