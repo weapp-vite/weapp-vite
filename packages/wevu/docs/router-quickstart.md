@@ -124,6 +124,11 @@ router.removeRoute('legacy-home')
 router.clearRoutes()
 ```
 
+说明：
+
+- `addRoute()` 若遇到同名路由，会覆盖旧记录并自动清理旧记录下的子路由链。
+- 初始化阶段如果 `routes` 与 `namedRoutes` 出现同名记录，会告警提示“后者覆盖前者”。
+
 ## 6. 导航 API 行为
 
 ```ts

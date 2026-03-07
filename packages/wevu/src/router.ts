@@ -226,6 +226,8 @@ interface NamedRouteLookup {
   nameByStaticPath: Map<string, string>
 }
 
+type RouteOptionSource = 'routes' | 'namedRoutes'
+
 interface PathParamToken {
   key: string
   modifier: '' | '?' | '+' | '*'
@@ -239,6 +241,7 @@ interface NamedRoutePathResolveResult {
 interface FlattenedRouteRecordSeed {
   route: RouteRecordRaw
   parentName?: string
+  source?: RouteOptionSource
 }
 
 interface MatchedRouteRecordResolveResult {
@@ -530,13 +533,16 @@ function normalizeRouteRecordAliasPaths(
   return normalizedAliasPaths
 }
 
-function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): FlattenedRouteRecordSeed[] {
+function normalizeNamedRouteEntries(
+  namedRoutes?: NamedRoutes,
+  source: RouteOptionSource = 'namedRoutes',
+): FlattenedRouteRecordSeed[] {
   if (!namedRoutes) {
     return []
   }
 
   if (Array.isArray(namedRoutes)) {
-    return flattenNamedRouteRecords(namedRoutes)
+    return flattenNamedRouteRecords(namedRoutes, undefined, undefined, [], source)
   }
 
   return Object.entries(namedRoutes)
@@ -549,13 +555,14 @@ function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): FlattenedRouteRe
         name: name.trim(),
         path,
       },
+      source,
     }))
 }
 
 function resolveRouteOptionEntries(options: UseRouterOptions): FlattenedRouteRecordSeed[] {
   return [
-    ...normalizeNamedRouteEntries(options.routes),
-    ...normalizeNamedRouteEntries(options.namedRoutes),
+    ...normalizeNamedRouteEntries(options.routes, 'routes'),
+    ...normalizeNamedRouteEntries(options.namedRoutes, 'namedRoutes'),
   ]
 }
 
@@ -604,6 +611,7 @@ function flattenNamedRouteRecords(
   parentPath?: string,
   parentName?: string,
   parentAliasPaths: readonly string[] = [],
+  source?: RouteOptionSource,
 ): FlattenedRouteRecordSeed[] {
   const flattenedRecords: FlattenedRouteRecordSeed[] = []
 
@@ -639,10 +647,11 @@ function flattenNamedRouteRecords(
     flattenedRecords.push({
       route: normalizedRecord,
       parentName,
+      source,
     })
 
     if (Array.isArray(record.children) && record.children.length > 0) {
-      flattenedRecords.push(...flattenNamedRouteRecords(record.children, normalizedPath, routeName, normalizedAliasPaths))
+      flattenedRecords.push(...flattenNamedRouteRecords(record.children, normalizedPath, routeName, normalizedAliasPaths, source))
     }
   }
 
@@ -662,6 +671,38 @@ function createNamedRouteNameByStaticPath(recordByName: ReadonlyMap<string, Rout
     }
   }
   return nameByStaticPath
+}
+
+function warnRouteConfig(message: string): void {
+  if (typeof console === 'undefined' || typeof console.warn !== 'function') {
+    return
+  }
+  console.warn(`[wevu/router] ${message}`)
+}
+
+function warnDuplicateRouteEntries(routeEntries: readonly FlattenedRouteRecordSeed[]): void {
+  const latestSourceByName = new Map<string, RouteOptionSource>()
+  const duplicateMessages: string[] = []
+
+  for (const routeEntry of routeEntries) {
+    const routeName = routeEntry.route.name.trim()
+    if (!routeName) {
+      continue
+    }
+
+    const currentSource = routeEntry.source ?? 'namedRoutes'
+    const previousSource = latestSourceByName.get(routeName)
+    if (previousSource) {
+      duplicateMessages.push(`"${routeName}" (${previousSource} -> ${currentSource})`)
+    }
+    latestSourceByName.set(routeName, currentSource)
+  }
+
+  if (duplicateMessages.length === 0) {
+    return
+  }
+
+  warnRouteConfig(`duplicate route names detected, later entries override earlier ones: ${duplicateMessages.join(', ')}`)
 }
 
 function createNamedRouteLookup(routeEntries: readonly FlattenedRouteRecordSeed[]): NamedRouteLookup {
@@ -1683,6 +1724,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
   }
   const readyPromise = Promise.resolve()
   const routeEntries = resolveRouteOptionEntries(options)
+  warnDuplicateRouteEntries(routeEntries)
   const namedRouteLookup = createNamedRouteLookup(routeEntries)
   const normalizedTabBarEntries = (options.tabBarEntries ?? [])
     .map(path => resolvePath(path, ''))
@@ -1811,6 +1853,14 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       const normalizedRoute = normalizeRouteRecordRaw(routeRecord.route, routeRecord.parentName)
       if (!normalizedRoute) {
         continue
+      }
+      const existingRoute = namedRouteLookup.recordByName.get(normalizedRoute.name)
+      if (existingRoute) {
+        const namesToRemove = collectRouteNamesForRemoval(existingRoute.name, namedRouteLookup.recordByName)
+        for (const routeName of namesToRemove) {
+          namedRouteLookup.recordByName.delete(routeName)
+        }
+        warnRouteConfig(`addRoute() replaced existing route "${normalizedRoute.name}" and removed ${namesToRemove.size - 1} nested route(s)`)
       }
       namedRouteLookup.recordByName.set(normalizedRoute.name, normalizedRoute)
       addedRoutes.push(normalizedRoute)

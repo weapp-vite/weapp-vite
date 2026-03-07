@@ -882,6 +882,7 @@ describe('router navigation helpers', () => {
   })
 
   it('gives namedRoutes higher precedence when routes and namedRoutes overlap', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const instance = {
       __wevu: {},
       __wevuHooks: {},
@@ -926,6 +927,165 @@ describe('router navigation helpers', () => {
         path: '/pages/home/from-named-routes',
       },
     ])
+    warn.mockRestore()
+  })
+
+  it('warns when routes and namedRoutes contain duplicate route names', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home/from-routes',
+        },
+      ],
+      namedRoutes: {
+        home: '/pages/home/from-named-routes',
+      },
+    })
+
+    expect(router.resolve({
+      name: 'home',
+    }).fullPath).toBe('/pages/home/from-named-routes')
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0]?.[0]).toContain('duplicate route names detected')
+    expect(warn.mock.calls[0]?.[0]).toContain('"home" (routes -> namedRoutes)')
+    warn.mockRestore()
+  })
+
+  it('uses the overriding route guard when routes and namedRoutes overlap', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const routesBeforeEnter = vi.fn(() => '/pages/login/index?from=routes')
+    const namedRoutesBeforeEnter = vi.fn(() => '/pages/login/index?from=named-routes')
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home/from-routes',
+          beforeEnter: routesBeforeEnter,
+        },
+      ],
+      namedRoutes: [
+        {
+          name: 'home',
+          path: '/pages/home/from-named-routes',
+          beforeEnter: namedRoutesBeforeEnter,
+        },
+      ],
+    })
+
+    await expect(router.push({
+      name: 'home',
+    })).resolves.toBeUndefined()
+    expect(routesBeforeEnter).not.toHaveBeenCalled()
+    expect(namedRoutesBeforeEnter).toHaveBeenCalledTimes(1)
+    expect(navigateTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/login/index?from=named-routes',
+    }))
+    warn.mockRestore()
+  })
+
+  it('uses the overriding route redirect when routes and namedRoutes overlap', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const navigateTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const redirectTo = vi.fn((options: any) => {
+      options.success?.({})
+    })
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo,
+        navigateTo,
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: 'legacy',
+          path: '/pages/legacy/from-routes',
+          redirect: '/pages/login/index?from=routes',
+        },
+      ],
+      namedRoutes: [
+        {
+          name: 'legacy',
+          path: '/pages/legacy/from-named-routes',
+          redirect: '/pages/login/index?from=named-routes',
+        },
+      ],
+    })
+
+    await expect(router.push({
+      name: 'legacy',
+    })).resolves.toBeUndefined()
+    expect(redirectTo).toHaveBeenCalledWith(expect.objectContaining({
+      url: '/pages/login/index?from=named-routes',
+    }))
+    warn.mockRestore()
   })
 
   it('supports guard redirect with named route target', async () => {
@@ -1645,6 +1805,106 @@ describe('router navigation helpers', () => {
     removeChildRoute()
     expect(router.hasRoute('home-settings')).toBe(false)
     expect(router.hasRoute('home')).toBe(true)
+  })
+
+  it('addRoute replacement removes previous nested children and old path matches', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home',
+          children: [
+            {
+              name: 'home-detail',
+              path: 'detail/:id',
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(router.resolve('/pages/home/detail/9').name).toBe('home-detail')
+    router.addRoute({
+      name: 'home',
+      path: '/pages/dashboard',
+    })
+
+    expect(router.hasRoute('home')).toBe(true)
+    expect(router.hasRoute('home-detail')).toBe(false)
+    expect(router.resolve('/pages/home/detail/9').name).toBeUndefined()
+    expect(router.resolve({
+      name: 'home',
+    }).fullPath).toBe('/pages/dashboard')
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('replaced existing route "home" and removed 1 nested route(s)'))
+    warn.mockRestore()
+  })
+
+  it('addRoute replacement updates static path lookup for renamed route path', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      routes: [
+        {
+          name: 'home',
+          path: '/pages/home/index',
+        },
+      ],
+    })
+
+    expect(router.resolve('/pages/home/index').name).toBe('home')
+    router.addRoute({
+      name: 'home',
+      path: '/pages/home/new-index',
+    })
+
+    expect(router.resolve('/pages/home/index').name).toBeUndefined()
+    expect(router.resolve('/pages/home/new-index').name).toBe('home')
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('replaced existing route "home" and removed 0 nested route(s)'))
+    warn.mockRestore()
   })
 
   it('inherits parent alias paths for addRoute(parentName, route) children', () => {
