@@ -86,6 +86,7 @@
 - `tt.getEnterOptionsSync` 不映射 `tt.getLaunchOptionsSync`
 - `tt.getAccountInfoSync` 不映射 `tt.getEnvInfoSync`
 - `my/tt.requestSubscribeDeviceMessage|requestSubscribeEmployeeMessage` 不映射 `requestSubscribeMessage`
+- `my.createBLEConnection|closeBLEConnection` 不映射 `connectBLEDevice|disconnectBLEDevice`
 
 ## 5. 每批固定验证清单
 

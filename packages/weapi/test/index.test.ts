@@ -514,6 +514,47 @@ describe('weapi', () => {
     expect(chooseImage).not.toHaveBeenCalled()
   })
 
+  it('treats createBLEConnection/closeBLEConnection as unsupported for alipay without strict-equivalent api', async () => {
+    const connectBLEDevice = vi.fn((options: any) => {
+      options.success?.({ error: '0', errorMessage: 'ok' })
+    })
+    const disconnectBLEDevice = vi.fn((options: any) => {
+      options.success?.({ errorCode: '0', errorMessage: 'ok' })
+    })
+    const api = createWeapi({
+      adapter: {
+        connectBLEDevice,
+        disconnectBLEDevice,
+      },
+      platform: 'alipay',
+    }) as Record<string, any>
+
+    for (const methodName of ['createBLEConnection', 'closeBLEConnection'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+    }
+
+    await expect(api.createBLEConnection({
+      deviceId: 'dev-1',
+      timeout: 1000,
+    })).rejects.toMatchObject({
+      errMsg: 'my.createBLEConnection:fail method not supported',
+    })
+    await expect(api.closeBLEConnection({
+      deviceId: 'dev-1',
+    })).rejects.toMatchObject({
+      errMsg: 'my.closeBLEConnection:fail method not supported',
+    })
+
+    expect(connectBLEDevice).not.toHaveBeenCalled()
+    expect(disconnectBLEDevice).not.toHaveBeenCalled()
+  })
+
   it.each([
     { platform: 'alipay' },
     { platform: 'tt' },
