@@ -233,7 +233,19 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
         const runtimeMethod = runtimeAdapter
           ? (runtimeAdapter as Record<string, any>)[methodName]
           : undefined
-        const runtimeArgs = mappingRule?.mapArgs ? mappingRule.mapArgs(args) : args
+        let runtimeArgs = args
+        try {
+          runtimeArgs = mappingRule?.mapArgs ? mappingRule.mapArgs(args) : args
+        }
+        catch (error) {
+          const lastArg = args.length > 0 ? args[args.length - 1] : undefined
+          if (hasCallbacks(lastArg)) {
+            lastArg.fail?.(error)
+            lastArg.complete?.(error)
+            return undefined
+          }
+          return Promise.reject(error)
+        }
         if (typeof runtimeMethod !== 'function') {
           return callMissingApi(prop as string, getPlatform(), args)
         }

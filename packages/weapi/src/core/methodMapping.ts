@@ -1,5 +1,5 @@
 import { WEAPI_MY_METHODS, WEAPI_TT_METHODS, WEAPI_WX_METHODS } from './apiCatalog'
-import { isPlainObject } from './utils.ts'
+import { createNotSupportedError, isPlainObject } from './utils.ts'
 
 export interface WeapiMethodMappingRule {
   target: string
@@ -137,9 +137,9 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'showModal',
     description: '显示模态弹窗。',
     wxStrategy: '直连 `wx.showModal`',
-    alipayStrategy: '调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果',
+    alipayStrategy: '调用 `my.confirm` 并对齐按钮字段与 `cancel/content`；`showCancel=false`、`editable` 等场景按 unsupported 报错',
     douyinStrategy: '直连 `tt.showModal`',
-    support: '✅',
+    support: '⚠️',
   },
   {
     method: 'chooseImage',
@@ -2067,6 +2067,15 @@ function mapModalArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
+  if (Object.prototype.hasOwnProperty.call(nextOptions, 'showCancel') && nextOptions.showCancel === false) {
+    throw createNotSupportedError('showModal', 'my')
+  }
+  if (Object.prototype.hasOwnProperty.call(nextOptions, 'editable') && nextOptions.editable === true) {
+    throw createNotSupportedError('showModal', 'my')
+  }
+  if (Object.prototype.hasOwnProperty.call(nextOptions, 'placeholderText')) {
+    throw createNotSupportedError('showModal', 'my')
+  }
   if (!Object.prototype.hasOwnProperty.call(nextOptions, 'confirmButtonText') && Object.prototype.hasOwnProperty.call(nextOptions, 'confirmText')) {
     nextOptions.confirmButtonText = nextOptions.confirmText
   }
@@ -2081,13 +2090,19 @@ function mapModalResult(result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (!Object.prototype.hasOwnProperty.call(result, 'cancel') && Object.prototype.hasOwnProperty.call(result, 'confirm')) {
-    return {
-      ...result,
-      cancel: !result.confirm,
-    }
+  let changed = false
+  const nextResult = {
+    ...result,
+  } as Record<string, any>
+  if (!Object.prototype.hasOwnProperty.call(nextResult, 'cancel') && Object.prototype.hasOwnProperty.call(nextResult, 'confirm')) {
+    nextResult.cancel = !nextResult.confirm
+    changed = true
   }
-  return result
+  if (!Object.prototype.hasOwnProperty.call(nextResult, 'content')) {
+    nextResult.content = ''
+    changed = true
+  }
+  return changed ? nextResult : result
 }
 
 function mapChooseImageResult(result: any) {

@@ -163,9 +163,9 @@ interface WeapiCrossPlatformMethodDocs {
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
-   * | 微信 | 直连 `wx.showModal` | ✅ |
-   * | 支付宝 | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果 | ✅ |
-   * | 抖音 | 直连 `tt.showModal` | ✅ |
+   * | 微信 | 直连 `wx.showModal` | ⚠️ |
+   * | 支付宝 | 调用 `my.confirm` 并对齐按钮字段与 `cancel/content`；`showCancel=false`、`editable` 等场景按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 直连 `tt.showModal` | ⚠️ |
    */
   showModal: WeapiCrossPlatformAdapter['showModal']
 
