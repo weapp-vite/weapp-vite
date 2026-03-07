@@ -87,6 +87,9 @@
 - `tt.getAccountInfoSync` 不映射 `tt.getEnvInfoSync`
 - `my/tt.requestSubscribeDeviceMessage|requestSubscribeEmployeeMessage` 不映射 `requestSubscribeMessage`
 - `my.createBLEConnection|closeBLEConnection` 不映射 `connectBLEDevice|disconnectBLEDevice`
+- `my/tt.createAudioContext|createWebAudioContext` 不映射 `createInnerAudioContext`
+- `my/tt.onNetworkWeakChange|offNetworkWeakChange` 不映射 `onNetworkStatusChange|offNetworkStatusChange`
+- `my/tt.getBackgroundFetchToken` 不映射 `getBackgroundFetchData`
 
 ## 5. 每批固定验证清单
 
