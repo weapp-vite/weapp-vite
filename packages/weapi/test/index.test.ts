@@ -2864,6 +2864,15 @@ describe('weapi', () => {
     }
   })
 
+  it('keeps fallback mappings disabled on my and tt', () => {
+    const compatibilityMatrix = generateMethodCompatibilityMatrix()
+    const fallbackMappings = compatibilityMatrix.filter(
+      item => item.alipaySupportLevel === 'fallback' || item.douyinSupportLevel === 'fallback',
+    )
+
+    expect(fallbackMappings).toEqual([])
+  })
+
   it('keeps support matrix data in sync with mappings', () => {
     const {
       extraDouyinMappings,
