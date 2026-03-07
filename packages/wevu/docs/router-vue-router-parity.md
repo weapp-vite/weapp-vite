@@ -4,27 +4,27 @@
 
 ## 1. Router 实例 API
 
-| API               | Vue Router 4                         | wevu/router                               | 状态      | 说明                                                                           |
-| ----------------- | ------------------------------------ | ----------------------------------------- | --------- | ------------------------------------------------------------------------------ |
-| `currentRoute`    | `Ref<RouteLocationNormalizedLoaded>` | `Readonly<RouteLocationNormalizedLoaded>` | 部分对齐  | `wevu` 下通过页面生命周期同步更新，不暴露 `Ref` 容器。                         |
-| `options`         | `RouterOptions`                      | `Readonly<UseRouterOptions>`              | 部分对齐  | 提供初始化快照，便于读取 `paramsMode/maxRedirects/namedRoutes/tabBarEntries`。 |
-| `resolve(to)`     | 支持                                 | 支持                                      | 已对齐    | 额外提供 `href/matched/redirectedFrom` 调试字段。                              |
-| `isReady()`       | 支持                                 | 支持                                      | 已对齐    | 小程序运行时下 Promise 立即 resolve。                                          |
-| `push(to)`        | 支持                                 | 支持                                      | 已对齐    | 导航失败语义通过 `NavigationFailure` 对齐。                                    |
-| `replace(to)`     | 支持                                 | 支持                                      | 已对齐    | 同上。                                                                         |
-| `back()`          | 支持                                 | 支持                                      | 已对齐    | 对齐为 `navigateBack` 语义。                                                   |
-| `go(delta)`       | 支持                                 | 支持                                      | 部分对齐  | `delta > 0` 在小程序下不支持前进栈，返回 `aborted`。                           |
-| `forward()`       | 支持                                 | 支持                                      | 部分对齐  | 小程序无前进栈，固定返回 `aborted` 失败对象。                                  |
-| `beforeEach()`    | 支持                                 | 支持                                      | 已对齐    | 返回卸载函数。                                                                 |
-| `beforeResolve()` | 支持                                 | 支持                                      | 已对齐    | 返回卸载函数。                                                                 |
-| `afterEach()`     | 支持                                 | 支持                                      | 已对齐    | 返回卸载函数。                                                                 |
-| `onError()`       | 支持                                 | 支持                                      | 已对齐    | 异常导航失败会上报。                                                           |
-| `addRoute()`      | 支持                                 | 支持                                      | 已对齐    | 返回移除函数。                                                                 |
-| `removeRoute()`   | 支持                                 | 支持                                      | 已对齐    | 按 name 删除。                                                                 |
-| `hasRoute()`      | 支持                                 | 支持                                      | 已对齐    | 按 name 查询。                                                                 |
-| `getRoutes()`     | 支持                                 | 支持                                      | 已对齐    | 返回当前命名路由记录快照。                                                     |
-| `clearRoutes()`   | 无                                   | 支持                                      | wevu 扩展 | 一次性清空命名路由（迁移期/测试隔离常用）。                                    |
-| `install(app)`    | 支持                                 | 支持（兼容 no-op）                        | 部分对齐  | 为跨端共享代码提供调用兼容，但不参与小程序运行时注册。                         |
+| API               | Vue Router 4                         | wevu/router                               | 状态      | 说明                                                                                      |
+| ----------------- | ------------------------------------ | ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------- |
+| `currentRoute`    | `Ref<RouteLocationNormalizedLoaded>` | `Readonly<RouteLocationNormalizedLoaded>` | 部分对齐  | `wevu` 下通过页面生命周期同步更新，不暴露 `Ref` 容器。                                    |
+| `options`         | `RouterOptions`                      | `Readonly<UseRouterOptions>`              | 部分对齐  | 提供初始化快照，便于读取 `paramsMode/maxRedirects/namedRoutes/tabBarEntries`。            |
+| `resolve(to)`     | 支持                                 | 支持                                      | 已对齐    | 额外提供 `href/matched/redirectedFrom` 调试字段；`children` 场景下 `matched` 返回父子链。 |
+| `isReady()`       | 支持                                 | 支持                                      | 已对齐    | 小程序运行时下 Promise 立即 resolve。                                                     |
+| `push(to)`        | 支持                                 | 支持                                      | 已对齐    | 导航失败语义通过 `NavigationFailure` 对齐。                                               |
+| `replace(to)`     | 支持                                 | 支持                                      | 已对齐    | 同上。                                                                                    |
+| `back()`          | 支持                                 | 支持                                      | 已对齐    | 对齐为 `navigateBack` 语义。                                                              |
+| `go(delta)`       | 支持                                 | 支持                                      | 部分对齐  | `delta > 0` 在小程序下不支持前进栈，返回 `aborted`。                                      |
+| `forward()`       | 支持                                 | 支持                                      | 部分对齐  | 小程序无前进栈，固定返回 `aborted` 失败对象。                                             |
+| `beforeEach()`    | 支持                                 | 支持                                      | 已对齐    | 返回卸载函数。                                                                            |
+| `beforeResolve()` | 支持                                 | 支持                                      | 已对齐    | 返回卸载函数。                                                                            |
+| `afterEach()`     | 支持                                 | 支持                                      | 已对齐    | 返回卸载函数。                                                                            |
+| `onError()`       | 支持                                 | 支持                                      | 已对齐    | 异常导航失败会上报。                                                                      |
+| `addRoute()`      | 支持                                 | 支持                                      | 已对齐    | 返回移除函数。                                                                            |
+| `removeRoute()`   | 支持                                 | 支持                                      | 已对齐    | 按 name 删除。                                                                            |
+| `hasRoute()`      | 支持                                 | 支持                                      | 已对齐    | 按 name 查询。                                                                            |
+| `getRoutes()`     | 支持                                 | 支持                                      | 已对齐    | 返回当前命名路由记录快照。                                                                |
+| `clearRoutes()`   | 无                                   | 支持                                      | wevu 扩展 | 一次性清空命名路由（迁移期/测试隔离常用）。                                               |
+| `install(app)`    | 支持                                 | 支持（兼容 no-op）                        | 部分对齐  | 为跨端共享代码提供调用兼容，但不参与小程序运行时注册。                                    |
 
 ## 2. 路由记录与守卫
 
