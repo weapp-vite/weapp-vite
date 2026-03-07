@@ -80,12 +80,30 @@ type PromisifyOptionMethod<
 
 type NormalizePromisifyReturn<T> = T extends Promise<any> ? T : Promise<T>
 
+type NormalizeTupleArgs<Args extends any[]> = {
+  [Key in keyof Args]-?: Args[Key]
+}
+
+type DecomposeTrailingArg<Args extends any[]> = NormalizeTupleArgs<Args> extends [...infer Prefix, infer Last]
+  ? {
+      prefix: Prefix
+      last: Last
+    }
+  : never
+
+type IsOptionalTrailingArg<Args extends any[], Prefix extends any[]> = Record<never, never> extends Pick<Args, Prefix['length']>
+  ? true
+  : false
+
 type PromisifyMethod<TMethod> = TMethod extends (...args: infer Args) => infer Result
   ? Args extends []
     ? (...args: Args) => NormalizePromisifyReturn<Result>
-    : Args extends [...infer Prefix, infer Last]
+    : DecomposeTrailingArg<Args> extends {
+      prefix: infer Prefix extends any[]
+      last: infer Last
+    }
       ? true extends HasCallbackKey<NonNullable<Last>>
-        ? PromisifyOptionMethod<Prefix, NonNullable<Last>, Result, undefined extends Last ? true : false>
+        ? PromisifyOptionMethod<Prefix, NonNullable<Last>, Result, IsOptionalTrailingArg<Args, Prefix>>
         : (...args: Args) => NormalizePromisifyReturn<Result>
       : (...args: Args) => NormalizePromisifyReturn<Result>
   : TMethod
@@ -2705,7 +2723,7 @@ export interface WeapiResolvedTarget {
   semanticAligned: boolean
 }
 
-export type WeapiInstance<TAdapter extends WeapiAdapter = WeapiCrossPlatformRawAdapter> = WeapiPromisify<TAdapter> & TAdapter & WeapiMethodDocOverlay<TAdapter> & {
+export type WeapiInstance<TAdapter extends WeapiAdapter = WeapiCrossPlatformRawAdapter> = WeapiPromisify<TAdapter> & WeapiMethodDocOverlay<TAdapter> & {
   /**
    * @description 当前平台标识
    */

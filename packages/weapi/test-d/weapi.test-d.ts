@@ -231,7 +231,7 @@ const requestTask = wpi.request({
   url: 'https://example.com',
   success: () => {},
 })
-expectType<ReturnType<WeapiDefaultInstance['request']>>(requestTask)
+expectType<WechatMiniprogram.RequestTask>(requestTask)
 
 const saveFilePromise = wpi.saveFile({
   apFilePath: '/tmp/demo.png',
@@ -250,7 +250,7 @@ const closeBleConnectionPromise = wpi.closeBLEConnection({
 expectType<Promise<WechatMiniprogram.BluetoothError>>(closeBleConnectionPromise)
 
 const getSystemInfoAsyncPromise = wpi.getSystemInfoAsync()
-expectType<Promise<void>>(getSystemInfoAsyncPromise)
+expectType<Promise<WechatMiniprogram.SystemInfo>>(getSystemInfoAsyncPromise)
 
 const clipboardPromise = wpi.getClipboardData()
 expectType<Promise<WechatMiniprogram.GetClipboardDataSuccessCallbackOption>>(clipboardPromise)
