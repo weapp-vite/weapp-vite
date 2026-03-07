@@ -152,9 +152,9 @@ interface WeapiCrossPlatformMethodDocs {
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
-   * | 微信 | 直连 `wx.showActionSheet` | ✅ |
-   * | 支付宝 | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | ✅ |
-   * | 抖音 | 优先直连 `tt.showActionSheet`；缺失时降级到 `tt.showModal` shim | ✅ |
+   * | 微信 | 直连 `wx.showActionSheet` | ⚠️ |
+   * | 支付宝 | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐 | ⚠️ |
+   * | 抖音 | 直连 `tt.showActionSheet`；缺失时按 unsupported 报错 | ⚠️ |
    */
   showActionSheet: WeapiCrossPlatformAdapter['showActionSheet']
 

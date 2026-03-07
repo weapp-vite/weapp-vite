@@ -17,11 +17,11 @@
 | 支付宝可按微信命名调用的方法数   |  395 |
 | 支付宝语义对齐方法数             |  395 |
 | 支付宝 fallback 方法数           |    0 |
-| 抖音可按微信命名调用的方法数     |  335 |
-| 抖音语义对齐方法数               |  335 |
+| 抖音可按微信命名调用的方法数     |  334 |
+| 抖音语义对齐方法数               |  334 |
 | 抖音 fallback 方法数             |    0 |
-| 三端可调用完全对齐方法数         |  333 |
-| 三端语义完全对齐方法数           |  333 |
+| 三端可调用完全对齐方法数         |  332 |
+| 三端语义完全对齐方法数           |  332 |
 
 ## 覆盖率
 
@@ -29,9 +29,9 @@
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
 | 支付宝小程序 (`my`)           |           395 |             395 |               0 |      479 |       82.46% |         82.46% |
-| 抖音小程序 (`tt`)             |           335 |             335 |               0 |      479 |       69.94% |         69.94% |
-| 三端可调用完全对齐 (wx/my/tt) |           333 |               - |               - |      479 |       69.52% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             333 |               - |      479 |            - |         69.52% |
+| 抖音小程序 (`tt`)             |           334 |             334 |               0 |      479 |       69.73% |         69.73% |
+| 三端可调用完全对齐 (wx/my/tt) |           332 |               - |               - |      479 |       69.31% |              - |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             332 |               - |      479 |            - |         69.31% |
 
 ## 核心差异映射（手工规则）
 
@@ -39,7 +39,7 @@
 | ----------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | `showToast`                         | 直连 `wx.showToast`                                 | `title/icon` 映射到 `content/type` 后调用 `my.showToast`               | `icon=error` 映射为 `fail` 后调用 `tt.showToast`                       |
 | `showLoading`                       | 直连 `wx.showLoading`                               | `title` 映射到 `content` 后调用 `my.showLoading`                       | 直连 `tt.showLoading`                                                  |
-| `showActionSheet`                   | 直连 `wx.showActionSheet`                           | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐                    | 优先直连 `tt.showActionSheet`；缺失时降级到 `tt.showModal` shim        |
+| `showActionSheet`                   | 直连 `wx.showActionSheet`                           | `itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐                    | 直连 `tt.showActionSheet`；缺失时按 unsupported 报错                   |
 | `showModal`                         | 直连 `wx.showModal`                                 | 调用 `my.confirm` 并对齐按钮字段与 `cancel` 结果                       | 直连 `tt.showModal`                                                    |
 | `chooseImage`                       | 直连 `wx.chooseImage`                               | 返回值 `apFilePaths` 映射到 `tempFilePaths`                            | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底           |
 | `chooseMedia`                       | 直连 `wx.chooseMedia`                               | 映射到 `my.chooseImage`，并补齐 `tempFiles[].tempFilePath/fileType`    | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType`      |

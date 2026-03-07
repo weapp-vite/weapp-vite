@@ -305,19 +305,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     checkIsSupportSoterAuthentication: { supportMode: [] },
   }
 
-  const mapSyntheticActionSheetResult = (result: any, itemList: readonly string[]) => {
-    const hasSelection = itemList.length > 0
-    const confirmed = Boolean(result?.confirm) && hasSelection
-    const index = confirmed ? 0 : -1
-    return {
-      ...(isPlainObject(result) ? result : {}),
-      index,
-      tapIndex: index,
-      cancel: !confirmed,
-      errMsg: confirmed ? 'showActionSheet:ok' : 'showActionSheet:fail cancel',
-    }
-  }
-
   const resolveAdapter = () => {
     if (adapter) {
       return adapter
@@ -476,56 +463,6 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
       return {
         handled: true as const,
         result: undefined,
-      }
-    }
-    if (methodName === 'showActionSheet' && platform === 'tt') {
-      const runtimeAdapter = resolveAdapter() as Record<string, any> | undefined
-      const showModal = runtimeAdapter?.showModal
-      if (typeof showModal !== 'function') {
-        return {
-          handled: false as const,
-          result: undefined,
-        }
-      }
-      const lastArg = args.length > 0 ? args[args.length - 1] : undefined
-      const originalOptions = isPlainObject(lastArg) ? lastArg as Record<string, any> : {}
-      const itemList = Array.isArray(originalOptions.itemList)
-        ? originalOptions.itemList.filter((item: unknown): item is string => typeof item === 'string')
-        : []
-      const content = itemList.length > 0
-        ? itemList.map((item, index) => `${index + 1}. ${item}`).join('\n')
-        : (typeof originalOptions.alertText === 'string' ? originalOptions.alertText : '')
-      const modalOptions: Record<string, any> = {
-        ...originalOptions,
-        title: typeof originalOptions.title === 'string' && originalOptions.title
-          ? originalOptions.title
-          : '请选择操作',
-        content,
-        showCancel: true,
-      }
-
-      if (hasCallbacks(originalOptions)) {
-        const originalSuccess = originalOptions.success
-        const originalComplete = originalOptions.complete
-        modalOptions.success = (result: any) => {
-          originalSuccess?.(mapSyntheticActionSheetResult(result, itemList))
-        }
-        modalOptions.complete = (result: any) => {
-          originalComplete?.(mapSyntheticActionSheetResult(result, itemList))
-        }
-        return {
-          handled: true as const,
-          result: showModal.call(runtimeAdapter, modalOptions),
-        }
-      }
-      return {
-        handled: true as const,
-        result: callWithPromise(
-          runtimeAdapter as WeapiAdapter,
-          showModal,
-          [modalOptions],
-          (result: any) => mapSyntheticActionSheetResult(result, itemList),
-        ),
       }
     }
     if (methodName === 'getLogManager') {

@@ -408,7 +408,6 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'seekBackgroundAudio',
     'setEnableDebug',
     'setInnerAudioOption',
-    'showActionSheet',
     'openCustomerServiceChat',
     'createVKSession',
     'compressVideo',
@@ -478,8 +477,8 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '显示操作菜单。',
     wxStrategy: '直连 `wx.showActionSheet`',
     alipayStrategy: '`itemList` ↔ `items`、`index` ↔ `tapIndex` 双向对齐',
-    douyinStrategy: '优先直连 `tt.showActionSheet`；缺失时降级到 `tt.showModal` shim',
-    support: '✅',
+    douyinStrategy: '直连 `tt.showActionSheet`；缺失时按 unsupported 报错',
+    support: '⚠️',
   },
   {
     method: 'showModal',

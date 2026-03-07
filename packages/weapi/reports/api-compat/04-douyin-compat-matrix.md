@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：335，不支持：144
+总计：479，支持：334，不支持：145
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -435,7 +435,7 @@
 | `shareToWeRun`                                | `shareToWeRun`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `shareVideoMessage`                           | `shareVideoMessage`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `shareVideoToGroup`                           | `shareVideoToGroup`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `showActionSheet`                             | `showActionSheet`                             | ✅   | `mapped`      | ✅       | 优先直连 `tt.showActionSheet`；缺失时降级到 `tt.showModal` shim                   |
+| `showActionSheet`                             | `showActionSheet`                             | ❌   | `unsupported` | ❌       | 直连 `tt.showActionSheet`；缺失时按 unsupported 报错                              |
 | `showLoading`                                 | `showLoading`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.showLoading`                                                             |
 | `showModal`                                   | `showModal`                                   | ✅   | `mapped`      | ✅       | 直连 `tt.showModal`                                                               |
 | `showNavigationBarLoading`                    | `showNavigationBarLoading`                    | ✅   | `native`      | ✅       | 直连 `tt.showNavigationBarLoading`                                                |
