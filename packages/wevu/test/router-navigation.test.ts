@@ -478,10 +478,18 @@ describe('router navigation helpers', () => {
         {
           name: 'home',
           path: '/pages/home',
+          meta: {
+            layout: 'base',
+            requiresAuth: false,
+          },
           children: [
             {
               name: 'home-detail',
               path: 'detail/:id',
+              meta: {
+                requiresAuth: true,
+                page: 'detail',
+              },
             },
           ],
         },
@@ -494,10 +502,18 @@ describe('router navigation helpers', () => {
       {
         name: 'home',
         path: '/pages/home',
+        meta: {
+          layout: 'base',
+          requiresAuth: false,
+        },
       },
       {
         name: 'home-detail',
         path: '/pages/home/detail/:id',
+        meta: {
+          requiresAuth: true,
+          page: 'detail',
+        },
       },
     ])
 
@@ -508,11 +524,52 @@ describe('router navigation helpers', () => {
       },
     })
     expect(resolvedByName.fullPath).toBe('/pages/home/detail/3')
+    expect(resolvedByName.matched).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home',
+        meta: {
+          layout: 'base',
+          requiresAuth: false,
+        },
+      },
+      {
+        name: 'home-detail',
+        path: '/pages/home/detail/:id',
+        meta: {
+          requiresAuth: true,
+          page: 'detail',
+        },
+      },
+    ])
 
     const resolvedByPath = router.resolve('/pages/home/detail/3')
     expect(resolvedByPath.name).toBe('home-detail')
     expect(resolvedByPath.params).toEqual({
       id: '3',
+    })
+    expect(resolvedByPath.matched).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home',
+        meta: {
+          layout: 'base',
+          requiresAuth: false,
+        },
+      },
+      {
+        name: 'home-detail',
+        path: '/pages/home/detail/:id',
+        meta: {
+          requiresAuth: true,
+          page: 'detail',
+        },
+      },
+    ])
+    expect(resolvedByPath.meta).toEqual({
+      layout: 'base',
+      requiresAuth: true,
+      page: 'detail',
     })
   })
 

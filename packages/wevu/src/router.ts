@@ -202,6 +202,7 @@ interface RouteRecordNormalized {
   name: string
   path: string
   aliasPaths: readonly string[]
+  parentName?: string
   meta?: RouteMeta
   beforeEnterGuards: readonly NavigationGuard[]
   redirect?: RouteRecordRedirect
@@ -222,8 +223,14 @@ interface NamedRoutePathResolveResult {
   consumedKeys: ReadonlySet<string>
 }
 
+interface FlattenedRouteRecordSeed {
+  route: RouteRecordRaw
+  parentName?: string
+}
+
 interface MatchedRouteRecordResolveResult {
   record: RouteRecordNormalized
+  matchedRecords: readonly RouteRecordNormalized[]
   params?: RouteParams
 }
 
@@ -458,7 +465,7 @@ function normalizeBeforeEnterGuards(beforeEnter?: RouteRecordRaw['beforeEnter'])
   return [beforeEnter]
 }
 
-function normalizeRouteRecordRaw(route: RouteRecordRaw): RouteRecordNormalized | undefined {
+function normalizeRouteRecordRaw(route: RouteRecordRaw, parentName?: string): RouteRecordNormalized | undefined {
   const routeName = route.name.trim()
   if (!routeName) {
     return undefined
@@ -474,6 +481,7 @@ function normalizeRouteRecordRaw(route: RouteRecordRaw): RouteRecordNormalized |
     name: routeName,
     path: normalizedPath,
     aliasPaths,
+    parentName,
     meta: route.meta,
     beforeEnterGuards: normalizeBeforeEnterGuards(route.beforeEnter),
     redirect: route.redirect,
@@ -508,7 +516,7 @@ function normalizeRouteRecordAliasPaths(
   return normalizedAliasPaths
 }
 
-function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): RouteRecordRaw[] {
+function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): FlattenedRouteRecordSeed[] {
   if (!namedRoutes) {
     return []
   }
@@ -522,7 +530,12 @@ function normalizeNamedRouteEntries(namedRoutes?: NamedRoutes): RouteRecordRaw[]
       const [name, path] = entry
       return Boolean(name && typeof path === 'string' && path)
     })
-    .map(([name, path]) => ({ name, path }))
+    .map(([name, path]) => ({
+      route: {
+        name: name.trim(),
+        path,
+      },
+    }))
 }
 
 function normalizeNestedRoutePath(path: string, parentPath?: string): string {
@@ -535,23 +548,31 @@ function normalizeNestedRoutePath(path: string, parentPath?: string): string {
 function flattenNamedRouteRecords(
   records: readonly RouteRecordRaw[],
   parentPath?: string,
-): RouteRecordRaw[] {
-  const flattenedRecords: RouteRecordRaw[] = []
+  parentName?: string,
+): FlattenedRouteRecordSeed[] {
+  const flattenedRecords: FlattenedRouteRecordSeed[] = []
 
   for (const record of records) {
-    if (!record || typeof record.name !== 'string' || !record.name || typeof record.path !== 'string' || !record.path) {
+    const routeName = typeof record?.name === 'string'
+      ? record.name.trim()
+      : ''
+    if (!routeName || typeof record.path !== 'string' || !record.path) {
       continue
     }
 
     const normalizedPath = normalizeNestedRoutePath(record.path, parentPath)
     const normalizedRecord: RouteRecordRaw = {
       ...record,
+      name: routeName,
       path: normalizedPath ? createAbsoluteRoutePath(normalizedPath) : '/',
     }
-    flattenedRecords.push(normalizedRecord)
+    flattenedRecords.push({
+      route: normalizedRecord,
+      parentName,
+    })
 
     if (Array.isArray(record.children) && record.children.length > 0) {
-      flattenedRecords.push(...flattenNamedRouteRecords(record.children, normalizedPath))
+      flattenedRecords.push(...flattenNamedRouteRecords(record.children, normalizedPath, routeName))
     }
   }
 
@@ -577,7 +598,7 @@ function createNamedRouteLookup(namedRoutes?: NamedRoutes): NamedRouteLookup {
   const recordByName = new Map<string, RouteRecordNormalized>()
 
   for (const routeRecord of normalizeNamedRouteEntries(namedRoutes)) {
-    const normalizedRecord = normalizeRouteRecordRaw(routeRecord)
+    const normalizedRecord = normalizeRouteRecordRaw(routeRecord.route, routeRecord.parentName)
     if (!normalizedRecord) {
       continue
     }
@@ -836,6 +857,43 @@ function listRouteRecordMatchPaths(record: RouteRecordNormalized): readonly stri
   return [record.path, ...record.aliasPaths]
 }
 
+function resolveMatchedRouteRecordChain(
+  record: RouteRecordNormalized,
+  lookup: NamedRouteLookup,
+): RouteRecordNormalized[] {
+  const matchedRecords: RouteRecordNormalized[] = []
+  const visitedNames = new Set<string>()
+  let currentRecord: RouteRecordNormalized | undefined = record
+
+  while (currentRecord) {
+    if (visitedNames.has(currentRecord.name)) {
+      break
+    }
+    visitedNames.add(currentRecord.name)
+    matchedRecords.unshift(currentRecord)
+    if (!currentRecord.parentName) {
+      break
+    }
+    currentRecord = lookup.recordByName.get(currentRecord.parentName)
+  }
+
+  return matchedRecords
+}
+
+function mergeMatchedRouteMeta(matchedRecords: readonly RouteRecordNormalized[]): RouteMeta | undefined {
+  let mergedRouteMeta: RouteMeta | undefined
+  for (const matchedRecord of matchedRecords) {
+    if (!matchedRecord.meta) {
+      continue
+    }
+    if (!mergedRouteMeta) {
+      mergedRouteMeta = {}
+    }
+    Object.assign(mergedRouteMeta, matchedRecord.meta)
+  }
+  return mergedRouteMeta
+}
+
 function buildRouteParamsFromMatch(matchValues: ReadonlyMap<string, string[]>): RouteParams {
   const params: RouteParams = {}
   for (const [key, values] of matchValues.entries()) {
@@ -952,6 +1010,7 @@ function resolveMatchedRouteRecord(
     if (byName) {
       return {
         record: byName,
+        matchedRecords: resolveMatchedRouteRecordChain(byName, lookup),
       }
     }
   }
@@ -962,6 +1021,7 @@ function resolveMatchedRouteRecord(
     if (record) {
       return {
         record,
+        matchedRecords: resolveMatchedRouteRecordChain(record, lookup),
       }
     }
   }
@@ -977,6 +1037,7 @@ function resolveMatchedRouteRecord(
       }
       return {
         record,
+        matchedRecords: resolveMatchedRouteRecordChain(record, lookup),
         params: matchedParams,
       }
     }
@@ -1539,13 +1600,14 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
       if (resolved.name === undefined) {
         resolved.name = matchedRecord.name
       }
-      if (matchedRecord.meta !== undefined) {
-        resolved.meta = cloneRouteMeta(matchedRecord.meta)
+      const mergedRouteMeta = mergeMatchedRouteMeta(matchedResult.matchedRecords)
+      if (mergedRouteMeta !== undefined) {
+        resolved.meta = cloneRouteMeta(mergedRouteMeta)
       }
       if (matchedResult.params && Object.keys(resolved.params).length === 0) {
         resolved.params = cloneRouteParams(matchedResult.params)
       }
-      resolved.matched = [normalizeRouteRecordMatched(matchedRecord)]
+      resolved.matched = matchedResult.matchedRecords.map(normalizeRouteRecordMatched)
     }
     else {
       resolved.matched = []
@@ -1605,7 +1667,7 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     }
     const addedRoutes: RouteRecordNormalized[] = []
     for (const routeRecord of routeRecords) {
-      const normalizedRoute = normalizeRouteRecordRaw(routeRecord)
+      const normalizedRoute = normalizeRouteRecordRaw(routeRecord.route, routeRecord.parentName)
       if (!normalizedRoute) {
         continue
       }
