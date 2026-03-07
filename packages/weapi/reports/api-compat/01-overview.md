@@ -3,18 +3,18 @@
 ## 覆盖结论
 
 - 微信基准命名方法总数：479
-- 支付宝可调用兼容方法数：214
-- 支付宝语义对齐方法数：214
+- 支付宝可调用兼容方法数：213
+- 支付宝语义对齐方法数：213
 - 支付宝 fallback 方法数：0
 - 抖音可调用兼容方法数：152
 - 抖音语义对齐方法数：152
 - 抖音 fallback 方法数：0
-- 三端可调用完全对齐方法数：144
-- 三端语义完全对齐方法数：144
+- 三端可调用完全对齐方法数：143
+- 三端语义完全对齐方法数：143
 
 ## 不兼容规模
 
-- 支付宝侧不兼容（按微信命名调用失败）方法：265
+- 支付宝侧不兼容（按微信命名调用失败）方法：266
 - 抖音侧不兼容（按微信命名调用失败）方法：327
 
 ## 不兼容示例（前 40 项）
@@ -46,6 +46,7 @@
 - `checkIsPictureInPictureActive` -> 目标 `checkIsPictureInPictureActive`（unsupported）
 - `checkIsSoterEnrolledInDevice` -> 目标 `checkIsSoterEnrolledInDevice`（unsupported）
 - `checkIsSupportSoterAuthentication` -> 目标 `checkIsSupportSoterAuthentication`（unsupported）
+- `chooseAddress` -> 目标 `chooseAddress`（unsupported）
 - `chooseInvoice` -> 目标 `chooseInvoice`（unsupported）
 - `chooseInvoiceTitle` -> 目标 `chooseInvoiceTitle`（unsupported）
 - `chooseLicensePlate` -> 目标 `chooseLicensePlate`（unsupported）
@@ -60,7 +61,6 @@
 - `createBufferURL` -> 目标 `createBufferURL`（unsupported）
 - `createCacheManager` -> 目标 `createCacheManager`（unsupported）
 - `createCameraContext` -> 目标 `createCameraContext`（unsupported）
-- `createGlobalPayment` -> 目标 `createGlobalPayment`（unsupported）
 
 ### 抖音不兼容示例
 
