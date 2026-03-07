@@ -410,7 +410,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     description: '保存文件到磁盘。',
     wxStrategy: '直连 `wx.saveFileToDisk`',
     alipayStrategy: '直连 `my.saveFileToDisk`',
-    douyinStrategy: '映射到 `tt.saveFile`',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -3275,7 +3275,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'openEmbeddedMiniProgram',
     },
     saveFileToDisk: {
-      target: 'saveFile',
+      target: 'saveFileToDisk',
     },
     getEnterOptionsSync: {
       target: 'getLaunchOptionsSync',

@@ -1685,6 +1685,30 @@ describe('weapi', () => {
     expect(getFileInfo).not.toHaveBeenCalled()
   })
 
+  it('treats saveFileToDisk as unsupported for douyin without strict-equivalent api', async () => {
+    const saveFile = vi.fn((options: any) => {
+      options.success?.({ savedFilePath: '/tmp/tt-saved.txt' })
+    })
+    const api = createWeapi({
+      adapter: {
+        saveFile,
+      },
+      platform: 'tt',
+    })
+
+    expect(api.resolveTarget('saveFileToDisk')).toMatchObject({
+      method: 'saveFileToDisk',
+      target: 'saveFileToDisk',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.saveFileToDisk({ filePath: '/tmp/tt-temp.txt' } as any)).rejects.toMatchObject({
+      errMsg: 'tt.saveFileToDisk:fail method not supported',
+    })
+    expect(saveFile).not.toHaveBeenCalled()
+  })
+
   it('maps interstitial and live-player context apis for douyin', async () => {
     const createInterstitialAd = vi.fn(() => ({ show: vi.fn() }))
     const createLivePlayerContext = vi.fn(() => ({ play: vi.fn() }))
@@ -1970,7 +1994,7 @@ describe('weapi', () => {
       { method: 'showShareImageMenu', my: 'showShareImageMenu', tt: 'showShareImageMenu', mySupported: false, ttSupported: false },
       { method: 'updateShareMenu', my: 'updateShareMenu', tt: 'updateShareMenu', mySupported: false, ttSupported: false },
       { method: 'openEmbeddedMiniProgram', my: 'openEmbeddedMiniProgram', tt: 'openEmbeddedMiniProgram', mySupported: false, ttSupported: false },
-      { method: 'saveFileToDisk', my: 'saveFileToDisk', tt: 'saveFile' },
+      { method: 'saveFileToDisk', my: 'saveFileToDisk', tt: 'saveFileToDisk', ttSupported: false },
       { method: 'getEnterOptionsSync', my: 'getEnterOptionsSync', tt: 'getLaunchOptionsSync' },
       { method: 'getSystemSetting', my: 'getSystemSetting', tt: 'getSetting' },
       { method: 'getUserProfile', my: 'getOpenUserInfo', tt: 'getUserProfile' },
