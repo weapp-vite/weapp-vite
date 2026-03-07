@@ -1968,8 +1968,11 @@ describe('weapi', () => {
   })
 
   it('treats offMemoryWarning as unsupported for douyin when method is missing', async () => {
+    const onMemoryWarning = vi.fn()
     const api = createWeapi({
-      adapter: {},
+      adapter: {
+        onMemoryWarning,
+      },
       platform: 'tt',
     })
 
@@ -1983,9 +1986,14 @@ describe('weapi', () => {
     await expect(api.offMemoryWarning(vi.fn() as any)).rejects.toMatchObject({
       errMsg: 'tt.offMemoryWarning:fail method not supported',
     })
+    expect(onMemoryWarning).not.toHaveBeenCalled()
   })
 
   it.each([
+    'onAppRoute',
+    'onAppRouteDone',
+    'offAppRoute',
+    'offAppRouteDone',
     'onAfterPageLoad',
     'onBeforeAppRoute',
     'onBLEMTUChange',
