@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：288，不支持：191
+总计：479，支持：268，不支持：211
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -380,10 +380,10 @@
 | `reportMonitor`                               | `reportMonitor`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `reportPerformance`                           | `reportPerformance`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `request`                                     | `request`                                     | ✅   | `native`      | ✅       | 直连 `tt.request`                                                                 |
-| `requestCommonPayment`                        | `requestCommonPayment`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `requestCommonPayment`                        | `requestCommonPayment`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `requestDeviceVoIP`                           | `requestDeviceVoIP`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestIdleCallback`                         | `requestIdleCallback`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `requestMerchantTransfer`                     | `requestMerchantTransfer`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `requestMerchantTransfer`                     | `requestMerchantTransfer`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `requestOrderPayment`                         | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
 | `requestPayment`                              | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
 | `requestPluginPayment`                        | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
@@ -391,8 +391,8 @@
 | `requestSubscribeEmployeeMessage`             | `requestSubscribeMessage`                     | ✅   | `mapped`      | ✅       | 映射到 `tt.requestSubscribeMessage`                                               |
 | `requestSubscribeMessage`                     | `requestSubscribeMessage`                     | ✅   | `native`      | ✅       | 直连 `tt.requestSubscribeMessage`                                                 |
 | `requestVirtualPayment`                       | `pay`                                         | ✅   | `mapped`      | ✅       | 映射到 `tt.pay`，并将微信支付参数对齐到 `orderInfo`                               |
-| `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `reserveChannelsLive`                         | `reserveChannelsLive`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `requirePrivacyAuthorize`                     | `requirePrivacyAuthorize`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `reserveChannelsLive`                         | `reserveChannelsLive`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `restartMiniProgram`                          | `reLaunch`                                    | ✅   | `mapped`      | ✅       | 映射到 `tt.reLaunch`                                                              |
 | `revokeBufferURL`                             | `revokeBufferURL`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `rewriteRoute`                                | `rewriteRoute`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
@@ -401,16 +401,16 @@
 | `saveVideoToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `mapped`      | ✅       | 映射到 `tt.saveImageToPhotosAlbum`                                                |
 | `scanCode`                                    | `scanCode`                                    | ✅   | `mapped`      | ✅       | 直连 `tt.scanCode`                                                                |
 | `seekBackgroundAudio`                         | `seekBackgroundAudio`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `selectGroupMembers`                          | `selectGroupMembers`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `sendHCEMessage`                              | `sendHCEMessage`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `sendSms`                                     | `sendSms`                                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `selectGroupMembers`                          | `selectGroupMembers`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `sendHCEMessage`                              | `sendHCEMessage`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `sendSms`                                     | `sendSms`                                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `sendSocketMessage`                           | `sendSocketMessage`                           | ❌   | `unsupported` | ❌       | 未提供 tt.sendSocketMessage，调用时将返回 not supported                           |
 | `setBackgroundColor`                          | `setNavigationBarColor`                       | ✅   | `mapped`      | ✅       | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor`              |
-| `setBackgroundFetchToken`                     | `setBackgroundFetchToken`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `setBackgroundFetchToken`                     | `setBackgroundFetchToken`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `setBackgroundTextStyle`                      | `setNavigationBarColor`                       | ✅   | `mapped`      | ✅       | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor`             |
 | `setBLEMTU`                                   | `setBLEMTU`                                   | ❌   | `unsupported` | ❌       | 未提供 tt.setBLEMTU，调用时将返回 not supported                                   |
 | `setClipboardData`                            | `setClipboardData`                            | ✅   | `mapped`      | ✅       | 直连 `tt.setClipboardData`                                                        |
-| `setEnable1v1Chat`                            | `setEnable1v1Chat`                            | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `setEnable1v1Chat`                            | `setEnable1v1Chat`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `setEnableDebug`                              | `setEnableDebug`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `setInnerAudioOption`                         | `setInnerAudioOption`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `setKeepScreenOn`                             | `setKeepScreenOn`                             | ✅   | `native`      | ✅       | 直连 `tt.setKeepScreenOn`                                                         |
@@ -422,10 +422,10 @@
 | `setTabBarBadge`                              | `setTabBarBadge`                              | ✅   | `native`      | ✅       | 直连 `tt.setTabBarBadge`                                                          |
 | `setTabBarItem`                               | `setTabBarItem`                               | ✅   | `native`      | ✅       | 直连 `tt.setTabBarItem`                                                           |
 | `setTabBarStyle`                              | `setTabBarStyle`                              | ✅   | `native`      | ✅       | 直连 `tt.setTabBarStyle`                                                          |
-| `setTopBarText`                               | `setTopBarText`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `setTopBarText`                               | `setTopBarText`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `setVisualEffectOnCapture`                    | `setVisualEffectOnCapture`                    | ❌   | `unsupported` | ❌       | 未提供 tt.setVisualEffectOnCapture，调用时将返回 not supported                    |
 | `setWifiList`                                 | `setWifiList`                                 | ❌   | `unsupported` | ❌       | 未提供 tt.setWifiList，调用时将返回 not supported                                 |
-| `setWindowSize`                               | `setWindowSize`                               | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `setWindowSize`                               | `setWindowSize`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `shareAppMessageToGroup`                      | `shareAppMessageToGroup`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `shareEmojiToGroup`                           | `shareEmojiToGroup`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `shareFileMessage`                            | `shareFileMessage`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
@@ -467,18 +467,18 @@
 | `stopDeviceMotionListening`                   | `stopDeviceMotionListening`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `stopFaceDetect`                              | `stopFaceDetect`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `stopGyroscope`                               | `stopGyroscope`                               | ❌   | `unsupported` | ❌       | 未提供 tt.stopGyroscope，调用时将返回 not supported                               |
-| `stopHCE`                                     | `stopHCE`                                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `stopLocalServiceDiscovery`                   | `stopLocalServiceDiscovery`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `stopLocationUpdate`                          | `stopLocationUpdate`                          | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopHCE`                                     | `stopHCE`                                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `stopLocalServiceDiscovery`                   | `stopLocalServiceDiscovery`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `stopLocationUpdate`                          | `stopLocationUpdate`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `stopPullDownRefresh`                         | `stopPullDownRefresh`                         | ✅   | `native`      | ✅       | 直连 `tt.stopPullDownRefresh`                                                     |
-| `stopRecord`                                  | `stopRecord`                                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `stopVoice`                                   | `stopVoice`                                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `stopRecord`                                  | `stopRecord`                                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `stopVoice`                                   | `stopVoice`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `stopWifi`                                    | `stopWifi`                                    | ❌   | `unsupported` | ❌       | 未提供 tt.stopWifi，调用时将返回 not supported                                    |
-| `subscribeVoIPVideoMembers`                   | `subscribeVoIPVideoMembers`                   | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `subscribeVoIPVideoMembers`                   | `subscribeVoIPVideoMembers`                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `switchTab`                                   | `switchTab`                                   | ✅   | `native`      | ✅       | 直连 `tt.switchTab`                                                               |
 | `updateShareMenu`                             | `showShareMenu`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.showShareMenu`                                                         |
-| `updateVoIPChatMuteConfig`                    | `updateVoIPChatMuteConfig`                    | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `updateWeChatApp`                             | `updateWeChatApp`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `updateVoIPChatMuteConfig`                    | `updateVoIPChatMuteConfig`                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `updateWeChatApp`                             | `updateWeChatApp`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `uploadFile`                                  | `uploadFile`                                  | ✅   | `native`      | ✅       | 直连 `tt.uploadFile`                                                              |
 | `vibrateLong`                                 | `vibrateLong`                                 | ✅   | `native`      | ✅       | 直连 `tt.vibrateLong`                                                             |
 | `vibrateShort`                                | `vibrateShort`                                | ✅   | `native`      | ✅       | 直连 `tt.vibrateShort`                                                            |

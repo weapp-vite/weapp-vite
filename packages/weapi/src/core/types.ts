@@ -2001,8 +2001,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.requestCommonPayment` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   requestCommonPayment: WeapiCrossPlatformAdapter['requestCommonPayment']
 
@@ -2012,8 +2012,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.requestDeviceVoIP` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   requestDeviceVoIP: WeapiCrossPlatformAdapter['requestDeviceVoIP']
 
@@ -2023,8 +2023,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.requestMerchantTransfer` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   requestMerchantTransfer: WeapiCrossPlatformAdapter['requestMerchantTransfer']
 
@@ -2034,8 +2034,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.requirePrivacyAuthorize` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   requirePrivacyAuthorize: WeapiCrossPlatformAdapter['requirePrivacyAuthorize']
 
@@ -2045,8 +2045,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.reserveChannelsLive` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   reserveChannelsLive: WeapiCrossPlatformAdapter['reserveChannelsLive']
 
@@ -2056,8 +2056,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.selectGroupMembers` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   selectGroupMembers: WeapiCrossPlatformAdapter['selectGroupMembers']
 
@@ -2067,8 +2067,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.sendHCEMessage` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   sendHCEMessage: WeapiCrossPlatformAdapter['sendHCEMessage']
 
@@ -2078,8 +2078,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.sendSms` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   sendSms: WeapiCrossPlatformAdapter['sendSms']
 
@@ -2089,8 +2089,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.setBackgroundFetchToken` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   setBackgroundFetchToken: WeapiCrossPlatformAdapter['setBackgroundFetchToken']
 
@@ -2100,8 +2100,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.setEnable1v1Chat` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   setEnable1v1Chat: WeapiCrossPlatformAdapter['setEnable1v1Chat']
 
@@ -2111,8 +2111,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.setTopBarText` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   setTopBarText: WeapiCrossPlatformAdapter['setTopBarText']
 
@@ -2122,8 +2122,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.setWindowSize` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   setWindowSize: WeapiCrossPlatformAdapter['setWindowSize']
 
@@ -2133,8 +2133,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.stopHCE` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   stopHCE: WeapiCrossPlatformAdapter['stopHCE']
 
@@ -2144,8 +2144,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.stopLocalServiceDiscovery` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   stopLocalServiceDiscovery: WeapiCrossPlatformAdapter['stopLocalServiceDiscovery']
 
@@ -2155,8 +2155,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.stopLocationUpdate` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   stopLocationUpdate: WeapiCrossPlatformAdapter['stopLocationUpdate']
 
@@ -2166,8 +2166,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.stopRecord` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   stopRecord: WeapiCrossPlatformAdapter['stopRecord']
 
@@ -2177,8 +2177,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.stopVoice` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   stopVoice: WeapiCrossPlatformAdapter['stopVoice']
 
@@ -2188,8 +2188,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.subscribeVoIPVideoMembers` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   subscribeVoIPVideoMembers: WeapiCrossPlatformAdapter['subscribeVoIPVideoMembers']
 
@@ -2199,8 +2199,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.updateVoIPChatMuteConfig` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   updateVoIPChatMuteConfig: WeapiCrossPlatformAdapter['updateVoIPChatMuteConfig']
 
@@ -2210,8 +2210,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.updateWeChatApp` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   updateWeChatApp: WeapiCrossPlatformAdapter['updateWeChatApp']
 

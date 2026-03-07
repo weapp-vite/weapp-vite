@@ -1,0 +1,5 @@
+---
+"@wevu/api": patch
+---
+
+继续推进 `weapi` 严格兼容策略：移除支付宝/抖音对 `requestCommonPayment`、`requestDeviceVoIP`、`requestMerchantTransfer`、`requirePrivacyAuthorize`、`reserveChannelsLive`、`selectGroupMembers`、`sendHCEMessage`、`sendSms`、`setBackgroundFetchToken`、`setEnable1v1Chat`、`setTopBarText`、`setWindowSize`、`stopHCE`、`stopLocalServiceDiscovery`、`stopLocationUpdate`、`stopRecord`、`stopVoice`、`subscribeVoIPVideoMembers`、`updateVoIPChatMuteConfig`、`updateWeChatApp` 的 synthetic no-op 支持。对应平台缺失时统一按 unsupported 报错，并同步更新单元测试、类型文档与 API 兼容报告。
