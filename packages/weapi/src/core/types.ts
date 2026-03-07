@@ -561,7 +561,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getSystemSetting` | ⚠️ |
    * | 支付宝 | 直连 `my.getSystemSetting` | ⚠️ |
-   * | 抖音 | 映射到 `tt.getSetting` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getSystemSetting: WeapiCrossPlatformAdapter['getSystemSetting']
 
@@ -594,7 +594,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getAppAuthorizeSetting` | ⚠️ |
    * | 支付宝 | 直连 `my.getAppAuthorizeSetting` | ⚠️ |
-   * | 抖音 | 映射到 `tt.getSetting` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getAppAuthorizeSetting: WeapiCrossPlatformAdapter['getAppAuthorizeSetting']
 

@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：146，不支持：333
+总计：479，支持：144，不支持：335
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -95,7 +95,7 @@
 | `faceDetect`                                  | `faceDetect`                                  | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getAccountInfoSync`                          | `getEnvInfoSync`                              | ✅   | `mapped`      | ✅       | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构                                    |
 | `getApiCategory`                              | `getApiCategory`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `getAppAuthorizeSetting`                      | `getSetting`                                  | ✅   | `mapped`      | ✅       | 映射到 `tt.getSetting`                                                            |
+| `getAppAuthorizeSetting`                      | `getAppAuthorizeSetting`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getAppBaseInfo`                              | `getEnvInfoSync`                              | ✅   | `mapped`      | ✅       | 映射到 `tt.getEnvInfoSync`                                                        |
 | `getAvailableAudioSources`                    | `getAvailableAudioSources`                    | ❌   | `unsupported` | ❌       | 未提供 tt.getAvailableAudioSources，调用时将返回 not supported                    |
 | `getBackgroundAudioManager`                   | `getBackgroundAudioManager`                   | ✅   | `native`      | ✅       | 直连 `tt.getBackgroundAudioManager`                                               |
@@ -161,7 +161,7 @@
 | `getSystemInfo`                               | `getSystemInfo`                               | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfo`                                                           |
 | `getSystemInfoAsync`                          | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`                                                         |
 | `getSystemInfoSync`                           | `getSystemInfoSync`                           | ✅   | `native`      | ✅       | 直连 `tt.getSystemInfoSync`                                                       |
-| `getSystemSetting`                            | `getSetting`                                  | ✅   | `mapped`      | ✅       | 映射到 `tt.getSetting`                                                            |
+| `getSystemSetting`                            | `getSystemSetting`                            | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getUpdateManager`                            | `getUpdateManager`                            | ✅   | `native`      | ✅       | 直连 `tt.getUpdateManager`                                                        |
 | `getUserCryptoManager`                        | `getUserCryptoManager`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getUserInfo`                                 | `getUserInfo`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.getUserInfo`                                                             |

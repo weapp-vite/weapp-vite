@@ -1709,6 +1709,32 @@ describe('weapi', () => {
     expect(saveFile).not.toHaveBeenCalled()
   })
 
+  it('treats getSystemSetting/getAppAuthorizeSetting as unsupported for douyin without strict-equivalent api', async () => {
+    const getSetting = vi.fn((options: any) => {
+      options.success?.({ authSetting: { 'scope.userInfo': true } })
+    })
+    const api = createWeapi({
+      adapter: {
+        getSetting,
+      },
+      platform: 'tt',
+    })
+
+    for (const methodName of ['getSystemSetting', 'getAppAuthorizeSetting'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]()).rejects.toMatchObject({
+        errMsg: `tt.${methodName}:fail method not supported`,
+      })
+    }
+    expect(getSetting).not.toHaveBeenCalled()
+  })
+
   it('maps interstitial and live-player context apis for douyin', async () => {
     const createInterstitialAd = vi.fn(() => ({ show: vi.fn() }))
     const createLivePlayerContext = vi.fn(() => ({ play: vi.fn() }))
@@ -1996,10 +2022,10 @@ describe('weapi', () => {
       { method: 'openEmbeddedMiniProgram', my: 'openEmbeddedMiniProgram', tt: 'openEmbeddedMiniProgram', mySupported: false, ttSupported: false },
       { method: 'saveFileToDisk', my: 'saveFileToDisk', tt: 'saveFileToDisk', ttSupported: false },
       { method: 'getEnterOptionsSync', my: 'getEnterOptionsSync', tt: 'getLaunchOptionsSync' },
-      { method: 'getSystemSetting', my: 'getSystemSetting', tt: 'getSetting' },
+      { method: 'getSystemSetting', my: 'getSystemSetting', tt: 'getSystemSetting', ttSupported: false },
       { method: 'getUserProfile', my: 'getOpenUserInfo', tt: 'getUserProfile' },
       { method: 'getUserInfo', my: 'getOpenUserInfo', tt: 'getUserInfo' },
-      { method: 'getAppAuthorizeSetting', my: 'getAppAuthorizeSetting', tt: 'getSetting' },
+      { method: 'getAppAuthorizeSetting', my: 'getAppAuthorizeSetting', tt: 'getAppAuthorizeSetting', ttSupported: false },
       { method: 'getAppBaseInfo', my: 'getAppBaseInfo', tt: 'getEnvInfoSync' },
       { method: 'chooseVideo', my: 'chooseVideo', tt: 'chooseVideo', ttSupported: false },
       { method: 'chooseMedia', my: 'chooseMedia', tt: 'chooseMedia', mySupported: false },
