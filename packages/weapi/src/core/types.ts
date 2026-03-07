@@ -725,8 +725,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.getLogManager` | ⚠️ |
-   * | 支付宝 | 使用内置日志 shim（对齐 `log/info/warn/error`） | ⚠️ |
-   * | 抖音 | 使用内置日志 shim（对齐 `log/info/warn/error`） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   getLogManager: WeapiCrossPlatformAdapter['getLogManager']
 
@@ -736,8 +736,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.nextTick` | ⚠️ |
-   * | 支付宝 | 使用内置 microtask shim 调度回调 | ⚠️ |
-   * | 抖音 | 使用内置 microtask shim 调度回调 | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   nextTick: WeapiCrossPlatformAdapter['nextTick']
 
@@ -791,8 +791,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.createVKSession` | ⚠️ |
-   * | 支付宝 | 使用内置 VKSession shim（对齐 `start/stop/destroy`） | ⚠️ |
-   * | 抖音 | 使用内置 VKSession shim（对齐 `start/stop/destroy`） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   createVKSession: WeapiCrossPlatformAdapter['createVKSession']
 
@@ -868,8 +868,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.batchSetStorage` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，逐项转调 `my.setStorage` | ⚠️ |
-   * | 抖音 | 使用内置 shim，逐项转调 `tt.setStorage` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   batchSetStorage: WeapiCrossPlatformAdapter['batchSetStorage']
 
@@ -879,8 +879,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.batchGetStorage` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，逐项转调 `my.getStorage` | ⚠️ |
-   * | 抖音 | 使用内置 shim，逐项转调 `tt.getStorage` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   batchGetStorage: WeapiCrossPlatformAdapter['batchGetStorage']
 
@@ -890,8 +890,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.batchSetStorageSync` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，逐项转调 `my.setStorageSync` | ⚠️ |
-   * | 抖音 | 使用内置 shim，逐项转调 `tt.setStorageSync` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   batchSetStorageSync: WeapiCrossPlatformAdapter['batchSetStorageSync']
 
@@ -901,8 +901,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.batchGetStorageSync` | ⚠️ |
-   * | 支付宝 | 使用内置 shim，逐项转调 `my.getStorageSync` | ⚠️ |
-   * | 抖音 | 使用内置 shim，逐项转调 `tt.getStorageSync` | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   batchGetStorageSync: WeapiCrossPlatformAdapter['batchGetStorageSync']
 
@@ -912,8 +912,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.createCameraContext` | ⚠️ |
-   * | 支付宝 | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） | ⚠️ |
-   * | 抖音 | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   createCameraContext: WeapiCrossPlatformAdapter['createCameraContext']
 
@@ -934,8 +934,8 @@ interface WeapiCrossPlatformMethodDocs {
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.cancelIdleCallback` | ⚠️ |
-   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   cancelIdleCallback: WeapiCrossPlatformAdapter['cancelIdleCallback']
 
