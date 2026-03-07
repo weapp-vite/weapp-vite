@@ -1244,6 +1244,55 @@ describe('router navigation helpers', () => {
     expect(router.hasRoute('home-detail')).toBe(false)
   })
 
+  it('removeRoute removes nested child route records together', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'home',
+          path: '/pages/home',
+          children: [
+            {
+              name: 'home-detail',
+              path: 'detail/:id',
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(router.hasRoute('home')).toBe(true)
+    expect(router.hasRoute('home-detail')).toBe(true)
+
+    router.removeRoute('home')
+
+    expect(router.hasRoute('home')).toBe(false)
+    expect(router.hasRoute('home-detail')).toBe(false)
+    expect(router.getRoutes()).toEqual([])
+    expect(router.resolve('/pages/home/detail/1').name).toBeUndefined()
+  })
+
   it('supports clearing all named routes at runtime', async () => {
     const instance = {
       __wevu: {},
