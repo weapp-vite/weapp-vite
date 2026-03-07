@@ -17,6 +17,7 @@ import {
   touch,
   touchSync,
 } from './file'
+import { normalizePath } from './path'
 
 describe('utils/file', () => {
   describe('isJsOrTs', () => {
@@ -430,19 +431,19 @@ defineAppJson(nonExistentMacroValue)
         await fs.writeFile(`${cssBase}.css`, '.a {}')
         await fs.writeFile(`${tplBase}.wxml`, '<view />')
 
-        expect(await findVueEntry(vueBase)).toBe(`${vueBase}.vue`)
-        expect((await findJsEntry(jsBase)).path).toBe(`${jsBase}.js`)
+        expect(normalizePath(await findVueEntry(vueBase) || '')).toBe(normalizePath(`${vueBase}.vue`))
+        expect(normalizePath((await findJsEntry(jsBase)).path || '')).toBe(normalizePath(`${jsBase}.js`))
 
         const jsonResult = await findJsonEntry(jsonBase)
-        expect(jsonResult.path).toBe(`${jsonBase}.json`)
+        expect(normalizePath(jsonResult.path || '')).toBe(normalizePath(`${jsonBase}.json`))
         expect(jsonResult.predictions.length).toBeGreaterThan(0)
 
         const cssResult = await findCssEntry(cssBase)
-        expect(cssResult.path).toBe(`${cssBase}.css`)
+        expect(normalizePath(cssResult.path || '')).toBe(normalizePath(`${cssBase}.css`))
         expect(cssResult.predictions.length).toBeGreaterThan(0)
 
         const templateResult = await findTemplateEntry(tplBase)
-        expect(templateResult.path).toBe(`${tplBase}.wxml`)
+        expect(normalizePath(templateResult.path || '')).toBe(normalizePath(`${tplBase}.wxml`))
         expect(templateResult.predictions.length).toBeGreaterThan(0)
       }
       finally {

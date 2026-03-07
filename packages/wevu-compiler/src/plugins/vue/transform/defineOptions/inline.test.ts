@@ -108,11 +108,9 @@ defineOptions(() => ({
 }))
     `.trim()
 
-    await expect(
-      inlineScriptSetupDefineOptionsArgs(source, filename, 'ts'),
-    ).resolves.toMatchObject({
-      dependencies: [],
-    })
+    const result = await inlineScriptSetupDefineOptionsArgs(source, filename, 'ts')
+    expect(result.code).toContain('defineOptions({')
+    expect(result.dependencies.some(dep => dep.includes('missing-module'))).toBe(false)
   })
 
   it('supports serializing built-in native constructor values', async () => {

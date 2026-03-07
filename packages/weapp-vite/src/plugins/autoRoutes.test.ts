@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
+import { toPosixPath } from '../utils/path'
 import { autoRoutes } from './autoRoutes'
 
 function createPlugin(overrides: Record<string, unknown> = {}) {
@@ -106,8 +107,13 @@ describe('auto-routes plugin alias fallback', () => {
 
     await expect(plugin.buildStart?.call({ addWatchFile } as any)).resolves.toBeUndefined()
     expect(ensureFresh).toHaveBeenCalled()
-    expect(addWatchFile).toHaveBeenCalledWith('/virtual/project/src/pages/index/index.ts')
-    expect(addWatchFile).toHaveBeenCalledWith('/virtual/project/src/pages')
+    const watched = addWatchFile.mock.calls
+      .map(call => call[0])
+      .map((item: string) => toPosixPath(item))
+    expect(watched).toEqual(expect.arrayContaining([
+      '/virtual/project/src/pages/index/index.ts',
+      '/virtual/project/src/pages',
+    ]))
   })
 
   it('returns null in load for unrelated ids', async () => {
@@ -138,6 +144,29 @@ describe('auto-routes plugin alias fallback', () => {
 
     expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/home/index.ts', 'rename')
     expect(handleFileChange).not.toHaveBeenCalledWith('/virtual/project/src/components/card/index.ts', 'rename')
+  })
+
+  it('routes Windows-style watchChange paths under src/pages', async () => {
+    const {
+      plugin,
+      isRouteFile,
+      handleFileChange,
+    } = createPlugin({
+      configService: {
+        cwd: 'C:/virtual/project',
+        absoluteSrcRoot: 'C:/virtual/project/src',
+        packageInfo: {
+          rootPath: 'C:/virtual/weapp-vite',
+        },
+      },
+    })
+
+    isRouteFile.mockReturnValue(false)
+    await plugin.watchChange?.('C:\\virtual\\project\\src\\pages\\home\\index.ts', { event: 'create' } as any)
+    await plugin.watchChange?.('C:\\virtual\\project\\src\\components\\card\\index.ts', { event: 'create' } as any)
+
+    expect(handleFileChange).toHaveBeenCalledWith('C:\\virtual\\project\\src\\pages\\home\\index.ts', 'rename')
+    expect(handleFileChange).not.toHaveBeenCalledWith('C:\\virtual\\project\\src\\components\\card\\index.ts', 'rename')
   })
 
   it('handleHotUpdate returns virtual module in serve mode and filters fallback in build mode', async () => {

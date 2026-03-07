@@ -4,7 +4,7 @@ import type { CandidateEntry } from './candidates'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../utils/file'
-import { toPosixPath } from '../../utils/path'
+import { normalizePath, toPosixPath } from '../../utils/path'
 import {
   areSetsEqual,
   isConfigFile,
@@ -31,16 +31,14 @@ export function matchesRouteFile(
     return false
   }
 
-  const normalized = path.isAbsolute(pathWithoutQuery)
-    ? pathWithoutQuery
-    : path.resolve(configService.cwd, pathWithoutQuery)
-
-  if (!normalized.startsWith(configService.absoluteSrcRoot)) {
-    return false
-  }
-
-  const relative = toPosixPath(path.relative(configService.absoluteSrcRoot, normalized))
-  if (!relative || relative.startsWith('..')) {
+  const normalizedSrcRoot = normalizePath(configService.absoluteSrcRoot)
+  const normalizedCandidate = normalizePath(
+    path.isAbsolute(pathWithoutQuery)
+      ? pathWithoutQuery
+      : path.resolve(configService.cwd, pathWithoutQuery),
+  )
+  const relative = toPosixPath(path.relative(normalizedSrcRoot, normalizedCandidate))
+  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
     return false
   }
 
@@ -51,11 +49,16 @@ export function matchesRouteFile(
     return false
   }
 
-  if (isConfigFile(normalized)) {
+  if (isConfigFile(normalizedCandidate)) {
     return true
   }
 
-  if (isVueFile(normalized) || isScriptFile(normalized) || isTemplateFile(normalized) || isStyleFile(normalized)) {
+  if (
+    isVueFile(normalizedCandidate)
+    || isScriptFile(normalizedCandidate)
+    || isTemplateFile(normalizedCandidate)
+    || isStyleFile(normalizedCandidate)
+  ) {
     return true
   }
 
@@ -135,15 +138,11 @@ export async function updateCandidateFromFile(
   const absolutePath = path.isAbsolute(pathWithoutQuery)
     ? pathWithoutQuery
     : path.resolve(ctx.configService.cwd, pathWithoutQuery)
-
-  if (!absolutePath.startsWith(ctx.configService.absoluteSrcRoot)) {
-    markNeedsFullRescan?.()
-    return true
-  }
-
-  const base = removeExtensionDeep(absolutePath)
-  const relativeBase = toPosixPath(path.relative(ctx.configService.absoluteSrcRoot, base))
-  if (!relativeBase || relativeBase.startsWith('..')) {
+  const normalizedSrcRoot = normalizePath(ctx.configService.absoluteSrcRoot)
+  const normalizedAbsolutePath = normalizePath(absolutePath)
+  const base = removeExtensionDeep(normalizedAbsolutePath)
+  const relativeBase = toPosixPath(path.relative(normalizedSrcRoot, base))
+  if (!relativeBase || relativeBase.startsWith('..') || path.isAbsolute(relativeBase)) {
     markNeedsFullRescan?.()
     return true
   }
