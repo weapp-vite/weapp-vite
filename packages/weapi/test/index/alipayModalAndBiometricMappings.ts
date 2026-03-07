@@ -1,11 +1,11 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexAlipayModalAndBiometricMappingsTests() {
   it('maps showModal to confirm for alipay', async () => {
     const confirm = vi.fn((options: any) => {
       options.success?.({ confirm: false })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         confirm,
       },
@@ -36,7 +36,7 @@ export function registerWeapiIndexAlipayModalAndBiometricMappingsTests() {
 
   it('treats showModal as unsupported for alipay when showCancel is false', async () => {
     const confirm = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         confirm,
       },
@@ -59,7 +59,7 @@ export function registerWeapiIndexAlipayModalAndBiometricMappingsTests() {
     const fail = vi.fn()
     const complete = vi.fn()
     const success = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         confirm,
       },
@@ -87,7 +87,7 @@ export function registerWeapiIndexAlipayModalAndBiometricMappingsTests() {
   })
 
   it('maps chooseImage result from apFilePaths to tempFilePaths', async () => {
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         chooseImage(options: any) {
           options.success?.({ apFilePaths: ['/tmp/demo.png'] })
@@ -107,7 +107,7 @@ export function registerWeapiIndexAlipayModalAndBiometricMappingsTests() {
     const checkIsIfaaEnrolledInDevice = vi.fn((options: any) => {
       options.success?.({ isEnrolled: true, success: true })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         checkIsIfaaEnrolledInDevice,
       },
@@ -138,7 +138,7 @@ export function registerWeapiIndexAlipayModalAndBiometricMappingsTests() {
 
   it('treats speech mode as unsupported when mapping checkIsSoterEnrolledInDevice to alipay', async () => {
     const checkIsIfaaEnrolledInDevice = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         checkIsIfaaEnrolledInDevice,
       },
@@ -157,7 +157,7 @@ export function registerWeapiIndexAlipayModalAndBiometricMappingsTests() {
     const checkIsSupportIfaaAuthentication = vi.fn((options: any) => {
       options.success?.({ supportMode: ['fingerPrint', 'facial'], success: true })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         checkIsSupportIfaaAuthentication,
       },
@@ -186,7 +186,7 @@ export function registerWeapiIndexAlipayModalAndBiometricMappingsTests() {
     const getAddress = vi.fn((options: any) => {
       options.success?.({ provinceName: 'Zhejiang' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getAddress,
       },
@@ -210,7 +210,7 @@ export function registerWeapiIndexAlipayModalAndBiometricMappingsTests() {
     const getRunData = vi.fn((options: any) => {
       options.success?.({ response: '{}' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getRunData,
       },

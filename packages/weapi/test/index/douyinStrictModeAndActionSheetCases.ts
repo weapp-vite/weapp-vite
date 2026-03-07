@@ -1,11 +1,11 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexDouyinStrictModeAndActionSheetCasesTests() {
   it.each([
     'checkIsSoterEnrolledInDevice',
     'checkIsSupportSoterAuthentication',
   ])('keeps %s unsupported for douyin in strict mode', async (methodName) => {
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {},
       platform: 'tt',
     }) as Record<string, any>
@@ -27,7 +27,7 @@ export function registerWeapiIndexDouyinStrictModeAndActionSheetCasesTests() {
   ])('treats on/offBLEPeripheralConnectionStateChanged as unsupported for $platform without aliasing ble connection change events', async ({ platform, normalizedPlatform }) => {
     const onBLEConnectionStateChanged = vi.fn()
     const offBLEConnectionStateChanged = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         onBLEConnectionStateChanged,
         offBLEConnectionStateChanged,
@@ -62,7 +62,7 @@ export function registerWeapiIndexDouyinStrictModeAndActionSheetCasesTests() {
   ])('treats %s as unsupported when no strict-equivalent target exists', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
@@ -81,7 +81,7 @@ export function registerWeapiIndexDouyinStrictModeAndActionSheetCasesTests() {
 
   it('treats offMemoryWarning as unsupported for douyin when method is missing', async () => {
     const onMemoryWarning = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         onMemoryWarning,
       },
@@ -116,7 +116,7 @@ export function registerWeapiIndexDouyinStrictModeAndActionSheetCasesTests() {
     for (const platform of ['alipay', 'tt'] as const) {
       const onAppShow = vi.fn()
       const offAppShow = vi.fn()
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {
           onAppShow,
           offAppShow,
@@ -141,7 +141,7 @@ export function registerWeapiIndexDouyinStrictModeAndActionSheetCasesTests() {
   it('maps BLE connection state event aliases to alipay changed suffix methods', () => {
     const onBLEConnectionStateChanged = vi.fn()
     const offBLEConnectionStateChanged = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         onBLEConnectionStateChanged,
         offBLEConnectionStateChanged,
@@ -176,7 +176,7 @@ export function registerWeapiIndexDouyinStrictModeAndActionSheetCasesTests() {
     const showToast = vi.fn((options: any) => {
       options.success?.({ errMsg: 'showToast:ok' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         showToast,
       },
@@ -192,7 +192,7 @@ export function registerWeapiIndexDouyinStrictModeAndActionSheetCasesTests() {
   })
 
   it('normalizes douyin showActionSheet result from index to tapIndex', async () => {
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         showActionSheet(options: any) {
           options.success?.({ index: 1 })
@@ -212,7 +212,7 @@ export function registerWeapiIndexDouyinStrictModeAndActionSheetCasesTests() {
     const showModal = vi.fn((options: any) => {
       options.success?.({ confirm: true })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         showModal,
       },

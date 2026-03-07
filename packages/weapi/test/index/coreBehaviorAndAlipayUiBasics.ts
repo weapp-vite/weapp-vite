@@ -1,4 +1,4 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
   it('promisifies when no callbacks provided', async () => {
@@ -11,7 +11,7 @@ export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
         options.success?.({ ok: true })
       },
     }
-    const api = createWeapi({ adapter, platform: 'wx' })
+    const api = createTestWeapi({ adapter, platform: 'wx' })
     const res = await api.request({ url: 'https://example.com' })
     expect(res).toEqual({ ok: true })
   })
@@ -27,7 +27,7 @@ export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
         return 'raw'
       },
     }
-    const api = createWeapi({ adapter, platform: 'wx' })
+    const api = createTestWeapi({ adapter, platform: 'wx' })
     const result = api.request({
       success() {},
     })
@@ -40,12 +40,12 @@ export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
         return { platform: 'wx' }
       },
     }
-    const api = createWeapi({ adapter, platform: 'wx' })
+    const api = createTestWeapi({ adapter, platform: 'wx' })
     expect(api.getSystemInfoSync()).toEqual({ platform: 'wx' })
   })
 
   it('rejects when api is missing', async () => {
-    const api = createWeapi({ adapter: {}, platform: 'wx' }) as Record<string, any>
+    const api = createTestWeapi({ adapter: {}, platform: 'wx' }) as Record<string, any>
     await expect(api.unknown({})).rejects.toMatchObject({
       errMsg: 'wx.unknown:fail method not supported',
     })
@@ -53,7 +53,7 @@ export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
 
   it('resolves mapped target and support state', () => {
     const confirm = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: { confirm },
       platform: 'alipay',
     })
@@ -83,7 +83,7 @@ export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
     const hideToast = vi.fn((options: any) => {
       options.success?.({ errMsg: 'hideToast:ok' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: { hideToast },
       platform: 'my',
     }) as Record<string, any>
@@ -108,7 +108,7 @@ export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
     const hideToast = vi.fn((options: any) => {
       options.success?.({ errMsg: 'hideToast:ok' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: { hideToast },
       platform: 'my',
       strictCompatibility: true,
@@ -134,7 +134,7 @@ export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
     const showToast = vi.fn((options: any) => {
       options.success?.({ errMsg: 'showToast:ok' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         showToast,
       },
@@ -155,7 +155,7 @@ export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
     const showLoading = vi.fn((options: any) => {
       options.success?.({ errMsg: 'showLoading:ok' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         showLoading,
       },
@@ -174,7 +174,7 @@ export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
     const showActionSheet = vi.fn((options: any) => {
       options.success?.({ index: 1 })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         showActionSheet,
       },
@@ -199,7 +199,7 @@ export function registerWeapiIndexCoreBehaviorAndAlipayUiBasicsTests() {
       options.success?.({ index: 2 })
       return { index: 3 }
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         showActionSheet,
       },

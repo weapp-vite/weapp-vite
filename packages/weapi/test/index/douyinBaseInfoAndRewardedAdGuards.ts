@@ -1,9 +1,9 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexDouyinBaseInfoAndRewardedAdGuardsTests() {
   it('treats getAppBaseInfo/getAccountInfoSync as unsupported for douyin without strict-equivalent api', async () => {
     const getEnvInfoSync = vi.fn()
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getEnvInfoSync,
       },
@@ -31,7 +31,7 @@ export function registerWeapiIndexDouyinBaseInfoAndRewardedAdGuardsTests() {
       query: {},
       scene: 1001,
     }))
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getLaunchOptionsSync,
       },
@@ -55,7 +55,7 @@ export function registerWeapiIndexDouyinBaseInfoAndRewardedAdGuardsTests() {
     const previewImage = vi.fn((options: any) => {
       options.success?.({ errMsg: 'previewImage:ok' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         previewImage,
       },
@@ -84,7 +84,7 @@ export function registerWeapiIndexDouyinBaseInfoAndRewardedAdGuardsTests() {
     const getFileInfo = vi.fn((options: any) => {
       options.success?.({ size: 1024 })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getFileInfo,
       },
@@ -108,7 +108,7 @@ export function registerWeapiIndexDouyinBaseInfoAndRewardedAdGuardsTests() {
     const saveFile = vi.fn((options: any) => {
       options.success?.({ savedFilePath: '/tmp/tt-saved.txt' })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         saveFile,
       },
@@ -132,7 +132,7 @@ export function registerWeapiIndexDouyinBaseInfoAndRewardedAdGuardsTests() {
     const getSetting = vi.fn((options: any) => {
       options.success?.({ authSetting: { 'scope.userInfo': true } })
     })
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         getSetting,
       },
@@ -158,7 +158,7 @@ export function registerWeapiIndexDouyinBaseInfoAndRewardedAdGuardsTests() {
     const createInterstitialAd = vi.fn(() => ({ show: vi.fn() }))
     const createLivePlayerContext = vi.fn(() => ({ play: vi.fn() }))
     const createVideoContext = vi.fn(() => ({ play: vi.fn() }))
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         createInterstitialAd,
         createLivePlayerContext,
@@ -188,7 +188,7 @@ export function registerWeapiIndexDouyinBaseInfoAndRewardedAdGuardsTests() {
 
   it('treats createRewardedVideoAd as unsupported for douyin without strict-equivalent api', async () => {
     const createInterstitialAd = vi.fn(() => ({ show: vi.fn() }))
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         createInterstitialAd,
       },

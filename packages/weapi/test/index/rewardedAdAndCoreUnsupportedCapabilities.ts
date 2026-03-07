@@ -1,4 +1,4 @@
-import { createWeapi } from '@/index'
+import { createTestWeapi } from '../helpers/createTestWeapi'
 
 export function registerWeapiIndexRewardedAdAndCoreUnsupportedCapabilitiesTests() {
   it('maps rewarded ad api to strict-equivalent alipay target and keeps live contexts unsupported', async () => {
@@ -11,7 +11,7 @@ export function registerWeapiIndexRewardedAdAndCoreUnsupportedCapabilitiesTests(
     }
     const createRewardedAd = vi.fn(() => rewardedAd)
     const createVideoContext = vi.fn(() => ({ play: vi.fn() }))
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {
         createRewardedAd,
         createVideoContext,
@@ -83,7 +83,7 @@ export function registerWeapiIndexRewardedAdAndCoreUnsupportedCapabilitiesTests(
   })
 
   it('normalizes platform alias for createWeapi', () => {
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {},
       platform: 'douyin',
     })
@@ -97,7 +97,7 @@ export function registerWeapiIndexRewardedAdAndCoreUnsupportedCapabilitiesTests(
   ])('treats %s as unsupported without strict-equivalent runtime API', async (methodName) => {
     for (const platform of ['alipay', 'tt'] as const) {
       const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-      const api = createWeapi({
+      const api = createTestWeapi({
         adapter: {},
         platform,
       }) as Record<string, any>
@@ -115,7 +115,7 @@ export function registerWeapiIndexRewardedAdAndCoreUnsupportedCapabilitiesTests(
   })
 
   it('treats reportAnalytics as unsupported for alipay when method is missing', async () => {
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {},
       platform: 'alipay',
     })
@@ -133,7 +133,7 @@ export function registerWeapiIndexRewardedAdAndCoreUnsupportedCapabilitiesTests(
   })
 
   it('treats onWindowResize/offWindowResize as unsupported for alipay when method is missing', async () => {
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {},
       platform: 'alipay',
     })
@@ -165,7 +165,7 @@ export function registerWeapiIndexRewardedAdAndCoreUnsupportedCapabilitiesTests(
     { platform: 'tt' },
   ])('treats openCustomerServiceChat as unsupported for $platform', async ({ platform }) => {
     const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {},
       platform,
     })
@@ -186,7 +186,7 @@ export function registerWeapiIndexRewardedAdAndCoreUnsupportedCapabilitiesTests(
     { platform: 'tt' },
   ])('treats compressVideo/openVideoEditor/getShareInfo/joinVoIPChat as unsupported for $platform', async ({ platform }) => {
     const normalizedPlatform = platform === 'alipay' ? 'my' : platform
-    const api = createWeapi({
+    const api = createTestWeapi({
       adapter: {},
       platform,
     })
