@@ -278,12 +278,8 @@ describe('weapi', () => {
     })
   })
 
-  it('maps chooseMedia to chooseImage for alipay', async () => {
-    const chooseImage = vi.fn((options: any) => {
-      options.success?.({
-        apFilePaths: ['/tmp/media-a.png', '/tmp/media-b.png'],
-      })
-    })
+  it('treats chooseMedia as unsupported for alipay without strict-equivalent api', async () => {
+    const chooseImage = vi.fn()
     const api = createWeapi({
       adapter: {
         chooseImage,
@@ -291,34 +287,29 @@ describe('weapi', () => {
       platform: 'alipay',
     })
 
-    const result = await api.chooseMedia({
-      count: 2,
-      mediaType: ['image'],
-      sourceType: ['album'],
-    } as any)
-
-    expect(chooseImage).toHaveBeenCalledWith(expect.objectContaining({
-      count: 2,
-      mediaType: ['image'],
-      sourceType: ['album'],
-    }))
-    expect(result).toMatchObject({
-      tempFilePaths: ['/tmp/media-a.png', '/tmp/media-b.png'],
-      tempFiles: [
-        { tempFilePath: '/tmp/media-a.png', fileType: 'image' },
-        { tempFilePath: '/tmp/media-b.png', fileType: 'image' },
-      ],
-      type: 'image',
+    expect(api.resolveTarget('chooseMedia')).toMatchObject({
+      method: 'chooseMedia',
+      target: 'chooseMedia',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
+    await expect(api.chooseMedia({
+      count: 2,
+      mediaType: ['image'],
+      sourceType: ['album'],
+    } as any)).rejects.toMatchObject({
+      errMsg: 'my.chooseMedia:fail method not supported',
+    })
+    expect(chooseImage).not.toHaveBeenCalled()
   })
 
   it.each([
-    { platform: 'alipay', response: { apFilePaths: ['/tmp/file-a.png'] } },
-    { platform: 'tt', response: { tempFilePaths: '/tmp/file-b.png' } },
-  ])('maps chooseMessageFile to chooseImage for $platform', async ({ platform, response }) => {
-    const chooseImage = vi.fn((options: any) => {
-      options.success?.(response)
-    })
+    { platform: 'alipay' },
+    { platform: 'tt' },
+  ])('treats chooseMessageFile as unsupported for $platform without strict-equivalent api', async ({ platform }) => {
+    const normalizedPlatform = platform === 'alipay' ? 'my' : platform
+    const chooseImage = vi.fn()
     const api = createWeapi({
       adapter: {
         chooseImage,
@@ -326,23 +317,20 @@ describe('weapi', () => {
       platform,
     })
 
-    const result = await api.chooseMessageFile({
-      count: 1,
-      type: 'file',
-    } as any)
-
-    expect(chooseImage).toHaveBeenCalledWith(expect.objectContaining({
-      count: 1,
-      type: 'file',
-    }))
-    expect(result).toMatchObject({
-      tempFiles: [
-        expect.objectContaining({
-          path: expect.stringContaining('/tmp/file-'),
-          name: expect.stringMatching(/^file-[ab]\.png$/),
-        }),
-      ],
+    expect(api.resolveTarget('chooseMessageFile')).toMatchObject({
+      method: 'chooseMessageFile',
+      target: 'chooseMessageFile',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
     })
+    await expect(api.chooseMessageFile({
+      count: 1,
+      type: 'file',
+    } as any)).rejects.toMatchObject({
+      errMsg: `${normalizedPlatform}.chooseMessageFile:fail method not supported`,
+    })
+    expect(chooseImage).not.toHaveBeenCalled()
   })
 
   it.each([
@@ -1913,8 +1901,8 @@ describe('weapi', () => {
       { method: 'getAppAuthorizeSetting', my: 'getAppAuthorizeSetting', tt: 'getSetting' },
       { method: 'getAppBaseInfo', my: 'getAppBaseInfo', tt: 'getEnvInfoSync' },
       { method: 'chooseVideo', my: 'chooseVideo', tt: 'chooseMedia' },
-      { method: 'chooseMedia', my: 'chooseImage', tt: 'chooseMedia' },
-      { method: 'chooseMessageFile', my: 'chooseImage', tt: 'chooseImage' },
+      { method: 'chooseMedia', my: 'chooseMedia', tt: 'chooseMedia', mySupported: false },
+      { method: 'chooseMessageFile', my: 'chooseMessageFile', tt: 'chooseMessageFile', mySupported: false, ttSupported: false },
       { method: 'getFuzzyLocation', my: 'getLocation', tt: 'getLocation' },
       { method: 'hideHomeButton', my: 'hideBackHome', tt: 'hideHomeButton' },
       { method: 'getWindowInfo', my: 'getWindowInfo', tt: 'getSystemInfo' },

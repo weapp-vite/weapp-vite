@@ -153,7 +153,7 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'chooseMedia',
     description: '选择图片或视频。',
     wxStrategy: '直连 `wx.chooseMedia`',
-    alipayStrategy: '映射到 `my.chooseImage`，并补齐 `tempFiles[].tempFilePath/fileType`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType`',
     support: '⚠️',
   },
@@ -161,8 +161,8 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'chooseMessageFile',
     description: '选择会话文件。',
     wxStrategy: '直连 `wx.chooseMessageFile`',
-    alipayStrategy: '映射到 `my.chooseImage`，并补齐 `tempFiles[].path/name`',
-    douyinStrategy: '映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
+    douyinStrategy: '无同等 API，调用时按 unsupported 报错',
     support: '⚠️',
   },
   {
@@ -2504,22 +2504,6 @@ function resolveFilePaths(result: any): string[] {
   return []
 }
 
-function mapChooseMediaArgsToChooseImage(args: unknown[]) {
-  if (args.length === 0) {
-    return [{}]
-  }
-  const nextArgs = [...args]
-  const lastIndex = nextArgs.length - 1
-  const lastArg = nextArgs[lastIndex]
-  if (!isPlainObject(lastArg)) {
-    return [...nextArgs, {}]
-  }
-  const nextOptions = { ...lastArg } as Record<string, any>
-  nextOptions.mediaType = ['image']
-  nextArgs[lastIndex] = nextOptions
-  return nextArgs
-}
-
 function mapChooseMediaResultFromImage(result: any) {
   const normalized = mapChooseImageResult(result)
   if (!isPlainObject(normalized)) {
@@ -2540,52 +2524,6 @@ function mapChooseMediaResultFromImage(result: any) {
       fileType: 'image',
     })),
     type: 'image',
-  }
-}
-
-function resolveFileName(filePath: string) {
-  const normalized = filePath.split('?')[0]
-  const segments = normalized.split('/')
-  return segments[segments.length - 1] || 'file'
-}
-
-function mapChooseMessageFileArgs(args: unknown[]) {
-  if (args.length === 0) {
-    return [{}]
-  }
-  const nextArgs = [...args]
-  const lastIndex = nextArgs.length - 1
-  const lastArg = nextArgs[lastIndex]
-  if (!isPlainObject(lastArg)) {
-    return [...nextArgs, {}]
-  }
-  const nextOptions = { ...lastArg } as Record<string, any>
-  nextArgs[lastIndex] = nextOptions
-  return nextArgs
-}
-
-function mapChooseMessageFileResult(result: any) {
-  if (!isPlainObject(result)) {
-    return result
-  }
-  if (Array.isArray(result.tempFiles) && result.tempFiles.length > 0) {
-    return result
-  }
-  const normalized = mapChooseImageResult(result)
-  if (!isPlainObject(normalized)) {
-    return normalized
-  }
-  const tempFilePaths = resolveFilePaths(normalized)
-  if (tempFilePaths.length === 0) {
-    return normalized
-  }
-  return {
-    ...normalized,
-    tempFilePaths,
-    tempFiles: tempFilePaths.map(path => ({
-      path,
-      name: resolveFileName(path),
-    })),
   }
 }
 
@@ -2781,14 +2719,10 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       mapResult: mapChooseImageResult,
     },
     chooseMedia: {
-      target: 'chooseImage',
-      mapArgs: mapChooseMediaArgsToChooseImage,
-      mapResult: mapChooseMediaResultFromImage,
+      target: 'chooseMedia',
     },
     chooseMessageFile: {
-      target: 'chooseImage',
-      mapArgs: mapChooseMessageFileArgs,
-      mapResult: mapChooseMessageFileResult,
+      target: 'chooseMessageFile',
     },
     getFuzzyLocation: {
       target: 'getLocation',
@@ -3498,9 +3432,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       mapResult: mapChooseMediaResultFromImage,
     },
     chooseMessageFile: {
-      target: 'chooseImage',
-      mapArgs: mapChooseMessageFileArgs,
-      mapResult: mapChooseMessageFileResult,
+      target: 'chooseMessageFile',
     },
     getFuzzyLocation: {
       target: 'getLocation',

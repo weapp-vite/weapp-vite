@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：225，不支持：254
+总计：479，支持：223，不支持：256
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -43,8 +43,8 @@
 | `chooseInvoiceTitle`                          | `chooseInvoiceTitle`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `chooseLicensePlate`                          | `chooseLicensePlate`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `chooseLocation`                              | `chooseLocation`                              | ✅   | `native`      | ✅       | 直连 `my.chooseLocation`                                                          |
-| `chooseMedia`                                 | `chooseImage`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.chooseImage`，并补齐 `tempFiles[].tempFilePath/fileType`               |
-| `chooseMessageFile`                           | `chooseImage`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.chooseImage`，并补齐 `tempFiles[].path/name`                           |
+| `chooseMedia`                                 | `chooseMedia`                                 | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
+| `chooseMessageFile`                           | `chooseMessageFile`                           | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `choosePoi`                                   | `choosePoi`                                   | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `chooseVideo`                                 | `chooseVideo`                                 | ✅   | `mapped`      | ✅       | 直连 `my.chooseVideo`                                                             |
 | `clearStorage`                                | `clearStorage`                                | ✅   | `native`      | ✅       | 直连 `my.clearStorage`                                                            |
