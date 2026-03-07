@@ -4,5 +4,6 @@
 
 - [快速上手](./router-quickstart.md)
 - [迁移指南](./router-migration-guide.md)
+- [Vue Router 对齐矩阵](./router-vue-router-parity.md)
 
 如果你只想立即使用，先看“快速上手”；如果你在改造已有项目，优先看“迁移指南”。
