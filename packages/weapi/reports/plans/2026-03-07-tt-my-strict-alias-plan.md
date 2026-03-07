@@ -112,6 +112,19 @@
 - 结果：除第 5 节候选外，未发现新的可证明“严格等价异名映射”项。
 - 噪声候选示例：`on/offBLEPeripheralConnectionStateChanged` 与 `on/offBLEConnectionStateChanged` 名称近似，但外围设备与中心设备事件语义不同，已按非严格等价处理并以单测锁定 unsupported。
 
+7. 原始 typings 反查证据补充（2026-03-08）
+
+- 已对高相似度候选做声明级反查（`@douyin-microapp/typings`、`@mini-types/alipay`、`miniprogram-api-typings`）：
+- `tt` 侧未导出 `createBLEConnection` / `closeBLEConnection` / `connectBLEDevice` / `disconnectBLEDevice`，无法承接微信 BLE 连接接口。
+- `tt` 侧仅导出 `saveImageToPhotosAlbum`，未导出 `saveVideoToPhotosAlbum`；`setting.d.ts` 中关于 `saveVideoToPhotosAlbum` 的出现仅为注释文本，不是 API 声明。
+- `tt.getEnvInfoSync` 仍无法提供微信 `getAccountInfoSync` 所需的 `miniProgram.envVersion` 与 `plugin` 结构契约。
+- `my.openSetting` 与 `wx.openAppAuthorizeSetting` 虽名称相近，但前者返回授权配置载荷且语义锚点更接近 `wx.openSetting`，不作为 `openAppAuthorizeSetting` 的严格等价映射。
+
+8. 策略防回归状态（2026-03-08）
+
+- 已增加矩阵级白名单测试，限定 `target !== method` 的异名映射仅允许当前可证明严格等价项（my 12 项 + tt 1 项）。
+- 已增加矩阵级断言：`my/tt` 两端 fallback 映射数必须恒为 `0`，防止重新引入“近名兜底映射”。
+
 ## 5. 每批固定验证清单
 
 1. `pnpm --filter @wevu/api test`
