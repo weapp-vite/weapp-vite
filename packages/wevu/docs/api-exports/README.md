@@ -22,6 +22,8 @@
 - [wevu-api.md](wevu-api.md)
 - [wevu-router.md](wevu-router.md)
 - [../router-usage-guide.md](../router-usage-guide.md)
+- [../router-quickstart.md](../router-quickstart.md)
+- [../router-migration-guide.md](../router-migration-guide.md)
 
 ## 说明
 
