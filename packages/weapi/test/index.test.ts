@@ -1488,10 +1488,8 @@ describe('weapi', () => {
     expect(getSystemInfo).not.toHaveBeenCalled()
   })
 
-  it('maps setBackgroundColor and setBackgroundTextStyle to setNavigationBarColor for douyin', async () => {
-    const setNavigationBarColor = vi.fn((options: any) => {
-      options.success?.({ errMsg: 'setNavigationBarColor:ok' })
-    })
+  it('treats setBackgroundColor/setBackgroundTextStyle as unsupported for douyin without strict-equivalent api', async () => {
+    const setNavigationBarColor = vi.fn()
     const api = createWeapi({
       adapter: {
         setNavigationBarColor,
@@ -1499,23 +1497,22 @@ describe('weapi', () => {
       platform: 'tt',
     })
 
-    await api.setBackgroundColor({
-      backgroundColorTop: '#112233',
-      textStyle: 'light',
-    } as any)
-    await api.setBackgroundTextStyle({
-      textStyle: 'dark',
-    } as any)
-
-    expect(setNavigationBarColor).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      backgroundColorTop: '#112233',
-      backgroundColor: '#112233',
-      frontColor: '#ffffff',
-    }))
-    expect(setNavigationBarColor).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      textStyle: 'dark',
-      frontColor: '#000000',
-    }))
+    for (const methodName of ['setBackgroundColor', 'setBackgroundTextStyle'] as const) {
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'unsupported',
+        supported: false,
+        semanticAligned: false,
+      })
+      await expect(api[methodName]({
+        backgroundColorTop: '#112233',
+        textStyle: 'light',
+      })).rejects.toMatchObject({
+        errMsg: `tt.${methodName}:fail method not supported`,
+      })
+    }
+    expect(setNavigationBarColor).not.toHaveBeenCalled()
   })
 
   it('treats getNetworkType as unsupported for douyin without strict-equivalent api', async () => {
@@ -2047,8 +2044,8 @@ describe('weapi', () => {
       { method: 'onWindowResize', my: 'onWindowResize', tt: 'onWindowResize', mySupported: false },
       { method: 'offWindowResize', my: 'offWindowResize', tt: 'offWindowResize', mySupported: false },
       { method: 'reportAnalytics', my: 'reportAnalytics', tt: 'reportAnalytics', mySupported: false },
-      { method: 'setBackgroundColor', my: 'setBackgroundColor', tt: 'setNavigationBarColor' },
-      { method: 'setBackgroundTextStyle', my: 'setBackgroundTextStyle', tt: 'setNavigationBarColor' },
+      { method: 'setBackgroundColor', my: 'setBackgroundColor', tt: 'setBackgroundColor', ttSupported: false },
+      { method: 'setBackgroundTextStyle', my: 'setBackgroundTextStyle', tt: 'setBackgroundTextStyle', ttSupported: false },
       { method: 'getNetworkType', my: 'getNetworkType', tt: 'getNetworkType', ttSupported: false },
       { method: 'getBatteryInfo', my: 'getBatteryInfo', tt: 'getBatteryInfo', ttSupported: false },
       { method: 'getBatteryInfoSync', my: 'getBatteryInfoSync', tt: 'getBatteryInfoSync', ttSupported: false },

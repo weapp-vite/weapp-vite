@@ -36,9 +36,9 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
 | 支付宝小程序 (`my`) | 201 | 201 | 0 | 479 | 41.96% | 41.96% |
-| 抖音小程序 (`tt`) | 137 | 137 | 0 | 479 | 28.60% | 28.60% |
-| 三端可调用完全对齐 (wx/my/tt) | 123 | - | - | 479 | 25.68% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 123 | - | 479 | - | 25.68% |
+| 抖音小程序 (`tt`) | 135 | 135 | 0 | 479 | 28.18% | 28.18% |
+| 三端可调用完全对齐 (wx/my/tt) | 121 | - | - | 479 | 25.26% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 121 | - | 479 | - | 25.26% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -95,8 +95,8 @@
 | `getWindowInfo` | 获取窗口信息。 | 直连 `wx.getWindowInfo` | 直连 `my.getWindowInfo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getDeviceInfo` | 获取设备基础信息。 | 直连 `wx.getDeviceInfo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getAccountInfoSync` | 同步获取当前账号信息。 | 直连 `wx.getAccountInfoSync` | 直连 `my.getAccountInfoSync` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `setBackgroundColor` | 动态设置窗口背景色。 | 直连 `wx.setBackgroundColor` | 直连 `my.setBackgroundColor` | 映射到 `tt.setNavigationBarColor`，对齐 `backgroundColor/frontColor` | ⚠️ |
-| `setBackgroundTextStyle` | 动态设置下拉背景字体样式。 | 直连 `wx.setBackgroundTextStyle` | 直连 `my.setBackgroundTextStyle` | 映射到 `tt.setNavigationBarColor`，将 `textStyle` 对齐到 `frontColor` | ⚠️ |
+| `setBackgroundColor` | 动态设置窗口背景色。 | 直连 `wx.setBackgroundColor` | 直连 `my.setBackgroundColor` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `setBackgroundTextStyle` | 动态设置下拉背景字体样式。 | 直连 `wx.setBackgroundTextStyle` | 直连 `my.setBackgroundTextStyle` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getNetworkType` | 获取网络类型。 | 直连 `wx.getNetworkType` | 直连 `my.getNetworkType` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getBatteryInfo` | 异步获取电量信息。 | 直连 `wx.getBatteryInfo` | 直连 `my.getBatteryInfo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `getBatteryInfoSync` | 同步获取电量信息。 | 直连 `wx.getBatteryInfoSync` | 直连 `my.getBatteryInfoSync` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
