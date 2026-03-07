@@ -539,7 +539,7 @@ interface WeapiCrossPlatformMethodDocs {
    * | --- | --- | --- |
    * | 微信 | 直连 `wx.saveFileToDisk` | ⚠️ |
    * | 支付宝 | 直连 `my.saveFileToDisk` | ⚠️ |
-   * | 抖音 | 映射到 `tt.saveFile` | ⚠️ |
+   * | 抖音 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
    */
   saveFileToDisk: WeapiCrossPlatformAdapter['saveFileToDisk']
 

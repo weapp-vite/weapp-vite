@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：147，不支持：332
+总计：479，支持：146，不支持：333
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -396,7 +396,7 @@
 | `restartMiniProgram`                          | `reLaunch`                                    | ✅   | `mapped`      | ✅       | 映射到 `tt.reLaunch`                                                              |
 | `revokeBufferURL`                             | `revokeBufferURL`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `rewriteRoute`                                | `rewriteRoute`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
-| `saveFileToDisk`                              | `saveFile`                                    | ✅   | `mapped`      | ✅       | 映射到 `tt.saveFile`                                                              |
+| `saveFileToDisk`                              | `saveFileToDisk`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `native`      | ✅       | 直连 `tt.saveImageToPhotosAlbum`                                                  |
 | `saveVideoToPhotosAlbum`                      | `saveVideoToPhotosAlbum`                      | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `scanCode`                                    | `scanCode`                                    | ✅   | `mapped`      | ✅       | 直连 `tt.scanCode`                                                                |
