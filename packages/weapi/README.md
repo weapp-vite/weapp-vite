@@ -36,9 +36,9 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
 | 支付宝小程序 (`my`) | 219 | 219 | 0 | 479 | 45.72% | 45.72% |
-| 抖音小程序 (`tt`) | 159 | 159 | 0 | 479 | 33.19% | 33.19% |
-| 三端可调用完全对齐 (wx/my/tt) | 151 | - | - | 479 | 31.52% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 151 | - | 479 | - | 31.52% |
+| 抖音小程序 (`tt`) | 158 | 158 | 0 | 479 | 32.99% | 32.99% |
+| 三端可调用完全对齐 (wx/my/tt) | 150 | - | - | 479 | 31.32% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 150 | - | 479 | - | 31.32% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -59,7 +59,7 @@
 | `createRewardedVideoAd` | 创建激励视频广告实例。 | 直连 `wx.createRewardedVideoAd` | 映射到 `my.createRewardedAd`，并对齐入参 `adUnitId` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createLivePlayerContext` | 创建直播播放器上下文。 | 直连 `wx.createLivePlayerContext` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.createLivePlayerContext` | ⚠️ |
 | `createLivePusherContext` | 创建直播推流上下文。 | 直连 `wx.createLivePusherContext` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `getVideoInfo` | 获取视频详细信息。 | 直连 `wx.getVideoInfo` | 直连 `my.getVideoInfo` | 映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath` | ⚠️ |
+| `getVideoInfo` | 获取视频详细信息。 | 直连 `wx.getVideoInfo` | 直连 `my.getVideoInfo` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `saveFile` | 保存文件（跨端扩展，微信 typings 未声明同名 API）。 | 微信当前 typings 未声明同名 API，保留为跨端扩展能力 | 请求参数 `tempFilePath` ↔ `apFilePath`、结果映射为 `savedFilePath` | 直连 `tt.saveFile`，并在缺失时用 `filePath` 兜底 `savedFilePath` | ⚠️ |
 | `setClipboardData` | 设置剪贴板内容。 | 直连 `wx.setClipboardData` | 转调 `my.setClipboard` 并映射 `data` → `text` | 直连 `tt.setClipboardData` | ✅ |
 | `getClipboardData` | 获取剪贴板内容。 | 直连 `wx.getClipboardData` | 转调 `my.getClipboard` 并映射 `text` → `data` | 直连 `tt.getClipboardData` | ✅ |

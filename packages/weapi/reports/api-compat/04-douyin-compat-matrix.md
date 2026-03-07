@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：159，不支持：320
+总计：479，支持：158，不支持：321
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -166,7 +166,7 @@
 | `getUserCryptoManager`                        | `getUserCryptoManager`                        | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getUserInfo`                                 | `getUserInfo`                                 | ✅   | `mapped`      | ✅       | 直连 `tt.getUserInfo`                                                             |
 | `getUserProfile`                              | `getUserProfile`                              | ✅   | `mapped`      | ✅       | 直连 `tt.getUserProfile`                                                          |
-| `getVideoInfo`                                | `getFileInfo`                                 | ✅   | `mapped`      | ✅       | 映射到 `tt.getFileInfo`，并将 `src` 对齐为 `filePath`                             |
+| `getVideoInfo`                                | `getVideoInfo`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getWeRunData`                                | `getWeRunData`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getWifiList`                                 | `getWifiList`                                 | ✅   | `native`      | ✅       | 直连 `tt.getWifiList`                                                             |
 | `getWindowInfo`                               | `getSystemInfo`                               | ✅   | `mapped`      | ✅       | 映射到 `tt.getSystemInfo`，并提取窗口字段                                         |
