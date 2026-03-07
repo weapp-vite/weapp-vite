@@ -96,17 +96,17 @@ describe('weapi', () => {
       platform: 'my',
     })
 
-    expect(api.resolveTarget('addCard')).toMatchObject({
-      method: 'addCard',
+    expect(api.resolveTarget('canvasGetImageData')).toMatchObject({
+      method: 'canvasGetImageData',
       target: 'hideToast',
       supportLevel: 'fallback',
       supported: true,
       semanticAligned: false,
     })
-    expect(api.supports('addCard')).toBe(true)
-    expect(api.supports('addCard', { semantic: true })).toBe(false)
+    expect(api.supports('canvasGetImageData')).toBe(true)
+    expect(api.supports('canvasGetImageData', { semantic: true })).toBe(false)
 
-    await api.addCard()
+    await api.canvasGetImageData()
     expect(hideToast).toHaveBeenCalledWith(expect.any(Object))
   })
 
@@ -120,18 +120,18 @@ describe('weapi', () => {
       strictCompatibility: true,
     }) as Record<string, any>
 
-    expect(api.resolveTarget('addCard')).toMatchObject({
-      method: 'addCard',
-      target: 'addCard',
+    expect(api.resolveTarget('canvasGetImageData')).toMatchObject({
+      method: 'canvasGetImageData',
+      target: 'canvasGetImageData',
       mapped: false,
       supported: false,
       supportLevel: 'unsupported',
       semanticAligned: false,
     })
-    expect(api.supports('addCard')).toBe(false)
+    expect(api.supports('canvasGetImageData')).toBe(false)
 
-    await expect(api.addCard()).rejects.toMatchObject({
-      errMsg: 'my.addCard:fail method not supported',
+    await expect(api.canvasGetImageData()).rejects.toMatchObject({
+      errMsg: 'my.canvasGetImageData:fail method not supported',
     })
     expect(hideToast).not.toHaveBeenCalled()
   })
@@ -749,6 +749,38 @@ describe('weapi', () => {
     await expect(api.joinVoIPChat({} as any)).resolves.toMatchObject({
       errMsg: 'joinVoIPChat:ok',
     })
+  })
+
+  it.each([
+    'addCard',
+    'addFileToFavorites',
+    'addPaymentPassFinish',
+    'addPaymentPassGetCertificateData',
+    'addPhoneCalendar',
+    'addPhoneContact',
+    'addPhoneRepeatCalendar',
+    'addVideoToFavorites',
+    'authorizeForMiniProgram',
+    'authPrivateMessage',
+    'bindEmployeeRelation',
+    'canAddSecureElementPass',
+  ])('provides synthetic no-op mapping for %s on alipay and douyin', async (methodName) => {
+    for (const platform of ['alipay', 'tt'] as const) {
+      const api = createWeapi({
+        adapter: {},
+        platform,
+      }) as Record<string, any>
+      expect(api.resolveTarget(methodName)).toMatchObject({
+        method: methodName,
+        target: methodName,
+        supportLevel: 'mapped',
+        supported: true,
+        semanticAligned: true,
+      })
+      await expect(api[methodName]({})).resolves.toMatchObject({
+        errMsg: `${methodName}:ok`,
+      })
+    }
   })
 
   it.each([
@@ -1511,6 +1543,18 @@ describe('weapi', () => {
       { method: 'createAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
       { method: 'createWebAudioContext', my: 'createInnerAudioContext', tt: 'createInnerAudioContext' },
       { method: 'showActionSheet', my: 'showActionSheet', tt: 'showActionSheet' },
+      { method: 'addCard', my: 'addCard', tt: 'addCard' },
+      { method: 'addFileToFavorites', my: 'addFileToFavorites', tt: 'addFileToFavorites' },
+      { method: 'addPaymentPassFinish', my: 'addPaymentPassFinish', tt: 'addPaymentPassFinish' },
+      { method: 'addPaymentPassGetCertificateData', my: 'addPaymentPassGetCertificateData', tt: 'addPaymentPassGetCertificateData' },
+      { method: 'addPhoneCalendar', my: 'addPhoneCalendar', tt: 'addPhoneCalendar' },
+      { method: 'addPhoneContact', my: 'addPhoneContact', tt: 'addPhoneContact' },
+      { method: 'addPhoneRepeatCalendar', my: 'addPhoneRepeatCalendar', tt: 'addPhoneRepeatCalendar' },
+      { method: 'addVideoToFavorites', my: 'addVideoToFavorites', tt: 'addVideoToFavorites' },
+      { method: 'authorizeForMiniProgram', my: 'authorizeForMiniProgram', tt: 'authorizeForMiniProgram' },
+      { method: 'authPrivateMessage', my: 'authPrivateMessage', tt: 'authPrivateMessage' },
+      { method: 'bindEmployeeRelation', my: 'bindEmployeeRelation', tt: 'bindEmployeeRelation' },
+      { method: 'canAddSecureElementPass', my: 'canAddSecureElementPass', tt: 'canAddSecureElementPass' },
       { method: 'openCustomerServiceChat', my: 'openCustomerServiceChat', tt: 'openCustomerServiceChat' },
       { method: 'createVKSession', my: 'createVKSession', tt: 'createVKSession' },
       { method: 'compressVideo', my: 'compressVideo', tt: 'compressVideo' },
@@ -1614,6 +1658,18 @@ describe('weapi', () => {
       'showLoading',
       'showActionSheet',
       'showModal',
+      'addCard',
+      'addFileToFavorites',
+      'addPaymentPassFinish',
+      'addPaymentPassGetCertificateData',
+      'addPhoneCalendar',
+      'addPhoneContact',
+      'addPhoneRepeatCalendar',
+      'addVideoToFavorites',
+      'authorizeForMiniProgram',
+      'authPrivateMessage',
+      'bindEmployeeRelation',
+      'canAddSecureElementPass',
       'openCustomerServiceChat',
       'createVKSession',
       'compressVideo',

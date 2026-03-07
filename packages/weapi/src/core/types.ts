@@ -938,6 +938,138 @@ interface WeapiCrossPlatformMethodDocs {
    * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
    */
   cancelIdleCallback: WeapiCrossPlatformAdapter['cancelIdleCallback']
+
+  /**
+   * 添加微信卡券。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.addCard` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  addCard: WeapiCrossPlatformAdapter['addCard']
+
+  /**
+   * 添加文件到收藏。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.addFileToFavorites` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  addFileToFavorites: WeapiCrossPlatformAdapter['addFileToFavorites']
+
+  /**
+   * 添加支付 pass 完成回调。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.addPaymentPassFinish` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  addPaymentPassFinish: WeapiCrossPlatformAdapter['addPaymentPassFinish']
+
+  /**
+   * 添加支付 pass 证书数据回调。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.addPaymentPassGetCertificateData` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  addPaymentPassGetCertificateData: WeapiCrossPlatformAdapter['addPaymentPassGetCertificateData']
+
+  /**
+   * 添加日历事件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.addPhoneCalendar` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  addPhoneCalendar: WeapiCrossPlatformAdapter['addPhoneCalendar']
+
+  /**
+   * 添加手机联系人。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.addPhoneContact` | ⚠️ |
+   * | 支付宝 | 直连 `my.addPhoneContact` | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  addPhoneContact: WeapiCrossPlatformAdapter['addPhoneContact']
+
+  /**
+   * 添加重复日历事件。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.addPhoneRepeatCalendar` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  addPhoneRepeatCalendar: WeapiCrossPlatformAdapter['addPhoneRepeatCalendar']
+
+  /**
+   * 添加视频到收藏。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.addVideoToFavorites` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  addVideoToFavorites: WeapiCrossPlatformAdapter['addVideoToFavorites']
+
+  /**
+   * 获取小程序授权码。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.authorizeForMiniProgram` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  authorizeForMiniProgram: WeapiCrossPlatformAdapter['authorizeForMiniProgram']
+
+  /**
+   * 校验私密消息。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.authPrivateMessage` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  authPrivateMessage: WeapiCrossPlatformAdapter['authPrivateMessage']
+
+  /**
+   * 绑定员工关系。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.bindEmployeeRelation` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  bindEmployeeRelation: WeapiCrossPlatformAdapter['bindEmployeeRelation']
+
+  /**
+   * 检测是否可添加安全元素卡片。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.canAddSecureElementPass` | ⚠️ |
+   * | 支付宝 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   * | 抖音 | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+   */
+  canAddSecureElementPass: WeapiCrossPlatformAdapter['canAddSecureElementPass']
   // @generated weapi-method-docs:end
 }
 

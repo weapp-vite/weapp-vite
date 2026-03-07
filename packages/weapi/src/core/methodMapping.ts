@@ -83,6 +83,18 @@ const PLATFORM_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
 
 const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> = {
   my: new Set([
+    'addCard',
+    'addFileToFavorites',
+    'addPaymentPassFinish',
+    'addPaymentPassGetCertificateData',
+    'addPhoneCalendar',
+    'addPhoneContact',
+    'addPhoneRepeatCalendar',
+    'addVideoToFavorites',
+    'authorizeForMiniProgram',
+    'authPrivateMessage',
+    'bindEmployeeRelation',
+    'canAddSecureElementPass',
     'openCustomerServiceChat',
     'createVKSession',
     'compressVideo',
@@ -102,6 +114,18 @@ const SYNTHETIC_SUPPORT_METHOD_SET: Readonly<Record<'my' | 'tt', Set<string>>> =
     'offWindowResize',
   ]),
   tt: new Set([
+    'addCard',
+    'addFileToFavorites',
+    'addPaymentPassFinish',
+    'addPaymentPassGetCertificateData',
+    'addPhoneCalendar',
+    'addPhoneContact',
+    'addPhoneRepeatCalendar',
+    'addVideoToFavorites',
+    'authorizeForMiniProgram',
+    'authPrivateMessage',
+    'bindEmployeeRelation',
+    'canAddSecureElementPass',
     'showActionSheet',
     'openCustomerServiceChat',
     'createVKSession',
@@ -739,6 +763,102 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'cancelIdleCallback',
     description: '取消空闲回调。',
     wxStrategy: '直连 `wx.cancelIdleCallback`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'addCard',
+    description: '添加微信卡券。',
+    wxStrategy: '直连 `wx.addCard`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'addFileToFavorites',
+    description: '添加文件到收藏。',
+    wxStrategy: '直连 `wx.addFileToFavorites`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'addPaymentPassFinish',
+    description: '添加支付 pass 完成回调。',
+    wxStrategy: '直连 `wx.addPaymentPassFinish`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'addPaymentPassGetCertificateData',
+    description: '添加支付 pass 证书数据回调。',
+    wxStrategy: '直连 `wx.addPaymentPassGetCertificateData`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'addPhoneCalendar',
+    description: '添加日历事件。',
+    wxStrategy: '直连 `wx.addPhoneCalendar`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'addPhoneContact',
+    description: '添加手机联系人。',
+    wxStrategy: '直连 `wx.addPhoneContact`',
+    alipayStrategy: '直连 `my.addPhoneContact`',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'addPhoneRepeatCalendar',
+    description: '添加重复日历事件。',
+    wxStrategy: '直连 `wx.addPhoneRepeatCalendar`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'addVideoToFavorites',
+    description: '添加视频到收藏。',
+    wxStrategy: '直连 `wx.addVideoToFavorites`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'authorizeForMiniProgram',
+    description: '获取小程序授权码。',
+    wxStrategy: '直连 `wx.authorizeForMiniProgram`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'authPrivateMessage',
+    description: '校验私密消息。',
+    wxStrategy: '直连 `wx.authPrivateMessage`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'bindEmployeeRelation',
+    description: '绑定员工关系。',
+    wxStrategy: '直连 `wx.bindEmployeeRelation`',
+    alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
+    support: '⚠️',
+  },
+  {
+    method: 'canAddSecureElementPass',
+    description: '检测是否可添加安全元素卡片。',
+    wxStrategy: '直连 `wx.canAddSecureElementPass`',
     alipayStrategy: '使用内置 no-op shim（保持调用不抛错）',
     douyinStrategy: '使用内置 no-op shim（保持调用不抛错）',
     support: '⚠️',
@@ -1777,6 +1897,42 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     reportAnalytics: {
       target: 'reportAnalytics',
     },
+    addCard: {
+      target: 'addCard',
+    },
+    addFileToFavorites: {
+      target: 'addFileToFavorites',
+    },
+    addPaymentPassFinish: {
+      target: 'addPaymentPassFinish',
+    },
+    addPaymentPassGetCertificateData: {
+      target: 'addPaymentPassGetCertificateData',
+    },
+    addPhoneCalendar: {
+      target: 'addPhoneCalendar',
+    },
+    addPhoneContact: {
+      target: 'addPhoneContact',
+    },
+    addPhoneRepeatCalendar: {
+      target: 'addPhoneRepeatCalendar',
+    },
+    addVideoToFavorites: {
+      target: 'addVideoToFavorites',
+    },
+    authorizeForMiniProgram: {
+      target: 'authorizeForMiniProgram',
+    },
+    authPrivateMessage: {
+      target: 'authPrivateMessage',
+    },
+    bindEmployeeRelation: {
+      target: 'bindEmployeeRelation',
+    },
+    canAddSecureElementPass: {
+      target: 'canAddSecureElementPass',
+    },
     openCustomerServiceChat: {
       target: 'openCustomerServiceChat',
     },
@@ -2023,6 +2179,42 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     reportAnalytics: {
       target: 'reportAnalytics',
+    },
+    addCard: {
+      target: 'addCard',
+    },
+    addFileToFavorites: {
+      target: 'addFileToFavorites',
+    },
+    addPaymentPassFinish: {
+      target: 'addPaymentPassFinish',
+    },
+    addPaymentPassGetCertificateData: {
+      target: 'addPaymentPassGetCertificateData',
+    },
+    addPhoneCalendar: {
+      target: 'addPhoneCalendar',
+    },
+    addPhoneContact: {
+      target: 'addPhoneContact',
+    },
+    addPhoneRepeatCalendar: {
+      target: 'addPhoneRepeatCalendar',
+    },
+    addVideoToFavorites: {
+      target: 'addVideoToFavorites',
+    },
+    authorizeForMiniProgram: {
+      target: 'authorizeForMiniProgram',
+    },
+    authPrivateMessage: {
+      target: 'authPrivateMessage',
+    },
+    bindEmployeeRelation: {
+      target: 'bindEmployeeRelation',
+    },
+    canAddSecureElementPass: {
+      target: 'canAddSecureElementPass',
     },
     openCustomerServiceChat: {
       target: 'openCustomerServiceChat',

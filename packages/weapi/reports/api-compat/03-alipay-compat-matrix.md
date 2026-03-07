@@ -4,25 +4,25 @@
 
 | 微信 API                                      | 支付宝目标 API                       | 支持 | 支持级别   | 语义对齐 | 策略                                                                   |
 | --------------------------------------------- | ------------------------------------ | ---- | ---------- | -------- | ---------------------------------------------------------------------- |
-| `addCard`                                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `addFileToFavorites`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `addPaymentPassFinish`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `addPaymentPassGetCertificateData`            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `addPhoneCalendar`                            | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `addPhoneContact`                             | `addPhoneContact`                    | ✅   | `native`   | ✅       | 直连 `my.addPhoneContact`                                              |
-| `addPhoneRepeatCalendar`                      | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `addVideoToFavorites`                         | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `addCard`                                     | `addCard`                            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `addFileToFavorites`                          | `addFileToFavorites`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `addPaymentPassFinish`                        | `addPaymentPassFinish`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `addPaymentPassGetCertificateData`            | `addPaymentPassGetCertificateData`   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `addPhoneCalendar`                            | `addPhoneCalendar`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `addPhoneContact`                             | `addPhoneContact`                    | ✅   | `mapped`   | ✅       | 直连 `my.addPhoneContact`                                              |
+| `addPhoneRepeatCalendar`                      | `addPhoneRepeatCalendar`             | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `addVideoToFavorites`                         | `addVideoToFavorites`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `arrayBufferToBase64`                         | `arrayBufferToBase64`                | ✅   | `native`   | ✅       | 直连 `my.arrayBufferToBase64`                                          |
 | `authorize`                                   | `getAuthCode`                        | ✅   | `mapped`   | ✅       | 映射到 `my.getAuthCode`，并对齐 `scope` -> `scopes` 参数               |
-| `authorizeForMiniProgram`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `authPrivateMessage`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `authorizeForMiniProgram`                     | `authorizeForMiniProgram`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `authPrivateMessage`                          | `authPrivateMessage`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `base64ToArrayBuffer`                         | `base64ToArrayBuffer`                | ✅   | `native`   | ✅       | 直连 `my.base64ToArrayBuffer`                                          |
 | `batchGetStorage`                             | `batchGetStorage`                    | ✅   | `mapped`   | ✅       | 使用内置 shim，逐项转调 `my.getStorage`                                |
 | `batchGetStorageSync`                         | `batchGetStorageSync`                | ✅   | `mapped`   | ✅       | 使用内置 shim，逐项转调 `my.getStorageSync`                            |
 | `batchSetStorage`                             | `batchSetStorage`                    | ✅   | `mapped`   | ✅       | 使用内置 shim，逐项转调 `my.setStorage`                                |
 | `batchSetStorageSync`                         | `batchSetStorageSync`                | ✅   | `mapped`   | ✅       | 使用内置 shim，逐项转调 `my.setStorageSync`                            |
-| `bindEmployeeRelation`                        | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
-| `canAddSecureElementPass`                     | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
+| `bindEmployeeRelation`                        | `bindEmployeeRelation`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `canAddSecureElementPass`                     | `canAddSecureElementPass`            | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `cancelIdleCallback`                          | `cancelIdleCallback`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `canIUse`                                     | `canIUse`                            | ✅   | `native`   | ✅       | 直连 `my.canIUse`                                                      |
 | `canvasGetImageData`                          | `hideToast`                          | ✅   | `fallback` | ❌       | 回退映射到 `my.hideToast`（通用兜底）                                  |
