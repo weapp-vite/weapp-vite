@@ -7,8 +7,10 @@ import type {
   WeapiResolvedTarget,
 } from './types'
 import { detectGlobalAdapter } from './adapter'
+import { callMissingApi, callWithError, callWithPromise } from './callBridge'
 import { resolveMethodMappingWithMeta } from './methodMapping'
-import { createNotSupportedError, hasCallbacks, isPlainObject, shouldSkipPromise } from './utils'
+import { createNetworkRequestPolicy } from './networkRequestPolicy'
+import { hasCallbacks, isPlainObject, shouldSkipPromise } from './utils'
 
 const INTERNAL_KEYS = new Set<PropertyKey>([
   'setAdapter',
@@ -35,61 +37,6 @@ function normalizePlatformName(value?: string) {
   return PLATFORM_ALIASES[normalized] ?? normalized
 }
 
-function resolveOptionsArg(args: unknown[]) {
-  const nextArgs = args.slice()
-  const lastArg = nextArgs.length > 0 ? nextArgs[nextArgs.length - 1] : undefined
-  if (isPlainObject(lastArg)) {
-    const options = { ...lastArg }
-    nextArgs[nextArgs.length - 1] = options
-    return { args: nextArgs, options }
-  }
-  const options: Record<string, any> = {}
-  nextArgs.push(options)
-  return { args: nextArgs, options }
-}
-
-function callWithPromise(
-  context: WeapiAdapter,
-  method: (...args: any[]) => any,
-  args: unknown[],
-  mapResult?: (result: any, args?: unknown[]) => any,
-) {
-  return new Promise((resolve, reject) => {
-    const { args: nextArgs, options } = resolveOptionsArg(args)
-    let settled = false
-    options.success = (res: any) => {
-      settled = true
-      resolve(mapResult ? mapResult(res, args) : res)
-    }
-    options.fail = (err: any) => {
-      settled = true
-      reject(err)
-    }
-    options.complete = (res: any) => {
-      if (!settled) {
-        resolve(mapResult ? mapResult(res, args) : res)
-      }
-    }
-    try {
-      method.apply(context, nextArgs)
-    }
-    catch (err) {
-      reject(err)
-    }
-  })
-}
-
-function callMissingApi(methodName: string, platform: string | undefined, args: unknown[]) {
-  const lastArg = args.length > 0 ? args[args.length - 1] : undefined
-  const error = createNotSupportedError(methodName, platform)
-  if (hasCallbacks(lastArg)) {
-    lastArg.fail?.(error)
-    lastArg.complete?.(error)
-    return undefined
-  }
-  return Promise.reject(error)
-}
-
 /**
  * @description 创建跨平台 API 实例
  */
@@ -100,6 +47,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
   let platformName: string | undefined = normalizePlatformName(options.platform)
   const allowFallback = false
   const cache = new Map<PropertyKey, any>()
+  const networkPolicy = createNetworkRequestPolicy(() => platformName)
   const resolveAdapter = () => {
     if (adapter) {
       return adapter
@@ -266,10 +214,48 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
               originalComplete?.(mappingRule.mapResult!(res, runtimeArgs))
             }
           }
-          const result = runtimeMethod.apply(runtimeAdapter, runtimeArgs)
-          return mappingRule?.mapResult ? mappingRule.mapResult(result, runtimeArgs) : result
+          networkPolicy.bindAdapter(runtimeAdapter as WeapiAdapter)
+          const networkCall = networkPolicy.prepareCall(prop as string, runtimeArgs)
+          if (networkCall?.blockedError) {
+            return callWithError(networkCall.blockedError, runtimeArgs)
+          }
+          const nextRuntimeArgs = networkCall?.args ?? runtimeArgs
+          try {
+            const result = runtimeMethod.apply(runtimeAdapter, nextRuntimeArgs)
+            networkCall?.onInvokeResult(result)
+            return mappingRule?.mapResult ? mappingRule.mapResult(result, nextRuntimeArgs) : result
+          }
+          catch (error) {
+            networkCall?.onInvokeError()
+            throw error
+          }
         }
-        return callWithPromise(runtimeAdapter as WeapiAdapter, runtimeMethod, runtimeArgs, mappingRule?.mapResult)
+        let networkCall: ReturnType<typeof networkPolicy.prepareCall> | undefined
+        return callWithPromise(
+          runtimeAdapter as WeapiAdapter,
+          runtimeMethod,
+          runtimeArgs,
+          mappingRule?.mapResult,
+          {
+            onOptions: (_options, nextArgs) => {
+              networkPolicy.bindAdapter(runtimeAdapter as WeapiAdapter)
+              networkCall = networkPolicy.prepareCall(prop as string, nextArgs)
+              if (networkCall?.blockedError) {
+                throw networkCall.blockedError
+              }
+              if (!networkCall) {
+                return
+              }
+              nextArgs.splice(0, nextArgs.length, ...(networkCall.args as unknown[]))
+            },
+            onInvokeResult: (result) => {
+              networkCall?.onInvokeResult(result)
+            },
+            onInvokeError: () => {
+              networkCall?.onInvokeError()
+            },
+          },
+        )
       }
       cache.set(prop, wrapped)
       return wrapped
