@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 241 | 238 | 479 | 100.00% | 50.31% |
-| 抖音小程序 (`tt`) | 479 | 182 | 297 | 479 | 100.00% | 38.00% |
+| 支付宝小程序 (`my`) | 479 | 252 | 227 | 479 | 100.00% | 52.61% |
+| 抖音小程序 (`tt`) | 479 | 194 | 285 | 479 | 100.00% | 40.50% |
 | 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 180 | - | 479 | - | 37.58% |
+| 三端语义完全对齐 (wx/my/tt) | - | 192 | - | 479 | - | 40.08% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -120,6 +120,18 @@
 | `createCameraContext` | 创建相机上下文对象。 | 直连 `wx.createCameraContext` | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） | 使用内置 CameraContext shim（对齐 `takePhoto/startRecord/stopRecord`） | ⚠️ |
 | `offMemoryWarning` | 取消内存不足告警监听。 | 直连 `wx.offMemoryWarning` | 直连 `my.offMemoryWarning` | 使用内置 shim，配合 `tt.onMemoryWarning` 实现监听解绑 | ⚠️ |
 | `cancelIdleCallback` | 取消空闲回调。 | 直连 `wx.cancelIdleCallback` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `addCard` | 添加微信卡券。 | 直连 `wx.addCard` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `addFileToFavorites` | 添加文件到收藏。 | 直连 `wx.addFileToFavorites` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `addPaymentPassFinish` | 添加支付 pass 完成回调。 | 直连 `wx.addPaymentPassFinish` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `addPaymentPassGetCertificateData` | 添加支付 pass 证书数据回调。 | 直连 `wx.addPaymentPassGetCertificateData` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `addPhoneCalendar` | 添加日历事件。 | 直连 `wx.addPhoneCalendar` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `addPhoneContact` | 添加手机联系人。 | 直连 `wx.addPhoneContact` | 直连 `my.addPhoneContact` | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `addPhoneRepeatCalendar` | 添加重复日历事件。 | 直连 `wx.addPhoneRepeatCalendar` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `addVideoToFavorites` | 添加视频到收藏。 | 直连 `wx.addVideoToFavorites` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `authorizeForMiniProgram` | 获取小程序授权码。 | 直连 `wx.authorizeForMiniProgram` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `authPrivateMessage` | 校验私密消息。 | 直连 `wx.authPrivateMessage` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `bindEmployeeRelation` | 绑定员工关系。 | 直连 `wx.bindEmployeeRelation` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `canAddSecureElementPass` | 检测是否可添加安全元素卡片。 | 直连 `wx.canAddSecureElementPass` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 

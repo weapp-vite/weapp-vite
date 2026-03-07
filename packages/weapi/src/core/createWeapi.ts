@@ -141,6 +141,20 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
     }),
     onCameraFrame: (_callback: (...args: any[]) => void) => {},
   }
+  const syntheticNoopMethodSet = new Set([
+    'addCard',
+    'addFileToFavorites',
+    'addPaymentPassFinish',
+    'addPaymentPassGetCertificateData',
+    'addPhoneCalendar',
+    'addPhoneContact',
+    'addPhoneRepeatCalendar',
+    'addVideoToFavorites',
+    'authorizeForMiniProgram',
+    'authPrivateMessage',
+    'bindEmployeeRelation',
+    'canAddSecureElementPass',
+  ])
 
   const mapSyntheticActionSheetResult = (result: any, itemList: readonly string[]) => {
     const hasSelection = itemList.length > 0
@@ -387,6 +401,14 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
       return {
         handled: true as const,
         result: undefined,
+      }
+    }
+    if (syntheticNoopMethodSet.has(methodName)) {
+      return {
+        handled: true as const,
+        result: invokeSyntheticAsyncSuccess({
+          errMsg: `${methodName}:ok`,
+        }),
       }
     }
     if (methodName === 'reportAnalytics') {
