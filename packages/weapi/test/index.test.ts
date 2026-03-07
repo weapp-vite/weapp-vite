@@ -731,7 +731,6 @@ describe('weapi', () => {
 
   it.each([
     { platform: 'alipay', normalizedPlatform: 'my' },
-    { platform: 'tt', normalizedPlatform: 'tt' },
   ])('treats getSystemInfoAsync as unsupported for $platform without strict-equivalent api', async ({ platform, normalizedPlatform }) => {
     const getSystemInfo = vi.fn()
     const api = createWeapi({
@@ -752,6 +751,36 @@ describe('weapi', () => {
       errMsg: `${normalizedPlatform}.getSystemInfoAsync:fail method not supported`,
     })
     expect(getSystemInfo).not.toHaveBeenCalled()
+  })
+
+  it('maps getSystemInfoAsync to strict-equivalent getSystemInfo for douyin', async () => {
+    const getSystemInfo = vi.fn((options: any) => {
+      options.success?.({
+        platform: 'android',
+        brand: 'douyin',
+      })
+    })
+    const api = createWeapi({
+      adapter: {
+        getSystemInfo,
+      },
+      platform: 'tt',
+    })
+
+    expect(api.resolveTarget('getSystemInfoAsync')).toMatchObject({
+      method: 'getSystemInfoAsync',
+      target: 'getSystemInfo',
+      supportLevel: 'mapped',
+      supported: true,
+      semanticAligned: true,
+    })
+
+    const result = await api.getSystemInfoAsync()
+    expect(getSystemInfo).toHaveBeenCalledTimes(1)
+    expect(result).toMatchObject({
+      platform: 'android',
+      brand: 'douyin',
+    })
   })
 
   it('treats hideHomeButton as unsupported for alipay without strict-equivalent api', async () => {
@@ -2335,7 +2364,7 @@ describe('weapi', () => {
       { method: 'chooseAddress', my: 'chooseAddress', tt: 'chooseAddress', mySupported: false },
       { method: 'createAudioContext', my: 'createAudioContext', tt: 'createAudioContext', mySupported: false, ttSupported: false },
       { method: 'createWebAudioContext', my: 'createWebAudioContext', tt: 'createWebAudioContext', mySupported: false, ttSupported: false },
-      { method: 'getSystemInfoAsync', my: 'getSystemInfoAsync', tt: 'getSystemInfoAsync', mySupported: false, ttSupported: false },
+      { method: 'getSystemInfoAsync', my: 'getSystemInfoAsync', tt: 'getSystemInfo', mySupported: false },
       { method: 'openAppAuthorizeSetting', my: 'openAppAuthorizeSetting', tt: 'openAppAuthorizeSetting', mySupported: false, ttSupported: false },
       { method: 'pluginLogin', my: 'pluginLogin', tt: 'pluginLogin', mySupported: false, ttSupported: false },
       { method: 'login', my: 'login', tt: 'login', mySupported: false },
