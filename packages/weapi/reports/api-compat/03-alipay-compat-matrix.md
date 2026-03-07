@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：196，不支持：283
+总计：479，支持：195，不支持：284
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -399,7 +399,7 @@
 | `saveFileToDisk`                              | `saveFileToDisk`                              | ✅   | `mapped`      | ✅       | 直连 `my.saveFileToDisk`                                                          |
 | `saveImageToPhotosAlbum`                      | `saveImageToPhotosAlbum`                      | ✅   | `native`      | ✅       | 直连 `my.saveImageToPhotosAlbum`                                                  |
 | `saveVideoToPhotosAlbum`                      | `saveVideoToPhotosAlbum`                      | ✅   | `mapped`      | ✅       | 直连 `my.saveVideoToPhotosAlbum`                                                  |
-| `scanCode`                                    | `scan`                                        | ✅   | `mapped`      | ✅       | 映射到 `my.scan`                                                                  |
+| `scanCode`                                    | `scanCode`                                    | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `seekBackgroundAudio`                         | `seekBackgroundAudio`                         | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `selectGroupMembers`                          | `selectGroupMembers`                          | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `sendHCEMessage`                              | `sendHCEMessage`                              | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |

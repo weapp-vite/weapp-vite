@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 196 | 196 | 0 | 479 | 40.92% | 40.92% |
+| 支付宝小程序 (`my`) | 195 | 195 | 0 | 479 | 40.71% | 40.71% |
 | 抖音小程序 (`tt`) | 131 | 131 | 0 | 479 | 27.35% | 27.35% |
-| 三端可调用完全对齐 (wx/my/tt) | 116 | - | - | 479 | 24.22% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 116 | - | 479 | - | 24.22% |
+| 三端可调用完全对齐 (wx/my/tt) | 115 | - | - | 479 | 24.01% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 115 | - | 479 | - | 24.01% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -75,7 +75,7 @@
 | `requestSubscribeDeviceMessage` | 请求订阅设备消息。 | 直连 `wx.requestSubscribeDeviceMessage` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `requestSubscribeEmployeeMessage` | 请求订阅员工消息。 | 直连 `wx.requestSubscribeEmployeeMessage` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `restartMiniProgram` | 重启小程序。 | 直连 `wx.restartMiniProgram` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-| `scanCode` | 扫码。 | 直连 `wx.scanCode` | 映射到 `my.scan` | 直连 `tt.scanCode` | ✅ |
+| `scanCode` | 扫码。 | 直连 `wx.scanCode` | 无同等 API，调用时按 unsupported 报错 | 直连 `tt.scanCode` | ⚠️ |
 | `requestPayment` | 发起支付。 | 直连 `wx.requestPayment` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `requestOrderPayment` | 发起订单支付。 | 直连 `wx.requestOrderPayment` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `requestPluginPayment` | 发起插件支付。 | 直连 `wx.requestPluginPayment` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |

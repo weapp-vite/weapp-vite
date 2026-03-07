@@ -345,9 +345,9 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     method: 'scanCode',
     description: '扫码。',
     wxStrategy: '直连 `wx.scanCode`',
-    alipayStrategy: '映射到 `my.scan`',
+    alipayStrategy: '无同等 API，调用时按 unsupported 报错',
     douyinStrategy: '直连 `tt.scanCode`',
-    support: '✅',
+    support: '⚠️',
   },
   {
     method: 'requestPayment',
@@ -2389,7 +2389,7 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
       target: 'restartMiniProgram',
     },
     scanCode: {
-      target: 'scan',
+      target: 'scanCode',
     },
     requestPayment: {
       target: 'requestPayment',

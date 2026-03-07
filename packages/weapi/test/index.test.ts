@@ -621,6 +621,28 @@ describe('weapi', () => {
     expect(hideBackHome).not.toHaveBeenCalled()
   })
 
+  it('treats scanCode as unsupported for alipay without strict-equivalent api', async () => {
+    const scan = vi.fn()
+    const api = createWeapi({
+      adapter: {
+        scan,
+      },
+      platform: 'alipay',
+    }) as Record<string, any>
+
+    expect(api.resolveTarget('scanCode')).toMatchObject({
+      method: 'scanCode',
+      target: 'scanCode',
+      supportLevel: 'unsupported',
+      supported: false,
+      semanticAligned: false,
+    })
+    await expect(api.scanCode()).rejects.toMatchObject({
+      errMsg: 'my.scanCode:fail method not supported',
+    })
+    expect(scan).not.toHaveBeenCalled()
+  })
+
   it('treats requestPayment family as unsupported for alipay', async () => {
     const tradePay = vi.fn()
     const api = createWeapi({
@@ -2096,7 +2118,7 @@ describe('weapi', () => {
       { method: 'requestSubscribeDeviceMessage', my: 'requestSubscribeDeviceMessage', tt: 'requestSubscribeDeviceMessage', mySupported: false, ttSupported: false },
       { method: 'requestSubscribeEmployeeMessage', my: 'requestSubscribeEmployeeMessage', tt: 'requestSubscribeEmployeeMessage', mySupported: false, ttSupported: false },
       { method: 'restartMiniProgram', my: 'restartMiniProgram', tt: 'restartMiniProgram', mySupported: false, ttSupported: false },
-      { method: 'scanCode', my: 'scan', tt: 'scanCode' },
+      { method: 'scanCode', my: 'scanCode', tt: 'scanCode', mySupported: false },
       { method: 'requestPayment', my: 'requestPayment', tt: 'requestPayment', mySupported: false, ttSupported: false },
       { method: 'requestOrderPayment', my: 'requestOrderPayment', tt: 'requestOrderPayment', mySupported: false, ttSupported: false },
       { method: 'requestPluginPayment', my: 'requestPluginPayment', tt: 'requestPluginPayment', mySupported: false, ttSupported: false },
