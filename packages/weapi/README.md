@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 479 | 393 | 86 | 479 | 100.00% | 82.05% |
-| 抖音小程序 (`tt`) | 479 | 335 | 144 | 479 | 100.00% | 69.94% |
+| 支付宝小程序 (`my`) | 479 | 413 | 66 | 479 | 100.00% | 86.22% |
+| 抖音小程序 (`tt`) | 479 | 355 | 124 | 479 | 100.00% | 74.11% |
 | 三端可调用完全对齐 (wx/my/tt) | 479 | - | - | 479 | 100.00% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 333 | - | 479 | - | 69.52% |
+| 三端语义完全对齐 (wx/my/tt) | - | 353 | - | 479 | - | 73.70% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -273,6 +273,26 @@
 | `seekBackgroundAudio` | 调整后台音频播放进度。 | 直连 `wx.seekBackgroundAudio` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `setEnableDebug` | 设置调试开关。 | 直连 `wx.setEnableDebug` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
 | `setInnerAudioOption` | 设置内部音频选项。 | 直连 `wx.setInnerAudioOption` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `onAfterPageLoad` | 监听页面加载完成。 | 直连 `wx.onAfterPageLoad` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onAfterPageUnload` | 监听页面卸载完成。 | 直连 `wx.onAfterPageUnload` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onApiCategoryChange` | 监听 API 分类变更。 | 直连 `wx.onApiCategoryChange` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onAppRoute` | 监听路由开始。 | 直连 `wx.onAppRoute` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onAppRouteDone` | 监听路由结束。 | 直连 `wx.onAppRouteDone` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onBackgroundAudioPause` | 监听后台音频暂停。 | 直连 `wx.onBackgroundAudioPause` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onBackgroundAudioPlay` | 监听后台音频播放。 | 直连 `wx.onBackgroundAudioPlay` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onBackgroundAudioStop` | 监听后台音频停止。 | 直连 `wx.onBackgroundAudioStop` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onBackgroundFetchData` | 监听后台拉取数据。 | 直连 `wx.onBackgroundFetchData` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `onBatteryInfoChange` | 监听电池信息变化。 | 直连 `wx.onBatteryInfoChange` | 映射到 `my.onAppShow`（近似事件回调） | 映射到 `tt.onAppShow`（近似事件回调） | ⚠️ |
+| `offAfterPageLoad` | 取消监听页面加载完成。 | 直连 `wx.offAfterPageLoad` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offAfterPageUnload` | 取消监听页面卸载完成。 | 直连 `wx.offAfterPageUnload` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offApiCategoryChange` | 取消监听 API 分类变更。 | 直连 `wx.offApiCategoryChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offAppRoute` | 取消监听路由开始。 | 直连 `wx.offAppRoute` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offAppRouteDone` | 取消监听路由结束。 | 直连 `wx.offAppRouteDone` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offBatteryInfoChange` | 取消监听电池信息变化。 | 直连 `wx.offBatteryInfoChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offBeforeAppRoute` | 取消监听路由前事件。 | 直连 `wx.offBeforeAppRoute` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offBeforePageLoad` | 取消监听页面加载前事件。 | 直连 `wx.offBeforePageLoad` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offBeforePageUnload` | 取消监听页面卸载前事件。 | 直连 `wx.offBeforePageUnload` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
+| `offBLEConnectionStateChange` | 取消监听 BLE 连接状态变化。 | 直连 `wx.offBLEConnectionStateChange` | 映射到 `my.offAppShow`（近似事件回调解绑） | 映射到 `tt.offAppShow`（近似事件回调解绑） | ⚠️ |
 <!-- @generated weapi-support-matrix:end -->
 <!-- prettier-ignore-end -->
 

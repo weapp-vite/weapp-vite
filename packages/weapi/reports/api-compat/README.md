@@ -15,23 +15,23 @@
 | 支付宝独有方法数（不在 wx 命名） |   93 |
 | 抖音独有方法数（不在 wx 命名）   |   36 |
 | 支付宝可按微信命名调用的方法数   |  479 |
-| 支付宝语义对齐方法数             |  393 |
-| 支付宝 fallback 方法数           |   86 |
+| 支付宝语义对齐方法数             |  413 |
+| 支付宝 fallback 方法数           |   66 |
 | 抖音可按微信命名调用的方法数     |  479 |
-| 抖音语义对齐方法数               |  335 |
-| 抖音 fallback 方法数             |  144 |
+| 抖音语义对齐方法数               |  355 |
+| 抖音 fallback 方法数             |  124 |
 | 三端可调用完全对齐方法数         |  479 |
-| 三端语义完全对齐方法数           |  333 |
+| 三端语义完全对齐方法数           |  353 |
 
 ## 覆盖率
 
 | 平台                          | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | ----------------------------- | ------------: | --------------: | --------------: | -------: | -----------: | -------------: |
 | 微信小程序 (`wx`)             |           479 |             479 |               0 |      479 |      100.00% |        100.00% |
-| 支付宝小程序 (`my`)           |           479 |             393 |              86 |      479 |      100.00% |         82.05% |
-| 抖音小程序 (`tt`)             |           479 |             335 |             144 |      479 |      100.00% |         69.94% |
+| 支付宝小程序 (`my`)           |           479 |             413 |              66 |      479 |      100.00% |         86.22% |
+| 抖音小程序 (`tt`)             |           479 |             355 |             124 |      479 |      100.00% |         74.11% |
 | 三端可调用完全对齐 (wx/my/tt) |           479 |               - |               - |      479 |      100.00% |              - |
-| 三端语义完全对齐 (wx/my/tt)   |             - |             333 |               - |      479 |            - |         69.52% |
+| 三端语义完全对齐 (wx/my/tt)   |             - |             353 |               - |      479 |            - |         73.70% |
 
 ## 核心差异映射（手工规则）
 
@@ -264,6 +264,26 @@
 | `seekBackgroundAudio`               | 直连 `wx.seekBackgroundAudio`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `setEnableDebug`                    | 直连 `wx.setEnableDebug`                            | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `setInnerAudioOption`               | 直连 `wx.setInnerAudioOption`                       | 使用内置 no-op shim（保持调用不抛错）                                  | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `onAfterPageLoad`                   | 直连 `wx.onAfterPageLoad`                           | 映射到 `my.onAppShow`（近似事件回调）                                  | 映射到 `tt.onAppShow`（近似事件回调）                                  |
+| `onAfterPageUnload`                 | 直连 `wx.onAfterPageUnload`                         | 映射到 `my.onAppShow`（近似事件回调）                                  | 映射到 `tt.onAppShow`（近似事件回调）                                  |
+| `onApiCategoryChange`               | 直连 `wx.onApiCategoryChange`                       | 映射到 `my.onAppShow`（近似事件回调）                                  | 映射到 `tt.onAppShow`（近似事件回调）                                  |
+| `onAppRoute`                        | 直连 `wx.onAppRoute`                                | 映射到 `my.onAppShow`（近似事件回调）                                  | 映射到 `tt.onAppShow`（近似事件回调）                                  |
+| `onAppRouteDone`                    | 直连 `wx.onAppRouteDone`                            | 映射到 `my.onAppShow`（近似事件回调）                                  | 映射到 `tt.onAppShow`（近似事件回调）                                  |
+| `onBackgroundAudioPause`            | 直连 `wx.onBackgroundAudioPause`                    | 映射到 `my.onAppShow`（近似事件回调）                                  | 映射到 `tt.onAppShow`（近似事件回调）                                  |
+| `onBackgroundAudioPlay`             | 直连 `wx.onBackgroundAudioPlay`                     | 映射到 `my.onAppShow`（近似事件回调）                                  | 映射到 `tt.onAppShow`（近似事件回调）                                  |
+| `onBackgroundAudioStop`             | 直连 `wx.onBackgroundAudioStop`                     | 映射到 `my.onAppShow`（近似事件回调）                                  | 映射到 `tt.onAppShow`（近似事件回调）                                  |
+| `onBackgroundFetchData`             | 直连 `wx.onBackgroundFetchData`                     | 映射到 `my.onAppShow`（近似事件回调）                                  | 映射到 `tt.onAppShow`（近似事件回调）                                  |
+| `onBatteryInfoChange`               | 直连 `wx.onBatteryInfoChange`                       | 映射到 `my.onAppShow`（近似事件回调）                                  | 映射到 `tt.onAppShow`（近似事件回调）                                  |
+| `offAfterPageLoad`                  | 直连 `wx.offAfterPageLoad`                          | 映射到 `my.offAppShow`（近似事件回调解绑）                             | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
+| `offAfterPageUnload`                | 直连 `wx.offAfterPageUnload`                        | 映射到 `my.offAppShow`（近似事件回调解绑）                             | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
+| `offApiCategoryChange`              | 直连 `wx.offApiCategoryChange`                      | 映射到 `my.offAppShow`（近似事件回调解绑）                             | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
+| `offAppRoute`                       | 直连 `wx.offAppRoute`                               | 映射到 `my.offAppShow`（近似事件回调解绑）                             | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
+| `offAppRouteDone`                   | 直连 `wx.offAppRouteDone`                           | 映射到 `my.offAppShow`（近似事件回调解绑）                             | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
+| `offBatteryInfoChange`              | 直连 `wx.offBatteryInfoChange`                      | 映射到 `my.offAppShow`（近似事件回调解绑）                             | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
+| `offBeforeAppRoute`                 | 直连 `wx.offBeforeAppRoute`                         | 映射到 `my.offAppShow`（近似事件回调解绑）                             | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
+| `offBeforePageLoad`                 | 直连 `wx.offBeforePageLoad`                         | 映射到 `my.offAppShow`（近似事件回调解绑）                             | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
+| `offBeforePageUnload`               | 直连 `wx.offBeforePageUnload`                       | 映射到 `my.offAppShow`（近似事件回调解绑）                             | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
+| `offBLEConnectionStateChange`       | 直连 `wx.offBLEConnectionStateChange`               | 映射到 `my.offAppShow`（近似事件回调解绑）                             | 映射到 `tt.offAppShow`（近似事件回调解绑）                             |
 
 ## 已执行验证
 
