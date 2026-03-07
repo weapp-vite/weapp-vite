@@ -1,3 +1,5 @@
+import type { WeapiCrossPlatformAdapter } from '../types'
+
 export interface WeapiCrossPlatformMethodDocsChoosePoiToShareFileToGroup {
   /**
    * 选择兴趣点 POI。

@@ -1,3 +1,5 @@
+import type { WeapiCrossPlatformAdapter } from '../types'
+
 export interface WeapiCrossPlatformMethodDocsShowToastToOpenAppAuthorizeSetting {
   /**
    * 显示消息提示框。

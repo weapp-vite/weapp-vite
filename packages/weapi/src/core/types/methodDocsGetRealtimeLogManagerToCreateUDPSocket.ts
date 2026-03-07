@@ -1,3 +1,5 @@
+import type { WeapiCrossPlatformAdapter } from '../types'
+
 export interface WeapiCrossPlatformMethodDocsGetRealtimeLogManagerToCreateUDPSocket {
   /**
    * 获取实时日志管理器。

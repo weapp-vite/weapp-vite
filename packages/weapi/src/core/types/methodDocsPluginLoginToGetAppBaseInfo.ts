@@ -1,3 +1,5 @@
+import type { WeapiCrossPlatformAdapter } from '../types'
+
 export interface WeapiCrossPlatformMethodDocsPluginLoginToGetAppBaseInfo {
   /**
    * 插件登录。

@@ -1,3 +1,5 @@
+import type { WeapiCrossPlatformAdapter } from '../types'
+
 export interface WeapiCrossPlatformMethodDocsSendHCEMessageToGetRandomValues {
   /**
    * 发送 HCE 消息。

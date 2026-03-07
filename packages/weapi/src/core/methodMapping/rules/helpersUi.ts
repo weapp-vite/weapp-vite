@@ -1,4 +1,4 @@
-import { createNotSupportedError, isPlainObject } from '../../utils.ts'
+import { createNotSupportedError, isPlainObject } from '../../utils'
 
 function mapToastType(type: unknown) {
   if (type === 'error') {

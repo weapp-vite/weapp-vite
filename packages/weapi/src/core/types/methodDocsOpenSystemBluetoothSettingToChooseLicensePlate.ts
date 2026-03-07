@@ -1,3 +1,5 @@
+import type { WeapiCrossPlatformAdapter } from '../types'
+
 export interface WeapiCrossPlatformMethodDocsOpenSystemBluetoothSettingToChooseLicensePlate {
   /**
    * 打开系统蓝牙设置页面。

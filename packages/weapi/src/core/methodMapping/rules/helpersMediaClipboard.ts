@@ -1,4 +1,4 @@
-import { isPlainObject } from '../../utils.ts'
+import { isPlainObject } from '../../utils'
 import { mapChooseImageResult } from './helpersUi'
 
 export function mapSetClipboardArgs(args: unknown[]) {

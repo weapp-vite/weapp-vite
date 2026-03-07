@@ -1,4 +1,4 @@
-import { createNotSupportedError, isPlainObject } from '../../utils.ts'
+import { createNotSupportedError, isPlainObject } from '../../utils'
 
 const PLATFORM_ALIASES: Readonly<Record<string, string>> = {
   alipay: 'my',

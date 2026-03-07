@@ -1,3 +1,5 @@
+import type { WeapiCrossPlatformAdapter } from '../types'
+
 export interface WeapiCrossPlatformMethodDocsSaveVideoToPhotosAlbumToCanAddSecureElementPass {
   /**
    * 保存视频到系统相册。
