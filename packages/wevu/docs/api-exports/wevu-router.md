@@ -3,8 +3,8 @@
 - 子路径: `./router`
 - 类型入口: `./dist/router.d.mts`
 - 运行时入口: `./dist/router.mjs`
-- 类型导出总数: **50**
-- 仅类型导出数（推断）: **40**
+- 类型导出总数: **51**
+- 仅类型导出数（推断）: **41**
 - 运行时同名导出数: **10**
 
 ## 心智对齐补充
@@ -44,31 +44,32 @@
 23. `RouteParamValue`
 24. `RouteParamValueRaw`
 25. `RouteParams`
-26. `RouteParamsRaw`
-27. `RouteQueryParser`
-28. `RouteQueryStringifier`
-29. `RouteRecordMatched`
-30. `RouteRecordRaw`
-31. `RouteRecordRedirect`
-32. `RouterNavigateToOption`
-33. `RouterNavigation`
-34. `RouterReLaunchOption`
-35. `RouterRedirectToOption`
-36. `RouterSwitchTabOption`
-37. `SetupContextRouter`
-38. `TypedRouterTabBarUrl`
-39. `TypedRouterUrl`
-40. `UseRouterOptions`
-41. `WevuTypedRouterRouteMap`
-42. `createNavigationFailure`
-43. `isNavigationFailure`
-44. `parseQuery`
-45. `resolveRouteLocation`
-46. `stringifyQuery`
-47. `useNativePageRouter`
-48. `useNativeRouter`
-49. `useRoute`
-50. `useRouter`
+26. `RouteParamsMode`
+27. `RouteParamsRaw`
+28. `RouteQueryParser`
+29. `RouteQueryStringifier`
+30. `RouteRecordMatched`
+31. `RouteRecordRaw`
+32. `RouteRecordRedirect`
+33. `RouterNavigateToOption`
+34. `RouterNavigation`
+35. `RouterReLaunchOption`
+36. `RouterRedirectToOption`
+37. `RouterSwitchTabOption`
+38. `SetupContextRouter`
+39. `TypedRouterTabBarUrl`
+40. `TypedRouterUrl`
+41. `UseRouterOptions`
+42. `WevuTypedRouterRouteMap`
+43. `createNavigationFailure`
+44. `isNavigationFailure`
+45. `parseQuery`
+46. `resolveRouteLocation`
+47. `stringifyQuery`
+48. `useNativePageRouter`
+49. `useNativeRouter`
+50. `useRoute`
+51. `useRouter`
 
 ## 仅类型导出（推断）
 
@@ -96,22 +97,23 @@
 22. `RouteParamValue`
 23. `RouteParamValueRaw`
 24. `RouteParams`
-25. `RouteParamsRaw`
-26. `RouteQueryParser`
-27. `RouteQueryStringifier`
-28. `RouteRecordMatched`
-29. `RouteRecordRaw`
-30. `RouteRecordRedirect`
-31. `RouterNavigateToOption`
-32. `RouterNavigation`
-33. `RouterReLaunchOption`
-34. `RouterRedirectToOption`
-35. `RouterSwitchTabOption`
-36. `SetupContextRouter`
-37. `TypedRouterTabBarUrl`
-38. `TypedRouterUrl`
-39. `UseRouterOptions`
-40. `WevuTypedRouterRouteMap`
+25. `RouteParamsMode`
+26. `RouteParamsRaw`
+27. `RouteQueryParser`
+28. `RouteQueryStringifier`
+29. `RouteRecordMatched`
+30. `RouteRecordRaw`
+31. `RouteRecordRedirect`
+32. `RouterNavigateToOption`
+33. `RouterNavigation`
+34. `RouterReLaunchOption`
+35. `RouterRedirectToOption`
+36. `RouterSwitchTabOption`
+37. `SetupContextRouter`
+38. `TypedRouterTabBarUrl`
+39. `TypedRouterUrl`
+40. `UseRouterOptions`
+41. `WevuTypedRouterRouteMap`
 
 ## 与运行时同名导出
 
