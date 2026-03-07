@@ -1472,6 +1472,9 @@ importers:
 
   packages/wevu:
     dependencies:
+      '@wevu/api':
+        specifier: workspace:*
+        version: link:../weapi
       '@wevu/compiler':
         specifier: workspace:*
         version: link:../wevu-compiler
