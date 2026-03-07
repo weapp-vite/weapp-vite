@@ -96,11 +96,11 @@ export function watch(
     cbWithOnce(newValue, oldValue, onCleanup)
     oldValue = newValue
   }
+  const scheduledJob = () => runJob(scheduledToken)
 
   const scheduleJob = (isFirstRun: boolean) => {
     scheduledToken = pauseToken
-    const token = scheduledToken
-    dispatchScheduledJob(() => runJob(token), flush, isFirstRun, options.scheduler)
+    dispatchScheduledJob(scheduledJob, flush, isFirstRun, options.scheduler)
   }
 
   runner = effect(() => getter(), {
@@ -168,11 +168,11 @@ export function watchEffect(
     }
     runner()
   }
+  const scheduledJob = () => runJob(scheduledToken)
 
   const scheduleJob = (isFirstRun: boolean) => {
     scheduledToken = pauseToken
-    const token = scheduledToken
-    dispatchScheduledJob(() => runJob(token), flush, isFirstRun)
+    dispatchScheduledJob(scheduledJob, flush, isFirstRun)
   }
 
   runner = effect(
