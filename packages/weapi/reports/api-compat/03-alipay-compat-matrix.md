@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：395，不支持：84
+总计：479，支持：390，不支持：89
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -53,7 +53,7 @@
 | `closeBluetoothAdapter`                       | `closeBluetoothAdapter`                       | ✅   | `native`      | ✅       | 直连 `my.closeBluetoothAdapter`                                                   |
 | `closeSocket`                                 | `closeSocket`                                 | ✅   | `native`      | ✅       | 直连 `my.closeSocket`                                                             |
 | `compressImage`                               | `compressImage`                               | ✅   | `native`      | ✅       | 直连 `my.compressImage`                                                           |
-| `compressVideo`                               | `compressVideo`                               | ✅   | `mapped`      | ✅       | 使用内置 shim（回传原始文件路径）                                                 |
+| `compressVideo`                               | `compressVideo`                               | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `connectSocket`                               | `connectSocket`                               | ✅   | `native`      | ✅       | 直连 `my.connectSocket`                                                           |
 | `connectWifi`                                 | `connectWifi`                                 | ✅   | `native`      | ✅       | 直连 `my.connectWifi`                                                             |
 | `createAnimation`                             | `createAnimation`                             | ✅   | `native`      | ✅       | 直连 `my.createAnimation`                                                         |
@@ -150,7 +150,7 @@
 | `getSecureElementPasses`                      | `getSecureElementPasses`                      | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `getSelectedTextRange`                        | `getSelectedTextRange`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `getSetting`                                  | `getSetting`                                  | ✅   | `native`      | ✅       | 直连 `my.getSetting`                                                              |
-| `getShareInfo`                                | `getShareInfo`                                | ✅   | `mapped`      | ✅       | 使用内置 shim（补齐 `encryptedData/iv`）                                          |
+| `getShareInfo`                                | `getShareInfo`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `getShowSplashAdStatus`                       | `getShowSplashAdStatus`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `getSkylineInfo`                              | `getSkylineInfo`                              | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `getSkylineInfoSync`                          | `getSkylineInfoSync`                          | ❌   | `unsupported` | ❌       | 未提供 my.getSkylineInfoSync，调用时将返回 not supported                          |
@@ -183,7 +183,7 @@
 | `isBluetoothDevicePaired`                     | `isBluetoothDevicePaired`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `isVKSupport`                                 | `isVKSupport`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `join1v1Chat`                                 | `join1v1Chat`                                 | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `joinVoIPChat`                                | `joinVoIPChat`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `joinVoIPChat`                                | `joinVoIPChat`                                | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `loadBuiltInFontFace`                         | `loadBuiltInFontFace`                         | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `loadFontFace`                                | `loadFontFace`                                | ✅   | `native`      | ✅       | 直连 `my.loadFontFace`                                                            |
 | `login`                                       | `getAuthCode`                                 | ✅   | `mapped`      | ✅       | 映射到 `my.getAuthCode`，并对齐返回 `code` 字段                                   |
@@ -336,7 +336,7 @@
 | `openChannelsLiveNoticeInfo`                  | `openChannelsLiveNoticeInfo`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openChannelsUserProfile`                     | `openChannelsUserProfile`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openChatTool`                                | `openChatTool`                                | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openCustomerServiceChat`                     | `openCustomerServiceChat`                     | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `openDocument`                                | `openDocument`                                | ✅   | `mapped`      | ✅       | 直连 `my.openDocument`                                                            |
 | `openEmbeddedMiniProgram`                     | `navigateToMiniProgram`                       | ✅   | `mapped`      | ✅       | 映射到 `my.navigateToMiniProgram`                                                 |
 | `openHKOfflinePayView`                        | `openHKOfflinePayView`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
@@ -353,7 +353,7 @@
 | `openStoreCouponDetail`                       | `openStoreCouponDetail`                       | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openStoreOrderDetail`                        | `openStoreOrderDetail`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `openSystemBluetoothSetting`                  | `openSystemBluetoothSetting`                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
-| `openVideoEditor`                             | `openVideoEditor`                             | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
+| `openVideoEditor`                             | `openVideoEditor`                             | ❌   | `unsupported` | ❌       | 无同等 API，调用时按 unsupported 报错                                             |
 | `pageScrollTo`                                | `pageScrollTo`                                | ✅   | `native`      | ✅       | 直连 `my.pageScrollTo`                                                            |
 | `pauseBackgroundAudio`                        | `pauseBackgroundAudio`                        | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |
 | `pauseVoice`                                  | `pauseVoice`                                  | ✅   | `mapped`      | ✅       | 使用内置 no-op shim（保持调用不抛错）                                             |

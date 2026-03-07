@@ -35,10 +35,10 @@
 | 平台 | 可调用 API 数 | 语义对齐 API 数 | fallback API 数 | API 总数 | 可调用覆盖率 | 语义对齐覆盖率 |
 | --- | --- | --- | --- | --- | --- | --- |
 | 微信小程序 (`wx`) | 479 | 479 | 0 | 479 | 100.00% | 100.00% |
-| 支付宝小程序 (`my`) | 395 | 395 | 0 | 479 | 82.46% | 82.46% |
-| 抖音小程序 (`tt`) | 334 | 334 | 0 | 479 | 69.73% | 69.73% |
-| 三端可调用完全对齐 (wx/my/tt) | 332 | - | - | 479 | 69.31% | - |
-| 三端语义完全对齐 (wx/my/tt) | - | 332 | - | 479 | - | 69.31% |
+| 支付宝小程序 (`my`) | 390 | 390 | 0 | 479 | 81.42% | 81.42% |
+| 抖音小程序 (`tt`) | 328 | 328 | 0 | 479 | 68.48% | 68.48% |
+| 三端可调用完全对齐 (wx/my/tt) | 326 | - | - | 479 | 68.06% | - |
+| 三端语义完全对齐 (wx/my/tt) | - | 326 | - | 479 | - | 68.06% |
 
 > 该报告由 `WEAPI_METHOD_SUPPORT_MATRIX` 与映射规则自动计算生成。
 
@@ -105,13 +105,13 @@
 | `onWindowResize` | 监听窗口尺寸变化事件。 | 直连 `wx.onWindowResize` | 使用内置 shim，通过 `my.onAppShow + my.getWindowInfo` 近似监听 | 直连 `tt.onWindowResize` | ⚠️ |
 | `offWindowResize` | 取消监听窗口尺寸变化事件。 | 直连 `wx.offWindowResize` | 使用内置 shim，移除 `onWindowResize` 注册回调 | 直连 `tt.offWindowResize` | ⚠️ |
 | `reportAnalytics` | 上报分析数据。 | 直连 `wx.reportAnalytics` | 使用内置 no-op shim（保持调用不抛错） | 直连 `tt.reportAnalytics` | ⚠️ |
-| `openCustomerServiceChat` | 打开客服会话。 | 直连 `wx.openCustomerServiceChat` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `openCustomerServiceChat` | 打开客服会话。 | 直连 `wx.openCustomerServiceChat` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `createVKSession` | 创建视觉识别会话。 | 直连 `wx.createVKSession` | 使用内置 VKSession shim（对齐 `start/stop/destroy`） | 使用内置 VKSession shim（对齐 `start/stop/destroy`） | ⚠️ |
-| `compressVideo` | 压缩视频文件。 | 直连 `wx.compressVideo` | 使用内置 shim（回传原始文件路径） | 使用内置 shim（回传原始文件路径） | ⚠️ |
-| `openVideoEditor` | 打开视频编辑器。 | 直连 `wx.openVideoEditor` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `getShareInfo` | 获取转发详细信息。 | 直连 `wx.getShareInfo` | 使用内置 shim（补齐 `encryptedData/iv`） | 使用内置 shim（补齐 `encryptedData/iv`） | ⚠️ |
-| `joinVoIPChat` | 加入音视频通话。 | 直连 `wx.joinVoIPChat` | 使用内置 no-op shim（保持调用不抛错） | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
-| `openDocument` | 打开文档。 | 直连 `wx.openDocument` | 直连 `my.openDocument` | 使用内置 no-op shim（保持调用不抛错） | ⚠️ |
+| `compressVideo` | 压缩视频文件。 | 直连 `wx.compressVideo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openVideoEditor` | 打开视频编辑器。 | 直连 `wx.openVideoEditor` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `getShareInfo` | 获取转发详细信息。 | 直连 `wx.getShareInfo` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `joinVoIPChat` | 加入音视频通话。 | 直连 `wx.joinVoIPChat` | 无同等 API，调用时按 unsupported 报错 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
+| `openDocument` | 打开文档。 | 直连 `wx.openDocument` | 直连 `my.openDocument` | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
 | `saveVideoToPhotosAlbum` | 保存视频到系统相册。 | 直连 `wx.saveVideoToPhotosAlbum` | 直连 `my.saveVideoToPhotosAlbum` | 映射到 `tt.saveImageToPhotosAlbum` | ⚠️ |
 | `batchSetStorage` | 批量异步写入缓存。 | 直连 `wx.batchSetStorage` | 使用内置 shim，逐项转调 `my.setStorage` | 使用内置 shim，逐项转调 `tt.setStorage` | ⚠️ |
 | `batchGetStorage` | 批量异步读取缓存。 | 直连 `wx.batchGetStorage` | 使用内置 shim，逐项转调 `my.getStorage` | 使用内置 shim，逐项转调 `tt.getStorage` | ⚠️ |

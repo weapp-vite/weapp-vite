@@ -3,27 +3,30 @@
 ## 覆盖结论
 
 - 微信基准命名方法总数：479
-- 支付宝可调用兼容方法数：395
-- 支付宝语义对齐方法数：395
+- 支付宝可调用兼容方法数：390
+- 支付宝语义对齐方法数：390
 - 支付宝 fallback 方法数：0
-- 抖音可调用兼容方法数：334
-- 抖音语义对齐方法数：334
+- 抖音可调用兼容方法数：328
+- 抖音语义对齐方法数：328
 - 抖音 fallback 方法数：0
-- 三端可调用完全对齐方法数：332
-- 三端语义完全对齐方法数：332
+- 三端可调用完全对齐方法数：326
+- 三端语义完全对齐方法数：326
 
 ## 不兼容规模
 
-- 支付宝侧不兼容（按微信命名调用失败）方法：84
-- 抖音侧不兼容（按微信命名调用失败）方法：145
+- 支付宝侧不兼容（按微信命名调用失败）方法：89
+- 抖音侧不兼容（按微信命名调用失败）方法：151
 
 ## 不兼容示例（前 40 项）
 
 ### 支付宝不兼容示例
 
 - `chooseInvoice` -> 目标 `chooseInvoice`（unsupported）
+- `compressVideo` -> 目标 `compressVideo`（unsupported）
 - `getExptInfoSync` -> 目标 `getExptInfoSync`（unsupported）
+- `getShareInfo` -> 目标 `getShareInfo`（unsupported）
 - `getSkylineInfoSync` -> 目标 `getSkylineInfoSync`（unsupported）
+- `joinVoIPChat` -> 目标 `joinVoIPChat`（unsupported）
 - `offAfterPageLoad` -> 目标 `offAfterPageLoad`（unsupported）
 - `offAfterPageUnload` -> 目标 `offAfterPageUnload`（unsupported）
 - `offApiCategoryChange` -> 目标 `offApiCategoryChange`（unsupported）
@@ -58,9 +61,6 @@
 - `offVoIPChatInterrupted` -> 目标 `offVoIPChatInterrupted`（unsupported）
 - `offVoIPChatMembersChanged` -> 目标 `offVoIPChatMembersChanged`（unsupported）
 - `offVoIPChatSpeakersChanged` -> 目标 `offVoIPChatSpeakersChanged`（unsupported）
-- `offVoIPChatStateChanged` -> 目标 `offVoIPChatStateChanged`（unsupported）
-- `offVoIPVideoMembersChanged` -> 目标 `offVoIPVideoMembersChanged`（unsupported）
-- `offWifiConnectedWithPartialInfo` -> 目标 `offWifiConnectedWithPartialInfo`（unsupported）
 
 ### 抖音不兼容示例
 
@@ -68,6 +68,7 @@
 - `chooseInvoice` -> 目标 `chooseInvoice`（unsupported）
 - `closeBluetoothAdapter` -> 目标 `closeBluetoothAdapter`（unsupported）
 - `closeSocket` -> 目标 `closeSocket`（unsupported）
+- `compressVideo` -> 目标 `compressVideo`（unsupported）
 - `connectWifi` -> 目标 `connectWifi`（unsupported）
 - `disableAlertBeforeUnload` -> 目标 `disableAlertBeforeUnload`（unsupported）
 - `enableAlertBeforeUnload` -> 目标 `enableAlertBeforeUnload`（unsupported）
@@ -83,7 +84,9 @@
 - `getConnectedBluetoothDevices` -> 目标 `getConnectedBluetoothDevices`（unsupported）
 - `getExptInfoSync` -> 目标 `getExptInfoSync`（unsupported）
 - `getLocalIPAddress` -> 目标 `getLocalIPAddress`（unsupported）
+- `getShareInfo` -> 目标 `getShareInfo`（unsupported）
 - `getSkylineInfoSync` -> 目标 `getSkylineInfoSync`（unsupported）
+- `joinVoIPChat` -> 目标 `joinVoIPChat`（unsupported）
 - `loadFontFace` -> 目标 `loadFontFace`（unsupported）
 - `makeBluetoothPair` -> 目标 `makeBluetoothPair`（unsupported）
 - `notifyBLECharacteristicValueChange` -> 目标 `notifyBLECharacteristicValueChange`（unsupported）
@@ -101,6 +104,3 @@
 - `offBeforeAppRoute` -> 目标 `offBeforeAppRoute`（unsupported）
 - `offBeforePageLoad` -> 目标 `offBeforePageLoad`（unsupported）
 - `offBeforePageUnload` -> 目标 `offBeforePageUnload`（unsupported）
-- `offBLECharacteristicValueChange` -> 目标 `offBLECharacteristicValueChange`（unsupported）
-- `offBLEConnectionStateChange` -> 目标 `offBLEConnectionStateChange`（unsupported）
-- `offBLEMTUChange` -> 目标 `offBLEMTUChange`（unsupported）
