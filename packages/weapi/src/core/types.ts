@@ -625,9 +625,9 @@ interface WeapiCrossPlatformMethodDocs {
    *
    * | 平台 | 对齐策略 | 支持度 |
    * | --- | --- | --- |
-   * | 微信 | 直连 `wx.hideHomeButton` | ⚠️ |
-   * | 支付宝 | 无同等 API，调用时按 unsupported 报错 | ⚠️ |
-   * | 抖音 | 直连 `tt.hideHomeButton` | ⚠️ |
+   * | 微信 | 直连 `wx.hideHomeButton` | ✅ |
+   * | 支付宝 | 映射到 `my.hideBackHome` | ✅ |
+   * | 抖音 | 直连 `tt.hideHomeButton` | ✅ |
    */
   hideHomeButton: WeapiCrossPlatformAdapter['hideHomeButton']
 
