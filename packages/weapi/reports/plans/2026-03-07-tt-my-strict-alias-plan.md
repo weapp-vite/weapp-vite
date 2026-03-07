@@ -140,6 +140,7 @@
 - 所有异名映射是否保持 `supportLevel=mapped` 且 `semanticAligned=true`。
 - fallback 映射数量是否为 `0`。
 - 已在 `package.json` 新增 `strict-alias:check`，并接入 `prebuild`，确保构建前自动执行门禁。
+- 白名单数据已抽到 `src/core/strictAliasPolicy.ts`，测试与门禁脚本共用同一来源，避免双份维护漂移。
 
 10. 最新候选复筛（2026-03-08）
 
