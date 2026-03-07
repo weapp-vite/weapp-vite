@@ -40,16 +40,16 @@
 | `chooseContact`                               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `chooseImage`                                 | `chooseImage`                       | ✅   | `mapped`   | ✅       | `tempFilePaths` 字符串转数组，缺失时从 `tempFiles.path` 兜底           |
 | `chooseInvoice`                               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `chooseInvoiceTitle`                          | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `chooseLicensePlate`                          | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `chooseInvoiceTitle`                          | `chooseInvoiceTitle`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `chooseLicensePlate`                          | `chooseLicensePlate`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `chooseLocation`                              | `chooseLocation`                    | ✅   | `native`   | ✅       | 直连 `tt.chooseLocation`                                               |
 | `chooseMedia`                                 | `chooseMedia`                       | ✅   | `mapped`   | ✅       | 直连 `tt.chooseMedia`，并补齐 `tempFiles[].tempFilePath/fileType`      |
 | `chooseMessageFile`                           | `chooseImage`                       | ✅   | `mapped`   | ✅       | 映射到 `tt.chooseImage`，并补齐 `tempFiles[].path/name`                |
-| `choosePoi`                                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `choosePoi`                                   | `choosePoi`                         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `chooseVideo`                                 | `chooseMedia`                       | ✅   | `mapped`   | ✅       | 映射到 `tt.chooseMedia`，固定 `mediaType=[video]` 并对齐返回结构       |
 | `clearStorage`                                | `clearStorage`                      | ✅   | `native`   | ✅       | 直连 `tt.clearStorage`                                                 |
 | `clearStorageSync`                            | `clearStorageSync`                  | ✅   | `native`   | ✅       | 直连 `tt.clearStorageSync`                                             |
-| `closeBLEConnection`                          | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `closeBLEConnection`                          | `closeBLEConnection`                | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `closeBluetoothAdapter`                       | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `closeSocket`                                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `compressImage`                               | `compressImage`                     | ✅   | `native`   | ✅       | 直连 `tt.compressImage`                                                |
@@ -58,7 +58,7 @@
 | `connectWifi`                                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `createAnimation`                             | `createAnimation`                   | ✅   | `native`   | ✅       | 直连 `tt.createAnimation`                                              |
 | `createAudioContext`                          | `createInnerAudioContext`           | ✅   | `mapped`   | ✅       | 映射到 `tt.createInnerAudioContext`                                    |
-| `createBLEConnection`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `createBLEConnection`                         | `createBLEConnection`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `createBLEPeripheralServer`                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `createBufferURL`                             | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `createCacheManager`                          | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
@@ -85,23 +85,23 @@
 | `createVKSession`                             | `createVKSession`                   | ✅   | `mapped`   | ✅       | 使用内置 VKSession shim（对齐 `start/stop/destroy`）                   |
 | `createWebAudioContext`                       | `createInnerAudioContext`           | ✅   | `mapped`   | ✅       | 映射到 `tt.createInnerAudioContext`                                    |
 | `createWorker`                                | `createWorker`                      | ✅   | `native`   | ✅       | 直连 `tt.createWorker`                                                 |
-| `cropImage`                                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `cropImage`                                   | `cropImage`                         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `disableAlertBeforeUnload`                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `downloadFile`                                | `downloadFile`                      | ✅   | `native`   | ✅       | 直连 `tt.downloadFile`                                                 |
-| `editImage`                                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `editImage`                                   | `editImage`                         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `enableAlertBeforeUnload`                     | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `exitMiniProgram`                             | `exitMiniProgram`                   | ✅   | `native`   | ✅       | 直连 `tt.exitMiniProgram`                                              |
-| `exitVoIPChat`                                | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `faceDetect`                                  | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `exitVoIPChat`                                | `exitVoIPChat`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `faceDetect`                                  | `faceDetect`                        | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getAccountInfoSync`                          | `getEnvInfoSync`                    | ✅   | `mapped`   | ✅       | 映射到 `tt.getEnvInfoSync`，并对齐账号字段结构                         |
-| `getApiCategory`                              | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `getApiCategory`                              | `getApiCategory`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getAppAuthorizeSetting`                      | `getSetting`                        | ✅   | `mapped`   | ✅       | 映射到 `tt.getSetting`                                                 |
 | `getAppBaseInfo`                              | `getEnvInfoSync`                    | ✅   | `mapped`   | ✅       | 映射到 `tt.getEnvInfoSync`                                             |
 | `getAvailableAudioSources`                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `getBackgroundAudioManager`                   | `getBackgroundAudioManager`         | ✅   | `native`   | ✅       | 直连 `tt.getBackgroundAudioManager`                                    |
 | `getBackgroundAudioPlayerState`               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `getBackgroundFetchData`                      | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getBackgroundFetchToken`                     | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `getBackgroundFetchToken`                     | `getBackgroundFetchToken`           | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getBatteryInfo`                              | `getSystemInfo`                     | ✅   | `mapped`   | ✅       | 映射到 `tt.getSystemInfo`，补齐 `level/isCharging`                     |
 | `getBatteryInfoSync`                          | `getSystemInfoSync`                 | ✅   | `mapped`   | ✅       | 映射到 `tt.getSystemInfoSync`，补齐 `level/isCharging`                 |
 | `getBeacons`                                  | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
@@ -111,12 +111,12 @@
 | `getBLEMTU`                                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `getBluetoothAdapterState`                    | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `getBluetoothDevices`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getChannelsLiveInfo`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getChannelsLiveNoticeInfo`                   | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getChannelsShareKey`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getChatToolInfo`                             | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `getChannelsLiveInfo`                         | `getChannelsLiveInfo`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `getChannelsLiveNoticeInfo`                   | `getChannelsLiveNoticeInfo`         | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `getChannelsShareKey`                         | `getChannelsShareKey`               | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
+| `getChatToolInfo`                             | `getChatToolInfo`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getClipboardData`                            | `getClipboardData`                  | ✅   | `mapped`   | ✅       | 直连 `tt.getClipboardData`                                             |
-| `getCommonConfig`                             | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `getCommonConfig`                             | `getCommonConfig`                   | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getConnectedBluetoothDevices`                | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `getConnectedWifi`                            | `getConnectedWifi`                  | ✅   | `native`   | ✅       | 直连 `tt.getConnectedWifi`                                             |
 | `getDeviceBenchmarkInfo`                      | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
@@ -128,7 +128,7 @@
 | `getExtConfigSync`                            | `getExtConfigSync`                  | ✅   | `native`   | ✅       | 直连 `tt.getExtConfigSync`                                             |
 | `getFileSystemManager`                        | `getFileSystemManager`              | ✅   | `native`   | ✅       | 直连 `tt.getFileSystemManager`                                         |
 | `getFuzzyLocation`                            | `getLocation`                       | ✅   | `mapped`   | ✅       | 映射到 `tt.getLocation`                                                |
-| `getGroupEnterInfo`                           | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `getGroupEnterInfo`                           | `getGroupEnterInfo`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getHCEState`                                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `getImageInfo`                                | `getImageInfo`                      | ✅   | `native`   | ✅       | 直连 `tt.getImageInfo`                                                 |
 | `getInferenceEnvInfo`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
@@ -140,7 +140,7 @@
 | `getNetworkType`                              | `getSystemInfo`                     | ✅   | `mapped`   | ✅       | 映射到 `tt.getSystemInfo`，兜底补齐 `networkType`                      |
 | `getNFCAdapter`                               | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `getPerformance`                              | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `getPrivacySetting`                           | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `getPrivacySetting`                           | `getPrivacySetting`                 | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `getRandomValues`                             | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `getRealtimeLogManager`                       | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `getRecorderManager`                          | `getRecorderManager`                | ✅   | `native`   | ✅       | 直连 `tt.getRecorderManager`                                           |
@@ -179,10 +179,10 @@
 | `hideTabBar`                                  | `hideTabBar`                        | ✅   | `native`   | ✅       | 直连 `tt.hideTabBar`                                                   |
 | `hideTabBarRedDot`                            | `hideTabBarRedDot`                  | ✅   | `native`   | ✅       | 直连 `tt.hideTabBarRedDot`                                             |
 | `hideToast`                                   | `hideToast`                         | ✅   | `native`   | ✅       | 直连 `tt.hideToast`                                                    |
-| `initFaceDetect`                              | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `initFaceDetect`                              | `initFaceDetect`                    | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `isBluetoothDevicePaired`                     | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `isVKSupport`                                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
-| `join1v1Chat`                                 | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
+| `join1v1Chat`                                 | `join1v1Chat`                       | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `joinVoIPChat`                                | `joinVoIPChat`                      | ✅   | `mapped`   | ✅       | 使用内置 no-op shim（保持调用不抛错）                                  |
 | `loadBuiltInFontFace`                         | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
 | `loadFontFace`                                | `hideToast`                         | ✅   | `fallback` | ❌       | 回退映射到 `tt.hideToast`（通用兜底）                                  |
