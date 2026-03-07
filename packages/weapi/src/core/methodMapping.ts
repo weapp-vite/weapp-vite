@@ -1050,6 +1050,22 @@ export const WEAPI_METHOD_SUPPORT_MATRIX: readonly WeapiMethodSupportMatrixItem[
     support: '⚠️',
   },
   {
+    method: 'onBLEConnectionStateChange',
+    description: '监听 BLE 连接状态变化。',
+    wxStrategy: '直连 `wx.onBLEConnectionStateChange`',
+    alipayStrategy: '映射到 `my.onBLEConnectionStateChanged`',
+    douyinStrategy: '抖音无同等 API，调用时报 not supported',
+    support: '⚠️',
+  },
+  {
+    method: 'offBLEConnectionStateChange',
+    description: '取消监听 BLE 连接状态变化。',
+    wxStrategy: '直连 `wx.offBLEConnectionStateChange`',
+    alipayStrategy: '映射到 `my.offBLEConnectionStateChanged`',
+    douyinStrategy: '抖音无同等 API，调用时报 not supported',
+    support: '⚠️',
+  },
+  {
     method: 'addCard',
     description: '添加微信卡券。',
     wxStrategy: '直连 `wx.addCard`',
@@ -3800,6 +3816,12 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     cancelIdleCallback: {
       target: 'cancelIdleCallback',
     },
+    onBLEConnectionStateChange: {
+      target: 'onBLEConnectionStateChanged',
+    },
+    offBLEConnectionStateChange: {
+      target: 'offBLEConnectionStateChanged',
+    },
   },
   tt: {
     showToast: {
@@ -4505,6 +4527,12 @@ const METHOD_MAPPINGS: Readonly<Record<string, Readonly<Record<string, WeapiMeth
     },
     cancelIdleCallback: {
       target: 'cancelIdleCallback',
+    },
+    onBLEConnectionStateChange: {
+      target: 'onBLEConnectionStateChange',
+    },
+    offBLEConnectionStateChange: {
+      target: 'offBLEConnectionStateChange',
     },
   },
 }

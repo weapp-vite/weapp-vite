@@ -940,6 +940,28 @@ interface WeapiCrossPlatformMethodDocs {
   cancelIdleCallback: WeapiCrossPlatformAdapter['cancelIdleCallback']
 
   /**
+   * 监听 BLE 连接状态变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.onBLEConnectionStateChange` | ⚠️ |
+   * | 支付宝 | 映射到 `my.onBLEConnectionStateChanged` | ⚠️ |
+   * | 抖音 | 抖音无同等 API，调用时报 not supported | ⚠️ |
+   */
+  onBLEConnectionStateChange: WeapiCrossPlatformAdapter['onBLEConnectionStateChange']
+
+  /**
+   * 取消监听 BLE 连接状态变化。
+   *
+   * | 平台 | 对齐策略 | 支持度 |
+   * | --- | --- | --- |
+   * | 微信 | 直连 `wx.offBLEConnectionStateChange` | ⚠️ |
+   * | 支付宝 | 映射到 `my.offBLEConnectionStateChanged` | ⚠️ |
+   * | 抖音 | 抖音无同等 API，调用时报 not supported | ⚠️ |
+   */
+  offBLEConnectionStateChange: WeapiCrossPlatformAdapter['offBLEConnectionStateChange']
+
+  /**
    * 添加微信卡券。
    *
    * | 平台 | 对齐策略 | 支持度 |
