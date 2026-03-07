@@ -1,4 +1,5 @@
 import type {
+  AddRoute,
   LocationQuery,
   NavigationAfterEachContext,
   NavigationErrorContext,
@@ -78,6 +79,7 @@ const navigationOptions: UseRouterOptions = {
 }
 const navigation = useRouter(navigationOptions)
 expectType<RouterNavigation>(navigation)
+expectType<AddRoute>(navigation.addRoute)
 expectType<Readonly<UseRouterOptions>>(navigation.options)
 expectType<void>(navigation.install())
 expectType<SetupContextRouter>(useNativeRouter())
@@ -107,6 +109,11 @@ const removeDynamicRoute = navigation.addRoute({
   },
 })
 expectType<() => void>(removeDynamicRoute)
+const removeChildRoute = navigation.addRoute('home', {
+  name: 'home-settings',
+  path: 'settings',
+})
+expectType<() => void>(removeChildRoute)
 expectType<void>(navigation.removeRoute('dynamic-post'))
 expectType<void>(navigation.clearRoutes())
 expectType<Promise<void>>(navigation.isReady())

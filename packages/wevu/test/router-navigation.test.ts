@@ -1244,6 +1244,61 @@ describe('router navigation helpers', () => {
     expect(router.hasRoute('home-detail')).toBe(false)
   })
 
+  it('supports addRoute(parentName, route) with relative child path', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      namedRoutes: [
+        {
+          name: 'home',
+          path: '/pages/home',
+        },
+      ],
+    })
+
+    const removeChildRoute = router.addRoute('home', {
+      name: 'home-settings',
+      path: 'settings',
+    })
+
+    expect(router.hasRoute('home-settings')).toBe(true)
+    expect(router.resolve('/pages/home/settings').name).toBe('home-settings')
+    expect(router.getRoutes()).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home',
+      },
+      {
+        name: 'home-settings',
+        path: '/pages/home/settings',
+      },
+    ])
+
+    removeChildRoute()
+    expect(router.hasRoute('home-settings')).toBe(false)
+    expect(router.hasRoute('home')).toBe(true)
+  })
+
   it('removeRoute removes nested child route records together', () => {
     const instance = {
       __wevu: {},

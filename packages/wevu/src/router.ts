@@ -179,13 +179,18 @@ export interface RouterNavigation {
   forward: () => Promise<void | NavigationFailure>
   hasRoute: (name: string) => boolean
   getRoutes: () => readonly RouteRecordRaw[]
-  addRoute: (route: RouteRecordRaw) => () => void
+  addRoute: AddRoute
   removeRoute: (name: string) => void
   clearRoutes: () => void
   beforeEach: (guard: NavigationGuard) => () => void
   beforeResolve: (guard: NavigationGuard) => () => void
   afterEach: (hook: NavigationAfterEach) => () => void
   onError: (handler: NavigationErrorHandler) => () => void
+}
+
+export interface AddRoute {
+  (route: RouteRecordRaw): () => void
+  (parentName: string, route: RouteRecordRaw): () => void
 }
 
 interface MiniProgramPageLike {
@@ -1706,8 +1711,31 @@ export function useRouter(options: UseRouterOptions = {}): RouterNavigation {
     return Array.from(namedRouteLookup.recordByName.values()).map(normalizeRouteRecordForOutput)
   }
 
-  function addRoute(route: RouteRecordRaw): () => void {
-    const routeRecords = flattenNamedRouteRecords([route])
+  function addRoute(route: RouteRecordRaw): () => void
+  function addRoute(parentName: string, route: RouteRecordRaw): () => void
+  function addRoute(parentNameOrRoute: string | RouteRecordRaw, maybeRoute?: RouteRecordRaw): () => void {
+    const route = typeof parentNameOrRoute === 'string'
+      ? maybeRoute
+      : parentNameOrRoute
+    if (!route) {
+      throw new Error('Route record is required when adding a child route')
+    }
+
+    const parentRouteName = typeof parentNameOrRoute === 'string'
+      ? parentNameOrRoute
+      : undefined
+    const parentRouteRecord = parentRouteName
+      ? namedRouteLookup.recordByName.get(parentRouteName)
+      : undefined
+    if (parentRouteName && !parentRouteRecord) {
+      throw new Error(`Parent route "${parentRouteName}" is not defined in useRouter({ namedRoutes })`)
+    }
+
+    const routeRecords = flattenNamedRouteRecords(
+      [route],
+      parentRouteRecord?.path,
+      parentRouteName,
+    )
     if (routeRecords.length === 0) {
       throw new Error('Route name and path are required when adding a named route')
     }
