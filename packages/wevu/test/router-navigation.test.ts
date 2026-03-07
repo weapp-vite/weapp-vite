@@ -1092,6 +1092,64 @@ describe('router navigation helpers', () => {
     await expect(router.isReady()).resolves.toBeUndefined()
   })
 
+  it('exposes normalized options snapshot', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = useRouter({
+      tabBarEntries: ['pages/home/index'],
+      namedRoutes: {
+        home: '/pages/home/index',
+      },
+      paramsMode: 'strict',
+      maxRedirects: 3,
+      rejectOnError: false,
+    })
+
+    expect(router.options).toMatchObject({
+      tabBarEntries: ['/pages/home/index'],
+      namedRoutes: [
+        {
+          name: 'home',
+          path: '/pages/home/index',
+        },
+      ],
+      paramsMode: 'strict',
+      maxRedirects: 3,
+      rejectOnError: false,
+    })
+
+    router.addRoute({
+      name: 'dynamic-post',
+      path: '/pages/post/:id/index',
+    })
+    expect(router.options.namedRoutes).toEqual([
+      {
+        name: 'home',
+        path: '/pages/home/index',
+      },
+    ])
+  })
+
   it('push auto-switches to tabBar entries', async () => {
     const switchTab = vi.fn((options: any) => {
       options.success?.({})
