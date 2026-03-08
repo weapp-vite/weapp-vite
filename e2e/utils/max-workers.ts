@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-const DEFAULT_E2E_MAX_WORKERS = 1
+const DEFAULT_E2E_MAX_WORKERS = 2
 
 export function resolveE2EMaxWorkers(defaultValue = DEFAULT_E2E_MAX_WORKERS) {
   const raw = process.env.WEAPP_VITE_E2E_MAX_WORKERS
