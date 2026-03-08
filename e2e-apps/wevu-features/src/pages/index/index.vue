@@ -31,6 +31,12 @@ const featureList = [
     path: '/pages/use-store/index',
   },
   {
+    key: 'subpath-entries',
+    title: 'subpath entries',
+    summary: '展示 wevu/router|store|api|fetch 子路径入口联动',
+    path: '/pages/subpath-entries/index',
+  },
+  {
     key: 'native-uses-vue',
     title: 'native -> vue',
     summary: '展示原生组件通过 usingComponents 引入 Vue 组件',

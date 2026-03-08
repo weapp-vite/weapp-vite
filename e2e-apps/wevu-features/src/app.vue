@@ -9,6 +9,7 @@ defineAppJson({
     'pages/use-model/index',
     'pages/use-provide-inject/index',
     'pages/use-store/index',
+    'pages/subpath-entries/index',
     'pages/native-uses-vue/index',
     'pages/router-stability/index',
     'pages/router-stability/sub/index',

@@ -46,6 +46,7 @@ describe.sequential('e2e app: wevu-features (build)', () => {
       'pages/use-model/index',
       'pages/use-provide-inject/index',
       'pages/use-store/index',
+      'pages/subpath-entries/index',
       'pages/native-uses-vue/index',
       'pages/router-stability/index',
       'pages/router-stability/sub/index',
@@ -60,6 +61,7 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(indexJs).toContain('/pages/use-model/index')
     expect(indexJs).toContain('/pages/use-provide-inject/index')
     expect(indexJs).toContain('/pages/use-store/index')
+    expect(indexJs).toContain('/pages/subpath-entries/index')
     expect(indexJs).toContain('/pages/native-uses-vue/index')
     expect(indexJs).toContain('/pages/router-stability/index')
     expect(indexJs).toContain('useAttrs')
@@ -67,6 +69,7 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(indexJs).toContain('useModel')
     expect(indexJs).toContain('provide / inject')
     expect(indexJs).toContain('store')
+    expect(indexJs).toContain('subpath entries')
     expect(indexJs).toContain('native -> vue')
     expect(indexJs).toContain('router stability')
 
@@ -101,6 +104,8 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     const useProvideInjectFeatureWxmlPath = path.join(DIST_ROOT, 'components/use-provide-inject-feature/index.wxml')
     const useStorePageWxmlPath = path.join(DIST_ROOT, 'pages/use-store/index.wxml')
     const useStorePageJsPath = path.join(DIST_ROOT, 'pages/use-store/index.js')
+    const subpathEntriesPageWxmlPath = path.join(DIST_ROOT, 'pages/subpath-entries/index.wxml')
+    const subpathEntriesPageJsPath = path.join(DIST_ROOT, 'pages/subpath-entries/index.js')
     const nativeUsesVuePageWxmlPath = path.join(DIST_ROOT, 'pages/native-uses-vue/index.wxml')
     const nativeUsesVuePageJsPath = path.join(DIST_ROOT, 'pages/native-uses-vue/index.js')
     const nativeUsesVueComponentJsonPath = path.join(DIST_ROOT, 'native/native-uses-vue/index.json')
@@ -130,6 +135,8 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(await fs.pathExists(useProvideInjectFeatureWxmlPath)).toBe(true)
     expect(await fs.pathExists(useStorePageWxmlPath)).toBe(true)
     expect(await fs.pathExists(useStorePageJsPath)).toBe(true)
+    expect(await fs.pathExists(subpathEntriesPageWxmlPath)).toBe(true)
+    expect(await fs.pathExists(subpathEntriesPageJsPath)).toBe(true)
     expect(await fs.pathExists(nativeUsesVuePageWxmlPath)).toBe(true)
     expect(await fs.pathExists(nativeUsesVuePageJsPath)).toBe(true)
     expect(await fs.pathExists(nativeUsesVueComponentJsonPath)).toBe(true)
@@ -159,6 +166,8 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     const useProvideInjectFeatureWxml = await fs.readFile(useProvideInjectFeatureWxmlPath, 'utf8')
     const useStorePageWxml = await fs.readFile(useStorePageWxmlPath, 'utf8')
     const useStorePageJs = await fs.readFile(useStorePageJsPath, 'utf8')
+    const subpathEntriesPageWxml = await fs.readFile(subpathEntriesPageWxmlPath, 'utf8')
+    const subpathEntriesPageJs = await fs.readFile(subpathEntriesPageJsPath, 'utf8')
     const nativeUsesVuePageWxml = await fs.readFile(nativeUsesVuePageWxmlPath, 'utf8')
     const nativeUsesVuePageJs = await fs.readFile(nativeUsesVuePageJsPath, 'utf8')
     const nativeUsesVueComponentJson = await fs.readJson(nativeUsesVueComponentJsonPath)
@@ -226,6 +235,14 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(useStorePageJs).toContain('featureSetupCounter')
     expect(useStorePageJs).toContain('featureOptionsCounter')
     expect(useStorePageJs).toContain('_runE2E')
+
+    expect(subpathEntriesPageWxml).toContain('id="subpath-router-fullpath"')
+    expect(subpathEntriesPageWxml).toContain('id="subpath-store-summary"')
+    expect(subpathEntriesPageWxml).toContain('id="subpath-api-status"')
+    expect(subpathEntriesPageWxml).toContain('id="subpath-fetch-status"')
+    expect(subpathEntriesPageWxml).toContain('id="subpath-run-e2e"')
+    expect(subpathEntriesPageJs).toContain('runE2E')
+    expect(subpathEntriesPageJs).toContain('_runE2E')
 
     expect(nativeUsesVuePageWxml).toMatch(/<(native-uses-vue|NativeUsesVue)\b/)
     expect(nativeUsesVuePageWxml).toContain('id="native-interop-toggle"')
