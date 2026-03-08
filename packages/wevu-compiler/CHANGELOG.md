@@ -1,5 +1,17 @@
 # @wevu/compiler
 
+## 6.7.4
+
+### Patch Changes
+
+- 🐛 **整合 wevu compiler 相关 changeset。** [`3449921`](https://github.com/weapp-vite/weapp-vite/commit/3449921ee8d3ff327ccbbad114ad1984a858781e) by @sonofmagic
+
+  ## 合并来源
+  - cool-rings-double.md
+
+  ## 变更摘要
+  1. **cool-rings-double.md**：修复 `<script setup>` 中 `defineOptions({ behaviors: [...] })` 的编译兼容性：当 `behaviors` 依赖原生 `Behavior()` 返回值且构建环境不存在全局 `Behavior` 时，不再在 `defineOptions` 内联阶段抛错，而是回退为保留原始 `defineOptions` 表达式继续编译。补充了内联单测与 `compileVueFile` 端到端测试，覆盖内建行为字符串与原生 `Behavior` 导入两类场景。
+
 ## 6.7.3
 
 ## 6.7.2
