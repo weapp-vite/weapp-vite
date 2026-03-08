@@ -5,9 +5,9 @@
   "setting": {
     "minifyWXML": true,
     "es6": false,
-    "postcss": false,
+    "postcss": true,
     "compileWorklet": false,
-    "minified": false,
+    "minified": true,
     "uglifyFileName": false,
     "uploadWithSourceMap": true,
     "enhance": false,
