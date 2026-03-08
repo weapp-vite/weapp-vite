@@ -29,6 +29,15 @@ const DEFAULT_RELUNCH_READY_TIMEOUT = 15_000
 const DEFAULT_RELUNCH_RETRIES = 3
 const DEFAULT_RELUNCH_RETRY_DELAY = 280
 const DEFAULT_RELUNCH_SETTLE_DELAY = 260
+const DEFAULT_LAUNCH_RETRIES = 3
+const DEFAULT_LAUNCH_RETRY_DELAY = 1_200
+const DEFAULT_APP_CONFIG_READY_TIMEOUT = 12_000
+const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
+  /模拟器启动失败/,
+  /cannot read propert(?:y|ies)\s+['"]subPackages['"]\s+of\s+undefined/i,
+  /cannot read propert(?:y|ies)\s+\(reading\s+['"]subPackages['"]\)/i,
+  /subPackages[\s\S]{0,80}undefined/i,
+]
 const RELAUNCH_READY_TIMEOUT = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT,
   DEFAULT_RELUNCH_READY_TIMEOUT,
@@ -44,6 +53,18 @@ const RELAUNCH_RETRY_DELAY = resolvePositiveIntEnv(
 const RELAUNCH_SETTLE_DELAY = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_RELUNCH_SETTLE_DELAY,
   DEFAULT_RELUNCH_SETTLE_DELAY,
+)
+const LAUNCH_RETRIES = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES,
+  DEFAULT_LAUNCH_RETRIES,
+)
+const LAUNCH_RETRY_DELAY = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY,
+  DEFAULT_LAUNCH_RETRY_DELAY,
+)
+const APP_CONFIG_READY_TIMEOUT = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT,
+  DEFAULT_APP_CONFIG_READY_TIMEOUT,
 )
 const TRUST_ALL_PROJECTS = process.env.WEAPP_VITE_E2E_TRUST_PROJECT === '1'
 const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
@@ -78,6 +99,11 @@ type RuntimeLogLevel = 'warn' | 'error' | 'exception'
 interface RuntimeLogEntry {
   level: RuntimeLogLevel
   text: string
+}
+
+interface LaunchProjectMeta {
+  appConfigPath: string
+  warmupRoute?: string
 }
 
 function normalizePathForMatch(value: string) {
@@ -261,6 +287,128 @@ function isLikelyRelaunchRetryableError(error: unknown) {
     || /Target closed/i.test(message)
     || /ECONNRESET/i.test(message)
     || /not connected/i.test(message)
+}
+
+function isLikelySimulatorBootErrorMessage(message: string) {
+  return DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS.some(pattern => pattern.test(message))
+}
+
+function readJsonObject(filePath: string): Record<string, any> | undefined {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8')
+    const parsed = JSON.parse(content)
+    return parsed && typeof parsed === 'object' ? parsed as Record<string, any> : undefined
+  }
+  catch {
+    return undefined
+  }
+}
+
+function resolveMiniprogramRoot(projectPath: string) {
+  for (const fileName of ['project.config.json', 'project.private.config.json']) {
+    const config = readJsonObject(path.join(projectPath, fileName))
+    if (!config) {
+      continue
+    }
+    const miniprogramRoot = config.miniprogramRoot
+    if (typeof miniprogramRoot === 'string' && miniprogramRoot.trim()) {
+      return miniprogramRoot.trim()
+    }
+  }
+  return 'dist'
+}
+
+function resolveRouteFromAppConfig(config: Record<string, any>) {
+  const pages = Array.isArray(config.pages) ? config.pages : []
+  const firstPage = pages.find(item => typeof item === 'string' && item.trim())
+  if (typeof firstPage === 'string') {
+    return `/${firstPage.replace(/^\/+/, '')}`
+  }
+
+  const subPackages = [
+    ...(Array.isArray(config.subPackages) ? config.subPackages : []),
+    ...(Array.isArray(config.subpackages) ? config.subpackages : []),
+  ]
+  for (const subPackage of subPackages) {
+    if (!subPackage || typeof subPackage !== 'object') {
+      continue
+    }
+    const root = typeof subPackage.root === 'string' ? subPackage.root.replace(/^\/+|\/+$/g, '') : ''
+    const packagePages = Array.isArray(subPackage.pages) ? subPackage.pages : []
+    const packagePage = packagePages.find(item => typeof item === 'string' && item.trim())
+    if (typeof packagePage !== 'string') {
+      continue
+    }
+    const segments = [root, packagePage].filter(Boolean)
+    if (segments.length > 0) {
+      return `/${segments.join('/').replace(/\/{2,}/g, '/')}`
+    }
+  }
+
+  return undefined
+}
+
+async function resolveLaunchProjectMeta(projectPath: string | undefined): Promise<LaunchProjectMeta | undefined> {
+  if (!projectPath) {
+    return undefined
+  }
+
+  const appConfigPath = path.resolve(projectPath, resolveMiniprogramRoot(projectPath), 'app.json')
+  const start = Date.now()
+  while (Date.now() - start <= APP_CONFIG_READY_TIMEOUT) {
+    const config = readJsonObject(appConfigPath)
+    if (config) {
+      return {
+        appConfigPath,
+        warmupRoute: resolveRouteFromAppConfig(config),
+      }
+    }
+    await sleep(120)
+  }
+
+  const timeoutLine = `[warn] [runtime:launch-preflight] app.json not ready within ${APP_CONFIG_READY_TIMEOUT}ms: ${appConfigPath}`
+  process.stdout.write(`${timeoutLine}\n`)
+  appendRuntimeLog(timeoutLine)
+  return { appConfigPath }
+}
+
+function isLikelyLaunchRetryableError(error: unknown) {
+  if (isDevtoolsLoginRequiredError(error)) {
+    return false
+  }
+
+  const message = error instanceof Error ? error.message : String(error)
+  return isLikelyDevtoolsInfraErrorMessage(message)
+    || isLikelySimulatorBootErrorMessage(message)
+    || isLikelyRelaunchRetryableError(error)
+}
+
+function handleLaunchError(error: unknown): never {
+  const message = error instanceof Error ? error.message : String(error)
+  const isInfraError = isLikelyDevtoolsInfraErrorMessage(message)
+  const isLoginRequiredError = isDevtoolsLoginRequiredError(error)
+  const summary = isInfraError
+    ? '[e2e-runtime-stats] warn=0 error=0 exception=0 total=0'
+    : '[e2e-runtime-stats] warn=0 error=1 exception=0 total=1'
+  const logLine = isInfraError
+    ? `[runtime:launch-infra] ${message}`
+    : isLoginRequiredError
+      ? `[error] [runtime:launch-login] ${formatDevtoolsLoginRequiredError(error)}`
+      : `[error] [runtime:launch] ${message}`
+  if (isInfraError) {
+    process.stdout.write(`${summary}\n`)
+    process.stdout.write(`${logLine}\n`)
+  }
+  else {
+    process.stderr.write(`${summary}\n`)
+    process.stderr.write(`${logLine}\n`)
+  }
+  appendRuntimeLog(summary)
+  appendRuntimeLog(logLine)
+  if (isLoginRequiredError) {
+    throw createDevtoolsLoginRequiredError(error)
+  }
+  throw error
 }
 
 async function waitForRelaunchPageRoot(page: any, timeoutMs = RELAUNCH_READY_TIMEOUT) {
@@ -504,46 +652,53 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
   patchAutomatorVersionCheck()
   const { projectConfig, timeout, trustProject, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
-  return automator.launch({
-    ...rest,
-    timeout: timeout ?? 90_000,
-    trustProject: resolvedTrustProject,
-    projectConfig: {
-      libVersion: DEFAULT_LIB_VERSION,
-      ...projectConfig,
-    },
-  })
-    .then((miniProgram) => {
-      const withRuntimeLogs = enhanceMiniProgramWithRuntimeLogs(miniProgram)
-      return enhanceMiniProgramRelaunch(withRuntimeLogs)
-    })
-    .catch((error) => {
-      const message = error instanceof Error ? error.message : String(error)
-      const isInfraError = isLikelyDevtoolsInfraErrorMessage(message)
-      const isLoginRequiredError = isDevtoolsLoginRequiredError(error)
-      const summary = isInfraError
-        ? '[e2e-runtime-stats] warn=0 error=0 exception=0 total=0'
-        : '[e2e-runtime-stats] warn=0 error=1 exception=0 total=1'
-      const logLine = isInfraError
-        ? `[runtime:launch-infra] ${message}`
-        : isLoginRequiredError
-          ? `[error] [runtime:launch-login] ${formatDevtoolsLoginRequiredError(error)}`
-          : `[error] [runtime:launch] ${message}`
-      if (isInfraError) {
-        process.stdout.write(`${summary}\n`)
-        process.stdout.write(`${logLine}\n`)
+  return (async () => {
+    for (let attempt = 1; attempt <= LAUNCH_RETRIES; attempt += 1) {
+      let miniProgram: any = null
+      try {
+        const projectMeta = await resolveLaunchProjectMeta(rest.projectPath)
+        miniProgram = await automator.launch({
+          ...rest,
+          timeout: timeout ?? 90_000,
+          trustProject: resolvedTrustProject,
+          projectConfig: {
+            libVersion: DEFAULT_LIB_VERSION,
+            ...projectConfig,
+          },
+        })
+
+        const withRuntimeLogs = enhanceMiniProgramWithRuntimeLogs(miniProgram)
+        const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs)
+        if (projectMeta?.warmupRoute) {
+          await withRelaunch.reLaunch(projectMeta.warmupRoute)
+        }
+        return withRelaunch
       }
-      else {
-        process.stderr.write(`${summary}\n`)
-        process.stderr.write(`${logLine}\n`)
+      catch (error) {
+        if (miniProgram) {
+          try {
+            await miniProgram.close()
+          }
+          catch {
+          }
+        }
+
+        if (attempt < LAUNCH_RETRIES && isLikelyLaunchRetryableError(error)) {
+          const rawMessage = error instanceof Error ? error.message : String(error)
+          const compactMessage = rawMessage.replace(/\s+/g, ' ').trim()
+          const retryLine = `[warn] [runtime:launch-retry] attempt=${attempt}/${LAUNCH_RETRIES} delay=${LAUNCH_RETRY_DELAY}ms reason=${compactMessage.slice(0, 240)}`
+          process.stdout.write(`${retryLine}\n`)
+          appendRuntimeLog(retryLine)
+          await sleep(LAUNCH_RETRY_DELAY)
+          continue
+        }
+
+        handleLaunchError(error)
       }
-      appendRuntimeLog(summary)
-      appendRuntimeLog(logLine)
-      if (isLoginRequiredError) {
-        throw createDevtoolsLoginRequiredError(error)
-      }
-      throw error
-    })
+    }
+
+    throw new Error('[runtime:launch] exhausted launch retries')
+  })()
 }
 
 export async function assertDevtoolsLoggedIn(projectPath: string) {
