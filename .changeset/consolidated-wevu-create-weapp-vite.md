@@ -5,58 +5,6 @@
 
 整合 wevu 路由与运行时能力增强相关 changeset。
 
-## 合并来源
-- blue-apples-jump.md
-- blue-halls-listen.md
-- bright-falcons-cheer.md
-- calm-pets-fry.md
-- chilly-wasps-enjoy.md
-- cold-apricots-impress.md
-- cool-needles-warn.md
-- dirty-bees-work.md
-- early-olives-trade.md
-- fair-hats-switch.md
-- fair-spoons-visit.md
-- fast-eggs-try.md
-- five-mangos-grab.md
-- funny-buses-whisper.md
-- fuzzy-pigs-cheat.md
-- good-pianos-juggle.md
-- green-bears-hear.md
-- green-cups-bow.md
-- green-houses-smile.md
-- green-lamps-brush.md
-- green-zebras-think.md
-- itchy-points-begin.md
-- late-poems-think.md
-- lazy-lions-film.md
-- mighty-garlics-teach.md
-- neat-lions-swim.md
-- neat-pens-jam.md
-- neat-squids-dance.md
-- odd-cups-beam.md
-- old-emus-decide.md
-- olive-cameras-itch.md
-- quick-cameras-wave.md
-- quiet-badgers-sparkle.md
-- quiet-planes-check.md
-- rare-brooms-argue.md
-- red-lamps-talk.md
-- rude-countries-yawn.md
-- silly-cobras-wave.md
-- small-seas-knock.md
-- sour-houses-listen.md
-- swift-icons-fail.md
-- tall-bottles-push.md
-- tame-geese-taste.md
-- tidy-bottles-joke.md
-- tiny-countries-listen.md
-- tough-rice-wave.md
-- twelve-turtles-tickle.md
-- wild-peaches-smell.md
-- wise-buses-jam.md
-- young-pears-glow.md
-
 ## 变更摘要
 1. **blue-apples-jump.md**：对齐 `wevu/router` 的导航钩子调用心智：`beforeEach` / `beforeResolve` 统一支持 `(to, from, context?)`，`afterEach` 支持 `(to, from, failure?, context?)`，让默认使用方式与 Vue Router 更一致，同时保留 `context` 作为高级扩展参数。
 2. **blue-halls-listen.md**：为 `wevu` 新增 `usePageScrollThrottle()` 组合式 API：可在 `setup()` 中直接注册节流版 `onPageScroll` 回调，支持 `interval`、`leading`、`trailing` 选项，并返回 `stop` 句柄用于手动停止监听。 该能力会在 `onUnload/onDetached` 自动清理挂起的 trailing 定时器，避免页面销毁后残留滚动任务；同时补齐运行时导出覆盖与类型测试，确保 API 可用性与类型推导稳定。
