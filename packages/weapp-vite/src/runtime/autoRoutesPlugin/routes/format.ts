@@ -46,6 +46,8 @@ export function createTypedRouterDefinition(routes: AutoRoutes) {
     '// oxlint-disable',
     '// ------',
     '// 由 weapp-vite 自动生成，请勿编辑。',
+    'import \'wevu/router\';',
+    '',
     'declare module \'weapp-vite/auto-routes\' {',
     `    export type AutoRoutesPages = ${pagesType};`,
     `    export type AutoRoutesEntries = ${entriesType};`,
