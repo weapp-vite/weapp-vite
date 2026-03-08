@@ -13,6 +13,7 @@ describe('createTypedRouterDefinition', () => {
     expect(dts).toContain('// biome-ignore lint: disable')
     expect(dts).toContain('// oxlint-disable')
     expect(dts).toContain('// ------')
+    expect(dts).toContain('import \'wevu/router\';')
     expect(dts).not.toContain('readonly [')
     expect(dts).toContain('    export type AutoRoutesPages = [')
     expect(dts).toContain('        "pages/home/index"')
