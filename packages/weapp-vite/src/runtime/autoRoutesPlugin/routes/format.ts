@@ -28,6 +28,7 @@ function formatSubPackagesTuple(subPackages: AutoRoutesSubPackage[], baseIndent 
     lines.push(`${fieldIndent}readonly root: ${JSON.stringify(pkg.root)};`)
     const pages = formatTuple(pkg.pages, fieldIndent)
     lines.push(`${fieldIndent}readonly pages: ${pages};`)
+    lines.push(`${fieldIndent}[k: string]: unknown;`)
     lines.push(`${objectIndent}}${index < subPackages.length - 1 ? ',' : ''}`)
   })
 
