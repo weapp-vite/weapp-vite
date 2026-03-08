@@ -39,6 +39,21 @@ function generateExpressionCode(exp: t.Expression) {
   return code
 }
 
+function normalizeStyleFallbackValue(value: string) {
+  return value.trim().replace(/;+\s*$/, '')
+}
+
+function buildStyleErrorFallback(staticValue: string | undefined, shouldHideByDefault: boolean) {
+  const segments: string[] = []
+  if (staticValue?.trim()) {
+    segments.push(normalizeStyleFallbackValue(staticValue))
+  }
+  if (shouldHideByDefault) {
+    segments.push('display: none')
+  }
+  return segments.join(';')
+}
+
 function mergeJsExpressionParts(parts: t.Expression[]) {
   if (!parts.length) {
     return t.stringLiteral('')
@@ -131,6 +146,7 @@ function createClassStyleBinding(
   type: ClassStyleBinding['type'],
   exp: string,
   expAst?: ClassStyleBinding['expAst'],
+  errorFallback?: string,
 ): ClassStyleBinding {
   const sameTypeCount = context.classStyleBindings.filter(binding => binding.type === type).length
   const name = type === 'class'
@@ -138,13 +154,17 @@ function createClassStyleBinding(
     : type === 'style'
       ? `__wv_style_${sameTypeCount}`
       : `__wv_bind_${sameTypeCount}`
-  return {
+  const binding: ClassStyleBinding = {
     name,
     type,
     exp,
     expAst,
     forStack: cloneForStack(context),
   }
+  if (errorFallback !== undefined) {
+    binding.errorFallback = errorFallback
+  }
+  return binding
 }
 
 export function renderClassAttribute(
@@ -186,7 +206,7 @@ export function renderClassAttribute(
   }
   const expAst = mergeJsExpressionParts(jsParts)
   const exp = generateExpressionCode(expAst)
-  const binding = createClassStyleBinding(context, 'class', exp, expAst)
+  const binding = createClassStyleBinding(context, 'class', exp, expAst, staticValue ?? '')
   context.classStyleBindings.push(binding)
   const indexAccess = buildForIndexAccess(context)
   return `class="${renderMustache(`${binding.name}${indexAccess}`, context)}"`
@@ -252,7 +272,13 @@ export function renderStyleAttribute(
   }
   const expAst = mergeJsExpressionParts(jsParts)
   const exp = generateExpressionCode(expAst)
-  const binding = createClassStyleBinding(context, 'style', exp, expAst)
+  const binding = createClassStyleBinding(
+    context,
+    'style',
+    exp,
+    expAst,
+    buildStyleErrorFallback(staticValue, Boolean(vShowExp)),
+  )
   context.classStyleBindings.push(binding)
   const indexAccess = buildForIndexAccess(context)
   return `style="${renderMustache(`${binding.name}${indexAccess}`, context)}"`

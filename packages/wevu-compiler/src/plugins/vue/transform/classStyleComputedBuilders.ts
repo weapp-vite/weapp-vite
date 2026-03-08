@@ -39,6 +39,7 @@ function buildNormalizedExpression(
   const normalizeHelper = binding.type === 'class'
     ? helpers.normalizeClass
     : helpers.normalizeStyle
+  const errorFallback = binding.errorFallback ?? ''
   const exp = binding.expAst ? t.cloneNode(binding.expAst, true) : t.stringLiteral('')
 
   const normalizedCall = t.callExpression(t.cloneNode(normalizeHelper), [exp])
@@ -50,7 +51,7 @@ function buildNormalizedExpression(
           t.blockStatement([t.returnStatement(normalizedCall)]),
           t.catchClause(
             t.identifier('__wv_expr_err'),
-            t.blockStatement([t.returnStatement(t.stringLiteral(''))]),
+            t.blockStatement([t.returnStatement(t.stringLiteral(errorFallback))]),
           ),
           null,
         ),
