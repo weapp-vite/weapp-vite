@@ -37,6 +37,18 @@ const featureList = [
     path: '/pages/subpath-entries/index',
   },
   {
+    key: 'router-showcase',
+    title: 'router showcase',
+    summary: '展示命名路由、alias、query 编解码与 hash-only/forward/go',
+    path: '/pages/router-showcase/index',
+  },
+  {
+    key: 'router-dynamic',
+    title: 'router dynamic',
+    summary: '展示 add/remove/clear 路由与守卫链路',
+    path: '/pages/router-dynamic/index',
+  },
+  {
     key: 'native-uses-vue',
     title: 'native -> vue',
     summary: '展示原生组件通过 usingComponents 引入 Vue 组件',

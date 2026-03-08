@@ -42,6 +42,20 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       <view class="feature-nav-item-title">store</view>
       <view class="feature-nav-item-summary">展示 setup/options store 与 patch/reset/订阅能力</view>
     </navigator>
+    <navigator class="feature-nav-item" url="/pages/subpath-entries/index" role="link">
+      <view class="feature-nav-item-title">subpath entries</view>
+      <view class="feature-nav-item-summary">展示 wevu/router|store|api|fetch 子路径入口联动</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/router-showcase/index" role="link">
+      <view class="feature-nav-item-title">router showcase</view>
+      <view class="feature-nav-item-summary">
+        展示命名路由、alias、query 编解码与 hash-only/forward/go
+      </view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/router-dynamic/index" role="link">
+      <view class="feature-nav-item-title">router dynamic</view>
+      <view class="feature-nav-item-summary">展示 add/remove/clear 路由与守卫链路</view>
+    </navigator>
     <navigator class="feature-nav-item" url="/pages/native-uses-vue/index" role="link">
       <view class="feature-nav-item-title">native -&gt; vue</view>
       <view class="feature-nav-item-summary">展示原生组件通过 usingComponents 引入 Vue 组件</view>
@@ -83,6 +97,62 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
       </native-card>
     </view>
   </nativeusesvue>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-dynamic/index 1`] = `
+"<view class="router-dynamic-page">
+  <view class="router-dynamic-page__title">wevu/router 能力展示 (dynamic + guards)</view>
+  <view class="router-dynamic-page__subtitle">
+    展示 add/remove/clear、options 快照、beforeEach/beforeResolve/afterEach/onError
+  </view>
+  <view class="router-dynamic-page__line" id="router-dynamic-base">base routes = pending</view>
+  <view class="router-dynamic-page__line" id="router-dynamic-add-remove">
+    add/remove summary = pending
+  </view>
+  <view class="router-dynamic-page__line" id="router-dynamic-clear">clear summary = pending</view>
+  <view class="router-dynamic-page__line" id="router-dynamic-options">
+    options summary = pending
+  </view>
+  <view class="router-dynamic-page__line" id="router-dynamic-guard">guard summary = pending</view>
+  <view class="router-dynamic-page__line" id="router-dynamic-error">error summary = pending</view>
+  <view class="router-dynamic-page__line" id="router-dynamic-run">run summary = idle</view>
+  <view class="router-dynamic-page__btn" id="router-dynamic-run-e2e">run router dynamic e2e</view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-showcase/index 1`] = `
+"<view class="router-showcase-page">
+  <view class="router-showcase-page__title">wevu/router 能力展示 (showcase)</view>
+  <view class="router-showcase-page__subtitle">
+    展示 query 编解码、命名路由、alias、hash-only 失败、forward/go/isReady
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-route">
+    route summary = /pages/router-showcase/index|/pages/router-showcase/index
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-parse">parse summary = pending</view>
+  <view class="router-showcase-page__line" id="router-showcase-stringify">
+    stringify summary = pending
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-named">named summary = pending</view>
+  <view class="router-showcase-page__line" id="router-showcase-alias">alias summary = pending</view>
+  <view class="router-showcase-page__line" id="router-showcase-relative">
+    relative summary = pending
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-hash-only">
+    hash-only summary = pending
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-forward">
+    forward summary = pending
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-go">go summary = pending</view>
+  <view class="router-showcase-page__line" id="router-showcase-ready">ready summary = pending</view>
+  <view class="router-showcase-page__line" id="router-showcase-run">run summary = idle</view>
+  <view class="router-showcase-page__btn" id="router-showcase-run-e2e">
+    run router showcase e2e
+  </view>
 </view>
 "
 `;
@@ -149,6 +219,29 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
   <view id="router-target-main-marker">
     route=pages/router-stability/target/index source=unknown
   </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/subpath-entries/index 1`] = `
+"<view class="subpath-entries-page">
+  <view class="subpath-entries-page__title">wevu 子路径入口综合场景</view>
+  <view class="subpath-entries-page__subtitle">
+    覆盖 wevu/router、wevu/store、wevu/api、wevu/fetch 的联动使用
+  </view>
+  <view class="subpath-entries-page__line" id="subpath-router-fullpath">
+    router fullPath = pending
+  </view>
+  <view class="subpath-entries-page__line" id="subpath-store-summary">
+    store count/label = 0 / init
+  </view>
+  <view class="subpath-entries-page__line" id="subpath-api-status">api status = pending</view>
+  <view class="subpath-entries-page__line" id="subpath-fetch-status">fetch status = pending</view>
+  <view class="subpath-entries-page__line" id="subpath-fetch-payload">fetch payload = pending</view>
+  <view class="subpath-entries-page__line" id="subpath-request-count">request count = 0</view>
+  <view class="subpath-entries-page__line" id="subpath-request-echo">request body echo =</view>
+  <view class="subpath-entries-page__line" id="subpath-run-summary">run summary = idle</view>
+  <view class="subpath-entries-page__btn" id="subpath-run-e2e">run e2e scenario</view>
 </view>
 "
 `;
