@@ -71,6 +71,20 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/router-showcase/index",
+          "pathName": "pages/router-showcase/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/router-dynamic/index",
+          "pathName": "pages/router-dynamic/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/native-uses-vue/index",
           "pathName": "pages/native-uses-vue/index",
           "query": "",
