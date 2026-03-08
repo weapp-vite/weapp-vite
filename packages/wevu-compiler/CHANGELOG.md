@@ -1,5 +1,21 @@
 # @wevu/compiler
 
+## 6.7.4
+
+### Patch Changes
+
+- 🐛 **整合 wevu compiler 相关 changeset。** [`3449921`](https://github.com/weapp-vite/weapp-vite/commit/3449921ee8d3ff327ccbbad114ad1984a858781e) by @sonofmagic
+
+  ## 变更摘要
+  1. **cool-rings-double.md**：修复 `<script setup>` 中 `defineOptions({ behaviors: [...] })` 的编译兼容性：当 `behaviors` 依赖原生 `Behavior()` 返回值且构建环境不存在全局 `Behavior` 时，不再在 `defineOptions` 内联阶段抛错，而是回退为保留原始 `defineOptions` 表达式继续编译。补充了内联单测与 `compileVueFile` 端到端测试，覆盖内建行为字符串与原生 `Behavior` 导入两类场景。
+
+- 🐛 **修复模板中 `:class` 与 `v-show` 绑定表达式在首帧访问未就绪对象（如 `errors.email`）时的闪烁问题。现在 class/style 运行时绑定在表达式抛错时会使用更安全的回退值：`class` 保留静态类名，`v-show` 默认回退到 `display: none`，避免先显示后隐藏和样式短暂丢失。同时补充 template 解析阶段的 HTML void 标签处理：当 `input` 等标签未显式书写 `/>` 时，编译器会按自闭合标签解析并输出，避免后续兄弟节点被错误嵌套进 `input`。** [`f2da08b`](https://github.com/weapp-vite/weapp-vite/commit/f2da08b48b7d44fe60ac27dc91a742afda1055b5) by @sonofmagic
+
+- 🐛 **汇总 `c8f491b328e2151eb8b8d284a1fac0974de09476` 与 `4ba41941f18028bedbb4b8d75426780b442d95c6` 两个重构提交。** [`590893f`](https://github.com/weapp-vite/weapp-vite/commit/590893f02d3bac84a4b3566326cbe5498880edf9) by @sonofmagic
+  ## 变更摘要
+  1. `c8f491b328e2151eb8b8d284a1fac0974de09476`：重构 `@wevu/compiler`，将过长源码拆分为职责更聚焦的模块（覆盖 JSX 编译流程、`vueSfc` block src 解析、template 元素辅助逻辑、class/style computed 构建、`defineOptions` 序列化等），降低单文件复杂度并提升维护性。该提交以代码组织优化为主，不改变既有编译语义。
+  2. `4ba41941f18028bedbb4b8d75426780b442d95c6`：重构 `@weapp-vite/web` 运行时，拆分 `element`、`mediaApi`、`network`、`selectorQuery` 等超长模块为独立子模块（如 `mediaApi/*`、`network/*`），并抽离配套类型定义，增强边界清晰度与后续可扩展性。该提交同样以结构重排为主，不引入对外行为变更。
+
 ## 6.7.3
 
 ## 6.7.2
