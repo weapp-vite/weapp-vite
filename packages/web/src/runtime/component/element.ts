@@ -1,9 +1,10 @@
-import type { ComponentRuntimeState } from './state'
+import type {
+  CreateComponentElementClassOptions,
+  WeappComponentInstance,
+} from './elementTypes'
 import type {
   ComponentOptions,
-  ComponentPublicInstance,
   DataRecord,
-  PageLifeTimeHooks,
 } from './types'
 import { html } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
@@ -18,16 +19,7 @@ import {
 import { bindRuntimeEvents } from './events'
 import { cloneValue, coerceValue, toCamelCase } from './utils'
 
-export interface WeappComponentInstance extends ComponentPublicInstance {
-  __weappSync: (nextMethods: ComponentOptions['methods']) => void
-  __weappInvokePageLifetime: (type: keyof PageLifeTimeHooks) => void
-}
-
-interface CreateComponentElementClassOptions {
-  BaseElement: typeof HTMLElement
-  runtimeState: ComponentRuntimeState
-  instances: Set<WeappComponentInstance>
-}
+export type { WeappComponentInstance } from './elementTypes'
 
 export function createComponentElementClass({
   BaseElement,
@@ -51,17 +43,13 @@ export function createComponentElementClass({
 
     constructor() {
       super()
-
       const dataOption = typeof runtimeState.componentRef.data === 'function'
         ? (runtimeState.componentRef.data as () => DataRecord)()
         : (runtimeState.componentRef.data ?? {})
-
       this.#properties = { ...runtimeState.defaultPropertyValues }
       this.#state = { ...cloneValue(this.#properties), ...cloneValue(dataOption) }
-
       this.#methods = {}
       this.#syncMethods(runtimeState.componentRef.methods ?? {})
-
       for (const [propName] of runtimeState.propertyEntries) {
         Object.defineProperty(this, propName, {
           configurable: true,
@@ -70,7 +58,6 @@ export function createComponentElementClass({
           set: value => this.#setProperty(propName, value),
         })
       }
-
       if (!supportsLit) {
         const host = this as unknown as HTMLElement
         if (!host.shadowRoot && typeof host.attachShadow === 'function') {
@@ -78,7 +65,6 @@ export function createComponentElementClass({
         }
         ;(this as any).renderRoot = host.shadowRoot ?? host
       }
-
       instances.add(this)
       runtimeState.lifetimes.created?.call(this)
     }

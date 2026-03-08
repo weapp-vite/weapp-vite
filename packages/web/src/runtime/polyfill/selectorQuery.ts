@@ -1,58 +1,11 @@
-interface SelectorQueryNodeFields {
-  id?: boolean
-  dataset?: boolean
-  rect?: boolean
-  size?: boolean
-  scrollOffset?: boolean
-  properties?: string[]
-  computedStyle?: string[]
-  context?: boolean
-  node?: boolean
-}
-
-type SelectorQueryNodeCallback = (result: any) => void
-
-interface SelectorQuery {
-  in: (context?: unknown) => SelectorQuery
-  select: (selector: string) => SelectorQueryNodesRef
-  selectAll: (selector: string) => SelectorQueryNodesRef
-  selectViewport: () => SelectorQueryNodesRef
-  exec: (callback?: (result: any[]) => void) => SelectorQuery
-}
-
-interface SelectorQueryNodesRef {
-  boundingClientRect: (callback?: SelectorQueryNodeCallback) => SelectorQuery
-  scrollOffset: (callback?: SelectorQueryNodeCallback) => SelectorQuery
-  fields: (fields: SelectorQueryNodeFields, callback?: SelectorQueryNodeCallback) => SelectorQuery
-  node: (callback?: SelectorQueryNodeCallback) => SelectorQuery
-}
-
-type SelectorTargetDescriptor
-  = | { type: 'node', selector: string, multiple: boolean }
-    | { type: 'viewport' }
-
-type SelectorQueryTask
-  = | {
-    type: 'boundingClientRect'
-    target: SelectorTargetDescriptor
-    callback?: SelectorQueryNodeCallback
-  }
-  | {
-    type: 'scrollOffset'
-    target: SelectorTargetDescriptor
-    callback?: SelectorQueryNodeCallback
-  }
-  | {
-    type: 'fields'
-    target: SelectorTargetDescriptor
-    fields: SelectorQueryNodeFields
-    callback?: SelectorQueryNodeCallback
-  }
-  | {
-    type: 'node'
-    target: SelectorTargetDescriptor
-    callback?: SelectorQueryNodeCallback
-  }
+import type {
+  SelectorQuery,
+  SelectorQueryNodeCallback,
+  SelectorQueryNodeFields,
+  SelectorQueryNodesRef,
+  SelectorQueryTask,
+  SelectorTargetDescriptor,
+} from './selectorQueryTypes'
 
 function isQueryRoot(value: unknown): value is ParentNode {
   if (!value || typeof value !== 'object') {
