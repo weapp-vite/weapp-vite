@@ -6,6 +6,23 @@ import { buildClassStyleWxsTag } from './template/classStyleRuntime'
 import { transformNode } from './template/nodes'
 import { wechatPlatform } from './template/platforms'
 
+const HTML_VOID_TAGS = new Set([
+  'area',
+  'base',
+  'br',
+  'col',
+  'embed',
+  'hr',
+  'img',
+  'input',
+  'link',
+  'meta',
+  'param',
+  'source',
+  'track',
+  'wbr',
+])
+
 export type { MiniProgramPlatform } from './template/platform'
 export { alipayPlatform, getMiniProgramTemplatePlatform, swanPlatform, ttPlatform, wechatPlatform } from './template/platforms'
 export type { TemplateCompileResult } from './template/types'
@@ -36,6 +53,7 @@ export function compileVueTemplateToWxml(
   try {
     // 使用 Vue compiler-core 解析模板
     const ast = parse(template, {
+      isVoidTag: tag => HTML_VOID_TAGS.has(tag),
       onError: (error) => {
         warnings.push(`模板解析失败：${error.message}`)
       },

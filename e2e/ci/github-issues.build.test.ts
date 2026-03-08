@@ -417,6 +417,9 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageWxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
     expect(issuePageWxml).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
     expect(issuePageWxml).not.toContain('errors.email ?')
+    expect(issuePageWxml).toMatch(/<input[^>]*class="\{\{__wv_cls_\d+\}\}"[^>]*\/>/)
+    expect(issuePageWxml).not.toContain('</input>')
+    expect(issuePageWxml).toMatch(/<input[^>]*\/><view style="\{\{__wv_style_\d+\}\}" class="issue322-error-tip">/)
 
     expect(issuePageJs).toContain('__wv_cls_0')
     expect(issuePageJs).toContain('__wv_style_0')

@@ -467,6 +467,21 @@ describe('compileVueTemplateToWxml', () => {
     expect(warnings.some(message => message.includes('v-model'))).toBe(true)
   })
 
+  it('treats input as void tag even without explicit self-closing slash', () => {
+    const template = `
+<view>
+  <input class="a" :value="name">
+  <view class="b">{{ name }}</view>
+</view>
+    `.trim()
+
+    const { code } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(code).toContain('<input class="a" value="{{name}}" />')
+    expect(code).not.toContain('</input>')
+    expect(code).toContain('<view class="b">{{name}}</view>')
+  })
+
   it('handles custom directives with and without expression', () => {
     const withExp = compileVueTemplateToWxml(
       `<view v-track="eventId" />`,
