@@ -147,6 +147,7 @@ export interface ClassStyleBinding {
   type: 'class' | 'style' | 'bind'
   exp: string
   expAst?: Expression
+  errorFallback?: string
   forStack: ForParseResult[]
 }
 

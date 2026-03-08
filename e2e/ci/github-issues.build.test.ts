@@ -403,6 +403,28 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageJs).toMatch(/pick:\[[^\]]*['"`]__wv_bind_\d+['"`]/)
   })
 
+  it('issue #322: keeps static class and hidden v-show fallback when expression access throws', async () => {
+    await runBuild()
+
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-322/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-322/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-322 class/v-show first paint flicker')
+    expect(issuePageWxml).toContain('set email error')
+    expect(issuePageWxml).toContain('clear email error')
+    expect(issuePageWxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
+    expect(issuePageWxml).not.toContain('errors.email ?')
+
+    expect(issuePageJs).toContain('__wv_cls_0')
+    expect(issuePageJs).toContain('__wv_style_0')
+    expect(issuePageJs).toContain('Object.prototype.hasOwnProperty.call(this.$state,`errors`)')
+    expect(issuePageJs).toMatch(/return["'`]issue322-input issue322-input-base["'`]/)
+    expect(issuePageJs).toMatch(/return["'`]display: none["'`]/)
+  })
+
   it('issue #317: keeps shared chunk duplication in subpackages without invalid self or runtime imports', async () => {
     await runBuild()
 

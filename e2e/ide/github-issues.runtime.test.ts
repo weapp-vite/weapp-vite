@@ -948,6 +948,63 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
+  it('issue #322: keeps static class and hidden v-show state on first render before errors object exists', async () => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-322/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-322/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-322 class/v-show first paint flicker')
+    expect(issuePageWxml).toMatch(/class="\{\{__wv_cls_\d+\}\}"/)
+    expect(issuePageWxml).toMatch(/style="\{\{__wv_style_\d+\}\}"/)
+    expect(issuePageJs).toMatch(/return["'`]issue322-input issue322-input-base["'`]/)
+    expect(issuePageJs).toMatch(/return["'`]display: none["'`]/)
+
+    const miniProgram = await getSharedMiniProgram()
+
+    try {
+      const issuePage = await miniProgram.reLaunch('/pages/issue-322/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-322 page')
+      }
+      await issuePage.waitFor(500)
+      const resetResult = await issuePage.callMethod('_resetE2E')
+      expect(resetResult?.ok).toBe(true)
+      expect(resetResult?.hasEmailError).toBe(false)
+      await issuePage.waitFor(260)
+
+      const initialWxml = await readPageWxml(issuePage)
+      expect(initialWxml).toContain('state: none')
+      expect(await issuePage.data('__wv_cls_0')).toBe('issue322-input issue322-input-base')
+      expect(await issuePage.data('__wv_style_0')).toBe('display: none')
+      expect(await readClassName(issuePage, '.issue322-input')).toContain('issue322-input-base')
+      expect(await readClassName(issuePage, '.issue322-input')).not.toContain('issue322-input-error')
+
+      await tapElement(issuePage, '.issue322-btn-set')
+      await issuePage.waitFor(260)
+      const setResult = await issuePage.callMethod('_runE2E')
+      expect(setResult?.ok).toBe(true)
+      expect(setResult?.hasEmailError).toBe(true)
+      expect(setResult?.emailError).toBe('invalid email')
+      expect(await issuePage.data('__wv_cls_0')).toContain('issue322-input-error')
+      expect(await issuePage.data('__wv_style_0')).toBe('')
+      expect(await readClassName(issuePage, '.issue322-input')).toContain('issue322-input-error')
+
+      await tapElement(issuePage, '.issue322-btn-clear')
+      await issuePage.waitFor(260)
+      const clearResult = await issuePage.callMethod('_runE2E')
+      expect(clearResult?.ok).toBe(true)
+      expect(clearResult?.hasEmailError).toBe(false)
+      expect(await issuePage.data('__wv_cls_0')).toBe('issue322-input issue322-input-base')
+      expect(await issuePage.data('__wv_style_0')).toBe('display: none')
+      expect(await readClassName(issuePage, '.issue322-input')).toContain('issue322-input-base')
+      expect(await readClassName(issuePage, '.issue322-input')).not.toContain('issue322-input-error')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('issue #300: renders destructured boolean props in runtime call-expression bindings', async () => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-300/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-300/index.js')

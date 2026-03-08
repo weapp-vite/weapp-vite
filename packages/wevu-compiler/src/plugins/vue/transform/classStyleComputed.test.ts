@@ -25,6 +25,7 @@ describe('classStyleComputed', () => {
         type: 'class',
         exp: 'foo',
         expAst: t.identifier('foo'),
+        errorFallback: 'base',
         forStack: [],
       },
       {
@@ -32,6 +33,7 @@ describe('classStyleComputed', () => {
         type: 'style',
         exp: 'bar',
         expAst: t.identifier('bar'),
+        errorFallback: 'display: none',
         forStack: [],
       },
       {
@@ -59,6 +61,8 @@ describe('classStyleComputed', () => {
     expect(code).toContain('normalizeClass')
     expect(code).toContain('normalizeStyle')
     expect(code).toContain('__wv_bind_0')
+    expect(code).toContain('return"base"')
+    expect(code).toContain('return"display: none"')
   })
 
   it('builds nested for expressions for array/object lists', () => {

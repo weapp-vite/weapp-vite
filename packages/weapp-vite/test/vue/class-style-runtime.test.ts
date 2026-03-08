@@ -342,6 +342,44 @@ defineProps<{
     expect(scriptResult.code).toContain('return ""')
   })
 
+  it('keeps static class as catch fallback when dynamic class expression throws', () => {
+    const templateResult = compileVueTemplateToWxml(
+      `<view class="issue322-input issue322-input-base" :class="{ 'issue322-input-error': errors.email }" />`,
+      'test.vue',
+      {
+        classStyleRuntime: 'js',
+      },
+    )
+
+    const scriptResult = transformScript('export default {}', {
+      classStyleRuntime: 'js',
+      classStyleBindings: templateResult.classStyleBindings ?? [],
+    })
+
+    expect(scriptResult.code).toContain('Object.prototype.hasOwnProperty.call(this.$state, "errors")')
+    expect(scriptResult.code).toContain('issue322-input-error')
+    expect(scriptResult.code).toContain('return "issue322-input issue322-input-base"')
+  })
+
+  it('keeps display:none as catch fallback when v-show expression throws', () => {
+    const templateResult = compileVueTemplateToWxml(
+      `<view style="color:#0f172a" v-show="errors.email" />`,
+      'test.vue',
+      {
+        classStyleRuntime: 'js',
+      },
+    )
+
+    const scriptResult = transformScript('export default {}', {
+      classStyleRuntime: 'js',
+      classStyleBindings: templateResult.classStyleBindings ?? [],
+    })
+
+    expect(scriptResult.code).toContain('Object.prototype.hasOwnProperty.call(this.$state, "errors")')
+    expect(scriptResult.code).toContain('display: none')
+    expect(scriptResult.code).toContain('return "color:#0f172a;display: none"')
+  })
+
   it('guards v-for item class expression evaluation errors', () => {
     const templateResult = compileVueTemplateToWxml(
       `<view v-for="(event, index) in events" :class="selectedEventIdx === index ? (event.isPublic ? 'on' : 'off') : 'idle'" />`,
