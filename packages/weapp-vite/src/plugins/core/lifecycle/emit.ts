@@ -577,12 +577,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       rewriteBundleNpmImportsForAlipay(rolldownBundle, configService.packageJson.dependencies, configService.weappViteConfig?.npm?.alipayNpmMode)
     }
     else {
-      const includeNormalSubPackages = configService.weappViteConfig?.npm?.experimentalNormalSubpackageNpm === true
       const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
-      const independentSubPackageMap = scanService.independentSubPackageMap ?? new Map<string, SubPackageMetaValue>()
-      const localSubPackageMetas = [...includeNormalSubPackages
-        ? subPackageMap.values()
-        : independentSubPackageMap.values()]
+      const localSubPackageMetas = [...subPackageMap.values()]
+        .filter(meta => Array.isArray(meta.subPackage.dependencies) && meta.subPackage.dependencies.length > 0)
 
       for (const meta of localSubPackageMetas) {
         for (const output of Object.values(rolldownBundle)) {

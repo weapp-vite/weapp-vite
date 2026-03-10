@@ -152,7 +152,8 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
             entries: resolveSubPackageEntries(subPackage),
           }
           const subPackageConfig = configService.weappViteConfig?.subPackages?.[subPackage.root!]
-          meta.subPackage.dependencies = subPackageConfig?.dependencies
+          const npmSubPackageConfig = configService.weappViteConfig?.npm?.subPackages?.[subPackage.root!]
+          meta.subPackage.dependencies = npmSubPackageConfig?.dependencies ?? subPackageConfig?.dependencies
           meta.subPackage.inlineConfig = subPackageConfig?.inlineConfig
           meta.autoImportComponents = subPackageConfig?.autoImportComponents
           meta.styleEntries = normalizeSubPackageStyleEntries(
@@ -183,14 +184,14 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
     }
 
     if (scanState.appEntry) {
-      return Array.from(subPackageMap.values())
+      return [...subPackageMap.values()]
     }
 
     throw new Error(`在 ${configService.absoluteSrcRoot} 目录下没有找到 \`app.json\`, 请确保你初始化了小程序项目，或者在 \`vite.config.ts\` 中设置的正确的 \`weapp.srcRoot\` 配置路径  `)
   }
 
   function isMainPackageFileName(fileName: string) {
-    return Array.from(independentSubPackageMap.keys()).every((root) => {
+    return [...independentSubPackageMap.keys()].every((root) => {
       return !fileName.startsWith(root)
     })
   }
@@ -243,7 +244,7 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
       }
     },
     drainIndependentDirtyRoots() {
-      const roots = Array.from(independentDirtyRoots)
+      const roots = [...independentDirtyRoots]
       independentDirtyRoots.clear()
       return roots
     },
