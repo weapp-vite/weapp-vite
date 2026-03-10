@@ -19,10 +19,10 @@ catalog:
   '@mini-types/alipay': ^3.0.14
   '@tailwindcss/postcss': ^4.2.1
   '@tailwindcss/vite': ^4.2.1
-  '@types/node': ^25.3.5
+  '@types/node': ^25.4.0
   '@types/semver': ^7.7.1
   '@vant/weapp': ^1.11.7
-  '@vue/compiler-core': ^3.5.29
+  '@vue/compiler-core': ^3.5.30
   '@vue/language-core': ^3.2.5
   antd-mini: ^3.4.3
   autoprefixer: ^10.4.27
@@ -56,9 +56,9 @@ catalog:
   ts-morph: ^27.0.2
   tslib: ^2.8.1
   typescript: ^5.9.3
-  vite: 8.0.0-beta.16
+  vite: 8.0.0-beta.18
   vite-plugin-inspect: ^11.3.3
-  vue: ^3.5.29
+  vue: ^3.5.30
   vue-tsc: ^3.2.5
   weapp-tailwindcss: ^4.10.3
   zod: ^4.3.6

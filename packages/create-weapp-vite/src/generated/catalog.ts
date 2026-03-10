@@ -12,10 +12,10 @@ export const TEMPLATE_CATALOG = {
   '@mini-types/alipay': '^3.0.14',
   '@tailwindcss/postcss': '^4.2.1',
   '@tailwindcss/vite': '^4.2.1',
-  '@types/node': '^25.3.5',
+  '@types/node': '^25.4.0',
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
-  '@vue/compiler-core': '^3.5.29',
+  '@vue/compiler-core': '^3.5.30',
   '@vue/language-core': '^3.2.5',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
@@ -52,8 +52,8 @@ export const TEMPLATE_CATALOG = {
   tailwindcss: '^3.4.19',
   tslib: '^2.8.1',
   typescript: '^5.9.3',
-  vite: '8.0.0-beta.16',
-  vue: '^3.5.29',
+  vite: '8.0.0-beta.18',
+  vue: '^3.5.30',
   zod: '^4.3.6'
 } as const
 

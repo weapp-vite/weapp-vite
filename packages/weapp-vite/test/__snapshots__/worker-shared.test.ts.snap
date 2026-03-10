@@ -1,10 +1,12 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`worker-shared > dist > app.js 1`] = `
-"App({
+"//#region packages/weapp-vite/test/fixtures/worker-shared/src/app.ts
+App({
 	globalData: {},
 	onLaunch() {}
 });
+//#endregion
 "
 `;
 
@@ -32,7 +34,9 @@ exports[`worker-shared > dist > app.wxss 1`] = `
 `;
 
 exports[`worker-shared > dist > components/Navbar/Navbar.js 1`] = `
-"Component({});
+"//#region packages/weapp-vite/test/fixtures/worker-shared/src/components/Navbar/Navbar.ts
+Component({});
+//#endregion
 "
 `;
 
@@ -91,7 +95,9 @@ function tapName(event, ownerInstance) {
 `;
 
 exports[`worker-shared > dist > pages/index/index.js 1`] = `
-"Page({});
+"//#region packages/weapp-vite/test/fixtures/worker-shared/src/pages/index/index.ts
+Page({});
+//#endregion
 "
 `;
 
@@ -154,28 +160,37 @@ exports[`worker-shared > dist > theme.json 1`] = `
 
 exports[`worker-shared > dist > workers/hello.js 1`] = `
 "const require_util = require("./util-56X7Zw3b.js");
+//#region packages/weapp-vite/test/fixtures/worker-shared/src/workers/hello.ts
 worker.onMessage((res) => {
 	console.log(res, require_util.hello);
 });
+//#endregion
 "
 `;
 
 exports[`worker-shared > dist > workers/index.js 1`] = `
-"var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+"//#region \\0rolldown/runtime.js
+var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+//#endregion
 const require_util = require("./util-56X7Zw3b.js");
+//#endregion
+//#region packages/weapp-vite/test/fixtures/worker-shared/src/workers/index.js
 var utils = (/* @__PURE__ */ __commonJSMin(((exports, module) => {
 	module.exports = { a: 1 };
 })))();
 worker.onMessage((res) => {
 	console.log(res, utils, require_util.hello);
 });
+//#endregion
 "
 `;
 
 exports[`worker-shared > dist > workers/util-56X7Zw3b.js 1`] = `
-"function hello() {
+"//#region packages/weapp-vite/test/fixtures/worker-shared/src/utils/util.ts
+function hello() {
 	return "world";
 }
+//#endregion
 Object.defineProperty(exports, "hello", {
 	enumerable: true,
 	get: function() {
