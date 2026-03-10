@@ -113,17 +113,17 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
       await dev.waitFor(waitForFileContains(LOGS_WXML_DIST, modifyMarker), 'dist template updated after modify')
 
       // add route — small delay lets the watcher settle after the previous modify event
-      await sleep(500)
+      await sleep(1_000)
       await fs.writeFile(ADDED_ROUTE_VUE_PATH, `<template><view>${addMarker}</view></template>\n`, 'utf8')
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router includes added route')
 
       // delete route
-      await sleep(500)
+      await sleep(1_000)
       await fs.remove(ADDED_ROUTE_VUE_PATH)
       await dev.waitFor(waitForFileNotContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router removes added route')
 
       // recreate route
-      await sleep(500)
+      await sleep(1_000)
       await fs.writeFile(ADDED_ROUTE_VUE_PATH, `<template><view>${recreateMarker}</view></template>\n`, 'utf8')
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router restores recreated route')
     }
@@ -158,7 +158,7 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
       await dev.waitFor(waitForFileContains(APP_JS_DIST, MARKETING_CAMPAIGN_ROUTE), 'initial subpackage route in app.js globalData')
 
       // small delay lets the watcher settle after initial build
-      await sleep(500)
+      await sleep(1_000)
       await fs.writeFile(ADDED_ROUTE_VUE_PATH, `<template><view>${addMarker}</view></template>\n`, 'utf8')
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router includes added route')
 
@@ -169,7 +169,7 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
       await dev.waitFor(waitForFileContains(APP_JS_DIST, ADDED_ROUTE), 'app.js globalData includes added route after app macro change')
       await dev.waitFor(waitForFileContains(ADDED_ROUTE_WXML_DIST, addMarker), 'added route page generated after app macro change')
 
-      await sleep(500)
+      await sleep(1_000)
       await fs.remove(ADDED_ROUTE_VUE_PATH)
       await dev.waitFor(waitForFileNotContains(TYPED_ROUTER_PATH, `"${ADDED_ROUTE}"`), 'typed-router removes added route')
     }
