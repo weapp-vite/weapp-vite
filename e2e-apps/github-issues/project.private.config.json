@@ -148,6 +148,13 @@
           "launchMode": "default"
         },
         {
+          "name": "subpackages/issue-327/index",
+          "pathName": "subpackages/issue-327/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "subpackages/user/index",
           "pathName": "subpackages/user/index",
           "query": "",

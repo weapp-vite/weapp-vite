@@ -662,6 +662,7 @@ export interface WeappViteConfig {
     cache?: boolean
     /**
      * @description 构建 npm 的配置，可传入 Vite 的库模式配置，让不同的包走不同的配置
+     * - 返回值中的 `build.outDir` 同时影响二次 bundle 的依赖与直接复制 `miniprogram` 产物的依赖
      * @example
      * buildOptions: (options, pkg) => {
      *   if (pkg.name === 'my-lib') return { ...options, minify: false }
