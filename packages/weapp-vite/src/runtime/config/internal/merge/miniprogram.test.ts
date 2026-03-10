@@ -54,6 +54,10 @@ describe('runtime config merge miniprogram', () => {
     expect(applyRuntimePlatform).toHaveBeenCalledWith('miniprogram')
     expect(result.mode).toBe('development')
     expect(result.root).toBe('/project')
+    expect(result.weappVite).toEqual({
+      name: 'weapp-vite',
+      runtime: 'miniprogram',
+    })
     expect(result.define).toMatchObject({
       __DEV__: true,
       __VITE_IS_MODERN__: 'false',
@@ -146,6 +150,10 @@ describe('runtime config merge miniprogram', () => {
     expect(applyRuntimePlatform).toHaveBeenCalledWith('miniprogram')
     expect(result.mode).toBe('production')
     expect(result.root).toBe('/project')
+    expect(result.weappVite).toEqual({
+      name: 'weapp-vite',
+      runtime: 'miniprogram',
+    })
     expect(result.logLevel).toBe('info')
     expect(result.define).toMatchObject({
       __PROD__: true,

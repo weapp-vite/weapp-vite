@@ -5,8 +5,11 @@ import type { SubPackageMetaValue } from '../../../../types'
 import { defu } from '@weapp-core/shared'
 import path from 'pathe'
 import { defaultExcluded } from '../../../../defaults'
+import { applyWeappViteHostMeta } from '../../../../pluginHost'
 import { stripRollupOptions } from './inline'
 import { arrangePlugins } from './plugins'
+
+const PACKAGE_NAME_REGEX = /[-/\\^$*+?.()|[\]{}]/g
 
 interface MergeMiniprogramOptions {
   ctx: MutableCompilerContext
@@ -47,7 +50,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
   if (packageJson?.dependencies) {
     external.push(
       ...Object.keys(packageJson.dependencies).map((pkg) => {
-        return new RegExp(`^${pkg.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}(\\/|$)`)
+        return new RegExp(`^${pkg.replace(PACKAGE_NAME_REGEX, '\\$&')}(\\/|$)`)
       }),
     )
   }
@@ -112,6 +115,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
       ...(inline.define ?? {}),
       __VITE_IS_MODERN__: 'false',
     }
+    applyWeappViteHostMeta(inline, 'miniprogram')
     stripRollupOptions(inline)
     arrangePlugins(inline, ctx, subPackageMeta)
     injectBuiltinAliases(inline)
@@ -139,6 +143,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
     ...(inlineConfig.define ?? {}),
     __VITE_IS_MODERN__: 'false',
   }
+  applyWeappViteHostMeta(inlineConfig, 'miniprogram')
   stripRollupOptions(inlineConfig)
   arrangePlugins(inlineConfig, ctx, subPackageMeta)
   inlineConfig.logLevel = 'info'

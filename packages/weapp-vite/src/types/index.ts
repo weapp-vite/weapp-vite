@@ -1,3 +1,4 @@
+export type { WeappViteHostMeta, WeappViteRuntime } from '../pluginHost'
 export * from './config'
 export * from './context'
 export * from './entry'

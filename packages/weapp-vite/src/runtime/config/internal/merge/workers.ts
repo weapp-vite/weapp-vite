@@ -1,6 +1,7 @@
 import type { InlineConfig } from 'vite'
 import type { MutableCompilerContext } from '../../../../context'
 import { defu } from '@weapp-core/shared'
+import { applyWeappViteHostMeta } from '../../../../pluginHost'
 import { vitePluginWeappWorkers } from '../../../../plugins'
 import { stripRollupOptions } from './inline'
 
@@ -43,6 +44,7 @@ export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<I
         },
       },
     )
+    applyWeappViteHostMeta(inline, 'miniprogram')
     stripRollupOptions(inline)
     injectBuiltinAliases(inline)
     return inline
@@ -61,6 +63,7 @@ export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<I
       },
     },
   )
+  applyWeappViteHostMeta(inlineConfig, 'miniprogram')
   stripRollupOptions(inlineConfig)
   inlineConfig.logLevel = 'info'
   injectBuiltinAliases(inlineConfig)

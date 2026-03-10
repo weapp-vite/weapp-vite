@@ -2,6 +2,7 @@ import type { InlineConfig, PluginOption } from 'vite'
 import type { ResolvedWeappWebConfig } from '../../types'
 import { defu } from '@weapp-core/shared'
 import { weappWebPlugin } from '@weapp-vite/web'
+import { applyWeappViteHostMeta } from '../../../../pluginHost'
 import { stripRollupOptions } from './inline'
 
 interface MergeWebOptions {
@@ -82,10 +83,9 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
 
   inline.build ??= {}
   inline.build.outDir = web.outDir
-  if (inline.build.emptyOutDir == null) {
-    inline.build.emptyOutDir = !isDev
-  }
+  inline.build.emptyOutDir ??= !isDev
 
+  applyWeappViteHostMeta(inline, 'web')
   inline.define = defu(inline.define ?? {}, getDefineImportMetaEnv())
   injectBuiltinAliases(inline)
 
