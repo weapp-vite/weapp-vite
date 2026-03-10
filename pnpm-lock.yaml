@@ -1080,7 +1080,14 @@ importers:
 
   e2e-apps/chunk-modes: {}
 
-  e2e-apps/github-issues: {}
+  e2e-apps/github-issues:
+    dependencies:
+      dayjs:
+        specifier: 'catalog:'
+        version: 1.11.19
+      tdesign-miniprogram:
+        specifier: 'catalog:'
+        version: 1.12.3
 
   e2e-apps/issue-814-tailwind3:
     devDependencies:
@@ -19966,8 +19973,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@5.9.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.0(typescript@5.9.3)
+      '@typescript-eslint/types': 8.57.0
       debug: 4.4.3
       typescript: 5.9.3
     transitivePeerDependencies:

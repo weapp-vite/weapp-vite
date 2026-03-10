@@ -266,6 +266,54 @@ describe('runtime npm package builder core', () => {
     expect(viteBuildMock).not.toHaveBeenCalled()
   })
 
+  it('applies npm.buildOptions outDir to miniprogram copy packages', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'mini-pkg')
+    const defaultOutRoot = path.resolve(root, 'dist/miniprogram_npm')
+    const customOutRoot = path.resolve(root, 'dist/subpackages/issue-327/miniprogram_npm')
+
+    await fs.ensureDir(path.resolve(pkgRoot, 'miniprogram/button'))
+    await fs.writeFile(path.resolve(pkgRoot, 'miniprogram/button/index.js'), 'module.exports = 1', 'utf8')
+
+    const buildOptions = vi.fn((options: any, pkgMeta: { name: string }) => {
+      return {
+        ...options,
+        build: {
+          ...options.build,
+          outDir: path.resolve(customOutRoot, pkgMeta.name),
+        },
+      }
+    })
+    const ctx = createMockContext({
+      cwd: root,
+      weappViteConfig: {
+        npm: {
+          buildOptions,
+        },
+      },
+    })
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'mini-pkg',
+        version: '0.0.0',
+        miniprogram: 'miniprogram',
+        dependencies: {},
+      },
+    })
+
+    await builder.buildPackage({
+      dep: 'mini-pkg',
+      outDir: defaultOutRoot,
+      isDependenciesCacheOutdate: true,
+    })
+
+    expect(buildOptions).toHaveBeenCalledTimes(1)
+    expect(await fs.pathExists(path.resolve(customOutRoot, 'mini-pkg/button/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(defaultOutRoot, 'mini-pkg/button/index.js'))).toBe(false)
+  })
+
   it('skips miniprogram copy build when cache is valid on weapp platform', async () => {
     const root = await createTempDir()
     const pkgRoot = path.resolve(root, 'mini-pkg')

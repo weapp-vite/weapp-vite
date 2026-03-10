@@ -30,11 +30,38 @@ interface BuildPackageArgs {
   isDependenciesCacheOutdate: boolean
 }
 
+interface ResolvePackageBuildTargetArgs {
+  entry: InputOption
+  name: string
+  options?: NpmBuildOptions
+  outDir: string
+}
+
+interface ResolvedPackageBuildTarget {
+  outDir: string
+  options?: NpmBuildOptions
+}
+
 const ALIPAY_EXTENSION_MAP: Record<string, string> = {
   '.wxml': '.axml',
   '.wxss': '.acss',
   '.wxs': '.sjs',
 }
+
+const WX_TEMPLATE_REFERENCE_RE = /\.wxml\b|\.wxss\b|\.wxs\b/
+const ESM_SYNTAX_RE = /\bimport\s|\bexport\s/
+const NULLISH_COALESCING_RE = /\?\?/
+const WX_DIRECTIVE_RE = /\bwx:(?:if|elif|else|for|for-item|for-index|key)\b/
+const WX_DIRECTIVE_CAPTURE_RE = /\bwx:(if|elif|else|for|for-item|for-index|key)\b/g
+const WXS_TAG_RE = /<\s*(?:\/\s*)?wxs\b/
+const WXS_CLOSING_TAG_RE = /<\s*\/\s*wxs\b/g
+const ELSE_ATTRIBUTE_RE = /\selse(?=[\s/>])/
+const IMPORT_SJS_TAG_RE = /<import-sjs([\s\S]*?)>/g
+const SRC_ATTRIBUTE_RE = /\bsrc\s*=\s*/g
+const MODULE_ATTRIBUTE_RE = /\bmodule\s*=\s*/g
+const WXML_EXTENSION_RE = /\.wxml\b/g
+const WXSS_EXTENSION_RE = /\.wxss\b/g
+const WXS_EXTENSION_RE = /\.wxs\b/g
 
 const ALIPAY_TEXT_FILE_EXTENSIONS = new Set([
   '.js',
@@ -109,15 +136,15 @@ export async function shouldRebuildCachedAlipayMiniprogramPackage(
       continue
     }
 
-    if (/\.wxml\b|\.wxss\b|\.wxs\b/.test(source)) {
+    if (WX_TEMPLATE_REFERENCE_RE.test(source)) {
       return true
     }
 
-    if (ext === '.js' && (/\bimport\s|\bexport\s/.test(source) || /\?\?/.test(source))) {
+    if (ext === '.js' && (ESM_SYNTAX_RE.test(source) || NULLISH_COALESCING_RE.test(source))) {
       return true
     }
 
-    if ((ext === '.axml' || ext === '.wxml') && (/\bwx:(?:if|elif|else|for|for-item|for-index|key)\b/.test(source) || /<\s*(?:\/\s*)?wxs\b/.test(source) || /\selse(?=[\s/>])/.test(source))) {
+    if ((ext === '.axml' || ext === '.wxml') && (WX_DIRECTIVE_RE.test(source) || WXS_TAG_RE.test(source) || ELSE_ATTRIBUTE_RE.test(source))) {
       return true
     }
   }
@@ -139,27 +166,27 @@ export async function shouldRebuildCachedAlipayMiniprogramPackage(
 }
 
 function hasEsmSyntax(source: string) {
-  return /\bimport\s|\bexport\s/.test(source)
+  return ESM_SYNTAX_RE.test(source)
 }
 
 function rewriteAlipayWxmlSyntax(source: string) {
   return source
-    .replace(/\bwx:(if|elif|else|for|for-item|for-index|key)\b/g, (_, directive: string) => `a:${directive}`)
-    .replace(/<\s*\/\s*wxs\b/g, '</import-sjs')
-    .replace(/<\s*wxs\b/g, '<import-sjs')
-    .replace(/<import-sjs([\s\S]*?)>/g, (tag) => {
+    .replace(WX_DIRECTIVE_CAPTURE_RE, (_, directive: string) => `a:${directive}`)
+    .replace(WXS_CLOSING_TAG_RE, '</import-sjs')
+    .replace(WXS_TAG_RE, '<import-sjs')
+    .replace(IMPORT_SJS_TAG_RE, (tag) => {
       return tag
-        .replace(/\bsrc\s*=\s*/g, 'from=')
-        .replace(/\bmodule\s*=\s*/g, 'name=')
+        .replace(SRC_ATTRIBUTE_RE, 'from=')
+        .replace(MODULE_ATTRIBUTE_RE, 'name=')
     })
-    .replace(/\selse(?=[\s/>])/g, ' a:else')
+    .replace(ELSE_ATTRIBUTE_RE, ' a:else')
 }
 
 function rewriteAlipayExtensionReferences(source: string) {
   return source
-    .replace(/\.wxml\b/g, '.axml')
-    .replace(/\.wxss\b/g, '.acss')
-    .replace(/\.wxs\b/g, '.sjs')
+    .replace(WXML_EXTENSION_RE, '.axml')
+    .replace(WXSS_EXTENSION_RE, '.acss')
+    .replace(WXS_EXTENSION_RE, '.sjs')
 }
 
 function transformWxmlToAxmlForAlipay(source: string) {
@@ -478,7 +505,24 @@ export function createPackageBuilder(
     return !isOutdated && await fs.pathExists(outDir)
   }
 
-  async function bundleBuild({ entry, name, options, outDir }: { entry: InputOption, name: string, options?: NpmBuildOptions, outDir: string }) {
+  function resolveBuildOutDir(options: NpmBuildOptions | undefined, fallbackOutDir: string) {
+    const rawOutDir = options?.build?.outDir
+    if (typeof rawOutDir !== 'string' || !rawOutDir.trim()) {
+      return fallbackOutDir
+    }
+
+    if (path.isAbsolute(rawOutDir)) {
+      return rawOutDir
+    }
+
+    const root = typeof options.root === 'string' && options.root
+      ? options.root
+      : ctx.configService?.cwd ?? process.cwd()
+
+    return path.resolve(root, rawOutDir)
+  }
+
+  function resolvePackageBuildTarget({ entry, name, options, outDir }: ResolvePackageBuildTargetArgs): ResolvedPackageBuildTarget {
     const defineImportMetaEnv = ctx.configService?.defineImportMetaEnv ?? {}
     const mergedOptions: NpmBuildOptions = defu<NpmBuildOptions, NpmBuildOptions[]>(options, {
       configFile: false,
@@ -520,35 +564,56 @@ export function createPackageBuilder(
     else if (isObject(resolvedOptions)) {
       finalOptions = resolvedOptions
     }
-    if (finalOptions) {
-      if (oxcVitePlugin) {
-        const toPluginArray = (plugins: NpmBuildOptions['plugins']): Plugin[] => {
-          const queue: unknown[] = []
-          const result: Plugin[] = []
-          if (plugins) {
-            queue.push(plugins)
-          }
-          while (queue.length > 0) {
-            const current = queue.shift()
-            if (!current) {
-              continue
-            }
-            if (Array.isArray(current)) {
-              queue.unshift(...current)
-              continue
-            }
-            result.push(current as Plugin)
-          }
-          return result
-        }
-        const existing = toPluginArray(finalOptions.plugins)
-        const hasPlugin = existing.includes(oxcVitePlugin)
-        const nextPlugins = hasPlugin ? existing : [oxcVitePlugin, ...existing]
-        finalOptions.plugins = nextPlugins
-      }
 
-      await viteBuild(finalOptions)
+    return {
+      outDir: resolveBuildOutDir(finalOptions ?? mergedOptions, outDir),
+      options: finalOptions,
     }
+  }
+
+  async function runResolvedBundleBuild(finalOptions: NpmBuildOptions | undefined) {
+    if (!finalOptions) {
+      return
+    }
+
+    if (oxcVitePlugin) {
+      const toPluginArray = (plugins: NpmBuildOptions['plugins']): Plugin[] => {
+        const queue: unknown[] = []
+        const result: Plugin[] = []
+        if (plugins) {
+          queue.push(plugins)
+        }
+        while (queue.length > 0) {
+          const current = queue.shift()
+          if (!current) {
+            continue
+          }
+          if (Array.isArray(current)) {
+            queue.unshift(...current)
+            continue
+          }
+          result.push(current as Plugin)
+        }
+        return result
+      }
+      const existing = toPluginArray(finalOptions.plugins)
+      const hasPlugin = existing.includes(oxcVitePlugin)
+      const nextPlugins = hasPlugin ? existing : [oxcVitePlugin, ...existing]
+      finalOptions.plugins = nextPlugins
+    }
+
+    await viteBuild(finalOptions)
+  }
+
+  async function bundleBuild({ entry, name, options, outDir }: { entry: InputOption, name: string, options?: NpmBuildOptions, outDir: string }) {
+    const resolvedTarget = resolvePackageBuildTarget({
+      entry,
+      name,
+      options,
+      outDir,
+    })
+
+    await runResolvedBundleBuild(resolvedTarget.options)
   }
 
   async function copyBuild({ from, to }: { from: string, to: string, name: string }) {
@@ -571,8 +636,26 @@ export function createPackageBuilder(
     const { packageJson: targetJson, rootPath } = packageInfo
     const dependencies = targetJson.dependencies ?? {}
     const keys = Object.keys(dependencies)
-    const destOutDir = path.resolve(outDir, dep)
     if (isMiniprogramPackage(targetJson)) {
+      const sourceDir = path.resolve(
+        rootPath,
+        targetJson.miniprogram,
+      )
+      const resolvedTarget = resolvePackageBuildTarget({
+        entry: {
+          index: sourceDir,
+        },
+        name: dep,
+        options,
+        outDir: path.resolve(outDir, dep),
+      })
+      const destOutDir = resolvedTarget.outDir
+
+      if (!resolvedTarget.options) {
+        npmLogger.info(`[npm] 依赖 \`${dep}\` 被 npm.buildOptions 跳过处理!`)
+        return
+      }
+
       if (await shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
         const alipayNpmDistDirName = getAlipayNpmDistDirName(ctx.configService.weappViteConfig?.npm?.alipayNpmMode)
         const shouldRebuildAlipayPackage = ctx.configService.platform === 'alipay'
@@ -584,10 +667,7 @@ export function createPackageBuilder(
         }
       }
       await copyBuild({
-        from: path.resolve(
-          rootPath,
-          targetJson.miniprogram,
-        ),
+        from: sourceDir,
         to: destOutDir,
         name: dep,
       })
@@ -620,6 +700,21 @@ export function createPackageBuilder(
         npmLogger.warn(`[npm] 无法解析模块 \`${dep}\`，跳过处理!`)
         return
       }
+      const resolvedTarget = resolvePackageBuildTarget({
+        entry: {
+          index,
+        },
+        name: dep,
+        options,
+        outDir: path.resolve(outDir, dep),
+      })
+      const destOutDir = resolvedTarget.outDir
+
+      if (!resolvedTarget.options) {
+        npmLogger.info(`[npm] 依赖 \`${dep}\` 被 npm.buildOptions 跳过处理!`)
+        return
+      }
+
       if (!isDependenciesCacheOutdate && await fs.pathExists(destOutDir)) {
         const destEntry = path.resolve(destOutDir, 'index.js')
         if (await fs.pathExists(destEntry)) {
@@ -630,14 +725,7 @@ export function createPackageBuilder(
           }
         }
       }
-      await bundleBuild({
-        entry: {
-          index,
-        },
-        name: dep,
-        options,
-        outDir: destOutDir,
-      })
+      await runResolvedBundleBuild(resolvedTarget.options)
       if (keys.length > 0) {
         await Promise.all(
           keys.filter(x => isBuiltin(x)).map((x) => {
