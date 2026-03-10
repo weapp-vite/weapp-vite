@@ -1,5 +1,21 @@
 # weapp-vite
 
+## 6.7.5
+
+### Patch Changes
+
+- 🐛 **修复自动路由 HMR 监听：新增 chokidar 文件监听补偿 Rolldown watcher 不触发新建文件的 watchChange 事件，同时在 `updateCandidateFromFile` 中对 `create` 和 `delete` 事件触发全量重扫，确保路由文件增删后 typed-router 和 app.json 能正确同步更新。** [`b127b5e`](https://github.com/weapp-vite/weapp-vite/commit/b127b5e0e54f223f6e019ece85c99a09e6862cab) by @sonofmagic
+
+- 🐛 **修复 issue #327：补齐 `weapp.npm.mainPackage.dependencies` 与 `weapp.npm.subPackages.<root>.dependencies` 在分包场景下的依赖分配能力。现在可以显式让主包不输出 `miniprogram_npm`，再按分包根目录分别声明应落入各自分包的 npm 依赖，避免依赖串包或主包残留产物；同时补上主包禁用 npm 输出时的缓存兜底逻辑，即使缓存标记未失效但缓存目录已经不存在，也会自动重新构建分包依赖，避免构建阶段因为缺失缓存目录而直接报错。此次改动同步补充了对应单测与 `github-issues` e2e 回归用例。** [#329](https://github.com/weapp-vite/weapp-vite/pull/329) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` 的 npm 构建新增更直观的依赖范围配置：现在可以通过 `weapp.npm.mainPackage.dependencies` 明确控制主包 `miniprogram_npm` 的输出范围，再通过 `weapp.npm.subPackages.<root>.dependencies` 显式声明各分包自己的 npm 依赖集合，让主包和分包的 npm 构建目标一眼可见，也为后续扩展主包 npm 自定义配置预留出清晰结构。此次改动同时补齐了依赖范围变更时的缓存失效与输出目录清理，避免旧的主包或分包 `miniprogram_npm` 残留；普通分包的本地 npm 输出也不再依赖额外实验开关，只要声明 `weapp.npm.subPackages.<root>.dependencies`，就会生成对应分包的 `miniprogram_npm`，并把分包内的 JS `require` 与 JSON `usingComponents` 路径本地化到该分包目录。** [#329](https://github.com/weapp-vite/weapp-vite/pull/329) by @sonofmagic
+
+- 🐛 **升级 `weapp-vite` 的构建链路依赖版本，包含 `rolldown`、`oxc-parser`、`@oxc-project/types` 与 `cac`，并同步更新 `create-weapp-vite` 模板 catalog 中的 `vite`、`vue`、`@vue/compiler-core`、`@types/node` 等依赖版本，使脚手架生成项目与当前工具链版本保持一致。** [`46c34e3`](https://github.com/weapp-vite/weapp-vite/commit/46c34e3ef3ff70f4162601b63825395d662cfec1) by @sonofmagic
+
+- 🐛 **为 weapp-vite 创建的 Vite 实例注入 `config.weappVite` 宿主元信息，并提供配套的检测 helper。这样用户自定义的 Vite 插件可以在 `config` 与 `configResolved` 阶段可靠判断自己当前是运行在 weapp-vite 中，还是普通 Vite 中，同时还能区分 `miniprogram` 与 `web` 两种 weapp-vite 运行面。** [`ae7fb25`](https://github.com/weapp-vite/weapp-vite/commit/ae7fb25d0a557bbb15653ffff684f580c6a6feb4) by @sonofmagic
+- 📦 **Dependencies** [`7dda40a`](https://github.com/weapp-vite/weapp-vite/commit/7dda40a4f4a9f0f5e76cfdd3a81bf2fbd5c3a163)
+  → `wevu@6.7.5`
+
 ## 6.7.4
 
 ### Patch Changes
