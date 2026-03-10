@@ -98,6 +98,13 @@ async function dispatchRuntimeNavigation(
   method: 'navigateTo' | 'navigateBack',
   payload: Record<string, unknown>,
 ) {
+  await expect.poll(async () => {
+    return await page.evaluate(({ method }) => {
+      const wxRuntime = (window as any).wx
+      return typeof wxRuntime?.[method] === 'function'
+    }, { method })
+  }, { timeout: 20_000 }).toBe(true)
+
   try {
     await page.evaluate(({ method, payload }) => {
       const wxRuntime = (window as any).wx
@@ -176,9 +183,9 @@ async function setCurrentPageData(page: Page, patch: Record<string, unknown>) {
 async function pageContainsVisibleText(page: Page, selector: string, text: string) {
   return await page.evaluate(({ selector, text }) => {
     const collectMatches = (root: ParentNode): HTMLElement[] => {
-      const matches = Array.from(root.querySelectorAll(selector))
+      const matches = [...root.querySelectorAll(selector)]
         .filter((element): element is HTMLElement => element instanceof HTMLElement)
-      const hosts = Array.from(root.querySelectorAll('*')) as HTMLElement[]
+      const hosts = [...root.querySelectorAll('*')] as HTMLElement[]
       for (const host of hosts) {
         if (host.shadowRoot) {
           matches.push(...collectMatches(host.shadowRoot))
@@ -220,8 +227,8 @@ interface NavigationBarState {
 async function getNavigationBarState(page: Page): Promise<NavigationBarState> {
   return await page.evaluate(() => {
     const collectMatches = (root: ParentNode, selector: string): Element[] => {
-      const matches = Array.from(root.querySelectorAll(selector))
-      const hosts = Array.from(root.querySelectorAll('*')) as HTMLElement[]
+      const matches = [...root.querySelectorAll(selector)]
+      const hosts = [...root.querySelectorAll('*')] as HTMLElement[]
       for (const host of hosts) {
         if (host.shadowRoot) {
           matches.push(...collectMatches(host.shadowRoot, selector))
