@@ -88,6 +88,14 @@ describe('runtime npm service', () => {
             mainPackage: {
               dependencies: false,
             },
+            subPackages: {
+              packageA: {
+                dependencies: ['dayjs', 'tdesign-miniprogram', 'clsx'],
+              },
+              packageB: {
+                dependencies: ['dayjs', 'tdesign-miniprogram', 'class-variance-authority'],
+              },
+            },
           },
         },
       },
