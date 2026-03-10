@@ -6,8 +6,6 @@ import type {
   JSXSpreadChild,
   JSXText,
 } from '@babel/types'
-
-type JSXChild = JSXText | JSXExpressionContainer | JSXSpreadChild | JSXElement | JSXFragment
 import type { JsxCompileContext } from './types'
 import * as t from '@babel/types'
 import {
@@ -21,6 +19,8 @@ import {
   unwrapTsExpression,
 } from './ast'
 import { compileJsxAttributes, extractJsxKeyExpression } from './attributes'
+
+type JSXChild = JSXText | JSXExpressionContainer | JSXSpreadChild | JSXElement | JSXFragment
 
 function compileListExpression(exp: Expression) {
   return normalizeInterpolationExpression(exp)
