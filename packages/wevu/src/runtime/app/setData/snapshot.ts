@@ -51,7 +51,7 @@ export function isShallowEqualValue(a: any, b: any): boolean {
     return false
   }
   for (const k of aKeys) {
-    if (!Object.prototype.hasOwnProperty.call(b, k)) {
+    if (!Object.hasOwn(b, k)) {
       return false
     }
     if (!Object.is(a[k], b[k])) {
@@ -97,7 +97,7 @@ export function isDeepEqualValue(
     if (budget.keys <= 0) {
       return false
     }
-    if (!Object.prototype.hasOwnProperty.call(b, k)) {
+    if (!Object.hasOwn(b, k)) {
       return false
     }
     if (!isDeepEqualValue(a[k], b[k], depth - 1, budget)) {
@@ -120,12 +120,12 @@ export function applySnapshotUpdate(
   let current: any = snapshot
   for (let i = 0; i < segments.length - 1; i++) {
     const key = segments[i]
-    if (!Object.prototype.hasOwnProperty.call(current, key) || current[key] == null || typeof current[key] !== 'object') {
+    if (!Object.hasOwn(current, key) || current[key] == null || typeof current[key] !== 'object') {
       current[key] = Object.create(null)
     }
     current = current[key]
   }
-  const leaf = segments[segments.length - 1]
+  const leaf = segments.at(-1)
   if (op === 'delete') {
     try {
       delete current[leaf]

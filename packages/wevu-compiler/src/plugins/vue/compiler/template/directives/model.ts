@@ -19,12 +19,14 @@ function getElementType(element: ElementNode | undefined): string {
   return ''
 }
 
+const QUOTE_RE = /"/g
+
 function transformVModel(
   element: ElementNode | undefined,
   expValue: string,
   context: TransformContext,
 ): string | null {
-  const escapedModel = expValue.replace(/"/g, '&quot;')
+  const escapedModel = expValue.replace(QUOTE_RE, '&quot;')
   const bindModel = (event: string) => {
     const bindAttr = context.platform.eventBindingAttr(event)
     return `${bindAttr}="__weapp_vite_model" data-wv-model="${escapedModel}"`

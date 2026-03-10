@@ -186,7 +186,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
           runtimeArgs = mappingRule?.mapArgs ? mappingRule.mapArgs(args) : args
         }
         catch (error) {
-          const lastArg = args.length > 0 ? args[args.length - 1] : undefined
+          const lastArg = args.length > 0 ? args.at(-1) : undefined
           if (hasCallbacks(lastArg)) {
             lastArg.fail?.(error)
             lastArg.complete?.(error)
@@ -201,7 +201,7 @@ export function createWeapi<TAdapter extends WeapiAdapter = WeapiCrossPlatformRa
           const result = runtimeMethod.apply(runtimeAdapter, runtimeArgs)
           return mappingRule?.mapResult ? mappingRule.mapResult(result, runtimeArgs) : result
         }
-        const lastArg = runtimeArgs.length > 0 ? runtimeArgs[runtimeArgs.length - 1] : undefined
+        const lastArg = runtimeArgs.length > 0 ? runtimeArgs.at(-1) : undefined
         if (hasCallbacks(lastArg)) {
           if (mappingRule?.mapResult && isPlainObject(lastArg)) {
             const options = lastArg as Record<string, any>

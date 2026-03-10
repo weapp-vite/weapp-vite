@@ -19,8 +19,10 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(currentDir, '..')
 const reportDir = path.join(rootDir, 'reports/api-compat')
 
+const PIPE_RE = /\|/g
+
 function escapePipe(value) {
-  return String(value).replace(/\|/g, '\\|')
+  return String(value).replace(PIPE_RE, '\\|')
 }
 
 function formatBool(value) {

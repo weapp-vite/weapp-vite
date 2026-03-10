@@ -147,7 +147,7 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
       return
     }
     for (const [key, value] of extraInstanceFieldEntries) {
-      if (Object.prototype.hasOwnProperty.call(instance, key)) {
+      if (Object.hasOwn(instance, key)) {
         continue
       }
       try {

@@ -88,7 +88,7 @@ function mergeComponentRefValue(
       return Reflect.has(target, key) || key in source
     },
     ownKeys(target) {
-      return Array.from(new Set([...Reflect.ownKeys(target), ...Reflect.ownKeys(source)]))
+      return [...new Set([...Reflect.ownKeys(target), ...Reflect.ownKeys(source)])]
     },
     getOwnPropertyDescriptor(target, key) {
       if (Reflect.has(target, key)) {

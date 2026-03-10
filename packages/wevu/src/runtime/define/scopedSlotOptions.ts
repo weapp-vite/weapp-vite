@@ -3,15 +3,23 @@ import type { ComputedDefinitions } from '../types'
 import { resolveDatasetEventValue, runInlineExpression } from '../register/inline'
 import { getOwnerProxy, getOwnerSnapshot, subscribeOwner } from '../scopedSlots'
 
+const AMP_RE = /&amp;/g
+const QUOT_RE = /&quot;/g
+const NUM_QUOT_RE = /&#34;/g
+const APOS_RE = /&apos;/g
+const NUM_APOS_RE = /&#39;/g
+const LT_RE = /&lt;/g
+const GT_RE = /&gt;/g
+
 function decodeWxmlEntities(value: string) {
   return value
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#34;/g, '"')
-    .replace(/&apos;/g, '\'')
-    .replace(/&#39;/g, '\'')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
+    .replace(AMP_RE, '&')
+    .replace(QUOT_RE, '"')
+    .replace(NUM_QUOT_RE, '"')
+    .replace(APOS_RE, '\'')
+    .replace(NUM_APOS_RE, '\'')
+    .replace(LT_RE, '<')
+    .replace(GT_RE, '>')
 }
 
 function parseInlineArgs(event: any) {
@@ -61,10 +69,10 @@ function mergeSlotProps(
   instance: any,
   override?: { __wvSlotScope?: unknown, __wvSlotProps?: unknown },
 ) {
-  const scopeSource = Object.prototype.hasOwnProperty.call(override ?? {}, '__wvSlotScope')
+  const scopeSource = Object.hasOwn(override ?? {}, '__wvSlotScope')
     ? (override as any).__wvSlotScope
     : instance?.properties?.__wvSlotScope
-  const propsSource = Object.prototype.hasOwnProperty.call(override ?? {}, '__wvSlotProps')
+  const propsSource = Object.hasOwn(override ?? {}, '__wvSlotProps')
     ? (override as any).__wvSlotProps
     : instance?.properties?.__wvSlotProps
   const scope = normalizeSlotBindings(scopeSource)

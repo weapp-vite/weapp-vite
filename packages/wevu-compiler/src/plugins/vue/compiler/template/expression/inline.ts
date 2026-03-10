@@ -67,7 +67,7 @@ function createMemberAccess(target: string, prop: string) {
 }
 
 function resolveSlotPropBinding(slotProps: Record<string, string>, name: string): string | null {
-  if (!Object.prototype.hasOwnProperty.call(slotProps, name)) {
+  if (!Object.hasOwn(slotProps, name)) {
     return null
   }
   const prop = slotProps[name]

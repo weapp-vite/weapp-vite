@@ -102,7 +102,7 @@ export function injectWevuPageFeatureFlagsIntoOptionsObject(
     return false
   }
 
-  const expectedKeys = Array.from(enabled)
+  const expectedKeys = [...enabled]
   const existingFeaturesProp = getObjectPropertyByKey(optionsObject, 'features')
   let changed = false
 

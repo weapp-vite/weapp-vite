@@ -104,11 +104,11 @@ function lowerOptionalChain(node: OptionalChainNode): t.Expression {
 
   const segments: t.Expression[] = [chain.base]
   for (const operation of chain.operations) {
-    const currentBase = t.cloneNode(segments[segments.length - 1])
+    const currentBase = t.cloneNode(segments.at(-1))
     segments.push(applyOptionalChainOperation(currentBase, operation))
   }
 
-  let lowered = t.cloneNode(segments[segments.length - 1])
+  let lowered = t.cloneNode(segments.at(-1))
   for (let index = chain.operations.length - 1; index >= 0; index--) {
     const operation = chain.operations[index]
     if (!operation.optional) {
@@ -123,6 +123,12 @@ function lowerOptionalChain(node: OptionalChainNode): t.Expression {
 
   return lowered
 }
+
+const TEMPLATE_INTERPOLATION_RE = /\$\{([^}]+)\}/g
+const EMPTY_STRING_CONCAT_LEFT_RE = /'\s*\+\s*''/g
+const EMPTY_STRING_CONCAT_RIGHT_RE = /''\s*\+\s*'/g
+const LEADING_EMPTY_CONCAT_RE = /^\s*''\s*\+\s*/g
+const TRAILING_EMPTY_CONCAT_RE = /\s*\+\s*''\s*$/g
 
 export function normalizeWxmlExpression(exp: string): string {
   if (!exp.includes('`') && !exp.includes('??') && !exp.includes('?.')) {
@@ -181,9 +187,9 @@ export function normalizeWxmlExpression(exp: string): string {
   catch {
     if (exp.startsWith('`') && exp.endsWith('`')) {
       const inner = exp.slice(1, -1)
-      let rewritten = `'${inner.replace(/\$\{([^}]+)\}/g, '\' + ($1) + \'')}'`
-      rewritten = rewritten.replace(/'\s*\+\s*''/g, '\'').replace(/''\s*\+\s*'/g, '\'')
-      rewritten = rewritten.replace(/^\s*''\s*\+\s*/g, '').replace(/\s*\+\s*''\s*$/g, '')
+      let rewritten = `'${inner.replace(TEMPLATE_INTERPOLATION_RE, '\' + ($1) + \'')}'`
+      rewritten = rewritten.replace(EMPTY_STRING_CONCAT_LEFT_RE, '\'').replace(EMPTY_STRING_CONCAT_RIGHT_RE, '\'')
+      rewritten = rewritten.replace(LEADING_EMPTY_CONCAT_RE, '').replace(TRAILING_EMPTY_CONCAT_RE, '')
       return rewritten
     }
 

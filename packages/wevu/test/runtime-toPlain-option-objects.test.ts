@@ -41,7 +41,7 @@ describe('runtime: toPlain does not unwrap plain objects with "value" key', () =
     opts.lifetimes.attached.call(inst)
     await Promise.resolve()
 
-    const mergedPayload = Object.assign({}, ...setData.mock.calls.map(call => call[0]))
+    const mergedPayload = setData.mock.calls.map(call => call[0]).reduce((acc, cur) => ({ ...acc, ...cur }), {})
     expect(mergedPayload.todoOptions).toEqual([
       { label: 'a', value: 0 },
       { label: 'b', value: 1 },

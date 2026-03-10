@@ -9,6 +9,8 @@ import { findSlotDirective, FOR_ITEM_ALIAS_PLACEHOLDER, parseForExpression, with
 import { transformComponentWithSlots } from './tag-component'
 import { transformNormalElement } from './tag-normal'
 
+const REGEX_SPECIAL_CHARS_RE = /[.*+?^${}()|[\]\\]/g
+
 function resolveConditionExpression(rawExpValue: string, context: TransformContext, hint: string) {
   const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue)
     ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
@@ -75,7 +77,7 @@ export function transformForElement(node: ElementNode, context: TransformContext
     const generatedItem = `__wv_item_${context.forIndexSeed++}`
     forInfo.item = generatedItem
     if (forInfo.itemAliases) {
-      const escaped = FOR_ITEM_ALIAS_PLACEHOLDER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const escaped = FOR_ITEM_ALIAS_PLACEHOLDER.replace(REGEX_SPECIAL_CHARS_RE, '\\$&')
       const placeholderRE = new RegExp(`\\b${escaped}\\b`, 'g')
       forInfo.itemAliases = Object.fromEntries(
         Object.entries(forInfo.itemAliases).map(([alias, expression]) => {

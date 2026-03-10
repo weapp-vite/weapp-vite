@@ -9,8 +9,10 @@ import type {
   RouteParamValueRaw,
 } from '../router'
 
+const PLUS_RE = /\+/g
+
 function decodeQuerySegment(value: string): string {
-  return decodeURIComponent(value.replace(/\+/g, ' '))
+  return decodeURIComponent(value.replace(PLUS_RE, ' '))
 }
 
 function encodeQuerySegment(value: string): string {

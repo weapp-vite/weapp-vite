@@ -106,7 +106,7 @@ export function useDisposables(): DisposableBag {
       return
     }
     disposed = true
-    const queue = Array.from(cleanupSet)
+    const queue = [...cleanupSet]
     cleanupSet.clear()
     for (const cleanup of queue) {
       try {

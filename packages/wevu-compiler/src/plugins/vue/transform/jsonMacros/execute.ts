@@ -149,7 +149,7 @@ const __weapp_defineThemeJson = (config) => (__weapp_json_macro_values.push(conf
         if (!next || typeof next !== 'object' || Array.isArray(next)) {
           throw new Error('宏的返回值必须解析为对象。')
         }
-        if (Object.prototype.hasOwnProperty.call(next, '$schema')) {
+        if (Object.hasOwn(next, '$schema')) {
           delete next.$schema
         }
         if (options?.merge) {

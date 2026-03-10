@@ -10,7 +10,7 @@ export interface CallWithPromiseHooks {
 
 function resolveOptionsArg(args: unknown[]) {
   const nextArgs = args.slice()
-  const lastArg = nextArgs.length > 0 ? nextArgs[nextArgs.length - 1] : undefined
+  const lastArg = nextArgs.length > 0 ? nextArgs.at(-1) : undefined
   if (isPlainObject(lastArg)) {
     const options = { ...lastArg }
     nextArgs[nextArgs.length - 1] = options
@@ -25,7 +25,7 @@ function resolveOptionsArg(args: unknown[]) {
  * @description 将错误按小程序回调风格分发；若无回调则返回 reject Promise。
  */
 export function callWithError(error: unknown, args: unknown[]) {
-  const lastArg = args.length > 0 ? args[args.length - 1] : undefined
+  const lastArg = args.length > 0 ? args.at(-1) : undefined
   if (hasCallbacks(lastArg)) {
     lastArg.fail?.(error)
     lastArg.complete?.(error)

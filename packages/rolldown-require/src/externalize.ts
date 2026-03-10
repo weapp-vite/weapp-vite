@@ -5,6 +5,8 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { isNodeBuiltin, isNodeLikeBuiltin } from './utils'
 
+const NON_RELATIVE_NON_HASH_RE = /^[^.#].*/
+
 export function createExternalizeDepsPlugin({
   entryFile,
   isESM,
@@ -22,7 +24,7 @@ export function createExternalizeDepsPlugin({
   return {
     name: 'externalize-deps',
     resolveId: {
-      filter: { id: /^[^.#].*/ },
+      filter: { id: NON_RELATIVE_NON_HASH_RE },
       async handler(
         this: PluginContext,
         id: string,

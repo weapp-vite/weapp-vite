@@ -11,6 +11,7 @@ import { latestVersion } from './npm'
 import { updateGitIgnore } from './updateGitignore'
 import { writeJsonFile } from './utils/fs'
 
+const DIGIT_RE = /\d/
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
 const templateCatalogMap: Record<string, string> = { ...TEMPLATE_CATALOG }
 const templateNamedCatalogMap: Record<string, Record<string, string>> = Object.fromEntries(
@@ -116,7 +117,7 @@ function normalizeTemplateDependencySpecs(pkgJson: PackageJson) {
       }
       else if (spec.startsWith('workspace:')) {
         const workspaceSpec = spec.slice('workspace:'.length)
-        if (workspaceSpec && /\d/.test(workspaceSpec)) {
+        if (workspaceSpec && DIGIT_RE.test(workspaceSpec)) {
           deps[name] = workspaceSpec
           continue
         }

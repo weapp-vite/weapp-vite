@@ -7,6 +7,9 @@ import { renderMustache } from '../mustache'
 import { transformNormalElement } from './tag-normal'
 import { transformForElement, transformIfElement } from './tag-structural'
 
+const TEMPLATE_OPEN_RE = /<template/g
+const TEMPLATE_CLOSE_RE = /<\/template>/g
+
 function resolveConditionExpression(rawExpValue: string, context: TransformContext, hint: string) {
   const runtimeExp = shouldFallbackToRuntimeBinding(rawExpValue)
     ? registerRuntimeBindingExpression(rawExpValue, context, { hint })
@@ -100,7 +103,7 @@ export function transformTemplateElement(node: ElementNode, context: TransformCo
       return transformIfElement(fakeNode, context, transformNode)
     }
     if (hasOtherDirective) {
-      return transformNormalElement(node, context, transformNode).replace(/<template/g, '<block').replace(/<\/template>/g, '</block>')
+      return transformNormalElement(node, context, transformNode).replace(TEMPLATE_OPEN_RE, '<block').replace(TEMPLATE_CLOSE_RE, '</block>')
     }
     return children
   }

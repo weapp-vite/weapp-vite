@@ -376,7 +376,7 @@ describe('defineComponent', () => {
           Array.from({ length: pageSize }, (_, index) => offset + index),
         )
         this.setData({
-          list: fresh ? nextList : this.data.list.concat(nextList),
+          list: fresh ? nextList : [...this.data.list, ...nextList],
           status: 0,
         })
       },

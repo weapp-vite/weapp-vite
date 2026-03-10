@@ -28,6 +28,13 @@ const TYPE_ALIASES = new Map([
 
 const EVENT_HANDLER_TYPE = 'WeappIntrinsicEventHandler'
 const IDENTIFIER_RE = /^[a-z_$][\w$]*$/i
+const SLASH_SEPARATOR_RE = /\s*\/\s*/g
+const RECORD_ANY_RE = /^Record<\s*string\s*,\s*any\s*>$/
+const ANY_ARRAY_RE = /\bany\[\]/g
+const BACKSLASH_RE = /\\/g
+const SINGLE_QUOTE_RE = /'/g
+const NON_ALNUM_RE = /[^a-z0-9]+/i
+const TS_EXT_RE = /\.ts$/
 
 const BASE_ATTRIBUTE_TYPES = {
   id: 'string | number',
@@ -46,7 +53,7 @@ function normalizeTypeName(raw) {
   if (!trimmed) {
     return undefined
   }
-  const normalizedRaw = trimmed.replace(/\s*\/\s*/g, ' | ')
+  const normalizedRaw = trimmed.replace(SLASH_SEPARATOR_RE, ' | ')
   const segments = normalizedRaw.split('|').map(segment => segment.trim()).filter(Boolean)
   if (segments.length === 0) {
     return undefined
@@ -68,14 +75,14 @@ function normalizeTypeSegment(segment) {
   if (lowered === 'any[]') {
     return 'unknown[]'
   }
-  if (/^Record<\s*string\s*,\s*any\s*>$/.test(segment)) {
+  if (RECORD_ANY_RE.test(segment)) {
     return 'Record<string, unknown>'
   }
-  return segment.replace(/\bany\[\]/g, 'unknown[]')
+  return segment.replace(ANY_ARRAY_RE, 'unknown[]')
 }
 
 function escapeSingleQuotes(value) {
-  return value.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')
+  return value.replace(BACKSLASH_RE, '\\\\').replace(SINGLE_QUOTE_RE, '\\\'')
 }
 
 function formatPropertyKey(name) {
@@ -91,7 +98,7 @@ function formatStringLiteral(value) {
 
 function toPascalCase(value) {
   return value
-    .split(/[^a-z0-9]+/i)
+    .split(NON_ALNUM_RE)
     .filter(Boolean)
     .map((segment) => {
       const lower = segment.toLowerCase()
@@ -124,7 +131,7 @@ function resolveEnumType(values) {
   if (literals.length === 0) {
     return undefined
   }
-  return Array.from(new Set(literals)).join(' | ')
+  return [...new Set(literals)].join(' | ')
 }
 
 function resolveAttributeType(attr) {
@@ -277,7 +284,7 @@ const indexLines = [
   '// 此文件由 components.json 自动生成，请勿直接修改。',
   '/* eslint-disable style/quote-props -- 生成的属性名需要保留引号 */',
   '',
-  ...elementFiles.map(file => `import type { ${file.typeName} } from './weappIntrinsicElements/elements/${file.fileName.replace(/\.ts$/, '')}'`),
+  ...elementFiles.map(file => `import type { ${file.typeName} } from './weappIntrinsicElements/elements/${file.fileName.replace(TS_EXT_RE, '')}'`),
   '',
   'export type { WeappIntrinsicElementBaseAttributes, WeappIntrinsicEventHandler } from \'./weappIntrinsicElements/base\'',
 ]
@@ -288,7 +295,7 @@ if (elementFiles.length === 0) {
 else {
   indexLines.push('', 'export interface WeappIntrinsicElements {')
   for (const file of elementFiles) {
-    const tagName = file.fileName.replace(/\.ts$/, '')
+    const tagName = file.fileName.replace(TS_EXT_RE, '')
     indexLines.push(`  ${formatPropertyKey(tagName)}: ${file.typeName}`)
   }
   indexLines.push('}')

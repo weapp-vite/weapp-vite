@@ -40,7 +40,7 @@ describe('runtime: setup returns non-serializable values', () => {
     inst.inc()
     await Promise.resolve()
 
-    const lastPayload = setData.mock.calls[setData.mock.calls.length - 1]?.[0] ?? {}
+    const lastPayload = setData.mock.calls.at(-1)?.[0] ?? {}
     expect(lastPayload).toEqual(expect.objectContaining({ count: 1 }))
     expect('inst' in lastPayload).toBe(false)
   })
@@ -73,7 +73,7 @@ describe('runtime: setup returns non-serializable values', () => {
     inst.inc()
     await Promise.resolve()
 
-    const lastPayload = setData.mock.calls[setData.mock.calls.length - 1]?.[0] ?? {}
+    const lastPayload = setData.mock.calls.at(-1)?.[0] ?? {}
     expect(lastPayload).toEqual(expect.objectContaining({ count: 1 }))
     expect('ctx' in lastPayload).toBe(false)
   })

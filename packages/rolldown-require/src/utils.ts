@@ -17,6 +17,9 @@ import {
   splitFileAndPostfix,
 } from './sharedUtils'
 
+const MJS_MTS_EXT_RE = /\.m[jt]s$/
+const CJS_CTS_EXT_RE = /\.c[jt]s$/
+
 /**
  * 内联类型以保持 `@rollup/pluginutils` 只作为 devDependencies。
  */
@@ -132,10 +135,10 @@ export function isFilePathESM(
   filePath: string,
   packageCache?: PackageCache,
 ): boolean {
-  if (/\.m[jt]s$/.test(filePath)) {
+  if (MJS_MTS_EXT_RE.test(filePath)) {
     return true
   }
-  else if (/\.c[jt]s$/.test(filePath)) {
+  else if (CJS_CTS_EXT_RE.test(filePath)) {
     return false
   }
   else {

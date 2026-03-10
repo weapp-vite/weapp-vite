@@ -23,11 +23,14 @@ function parseThreshold(argv) {
   return value
 }
 
+const CAMEL_CASE_BOUNDARY_RE = /([a-z])([A-Z])/g
+const NON_ALPHANUMERIC_RE = /[^a-z0-9]+/
+
 function splitMethodTokens(methodName) {
   return methodName
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(CAMEL_CASE_BOUNDARY_RE, '$1 $2')
     .toLowerCase()
-    .split(/[^a-z0-9]+/)
+    .split(NON_ALPHANUMERIC_RE)
     .filter(Boolean)
 }
 

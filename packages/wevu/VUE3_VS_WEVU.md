@@ -444,7 +444,7 @@ function assignNestedDiff(
     const keys = new Set([...Object.keys(prev), ...Object.keys(next)])
 
     keys.forEach((key) => {
-      if (!Object.prototype.hasOwnProperty.call(next, key)) {
+      if (!Object.hasOwn(next, key)) {
         output[`${path}.${key}`] = null // 🎯 删除属性
         return
       }

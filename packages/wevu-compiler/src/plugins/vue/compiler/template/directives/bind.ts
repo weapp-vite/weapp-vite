@@ -39,8 +39,11 @@ function createInlineObjectLiteralAttr(argValue: string, rawExpValue: string, co
   return `${argValue}="{{ ${expValue} }}"`
 }
 
-const isSimpleIdentifier = (value: string) => /^[A-Z_$][\w$]*$/i.test(value)
-const isSimpleMemberPath = (value: string) => /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i.test(value)
+const SIMPLE_IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
+const SIMPLE_MEMBER_PATH_RE = /^[A-Z_$][\w$]*(?:\.[A-Z_$][\w$]*)*$/i
+
+const isSimpleIdentifier = (value: string) => SIMPLE_IDENTIFIER_RE.test(value)
+const isSimpleMemberPath = (value: string) => SIMPLE_MEMBER_PATH_RE.test(value)
 
 export function transformBindDirective(
   node: DirectiveNode,

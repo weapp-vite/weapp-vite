@@ -1,5 +1,8 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 
+const CSS_RULE_RE = /([^{]+)(\{[^}]*\})/g
+const CSS_CLASS_RE = /\.([a-z_][\w-]*)(?:\[[^\]]+\])?\s*\{/gi
+
 /**
  * 样式编译结果。
  */
@@ -61,9 +64,8 @@ function transformScopedCss(source: string, id: string): string {
 
   // 更智能的 CSS 处理：找到选择器并在其后添加 [data-v-xxx]
   // 使用正则匹配 CSS 规则
-  const cssRuleRegex = /([^{]+)(\{[^}]*\})/g
 
-  return source.replace(cssRuleRegex, (match, selector, rules) => {
+  return source.replace(CSS_RULE_RE, (match, selector, rules) => {
     const trimmedSelector = selector.trim()
 
     // 跳过空选择器
@@ -104,7 +106,7 @@ function transformCssModules(source: string, id: string): {
   const hash = generateHash(id)
 
   // 匹配所有 .className { 形式的类
-  const classRegex = /\.([a-z_][\w-]*)(?:\[[^\]]+\])?\s*\{/gi
+  const classRegex = new RegExp(CSS_CLASS_RE.source, CSS_CLASS_RE.flags)
   const foundClasses: string[] = []
 
   let result: RegExpExecArray | null = classRegex.exec(source)

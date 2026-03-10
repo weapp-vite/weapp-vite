@@ -23,10 +23,10 @@ export function mapToastArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'content') && Object.prototype.hasOwnProperty.call(nextOptions, 'title')) {
+  if (!Object.hasOwn(nextOptions, 'content') && Object.hasOwn(nextOptions, 'title')) {
     nextOptions.content = nextOptions.title
   }
-  if (Object.prototype.hasOwnProperty.call(nextOptions, 'icon')) {
+  if (Object.hasOwn(nextOptions, 'icon')) {
     nextOptions.type = mapToastType(nextOptions.icon)
   }
   nextArgs[lastIndex] = nextOptions
@@ -66,7 +66,7 @@ export function mapLoadingArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'content') && Object.prototype.hasOwnProperty.call(nextOptions, 'title')) {
+  if (!Object.hasOwn(nextOptions, 'content') && Object.hasOwn(nextOptions, 'title')) {
     nextOptions.content = nextOptions.title
   }
   nextArgs[lastIndex] = nextOptions
@@ -86,7 +86,7 @@ export function mapActionSheetArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'items') && Array.isArray(nextOptions.itemList)) {
+  if (!Object.hasOwn(nextOptions, 'items') && Array.isArray(nextOptions.itemList)) {
     nextOptions.items = nextOptions.itemList
   }
   nextArgs[lastIndex] = nextOptions
@@ -97,7 +97,7 @@ export function mapActionSheetResult(result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (!Object.prototype.hasOwnProperty.call(result, 'tapIndex') && Object.prototype.hasOwnProperty.call(result, 'index')) {
+  if (!Object.hasOwn(result, 'tapIndex') && Object.hasOwn(result, 'index')) {
     return {
       ...result,
       tapIndex: result.index,
@@ -119,19 +119,19 @@ export function mapModalArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (Object.prototype.hasOwnProperty.call(nextOptions, 'showCancel') && nextOptions.showCancel === false) {
+  if (Object.hasOwn(nextOptions, 'showCancel') && nextOptions.showCancel === false) {
     throw createNotSupportedError('showModal', 'my')
   }
-  if (Object.prototype.hasOwnProperty.call(nextOptions, 'editable') && nextOptions.editable === true) {
+  if (Object.hasOwn(nextOptions, 'editable') && nextOptions.editable === true) {
     throw createNotSupportedError('showModal', 'my')
   }
-  if (Object.prototype.hasOwnProperty.call(nextOptions, 'placeholderText')) {
+  if (Object.hasOwn(nextOptions, 'placeholderText')) {
     throw createNotSupportedError('showModal', 'my')
   }
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'confirmButtonText') && Object.prototype.hasOwnProperty.call(nextOptions, 'confirmText')) {
+  if (!Object.hasOwn(nextOptions, 'confirmButtonText') && Object.hasOwn(nextOptions, 'confirmText')) {
     nextOptions.confirmButtonText = nextOptions.confirmText
   }
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'cancelButtonText') && Object.prototype.hasOwnProperty.call(nextOptions, 'cancelText')) {
+  if (!Object.hasOwn(nextOptions, 'cancelButtonText') && Object.hasOwn(nextOptions, 'cancelText')) {
     nextOptions.cancelButtonText = nextOptions.cancelText
   }
   nextArgs[lastIndex] = nextOptions
@@ -146,11 +146,11 @@ export function mapModalResult(result: any) {
   const nextResult = {
     ...result,
   } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextResult, 'cancel') && Object.prototype.hasOwnProperty.call(nextResult, 'confirm')) {
+  if (!Object.hasOwn(nextResult, 'cancel') && Object.hasOwn(nextResult, 'confirm')) {
     nextResult.cancel = !nextResult.confirm
     changed = true
   }
-  if (!Object.prototype.hasOwnProperty.call(nextResult, 'content')) {
+  if (!Object.hasOwn(nextResult, 'content')) {
     nextResult.content = ''
     changed = true
   }
@@ -161,7 +161,7 @@ export function mapChooseImageResult(result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (!Object.prototype.hasOwnProperty.call(result, 'tempFilePaths') && Array.isArray(result.apFilePaths)) {
+  if (!Object.hasOwn(result, 'tempFilePaths') && Array.isArray(result.apFilePaths)) {
     return {
       ...result,
       tempFilePaths: result.apFilePaths,

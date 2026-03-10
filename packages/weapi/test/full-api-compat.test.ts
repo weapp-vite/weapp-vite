@@ -20,7 +20,7 @@ function createMockAdapter(methods: readonly string[], nonFunctionMembers: reado
 
   for (const methodName of methods) {
     const spy = vi.fn((...args: any[]) => {
-      const lastArg = args.length > 0 ? args[args.length - 1] : undefined
+      const lastArg = args.length > 0 ? args.at(-1) : undefined
       if (lastArg && typeof lastArg === 'object') {
         lastArg.success?.({ ok: true, method: methodName })
         lastArg.complete?.({ ok: true, method: methodName })

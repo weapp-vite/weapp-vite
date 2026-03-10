@@ -5,27 +5,32 @@ import objectHash from 'object-hash'
 export { default as defu } from 'defu'
 export { default as get } from 'get-value'
 
+const SPECIAL_CHARS_RE = /[|\\{}()[\]^$+*?.]/g
+const HYPHEN_RE = /-/g
+const LAST_EXT_RE = /\.[^/.]+$/
+const ALL_EXT_RE = /(\.[^/.]+)+$/
+
 /**
  * @description 转义字符串中的正则特殊字符
  */
 export function escapeStringRegexp(str: string) {
   return str
-    .replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
-    .replace(/-/g, '\\x2d')
+    .replace(SPECIAL_CHARS_RE, '\\$&')
+    .replace(HYPHEN_RE, '\\x2d')
 }
 
 /**
  * @description 移除文件名的最后一个扩展名
  */
 export function removeExtension(file: string) {
-  return file.replace(/\.[^/.]+$/, '')
+  return file.replace(LAST_EXT_RE, '')
 }
 
 /**
  * @description 移除文件名的所有扩展名（多重后缀）
  */
 export function removeExtensionDeep(file: string) {
-  return file.replace(/(\.[^/.]+)+$/, '')
+  return file.replace(ALL_EXT_RE, '')
 }
 
 /**

@@ -7,7 +7,7 @@ export function collapsePayload(input: Record<string, any>) {
   const prefixStack: string[] = []
   for (const key of keys) {
     while (prefixStack.length) {
-      const prefix = prefixStack[prefixStack.length - 1]
+      const prefix = prefixStack.at(-1)
       if (key.startsWith(prefix)) {
         break
       }
@@ -161,7 +161,7 @@ export function mergeSiblingPayload(options: {
     groups.set(parent, list)
   }
 
-  const parents = Array.from(groups.entries())
+  const parents = [...groups.entries()]
     .filter(([parent, list]) => list.length >= mergeSiblingThreshold && !hasDelete.has(parent))
     .sort((a, b) => b[0].split('.').length - a[0].split('.').length)
 
@@ -192,10 +192,10 @@ export function mergeSiblingPayload(options: {
   }
 
   for (const [parent, list] of parents) {
-    if (Object.prototype.hasOwnProperty.call(out, parent)) {
+    if (Object.hasOwn(out, parent)) {
       continue
     }
-    const existingChildren = list.filter(k => Object.prototype.hasOwnProperty.call(out, k))
+    const existingChildren = list.filter(k => Object.hasOwn(out, k))
     if (existingChildren.length < mergeSiblingThreshold) {
       continue
     }

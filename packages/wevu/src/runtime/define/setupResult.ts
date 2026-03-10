@@ -63,7 +63,7 @@ export function applySetupResult(runtime: any, target: any, result: any) {
             enumerable: false,
             get() {
               const propsSource = (rawState as any).__wevuProps
-              if (propsSource && typeof propsSource === 'object' && Object.prototype.hasOwnProperty.call(propsSource, key)) {
+              if (propsSource && typeof propsSource === 'object' && Object.hasOwn(propsSource, key)) {
                 return (propsSource as any)[key]
               }
               return fallbackValue

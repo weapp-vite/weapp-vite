@@ -21,7 +21,7 @@ function run() {
 
   const fullyAlignedApis = matrix.filter(item => item.alipaySupported && item.douyinSupported).length
 
-  const intersectionMethods = Array.from(wxMethods).filter(method => myMethods.has(method) && ttMethods.has(method))
+  const intersectionMethods = [...wxMethods].filter(method => myMethods.has(method) && ttMethods.has(method))
   const intersectionMethodSet = new Set(intersectionMethods)
   const intersectionAlignedApis = matrix.filter(
     item => intersectionMethodSet.has(item.method) && item.alipaySupported && item.douyinSupported,

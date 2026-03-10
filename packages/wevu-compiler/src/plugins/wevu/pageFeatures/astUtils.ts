@@ -28,7 +28,7 @@ export function buildInjectedFeaturesObject(
   enabled: Set<WevuPageFeatureFlag>,
 ): t.ObjectExpression {
   return t.objectExpression(
-    Array.from(enabled).map((key) => {
+    Array.from(enabled, (key) => {
       return t.objectProperty(t.identifier(key), t.booleanLiteral(true))
     }),
   )

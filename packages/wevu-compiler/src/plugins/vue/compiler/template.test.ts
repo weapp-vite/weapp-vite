@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { compileVueTemplateToWxml, getMiniProgramTemplatePlatform } from './template'
 
+const WHITESPACE_RE = /\s/g
+const INLINE_OBJECT_PROP_RE = /prop="\{\{\s*\{[^}]+\}\s*\}\}"/
+const DATA_TITLE_BIND_RE = /data-title="\{\{__wv_bind_\d+\}\}"/
+const IF_BIND_RE = /wx:if="\{\{__wv_bind_\d+\}\}"/
+const FOR_BIND_RE = /wx:for="\{\{__wv_bind_\d+\}\}"/
+const INTERPOLATION_BIND_INDEX_RE = /\{\{__wv_bind_\d+\[[^\]]+\]\}\}/
+
 describe('compileVueTemplateToWxml', () => {
   it('rewrites nullish coalescing in bindings', () => {
     const template = `
@@ -9,7 +16,7 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/components/QuickActionGrid/index.vue')
 
-    const normalized = code.replace(/\s/g, '')
+    const normalized = code.replace(WHITESPACE_RE, '')
     expect(normalized).toContain(`name="{{item.icon!=null?item.icon:'app'}}"`)
     expect(code).not.toContain('??')
   })
@@ -21,7 +28,7 @@ describe('compileVueTemplateToWxml', () => {
     `.trim()
 
     const { code } = compileVueTemplateToWxml(template, '/project/src/components/RetailPageShell/index.vue')
-    const normalized = code.replace(/\s/g, '')
+    const normalized = code.replace(WHITESPACE_RE, '')
 
     expect(normalized).not.toContain('?.')
     expect(normalized).toContain(`routeMeta==null?undefined:routeMeta.title`)
@@ -37,7 +44,7 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    const normalized = code.replace(/\s/g, '')
+    const normalized = code.replace(WHITESPACE_RE, '')
     expect(normalized).toContain(`root="{{__wv_bind_0}}"`)
     expect(code).not.toContain('root="{{{')
     expect(classStyleBindings).toBeDefined()
@@ -55,7 +62,7 @@ describe('compileVueTemplateToWxml', () => {
       { objectLiteralBindMode: 'inline' },
     )
 
-    expect(code).toMatch(/prop="\{\{\s*\{[^}]+\}\s*\}\}"/)
+    expect(code).toMatch(INLINE_OBJECT_PROP_RE)
     expect(code).not.toContain('prop="{{{')
     expect(classStyleBindings).toBeUndefined()
   })
@@ -120,7 +127,7 @@ describe('compileVueTemplateToWxml', () => {
     `.trim()
 
     const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
-    const normalized = code.replace(/\s/g, '')
+    const normalized = code.replace(WHITESPACE_RE, '')
 
     expect(normalized).toContain('title="{{__wv_bind_0}}"')
     expect(normalized).toContain('>{{__wv_bind_1}}</view>')
@@ -153,10 +160,10 @@ describe('compileVueTemplateToWxml', () => {
 
     const { code, classStyleBindings } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
 
-    expect(code).toMatch(/data-title="\{\{__wv_bind_\d+\}\}"/)
-    expect(code).toMatch(/wx:if="\{\{__wv_bind_\d+\}\}"/)
-    expect(code).toMatch(/wx:for="\{\{__wv_bind_\d+\}\}"/)
-    expect(code).toMatch(/\{\{__wv_bind_\d+\[[^\]]+\]\}\}/)
+    expect(code).toMatch(DATA_TITLE_BIND_RE)
+    expect(code).toMatch(IF_BIND_RE)
+    expect(code).toMatch(FOR_BIND_RE)
+    expect(code).toMatch(INTERPOLATION_BIND_INDEX_RE)
     expect(code).not.toContain('sayHello(1, item.label, dasd)')
     expect(classStyleBindings?.some(binding => binding.exp === `sayHello(1, 'root', dasd)`)).toBe(true)
     expect(classStyleBindings?.some(binding => binding.exp === 'shouldRenderList()')).toBe(true)

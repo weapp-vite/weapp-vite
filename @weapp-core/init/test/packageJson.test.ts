@@ -7,6 +7,8 @@ import { createDefaultPackageJson, createOrUpdatePackageJson, upsertDependencyVe
 import * as fsUtils from '@/utils/fs'
 import { logger } from '../vitest.setup'
 
+const CARET_PREFIX_RE = /^\^/
+
 describe('packageJson', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -23,7 +25,7 @@ describe('packageJson', () => {
 
     expect(pkg.scripts?.dev).toBe('weapp-vite dev')
     expect(saved.scripts?.build).toBe('weapp-vite build')
-    expect(saved.devDependencies['weapp-vite']).toMatch(/^\^/)
+    expect(saved.devDependencies['weapp-vite']).toMatch(CARET_PREFIX_RE)
     expect(saved.devDependencies['miniprogram-api-typings']).toBe('^1.0.0')
     expect(saved.devDependencies.typescript).toBe('^2.0.0')
   })

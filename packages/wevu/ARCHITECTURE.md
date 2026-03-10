@@ -118,7 +118,7 @@ function createReactiveEffect<T>(fn: () => T, options: EffectOptions = {}): Reac
     }
     finally {
       effectStack.pop()
-      activeEffect = effectStack[effectStack.length - 1] ?? null
+      activeEffect = effectStack.at(-1) ?? null
     }
   }
 
@@ -330,11 +330,11 @@ export function diffSnapshots(
     const prevValue = prev[key]
     const nextValue = next[key]
 
-    if (!Object.prototype.hasOwnProperty.call(next, key)) {
+    if (!Object.hasOwn(next, key)) {
       // key 在 next 中不存在 → 删除
       output[key] = null
     }
-    else if (!Object.prototype.hasOwnProperty.call(prev, key)) {
+    else if (!Object.hasOwn(prev, key)) {
       // key 在 prev 中不存在 → 新增
       output[key] = normalizeSetDataValue(nextValue)
     }
@@ -362,7 +362,7 @@ function assignNestedDiff(
     const keys = new Set([...Object.keys(prev), ...Object.keys(next)])
 
     keys.forEach((key) => {
-      if (!Object.prototype.hasOwnProperty.call(next, key)) {
+      if (!Object.hasOwn(next, key)) {
         output[`${path}.${key}`] = null // 删除嵌套属性
         return
       }

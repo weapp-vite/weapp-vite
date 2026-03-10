@@ -60,7 +60,7 @@ function resolveObjectExpressionFromProgram(program: Program, name: string): Obj
         return normalized
       }
       if (t.isCallExpression(normalized) && isObjectAssignCall(normalized)) {
-        const lastArg = normalized.arguments[normalized.arguments.length - 1]
+        const lastArg = normalized.arguments.at(-1)
         if (lastArg && !t.isSpreadElement(lastArg) && t.isExpression(lastArg)) {
           const lastNormalized = unwrapTypeLikeExpression(lastArg)
           if (t.isObjectExpression(lastNormalized)) {

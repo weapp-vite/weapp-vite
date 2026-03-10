@@ -81,7 +81,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   const hasRuntimeStateKey = (key: string) => {
     return runtimeState != null
       && typeof runtimeState === 'object'
-      && Object.prototype.hasOwnProperty.call(runtimeState as Record<string, unknown>, key)
+      && Object.hasOwn(runtimeState as Record<string, unknown>, key)
   }
   const syncAttrsFromProperties = () => {
     const next = ((target as any).properties && typeof (target as any).properties === 'object')
@@ -91,7 +91,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     for (const existingKey of Object.keys(attrs)) {
       if (
         !next
-        || !Object.prototype.hasOwnProperty.call(next, existingKey)
+        || !Object.hasOwn(next, existingKey)
         || declaredPropKeys.has(existingKey)
         || hasRuntimeStateKey(existingKey)
       ) {
@@ -181,7 +181,7 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
                 enumerable: false,
                 get() {
                   const propsSource = (runtimeRawState as any).__wevuProps
-                  if (propsSource && typeof propsSource === 'object' && Object.prototype.hasOwnProperty.call(propsSource, key)) {
+                  if (propsSource && typeof propsSource === 'object' && Object.hasOwn(propsSource, key)) {
                     return (propsSource as any)[key]
                   }
                   return fallbackValue

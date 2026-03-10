@@ -8,14 +8,18 @@ import { normalizeWxmlExpressionWithContext } from './expression'
 import { registerRuntimeBindingExpression, shouldFallbackToRuntimeBinding } from './expression/runtimeBinding'
 import { renderMustache } from './mustache'
 
+const AMP_RE = /&/g
+const LT_RE = /</g
+const GT_RE = />/g
+
 function escapeWxmlText(value: string) {
   if (!value) {
     return ''
   }
   return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+    .replace(AMP_RE, '&amp;')
+    .replace(LT_RE, '&lt;')
+    .replace(GT_RE, '&gt;')
 }
 
 function transformText(node: TextNode, _context: TransformContext): string {

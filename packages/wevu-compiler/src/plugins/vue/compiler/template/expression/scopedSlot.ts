@@ -76,6 +76,8 @@ function replaceIdentifierWithExpression(path: import('@babel/traverse').NodePat
   path.replaceWith(replacement)
 }
 
+const IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
+
 function rewriteScopedSlotExpression(exp: string, context: TransformContext): string {
   const normalized = normalizeWxmlExpression(exp)
   const parsed = parseBabelExpressionFile(normalized)
@@ -90,7 +92,7 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
     if (!prop) {
       return t.identifier(target)
     }
-    if (/^[A-Z_$][\w$]*$/i.test(prop)) {
+    if (IDENTIFIER_RE.test(prop)) {
       return t.memberExpression(t.identifier(target), t.identifier(prop))
     }
     return t.memberExpression(t.identifier(target), t.stringLiteral(prop), true)
@@ -108,7 +110,7 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
       if (path.scope.hasBinding(name)) {
         return
       }
-      if (Object.prototype.hasOwnProperty.call(forAliases, name)) {
+      if (Object.hasOwn(forAliases, name)) {
         const aliasExp = parseBabelExpression(forAliases[name])
         if (aliasExp) {
           replaceIdentifierWithExpression(path, t.cloneNode(aliasExp, true))
@@ -118,7 +120,7 @@ function rewriteScopedSlotExpression(exp: string, context: TransformContext): st
       if (locals.has(name)) {
         return
       }
-      if (Object.prototype.hasOwnProperty.call(slotProps, name)) {
+      if (Object.hasOwn(slotProps, name)) {
         const member = createMemberAccess('__wvSlotPropsData', slotProps[name])
         replaceIdentifierWithExpression(path, member)
         return
@@ -154,7 +156,7 @@ function rewriteForAliasExpression(exp: string, context: TransformContext): stri
       if (path.scope.hasBinding(name)) {
         return
       }
-      if (!Object.prototype.hasOwnProperty.call(forAliases, name)) {
+      if (!Object.hasOwn(forAliases, name)) {
         return
       }
       const aliasExp = parseBabelExpression(forAliases[name])

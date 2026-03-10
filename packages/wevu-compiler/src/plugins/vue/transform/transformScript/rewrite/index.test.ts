@@ -5,6 +5,8 @@ import { generate, parseJsLike, traverse } from '../../../../../utils/babel'
 import { createCollectVisitors } from '../collect'
 import { rewriteDefaultExport } from './index'
 
+const WEVU_IS_PAGE_RE = /__wevu_isPage/g
+
 function createState(ast: any): TransformState {
   const state: TransformState = {
     transformed: false,
@@ -83,7 +85,7 @@ export default (Object.assign({}, merged, { data: {} }) as any)
       isPage: true,
     })
 
-    const markerCount = (code.match(/__wevu_isPage/g) ?? []).length
+    const markerCount = (code.match(WEVU_IS_PAGE_RE) ?? []).length
     expect(markerCount).toBe(1)
   })
 

@@ -23,8 +23,10 @@ const eventMap: Record<string, string> = {
   longpress: 'longpress',
 }
 
+const EVENT_BINDING_PREFIX_RE = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/
+
 function parseEventBinding(eventName: string) {
-  const prefixed = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/.exec(eventName)
+  const prefixed = EVENT_BINDING_PREFIX_RE.exec(eventName)
   if (prefixed) {
     return {
       prefix: prefixed[1],
