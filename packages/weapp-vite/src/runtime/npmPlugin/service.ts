@@ -65,6 +65,20 @@ function resolveMainPackageDependencyPatterns(ctx: MutableCompilerContext) {
   return ctx.configService?.weappViteConfig?.npm?.mainPackage?.dependencies
 }
 
+function hasLocalSubPackageNpmConfig(ctx: MutableCompilerContext) {
+  const npmSubPackages = ctx.configService?.weappViteConfig?.npm?.subPackages
+  if (npmSubPackages && Object.values(npmSubPackages).some(config => Array.isArray(config?.dependencies) && config.dependencies.length > 0)) {
+    return true
+  }
+
+  const legacySubPackages = ctx.configService?.weappViteConfig?.subPackages
+  if (legacySubPackages && Object.values(legacySubPackages).some(config => Array.isArray(config?.dependencies) && config.dependencies.length > 0)) {
+    return true
+  }
+
+  return false
+}
+
 export interface NpmService {
   getDependenciesCacheFilePath: (key?: string) => string
   readonly dependenciesCacheHash: string
@@ -100,7 +114,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
 
     debug?.('buildNpm start')
 
-    if (ctx.scanService && typeof ctx.scanService.loadAppEntry === 'function') {
+    if (ctx.scanService && hasLocalSubPackageNpmConfig(ctx) && typeof ctx.scanService.loadAppEntry === 'function') {
       await ctx.scanService.loadAppEntry()
       if (typeof ctx.scanService.loadSubPackages === 'function') {
         ctx.scanService.loadSubPackages()
