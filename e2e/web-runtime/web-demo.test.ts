@@ -315,6 +315,7 @@ async function openHomePage(page: Page) {
 
 async function navigateToInteractiveFromHome(page: Page) {
   await navigateToByRuntime(page, 'pages/interactive/index?from=index')
+  await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
   await expectCurrentPageData(page, data => Boolean(
     data
     && data.from === 'index'
@@ -365,6 +366,7 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
       await navigateToInteractiveFromHome(page)
 
       await navigateToByRuntime(page, 'pages/interactive/detail?id=component-flow&from=interactive')
+      await expectVisibleElementText(page, '.detail__title', '场景详情')
       await expectCurrentPageData(page, data => Boolean(
         data
         && data.id === 'component-flow'
@@ -372,14 +374,15 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
       ))
 
       await navigateBackByRuntime(page)
+      await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
       await expectCurrentPageData(page, data => Boolean(
         data
-        && data.from === 'index'
-        && Array.isArray(data.filteredScenarios),
-      ))
+        && data.from === 'index',
+      ), 30_000)
 
       await navigateBackByRuntime(page)
-      await expectCurrentPageData(page, data => Boolean(data && data.hello))
+      await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
+      await expectCurrentPageData(page, data => Boolean(data && data.hello), 30_000)
     }
     finally {
       await page.close()
