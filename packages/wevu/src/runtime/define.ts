@@ -157,16 +157,15 @@ export function defineComponent(
   } as any)
 
   // 对 setup 的包装：注入 props/context 后应用到 runtime/state/methods
-  const setupWrapper: DefineComponentOptions<ComponentPropsOptions, any, any, any, any>['setup'] = (
-    props,
-    ctx,
-  ) => {
-    const result = runSetupFunction(setup as any, props as Record<string, any>, ctx as any) as Record<string, any> | void
-    if (result && ctx) {
-      applySetupResult((ctx as any).runtime, (ctx as any).instance, result as Record<string, any>)
-    }
-    return result
-  }
+  const setupWrapper = typeof setup === 'function'
+    ? ((props, ctx) => {
+      const result = runSetupFunction(setup as any, props as Record<string, any>, ctx as any) as Record<string, any> | void
+      if (result && ctx) {
+        applySetupResult((ctx as any).runtime, (ctx as any).instance, result as Record<string, any>)
+      }
+      return result
+    }) satisfies DefineComponentOptions<ComponentPropsOptions, any, any, any, any>['setup']
+    : undefined
 
   // 保存供手动注册使用的选项
   const mpOptionsWithProps = normalizeProps(mpOptions, props)
