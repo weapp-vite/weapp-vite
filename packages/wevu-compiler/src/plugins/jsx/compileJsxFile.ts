@@ -6,7 +6,7 @@ import { extractJsonMacroFromScriptSetup } from '../vue/transform/jsonMacros'
 import { createJsonMerger } from '../vue/transform/jsonMerge'
 import { transformScript } from '../vue/transform/script'
 import { stripRenderOptionFromScript } from './compileJsx/script'
-import { collectJsxAutoComponents, compileJsxTemplate } from './compileJsx/template'
+import { compileJsxTemplateAndCollectComponents } from './compileJsx/template'
 
 const LEADING_DOT_RE = /^\./
 const SETUP_CALL_RE = /\bsetup\s*\(/
@@ -42,8 +42,7 @@ export async function compileJsxFile(
     throw new Error(`解析 ${filename} 失败：${message}`)
   }
 
-  const compiledTemplate = compileJsxTemplate(source, filename, options)
-  const autoComponentContext = collectJsxAutoComponents(source, filename, options)
+  const { template: compiledTemplateStr, warnings: templateWarnings, inlineExpressions, autoComponentContext } = compileJsxTemplateAndCollectComponents(source, filename, options)
 
   const autoUsingComponentsMap: Record<string, string> = {}
   if (options?.autoUsingComponents?.resolveUsingComponentPath && autoComponentContext.templateTags.size > 0) {
@@ -103,11 +102,11 @@ export async function compileJsxFile(
     isPage: options?.isPage,
     warn: options?.warn,
     wevuDefaults: options?.wevuDefaults,
-    inlineExpressions: compiledTemplate.inlineExpressions,
+    inlineExpressions,
   })
 
-  if (compiledTemplate.warnings.length && options?.warn) {
-    compiledTemplate.warnings.forEach(message => options.warn?.(`[JSX 编译] ${message}`))
+  if (templateWarnings.length && options?.warn) {
+    templateWarnings.forEach(message => options.warn?.(`[JSX 编译] ${message}`))
   }
 
   let configObj: Record<string, any> | undefined
@@ -149,7 +148,7 @@ export async function compileJsxFile(
 
   const result: VueTransformResult = {
     script: transformedScript.code,
-    template: compiledTemplate.template,
+    template: compiledTemplateStr,
     config: configObj && Object.keys(configObj).length > 0
       ? JSON.stringify(configObj, null, 2)
       : undefined,
