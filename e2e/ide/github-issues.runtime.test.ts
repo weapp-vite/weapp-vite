@@ -900,8 +900,14 @@ describe.sequential('e2e app: github-issues', () => {
       if (!redirectedPage) {
         throw new Error('Failed to wait issue-320 redirect target page')
       }
-      await redirectedPage.waitFor(400)
-      const redirectedWxml = await readPageWxml(redirectedPage)
+      // 重定向导航涉及两次页面跳转，需要更长等待时间确保目标页面完成首次渲染
+      await redirectedPage.waitFor(800)
+      let redirectedWxml = await readPageWxml(redirectedPage)
+      // 小程序页面首次渲染可能延迟，轮询等待静态文本出现
+      for (let attempt = 0; attempt < 5 && !redirectedWxml.includes('issue-309 onLoad hook'); attempt++) {
+        await redirectedPage.waitFor(300)
+        redirectedWxml = await readPageWxml(redirectedPage)
+      }
       expect(redirectedWxml).toContain('issue-309 onLoad hook')
       expect(redirectedWxml).toContain('loadCount:')
     }
