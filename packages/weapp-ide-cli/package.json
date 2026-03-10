@@ -63,6 +63,7 @@
     "release": "node scripts/release.js",
     "test:dev": "vitest",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "weapp": "tsx src/cli.ts",
     "debug": "tsx src/cli.ts config",
     "raw": "node bin/weapp.js",

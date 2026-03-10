@@ -37,6 +37,7 @@
     "build": "tsup",
     "test": "vitest run",
     "test:dev": "vitest",
+    "typecheck": "tsc --noEmit",
     "prepublishOnly": "node --import tsx scripts/prepublish.ts && pnpm build",
     "release": "pnpm publish",
     "lint": "eslint .",
