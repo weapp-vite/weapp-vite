@@ -10,6 +10,7 @@ import { ensureClassStyleRuntimeImports, injectClassStyleComputed } from './clas
 import { applyWevuDefaultsToComponentOptions, injectWevuDefaultsForApp } from './defaults'
 import { rewriteComponentExport } from './export'
 import { injectInlineExpressions } from './inlineExpressions'
+import { injectSetupInitialData } from './setupInitialData'
 import { injectTemplateRefs } from './templateRefs'
 
 function hasStaticProperty(target: ObjectExpression, keyName: string) {
@@ -179,6 +180,10 @@ export function rewriteDefaultExport(
       parsedWevuDefaults,
       options,
     }) || transformed
+  }
+
+  if (componentOptionsObject) {
+    transformed = injectSetupInitialData(componentOptionsObject) || transformed
   }
 
   const classStyleBindings = options?.classStyleBindings ?? []

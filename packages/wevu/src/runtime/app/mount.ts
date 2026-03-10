@@ -38,6 +38,7 @@ type RuntimeInstanceWithSetupMethodsVersion<
   M extends MethodDefinitions,
 > = RuntimeInstance<D, C, M> & {
   __wevu_touchSetupMethodsVersion?: () => void
+  __wevu_flushSetupSnapshotSync?: () => void
 }
 
 export function createRuntimeMount<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
@@ -285,6 +286,18 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     }
     catch {
       ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_touchSetupMethodsVersion = touchSetupMethodsVersion
+    }
+
+    try {
+      Object.defineProperty(runtimeInstance, '__wevu_flushSetupSnapshotSync', {
+        value: job,
+        configurable: true,
+        enumerable: false,
+        writable: false,
+      })
+    }
+    catch {
+      ;(runtimeInstance as RuntimeInstanceWithSetupMethodsVersion<D, C, M>).__wevu_flushSetupSnapshotSync = job
     }
 
     return runtimeInstance

@@ -169,7 +169,18 @@ export function defineComponent(
   }
 
   // 保存供手动注册使用的选项
-  const mpOptionsWithProps = normalizeProps(mpOptions, props)
+  const nativeData = typeof data === 'function'
+    ? data()
+    : data
+  const mpOptionsWithProps = normalizeProps(
+    nativeData !== undefined
+      ? {
+          ...mpOptions,
+          data: nativeData,
+        }
+      : mpOptions,
+    props,
+  )
 
   const componentOptions = {
     data: data as () => Record<string, any>,
@@ -219,8 +230,13 @@ export function createWevuComponent<
     ...restOptions
   } = options
 
+  const baseOptions = {
+    ...restOptions,
+    __wevu_allowNullPropInput: true,
+  }
+
   // 将 properties 合并到 mpOptions，保持小程序属性定义
-  const finalOptions = normalizeProps(restOptions, props, properties)
+  const finalOptions = normalizeProps(baseOptions, props, properties)
 
   // 调用 defineComponent 完成注册
   defineComponent(finalOptions)

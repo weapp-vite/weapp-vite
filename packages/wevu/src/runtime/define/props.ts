@@ -1,5 +1,7 @@
 import type { ComponentPropsOptions } from '../types'
 
+const ALLOW_NULL_PROP_INPUT_KEY = '__wevu_allowNullPropInput'
+
 const NATIVE_PROPERTY_TYPE_MAP = new Map<unknown, WechatMiniprogram.Component.ShortProperty | null>([
   [String, String],
   [Number, Number],
@@ -65,11 +67,30 @@ function applyTypeOptions(target: Record<string, any>, rawType: unknown) {
   }
 }
 
+function appendOptionalType(target: Record<string, any>, candidate: unknown) {
+  if (candidate === undefined || target.type === candidate) {
+    return
+  }
+  const optionalTypes = Array.isArray(target.optionalTypes)
+    ? [...target.optionalTypes]
+    : []
+  if (optionalTypes.includes(candidate)) {
+    return
+  }
+  optionalTypes.push(candidate)
+  target.optionalTypes = optionalTypes
+}
+
 export function normalizeProps(
   baseOptions: Record<string, any>,
   props?: ComponentPropsOptions,
   explicitProperties?: WechatMiniprogram.Component.PropertyOption,
 ) {
+  const allowNullPropInput = Boolean((baseOptions as any)[ALLOW_NULL_PROP_INPUT_KEY])
+  const {
+    [ALLOW_NULL_PROP_INPUT_KEY]: _ignoredAllowNullPropInput,
+    ...normalizedBaseOptions
+  } = baseOptions
   const baseProperties = (baseOptions as any).properties
   const resolvedExplicit = explicitProperties
     ?? (baseProperties && typeof baseProperties === 'object' ? (baseProperties as any) : undefined)
@@ -85,7 +106,10 @@ export function normalizeProps(
   }
 
   if (resolvedExplicit || !props) {
-    const { properties: _ignored, ...rest } = baseOptions
+    const {
+      properties: _ignored,
+      ...rest
+    } = normalizedBaseOptions
     return {
       ...rest,
       properties: attachInternalProps(resolvedExplicit as any),
@@ -104,6 +128,9 @@ export function normalizeProps(
     if (Array.isArray(definition) || typeof definition === 'function') {
       const propOptions: Record<string, any> = {}
       applyTypeOptions(propOptions, definition)
+      if (allowNullPropInput && propOptions.type !== null) {
+        appendOptionalType(propOptions, null)
+      }
       if (!Object.hasOwn(propOptions, 'type')) {
         propOptions.type = null
       }
@@ -146,6 +173,9 @@ export function normalizeProps(
       if (defaultValue !== undefined) {
         propOptions.value = typeof defaultValue === 'function' ? (defaultValue as any)() : defaultValue
       }
+      if (allowNullPropInput && propOptions.type !== null) {
+        appendOptionalType(propOptions, null)
+      }
       if (!Object.hasOwn(propOptions, 'type')) {
         propOptions.type = null
       }
@@ -154,7 +184,7 @@ export function normalizeProps(
   })
 
   return {
-    ...baseOptions,
+    ...normalizedBaseOptions,
     properties: attachInternalProps(properties),
   }
 }

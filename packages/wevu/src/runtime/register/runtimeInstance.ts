@@ -39,6 +39,14 @@ type RuntimeSetupFunction<
 > = DefineComponentOptions<ComponentPropsOptions, D, C, M>['setup']
   | DefineAppOptions<D, C, M>['setup']
 
+type RuntimeInstanceWithSyncFlush<
+  D extends object,
+  C extends ComputedDefinitions,
+  M extends MethodDefinitions,
+> = RuntimeInstance<D, C, M> & {
+  __wevu_flushSetupSnapshotSync?: () => void
+}
+
 /**
  * 挂载运行时实例（框架内部注册流程使用）。
  * @internal
@@ -225,6 +233,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
       syncRuntimeProps,
       attachRuntimeProxyProps,
     })
+    ;(runtime as RuntimeInstanceWithSyncFlush<D, C, M>).__wevu_flushSetupSnapshotSync?.()
   }
 
   // 将 runtime.methods 透传到原生实例，供小程序事件处理直接调用

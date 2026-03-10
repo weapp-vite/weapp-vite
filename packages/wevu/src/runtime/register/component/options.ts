@@ -115,6 +115,7 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
     ...(rest as any),
   }
   const preservedInstanceFieldKeys = new Set([
+    'data',
     'behaviors',
     'relations',
     'externalClasses',
@@ -160,6 +161,7 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
   }
 
   const moveToMethodsExcludes = new Set([
+    'data',
     'export',
     'definitionFilter',
     'onLoad',

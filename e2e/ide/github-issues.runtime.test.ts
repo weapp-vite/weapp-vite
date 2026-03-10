@@ -1104,4 +1104,49 @@ describe.sequential('e2e app: github-issues', () => {
       await releaseSharedMiniProgram(miniProgram)
     }
   })
+
+  it('issue #328: keeps setup ref string props out of null/default fallback on first paint', async () => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-328/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-328/index.js')
+    const probeWxmlPath = path.join(DIST_ROOT, 'components/issue-328/ValueProbe/index.wxml')
+    const probeJsPath = path.join(DIST_ROOT, 'components/issue-328/ValueProbe/index.js')
+
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+    const probeWxml = await fs.readFile(probeWxmlPath, 'utf-8')
+    const probeJs = await fs.readFile(probeJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-328 setup ref prop first paint')
+    expect(issuePageWxml).toContain('value="{{value1}}"')
+    expect(issuePageJs).toContain('value1')
+    expect(issuePageJs).toContain('_runE2E')
+    expect(probeWxml).toContain('data-current-value="{{props.value}}"')
+    expect(probeWxml).toContain('data-history="{{historyText}}"')
+    expect(probeJs).toContain('valueHistory')
+    expect(probeJs).toContain('historyText')
+
+    const miniProgram = await getSharedMiniProgram()
+
+    try {
+      const issuePage = await miniProgram.reLaunch('/pages/issue-328/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-328 page')
+      }
+      await issuePage.waitFor(400)
+
+      const runtimeResult = await issuePage.callMethod('_runE2E')
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.value1).toBe('111')
+
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toMatch(/data-current-value="111"/)
+      expect(renderedWxml).toMatch(/data-history="111"/)
+      expect(renderedWxml).not.toContain('data-history="null')
+      expect(renderedWxml).not.toContain('data-history="0.00')
+      expect(renderedWxml).not.toContain('data-history="undefined')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
 })

@@ -184,6 +184,29 @@ export default (Object.assign({}, merged, { data: {} }) as any)
     expect(code).toContain('__weapp_vite_inline_map')
   })
 
+  it('injects static setup seeds into data for first paint', () => {
+    const { code } = runRewrite(
+      `
+export default {
+  setup() {
+    const value1 = ref('111')
+    const count = 2
+    const readyState = reactive({ ready: true })
+    const Comp = { __weappViteUsingComponent: true, name: 'Comp', from: '/components/Comp/index' }
+    const __returned__ = { value1, count, readyState, Comp }
+    return __returned__
+  },
+}
+      `.trim(),
+    )
+
+    expect(code).toContain('data()')
+    expect(code).toContain('value1: \'111\'')
+    expect(code).toContain('count: 2')
+    expect(code).toContain('readyState: {')
+    expect(code).not.toContain('Comp: { __weappViteUsingComponent: true')
+  })
+
   it('merges inline map with methods from spread defineOptions object', () => {
     const warn = vi.fn()
     const { transformed, code } = runRewrite(
