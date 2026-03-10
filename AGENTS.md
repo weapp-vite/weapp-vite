@@ -88,12 +88,16 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - Validate multiple cases by `miniProgram.reLaunch(...)` across different pages/routes instead of re-launching DevTools for each case.
   - If a case must use an isolated launch, document the reason in test comments.
 - For GitHub issue fixes (especially cases mapped to `e2e-apps/github-issues`), follow this order strictly:
+  - Before starting the fix, create a local `git worktree` from the mainline branch and do the issue work inside that isolated worktree.
   - Reproduce the issue first in `e2e-apps/github-issues` with a minimal, reviewable case.
   - Analyze and identify root cause before editing source.
   - Fix the relevant source package(s) only after reproduction is stable.
   - Add or update unit tests to lock the root-cause behavior.
   - Add or update e2e tests (including the `e2e-apps/github-issues` case when applicable) to verify end-to-end regression coverage.
-  - Run targeted unit + e2e verification and confirm the bug is fixed before closing the task.
+  - Run targeted unit + e2e verification and confirm the bug is fixed before opening review.
+  - Open a PR back to the mainline branch after local verification is complete.
+  - Ensure the PR CI/CD checks are all passing before considering the fix ready to merge.
+  - After the PR is merged, delete the temporary local worktree used for that issue.
 - All `e2e-apps/*/project.config.json` must use a real AppID (no `touristappid`).
 - When adding pages in any `e2e-apps/*`, also update `project.private.config.json` under `condition.miniprogram.list`.
 
@@ -107,6 +111,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - If release includes `weapp-vite`, `wevu`, or anything under `templates/`, also include a `create-weapp-vite` bump changeset.
 - `.changeset/*.md` summary paragraph must be in Chinese.
 - Default delivery action is commit-only: after checks pass, commit the changes directly, and do not push unless the user explicitly requests push.
+- Exception for GitHub bug-fix workflow: when the task is a GitHub issue fix, complete the work through a PR to the mainline branch and treat post-merge worktree cleanup as part of the task.
 
 ## 6. Security and Environment
 
