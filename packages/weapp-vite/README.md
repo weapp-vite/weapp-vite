@@ -82,6 +82,7 @@ function handleClick() {
 
 - 配置智能提示文档：[docs/volar.md](./docs/volar.md)
 - defineConfig 重载说明：[docs/define-config-overloads.md](./docs/define-config-overloads.md)
+- Vite 插件识别 weapp-vite 宿主：https://vite.icebreaker.top/guide/vite-plugin-host
 - MCP 集成使用指南：[docs/mcp.md](./docs/mcp.md)
 
 ## CLI 中调用 weapp-ide-cli

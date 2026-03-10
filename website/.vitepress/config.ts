@@ -15,6 +15,7 @@ const vueSharedEsmPath = fileURLToPath(
 )
 const atomGitSocialSvg = readFileSync(fileURLToPath(new URL('../public/AtomGit.svg', import.meta.url)), 'utf8')
   .replace(/fill="#[0-9a-fA-F]{3,8}"/g, 'fill="currentColor"')
+const EXTERNAL_LINK_REGEX = /^https?:\/\//
 
 function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Sidebar | undefined {
   const cleanItems = (items?: DefaultTheme.SidebarItem[]): DefaultTheme.SidebarItem[] =>
@@ -22,7 +23,7 @@ function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Side
       .map((item) => {
         const cleanedChildren = item.items ? cleanItems(item.items) : undefined
         const link = typeof item.link === 'string' ? item.link : ''
-        const isExternal = /^https?:\/\//.test(link)
+        const isExternal = EXTERNAL_LINK_REGEX.test(link)
 
         if (isExternal && (!cleanedChildren || cleanedChildren.length === 0)) {
           return null
@@ -94,6 +95,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '组件库构建（lib 模式）', link: '/guide/lib-mode' },
       { text: '静态资源的处理与优化', link: '/guide/image-optimize' },
       { text: '微信小程序插件开发', link: '/guide/plugin' },
+      { text: 'Vite 插件宿主识别', link: '/guide/vite-plugin-host' },
       { text: '🧪 Web 兼容矩阵', link: '/guide/web-compat-matrix' },
     ],
   },
