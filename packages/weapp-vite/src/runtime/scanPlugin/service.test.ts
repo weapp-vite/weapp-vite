@@ -56,7 +56,6 @@ function createCtx(overrides: Record<string, any> = {}) {
         },
         subPackages: {
           pkgA: {
-            dependencies: ['dep-a'],
             inlineConfig: { mode: 'bundle' },
             autoImportComponents: ['c-a'],
             watchSharedStyles: false,
