@@ -3,6 +3,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_PLUGIN_HOOKS } from '@/constants'
 import { wrapPlugin } from '@/wrapPlugin'
 
+type UnknownHook = ((...args: unknown[]) => unknown | Promise<unknown>) | undefined
+
+async function invokeHook(hook: UnknownHook, ...args: unknown[]) {
+  return await hook?.call({}, ...args)
+}
+
 function createTimelineClock(values: number[]) {
   let index = 0
   const lastIndex = values.length - 1
@@ -35,7 +41,7 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await (wrapped.transform as Function)?.call({}, 'code', 'id')
+    await invokeHook(wrapped.transform as UnknownHook, 'code', 'id')
 
     expect(logger).toHaveBeenCalledTimes(1)
     const [message, context] = logger.mock.calls[0]
@@ -66,7 +72,7 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await (wrapped.transform as Function)?.call({}, 'code', 'id')
+    await invokeHook(wrapped.transform as UnknownHook, 'code', 'id')
     expect(logger).not.toHaveBeenCalled()
   })
 
@@ -88,7 +94,7 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await (wrapped.buildStart as Function)?.call({}, {})
+    await invokeHook(wrapped.buildStart as UnknownHook, {})
     expect(logger).not.toHaveBeenCalled()
   })
 
@@ -114,7 +120,7 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await (wrapped.load as Function)?.call({}, 'id')
+    await invokeHook(wrapped.load as UnknownHook, 'id')
     expect(logger).toHaveBeenCalledTimes(1)
     const [, context] = logger.mock.calls[0]
     expect(context.duration).toBe(80)
@@ -163,8 +169,8 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await (wrapped[0].load as Function)?.call({}, 'a')
-    await (wrapped[1].load as Function)?.call({}, 'b')
+    await invokeHook(wrapped[0].load as UnknownHook, 'a')
+    await invokeHook(wrapped[1].load as UnknownHook, 'b')
     expect(logger).toHaveBeenCalledTimes(2)
   })
 
@@ -183,7 +189,7 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await (wrapped.transform as Function)?.call({}, 'code', 'id')
+    await invokeHook(wrapped.transform as UnknownHook, 'code', 'id')
     const [message] = logger.mock.calls[0]
     expect(message).toContain('anonymous-plugin')
   })

@@ -304,8 +304,12 @@ describe('runtime: features & hooks', () => {
     defineComponent({
       features: { enableOnPullDownRefresh: true, enableOnReachBottom: true },
       setup() {
-        onPullDownRefresh(() => { logs.push('hook:pull') })
-        onReachBottom(() => { logs.push('hook:bottom') })
+        onPullDownRefresh(() => {
+          logs.push('hook:pull')
+        })
+        onReachBottom(() => {
+          logs.push('hook:bottom')
+        })
       },
     })
     const opts2 = registeredComponents[0]

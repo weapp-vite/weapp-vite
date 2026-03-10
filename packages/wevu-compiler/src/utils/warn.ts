@@ -8,6 +8,7 @@ export type WarnHandler = (message: string) => void
  */
 export function resolveWarnHandler(warn?: WarnHandler): WarnHandler {
   return warn ?? ((message: string) => {
+    // eslint-disable-next-line no-console -- 默认警告处理需要直接输出编译期提示
     console.warn(message)
   })
 }
