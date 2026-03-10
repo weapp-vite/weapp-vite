@@ -27,9 +27,9 @@ describe.skipIf(CI.isCI)('asset', () => {
     expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/buffer'))).toBe(true)
     expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/gm-crypto'))).toBe(true)
-    expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm'))).toBe(true)
-    expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/buffer'))).toBe(true)
-    expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/gm-crypto'))).toBe(true)
+    expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm'))).toBe(false)
+    expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/buffer'))).toBe(false)
+    expect(await fs.exists(path.resolve(distDir, 'packageB/miniprogram_npm/gm-crypto'))).toBe(false)
     const copyConfig = ctx.configService.weappViteConfig?.copy
     const excludePatterns = copyConfig?.exclude
     const excludeMatchers = (Array.isArray(excludePatterns) ? excludePatterns : excludePatterns ? [excludePatterns] : [])
