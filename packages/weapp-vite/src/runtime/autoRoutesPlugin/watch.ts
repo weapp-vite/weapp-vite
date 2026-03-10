@@ -124,7 +124,7 @@ export async function updateCandidateFromFile(
     return false
   }
 
-  if (event === 'rename') {
+  if (event === 'rename' || event === 'create' || event === 'delete') {
     markNeedsFullRescan?.()
     return true
   }

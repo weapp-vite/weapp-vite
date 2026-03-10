@@ -1,6 +1,10 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
+import process from 'node:process'
+import chokidar from 'chokidar'
 import path from 'pathe'
+import { vueExtensions } from '../constants'
+import { logger } from '../context/shared'
 import { normalizePath, normalizeWatchPath, toPosixPath } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 
@@ -12,6 +16,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
   const service = ctx.autoRoutesService
   let resolvedConfig: ResolvedConfig | undefined
   const autoRoutesAliasTargets = new Set<string>()
+  let routeWatcher: ReturnType<typeof chokidar.watch> | undefined
 
   const normalizeTargetId = (id: string) => {
     return path.normalize(normalizeFsResolvedId(id))
@@ -81,6 +86,89 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       || relative.includes('/pages/')
   }
 
+  /**
+   * 启动 chokidar 监听 pages 目录下的路由文件增删。
+   * Rolldown 的 watcher 不会为新建文件触发 watchChange，
+   * 因此需要独立的文件监听来补偿。
+   */
+  function startRouteFileWatcher() {
+    if (routeWatcher) {
+      return
+    }
+
+    const configService = ctx.configService
+    if (!configService?.isDev) {
+      return
+    }
+
+    // 测试环境或显式禁用时跳过
+    if (
+      process.env.VITEST === 'true'
+      || process.env.NODE_ENV === 'test'
+    ) {
+      return
+    }
+
+    if (!service.isEnabled()) {
+      return
+    }
+
+    const srcRoot = configService.absoluteSrcRoot
+    const vueGlobs = vueExtensions.map(ext => `**/*.${ext}`)
+    const watchDirs: string[] = []
+
+    // 收集所有 pages 目录
+    for (const dir of service.getWatchDirectories()) {
+      watchDirs.push(dir)
+    }
+
+    // 至少监听 srcRoot/pages
+    const defaultPagesDir = path.join(srcRoot, 'pages')
+    if (!watchDirs.some(d => normalizePath(d) === normalizePath(defaultPagesDir))) {
+      watchDirs.push(defaultPagesDir)
+    }
+
+    const patterns = watchDirs.flatMap(dir =>
+      vueGlobs.map(glob => path.join(dir, glob)),
+    )
+
+    if (!patterns.length) {
+      return
+    }
+
+    routeWatcher = chokidar.watch(patterns, {
+      ignoreInitial: true,
+      persistent: true,
+      awaitWriteFinish: {
+        stabilityThreshold: 80,
+        pollInterval: 20,
+      },
+    })
+
+    routeWatcher.on('add', (filePath) => {
+      if (!isPagesRelatedPath(filePath)) {
+        return
+      }
+      logger.info(`[auto-routes:watch] 新增路由文件 ${configService.relativeCwd(filePath)}`)
+      void service.handleFileChange(filePath, 'create')
+    })
+
+    routeWatcher.on('unlink', (filePath) => {
+      if (!isPagesRelatedPath(filePath)) {
+        return
+      }
+      logger.info(`[auto-routes:watch] 删除路由文件 ${configService.relativeCwd(filePath)}`)
+      void service.handleFileChange(filePath, 'delete')
+    })
+  }
+
+  function stopRouteFileWatcher() {
+    if (routeWatcher) {
+      void routeWatcher.close()
+      routeWatcher = undefined
+    }
+  }
+
   return {
     name: 'weapp-vite:auto-routes',
     enforce: 'pre',
@@ -94,6 +182,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       await service.ensureFresh()
       refreshAutoRoutesAliasTargets()
       addWatchTargets(this as any)
+      startRouteFileWatcher()
     },
 
     resolveId(id) {
@@ -162,6 +251,10 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       }
 
       return context.modules.filter(module => module.id === RESOLVED_VIRTUAL_ID)
+    },
+
+    closeBundle() {
+      stopRouteFileWatcher()
     },
   }
 }
