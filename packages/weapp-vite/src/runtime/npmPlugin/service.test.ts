@@ -85,7 +85,9 @@ describe('runtime npm service', () => {
         weappViteConfig: {
           npm: {
             enable: true,
-            mainPackageDependencies: false,
+            mainPackage: {
+              dependencies: false,
+            },
           },
         },
       },
