@@ -1488,7 +1488,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
               class="t-radio-group group--t-radio-group"
               style="">
               <view
-                aria-checked="false"
+                aria-checked="true"
                 aria-disabled=""
                 aria-label="增长"
                 aria-role="radio"
@@ -1497,15 +1497,24 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 style=""
                 tabindex="0">
                 <view
-                  class="t-radio__icon radio--t-radio__icon t-radio__icon--left radio--t-radio__icon--left">
-                  <view class="t-radio__icon-circle radio--t-radio__icon-circle"></view>
+                  class="t-radio__icon radio--t-radio__icon t-radio__icon--left radio--t-radio__icon--left t-radio__icon--checked radio--t-radio__icon--checked">
+                  <view
+                    aria-hidden="false"
+                    aria-role=""
+                    class="t-icon icon--t-icon t-radio__icon-wrap radio--t-radio__icon-wrap"
+                    style="">
+                    <label
+                      class="t-icon-check-circle-filled icon--t-icon-check-circle-filled t-icon-base icon--t-icon-base"></label>
+                  </view>
                 </view>
                 <view class="t-radio__content radio--t-radio__content" data-target="text">
-                  <view class="t-radio__title radio--t-radio__title" style="-webkit-line-clamp: 3">
+                  <view
+                    class="t-radio__title radio--t-radio__title t-radio__title--checked radio--t-radio__title--checked"
+                    style="-webkit-line-clamp: 3">
                     增长
                   </view>
                   <view
-                    class="t-radio__description radio--t-radio__description"
+                    class="t-radio__description radio--t-radio__description t-radio__description--checked radio--t-radio__description--checked"
                     style="-webkit-line-clamp: 5"></view>
                 </view>
                 <view
