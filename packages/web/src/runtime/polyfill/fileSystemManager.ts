@@ -29,7 +29,7 @@ export function createFileSystemManagerBridge(
         return
       }
       try {
-        writeFileSyncInternal(filePath, options?.data ?? '')
+        writeFileSyncInternal(filePath, (options?.data ?? '') as string | ArrayBuffer | ArrayBufferView)
         callWxAsyncSuccess(options, { errMsg: 'writeFile:ok' })
       }
       catch (error) {

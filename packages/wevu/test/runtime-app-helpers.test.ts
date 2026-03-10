@@ -29,7 +29,7 @@ describe('runtime: app helpers', () => {
     })
 
     computedRefs.count = createTrackedComputed('count', () => state.count)
-    expect(computedProxy.count).toBe(0)
+    expect((computedProxy as any).count).toBe(0)
     state.count += 1
     expect(dirtyComputedKeys.has('count')).toBe(true)
     expect(computedRefs.count.value).toBe(1)

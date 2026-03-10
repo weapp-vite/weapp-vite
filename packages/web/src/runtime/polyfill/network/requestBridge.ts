@@ -1,3 +1,4 @@
+import type { DownloadFileOptions, RequestOptions, UploadFileOptions } from '../types/common'
 import {
   callWxAsyncFailure,
   callWxAsyncSuccess,

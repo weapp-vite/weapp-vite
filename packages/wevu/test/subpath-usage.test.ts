@@ -133,7 +133,7 @@ describe('subpath usage integration', () => {
           'content-type': 'application/json',
           'x-source': 'unit-adapter',
         },
-      } as WechatMiniprogram.RequestSuccessCallbackResult)
+      } as unknown as WechatMiniprogram.RequestSuccessCallbackResult)
       return {
         abort: vi.fn(),
       } as unknown as WechatMiniprogram.RequestTask

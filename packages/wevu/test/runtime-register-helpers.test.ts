@@ -47,8 +47,8 @@ describe('runtime: register helpers', () => {
     const context: any = {}
     const result = runSetupFunction(setup, { foo: 1 }, context)
 
-    expect(result?.props).toEqual({ foo: 1 })
-    expect(result?.runtime).toBe(context.runtime)
+    expect((result as any)?.props).toEqual({ foo: 1 })
+    expect((result as any)?.runtime).toBe(context.runtime)
     expect(context.runtime).toBeTruthy()
   })
 
@@ -56,7 +56,7 @@ describe('runtime: register helpers', () => {
     const runtime: any = {
       proxy: { marker: 'ok' },
       methods: {
-        onChange() {
+        onChange(this: any): any {
           return this.marker
         },
       },
@@ -68,8 +68,8 @@ describe('runtime: register helpers', () => {
     const normalizedFn = normalizeWatchDescriptor(fn, runtime, instance)
     const normalizedStr = normalizeWatchDescriptor('onChange', runtime, instance)
 
-    expect(normalizedFn?.handler()).toBe('ok')
-    expect(normalizedStr?.handler()).toBe('ok')
+    expect((normalizedFn as any)?.handler()).toBe('ok')
+    expect((normalizedStr as any)?.handler()).toBe('ok')
   })
 
   it('creates path getters and registers watches', () => {

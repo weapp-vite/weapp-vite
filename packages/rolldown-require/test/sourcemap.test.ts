@@ -38,7 +38,7 @@ it('uses inline sourcemap when explicitly requested', async () => {
   } as any)
 
   expect(generateSpy).toHaveBeenCalled()
-  const outputOptions = generateSpy.mock.calls[0]?.[0]
+  const outputOptions = (generateSpy.mock.calls[0] as any[])?.[0]
   expect(outputOptions?.sourcemap).toBe('inline')
 })
 
@@ -62,7 +62,7 @@ it('auto-enables inline sourcemap when debugging', async () => {
     })
     expect(result.mod.value).toBe(1)
     expect(bundleFileMock).toHaveBeenCalled()
-    const internalOptions = bundleFileMock.mock.calls[0]?.[1]
+    const internalOptions = (bundleFileMock.mock.calls[0] as any[])?.[1]
     expect(internalOptions?.sourcemap).toBe('inline')
   }
   finally {

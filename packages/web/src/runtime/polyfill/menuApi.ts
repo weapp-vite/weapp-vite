@@ -40,7 +40,7 @@ export function requestSubscribeMessageBridge(options?: any): Promise<any> {
     return Promise.reject(failure)
   }
   const decisionMap = resolveSubscribeDecisionMap(tmplIds)
-  const result = tmplIds.reduce<Record<string, any>>((payload, tmplId) => {
+  const result: Record<string, any> & { errMsg: string } = tmplIds.reduce<Record<string, any> & { errMsg: string }>((payload, tmplId) => {
     payload[tmplId] = decisionMap[tmplId]
     return payload
   }, { errMsg: 'requestSubscribeMessage:ok' })

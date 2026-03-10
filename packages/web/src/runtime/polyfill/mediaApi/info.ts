@@ -51,14 +51,14 @@ export function getVideoInfoBridge(options?: any) {
       const duration = normalizeVideoInfoNumber(result.duration)
       const width = normalizeVideoInfoNumber(result.width)
       const height = normalizeVideoInfoNumber(result.height)
-      const bitrate = normalizeVideoInfoNumber(result.bitrate)
-      const fps = normalizeVideoInfoNumber(result.fps)
+      const bitrate = normalizeVideoInfoNumber((result as Record<string, unknown>).bitrate)
+      const fps = normalizeVideoInfoNumber((result as Record<string, unknown>).fps)
       return callWxAsyncSuccess(options, {
         errMsg: 'getVideoInfo:ok',
         orientation: 'up',
         type: inferVideoTypeFromPath(src),
         duration,
-        size: normalizeVideoInfoNumber(result.size),
+        size: normalizeVideoInfoNumber((result as Record<string, unknown>).size),
         width,
         height,
         bitrate,

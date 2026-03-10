@@ -104,11 +104,11 @@ function lowerOptionalChain(node: OptionalChainNode): t.Expression {
 
   const segments: t.Expression[] = [chain.base]
   for (const operation of chain.operations) {
-    const currentBase = t.cloneNode(segments.at(-1))
+    const currentBase = t.cloneNode(segments.at(-1)!) as t.Expression
     segments.push(applyOptionalChainOperation(currentBase, operation))
   }
 
-  let lowered = t.cloneNode(segments.at(-1))
+  let lowered = t.cloneNode(segments.at(-1)!) as t.Expression
   for (let index = chain.operations.length - 1; index >= 0; index--) {
     const operation = chain.operations[index]
     if (!operation.optional) {

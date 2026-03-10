@@ -17,7 +17,7 @@ function setWithSegments(
     }
     current = current[key]
   }
-  current[segments.at(-1)] = value
+  current[segments.at(-1)!] = value
 }
 
 function setByPath(

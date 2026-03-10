@@ -249,13 +249,13 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     defineComponent({
       data: () => ({}),
       methods: {
-        fire(detail: Record<string, any>) {
+        fire(this: any, detail: Record<string, any>) {
           this.triggerEvent('change', detail)
         },
       },
       setup() {
         return {
-          fireFromSetup(detail: Record<string, any>) {
+          fireFromSetup(this: any, detail: Record<string, any>) {
             this.triggerEvent('change-setup', detail)
           },
         }
@@ -284,7 +284,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     defineComponent({
       data: () => ({}),
       methods: {
-        fire() {
+        fire(this: any) {
           this.triggerEvent('change', { source: 'proxy-host' })
         },
       },
@@ -314,7 +314,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     defineComponent({
       data: () => ({}),
       methods: {
-        fire() {
+        fire(this: any) {
           this.triggerEvent('change', { source: 'invocation-this' })
         },
       },
@@ -344,7 +344,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     defineComponent({
       data: () => ({}),
       methods: {
-        fire() {
+        fire(this: any) {
           this.triggerEvent('change', { source: 'bridge-filter' })
         },
       },
@@ -379,7 +379,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     defineComponent({
       data: () => ({}),
       methods: {
-        fire() {
+        fire(this: any) {
           this.triggerEvent('change', { source: 'runtime-proxy' })
         },
       },
@@ -408,7 +408,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     defineComponent({
       data: () => ({}),
       methods: {
-        fire() {
+        fire(this: any) {
           this.triggerEvent('change', { source: 'runtime-instance-fallback' })
         },
       },

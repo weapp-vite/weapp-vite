@@ -215,7 +215,7 @@ describe('createApp', () => {
             app.globalData.logs = logs.slice()
           },
           {
-            immediate: true,
+            immediate: true as any,
             deep: true,
           },
         )

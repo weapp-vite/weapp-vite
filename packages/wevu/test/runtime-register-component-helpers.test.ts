@@ -114,7 +114,7 @@ describe('runtime: register component helpers', () => {
       effectiveOnShareTimeline: vi.fn(),
       effectiveOnAddToFavorites: vi.fn(),
       hasHook: () => false,
-    })
+    } as any)
 
     const instance: any = {}
     hooks.onLoad.call(instance, 'a')
@@ -162,7 +162,7 @@ describe('runtime: register component helpers', () => {
       effectiveOnAddToFavorites: vi.fn(),
       hasHook: () => false,
       isPage: true,
-    })
+    } as any)
 
     const instance: any = {
       options: {

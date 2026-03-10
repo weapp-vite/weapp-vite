@@ -154,10 +154,10 @@ describe('bindModel helpers', () => {
       parser: (event: any) => event.detail.value,
     }).model()
 
-    expect(payload.checked).toBe(2)
-    expect(payload.onChange).toBeTypeOf('function')
+    expect((payload as any).checked).toBe(2)
+    expect((payload as any).onChange).toBeTypeOf('function')
 
-    payload.onChange({ detail: { value: 8 } })
+    ;(payload as any).onChange({ detail: { value: 8 } })
     expect(state.count).toBe(8)
   })
 })

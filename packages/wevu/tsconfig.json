@@ -8,12 +8,13 @@
       ]
     },
     "types": [
-      "miniprogram-api-typings"
+      "miniprogram-api-typings",
+      "node",
+      "vitest/globals"
     ]
   },
   "include": [
     "src",
-    "test",
-    "test-d"
+    "test"
   ]
 }

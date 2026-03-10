@@ -1,3 +1,5 @@
+import type { AppLaunchOptions } from './routeRuntime/options'
+
 export function resolveCurrentPages<T>(navigationHistory: Array<{ instance?: T }>) {
   return navigationHistory
     .map(entry => entry.instance)

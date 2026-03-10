@@ -35,7 +35,7 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await wrapped.transform?.call({}, 'code', 'id')
+    await (wrapped.transform as Function)?.call({}, 'code', 'id')
 
     expect(logger).toHaveBeenCalledTimes(1)
     const [message, context] = logger.mock.calls[0]
@@ -66,7 +66,7 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await wrapped.transform?.call({}, 'code', 'id')
+    await (wrapped.transform as Function)?.call({}, 'code', 'id')
     expect(logger).not.toHaveBeenCalled()
   })
 
@@ -88,7 +88,7 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await wrapped.buildStart?.call({}, {})
+    await (wrapped.buildStart as Function)?.call({}, {})
     expect(logger).not.toHaveBeenCalled()
   })
 
@@ -114,7 +114,7 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await wrapped.load?.call({}, 'id')
+    await (wrapped.load as Function)?.call({}, 'id')
     expect(logger).toHaveBeenCalledTimes(1)
     const [, context] = logger.mock.calls[0]
     expect(context.duration).toBe(80)
@@ -128,7 +128,7 @@ describe('wrapPlugin', () => {
       name: 'all-hooks',
       transform: (code: string) => code,
       customHook: () => null,
-    } as Plugin
+    } as unknown as Plugin
 
     const wrapped = wrapPlugin(plugin, {
       hooks: 'all',
@@ -137,7 +137,7 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await wrapped.customHook?.call({}, {})
+    await (wrapped as any).customHook?.call({}, {})
     expect(logger).toHaveBeenCalledTimes(1)
   })
 
@@ -163,8 +163,8 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await wrapped[0].load?.call({}, 'a')
-    await wrapped[1].load?.call({}, 'b')
+    await (wrapped[0].load as Function)?.call({}, 'a')
+    await (wrapped[1].load as Function)?.call({}, 'b')
     expect(logger).toHaveBeenCalledTimes(2)
   })
 
@@ -174,7 +174,7 @@ describe('wrapPlugin', () => {
 
     const plugin = {
       transform: (code: string) => code,
-    } as Plugin
+    } as unknown as Plugin
 
     const wrapped = wrapPlugin(plugin, {
       hooks: DEFAULT_PLUGIN_HOOKS,
@@ -183,7 +183,7 @@ describe('wrapPlugin', () => {
       clock,
     })
 
-    await wrapped.transform?.call({}, 'code', 'id')
+    await (wrapped.transform as Function)?.call({}, 'code', 'id')
     const [message] = logger.mock.calls[0]
     expect(message).toContain('anonymous-plugin')
   })

@@ -125,7 +125,7 @@ export function applySnapshotUpdate(
     }
     current = current[key]
   }
-  const leaf = segments.at(-1)
+  const leaf = segments.at(-1)!
   if (op === 'delete') {
     try {
       delete current[leaf]

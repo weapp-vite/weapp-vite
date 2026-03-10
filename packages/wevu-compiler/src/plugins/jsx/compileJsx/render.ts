@@ -1,10 +1,13 @@
 import type {
   Expression,
-  JSXChild,
   JSXElement,
   JSXExpressionContainer,
   JSXFragment,
+  JSXSpreadChild,
+  JSXText,
 } from '@babel/types'
+
+type JSXChild = JSXText | JSXExpressionContainer | JSXSpreadChild | JSXElement | JSXFragment
 import type { JsxCompileContext } from './types'
 import * as t from '@babel/types'
 import {

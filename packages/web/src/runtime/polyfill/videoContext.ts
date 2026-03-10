@@ -1,3 +1,5 @@
+import type { VideoContext } from './types/platformRuntime'
+
 function resolveVideoElementById(videoId: string) {
   if (typeof document === 'undefined') {
     return undefined

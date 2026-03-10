@@ -51,12 +51,12 @@ describe('weappWebPlugin', () => {
         },
       },
     })
-    await plugin.configResolved?.call({ warn() {} } as any, { root, command: 'build' } as any)
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'build' } as any)
 
-    const entryId = plugin.resolveId?.('/@weapp-vite/web/entry') as string
+    const entryId = (plugin.resolveId as ((...args: any[]) => any))?.('/@weapp-vite/web/entry') as string
     expect(entryId).toBeTruthy()
 
-    const code = plugin.load?.call({} as any, entryId) as string
+    const code = (plugin.load as ((...args: any[]) => any))?.call({} as any, entryId) as string
     expect(code).toContain('initializePageRoutes(["pages/index/index"]')
     expect(code).toContain('"runtime":{"executionMode":"safe","warnings":{"level":"off","dedupe":false}}')
   })

@@ -2641,7 +2641,7 @@ describe('router navigation helpers', () => {
         options: {
           from: 'mine',
         },
-      },
+      } as any,
     ]
 
     callHookList(instance, 'onShow')
@@ -3261,7 +3261,7 @@ describe('router navigation helpers', () => {
         options: {
           from: 'mine',
         },
-      },
+      } as any,
     ]
 
     callHookList(instance, 'onShow')
