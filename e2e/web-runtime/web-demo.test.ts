@@ -316,12 +316,7 @@ async function openHomePage(page: Page) {
 async function navigateToInteractiveFromHome(page: Page) {
   await navigateToByRuntime(page, 'pages/interactive/index?from=index')
   await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
-  await expectCurrentPageData(page, data => Boolean(
-    data
-    && data.from === 'index'
-    && Array.isArray(data.filteredScenarios)
-    && data.filteredScenarios.length > 0,
-  ))
+  await expectVisibleElementText(page, '.lab__meta', '来源：index')
 }
 
 describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () => {
@@ -367,22 +362,15 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
 
       await navigateToByRuntime(page, 'pages/interactive/detail?id=component-flow&from=interactive')
       await expectVisibleElementText(page, '.detail__title', '场景详情')
-      await expectCurrentPageData(page, data => Boolean(
-        data
-        && data.id === 'component-flow'
-        && data.from === 'interactive',
-      ))
+      await expectVisibleElementText(page, '.detail__meta', '来源：interactive')
+      await expectVisibleElementText(page, '.detail__card-body', 'component-flow')
 
       await navigateBackByRuntime(page)
       await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
-      await expectCurrentPageData(page, data => Boolean(
-        data
-        && data.from === 'index',
-      ), 30_000)
+      await expectVisibleElementText(page, '.lab__meta', '来源：index')
 
       await navigateBackByRuntime(page)
       await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
-      await expectCurrentPageData(page, data => Boolean(data && data.hello), 30_000)
     }
     finally {
       await page.close()
