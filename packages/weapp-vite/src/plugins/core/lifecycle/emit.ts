@@ -579,7 +579,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     else {
       const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
       const localSubPackageMetas = [...subPackageMap.values()]
-        .filter(meta => Array.isArray(meta.subPackage.dependencies) && meta.subPackage.dependencies.length > 0)
+        .filter(meta => Array.isArray(meta?.subPackage?.dependencies) && meta.subPackage.dependencies.length > 0)
 
       for (const meta of localSubPackageMetas) {
         for (const output of Object.values(rolldownBundle)) {
