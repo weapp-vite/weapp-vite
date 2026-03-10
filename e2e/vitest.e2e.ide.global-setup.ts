@@ -1,6 +1,10 @@
 import path from 'node:path'
 import process from 'node:process'
-import { assertDevtoolsLoggedIn } from './utils/automator'
+import {
+  clearRuntimeWarningLog,
+  ensureIdeWarningReportEnv,
+  writeIdeWarningReport,
+} from './utils/ideWarningReport'
 
 const DEFAULT_LOGIN_CHECK_PROJECT = path.resolve(import.meta.dirname, '../e2e-apps/base')
 
@@ -20,13 +24,25 @@ function shouldRunDevtoolsLoginPreflight() {
 }
 
 export default async function setupIdeE2E() {
+  const reportPaths = ensureIdeWarningReportEnv()
+
   if (process.env.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK === '1') {
-    return
+    return async () => {
+      writeIdeWarningReport(reportPaths)
+    }
   }
   if (!shouldRunDevtoolsLoginPreflight()) {
-    return
+    return async () => {
+      writeIdeWarningReport(reportPaths)
+    }
   }
 
+  const { assertDevtoolsLoggedIn } = await import('./utils/automator')
   const projectPath = process.env.WEAPP_VITE_E2E_LOGIN_CHECK_PROJECT_PATH || DEFAULT_LOGIN_CHECK_PROJECT
   await assertDevtoolsLoggedIn(projectPath)
+  clearRuntimeWarningLog(reportPaths.eventLogPath)
+
+  return async () => {
+    writeIdeWarningReport(reportPaths)
+  }
 }

@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { ensureIdeWarningReportEnv } from './utils/ideWarningReport'
 import { resolveE2EMaxWorkers } from './utils/max-workers'
 
 const RETAIL_PARITY_TEST_PATH = path.resolve(
@@ -7,6 +8,8 @@ const RETAIL_PARITY_TEST_PATH = path.resolve(
   './ide/template-weapp-vite-wevu-tailwindcss-tdesign-retail-template.test.ts',
 )
 const DEVTOOLS_GLOBAL_SETUP = path.resolve(import.meta.dirname, './vitest.e2e.ide.global-setup.ts')
+
+ensureIdeWarningReportEnv()
 
 export default defineConfig({
   test: {

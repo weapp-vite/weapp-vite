@@ -4,6 +4,10 @@ import process from 'node:process'
 import cmpVersion from 'licia/cmpVersion'
 import automator from 'miniprogram-automator'
 import MiniProgram from 'miniprogram-automator/out/MiniProgram.js'
+import {
+  appendIdeReportEvent,
+  resolveReportProjectPath,
+} from './ideWarningReport'
 
 const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
@@ -23,7 +27,6 @@ const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
 ]
 const RUNTIME_LOG_META_KEY = '__weappViteRuntimeLogMeta'
 const RELAUNCH_PATCH_META_KEY = '__weappViteRelaunchPatchMeta'
-const RUNTIME_LOG_FILE = process.env.WEAPP_VITE_E2E_RUNTIME_LOG_FILE || '/tmp/weapp-vite-e2e-runtime.log'
 const DEFAULT_LOGIN_PREFLIGHT_TIMEOUT = 30_000
 const DEFAULT_RELUNCH_READY_TIMEOUT = 15_000
 const DEFAULT_RELUNCH_RETRIES = 3
@@ -84,6 +87,7 @@ interface RuntimeLogStats {
 }
 
 interface RuntimeLogMeta {
+  project: string
   entries: RuntimeLogEntry[]
   stats: RuntimeLogStats
   dispose: () => void
@@ -201,7 +205,7 @@ function isWarnConsoleEntry(entry: any) {
     || /\[Component\]/.test(text)
 }
 
-function ensureRuntimeLogMeta(miniProgram: any): RuntimeLogMeta {
+function ensureRuntimeLogMeta(miniProgram: any, project: string): RuntimeLogMeta {
   const existing = (miniProgram as Record<string, any>)[RUNTIME_LOG_META_KEY] as RuntimeLogMeta | undefined
   if (existing) {
     return existing
@@ -246,6 +250,7 @@ function ensureRuntimeLogMeta(miniProgram: any): RuntimeLogMeta {
   miniProgram.on('exception', onException)
 
   const meta: RuntimeLogMeta = {
+    project,
     entries,
     stats,
     dispose() {
@@ -257,16 +262,6 @@ function ensureRuntimeLogMeta(miniProgram: any): RuntimeLogMeta {
 
   ;(miniProgram as Record<string, any>)[RUNTIME_LOG_META_KEY] = meta
   return meta
-}
-
-function appendRuntimeLog(line: string) {
-  try {
-    fs.appendFileSync(RUNTIME_LOG_FILE, `${line}\n`)
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    process.stderr.write(`[e2e-log-write-error] runtime-log file=${RUNTIME_LOG_FILE} error=${message}\n`)
-  }
 }
 
 function isLikelyDevtoolsInfraErrorMessage(message: string) {
@@ -368,7 +363,14 @@ async function resolveLaunchProjectMeta(projectPath: string | undefined): Promis
 
   const timeoutLine = `[warn] [runtime:launch-preflight] app.json not ready within ${APP_CONFIG_READY_TIMEOUT}ms: ${appConfigPath}`
   process.stdout.write(`${timeoutLine}\n`)
-  appendRuntimeLog(timeoutLine)
+  appendIdeReportEvent({
+    source: 'runtime',
+    kind: 'message',
+    project: resolveReportProjectPath(projectPath),
+    level: 'warn',
+    channel: 'launch-preflight',
+    text: `app.json not ready within ${APP_CONFIG_READY_TIMEOUT}ms: ${resolveReportProjectPath(appConfigPath)}`,
+  })
   return { appConfigPath }
 }
 
@@ -383,7 +385,7 @@ function isLikelyLaunchRetryableError(error: unknown) {
     || isLikelyRelaunchRetryableError(error)
 }
 
-function handleLaunchError(error: unknown): never {
+function handleLaunchError(error: unknown, project: string): never {
   const message = error instanceof Error ? error.message : String(error)
   const isInfraError = isLikelyDevtoolsInfraErrorMessage(message)
   const isLoginRequiredError = isDevtoolsLoginRequiredError(error)
@@ -403,8 +405,31 @@ function handleLaunchError(error: unknown): never {
     process.stderr.write(`${summary}\n`)
     process.stderr.write(`${logLine}\n`)
   }
-  appendRuntimeLog(summary)
-  appendRuntimeLog(logLine)
+  appendIdeReportEvent({
+    source: 'runtime',
+    kind: 'stats',
+    project,
+    warn: 0,
+    error: isInfraError ? 0 : 1,
+    exception: 0,
+    total: isInfraError ? 0 : 1,
+  })
+  appendIdeReportEvent({
+    source: 'runtime',
+    kind: 'message',
+    project,
+    level: isInfraError ? 'warn' : 'error',
+    channel: isInfraError
+      ? 'launch-infra'
+      : isLoginRequiredError
+        ? 'launch-login'
+        : 'launch',
+    text: isInfraError
+      ? message
+      : isLoginRequiredError
+        ? formatDevtoolsLoginRequiredError(error)
+        : message,
+  })
   if (isLoginRequiredError) {
     throw createDevtoolsLoginRequiredError(error)
   }
@@ -531,33 +556,62 @@ function createDevtoolsLoginRequiredError(error: unknown) {
 
 function logRuntimeStats(meta: RuntimeLogMeta) {
   const summary = `[e2e-runtime-stats] warn=${meta.stats.warn} error=${meta.stats.error} exception=${meta.stats.exception} total=${meta.stats.total}`
-  appendRuntimeLog(summary)
+  appendIdeReportEvent({
+    source: 'runtime',
+    kind: 'stats',
+    project: meta.project,
+    warn: meta.stats.warn,
+    error: meta.stats.error,
+    exception: meta.stats.exception,
+    total: meta.stats.total,
+  })
   if (meta.stats.total > 0) {
     process.stderr.write(`${summary}\n`)
     for (const entry of meta.entries) {
       if (entry.level === 'warn') {
         const logLine = `[warn] [runtime] ${entry.text}`
         process.stderr.write(`${logLine}\n`)
-        appendRuntimeLog(logLine)
+        appendIdeReportEvent({
+          source: 'runtime',
+          kind: 'message',
+          project: meta.project,
+          level: 'warn',
+          channel: 'runtime',
+          text: entry.text,
+        })
         continue
       }
       if (entry.level === 'error') {
         const logLine = `[error] [runtime] ${entry.text}`
         process.stderr.write(`${logLine}\n`)
-        appendRuntimeLog(logLine)
+        appendIdeReportEvent({
+          source: 'runtime',
+          kind: 'message',
+          project: meta.project,
+          level: 'error',
+          channel: 'runtime',
+          text: entry.text,
+        })
         continue
       }
       const logLine = `[error] [runtime:exception] ${entry.text}`
       process.stderr.write(`${logLine}\n`)
-      appendRuntimeLog(logLine)
+      appendIdeReportEvent({
+        source: 'runtime',
+        kind: 'message',
+        project: meta.project,
+        level: 'exception',
+        channel: 'exception',
+        text: entry.text,
+      })
     }
     return
   }
   process.stdout.write(`${summary}\n`)
 }
 
-function enhanceMiniProgramWithRuntimeLogs(miniProgram: any) {
-  const meta = ensureRuntimeLogMeta(miniProgram)
+function enhanceMiniProgramWithRuntimeLogs(miniProgram: any, project: string) {
+  const meta = ensureRuntimeLogMeta(miniProgram, project)
   if (meta.closeWrapped) {
     return miniProgram
   }
@@ -652,6 +706,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
   patchAutomatorVersionCheck()
   const { projectConfig, timeout, trustProject, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
+  const project = resolveReportProjectPath(rest.projectPath)
   return (async () => {
     for (let attempt = 1; attempt <= LAUNCH_RETRIES; attempt += 1) {
       let miniProgram: any = null
@@ -667,7 +722,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
           },
         })
 
-        const withRuntimeLogs = enhanceMiniProgramWithRuntimeLogs(miniProgram)
+        const withRuntimeLogs = enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
         const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs)
         if (projectMeta?.warmupRoute) {
           await withRelaunch.reLaunch(projectMeta.warmupRoute)
@@ -688,12 +743,19 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
           const compactMessage = rawMessage.replace(/\s+/g, ' ').trim()
           const retryLine = `[warn] [runtime:launch-retry] attempt=${attempt}/${LAUNCH_RETRIES} delay=${LAUNCH_RETRY_DELAY}ms reason=${compactMessage.slice(0, 240)}`
           process.stdout.write(`${retryLine}\n`)
-          appendRuntimeLog(retryLine)
+          appendIdeReportEvent({
+            source: 'runtime',
+            kind: 'message',
+            project,
+            level: 'warn',
+            channel: 'launch-retry',
+            text: `attempt=${attempt}/${LAUNCH_RETRIES} delay=${LAUNCH_RETRY_DELAY}ms reason=${compactMessage.slice(0, 240)}`,
+          })
           await sleep(LAUNCH_RETRY_DELAY)
           continue
         }
 
-        handleLaunchError(error)
+        handleLaunchError(error, project)
       }
     }
 

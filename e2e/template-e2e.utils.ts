@@ -1,11 +1,11 @@
 import process from 'node:process'
-import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import prettier from 'prettier'
 import { expect } from 'vitest'
 import { extractConfigFromVue } from '../packages/weapp-vite/src/utils/file'
 import { launchAutomator } from './utils/automator'
+import { runWeappViteBuildWithLogCapture } from './utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 const APP_JSON_PATH = 'src/app.json'
@@ -287,13 +287,13 @@ async function runBuild(templateRoot: string) {
   const outputRoot = path.join(templateRoot, 'dist')
   const npmOutputRoot = path.join(outputRoot, 'miniprogram_npm')
   const hasPrebuiltNpm = await fs.pathExists(npmOutputRoot)
-  const args = [CLI_PATH, 'build', templateRoot, '--platform', 'weapp']
-  if (!hasDependencies || hasPrebuiltNpm) {
-    args.push('--skipNpm')
-  }
-  await execa('node', args, {
-    stdio: 'inherit',
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: templateRoot,
+    platform: 'weapp',
     cwd: templateRoot,
+    label: `ide:${path.basename(templateRoot)}`,
+    skipNpm: !hasDependencies || hasPrebuiltNpm,
   })
 }
 
