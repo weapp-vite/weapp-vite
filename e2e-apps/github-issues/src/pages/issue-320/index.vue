@@ -91,16 +91,16 @@ function _runE2E() {
     : ''
 
   const nextReport = {
-    ok: beforeRoute.path === '/pages/issue-320/legacy'
-      && overriddenRoute.path === '/pages/issue-320/new'
+    ok: beforeRoute.fullPath === '/pages/issue-320/legacy'
+      && overriddenRoute.fullPath === '/pages/issue-320/new'
       && resolvedByNewAlias.name === 'issue320-legacy'
       && resolvedByOldAlias.name === undefined
       && (resolvedByNewAlias.matched?.[0]?.aliasPath ?? '') === '/pages/issue-320/new-alias'
       && currentAlias === '/pages/issue-320/new-alias'
       && currentRedirect === '/pages/issue-309/index?from=issue320-override'
       && router.hasRoute('issue320-legacy'),
-    beforePath: beforeRoute.path,
-    overriddenPath: overriddenRoute.path,
+    beforePath: beforeRoute.fullPath,
+    overriddenPath: overriddenRoute.fullPath,
     newAliasName: resolvedByNewAlias.name ?? '',
     oldAliasName: resolvedByOldAlias.name ?? '',
     matchedAliasPath: resolvedByNewAlias.matched?.[0]?.aliasPath ?? '',
