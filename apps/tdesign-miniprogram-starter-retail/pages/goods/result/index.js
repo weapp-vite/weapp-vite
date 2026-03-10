@@ -5,11 +5,13 @@ import Toast from 'tdesign-miniprogram/toast/index';
 const initFilters = {
   overall: 1,
   sorts: '',
+  layout: 0,
 };
 
 Page({
   data: {
     goodsList: [],
+    layout: 0,
     sorts: '',
     overall: 1,
     show: false,
@@ -176,14 +178,16 @@ Page({
   },
 
   handleFilterChange(e) {
-    const { overall, sorts } = e.detail;
+    const { layout, overall, sorts } = e.detail;
     const { total } = this;
     const _filter = {
+      layout,
       sorts,
       overall,
     };
     this.setData({
       filter: _filter,
+      layout,
       sorts,
       overall,
     });

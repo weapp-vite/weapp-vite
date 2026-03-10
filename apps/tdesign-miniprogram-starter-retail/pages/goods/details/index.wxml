@@ -70,7 +70,7 @@
       </view>
       <view class="comment-item-wrap" wx:for="{{ commentsList }}" wx:for-item="commentItem" wx:key="goodsSpu">
         <view class="comment-item-head">
-          <t-image src="{{commentItem.userHeadUrl}}" t-class="comment-item-avatar" />
+          <t-image src="{{commentItem.userHeadUrl || ''}}" t-class="comment-item-avatar" />
           <view class="comment-head-right">
             <view class="comment-username">{{commentItem.userName}}</view>
             <t-rate
@@ -93,7 +93,7 @@
       <t-image t-class="img" src="{{recRightImg}}" />
     </view>
     <view wx:if="{{details.desc.length > 0}}" wx:for="{{details.desc}}" wx:key="index">
-      <t-image t-class="desc-content__img" src="{{item}}" mode="widthFix" />
+      <t-image t-class="desc-content__img" src="{{item || ''}}" mode="widthFix" />
     </view>
   </view>
   <view class="goods-bottom-operation">

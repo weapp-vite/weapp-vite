@@ -21,11 +21,11 @@ Page({
     },
   },
 
-  onLoad(options) {
+  onLoad(options = {}) {
     this.setData({
-      imgUrl: options.imgUrl,
-      title: options.title,
-      goodsDetail: options.specs,
+      imgUrl: options.imgUrl || '',
+      title: options.title || '',
+      goodsDetail: options.specs || '',
     });
   },
 

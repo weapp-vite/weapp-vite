@@ -2,7 +2,7 @@
   <view class="comment-card">
     <view class="goods-info-container">
       <view class="goods-image-container">
-        <t-image t-class="goods-image" src="{{imgUrl}}" />
+        <t-image t-class="goods-image" src="{{imgUrl || ''}}" />
       </view>
       <view class="goods-title-container">
         <view class="goods-title">{{title}}</view>

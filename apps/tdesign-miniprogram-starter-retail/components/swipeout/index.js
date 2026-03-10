@@ -30,7 +30,6 @@ Component({
    */
   data: {
     wrapperStyle: '',
-    asyncClose: false,
     closed: true,
   },
 

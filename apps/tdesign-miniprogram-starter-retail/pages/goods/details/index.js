@@ -408,12 +408,12 @@ Page({
     });
   },
 
-  onLoad(query) {
+  onLoad(query = {}) {
     const { spuId } = query;
     this.setData({
-      spuId: spuId,
+      spuId: spuId || '',
     });
-    this.getDetail(spuId);
+    this.getDetail(spuId || '');
     this.getCommentsList(spuId);
     this.getCommentsStatistics(spuId);
   },

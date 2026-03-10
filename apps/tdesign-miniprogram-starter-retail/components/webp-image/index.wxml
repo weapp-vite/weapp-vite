@@ -9,6 +9,4 @@
   show-menu-by-longpress="{{showMenuByLongpress}}"
   error="{{loadFailed}}"
   loading="{{loading}}"
-  binderror="onError"
-  bindload="onLoad"
 />

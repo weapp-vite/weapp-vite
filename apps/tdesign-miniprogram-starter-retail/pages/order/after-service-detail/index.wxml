@@ -6,7 +6,7 @@
       <!-- 状态及描述 -->
       <view class="service-detail__header">
         <view class="title">
-          <t-icon prefix="wr" name="{{service.statusIcon}}" size="30px" />
+          <t-icon prefix="wr" name="{{service.statusIcon || ''}}" size="30px" />
           {{service.statusName}}
         </view>
         <view class="desc"> {{service.statusDesc}} </view>
@@ -116,7 +116,7 @@
           t-class-title="t-refund-info"
           t-class-note="t-refund-note"
           title="订单编号"
-          note="{{service.orderNo}}"
+          note="{{service.orderNo || ''}}"
         />
         <t-cell
           bordered="{{false}}"
@@ -124,7 +124,7 @@
           t-class-title="t-refund-info"
           t-class-note="t-refund-note"
           title="服务单号"
-          note="{{service.rightsNo}}"
+          note="{{service.rightsNo || ''}}"
         >
           <view slot="right-icon" class="text-btn" hover-class="text-btn--active" bindtap="onServiceNoCopy">复制 </view>
         </t-cell>
@@ -134,7 +134,7 @@
           t-class-title="t-refund-info"
           t-class-note="t-refund-note"
           title="退款原因"
-          note="{{service.rightsReasonDesc}}"
+          note="{{service.rightsReasonDesc || ''}}"
         />
         <t-cell
           bordered="{{false}}"
@@ -151,7 +151,7 @@
           t-class-title="t-refund-info"
           t-class-note="t-refund-note"
           title="申请时间"
-          note="{{service.createTime}}"
+          note="{{service.createTime || ''}}"
         />
       </view>
       <!-- 凭证/说明 -->

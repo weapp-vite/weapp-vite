@@ -1,23 +1,23 @@
 <!-- 过滤组件 -->
 <view class="wr-class filter-wrap">
 	<view class="filter-left-content">
-		<view class="filter-item {{overall === 1 ? 'filter-active-item' : ''}}" bindtap="onOverallAction">
+		<view class="filter-item {{currentOverall === 1 ? 'filter-active-item' : ''}}" bindtap="onOverallAction">
 			综合
 		</view>
 		<view class="filter-item" bind:tap="handlePriseSort">
-			<text style="color: {{sorts !== '' ? color : '' }}">价格</text>
+			<text style="color: {{currentSorts !== '' ? color : '' }}">价格</text>
 			<view class="filter-price">
 				<t-icon
 				  prefix="wr"
 				  name="arrow_drop_up"
 				  size="18rpx"
-				  style="color:{{sorts === 'asc' ? color : '#bbb'}}"
+				  style="color:{{currentSorts === 'asc' ? color : '#bbb'}}"
 				/>
 				<t-icon
 				  prefix="wr"
 				  name="arrow_drop_down"
 				  size="18rpx"
-				  style="color:{{sorts === 'desc' ? color : '#bbb'}}"
+				  style="color:{{currentSorts === 'desc' ? color : '#bbb'}}"
 				/>
 			</view>
 		</view>
@@ -34,4 +34,3 @@
 </view>
 <!-- 筛选弹框 -->
 <slot name="filterPopup" />
-

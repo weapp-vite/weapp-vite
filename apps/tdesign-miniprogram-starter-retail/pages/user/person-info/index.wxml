@@ -8,12 +8,12 @@
       arrow
       t-class-left="order-group__left"
     >
-      <t-image slot="note" src="{{personInfo.avatarUrl}}" t-class="avatarUrl" mode="aspectFill" />
+      <t-image slot="note" src="{{personInfo.avatarUrl || ''}}" t-class="avatarUrl" mode="aspectFill" />
     </t-cell>
     <t-cell
       title="昵称"
       arrow
-      note="{{personInfo.nickName}}"
+      note="{{personInfo.nickName || ''}}"
       data-type="name"
       bind:click="onClickCell"
       t-class="t-cell-class"
@@ -22,7 +22,7 @@
     <t-cell
       title="性别"
       arrow
-      note="{{genderMap[personInfo.gender]}}"
+      note="{{genderMap[personInfo.gender] || ''}}"
       data-type="gender"
       bind:click="onClickCell"
       t-class="t-cell-class"

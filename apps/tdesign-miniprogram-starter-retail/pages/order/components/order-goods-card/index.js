@@ -25,7 +25,6 @@ Component({
   },
 
   data: {
-    goods: {},
     hidden: false,
   },
 

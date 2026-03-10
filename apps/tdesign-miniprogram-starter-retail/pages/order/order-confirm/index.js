@@ -38,7 +38,7 @@ Page({
     promotionGoodsList: [], //当前门店商品列表(优惠券)
     couponList: [], //当前门店所选优惠券
     submitCouponList: [], //所有门店所选优惠券
-    currentStoreId: null, //当前优惠券storeId
+    currentStoreId: '', //当前优惠券storeId
     userAddress: null,
   },
 

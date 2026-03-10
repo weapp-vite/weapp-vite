@@ -23,7 +23,7 @@
       wx:key="id"
       class="goods-wrapper"
     >
-      <t-image src="{{goods.thumb}}" t-class="goods-image" mode="aspectFill" />
+      <t-image src="{{goods.thumb || ''}}" t-class="goods-image" mode="aspectFill" />
       <view class="goods-content">
         <view class="goods-title">{{goods.title}}</view>
         <view>{{goods.specs}}</view>
