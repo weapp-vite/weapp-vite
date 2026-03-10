@@ -4,7 +4,9 @@ export default defineConfig({
   weapp: {
     srcRoot: 'src',
     npm: {
-      mainPackageDependencies: false,
+      mainPackage: {
+        dependencies: false,
+      },
       subPackages: {
         packageA: {
           dependencies: [
