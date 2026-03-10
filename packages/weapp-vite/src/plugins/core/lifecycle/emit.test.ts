@@ -216,7 +216,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
             ['packageA', {
               subPackage: {
                 root: 'packageA',
-                dependencies: ['dayjs', 'tdesign-miniprogram'],
+                dependencies: ['dayjs', /^tdesign-miniprogram$/],
               },
             }],
           ]),
@@ -234,7 +234,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
             npm: {
               subPackages: {
                 packageA: {
-                  dependencies: ['dayjs', 'tdesign-miniprogram'],
+                  dependencies: ['dayjs', /^tdesign-miniprogram$/],
                 },
               },
             },
@@ -258,7 +258,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
       'packageA/pages/foo.js': {
         type: 'chunk',
         fileName: 'packageA/pages/foo.js',
-        code: 'const dayjs = require("dayjs"); const t = require("tdesign-miniprogram/toast/index")',
+        code: 'const dayjs = require(`dayjs`); const t = require("tdesign-miniprogram/toast/index")',
         imports: [],
         dynamicImports: [],
       },
@@ -275,7 +275,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
 
     await hook.call({}, {}, bundle)
 
-    expect(bundle['packageA/pages/foo.js'].code).toContain('require("../miniprogram_npm/dayjs/index")')
+    expect(bundle['packageA/pages/foo.js'].code).toContain('../miniprogram_npm/dayjs/index')
     expect(bundle['packageA/pages/foo.js'].code).toContain('require("../miniprogram_npm/tdesign-miniprogram/toast/index")')
     expect(bundle['packageA/pages/foo.json'].source).toContain('"t-button": "../miniprogram_npm/tdesign-miniprogram/button/button"')
   })

@@ -44,6 +44,7 @@ async function createTempDir() {
 describe('runtime npm service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    buildPackageMock.mockImplementation(async () => {})
     getPackNpmRelationListMock.mockReturnValue([
       {
         packageJsonPath: './package.json',
@@ -147,5 +148,102 @@ describe('runtime npm service', () => {
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
     expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
     expect(ctx.scanService.loadSubPackages).toHaveBeenCalledTimes(1)
+  })
+
+  it('rebuilds cached npm source when cache is marked fresh but source output is missing', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        dayjs: '^1.11.13',
+        lodash: '^4.17.21',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+    checkDependenciesCacheOutdateMock.mockResolvedValue(false)
+    buildPackageMock.mockImplementation(async ({ dep, outDir }) => {
+      await fs.outputFile(path.resolve(outDir, dep, 'index.js'), `module.exports = "${dep}"`)
+    })
+    getPackNpmRelationListMock.mockReturnValue([
+      {
+        packageJsonPath: './package.json',
+        miniprogramNpmDistDir: '.',
+      },
+    ])
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist'),
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            mainPackage: {
+              dependencies: false,
+            },
+            subPackages: {
+              packageA: {
+                dependencies: [/^dayjs$/],
+              },
+              packageB: {
+                dependencies: [/^lodash$/],
+              },
+            },
+          },
+        },
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
+          ['packageA', {
+            subPackage: {
+              root: 'packageA',
+              dependencies: [/^dayjs$/],
+            },
+          }],
+          ['packageB', {
+            subPackage: {
+              root: 'packageB',
+              dependencies: [/^lodash$/],
+            },
+          }],
+        ]),
+      },
+    } as any
+
+    const service = createNpmService(ctx)
+    await expect(service.build()).resolves.toBeUndefined()
+
+    const cachedSourceOutDir = path.resolve(cwd, 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm')
+    expect(await fs.pathExists(path.resolve(cachedSourceOutDir, 'dayjs/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cachedSourceOutDir, 'lodash/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/miniprogram_npm'))).toBe(false)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageA/miniprogram_npm/dayjs/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist/packageB/miniprogram_npm/lodash/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'packageA/miniprogram_npm/dayjs/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.resolve(cwd, 'packageB/miniprogram_npm/lodash/index.js'))).toBe(false)
+
+    const buildCalls = buildPackageMock.mock.calls.map(([args]) => ({
+      dep: args.dep,
+      outDir: path.relative(cwd, args.outDir).replace(/\\/g, '/'),
+    }))
+
+    expect(buildCalls).toEqual([
+      {
+        dep: 'dayjs',
+        outDir: 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm',
+      },
+      {
+        dep: 'lodash',
+        outDir: 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm',
+      },
+    ])
+    expect(writeDependenciesCacheMock).toHaveBeenCalledWith('__all__')
+    expect(writeDependenciesCacheMock).toHaveBeenCalledWith(undefined)
+    expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageA')
+    expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
   })
 })

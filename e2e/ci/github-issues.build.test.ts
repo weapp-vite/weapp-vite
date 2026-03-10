@@ -445,8 +445,6 @@ describe.sequential('e2e app: github-issues (build)', () => {
     const itemShared = await fs.readFile(itemSharedPath, 'utf-8')
     const userShared = await fs.readFile(userSharedPath, 'utf-8')
 
-    expect(itemShared).toMatch(/require\((['"`])\.\.\/rolldown-runtime\.js\1\)/)
-    expect(userShared).toMatch(/require\((['"`])\.\.\/rolldown-runtime\.js\1\)/)
     expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
     expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
     expect(itemShared).toMatch(/require\((['"`])\.\.\/\.\.\/\.\.\/common\.js\1\)/)
@@ -463,27 +461,53 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(await fs.pathExists(userRuntimePath)).toBe(true)
   })
 
-  it('issue #327: allows npm.buildOptions to redirect miniprogram and bundled deps into a subpackage output', async () => {
+  it('issue #327: routes npm deps by mainPackage/subPackages config without emitting main-package npm output', async () => {
     await runBuild()
 
-    const subpackageNpmRoot = path.join(DIST_ROOT, 'subpackages/issue-327/miniprogram_npm')
-    const subpackageDayjsPath = path.join(subpackageNpmRoot, 'dayjs/index.js')
-    const subpackageTdesignPath = path.join(subpackageNpmRoot, 'tdesign-miniprogram/button/button.js')
+    const issue327NpmRoot = path.join(DIST_ROOT, 'subpackages/issue-327/miniprogram_npm')
+    const itemNpmRoot = path.join(DIST_ROOT, 'subpackages/item/miniprogram_npm')
+    const userNpmRoot = path.join(DIST_ROOT, 'subpackages/user/miniprogram_npm')
+    const subpackageDayjsPath = path.join(issue327NpmRoot, 'dayjs/index.js')
+    const subpackageTdesignPath = path.join(issue327NpmRoot, 'tdesign-miniprogram/button/button.js')
+    const itemLodashPath = path.join(itemNpmRoot, 'lodash/index.js')
+    const userMergePath = path.join(userNpmRoot, 'merge/index.js')
     const mainDayjsPath = path.join(DIST_ROOT, 'miniprogram_npm/dayjs/index.js')
     const mainTdesignPath = path.join(DIST_ROOT, 'miniprogram_npm/tdesign-miniprogram/button/button.js')
+    const mainLodashPath = path.join(DIST_ROOT, 'miniprogram_npm/lodash/index.js')
+    const mainMergePath = path.join(DIST_ROOT, 'miniprogram_npm/merge/index.js')
     const issuePageJsPath = path.join(DIST_ROOT, 'subpackages/issue-327/index.js')
     const issuePageJsonPath = path.join(DIST_ROOT, 'subpackages/issue-327/index.json')
+    const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/index.js')
+    const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/index.js')
 
     expect(await fs.pathExists(subpackageDayjsPath)).toBe(true)
     expect(await fs.pathExists(subpackageTdesignPath)).toBe(true)
+    expect(await fs.pathExists(itemLodashPath)).toBe(true)
+    expect(await fs.pathExists(userMergePath)).toBe(true)
     expect(await fs.pathExists(mainDayjsPath)).toBe(false)
     expect(await fs.pathExists(mainTdesignPath)).toBe(false)
+    expect(await fs.pathExists(mainLodashPath)).toBe(false)
+    expect(await fs.pathExists(mainMergePath)).toBe(false)
+    expect(await fs.pathExists(path.join(DIST_ROOT, 'miniprogram_npm'))).toBe(false)
+
+    expect(await fs.pathExists(path.join(issue327NpmRoot, 'lodash/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.join(issue327NpmRoot, 'merge/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.join(itemNpmRoot, 'merge/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.join(itemNpmRoot, 'dayjs/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.join(userNpmRoot, 'lodash/index.js'))).toBe(false)
+    expect(await fs.pathExists(path.join(userNpmRoot, 'dayjs/index.js'))).toBe(false)
 
     const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
     const issuePageJson = await fs.readFile(issuePageJsonPath, 'utf-8')
+    const itemPageJs = await fs.readFile(itemPageJsPath, 'utf-8')
+    const userPageJs = await fs.readFile(userPageJsPath, 'utf-8')
 
     expect(issuePageJs).toContain('dayjs')
     expect(issuePageJson).toContain('"t-button": "tdesign-miniprogram/button/button"')
+    expect(itemPageJs).toContain('lodash')
+    expect(itemPageJs).toContain('npmMarker')
+    expect(userPageJs).toContain('merge')
+    expect(userPageJs).toContain('npmMarker')
   })
 
   it('issue #300: keeps boolean props available in runtime call-expression bindings', async () => {

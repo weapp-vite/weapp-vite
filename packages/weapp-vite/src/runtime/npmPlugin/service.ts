@@ -6,13 +6,14 @@ import type { NpmBuildOptions } from '../../types'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { debug } from '../../context/shared'
-import { regExpTest } from '../../utils'
 import { getAlipayNpmDistDirName } from '../../utils/alipayNpm'
 import { toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { createPackageBuilder } from './builder'
 import { createDependenciesCache } from './cache'
 import { getPackNpmRelationList } from './relations'
+
+const LEADING_SLASHES_RE = /^\/+/
 
 function matchDependencyName(patterns: (string | RegExp)[], dep: string) {
   return patterns.some((pattern) => {
@@ -22,6 +23,35 @@ function matchDependencyName(patterns: (string | RegExp)[], dep: string) {
 
     pattern.lastIndex = 0
     return pattern.test(dep)
+  })
+}
+
+function resolveDependencyId(value: string) {
+  const normalized = toPosixPath(value).replace(LEADING_SLASHES_RE, '')
+  const segments = normalized.split('/').filter(Boolean)
+  if (segments.length === 0) {
+    return ''
+  }
+  if (normalized.startsWith('@') && segments.length > 1) {
+    return `${segments[0]}/${segments[1]}`
+  }
+  return segments[0]
+}
+
+function matchDependencyPath(patterns: (string | RegExp)[], value: string) {
+  const dependencyId = resolveDependencyId(value)
+  return patterns.some((pattern) => {
+    if (typeof pattern === 'string') {
+      return dependencyId === pattern || value === pattern || value.startsWith(`${pattern}/`)
+    }
+
+    pattern.lastIndex = 0
+    if (pattern.test(dependencyId)) {
+      return true
+    }
+
+    pattern.lastIndex = 0
+    return pattern.test(value)
   })
 }
 
@@ -123,6 +153,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
       const npmDistDirName = getNpmDistDirName()
       const outDir = path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir, npmDistDirName)
       const cachedSourceOutDir = path.resolve(ctx.configService.cwd, 'node_modules/weapp-vite/.cache/npm-source', npmDistDirName)
+      const localSubPackageOutRoot = ctx.configService.outDir || path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir)
       if (pkgJson.dependencies) {
         const allDependencies = Object.keys(pkgJson.dependencies)
         const mainDependencyPatterns = resolveMainPackageDependencyPatterns(ctx)
@@ -136,7 +167,8 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
           npmDistDir: string
           cacheKey?: string
         }) => {
-          const isDependenciesCacheOutdate = await cache.checkDependenciesCacheOutdate(args.cacheKey)
+          const isNpmDistMissing = !(await fs.pathExists(args.npmDistDir))
+          const isDependenciesCacheOutdate = isNpmDistMissing || await cache.checkDependenciesCacheOutdate(args.cacheKey)
           if (isDependenciesCacheOutdate) {
             await fs.remove(args.npmDistDir)
           }
@@ -190,7 +222,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
         }
 
         await Promise.all(Array.from(localSubPackageMetas, async (meta) => {
-          const targetDir = path.resolve(ctx.configService!.cwd, mainRelation.miniprogramNpmDistDir, meta.subPackage.root, npmDistDirName)
+          const targetDir = path.resolve(localSubPackageOutRoot, meta.subPackage.root, npmDistDirName)
           const isDependenciesCacheOutdate = await cache.checkDependenciesCacheOutdate(meta.subPackage.root)
           if (isDependenciesCacheOutdate || !(await fs.pathExists(targetDir))) {
             await fs.remove(targetDir)
@@ -202,7 +234,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
                   if (relPath === '') {
                     return true
                   }
-                  return regExpTest(meta.subPackage.dependencies, relPath)
+                  return matchDependencyPath(meta.subPackage.dependencies, relPath)
                 }
                 return true
               },
