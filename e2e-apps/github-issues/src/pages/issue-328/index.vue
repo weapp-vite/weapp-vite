@@ -9,9 +9,15 @@ definePageJson({
 
 const value1 = ref('111')
 
+function advanceValue() {
+  value1.value = value1.value === '111'
+    ? '222'
+    : '111'
+}
+
 function _runE2E() {
   return {
-    ok: value1.value === '111',
+    ok: value1.value === '111' || value1.value === '222',
     value1: value1.value,
   }
 }
@@ -25,6 +31,13 @@ function _runE2E() {
     <text class="issue328-desc">
       setup 中的 ref 首帧传给子组件 string prop 时，不应先落成 null 或默认值。
     </text>
+
+    <view
+      class="issue328-toggle"
+      @tap="advanceValue"
+    >
+      toggle value: {{ value1 }}
+    </view>
 
     <ValueProbe :value="value1" />
   </view>
@@ -50,5 +63,15 @@ function _runE2E() {
   margin-top: 8rpx;
   font-size: 22rpx;
   color: #475569;
+}
+
+.issue328-toggle {
+  margin-top: 18rpx;
+  padding: 16rpx 20rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #dbeafe;
+  border-radius: 14rpx;
 }
 </style>

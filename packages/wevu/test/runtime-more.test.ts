@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent } from '@/index'
+import { createApp, createWevuComponent, defineComponent } from '@/index'
 
 const registeredComponents: Record<string, any>[] = []
 const registeredApps: Record<string, any>[] = []
@@ -86,6 +86,29 @@ describe('runtime (component as page lifetimes mapping)', () => {
 
     const opts = registeredComponents[0]
     expect(opts.data).toEqual({ value1: '111' })
+  })
+
+  it('preserves first-paint seeds and nullable prop bridge for compiled SFC components', () => {
+    createWevuComponent({
+      data: () => ({
+        value1: '111',
+      }),
+      props: {
+        value: {
+          type: String,
+          default: '0.00',
+        },
+      },
+      setup() {
+        return {}
+      },
+    } as any)
+
+    const opts = registeredComponents[0]
+    expect(opts.data).toEqual({ value1: '111' })
+    expect(opts.properties.value.type).toBe(String)
+    expect(opts.properties.value.value).toBe('0.00')
+    expect(opts.properties.value.optionalTypes).toEqual([null])
   })
 })
 

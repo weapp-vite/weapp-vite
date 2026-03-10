@@ -1117,8 +1117,10 @@ describe.sequential('e2e app: github-issues', () => {
     const probeJs = await fs.readFile(probeJsPath, 'utf-8')
 
     expect(issuePageWxml).toContain('issue-328 setup ref prop first paint')
+    expect(issuePageWxml).toContain('issue328-toggle')
     expect(issuePageWxml).toContain('value="{{value1}}"')
     expect(issuePageJs).toContain('value1')
+    expect(issuePageJs).toContain('advanceValue')
     expect(issuePageJs).toContain('_runE2E')
     expect(probeWxml).toContain('data-current-value="{{props.value}}"')
     expect(probeWxml).toContain('data-history="{{historyText}}"')
@@ -1138,12 +1140,26 @@ describe.sequential('e2e app: github-issues', () => {
       expect(runtimeResult?.ok).toBe(true)
       expect(runtimeResult?.value1).toBe('111')
 
-      const renderedWxml = await readPageWxml(issuePage)
-      expect(renderedWxml).toMatch(/data-current-value="111"/)
-      expect(renderedWxml).toMatch(/data-history="111"/)
-      expect(renderedWxml).not.toContain('data-history="null')
-      expect(renderedWxml).not.toContain('data-history="0.00')
-      expect(renderedWxml).not.toContain('data-history="undefined')
+      const initialRenderedWxml = await readPageWxml(issuePage)
+      expect(initialRenderedWxml).toMatch(/data-current-value="111"/)
+      expect(initialRenderedWxml).toMatch(/data-history="111"/)
+      expect(initialRenderedWxml).not.toContain('data-history="null')
+      expect(initialRenderedWxml).not.toContain('data-history="0.00')
+      expect(initialRenderedWxml).not.toContain('data-history="undefined')
+
+      await tapElement(issuePage, '.issue328-toggle')
+
+      const toggledRuntimeResult = await issuePage.callMethod('_runE2E')
+      expect(toggledRuntimeResult?.ok).toBe(true)
+      expect(toggledRuntimeResult?.value1).toBe('222')
+
+      const toggledWxml = await readPageWxml(issuePage)
+      expect(toggledWxml).toContain('toggle value: 222')
+      expect(toggledWxml).toMatch(/data-current-value="222"/)
+      expect(toggledWxml).toMatch(/data-history="111\|222"/)
+      expect(toggledWxml).not.toContain('data-history="null')
+      expect(toggledWxml).not.toContain('data-history="0.00')
+      expect(toggledWxml).not.toContain('data-history="undefined')
     }
     finally {
       await releaseSharedMiniProgram(miniProgram)
