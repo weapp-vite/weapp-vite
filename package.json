@@ -113,7 +113,7 @@
     "@commitlint/cli": "^20.4.3",
     "@icebreakers/changelog-github": "^0.2.1",
     "@icebreakers/commitlint-config": "^1.2.10",
-    "@icebreakers/eslint-config": "^1.6.27",
+    "@icebreakers/eslint-config": "^1.6.28",
     "@icebreakers/monorepo": "^3.2.15",
     "@icebreakers/stylelint-config": "^2.0.4",
     "@oxc-node/cli": "^0.0.35",
