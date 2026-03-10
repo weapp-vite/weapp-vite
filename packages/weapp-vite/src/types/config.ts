@@ -671,6 +671,16 @@ export interface WeappViteConfig {
      */
     mainPackageDependencies?: false | (string | RegExp)[]
     /**
+     * @description 实验特性：允许普通分包也输出自己的 `miniprogram_npm`
+     *
+     * 开启后，非独立分包同样会按 `weapp.subPackages.<root>.dependencies`
+     * 生成本地 npm 产物，并在构建产物中把分包内的 npm 引用本地化到
+     * `/<subpackage>/miniprogram_npm/**`。
+     *
+     * 注意：该能力依赖微信分包内 npm 目录的运行时行为，当前仅作为实验特性提供。
+     */
+    experimentalNormalSubpackageNpm?: boolean
+    /**
      * @description 构建 npm 的配置，可传入 Vite 的库模式配置，让不同的包走不同的配置
      * - 返回值中的 `build.outDir` 同时影响二次 bundle 的依赖与直接复制 `miniprogram` 产物的依赖
      * @example

@@ -207,4 +207,73 @@ describe('core lifecycle emit hook injectWeapi', () => {
 
     expect(bundle['common.js'].code).toContain('/miniprogram_npm/tdesign-miniprogram/toast/index')
   })
+
+  it('localizes npm imports to subpackage-local miniprogram_npm in experimental normal subpackage mode', async () => {
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map([
+            ['packageA', {
+              subPackage: {
+                root: 'packageA',
+                dependencies: ['dayjs', 'tdesign-miniprogram'],
+              },
+            }],
+          ]),
+          independentSubPackageMap: new Map(),
+        },
+        configService: {
+          isDev: false,
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              'dayjs': '^1.11.13',
+              'tdesign-miniprogram': '^1.12.3',
+            },
+          },
+          weappViteConfig: {
+            npm: {
+              experimentalNormalSubpackageNpm: true,
+            },
+          },
+        },
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: false,
+      },
+      hmrSharedChunksMode: 'auto',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'packageA/pages/foo.js': {
+        type: 'chunk',
+        fileName: 'packageA/pages/foo.js',
+        code: 'const dayjs = require("dayjs"); const t = require("tdesign-miniprogram/toast/index")',
+        imports: [],
+        dynamicImports: [],
+      },
+      'packageA/pages/foo.json': {
+        type: 'asset',
+        fileName: 'packageA/pages/foo.json',
+        source: JSON.stringify({
+          usingComponents: {
+            't-button': 'tdesign-miniprogram/button/button',
+          },
+        }),
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['packageA/pages/foo.js'].code).toContain('require("../miniprogram_npm/dayjs/index")')
+    expect(bundle['packageA/pages/foo.js'].code).toContain('require("../miniprogram_npm/tdesign-miniprogram/toast/index")')
+    expect(bundle['packageA/pages/foo.json'].source).toContain('"t-button": "../miniprogram_npm/tdesign-miniprogram/button/button"')
+  })
 })
