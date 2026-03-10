@@ -23,8 +23,6 @@ exports[`subPackages > scanFiles 1`] = `
   "packageA/pages/dog.wxss",
   "packageA/rolldown-runtime.js",
   "packageB/index.js",
-  "packageB/miniprogram_npm/buffer/index.js",
-  "packageB/miniprogram_npm/gm-crypto/index.js",
   "packageB/pages/apple.js",
   "packageB/pages/apple.json",
   "packageB/pages/apple.wxml",
