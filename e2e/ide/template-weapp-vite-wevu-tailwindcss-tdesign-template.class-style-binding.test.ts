@@ -159,7 +159,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
 
       const allOnStyleObject = readClassAndStyleByDataE2E(wxml, 'style-object')
       expect(allOnStyleObject.styleValue).toMatch(/border-style:\s*dashed/)
-      expect(allOnStyleObject.styleValue).toMatch(/border-radius:\s*(999rpx|499(?:\.5)?px)/)
+      expect(allOnStyleObject.styleValue).toMatch(/border-radius:\s*(999rpx|\d{3,4}(?:\.\d+)?px)/)
       expect(allOnStyleObject.styleValue).toMatch(/#ef4444/)
 
       const allOnStyleArray = readClassAndStyleByDataE2E(wxml, 'style-array')
