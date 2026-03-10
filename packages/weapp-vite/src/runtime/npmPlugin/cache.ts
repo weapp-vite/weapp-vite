@@ -20,6 +20,12 @@ function serializeDependencyScope(scope?: false | (string | RegExp)[]) {
   })
 }
 
+function resolveMainPackageDependencyScope(ctx: MutableCompilerContext) {
+  const configService = requireConfigService(ctx, '读取主包 npm 依赖范围前必须初始化 configService。')
+  return configService.weappViteConfig?.npm?.mainPackage?.dependencies
+    ?? configService.weappViteConfig?.npm?.mainPackageDependencies
+}
+
 export interface DependenciesCache {
   getDependenciesCacheFilePath: (key?: string) => string
   dependenciesCacheHash: () => string
@@ -35,14 +41,13 @@ export function createDependenciesCache(ctx: MutableCompilerContext): Dependenci
   }
 
   function resolveDependencyScope(root?: string) {
-    const configService = requireConfigService(ctx, '读取依赖缓存哈希前必须初始化 configService。')
     if (root === '__all__') {
       return undefined
     }
     if (root && root !== '/') {
       return ctx.scanService?.subPackageMap.get(root)?.subPackage.dependencies
     }
-    return configService.weappViteConfig?.npm?.mainPackageDependencies
+    return resolveMainPackageDependencyScope(ctx)
   }
 
   function dependenciesCacheHash(root?: string) {

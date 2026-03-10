@@ -452,6 +452,19 @@ export interface NpmSubPackageConfig {
   dependencies?: (string | RegExp)[]
 }
 
+export interface NpmMainPackageConfig {
+  /**
+   * @description 主包 `miniprogram_npm` 依赖输出范围
+   * - `undefined`: 默认行为，按根 `package.json.dependencies` 全量输出到主包
+   * - `false`: 禁止输出主包 `miniprogram_npm`
+   * - `string[] | RegExp[]`: 仅输出命中的依赖到主包
+   *
+   * 适用于依赖只希望落在特定分包 `miniprogram_npm` 的场景，
+   * 需配合 `weapp.npm.subPackages.<root>.dependencies` 显式声明各分包依赖集。
+   */
+  dependencies?: false | (string | RegExp)[]
+}
+
 export type JsFormat = 'cjs' | 'esm'
 
 export type SharedChunkStrategy = 'hoist' | 'duplicate'
@@ -671,13 +684,11 @@ export interface WeappViteConfig {
      */
     cache?: boolean
     /**
-     * @description 主包 `miniprogram_npm` 依赖输出范围
-     * - `undefined`: 默认行为，按根 `package.json.dependencies` 全量输出到主包
-     * - `false`: 禁止输出主包 `miniprogram_npm`
-     * - `string[] | RegExp[]`: 仅输出命中的依赖到主包
-     *
-     * 适用于依赖只希望落在特定分包 `miniprogram_npm` 的场景，
-     * 需配合 `weapp.npm.subPackages.<root>.dependencies` 显式声明各分包依赖集。
+     * @description 主包本地 npm 构建配置
+     */
+    mainPackage?: NpmMainPackageConfig
+    /**
+     * @deprecated 请改用 `weapp.npm.mainPackage.dependencies`
      */
     mainPackageDependencies?: false | (string | RegExp)[]
     /**
