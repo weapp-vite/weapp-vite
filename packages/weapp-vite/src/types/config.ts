@@ -688,10 +688,6 @@ export interface WeappViteConfig {
      */
     mainPackage?: NpmMainPackageConfig
     /**
-     * @deprecated 请改用 `weapp.npm.mainPackage.dependencies`
-     */
-    mainPackageDependencies?: false | (string | RegExp)[]
-    /**
      * @description 分包本地 npm 构建配置
      *
      * 配置后，命中的分包会输出自己的 `miniprogram_npm`，
