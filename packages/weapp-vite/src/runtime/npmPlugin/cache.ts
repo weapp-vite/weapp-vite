@@ -40,7 +40,7 @@ export function createDependenciesCache(ctx: MutableCompilerContext): Dependenci
       return undefined
     }
     if (root && root !== '/') {
-      return ctx.scanService?.independentSubPackageMap.get(root)?.subPackage.dependencies
+      return ctx.scanService?.subPackageMap.get(root)?.subPackage.dependencies
     }
     return configService.weappViteConfig?.npm?.mainPackageDependencies
   }
