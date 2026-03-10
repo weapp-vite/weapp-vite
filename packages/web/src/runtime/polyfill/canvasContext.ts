@@ -1,3 +1,5 @@
+import type { CanvasContext } from './types/platformRuntime'
+
 function normalizeCanvasNumber(value: unknown) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return 0

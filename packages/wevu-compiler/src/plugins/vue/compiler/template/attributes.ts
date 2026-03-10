@@ -137,7 +137,10 @@ function shouldPreferJsClassStyleRuntime(exp: string): boolean {
       return visit(current.test) || visit(current.consequent) || visit(current.alternate)
     }
     if (t.isLogicalExpression(current) || t.isBinaryExpression(current)) {
-      return visit(current.left) || visit(current.right)
+      if (t.isPrivateName(current.left) || t.isPrivateName(current.right)) {
+        return true
+      }
+      return visit(current.left as t.Expression) || visit(current.right as t.Expression)
     }
     if (t.isUnaryExpression(current)) {
       return visit(current.argument)

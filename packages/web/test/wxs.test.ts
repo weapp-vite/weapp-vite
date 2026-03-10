@@ -77,7 +77,7 @@ describe('weappWebPlugin wxs resolution', () => {
     await writeFile(depTs, `module.exports = { value: 2 }`)
 
     const plugin = weappWebPlugin({ srcDir: 'src' })
-    await plugin.configResolved?.call({ warn() {} } as any, { root, command: 'build' } as any)
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'build' } as any)
 
     const transform = plugin.transform as (code: string, id: string) => Promise<{ code: string } | null>
     const result = await transform.call({ addWatchFile() {}, warn() {} }, await readFile(entry, 'utf8'), entry)
@@ -97,7 +97,7 @@ describe('weappWebPlugin wxs resolution', () => {
     await writeFile(depTs, `module.exports = { value: 2 }`)
 
     const plugin = weappWebPlugin({ srcDir: 'src' })
-    await plugin.configResolved?.call({ warn() {} } as any, { root, command: 'build' } as any)
+    await (plugin.configResolved as ((...args: any[]) => any))?.call({ warn() {} } as any, { root, command: 'build' } as any)
 
     const transform = plugin.transform as (code: string, id: string) => Promise<{ code: string } | null>
     const result = await transform.call({ addWatchFile() {}, warn() {} }, await readFile(entry, 'utf8'), entry)

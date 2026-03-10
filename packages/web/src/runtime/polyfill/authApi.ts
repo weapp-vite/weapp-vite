@@ -1,3 +1,4 @@
+import type { AppAuthorizeStatusLike } from './auth'
 import {
   callWxAsyncFailure,
   callWxAsyncSuccess,
@@ -14,7 +15,7 @@ import {
   syncOpenSettingPreset,
 } from './auth'
 
-type AuthState = Map<string, string>
+type AuthState = Map<string, AppAuthorizeStatusLike>
 
 export function getSettingBridge(options: any, authState: AuthState) {
   return Promise.resolve(callWxAsyncSuccess(options, {

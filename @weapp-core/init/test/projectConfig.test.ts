@@ -40,9 +40,9 @@ describe('projectConfig', () => {
       },
     })
 
-    expect(updated.pluginRoot).toBe('dist-plugin')
+    expect((updated as any).pluginRoot).toBe('dist-plugin')
     expect(updated.setting.packNpmRelationList).toContainEqual(defaultRelation)
-    expect(updated.appid).toBe('demo-appid')
+    expect((updated as any).appid).toBe('demo-appid')
   })
 
   it('does not duplicate existing relations', async () => {

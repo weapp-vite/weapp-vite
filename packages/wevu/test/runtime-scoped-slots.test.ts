@@ -14,7 +14,7 @@ beforeEach(() => {
 describe('runtime: scoped slots', () => {
   it('subscribes to owner snapshot and updates data', () => {
     createWevuScopedSlotComponent()
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
 
     const ownerId = allocateOwnerId()
@@ -41,7 +41,7 @@ describe('runtime: scoped slots', () => {
 
   it('merges slot scope into slot props', () => {
     createWevuScopedSlotComponent()
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
 
     const inst: any = {
@@ -61,7 +61,7 @@ describe('runtime: scoped slots', () => {
 
   it('supports array-based slot bindings', () => {
     createWevuScopedSlotComponent()
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
 
     const inst: any = {
@@ -84,7 +84,7 @@ describe('runtime: scoped slots', () => {
 
   it('keeps slot prop observers on properties', () => {
     createWevuScopedSlotComponent()
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
 
     const propObserver = opts.properties.__wvSlotProps.observer
@@ -119,7 +119,7 @@ describe('runtime: scoped slots', () => {
 
   it('forwards events to owner handlers', () => {
     createWevuScopedSlotComponent()
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
 
     const handle = vi.fn()
@@ -145,7 +145,7 @@ describe('runtime: scoped slots', () => {
 
   it('forwards array args from dataset', () => {
     createWevuScopedSlotComponent()
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
 
     const handle = vi.fn()
@@ -177,7 +177,7 @@ describe('runtime: scoped slots', () => {
       },
     }
     createWevuScopedSlotComponent({ inlineMap })
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
 
     const handle = vi.fn()
@@ -213,7 +213,7 @@ describe('runtime: scoped slots', () => {
       },
     })
 
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
 
     const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: '' } }

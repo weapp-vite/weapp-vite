@@ -18,9 +18,9 @@ function normalizeBeforeEnterGuards(beforeEnter?: RouteRecordRaw['beforeEnter'])
     return []
   }
   if (Array.isArray(beforeEnter)) {
-    return beforeEnter
+    return beforeEnter as readonly NavigationGuard[]
   }
-  return [beforeEnter]
+  return [beforeEnter as NavigationGuard]
 }
 
 export function normalizeRouteRecordRaw(route: RouteRecordRaw, parentName?: string): RouteRecordNormalized | undefined {

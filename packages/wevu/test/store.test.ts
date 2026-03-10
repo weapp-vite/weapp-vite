@@ -109,7 +109,7 @@ describe('store (options)', () => {
     })
     const s = useUser()
     const calls: any[] = []
-    const unsub = s.$subscribe((m, state) => {
+    const unsub = s.$subscribe((m: any, state: any) => {
       calls.push([m.type, state.age])
     })
     expect(s.$id).toBe('user')
@@ -117,7 +117,7 @@ describe('store (options)', () => {
     s.grow()
     // 直接赋值会触发 $subscribe（direct）
     s.$patch({ age: 10 })
-    s.$patch((state) => {
+    s.$patch((state: any) => {
       state.age = 20
     })
     s.$state = { name: 'b', age: 2 }

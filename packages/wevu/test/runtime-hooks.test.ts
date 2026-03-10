@@ -59,13 +59,13 @@ describe('hooks - getCurrentInstance and setCurrentInstance', () => {
     const instance2 = { __wevu: { id: 2 } } as any
 
     setCurrentInstance(instance1)
-    expect(getCurrentInstance().__wevu.id).toBe(1)
+    expect((getCurrentInstance() as any).__wevu.id).toBe(1)
 
     setCurrentInstance(instance2)
-    expect(getCurrentInstance().__wevu.id).toBe(2)
+    expect((getCurrentInstance() as any).__wevu.id).toBe(2)
 
     setCurrentInstance(instance1)
-    expect(getCurrentInstance().__wevu.id).toBe(1)
+    expect((getCurrentInstance() as any).__wevu.id).toBe(1)
   })
 })
 
@@ -628,13 +628,13 @@ describe('hooks - getCurrentInstance and setCurrentInstance', () => {
     const instance2 = { __wevu: { id: 2 } } as any
 
     setCurrentInstance(instance1)
-    expect(getCurrentInstance().__wevu.id).toBe(1)
+    expect((getCurrentInstance() as any).__wevu.id).toBe(1)
 
     setCurrentInstance(instance2)
-    expect(getCurrentInstance().__wevu.id).toBe(2)
+    expect((getCurrentInstance() as any).__wevu.id).toBe(2)
 
     setCurrentInstance(instance1)
-    expect(getCurrentInstance().__wevu.id).toBe(1)
+    expect((getCurrentInstance() as any).__wevu.id).toBe(1)
   })
 })
 

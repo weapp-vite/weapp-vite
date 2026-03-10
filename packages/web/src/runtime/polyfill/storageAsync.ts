@@ -1,3 +1,5 @@
+import type { WxAsyncOptions, WxBaseResult } from './types/base'
+import type { GetStorageOptions, RemoveStorageOptions, SetStorageOptions, StorageInfoResult } from './types/common'
 import {
   callWxAsyncFailure,
   callWxAsyncSuccess,

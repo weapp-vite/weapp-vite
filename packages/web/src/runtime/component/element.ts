@@ -5,6 +5,7 @@ import type {
 import type {
   ComponentOptions,
   DataRecord,
+  PageLifeTimeHooks,
 } from './types'
 import { html } from 'lit'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'

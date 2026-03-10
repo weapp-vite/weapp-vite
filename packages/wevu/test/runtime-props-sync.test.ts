@@ -206,6 +206,6 @@ describe('runtime: props sync', () => {
     expect(inst.$wevu.state.props.bool).toBe(false)
 
     const payloads = inst.setData.mock.calls.map(([payload]: any[]) => payload ?? {})
-    expect(payloads.some(payload => Object.hasOwn(payload, 'bool'))).toBe(false)
+    expect(payloads.some((payload: any) => Object.hasOwn(payload, 'bool'))).toBe(false)
   })
 })

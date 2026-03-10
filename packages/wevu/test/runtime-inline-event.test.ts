@@ -23,7 +23,7 @@ describe('runtime: inline event handler', () => {
       },
     })
 
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
     const inst: any = {
       __wevu: {
@@ -60,7 +60,7 @@ describe('runtime: inline event handler', () => {
       },
     })
 
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
     const inst: any = {
       __wevu: {
@@ -97,7 +97,7 @@ describe('runtime: inline event handler', () => {
       },
     })
 
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
     const inst: any = {
       __wevu: {
@@ -135,7 +135,7 @@ describe('runtime: inline event handler', () => {
       },
     })
 
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
     const inst: any = {
       __wevu: {
@@ -173,13 +173,13 @@ describe('runtime: inline event handler', () => {
       methods: {
         handle,
         __weapp_vite_inline_map: inlineMap,
-      },
+      } as any,
       setup() {
         return {}
       },
     })
 
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
     const inst: any = {
       __wevu: {
@@ -221,13 +221,13 @@ describe('runtime: inline event handler', () => {
       methods: {
         handle,
         __weapp_vite_inline_map: inlineMap,
-      },
+      } as any,
       setup() {
         return {}
       },
     })
 
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
     const inst: any = {
       __wevu: {
@@ -274,13 +274,13 @@ describe('runtime: inline event handler', () => {
         onRun,
         onRunEvent,
         __weapp_vite_inline_map: inlineMap,
-      },
+      } as any,
       setup() {
         return {}
       },
     })
 
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
     const inst: any = {
       __wevu: {
@@ -341,13 +341,13 @@ describe('runtime: inline event handler', () => {
       methods: {
         handle,
         __weapp_vite_inline_map: inlineMap,
-      },
+      } as any,
       setup() {
         return {}
       },
     })
 
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
     const inst: any = {
       __wevu: {
@@ -385,13 +385,13 @@ describe('runtime: inline event handler', () => {
     defineComponent({
       methods: {
         __weapp_vite_inline_map: inlineMap,
-      },
+      } as any,
       setup() {
         return { handle }
       },
     })
 
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     expect(opts).toBeTruthy()
     const inst: any = {
       properties: {},
@@ -421,7 +421,7 @@ describe('runtime: inline event handler', () => {
         return {}
       },
     })
-    const opts = registeredComponents.pop()
+    const opts = registeredComponents.pop()!
     const inst: any = { __wevu: { proxy: {} } }
     const event = {
       currentTarget: {

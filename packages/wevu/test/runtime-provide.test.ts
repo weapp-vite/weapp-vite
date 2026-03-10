@@ -160,8 +160,8 @@ describe('provide/inject', () => {
       const injected = inject(key)
 
       expect(injected).toEqual(config)
-      expect(injected.api.baseUrl).toBe('https://example.com')
-      expect(injected.features.enabled).toHaveLength(2)
+      expect((injected as any).api.baseUrl).toBe('https://example.com')
+      expect((injected as any).features.enabled).toHaveLength(2)
     })
   })
 

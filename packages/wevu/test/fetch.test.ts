@@ -39,7 +39,7 @@ describe('wevu/fetch', () => {
           'content-type': 'application/json',
           'x-trace-id': 'trace-1',
         },
-      } as WechatMiniprogram.RequestSuccessCallbackResult)
+      } as unknown as WechatMiniprogram.RequestSuccessCallbackResult)
       return {
         abort: vi.fn(),
       } as unknown as WechatMiniprogram.RequestTask

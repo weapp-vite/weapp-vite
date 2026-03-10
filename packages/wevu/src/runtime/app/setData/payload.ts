@@ -7,7 +7,7 @@ export function collapsePayload(input: Record<string, any>) {
   const prefixStack: string[] = []
   for (const key of keys) {
     while (prefixStack.length) {
-      const prefix = prefixStack.at(-1)
+      const prefix = prefixStack.at(-1)!
       if (key.startsWith(prefix)) {
         break
       }

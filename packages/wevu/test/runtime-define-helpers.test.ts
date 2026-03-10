@@ -110,7 +110,7 @@ describe('runtime: define helpers', () => {
 
   it('creates scoped slot options with inline args parsing', () => {
     const options = createScopedSlotOptions({ computed: { foo: () => 1 } })
-    expect(options.computed).toBeTruthy()
+    expect((options as any).computed).toBeTruthy()
 
     const handler = vi.fn((msg: string, evt: any) => ({ msg, marker: evt.marker }))
     const ctx = { __wvOwnerProxy: { onTap: handler } }

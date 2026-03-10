@@ -133,7 +133,7 @@ describe('router api', () => {
         options: {
           from: 'mine',
         },
-      },
+      } as any,
     ]
 
     callHookList(instance, 'onShow')
@@ -154,7 +154,7 @@ describe('router api', () => {
         options: {
           from: 'activity',
         },
-      },
+      } as any,
     ]
 
     callHookList(instance, 'onRouteDone')

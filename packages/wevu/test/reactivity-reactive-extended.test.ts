@@ -76,7 +76,7 @@ describe('reactive - edge cases and boundary values', () => {
 
       expect(effectCount).toBe(1)
 
-      delete obj.extra
+      delete (obj as any).extra
       expect(effectCount).toBe(2)
     })
 
@@ -98,7 +98,7 @@ describe('reactive - edge cases and boundary values', () => {
 
     it('should return true when delete succeeds', () => {
       const obj = reactive({ count: 0 })
-      const result = delete obj.count
+      const result = delete (obj as any).count
 
       expect(result).toBe(true)
       expect('count' in obj).toBe(false)
@@ -116,7 +116,7 @@ describe('reactive - edge cases and boundary values', () => {
 
       expect(effectCount).toBe(1)
 
-      delete obj[sym]
+      delete (obj as any)[sym]
       expect(effectCount).toBe(2)
       expect(sym in obj).toBe(false)
     })
@@ -136,7 +136,7 @@ describe('reactive - edge cases and boundary values', () => {
       expect(effectCount).toBe(1)
       expect(keys).toEqual(['a', 'b'])
 
-      obj.c = 3
+      ;(obj as any).c = 3
       expect(effectCount).toBe(2)
       expect(keys).toEqual(['a', 'b', 'c'])
     })
@@ -154,7 +154,7 @@ describe('reactive - edge cases and boundary values', () => {
       expect(effectCount).toBe(1)
       expect(names).toEqual(['a'])
 
-      obj.b = 2
+      ;(obj as any).b = 2
       expect(effectCount).toBe(2)
       expect(names).toEqual(['a', 'b'])
     })
@@ -173,7 +173,7 @@ describe('reactive - edge cases and boundary values', () => {
 
       expect(effectCount).toBe(1)
 
-      obj.c = 3
+      ;(obj as any).c = 3
       expect(effectCount).toBe(2)
     })
   })
@@ -350,14 +350,14 @@ describe('reactive - edge cases and boundary values', () => {
       obj.b = 20
       expect(effectCount).toBe(3)
 
-      obj.c = 30
+      ;(obj as any).c = 30
       expect(effectCount).toBe(4)
     })
   })
 
   describe('reactive edge cases', () => {
     it('should handle empty object', () => {
-      const obj = reactive({})
+      const obj = reactive({}) as any
 
       expect(isReactive(obj)).toBe(true)
       expect(Object.keys(obj)).toEqual([])
@@ -367,7 +367,7 @@ describe('reactive - edge cases and boundary values', () => {
     })
 
     it('should handle empty array', () => {
-      const arr = reactive([])
+      const arr = reactive([] as any[])
 
       expect(isReactive(arr)).toBe(true)
       expect(arr.length).toBe(0)

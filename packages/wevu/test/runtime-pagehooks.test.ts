@@ -19,7 +19,7 @@ describe('runtime: onSaveExitState hook', () => {
         enableOnSaveExitState: true,
       },
       setup() {
-        onSaveExitState(() => ({ hello: 'world' }))
+        onSaveExitState(() => ({ hello: 'world' }) as any)
       },
     })
     expect(registeredComponents).toHaveLength(1)

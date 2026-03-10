@@ -1,3 +1,4 @@
+import type { SetBackgroundColorOptions, SetBackgroundTextStyleOptions } from './types/locationRuntime'
 import {
   callWxAsyncFailure,
   callWxAsyncSuccess,

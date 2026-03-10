@@ -635,7 +635,7 @@ describe('registerPage integration', () => {
     const firstTemplate = createTemplate('<view bindtap="increment">{{count}}</view>')
     registerPage({
       data: () => ({ count: 1 }),
-      increment() {
+      increment(this: any) {
         this.setData({ count: this.data.count + 1 })
       },
       onLoad,
@@ -689,7 +689,7 @@ describe('registerPage integration', () => {
     const updatedTemplate = createTemplate('<view bindtap="increment">{{count}}</view>')
     registerPage({
       data: () => ({ count: 999 }),
-      increment() {
+      increment(this: any) {
         this.setData({ count: this.data.count + 10 })
       },
       onLoad: onLoadUpdate,
@@ -739,7 +739,7 @@ describe('registerPage integration', () => {
 
     registerPage({
       data: () => ({ count: 0 }),
-      increment() {
+      increment(this: any) {
         this.setData({ count: this.data.count + 1 })
       },
       onLoad,
@@ -756,14 +756,14 @@ describe('registerPage integration', () => {
     expect(page).toBeTruthy()
     expect(onLoad).toHaveBeenCalledTimes(1)
 
-    const firstTrigger = (page.shadowRoot?.querySelectorAll('div') ?? [])
+    const firstTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
       .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
     firstTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(1)
 
     registerPage({
       data: () => ({ count: 1000 }),
-      increment() {
+      increment(this: any) {
         this.setData({ count: this.data.count + 5 })
       },
       onLoad: onHotLoad,
@@ -776,14 +776,14 @@ describe('registerPage integration', () => {
     expect(onHotLoad).toHaveBeenCalledTimes(0)
     expect(page.data.count).toBe(1)
 
-    const secondTrigger = (page.shadowRoot?.querySelectorAll('div') ?? [])
+    const secondTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
       .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
     secondTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(6)
 
     registerPage({
       data: () => ({ count: 9999 }),
-      increment() {
+      increment(this: any) {
         this.setData({ count: this.data.count + 2 })
       },
       onLoad: onHotLoad,
@@ -794,7 +794,7 @@ describe('registerPage integration', () => {
     await Promise.resolve()
     expect(page.data.count).toBe(6)
 
-    const thirdTrigger = (page.shadowRoot?.querySelectorAll('div') ?? [])
+    const thirdTrigger = [...(page.shadowRoot?.querySelectorAll('div') ?? [])]
       .find((node: HTMLElement) => node.getAttribute?.('data-wx-on-click') === 'increment') as HTMLElement | undefined
     thirdTrigger?.dispatchEvent(new Event('click', { bubbles: true, composed: true }))
     expect(page.data.count).toBe(8)
@@ -2771,7 +2771,7 @@ describe('web runtime wx utility APIs', () => {
       font: '',
     } as unknown as CanvasRenderingContext2D
     const getContext = vi.fn(() => runtimeContext)
-    canvas.getContext = getContext
+    canvas.getContext = getContext as any
     document.body.append(canvas)
 
     try {
@@ -2959,7 +2959,7 @@ describe('web runtime wx utility APIs', () => {
       const scrollResult = await pageScrollTo({
         scrollTop: 128,
         duration: 0,
-      })
+      }) as { errMsg: string }
       expect(scrollResult.errMsg).toBe('pageScrollTo:ok')
       expect(scrollTo).toHaveBeenCalledWith(0, 128)
     }

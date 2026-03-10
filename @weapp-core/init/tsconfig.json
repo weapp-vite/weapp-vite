@@ -11,5 +11,8 @@
   "include": [
     "src",
     "test"
+  ],
+  "exclude": [
+    "test/fixtures"
   ]
 }
