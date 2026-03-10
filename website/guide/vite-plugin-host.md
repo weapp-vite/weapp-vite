@@ -3,11 +3,11 @@ title: Vite 插件识别 weapp-vite 宿主
 description: 在自定义 Vite 插件中判断当前运行环境是否由 weapp-vite 创建，并区分 miniprogram 与 web 两种运行面。
 keywords:
   - weapp-vite
-  - vite plugin
-  - host
-  - miniprogram
-  - web
-  - Vite 插件识别 weapp-vite 宿主
+  - 宿主元信息
+  - configResolved
+  - 运行面判断
+  - 小程序构建
+  - Web 运行时
 ---
 
 # Vite 插件识别 weapp-vite 宿主
