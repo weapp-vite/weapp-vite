@@ -1,9 +1,12 @@
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+import { ensureIdeWarningReportEnv } from './utils/ideWarningReport'
 import { resolveE2EMaxWorkers } from './utils/max-workers'
 
 const DEVTOOLS_GLOBAL_SETUP = path.resolve(import.meta.dirname, './vitest.e2e.ide.global-setup.ts')
 const maxWorkers = resolveE2EMaxWorkers()
+
+ensureIdeWarningReportEnv()
 
 export default defineConfig({
   test: {

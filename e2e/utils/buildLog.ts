@@ -2,10 +2,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
+import { appendIdeReportEvent, resolveReportProjectPath } from './ideWarningReport'
 
 const WARN_PATTERN = /\[warn\]/i
 const ERROR_PATTERN = /\[error\]/i
-const BUILD_LOG_FILE = process.env.WEAPP_VITE_E2E_BUILD_LOG_FILE || '/tmp/weapp-vite-e2e-build.log'
 
 interface BuildLogStats {
   warn: number
@@ -26,32 +26,34 @@ interface DependencyMeta {
   source: 'dependencies' | 'none'
 }
 
-function appendBuildLog(line: string) {
-  try {
-    fs.appendFileSync(BUILD_LOG_FILE, `${line}\n`)
-  }
-  catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    process.stderr.write(`[e2e-log-write-error] build-log file=${BUILD_LOG_FILE} error=${message}\n`)
-  }
-}
-
-function collectLineStats(line: string, stats: BuildLogStats) {
-  let matched = false
+function collectLineStats(line: string, stats: BuildLogStats, project: string, label: string) {
   if (WARN_PATTERN.test(line)) {
     stats.warn += 1
-    matched = true
+    appendIdeReportEvent({
+      source: 'build',
+      kind: 'message',
+      project,
+      label,
+      level: 'warn',
+      channel: 'build',
+      text: line,
+    })
   }
   if (ERROR_PATTERN.test(line)) {
     stats.error += 1
-    matched = true
-  }
-  if (matched) {
-    appendBuildLog(`[build-log] ${line}`)
+    appendIdeReportEvent({
+      source: 'build',
+      kind: 'message',
+      project,
+      label,
+      level: 'error',
+      channel: 'build',
+      text: line,
+    })
   }
 }
 
-function createLineCollector(stats: BuildLogStats) {
+function createLineCollector(stats: BuildLogStats, project: string, label: string) {
   let pending = ''
 
   return {
@@ -61,7 +63,7 @@ function createLineCollector(stats: BuildLogStats) {
       while (index >= 0) {
         const line = pending.slice(0, index).replace(/\r$/, '')
         pending = pending.slice(index + 1)
-        collectLineStats(line, stats)
+        collectLineStats(line, stats, project, label)
         index = pending.indexOf('\n')
       }
     },
@@ -70,7 +72,7 @@ function createLineCollector(stats: BuildLogStats) {
       if (!line) {
         return
       }
-      collectLineStats(line, stats)
+      collectLineStats(line, stats, project, label)
       pending = ''
     },
   }
@@ -122,13 +124,13 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
     warn: 0,
     error: 0,
   }
+  const reportProject = resolveReportProjectPath(projectRoot)
 
   const dependencyMeta = readDependencyMeta(projectRoot)
   const safeSkipNpm = skipNpm && dependencyMeta.count === 0
   if (skipNpm && !safeSkipNpm) {
     const guardLine = `[e2e-build-guard] label=${label} project=${projectRoot} skipNpm=true ignored due to ${dependencyMeta.source}(${dependencyMeta.count})`
     process.stdout.write(`${guardLine}\n`)
-    appendBuildLog(guardLine)
   }
 
   const args = [cliPath, 'build', projectRoot, '--platform', platform]
@@ -142,7 +144,7 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
     reject: false,
   })
 
-  const collector = createLineCollector(stats)
+  const collector = createLineCollector(stats, reportProject, label)
   subprocess.all?.on('data', (chunk) => {
     const text = chunk.toString()
     process.stdout.write(text)
@@ -158,10 +160,17 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
   }
   else {
     process.stderr.write(`${summary}\n`)
-    appendBuildLog(summary)
     throw new Error(`Build failed: node ${args.join(' ')}`)
   }
-  appendBuildLog(summary)
+  appendIdeReportEvent({
+    source: 'build',
+    kind: 'stats',
+    project: reportProject,
+    label,
+    warn: stats.warn,
+    error: stats.error,
+    exit: result.exitCode ?? 1,
+  })
 
   return stats
 }
