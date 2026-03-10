@@ -61,6 +61,11 @@ function hasSameDependencySet(source: string[], target: string[]) {
   return source.every(dep => target.includes(dep))
 }
 
+function resolveMainPackageDependencyPatterns(ctx: MutableCompilerContext) {
+  return ctx.configService?.weappViteConfig?.npm?.mainPackage?.dependencies
+    ?? ctx.configService?.weappViteConfig?.npm?.mainPackageDependencies
+}
+
 export interface NpmService {
   getDependenciesCacheFilePath: (key?: string) => string
   readonly dependenciesCacheHash: string
@@ -113,7 +118,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
       const cachedSourceOutDir = path.resolve(ctx.configService.cwd, 'node_modules/weapp-vite/.cache/npm-source', npmDistDirName)
       if (pkgJson.dependencies) {
         const allDependencies = Object.keys(pkgJson.dependencies)
-        const mainDependencyPatterns = ctx.configService.weappViteConfig?.npm?.mainPackageDependencies
+        const mainDependencyPatterns = resolveMainPackageDependencyPatterns(ctx)
         const mainDependencies = resolveTargetDependencies(allDependencies, mainDependencyPatterns)
         const sourceOutDir = hasSameDependencySet(allDependencies, mainDependencies) ? outDir : cachedSourceOutDir
         const localSubPackageMetas = [...ctx.scanService?.subPackageMap.values() ?? []]
