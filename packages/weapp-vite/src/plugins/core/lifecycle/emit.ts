@@ -1,10 +1,12 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { RuntimeChunkDuplicatePayload, SharedChunkDuplicatePayload } from '../../../runtime/chunkStrategy'
+import type { SubPackageMetaValue } from '../../../types'
 import type { WxmlEmitRuntime } from '../../utils/wxmlEmit'
 import type { CorePluginState } from '../helpers'
+import path from 'pathe'
 import logger from '../../../logger'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
-import { toPosixPath } from '../../../utils'
+import { regExpTest, toPosixPath } from '../../../utils'
 import { normalizeAlipayNpmImportPath } from '../../../utils/alipayNpm'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { normalizeWatchPath } from '../../../utils/path'
@@ -21,6 +23,11 @@ import {
 } from '../helpers'
 
 const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
+const WINDOWS_SEPARATOR_RE = /\\/g
+const NPM_PROTOCOL_RE = /^npm:/
+const PLUGIN_PROTOCOL_RE = /^plugin:\/\//
+const ABSOLUTE_NPM_PREFIX_RE = /^\/(?:miniprogram_npm|node_modules)\//
+const PRETTY_NODE_MODULES_RE = /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(.+)/
 
 function resolveInjectWeapiGlobalName(state: CorePluginState) {
   const injectWeapi = state.ctx.configService.weappViteConfig?.injectWeapi
@@ -85,14 +92,14 @@ function hasDependencyPrefix(dependencies: Record<string, string> | undefined, i
     return false
   }
 
-  const normalizedImportee = importee.replace(/\\/g, '/').replace(/^npm:/, '')
+  const normalizedImportee = importee.replace(WINDOWS_SEPARATOR_RE, '/').replace(NPM_PROTOCOL_RE, '')
   const importeeTokens = normalizedImportee.split('/').filter(Boolean)
   if (importeeTokens.length === 0) {
     return false
   }
 
   return Object.keys(dependencies).some((dep) => {
-    const depTokens = dep.replace(/\\/g, '/').split('/').filter(Boolean)
+    const depTokens = dep.replace(WINDOWS_SEPARATOR_RE, '/').split('/').filter(Boolean)
     if (depTokens.length === 0 || depTokens.length > importeeTokens.length) {
       return false
     }
@@ -109,11 +116,11 @@ function hasDependencyPrefix(dependencies: Record<string, string> | undefined, i
 
 function normalizeNpmImportForAlipay(importee: string, dependencies: Record<string, string> | undefined, mode?: string) {
   const trimmed = importee.trim()
-  if (!trimmed || /^plugin:\/\//.test(trimmed)) {
+  if (!trimmed || PLUGIN_PROTOCOL_RE.test(trimmed)) {
     return importee
   }
 
-  const normalized = trimmed.replace(/^npm:/, '')
+  const normalized = trimmed.replace(NPM_PROTOCOL_RE, '')
   if (normalized.startsWith('/miniprogram_npm/') || normalized.startsWith('/node_modules/')) {
     return normalizeAlipayNpmImportPath(normalized, mode)
   }
@@ -231,6 +238,116 @@ function rewriteBundlePlatformApi(bundle: OutputBundle, globalName: string) {
   }
 }
 
+function matchesSubPackageDependency(dependencies: (string | RegExp)[] | undefined, importee: string, fallbackDependencies?: Record<string, string>) {
+  const normalized = importee.replace(NPM_PROTOCOL_RE, '').replace(ABSOLUTE_NPM_PREFIX_RE, '')
+  if (Array.isArray(dependencies) && dependencies.length > 0) {
+    return regExpTest(dependencies, normalized)
+  }
+
+  return hasDependencyPrefix(fallbackDependencies, normalized)
+}
+
+function normalizeWeappLocalNpmImport(importee: string) {
+  const normalized = importee.replace(NPM_PROTOCOL_RE, '').replace(ABSOLUTE_NPM_PREFIX_RE, '')
+  const segments = normalized.split('/').filter(Boolean)
+  if (segments.length === 1 || (segments.length === 2 && normalized.startsWith('@'))) {
+    return `${normalized}/index`
+  }
+  return normalized
+}
+
+function toRelativeRuntimeNpmImport(fileName: string, root: string, importee: string) {
+  const normalized = normalizeWeappLocalNpmImport(importee)
+  const relative = toPosixPath(path.relative(path.dirname(fileName), `${root}/miniprogram_npm/${normalized}`))
+  return relative.startsWith('.') ? relative : `./${relative}`
+}
+
+function rewriteChunkNpmImportsToLocalSubPackage(chunk: OutputChunk, meta: SubPackageMetaValue, dependencies: Record<string, string> | undefined) {
+  try {
+    const ast = parseJsLike(chunk.code)
+    let mutated = false
+
+    traverse(ast as any, {
+      CallExpression(path: any) {
+        const callee = path.node?.callee
+        if (!callee || callee.type !== 'Identifier' || callee.name !== 'require') {
+          return
+        }
+        if (path.scope?.hasBinding?.('require')) {
+          return
+        }
+
+        const args = path.node.arguments
+        if (!Array.isArray(args) || args.length === 0) {
+          return
+        }
+
+        const firstArg = args[0]
+        if (!firstArg || (firstArg.type !== 'StringLiteral' && firstArg.type !== 'Literal')) {
+          return
+        }
+
+        const currentValue = firstArg.value
+        if (typeof currentValue !== 'string' || !matchesSubPackageDependency(meta.subPackage.dependencies, currentValue, dependencies)) {
+          return
+        }
+
+        const nextValue = toRelativeRuntimeNpmImport(chunk.fileName, meta.subPackage.root, currentValue)
+        if (nextValue === currentValue) {
+          return
+        }
+
+        firstArg.value = nextValue
+        mutated = true
+      },
+    })
+
+    if (mutated) {
+      chunk.code = generate(ast as any).code
+    }
+  }
+  catch {
+  }
+}
+
+function rewriteJsonNpmImportsToLocalSubPackage(bundle: OutputBundle, meta: SubPackageMetaValue, dependencies: Record<string, string> | undefined) {
+  for (const output of Object.values(bundle)) {
+    if (output?.type !== 'asset' || typeof output.fileName !== 'string' || !output.fileName.endsWith('.json')) {
+      continue
+    }
+    if (output.fileName === `${meta.subPackage.root}.json` || !output.fileName.startsWith(`${meta.subPackage.root}/`)) {
+      continue
+    }
+
+    const source = typeof output.source === 'string' ? output.source : output.source?.toString()
+    if (!source) {
+      continue
+    }
+
+    try {
+      const parsed = JSON.parse(source)
+      if (!parsed || typeof parsed !== 'object' || !parsed.usingComponents || typeof parsed.usingComponents !== 'object' || Array.isArray(parsed.usingComponents)) {
+        continue
+      }
+
+      let mutated = false
+      for (const [componentName, importee] of Object.entries(parsed.usingComponents as Record<string, string>)) {
+        if (typeof importee !== 'string' || !matchesSubPackageDependency(meta.subPackage.dependencies, importee, dependencies)) {
+          continue
+        }
+        parsed.usingComponents[componentName] = toRelativeRuntimeNpmImport(output.fileName, meta.subPackage.root, importee)
+        mutated = true
+      }
+
+      if (mutated) {
+        output.source = `${JSON.stringify(parsed, null, 2)}\n`
+      }
+    }
+    catch {
+    }
+  }
+}
+
 export function createRenderStartHook(state: CorePluginState) {
   const { ctx, subPackageMeta, buildTarget } = state
 
@@ -270,7 +387,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     if (!subPackageMeta) {
       const sharedStrategy = configService.weappViteConfig?.chunks?.sharedStrategy ?? DEFAULT_SHARED_CHUNK_STRATEGY
       const shouldLogChunks = configService.weappViteConfig?.chunks?.logOptimization ?? true
-      const subPackageRoots = Array.from(scanService.subPackageMap.keys()).filter(Boolean)
+      const subPackageRoots = [...scanService.subPackageMap.keys()].filter(Boolean)
       const duplicateWarningBytes = Number(configService.weappViteConfig?.chunks?.duplicateWarningBytes ?? 0)
       const shouldWarnOnDuplicate = Number.isFinite(duplicateWarningBytes) && duplicateWarningBytes > 0
       let redundantBytesTotal = 0
@@ -289,7 +406,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       const resolveSharedChunkLabel = (sharedFileName: string, finalFileName: string) => {
         const prettifyModuleLabel = (label: string) => {
           const normalized = toPosixPath(label)
-          const match = normalized.match(/node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(.+)/)
+          const match = normalized.match(PRETTY_NODE_MODULES_RE)
           return match?.[1] || label
         }
 
@@ -320,14 +437,12 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           return finalFileName
         }
 
-        const moduleLabels = Array.from(
-          new Set(
-            Object.keys(chunk.modules ?? {})
-              .filter(id => id && !id.startsWith('\0'))
-              .map(id => configService.relativeAbsoluteSrcRoot(id))
-              .filter(Boolean),
-          ),
-        )
+        const moduleLabels = [...new Set(
+          Object.keys(chunk.modules ?? {})
+            .filter(id => id && !id.startsWith('\0'))
+            .map(id => configService.relativeAbsoluteSrcRoot(id))
+            .filter(Boolean),
+        )]
 
         if (!moduleLabels.length) {
           return chunk.fileName || finalFileName
@@ -381,7 +496,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
             subPackageSet.add(match)
           }
         }
-        const subPackageList = Array.from(subPackageSet).join('、') || '相关分包'
+        const subPackageList = [...subPackageSet].join('、') || '相关分包'
         const ignoredHint = ignoredMainImporters?.length
           ? `，忽略主包引用：${ignoredMainImporters.join('、')}`
           : ''
@@ -412,7 +527,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
               const segments: string[] = []
               if (involvedSubs.size) {
-                segments.push(`分包 ${Array.from(involvedSubs).join('、')}`)
+                segments.push(`分包 ${[...involvedSubs].join('、')}`)
               }
               if (hasMainReference) {
                 segments.push('主包')
@@ -442,7 +557,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
                   subPackageSet.add(match)
                 }
               }
-              const subPackageList = Array.from(subPackageSet).join('、') || '相关分包'
+              const subPackageList = [...subPackageSet].join('、') || '相关分包'
               logger.info(`[分包] 分包 ${subPackageList} 已本地化 ${runtimeFileName} 依赖，避免跨包 runtime 引用。`)
             }
           : undefined,
@@ -460,6 +575,30 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
     if (configService.platform === 'alipay') {
       rewriteBundleNpmImportsForAlipay(rolldownBundle, configService.packageJson.dependencies, configService.weappViteConfig?.npm?.alipayNpmMode)
+    }
+    else {
+      const includeNormalSubPackages = configService.weappViteConfig?.npm?.experimentalNormalSubpackageNpm === true
+      const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
+      const independentSubPackageMap = scanService.independentSubPackageMap ?? new Map<string, SubPackageMetaValue>()
+      const localSubPackageMetas = [...includeNormalSubPackages
+        ? subPackageMap.values()
+        : independentSubPackageMap.values()]
+
+      for (const meta of localSubPackageMetas) {
+        for (const output of Object.values(rolldownBundle)) {
+          if (output?.type !== 'chunk') {
+            continue
+          }
+
+          const chunk = output as OutputChunk
+          if (chunk.fileName === meta.subPackage.root || !chunk.fileName.startsWith(`${meta.subPackage.root}/`)) {
+            continue
+          }
+          rewriteChunkNpmImportsToLocalSubPackage(chunk, meta, configService.packageJson.dependencies)
+        }
+
+        rewriteJsonNpmImportsToLocalSubPackage(rolldownBundle, meta, configService.packageJson.dependencies)
+      }
     }
 
     const injectWeapiGlobalName = resolveInjectWeapiGlobalName(state)
