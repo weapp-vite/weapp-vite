@@ -32,6 +32,7 @@ function parseArgs() {
 }
 
 function uniqueSorted(names) {
+  // eslint-disable-next-line e18e/prefer-array-to-sorted -- Set 没有 toSorted 方法
   return [...new Set(names)].sort((a, b) => a.localeCompare(b))
 }
 
