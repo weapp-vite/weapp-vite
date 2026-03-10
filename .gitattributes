@@ -65,14 +65,14 @@ Dockerfile        text
 
 # Documentation
 *.ipynb           text eol=lf
-*.markdown        text diff=markdown
-*.md              text diff=markdown
-*.mdwn            text diff=markdown
-*.mdown           text diff=markdown
-*.mkd             text diff=markdown
-*.mkdn            text diff=markdown
-*.mdtxt           text
-*.mdtext          text
+*.markdown        text eol=lf diff=markdown
+*.md              text eol=lf diff=markdown
+*.mdwn            text eol=lf diff=markdown
+*.mdown           text eol=lf diff=markdown
+*.mkd             text eol=lf diff=markdown
+*.mkdn            text eol=lf diff=markdown
+*.mdtxt           text eol=lf
+*.mdtext          text eol=lf
 *.txt             text
 AUTHORS           text
 CHANGELOG         text

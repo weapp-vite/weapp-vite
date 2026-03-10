@@ -40,5 +40,6 @@ export const DEFAULT_FORMATTER: HookFormatter = ({ pluginName, hookName, duratio
  * @description 默认日志输出
  */
 export const DEFAULT_LOGGER: HookLogger = (message) => {
+  // eslint-disable-next-line no-console -- 默认 logger 需要直接输出插件耗时信息
   console.log(message)
 }
