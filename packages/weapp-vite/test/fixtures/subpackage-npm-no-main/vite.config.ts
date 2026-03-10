@@ -5,19 +5,19 @@ export default defineConfig({
     srcRoot: 'src',
     npm: {
       mainPackageDependencies: false,
-    },
-    subPackages: {
-      packageA: {
-        dependencies: [
-          'dayjs',
-          'clsx',
-        ],
-      },
-      packageB: {
-        dependencies: [
-          'dayjs',
-          'class-variance-authority',
-        ],
+      subPackages: {
+        packageA: {
+          dependencies: [
+            'dayjs',
+            'clsx',
+          ],
+        },
+        packageB: {
+          dependencies: [
+            'dayjs',
+            'class-variance-authority',
+          ],
+        },
       },
     },
   },

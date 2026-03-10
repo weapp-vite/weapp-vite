@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createCompilerContext } from '@/createContext'
 import { getFixture } from './utils'
 
-describe('subpackage npm experimental normal mode', () => {
+describe('subpackage npm local outputs', () => {
   const cwd = getFixture('subpackage-npm-normal')
 
   let ctx: CompilerContext | undefined

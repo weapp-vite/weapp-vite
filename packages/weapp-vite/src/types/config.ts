@@ -442,6 +442,16 @@ export interface BuildNpmPackageMeta {
   entry: InputOption
 }
 
+export interface NpmSubPackageConfig {
+  /**
+   * @description 分包本地 npm 依赖范围
+   *
+   * 当声明该字段后，会为对应分包输出本地 `miniprogram_npm`，
+   * 并将分包内命中的 npm 引用本地化到该目录。
+   */
+  dependencies?: (string | RegExp)[]
+}
+
 export type JsFormat = 'cjs' | 'esm'
 
 export type SharedChunkStrategy = 'hoist' | 'duplicate'
@@ -666,20 +676,17 @@ export interface WeappViteConfig {
      * - `false`: 禁止输出主包 `miniprogram_npm`
      * - `string[] | RegExp[]`: 仅输出命中的依赖到主包
      *
-     * 适用于依赖只希望落在独立分包 `miniprogram_npm` 的场景，
-     * 需配合 `weapp.subPackages.<root>.dependencies` 显式声明各分包依赖集。
+     * 适用于依赖只希望落在特定分包 `miniprogram_npm` 的场景，
+     * 需配合 `weapp.npm.subPackages.<root>.dependencies` 显式声明各分包依赖集。
      */
     mainPackageDependencies?: false | (string | RegExp)[]
     /**
-     * @description 实验特性：允许普通分包也输出自己的 `miniprogram_npm`
+     * @description 分包本地 npm 构建配置
      *
-     * 开启后，非独立分包同样会按 `weapp.subPackages.<root>.dependencies`
-     * 生成本地 npm 产物，并在构建产物中把分包内的 npm 引用本地化到
-     * `/<subpackage>/miniprogram_npm/**`。
-     *
-     * 注意：该能力依赖微信分包内 npm 目录的运行时行为，当前仅作为实验特性提供。
+     * 配置后，命中的分包会输出自己的 `miniprogram_npm`，
+     * 并将分包内命中的 npm 引用本地化到分包目录。
      */
-    experimentalNormalSubpackageNpm?: boolean
+    subPackages?: Record<string, NpmSubPackageConfig>
     /**
      * @description 构建 npm 的配置，可传入 Vite 的库模式配置，让不同的包走不同的配置
      * - 返回值中的 `build.outDir` 同时影响二次 bundle 的依赖与直接复制 `miniprogram` 产物的依赖

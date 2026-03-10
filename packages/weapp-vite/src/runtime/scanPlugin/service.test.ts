@@ -47,6 +47,13 @@ function createCtx(overrides: Record<string, any> = {}) {
       absoluteSrcRoot: '/project/src',
       absolutePluginRoot: '/project/plugin-root',
       weappViteConfig: {
+        npm: {
+          subPackages: {
+            pkgA: {
+              dependencies: ['dep-a-from-npm'],
+            },
+          },
+        },
         subPackages: {
           pkgA: {
             dependencies: ['dep-a'],
@@ -205,6 +212,7 @@ describe('scanPlugin service', () => {
     expect(metas).toHaveLength(2)
     expect(service.subPackageMap.has('pkgA')).toBe(true)
     expect(service.independentSubPackageMap.has('pkgA')).toBe(true)
+    expect(service.subPackageMap.get('pkgA')?.subPackage.dependencies).toEqual(['dep-a-from-npm'])
     expect(service.drainIndependentDirtyRoots()).toEqual(['pkgA'])
     expect(service.drainIndependentDirtyRoots()).toEqual([])
     expect(service.isMainPackageFileName('pages/home/index')).toBe(true)
