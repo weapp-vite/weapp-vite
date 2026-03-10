@@ -64,6 +64,27 @@ describe('runtime: define helpers', () => {
     expect(result.properties.__wvSlotScope).toBeTruthy()
   })
 
+  it('allows null as an optional native input for compiled vue props', () => {
+    const result = normalizeProps({
+      data: () => ({}),
+      __wevu_allowNullPropInput: true,
+    }, {
+      name: String,
+      count: { type: Number, default: 2 },
+      mode: [String, Number],
+      anyValue: null,
+    })
+
+    expect(result.properties.name.type).toBe(String)
+    expect(result.properties.name.optionalTypes).toEqual([null])
+    expect(result.properties.count.type).toBe(Number)
+    expect(result.properties.count.optionalTypes).toEqual([null])
+    expect(result.properties.mode.type).toBe(String)
+    expect(result.properties.mode.optionalTypes).toEqual([Number, null])
+    expect(result.properties.anyValue.type).toBeNull()
+    expect(result.properties.anyValue.optionalTypes).toBeUndefined()
+  })
+
   it('normalizes Vue inferred union arrays to native type and optionalTypes', () => {
     const result = normalizeProps({ data: () => ({}) }, {
       mixed: { type: [Number, String] },

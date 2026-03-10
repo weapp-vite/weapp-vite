@@ -1,0 +1,54 @@
+<script setup lang="ts">
+import { ref } from 'wevu'
+import ValueProbe from '../../components/issue-328/ValueProbe/index.vue'
+
+definePageJson({
+  navigationBarTitleText: 'issue-328',
+  backgroundColor: '#ffffff',
+})
+
+const value1 = ref('111')
+
+function _runE2E() {
+  return {
+    ok: value1.value === '111',
+    value1: value1.value,
+  }
+}
+</script>
+
+<template>
+  <view class="issue328-page">
+    <text class="issue328-title">
+      issue-328 setup ref prop first paint
+    </text>
+    <text class="issue328-desc">
+      setup 中的 ref 首帧传给子组件 string prop 时，不应先落成 null 或默认值。
+    </text>
+
+    <ValueProbe :value="value1" />
+  </view>
+</template>
+
+<style scoped>
+.issue328-page {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 24rpx;
+  background: #eff6ff;
+}
+
+.issue328-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.issue328-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #475569;
+}
+</style>

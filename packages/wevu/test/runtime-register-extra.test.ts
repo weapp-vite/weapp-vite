@@ -1,5 +1,6 @@
 import type { RuntimeApp } from '@/runtime/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from '@/index'
 import { createApp } from '@/runtime/app'
 import { callHookReturn, setCurrentInstance } from '@/runtime/hooks'
 import {
@@ -150,6 +151,29 @@ describe('mountRuntimeInstance and teardown', () => {
     const target: any = {}
     mountRuntimeInstance(target, app, undefined, undefined)
     expect(target.__wevu).toBeTruthy()
+
+    teardownRuntimeInstance(target)
+  })
+
+  it('flushes setup refs into the first setData payload synchronously', async () => {
+    const app = createApp({})
+    const target: any = {
+      route: 'pages/issue-328/index',
+      setData: vi.fn(),
+    }
+
+    mountRuntimeInstance(target, app as any, undefined, () => {
+      const value1 = ref('111')
+      return { value1 }
+    })
+
+    expect(target.setData).toHaveBeenCalledTimes(1)
+    expect(target.setData).toHaveBeenCalledWith(expect.objectContaining({ value1: '111' }))
+
+    await nextTick()
+
+    expect(target.setData).toHaveBeenCalledTimes(1)
+    expect(target.$wevu.state.value1.value).toBe('111')
 
     teardownRuntimeInstance(target)
   })

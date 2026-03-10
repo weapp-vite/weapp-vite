@@ -73,6 +73,20 @@ describe('runtime (component as page lifetimes mapping)', () => {
     })
     expect((globalThis as any).Component).toHaveBeenCalledTimes(1)
   })
+
+  it('preserves data() on native component options for first paint', () => {
+    defineComponent({
+      data: () => ({
+        value1: '111',
+      }),
+      setup() {
+        return {}
+      },
+    })
+
+    const opts = registeredComponents[0]
+    expect(opts.data).toEqual({ value1: '111' })
+  })
 })
 
 describe('runtime (setup signature alignment)', () => {
