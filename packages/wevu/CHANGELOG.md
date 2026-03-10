@@ -1,5 +1,17 @@
 # wevu
 
+## 6.7.5
+
+### Patch Changes
+
+- 🐛 **修复 issue #320 e2e 测试页面中 `addRoute` 同名替换验证逻辑：将 `path`（不含前导斜杠）改为 `fullPath`（含前导斜杠）进行路径比较，确保运行时断言与 e2e 测试期望值一致。同时新增 `addRoute` 同名替换的单元测试，覆盖 alias/redirect 替换、旧 alias 清理等场景。** [`7dda40a`](https://github.com/weapp-vite/weapp-vite/commit/7dda40a4f4a9f0f5e76cfdd3a81bf2fbd5c3a163) by @sonofmagic
+
+- 🐛 **修复 issue #328 中 `<script setup>` 首帧数据与子组件 prop 同步过晚的问题：编译产物现在会为可静态推导的 setup 初始值注入首帧 `data`，运行时注册阶段也会把这些初始数据同步保留到原生组件/页面定义中，避免父级 `ref('111')` 在首屏绑定到子组件 `String` prop 时先落成 `null` 并触发小程序类型 warning。同时补充 `github-issues` 的 issue-328 构建与 IDE 端到端回归用例，以及相关运行时/编译单测。** [`62619d9`](https://github.com/weapp-vite/weapp-vite/commit/62619d9b6b3e71afb99dc44bde51d6b0cfa1e322) by @sonofmagic
+
+- 🐛 **修复 `defineComponent` 在未提供 `setup` 时仍然注册内部 `setupWrapper` 的问题，避免与首屏同步快照逻辑叠加后，在组件 `attached` 阶段同步多触发一次 `setData`。这样可以恢复无 `setup` 组件的挂载时序稳定性，消除合并 `main` 后在 CI 中出现的 `__wvOwnerId` 额外同步回归。** [#329](https://github.com/weapp-vite/weapp-vite/pull/329) by @sonofmagic
+- 📦 **Dependencies** [`62619d9`](https://github.com/weapp-vite/weapp-vite/commit/62619d9b6b3e71afb99dc44bde51d6b0cfa1e322)
+  → `@wevu/compiler@6.7.5`
+
 ## 6.7.4
 
 ### Patch Changes
