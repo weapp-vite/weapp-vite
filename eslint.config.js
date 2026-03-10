@@ -171,4 +171,10 @@ export default icebreaker(
       'style/eol-last': 'off',
     },
   },
+  {
+    files: ['**/*.test.{ts,js,mjs,cjs}', '**/*.spec.{ts,js,mjs,cjs}'],
+    rules: {
+      'e18e/prefer-static-regex': 'off',
+    },
+  },
 )
