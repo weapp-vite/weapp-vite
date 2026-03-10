@@ -32,7 +32,7 @@ function parseArgs() {
 }
 
 function uniqueSorted(names) {
-  return new Set(names).toSorted((a, b) => a.localeCompare(b))
+  return [...new Set(names)].sort((a, b) => a.localeCompare(b))
 }
 
 function formatLiteralList(values) {
