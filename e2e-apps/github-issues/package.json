@@ -8,6 +8,8 @@
   },
   "dependencies": {
     "dayjs": "catalog:",
+    "lodash": "catalog:",
+    "merge": "catalog:",
     "tdesign-miniprogram": "catalog:"
   }
 }

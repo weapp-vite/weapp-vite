@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import lodash from 'lodash'
 import { ref } from 'wevu'
 import { useIssue317Toast } from '../../hooks/issue-317/useToast'
 
@@ -8,11 +9,13 @@ definePageJson({
 
 const { showToast } = useIssue317Toast('item')
 const message = ref(showToast('ready'))
+const npmMarker = lodash.camelCase('issue 317 item npm ready')
 
 function _runE2E() {
   return {
-    ok: message.value.includes('ITEM:ready'),
+    ok: message.value.includes('ITEM:ready') && npmMarker === 'issue317ItemNpmReady',
     message: message.value,
+    npmMarker,
   }
 }
 </script>
@@ -24,6 +27,9 @@ function _runE2E() {
     </text>
     <text class="issue317-message">
       {{ message }}
+    </text>
+    <text class="issue317-npm-marker">
+      {{ npmMarker }}
     </text>
   </view>
 </template>
@@ -48,5 +54,12 @@ function _runE2E() {
   margin-top: 12rpx;
   font-size: 24rpx;
   color: #334155;
+}
+
+.issue317-npm-marker {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #64748b;
 }
 </style>

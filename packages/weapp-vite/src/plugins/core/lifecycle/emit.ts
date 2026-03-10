@@ -6,7 +6,7 @@ import type { CorePluginState } from '../helpers'
 import path from 'pathe'
 import logger from '../../../logger'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
-import { regExpTest, toPosixPath } from '../../../utils'
+import { toPosixPath } from '../../../utils'
 import { normalizeAlipayNpmImportPath } from '../../../utils/alipayNpm'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { normalizeWatchPath } from '../../../utils/path'
@@ -112,6 +112,18 @@ function hasDependencyPrefix(dependencies: Record<string, string> | undefined, i
 
     return true
   })
+}
+
+function resolveDependencyId(importee: string) {
+  const normalizedImportee = importee.replace(WINDOWS_SEPARATOR_RE, '/').replace(NPM_PROTOCOL_RE, '').replace(ABSOLUTE_NPM_PREFIX_RE, '')
+  const importeeTokens = normalizedImportee.split('/').filter(Boolean)
+  if (importeeTokens.length === 0) {
+    return ''
+  }
+  if (normalizedImportee.startsWith('@') && importeeTokens.length > 1) {
+    return `${importeeTokens[0]}/${importeeTokens[1]}`
+  }
+  return importeeTokens[0]
 }
 
 function normalizeNpmImportForAlipay(importee: string, dependencies: Record<string, string> | undefined, mode?: string) {
@@ -241,7 +253,20 @@ function rewriteBundlePlatformApi(bundle: OutputBundle, globalName: string) {
 function matchesSubPackageDependency(dependencies: (string | RegExp)[] | undefined, importee: string, fallbackDependencies?: Record<string, string>) {
   const normalized = importee.replace(NPM_PROTOCOL_RE, '').replace(ABSOLUTE_NPM_PREFIX_RE, '')
   if (Array.isArray(dependencies) && dependencies.length > 0) {
-    return regExpTest(dependencies, normalized)
+    const dependencyId = resolveDependencyId(normalized)
+    return dependencies.some((pattern) => {
+      if (typeof pattern === 'string') {
+        return dependencyId === pattern || normalized === pattern || normalized.startsWith(`${pattern}/`)
+      }
+
+      pattern.lastIndex = 0
+      if (pattern.test(dependencyId)) {
+        return true
+      }
+
+      pattern.lastIndex = 0
+      return pattern.test(normalized)
+    })
   }
 
   return hasDependencyPrefix(fallbackDependencies, normalized)
@@ -254,6 +279,38 @@ function normalizeWeappLocalNpmImport(importee: string) {
     return `${normalized}/index`
   }
   return normalized
+}
+
+function getRequireImportLiteral(node: any) {
+  if (!node) {
+    return null
+  }
+
+  if (node.type === 'StringLiteral' || node.type === 'Literal') {
+    return typeof node.value === 'string' ? node.value : null
+  }
+
+  if (node.type === 'TemplateLiteral' && node.expressions?.length === 0 && node.quasis?.length === 1) {
+    return node.quasis[0]?.value?.cooked ?? null
+  }
+
+  return null
+}
+
+function setRequireImportLiteral(node: any, nextValue: string) {
+  if (!node) {
+    return
+  }
+
+  if (node.type === 'StringLiteral' || node.type === 'Literal') {
+    node.value = nextValue
+    return
+  }
+
+  if (node.type === 'TemplateLiteral' && node.expressions?.length === 0 && node.quasis?.length === 1) {
+    node.quasis[0].value.raw = nextValue
+    node.quasis[0].value.cooked = nextValue
+  }
 }
 
 function toRelativeRuntimeNpmImport(fileName: string, root: string, importee: string) {
@@ -283,11 +340,7 @@ function rewriteChunkNpmImportsToLocalSubPackage(chunk: OutputChunk, meta: SubPa
         }
 
         const firstArg = args[0]
-        if (!firstArg || (firstArg.type !== 'StringLiteral' && firstArg.type !== 'Literal')) {
-          return
-        }
-
-        const currentValue = firstArg.value
+        const currentValue = getRequireImportLiteral(firstArg)
         if (typeof currentValue !== 'string' || !matchesSubPackageDependency(meta.subPackage.dependencies, currentValue, dependencies)) {
           return
         }
@@ -297,7 +350,7 @@ function rewriteChunkNpmImportsToLocalSubPackage(chunk: OutputChunk, meta: SubPa
           return
         }
 
-        firstArg.value = nextValue
+        setRequireImportLiteral(firstArg, nextValue)
         mutated = true
       },
     })

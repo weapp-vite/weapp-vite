@@ -1085,6 +1085,12 @@ importers:
       dayjs:
         specifier: 'catalog:'
         version: 1.11.19
+      lodash:
+        specifier: 'catalog:'
+        version: 4.17.23
+      merge:
+        specifier: 'catalog:'
+        version: 2.1.1
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.12.3
@@ -19973,8 +19979,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@5.9.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.0(typescript@5.9.3)
+      '@typescript-eslint/types': 8.57.0
       debug: 4.4.3
       typescript: 5.9.3
     transitivePeerDependencies:

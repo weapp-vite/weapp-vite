@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import merge from 'merge'
 import { ref } from 'wevu'
 import { useIssue317Toast } from '../../hooks/issue-317/useToast'
 
@@ -8,11 +9,16 @@ definePageJson({
 
 const { showToast } = useIssue317Toast('user')
 const message = ref(showToast('ready'))
+const npmMarker = merge(
+  { label: 'Issue317 user' },
+  { label: 'Issue317 user npm ready' },
+).label
 
 function _runE2E() {
   return {
-    ok: message.value.includes('USER:ready'),
+    ok: message.value.includes('USER:ready') && npmMarker === 'Issue317 user npm ready',
     message: message.value,
+    npmMarker,
   }
 }
 </script>
@@ -24,6 +30,9 @@ function _runE2E() {
     </text>
     <text class="issue317-message">
       {{ message }}
+    </text>
+    <text class="issue317-npm-marker">
+      {{ npmMarker }}
     </text>
   </view>
 </template>
@@ -48,5 +57,12 @@ function _runE2E() {
   margin-top: 12rpx;
   font-size: 24rpx;
   color: #334155;
+}
+
+.issue317-npm-marker {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #64748b;
 }
 </style>
