@@ -560,10 +560,14 @@ describe.sequential('e2e app: github-issues (build)', () => {
 
     expect(issuePageWxml).toContain('issue-328 setup ref prop first paint')
     expect(issuePageWxml).toContain('ValueProbe')
+    expect(issuePageWxml).toContain('issue328-toggle')
+    expect(issuePageWxml).toContain('toggle value: {{value1}}')
     expect(issuePageWxml).toContain('value="{{value1}}"')
     expect(issuePageJs).toContain('value1')
+    expect(issuePageJs).toContain('advanceValue')
     expect(issuePageJs).toContain('_runE2E')
     expect(issuePageJs).toContain('111')
+    expect(issuePageJs).toContain('222')
 
     expect(probeWxml).toContain('data-current-value="{{props.value}}"')
     expect(probeWxml).toContain('data-history="{{historyText}}"')
