@@ -4,6 +4,7 @@ import type { ConfigEnv, UserConfig as ViteUserConfig } from 'vite'
 import type { WeappViteConfig } from './types'
 
 export * from './json'
+export * from './pluginHost'
 
 /**
  * @description weapp-vite 的用户配置（扩展 Vite UserConfig）

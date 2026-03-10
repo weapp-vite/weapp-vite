@@ -1,5 +1,6 @@
 export * from './config'
 export * from './createContext'
+export * from './pluginHost'
 export { defineEmits, defineProps } from './plugins/vue/runtime'
 export type { WevuComponentOptions } from './plugins/vue/runtime'
 
