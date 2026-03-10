@@ -1,7 +1,7 @@
-import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
+import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/github-issues')
@@ -10,9 +10,13 @@ const DIST_ROOT = path.join(APP_ROOT, 'dist')
 async function runBuild() {
   await fs.remove(DIST_ROOT)
 
-  await execa('node', [CLI_PATH, 'build', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
-    stdio: 'inherit',
+  await runWeappViteBuildWithLogCapture({
+    cliPath: CLI_PATH,
+    projectRoot: APP_ROOT,
+    platform: 'weapp',
     cwd: APP_ROOT,
+    label: 'ci:github-issues',
+    skipNpm: true,
   })
 }
 
@@ -457,6 +461,29 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(await fs.pathExists(fallbackPlusPath)).toBe(false)
     expect(await fs.pathExists(itemRuntimePath)).toBe(true)
     expect(await fs.pathExists(userRuntimePath)).toBe(true)
+  })
+
+  it('issue #327: allows npm.buildOptions to redirect miniprogram and bundled deps into a subpackage output', async () => {
+    await runBuild()
+
+    const subpackageNpmRoot = path.join(DIST_ROOT, 'subpackages/issue-327/miniprogram_npm')
+    const subpackageDayjsPath = path.join(subpackageNpmRoot, 'dayjs/index.js')
+    const subpackageTdesignPath = path.join(subpackageNpmRoot, 'tdesign-miniprogram/button/button.js')
+    const mainDayjsPath = path.join(DIST_ROOT, 'miniprogram_npm/dayjs/index.js')
+    const mainTdesignPath = path.join(DIST_ROOT, 'miniprogram_npm/tdesign-miniprogram/button/button.js')
+    const issuePageJsPath = path.join(DIST_ROOT, 'subpackages/issue-327/index.js')
+    const issuePageJsonPath = path.join(DIST_ROOT, 'subpackages/issue-327/index.json')
+
+    expect(await fs.pathExists(subpackageDayjsPath)).toBe(true)
+    expect(await fs.pathExists(subpackageTdesignPath)).toBe(true)
+    expect(await fs.pathExists(mainDayjsPath)).toBe(false)
+    expect(await fs.pathExists(mainTdesignPath)).toBe(false)
+
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+    const issuePageJson = await fs.readFile(issuePageJsonPath, 'utf-8')
+
+    expect(issuePageJs).toContain('dayjs')
+    expect(issuePageJson).toContain('"t-button": "tdesign-miniprogram/button/button"')
   })
 
   it('issue #300: keeps boolean props available in runtime call-expression bindings', async () => {

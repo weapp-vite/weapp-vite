@@ -28,6 +28,10 @@ defineAppJson({
       pages: ['index'],
     },
     {
+      root: 'subpackages/issue-327',
+      pages: ['index'],
+    },
+    {
       root: 'subpackages/user',
       pages: ['index'],
     },

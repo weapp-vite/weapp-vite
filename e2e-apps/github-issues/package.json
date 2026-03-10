@@ -5,5 +5,9 @@
   "scripts": {
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o"
+  },
+  "dependencies": {
+    "dayjs": "catalog:",
+    "tdesign-miniprogram": "catalog:"
   }
 }
