@@ -11,7 +11,7 @@
       t-class-title="t-class-title"
       t-class-note="t-class-note"
       title="规则说明"
-      note="{{detail && detail.desc}}"
+      note="{{(detail && detail.desc) || ''}}"
     />
     <t-cell
       wx:if="{{detail && detail.timeLimit}}"
@@ -19,7 +19,7 @@
       t-class-title="t-class-title"
       t-class-note="t-class-note"
       title="有效时间"
-      note="{{detail && detail.timeLimit}}"
+      note="{{(detail && detail.timeLimit) || ''}}"
     />
     <t-cell
       wx:if="{{detail && detail.storeAdapt}}"
@@ -27,7 +27,7 @@
       t-class-title="t-class-title"
       t-class-note="t-class-note"
       title="适用范围"
-      note="{{detail && detail.storeAdapt}}"
+      note="{{(detail && detail.storeAdapt) || ''}}"
     />
     <t-cell
       wx:if="{{detail && detail.useNotes}}"
@@ -35,7 +35,7 @@
       t-class-title="t-class-title"
       t-class-note="t-class-note"
       title="使用须知"
-      note="{{detail && detail.useNotes}}"
+      note="{{(detail && detail.useNotes) || ''}}"
     />
   </t-cell-group>
   <!-- 查看可用商品 -->

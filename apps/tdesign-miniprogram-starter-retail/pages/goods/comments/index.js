@@ -31,7 +31,7 @@ Page({
       uidCount: '0',
     },
   },
-  onLoad(options) {
+  onLoad(options = {}) {
     this.getCount(options);
     this.getComments(options);
   },
@@ -39,7 +39,7 @@ Page({
     try {
       const result = await fetchCommentsCount(
         {
-          spuId: options.spuId,
+          spuId: options.spuId || '',
         },
         {
           method: 'POST',
@@ -157,7 +157,7 @@ Page({
     }
     return array;
   },
-  getComments(options) {
+  getComments(options = {}) {
     const { commentLevel = -1, spuId, hasImage = '' } = options;
     if (commentLevel !== -1) {
       this.setData({
@@ -167,7 +167,7 @@ Page({
     this.setData({
       hasImage: hasImage,
       commentType: hasImage ? '4' : '',
-      spuId: spuId,
+      spuId: spuId || '',
     });
     this.init(true);
   },

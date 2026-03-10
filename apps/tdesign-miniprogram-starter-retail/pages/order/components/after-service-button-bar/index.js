@@ -9,6 +9,7 @@ Component({
     service: {
       type: Object,
       observer(service) {
+        if (!service) return;
         const buttonsRight = service.buttons || service.buttonVOs || [];
         this.setData({
           buttons: {
@@ -21,7 +22,6 @@ Component({
   },
 
   data: {
-    service: {},
     buttons: {
       left: [],
       right: [],

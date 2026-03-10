@@ -11,7 +11,7 @@ Component({
       value: 1,
       observer(overall) {
         this.setData({
-          overall,
+          currentOverall: overall,
         });
       },
     },
@@ -20,7 +20,7 @@ Component({
       value: 1,
       observer(layout) {
         this.setData({
-          layout,
+          currentLayout: layout,
         });
       },
     },
@@ -29,7 +29,7 @@ Component({
       value: '',
       observer(sorts) {
         this.setData({
-          sorts,
+          currentSorts: sorts,
         });
       },
     },
@@ -40,24 +40,25 @@ Component({
   },
 
   data: {
-    layout: 1,
-    overall: 1,
-    sorts: '',
+    currentLayout: 1,
+    currentOverall: 1,
+    currentSorts: '',
+    prices: [],
   },
 
   methods: {
     onChangeShowAction() {
-      const { layout } = this.data;
-      const nextLayout = layout === 1 ? 0 : 1;
+      const { currentLayout } = this.data;
+      const nextLayout = currentLayout === 1 ? 0 : 1;
       this.triggerEvent('change', { ...this.properties, layout: nextLayout });
     },
 
     handlePriseSort() {
-      const { sorts } = this.data;
+      const { currentSorts } = this.data;
       this.triggerEvent('change', {
         ...this.properties,
         overall: 0,
-        sorts: sorts === 'desc' ? 'asc' : 'desc',
+        sorts: currentSorts === 'desc' ? 'asc' : 'desc',
       });
     },
 
@@ -68,8 +69,8 @@ Component({
     },
 
     onOverallAction() {
-      const { overall } = this.data;
-      const nextOverall = overall === 1 ? 0 : 1;
+      const { currentOverall } = this.data;
+      const nextOverall = currentOverall === 1 ? 0 : 1;
       const nextData = {
         sorts: '',
         prices: [],

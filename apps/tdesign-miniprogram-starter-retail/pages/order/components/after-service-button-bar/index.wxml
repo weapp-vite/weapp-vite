@@ -24,7 +24,7 @@
       t-class="order-btn {{rightBtn.primary ? 'primary' : 'normal'}}"
       catchtap="onServiceBtnTap"
       data-type="{{rightBtn.type}}"
-      open-type="{{ rightBtn.openType }}"
+      open-type="{{ rightBtn.openType || '' }}"
       data-share="{{ rightBtn.dataShare }}"
     >
       {{rightBtn.name}}

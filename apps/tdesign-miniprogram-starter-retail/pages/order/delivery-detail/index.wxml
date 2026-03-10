@@ -69,7 +69,7 @@
 				  class="cell-steps__imgWrapper"
 				  slot="icon"
 				  t-class="cell-steps__img"
-				  src="{{item.icon}}"
+				  src="{{item.icon || ''}}"
 				/>
 			</block>
 			<block wx:else>
@@ -78,7 +78,7 @@
 				  size="32rpx"
 				  prefix="wr"
 				  color="{{index === 0 ? '#ef5433' : '#bbb'}}"
-				  name="{{item.icon}}"
+				  name="{{item.icon || ''}}"
 				/>
 			</block>
 			<view slot="content">
@@ -88,4 +88,3 @@
 		</t-step>
 	</t-steps>
 </view>
-

@@ -2,10 +2,10 @@ Page({
   data: {
     nameValue: '',
   },
-  onLoad(options) {
+  onLoad(options = {}) {
     const { name } = options;
     this.setData({
-      nameValue: name,
+      nameValue: name || '',
     });
   },
   onSubmit() {

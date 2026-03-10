@@ -27,7 +27,7 @@
               bindtap="changCategory"
               data-item="{{subItem}}"
             >
-              <t-image src="{{subItem.thumbnail}}" t-class="image" />
+              <t-image src="{{subItem.thumbnail || ''}}" t-class="image" />
               <view class="flex goods-category-normal-item-container-item-title"> {{subItem.name}} </view>
             </view>
           </view>
@@ -40,7 +40,7 @@
               bindtap="changCategory"
               data-item="{{item}}"
             >
-              <t-image src="{{item.thumbnail}}" t-class="image" />
+              <t-image src="{{item.thumbnail || ''}}" t-class="image" />
               <view class="flex goods-category-normal-item-container-item-title"> {{item.name}} </view>
             </view>
           </block>

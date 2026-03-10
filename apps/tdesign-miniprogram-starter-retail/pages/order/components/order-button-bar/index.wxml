@@ -26,7 +26,7 @@
       hover-class="order-btn--active"
       catchtap="onOrderBtnTap"
       data-type="{{rightBtn.type}}"
-      open-type="{{ rightBtn.openType }}"
+      open-type="{{ rightBtn.openType || '' }}"
       data-share="{{ rightBtn.dataShare }}"
     >
       {{rightBtn.name}}

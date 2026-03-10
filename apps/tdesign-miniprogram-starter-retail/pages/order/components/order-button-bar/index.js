@@ -10,6 +10,7 @@ Component({
     order: {
       type: Object,
       observer(order) {
+        if (!order) return;
         // 判定有传goodsIndex ，则认为是商品button bar, 仅显示申请售后按钮
         if (this.properties?.goodsIndex !== null) {
           const goods = order.goodsList[Number(this.properties.goodsIndex)];
@@ -74,7 +75,6 @@ Component({
   },
 
   data: {
-    order: {},
     buttons: {
       left: [],
       right: [],
@@ -199,9 +199,9 @@ Component({
 
     /** 添加订单评论 */
     onAddComment(order) {
-      const imgUrl = order?.goodsList?.[0]?.thumb;
-      const title = order?.goodsList?.[0]?.title;
-      const specs = order?.goodsList?.[0]?.specs;
+      const imgUrl = order?.goodsList?.[0]?.thumb || '';
+      const title = order?.goodsList?.[0]?.title || '';
+      const specs = order?.goodsList?.[0]?.specs || '';
       wx.navigateTo({
         url: `/pages/goods/comments/create/index?specs=${specs}&title=${title}&orderNo=${order?.orderNo}&imgUrl=${imgUrl}`,
       });
