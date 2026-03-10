@@ -90,7 +90,9 @@ describe('runtime npm service', () => {
         },
       },
       scanService: {
-        independentSubPackageMap: new Map([
+        loadAppEntry: vi.fn(async () => {}),
+        loadSubPackages: vi.fn(() => []),
+        subPackageMap: new Map([
           ['packageA', {
             subPackage: {
               root: 'packageA',
@@ -133,5 +135,7 @@ describe('runtime npm service', () => {
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('__all__')
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageA')
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
+    expect(ctx.scanService.loadAppEntry).toHaveBeenCalledTimes(1)
+    expect(ctx.scanService.loadSubPackages).toHaveBeenCalledTimes(1)
   })
 })
