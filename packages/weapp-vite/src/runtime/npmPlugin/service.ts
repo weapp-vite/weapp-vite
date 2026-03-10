@@ -70,12 +70,6 @@ function hasLocalSubPackageNpmConfig(ctx: MutableCompilerContext) {
   if (npmSubPackages && Object.values(npmSubPackages).some(config => Array.isArray(config?.dependencies) && config.dependencies.length > 0)) {
     return true
   }
-
-  const legacySubPackages = ctx.configService?.weappViteConfig?.subPackages
-  if (legacySubPackages && Object.values(legacySubPackages).some(config => Array.isArray(config?.dependencies) && config.dependencies.length > 0)) {
-    return true
-  }
-
   return false
 }
 

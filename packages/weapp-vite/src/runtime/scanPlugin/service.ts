@@ -153,7 +153,7 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
           }
           const subPackageConfig = configService.weappViteConfig?.subPackages?.[subPackage.root!]
           const npmSubPackageConfig = configService.weappViteConfig?.npm?.subPackages?.[subPackage.root!]
-          meta.subPackage.dependencies = npmSubPackageConfig?.dependencies ?? subPackageConfig?.dependencies
+          meta.subPackage.dependencies = npmSubPackageConfig?.dependencies
           meta.subPackage.inlineConfig = subPackageConfig?.inlineConfig
           meta.autoImportComponents = subPackageConfig?.autoImportComponents
           meta.styleEntries = normalizeSubPackageStyleEntries(
