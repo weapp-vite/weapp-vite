@@ -140,30 +140,88 @@ function isCollectableJsxTemplateTag(tag: string) {
   return !isBuiltinComponent(tag)
 }
 
+/**
+ * 递归收集 JSX 表达式中的自定义组件标签名。
+ * 直接遍历 AST 节点，无需 cloneNode 和 Babel traverse。
+ */
 function collectJsxTemplateTags(renderExpression: Expression) {
   const tags = new Set<string>()
-  const file = t.file(t.program([t.expressionStatement(t.cloneNode(renderExpression, true))]))
 
-  traverse(file, {
-    JSXOpeningElement(path) {
-      const { name } = path.node
-      if (t.isJSXMemberExpression(name)) {
-        return
+  function walk(node: t.Node) {
+    if (t.isJSXElement(node)) {
+      const { name } = node.openingElement
+      if (!t.isJSXMemberExpression(name)) {
+        let tag: string | null = null
+        if (t.isJSXIdentifier(name)) {
+          tag = name.name
+        }
+        else if (t.isJSXNamespacedName(name)) {
+          tag = `${name.namespace.name}:${name.name.name}`
+        }
+        if (tag && isCollectableJsxTemplateTag(tag)) {
+          tags.add(tag)
+        }
       }
-      let tag: string | null = null
-      if (t.isJSXIdentifier(name)) {
-        tag = name.name
+      for (const child of node.children) {
+        walk(child)
       }
-      else if (t.isJSXNamespacedName(name)) {
-        tag = `${name.namespace.name}:${name.name.name}`
+      return
+    }
+    if (t.isJSXFragment(node)) {
+      for (const child of node.children) {
+        walk(child)
       }
-      if (!tag || !isCollectableJsxTemplateTag(tag)) {
-        return
+      return
+    }
+    if (t.isJSXExpressionContainer(node) && !t.isJSXEmptyExpression(node.expression)) {
+      walk(node.expression)
+      return
+    }
+    if (t.isConditionalExpression(node)) {
+      walk(node.consequent)
+      walk(node.alternate)
+      return
+    }
+    if (t.isLogicalExpression(node)) {
+      walk(node.left)
+      walk(node.right)
+      return
+    }
+    if (t.isCallExpression(node)) {
+      for (const arg of node.arguments) {
+        if (t.isExpression(arg)) {
+          walk(arg)
+        }
       }
-      tags.add(tag)
-    },
-  })
+      return
+    }
+    if (t.isArrowFunctionExpression(node) || t.isFunctionExpression(node)) {
+      if (t.isBlockStatement(node.body)) {
+        for (const stmt of node.body.body) {
+          if (t.isReturnStatement(stmt) && stmt.argument) {
+            walk(stmt.argument)
+          }
+        }
+      }
+      else {
+        walk(node.body)
+      }
+      return
+    }
+    if (t.isArrayExpression(node)) {
+      for (const element of node.elements) {
+        if (element && t.isExpression(element)) {
+          walk(element)
+        }
+      }
+      return
+    }
+    if (t.isParenthesizedExpression(node) || t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node) || t.isTSNonNullExpression(node)) {
+      walk((node as t.ParenthesizedExpression).expression)
+    }
+  }
 
+  walk(renderExpression)
   return tags
 }
 
