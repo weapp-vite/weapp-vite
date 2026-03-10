@@ -208,7 +208,7 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['common.js'].code).toContain('/miniprogram_npm/tdesign-miniprogram/toast/index')
   })
 
-  it('localizes npm imports to subpackage-local miniprogram_npm in experimental normal subpackage mode', async () => {
+  it('localizes npm imports to subpackage-local miniprogram_npm when npm subpackage dependencies are declared', async () => {
     const state = {
       ctx: {
         scanService: {
@@ -220,7 +220,6 @@ describe('core lifecycle emit hook injectWeapi', () => {
               },
             }],
           ]),
-          independentSubPackageMap: new Map(),
         },
         configService: {
           isDev: false,
@@ -233,7 +232,11 @@ describe('core lifecycle emit hook injectWeapi', () => {
           },
           weappViteConfig: {
             npm: {
-              experimentalNormalSubpackageNpm: true,
+              subPackages: {
+                packageA: {
+                  dependencies: ['dayjs', 'tdesign-miniprogram'],
+                },
+              },
             },
           },
         },

@@ -3,6 +3,17 @@ import { defineConfig } from 'weapp-vite/config'
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
+    npm: {
+      subPackages: {
+        packageB: {
+          dependencies: [
+            'class-variance-authority',
+            'buffer',
+            'gm-crypto',
+          ],
+        },
+      },
+    },
     generate: {
       extensions: {
         js: 'ts',
@@ -12,15 +23,6 @@ export default defineConfig({
         component: 'src/components',
         page: 'src/pages',
       },
-    },
-    subPackages: {
-      packageB: {
-        dependencies: [
-          'class-variance-authority',
-          'buffer',
-          'gm-crypto'
-        ]
-      }
     }
   },
   css: {

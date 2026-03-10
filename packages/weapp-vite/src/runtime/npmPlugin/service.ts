@@ -96,9 +96,11 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
 
     debug?.('buildNpm start')
 
-    if (ctx.scanService) {
+    if (ctx.scanService && typeof ctx.scanService.loadAppEntry === 'function') {
       await ctx.scanService.loadAppEntry()
-      ctx.scanService.loadSubPackages()
+      if (typeof ctx.scanService.loadSubPackages === 'function') {
+        ctx.scanService.loadSubPackages()
+      }
     }
 
     const packNpmRelationList = getPackNpmRelationList(ctx)
@@ -112,12 +114,10 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
       if (pkgJson.dependencies) {
         const allDependencies = Object.keys(pkgJson.dependencies)
         const mainDependencyPatterns = ctx.configService.weappViteConfig?.npm?.mainPackageDependencies
-        const includeNormalSubPackages = ctx.configService.weappViteConfig?.npm?.experimentalNormalSubpackageNpm === true
         const mainDependencies = resolveTargetDependencies(allDependencies, mainDependencyPatterns)
         const sourceOutDir = hasSameDependencySet(allDependencies, mainDependencies) ? outDir : cachedSourceOutDir
-        const localSubPackageMetas = [...includeNormalSubPackages
-          ? ctx.scanService!.subPackageMap.values()
-          : ctx.scanService!.independentSubPackageMap.values()]
+        const localSubPackageMetas = [...ctx.scanService?.subPackageMap.values() ?? []]
+          .filter(meta => Array.isArray(meta.subPackage.dependencies) && meta.subPackage.dependencies.length > 0)
 
         const buildTargetDependencies = async (args: {
           dependencies: string[]
