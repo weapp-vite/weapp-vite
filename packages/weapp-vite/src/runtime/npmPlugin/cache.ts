@@ -4,6 +4,22 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { requireConfigService } from '../utils/requireConfigService'
 
+const CACHE_KEY_RE = /[\\/]/
+
+function serializeDependencyScope(scope?: false | (string | RegExp)[]) {
+  if (scope === false) {
+    return false
+  }
+
+  if (!Array.isArray(scope)) {
+    return undefined
+  }
+
+  return scope.map((item) => {
+    return typeof item === 'string' ? item : item.toString()
+  })
+}
+
 export interface DependenciesCache {
   getDependenciesCacheFilePath: (key?: string) => string
   dependenciesCacheHash: () => string
@@ -15,19 +31,33 @@ export interface DependenciesCache {
 export function createDependenciesCache(ctx: MutableCompilerContext): DependenciesCache {
   function getDependenciesCacheFilePath(key: string = '/') {
     const configService = requireConfigService(ctx, '生成 npm 缓存路径前必须初始化 configService。')
-    return path.resolve(configService.cwd, `node_modules/weapp-vite/.cache/${key.replace(/[\\/]/g, '-')}.json`)
+    return path.resolve(configService.cwd, `node_modules/weapp-vite/.cache/${key.replace(CACHE_KEY_RE, '-')}.json`)
   }
 
-  function dependenciesCacheHash() {
+  function resolveDependencyScope(root?: string) {
     const configService = requireConfigService(ctx, '读取依赖缓存哈希前必须初始化 configService。')
-    return objectHash(configService.packageJson.dependencies ?? {})
+    if (root === '__all__') {
+      return undefined
+    }
+    if (root && root !== '/') {
+      return ctx.scanService?.independentSubPackageMap.get(root)?.subPackage.dependencies
+    }
+    return configService.weappViteConfig?.npm?.mainPackageDependencies
+  }
+
+  function dependenciesCacheHash(root?: string) {
+    const configService = requireConfigService(ctx, '读取依赖缓存哈希前必须初始化 configService。')
+    return objectHash({
+      dependencies: configService.packageJson.dependencies ?? {},
+      scope: serializeDependencyScope(resolveDependencyScope(root)),
+    })
   }
 
   async function writeDependenciesCache(root?: string) {
     const configService = requireConfigService(ctx, '写入 npm 缓存前必须初始化 configService。')
     if (configService.weappViteConfig?.npm?.cache) {
       await fs.outputJSON(getDependenciesCacheFilePath(root), {
-        hash: dependenciesCacheHash(),
+        hash: dependenciesCacheHash(root),
       })
     }
   }
@@ -43,7 +73,7 @@ export function createDependenciesCache(ctx: MutableCompilerContext): Dependenci
     if (ctx.configService?.weappViteConfig?.npm?.cache) {
       const json = await readDependenciesCache(root)
       if (isObject(json)) {
-        return dependenciesCacheHash() !== json.hash
+        return dependenciesCacheHash(root) !== json.hash
       }
       return true
     }
@@ -52,7 +82,7 @@ export function createDependenciesCache(ctx: MutableCompilerContext): Dependenci
 
   return {
     getDependenciesCacheFilePath,
-    dependenciesCacheHash,
+    dependenciesCacheHash: () => dependenciesCacheHash(),
     writeDependenciesCache,
     readDependenciesCache,
     checkDependenciesCacheOutdate,

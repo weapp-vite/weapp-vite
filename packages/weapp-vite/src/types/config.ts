@@ -661,6 +661,16 @@ export interface WeappViteConfig {
      */
     cache?: boolean
     /**
+     * @description 主包 `miniprogram_npm` 依赖输出范围
+     * - `undefined`: 默认行为，按根 `package.json.dependencies` 全量输出到主包
+     * - `false`: 禁止输出主包 `miniprogram_npm`
+     * - `string[] | RegExp[]`: 仅输出命中的依赖到主包
+     *
+     * 适用于依赖只希望落在独立分包 `miniprogram_npm` 的场景，
+     * 需配合 `weapp.subPackages.<root>.dependencies` 显式声明各分包依赖集。
+     */
+    mainPackageDependencies?: false | (string | RegExp)[]
+    /**
      * @description 构建 npm 的配置，可传入 Vite 的库模式配置，让不同的包走不同的配置
      * - 返回值中的 `build.outDir` 同时影响二次 bundle 的依赖与直接复制 `miniprogram` 产物的依赖
      * @example
