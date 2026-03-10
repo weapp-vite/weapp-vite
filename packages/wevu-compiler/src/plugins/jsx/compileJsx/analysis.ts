@@ -27,25 +27,71 @@ function resolveRenderExpression(componentExpr: Expression, context: JsxCompileC
   return resolveRenderableExpression(renderNode)
 }
 
-function findExportDefaultExpression(ast: t.File): Expression | null {
+/**
+ * 单次遍历同时收集导入组件信息和默认导出表达式，避免多次 traverse 开销。
+ */
+function collectImportsAndExportDefault(ast: t.File) {
   const defineComponentAliases = new Set<string>(['defineComponent', '_defineComponent'])
   const defineComponentDecls = new Map<string, ObjectExpression>()
+  const imports = new Map<string, JsxImportedComponent>()
   let exportDefaultExpression: Expression | null = null
 
   traverse(ast, {
     ImportDeclaration(path) {
       const source = path.node.source.value
-      if (source !== 'wevu' && source !== 'vue') {
+
+      // 收集 defineComponent 别名
+      if (source === 'wevu' || source === 'vue') {
+        for (const specifier of path.node.specifiers) {
+          if (!t.isImportSpecifier(specifier)) {
+            continue
+          }
+          if (!t.isIdentifier(specifier.imported, { name: 'defineComponent' })) {
+            continue
+          }
+          defineComponentAliases.add(specifier.local.name)
+        }
+      }
+
+      // 收集导入的组件
+      if (path.node.importKind === 'type') {
         return
       }
+      if (!t.isStringLiteral(path.node.source)) {
+        return
+      }
+      const importSource = path.node.source.value
       for (const specifier of path.node.specifiers) {
+        if ('importKind' in specifier && specifier.importKind === 'type') {
+          continue
+        }
+        if (!('local' in specifier) || !t.isIdentifier(specifier.local)) {
+          continue
+        }
+        const localName = specifier.local.name
+        if (t.isImportDefaultSpecifier(specifier)) {
+          imports.set(localName, {
+            localName,
+            importSource,
+            importedName: 'default',
+            kind: 'default',
+          })
+          continue
+        }
         if (!t.isImportSpecifier(specifier)) {
           continue
         }
-        if (!t.isIdentifier(specifier.imported, { name: 'defineComponent' })) {
-          continue
-        }
-        defineComponentAliases.add(specifier.local.name)
+        const importedName = t.isIdentifier(specifier.imported)
+          ? specifier.imported.name
+          : t.isStringLiteral(specifier.imported)
+            ? specifier.imported.value
+            : undefined
+        imports.set(localName, {
+          localName,
+          importSource,
+          importedName,
+          kind: 'named',
+        })
       }
     },
     VariableDeclarator(path) {
@@ -78,7 +124,10 @@ function findExportDefaultExpression(ast: t.File): Expression | null {
     },
   })
 
-  return exportDefaultExpression
+  return {
+    importedComponents: [...imports.values()],
+    exportDefaultExpression,
+  }
 }
 
 function isCollectableJsxTemplateTag(tag: string) {
@@ -118,61 +167,6 @@ function collectJsxTemplateTags(renderExpression: Expression) {
   return tags
 }
 
-function collectImportedComponents(ast: t.File) {
-  const imports = new Map<string, JsxImportedComponent>()
-
-  traverse(ast, {
-    ImportDeclaration(path) {
-      if (path.node.importKind === 'type') {
-        return
-      }
-      if (!t.isStringLiteral(path.node.source)) {
-        return
-      }
-
-      const importSource = path.node.source.value
-      for (const specifier of path.node.specifiers) {
-        if ('importKind' in specifier && specifier.importKind === 'type') {
-          continue
-        }
-        if (!('local' in specifier) || !t.isIdentifier(specifier.local)) {
-          continue
-        }
-
-        const localName = specifier.local.name
-        if (t.isImportDefaultSpecifier(specifier)) {
-          imports.set(localName, {
-            localName,
-            importSource,
-            importedName: 'default',
-            kind: 'default',
-          })
-          continue
-        }
-
-        if (!t.isImportSpecifier(specifier)) {
-          continue
-        }
-
-        const importedName = t.isIdentifier(specifier.imported)
-          ? specifier.imported.name
-          : t.isStringLiteral(specifier.imported)
-            ? specifier.imported.value
-            : undefined
-
-        imports.set(localName, {
-          localName,
-          importSource,
-          importedName,
-          kind: 'named',
-        })
-      }
-    },
-  })
-
-  return [...imports.values()]
-}
-
 export function collectJsxAutoComponentContext(
   source: string,
   filename: string,
@@ -194,16 +188,15 @@ export function collectJsxAutoComponentContext(
     return empty
   }
 
-  const importedComponents = collectImportedComponents(ast)
-  const componentExpr = findExportDefaultExpression(ast)
-  if (!componentExpr) {
+  const { importedComponents, exportDefaultExpression } = collectImportsAndExportDefault(ast)
+  if (!exportDefaultExpression) {
     return {
       templateTags: new Set<string>(),
       importedComponents,
     }
   }
 
-  const renderExpression = resolveRenderExpression(componentExpr, context)
+  const renderExpression = resolveRenderExpression(exportDefaultExpression, context)
   if (!renderExpression) {
     return {
       templateTags: new Set<string>(),
@@ -217,17 +210,28 @@ export function collectJsxAutoComponentContext(
   }
 }
 
-export function findJsxRenderExpression(ast: t.File, context: JsxCompileContext) {
-  const componentExpr = findExportDefaultExpression(ast)
-  if (!componentExpr) {
-    context.warnings.push('未识别到默认导出组件。')
-    return null
+/**
+ * 从已解析的 AST 中一次性提取 render 表达式和自动组件上下文。
+ * 内部只调用一次 collectImportsAndExportDefault，避免重复遍历。
+ */
+export function analyzeJsxAst(ast: t.File, context: JsxCompileContext) {
+  const { importedComponents, exportDefaultExpression } = collectImportsAndExportDefault(ast)
+
+  let renderExpression: Expression | null = null
+  let templateTags = new Set<string>()
+
+  if (exportDefaultExpression) {
+    renderExpression = resolveRenderExpression(exportDefaultExpression, context)
+    if (renderExpression) {
+      templateTags = collectJsxTemplateTags(renderExpression)
+    }
   }
 
-  const renderExpression = resolveRenderExpression(componentExpr, context)
-  if (!renderExpression) {
-    return null
+  return {
+    renderExpression,
+    autoComponentContext: {
+      templateTags,
+      importedComponents,
+    } as JsxAutoComponentContext,
   }
-
-  return renderExpression
 }
