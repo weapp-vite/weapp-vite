@@ -23,6 +23,8 @@ const IMPORT_META_URL_VAR_NAME = '__injected_import_meta_url__'
 
 export const JS_EXT_RE = /\.([mc]?[tj]s|[tj]sx)$/
 const PATH_NODE_MODULES_RE = /[/\\]node_modules[/\\]/
+const STAR_WILDCARD_RE = /\*/
+const MATCH_ALL_RE = /.*/
 
 function inferLoader(ext: string): Loader {
   if (ext === '.mjs' || ext === '.cjs') {
@@ -138,7 +140,7 @@ export { getTsconfig }
 
 export function tsconfigPathsToRegExp(paths: Record<string, any>) {
   return Object.keys(paths || {}).map((key) => {
-    return new RegExp(`^${key.replace(/\*/, '.*')}$`)
+    return new RegExp(`^${key.replace(STAR_WILDCARD_RE, '.*')}$`)
   })
 }
 
@@ -169,7 +171,7 @@ export function externalPlugin({
   return {
     name: 'bundle-require:external',
     setup(ctx) {
-      ctx.onResolve({ filter: /.*/ }, async (args) => {
+      ctx.onResolve({ filter: MATCH_ALL_RE }, async (args) => {
         if (match(args.path, external)) {
           return {
             external: true,
@@ -181,7 +183,7 @@ export function externalPlugin({
           return
         }
 
-        if (externalNodeModules && args.path.match(PATH_NODE_MODULES_RE)) {
+        if (externalNodeModules && PATH_NODE_MODULES_RE.test(args.path)) {
           const resolved
             = args.path[0] === '.'
               ? path.resolve(args.resolveDir, args.path)

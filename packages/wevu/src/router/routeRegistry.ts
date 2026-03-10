@@ -43,7 +43,7 @@ function normalizeRouteRecordForOutput(record: RouteRecordNormalized): RouteReco
 export function createRouteRegistry(namedRouteLookup: NamedRouteLookup) {
   const hasRoute = (name: string) => namedRouteLookup.recordByName.has(name)
   const getRoutes = (): readonly RouteRecordRaw[] =>
-    Array.from(namedRouteLookup.recordByName.values()).map(normalizeRouteRecordForOutput)
+    Array.from(namedRouteLookup.recordByName.values(), normalizeRouteRecordForOutput)
 
   const addRoute: AddRoute = ((parentNameOrRoute: string | RouteRecordRaw, maybeRoute?: RouteRecordRaw) => {
     const route = typeof parentNameOrRoute === 'string'

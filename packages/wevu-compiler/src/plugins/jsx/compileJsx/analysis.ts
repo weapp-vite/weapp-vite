@@ -170,7 +170,7 @@ function collectImportedComponents(ast: t.File) {
     },
   })
 
-  return Array.from(imports.values())
+  return [...imports.values()]
 }
 
 export function collectJsxAutoComponentContext(

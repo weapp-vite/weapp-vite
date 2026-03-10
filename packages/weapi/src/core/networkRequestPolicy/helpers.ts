@@ -62,7 +62,7 @@ export function clearTimer(timer?: ReturnType<typeof setTimeout>) {
 
 export function resolveOptionsArg(args: unknown[]) {
   const nextArgs = args.slice()
-  const lastArg = nextArgs.length > 0 ? nextArgs[nextArgs.length - 1] : undefined
+  const lastArg = nextArgs.length > 0 ? nextArgs.at(-1) : undefined
   if (isPlainObject(lastArg)) {
     const options = { ...lastArg }
     nextArgs[nextArgs.length - 1] = options

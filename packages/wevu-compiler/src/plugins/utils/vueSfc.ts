@@ -40,6 +40,9 @@ const sfcParseCache = new LRUCache<
 const SCRIPT_SETUP_SRC_ATTR = 'data-weapp-vite-src'
 const SCRIPT_SRC_ATTR = 'data-weapp-vite-script-src'
 const SCRIPT_SETUP_TAG_RE = /<script\b([^>]*)>/gi
+const SETUP_WORD_RE = /\bsetup\b/i
+const SRC_WORD_RE = /\bsrc\b/i
+const SRC_ATTR_RE = /\bsrc(\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))/i
 
 /**
  * 预处理 `<script setup src>`，避免编译器丢失 src。
@@ -49,11 +52,11 @@ export function preprocessScriptSetupSrc(source: string) {
     return source
   }
   return source.replace(SCRIPT_SETUP_TAG_RE, (full, attrs) => {
-    if (!/\bsetup\b/i.test(attrs) || !/\bsrc\b/i.test(attrs)) {
+    if (!SETUP_WORD_RE.test(attrs) || !SRC_WORD_RE.test(attrs)) {
       return full
     }
     const nextAttrs = attrs.replace(
-      /\bsrc(\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))/i,
+      SRC_ATTR_RE,
       `${SCRIPT_SETUP_SRC_ATTR}$1`,
     )
     return `<script${nextAttrs}>`
@@ -68,11 +71,11 @@ export function preprocessScriptSrc(source: string) {
     return source
   }
   return source.replace(SCRIPT_SETUP_TAG_RE, (full, attrs) => {
-    if (/\bsetup\b/i.test(attrs) || !/\bsrc\b/i.test(attrs)) {
+    if (SETUP_WORD_RE.test(attrs) || !SRC_WORD_RE.test(attrs)) {
       return full
     }
     const nextAttrs = attrs.replace(
-      /\bsrc(\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))/i,
+      SRC_ATTR_RE,
       `${SCRIPT_SRC_ATTR}$1`,
     )
     return `<script${nextAttrs}>`

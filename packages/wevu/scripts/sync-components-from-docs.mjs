@@ -27,13 +27,30 @@ const TYPE_SEGMENT_MAP = new Map([
   ['object array', 'ArrayObject'],
 ])
 
+const NBSP_RE = /\u00A0/g
+const WHITESPACE_RE = /[ \t]+/g
+const TRAILING_WHITESPACE_RE = /\s+\n/g
+const LEADING_WHITESPACE_RE = /\n\s+/g
+const MULTI_NEWLINE_RE = /\n{3,}/g
+const SINCE_RE = /基础库\\s*([0-9.]+)\\s*开始支持/
+const TIP_BUG_PREFIX_RE = /^`?(tip|bug)`?\\s*[:：]\\s*/i
+const BUG_PREFIX_RE = /^`?bug`?/i
+const IMAGE_PIC_RE = /\/image\/pic\//
+const MARKDOWN_LINK_RE = /\[([^\]]+)\]\([^)]+\)/g
+const BACKTICK_RE = /`/g
+const SLASH_SEPARATOR_RE = /\s+\/\s+/g
+const MULTI_SPACE_RE = /\s+/g
+const ARRAY_GENERIC_RE = /^array\.?<(.+)>$/i
+const ATTR_NAME_RE = /^[a-z][\w:-]*$/i
+const MODE_ATTR_RE = /mode\\s*=\\s*([a-zA-Z]+)/
+
 function normalizeWhitespace(value) {
   return value
-    .replace(/\u00A0/g, ' ')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\s+\n/g, '\n')
-    .replace(/\n\s+/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
+    .replace(NBSP_RE, ' ')
+    .replace(WHITESPACE_RE, ' ')
+    .replace(TRAILING_WHITESPACE_RE, '\n')
+    .replace(LEADING_WHITESPACE_RE, '\n')
+    .replace(MULTI_NEWLINE_RE, '\n\n')
     .trim()
 }
 
@@ -157,7 +174,7 @@ function parseSince($) {
   const blocks = $('blockquote p').toArray()
   for (const block of blocks) {
     const text = $(block).text().trim()
-    const match = text.match(/基础库\\s*([0-9.]+)\\s*开始支持/)
+    const match = text.match(SINCE_RE)
     if (match?.[1]) {
       return match[1]
     }
@@ -212,8 +229,8 @@ function parseBugTips($, baseUrl) {
       if (!raw) {
         return
       }
-      const normalized = raw.replace(/^`?(tip|bug)`?\\s*[:：]\\s*/i, '')
-      if (/^`?bug`?/i.test(raw)) {
+      const normalized = raw.replace(TIP_BUG_PREFIX_RE, '')
+      if (BUG_PREFIX_RE.test(raw)) {
         bugs.push(normalized)
       }
       else {
@@ -252,7 +269,7 @@ function parseDemoImages($, baseUrl) {
       return
     }
     const full = resolveLink(baseUrl, src)
-    if (full && /\/image\/pic\//.test(full)) {
+    if (full && IMAGE_PIC_RE.test(full)) {
       images.push(full)
     }
   })
@@ -305,7 +322,7 @@ function stripMarkdownLinks(value) {
   if (!value) {
     return ''
   }
-  return value.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim()
+  return value.replace(MARKDOWN_LINK_RE, '$1').trim()
 }
 
 function parseEnumTable($, table, baseUrl) {
@@ -354,7 +371,7 @@ function parseEnumTable($, table, baseUrl) {
 }
 
 function normalizeType(raw) {
-  const cleaned = normalizeWhitespace(raw).replace(/`/g, '')
+  const cleaned = normalizeWhitespace(raw).replace(BACKTICK_RE, '')
   if (!cleaned) {
     return undefined
   }
@@ -369,7 +386,7 @@ function normalizeType(raw) {
     return { name: 'function', returns: { name: 'any' } }
   }
 
-  const normalized = lowered.replace(/\s+\/\s+/g, '/').replace(/\s+/g, ' ')
+  const normalized = lowered.replace(SLASH_SEPARATOR_RE, '/').replace(MULTI_SPACE_RE, ' ')
   const known = TYPE_SEGMENT_MAP.get(normalized)
   if (known) {
     return { name: known }
@@ -383,7 +400,7 @@ function mapTypeSegment(segment) {
   if (!segment) {
     return segment
   }
-  const arrayMatch = segment.match(/^array\.?<(.+)>$/i)
+  const arrayMatch = segment.match(ARRAY_GENERIC_RE)
   if (arrayMatch?.[1]) {
     const inner = arrayMatch[1].trim().toLowerCase()
     const mappedInner = TYPE_SEGMENT_MAP.get(inner)
@@ -476,7 +493,7 @@ function parseAttributesFromTable($, table, baseUrl) {
     const name = nameIndex !== undefined
       ? normalizeWhitespace(extractRichText($, cells[nameIndex], baseUrl))
       : ''
-    if (!name || !isAscii(name) || !/^[a-z][\w:-]*$/i.test(name)) {
+    if (!name || !isAscii(name) || !ATTR_NAME_RE.test(name)) {
       continue
     }
     const typeText = typeIndex !== undefined
@@ -526,7 +543,7 @@ function parsePickerSubAttrs($, baseUrl) {
     if (!title.includes('mode')) {
       return
     }
-    const match = title.match(/mode\\s*=\\s*([a-zA-Z]+)/)
+    const match = title.match(MODE_ATTR_RE)
     if (!match?.[1]) {
       return
     }
@@ -559,7 +576,7 @@ function sanitizeAttrs(attrs) {
     if (!isAscii(attr.name)) {
       continue
     }
-    if (!/^[a-z][\w:-]*$/i.test(attr.name)) {
+    if (!ATTR_NAME_RE.test(attr.name)) {
       continue
     }
     if (typeof attr.type === 'string') {

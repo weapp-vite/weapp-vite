@@ -8,6 +8,8 @@ import { pathToFileURL } from 'node:url'
 import { defaultGetOutputFile } from './config'
 import { findNearestNodeModules } from './packages'
 
+const NON_WORD_CHAR_RE = /[^\w.-]/g
+
 export interface TempOutput {
   outfile: string
   cleanup: () => Promise<void>
@@ -19,7 +21,7 @@ export interface TempOutput {
 }
 
 export function sanitizeFilename(name: string): string {
-  return name.replace(/[^\w.-]/g, '_')
+  return name.replace(NON_WORD_CHAR_RE, '_')
 }
 
 export async function resolveTempOutputFile(

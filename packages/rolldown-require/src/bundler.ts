@@ -7,6 +7,8 @@ import { collectReferencedModules } from './collect'
 import { createExternalizeDepsPlugin } from './externalize'
 import { getModuleSyncConditionEnabled } from './module-sync'
 
+const JS_TS_EXT_RE = /\.[cm]?[jt]s$/
+
 export async function bundleFile(
   fileName: string,
   options: InternalOptions,
@@ -155,7 +157,7 @@ function createFileScopeVariablesPlugin({
   return {
     name: 'inject-file-scope-variables',
     transform: {
-      filter: { id: /\.[cm]?[jt]s$/ },
+      filter: { id: JS_TS_EXT_RE },
       async handler(code: string, id: string) {
         const injectValues
           = `const ${dirnameVarName} = ${JSON.stringify(path.dirname(id))};`

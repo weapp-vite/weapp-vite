@@ -98,6 +98,8 @@ describe('runtime: setData snapshot options', () => {
   })
 })
 
+const TEST_REGEX_RE = /x/gi
+
 describe('runtime: toPlain lenient serialization', () => {
   it('serializes Date/Map/Set/RegExp/Error/ArrayBuffer', () => {
     const { calls, adapter } = createMockAdapter()
@@ -106,7 +108,7 @@ describe('runtime: toPlain lenient serialization', () => {
         when: new Date(0),
         map: new Map([['a', 1]]),
         set: new Set([1, 2]),
-        re: /x/gi,
+        re: TEST_REGEX_RE,
         err: new Error('boom'),
         buf: new ArrayBuffer(3),
       }),

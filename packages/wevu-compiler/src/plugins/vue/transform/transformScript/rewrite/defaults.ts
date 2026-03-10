@@ -153,7 +153,7 @@ export function stripVirtualHostFromDefaults(defaults: Record<string, any>): Rec
   if (!isPlainRecord(options)) {
     return next
   }
-  if (!Object.prototype.hasOwnProperty.call(options, 'virtualHost')) {
+  if (!Object.hasOwn(options, 'virtualHost')) {
     return next
   }
   const copiedOptions = { ...options }

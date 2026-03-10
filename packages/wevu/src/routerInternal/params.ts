@@ -11,8 +11,10 @@ import type {
 } from './types'
 import { normalizeRouteParams } from './query'
 
+const PATH_PARAM_TOKEN_RE = /^:(\w+)(?:\([^)]*\))?([+*?])?$/
+
 export function parsePathParamToken(segment: string): PathParamToken | undefined {
-  const match = /^:(\w+)(?:\([^)]*\))?([+*?])?$/.exec(segment)
+  const match = PATH_PARAM_TOKEN_RE.exec(segment)
   if (!match) {
     return undefined
   }

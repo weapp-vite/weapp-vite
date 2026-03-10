@@ -15,15 +15,23 @@ interface InlineExpressionScopeResolver {
 
 export type InlineExpressionMap = Record<string, InlineExpressionEntry>
 
+const AMP_RE = /&amp;/g
+const QUOT_RE = /&quot;/g
+const NUM_QUOT_RE = /&#34;/g
+const APOS_RE = /&apos;/g
+const NUM_APOS_RE = /&#39;/g
+const LT_RE = /&lt;/g
+const GT_RE = /&gt;/g
+
 export function decodeWxmlEntities(value: string) {
   return value
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#34;/g, '"')
-    .replace(/&apos;/g, '\'')
-    .replace(/&#39;/g, '\'')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
+    .replace(AMP_RE, '&')
+    .replace(QUOT_RE, '"')
+    .replace(NUM_QUOT_RE, '"')
+    .replace(APOS_RE, '\'')
+    .replace(NUM_APOS_RE, '\'')
+    .replace(LT_RE, '<')
+    .replace(GT_RE, '>')
 }
 
 function normalizeDatasetIndex(value: unknown): number | undefined {
@@ -39,13 +47,18 @@ function normalizeDatasetIndex(value: unknown): number | undefined {
   return undefined
 }
 
+const NON_ALNUM_RE = /[^a-z0-9]+/gi
+const LEADING_TRAILING_DASH_RE = /^-+|-+$/g
+
 function normalizeEventToken(value: string): string {
   return value
     .trim()
-    .replace(/[^a-z0-9]+/gi, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(NON_ALNUM_RE, '-')
+    .replace(LEADING_TRAILING_DASH_RE, '')
     .toLowerCase()
 }
+
+const DASH_ALNUM_RE = /-([a-z0-9])/g
 
 function resolveEventDatasetKey(baseKey: string, event: any): string | undefined {
   const eventType = typeof event?.type === 'string' ? event.type : ''
@@ -53,7 +66,7 @@ function resolveEventDatasetKey(baseKey: string, event: any): string | undefined
   if (!token) {
     return undefined
   }
-  const camelToken = token.replace(/-([a-z0-9])/g, (_, ch: string) => ch.toUpperCase())
+  const camelToken = token.replace(DASH_ALNUM_RE, (_, ch: string) => ch.toUpperCase())
   if (!camelToken) {
     return undefined
   }

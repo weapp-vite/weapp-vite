@@ -161,5 +161,5 @@ export async function resolveSfcBlockSrc(
     )
   }
 
-  return { descriptor: nextDescriptor, deps: Array.from(deps) }
+  return { descriptor: nextDescriptor, deps: [...deps] }
 }

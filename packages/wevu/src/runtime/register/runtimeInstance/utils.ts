@@ -124,7 +124,7 @@ export function callNativeSetData(
 export function syncRuntimeProps(props: Record<string, any>, mpProperties: Record<string, any>) {
   const currentKeys = Object.keys(props)
   for (const key of currentKeys) {
-    if (!Object.prototype.hasOwnProperty.call(mpProperties, key)) {
+    if (!Object.hasOwn(mpProperties, key)) {
       try {
         delete props[key]
       }

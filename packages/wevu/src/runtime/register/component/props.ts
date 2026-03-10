@@ -35,7 +35,7 @@ export function createPropsSync(options: {
       const runtimeState = (instance as any).__wevu?.state
       return runtimeState != null
         && typeof runtimeState === 'object'
-        && Object.prototype.hasOwnProperty.call(runtimeState as Record<string, unknown>, key)
+        && Object.hasOwn(runtimeState as Record<string, unknown>, key)
     }
 
     const properties = (instance as any).properties
@@ -47,7 +47,7 @@ export function createPropsSync(options: {
     for (const existingKey of currentKeys) {
       if (
         !next
-        || !Object.prototype.hasOwnProperty.call(next, existingKey)
+        || !Object.hasOwn(next, existingKey)
         || propKeySet.has(existingKey)
         || hasRuntimeStateKey(existingKey)
       ) {
@@ -89,7 +89,7 @@ export function createPropsSync(options: {
       const next = properties as any
       const currentKeys = Object.keys(propsProxy as any)
       for (const existingKey of currentKeys) {
-        if (!Object.prototype.hasOwnProperty.call(next, existingKey)) {
+        if (!Object.hasOwn(next, existingKey)) {
           try {
             delete (propsProxy as any)[existingKey]
           }
@@ -99,7 +99,7 @@ export function createPropsSync(options: {
         }
       }
       for (const [k, v] of Object.entries(next)) {
-        const nextValue = pendingPropValues && Object.prototype.hasOwnProperty.call(pendingPropValues, k)
+        const nextValue = pendingPropValues && Object.hasOwn(pendingPropValues, k)
           ? pendingPropValues[k]
           : v
         try {
@@ -111,7 +111,7 @@ export function createPropsSync(options: {
       }
       if (pendingPropValues) {
         for (const [k, v] of Object.entries(pendingPropValues)) {
-          if (!Object.prototype.hasOwnProperty.call(next, k)) {
+          if (!Object.hasOwn(next, k)) {
             try {
               ;(propsProxy as any)[k] = v
             }

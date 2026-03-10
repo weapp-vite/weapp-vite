@@ -72,7 +72,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
   }
 
   const installNativeMethodBridge = (methodName: string) => {
-    if (Object.prototype.hasOwnProperty.call(boundMethods, methodName)) {
+    if (Object.hasOwn(boundMethods, methodName)) {
       return
     }
     const bridge = (...args: any[]) => {
@@ -104,13 +104,13 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
         if (key === '$computed') {
           return computedProxy
         }
-        if (Object.prototype.hasOwnProperty.call(boundMethods, key)) {
+        if (Object.hasOwn(boundMethods, key)) {
           return boundMethods[key as keyof ExtractMethods<M>]
         }
         if ((computedRefs as any)[key]) {
           return (computedRefs as any)[key].value
         }
-        if (Object.prototype.hasOwnProperty.call(appConfig.globalProperties, key)) {
+        if (Object.hasOwn(appConfig.globalProperties, key)) {
           return (appConfig.globalProperties as any)[key]
         }
       }
@@ -144,7 +144,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       if (key === 'data') {
         return true
       }
-      if (typeof key === 'string' && ((computedRefs as any)[key] || Object.prototype.hasOwnProperty.call(boundMethods, key))) {
+      if (typeof key === 'string' && ((computedRefs as any)[key] || Object.hasOwn(boundMethods, key))) {
         return true
       }
       const nativeInstance = resolveNativeInstance(target as object, target as object)
@@ -160,7 +160,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
       })
       Object.keys(boundMethods).forEach(key => keys.add(key))
       Object.keys(computedRefs).forEach(key => keys.add(key))
-      return Array.from(keys)
+      return [...keys]
     },
     getOwnPropertyDescriptor(target, key) {
       if (Reflect.has(target, key)) {
@@ -188,7 +188,7 @@ export function createRuntimeContext<D extends object, C extends ComputedDefinit
             },
           }
         }
-        if (Object.prototype.hasOwnProperty.call(boundMethods, key)) {
+        if (Object.hasOwn(boundMethods, key)) {
           return {
             configurable: true,
             enumerable: false,

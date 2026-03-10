@@ -1,5 +1,7 @@
 import { compileVueFile, WE_VU_MODULE_ID } from '@/index'
 
+const LF_RE = /\n/g
+
 describe('tsdown template', () => {
   it('exports compiler entry', () => {
     expect(typeof compileVueFile).toBe('function')
@@ -54,7 +56,7 @@ const title = 'hello'
   <view>{{ title }}</view>
 </template>
     `.trim()
-    const crlfSource = lfSource.replace(/\n/g, '\r\n')
+    const crlfSource = lfSource.replace(LF_RE, '\r\n')
 
     const lfResult = await compileVueFile(lfSource, '/project/src/pages/index/index.vue')
     const crlfResult = await compileVueFile(crlfSource, '/project/src/pages/index/index.vue')

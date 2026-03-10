@@ -54,9 +54,9 @@ function isTriggerEventOptions(value: unknown): value is TriggerEventOptions {
     return false
   }
   return (
-    Object.prototype.hasOwnProperty.call(value, 'bubbles')
-    || Object.prototype.hasOwnProperty.call(value, 'composed')
-    || Object.prototype.hasOwnProperty.call(value, 'capturePhase')
+    Object.hasOwn(value, 'bubbles')
+    || Object.hasOwn(value, 'composed')
+    || Object.hasOwn(value, 'capturePhase')
   )
 }
 
@@ -75,7 +75,7 @@ export function normalizeEmitPayload(args: any[]): { detail: any, options: Trigg
     }
   }
 
-  const maybeOptions = args[args.length - 1]
+  const maybeOptions = args.at(-1)
   if (isTriggerEventOptions(maybeOptions)) {
     const detailArgs = args.slice(0, -1)
     return {

@@ -14,7 +14,7 @@ export function mapSetClipboardArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'text') && Object.prototype.hasOwnProperty.call(nextOptions, 'data')) {
+  if (!Object.hasOwn(nextOptions, 'text') && Object.hasOwn(nextOptions, 'data')) {
     nextOptions.text = nextOptions.data
   }
   nextArgs[lastIndex] = nextOptions
@@ -25,7 +25,7 @@ export function mapClipboardResult(result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (!Object.prototype.hasOwnProperty.call(result, 'data') && Object.prototype.hasOwnProperty.call(result, 'text')) {
+  if (!Object.hasOwn(result, 'data') && Object.hasOwn(result, 'text')) {
     return {
       ...result,
       data: result.text,

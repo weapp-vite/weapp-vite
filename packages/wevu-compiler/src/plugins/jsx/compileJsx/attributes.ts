@@ -14,39 +14,48 @@ import {
   unwrapTsExpression,
 } from './ast'
 
+const ON_EVENT_RE = /^on[A-Z]/
+const CATCH_EVENT_RE = /^catch[A-Z]/
+const CAPTURE_BIND_EVENT_RE = /^captureBind[A-Z]/
+const CAPTURE_CATCH_EVENT_RE = /^captureCatch[A-Z]/
+const MUT_BIND_EVENT_RE = /^mutBind[A-Z]/
+
 function isEventBinding(name: string) {
-  return /^on[A-Z]/.test(name)
-    || /^catch[A-Z]/.test(name)
-    || /^captureBind[A-Z]/.test(name)
-    || /^captureCatch[A-Z]/.test(name)
-    || /^mutBind[A-Z]/.test(name)
+  return ON_EVENT_RE.test(name)
+    || CATCH_EVENT_RE.test(name)
+    || CAPTURE_BIND_EVENT_RE.test(name)
+    || CAPTURE_CATCH_EVENT_RE.test(name)
+    || MUT_BIND_EVENT_RE.test(name)
 }
+
+const LEADING_UPPER_RE = /^[A-Z]/
+const UPPER_CHAR_RE = /[A-Z]/g
 
 function lowerEventName(name: string) {
   if (!name) {
     return name
   }
   return name
-    .replace(/^[A-Z]/, s => s.toLowerCase())
-    .replace(/[A-Z]/g, s => s.toLowerCase())
+    .replace(LEADING_UPPER_RE, s => s.toLowerCase())
+    .replace(UPPER_CHAR_RE, s => s.toLowerCase())
 }
 
 function toEventBindingName(rawName: string, context: JsxCompileContext) {
   const resolveEvent = (name: string) => context.platform.mapEventName(lowerEventName(name))
 
-  if (/^captureBind[A-Z]/.test(rawName)) {
+  if (CAPTURE_BIND_EVENT_RE.test(rawName)) {
     const eventName = resolveEvent(rawName.slice('captureBind'.length))
     return context.platform.eventBindingAttr(`capture-bind:${eventName}`)
   }
-  if (/^captureCatch[A-Z]/.test(rawName)) {
+  if (CAPTURE_CATCH_EVENT_RE.test(rawName)) {
     const eventName = resolveEvent(rawName.slice('captureCatch'.length))
     return context.platform.eventBindingAttr(`capture-catch:${eventName}`)
   }
-  if (/^mutBind[A-Z]/.test(rawName)) {
+  if (MUT_BIND_EVENT_RE.test(rawName)) {
     const eventName = resolveEvent(rawName.slice('mutBind'.length))
     return context.platform.eventBindingAttr(`mut-bind:${eventName}`)
   }
-  if (/^catch[A-Z]/.test(rawName)) {
+  if (CATCH_EVENT_RE.test(rawName)) {
     const eventName = resolveEvent(rawName.slice('catch'.length))
     return context.platform.eventBindingAttr(`catch:${eventName}`)
   }

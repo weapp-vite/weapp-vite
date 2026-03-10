@@ -85,11 +85,11 @@ export function toPlain(value: any, seen = new WeakMap<object, any>(), options?:
       const view: any = raw as any
       const iter = view[Symbol.iterator]
       if (typeof iter === 'function') {
-        const values = Array.from(view)
+        const values = [...view]
         seen.set(raw, values)
         return values.map(item => toPlain(item, seen))
       }
-      const bytes = Array.from(new Uint8Array(view.buffer, view.byteOffset, view.byteLength))
+      const bytes = [...new Uint8Array(view.buffer, view.byteOffset, view.byteLength)]
       seen.set(raw, bytes)
       return bytes
     }
@@ -159,7 +159,7 @@ function isPlainObjectEqual(a: Record<string, any>, b: Record<string, any>, comp
     return false
   }
   for (const key of aKeys) {
-    if (!Object.prototype.hasOwnProperty.call(b, key)) {
+    if (!Object.hasOwn(b, key)) {
       return false
     }
     if (!compare(a[key], b[key])) {
@@ -198,14 +198,14 @@ function assignNestedDiff(
 
   if (isPlainObject(prev) && isPlainObject(next)) {
     for (const key of Object.keys(next)) {
-      if (!Object.prototype.hasOwnProperty.call(prev, key)) {
+      if (!Object.hasOwn(prev, key)) {
         output[`${path}.${key}`] = normalizeSetDataValue(next[key])
         continue
       }
       assignNestedDiff(prev[key], next[key], `${path}.${key}`, output)
     }
     for (const key of Object.keys(prev)) {
-      if (!Object.prototype.hasOwnProperty.call(next, key)) {
+      if (!Object.hasOwn(next, key)) {
         output[`${path}.${key}`] = null
       }
     }
@@ -231,7 +231,7 @@ export function diffSnapshots(
     assignNestedDiff(prev[key], next[key], key, diff)
   }
   for (const key of Object.keys(prev)) {
-    if (!Object.prototype.hasOwnProperty.call(next, key)) {
+    if (!Object.hasOwn(next, key)) {
       diff[key] = null
     }
   }

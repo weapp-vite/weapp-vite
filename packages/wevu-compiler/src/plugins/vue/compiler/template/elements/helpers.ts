@@ -92,6 +92,12 @@ export function withSlotProps<T>(context: TransformContext, mapping: Record<stri
   }
 }
 
+const IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
+const BACKSLASH_RE = /\\/g
+const SINGLE_QUOTE_RE = /'/g
+const CR_RE = /\r/g
+const LF_RE = /\n/g
+
 export function collectScopePropMapping(context: TransformContext): Record<string, string> {
   const mapping: Record<string, string> = {}
   if (!context.slotMultipleInstance) {
@@ -99,10 +105,10 @@ export function collectScopePropMapping(context: TransformContext): Record<strin
   }
   for (const scope of context.scopeStack) {
     for (const name of scope) {
-      if (!/^[A-Z_$][\w$]*$/i.test(name)) {
+      if (!IDENTIFIER_RE.test(name)) {
         continue
       }
-      if (!Object.prototype.hasOwnProperty.call(mapping, name)) {
+      if (!Object.hasOwn(mapping, name)) {
         mapping[name] = name
       }
     }
@@ -121,10 +127,10 @@ export function buildScopePropsExpression(context: TransformContext): string | n
 
 export function toWxmlStringLiteral(value: string) {
   const escaped = value
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, '\\\'')
-    .replace(/\r/g, '\\r')
-    .replace(/\n/g, '\\n')
+    .replace(BACKSLASH_RE, '\\\\')
+    .replace(SINGLE_QUOTE_RE, '\\\'')
+    .replace(CR_RE, '\\r')
+    .replace(LF_RE, '\\n')
   return `'${escaped}'`
 }
 

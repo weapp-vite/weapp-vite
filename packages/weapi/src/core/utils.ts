@@ -21,8 +21,11 @@ export function isSyncMethod(name: string) {
   return name.endsWith('Sync')
 }
 
+const ON_EVENT_RE = /^on[A-Z]/
+const OFF_EVENT_RE = /^off[A-Z]/
+
 export function isEventMethod(name: string) {
-  return /^on[A-Z]/.test(name) || /^off[A-Z]/.test(name)
+  return ON_EVENT_RE.test(name) || OFF_EVENT_RE.test(name)
 }
 
 export function shouldSkipPromise(name: string) {

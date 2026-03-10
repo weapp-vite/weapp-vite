@@ -83,7 +83,7 @@ export function runPatchUpdate(options: {
   const seen = new WeakMap<object, any>()
   const plainByPath = new Map<string, any>()
   const payload: Record<string, any> = Object.create(null)
-  const patchEntriesRaw = Array.from(pendingPatches.entries())
+  const patchEntriesRaw = [...pendingPatches.entries()]
 
   if (Number.isFinite(elevateTopKeyThreshold) && elevateTopKeyThreshold > 0) {
     const counts = new Map<string, number>()
@@ -155,7 +155,7 @@ export function runPatchUpdate(options: {
   let computedDirtyProcessed = 0
   if (includeComputed && dirtyComputedKeys.size) {
     const computedPatch: Record<string, any> = Object.create(null)
-    const keys = Array.from(dirtyComputedKeys)
+    const keys = [...dirtyComputedKeys]
     dirtyComputedKeys.clear()
     computedDirtyProcessed = keys.length
     for (const key of keys) {

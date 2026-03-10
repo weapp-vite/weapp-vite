@@ -28,7 +28,7 @@ const shallowHandlers: ProxyHandler<any> = {
     return result
   },
   deleteProperty(target, key) {
-    const hadKey = Object.prototype.hasOwnProperty.call(target, key)
+    const hadKey = Object.hasOwn(target, key)
     const result = Reflect.deleteProperty(target, key)
     if (hadKey && result) {
       trigger(target, key)

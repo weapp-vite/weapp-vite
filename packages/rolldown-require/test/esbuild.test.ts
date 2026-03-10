@@ -6,6 +6,8 @@ import { bundleRequire } from './esbuild'
 
 const isWin = platform() === 'win32'
 
+const MATCH_ALL_RE = /.*/
+
 it('main', async () => {
   const { mod, dependencies } = await bundleRequire({
     cwd: path.resolve(__dirname, '..'),
@@ -70,7 +72,7 @@ it.skipIf(isWin)('custom readFile', async () => {
         {
           name: 'resolve',
           setup(build) {
-            build.onResolve({ filter: /.*/ }, (args) => {
+            build.onResolve({ filter: MATCH_ALL_RE }, (args) => {
               return {
                 path: args.path,
               }

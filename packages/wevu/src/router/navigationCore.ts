@@ -13,6 +13,10 @@ import type {
 } from './types'
 import { NavigationFailureType } from './types'
 
+const DUPLICATED_RE = /already|same|duplicat|重复/
+const CANCELLED_RE = /cancel|取消/
+const ABORTED_RE = /abort|interrupt|中断/
+
 function normalizeNavigationErrorMessage(error: unknown): string {
   if (typeof error === 'string') {
     return error
@@ -31,13 +35,13 @@ function normalizeNavigationErrorMessage(error: unknown): string {
 
 function resolveNavigationFailureType(error: unknown): NavigationFailureTypeValue {
   const normalizedMessage = normalizeNavigationErrorMessage(error).toLowerCase()
-  if (/already|same|duplicat|重复/.test(normalizedMessage)) {
+  if (DUPLICATED_RE.test(normalizedMessage)) {
     return NavigationFailureType.duplicated
   }
-  if (/cancel|取消/.test(normalizedMessage)) {
+  if (CANCELLED_RE.test(normalizedMessage)) {
     return NavigationFailureType.cancelled
   }
-  if (/abort|interrupt|中断/.test(normalizedMessage)) {
+  if (ABORTED_RE.test(normalizedMessage)) {
     return NavigationFailureType.aborted
   }
   return NavigationFailureType.unknown

@@ -227,11 +227,11 @@ export function validateSupportMatrixConsistency() {
   const mappedMethods = new Set(Object.keys(METHOD_MAPPINGS.my ?? {}))
   const douyinMappedMethods = new Set(Object.keys(METHOD_MAPPINGS.tt ?? {}))
   const documentedMethods = new Set(WEAPI_METHOD_SUPPORT_MATRIX.map(item => item.method))
-  const missingDocs = Array.from(mappedMethods).filter(method => !documentedMethods.has(method))
-  const missingMappings = Array.from(documentedMethods).filter(method => !mappedMethods.has(method))
-  const missingDouyinMappings = Array.from(mappedMethods).filter(method => !douyinMappedMethods.has(method))
-  const extraDouyinMappings = Array.from(douyinMappedMethods).filter(method => !mappedMethods.has(method))
-  const missingCatalogMethods = Array.from(documentedMethods).filter(method =>
+  const missingDocs = [...mappedMethods].filter(method => !documentedMethods.has(method))
+  const missingMappings = [...documentedMethods].filter(method => !mappedMethods.has(method))
+  const missingDouyinMappings = [...mappedMethods].filter(method => !douyinMappedMethods.has(method))
+  const extraDouyinMappings = [...douyinMappedMethods].filter(method => !mappedMethods.has(method))
+  const missingCatalogMethods = [...documentedMethods].filter(method =>
     !WEAPI_WX_METHOD_SET.has(method) && !WEAPI_MY_METHOD_SET.has(method) && !WEAPI_TT_METHOD_SET.has(method),
   )
   return {

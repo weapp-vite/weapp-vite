@@ -53,6 +53,8 @@ export function createAbsoluteRoutePath(path: string): string {
   return path ? `/${path}` : '/'
 }
 
+const DYNAMIC_ROUTE_RE = /(?:^|\/):/
+
 export function isDynamicRoutePath(path: string): boolean {
-  return /(?:^|\/):/.test(path)
+  return DYNAMIC_ROUTE_RE.test(path)
 }

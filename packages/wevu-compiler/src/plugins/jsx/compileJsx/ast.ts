@@ -33,8 +33,10 @@ export function escapeAttr(value: string) {
   return value.replace(ESCAPED_ATTR_RE, ch => ESCAPED_ATTR_MAP[ch] || ch)
 }
 
+const WHITESPACE_RE = /\s+/g
+
 export function normalizeJsxText(value: string) {
-  return value.replace(/\s+/g, ' ')
+  return value.replace(WHITESPACE_RE, ' ')
 }
 
 export function printExpression(exp: Expression) {

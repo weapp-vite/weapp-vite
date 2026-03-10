@@ -64,7 +64,7 @@ export function createSetupStyleStore(id: string, setupFactory: () => Record<str
     }
   }
 
-  instance = Object.assign({}, result)
+  instance = { ...result }
   notify = createSafeNotifier(id, base.subs, () => instance)
 
   // 将 setup 返回值与基础 API 合并，同时保留每个 getter/setter 的描述符，避免覆写访问器行为

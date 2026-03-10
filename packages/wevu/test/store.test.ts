@@ -61,7 +61,7 @@ describe('store (setup)', () => {
     expect(s.info.name).toBe('a')
     expect(s.info.tags).toEqual(['x'])
     expect(s.plain).toBe(1)
-    expect(calls[calls.length - 1]).toBe('patch object')
+    expect(calls.at(-1)).toBe('patch object')
   })
 
   it('$onAction supports after/onError for sync/async', async () => {

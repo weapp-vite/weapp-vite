@@ -241,7 +241,7 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     })
 
     const opts = registeredComponents[0]
-    expect(Object.prototype.hasOwnProperty.call(opts, '__typeProps')).toBe(false)
+    expect(Object.hasOwn(opts, '__typeProps')).toBe(false)
   })
 
   it('supports calling native triggerEvent from runtime methods this binding', () => {

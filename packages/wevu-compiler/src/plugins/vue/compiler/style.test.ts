@@ -2,6 +2,9 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import { describe, expect, it } from 'vitest'
 import { compileVueStyleToWxss } from './style'
 
+const CARD_PREFIX_RE = /^card_/
+const ITEM_PREFIX_RE = /^item_/
+
 function createStyleBlock(content: string, overrides: Partial<SFCStyleBlock> = {}): SFCStyleBlock {
   return {
     type: 'style',
@@ -52,7 +55,7 @@ describe('compileVueStyleToWxss', () => {
     )
 
     expect(result.modules).toBeDefined()
-    expect(result.modules?.$style?.card).toMatch(/^card_/)
+    expect(result.modules?.$style?.card).toMatch(CARD_PREFIX_RE)
     expect(result.code).toContain(`.${result.modules?.$style?.card}`)
     expect(result.code).not.toContain('.card {')
   })
@@ -63,7 +66,7 @@ describe('compileVueStyleToWxss', () => {
       { id: 'module-2' },
     )
 
-    expect(result.modules?.styles?.item).toMatch(/^item_/)
+    expect(result.modules?.styles?.item).toMatch(ITEM_PREFIX_RE)
     expect(result.code).toContain(`[data-v-module-2]`)
   })
 })

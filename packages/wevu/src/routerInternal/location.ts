@@ -76,7 +76,7 @@ function getCurrentMiniProgramPage(): MiniProgramPageLike | undefined {
     if (!Array.isArray(pages) || pages.length === 0) {
       return undefined
     }
-    return pages[pages.length - 1]
+    return pages.at(-1)
   }
   catch {
     return undefined

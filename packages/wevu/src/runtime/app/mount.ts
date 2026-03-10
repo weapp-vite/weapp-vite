@@ -60,7 +60,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
     const rawState = dataFn()
     // 预置 props 容器，确保编译器生成的 this.__wevuProps 回退表达式
     // 在 computed 首次求值阶段即可建立响应式依赖。
-    if (rawState && typeof rawState === 'object' && !Object.prototype.hasOwnProperty.call(rawState as object, '__wevuProps')) {
+    if (rawState && typeof rawState === 'object' && !Object.hasOwn(rawState as object, '__wevuProps')) {
       try {
         Object.defineProperty(rawState as object, '__wevuProps', {
           value: shallowReactive(Object.create(null)),

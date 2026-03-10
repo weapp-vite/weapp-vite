@@ -176,7 +176,7 @@ export function normalizeJsExpressionWithContext(
       if (path.scope.hasBinding(name)) {
         return
       }
-      if (Object.prototype.hasOwnProperty.call(forAliases, name)) {
+      if (Object.hasOwn(forAliases, name)) {
         const aliasExp = parseBabelExpression(forAliases[name])
         if (aliasExp) {
           const replacement = t.cloneNode(aliasExp, true)
@@ -196,7 +196,7 @@ export function normalizeJsExpressionWithContext(
 
       let replacement: t.Expression
       if (context.rewriteScopedSlot) {
-        if (Object.prototype.hasOwnProperty.call(slotProps, name)) {
+        if (Object.hasOwn(slotProps, name)) {
           const prop = slotProps[name]
           const base = createThisMemberAccess('__wvSlotPropsData')
           replacement = createUnrefCall(prop ? createMemberAccess(base, prop) : base)

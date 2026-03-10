@@ -18,7 +18,7 @@ export function mapSaveFileArgs(args: unknown[]) {
   const nextOptions = {
     ...lastArg,
   } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextOptions, 'apFilePath') && Object.prototype.hasOwnProperty.call(nextOptions, 'tempFilePath')) {
+  if (!Object.hasOwn(nextOptions, 'apFilePath') && Object.hasOwn(nextOptions, 'tempFilePath')) {
     nextOptions.apFilePath = nextOptions.tempFilePath
   }
   nextArgs[lastIndex] = nextOptions
@@ -35,10 +35,10 @@ export function mapCreateRewardedVideoAdArgs(args: unknown[]) {
   if (!isPlainObject(lastArg)) {
     return nextArgs
   }
-  if (Object.prototype.hasOwnProperty.call(lastArg, 'multiton') && lastArg.multiton === true) {
+  if (Object.hasOwn(lastArg, 'multiton') && lastArg.multiton === true) {
     throw createNotSupportedError('createRewardedVideoAd', 'my')
   }
-  if (Object.prototype.hasOwnProperty.call(lastArg, 'disableFallbackSharePage') && lastArg.disableFallbackSharePage === true) {
+  if (Object.hasOwn(lastArg, 'disableFallbackSharePage') && lastArg.disableFallbackSharePage === true) {
     throw createNotSupportedError('createRewardedVideoAd', 'my')
   }
   const adUnitId = lastArg.adUnitId
@@ -52,7 +52,7 @@ export function mapRewardedAdInstance(result: any, args: unknown[] = []) {
   if (typeof result !== 'object' || result === null) {
     return result
   }
-  const adUnitIdArg = args.length > 0 ? args[args.length - 1] : undefined
+  const adUnitIdArg = args.length > 0 ? args.at(-1) : undefined
   const adUnitId = typeof adUnitIdArg === 'string' ? adUnitIdArg : undefined
   if (!adUnitId) {
     return result
@@ -105,7 +105,7 @@ export function mapSoterCheckResult(methodName: string, result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (Object.prototype.hasOwnProperty.call(result, 'errMsg')) {
+  if (Object.hasOwn(result, 'errMsg')) {
     return result
   }
   return {
@@ -134,13 +134,13 @@ function mapBleConnectionResult(methodName: 'createBLEConnection' | 'closeBLECon
   const nextResult = {
     ...result,
   } as Record<string, any>
-  if (!Object.prototype.hasOwnProperty.call(nextResult, 'errCode')) {
+  if (!Object.hasOwn(nextResult, 'errCode')) {
     const code = toNumberCode(nextResult[codeKey])
     if (typeof code === 'number') {
       nextResult.errCode = code
     }
   }
-  if (!Object.prototype.hasOwnProperty.call(nextResult, 'errMsg')) {
+  if (!Object.hasOwn(nextResult, 'errMsg')) {
     if (typeof nextResult.errorMessage === 'string' && nextResult.errorMessage.length > 0) {
       nextResult.errMsg = nextResult.errorMessage
     }
@@ -163,7 +163,7 @@ export function mapSaveFileResult(result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (!Object.prototype.hasOwnProperty.call(result, 'savedFilePath') && Object.prototype.hasOwnProperty.call(result, 'apFilePath')) {
+  if (!Object.hasOwn(result, 'savedFilePath') && Object.hasOwn(result, 'apFilePath')) {
     return {
       ...result,
       savedFilePath: result.apFilePath,
@@ -176,7 +176,7 @@ export function mapDouyinSaveFileResult(result: any) {
   if (!isPlainObject(result)) {
     return result
   }
-  if (!Object.prototype.hasOwnProperty.call(result, 'savedFilePath') && Object.prototype.hasOwnProperty.call(result, 'filePath')) {
+  if (!Object.hasOwn(result, 'savedFilePath') && Object.hasOwn(result, 'filePath')) {
     return {
       ...result,
       savedFilePath: result.filePath,

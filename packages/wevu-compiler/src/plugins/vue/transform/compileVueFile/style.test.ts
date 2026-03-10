@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { parse } from 'vue/compiler-sfc'
 import { compileStylePhase } from './style'
 
+const CARD_PREFIX_RE = /^card_/
+
 describe('compileStylePhase', () => {
   it('returns early when descriptor has no styles', () => {
     const descriptor = parse(`<template><view /></template>`, { filename: '/project/src/pages/index/index.vue' }).descriptor
@@ -24,7 +26,7 @@ describe('compileStylePhase', () => {
 
     expect(result.style).toContain('color')
     expect(result.cssModules).toBeDefined()
-    expect(result.cssModules.$style.card).toMatch(/^card_/)
+    expect(result.cssModules.$style.card).toMatch(CARD_PREFIX_RE)
     expect(result.script).toContain('__cssModules')
     expect(result.script).toContain('export default {}')
   })

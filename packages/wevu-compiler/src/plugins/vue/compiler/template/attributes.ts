@@ -12,12 +12,17 @@ import {
 import { parseBabelExpression } from './expression/parse'
 import { renderMustache } from './mustache'
 
+const BACKSLASH_RE = /\\/g
+const SINGLE_QUOTE_RE = /'/g
+const CR_RE = /\r/g
+const LF_RE = /\n/g
+
 function toWxmlStringLiteral(value: string) {
   const escaped = value
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, '\\\'')
-    .replace(/\r/g, '\\r')
-    .replace(/\n/g, '\\n')
+    .replace(BACKSLASH_RE, '\\\\')
+    .replace(SINGLE_QUOTE_RE, '\\\'')
+    .replace(CR_RE, '\\r')
+    .replace(LF_RE, '\\n')
   return `'${escaped}'`
 }
 
@@ -39,8 +44,10 @@ function generateExpressionCode(exp: t.Expression) {
   return code
 }
 
+const TRAILING_SEMICOLONS_RE = /;+\s*$/
+
 function normalizeStyleFallbackValue(value: string) {
-  return value.trim().replace(/;+\s*$/, '')
+  return value.trim().replace(TRAILING_SEMICOLONS_RE, '')
 }
 
 function buildStyleErrorFallback(staticValue: string | undefined, shouldHideByDefault: boolean) {

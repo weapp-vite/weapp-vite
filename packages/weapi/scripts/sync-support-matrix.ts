@@ -37,12 +37,15 @@ function parseArgs() {
   }
 }
 
+const CRLF_RE = /\r\n/g
+const LEADING_WHITESPACE_RE = /^[ \t]*/
+
 function withIndent(line: string, indent: string) {
   return line ? `${indent}${line}` : indent.trimEnd()
 }
 
 function normalizeLineEndings(text: string) {
-  return text.replace(/\r\n/g, '\n')
+  return text.replace(CRLF_RE, '\n')
 }
 
 function isTextEquivalent(a: string, b: string) {
@@ -57,7 +60,7 @@ function resolveIndent(content: string, marker: Marker) {
   }
   const lineStart = content.lastIndexOf('\n', markerIndex)
   const segment = content.slice(lineStart + 1, markerIndex)
-  const match = segment.match(/^[ \t]*/)
+  const match = segment.match(LEADING_WHITESPACE_RE)
   return match?.[0] ?? ''
 }
 
@@ -134,7 +137,7 @@ function formatMethodDocs(indent: string) {
       '',
     )
   }
-  while (sections.length > 0 && sections[sections.length - 1] === '') {
+  while (sections.length > 0 && sections.at(-1) === '') {
     sections.pop()
   }
   return sections.join('\n')

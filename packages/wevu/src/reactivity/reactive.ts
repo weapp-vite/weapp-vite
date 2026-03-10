@@ -72,7 +72,7 @@ function emitMutation(target: object, key: PropertyKey, op: MutationOp) {
       fallback.add(key)
     }
     for (const recorder of mutationRecorders) {
-      recorder({ root, kind, op, path: undefined, fallbackTopKeys: fallback.size ? Array.from(fallback) : undefined })
+      recorder({ root, kind, op, path: undefined, fallbackTopKeys: fallback.size ? [...fallback] : undefined })
     }
     return
   }
@@ -174,7 +174,7 @@ const mutableHandlers: ProxyHandler<any> = {
     return result
   },
   deleteProperty(target, key) {
-    const hadKey = Object.prototype.hasOwnProperty.call(target, key)
+    const hadKey = Object.hasOwn(target, key)
     const oldValue = hadKey ? (target as any)[key] : undefined
     const result = Reflect.deleteProperty(target, key)
     if (hadKey && result) {

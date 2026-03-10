@@ -43,7 +43,7 @@ export function resolvePageOptions(target: InternalRuntimeState) {
   }
   if (typeof getCurrentPages === 'function') {
     const pages = getCurrentPages()
-    const page = Array.isArray(pages) ? pages[pages.length - 1] : undefined
+    const page = Array.isArray(pages) ? pages.at(-1) : undefined
     const options = page && typeof page === 'object' ? (page as any).options : undefined
     if (options && typeof options === 'object') {
       return options

@@ -47,7 +47,7 @@ export function collectMacroCallPaths(ast: BabelFile, filename: string) {
 
 export function assertSingleMacro(macroNames: Set<string>, filename: string) {
   if (macroNames.size > 1) {
-    throw new Error(`同一个 <script setup> 仅能使用 ${Array.from(JSON_MACROS).join(', ')} 中的一个（${filename}）。`)
+    throw new Error(`同一个 <script setup> 仅能使用 ${[...JSON_MACROS].join(', ')} 中的一个（${filename}）。`)
   }
   return macroNames.values().next().value as string | undefined
 }

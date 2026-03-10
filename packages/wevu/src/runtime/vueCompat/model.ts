@@ -173,7 +173,7 @@ export function mergeModels<T>(a: T, b: T): T {
     return a
   }
   if (Array.isArray(a) && Array.isArray(b)) {
-    return Array.from(new Set([...a, ...b])) as any
+    return [...new Set([...a, ...b])] as any
   }
   if (typeof a === 'object' && typeof b === 'object') {
     return { ...(a as any), ...(b as any) }

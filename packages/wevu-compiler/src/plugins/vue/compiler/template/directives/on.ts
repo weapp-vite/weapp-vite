@@ -4,31 +4,38 @@ import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext, registerInlineExpression } from '../expression'
 import { renderMustache } from '../mustache'
 
-const isSimpleHandler = (value: string) => /^[A-Z_$][\w$]*$/i.test(value)
+const SIMPLE_IDENTIFIER_RE = /^[A-Z_$][\w$]*$/i
+
+const isSimpleHandler = (value: string) => SIMPLE_IDENTIFIER_RE.test(value)
 
 function shouldUseDetailPayload(options?: { isComponent?: boolean }) {
   return options?.isComponent === true
 }
 
+const NON_ALNUM_RE = /[^a-z0-9]+/gi
+const LEADING_TRAILING_DASH_RE = /^-+|-+$/g
+
 function normalizeEventDatasetSuffix(eventName: string): string {
   const normalized = eventName
     .trim()
-    .replace(/[^a-z0-9]+/gi, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(NON_ALNUM_RE, '-')
+    .replace(LEADING_TRAILING_DASH_RE, '')
     .toLowerCase()
   return normalized || 'event'
 }
 
+const QUOTE_RE = /"/g
+
 function buildInlineScopeAttrs(scopeBindings: string[], context: TransformContext): string[] {
   return scopeBindings.map((binding, index) => {
-    const escaped = binding.replace(/"/g, '&quot;')
+    const escaped = binding.replace(QUOTE_RE, '&quot;')
     return `data-wv-s${index}="${renderMustache(escaped, context)}"`
   })
 }
 
 function buildInlineIndexAttrs(indexBindings: string[], context: TransformContext): string[] {
   return indexBindings.map((binding, index) => {
-    const escaped = binding.replace(/"/g, '&quot;')
+    const escaped = binding.replace(QUOTE_RE, '&quot;')
     return `data-wv-i${index}="${renderMustache(escaped, context)}"`
   })
 }
@@ -116,7 +123,7 @@ export function transformOnDirective(
     ].filter(Boolean).join(' ')
   }
   if (isInlineExpression) {
-    const escaped = inlineSource.replace(/"/g, '&quot;')
+    const escaped = inlineSource.replace(QUOTE_RE, '&quot;')
     return [detailAttr, `data-wv-inline-${eventSuffix}="${escaped}"`, `${bindAttr}="__weapp_vite_inline"`].filter(Boolean).join(' ')
   }
   return [detailAttr, `${bindAttr}="${expValue}"`].filter(Boolean).join(' ')

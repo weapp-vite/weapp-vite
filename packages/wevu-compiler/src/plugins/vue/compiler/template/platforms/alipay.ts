@@ -31,8 +31,10 @@ function toOnEventName(eventName: string) {
   return `on${first.toUpperCase()}${eventName.slice(1)}`
 }
 
+const EVENT_BINDING_PREFIX_RE = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/
+
 function parseEventBinding(eventName: string) {
-  const prefixed = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/.exec(eventName)
+  const prefixed = EVENT_BINDING_PREFIX_RE.exec(eventName)
   if (prefixed) {
     return {
       prefix: prefixed[1],

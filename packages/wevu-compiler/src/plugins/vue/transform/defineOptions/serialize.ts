@@ -8,9 +8,11 @@ function getErrorMessage(error: unknown) {
   return typeof error === 'string' ? error : ''
 }
 
+const BEHAVIOR_NOT_DEFINED_RE = /\bBehavior is not defined\b/
+
 export function shouldFallbackToRawDefineOptions(error: unknown) {
   const message = getErrorMessage(error)
-  return /\bBehavior is not defined\b/.test(message)
+  return BEHAVIOR_NOT_DEFINED_RE.test(message)
 }
 
 function normalizeScriptSetupLang(lang?: string) {
@@ -32,8 +34,10 @@ export function resolveScriptSetupExtension(lang?: string) {
   return 'js'
 }
 
+const IDENTIFIER_LIKE_KEY_RE = /^[A-Z_$][\w$]*$/i
+
 function isIdentifierLikeKey(key: string) {
-  return /^[A-Z_$][\w$]*$/i.test(key)
+  return IDENTIFIER_LIKE_KEY_RE.test(key)
 }
 
 type SerializableNativeFunction

@@ -87,10 +87,10 @@ export function getDefaultTsconfigNodeJson(include: string[] = []) {
     'scripts/**/*.ts',
   ]
 
-  const mergedInclude = Array.from(new Set([
+  const mergedInclude = [...new Set([
     ...baseInclude,
     ...include,
-  ]))
+  ])]
 
   return {
     compilerOptions: {

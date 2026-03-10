@@ -14,6 +14,9 @@ const JSON5_LANG = 'json5'
 const PLUGIN_VERSION = 2.2 as const
 const TS_LANG = 'ts'
 
+const BACKSLASH_RE = /\\/g
+const NON_SPACE_RE = /\S/
+
 const FULL_CAPABILITIES = {
   verification: true,
   completion: true,
@@ -51,7 +54,7 @@ function normalizeFilename(filename?: string) {
   if (!filename) {
     return ''
   }
-  return filename.replace(/\\/g, '/')
+  return filename.replace(BACKSLASH_RE, '/')
 }
 
 function inferConfigType(filename?: string) {
@@ -130,7 +133,7 @@ function injectSchemaIntoJsonObject(content: string, schemaId: string) {
     return content
   }
   const afterLeft = content.slice(leftBraceIndex + 1)
-  const firstNonSpace = afterLeft.match(/\S/)
+  const firstNonSpace = afterLeft.match(NON_SPACE_RE)
   const nextCharIndex = firstNonSpace ? leftBraceIndex + 1 + firstNonSpace.index! : -1
   const isEmptyObject = nextCharIndex >= 0 && content[nextCharIndex] === '}'
 

@@ -2,6 +2,10 @@ import { EventEmitter } from 'node:events'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import * as npmModule from '@/npm'
 
+const FAILED_WITH_STATUS_500_RE = /failed with status 500/
+const UNKNOWN_RE = /unknown/
+const MISSING_VERSION_RE = /missing version/
+
 const getMock = vi.hoisted(() => vi.fn())
 
 class FakeResponse extends EventEmitter {
@@ -50,7 +54,7 @@ describe('npm', () => {
       return { on: vi.fn().mockReturnThis() }
     })
 
-    await expect(npmModule.getLatestVersionFromNpm('bad')).rejects.toThrow(/failed with status 500/)
+    await expect(npmModule.getLatestVersionFromNpm('bad')).rejects.toThrow(FAILED_WITH_STATUS_500_RE)
   })
 
   it('rejects when response object is missing', async () => {
@@ -59,7 +63,7 @@ describe('npm', () => {
       return { on: vi.fn().mockReturnThis() }
     })
 
-    await expect(npmModule.getLatestVersionFromNpm('bad')).rejects.toThrow(/unknown/)
+    await expect(npmModule.getLatestVersionFromNpm('bad')).rejects.toThrow(UNKNOWN_RE)
   })
 
   it('rejects when response is missing a version', async () => {
@@ -74,7 +78,7 @@ describe('npm', () => {
       return { on: vi.fn().mockReturnThis() }
     })
 
-    await expect(npmModule.getLatestVersionFromNpm('demo')).rejects.toThrow(/missing version/)
+    await expect(npmModule.getLatestVersionFromNpm('demo')).rejects.toThrow(MISSING_VERSION_RE)
   })
 
   it('rejects when registry returns invalid json', async () => {

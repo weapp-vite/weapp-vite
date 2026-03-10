@@ -8,6 +8,9 @@ import { transformScript } from '../vue/transform/script'
 import { stripRenderOptionFromScript } from './compileJsx/script'
 import { collectJsxAutoComponents, compileJsxTemplate } from './compileJsx/template'
 
+const LEADING_DOT_RE = /^\./
+const SETUP_CALL_RE = /\bsetup\s*\(/
+
 /**
  * 编译 JSX/TSX 文件，输出 wevu 脚本与 WXML 模板。
  */
@@ -24,7 +27,7 @@ export async function compileJsxFile(
   let scriptSource = source
   let scriptMacroConfig: Record<string, any> | undefined
   let scriptMacroHash: string | undefined
-  const scriptLang = path.extname(filename).replace(/^\./, '') || undefined
+  const scriptLang = path.extname(filename).replace(LEADING_DOT_RE, '') || undefined
 
   try {
     const extracted = await extractJsonMacroFromScriptSetup(source, filename, scriptLang, {
@@ -152,7 +155,7 @@ export async function compileJsxFile(
       : undefined,
     meta: {
       hasScriptSetup: false,
-      hasSetupOption: /\bsetup\s*\(/.test(normalizedScriptSource),
+      hasSetupOption: SETUP_CALL_RE.test(normalizedScriptSource),
       jsonMacroHash: scriptMacroHash,
     },
   }

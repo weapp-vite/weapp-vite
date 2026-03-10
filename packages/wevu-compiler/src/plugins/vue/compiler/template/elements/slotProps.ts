@@ -6,6 +6,9 @@ import { parse as babelParse } from '../../../../../utils/babel'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { toWxmlStringLiteral } from './helpers'
 
+const BACKSLASH_RE = /\\/g
+const SINGLE_QUOTE_RE = /'/g
+
 export function parseSlotPropsExpression(exp: string, context: TransformContext): Record<string, string> {
   const trimmed = exp.trim()
   if (!trimmed) {
@@ -96,7 +99,7 @@ export function collectSlotBindingExpression(node: ElementNode, context: Transfo
     if (prop.type === NodeTypes.ATTRIBUTE && prop.name !== 'name') {
       const literal = prop.value?.type === NodeTypes.TEXT ? prop.value.content : ''
       if (literal) {
-        namedBindings.push({ key: prop.name, value: `'${literal.replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}'` })
+        namedBindings.push({ key: prop.name, value: `'${literal.replace(BACKSLASH_RE, '\\\\').replace(SINGLE_QUOTE_RE, '\\\'')}'` })
       }
     }
   }

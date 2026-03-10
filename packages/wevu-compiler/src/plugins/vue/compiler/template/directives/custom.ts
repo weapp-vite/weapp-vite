@@ -4,6 +4,8 @@ import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { renderMustache } from '../mustache'
 
+const IDENTIFIER_RE = /^[a-z_$][\w$]*$/i
+
 export function transformCustomDirective(
   name: string,
   exp: DirectiveNode['exp'],
@@ -34,7 +36,7 @@ export function transformCustomDirective(
 
   if (exp && exp.type === NodeTypes.SIMPLE_EXPRESSION) {
     const expValue = normalizeWxmlExpressionWithContext(exp.content, context)
-    if (/^[a-z_$][\w$]*$/i.test(expValue)) {
+    if (IDENTIFIER_RE.test(expValue)) {
       return `${dataAttrName}="${renderMustache(expValue, context)}"`
     }
     return `${dataAttrName}="${renderMustache(expValue, context)}"`

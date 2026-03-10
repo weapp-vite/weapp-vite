@@ -11,6 +11,12 @@ const METHOD_CHUNK_SIZE = 180
 const VIRTUAL_ENTRY = '/virtual/weapi-api-catalog-entry.ts'
 const require = createRequire(import.meta.url)
 
+const NON_ALPHANUMERIC_RE = /[^a-z0-9]/gi
+const CAMEL_CASE_BOUNDARY_RE = /([a-z0-9])([A-Z])/g
+const NON_ALPHANUMERIC_SEPARATOR_RE = /[^a-z0-9]+/gi
+const LEADING_TRAILING_UNDERSCORES_RE = /^_+|_+$/g
+const CRLF_RE = /\r\n/g
+
 const TYPE_REFERENCE_SOURCE = `
 declare const __wx: WechatMiniprogram.Wx
 
@@ -26,7 +32,7 @@ function parseArgs() {
 }
 
 function uniqueSorted(names) {
-  return [...new Set(names)].sort((a, b) => a.localeCompare(b))
+  return new Set(names).toSorted((a, b) => a.localeCompare(b))
 }
 
 function formatLiteralList(values) {
@@ -42,7 +48,7 @@ function chunkArray(values, size) {
 }
 
 function toPascalCaseIdentifier(value) {
-  const sanitized = String(value).replace(/[^a-z0-9]/gi, '')
+  const sanitized = String(value).replace(NON_ALPHANUMERIC_RE, '')
   if (!sanitized) {
     return 'Unknown'
   }
@@ -54,15 +60,15 @@ function getChunkFileSuffix(chunkValues) {
     return 'UnknownToUnknown'
   }
   const first = toPascalCaseIdentifier(chunkValues[0])
-  const last = toPascalCaseIdentifier(chunkValues[chunkValues.length - 1])
+  const last = toPascalCaseIdentifier(chunkValues.at(-1))
   return `${first}To${last}`
 }
 
 function toUpperSnakeIdentifier(value) {
   const normalized = String(value)
-    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
-    .replace(/[^a-z0-9]+/gi, '_')
-    .replace(/^_+|_+$/g, '')
+    .replace(CAMEL_CASE_BOUNDARY_RE, '$1_$2')
+    .replace(NON_ALPHANUMERIC_SEPARATOR_RE, '_')
+    .replace(LEADING_TRAILING_UNDERSCORES_RE, '')
     .toUpperCase()
   return normalized || 'UNKNOWN'
 }
@@ -72,7 +78,7 @@ function getChunkConstSuffix(chunkValues) {
     return 'UNKNOWN_TO_UNKNOWN'
   }
   const first = toUpperSnakeIdentifier(chunkValues[0])
-  const last = toUpperSnakeIdentifier(chunkValues[chunkValues.length - 1])
+  const last = toUpperSnakeIdentifier(chunkValues.at(-1))
   return `${first}_TO_${last}`
 }
 
@@ -159,7 +165,7 @@ ${mergeLines.join('\n')}
 }
 
 function normalizeLineEndings(text) {
-  return text.replace(/\r\n/g, '\n')
+  return text.replace(CRLF_RE, '\n')
 }
 
 function isTextEquivalent(a, b) {

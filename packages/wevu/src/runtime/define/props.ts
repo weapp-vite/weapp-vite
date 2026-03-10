@@ -75,10 +75,10 @@ export function normalizeProps(
     ?? (baseProperties && typeof baseProperties === 'object' ? (baseProperties as any) : undefined)
   const attachInternalProps = (source?: Record<string, any>) => {
     const next = { ...(source ?? {}) }
-    if (!Object.prototype.hasOwnProperty.call(next, '__wvSlotOwnerId')) {
+    if (!Object.hasOwn(next, '__wvSlotOwnerId')) {
       next.__wvSlotOwnerId = { type: String, value: '' }
     }
-    if (!Object.prototype.hasOwnProperty.call(next, '__wvSlotScope')) {
+    if (!Object.hasOwn(next, '__wvSlotScope')) {
       next.__wvSlotScope = { type: null, value: null }
     }
     return next
@@ -104,7 +104,7 @@ export function normalizeProps(
     if (Array.isArray(definition) || typeof definition === 'function') {
       const propOptions: Record<string, any> = {}
       applyTypeOptions(propOptions, definition)
-      if (!Object.prototype.hasOwnProperty.call(propOptions, 'type')) {
+      if (!Object.hasOwn(propOptions, 'type')) {
         propOptions.type = null
       }
       properties[key] = propOptions
@@ -146,7 +146,7 @@ export function normalizeProps(
       if (defaultValue !== undefined) {
         propOptions.value = typeof defaultValue === 'function' ? (defaultValue as any)() : defaultValue
       }
-      if (!Object.prototype.hasOwnProperty.call(propOptions, 'type')) {
+      if (!Object.hasOwn(propOptions, 'type')) {
         propOptions.type = null
       }
       properties[key] = propOptions

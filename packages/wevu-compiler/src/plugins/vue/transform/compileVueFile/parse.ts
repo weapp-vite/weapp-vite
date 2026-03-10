@@ -11,6 +11,10 @@ import { inlineScriptSetupDefineOptionsArgs } from '../defineOptions/inline'
 import { extractJsonMacroFromScriptSetup } from '../jsonMacros'
 import { createJsonMerger } from '../jsonMerge'
 
+const SETUP_CALL_RE = /\bsetup\s*\(/
+const DEFINE_OPTIONS_CALL_RE = /\bdefineOptions\s*\(/
+const APP_VUE_FILE_RE = /[\\/]app\.vue$/
+
 export interface ParsedVueFile {
   descriptor: ReturnType<typeof parse>['descriptor']
   descriptorForCompile: ReturnType<typeof parse>['descriptor']
@@ -99,7 +103,7 @@ export async function parseVueFile(
 
   const meta = {
     hasScriptSetup: !!resolvedDescriptor.scriptSetup,
-    hasSetupOption: !!resolvedDescriptor.script && /\bsetup\s*\(/.test(resolvedDescriptor.script.content),
+    hasSetupOption: !!resolvedDescriptor.script && SETUP_CALL_RE.test(resolvedDescriptor.script.content),
     sfcSrcDeps,
   }
 
@@ -153,7 +157,7 @@ export async function parseVueFile(
           descriptorForCompile = resolvedNext.descriptor
           if (resolvedNext.deps.length) {
             const deps = new Set([...(sfcSrcDeps ?? []), ...resolvedNext.deps])
-            sfcSrcDeps = Array.from(deps)
+            sfcSrcDeps = [...deps]
             meta.sfcSrcDeps = sfcSrcDeps
           }
         }
@@ -169,7 +173,7 @@ export async function parseVueFile(
   }
 
   const compileScriptSetup = descriptorForCompile.scriptSetup
-  if (compileScriptSetup?.content && /\bdefineOptions\s*\(/.test(compileScriptSetup.content)) {
+  if (compileScriptSetup?.content && DEFINE_OPTIONS_CALL_RE.test(compileScriptSetup.content)) {
     const inlined = await inlineScriptSetupDefineOptionsArgs(
       compileScriptSetup.content,
       filename,
@@ -207,7 +211,7 @@ export async function parseVueFile(
           descriptorForCompile = resolvedNext.descriptor
           if (resolvedNext.deps.length) {
             const deps = new Set([...(sfcSrcDeps ?? []), ...resolvedNext.deps])
-            sfcSrcDeps = Array.from(deps)
+            sfcSrcDeps = [...deps]
             meta.sfcSrcDeps = sfcSrcDeps
           }
         }
@@ -219,7 +223,7 @@ export async function parseVueFile(
     }
   }
 
-  const isAppFile = /[\\/]app\.vue$/.test(filename)
+  const isAppFile = APP_VUE_FILE_RE.test(filename)
 
   return {
     descriptor: resolvedDescriptor,
