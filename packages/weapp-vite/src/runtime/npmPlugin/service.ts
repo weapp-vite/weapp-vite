@@ -63,7 +63,6 @@ function hasSameDependencySet(source: string[], target: string[]) {
 
 function resolveMainPackageDependencyPatterns(ctx: MutableCompilerContext) {
   return ctx.configService?.weappViteConfig?.npm?.mainPackage?.dependencies
-    ?? ctx.configService?.weappViteConfig?.npm?.mainPackageDependencies
 }
 
 export interface NpmService {

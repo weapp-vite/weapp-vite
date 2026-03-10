@@ -23,7 +23,6 @@ function serializeDependencyScope(scope?: false | (string | RegExp)[]) {
 function resolveMainPackageDependencyScope(ctx: MutableCompilerContext) {
   const configService = requireConfigService(ctx, '读取主包 npm 依赖范围前必须初始化 configService。')
   return configService.weappViteConfig?.npm?.mainPackage?.dependencies
-    ?? configService.weappViteConfig?.npm?.mainPackageDependencies
 }
 
 export interface DependenciesCache {
