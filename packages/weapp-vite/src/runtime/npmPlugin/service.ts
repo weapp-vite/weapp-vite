@@ -96,6 +96,11 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
 
     debug?.('buildNpm start')
 
+    if (ctx.scanService) {
+      await ctx.scanService.loadAppEntry()
+      ctx.scanService.loadSubPackages()
+    }
+
     const packNpmRelationList = getPackNpmRelationList(ctx)
     const [mainRelation, ...subRelations] = packNpmRelationList
     const packageJsonPath = path.resolve(ctx.configService.cwd, mainRelation.packageJsonPath)
@@ -107,8 +112,12 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
       if (pkgJson.dependencies) {
         const allDependencies = Object.keys(pkgJson.dependencies)
         const mainDependencyPatterns = ctx.configService.weappViteConfig?.npm?.mainPackageDependencies
+        const includeNormalSubPackages = ctx.configService.weappViteConfig?.npm?.experimentalNormalSubpackageNpm === true
         const mainDependencies = resolveTargetDependencies(allDependencies, mainDependencyPatterns)
         const sourceOutDir = hasSameDependencySet(allDependencies, mainDependencies) ? outDir : cachedSourceOutDir
+        const localSubPackageMetas = [...includeNormalSubPackages
+          ? ctx.scanService!.subPackageMap.values()
+          : ctx.scanService!.independentSubPackageMap.values()]
 
         const buildTargetDependencies = async (args: {
           dependencies: string[]
@@ -168,7 +177,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
           }))
         }
 
-        await Promise.all(Array.from(ctx.scanService!.independentSubPackageMap.values(), async (meta) => {
+        await Promise.all(Array.from(localSubPackageMetas, async (meta) => {
           const targetDir = path.resolve(ctx.configService!.cwd, mainRelation.miniprogramNpmDistDir, meta.subPackage.root, npmDistDirName)
           const isDependenciesCacheOutdate = await cache.checkDependenciesCacheOutdate(meta.subPackage.root)
           if (isDependenciesCacheOutdate || !(await fs.pathExists(targetDir))) {

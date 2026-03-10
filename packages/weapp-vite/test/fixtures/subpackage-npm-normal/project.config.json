@@ -1,0 +1,22 @@
+{
+  "description": "项目配置文件",
+  "miniprogramRoot": "dist/",
+  "compileType": "miniprogram",
+  "setting": {
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./dist"
+      }
+    ],
+    "ignoreUploadUnusedFiles": true,
+    "es6": true
+  },
+  "condition": {},
+  "srcMiniprogramRoot": "dist/",
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}
