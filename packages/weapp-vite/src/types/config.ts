@@ -732,7 +732,7 @@ export interface WeappViteConfig {
    * 默认情况下，当一个分包设置了 independent: true 之后会默认启用
    * 可以设置 key: 为 root, value: {independent:true} 来强制启用 独立的 rollup 编译上下文
    */
-  subPackages?: Record<string, Pick<SubPackage, 'independent' | 'dependencies' | 'inlineConfig'> & {
+  subPackages?: Record<string, Pick<SubPackage, 'independent' | 'inlineConfig'> & {
     autoImportComponents?: AutoImportComponentsOption
     /** 分包文件变更时是否强制重新生成共享样式产物，默认启用 */
     watchSharedStyles?: boolean
