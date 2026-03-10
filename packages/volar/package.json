@@ -44,6 +44,7 @@
     "build": "tsup",
     "test": "vitest run",
     "test:dev": "vitest",
+    "typecheck": "tsc --noEmit",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

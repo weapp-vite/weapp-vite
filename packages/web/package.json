@@ -48,7 +48,8 @@
     "build:watch": "tsup --watch --sourcemap",
     "build": "tsup",
     "test": "vitest run",
-    "test:dev": "vitest"
+    "test:dev": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@babel/parser": "catalog:",

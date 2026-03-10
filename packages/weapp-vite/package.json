@@ -97,6 +97,7 @@
     "test:dev": "vitest",
     "test": "vitest run",
     "test:types": "cd test-d/auto-routes-define-app-json && tsd",
+    "typecheck": "tsc --noEmit",
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
