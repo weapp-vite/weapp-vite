@@ -26,6 +26,9 @@ const emit = defineEmits<{
   onEdit: [detail: any]
 }>()
 
+// 编辑器未正确加载 Volar WXS 注入时，提供一个纯类型兜底声明。
+declare const phoneReg: Record<string, (...args: any[]) => any>
+
 function onDelete(e: any) {
   emit('onDelete', e?.currentTarget?.dataset?.item)
 }
