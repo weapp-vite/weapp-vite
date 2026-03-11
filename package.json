@@ -168,7 +168,7 @@
     "jiti": "^2.6.1",
     "json-schema-to-typescript": "^15.0.4",
     "just-diff": "^6.0.2",
-    "less": "^4.5.1",
+    "less": "^4.6.2",
     "lint-staged": "^16.3.3",
     "lodash": "catalog:",
     "lodash-es": "^4.17.23",
