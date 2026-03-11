@@ -160,6 +160,32 @@ describe('bindModel helpers', () => {
     ;(payload as any).onChange({ detail: { value: 8 } })
     expect(state.count).toBe(8)
   })
+
+  it('creates intermediate objects for missing nested paths and supports default parser payloads', () => {
+    const state: any = {
+      nested: 1,
+      deep: undefined,
+    }
+    const publicInstance: any = {
+      nested: state.nested,
+      deep: state.deep,
+    }
+
+    const bindModel = createBindModel(publicInstance, state, {}, {})
+
+    bindModel('nested.value.leaf').update('ok')
+    expect(state.nested).toEqual({
+      value: {
+        leaf: 'ok',
+      },
+    })
+
+    const payload = bindModel('deep.value').model({
+      event: 'change',
+    })
+    ;(payload as any).onChange({ target: { value: 9 } })
+    expect(state.deep).toEqual({ value: 9 })
+  })
 })
 
 describe('hook aliases', () => {

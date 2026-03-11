@@ -6,6 +6,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import logger from './logger'
 import {
   DEFAULT_MCP_ENDPOINT,
   DEFAULT_MCP_PORT,
@@ -17,6 +18,11 @@ const mocks = vi.hoisted(() => {
   const transportInstances: any[] = []
   const mockStartStdioServer = vi.fn(async () => {})
   const mockConnect = vi.fn(async () => {})
+  const mockHandleRequestImpl = vi.fn<[
+    http.IncomingMessage,
+    http.ServerResponse,
+    unknown,
+  ], Promise<void>>()
   const mockCreateWeappViteMcpServer = vi.fn(async () => ({
     server: {
       connect: mockConnect,
@@ -37,6 +43,10 @@ const mocks = vi.hoisted(() => {
         url: req.url,
         body,
       })
+      if (mocks.mockHandleRequestImpl.mock.calls.length > 0 || mocks.mockHandleRequestImpl.getMockImplementation()) {
+        await mocks.mockHandleRequestImpl(req, res, body)
+        return
+      }
       res.statusCode = 204
       res.end()
     }
@@ -46,6 +56,7 @@ const mocks = vi.hoisted(() => {
     transportInstances,
     mockStartStdioServer,
     mockConnect,
+    mockHandleRequestImpl,
     mockCreateWeappViteMcpServer,
     MockStreamableHTTPServerTransport,
   }
@@ -124,6 +135,7 @@ beforeEach(() => {
   mocks.transportInstances.length = 0
   mocks.mockStartStdioServer.mockReset()
   mocks.mockConnect.mockReset()
+  mocks.mockHandleRequestImpl.mockReset()
   mocks.mockCreateWeappViteMcpServer.mockReset()
   mocks.mockCreateWeappViteMcpServer.mockResolvedValue({
     server: {
@@ -158,6 +170,18 @@ describe('weapp mcp config', () => {
 
     expect(resolved.endpoint).toBe('/my-mcp')
     expect(resolved.host).toBe('0.0.0.0')
+    expect(resolved.port).toBe(DEFAULT_MCP_PORT)
+  })
+
+  it('falls back to defaults for empty host and invalid endpoint/port values', () => {
+    const resolved = resolveWeappMcpConfig({
+      endpoint: '   ',
+      host: '   ',
+      port: 65536,
+    })
+
+    expect(resolved.endpoint).toBe(DEFAULT_MCP_ENDPOINT)
+    expect(resolved.host).toBe('127.0.0.1')
     expect(resolved.port).toBe(DEFAULT_MCP_PORT)
   })
 })
@@ -276,5 +300,100 @@ describe('startWeappViteMcpServer', () => {
     await handle.close?.()
     expect(transport.close).toHaveBeenCalledTimes(1)
     unrefSpy.mockRestore()
+  })
+
+  it('handles GET and empty-body POST requests on the mcp endpoint and logs by default', async () => {
+    const port = await getFreePort()
+    const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {})
+
+    const handle = await startWeappViteMcpServer({
+      transport: 'streamable-http',
+      host: '127.0.0.1',
+      port,
+      endpoint: '/mcp',
+    })
+
+    const getResponse = await requestHttp({
+      method: 'GET',
+      path: '/mcp',
+      port,
+    })
+    expect(getResponse.statusCode).toBe(204)
+
+    const emptyPost = await requestHttp({
+      method: 'POST',
+      path: '/mcp',
+      port,
+    })
+    expect(emptyPost.statusCode).toBe(204)
+
+    const blankJson = await requestHttp({
+      method: 'POST',
+      path: '/mcp',
+      port,
+      body: '   ',
+    })
+    expect(blankJson.statusCode).toBe(204)
+
+    const transport = mocks.transportInstances.at(-1)
+    expect(transport.requests.at(0)?.body).toBeUndefined()
+    expect(transport.requests.at(1)?.body).toBeUndefined()
+    expect(transport.requests.at(2)?.body).toBeUndefined()
+    expect(infoSpy).toHaveBeenCalledWith(`[mcp] streamable-http ready at http://127.0.0.1:${port}/mcp`)
+
+    await handle.close?.()
+    infoSpy.mockRestore()
+  })
+
+  it('does not rewrite response when transport throws after headers are sent', async () => {
+    const port = await getFreePort()
+    mocks.mockHandleRequestImpl.mockImplementationOnce(async (_req, res) => {
+      res.statusCode = 204
+      res.end()
+      throw new Error('late boom')
+    })
+
+    const handle = await startWeappViteMcpServer({
+      transport: 'streamable-http',
+      host: '127.0.0.1',
+      port,
+      endpoint: '/mcp',
+      quiet: true,
+    })
+
+    const response = await requestHttp({
+      method: 'GET',
+      path: '/mcp',
+      port,
+    })
+    expect(response.statusCode).toBe(204)
+    expect(response.text).toBe('')
+
+    await handle.close?.()
+  })
+
+  it('rejects close when the underlying http server close callback returns an error', async () => {
+    const port = await getFreePort()
+    const originalClose = http.Server.prototype.close
+    const closeSpy = vi.spyOn(http.Server.prototype, 'close').mockImplementation(function (this: http.Server, callback?: (err?: Error) => void) {
+      originalClose.call(this, () => {})
+      callback?.(new Error('close boom'))
+      return this
+    })
+
+    try {
+      const handle = await startWeappViteMcpServer({
+        transport: 'streamable-http',
+        host: '127.0.0.1',
+        port,
+        endpoint: '/mcp',
+        quiet: true,
+      })
+
+      await expect(handle.close?.()).rejects.toThrow('close boom')
+    }
+    finally {
+      closeSpy.mockRestore()
+    }
   })
 })

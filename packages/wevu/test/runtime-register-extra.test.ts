@@ -69,6 +69,38 @@ describe('runSetupFunction', () => {
     const result = runSetupFunction(setup, { a: 1 }, {}) as any
     expect(result.ok).toBe(true)
   })
+
+  it('reuses existing runtime context and supports missing outer context', () => {
+    const runtime = {
+      methods: { greet: vi.fn() },
+      state: { count: 1 },
+      proxy: { count: 1 },
+      watch: vi.fn(() => vi.fn()),
+      bindModel: vi.fn(),
+    }
+    const context: any = {
+      attrs: { id: 1 },
+      runtime,
+    }
+    const setup = vi.fn((_props: any, receivedContext: any) => receivedContext)
+
+    const withContext = runSetupFunction(setup, { a: 1 }, context) as any
+    expect(withContext.runtime).toBe(runtime)
+    expect(context.runtime).toBe(runtime)
+    expect(setup).toHaveBeenCalledWith({ a: 1 }, expect.objectContaining({
+      attrs: { id: 1 },
+      runtime,
+    }))
+
+    const withoutContext = runSetupFunction((_props: any, receivedContext: any) => receivedContext, { b: 2 }, undefined) as any
+    expect(withoutContext.runtime).toMatchObject({
+      methods: {},
+      state: {},
+      proxy: {},
+    })
+    expect(typeof withoutContext.runtime.watch).toBe('function')
+    expect(typeof withoutContext.runtime.bindModel).toBe('function')
+  })
 })
 
 describe('mountRuntimeInstance and teardown', () => {

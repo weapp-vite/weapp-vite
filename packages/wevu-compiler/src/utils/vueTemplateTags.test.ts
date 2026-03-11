@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   collectVueTemplateTags,
   isAutoImportCandidateTag,
@@ -34,6 +34,57 @@ describe('vueTemplateTags', () => {
     expect(tags.has('view')).toBe(false)
     for (const reserved of RESERVED_VUE_COMPONENT_TAGS) {
       expect(tags.has(reserved)).toBe(false)
+    }
+  })
+
+  it('respects shouldCollect and walks branches/alternate trees', () => {
+    const tags = collectVueTemplateTags(`
+<template>
+  <FooBar v-if="ok" />
+  <component :is="dynamic" />
+  <TButton v-else-if="middle" />
+  <FinalCard v-else />
+  <slot />
+</template>
+    `.trim(), {
+      shouldCollect: tag => tag !== 'TButton',
+    })
+
+    expect(tags.has('FooBar')).toBe(true)
+    expect(tags.has('FinalCard')).toBe(true)
+    expect(tags.has('TButton')).toBe(false)
+    expect(tags.has('component')).toBe(false)
+    expect(tags.has('slot')).toBe(false)
+  })
+
+  it('warns when parsing throws and returns collected tags accumulated so far', async () => {
+    vi.resetModules()
+    vi.doMock('@vue/compiler-core', async () => {
+      const actual = await vi.importActual<typeof import('@vue/compiler-core')>('@vue/compiler-core')
+      return {
+        ...actual,
+        baseParse: () => {
+          throw new Error('mock parse failure')
+        },
+      }
+    })
+
+    try {
+      const warn = vi.fn()
+      const { collectVueTemplateTags: collectTags } = await import('./vueTemplateTags')
+      const tags = collectTags('<Broken', {
+        filename: '/tmp/Broken.vue',
+        warnLabel: 'auto-import',
+        warn,
+        shouldCollect: () => true,
+      })
+
+      expect([...tags]).toEqual([])
+      expect(warn).toHaveBeenCalledWith('[Vue 模板] 解析失败：auto-import（/tmp/Broken.vue）：mock parse failure')
+    }
+    finally {
+      vi.doUnmock('@vue/compiler-core')
+      vi.resetModules()
     }
   })
 })

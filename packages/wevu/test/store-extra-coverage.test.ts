@@ -55,6 +55,15 @@ describe('store base and actions', () => {
 })
 
 describe('defineStore and storeToRefs', () => {
+  it('createStore keeps manager instance stable and ignores non-function plugins', () => {
+    const manager = createStore()
+
+    expect((createStore as any)._instance).toBe(manager)
+    expect(manager.install({})).toBeUndefined()
+    expect(manager.use(null as any)).toBe(manager)
+    expect(manager._plugins).toEqual([])
+  })
+
   it('reuses setup store instance and handles subscriber errors', () => {
     createStore()
     const useCounter = defineStore('counter', () => ({
@@ -153,5 +162,16 @@ describe('defineStore and storeToRefs', () => {
     const refResult = storeToRefs(withRef as any)
     expect(refResult.value).toBe(withRef.value)
     expect(refResult.action).toBe(withRef.action)
+  })
+
+  it('allows plugin chaining on the returned manager', () => {
+    const first = vi.fn()
+    const second = vi.fn()
+
+    const manager = createStore()
+      .use(first)
+      .use(second)
+
+    expect(manager._plugins).toEqual([first, second])
   })
 })

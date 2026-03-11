@@ -323,6 +323,48 @@ describe('compileVueTemplateToWxml', () => {
     expect(code).not.toContain(`__wv-slot-scope="{{{`)
   })
 
+  it('warns when component v-slot and template v-slot are mixed, preferring component slot', () => {
+    const template = `
+<Child v-slot="{ item }">
+  <view>{{ item }}</view>
+  <template #extra>
+    <view>extra</view>
+  </template>
+</Child>
+    `.trim()
+
+    const { code, warnings, scopedSlotComponents } = compileVueTemplateToWxml(template, '/project/src/pages/index/index.vue')
+
+    expect(warnings.some(message => message.includes('组件上的 v-slot 与 <template v-slot> 不能同时使用'))).toBe(true)
+    expect(code).toContain('vue-slots=')
+    expect(scopedSlotComponents).toHaveLength(1)
+    expect(scopedSlotComponents?.[0]?.template).toContain('__wvSlotPropsData.item')
+    expect(scopedSlotComponents?.[0]?.template).toContain('<view>extra</view>')
+  })
+
+  it('falls back to plain slot rendering when scoped slot compiler is disabled', () => {
+    const template = `
+<Child>
+  <template #header="{ title }">
+    <view>{{ title }}</view>
+  </template>
+</Child>
+<slot :item="card.item"><view>fallback</view></slot>
+    `.trim()
+
+    const { code, warnings } = compileVueTemplateToWxml(
+      template,
+      '/project/src/pages/index/index.vue',
+      { scopedSlotsCompiler: 'off' },
+    )
+
+    expect(warnings.some(message => message.includes('已禁用作用域插槽参数'))).toBe(true)
+    expect(code).toContain('<view slot="header"><view>{{title}}</view></view>')
+    expect(code).toContain('<slot><view>fallback</view></slot>')
+    expect(code).not.toContain('vue-slots=')
+    expect(code).not.toContain('__wv-slot-props=')
+  })
+
   it.each([
     [
       'weapp',
