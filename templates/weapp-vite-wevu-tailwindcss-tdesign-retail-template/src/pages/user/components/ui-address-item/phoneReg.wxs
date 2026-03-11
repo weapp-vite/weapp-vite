@@ -1,0 +1,7 @@
+var toHide = function(array) {
+  return array.substring(0, 3) + '****' + array.substring(7)
+}
+
+module.exports = {
+  toHide: toHide,
+}

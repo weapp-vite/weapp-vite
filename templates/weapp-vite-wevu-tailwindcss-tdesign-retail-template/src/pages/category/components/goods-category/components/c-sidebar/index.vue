@@ -4,10 +4,22 @@ defineOptions({
     './c-sidebar-item/index': {
       type: 'descendant',
       linked(target) {
+        this.children ||= []
+        this.topRightRadiusItemIndexs ||= []
+        this.bottomRightRadiusItemIndexs ||= []
+        if (typeof this.currentActive !== 'number') {
+          this.currentActive = -1
+        }
         this.children.push(target)
         this.setActive(this.properties.activeKey, true)
       },
       unlinked(target) {
+        this.children ||= []
+        this.topRightRadiusItemIndexs ||= []
+        this.bottomRightRadiusItemIndexs ||= []
+        if (typeof this.currentActive !== 'number') {
+          this.currentActive = -1
+        }
         this.children = this.children.filter(item => item !== target)
         this.setActive(this.properties.activeKey, true)
       },
@@ -26,13 +38,21 @@ defineOptions({
     },
   },
   created() {
-    this.children = []
-    this.currentActive = -1
-    this.topRightRadiusItemIndexs = []
-    this.bottomRightRadiusItemIndexs = []
+    this.children ||= []
+    this.topRightRadiusItemIndexs ||= []
+    this.bottomRightRadiusItemIndexs ||= []
+    if (typeof this.currentActive !== 'number') {
+      this.currentActive = -1
+    }
   },
   methods: {
     setActive(activeKey, isChildrenChange) {
+      this.children ||= []
+      this.topRightRadiusItemIndexs ||= []
+      this.bottomRightRadiusItemIndexs ||= []
+      if (typeof this.currentActive !== 'number') {
+        this.currentActive = -1
+      }
       const {
         children,
         currentActive,

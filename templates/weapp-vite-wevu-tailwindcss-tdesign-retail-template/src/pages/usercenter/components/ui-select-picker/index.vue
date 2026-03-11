@@ -52,7 +52,14 @@ function updateDivisions() {
 }
 
 function onChange(e: any) {
-  const currentValue = Array.isArray(e?.detail?.value) ? e.detail.value : [0]
+  const detailValue = e?.detail?.value
+  const currentValue = Array.isArray(detailValue)
+    ? detailValue
+    : Array.isArray(e?.target?.value)
+      ? e.target.value
+      : typeof detailValue === 'number'
+        ? [detailValue]
+        : [0]
   const target = getAreaByIndex(currentValue)
   if (!target) {
     return
@@ -125,7 +132,7 @@ defineExpose({
         </view>
         <picker-view class="picker [height:300rpx] [margin:50rpx_0] [line-height:88rpx] [text-align:center]" indicator-class="picker-center-row [height:88rpx]" :value="pickerValue" @change="onChange">
           <picker-view-column class="picker-column">
-            <view v-for="(item, index) in pickerOptions" :key="code">
+            <view v-for="(item, index) in pickerOptions" :key="item.code ?? index">
               {{ item.name }}
             </view>
           </picker-view-column>
