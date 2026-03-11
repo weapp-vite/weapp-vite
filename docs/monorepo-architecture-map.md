@@ -9,6 +9,7 @@
 - `packages/*`：核心与周边可发布包
 - `@weapp-core/*`：基础能力包（init/logger/shared/schematics）
 - `apps/*`：示例与验证应用
+- `e2e-apps/*`：端到端测试与 GitHub issue 复现应用
 - `templates/*`：脚手架模板
 - `website`：文档站点（VitePress）
 
@@ -144,9 +145,13 @@ sequenceDiagram
   - `-p h5`/`-p web`：只走 Web 分支
   - 其他 mini 平台值（如 `weapp`、`tt` 等）：走 mini 分支
 
-## 5. apps / templates / website 与核心包的关系
+## 5. apps / e2e-apps / templates / website 与核心包的关系
 
 - `apps/*`：多数项目直接以 `weapp-vite` 作为 `dev/build` 命令入口。
+- `e2e-apps/*`：用于 CI、IDE runtime 与 issue 回归验证的 workspace fixture。
+  - 标准脚本约定统一为 `dev`、`dev:open`、`build`。
+  - 默认分别对应 `weapp-vite dev`、`weapp-vite dev -o`、`weapp-vite build`。
+  - 若某个 e2e app 需要特殊构建参数，可以在此基础上额外扩展 `build:*` 或 `dev:*` 变体，但建议保留这三个基础入口，方便测试脚本和人工排障统一调用。
 - `templates/*`：作为 `create-weapp-vite` 的模板来源，创建项目时会同步注入当前 `weapp-vite` / `wevu` 版本。
 - `website`：文档站 devDependencies 依赖 `weapp-vite` 与 `create-weapp-vite`，用于文档示例与生态联动。
 
