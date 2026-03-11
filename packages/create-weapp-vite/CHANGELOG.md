@@ -1,5 +1,13 @@
 # create-weapp-vite
 
+## 2.0.46
+
+### Patch Changes
+
+- 🐛 **修复零售模板的 Volar 模板类型推断配置。`weapp-vite-wevu-tailwindcss-tdesign-retail-template` 不再禁用模板 codegen，并为 `ui-address-item` 里的 `phoneReg` WXS 模块补充纯类型兜底声明；这样即使编辑器侧的 Volar WXS 注入未及时生效，也不会再错误提示 `phoneReg` 不存在于组件实例类型上。** [`183f1f2`](https://github.com/weapp-vite/weapp-vite/commit/183f1f2df9be325e2c43c7f152e4c9513e9530b2) by @sonofmagic
+
+- 🐛 **修复分包 npm 依赖配置在构建阶段污染 `app.json` 的问题。现在 `weapp.npm.subPackages.<root>.dependencies` 与分包 `inlineConfig` 只会保留在内部构建元数据里，不会再被写回最终产物的 `subPackages` / `subpackages` 节点，从而避免生成包含无效字段的 `app.json`；同时补充单测与构建回归断言，继续覆盖 issue #327 相关的分包 npm 输出场景。** [`f141121`](https://github.com/weapp-vite/weapp-vite/commit/f141121d63b9c02172f551ffcfb5ca6e55ce7d80) by @sonofmagic
+
 ## 2.0.45
 
 ### Patch Changes
