@@ -47,18 +47,19 @@ export default defineConfig({
 | 主题 | 内容概览 |
 | --- | --- |
 | [基础目录与资源收集](./paths.md) | `srcRoot` / `pluginRoot` / 静态资源拷贝 / 预留字段 |
-| [构建输出与兼容](./build-and-output.md) | `jsFormat` / `es5` / 输出目录推导 / 多端输出规则 |
+| [构建输出与兼容](./build-and-output.md) | `jsFormat` / `es5` / `multiPlatform` / 输出目录推导 |
 | [JSON 配置](./json.md) | `jsonAlias` / JSON 默认值 / 合并策略 |
 | [JS 配置](./js.md) | `tsconfigPaths`（vite-tsconfig-paths） |
-| [Vue SFC 配置](./vue.md) | `weapp.vue` 模板编译与 class/style 运行时 |
-| [分包配置](./subpackages.md) | 独立/普通分包、依赖裁剪、共享样式 |
+| [Vue SFC 配置](./vue.md) | `weapp.vue.template` 模板编译与 class/style 运行时 |
+| [分包配置](./subpackages.md) | 独立/普通分包、`inlineConfig`、共享样式 |
 | [Worker 配置](./worker.md) | Worker 入口与构建输出 |
+| [库模式配置](./lib.md) | `weapp.lib` 入口、路径保持、组件 JSON 与 DTS |
 | [生成脚手架配置](./generate.md) | `weapp.generate` 目录结构、后缀与模板定制 |
-| [npm 配置](./npm.md) | 自动/手动构建、`weapp.npm` 字段、缓存与优化 |
+| [npm 配置](./npm.md) | 自动/手动构建、主包/分包依赖落位、缓存与优化 |
 | [WXML 配置](./wxml.md) | WXML 扫描与模板处理行为 |
 | [WXS 配置](./wxs.md) <span class="wv-badge wv-badge--experimental">experimental</span> | WXS 处理与调试建议 |
 | [自动导入组件配置](./auto-import-components.md) | `weapp.autoImportComponents` 字段与产物输出 |
-| [共享配置](./shared.md) | 自动路由、调试钩子、HMR 与共享 chunk 策略 |
+| [共享配置](./shared.md) | 自动路由、Wevu 默认值、`injectWeapi`、日志、HMR 与 chunk |
 | [Web 运行时配置](./web.md) <span class="wv-badge wv-badge--experimental">experimental</span> | `weapp.web` 浏览器端预览与调试 |
 
 > 仍在寻找 Vite 原生配置？可直接参考 [Vite 官方配置文档](https://cn.vitejs.dev/config/)。

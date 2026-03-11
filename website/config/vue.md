@@ -26,13 +26,14 @@ keywords:
 - **类型**：
   ```ts
   {
-    // 注意：removeComments / simplifyWhitespace 暂未接入编译流程
     removeComments?: boolean
     simplifyWhitespace?: boolean
     scopedSlotsCompiler?: 'auto' | 'augmented' | 'off'
     scopedSlotsRequireProps?: boolean
     slotMultipleInstance?: boolean
     classStyleRuntime?: 'auto' | 'wxs' | 'js'
+    objectLiteralBindMode?: 'runtime' | 'inline'
+    mustacheInterpolation?: 'compact' | 'spaced'
     classStyleWxsShared?: boolean
   }
   ```
@@ -50,6 +51,8 @@ export default defineConfig({
         scopedSlotsRequireProps: true,
         slotMultipleInstance: true,
         classStyleRuntime: 'js',
+        objectLiteralBindMode: 'runtime',
+        mustacheInterpolation: 'compact',
         classStyleWxsShared: true,
       },
     },
@@ -68,10 +71,16 @@ export default defineConfig({
   - `js`：强制 JS（默认）。
   - `auto`：平台支持 WXS 时优先 WXS，否则回退 JS。
   - `wxs`：强制 WXS，不支持时回退 JS 并告警。
+- `objectLiteralBindMode`：对象字面量 `v-bind` 的输出方式。
+  - `runtime`：默认，借助运行时中间变量输出。
+  - `inline`：直接内联对象字面量到模板插值。
+- `mustacheInterpolation`：Mustache 输出风格。
+  - `compact`：默认，输出 `{{expr}}`。
+  - `spaced`：输出 `{{ expr }}`，更便于调试阅读。
 - `classStyleWxsShared`：是否复用 class/style 的 WXS helper（主包与非独立分包共享，独立分包各自生成）。
 
 > [!NOTE]
-> `removeComments` / `simplifyWhitespace` 目前尚未接入实际编译流程，仅保留类型入口。
+> `removeComments` / `simplifyWhitespace` 当前仍是兼容性预留位，尚未接入实际编译流程；其余字段已经参与模板编译输出。
 
 ## `weapp.vue.autoImport` {#weapp-vue-autoimport}
 - **类型**：`boolean`
@@ -79,3 +88,4 @@ export default defineConfig({
 - **说明**：保留字段，当前不影响构建行为。
 
 > 组件自动导入请使用 [`weapp.autoImportComponents`](/config/auto-import-components.md)。
+> 如果你在使用 Wevu 的 `<script setup>` / JSON 宏，请继续阅读 [/wevu/vue-sfc/config](/wevu/vue-sfc/config)。

@@ -34,5 +34,8 @@ keywords:
 ## 相关链接
 
 - 配置总览：`/config/`
+- 基础目录与资源收集：`/config/paths`
+- 构建输出与兼容：`/config/build-and-output`
 - JS 配置：`/config/js`
 - JSON 配置：`/config/json`
+- 共享配置（Wevu 默认值 / injectWeapi / HMR）：`/config/shared`

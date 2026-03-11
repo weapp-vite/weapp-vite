@@ -17,6 +17,8 @@ keywords:
 
 - `weapp.autoRoutes`：生成路由清单与类型，供 `app.json.ts` 或业务代码使用
 - `weapp.debug`：遇到“为什么没扫描到 / 为什么没输出”时怎么定位
+- `weapp.logger`：控制 CLI / 构建日志级别与标签输出
+- `weapp.injectWeapi`：在运行时注入 `@wevu/api` 的 `wpi` 实例
 - `weapp.mcp`：AI 协作时的 MCP 服务开关与监听配置
 
 组件自动导入已经拆到 [自动导入组件配置](/config/auto-import-components.md) 单独说明。
@@ -99,6 +101,66 @@ export default defineConfig({
 1. **确认分包有没有参与构建**：用 `watchFiles` 看看独立分包的 `miniprogram_npm` 是否生成、文件是否被监听到。
 2. **定位构建卡顿**：在 `resolveId` / `load` 里打时间戳，快速找出慢的模块或目录。
 3. **排查组件自动导入**：组件没被识别时，先确认 `.json` 是否包含 `component: true`，再看 `autoImportComponents.globs` 是否命中。
+
+## `weapp.logger` {#weapp-logger}
+- **类型**：`LoggerConfig`
+- **作用**：透传给 `@weapp-core/logger`，统一控制 `weapp-vite` CLI、构建器和分析命令的日志输出。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    logger: {
+      level: 'info',
+      tags: {
+        build: true,
+        mcp: false,
+      },
+    },
+  },
+})
+```
+
+适用场景：
+- CI 中希望减少冗余日志，只保留警告/错误。
+- 本地调试时希望只打开构建、分析或特定子系统的日志标签。
+
+> [!TIP]
+> 字段细节以 `@weapp-core/logger` 的类型提示为准；`weapp-vite` 这里只做透传，不额外扩展私有字段。
+
+## `weapp.injectWeapi` {#weapp-injectweapi}
+- **类型**：`boolean | { enabled?: boolean; replaceWx?: boolean; globalName?: string }`
+- **默认值**：`{ enabled: false, replaceWx: false, globalName: 'wpi' }`
+- **作用**：在 App 入口注入 `@wevu/api` 导出的 `wpi` 实例；可选地把全局 `wx` / `my` / 当前平台对象代理到该实例上。
+
+### 配置示例
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    injectWeapi: {
+      enabled: true,
+      replaceWx: false,
+      globalName: 'wpi',
+    },
+  },
+})
+```
+
+### 字段说明
+
+1. `enabled`：是否启用 `wpi` 注入。
+2. `replaceWx`：是否把源码中的 `wx` / `my` / 当前平台全局对象访问重写到注入实例。
+3. `globalName`：挂到全局对象上的变量名，默认是 `wpi`。
+
+### 使用建议
+
+- 仅想在运行时全局暴露 `wpi`，但不改动现有 `wx.xxx` 调用：`enabled: true, replaceWx: false`。
+- 想统一走 `@wevu/api` 的适配层：再开启 `replaceWx: true`。
+- 若项目未安装 `@wevu/api`，构建时会跳过注入并给出告警。
 
 ## `weapp.mcp` {#weapp-mcp}
 - **类型**：`boolean | { enabled?: boolean; autoStart?: boolean; host?: string; port?: number; endpoint?: string }`

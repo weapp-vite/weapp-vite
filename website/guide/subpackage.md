@@ -30,7 +30,7 @@ keywords:
 官方说明可参考：[分包加载 - 微信官方文档](https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages.html)。以下内容聚焦于 `weapp-vite` 的行为和调优手段。
 
 ::: tip 分包配置入口
-通过 [`weapp.subPackages`](/config/subpackages.md#weapp-subpackages) 可以为每个 `root` 单独开启独立编译、裁剪 `dependencies` 或注入 `inlineConfig`。当需要强制开启独立分包、给特定分包设置额外的 `define`、或为某些分包关闭自动组件导入时，优先在 `vite.config.ts` 中调整该项。
+通过 [`weapp.subPackages`](/config/subpackages.md#weapp-subpackages) 可以为每个 `root` 单独开启独立编译、注入 `inlineConfig`、覆盖自动组件导入和共享样式。若还要控制 npm 依赖落位，请配合 [`weapp.npm.subPackages`](/config/npm.md#主包--分包依赖落位) 使用。
 :::
 
 > [!NOTE]
@@ -161,7 +161,7 @@ flowchart LR
 }
 ```
 
-2. 在 `vite.config.ts` 里为该 `root` 配置 `weapp.subPackages`（关键是 `independent` + `dependencies`，其余按需）：
+2. 在 `vite.config.ts` 里为该 `root` 配置 `weapp.subPackages`（关键是 `independent`，其余按需）：
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -270,5 +270,5 @@ pnpm run analyze -- --json --output report/analyze.json
 ## 常见问题
 
 - **本地运行时报路径错误？** 检查页面是否引用了其他分包的资源，或在 `weapp.chunks` 中启用了与你项目不符的策略。
-- **产物体积过大？** 使用 `weapp.subPackages[].dependencies` 精确声明每个独立分包需要的 npm 依赖，剩余依赖保持在主包。
+- **产物体积过大？** 使用 `weapp.npm.mainPackage.dependencies` 与 `weapp.npm.subPackages.<root>.dependencies` 精确声明主包/分包 npm 依赖落位。
 - **想在分包中调试 Worker？** 记得同时在 `weapp.worker` 中声明入口，并确保 Worker 文件位于对应分包目录。

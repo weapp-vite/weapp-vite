@@ -407,6 +407,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'Vue SFC 配置', link: '/config/vue' },
       { text: '分包配置', link: '/config/subpackages' },
       { text: 'Worker 配置', link: '/config/worker' },
+      { text: '库模式配置', link: '/config/lib' },
       { text: '生成脚手架配置', link: '/config/generate' },
       { text: 'npm 配置', link: '/config/npm' },
       { text: 'WXML 配置', link: '/config/wxml' },
