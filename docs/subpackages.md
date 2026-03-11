@@ -191,6 +191,89 @@ export default defineConfig({
 - 当主包设置为 `false` 后，如果某个依赖既没有出现在主包配置里，也没有出现在任何分包配置里，它就不会被输出到最终产物。
 - 同一个依赖可以同时声明在多个分包下，此时每个分包都会得到各自的一份本地 `miniprogram_npm`。
 
+## 自动导入组件与分包 npm 如何配合
+
+在“分包 + npm + 自动导入组件”场景下，需要把这三件事分开理解：
+
+- `autoImportComponents` 负责把模板里的组件名解析成 `usingComponents` 路径。
+- `weapp.npm.mainPackage.dependencies` / `weapp.npm.subPackages.<root>.dependencies` 负责决定 npm 依赖最终输出到主包还是某个分包。
+- 构建产物的 emit 阶段会把分包内命中的 npm 引用改写成分包本地 `miniprogram_npm` 相对路径。
+
+也就是说，自动导入组件本身不会决定“这个 npm 组件应该落在哪个包里”。它只会先产出类似：
+
+```json
+{
+  "usingComponents": {
+    "t-button": "tdesign-miniprogram/button/button"
+  }
+}
+```
+
+后续是否把这条路径本地化到某个分包，取决于你有没有为该分包声明：
+
+```ts
+export default defineConfig({
+  weapp: {
+    npm: {
+      subPackages: {
+        'subpackages/user': {
+          dependencies: [/^tdesign-miniprogram$/],
+        },
+      },
+    },
+  },
+})
+```
+
+### 推荐用法：TDesign 只存在于某个分包
+
+如果 `tdesign-miniprogram` 只在 `subpackages/user` 内使用，可以这样配置：
+
+```ts
+import { defineConfig, TDesignResolver } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    autoImportComponents: {
+      resolvers: [TDesignResolver()],
+    },
+    npm: {
+      mainPackage: {
+        dependencies: false,
+      },
+      subPackages: {
+        'subpackages/user': {
+          dependencies: [
+            /^tdesign-miniprogram$/,
+          ],
+        },
+      },
+    },
+  },
+})
+```
+
+当 `subpackages/user/**` 下的页面或组件模板中使用 `<t-button />` 时，构建链路会依次发生：
+
+1. 模板分析阶段识别出 `t-button`。
+2. `TDesignResolver` 将它解析为 `tdesign-miniprogram/button/button`。
+3. 页面或组件 JSON 先生成 npm 风格的 `usingComponents`。
+4. npm 构建阶段依据 `weapp.npm.subPackages['subpackages/user'].dependencies`，把 `tdesign-miniprogram` 输出到 `dist/subpackages/user/miniprogram_npm`。
+5. emit 阶段将 `subpackages/user/**` 下命中的 JS `require(...)` 与 JSON `usingComponents` 路径重写为分包内相对路径，例如 `../miniprogram_npm/tdesign-miniprogram/button/button`。
+
+最终效果是：
+
+- 主包不会生成 `miniprogram_npm/tdesign-miniprogram`。
+- `subpackages/user/miniprogram_npm/tdesign-miniprogram` 会存在。
+- 只有该分包下的页面和组件会引用这份本地 npm 产物。
+
+### 这套机制的边界
+
+- 如果主包页面也使用了 `<t-button />`，那主包同样必须能够拿到 `tdesign-miniprogram`；不能只配置到分包里。
+- `autoImportComponents` 不会根据引用图自动帮你把 npm 依赖分配到某个分包；真正决定落包位置的仍然是 `weapp.npm.*.dependencies`。
+- 分包级 `autoImportComponents` 适合控制“扫描哪些本地组件 / 使用哪些 resolver”；分包级 `npm.subPackages` 才负责“这个分包生成哪些本地 npm 依赖”。
+- 同一个 npm 组件库可以同时被多个分包声明，各分包会得到各自独立的一份 `miniprogram_npm`。
+
 ## 运行期体验优化
 
 ### 独立分包
