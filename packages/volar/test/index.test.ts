@@ -3,6 +3,81 @@ import { createVueLanguagePlugin } from '@vue/language-core'
 import ts from 'typescript'
 import plugin from '../src/index'
 
+function createLanguagePlugin(skipTemplateCodegen = false) {
+  return createVueLanguagePlugin(
+    ts,
+    {},
+    {
+      target: 3.5,
+      lib: 'wevu',
+      typesRoot: '',
+      extensions: ['.vue'],
+      vitePressExtensions: [],
+      petiteVueExtensions: [],
+      jsxSlots: false,
+      strictVModel: false,
+      strictCssModules: false,
+      checkUnknownProps: false,
+      checkUnknownEvents: false,
+      checkUnknownDirectives: false,
+      checkUnknownComponents: false,
+      inferComponentDollarEl: false,
+      inferComponentDollarRefs: false,
+      inferTemplateDollarAttrs: false,
+      inferTemplateDollarEl: false,
+      inferTemplateDollarRefs: false,
+      inferTemplateDollarSlots: false,
+      skipTemplateCodegen,
+      fallthroughAttributes: false,
+      resolveStyleImports: false,
+      resolveStyleClassNames: false,
+      fallthroughComponentNames: [],
+      dataAttributes: [],
+      htmlAttributes: [],
+      optionsWrapper: [],
+      macros: {
+        defineProps: ['defineProps'],
+        defineSlots: ['defineSlots'],
+        defineEmits: ['defineEmits'],
+        defineExpose: ['defineExpose'],
+        defineModel: ['defineModel'],
+        defineOptions: ['defineOptions'],
+        withDefaults: ['withDefaults'],
+      },
+      composables: {
+        useAttrs: ['useAttrs'],
+        useCssModule: ['useCssModule'],
+        useSlots: ['useSlots'],
+        useTemplateRef: ['useTemplateRef'],
+      },
+      plugins: [plugin],
+      experimentalModelPropName: {},
+    },
+    id => id,
+  )
+}
+
+function getGeneratedServiceScript(source: string, skipTemplateCodegen = false) {
+  const languagePlugin = createLanguagePlugin(skipTemplateCodegen)
+  const snapshot = {
+    getText: (start: number, end: number) => source.slice(start, end),
+    getLength: () => source.length,
+    getChangeRange: () => undefined,
+  }
+
+  const root = languagePlugin.createVirtualCode?.('fixture.vue', 'vue', snapshot)
+  expect(root).toBeTruthy()
+
+  const serviceScript = languagePlugin.typescript?.getServiceScript(root!)
+  expect(serviceScript).toBeTruthy()
+
+  return {
+    languagePlugin,
+    root: root!,
+    generated: serviceScript!.code.snapshot.getText(0, serviceScript!.code.snapshot.getLength()),
+  }
+}
+
 describe('@weapp-vite/volar plugin', () => {
   it('uses the latest Vue language plugin version', () => {
     const result = plugin({} as any)
@@ -13,58 +88,22 @@ describe('@weapp-vite/volar plugin', () => {
   })
 
   it('injects wxs modules into script setup bindings for template type checking', () => {
-    const languagePlugin = createVueLanguagePlugin(
-      ts,
-      {},
-      {
-        target: 3.5,
-        lib: 'wevu',
-        typesRoot: '',
-        extensions: ['.vue'],
-        vitePressExtensions: [],
-        petiteVueExtensions: [],
-        jsxSlots: false,
-        strictVModel: false,
-        strictCssModules: false,
-        checkUnknownProps: false,
-        checkUnknownEvents: false,
-        checkUnknownDirectives: false,
-        checkUnknownComponents: false,
-        inferComponentDollarEl: false,
-        inferComponentDollarRefs: false,
-        inferTemplateDollarAttrs: false,
-        inferTemplateDollarEl: false,
-        inferTemplateDollarRefs: false,
-        inferTemplateDollarSlots: false,
-        skipTemplateCodegen: false,
-        fallthroughAttributes: false,
-        resolveStyleImports: false,
-        resolveStyleClassNames: false,
-        fallthroughComponentNames: [],
-        dataAttributes: [],
-        htmlAttributes: [],
-        optionsWrapper: [],
-        macros: {
-          defineProps: ['defineProps'],
-          defineSlots: ['defineSlots'],
-          defineEmits: ['defineEmits'],
-          defineExpose: ['defineExpose'],
-          defineModel: ['defineModel'],
-          defineOptions: ['defineOptions'],
-          withDefaults: ['withDefaults'],
-        },
-        composables: {
-          useAttrs: ['useAttrs'],
-          useCssModule: ['useCssModule'],
-          useSlots: ['useSlots'],
-          useTemplateRef: ['useTemplateRef'],
-        },
-        plugins: [plugin],
-        experimentalModelPropName: {},
-      },
-      id => id,
-    )
+    const source = `<script setup lang="ts">
+const title = 'demo'
+</script>
+<template>
+  <wxs src="./phoneReg.wxs" module="phoneReg" />
+  <view>{{ phoneReg.toHide(title) }}</view>
+</template>`
+    const { generated, root } = getGeneratedServiceScript(source)
+    expect(generated).toContain(`const phoneReg = {} as Record<string, (...args: any[]) => any>`)
+    expect(generated).toContain(`__VLS_ctx.phoneReg`)
 
+    const embeddedIds = Array.from(forEachEmbeddedCode(root!), code => code.id)
+    expect(embeddedIds).toContain('script_ts')
+  })
+
+  it('still injects wxs declarations when template codegen is skipped, but template ctx bindings depend on Vue template codegen', () => {
     const source = `<script setup lang="ts">
 const title = 'demo'
 </script>
@@ -73,24 +112,9 @@ const title = 'demo'
   <view>{{ phoneReg.toHide(title) }}</view>
 </template>`
 
-    const snapshot = {
-      getText: (start: number, end: number) => source.slice(start, end),
-      getLength: () => source.length,
-      getChangeRange: () => undefined,
-    }
-
-    const root = languagePlugin.createVirtualCode?.('fixture.vue', 'vue', snapshot)
-    expect(root).toBeTruthy()
-
-    const serviceScript = languagePlugin.typescript?.getServiceScript(root!)
-    expect(serviceScript).toBeTruthy()
-
-    const generated = serviceScript!.code.snapshot.getText(0, serviceScript!.code.snapshot.getLength())
+    const { generated } = getGeneratedServiceScript(source, true)
     expect(generated).toContain(`const phoneReg = {} as Record<string, (...args: any[]) => any>`)
-    expect(generated).toContain(`__VLS_ctx.phoneReg`)
-
-    const embeddedIds = Array.from(forEachEmbeddedCode(root!), code => code.id)
-    expect(embeddedIds).toContain('script_ts')
+    expect(generated).not.toContain(`__VLS_ctx.phoneReg`)
   })
 
   it('creates a synthetic script setup block for wxs modules when no script exists', () => {
