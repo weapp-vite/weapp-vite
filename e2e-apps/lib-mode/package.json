@@ -9,5 +9,8 @@
     "build": "weapp-vite build",
     "pretest:types": "node ./scripts/prepare-type-fixtures.mjs",
     "test:types": "tsd"
+  },
+  "devDependencies": {
+    "weapp-vite": "workspace:*"
   }
 }

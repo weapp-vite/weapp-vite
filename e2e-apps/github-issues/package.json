@@ -12,5 +12,8 @@
     "lodash": "catalog:",
     "merge": "catalog:",
     "tdesign-miniprogram": "catalog:"
+  },
+  "devDependencies": {
+    "weapp-vite": "workspace:*"
   }
 }

@@ -1059,13 +1059,29 @@ importers:
         specifier: workspace:*
         version: link:../../packages/wevu
 
-  e2e-apps/app-lifecycle-native: {}
+  e2e-apps/app-lifecycle-native:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
-  e2e-apps/app-lifecycle-wevu-ts: {}
+  e2e-apps/app-lifecycle-wevu-ts:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
-  e2e-apps/app-lifecycle-wevu-vue: {}
+  e2e-apps/app-lifecycle-wevu-vue:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
-  e2e-apps/auto-import-vue-sfc: {}
+  e2e-apps/auto-import-vue-sfc:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
   e2e-apps/auto-routes-define-app-json:
     devDependencies:
@@ -1076,9 +1092,17 @@ importers:
         specifier: workspace:*
         version: link:../../packages/wevu
 
-  e2e-apps/base: {}
+  e2e-apps/base:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
-  e2e-apps/chunk-modes: {}
+  e2e-apps/chunk-modes:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
   e2e-apps/github-issues:
     dependencies:
@@ -1094,6 +1118,10 @@ importers:
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.12.3
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
   e2e-apps/issue-814-tailwind3:
     devDependencies:
@@ -1146,17 +1174,41 @@ importers:
         specifier: workspace:*
         version: link:../../packages/wevu
 
-  e2e-apps/lib-mode: {}
+  e2e-apps/lib-mode:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
-  e2e-apps/lifecycle-compare: {}
+  e2e-apps/lifecycle-compare:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
-  e2e-apps/object-literal-bind-prop: {}
+  e2e-apps/object-literal-bind-prop:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
-  e2e-apps/script-setup-macros-js-with-defaults-invalid: {}
+  e2e-apps/script-setup-macros-js-with-defaults-invalid:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
-  e2e-apps/script-setup-macros-mapping: {}
+  e2e-apps/script-setup-macros-mapping:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
-  e2e-apps/style-import-vue: {}
+  e2e-apps/style-import-vue:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
   e2e-apps/subpackage-shared-strategy-complex-a:
     devDependencies:
@@ -1176,9 +1228,17 @@ importers:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
 
-  e2e-apps/wevu-features: {}
+  e2e-apps/wevu-features:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
-  e2e-apps/wevu-runtime-e2e: {}
+  e2e-apps/wevu-runtime-e2e:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
 
   extensions/vscode: {}
 
@@ -7294,10 +7354,6 @@ packages:
   brace-expansion@2.0.2:
     resolution: {integrity: sha512-Jt0vHyM+jmUBqojB7E1NIYadt0vI0Qxjxd2TErW94wDz+E2LAm5vKMXXwg6ZZBTHPuUlDgQHKXvjGBdfcF1ZDQ==}
 
-  brace-expansion@5.0.3:
-    resolution: {integrity: sha512-fy6KJm2RawA5RcHkLa1z/ScpBeA762UF9KmZQxwIbDtRJrgLzM10depAiEQ+CXYcoiqW1/m96OAAoke2nE9EeA==}
-    engines: {node: 18 || 20 || >=22}
-
   brace-expansion@5.0.4:
     resolution: {integrity: sha512-h+DEnpVvxmfVefa4jFbCf5HdH5YMDXRsmKflpf1pILZWRFlTbJpxeU55nJl4Smt5HQaGzg1o6RHFPJaOqnmBDg==}
     engines: {node: 18 || 20 || >=22}
@@ -10985,10 +11041,6 @@ packages:
   minimatch@5.1.9:
     resolution: {integrity: sha512-7o1wEA2RyMP7Iu7GNba9vc0RWWGACJOCZBJX2GJWip0ikV+wcOsgVuY9uE8CPiyQhkGFSlhuSkZPavN7u1c2Fw==}
     engines: {node: '>=10'}
-
-  minimatch@9.0.5:
-    resolution: {integrity: sha512-G6T0ZX48xgozx7587koeX9Ys2NYy6Gmv//P89sEte9V9whIapMNF4idKxnW2QtCcLiTWlb/wfCabAtAFWhhBow==}
-    engines: {node: '>=16 || 14 >=14.17'}
 
   minimatch@9.0.9:
     resolution: {integrity: sha512-OBwBN9AL4dqmETlpS2zasx+vTeWclWzkblfZk7KTA5j3jeOONz/tRCnZomUyvNg83wL5Zv9Ss6HMJXAgL8R2Yg==}
@@ -19976,8 +20028,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@5.9.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.0(typescript@5.9.3)
+      '@typescript-eslint/types': 8.57.0
       debug: 4.4.3
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -20950,10 +21002,6 @@ snapshots:
   brace-expansion@2.0.2:
     dependencies:
       balanced-match: 1.0.2
-
-  brace-expansion@5.0.3:
-    dependencies:
-      balanced-match: 4.0.4
 
   brace-expansion@5.0.4:
     dependencies:
@@ -23502,7 +23550,7 @@ snapshots:
     dependencies:
       foreground-child: 3.3.0
       jackspeak: 3.4.3
-      minimatch: 9.0.5
+      minimatch: 9.0.9
       minipass: 7.1.2
       package-json-from-dist: 1.0.1
       path-scurry: 1.11.1
@@ -25426,7 +25474,7 @@ snapshots:
 
   minimatch@10.2.1:
     dependencies:
-      brace-expansion: 5.0.3
+      brace-expansion: 5.0.4
 
   minimatch@10.2.3:
     dependencies:
@@ -25441,10 +25489,6 @@ snapshots:
       brace-expansion: 1.1.12
 
   minimatch@5.1.9:
-    dependencies:
-      brace-expansion: 2.0.2
-
-  minimatch@9.0.5:
     dependencies:
       brace-expansion: 2.0.2
 
