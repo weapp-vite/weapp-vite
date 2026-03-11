@@ -6,5 +6,8 @@
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build"
+  },
+  "devDependencies": {
+    "weapp-vite": "workspace:*"
   }
 }
