@@ -1,10 +1,40 @@
+import type { VueVirtualCode } from '@vue/language-core'
 import { forEachEmbeddedCode } from '@volar/language-core'
 import { createVueLanguagePlugin } from '@vue/language-core'
 import ts from 'typescript'
 import plugin from '../src/index'
 
+interface ServiceScriptSnapshot {
+  getText: (start: number, end: number) => string
+  getLength: () => number
+}
+
+interface ServiceScript {
+  code: {
+    snapshot: ServiceScriptSnapshot
+  }
+}
+
+interface VueLanguagePluginWithTs {
+  createVirtualCode?: (
+    scriptId: string,
+    languageId: string,
+    snapshot: {
+      getText: (start: number, end: number) => string
+      getLength: () => number
+      getChangeRange: (oldSnapshot: { getText: (start: number, end: number) => string, getLength: () => number }) => undefined
+    },
+    ctx: {
+      getAssociatedScript: (scriptId: string) => undefined
+    },
+  ) => VueVirtualCode | undefined
+  typescript?: {
+    getServiceScript: (virtualCode: VueVirtualCode) => ServiceScript | undefined
+  }
+}
+
 function createLanguagePlugin(skipTemplateCodegen = false) {
-  return createVueLanguagePlugin(
+  return createVueLanguagePlugin<string>(
     ts,
     {},
     {
@@ -54,7 +84,7 @@ function createLanguagePlugin(skipTemplateCodegen = false) {
       experimentalModelPropName: {},
     },
     id => id,
-  )
+  ) as VueLanguagePluginWithTs
 }
 
 function getGeneratedServiceScript(source: string, skipTemplateCodegen = false) {
@@ -65,7 +95,9 @@ function getGeneratedServiceScript(source: string, skipTemplateCodegen = false) 
     getChangeRange: () => undefined,
   }
 
-  const root = languagePlugin.createVirtualCode?.('fixture.vue', 'vue', snapshot)
+  const root = languagePlugin.createVirtualCode?.('fixture.vue', 'vue', snapshot, {
+    getAssociatedScript: () => undefined,
+  })
   expect(root).toBeTruthy()
 
   const serviceScript = languagePlugin.typescript?.getServiceScript(root!)
