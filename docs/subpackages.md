@@ -11,7 +11,7 @@
 ## weapp-vite 的分包能力概览
 
 - 直接读取你维护的 `app.json`，无需额外 DSL。
-- 通过 `weapp.subPackages` 为每个分包追加独立编译、依赖裁剪、样式共享、组件自动导入等高级能力。
+- 通过 `weapp.subPackages` 与 `weapp.npm.subPackages` 为每个分包追加独立编译、npm 依赖裁剪、样式共享、组件自动导入等高级能力。
 - `chunks.sharedStrategy` 控制跨包共享模块的输出策略，避免主包/分包体积异常。
 - 在 `package.json` 中添加 `\"analyze\": \"weapp-vite analyze\"` 脚本后，执行 `pnpm run analyze` 可生成分包报告，定位共享依赖和重复模块。
 
@@ -74,11 +74,28 @@ export default defineConfig({
   weapp: {
     srcRoot: 'src',
     autoRoutes: true,
+    npm: {
+      mainPackage: {
+        // 明确禁止主包输出 miniprogram_npm
+        dependencies: false,
+      },
+      subPackages: {
+        'packages/order': {
+          dependencies: [
+            'dayjs',
+            /^tdesign-miniprogram$/,
+          ],
+        },
+        'packages/profile': {
+          dependencies: [
+            'lodash',
+          ],
+        },
+      },
+    },
     subPackages: {
       'packages/order': {
         independent: true,
-        // 只在订单分包保留支付相关依赖
-        dependencies: [/^@order\//, 'dayjs'],
         inlineConfig: {
           define: { 'import.meta.env.ORDER_SCOPE': 'true' },
         },
@@ -114,12 +131,72 @@ export default defineConfig({
 
 > 自动导入组件：主包与每个分包的 `components/**/*.wxml` 会默认被自动扫描。若分包需独立 Resolver/Typed 输出，可通过 `subPackages.<root>.autoImportComponents` 进一步覆盖；若某个分包不希望自动导入，也可以设置 `subPackages.<root>.autoImportComponents = false`。构建器会在主包与独立构建时分别应用对应配置，保证 `OrderMetrics` 等本地组件无需重复维护 `usingComponents`。
 
+## npm 依赖分配规则
+
+- `weapp.npm.mainPackage.dependencies` 控制主包 `miniprogram_npm` 的输出范围。
+- `weapp.npm.subPackages.<root>.dependencies` 控制对应分包本地 `miniprogram_npm` 的输出范围。
+- `subPackages` 的 key 必须是分包 `root`，例如 `packages/order`，不是分包名，也不是页面路径。
+- 这里的匹配目标是 npm 包名本身，例如 `dayjs`、`lodash`、`tdesign-miniprogram`；推荐优先使用精确字符串，只有在需要批量匹配时再使用正则。
+
+### `mainPackage.dependencies` 的三种常见写法
+
+- `undefined`：默认行为。主包会按根 `package.json.dependencies` 全量输出 `miniprogram_npm`。
+- `false`：显式禁用主包 `miniprogram_npm`。适合“主包完全不保留 npm，只按分包声明分发”的场景。
+- `[]`：当前实现下也会让主包最终不输出依赖内容，但它表达的是“白名单为空”，语义不如 `false` 明确，不建议作为禁用主包的推荐写法。
+
+### 推荐配置示例
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    npm: {
+      mainPackage: {
+        dependencies: false,
+      },
+      subPackages: {
+        'subpackages/issue-327': {
+          dependencies: [
+            'dayjs',
+            'tdesign-miniprogram',
+          ],
+        },
+        'subpackages/item': {
+          dependencies: [
+            'lodash',
+          ],
+        },
+        'subpackages/user': {
+          dependencies: [
+            'merge',
+          ],
+        },
+      },
+    },
+  },
+})
+```
+
+上述配置的含义是：
+
+- 主包不生成根级 `miniprogram_npm`。
+- `dayjs` 和 `tdesign-miniprogram` 只会进入 `subpackages/issue-327/miniprogram_npm`。
+- `lodash` 只会进入 `subpackages/item/miniprogram_npm`。
+- `merge` 只会进入 `subpackages/user/miniprogram_npm`。
+
+需要注意：
+
+- 这套配置是“显式声明依赖分配表”，不是根据页面里的 `import` 自动反推落包位置。
+- 当主包设置为 `false` 后，如果某个依赖既没有出现在主包配置里，也没有出现在任何分包配置里，它就不会被输出到最终产物。
+- 同一个依赖可以同时声明在多个分包下，此时每个分包都会得到各自的一份本地 `miniprogram_npm`。
+
 ## 运行期体验优化
 
 ### 独立分包
 
 - `independent: true` 会让分包运行在独立上下文，无法直接访问主包全局数据。
-- 使用 `weapp.subPackages.<root>.dependencies` 精确控制 `miniprogram_npm` 产物，防止主包依赖泄漏到独立分包。
+- 使用 `weapp.npm.subPackages.<root>.dependencies` 精确控制 `miniprogram_npm` 产物，防止主包依赖泄漏到独立分包。
 - 通过 `inlineConfig` 为独立分包追加自定义 `define`、插件或按需关闭自动导入。
 
 ### 分包预加载
