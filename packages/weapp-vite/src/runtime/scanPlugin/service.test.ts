@@ -212,6 +212,8 @@ describe('scanPlugin service', () => {
     expect(service.subPackageMap.has('pkgA')).toBe(true)
     expect(service.independentSubPackageMap.has('pkgA')).toBe(true)
     expect(service.subPackageMap.get('pkgA')?.subPackage.dependencies).toEqual(['dep-a-from-npm'])
+    expect(ctx.runtimeState.scan.appEntry.json.subPackages[0]).not.toHaveProperty('dependencies')
+    expect(ctx.runtimeState.scan.appEntry.json.subPackages[0]).not.toHaveProperty('inlineConfig')
     expect(service.drainIndependentDirtyRoots()).toEqual(['pkgA'])
     expect(service.drainIndependentDirtyRoots()).toEqual([])
     expect(service.isMainPackageFileName('pages/home/index')).toBe(true)
