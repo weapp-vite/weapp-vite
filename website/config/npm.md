@@ -43,10 +43,17 @@ keywords:
   {
     enable?: boolean
     cache?: boolean
+    mainPackage?: {
+      dependencies?: false | (string | RegExp)[]
+    }
+    subPackages?: Record<string, {
+      dependencies?: (string | RegExp)[]
+    }>
     buildOptions?: (options: NpmBuildOptions, meta: { name: string; entry: InputOption }) => NpmBuildOptions | undefined
+    alipayNpmMode?: 'node_modules' | 'miniprogram_npm'
   }
   ```
-- **默认值**：`{ enable: true, cache: true }`
+- **默认值**：`{ enable: true, cache: true, alipayNpmMode: 'node_modules' }`
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -56,6 +63,14 @@ export default defineConfig({
     npm: {
       enable: true,
       cache: true,
+      mainPackage: {
+        dependencies: false,
+      },
+      subPackages: {
+        'packages/order': {
+          dependencies: [/^tdesign-miniprogram/],
+        },
+      },
       buildOptions(options, { name }) {
         if (name === 'lodash') {
           return {
@@ -76,7 +91,43 @@ export default defineConfig({
 字段说明：
 - `enable`：关闭后 **不会自动构建** `miniprogram_npm`。如果你的代码仍保留 `require('pkg')`，需要自行处理（如 devtools 构建 npm）。
 - `cache`：是否启用 npm 构建缓存（缓存目录：`node_modules/weapp-vite/.cache/`）。
+- `mainPackage.dependencies`：
+  - `undefined`：默认行为，按根 `package.json.dependencies` 输出到主包；
+  - `false`：禁止输出主包 `miniprogram_npm`；
+  - `string[] | RegExp[]`：只把命中的依赖输出到主包。
+- `subPackages`：为特定分包声明本地 npm 依赖范围。命中的分包会输出自己的 `miniprogram_npm`，并将分包内命中的 npm 引用重写到本地目录。
 - `buildOptions`：为单个包覆写 Vite 库模式构建参数。
+- `alipayNpmMode`：支付宝平台 npm 目录风格。默认 `node_modules`，若要兼容微信风格目录，可切到 `miniprogram_npm`。
+
+## 主包 / 分包依赖落位
+
+默认情况下，`weapp-vite` 会把根 `package.json.dependencies` 视为运行时依赖，输出到主包 `miniprogram_npm`。
+
+如果你希望把依赖尽量下沉到独立分包，可以这样做：
+
+```ts
+export default defineConfig({
+  weapp: {
+    npm: {
+      mainPackage: {
+        dependencies: false,
+      },
+      subPackages: {
+        'packages/order': {
+          dependencies: [/^tdesign-miniprogram/, 'dayjs'],
+        },
+        'packages/member': {
+          dependencies: ['@scope/member-sdk'],
+        },
+      },
+    },
+  },
+})
+```
+
+适用场景：
+- 想把只被独立分包使用的依赖留在分包内，减少主包体积。
+- 想精确控制不同分包的 `miniprogram_npm` 内容。
 
 ## 控制 npm 依赖的压缩与 sourcemap
 
@@ -134,7 +185,8 @@ export default defineConfig({
 ## 常见问题
 
 - **npm 构建内容未更新**：尝试将 `cache` 设为 `false`，或清理 `node_modules/weapp-vite/.cache/`。
-- **分包体积过大**：结合 `weapp.subPackages.*.dependencies` 裁剪独立分包依赖。
+- **分包体积过大**：使用 `weapp.npm.mainPackage.dependencies` 和 `weapp.npm.subPackages.<root>.dependencies` 精确控制依赖落位。
+- **支付宝平台下 npm 目录不符合预期**：检查 `weapp.npm.alipayNpmMode`，默认是 `node_modules` 而不是 `miniprogram_npm`。
 
 ---
 

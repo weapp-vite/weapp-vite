@@ -17,6 +17,7 @@ keywords:
 - `dist/` 的目录结构
 - 是否输出 CommonJS 或 ESM
 - 是否启用 ES5 兼容降级
+- 是否启用多平台 `project.config` 解析
 - 是否压缩代码、是否生成 sourcemap
 
 [[toc]]
@@ -30,6 +31,30 @@ keywords:
 
 > [!NOTE]
 > 当启用 `weapp.multiPlatform` 且 `miniprogramRoot` 为相对路径 `dist` 时，输出会自动调整为 `dist/<platform>/dist`，以避免不同平台互相覆盖。
+
+## `weapp.multiPlatform` {#weapp-multiplatform}
+- **类型**：`boolean | { enabled?: boolean; projectConfigRoot?: string }`
+- **默认值**：`false`
+- **作用**：启用按平台读取 `project.config` 的模式，常用于同一仓库输出微信、支付宝、抖音等不同小程序平台。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    multiPlatform: {
+      enabled: true,
+      projectConfigRoot: 'config',
+    },
+  },
+})
+```
+
+行为说明：
+- `true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`。
+- 启用后会按 `${projectConfigRoot}/${platform}/<platform-config-file>` 解析平台配置。
+- 需要配合 CLI `--platform` 指定目标平台，例如 `weapp-vite build --platform alipay`。
+- 若你的多端项目都使用相对 `miniprogramRoot`，建议显式检查最终输出目录，避免多个平台互相覆盖。
 
 ## `weapp.jsFormat` {#weapp-jsformat}
 - **类型**：`'cjs' | 'esm'`
