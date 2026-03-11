@@ -32,8 +32,12 @@ describe.skipIf(CI.isCI)('subPackages-dependencies', () => {
       expect(files).toMatchSnapshot()
       expect(wxsCodeCache.size).toBe(0)
       expect(cssCodeCache.size).toBe(4)
+      const appJson = await fs.readJson(path.resolve(distDir, 'app.json'))
+      const packageB = [...appJson.subPackages ?? [], ...appJson.subpackages ?? []].find((item: { root?: string }) => item.root === 'packageB')
 
       expect(ctx.scanService.independentSubPackageMap).toMatchSnapshot()
+      expect(packageB).toBeDefined()
+      expect(packageB).not.toHaveProperty('dependencies')
       expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm'))).toBe(true)
       expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/buffer'))).toBe(true)
       expect(await fs.exists(path.resolve(distDir, 'miniprogram_npm/gm-crypto'))).toBe(true)

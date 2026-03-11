@@ -147,18 +147,21 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
           ...json.subpackages ?? [],
         ] as SubPackage[]
         for (const subPackage of independentSubPackages) {
-          const meta: SubPackageMetaValue = {
-            subPackage,
-            entries: resolveSubPackageEntries(subPackage),
-          }
           const subPackageConfig = configService.weappViteConfig?.subPackages?.[subPackage.root!]
           const npmSubPackageConfig = configService.weappViteConfig?.npm?.subPackages?.[subPackage.root!]
-          meta.subPackage.dependencies = npmSubPackageConfig?.dependencies
-          meta.subPackage.inlineConfig = subPackageConfig?.inlineConfig
+          const resolvedSubPackage = {
+            ...subPackage,
+            dependencies: npmSubPackageConfig?.dependencies,
+            inlineConfig: subPackageConfig?.inlineConfig,
+          }
+          const meta: SubPackageMetaValue = {
+            subPackage: resolvedSubPackage,
+            entries: resolveSubPackageEntries(resolvedSubPackage),
+          }
           meta.autoImportComponents = subPackageConfig?.autoImportComponents
           meta.styleEntries = normalizeSubPackageStyleEntries(
             subPackageConfig?.styles,
-            subPackage,
+            resolvedSubPackage,
             configService,
           )
           meta.watchSharedStyles = subPackageConfig?.watchSharedStyles ?? true
