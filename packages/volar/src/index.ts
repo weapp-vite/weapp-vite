@@ -16,6 +16,7 @@ const TS_LANG = 'ts'
 
 const BACKSLASH_RE = /\\/g
 const NON_SPACE_RE = /\S/
+const WXS_MODULE_RE = /<wxs[\s\S]*?module\s*=\s*(?:"([^"]+)"|'([^']+)')[\s\S]*?\/?>/gi
 
 const FULL_CAPABILITIES = {
   verification: true,
@@ -48,6 +49,72 @@ try {
 }
 catch {
   hasSchematicsTypes = false
+}
+
+function parseVueSfc(content: string, filename = 'component.vue') {
+  try {
+    const compilerSfc = require('@vue/compiler-sfc') as typeof import('@vue/compiler-sfc')
+    return compilerSfc.parse(content, { filename })
+  }
+  catch {
+    return undefined
+  }
+}
+
+function collectWxsModuleNames(templateContent?: string) {
+  if (!templateContent) {
+    return []
+  }
+  const names = new Set<string>()
+  for (const match of templateContent.matchAll(WXS_MODULE_RE)) {
+    const name = match[1] ?? match[2]
+    if (name) {
+      names.add(name)
+    }
+  }
+  return [...names]
+}
+
+function createWxsModuleDeclarations(moduleNames: string[]) {
+  if (!moduleNames.length) {
+    return ''
+  }
+  return moduleNames
+    .map(name => `const ${name} = {} as Record<string, (...args: any[]) => any>`)
+    .join('\n')
+}
+
+function appendWxsDeclarations(code: string, moduleNames: string[]) {
+  const declarations = createWxsModuleDeclarations(moduleNames)
+  if (!declarations) {
+    return code
+  }
+  return code
+    ? `${code}\n\n${declarations}\n`
+    : `${declarations}\n`
+}
+
+function createSyntheticScriptSetup(moduleNames: string[]) {
+  const content = createWxsModuleDeclarations(moduleNames)
+  if (!content) {
+    return undefined
+  }
+  return {
+    type: 'script',
+    content,
+    loc: {
+      source: `<script setup lang="ts">\n${content}\n</script>`,
+      start: { column: 1, line: 1, offset: 0 },
+      end: { column: 1, line: 1, offset: 0 },
+    },
+    attrs: {
+      setup: true,
+      lang: 'ts',
+    },
+    lang: 'ts',
+    setup: true,
+    name: 'scriptSetup',
+  }
 }
 
 function normalizeFilename(filename?: string) {
@@ -169,6 +236,32 @@ const plugin: VueLanguagePlugin = (ctx) => {
   return {
     name,
     version: PLUGIN_VERSION,
+    order: -1,
+    parseSFC2(fileName, languageId, content) {
+      if (languageId !== 'vue') {
+        return
+      }
+
+      const parsed = parseVueSfc(content, fileName)
+      if (!parsed) {
+        return
+      }
+
+      const descriptor = parsed.descriptor
+      const wxsModuleNames = collectWxsModuleNames(descriptor.template?.content)
+      if (!wxsModuleNames.length) {
+        return parsed
+      }
+
+      if (descriptor.scriptSetup) {
+        descriptor.scriptSetup.content = appendWxsDeclarations(descriptor.scriptSetup.content, wxsModuleNames)
+      }
+      else {
+        descriptor.scriptSetup = createSyntheticScriptSetup(wxsModuleNames) as unknown as NonNullable<typeof descriptor.scriptSetup>
+      }
+
+      return parsed
+    },
     getEmbeddedCodes(_, sfc) {
       const names = []
       for (let i = 0; i < sfc.customBlocks.length; i++) {
