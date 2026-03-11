@@ -45,7 +45,7 @@
     ],
     "lib": "wevu",
     "strictTemplates": false,
-    "skipTemplateCodegen": true
+    "skipTemplateCodegen": false
   },
   "include": [
     "src/**/*.ts",
