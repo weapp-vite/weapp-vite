@@ -85,7 +85,7 @@ async function toModifyAvatar() {
     })
 
     const tempUrlArr = tempFilePath.split('/')
-    const tempFileName = tempUrlArr[tempUrlArr.length - 1] || tempFilePath
+    const tempFileName = tempUrlArr.at(-1) || tempFilePath
     showToast(`已选择图片-${tempFileName}`)
   }
   catch (error: any) {
@@ -122,7 +122,8 @@ function onClose() {
 }
 
 function onConfirm(e: any) {
-  const value = Number(e?.detail?.value || 0)
+  const rawValue = e?.detail?.value ?? e?.detail?.target?.code ?? e?.target?.value ?? personInfo.value.gender
+  const value = Number(rawValue || 0)
   typeVisible.value = false
   personInfo.value = {
     ...personInfo.value,
