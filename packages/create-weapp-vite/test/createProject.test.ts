@@ -248,7 +248,7 @@ describe('createProject', () => {
     expect(pkgJson.devDependencies['typescript']).toBe('^5.9.3')
     expect(pkgJson.devDependencies['miniprogram-api-typings']).toBe('^5.1.1')
     expect(pkgJson.devDependencies['postcss']).toBe('^8.5.6')
-    expect(pkgJson.devDependencies['sass']).toBe('^1.97.3')
+    expect(pkgJson.devDependencies['sass']).toBe('^1.98.0')
     expect(pkgJson.devDependencies['weapp-vite']).not.toContain('workspace:')
     expect(pkgJson.devDependencies['weapp-vite']).not.toContain('catalog:')
   })
