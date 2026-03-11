@@ -30,6 +30,31 @@ describe('runtime: register component helpers', () => {
     expect(resolved.effectiveOnReachBottom).toBe(userOnReachBottom)
   })
 
+  it('falls back to default handlers when feature flags are enabled without user handlers', () => {
+    const resolved = resolveComponentFeatures({
+      features: {
+        enableOnAddToFavorites: true,
+        enableOnPullDownRefresh: true,
+        enableOnRouteDoneFallback: true,
+        enableOnSaveExitState: true,
+        enableOnShareAppMessage: true,
+        enableOnShareTimeline: true,
+      } as any,
+    })
+
+    expect(resolved.enableOnAddToFavorites).toBe(true)
+    expect(resolved.enableOnPullDownRefresh).toBe(true)
+    expect(resolved.enableOnRouteDoneFallback).toBe(true)
+    expect(resolved.enableOnSaveExitState).toBe(true)
+    expect(resolved.enableOnShareAppMessage).toBe(true)
+    expect(resolved.enableOnShareTimeline).toBe(true)
+    expect(resolved.effectiveOnAddToFavorites()).toEqual({})
+    expect(resolved.effectiveOnSaveExitState()).toEqual({ data: undefined })
+    expect(resolved.effectiveOnPullDownRefresh()).toBeUndefined()
+    expect(resolved.effectiveOnShareAppMessage()).toBeUndefined()
+    expect(resolved.effectiveOnShareTimeline()).toBeUndefined()
+  })
+
   it('creates component methods with runtime binding', () => {
     const user = { tap: vi.fn() }
     const runtimeMethods = {

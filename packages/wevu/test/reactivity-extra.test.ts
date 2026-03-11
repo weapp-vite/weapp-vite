@@ -116,6 +116,26 @@ describe('shallowRef and toRefs', () => {
     expect(calls).toBe(3)
   })
 
+  it('supports shallowRef default fallback and triggerRef fallback branches', () => {
+    const fallback = shallowRef<string | undefined>(undefined, 'fallback')
+    expect(fallback.value).toBe('fallback')
+
+    const bareRef: any = {
+      __v_isRef: true,
+      set value(nextValue: number) {
+        this.assigned = nextValue
+      },
+      get value() {
+        return 42
+      },
+    }
+
+    triggerRef(bareRef)
+    expect(bareRef.assigned).toBe(42)
+    expect(isShallowRef(() => {})).toBe(false)
+    expect(() => triggerRef(null as any)).not.toThrow()
+  })
+
   it('converts reactive objects to refs and warns on plain objects', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
