@@ -1,5 +1,15 @@
 # weapp-vite
 
+## 6.7.7
+
+### Patch Changes
+
+- 🐛 **将 `rolldown-require` 的 `rolldown` peer 依赖最低版本提升到 `1.0.0-rc.9`，并为 `weapp-vite` 增加安装时的真实 rolldown 版本检查与运行时版本判断修复，避免工作区继续解析旧的 `1.0.0-rc.3`，同时同步 `create-weapp-vite` 的模板依赖目录版本。** [`88b2d31`](https://github.com/weapp-vite/weapp-vite/commit/88b2d316fe1238ea928abf7d63d0cb63ae29e1e8) by @sonofmagic
+
+- 🐛 **为 `weapp-vite build` 增加主包与分包体积报告，并支持在包体积超过默认 2 MB 阈值时输出告警，便于在构建结束后直接发现包体积风险。** [`96f8e8e`](https://github.com/weapp-vite/weapp-vite/commit/96f8e8e0976eb6546025ad16162dccdbccd0e50a) by @sonofmagic
+- 📦 **Dependencies** [`88b2d31`](https://github.com/weapp-vite/weapp-vite/commit/88b2d316fe1238ea928abf7d63d0cb63ae29e1e8)
+  → `rolldown-require@2.0.7`, `@weapp-vite/web@1.3.2`, `wevu@6.7.7`
+
 ## 6.7.6
 
 ### Patch Changes
