@@ -182,7 +182,7 @@ VS Code 里装了 Vue 官方插件（Vue - Official / Volar）的话，Weapp-vit
 npx skills add sonofmagic/skills
 ```
 
-常用的几个：`weapp-vite-best-practices`、`weapp-vite-vue-sfc-best-practices`、`wevu-best-practices`。
+常用的几个：`weapp-vite-best-practices`、`docs-and-website-sync`、`weapp-vite-vue-sfc-best-practices`、`wevu-best-practices`。
 
 然后启动 MCP：
 

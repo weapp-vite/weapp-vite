@@ -46,6 +46,7 @@ const mcpCommands = [
 
 const directSkills = [
   'weapp-vite-best-practices',
+  'docs-and-website-sync',
   'weapp-vite-wevu-performance-best-practices',
   'weapp-vite-vue-sfc-best-practices',
   'wevu-best-practices',

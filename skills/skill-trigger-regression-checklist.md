@@ -2,9 +2,10 @@
 
 ## 目标
 
-验证以下 6 个 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
+验证以下 7 个 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
 
 - `weapp-vite-best-practices`
+- `docs-and-website-sync`
 - `weapp-ide-cli-best-practices`
 - `weapp-vite-vue-sfc-best-practices`
 - `wevu-best-practices`
@@ -152,6 +153,23 @@ pnpm skills:score:json
 5. 边界提问：我们主要是想调 `subpackage` 和 `sharedStrategy`，提升首开速度，先看哪个 skill？
    预期 skill：`weapp-vite-best-practices`
 
+### G. docs-and-website-sync
+
+1. 提问：根据现在仓库里的代码和脚本，把 `website` 的 AI 页面和 Skills 文档同步一下。
+   预期 skill：`docs-and-website-sync`
+
+2. 提问：我们刚给 CLI 加了新能力，帮我把站点、README 和相关 Skills 入口一起更新。
+   预期 skill：`docs-and-website-sync`
+
+3. 提问：现在文档入口有点过期，请按真实实现刷新 `guide/ai`、组件页和生成产物。
+   预期 skill：`docs-and-website-sync`
+
+4. 提问：新增了一个 skill，帮我把文档入口、回归清单和评分脚本一起补齐。
+   预期 skill：`docs-and-website-sync`
+
+5. 边界提问：我不是要同步文档，我是要改 `vite.config.ts` 的分包策略。
+   预期 skill：`weapp-vite-best-practices`
+
 ## 冲突场景回归
 
 1. 提问：我这个页面 `v-model` 报错，同时首包也超了，先看哪个？
@@ -173,6 +191,10 @@ pnpm skills:score:json
 5. 提问：页面切换慢，同时 `onUnload` 里还有一堆运行时状态清理，先按性能还是运行时语义来拆？
    预期主 skill：`weapp-vite-wevu-performance-best-practices`
    预期次 skill：`wevu-best-practices`
+
+6. 提问：CLI 能力刚变了，我既要更新站点说明，也要梳理命令归属和透传规则，先看哪个？
+   预期主 skill：`docs-and-website-sync`
+   预期次 skill：`weapp-ide-cli-best-practices`
 
 ## 通过标准
 
@@ -220,3 +242,9 @@ pnpm skills:score:json
 | F4   |      |            |            |           |      |
 | F5   |      |            |            |           |      |
 | X5   |      |            |            |           |      |
+| G1   |      |            |            |           |      |
+| G2   |      |            |            |           |      |
+| G3   |      |            |            |           |      |
+| G4   |      |            |            |           |      |
+| G5   |      |            |            |           |      |
+| X6   |      |            |            |           |      |

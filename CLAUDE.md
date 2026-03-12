@@ -68,8 +68,12 @@ pnpm pr:exit          # Exit pre-release mode
 This repo includes installable user-facing skills in `./skills`:
 
 - `weapp-vite-best-practices`
+- `docs-and-website-sync`
+- `weapp-vite-wevu-performance-best-practices`
 - `weapp-vite-vue-sfc-best-practices`
 - `wevu-best-practices`
+- `native-to-weapp-vite-wevu-migration`
+- `weapp-ide-cli-best-practices`
 - Project-specific Claude skills can also live in `./.claude/skills` (for example: `playwright-cli`).
 
 Recommended remote install source for all public skills:
