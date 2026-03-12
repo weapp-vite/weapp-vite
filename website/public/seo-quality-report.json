@@ -1,35 +1,35 @@
 {
-  "generatedAt": "2026-03-01T16:28:20.200Z",
+  "generatedAt": "2026-03-12T06:17:00.077Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
-    "files": 164,
-    "docs": 155,
-    "blog": 4,
+    "files": 186,
+    "docs": 171,
+    "blog": 10,
     "page": 5,
-    "withFrontmatter": 163,
-    "missingFrontmatter": 1
+    "withFrontmatter": 186,
+    "missingFrontmatter": 0
   },
   "coverage": {
     "all": {
-      "total": 164,
-      "title": 163,
-      "description": 162,
-      "keywords": 162,
-      "date": 5
+      "total": 186,
+      "title": 186,
+      "description": 186,
+      "keywords": 186,
+      "date": 9
     },
     "docs": {
-      "total": 155,
-      "title": 154,
-      "description": 153,
-      "keywords": 153,
+      "total": 171,
+      "title": 171,
+      "description": 171,
+      "keywords": 171,
       "date": 1
     },
     "blog": {
-      "total": 4,
-      "title": 4,
-      "description": 4,
-      "keywords": 4,
-      "date": 4
+      "total": 10,
+      "title": 10,
+      "description": 10,
+      "keywords": 10,
+      "date": 8
     },
     "page": {
       "total": 5,
@@ -41,22 +41,22 @@
   },
   "coveragePercent": {
     "all": {
-      "title": 99.4,
-      "description": 98.8,
-      "keywords": 98.8,
-      "date": 3
+      "title": 100,
+      "description": 100,
+      "keywords": 100,
+      "date": 4.8
     },
     "docs": {
-      "title": 99.4,
-      "description": 98.7,
-      "keywords": 98.7,
+      "title": 100,
+      "description": 100,
+      "keywords": 100,
       "date": 0.6
     },
     "blog": {
       "title": 100,
       "description": 100,
       "keywords": 100,
-      "date": 100
+      "date": 80
     },
     "page": {
       "title": 100,
@@ -107,39 +107,8 @@
     "seoQualityReportPublic": true
   },
   "quality": {
-    "checked": 164,
-    "issues": [
-      {
-        "path": "demos/my-app/README.md",
-        "type": "missing-description",
-        "message": "缺少 description。"
-      },
-      {
-        "path": "demos/my-app/README.md",
-        "type": "missing-keywords",
-        "message": "缺少 keywords。"
-      },
-      {
-        "path": "wevu/api-reference/index.md",
-        "type": "non-normalized-keywords",
-        "message": "keywords 未标准化（去噪/去重/格式不一致）。",
-        "detail": "当前: wevu, api, reference, vue-style, 指南 | 标准: wevu, api, reference, vue-style"
-      },
-      {
-        "path": "wevu/api/index.md",
-        "type": "missing-description",
-        "message": "缺少 description。"
-      },
-      {
-        "path": "wevu/api/index.md",
-        "type": "missing-keywords",
-        "message": "缺少 keywords。"
-      }
-    ]
+    "checked": 186,
+    "issues": []
   },
-  "qualityIssueCounts": {
-    "missing-description": 2,
-    "missing-keywords": 2,
-    "non-normalized-keywords": 1
-  }
+  "qualityIssueCounts": {}
 }
