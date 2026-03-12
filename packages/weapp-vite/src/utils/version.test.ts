@@ -1,118 +1,139 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { checkRuntime } from './version'
 
 afterEach(() => {
-  vi.resetModules()
-  vi.clearAllMocks()
-  vi.doUnmock('../logger')
-  vi.doUnmock('node:process')
   delete (globalThis as any).Deno
   delete (globalThis as any).Bun
+  vi.unstubAllGlobals()
 })
 
-async function loadVersionModule(options: {
-  process: any
-  setup?: () => void
-}) {
-  const warn = vi.fn()
-  vi.doMock('../logger', () => ({ default: { warn } }))
-  vi.doMock('node:process', () => ({ default: options.process }))
-  options.setup?.()
-  const mod = await import('./version')
-  return { warn, ...mod }
+function createWarn() {
+  return vi.fn()
 }
 
 describe('utils/version', () => {
-  it('warns when the current runtime has no minimum requirement configured', async () => {
-    const { checkRuntime, warn } = await loadVersionModule({
-      process: {
-        versions: { node: '20.0.0' },
-        version: 'v20.0.0',
-      },
-    })
+  it('warns when the current runtime has no minimum requirement configured', () => {
+    const warn = createWarn()
 
-    checkRuntime({ bun: '1.0.0' })
+    checkRuntime(
+      { bun: '1.0.0' },
+      {
+        runtimeInfo: {
+          runtime: 'node',
+          version: '20.0.0',
+        },
+        logger: { warn },
+      },
+    )
+
     expect(warn).toHaveBeenCalledWith('未为 node 指定最低版本，已跳过检查。')
   })
 
-  it('warns when the runtime version is lower than required', async () => {
-    const { checkRuntime, warn } = await loadVersionModule({
-      process: {
-        versions: { node: '1.0.0' },
-        version: 'v1.0.0',
-      },
-    })
+  it('warns when the runtime version is lower than required', () => {
+    const warn = createWarn()
 
-    checkRuntime({ node: '2.0.0' })
+    checkRuntime(
+      { node: '2.0.0' },
+      {
+        runtimeInfo: {
+          runtime: 'node',
+          version: '1.0.0',
+        },
+        logger: { warn },
+      },
+    )
+
     expect(warn).toHaveBeenCalledWith(
       '当前 node 版本为 1.0.0 无法满足 `weapp-vite` 最低要求的版本(>= 2.0.0)',
     )
   })
 
-  it('does not warn when the runtime already satisfies the requirement', async () => {
-    const { checkRuntime, warn } = await loadVersionModule({
-      process: {
-        versions: { node: '3.0.0' },
-        version: 'v3.0.0',
-      },
-    })
+  it('does not warn when the runtime already satisfies the requirement', () => {
+    const warn = createWarn()
 
-    checkRuntime({ node: '2.0.0' })
+    checkRuntime(
+      { node: '2.0.0' },
+      {
+        runtimeInfo: {
+          runtime: 'node',
+          version: '3.0.0',
+        },
+        logger: { warn },
+      },
+    )
+
     expect(warn).not.toHaveBeenCalled()
   })
 
-  it('warns when the runtime version does not satisfy a range requirement', async () => {
-    const { checkRuntime, warn } = await loadVersionModule({
-      process: {
-        versions: { node: '21.0.0' },
-        version: 'v21.0.0',
-      },
-    })
+  it('warns when the runtime version does not satisfy a range requirement', () => {
+    const warn = createWarn()
 
-    checkRuntime({ node: '^20.19.0 || >=22.12.0' })
+    checkRuntime(
+      { node: '^20.19.0 || >=22.12.0' },
+      {
+        runtimeInfo: {
+          runtime: 'node',
+          version: '21.0.0',
+        },
+        logger: { warn },
+      },
+    )
+
     expect(warn).toHaveBeenCalledWith(
       '当前 node 版本为 21.0.0 无法满足 `weapp-vite` 最低要求的版本(^20.19.0 || >=22.12.0)',
     )
   })
 
-  it('does not warn when the runtime version satisfies a range requirement', async () => {
-    const { checkRuntime, warn } = await loadVersionModule({
-      process: {
-        versions: { node: '22.12.0' },
-        version: 'v22.12.0',
-      },
-    })
+  it('does not warn when the runtime version satisfies a range requirement', () => {
+    const warn = createWarn()
 
-    checkRuntime({ node: '^20.19.0 || >=22.12.0' })
+    checkRuntime(
+      { node: '^20.19.0 || >=22.12.0' },
+      {
+        runtimeInfo: {
+          runtime: 'node',
+          version: '22.12.0',
+        },
+        logger: { warn },
+      },
+    )
+
     expect(warn).not.toHaveBeenCalled()
   })
 
-  it('supports deno runtime detection', async () => {
-    const { checkRuntime, warn } = await loadVersionModule({
-      process: {},
-      setup: () => {
-        (globalThis as any).Deno = {
-          version: {
-            deno: '1.40.0',
-            v8: '1',
-            typescript: '1',
-          },
-        }
-      },
-    })
+  it('supports deno runtime detection', () => {
+    const warn = createWarn()
 
-    checkRuntime({ deno: '1.0.0' })
+    ;(globalThis as any).Deno = {
+      version: {
+        deno: '1.40.0',
+        v8: '1',
+        typescript: '1',
+      },
+    }
+
+    checkRuntime(
+      { deno: '1.0.0' },
+      {
+        logger: { warn },
+      },
+    )
+
     expect(warn).not.toHaveBeenCalled()
   })
 
-  it('supports bun runtime detection and version comparison', async () => {
-    const { checkRuntime, warn } = await loadVersionModule({
-      process: {},
-      setup: () => {
-        (globalThis as any).Bun = { version: '1.0.1' }
-      },
-    })
+  it('supports bun runtime detection and version comparison', () => {
+    const warn = createWarn()
 
-    checkRuntime({ bun: '2.0.0' })
+    ;(globalThis as any).Bun = { version: '1.0.1' }
+
+    checkRuntime(
+      { bun: '2.0.0' },
+      {
+        logger: { warn },
+      },
+    )
+
     expect(warn).toHaveBeenCalledWith(
       '当前 bun 版本为 1.0.1 无法满足 `weapp-vite` 最低要求的版本(>= 2.0.0)',
     )
