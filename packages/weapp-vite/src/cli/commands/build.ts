@@ -8,6 +8,7 @@ import { createCompilerContext } from '../../createContext'
 import logger, { colors } from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { logBuildAppFinish } from '../logBuildAppFinish'
+import { logBuildPackageSizeReport } from '../logBuildPackageSizeReport'
 import { openIde, resolveIdeProjectPath } from '../openIde'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
@@ -54,7 +55,14 @@ export function registerBuildCommand(cli: CAC) {
       const enableAnalyze = Boolean(options.analyze && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
       if (targets.runMini) {
-        await buildService.build(options)
+        const output = await buildService.build(options)
+        if (!Array.isArray(output) && 'output' in output) {
+          logBuildPackageSizeReport({
+            output,
+            subPackageMap: ctx.scanService?.subPackageMap,
+            warningBytes: configService.weappViteConfig.packageSizeWarningBytes,
+          })
+        }
         if (enableAnalyze) {
           const analyzeResult = await analyzeSubpackages(ctx)
           analyzeHandle = await startAnalyzeDashboard(analyzeResult, { watch: true }) ?? undefined

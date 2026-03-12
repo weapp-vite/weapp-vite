@@ -656,6 +656,16 @@ export interface WeappViteConfig {
    */
   logger?: LoggerConfig
   /**
+   * @description 主包/分包体积告警阈值（字节）。
+   * 构建结束后会始终输出主包与各分包的体积报告；
+   * 当某个包体积超过该阈值时，会额外输出警告。
+   * 设置为 0 或 undefined 可关闭告警，但不会关闭体积报告。
+   * @default 2097152 (2 MB)
+   * @example
+   * packageSizeWarningBytes: 2 * 1024 * 1024
+   */
+  packageSizeWarningBytes?: number
+  /**
    * @group json 配置
    * 文件引入别名
    * @example
