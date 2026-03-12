@@ -16,25 +16,44 @@ keywords:
 
 `Skills` 负责给 AI 注入稳定的工程流程，减少“回答看起来对、执行却跑偏”的情况。
 
-快速安装：
+如果你是直接使用公开技能仓库，先安装：
 
 ```bash
 npx skills add sonofmagic/skills
 ```
 
-安装后常用技能：
+如果你正在这个 monorepo 里开发，优先把仓库自带技能链接到本地环境：
+
+```bash
+pnpm skills:link
+```
+
+只想预览链接结果而不改本地环境时：
+
+```bash
+pnpm skills:link:dry
+```
+
+当前仓库内常用技能：
 
 ```text
 $weapp-vite-best-practices
+$weapp-vite-wevu-performance-best-practices
 $weapp-vite-vue-sfc-best-practices
 $wevu-best-practices
 $native-to-weapp-vite-wevu-migration
+$weapp-ide-cli-best-practices
 ```
 
 建议：
 
-1. 先让 AI 明确使用哪个 Skill，再开始具体任务。
-2. 让团队统一 Skill 名称与调用方式，方便复用提示词模板。
+1. 项目架构、分包、构建编排问题优先用 `weapp-vite-best-practices`。
+2. 卡顿、掉帧、白屏、内存告警优先用 `weapp-vite-wevu-performance-best-practices`。
+3. `.vue` 宏、模板兼容、`v-model`/`usingComponents` 问题优先用 `weapp-vite-vue-sfc-best-practices`。
+4. `wevu` 生命周期、状态、事件、store 问题优先用 `wevu-best-practices`。
+5. 原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 优先用 `native-to-weapp-vite-wevu-migration`。
+6. DevTools 自动化、`preview/upload/automator/config` 命令治理优先用 `weapp-ide-cli-best-practices`。
+7. 先让 AI 明确使用哪个 Skill，再开始具体任务。
 
 ## MCP
 

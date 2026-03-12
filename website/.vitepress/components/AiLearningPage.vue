@@ -46,13 +46,17 @@ const mcpCommands = [
 
 const directSkills = [
   'weapp-vite-best-practices',
+  'weapp-vite-wevu-performance-best-practices',
   'weapp-vite-vue-sfc-best-practices',
   'wevu-best-practices',
   'native-to-weapp-vite-wevu-migration',
+  'weapp-ide-cli-best-practices',
 ]
 
 const skillInstallCommand = 'npx skills add sonofmagic/skills'
+const skillLinkCommand = 'pnpm skills:link'
 const skillDirectCommand = computed(() => directSkills.map(skill => `$${skill}`).join('\n'))
+const DIRECT_SKILL_PREFIX_REGEX = /^\$/gm
 
 const llmsResources = computed(() => [
   {
@@ -80,7 +84,7 @@ const llmsResources = computed(() => [
 const copiedKey = ref<string | null>(null)
 
 function copyText(text: string, key: string) {
-  const normalizedText = text.replace(/^\$/gm, '')
+  const normalizedText = text.replace(DIRECT_SKILL_PREFIX_REGEX, '')
 
   const markCopied = () => {
     copiedKey.value = key
@@ -202,6 +206,16 @@ function copyText(text: string, key: string) {
 
             <article class="command-card">
               <header>
+                <h3>本仓库开发时链接本地 Skills</h3>
+                <button type="button" @click="copyText(skillLinkCommand, 'skill-link')">
+                  {{ copiedKey === 'skill-link' ? '已复制' : '复制命令' }}
+                </button>
+              </header>
+              <pre><code>{{ skillLinkCommand }}</code></pre>
+            </article>
+
+            <article class="command-card">
+              <header>
                 <h3>安装后可直接调用</h3>
                 <button type="button" @click="copyText(skillDirectCommand, 'skill-direct')">
                   {{ copiedKey === 'skill-direct' ? '已复制' : '复制命令' }}
@@ -218,7 +232,7 @@ function copyText(text: string, key: string) {
           </ul>
 
           <ol class="flow-list">
-            <li>先安装 `sonofmagic/skills`，再进入具体任务。</li>
+            <li>公开分发场景先安装 `sonofmagic/skills`，仓库开发场景优先执行 `pnpm skills:link`。</li>
             <li>让 AI 明确调用对应 Skill，减少自由发挥偏差。</li>
             <li>配合 MCP 让结果从“建议”变成“可执行 + 可验收”。</li>
           </ol>
@@ -575,7 +589,7 @@ function copyText(text: string, key: string) {
   color: var(--ai-muted);
 }
 
-@media (width <= 860px) {
+@media (max-width: 860px) {
   .ai-shell {
     min-height: 0;
     margin: 4px 0 14px;

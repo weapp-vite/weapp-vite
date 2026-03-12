@@ -2,13 +2,14 @@
 
 ## 目标
 
-验证以下 5 个 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
+验证以下 6 个 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
 
 - `weapp-vite-best-practices`
 - `weapp-ide-cli-best-practices`
 - `weapp-vite-vue-sfc-best-practices`
 - `wevu-best-practices`
 - `native-to-weapp-vite-wevu-migration`
+- `weapp-vite-wevu-performance-best-practices`
 
 ## 执行方式
 
@@ -134,6 +135,23 @@ pnpm skills:score:json
 5. 边界提问：我们现在只想优化 `vite.config.ts` 的分包和 chunk，不改 CLI。
    预期 skill：`weapp-vite-best-practices`
 
+### F. weapp-vite-wevu-performance-best-practices
+
+1. 提问：页面滚动明显掉帧，怀疑是 `onPageScroll` 里频繁 `setData`，该怎么系统排查？
+   预期 skill：`weapp-vite-wevu-performance-best-practices`
+
+2. 提问：首屏还行，但页面切换经常慢半拍甚至白屏，我想按导航链路做性能治理。
+   预期 skill：`weapp-vite-wevu-performance-best-practices`
+
+3. 提问：商品图片列表在 iPhone 上容易触发内存告警，`wevu` 这边该怎么收敛资源和缓存？
+   预期 skill：`weapp-vite-wevu-performance-best-practices`
+
+4. 提问：想给 `weapp-vite + wevu` 项目建一套性能基线、回归信号和回滚开关，应该怎么设计？
+   预期 skill：`weapp-vite-wevu-performance-best-practices`
+
+5. 边界提问：我们主要是想调 `subpackage` 和 `sharedStrategy`，提升首开速度，先看哪个 skill？
+   预期 skill：`weapp-vite-best-practices`
+
 ## 冲突场景回归
 
 1. 提问：我这个页面 `v-model` 报错，同时首包也超了，先看哪个？
@@ -151,6 +169,10 @@ pnpm skills:score:json
 4. 提问：我在 `weapp-vite` 里执行 `preview/upload`，想知道该走原生命令还是 `weapp-ide-cli` 透传。
    预期主 skill：`weapp-ide-cli-best-practices`
    预期次 skill：`weapp-vite-best-practices`
+
+5. 提问：页面切换慢，同时 `onUnload` 里还有一堆运行时状态清理，先按性能还是运行时语义来拆？
+   预期主 skill：`weapp-vite-wevu-performance-best-practices`
+   预期次 skill：`wevu-best-practices`
 
 ## 通过标准
 
@@ -192,3 +214,9 @@ pnpm skills:score:json
 | X2   |      |            |            |           |      |
 | X3   |      |            |            |           |      |
 | X4   |      |            |            |           |      |
+| F1   |      |            |            |           |      |
+| F2   |      |            |            |           |      |
+| F3   |      |            |            |           |      |
+| F4   |      |            |            |           |      |
+| F5   |      |            |            |           |      |
+| X5   |      |            |            |           |      |
