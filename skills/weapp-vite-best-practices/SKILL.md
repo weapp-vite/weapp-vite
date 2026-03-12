@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-best-practices
-description: Production playbook for weapp-vite project architecture, `vite.config.ts` weapp options, `app.json` routes/subPackages, chunk strategy, and CI/DevTools automation. Use when users ask to create/refactor weapp-vite projects, configure auto routes/components, split subpackages, optimize chunk output, or debug build/output issues (e.g. "配置 weapp-vite", "分包策略", "构建输出异常", "typed-router.d.ts 生成问题").
+description: Production playbook for repositories using the weapp-vite project layout, covering `vite.config.ts` weapp options, `app.json` routes/subPackages, chunk strategy, and CI/DevTools automation. Use when users ask to create/refactor weapp-vite projects, configure auto routes/components, split subpackages, optimize chunk output, or debug build/output issues (e.g. "配置 weapp-vite", "分包策略", "构建输出异常", "typed-router.d.ts 生成问题").
 ---
 
 # weapp-vite-best-practices

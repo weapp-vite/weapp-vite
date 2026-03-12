@@ -1,13 +1,13 @@
 ---
 name: release-and-changeset-best-practices
-description: Release and changeset workflow for the weapp-vite monorepo. Use this whenever the task involves adding changesets, deciding whether a change needs a release note, keeping `create-weapp-vite` in sync with `weapp-vite`/`wevu`/`templates/*`, checking Conventional Commits, or preparing package releases. Trigger on requests like "要不要加 changeset", "帮我补发版记录", "这个改动要不要 bump create-weapp-vite", "准备发布", "校验 changeset", or "按仓库规范提交/发布".
+description: Release and changeset workflow for repositories using the weapp-vite monorepo layout. Use this whenever the task involves adding changesets, deciding whether a change needs a release note, keeping `create-weapp-vite` in sync with `weapp-vite`/`wevu`/`templates/*`, checking Conventional Commits, or preparing package releases. Trigger on requests like "要不要加 changeset", "帮我补发版记录", "这个改动要不要 bump create-weapp-vite", "准备发布", "校验 changeset", or "按仓库规范提交/发布".
 ---
 
 # release-and-changeset-best-practices
 
 ## Purpose
 
-统一 weapp-vite monorepo 的 changeset、提交、版本联动和发布前检查，避免漏掉 `create-weapp-vite` bump、遗漏 changeset 或提交信息不符合仓库规范。
+统一这类仓库的 changeset、提交、版本联动和发布前检查，避免漏掉 `create-weapp-vite` bump、遗漏 changeset 或提交信息不符合约定。
 
 ## Trigger Signals
 
@@ -33,7 +33,7 @@ description: Release and changeset workflow for the weapp-vite monorepo. Use thi
 1. 先判断改动是否用户可见或行为受影响。
 2. 需要 changeset 时，检查是否还要联动 `create-weapp-vite`。
 3. 保持 changeset summary 使用中文。
-4. 默认交付是 commit-only，不自动 push；GitHub issue 修复例外按 PR 流程走。
+4. 遵循仓库约定的默认交付方式；若仓库采用 commit-only，则不要擅自 push；GitHub issue 修复按 PR 流程走。
 
 ## Execution Protocol
 
@@ -59,8 +59,8 @@ description: Release and changeset workflow for the weapp-vite monorepo. Use thi
 4. 提交与交付约束
 
 - 使用 Conventional Commits。
-- 默认只 commit，不 push。
-- GitHub issue 修复任务按 PR 流程处理，不能用普通 commit-only 流程替代。
+- 遵循仓库约定的默认交付方式；若未明确要求，不要擅自 push。
+- GitHub issue 修复任务按 PR 流程处理，不能用普通本地提交流程替代。
 
 5. 发布前检查
 
@@ -95,7 +95,7 @@ description: Release and changeset workflow for the weapp-vite monorepo. Use thi
 - 需要时已补 `.changeset/*.md` 且 summary 为中文。
 - 需要时已补 `create-weapp-vite` bump。
 - 提交方式符合 Conventional Commits。
-- 交付方式符合 commit-only / PR 例外规则。
+- 交付方式符合该仓库的默认交付规则，以及 issue 修复的 PR 例外规则。
 - 相关 release 检查脚本已运行或已说明未运行原因。
 
 ## References

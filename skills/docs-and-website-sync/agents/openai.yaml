@@ -4,7 +4,8 @@ interface:
   default_prompt: >-
     Use $docs-and-website-sync whenever the user asks to sync docs/website/skills
     with current code, refresh AI collaboration pages, update package docs after
-    capability changes, or fix stale documentation in the weapp-vite monorepo.
+    capability changes, or fix stale documentation in repositories using the
+    weapp-vite monorepo layout.
     Always inspect real source/package scripts first, then update affected entry
     pages, skill lists, and regression checklists before regenerating
     llms/SEO assets. If the task is mainly architecture/build design, switch to

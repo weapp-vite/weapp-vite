@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-wevu-performance-best-practices
-description: Performance playbook for `weapp-vite + wevu` mini-program projects, aligned with WeChat runtime guidance (`setData`, render, navigation, resource, memory). Use this whenever users report卡顿/掉帧/白屏/页面切换慢/内存告警，或希望系统性做性能治理、压测与回归。
+description: Performance playbook for mini-program projects using `weapp-vite + wevu`, aligned with WeChat runtime guidance (`setData`, render, navigation, resource, memory). Use this whenever users report卡顿/掉帧/白屏/页面切换慢/内存告警，或希望系统性做性能治理、压测与回归。
 ---
 
 # weapp-vite-wevu-performance-best-practices

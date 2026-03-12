@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-vue-sfc-best-practices
-description: Vue SFC implementation playbook for weapp-vite mini-program projects, including `<script setup lang="ts">`, JSON macros (`defineAppJson/definePageJson/defineComponentJson`), `usingComponents`, template directive compatibility, and SFC compile/runtime troubleshooting. Use when users ask about `.vue` authoring or refactoring in mini-programs (e.g. "v-model 在小程序里怎么写", "definePageJson 和 <json> 怎么选", "SFC 编译报错", "usingComponents 不生效").
+description: Vue SFC implementation playbook for mini-program projects using weapp-vite, including `<script setup lang="ts">`, JSON macros (`defineAppJson/definePageJson/defineComponentJson`), `usingComponents`, template directive compatibility, and SFC compile/runtime troubleshooting. Use when users ask about `.vue` authoring or refactoring in mini-programs (e.g. "v-model 在小程序里怎么写", "definePageJson 和 <json> 怎么选", "SFC 编译报错", "usingComponents 不生效").
 ---
 
 # weapp-vite-vue-sfc-best-practices

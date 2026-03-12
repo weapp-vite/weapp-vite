@@ -5,7 +5,8 @@ interface:
     Use $weapp-devtools-e2e-best-practices whenever the task involves e2e/ide
     runtime tests, miniprogram-automator usage, shared launch patterns,
     miniProgram.reLaunch sequencing, DevTools service port prerequisites, or
-    maintaining e2e-app project configs for IDE validation. Reuse one
+    maintaining e2e-app project configs for IDE validation in repositories
+    using the weapp-vite monorepo layout. Reuse one
     launchAutomator session per app suite, navigate with reLaunch, and sync
     project.private.config.json conditions when adding pages. If the task is
     mainly weapp-ide-cli command design, switch to

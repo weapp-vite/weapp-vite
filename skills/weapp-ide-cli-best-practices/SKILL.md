@@ -1,6 +1,6 @@
 ---
 name: weapp-ide-cli-best-practices
-description: "Command governance and automation playbook for weapp-ide-cli, including official CLI passthrough, automator commands, config/i18n persistence, command catalog export, and integration contracts with weapp-vite CLI dispatch."
+description: "Command governance and automation playbook for repositories using weapp-ide-cli with weapp-vite, including official CLI passthrough, automator commands, config/i18n persistence, command catalog export, and integration contracts with weapp-vite CLI dispatch."
 ---
 
 # weapp-ide-cli-best-practices

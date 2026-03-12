@@ -1,6 +1,6 @@
 ---
 name: weapp-devtools-e2e-best-practices
-description: WeChat DevTools runtime e2e playbook for the weapp-vite monorepo. Use this whenever the task involves `e2e/ide/**`, `miniprogram-automator`, DevTools service port checks, runtime WXML assertions, shared automator launch, `miniProgram.reLaunch(...)` sequencing, or maintaining `e2e-apps/*` DevTools project configs. Trigger on requests like "补 IDE e2e", "automator 用例怎么写", "DevTools runtime 验证", "为什么要复用 launchAutomator", "project.private.config.json 条件页怎么同步", or "这个用例要不要 reLaunch".
+description: WeChat DevTools runtime e2e playbook for repositories using the weapp-vite monorepo layout. Use this whenever the task involves `e2e/ide/**`, `miniprogram-automator`, DevTools service port checks, runtime WXML assertions, shared automator launch, `miniProgram.reLaunch(...)` sequencing, or maintaining `e2e-apps/*` DevTools project configs. Trigger on requests like "补 IDE e2e", "automator 用例怎么写", "DevTools runtime 验证", "为什么要复用 launchAutomator", "project.private.config.json 条件页怎么同步", or "这个用例要不要 reLaunch".
 ---
 
 # weapp-devtools-e2e-best-practices

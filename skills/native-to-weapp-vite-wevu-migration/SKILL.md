@@ -1,6 +1,6 @@
 ---
 name: native-to-weapp-vite-wevu-migration
-description: Structured migration workflow from native mini-program projects to `weapp-vite + wevu + Vue SFC`, covering phased rollout, behavior-equivalent conversion, typed props/events migration, platform guards, and migration-focused e2e validation with rollback checkpoints. Use when users ask to migrate native `Page/Component` code, replace `setData`-heavy patterns, map `properties/observers/triggerEvent`, or design safe incremental migration plans (e.g. "原生迁移到 weapp-vite", "setData 改造", "迁移回滚策略", "迁移 e2e 怎么测").
+description: Structured migration workflow for moving native mini-program projects to `weapp-vite + wevu + Vue SFC`, covering phased rollout, behavior-equivalent conversion, typed props/events migration, platform guards, and migration-focused e2e validation with rollback checkpoints. Use when users ask to migrate native `Page/Component` code, replace `setData`-heavy patterns, map `properties/observers/triggerEvent`, or design safe incremental migration plans (e.g. "原生迁移到 weapp-vite", "setData 改造", "迁移回滚策略", "迁移 e2e 怎么测").
 ---
 
 # native-to-weapp-vite-wevu-migration
