@@ -38,6 +38,7 @@ pnpm skills:link:dry
 
 ```text
 $weapp-vite-best-practices
+$docs-and-website-sync
 $weapp-vite-wevu-performance-best-practices
 $weapp-vite-vue-sfc-best-practices
 $wevu-best-practices
@@ -48,12 +49,13 @@ $weapp-ide-cli-best-practices
 建议：
 
 1. 项目架构、分包、构建编排问题优先用 `weapp-vite-best-practices`。
-2. 卡顿、掉帧、白屏、内存告警优先用 `weapp-vite-wevu-performance-best-practices`。
-3. `.vue` 宏、模板兼容、`v-model`/`usingComponents` 问题优先用 `weapp-vite-vue-sfc-best-practices`。
-4. `wevu` 生命周期、状态、事件、store 问题优先用 `wevu-best-practices`。
-5. 原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 优先用 `native-to-weapp-vite-wevu-migration`。
-6. DevTools 自动化、`preview/upload/automator/config` 命令治理优先用 `weapp-ide-cli-best-practices`。
-7. 先让 AI 明确使用哪个 Skill，再开始具体任务。
+2. 根据现有代码同步 `website`、`skills`、AI 指南时优先用 `docs-and-website-sync`。
+3. 卡顿、掉帧、白屏、内存告警优先用 `weapp-vite-wevu-performance-best-practices`。
+4. `.vue` 宏、模板兼容、`v-model`/`usingComponents` 问题优先用 `weapp-vite-vue-sfc-best-practices`。
+5. `wevu` 生命周期、状态、事件、store 问题优先用 `wevu-best-practices`。
+6. 原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 优先用 `native-to-weapp-vite-wevu-migration`。
+7. DevTools 自动化、`preview/upload/automator/config` 命令治理优先用 `weapp-ide-cli-best-practices`。
+8. 先让 AI 明确使用哪个 Skill，再开始具体任务。
 
 ## MCP
 
