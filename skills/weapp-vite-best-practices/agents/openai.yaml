@@ -3,7 +3,7 @@ interface:
   short_description: weapp-vite 工程化、分包、CLI 分发与构建调优（vite.config.ts / app.json / CI）
   default_prompt: >-
     Use $weapp-vite-best-practices for project-level architecture and build
-    orchestration in weapp-vite. Focus on `vite.config.ts` weapp options,
+    orchestration in repositories using the weapp-vite project layout. Focus on `vite.config.ts` weapp options,
     route/subpackage strategy, chunk sharing, CLI dispatch ownership between
     `weapp-vite` and `weapp-ide-cli`, and CI/DevTools workflow. If the issue
     is mainly SFC macro/template syntax, delegate to

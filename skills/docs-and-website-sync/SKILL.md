@@ -1,20 +1,20 @@
 ---
 name: docs-and-website-sync
-description: Documentation and website synchronization workflow for the weapp-vite monorepo. Use this whenever code capabilities have changed but docs/website/skills/release notes may be stale, or when the user asks to "update website", "sync docs with current code", "refresh AI guide/skills page", "补文档", or "根据现有代码更新文档". Always inspect the real code/package scripts first, then sync the affected website entry pages, skills docs, and generated LLM/SEO assets.
+description: Documentation and website synchronization workflow for repositories using the weapp-vite monorepo layout. Use this whenever code capabilities have changed but docs/website/skills/release notes may be stale, or when the user asks to "update website", "sync docs with current code", "refresh AI guide/skills page", "补文档", or "根据现有代码更新文档". Always inspect the real code/package scripts first, then sync the affected website entry pages, skills docs, and generated LLM/SEO assets.
 ---
 
 # docs-and-website-sync
 
 ## Purpose
 
-根据仓库当前真实能力，更新 `website`、`skills`、`README/CLAUDE` 等文档入口，并确保生成产物（如 `llms-index.json`、`seo-quality-report.json`）与源码一致。
+根据仓库真实能力，更新 `website`、`skills`、`README/CLAUDE` 等对外入口，并确保生成产物（如 `llms-index.json`、`seo-quality-report.json`）与源码一致。
 
 ## Trigger Signals
 
 - 用户要求“根据现有代码更新 website/docs/skills”。
 - 新增或调整了 CLI 命令、包能力、skill、AI 协作入口。
 - `website` 页面、`guide/ai`、`packages/*` 页面描述已经落后于实现。
-- 技能列表、安装方式、调用示例与仓库现状不一致。
+- 技能列表、安装方式、调用示例与当前仓库状态不一致。
 - 需要刷新 `llms` / SEO 相关生成资产。
 
 ## Scope Boundary
@@ -99,7 +99,7 @@ description: Documentation and website synchronization workflow for the weapp-vi
 
 ## Completion Checklist
 
-- 关键文档入口与当前实现一致。
+- 关键文档入口与实际实现一致。
 - skill 清单、安装方式、调用示例没有过期信息。
 - 如新增/调整 skill，回归清单与评分脚本已同步。
 - 如涉及网站内容，`website` 已成功构建。

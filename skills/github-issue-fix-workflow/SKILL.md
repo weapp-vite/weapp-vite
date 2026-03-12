@@ -1,6 +1,6 @@
 ---
 name: github-issue-fix-workflow
-description: GitHub issue fix workflow for the weapp-vite monorepo. Use this whenever the task is to fix a reported GitHub issue, reproduce a bug in `e2e-apps/github-issues`, prepare a PR from a clean worktree, or run the full "reproduce -> root cause -> unit/e2e coverage -> PR" loop. Trigger on requests like "修 GitHub issue", "复现这个 issue", "给这个 bug 补 github-issues case", "开 PR 修复", or "按仓库流程修这个问题".
+description: GitHub issue fix workflow for repositories using the weapp-vite monorepo layout. Use this whenever the task is to fix a reported GitHub issue, reproduce a bug in `e2e-apps/github-issues`, prepare a PR from an isolated worktree, or run the full "reproduce -> root cause -> unit/e2e coverage -> PR" loop. Trigger on requests like "修 GitHub issue", "复现这个 issue", "给这个 bug 补 github-issues case", "开 PR 修复", or "按仓库流程修这个问题".
 ---
 
 # github-issue-fix-workflow
@@ -31,7 +31,7 @@ description: GitHub issue fix workflow for the weapp-vite monorepo. Use this whe
 
 ## Quick Start
 
-1. 从主线分支创建独立 `git worktree`。
+1. 从主线或目标基线分支创建独立 `git worktree`。
 2. 在 `e2e-apps/github-issues` 先建立最小复现。
 3. 复现稳定后再做根因分析和源码修复。
 4. 补 unit + e2e + changeset，完成定向验证后再开 PR。
@@ -40,8 +40,8 @@ description: GitHub issue fix workflow for the weapp-vite monorepo. Use this whe
 
 1. 先隔离工作区
 
-- 在主线分支基础上创建本地 `git worktree`。
-- 不要直接在当前脏工作区里混做 issue 修复。
+- 在主线分支或约定基线上创建独立 `git worktree`。
+- 不要在混杂其他未完成改动的工作区里直接做 issue 修复。
 - worktree 命名与 issue 标识保持可追踪。
 
 2. 先复现，后修复
@@ -82,7 +82,7 @@ description: GitHub issue fix workflow for the weapp-vite monorepo. Use this whe
 7. 验证与收尾
 
 - 先跑定向 unit + e2e 验证，再决定是否扩大范围。
-- 本地验证通过后再开 PR 回主线。
+- 验证通过后再开 PR 回目标主线分支。
 - 视任务要求继续跟进 CI/CD，合并后清理临时 worktree。
 
 ## Guardrails
@@ -109,7 +109,7 @@ description: GitHub issue fix workflow for the weapp-vite monorepo. Use this whe
 - `e2e-apps/github-issues` 已有最小复现或已确认无需新增并说明原因。
 - 根因分析与最终修复一一对应。
 - unit tests 与 e2e tests 已补齐。
-- changeset 已添加且内容符合仓库规则。
+- changeset 已添加且内容符合该仓库规则。
 - PR 已创建或已明确记录下一步 PR 动作。
 
 ## References

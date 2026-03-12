@@ -5,9 +5,9 @@ interface:
     Use $release-and-changeset-best-practices whenever the task is to decide
     whether a change needs a changeset, prepare release notes, keep
     create-weapp-vite in sync with weapp-vite/wevu/templates, or follow the
-    monorepo's commit-and-release rules. Require Chinese changeset summaries,
-    Conventional Commits, and default commit-only delivery unless the task is a
-    GitHub issue PR workflow.
+    repository's commit-and-release rules. Require Chinese changeset summaries,
+    Conventional Commits, and the repository's default delivery policy unless
+    the task is a GitHub issue PR workflow.
 
 policy:
   allow_implicit_invocation: true
