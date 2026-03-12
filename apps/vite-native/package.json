@@ -57,7 +57,7 @@
     "@weapp-tailwindcss/merge": "2.1.6",
     "autoprefixer": "catalog:",
     "cos-wx-sdk-v5": "^1.8.0",
-    "dayjs": "^1.11.19",
+    "dayjs": "^1.11.20",
     "magic-string": "^0.30.21",
     "miniprogram-api-typings": "catalog:",
     "miniprogram-simulate": "^1.6.1",

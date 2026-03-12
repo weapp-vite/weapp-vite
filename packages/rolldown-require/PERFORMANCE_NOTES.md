@@ -3,7 +3,7 @@
 ## Scope
 
 This note focuses on cold-start and rebuild performance for `rolldown-require`
-while staying compatible with rolldown `1.0.0-rc.2`.
+while staying compatible with rolldown `1.0.0-rc.9`.
 
 ## Rolldown Core Behaviors That Matter
 
