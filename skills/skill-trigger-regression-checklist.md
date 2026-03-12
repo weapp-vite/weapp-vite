@@ -2,10 +2,13 @@
 
 ## 目标
 
-验证以下 7 个 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
+验证以下 10 个 skills 在隐式触发（不显式写 `$skill-name`）时是否命中正确：
 
 - `weapp-vite-best-practices`
 - `docs-and-website-sync`
+- `github-issue-fix-workflow`
+- `release-and-changeset-best-practices`
+- `weapp-devtools-e2e-best-practices`
 - `weapp-ide-cli-best-practices`
 - `weapp-vite-vue-sfc-best-practices`
 - `wevu-best-practices`
@@ -170,6 +173,57 @@ pnpm skills:score:json
 5. 边界提问：我不是要同步文档，我是要改 `vite.config.ts` 的分包策略。
    预期 skill：`weapp-vite-best-practices`
 
+### H. github-issue-fix-workflow
+
+1. 提问：这个 GitHub issue 我想按仓库流程修，先帮我建 worktree 并补一个最小复现。
+   预期 skill：`github-issue-fix-workflow`
+
+2. 提问：请把这个 bug 先放进 `e2e-apps/github-issues` 复现，再分析根因和修复。
+   预期 skill：`github-issue-fix-workflow`
+
+3. 提问：我需要一个从 issue 复现、补单测、补 e2e 到开 PR 的完整闭环。
+   预期 skill：`github-issue-fix-workflow`
+
+4. 提问：这个线上 bug 已经有 issue 了，帮我按 worktree + changeset + PR 的标准流程处理。
+   预期 skill：`github-issue-fix-workflow`
+
+5. 边界提问：我只是要更新 AI 文档入口，不是修 issue。
+   预期 skill：`docs-and-website-sync`
+
+### I. weapp-devtools-e2e-best-practices
+
+1. 提问：帮我给 `e2e/ide` 新增一个 runtime 用例，要求同一个 app 只启动一次 automator。
+   预期 skill：`weapp-devtools-e2e-best-practices`
+
+2. 提问：这个 IDE e2e 里多个页面场景应该怎么通过 `miniProgram.reLaunch(...)` 串起来？
+   预期 skill：`weapp-devtools-e2e-best-practices`
+
+3. 提问：我给 `e2e-app` 新增了页面，`project.private.config.json` 和真实 AppID 这块要怎么同步？
+   预期 skill：`weapp-devtools-e2e-best-practices`
+
+4. 提问：为什么仓库里不建议在每个 `it` 里都 `launchAutomator()`？这个 suite 该怎么重构？
+   预期 skill：`weapp-devtools-e2e-best-practices`
+
+5. 边界提问：我现在不是写 IDE e2e，而是设计 `weapp-ide-cli` 的 automator 命令。
+   预期 skill：`weapp-ide-cli-best-practices`
+
+### J. release-and-changeset-best-practices
+
+1. 提问：这个改动要不要加 changeset？如果要，顺便看看 commit 类型该怎么写。
+   预期 skill：`release-and-changeset-best-practices`
+
+2. 提问：我改了 `weapp-vite` 和模板，帮我判断是不是还要补 `create-weapp-vite` 的 changeset。
+   预期 skill：`release-and-changeset-best-practices`
+
+3. 提问：请按仓库规则检查这次发布前还缺哪些 changeset 和 release 校验。
+   预期 skill：`release-and-changeset-best-practices`
+
+4. 提问：这个 bugfix 要走 commit-only 还是 PR？changeset summary 应该怎么写才符合规范？
+   预期 skill：`release-and-changeset-best-practices`
+
+5. 边界提问：我现在不是准备发版，而是要补 GitHub issue 的复现和 PR 闭环。
+   预期 skill：`github-issue-fix-workflow`
+
 ## 冲突场景回归
 
 1. 提问：我这个页面 `v-model` 报错，同时首包也超了，先看哪个？
@@ -195,6 +249,18 @@ pnpm skills:score:json
 6. 提问：CLI 能力刚变了，我既要更新站点说明，也要梳理命令归属和透传规则，先看哪个？
    预期主 skill：`docs-and-website-sync`
    预期次 skill：`weapp-ide-cli-best-practices`
+
+7. 提问：一个 GitHub issue 里的复现同时涉及运行时生命周期异常，先按 issue workflow 还是 wevu 语义来拆？
+   预期主 skill：`github-issue-fix-workflow`
+   预期次 skill：`wevu-best-practices`
+
+8. 提问：我要新增 DevTools runtime e2e，同时 CLI 的 automator 子命令也要对齐，先看哪个？
+   预期主 skill：`weapp-devtools-e2e-best-practices`
+   预期次 skill：`weapp-ide-cli-best-practices`
+
+9. 提问：这个 issue 修复快做完了，我还想一起判断 changeset、commit 和 PR 交付方式，先看哪个？
+   预期主 skill：`github-issue-fix-workflow`
+   预期次 skill：`release-and-changeset-best-practices`
 
 ## 通过标准
 
@@ -248,3 +314,21 @@ pnpm skills:score:json
 | G4   |      |            |            |           |      |
 | G5   |      |            |            |           |      |
 | X6   |      |            |            |           |      |
+| H1   |      |            |            |           |      |
+| H2   |      |            |            |           |      |
+| H3   |      |            |            |           |      |
+| H4   |      |            |            |           |      |
+| H5   |      |            |            |           |      |
+| X7   |      |            |            |           |      |
+| I1   |      |            |            |           |      |
+| I2   |      |            |            |           |      |
+| I3   |      |            |            |           |      |
+| I4   |      |            |            |           |      |
+| I5   |      |            |            |           |      |
+| X8   |      |            |            |           |      |
+| J1   |      |            |            |           |      |
+| J2   |      |            |            |           |      |
+| J3   |      |            |            |           |      |
+| J4   |      |            |            |           |      |
+| J5   |      |            |            |           |      |
+| X9   |      |            |            |           |      |
