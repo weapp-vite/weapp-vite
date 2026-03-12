@@ -1,6 +1,6 @@
 ---
 name: weapp-devtools-e2e-best-practices
-description: WeChat DevTools runtime e2e playbook for repositories using the weapp-vite monorepo layout. Use this whenever the task involves `e2e/ide/**`, `miniprogram-automator`, DevTools service port checks, runtime WXML assertions, shared automator launch, `miniProgram.reLaunch(...)` sequencing, or maintaining `e2e-apps/*` DevTools project configs. Trigger on requests like "补 IDE e2e", "automator 用例怎么写", "DevTools runtime 验证", "为什么要复用 launchAutomator", "project.private.config.json 条件页怎么同步", or "这个用例要不要 reLaunch".
+description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools runtime e2e 工作流。适用于 `e2e/ide/**`、`miniprogram-automator`、DevTools 服务端口检查、运行时 WXML 断言、共享 automator 启动、`miniProgram.reLaunch(...)` 串联，以及维护 `e2e-apps/*` DevTools 项目配置。触发语句包括“补 IDE e2e”“automator 用例怎么写”“DevTools runtime 验证”“为什么要复用 launchAutomator”“project.private.config.json 条件页怎么同步”“这个用例要不要 reLaunch”等。
 ---
 
 # weapp-devtools-e2e-best-practices
@@ -9,7 +9,7 @@ description: WeChat DevTools runtime e2e playbook for repositories using the wea
 
 统一 WeChat DevTools runtime e2e 的写法和验证顺序，避免重复启动 automator、脆弱导航、错误的项目配置，以及无法稳定复现的 IDE 自动化测试。
 
-## Trigger Signals
+## 触发信号
 
 - 用户要新增或修改 `e2e/ide/**` 测试。
 - 用户要使用 `miniprogram-automator` 做真实运行时断言。
@@ -18,7 +18,7 @@ description: WeChat DevTools runtime e2e playbook for repositories using the wea
 - 用户要在 `e2e-apps/*` 增加页面，并同步 DevTools 调试入口。
 - 用户遇到 DevTools 服务端口、登录、warmup、runtime snapshot 相关问题。
 
-## Scope Boundary
+## 适用边界
 
 本 skill 聚焦 WeChat DevTools runtime e2e。
 
@@ -29,14 +29,14 @@ description: WeChat DevTools runtime e2e playbook for repositories using the wea
 - 主要是项目架构、分包、构建编排。使用 `weapp-vite-best-practices`。
 - 主要是 `wevu` 生命周期、运行时语义。使用 `wevu-best-practices`。
 
-## Quick Start
+## 快速开始
 
 1. 先确认是否真的需要 `e2e/ide/**` 级别的真实运行时验证。
 2. 同一个 `e2e-app` 在同一 suite 只启动一次 automator。
 3. 多页面/多场景优先通过 `miniProgram.reLaunch(...)` 切换，不重复拉起 DevTools。
 4. 更新 `e2e-apps/*` 页面时，同步维护 `project.private.config.json` 条件页和真实 AppID。
 
-## Execution Protocol
+## 执行流程
 
 1. 先检查环境前提
 
@@ -76,7 +76,7 @@ description: WeChat DevTools runtime e2e playbook for repositories using the wea
   - `node --import tsx scripts/check-e2e-ide-shared-launch.ts`
 - 再跑目标 `vitest` 用例。
 
-## Guardrails
+## 约束
 
 - 不要在同一 `e2e-app` 的多个 `it/test` 回调里重复调用 `launchAutomator()`。
 - 不要为了切换页面反复重启 DevTools。
@@ -84,7 +84,7 @@ description: WeChat DevTools runtime e2e playbook for repositories using the wea
 - 不要把环境错误（未登录、端口未开）误判成业务回归。
 - 不要默认上来跑所有 IDE e2e。
 
-## Output Contract
+## 输出要求
 
 应用本 skill 时，输出必须包含：
 
@@ -93,7 +93,7 @@ description: WeChat DevTools runtime e2e playbook for repositories using the wea
 - 相关 `e2e-app` 配置同步项。
 - 最小验证命令。
 
-## Completion Checklist
+## 完成检查
 
 - 同一 `e2e-app` 的 automator 启动已复用。
 - 多场景验证通过 `miniProgram.reLaunch(...)` 串联。
@@ -102,6 +102,6 @@ description: WeChat DevTools runtime e2e playbook for repositories using the wea
 - 新增页面时 `project.private.config.json` 条件页已更新。
 - 已运行共享启动检查和目标 IDE e2e。
 
-## References
+## 参考资料
 
 - `references/runtime-e2e-checklist.md`

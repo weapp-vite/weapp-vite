@@ -2,16 +2,13 @@ interface:
   display_name: Docs And Website Sync
   short_description: 根据仓库真实代码能力同步 website、skills、AI 指南与生成资产
   default_prompt: >-
-    Use $docs-and-website-sync whenever the user asks to sync docs/website/skills
-    with current code, refresh AI collaboration pages, update package docs after
-    capability changes, or fix stale documentation in repositories using the
-    weapp-vite monorepo layout.
-    Always inspect real source/package scripts first, then update affected entry
-    pages, skill lists, and regression checklists before regenerating
-    llms/SEO assets. If the task is mainly architecture/build design, switch to
-    $weapp-vite-best-practices; if mainly runtime semantics, use
-    $wevu-best-practices; if mainly performance, use
-    $weapp-vite-wevu-performance-best-practices.
+    当用户要求同步 docs/website/skills 与当前代码、刷新 AI 协作页面、在能力变化后更新包文档，
+    或修复采用 weapp-vite monorepo 布局仓库中的过期文档时，使用
+    $docs-and-website-sync。始终先检查真实源码与 package scripts，再更新受影响的
+    入口页、skill 列表与回归清单，最后再刷新 llms/SEO 生成资产。若问题主轴是
+    架构与构建设计，切换到 $weapp-vite-best-practices；若主轴是运行时语义，使用
+    $wevu-best-practices；若主轴是性能治理，使用
+    $weapp-vite-wevu-performance-best-practices。
 
 policy:
   allow_implicit_invocation: true

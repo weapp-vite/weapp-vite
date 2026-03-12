@@ -1,15 +1,15 @@
 ---
 name: weapp-vite-wevu-performance-best-practices
-description: Performance playbook for mini-program projects using `weapp-vite + wevu`, aligned with WeChat runtime guidance (`setData`, render, navigation, resource, memory). Use this whenever users report卡顿/掉帧/白屏/页面切换慢/内存告警，或希望系统性做性能治理、压测与回归。
+description: 面向使用 `weapp-vite + wevu` 的小程序项目的性能实践手册，对齐微信运行时建议（`setData`、render、navigation、resource、memory）。适用于用户反馈卡顿/掉帧/白屏/页面切换慢/内存告警，或希望系统性做性能治理、压测与回归的场景。
 ---
 
 # weapp-vite-wevu-performance-best-practices
 
-## Purpose
+## 目的
 
 在 `weapp-vite + wevu` 项目中做“可测量、可回归”的性能优化，优先处理运行时瓶颈（`setData`、滚动渲染、页面切换、资源加载、内存）。
 
-## Trigger Signals
+## 触发信号
 
 - 用户反馈页面卡顿、滚动掉帧、交互延迟。
 - 用户反馈页面切换慢、首屏慢、偶发白屏。
@@ -18,7 +18,7 @@ description: Performance playbook for mini-program projects using `weapp-vite + 
 - 用户提到 iOS 内存告警、被系统回收、闪退。
 - 用户要求“做一套性能优化方案/Checklist/基线与回归机制”。
 
-## Scope Boundary
+## 适用边界
 
 本 skill 聚焦“性能诊断与优化执行”。
 
@@ -29,14 +29,14 @@ description: Performance playbook for mini-program projects using `weapp-vite + 
 - 主要是生命周期/store/event 语义重构。使用 `wevu-best-practices`。
 - 主要是原生到 wevu 的迁移方案。使用 `native-to-weapp-vite-wevu-migration`。
 
-## Quick Start
+## 快速开始
 
 1. 建立基线：明确慢点是 `setData`、渲染、切换、资源还是内存。
 2. 先开低风险优化：`weapp.wevu.preset: 'performance'` + 针对页面启用 `autoSetDataPick`。
 3. 按五类场景逐项收敛：`setData -> 渲染 -> 切换 -> 资源 -> 内存`。
 4. 每次只改一类变量，并附带最小验证命令与回归信号。
 
-## Execution Protocol
+## 执行流程
 
 1. Baseline first
 
@@ -72,14 +72,14 @@ description: Performance playbook for mini-program projects using `weapp-vite + 
 - 每轮改动给出“预期收益 + 可观测信号 + 回滚开关”。
 - 优先跑定向验证，再决定是否扩大验证范围。
 
-## Guardrails
+## 约束
 
 - 不要一次性同时改“构建策略 + 运行时策略 + 业务逻辑”。
 - 不要只看平均值，至少观察慢链路（P95/P99）或最差帧表现。
 - 不要把“告警消失”当作“性能已达标”的唯一依据。
 - 不要在未建立基线时做大规模重构。
 
-## Output Contract
+## 输出要求
 
 应用本 skill 时，输出必须包含：
 
@@ -88,7 +88,7 @@ description: Performance playbook for mini-program projects using `weapp-vite + 
 - 对应验证命令与验收信号。
 - 风险、回滚点与后续观察项。
 
-## Completion Checklist
+## 完成检查
 
 - 有明确的优化前后基线对照。
 - `setData` 高频路径已收敛（频率/范围/payload）。
@@ -97,7 +97,7 @@ description: Performance playbook for mini-program projects using `weapp-vite + 
 - 资源策略对图片体积和布局抖动有约束。
 - 内存告警与卸载清理机制已覆盖关键页面。
 
-## References
+## 参考资料
 
 - `references/runtime-perf-matrix.md`
 - `references/tuning-recipes.md`

@@ -1,15 +1,15 @@
 ---
 name: weapp-vite-vue-sfc-best-practices
-description: Vue SFC implementation playbook for mini-program projects using weapp-vite, including `<script setup lang="ts">`, JSON macros (`defineAppJson/definePageJson/defineComponentJson`), `usingComponents`, template directive compatibility, and SFC compile/runtime troubleshooting. Use when users ask about `.vue` authoring or refactoring in mini-programs (e.g. "v-model 在小程序里怎么写", "definePageJson 和 <json> 怎么选", "SFC 编译报错", "usingComponents 不生效").
+description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册，覆盖 `<script setup lang="ts">`、JSON 宏（`defineAppJson/definePageJson/defineComponentJson`）、`usingComponents`、模板指令兼容性，以及 SFC 编译/运行时排障。适用于“v-model 在小程序里怎么写”“definePageJson 和 <json> 怎么选”“SFC 编译报错”“usingComponents 不生效”等场景。
 ---
 
 # weapp-vite-vue-sfc-best-practices
 
-## Purpose
+## 目的
 
 Implement Vue SFC for mini-programs with a two-layer model: compile-time rules (weapp-vite) and runtime behavior (wevu). Favor predictable compile output and explicit mini-program semantics.
 
-## Trigger Signals
+## 触发信号
 
 - User asks how to write/refactor mini-program `.vue` files.
 - User asks about JSON macro usage (`definePageJson`, `defineComponentJson`, `defineAppJson`) or `<json>` migration.
@@ -17,7 +17,7 @@ Implement Vue SFC for mini-programs with a two-layer model: compile-time rules (
 - User reports SFC compile or runtime mismatch after template/script changes.
 - User asks how to declare `usingComponents` correctly in SFC.
 
-## Scope Boundary
+## 适用边界
 
 Use this skill when the center of gravity is SFC authoring and compile compatibility.
 
@@ -27,14 +27,14 @@ Do not use this as the primary skill when:
 - The issue is mostly runtime lifecycle/store/event architecture. Use `wevu-best-practices`.
 - The task is phased migration from native mini-program. Use `native-to-weapp-vite-wevu-migration`.
 
-## Quick Start
+## 快速开始
 
 1. Confirm SFC type first: App, Page, or Component.
 2. Pick one JSON macro family that matches the SFC role.
 3. Validate template directives against mini-program compatibility constraints.
 4. Verify runtime API imports and hook timing.
 
-## Execution Protocol
+## 执行流程
 
 1. Classify the failure stage
 
@@ -68,7 +68,7 @@ Do not use this as the primary skill when:
 - Run targeted checks that match the touched SFC files.
 - Escalate to broader runs only when cross-page behavior is affected.
 
-## Guardrails
+## 约束
 
 - Do not treat mini-program component registration like web Vue component registration.
 - Do not register hooks after `await` in `setup()`.
@@ -76,7 +76,7 @@ Do not use this as the primary skill when:
 - Do not mix multiple JSON macro families in one SFC.
 - Do not mix SFC syntax fixes with unrelated runtime architecture refactors.
 
-## Output Contract
+## 输出要求
 
 When applying this skill, return:
 
@@ -85,7 +85,7 @@ When applying this skill, return:
 - Compatibility notes for directives/macros used.
 - Minimal verification commands.
 
-## Completion Checklist
+## 完成检查
 
 - SFC config path is clear and macro-first (avoid new `<json>` usage by default).
 - `usingComponents` strategy is deterministic and path-safe.
@@ -93,7 +93,7 @@ When applying this skill, return:
 - Runtime API imports come from `wevu`.
 - Hook timing and page/component context are valid.
 
-## References
+## 参考资料
 
 - `references/macro-config-checklist.md`
 - `references/template-compat-matrix.md`

@@ -56,10 +56,14 @@ const directSkills = [
   'native-to-weapp-vite-wevu-migration',
   'weapp-ide-cli-best-practices',
 ]
+const localProjectSkills = [
+  'playwright-cli',
+]
 
 const skillInstallCommand = 'npx skills add sonofmagic/skills'
 const skillLinkCommand = 'pnpm skills:link'
 const skillDirectCommand = computed(() => directSkills.map(skill => `$${skill}`).join('\n'))
+const localSkillDirectCommand = computed(() => localProjectSkills.map(skill => `$${skill}`).join('\n'))
 const DIRECT_SKILL_PREFIX_REGEX = /^\$/gm
 
 const llmsResources = computed(() => [
@@ -194,7 +198,7 @@ function copyText(text: string, key: string) {
               Skill
             </p>
             <h2>给 AI 挂载工程化工作流</h2>
-            <p>统一技能入口，让团队在同一套规则下协作与交付。</p>
+            <p>区分公开 skills 与项目本地附加 skills，让团队在稳定边界下协作与交付。</p>
           </header>
 
           <div class="command-stack">
@@ -220,14 +224,28 @@ function copyText(text: string, key: string) {
 
             <article class="command-card">
               <header>
-                <h3>安装后可直接调用</h3>
+                <h3>公开 Skills 安装后可直接调用</h3>
                 <button type="button" @click="copyText(skillDirectCommand, 'skill-direct')">
                   {{ copiedKey === 'skill-direct' ? '已复制' : '复制命令' }}
                 </button>
               </header>
               <pre><code>{{ skillDirectCommand }}</code></pre>
             </article>
+
+            <article class="command-card">
+              <header>
+                <h3>项目本地附加 Skills</h3>
+                <button type="button" @click="copyText(localSkillDirectCommand, 'skill-local-direct')">
+                  {{ copiedKey === 'skill-local-direct' ? '已复制' : '复制命令' }}
+                </button>
+              </header>
+              <pre><code>{{ localSkillDirectCommand }}</code></pre>
+            </article>
           </div>
+
+          <p class="skill-note">
+            `skills/*` 面向公开分发；`.claude/skills/*` 面向这个仓库的本地附加能力，并通过 `pnpm skills:link` 一起同步。
+          </p>
 
           <ul class="chip-list">
             <li v-for="skill in directSkills" :key="skill">
@@ -235,8 +253,15 @@ function copyText(text: string, key: string) {
             </li>
           </ul>
 
+          <ul class="chip-list chip-list-local">
+            <li v-for="skill in localProjectSkills" :key="skill">
+              <code>${{ skill }}</code>
+            </li>
+          </ul>
+
           <ol class="flow-list">
-            <li>公开分发场景先安装 `sonofmagic/skills`，仓库开发场景优先执行 `pnpm skills:link`。</li>
+            <li>公开分发场景先安装 `sonofmagic/skills`，拿到 `skills/*` 里的公共能力。</li>
+            <li>仓库开发场景再执行 `pnpm skills:link`，把 `skills/*` 和 `.claude/skills/*` 一起同步到本地环境。</li>
             <li>让 AI 明确调用对应 Skill，减少自由发挥偏差。</li>
             <li>配合 MCP 让结果从“建议”变成“可执行 + 可验收”。</li>
           </ol>
@@ -570,6 +595,10 @@ function copyText(text: string, key: string) {
   list-style: none;
 }
 
+.chip-list-local {
+  margin-top: 8px;
+}
+
 .chip-list code {
   display: inline-flex;
   padding: 5px 9px;
@@ -579,6 +608,13 @@ function copyText(text: string, key: string) {
   background: var(--ai-code-bg);
   border: 1px solid var(--ai-code-border);
   border-radius: 999px;
+}
+
+.skill-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ai-muted);
 }
 
 .flow-list {
