@@ -39,6 +39,9 @@ pnpm skills:link:dry
 ```text
 $weapp-vite-best-practices
 $docs-and-website-sync
+$github-issue-fix-workflow
+$release-and-changeset-best-practices
+$weapp-devtools-e2e-best-practices
 $weapp-vite-wevu-performance-best-practices
 $weapp-vite-vue-sfc-best-practices
 $wevu-best-practices
@@ -50,12 +53,15 @@ $weapp-ide-cli-best-practices
 
 1. 项目架构、分包、构建编排问题优先用 `weapp-vite-best-practices`。
 2. 根据现有代码同步 `website`、`skills`、AI 指南时优先用 `docs-and-website-sync`。
-3. 卡顿、掉帧、白屏、内存告警优先用 `weapp-vite-wevu-performance-best-practices`。
-4. `.vue` 宏、模板兼容、`v-model`/`usingComponents` 问题优先用 `weapp-vite-vue-sfc-best-practices`。
-5. `wevu` 生命周期、状态、事件、store 问题优先用 `wevu-best-practices`。
-6. 原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 优先用 `native-to-weapp-vite-wevu-migration`。
-7. DevTools 自动化、`preview/upload/automator/config` 命令治理优先用 `weapp-ide-cli-best-practices`。
-8. 先让 AI 明确使用哪个 Skill，再开始具体任务。
+3. GitHub issue 修复、`e2e-apps/github-issues` 复现、PR 闭环优先用 `github-issue-fix-workflow`。
+4. changeset、发布、`create-weapp-vite` 联动和提交规范优先用 `release-and-changeset-best-practices`。
+5. WeChat DevTools runtime e2e、automator 复用、`reLaunch` 方案优先用 `weapp-devtools-e2e-best-practices`。
+6. 卡顿、掉帧、白屏、内存告警优先用 `weapp-vite-wevu-performance-best-practices`。
+7. `.vue` 宏、模板兼容、`v-model`/`usingComponents` 问题优先用 `weapp-vite-vue-sfc-best-practices`。
+8. `wevu` 生命周期、状态、事件、store 问题优先用 `wevu-best-practices`。
+9. 原生小程序迁移到 `weapp-vite + wevu + Vue SFC` 优先用 `native-to-weapp-vite-wevu-migration`。
+10. DevTools 自动化、`preview/upload/automator/config` 命令治理优先用 `weapp-ide-cli-best-practices`。
+11. 先让 AI 明确使用哪个 Skill，再开始具体任务。
 
 ## MCP
 

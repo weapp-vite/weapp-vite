@@ -1,0 +1,14 @@
+interface:
+  display_name: GitHub Issue Fix Workflow
+  short_description: GitHub issue 修复流程：worktree、最小复现、root cause、unit/e2e、PR
+  default_prompt: >-
+    Use $github-issue-fix-workflow whenever the task is to fix a reported
+    GitHub issue in the weapp-vite monorepo, reproduce a bug in
+    e2e-apps/github-issues, or carry a bugfix through worktree isolation,
+    root-cause analysis, regression coverage, and PR delivery. Always create
+    an isolated worktree first, reproduce before editing source, then add unit
+    and e2e coverage plus required changesets. If the task is mainly docs/site
+    synchronization, switch to $docs-and-website-sync.
+
+policy:
+  allow_implicit_invocation: true

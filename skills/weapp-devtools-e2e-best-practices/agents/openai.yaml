@@ -1,0 +1,15 @@
+interface:
+  display_name: Weapp DevTools E2E Best Practices
+  short_description: WeChat DevTools runtime e2e、automator 复用、reLaunch 与项目配置维护
+  default_prompt: >-
+    Use $weapp-devtools-e2e-best-practices whenever the task involves e2e/ide
+    runtime tests, miniprogram-automator usage, shared launch patterns,
+    miniProgram.reLaunch sequencing, DevTools service port prerequisites, or
+    maintaining e2e-app project configs for IDE validation. Reuse one
+    launchAutomator session per app suite, navigate with reLaunch, and sync
+    project.private.config.json conditions when adding pages. If the task is
+    mainly weapp-ide-cli command design, switch to
+    $weapp-ide-cli-best-practices.
+
+policy:
+  allow_implicit_invocation: true
