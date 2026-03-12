@@ -1,0 +1,50 @@
+{
+  "projectname": "wevu-subpackage-placement",
+  "setting": {
+    "urlCheck": true,
+    "compileHotReLoad": true,
+    "checkInvalidKey": true,
+    "ignoreDevUnusedFiles": true
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "pages/index/index",
+          "pathName": "pages/index/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/normal-wevu/pages/entry/index",
+          "pathName": "subpackages/normal-wevu/pages/entry/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/normal-wevu/pages/detail/index",
+          "pathName": "subpackages/normal-wevu/pages/detail/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/independent-wevu/pages/entry/index",
+          "pathName": "subpackages/independent-wevu/pages/entry/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/independent-wevu/pages/detail/index",
+          "pathName": "subpackages/independent-wevu/pages/detail/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
+  }
+}

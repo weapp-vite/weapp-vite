@@ -1,0 +1,1 @@
+<view id="main-native-badge">native: {{label}}</view>
