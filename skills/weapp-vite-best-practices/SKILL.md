@@ -1,15 +1,15 @@
 ---
 name: weapp-vite-best-practices
-description: Production playbook for repositories using the weapp-vite project layout, covering `vite.config.ts` weapp options, `app.json` routes/subPackages, chunk strategy, and CI/DevTools automation. Use when users ask to create/refactor weapp-vite projects, configure auto routes/components, split subpackages, optimize chunk output, or debug build/output issues (e.g. "配置 weapp-vite", "分包策略", "构建输出异常", "typed-router.d.ts 生成问题").
+description: 面向采用 weapp-vite 项目布局仓库的工程化实践手册，覆盖 `vite.config.ts` 的 weapp 配置、`app.json` routes/subPackages、chunk 策略以及 CI/DevTools 自动化。适用于创建或重构 weapp-vite 项目、配置自动路由/自动组件、拆分分包、优化 chunk 输出，或排查构建与输出问题（如“配置 weapp-vite”“分包策略”“构建输出异常”“typed-router.d.ts 生成问题”）。
 ---
 
 # weapp-vite-best-practices
 
-## Purpose
+## 目的
 
 Build or refactor weapp-vite projects with stable defaults first, then optimize packaging and performance. Prioritize predictable output and reproducible CI.
 
-## Trigger Signals
+## 触发信号
 
 - User asks about `vite.config.ts` + `weapp` config design.
 - User asks how to organize pages/components/subpackages in weapp-vite.
@@ -18,7 +18,7 @@ Build or refactor weapp-vite projects with stable defaults first, then optimize 
 - User asks how `weapp-vite` CLI and `weapp-ide-cli` should split command ownership / passthrough.
 - User asks when to use `autoRoutes`, auto-imported components, or chunk shared strategy.
 
-## Scope Boundary
+## 适用边界
 
 Use this skill when the core issue is project-level architecture or build orchestration.
 
@@ -28,14 +28,14 @@ Do not use this as the primary skill when:
 - The issue is mainly runtime lifecycle/state/store patterns. Use `wevu-best-practices`.
 - The task is native mini-program to weapp-vite migration planning. Use `native-to-weapp-vite-wevu-migration`.
 
-## Quick Start
+## 快速开始
 
 1. Confirm baseline runtime and source roots.
 2. Classify goal: new setup, refactor, debug, or performance optimization.
 3. Apply minimum viable config changes in `vite.config.ts` and app/page JSON sources.
 4. Verify with targeted build/type checks before suggesting broader cleanup.
 
-## Execution Protocol
+## 执行流程
 
 1. Gather context first
 
@@ -80,7 +80,7 @@ pnpm vitest run <related-test-file>
 
 - Only suggest full regression when change scope requires it.
 
-## Guardrails
+## 约束
 
 - Do not optimize chunk strategy before `srcRoot` and route generation are confirmed.
 - Do not combine many advanced overrides in the first iteration.
@@ -89,7 +89,7 @@ pnpm vitest run <related-test-file>
 - Do not implement IDE command passthrough with hardcoded duplicate lists in multiple packages.
 - Do not passthrough unknown commands blindly; require catalog hit before delegation.
 
-## Output Contract
+## 输出要求
 
 When applying this skill, return:
 
@@ -98,7 +98,7 @@ When applying this skill, return:
 - Suggested verification commands (narrow first, then broad if needed).
 - Tradeoff notes for subpackage/chunk choices.
 
-## Completion Checklist
+## 完成检查
 
 - `vite.config.ts` has a clear and minimal `weapp` section.
 - `pages/subPackages` source-of-truth is explicit (manual or auto routes).
@@ -108,7 +108,7 @@ When applying this skill, return:
 - CLI dispatch ownership is deterministic: native-first, catalog-based passthrough second.
 - Command catalog changes are made in `weapp-ide-cli` and consumed by `weapp-vite`, not duplicated.
 
-## References
+## 参考资料
 
 - `references/config-playbook.md`
 - `references/debug-playbook.md`

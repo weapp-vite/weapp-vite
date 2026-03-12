@@ -1,15 +1,15 @@
 ---
 name: native-to-weapp-vite-wevu-migration
-description: Structured migration workflow for moving native mini-program projects to `weapp-vite + wevu + Vue SFC`, covering phased rollout, behavior-equivalent conversion, typed props/events migration, platform guards, and migration-focused e2e validation with rollback checkpoints. Use when users ask to migrate native `Page/Component` code, replace `setData`-heavy patterns, map `properties/observers/triggerEvent`, or design safe incremental migration plans (e.g. "原生迁移到 weapp-vite", "setData 改造", "迁移回滚策略", "迁移 e2e 怎么测").
+description: 面向将原生小程序项目迁移到 `weapp-vite + wevu + Vue SFC` 的结构化迁移工作流，覆盖分波次推进、行为等价转换、类型化 props/events 迁移、平台守卫以及面向迁移的 e2e 验证与回滚检查点。适用于“原生迁移到 weapp-vite”“setData 改造”“迁移回滚策略”“迁移 e2e 怎么测”等场景。
 ---
 
 # native-to-weapp-vite-wevu-migration
 
-## Purpose
+## 目的
 
 将原生小程序迁移到 `weapp-vite + wevu + Vue SFC`，遵循“行为等价优先、语义逐步升级、全程可回滚”。
 
-## Trigger Signals
+## 触发信号
 
 - 用户要把原生 `Page/Component` 迁移到 `.vue`。
 - 用户要把 `this.data/setData` 重构为响应式状态。
@@ -17,7 +17,7 @@ description: Structured migration workflow for moving native mini-program projec
 - 用户要做多平台守卫（`import.meta.env.PLATFORM`）并验证一致性。
 - 用户要迁移阶段的 e2e 校验、日志拦截和回滚机制。
 
-## Scope Boundary
+## 适用边界
 
 使用本 skill 的前提是“迁移安全和落地路径”是核心问题。
 
@@ -27,14 +27,14 @@ description: Structured migration workflow for moving native mini-program projec
 - 只是在 `.vue` 里处理宏或模板兼容。使用 `weapp-vite-vue-sfc-best-practices`。
 - 只是在 wevu 运行时做生命周期/store 优化。使用 `wevu-best-practices`。
 
-## Quick Start
+## 快速开始
 
 1. 划分迁移波次并定义回滚边界。
 2. 建立迁移前基线（关键页面、关键交互、关键接口）。
 3. 按“机械迁移 -> 语义迁移 -> 定向验证”推进。
 4. 每个页面族独立提交，保证可单独回滚。
 
-## Execution Protocol
+## 执行流程
 
 1. 锁定迁移波次
 
@@ -76,7 +76,7 @@ description: Structured migration workflow for moving native mini-program projec
 - e2e 必须收集运行时错误日志，防止“页面可见但持续报错”。
 - 每个页面族独立提交，具备单独回滚能力。
 
-## Guardrails
+## 约束
 
 - 不要在同一波次同时进行“迁移 + 架构重写”。
 - 不要把原生实例对象返回到模板状态。
@@ -84,7 +84,7 @@ description: Structured migration workflow for moving native mini-program projec
 - 不要先跑全量回归；迁移阶段优先高价值链路。
 - 不要跳过迁移前基线采集，否则难以证明行为等价。
 
-## Output Contract
+## 输出要求
 
 应用本 skill 时，输出必须包含：
 
@@ -93,7 +93,7 @@ description: Structured migration workflow for moving native mini-program projec
 - 风险点与回滚点。
 - 最小验证命令与通过标准。
 
-## Completion Checklist
+## 完成检查
 
 - 迁移页面已改为 `.vue`，不再使用 `Page/Component` 构造器。
 - 页面状态更新不依赖 `setData` 大对象写法。
@@ -102,7 +102,7 @@ description: Structured migration workflow for moving native mini-program projec
 - e2e 能捕获运行时报错，并对关键链路有断言。
 - 回滚点与迁移记录已写入变更说明。
 
-## References
+## 参考资料
 
 - `references/migration-checklist.md`
 - `references/api-mapping-and-pitfalls.md`

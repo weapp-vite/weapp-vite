@@ -1,15 +1,15 @@
 ---
 name: weapp-ide-cli-best-practices
-description: "Command governance and automation playbook for repositories using weapp-ide-cli with weapp-vite, including official CLI passthrough, automator commands, config/i18n persistence, command catalog export, and integration contracts with weapp-vite CLI dispatch."
+description: "面向结合 weapp-ide-cli 与 weapp-vite 使用场景的命令治理与自动化实践手册，覆盖官方 CLI 透传、automator 命令、config/i18n 持久化、命令目录导出，以及与 weapp-vite CLI 分发的集成契约。"
 ---
 
 # weapp-ide-cli-best-practices
 
-## Purpose
+## 目的
 
 Design and evolve `weapp-ide-cli` with deterministic command behavior, automation-friendly UX, and stable integration contracts for other CLIs (especially `weapp-vite`).
 
-## Trigger Signals
+## 触发信号
 
 - User asks to add/refactor `weapp-ide-cli` commands or argument validation.
 - User asks to expose command metadata for external CLI dispatch.
@@ -17,7 +17,7 @@ Design and evolve `weapp-ide-cli` with deterministic command behavior, automatio
 - User asks to add language switching or config persistence behavior.
 - User asks how `weapp-vite` should delegate to `weapp-ide-cli`.
 
-## Scope Boundary
+## 适用边界
 
 Use this skill when the center of gravity is command routing, CLI UX, config persistence, and cross-package CLI contracts.
 
@@ -27,14 +27,14 @@ Do not use this as the primary skill when:
 - The issue is mainly Vue SFC syntax/macro compatibility. Use `weapp-vite-vue-sfc-best-practices`.
 - The issue is runtime lifecycle/state architecture in components/pages. Use `wevu-best-practices`.
 
-## Quick Start
+## 快速开始
 
 1. Classify change type: command addition, validation, i18n/config, or dispatch contract.
 2. Update command source-of-truth first, then update parser/dispatcher.
 3. Add/adjust tests around routing and error behavior.
 4. Sync docs in package README and website package page.
 
-## Execution Protocol
+## 执行流程
 
 1. Keep command taxonomy explicit
 
@@ -75,14 +75,14 @@ Do not use this as the primary skill when:
   - related `packages/weapp-vite/src/cli/*.test.ts` when dispatch contract changes
 - Run lint on touched docs and source files only.
 
-## Guardrails
+## 约束
 
 - Do not duplicate command lists in multiple packages as independent sources of truth.
 - Do not add user-facing text without i18n wrapping.
 - Do not couple command parsing with business side effects before validation.
 - Do not let unknown commands silently passthrough when integrating with another CLI.
 
-## Output Contract
+## 输出要求
 
 When applying this skill, return:
 
@@ -91,7 +91,7 @@ When applying this skill, return:
 - Verification commands and expected outcomes.
 - Cross-package contract notes when `weapp-vite` integration is touched.
 
-## Completion Checklist
+## 完成检查
 
 - Top-level command catalog and predicate are exported from `weapp-ide-cli`.
 - Dispatch priority is deterministic and covered by tests.
@@ -99,7 +99,7 @@ When applying this skill, return:
 - Config persistence and command behavior are documented.
 - If integration changed, `weapp-vite` uses exported catalog instead of duplicated lists.
 
-## References
+## 参考资料
 
 - `references/command-catalog-and-dispatch.md`
 - `references/i18n-config-playbook.md`

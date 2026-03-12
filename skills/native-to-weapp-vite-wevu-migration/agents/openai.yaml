@@ -2,14 +2,12 @@ interface:
   display_name: Native Migration Guide
   short_description: 原生小程序迁移工作流（Page/Component -> Vue SFC，setData 改造，回滚与 e2e）
   default_prompt: >-
-    Use $native-to-weapp-vite-wevu-migration for incremental migration from
-    native mini-program code to `weapp-vite + wevu + Vue SFC`. Plan in waves,
-    keep behavior equivalence first, and separate mechanical migration from
-    semantic upgrades. Cover mappings for
-    `Page/Component`, `setData`, `properties/observers/triggerEvent`,
-    `import.meta.env.PLATFORM` guards, and migration-focused e2e validation.
-    Return: wave boundaries, per-wave task list (mechanical/semantic/verification),
-    risk + rollback points, and minimal pass criteria.
+    当任务是把原生小程序代码渐进迁移到 `weapp-vite + wevu + Vue SFC` 时，
+    使用 $native-to-weapp-vite-wevu-migration。按波次规划，优先保证行为等价，
+    并把机械迁移与语义升级拆开处理。覆盖 `Page/Component`、`setData`、
+    `properties/observers/triggerEvent`、`import.meta.env.PLATFORM` 守卫，
+    以及面向迁移的 e2e 验证。输出应包含：波次边界、每波次任务清单
+    （机械迁移/语义迁移/验证）、风险与回滚点、最小通过标准。
 
 policy:
   allow_implicit_invocation: true

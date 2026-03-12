@@ -1,6 +1,6 @@
 ---
 name: docs-and-website-sync
-description: Documentation and website synchronization workflow for repositories using the weapp-vite monorepo layout. Use this whenever code capabilities have changed but docs/website/skills/release notes may be stale, or when the user asks to "update website", "sync docs with current code", "refresh AI guide/skills page", "补文档", or "根据现有代码更新文档". Always inspect the real code/package scripts first, then sync the affected website entry pages, skills docs, and generated LLM/SEO assets.
+description: 面向采用 weapp-vite monorepo 布局仓库的文档与网站同步工作流。适用于代码能力已变化但 docs/website/skills/release notes 可能过期的场景，或用户提出“update website”“sync docs with current code”“refresh AI guide/skills page”“补文档”“根据现有代码更新文档”等请求。始终先核对真实源码与脚本，再同步受影响的文档入口、skills 文档以及生成的 LLM/SEO 资产。
 ---
 
 # docs-and-website-sync
@@ -9,7 +9,7 @@ description: Documentation and website synchronization workflow for repositories
 
 根据仓库真实能力，更新 `website`、`skills`、`README/CLAUDE` 等对外入口，并确保生成产物（如 `llms-index.json`、`seo-quality-report.json`）与源码一致。
 
-## Trigger Signals
+## 触发信号
 
 - 用户要求“根据现有代码更新 website/docs/skills”。
 - 新增或调整了 CLI 命令、包能力、skill、AI 协作入口。
@@ -17,7 +17,7 @@ description: Documentation and website synchronization workflow for repositories
 - 技能列表、安装方式、调用示例与当前仓库状态不一致。
 - 需要刷新 `llms` / SEO 相关生成资产。
 
-## Scope Boundary
+## 适用边界
 
 本 skill 聚焦“文档入口同步”和“网站内容校准”。
 
@@ -28,14 +28,14 @@ description: Documentation and website synchronization workflow for repositories
 - 主要问题是 `wevu` 运行时语义或 store/lifecycle。使用 `wevu-best-practices`。
 - 主要问题是性能诊断与治理。使用 `weapp-vite-wevu-performance-best-practices`。
 
-## Quick Start
+## 快速开始
 
 1. 先从源码、CLI、脚本、skill 目录确认“真实能力”。
 2. 再找所有对外入口页：`website`、`skills`、`README`、`CLAUDE`、博客或包说明。
 3. 先更新源文档，再通过构建刷新生成资产。
 4. 最后用最小验证确认页面可构建、skill 元数据可解析。
 
-## Execution Protocol
+## 执行流程
 
 1. 先找事实来源
 
@@ -81,14 +81,14 @@ description: Documentation and website synchronization workflow for repositories
 - 涉及 `website/**` 或生成资产时，再执行：
   - `pnpm --filter website-weapp-vite build`
 
-## Guardrails
+## 约束
 
 - 不要把生成资产当作人工维护文件直接编辑。
 - 不要只更新单个页面而遗漏其他入口页。
 - 不要在未核对源码前直接根据旧文案扩写。
 - 不要把“技能清单更新”与“技能触发回归基线”拆开处理。
 
-## Output Contract
+## 输出要求
 
 应用本 skill 时，输出必须包含：
 
@@ -97,7 +97,7 @@ description: Documentation and website synchronization workflow for repositories
 - 具体修改文件。
 - 验证命令与生成产物说明。
 
-## Completion Checklist
+## 完成检查
 
 - 关键文档入口与实际实现一致。
 - skill 清单、安装方式、调用示例没有过期信息。
@@ -105,6 +105,6 @@ description: Documentation and website synchronization workflow for repositories
 - 如涉及网站内容，`website` 已成功构建。
 - 生成资产已通过脚本刷新，而不是手工拼写。
 
-## References
+## 参考资料
 
 - `references/docs-sync-checklist.md`
