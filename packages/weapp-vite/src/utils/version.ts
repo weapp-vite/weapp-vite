@@ -14,6 +14,20 @@ interface MinVersions {
   bun?: string
 }
 
+interface RuntimeInfo {
+  runtime: Runtime
+  version: string
+}
+
+interface RuntimeLogger {
+  warn: (message: string) => void
+}
+
+interface CheckRuntimeOptions {
+  runtimeInfo?: RuntimeInfo
+  logger?: RuntimeLogger
+}
+
 declare const Deno: {
   version: {
     deno: string
@@ -22,7 +36,7 @@ declare const Deno: {
   }
 }
 
-function getRuntime(): { runtime: Runtime, version: string } {
+function getRuntime(): RuntimeInfo {
   // 运行时：Deno
   if (typeof (globalThis as any).Deno !== 'undefined' && 'version' in Deno) {
     return {
@@ -50,12 +64,13 @@ function getRuntime(): { runtime: Runtime, version: string } {
   throw new Error('无法识别运行时：无法确定 Node.js / Deno / Bun。')
 }
 
-export function checkRuntime(minVersions: MinVersions): void {
-  const { runtime, version } = getRuntime()
+export function checkRuntime(minVersions: MinVersions, options: CheckRuntimeOptions = {}): void {
+  const { runtime, version } = options.runtimeInfo ?? getRuntime()
+  const runtimeLogger = options.logger ?? logger
   const required = minVersions[runtime]
 
   if (!required) {
-    logger.warn(`未为 ${runtime} 指定最低版本，已跳过检查。`)
+    runtimeLogger.warn(`未为 ${runtime} 指定最低版本，已跳过检查。`)
     return
   }
 
@@ -66,6 +81,6 @@ export function checkRuntime(minVersions: MinVersions): void {
 
   if (!isSatisfied) {
     const expected = isPlainVersion ? `>= ${required}` : required
-    logger.warn(`当前 ${runtime} 版本为 ${version} 无法满足 \`weapp-vite\` 最低要求的版本(${expected})`)
+    runtimeLogger.warn(`当前 ${runtime} 版本为 ${version} 无法满足 \`weapp-vite\` 最低要求的版本(${expected})`)
   }
 }
