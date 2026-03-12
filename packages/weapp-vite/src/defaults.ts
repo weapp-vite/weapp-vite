@@ -53,6 +53,7 @@ export function getWeappViteConfig(): WeappViteConfig {
     platform: 'weapp',
     multiPlatform: false,
     es5: false,
+    packageSizeWarningBytes: 2 * 1024 * 1024,
     jsFormat: 'cjs',
     isAdditionalWxml: () => {
       return false
