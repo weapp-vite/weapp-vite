@@ -7,6 +7,7 @@ import { isBuiltin } from 'node:module'
 import process from 'node:process'
 import * as t from '@babel/types'
 import { defu, isObject } from '@weapp-core/shared'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import { getPackageInfo, resolveModule } from 'local-pkg'
 import path from 'pathe'
@@ -515,7 +516,7 @@ export function createPackageBuilder(
       return rawOutDir
     }
 
-    const root = typeof options.root === 'string' && options.root
+    const root = typeof options?.root === 'string' && options.root
       ? options.root
       : ctx.configService?.cwd ?? process.cwd()
 

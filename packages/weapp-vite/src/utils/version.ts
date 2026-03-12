@@ -4,6 +4,8 @@ import semverSatisfies from 'semver/functions/satisfies'
 import semverValid from 'semver/functions/valid'
 import logger from '../logger'
 
+const LEADING_V = /^v/
+
 type Runtime = 'node' | 'deno' | 'bun'
 
 interface MinVersions {
@@ -21,14 +23,6 @@ declare const Deno: {
 }
 
 function getRuntime(): { runtime: Runtime, version: string } {
-  // 运行时：Node.js
-  if (typeof process !== 'undefined' && process.versions?.node) {
-    return {
-      runtime: 'node',
-      version: process.version.replace(/^v/, ''), // "v18.17.1" -> "18.17.1"
-    }
-  }
-
   // 运行时：Deno
   if (typeof (globalThis as any).Deno !== 'undefined' && 'version' in Deno) {
     return {
@@ -42,6 +36,14 @@ function getRuntime(): { runtime: Runtime, version: string } {
     return {
       runtime: 'bun',
       version: (globalThis as any).Bun.version,
+    }
+  }
+
+  // 运行时：Node.js
+  if (typeof process !== 'undefined' && process.versions?.node) {
+    return {
+      runtime: 'node',
+      version: process.version.replace(LEADING_V, ''), // "v18.17.1" -> "18.17.1"
     }
   }
 

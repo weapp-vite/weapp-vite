@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 afterEach(() => {
   vi.resetModules()
   vi.clearAllMocks()
-  vi.doUnmock('@weapp-core/logger')
+  vi.doUnmock('../logger')
   vi.doUnmock('node:process')
   delete (globalThis as any).Deno
   delete (globalThis as any).Bun
@@ -14,7 +14,7 @@ async function loadVersionModule(options: {
   setup?: () => void
 }) {
   const warn = vi.fn()
-  vi.doMock('@weapp-core/logger', () => ({ default: { warn } }))
+  vi.doMock('../logger', () => ({ default: { warn } }))
   vi.doMock('node:process', () => ({ default: options.process }))
   options.setup?.()
   const mod = await import('./version')
