@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { wxRouter } from 'weapp-vite/auto-routes'
 import { computed, ref, watch } from 'wevu'
 
 interface HelloActionPayload {
@@ -174,6 +175,12 @@ function reset() {
   showToast('计数已重置')
 }
 
+function openSubPackageDemo() {
+  wxRouter.navigateTo({
+    url: '/packageA/pages/demo/index',
+  })
+}
+
 function handleHelloAction(payload: HelloActionPayload) {
   if (payload.type === 'copy' && payload.value) {
     wx.setClipboardData({
@@ -244,6 +251,9 @@ watch(count, (newValue, oldValue) => {
         <button class="btn danger" @tap.stop="reset">
           重置
         </button>
+        <button class="btn ghost" @tap="openSubPackageDemo">
+          打开分包页
+        </button>
       </view>
 
       <view class="row">
@@ -262,6 +272,12 @@ watch(count, (newValue, oldValue) => {
         <view v-for="(todo, index) in todos" :key="index" class="todo-item">
           <text>• {{ todo.title }}</text>
         </view>
+      </view>
+
+      <view class="route-tip">
+        <text class="route-tip-text">
+          这个模板已经默认启用 autoRoutes，主包页面和 packageA 普通分包页面都会自动进入 app.json。
+        </text>
       </view>
     </view>
   </view>
@@ -340,6 +356,11 @@ watch(count, (newValue, oldValue) => {
   background: #f03e3e;
 }
 
+.btn.ghost {
+  color: #3d5af1;
+  background: #edf2ff;
+}
+
 .input {
   box-sizing: border-box;
   height: 88rpx;
@@ -354,6 +375,19 @@ watch(count, (newValue, oldValue) => {
   margin-bottom: 12rpx;
   font-size: 26rpx;
   color: #4f4f7a;
+}
+
+.route-tip {
+  padding: 20rpx 24rpx;
+  margin-top: 24rpx;
+  background: #eef2ff;
+  border-radius: 16rpx;
+}
+
+.route-tip-text {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #42558b;
 }
 
 .hello-footer {
