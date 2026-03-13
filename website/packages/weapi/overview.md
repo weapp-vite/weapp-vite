@@ -29,7 +29,7 @@ keywords:
 ## 安装
 
 ```bash
-pnpm add @wevu/api
+pnpm add -D wevu
 ```
 
 如果你已经使用 `wevu`，也可以从 [`wevu/api`](/wevu/api-package) 导入同一套能力。
@@ -39,7 +39,7 @@ pnpm add @wevu/api
 ### Promise 风格
 
 ```ts
-import { wpi } from '@wevu/api'
+import { wpi } from 'wevu/api'
 
 const res = await wpi.request({
   url: 'https://example.com',
@@ -50,7 +50,7 @@ const res = await wpi.request({
 ### 回调风格
 
 ```ts
-import { wpi } from '@wevu/api'
+import { wpi } from 'wevu/api'
 
 wpi.request({
   url: 'https://example.com',
@@ -63,7 +63,7 @@ wpi.request({
 ### 显式实例
 
 ```ts
-import { createWeapi } from '@wevu/api'
+import { createWeapi } from 'wevu/api'
 
 const api = createWeapi({
   adapter: wx,

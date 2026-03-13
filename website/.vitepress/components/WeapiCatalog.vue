@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { WEAPI_METHOD_SUPPORT_MATRIX } from '../../../packages/weapi/src/core/methodMapping/supportMatrix'
 import { matchWeapiCapability, WEAPI_CAPABILITY_GROUPS } from '../shared/weapiCapabilities'
 
@@ -23,10 +23,12 @@ const props = withDefaults(defineProps<{
 })
 
 const keyword = ref('')
+const highlightedExamples = ref<Record<string, string>>({})
+let stopThemeWatcher: (() => void) | null = null
 
 function createExample(method: string) {
   if (method.startsWith('on')) {
-    return `import { wpi } from '@wevu/api'
+    return `import { wpi } from 'wevu/api'
 
 wpi.${method}((payload) => {
   console.log(payload)
@@ -34,19 +36,19 @@ wpi.${method}((payload) => {
   }
 
   if (method.startsWith('off')) {
-    return `import { wpi } from '@wevu/api'
+    return `import { wpi } from 'wevu/api'
 
 const handler = () => {}
 wpi.${method}(handler)`
   }
 
   if (method.endsWith('Sync')) {
-    return `import { wpi } from '@wevu/api'
+    return `import { wpi } from 'wevu/api'
 
 const result = wpi.${method}()`
   }
 
-  return `import { wpi } from '@wevu/api'
+  return `import { wpi } from 'wevu/api'
 
 const result = await wpi.${method}({
   // ...
@@ -76,6 +78,40 @@ const rows = computed(() => {
     return item.method.toLowerCase().includes(normalized)
       || item.description.toLowerCase().includes(normalized)
   })
+})
+
+async function updateHighlightedExamples() {
+  const shiki = await import('shiki')
+  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  const theme = isDark ? 'github-dark' : 'github-light'
+  const next: Record<string, string> = {}
+
+  for (const item of rows.value) {
+    next[item.method] = await shiki.codeToHtml(createExample(item.method), {
+      lang: 'ts',
+      theme,
+    })
+  }
+
+  highlightedExamples.value = next
+}
+
+onMounted(() => {
+  updateHighlightedExamples()
+
+  if (typeof document === 'undefined') {
+    return
+  }
+
+  const observer = new MutationObserver(() => {
+    updateHighlightedExamples()
+  })
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+  stopThemeWatcher = () => observer.disconnect()
+})
+
+onBeforeUnmount(() => {
+  stopThemeWatcher?.()
 })
 </script>
 
@@ -138,7 +174,10 @@ const rows = computed(() => {
 
       <div class="weapi-catalog__section">
         <h3>大概用法</h3>
-        <pre><code>{{ createExample(item.method) }}</code></pre>
+        <div
+          class="weapi-catalog__code"
+          v-html="highlightedExamples[item.method] || ''"
+        />
       </div>
 
       <div class="weapi-catalog__section">
@@ -156,37 +195,39 @@ const rows = computed(() => {
 <style scoped lang="scss">
 .weapi-catalog {
   display: grid;
-  gap: 20px;
+  gap: 12px;
 }
 
 .weapi-catalog__toolbar {
   position: sticky;
   top: 0;
   z-index: 2;
-  padding: 16px;
+  padding: 10px;
   background: linear-gradient(135deg, rgb(149 236 105 / 12%), rgb(14 165 233 / 10%)), var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-divider);
-  border-radius: 16px;
+  border-radius: 12px;
   backdrop-filter: blur(10px);
 }
 
 .weapi-catalog__search {
   width: 100%;
-  padding: 12px 14px;
+  padding: 8px 10px;
   background: var(--vp-c-bg);
   border: 1px solid var(--vp-c-divider);
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .weapi-catalog__caps {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .weapi-catalog__cap {
-  padding: 6px 12px;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1.2;
   cursor: pointer;
   background: var(--vp-c-bg);
   border: 1px solid var(--vp-c-divider);
@@ -200,69 +241,82 @@ const rows = computed(() => {
 }
 
 .weapi-catalog__meta {
-  margin: 10px 0 0;
-  font-size: 13px;
+  margin: 6px 0 0;
+  font-size: 12px;
   color: var(--vp-c-text-2);
 }
 
 .weapi-catalog__title {
   margin: 0;
+  font-size: 18px;
 }
 
 .weapi-catalog__card {
-  padding: 20px;
+  padding: 12px;
   background: var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-divider);
-  border-radius: 18px;
+  border-radius: 12px;
 }
 
 .weapi-catalog__header {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
 }
 
 .weapi-catalog__header h2 {
   margin: 0;
+  font-size: 17px;
 }
 
 .weapi-catalog__badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 48px;
-  padding: 4px 10px;
-  font-size: 12px;
+  min-width: 38px;
+  padding: 2px 8px;
+  font-size: 11px;
   background: var(--vp-c-default-soft);
   border-radius: 999px;
 }
 
 .weapi-catalog__desc {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
   color: var(--vp-c-text-1);
 }
 
 .weapi-catalog__links {
-  margin-top: 10px;
+  margin-top: 6px;
+  font-size: 13px;
 }
 
 .weapi-catalog__section {
-  margin-top: 18px;
+  margin-top: 12px;
 }
 
 .weapi-catalog__section h3 {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+  font-size: 14px;
 }
 
-.weapi-catalog__section pre {
-  padding: 14px;
+.weapi-catalog__code {
   overflow: auto;
-  background: var(--vp-code-block-bg);
-  border-radius: 14px;
+  border-radius: 10px;
+}
+
+.weapi-catalog__code :deep(pre) {
+  padding: 10px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .weapi-catalog__section ul {
-  padding-left: 18px;
+  padding-left: 16px;
+  margin: 0;
+  font-size: 14px;
 }
 </style>
