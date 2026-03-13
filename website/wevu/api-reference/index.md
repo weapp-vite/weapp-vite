@@ -54,6 +54,19 @@ keywords:
 - [Type Reference（类型总览）](/wevu/api/types.html)
   - 核心类型、上下文类型、Store 类型、桥接类型
 
+## 子路径导出
+
+这些页面不属于 `wevu` 主入口的“逐函数分组 API”，但它们同样是 Wevu 当前公开的 namespace 导出：
+
+- [wevu/api](/wevu/api-package)
+  - 透传 `@wevu/api`，用于统一多端小程序 API 调用
+- [wevu/fetch](/wevu/fetch)
+  - 基于 `wpi.request` 的 Fetch 风格接口
+- [wevu/router](/wevu/router)
+  - 命名路由、守卫、失败分类与动态路由管理
+- [wevu/jsx-runtime](/wevu/jsx-runtime)
+  - TSX / JSX 类型入口
+
 ## 建议阅读路径
 
 1. 先读 `Core`，建立 Wevu 的组件与宏心智。
@@ -65,4 +78,5 @@ keywords:
 
 - 业务代码统一从 `wevu` 主入口导入。
 - `wevu/compiler` 主要用于编译工具链，不建议在业务运行时代码中直接依赖。
+- `wevu` 请安装在 `devDependencies` 中，而不是 `dependencies`。
 - 本目录是“按场景组织”的人工参考；精确签名、泛型和重载以对应 API 分页为准。
