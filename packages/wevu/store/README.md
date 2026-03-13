@@ -59,7 +59,7 @@ const store = useCounterStore() // 即刻可用
 ### 安装
 
 ```bash
-npm install wevu
+npm install -D wevu
 ```
 
 ### 定义 Store

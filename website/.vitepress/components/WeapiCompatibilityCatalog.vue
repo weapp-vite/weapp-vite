@@ -152,36 +152,38 @@ const rows = computed(() => {
 <style scoped lang="scss">
 .weapi-compat {
   display: grid;
-  gap: 20px;
+  gap: 12px;
 }
 
 .weapi-compat__toolbar {
   position: sticky;
   top: 0;
   z-index: 2;
-  padding: 16px;
+  padding: 10px;
   background: linear-gradient(135deg, rgb(250 204 21 / 10%), rgb(59 130 246 / 10%)), var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-divider);
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .weapi-compat__search {
   width: 100%;
-  padding: 12px 14px;
+  padding: 8px 10px;
   background: var(--vp-c-bg);
   border: 1px solid var(--vp-c-divider);
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .weapi-compat__caps {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .weapi-compat__cap {
-  padding: 6px 12px;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1.2;
   cursor: pointer;
   background: var(--vp-c-bg);
   border: 1px solid var(--vp-c-divider);
@@ -195,62 +197,70 @@ const rows = computed(() => {
 }
 
 .weapi-compat__meta {
-  margin: 10px 0 0;
-  font-size: 13px;
+  margin: 6px 0 0;
+  font-size: 12px;
   color: var(--vp-c-text-2);
 }
 
 .weapi-compat__title {
   margin: 0;
+  font-size: 18px;
 }
 
 .weapi-compat__card {
-  padding: 20px;
+  padding: 12px;
   background: var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-divider);
-  border-radius: 18px;
+  border-radius: 12px;
 }
 
 .weapi-compat__header {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
 }
 
 .weapi-compat__header h2 {
   margin: 0;
+  font-size: 17px;
 }
 
 .weapi-compat__badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 84px;
-  padding: 4px 10px;
-  font-size: 12px;
+  min-width: 68px;
+  padding: 2px 8px;
+  font-size: 11px;
   background: var(--vp-c-default-soft);
   border-radius: 999px;
 }
 
 .weapi-compat__desc {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
   color: var(--vp-c-text-1);
 }
 
 .weapi-compat__links {
-  margin-top: 10px;
+  margin-top: 6px;
+  font-size: 13px;
 }
 
 .weapi-compat__section {
-  margin-top: 18px;
+  margin-top: 12px;
 }
 
 .weapi-compat__section h3 {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
+  font-size: 14px;
 }
 
 .weapi-compat__section ul {
-  padding-left: 18px;
+  padding-left: 16px;
+  margin: 0;
+  font-size: 14px;
 }
 </style>
