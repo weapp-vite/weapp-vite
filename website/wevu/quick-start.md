@@ -43,6 +43,12 @@ bun add -D wevu
 如果你同时安装 `weapp-vite` 与 `wevu`，请保持两者版本号一致（例如 `weapp-vite@x.y.z` 与 `wevu@x.y.z`），这样可以避免编译期与运行期组合不一致。
 :::
 
+:::warning 安装位置
+`wevu` 必须安装在 `devDependencies` 中。上面的 `-D` / `--save-dev` 不是可选项。
+
+原因是 Weapp-vite 会把 `wevu` 作为构建期依赖参与编译与内联；若误装到 `dependencies`，通常会被当成运行时 npm 依赖处理，影响产物结构与依赖落位。
+:::
+
 :::tip
 运行时 API 均从 `wevu` 主入口导入；`wevu/compiler` 仅供 Weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::

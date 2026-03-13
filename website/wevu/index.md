@@ -17,6 +17,16 @@ keywords:
 
 `wevu` 是一个面向小程序（以微信小程序为主）的轻量运行时。可以把它看作“把 Vue 3 的响应式心智模型带到小程序里”，但不引入 Virtual DOM，而是用快照 diff 来尽量减少 `setData` 的更新量。
 
+:::warning 安装方式
+`wevu` 建议始终安装在 `devDependencies` 中：
+
+```sh
+pnpm add -D wevu
+```
+
+不要放到 `dependencies`。在 Weapp-vite 项目里，这样更符合其“构建期依赖内联、运行时依赖单独落位”的产物策略。
+:::
+
 它主要提供：
 
 - Vue 3 风格的响应式（`ref` / `reactive` / `computed` / `watch`）
@@ -57,6 +67,15 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 运行时 API 都从 `wevu` 主入口导入。`wevu/compiler` 仅供 Weapp-vite 等编译侧工具使用（非稳定用户 API）。
 :::
 
+## 其他子路径导出
+
+除了 `wevu` 主入口外，当前还提供几组按能力拆分的子路径导出：
+
+- [wevu/api](/wevu/api-package)：透传 `@wevu/api`，用于统一多端小程序 API 调用
+- [wevu/fetch](/wevu/fetch)：基于 `wpi.request` 的 Fetch 风格接口
+- [wevu/router](/wevu/router)：更接近 Vue Router 心智的路由入口
+- [wevu/jsx-runtime](/wevu/jsx-runtime)：给 TSX / JSX 类型系统使用的入口
+
 ## 编译侧桥接（wevu/compiler）
 
 `wevu/compiler` 用来承载 Wevu 与编译工具之间的共享常量，避免在多个项目里重复写字符串：
@@ -82,6 +101,10 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 - [defineComponent（组件）](/wevu/component)
 - [Store](/wevu/store)
 - [API 参考总览](/wevu/api-reference/)
+- [wevu/api](/wevu/api-package)
+- [wevu/fetch](/wevu/fetch)
+- [wevu/router](/wevu/router)
+- [wevu/jsx-runtime](/wevu/jsx-runtime)
 - [兼容性与注意事项](/wevu/compatibility)
 - [Vue 3 兼容性说明（完整）](/wevu/vue3-compat)
 - [Wevu vs Vue 3（核心差异）](/wevu/vue3-vs-wevu)
