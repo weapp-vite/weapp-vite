@@ -67,6 +67,9 @@ export default defineConfig({
 > [!TIP]
 > 若你想控制某个分包的 npm 依赖落位，请到 [npm 配置](/config/npm.md) 使用 `weapp.npm.subPackages.<root>.dependencies`，而不是写在 `weapp.subPackages` 里。
 
+> [!TIP]
+> 当你开启 `weapp.autoRoutes` 时，`weapp.subPackages` 还有另一层作用：它会告诉自动路由“哪些 root 应按分包页面目录处理”。默认规则下，自动路由只会扫描 `srcRoot/pages/**` 与这些已声明 root 下的 `pages/**`。
+
 ## `subPackages.*.styles` {#subpackages-styles}
 
 **类型**：`string | SubPackageStyleConfigObject | (string | SubPackageStyleConfigObject)[]`

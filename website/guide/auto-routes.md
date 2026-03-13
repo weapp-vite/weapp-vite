@@ -51,6 +51,43 @@ export default defineConfig({
 - 暴露虚拟模块 `weapp-vite/auto-routes`，默认导出完整路由对象，并额外提供 `entries`、`pages`、`subPackages` 等数组；
 - 在开发与构建过程中持续监听页面相关文件，增删改都会立刻刷新清单并触发热更新。
 
+## 默认扫描规则
+
+不传 `include` 时，自动路由不会做“全局 `**/pages/**` 扫描”。
+
+默认行为只有两条：
+
+- 主包：扫描 `srcRoot/pages/**`
+- 分包：扫描 **已声明在 `weapp.subPackages` 中的每个 root** 下的 `pages/**`
+
+例如：
+
+```ts
+export default defineConfig({
+  weapp: {
+    srcRoot: 'src',
+    autoRoutes: true,
+    subPackages: {
+      'subpackages/marketing': {},
+      'packageA': {},
+    },
+  },
+})
+```
+
+这时默认会扫描：
+
+- `src/pages/**`
+- `src/subpackages/marketing/pages/**`
+- `src/packageA/pages/**`
+
+但不会把下面这些目录误当成页面：
+
+- `src/components/pages/**`
+- `src/features/foo/pages/**`，除非你显式把 `features/foo` 声明为分包 root，或通过 `include` 手动放开
+
+这样做的目的是避免把“只是名字里带 `pages` 的目录”误识别成真实页面目录。
+
 > [!TIP]
 > 扫描的“根目录”受 `weapp.srcRoot` 影响：如果你的源码在 `miniprogram/` 或 `src/`，先把 `weapp.srcRoot` 配对（参考 `/config/paths`），再开启自动路由会更顺滑。
 
@@ -89,6 +126,38 @@ export default defineConfig({
 - `include` 是按“路由基础路径”匹配的，不需要带文件扩展名；
 - 如果分包目录不再沿用 `root/pages/**` 约定，建议同时声明 `weapp.subPackages`，这样自动路由才能把它稳定归入 `subPackages`，而不是主包 `pages`。
 
+## 分包扫描规则
+
+自动路由里的“分包扫描”和“分包归属”是两件事，但它们最好一起配置：
+
+1. 扫描入口：
+   `weapp.subPackages` 会告诉自动路由“哪些 root 应该按分包目录处理”。
+2. 归属输出：
+   命中的页面会被写入 `routes.subPackages`，最终可直接喂给 `defineAppJson({ subPackages })`。
+
+推荐写法：
+
+```ts
+export default defineConfig({
+  weapp: {
+    autoRoutes: true,
+    subPackages: {
+      'subpackages/marketing': {},
+      'subpackages/lab': {
+        independent: true,
+      },
+    },
+  },
+})
+```
+
+对应目录：
+
+- `src/subpackages/marketing/pages/**`
+- `src/subpackages/lab/pages/**`
+
+如果你只写了目录、没有声明 `weapp.subPackages`，那在默认规则下这些页面不会自动进入 `routes.subPackages`。这也是为什么现在文档更推荐把“分包 root”显式写到配置里，而不是依赖宽泛目录猜测。
+
 ## 监听范围
 
 当自动路由开启后，以下文件会纳入监听：
@@ -102,7 +171,7 @@ export default defineConfig({
 
 路由识别规则：
 
-- 默认扫描主包 `pages/**`，以及已声明分包 root 下的 `pages/**`，也可以通过 `include` 改成任意 glob / 正则；
+- 默认扫描主包 `pages/**`，以及已声明分包 root 下的 `pages/**`，不会把任意 `**/pages/**` 都视为页面目录；也可以通过 `include` 改成任意 glob / 正则；
 - 同一路径下 **只要存在脚本 / 模板 / 配置之一** 即可作为页面；但若 `json.component === true` 会被排除（视为组件）；
 - 分包归属优先参考 `weapp.subPackages` 的 root；如果未声明，则回退到传统的 `root/pages/**` 目录约定自动推断。
 
@@ -172,6 +241,7 @@ export default defineAppJson({
 
 - **为什么没有生成路由？**
   - 确认页面文件命中了 `autoRoutes.include` 规则；默认是 `srcRoot/pages/**`，以及已声明分包 root 下的 `pages/**`。
+  - 如果页面位于分包目录下，确认对应 root 已经声明在 `weapp.subPackages` 中。
   - 确认页面目录下至少存在脚本 / 模板 / `json` 文件之一，且 `json.component !== true`。
   - 确认 `autoRoutes: true` 已开启。
   - 首次开启后如果没看到变化，重启一次 `pnpm dev`，让监听器重新初始化。

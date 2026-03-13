@@ -77,6 +77,9 @@ export default defineConfig({
 > [!NOTE]
 > 自动路由默认扫描 `srcRoot/pages/**`，以及已声明分包 root 下的 `pages/**`。它不会把任意 `**/pages/**` 都当作页面目录；如果目录结构不同，可以通过 `include` 自定义 glob / 正则规则。分包页面若不再使用 `root/pages/**` 约定，建议同时声明 `weapp.subPackages`，这样 `autoRoutes` 才能稳定推断 `subPackages` 输出。
 
+> [!TIP]
+> 如果你在 `src/subpackages/foo/pages/**`、`src/packageA/pages/**` 这类目录下放页面，但没有在 `weapp.subPackages` 中声明对应 root，那么这些页面在默认规则下不会被自动收集。要么补 `weapp.subPackages`，要么显式配置 `autoRoutes.include`。
+
 ## `weapp.debug` {#weapp-debug}
 - **类型**：
   ```ts
