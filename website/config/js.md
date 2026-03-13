@@ -1,31 +1,44 @@
 ---
 title: JS 配置
-description: Weapp-vite 内置集成了 vite-tsconfig-paths，用于读取
-  tsconfig.json/jsconfig.json 的 paths/baseUrl，把别名映射到 Vite/Rolldown 流程中。
+description: Weapp-vite 默认使用 Vite 8 原生的 resolve.tsconfigPaths
+  读取 tsconfig.json/jsconfig.json 的 paths/baseUrl，并在需要高级选项时兼容 vite-tsconfig-paths。
 keywords:
   - 配置
   - config
   - js
   - Weapp-vite
   - 内置集成了
-  - vite-tsconfig-paths
+  - resolve.tsconfigPaths
   - 用于读取
 ---
 
 # JS 配置 {#js-config}
 
-`weapp-vite` 内置集成了 `vite-tsconfig-paths`，用于读取 `tsconfig.json/jsconfig.json` 的 `paths/baseUrl`，把别名映射到 Vite/Rolldown 流程中。
+`weapp-vite` 默认使用 Vite 8 原生的 `resolve.tsconfigPaths` 读取 `tsconfig.json/jsconfig.json` 的 `paths/baseUrl`，把别名映射到 Vite / Rolldown 流程中；只有在你传入高级选项对象时，才会回退到 `vite-tsconfig-paths` 插件。
 
 [[toc]]
 
 ## `weapp.tsconfigPaths` {#weapp-tsconfigpaths}
-- **类型**：`TsconfigPathsOptions | false`
+- **类型**：`boolean | TsconfigPathsOptions | false`
 - **默认值**：`undefined`（按需自动启用）
 
 启用规则：
-- 当 `tsconfig.json` 或 `jsconfig.json` **存在 `paths` 或 `baseUrl`** 时，会自动启用该插件；
-- 若你显式配置 `weapp.tsconfigPaths`，则以你的配置为准；
+- 当 `tsconfig.json` 或 `jsconfig.json` **存在 `paths` 或 `baseUrl`** 时，会自动启用 Vite 原生 `resolve.tsconfigPaths`；
+- 传入 `true` 时，会强制启用原生 `resolve.tsconfigPaths`；
+- 传入对象时，会启用 `vite-tsconfig-paths` 插件以支持 `projects`、`exclude` 等高级选项；
 - 传入 `false` 可完全禁用（适合没有别名需求、追求更快启动的项目）。
+
+推荐优先使用默认行为或 `true`，这样不会触发 Vite 8 对 `vite-tsconfig-paths` 的提示信息。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    tsconfigPaths: true,
+  },
+})
+```
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -46,7 +59,7 @@ export default defineConfig({
 
 ### 与 `resolve.alias` 的关系
 
-- `weapp.tsconfigPaths` 负责把 **tsconfig 的 paths/baseUrl** 转成 Vite alias。
+- `weapp.tsconfigPaths` / `resolve.tsconfigPaths` 负责把 **tsconfig 的 paths/baseUrl** 转成 Vite alias。
 - 你仍然可以在 `resolve.alias` 中补充或覆盖特定映射，两者可共存。
 
 ```ts

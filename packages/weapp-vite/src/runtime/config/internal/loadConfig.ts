@@ -28,6 +28,8 @@ import { getDefaultBuildTarget, isNonConcreteBuildTarget, sanitizeBuildTarget } 
 import { resolveWeappWebConfig } from '../web'
 import { shouldEnableTsconfigPathsPlugin } from './tsconfigPaths'
 
+const TRAILING_SLASH_RE = /\/+$/
+
 export interface LoadConfigFactoryOptions {
   injectBuiltinAliases: (config: InlineConfig) => void
   oxcRolldownPlugin: RolldownPluginOption<any> | undefined
@@ -121,7 +123,7 @@ function formatProjectConfigPath(cwd: string, target?: string) {
 }
 
 function normalizeRelativeDistRoot(value: string) {
-  const normalized = toPosixPath(value).replace(/\/+$/, '')
+  const normalized = toPosixPath(value).replace(TRAILING_SLASH_RE, '')
   return normalized.startsWith('./') ? normalized.slice(2) : normalized
 }
 
@@ -436,17 +438,13 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
           mpDistRoot = path.join('dist', platform, normalizedDistRoot)
         }
       }
-      if (buildConfig.outDir == null) {
-        buildConfig.outDir = mpDistRoot
-      }
+      buildConfig.outDir ??= mpDistRoot
       projectConfigPathResolved = path.resolve(cwd, basePath ?? getProjectConfigFileName(platform))
       projectPrivateConfigPathResolved = path.resolve(cwd, privatePath ?? getProjectPrivateConfigFileName(platform))
     }
     else if (isLibMode) {
       const libOutDir = buildConfig.outDir ?? resolvedLibConfig?.outDir ?? 'dist'
-      if (buildConfig.outDir == null) {
-        buildConfig.outDir = libOutDir
-      }
+      buildConfig.outDir ??= libOutDir
       mpDistRoot = libOutDir
     }
     const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
@@ -454,11 +452,18 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     config.plugins ??= []
     const tsconfigPathsOptions = config.weapp?.tsconfigPaths
     if (tsconfigPathsOptions !== false) {
+      const usesAdvancedTsconfigPathsOptions = typeof tsconfigPathsOptions === 'object' && tsconfigPathsOptions !== null
       const shouldEnable = tsconfigPathsOptions
         ? true
         : await shouldEnableTsconfigPathsPlugin(cwd)
       if (shouldEnable) {
-        config.plugins.push(tsconfigPaths(tsconfigPathsOptions || undefined))
+        config.resolve ??= {}
+        if (usesAdvancedTsconfigPathsOptions) {
+          config.plugins.push(tsconfigPaths(tsconfigPathsOptions))
+        }
+        else {
+          config.resolve.tsconfigPaths ??= true
+        }
       }
     }
 
