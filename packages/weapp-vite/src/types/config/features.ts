@@ -47,7 +47,7 @@ export interface AutoImportComponents {
   vueComponentsModule?: string
 }
 
-export type AutoImportComponentsOption = AutoImportComponents | false
+export type AutoImportComponentsOption = AutoImportComponents | boolean
 
 export type EnhanceWxmlOptions = ScanWxmlOptions & HandleWxmlOptions
 

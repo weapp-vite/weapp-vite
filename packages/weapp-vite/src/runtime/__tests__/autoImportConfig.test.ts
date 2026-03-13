@@ -24,6 +24,9 @@ function createContext(
     absoluteSrcRoot: path.join(PROJECT_ROOT, 'src'),
     relativeCwd: (p: string) => p,
     relativeSrcRoot: (p: string) => p,
+    packageJson: {
+      name: 'test-project',
+    },
     weappViteConfig: {
       ...weappConfig,
     },
@@ -157,6 +160,33 @@ describe('autoImport config helpers', () => {
           'marketing/components/**/*.wxml',
         ]),
       )
+    })
+
+    it('expands boolean true into enhanced defaults for wevu projects', () => {
+      const ctx = createContext({
+        autoImportComponents: true,
+        subPackages: {
+          'packages/order': {},
+        },
+      }, {
+        packageJson: {
+          name: 'test-project',
+          devDependencies: {
+            wevu: '^1.0.0',
+          },
+        } as any,
+      })
+      const config = getAutoImportConfig(ctx.configService)
+
+      expect(config?.globs).toEqual(
+        expect.arrayContaining([
+          'components/**/*.wxml',
+          'packages/order/components/**/*.wxml',
+        ]),
+      )
+      expect(config?.typedComponents).toBe(true)
+      expect(config?.vueComponents).toBe(true)
+      expect(config?.vueComponentsModule).toBe('wevu')
     })
 
     it('omits default subpackage globs when subpackage disables auto import', () => {

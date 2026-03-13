@@ -7,12 +7,7 @@ export default defineConfig(() => ({
     subPackages: {
       packageA: {},
     },
-    autoImportComponents: {
-      globs: ['components/**/*.vue', 'components/**/*.wxml'],
-      typedComponents: true,
-      vueComponents: true,
-      vueComponentsModule: 'wevu',
-    },
+    autoImportComponents: true,
   },
   // weapp-vite 内置的 Vue 支持会自动处理 .vue 文件，不需要额外插件
 }))

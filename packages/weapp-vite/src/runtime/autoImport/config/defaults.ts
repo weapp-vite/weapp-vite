@@ -24,7 +24,32 @@ function createDefaultAutoImportComponents(
       globs.add(`${normalized}/components/**/*.wxml`)
     }
   }
-  return globs.size ? { globs: Array.from(globs) } as AutoImportComponents : undefined
+  return globs.size ? { globs: [...globs] } as AutoImportComponents : undefined
+}
+
+function hasWevuDependency(configService: NonNullable<MutableCompilerContext['configService']>) {
+  const packageJson = configService.packageJson ?? {}
+  return Boolean(
+    packageJson.dependencies?.wevu
+    || packageJson.devDependencies?.wevu
+    || packageJson.peerDependencies?.wevu,
+  )
+}
+
+function createEnabledAutoImportComponents(
+  configService: NonNullable<MutableCompilerContext['configService']>,
+): AutoImportComponents | undefined {
+  const defaults = createDefaultAutoImportComponents(configService)
+  if (!defaults) {
+    return undefined
+  }
+
+  return {
+    ...defaults,
+    typedComponents: true,
+    vueComponents: true,
+    vueComponentsModule: hasWevuDependency(configService) ? 'wevu' : undefined,
+  }
 }
 
 export function getAutoImportConfig(configService?: MutableCompilerContext['configService']): AutoImportComponents | undefined {
@@ -41,10 +66,13 @@ export function getAutoImportConfig(configService?: MutableCompilerContext['conf
   if (userConfigured === false) {
     return undefined
   }
-  const fallbackConfig = userConfigured === undefined
+  const normalizedConfig = userConfigured === true
+    ? createEnabledAutoImportComponents(configService)
+    : userConfigured
+  const fallbackConfig = normalizedConfig === undefined
     ? createDefaultAutoImportComponents(configService)
     : undefined
-  const baseConfig = cloneAutoImportComponents(userConfigured ?? fallbackConfig)
+  const baseConfig = cloneAutoImportComponents(normalizedConfig ?? fallbackConfig)
   const subPackageConfigs = weappConfig.subPackages
   const currentRoot = configService.currentSubPackageRoot
 

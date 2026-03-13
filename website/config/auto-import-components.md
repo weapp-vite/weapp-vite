@@ -30,13 +30,19 @@ keywords:
     htmlCustomData?: boolean | string
     vueComponents?: boolean | string
     vueComponentsModule?: string
-  } | false
+  } | boolean
   ```
 - **默认值**：启用（自动生成默认 `globs`）。
 
 默认扫描规则：
 - 主包：`components/**/*.wxml`
 - 分包：`<root>/components/**/*.wxml`（若该分包未显式禁用）
+
+如果你直接写 `autoImportComponents: true`，Weapp-vite 会在默认扫描规则之外，额外帮你启用：
+
+- `typedComponents: true`
+- `vueComponents: true`
+- 当项目检测到 `wevu` 依赖时，自动补 `vueComponentsModule: 'wevu'`
 
 ### 示例
 
@@ -46,14 +52,20 @@ import { TDesignResolver, VantResolver } from 'weapp-vite/auto-import-components
 
 export default defineConfig({
   weapp: {
+    autoImportComponents: true,
+  },
+})
+```
+
+如果你还需要第三方组件库 resolver、定制输出路径或额外扫描目录，再改回对象形式：
+
+```ts
+export default defineConfig({
+  weapp: {
     autoImportComponents: {
-      globs: ['components/**/*.wxml'],
       resolvers: [VantResolver(), TDesignResolver()],
-      output: true,
-      typedComponents: true,
       htmlCustomData: 'dist/mini-program.html-data.json',
-      vueComponents: true,
-      vueComponentsModule: 'wevu',
+      globs: ['components/**/*.wxml'],
     },
   },
 })

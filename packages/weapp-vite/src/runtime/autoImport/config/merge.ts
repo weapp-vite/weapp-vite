@@ -4,6 +4,9 @@ export function cloneAutoImportComponents(config?: AutoImportComponentsOption | 
   if (config === false || !config) {
     return undefined
   }
+  if (config === true) {
+    return {}
+  }
 
   const cloned: AutoImportComponents = {}
   if (config.globs?.length) {
