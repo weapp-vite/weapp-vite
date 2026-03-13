@@ -3,27 +3,37 @@ import type { AutoImportComponents } from '../../../types'
 import { normalizeRoot } from '../../../utils/path'
 import { cloneAutoImportComponents, mergeAutoImportComponents } from './merge'
 
+function addDefaultComponentGlobs(
+  globs: Set<string>,
+  configService: NonNullable<MutableCompilerContext['configService']>,
+  extension: 'vue' | 'wxml',
+) {
+  globs.add(`components/**/*.${extension}`)
+  const subPackages = configService.weappViteConfig?.subPackages
+  if (!subPackages) {
+    return
+  }
+
+  for (const [root, subConfig] of Object.entries(subPackages)) {
+    if (!root) {
+      continue
+    }
+    if (subConfig?.autoImportComponents === false) {
+      continue
+    }
+    const normalized = normalizeRoot(root)
+    if (!normalized) {
+      continue
+    }
+    globs.add(`${normalized}/components/**/*.${extension}`)
+  }
+}
+
 function createDefaultAutoImportComponents(
   configService: NonNullable<MutableCompilerContext['configService']>,
 ): AutoImportComponents | undefined {
   const globs = new Set<string>()
-  globs.add('components/**/*.wxml')
-  const subPackages = configService.weappViteConfig?.subPackages
-  if (subPackages) {
-    for (const [root, subConfig] of Object.entries(subPackages)) {
-      if (!root) {
-        continue
-      }
-      if (subConfig?.autoImportComponents === false) {
-        continue
-      }
-      const normalized = normalizeRoot(root)
-      if (!normalized) {
-        continue
-      }
-      globs.add(`${normalized}/components/**/*.wxml`)
-    }
-  }
+  addDefaultComponentGlobs(globs, configService, 'wxml')
   return globs.size ? { globs: [...globs] } as AutoImportComponents : undefined
 }
 
@@ -44,8 +54,14 @@ function createEnabledAutoImportComponents(
     return undefined
   }
 
+  const globs = new Set(defaults.globs ?? [])
+  if (hasWevuDependency(configService)) {
+    addDefaultComponentGlobs(globs, configService, 'vue')
+  }
+
   return {
     ...defaults,
+    globs: [...globs],
     typedComponents: true,
     vueComponents: true,
     vueComponentsModule: hasWevuDependency(configService) ? 'wevu' : undefined,

@@ -1,1 +1,4 @@
-{}
+{
+  "HelloWorld": "/components/HelloWorld/index",
+  "InfoBanner": "/components/InfoBanner/index"
+}
