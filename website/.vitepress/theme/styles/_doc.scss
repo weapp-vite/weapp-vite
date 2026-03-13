@@ -332,7 +332,7 @@
 }
 
 /* Wider doc content on large screens (avoid over-narrow columns) */
-@media (width >= 960px) {
+@media (min-width: 960px) {
   .VPDoc .content-container {
     max-width: 760px;
   }
@@ -343,6 +343,15 @@
   }
 
   .wevu-api-home .VPDoc .content {
+    max-width: 1080px;
+  }
+
+  /* /packages/weapi/ 入口页同样是纯导航页，使用更宽的内容区域 */
+  .weapi-home .VPDoc .content-container {
+    max-width: 980px;
+  }
+
+  .weapi-home .VPDoc .content {
     max-width: 1080px;
   }
 }

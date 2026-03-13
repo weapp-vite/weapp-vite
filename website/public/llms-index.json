@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-13T05:52:32.070Z",
+  "generatedAt": "2026-03-13T06:23:13.417Z",
   "site": "https://vite.icebreaker.top",
-  "count": 196,
+  "count": 214,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -3504,6 +3504,138 @@
       "source": "packages/weapi/alipay-compat-matrix.md"
     },
     {
+      "id": "doc-d4133afeaf",
+      "title": "支付宝兼容矩阵 · A-C",
+      "summary": "@wevu/api 支付宝兼容矩阵分组页（A-C）。",
+      "url": "/packages/weapi/alipay-compat-matrix/a-c",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/a-c",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "alipay",
+        "compat",
+        "matrix",
+        "支付宝兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "支付宝兼容矩阵 · A-C"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/alipay-compat-matrix/a-c.md"
+    },
+    {
+      "id": "doc-e04066301c",
+      "title": "支付宝兼容矩阵 · D-G",
+      "summary": "@wevu/api 支付宝兼容矩阵分组页（D-G）。",
+      "url": "/packages/weapi/alipay-compat-matrix/d-g",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/d-g",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "alipay",
+        "compat",
+        "matrix",
+        "支付宝兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "支付宝兼容矩阵 · D-G"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/alipay-compat-matrix/d-g.md"
+    },
+    {
+      "id": "doc-53d5e9facc",
+      "title": "支付宝兼容矩阵 · H-M",
+      "summary": "@wevu/api 支付宝兼容矩阵分组页（H-M）。",
+      "url": "/packages/weapi/alipay-compat-matrix/h-m",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/h-m",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "alipay",
+        "compat",
+        "matrix",
+        "支付宝兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "支付宝兼容矩阵 · H-M"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/alipay-compat-matrix/h-m.md"
+    },
+    {
+      "id": "doc-f33b8394d5",
+      "title": "支付宝兼容矩阵 · N-O",
+      "summary": "@wevu/api 支付宝兼容矩阵分组页（N-O）。",
+      "url": "/packages/weapi/alipay-compat-matrix/n-o",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/n-o",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "alipay",
+        "compat",
+        "matrix",
+        "支付宝兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "支付宝兼容矩阵 · N-O"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/alipay-compat-matrix/n-o.md"
+    },
+    {
+      "id": "doc-eda16a7c13",
+      "title": "支付宝兼容矩阵 · P-R",
+      "summary": "@wevu/api 支付宝兼容矩阵分组页（P-R）。",
+      "url": "/packages/weapi/alipay-compat-matrix/p-r",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/p-r",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "alipay",
+        "compat",
+        "matrix",
+        "支付宝兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "支付宝兼容矩阵 · P-R"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/alipay-compat-matrix/p-r.md"
+    },
+    {
+      "id": "doc-f42a84dbb2",
+      "title": "支付宝兼容矩阵 · S-Z",
+      "summary": "@wevu/api 支付宝兼容矩阵分组页（S-Z）。",
+      "url": "/packages/weapi/alipay-compat-matrix/s-z",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix/s-z",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "alipay",
+        "compat",
+        "matrix",
+        "支付宝兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "支付宝兼容矩阵 · S-Z"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/alipay-compat-matrix/s-z.md"
+    },
+    {
       "id": "doc-47b06895de",
       "title": "@wevu/api 兼容总览",
       "summary": "@wevu/api 三端 API 兼容报告总览，覆盖覆盖率、对齐结论与核心差异映射。",
@@ -3548,6 +3680,138 @@
       "source": "packages/weapi/douyin-compat-matrix.md"
     },
     {
+      "id": "doc-6aa797de58",
+      "title": "抖音兼容矩阵 · A-C",
+      "summary": "@wevu/api 抖音兼容矩阵分组页（A-C）。",
+      "url": "/packages/weapi/douyin-compat-matrix/a-c",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/a-c",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "douyin",
+        "compat",
+        "matrix",
+        "抖音兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "抖音兼容矩阵 · A-C"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/douyin-compat-matrix/a-c.md"
+    },
+    {
+      "id": "doc-744c2dec93",
+      "title": "抖音兼容矩阵 · D-G",
+      "summary": "@wevu/api 抖音兼容矩阵分组页（D-G）。",
+      "url": "/packages/weapi/douyin-compat-matrix/d-g",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/d-g",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "douyin",
+        "compat",
+        "matrix",
+        "抖音兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "抖音兼容矩阵 · D-G"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/douyin-compat-matrix/d-g.md"
+    },
+    {
+      "id": "doc-fcd5763d69",
+      "title": "抖音兼容矩阵 · H-M",
+      "summary": "@wevu/api 抖音兼容矩阵分组页（H-M）。",
+      "url": "/packages/weapi/douyin-compat-matrix/h-m",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/h-m",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "douyin",
+        "compat",
+        "matrix",
+        "抖音兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "抖音兼容矩阵 · H-M"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/douyin-compat-matrix/h-m.md"
+    },
+    {
+      "id": "doc-ef2b4eda23",
+      "title": "抖音兼容矩阵 · N-O",
+      "summary": "@wevu/api 抖音兼容矩阵分组页（N-O）。",
+      "url": "/packages/weapi/douyin-compat-matrix/n-o",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/n-o",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "douyin",
+        "compat",
+        "matrix",
+        "抖音兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "抖音兼容矩阵 · N-O"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/douyin-compat-matrix/n-o.md"
+    },
+    {
+      "id": "doc-18e7c1e431",
+      "title": "抖音兼容矩阵 · P-R",
+      "summary": "@wevu/api 抖音兼容矩阵分组页（P-R）。",
+      "url": "/packages/weapi/douyin-compat-matrix/p-r",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/p-r",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "douyin",
+        "compat",
+        "matrix",
+        "抖音兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "抖音兼容矩阵 · P-R"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/douyin-compat-matrix/p-r.md"
+    },
+    {
+      "id": "doc-ec450c9b51",
+      "title": "抖音兼容矩阵 · S-Z",
+      "summary": "@wevu/api 抖音兼容矩阵分组页（S-Z）。",
+      "url": "/packages/weapi/douyin-compat-matrix/s-z",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix/s-z",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "douyin",
+        "compat",
+        "matrix",
+        "抖音兼容矩阵",
+        "·"
+      ],
+      "headings": [
+        "抖音兼容矩阵 · S-Z"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/douyin-compat-matrix/s-z.md"
+    },
+    {
       "id": "doc-e1b8e95c46",
       "title": "兼容差异说明",
       "summary": "@wevu/api 兼容报告中的特殊命名、类型来源差异与 gap 说明。",
@@ -3572,31 +3836,18 @@
     {
       "id": "doc-d4b54403eb",
       "title": "@wevu/api",
-      "summary": "@wevu/api 提供跨平台小程序 API 封装，默认推荐 Promise 调用方式，同时兼容传统回调风格。",
+      "summary": "@wevu/api 独立文档入口，按总览、全量目录、兼容矩阵与差异说明组织。",
       "url": "/packages/weapi/",
       "canonical": "https://vite.icebreaker.top/packages/weapi/",
       "keywords": [
-        "wevu",
-        "api",
-        "packages",
+        "@wevu/api",
         "weapi",
-        "@wevu/api",
-        "提供跨平台小程序",
-        "封装",
-        "默认推荐"
+        "api",
+        "docs",
+        "wevu",
+        "packages"
       ],
-      "headings": [
-        "@wevu/api",
-        "何时使用",
-        "安装",
-        "基本用法",
-        "Promise 风格（推荐）",
-        "回调风格（兼容）",
-        "显式注入平台",
-        "这组文档怎么读",
-        "行为说明",
-        "与 Wevu 的关系"
-      ],
+      "headings": [],
       "updatedAt": "2026-03-13",
       "source": "packages/weapi/index.md"
     },
@@ -3643,6 +3894,138 @@
       ],
       "updatedAt": "2026-03-13",
       "source": "packages/weapi/wx-method-list.md"
+    },
+    {
+      "id": "doc-14ef9a9421",
+      "title": "API 全量清单 · A-C",
+      "summary": "@wevu/api 全量 API 目录分组页（A-C）。",
+      "url": "/packages/weapi/wx-method-list/a-c",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/a-c",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "wx",
+        "method",
+        "list",
+        "全量清单",
+        "·"
+      ],
+      "headings": [
+        "API 全量清单 · A-C"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/wx-method-list/a-c.md"
+    },
+    {
+      "id": "doc-72c7902cdf",
+      "title": "API 全量清单 · D-G",
+      "summary": "@wevu/api 全量 API 目录分组页（D-G）。",
+      "url": "/packages/weapi/wx-method-list/d-g",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/d-g",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "wx",
+        "method",
+        "list",
+        "全量清单",
+        "·"
+      ],
+      "headings": [
+        "API 全量清单 · D-G"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/wx-method-list/d-g.md"
+    },
+    {
+      "id": "doc-95b485f2c5",
+      "title": "API 全量清单 · H-M",
+      "summary": "@wevu/api 全量 API 目录分组页（H-M）。",
+      "url": "/packages/weapi/wx-method-list/h-m",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/h-m",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "wx",
+        "method",
+        "list",
+        "全量清单",
+        "·"
+      ],
+      "headings": [
+        "API 全量清单 · H-M"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/wx-method-list/h-m.md"
+    },
+    {
+      "id": "doc-b93384da8f",
+      "title": "API 全量清单 · N-O",
+      "summary": "@wevu/api 全量 API 目录分组页（N-O）。",
+      "url": "/packages/weapi/wx-method-list/n-o",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/n-o",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "wx",
+        "method",
+        "list",
+        "全量清单",
+        "·"
+      ],
+      "headings": [
+        "API 全量清单 · N-O"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/wx-method-list/n-o.md"
+    },
+    {
+      "id": "doc-d1799f5f67",
+      "title": "API 全量清单 · P-R",
+      "summary": "@wevu/api 全量 API 目录分组页（P-R）。",
+      "url": "/packages/weapi/wx-method-list/p-r",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/p-r",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "wx",
+        "method",
+        "list",
+        "全量清单",
+        "·"
+      ],
+      "headings": [
+        "API 全量清单 · P-R"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/wx-method-list/p-r.md"
+    },
+    {
+      "id": "doc-6706ae968b",
+      "title": "API 全量清单 · S-Z",
+      "summary": "@wevu/api 全量 API 目录分组页（S-Z）。",
+      "url": "/packages/weapi/wx-method-list/s-z",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list/s-z",
+      "keywords": [
+        "api",
+        "packages",
+        "weapi",
+        "wx",
+        "method",
+        "list",
+        "全量清单",
+        "·"
+      ],
+      "headings": [
+        "API 全量清单 · S-Z"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/wx-method-list/s-z.md"
     },
     {
       "id": "doc-70402715ac",

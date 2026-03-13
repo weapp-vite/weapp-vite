@@ -7,12 +7,18 @@ import { h } from 'vue'
 import AiLearningPage from '../components/AiLearningPage.vue'
 import HomePage from '../components/HomePage.vue'
 import TechBackground from '../components/TechBackground.vue'
+import WeapiCatalog from '../components/WeapiCatalog.vue'
+import WeapiCompatibilityCatalog from '../components/WeapiCompatibilityCatalog.vue'
+import WeapiReference from '../components/WeapiReference.vue'
 import WevuApiReference from '../components/WevuApiReference.vue'
 import Layout from './Layout.vue'
 import '@shikijs/vitepress-twoslash/style.css'
 import './index.scss'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import 'virtual:group-icons.css'
+
+const CSS_ESCAPE_FALLBACK_RE = /['"\\]/g
+const MERMAID_LABEL_PREFIX_RE = /^\s*mermaid\s*/i
 
 export default {
   extends: DefaultTheme,
@@ -27,6 +33,9 @@ export default {
     app.component('AiLearningPage', AiLearningPage)
     app.component('HomePage', HomePage)
     app.component('TechBackground', TechBackground)
+    app.component('WeapiCatalog', WeapiCatalog)
+    app.component('WeapiCompatibilityCatalog', WeapiCompatibilityCatalog)
+    app.component('WeapiReference', WeapiReference)
     app.component('WevuApiReference', WevuApiReference)
     if (typeof window !== 'undefined') {
       let cleanupOutline: (() => void) | null = null
@@ -58,7 +67,7 @@ export default {
           }
           evt.preventDefault()
           // optimistic active state for better visual feedback
-          for (const link of Array.from(aside.querySelectorAll<HTMLAnchorElement>('a.outline-link'))) {
+          for (const link of [...aside.querySelectorAll<HTMLAnchorElement>('a.outline-link')]) {
             link.classList.remove('is-active')
             link.removeAttribute('aria-current')
           }
@@ -92,7 +101,7 @@ export default {
           if (locked) {
             return
           }
-          const links = Array.from(outline.querySelectorAll<HTMLAnchorElement>('a.outline-link'))
+          const links = [...outline.querySelectorAll<HTMLAnchorElement>('a.outline-link')]
           if (!links.length) {
             return
           }
@@ -101,7 +110,7 @@ export default {
           if (location.hash) {
             const id = decodeURIComponent(location.hash.slice(1))
             // CSS.escape may not exist on very old browsers
-            const safe = (window as any).CSS?.escape ? (window as any).CSS.escape(id) : id.replace(/['"\\]/g, '')
+            const safe = (window as any).CSS?.escape ? (window as any).CSS.escape(id) : id.replace(CSS_ESCAPE_FALLBACK_RE, '')
             target = outline.querySelector<HTMLAnchorElement>(`a[href="#${safe}"]`)
           }
           // fallback: find nearest to marker center
@@ -154,8 +163,8 @@ export default {
         // collect blocks from two structures:
         // 1) VitePress/Shiki: <div class="language-mermaid"><span class="lang">mermaid</span><pre><code>...</code></pre></div>
         // 2) fallback: <pre><code class="language-mermaid">...</code></pre>
-        const wrappers = Array.from(document.querySelectorAll<HTMLElement>('div[class*=\"language-mermaid\"]'))
-        const inlineBlocks = Array.from(document.querySelectorAll<HTMLElement>('pre code.language-mermaid'))
+        const wrappers = [...document.querySelectorAll<HTMLElement>('div[class*=\"language-mermaid\"]')]
+        const inlineBlocks = [...document.querySelectorAll<HTMLElement>('pre code.language-mermaid')]
 
         let found = false
         // handle wrapper structure
@@ -164,7 +173,7 @@ export default {
             continue
           }
           const code = wrap.querySelector('code')
-          const raw = (code?.textContent || wrap.textContent || '').replace(/^\\s*mermaid\\s*/i, '')
+          const raw = (code?.textContent || wrap.textContent || '').replace(MERMAID_LABEL_PREFIX_RE, '')
           const src = raw.trim()
           if (!src) {
             continue
@@ -246,7 +255,7 @@ export default {
 
       // re-render on theme change to switch mermaid theme
       const rerenderForTheme = async () => {
-        const nodes = Array.from(document.querySelectorAll<HTMLElement>('.mermaid'))
+        const nodes = [...document.querySelectorAll<HTMLElement>('.mermaid')]
         if (!nodes.length) {
           return
         }
