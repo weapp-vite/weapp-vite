@@ -27,7 +27,7 @@ keywords:
 
 ## `weapp.autoRoutes` {#weapp-autoroutes}
 - **类型**：`boolean | { enabled?: boolean; typedRouter?: boolean; persistentCache?: boolean; watch?: boolean }`
-- **默认值**：`true`
+- **默认值**：`false`
 - **适用场景**：
   - 希望从目录结构自动生成 `pages` 清单，不再手动维护 `app.json.pages`。
   - 希望在 TypeScript 里拿到“页面路径”的类型提示，避免字符串拼错。
@@ -45,6 +45,16 @@ export default defineConfig({
       persistentCache: true,
       watch: true,
     },
+  },
+})
+```
+
+如果只是快速启用，也可以直接写：
+
+```ts
+export default defineConfig({
+  weapp: {
+    autoRoutes: true,
   },
 })
 ```

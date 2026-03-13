@@ -27,7 +27,7 @@ keywords:
 
 ## 快速开启
 
-自动路由默认开启；如果想显式声明或做细粒度控制，可以在 `vite.config.ts` 中配置：
+自动路由默认关闭；如果想启用或做细粒度控制，可以在 `vite.config.ts` 中配置：
 
 ```ts
 import { defineConfig } from 'weapp-vite'

@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { resolveWeappAutoRoutesConfig } from './autoRoutesConfig'
 
 describe('resolveWeappAutoRoutesConfig', () => {
-  it('uses enabled defaults when config is omitted or true', () => {
+  it('keeps auto routes disabled when config is omitted', () => {
     expect(resolveWeappAutoRoutesConfig()).toEqual({
-      enabled: true,
-      typedRouter: true,
-      persistentCache: true,
-      watch: true,
+      enabled: false,
+      typedRouter: false,
+      persistentCache: false,
+      watch: false,
     })
+  })
+
+  it('uses enabled defaults when config is true', () => {
     expect(resolveWeappAutoRoutesConfig(true)).toEqual({
       enabled: true,
       typedRouter: true,
@@ -27,6 +30,12 @@ describe('resolveWeappAutoRoutesConfig', () => {
   })
 
   it('supports object config overrides', () => {
+    expect(resolveWeappAutoRoutesConfig({})).toEqual({
+      enabled: true,
+      typedRouter: true,
+      persistentCache: true,
+      watch: true,
+    })
     expect(resolveWeappAutoRoutesConfig({
       enabled: true,
       typedRouter: false,
