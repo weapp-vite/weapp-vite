@@ -211,7 +211,7 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
         items: [
           { text: '总览', link: '/packages/weapi/' },
           { text: '兼容总览', link: '/packages/weapi/compat-overview' },
-          { text: '微信基准 API 全量清单', link: '/packages/weapi/wx-method-list' },
+          { text: 'API 全量清单', link: '/packages/weapi/wx-method-list' },
           { text: '支付宝兼容矩阵', link: '/packages/weapi/alipay-compat-matrix' },
           { text: '抖音兼容矩阵', link: '/packages/weapi/douyin-compat-matrix' },
           { text: '兼容差异说明', link: '/packages/weapi/gap-notes' },
