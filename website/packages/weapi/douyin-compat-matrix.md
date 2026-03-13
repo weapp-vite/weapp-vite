@@ -13,4 +13,29 @@ keywords:
 
 本页展示 `wpi.<wxMethod>` 在抖音小程序环境下的目标 API、支持状态与映射策略，并按能力域组织。
 
-<WeapiCompatibilityCatalog platform="douyin" />
+能力域入口：
+
+- [基础](/packages/weapi/douyin-compat-matrix/base)
+- [路由](/packages/weapi/douyin-compat-matrix/route)
+- [跳转](/packages/weapi/douyin-compat-matrix/navigate)
+- [聊天工具](/packages/weapi/douyin-compat-matrix/chattool)
+- [转发](/packages/weapi/douyin-compat-matrix/share)
+- [界面](/packages/weapi/douyin-compat-matrix/ui)
+- [网络](/packages/weapi/douyin-compat-matrix/network)
+- [支付](/packages/weapi/douyin-compat-matrix/payment)
+- [数据缓存](/packages/weapi/douyin-compat-matrix/storage)
+- [数据分析](/packages/weapi/douyin-compat-matrix/data-analysis)
+- [画布](/packages/weapi/douyin-compat-matrix/canvas)
+- [媒体](/packages/weapi/douyin-compat-matrix/media)
+- [位置](/packages/weapi/douyin-compat-matrix/location)
+- [文件](/packages/weapi/douyin-compat-matrix/file)
+- [开放接口](/packages/weapi/douyin-compat-matrix/open-api)
+- [设备](/packages/weapi/douyin-compat-matrix/device)
+- [AI](/packages/weapi/douyin-compat-matrix/ai)
+- [Worker](/packages/weapi/douyin-compat-matrix/worker)
+- [WXML](/packages/weapi/douyin-compat-matrix/wxml)
+- [第三方平台](/packages/weapi/douyin-compat-matrix/ext)
+- [广告](/packages/weapi/douyin-compat-matrix/ad)
+- [XR-FRAME](/packages/weapi/douyin-compat-matrix/xr-frame)
+
+<WeapiCompatibilityCatalog platform="douyin" capability="base" base-path="/packages/weapi/douyin-compat-matrix" />
