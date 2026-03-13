@@ -2,23 +2,7 @@
 import { ref } from 'wevu'
 import { isNavigationFailure, NavigationFailureType, useRouter } from 'wevu/router'
 
-const router = useRouter({
-  rejectOnError: false,
-  routes: [
-    {
-      name: 'router-dynamic-home',
-      path: '/pages/router-dynamic/index',
-    },
-    {
-      name: 'router-guard-block',
-      path: '/router-guard/block',
-    },
-    {
-      name: 'router-guard-error',
-      path: '/router-guard/error',
-    },
-  ],
-})
+const router = useRouter()
 
 const baseRoutesSummary = ref('pending')
 const addRemoveSummary = ref('pending')
@@ -31,8 +15,8 @@ const runSummary = ref('idle')
 async function runE2E() {
   runSummary.value = 'running'
 
-  const baseRouteNames = router.getRoutes().map(item => item.name)
-  baseRoutesSummary.value = baseRouteNames.join(',')
+  const baseRoutePaths = router.getRoutes().map(item => item.path)
+  baseRoutesSummary.value = baseRoutePaths.join(',')
 
   const removeParent = router.addRoute({
     name: 'router-dynamic-parent',
@@ -76,8 +60,8 @@ async function runE2E() {
   const afterClearCount = router.getRoutes().length
   clearSummary.value = `${beforeClearCount}->${afterClearCount}`
 
-  const optionsRouteNames = (router.options.routes ?? []).map(item => item.name).join(',')
-  optionsSummary.value = optionsRouteNames
+  const optionsRoutePaths = (router.options.routes ?? []).map(item => item.path).join(',')
+  optionsSummary.value = optionsRoutePaths
 
   const offBeforeEach = router.beforeEach((to) => {
     if (to?.path === 'router-guard/block') {
@@ -120,13 +104,13 @@ async function runE2E() {
   errorSummary.value = errorMessages.join('|') || 'none'
 
   const checks = {
-    baseRoutesOk: baseRoutesSummary.value.includes('router-dynamic-home'),
+    baseRoutesOk: baseRoutesSummary.value.includes('/pages/router-dynamic/index'),
     addRemoveOk: addRemoveSummary.value.includes('/router-dynamic/parent/5/child/metrics?from=dynamic')
       && addRemoveSummary.value.includes('added')
       && addRemoveSummary.value.includes('removed')
       && addRemoveSummary.value.includes('stable'),
     clearOk: clearSummary.value.endsWith('->0'),
-    optionsOk: optionsSummary.value.includes('router-dynamic-home')
+    optionsOk: optionsSummary.value.includes('/pages/router-dynamic/index')
       && !optionsSummary.value.includes('router-dynamic-parent'),
     guardOk: guardSummary.value.includes('block-ok')
       && guardSummary.value.includes('error-ok')

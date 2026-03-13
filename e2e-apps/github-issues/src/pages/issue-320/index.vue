@@ -7,20 +7,7 @@ definePageJson({
   backgroundColor: '#ffffff',
 })
 
-const router = useRouter({
-  routes: [
-    {
-      name: 'issue320-home',
-      path: '/pages/issue-320/index',
-    },
-    {
-      name: 'issue320-legacy',
-      path: '/pages/issue-320/legacy',
-      alias: '/pages/issue-320/legacy-alias',
-      redirect: '/pages/issue-320/index?from=legacy',
-    },
-  ],
-})
+const router = useRouter()
 
 const report = ref({
   ok: false,
