@@ -34,7 +34,8 @@ dist
 dist-plugin
 dist-web
 dist/web
-vite.config.ts.timestamp-*.mjs`
+vite.config.ts.timestamp-*.mjs
+.weapp-vite/`
 
 const CRLF_RE = /\r\n/g
 

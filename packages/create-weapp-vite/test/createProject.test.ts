@@ -60,6 +60,7 @@ describe('createProject', () => {
     expect(await fs.pathExists(path.join(root, 'gitignore'))).toBe(false)
     const gitignore = await fs.readFile(path.join(root, '.gitignore'), 'utf8')
     expect(gitignore).toContain('node_modules')
+    expect(gitignore).toContain('.weapp-vite/')
 
     const files = await scanFiles(root)
     expect(files).toContain('package.json')
@@ -77,6 +78,7 @@ describe('createProject', () => {
     expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^4.10.3')
     const gitignore = await fs.readFile(path.join(root, '.gitignore'), 'utf8')
     expect(gitignore).toContain('# existing entry')
+    expect(gitignore).toContain('.weapp-vite/')
     expect(await fs.pathExists(path.join(root, 'gitignore'))).toBe(false)
   })
 
