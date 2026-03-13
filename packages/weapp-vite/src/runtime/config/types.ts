@@ -1,4 +1,4 @@
-import type { WeappWebPluginOptions } from '@weapp-vite/web'
+import type { WeappWebPluginOptions } from '@weapp-vite/web/plugin'
 import type { DetectResult } from 'package-manager-detector'
 import type { PackageJson } from 'pkg-types'
 import type { InlineConfig } from 'vite'
