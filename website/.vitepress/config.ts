@@ -205,7 +205,19 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: '@wevu/compiler（编译底座）', link: '/packages/wevu-compiler' },
-      { text: '@wevu/api（跨端 API）', link: '/packages/weapi' },
+      {
+        text: '@wevu/api（跨端 API）',
+        collapsed: false,
+        items: [
+          { text: '总览', link: '/packages/weapi/' },
+          { text: '兼容总览', link: '/packages/weapi/compat-overview' },
+          { text: '微信基准 API 全量清单', link: '/packages/weapi/wx-method-list' },
+          { text: '支付宝兼容矩阵', link: '/packages/weapi/alipay-compat-matrix' },
+          { text: '抖音兼容矩阵', link: '/packages/weapi/douyin-compat-matrix' },
+          { text: '兼容差异说明', link: '/packages/weapi/gap-notes' },
+          { text: '平台独有 API 清单', link: '/packages/weapi/platform-only-methods' },
+        ],
+      },
       { text: '@weapp-vite/web（Web 实验运行时）', link: '/packages/web' },
       { text: '@weapp-vite/volar（IDE 插件）', link: '/packages/volar' },
     ],
