@@ -155,7 +155,12 @@ describe('createAutoRoutesService branch coverage', () => {
 
   it('logs an error when writing typed router definition fails', async () => {
     outputFileMock.mockRejectedValueOnce(new Error('boom'))
-    const ctx = createContext({ autoRoutes: true })
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
     const service = createAutoRoutesService(ctx)
 
     await service.ensureFresh()
@@ -210,7 +215,12 @@ describe('createAutoRoutesService branch coverage', () => {
   })
 
   it('marks dirty and exposes serialized signature', () => {
-    const ctx = createContext({ autoRoutes: true })
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
     const service = createAutoRoutesService(ctx)
 
     ctx.runtimeState.autoRoutes.dirty = false
@@ -225,7 +235,12 @@ describe('createAutoRoutesService branch coverage', () => {
 
   it('returns early for unchanged route files without full rescan request', async () => {
     updateCandidateFromFileMock.mockResolvedValueOnce(false)
-    const ctx = createContext({ autoRoutes: true })
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
     ctx.runtimeState.autoRoutes.needsFullRescan = false
     const service = createAutoRoutesService(ctx)
 
@@ -258,7 +273,12 @@ describe('createAutoRoutesService branch coverage', () => {
       },
     })
 
-    const ctx = createContext({ autoRoutes: true })
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
     const service = createAutoRoutesService(ctx)
 
     await service.ensureFresh()
@@ -293,7 +313,12 @@ describe('createAutoRoutesService branch coverage', () => {
     })
     statMock.mockResolvedValue({ mtimeMs: 1 })
 
-    const ctx = createContext({ autoRoutes: true })
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
     const service = createAutoRoutesService(ctx)
 
     await service.ensureFresh()
@@ -304,7 +329,12 @@ describe('createAutoRoutesService branch coverage', () => {
 
   it('warns when writing persistent cache fails', async () => {
     outputJsonMock.mockRejectedValueOnce(new Error('cache-boom'))
-    const ctx = createContext({ autoRoutes: true })
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: true,
+      },
+    })
     const service = createAutoRoutesService(ctx)
 
     await service.ensureFresh()

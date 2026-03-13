@@ -37,7 +37,7 @@ export default defineConfig({
     autoRoutes: {
       enabled: true,
       typedRouter: true,
-      persistentCache: true,
+      persistentCache: false,
       watch: true,
     },
   },

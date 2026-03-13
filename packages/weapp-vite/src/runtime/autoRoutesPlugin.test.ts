@@ -130,7 +130,7 @@ describe('createAutoRoutesService', () => {
   })
 
   it('restores routes from persistent cache without rescanning directories', async () => {
-    const firstCtx = createContext()
+    const firstCtx = createContext({ enabled: true, persistentCache: true })
     const firstService = createAutoRoutesService(firstCtx)
 
     await firstService.ensureFresh()
@@ -141,7 +141,7 @@ describe('createAutoRoutesService', () => {
     const readdirSpy = vi.spyOn(fs, 'readdir')
     readdirSpy.mockClear()
 
-    const secondCtx = createContext()
+    const secondCtx = createContext({ enabled: true, persistentCache: true })
     const secondService = createAutoRoutesService(secondCtx)
 
     await secondService.ensureFresh()
