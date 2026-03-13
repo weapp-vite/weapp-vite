@@ -35,30 +35,11 @@ pnpm add -D wevu
 ```ts
 import { useRouter } from 'wevu/router'
 
-const router = useRouter({
-  paramsMode: 'strict',
-  routes: [
-    {
-      name: 'home',
-      path: '/pages/home/index',
-    },
-    {
-      name: 'post-detail',
-      path: '/pages/post/:id/index',
-      beforeEnter: (to) => {
-        if (to.query.preview === '1') {
-          return '/pages/preview/index'
-        }
-      },
-    },
-  ],
-})
+const router = useRouter()
 
-await router.push({
-  name: 'post-detail',
-  params: { id: 42 },
-  query: { preview: '0' },
-})
+await router.push('/pages/home/index')
+await router.replace('/pages/profile/index?tab=security')
+await router.back(1)
 ```
 
 ## 核心能力
@@ -75,10 +56,23 @@ await router.push({
 ### 命名路由优先
 
 ```ts
-await router.push({
-  name: 'post-detail',
-  params: { id: 1 },
+const router = useRouter({
+  paramsMode: 'strict',
+  routes: [
+    { name: 'home', path: '/pages/home/index' },
+    {
+      name: 'post-detail',
+      path: '/pages/post/:id/index',
+      beforeEnter: (to) => {
+        if (to.query.preview === '1') {
+          return '/pages/preview/index'
+        }
+      },
+    },
+  ],
 })
+
+await router.push({ name: 'post-detail', params: { id: 1 } })
 ```
 
 相比手写 `/pages/post/1/index`，命名路由更适合做类型约束、统一迁移和重构。
