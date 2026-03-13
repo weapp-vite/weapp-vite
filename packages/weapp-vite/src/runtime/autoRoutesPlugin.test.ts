@@ -77,12 +77,12 @@ describe('createAutoRoutesService', () => {
     expect(reference.pages).toBe(ctx.runtimeState.autoRoutes.routes.pages)
     expect(reference.entries).toBe(ctx.runtimeState.autoRoutes.routes.entries)
 
-    const watchFiles = Array.from(service.getWatchFiles())
+    const watchFiles = [...service.getWatchFiles()]
     expect(watchFiles).toEqual(expect.arrayContaining([
       path.join(srcRoot, 'pages', 'index', 'index.ts'),
     ]))
 
-    const watchDirs = Array.from(service.getWatchDirectories())
+    const watchDirs = [...service.getWatchDirectories()]
     expect(watchDirs).toEqual(expect.arrayContaining([
       path.join(srcRoot, 'pages'),
       path.join(srcRoot, 'pages', 'index'),
@@ -123,10 +123,35 @@ describe('createAutoRoutesService', () => {
     const packageA = snapshot.subPackages.find(pkg => pkg.root === 'packageA')
     expect(packageA?.pages).toEqual(['pages/cat'])
 
-    const watchFiles = Array.from(service.getWatchFiles())
+    const watchFiles = [...service.getWatchFiles()]
     expect(watchFiles).toEqual(expect.arrayContaining([
       path.join(srcRoot, 'packageA', 'pages', 'cat.ts'),
     ]))
+  })
+
+  it('restores routes from persistent cache without rescanning directories', async () => {
+    const firstCtx = createContext()
+    const firstService = createAutoRoutesService(firstCtx)
+
+    await firstService.ensureFresh()
+
+    const cachePath = path.join(tempDir, '.weapp-vite', 'auto-routes.cache.json')
+    expect(await fs.pathExists(cachePath)).toBe(true)
+
+    const readdirSpy = vi.spyOn(fs, 'readdir')
+    readdirSpy.mockClear()
+
+    const secondCtx = createContext()
+    const secondService = createAutoRoutesService(secondCtx)
+
+    await secondService.ensureFresh()
+
+    expect(readdirSpy).not.toHaveBeenCalled()
+    expect(secondService.getSnapshot()).toEqual({
+      pages: ['pages/index/index'],
+      entries: ['pages/index/index'],
+      subPackages: [],
+    })
   })
 
   it('matches and handles route changes from Windows-style absolute paths', async () => {
@@ -164,13 +189,13 @@ describe('createAutoRoutesService', () => {
 
     await service.handleFileChange(stylePath, 'create')
 
-    const watchFilesAfterCreate = Array.from(service.getWatchFiles())
+    const watchFilesAfterCreate = [...service.getWatchFiles()]
     expect(watchFilesAfterCreate).toEqual(expect.arrayContaining([stylePath]))
 
     await fs.remove(stylePath)
     await service.handleFileChange(stylePath, 'delete')
 
-    const watchFilesAfterDelete = Array.from(service.getWatchFiles())
+    const watchFilesAfterDelete = [...service.getWatchFiles()]
     expect(watchFilesAfterDelete).not.toContain(stylePath)
   })
 

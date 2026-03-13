@@ -4,9 +4,13 @@ import { createRuntimeState } from '../runtimeState'
 import { createAutoRoutesService } from './service'
 
 const outputFileMock = vi.hoisted(() => vi.fn())
+const outputJsonMock = vi.hoisted(() => vi.fn())
 const pathExistsMock = vi.hoisted(() => vi.fn())
+const readJsonMock = vi.hoisted(() => vi.fn())
 const removeMock = vi.hoisted(() => vi.fn())
+const statMock = vi.hoisted(() => vi.fn())
 const loggerErrorMock = vi.hoisted(() => vi.fn())
+const loggerWarnMock = vi.hoisted(() => vi.fn())
 const requireConfigServiceMock = vi.hoisted(() => vi.fn((ctx: MutableCompilerContext) => {
   if (!ctx.configService) {
     throw new Error('missing config service')
@@ -48,14 +52,18 @@ const updateCandidateFromFileMock = vi.hoisted(() => vi.fn(async () => true))
 vi.mock('fs-extra', () => ({
   default: {
     outputFile: outputFileMock,
+    outputJson: outputJsonMock,
     pathExists: pathExistsMock,
+    readJson: readJsonMock,
     remove: removeMock,
+    stat: statMock,
   },
 }))
 
 vi.mock('../../context/shared', () => ({
   logger: {
     error: loggerErrorMock,
+    warn: loggerWarnMock,
   },
 }))
 
@@ -116,8 +124,11 @@ describe('createAutoRoutesService branch coverage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     pathExistsMock.mockResolvedValue(false)
+    readJsonMock.mockResolvedValue(undefined)
     removeMock.mockResolvedValue(undefined)
     outputFileMock.mockResolvedValue(undefined)
+    outputJsonMock.mockResolvedValue(undefined)
+    statMock.mockResolvedValue({ mtimeMs: 1 })
   })
 
   it('resets state and skips remove path operations when config service is missing', async () => {
@@ -222,5 +233,82 @@ describe('createAutoRoutesService branch coverage', () => {
 
     expect(updateCandidateFromFileMock).toHaveBeenCalledTimes(1)
     expect(scanRoutesMock).not.toHaveBeenCalled()
+  })
+
+  it('restores routes from persistent cache when watched files are unchanged', async () => {
+    pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
+    readJsonMock.mockResolvedValue({
+      version: 1,
+      snapshot: {
+        pages: ['pages/index/index'],
+        entries: ['pages/index/index'],
+        subPackages: [],
+      },
+      serialized: JSON.stringify({
+        pages: ['pages/index/index'],
+        entries: ['pages/index/index'],
+        subPackages: [],
+      }, null, 2),
+      moduleCode: 'export default ["pages/index/index"]',
+      typedDefinition: 'type TypedRouter = ["pages/index/index"]',
+      watchFiles: ['/project/src/pages/index/index.ts'],
+      watchDirs: ['/project/src/pages/index'],
+      fileMtims: {
+        '/project/src/pages/index/index.ts': 1,
+      },
+    })
+
+    const ctx = createContext({ autoRoutes: true })
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(scanRoutesMock).not.toHaveBeenCalled()
+    expect(outputJsonMock).not.toHaveBeenCalled()
+    expect(service.getSnapshot()).toEqual({
+      pages: ['pages/index/index'],
+      entries: ['pages/index/index'],
+      subPackages: [],
+    })
+    expect([...service.getWatchFiles()]).toEqual(['/project/src/pages/index/index.ts'])
+  })
+
+  it('falls back to a full scan when persistent cache mtimes do not match', async () => {
+    pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
+    readJsonMock.mockResolvedValue({
+      version: 1,
+      snapshot: {
+        pages: ['stale/page'],
+        entries: ['stale/page'],
+        subPackages: [],
+      },
+      serialized: '{"pages":["stale/page"],"entries":["stale/page"],"subPackages":[]}',
+      moduleCode: 'export default ["stale/page"]',
+      typedDefinition: 'type TypedRouter = ["stale/page"]',
+      watchFiles: ['/project/src/pages/index/index.ts'],
+      watchDirs: ['/project/src/pages/index'],
+      fileMtims: {
+        '/project/src/pages/index/index.ts': 2,
+      },
+    })
+    statMock.mockResolvedValue({ mtimeMs: 1 })
+
+    const ctx = createContext({ autoRoutes: true })
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(scanRoutesMock).toHaveBeenCalledTimes(1)
+    expect(outputJsonMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('warns when writing persistent cache fails', async () => {
+    outputJsonMock.mockRejectedValueOnce(new Error('cache-boom'))
+    const ctx = createContext({ autoRoutes: true })
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('写入 auto-routes 缓存失败: cache-boom'))
   })
 })

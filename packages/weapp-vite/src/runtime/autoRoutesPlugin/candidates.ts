@@ -19,6 +19,48 @@ const VUE_EXTENSIONS = new Set(vueExtensions.map(ext => `.${ext}`))
 const STYLE_EXTENSIONS = new Set(supportedCssLangs.map(ext => `.${ext}`))
 const CONFIG_SUFFIXES = configExtensions.map(ext => `.${ext}`)
 const SKIPPED_DIRECTORIES = new Set(['node_modules', 'miniprogram_npm', '.git', '.idea', '.husky', '.turbo', '.cache', '.wevu-config', 'dist'])
+const SCRIPT_SIDECAR_PATTERN = /\.(?:wxs|sjs)\.[jt]s$/i
+const TEMPLATE_SIDECAR_PATTERN = /\.wxml\.[jt]s$/i
+
+async function discoverPagesRoots(root: string) {
+  const queue = [root]
+  const pagesRoots = new Set<string>()
+
+  while (queue.length > 0) {
+    const current = queue.shift()
+    if (!current) {
+      continue
+    }
+
+    let entries: fs.Dirent[]
+    try {
+      entries = await fs.readdir(current, { withFileTypes: true })
+    }
+    catch {
+      continue
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory()) {
+        continue
+      }
+
+      if (SKIPPED_DIRECTORIES.has(entry.name)) {
+        continue
+      }
+
+      const nextPath = path.join(current, entry.name)
+      if (entry.name === 'pages') {
+        pagesRoots.add(nextPath)
+        continue
+      }
+
+      queue.push(nextPath)
+    }
+  }
+
+  return pagesRoots
+}
 
 export function isConfigFile(filePath: string) {
   return CONFIG_SUFFIXES.some(ext => filePath.endsWith(ext))
@@ -28,7 +70,7 @@ export function isScriptFile(filePath: string) {
   if (filePath.endsWith('.d.ts')) {
     return false
   }
-  if (/\.(?:wxs|sjs)\.[jt]s$/i.test(filePath) || /\.wxml\.[jt]s$/i.test(filePath)) {
+  if (SCRIPT_SIDECAR_PATTERN.test(filePath) || TEMPLATE_SIDECAR_PATTERN.test(filePath)) {
     return false
   }
   const ext = path.extname(filePath)
@@ -66,7 +108,21 @@ function ensureCandidate(map: Map<string, CandidateEntry>, base: string) {
 
 export async function collectCandidates(absoluteSrcRoot: string, searchRoots?: Iterable<string>) {
   const candidates = new Map<string, CandidateEntry>()
-  const roots = searchRoots ? Array.from(new Set(searchRoots)) : [absoluteSrcRoot]
+  const roots = searchRoots
+    ? [...new Set(searchRoots)]
+    : (() => {
+        return []
+      })()
+
+  if (!searchRoots) {
+    const discoveredPagesRoots = await discoverPagesRoots(absoluteSrcRoot)
+    if (discoveredPagesRoots.size > 0) {
+      roots.push(...discoveredPagesRoots)
+    }
+    else {
+      roots.push(absoluteSrcRoot)
+    }
+  }
 
   const crawler = new Fdir({
     includeDirs: false,
