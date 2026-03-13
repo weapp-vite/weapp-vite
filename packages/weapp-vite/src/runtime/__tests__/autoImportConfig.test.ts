@@ -181,12 +181,35 @@ describe('autoImport config helpers', () => {
       expect(config?.globs).toEqual(
         expect.arrayContaining([
           'components/**/*.wxml',
+          'components/**/*.vue',
           'packages/order/components/**/*.wxml',
+          'packages/order/components/**/*.vue',
         ]),
       )
       expect(config?.typedComponents).toBe(true)
       expect(config?.vueComponents).toBe(true)
       expect(config?.vueComponentsModule).toBe('wevu')
+    })
+
+    it('does not add vue component globs for non-wevu projects when auto import is true', () => {
+      const ctx = createContext({
+        autoImportComponents: true,
+        subPackages: {
+          'packages/order': {},
+        },
+      })
+      const config = getAutoImportConfig(ctx.configService)
+
+      expect(config?.globs).toEqual(
+        expect.arrayContaining([
+          'components/**/*.wxml',
+          'packages/order/components/**/*.wxml',
+        ]),
+      )
+      expect(config?.globs).not.toContain('components/**/*.vue')
+      expect(config?.globs).not.toContain('packages/order/components/**/*.vue')
+      expect(config?.vueComponents).toBe(true)
+      expect(config?.vueComponentsModule).toBeUndefined()
     })
 
     it('omits default subpackage globs when subpackage disables auto import', () => {
