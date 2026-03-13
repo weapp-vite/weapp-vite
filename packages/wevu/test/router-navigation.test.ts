@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createNavigationFailure,
+  createRouter,
   isNavigationFailure,
   NavigationFailureType,
-  useRouter,
 } from '@/router'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 
@@ -53,7 +53,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const result = await router.push('./detail?scene=1')
 
     expect(result).toBeUndefined()
@@ -89,7 +89,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const resolved = router.resolve('./detail?scene=1#comment')
     expect(resolved.fullPath).toBe('/pages/home/detail?scene=1#comment')
     expect(resolved.hash).toBe('#comment')
@@ -129,7 +129,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const result = await router.push('/pages/home/index?tab=all#comment')
     expect(isNavigationFailure(result, NavigationFailureType.aborted)).toBe(true)
     expect(result?.message).toContain('Hash-only navigation is not supported')
@@ -171,7 +171,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       parseQuery: parseQueryHook,
       stringifyQuery: stringifyQueryHook,
     })
@@ -216,7 +216,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: {
         'post-detail': '/pages/post/:id/index',
       },
@@ -290,7 +290,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'home',
@@ -325,7 +325,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'dashboard',
@@ -380,7 +380,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: {
         'post-detail': '/pages/post/:id/index',
       },
@@ -422,7 +422,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'dashboard',
@@ -474,7 +474,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'home',
@@ -543,7 +543,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'home',
@@ -666,7 +666,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: {
         'home': '/pages/home/index',
         'post-detail': '/pages/post/:id/index',
@@ -714,7 +714,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: {
         'post-detail': '/pages/post/:id/index',
       },
@@ -756,7 +756,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       paramsMode: 'strict',
       namedRoutes: {
         'post-detail': '/pages/post/:id/index',
@@ -798,7 +798,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: {
         'home': '/pages/home/index',
         'post-detail': '/pages/post/:id/index',
@@ -843,7 +843,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'home',
@@ -905,7 +905,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'home',
@@ -954,7 +954,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'home',
@@ -999,7 +999,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: '',
@@ -1057,7 +1057,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'alias-home',
@@ -1121,7 +1121,7 @@ describe('router navigation helpers', () => {
       },
     ]
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [circularRoute],
     })
 
@@ -1163,7 +1163,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'home',
@@ -1221,7 +1221,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'legacy',
@@ -1273,7 +1273,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: {
         'home': '/pages/home/index',
         'post-detail': '/pages/post/:id/index',
@@ -1323,7 +1323,7 @@ describe('router navigation helpers', () => {
     ])
 
     const beforeEnter = vi.fn(() => '/pages/login/index?from=before-enter')
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'protected',
@@ -1376,7 +1376,7 @@ describe('router navigation helpers', () => {
       return '/pages/login/index?from=dynamic-path'
     })
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'post-detail',
@@ -1428,7 +1428,7 @@ describe('router navigation helpers', () => {
       return '/pages/login/index?from=alias'
     })
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'post-detail',
@@ -1494,7 +1494,7 @@ describe('router navigation helpers', () => {
       return '/pages/login/index?from=nested-child'
     })
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'home',
@@ -1552,7 +1552,7 @@ describe('router navigation helpers', () => {
       callOrder.push('child')
     })
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'home',
@@ -1608,7 +1608,7 @@ describe('router navigation helpers', () => {
     const parentBeforeEnter = vi.fn(() => '/pages/login/index?from=parent-guard')
     const childBeforeEnter = vi.fn()
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'home',
@@ -1663,7 +1663,7 @@ describe('router navigation helpers', () => {
 
     const childBeforeEnter = vi.fn()
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'home',
@@ -1716,7 +1716,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'legacy-home',
@@ -1762,7 +1762,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'legacy-home',
@@ -1812,7 +1812,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     expect(router.hasRoute('dynamic-post')).toBe(false)
 
     const removeDynamicPostRoute = router.addRoute({
@@ -1890,7 +1890,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const removeNestedRoutes = router.addRoute({
       name: 'home',
       path: '/pages/home',
@@ -1934,7 +1934,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'home',
@@ -1980,7 +1980,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const circularRoute: any = {
       name: 'circular-home',
       path: '/pages/circular/home',
@@ -2015,7 +2015,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'home',
@@ -2071,7 +2071,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'home',
@@ -2126,7 +2126,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'home',
@@ -2176,7 +2176,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'home',
@@ -2247,7 +2247,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'legacy',
@@ -2298,7 +2298,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'home',
@@ -2366,7 +2366,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: [
         {
           name: 'home',
@@ -2415,7 +2415,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       namedRoutes: {
         home: '/pages/home/index',
       },
@@ -2469,7 +2469,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const result = await router.replace('/pages/home/index?tab=all')
 
     expect(isNavigationFailure(result)).toBe(true)
@@ -2505,7 +2505,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const result = await router.back(2)
 
     expect(navigateBack).toHaveBeenCalledWith(expect.objectContaining({ delta: 2 }))
@@ -2538,7 +2538,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const result = await router.go(-3)
     expect(result).toBeUndefined()
     expect(navigateBack).toHaveBeenCalledWith(expect.objectContaining({ delta: 3 }))
@@ -2568,7 +2568,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const result = await router.go(0)
     expect(result).toBeUndefined()
     expect(navigateBack).not.toHaveBeenCalled()
@@ -2598,7 +2598,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const result = await router.forward()
     expect(isNavigationFailure(result, NavigationFailureType.aborted)).toBe(true)
     expect(result?.message).toContain('Forward navigation is not supported')
@@ -2631,7 +2631,7 @@ describe('router navigation helpers', () => {
     ]
     ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
 
-    const router = useRouter()
+    const router = createRouter()
     expect(router.currentRoute.fullPath).toBe('/pages/home/index?tab=all')
     expect(router.currentRoute.path).toBe('pages/home/index')
 
@@ -2672,7 +2672,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     await expect(router.isReady()).resolves.toBeUndefined()
   })
 
@@ -2699,7 +2699,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     expect(() => router.install({})).not.toThrow()
   })
 
@@ -2726,7 +2726,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       tabBarEntries: ['pages/home/index'],
       namedRoutes: {
         home: '/pages/home/index',
@@ -2812,7 +2812,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       tabBarEntries: ['pages/home/index'],
     })
 
@@ -2847,7 +2847,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       tabBarEntries: ['pages/home/index'],
     })
     const result = await router.push('/pages/home/index?from=profile')
@@ -2882,7 +2882,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const removeGuard = router.beforeEach(guard)
 
     const blocked = await router.push('/pages/detail/index')
@@ -2923,7 +2923,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     router.beforeEach(() => '/pages/login/index?from=home')
 
     const result = await router.push('/pages/detail/index')
@@ -2959,7 +2959,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       tabBarEntries: ['pages/home/index'],
     })
     router.beforeResolve(() => '/pages/home/index')
@@ -2998,7 +2998,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     router.beforeEach(() => ({
       to: '/pages/login/index?from=home',
       replace: true,
@@ -3035,7 +3035,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       maxRedirects: 1,
     })
     router.beforeEach((to) => {
@@ -3073,7 +3073,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     router.afterEach((to, from, failure, context) => {
       calls.push({ to, from, failure, context })
     })
@@ -3126,7 +3126,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter()
+    const router = createRouter()
     const removeOnError = router.onError((error, context) => {
       errors.push({ error, context })
     })
@@ -3183,7 +3183,7 @@ describe('router navigation helpers', () => {
       },
     ])
 
-    const router = useRouter({
+    const router = createRouter({
       rejectOnError: false,
     })
     router.beforeEach(() => {
@@ -3218,7 +3218,7 @@ describe('router navigation helpers', () => {
     ])
 
     const onError = vi.fn()
-    const router = useRouter()
+    const router = createRouter()
     router.onError(onError)
 
     const result = await router.push('/pages/home/index')
@@ -3252,7 +3252,7 @@ describe('router navigation helpers', () => {
     ]
     ;(globalThis as any).getCurrentPages = vi.fn(() => pages)
 
-    const router = useRouter()
+    const router = createRouter()
     expect(router.resolve('./detail').fullPath).toBe('/pages/home/detail')
 
     pages = [

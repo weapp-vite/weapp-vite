@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useRouter } from '@/router'
+import { createRouter } from '@/router'
 import { setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 
 describe('addRoute name override with alias and redirect (issue #320)', () => {
@@ -39,7 +39,7 @@ describe('addRoute name override with alias and redirect (issue #320)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     setupRouterEnv()
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'issue320-home',
@@ -102,7 +102,7 @@ describe('addRoute name override with alias and redirect (issue #320)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     setupRouterEnv()
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'page-a',

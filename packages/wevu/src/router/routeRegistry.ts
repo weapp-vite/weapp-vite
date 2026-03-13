@@ -61,7 +61,7 @@ export function createRouteRegistry(namedRouteLookup: NamedRouteLookup) {
       ? namedRouteLookup.recordByName.get(parentRouteName)
       : undefined
     if (parentRouteName && !parentRouteRecord) {
-      throw new Error(`Parent route "${parentRouteName}" is not defined in useRouter({ routes | namedRoutes })`)
+      throw new Error(`Parent route "${parentRouteName}" is not defined in createRouter({ routes | namedRoutes })`)
     }
 
     const routeRecords = flattenNamedRouteRecords(

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createWeapi, wpi } from '@/api'
 import { fetch as wevuFetch } from '@/fetch'
 import { ref } from '@/reactivity'
-import { useRouter } from '@/router'
+import { createRouter } from '@/router'
 import { setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 import { createStore, defineStore, storeToRefs } from '@/store'
 
@@ -92,7 +92,7 @@ describe('subpath usage integration', () => {
     expect(scenarioRefs.label.value).toBe('unit')
     expect((scenarioStore as any).__unitPluginTouched).toBe(true)
 
-    const router = useRouter({
+    const router = createRouter({
       routes: [
         {
           name: 'subpath-entries',
