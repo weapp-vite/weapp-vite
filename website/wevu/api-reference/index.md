@@ -63,7 +63,7 @@ keywords:
 - [wevu/fetch](/wevu/fetch)
   - 基于 `wpi.request` 的 Fetch 风格接口
 - [wevu/router](/wevu/router)
-  - 命名路由、守卫、失败分类与动态路由管理
+  - 路径式导航、守卫、失败分类与调试能力
 - [wevu/jsx-runtime](/wevu/jsx-runtime)
   - TSX / JSX 类型入口
 
