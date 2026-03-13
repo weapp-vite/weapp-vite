@@ -96,7 +96,11 @@ describe('createAutoRoutesService', () => {
   })
 
   it('updates routes snapshot after handling file changes', async () => {
-    const ctx = createContext()
+    const ctx = createContext(true, {
+      subPackages: {
+        packageA: {},
+      },
+    })
     const service = createAutoRoutesService(ctx)
 
     await service.ensureFresh()
@@ -217,8 +221,28 @@ describe('createAutoRoutesService', () => {
     })
   })
 
-  it('matches and handles route changes from Windows-style absolute paths', async () => {
+  it('does not treat nested components pages directory as default route root', async () => {
+    await fs.ensureDir(path.join(srcRoot, 'components', 'pages', 'card'))
+    await fs.writeFile(path.join(srcRoot, 'components', 'pages', 'card', 'index.ts'), '// component', 'utf8')
+
     const ctx = createContext()
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(service.getSnapshot()).toEqual({
+      pages: ['pages/index/index'],
+      entries: ['pages/index/index'],
+      subPackages: [],
+    })
+  })
+
+  it('matches and handles route changes from Windows-style absolute paths', async () => {
+    const ctx = createContext(true, {
+      subPackages: {
+        packageB: {},
+      },
+    })
     const service = createAutoRoutesService(ctx)
 
     await service.ensureFresh()

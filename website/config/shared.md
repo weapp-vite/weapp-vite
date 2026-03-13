@@ -42,7 +42,7 @@ export default defineConfig({
     autoRoutes: {
       enabled: true,
       typedRouter: true,
-      include: ['pages/**', '**/pages/**'],
+      include: ['pages/**'],
       persistentCache: false,
       watch: true,
     },
@@ -70,12 +70,12 @@ export default defineConfig({
 
 - `enabled`：总开关；设为 `false` 时完全关闭自动路由。
 - `typedRouter`：是否输出 `typed-router.d.ts`。
-- `include`：自动路由扫描规则。支持单个 glob、正则或它们的数组；默认是 `['pages/**', '**/pages/**']`。
+- `include`：自动路由扫描规则。支持单个 glob、正则或它们的数组；默认是主包 `pages/**`，并额外包含已声明分包 root 下的 `pages/**`。
 - `persistentCache`：是否启用持久化缓存；传 `true` 时使用默认 `.weapp-vite/auto-routes.cache.json`，传字符串时表示自定义缓存文件路径，默认关闭。
 - `watch`：开发模式下是否监听页面目录变化并实时刷新路由清单。
 
 > [!NOTE]
-> 自动路由默认扫描 `srcRoot` 下的 `pages/**` 与任意 `**/pages/**` 结构；如果目录结构不同，可以通过 `include` 自定义 glob / 正则规则。分包页面若不再使用 `root/pages/**` 约定，建议同时声明 `weapp.subPackages`，这样 `autoRoutes` 才能稳定推断 `subPackages` 输出。
+> 自动路由默认扫描 `srcRoot/pages/**`，以及已声明分包 root 下的 `pages/**`。它不会把任意 `**/pages/**` 都当作页面目录；如果目录结构不同，可以通过 `include` 自定义 glob / 正则规则。分包页面若不再使用 `root/pages/**` 约定，建议同时声明 `weapp.subPackages`，这样 `autoRoutes` 才能稳定推断 `subPackages` 输出。
 
 ## `weapp.debug` {#weapp-debug}
 - **类型**：

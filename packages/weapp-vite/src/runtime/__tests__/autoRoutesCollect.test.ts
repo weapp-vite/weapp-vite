@@ -13,6 +13,8 @@ describe('collectCandidates', () => {
     await fs.ensureFile(path.join(tempDir, 'pages/index/index.ts'))
     await fs.ensureDir(path.join(tempDir, 'sub/pages/foo'))
     await fs.ensureFile(path.join(tempDir, 'sub/pages/foo/index.ts'))
+    await fs.ensureDir(path.join(tempDir, 'components/pages/card'))
+    await fs.ensureFile(path.join(tempDir, 'components/pages/card/index.ts'))
   })
 
   afterAll(async () => {
@@ -23,9 +25,10 @@ describe('collectCandidates', () => {
     const allCandidates = await _collectAutoRouteCandidates(tempDir)
     const allKeys = Array.from(allCandidates.keys(), key => path.relative(tempDir, key))
     expect(allKeys).toContain('pages/index/index')
-    expect(allKeys).toContain('sub/pages/foo/index')
+    expect(allKeys).not.toContain('sub/pages/foo/index')
+    expect(allKeys).not.toContain('components/pages/card/index')
 
-    const limitedCandidates = await _collectAutoRouteCandidates(tempDir, undefined, [path.join(tempDir, 'sub')])
+    const limitedCandidates = await _collectAutoRouteCandidates(tempDir, undefined, ['sub'], [path.join(tempDir, 'sub')])
     const limitedKeys = Array.from(limitedCandidates.keys(), key => path.relative(tempDir, key))
     expect(limitedKeys).toContain('sub/pages/foo/index')
     expect(limitedKeys).not.toContain('pages/index/index')

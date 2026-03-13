@@ -39,7 +39,8 @@ export async function scanRoutes(
 
   const absoluteSrcRoot = configService.absoluteSrcRoot
   const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
-  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include)
+  const subPackageRoots = Object.keys(configService.weappViteConfig?.subPackages ?? {})
+  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots)
   const pagesSet = new Set<string>()
   const entriesSet = new Set<string>()
   const subPackages = new Map<string, Set<string>>()
@@ -71,7 +72,7 @@ export async function scanRoutes(
       continue
     }
 
-    const route = resolveRoute(normalizedBase, Object.keys(configService.weappViteConfig?.subPackages ?? {}))
+    const route = resolveRoute(normalizedBase, subPackageRoots)
     if (!route) {
       continue
     }

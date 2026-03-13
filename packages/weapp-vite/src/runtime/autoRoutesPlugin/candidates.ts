@@ -110,10 +110,11 @@ function ensureCandidate(map: Map<string, CandidateEntry>, base: string) {
 export async function collectCandidates(
   absoluteSrcRoot: string,
   include?: string | RegExp | Array<string | RegExp>,
+  subPackageRoots?: Iterable<string>,
   searchRoots?: Iterable<string>,
 ) {
   const candidates = new Map<string, CandidateEntry>()
-  const matcher = createAutoRoutesMatcher(include)
+  const matcher = createAutoRoutesMatcher(include, subPackageRoots)
   const roots = searchRoots
     ? [...new Set(searchRoots)]
     : (() => {

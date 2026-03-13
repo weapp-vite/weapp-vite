@@ -6,7 +6,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     expect(resolveWeappAutoRoutesConfig()).toEqual({
       enabled: false,
       typedRouter: false,
-      include: ['pages/**', '**/pages/**'],
+      include: ['pages/**'],
       persistentCache: false,
       persistentCachePath: undefined,
       watch: false,
@@ -17,7 +17,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     expect(resolveWeappAutoRoutesConfig(true)).toEqual({
       enabled: true,
       typedRouter: true,
-      include: ['pages/**', '**/pages/**'],
+      include: ['pages/**'],
       persistentCache: false,
       persistentCachePath: undefined,
       watch: true,
@@ -28,7 +28,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     expect(resolveWeappAutoRoutesConfig(false)).toEqual({
       enabled: false,
       typedRouter: false,
-      include: ['pages/**', '**/pages/**'],
+      include: ['pages/**'],
       persistentCache: false,
       persistentCachePath: undefined,
       watch: false,
@@ -39,7 +39,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     expect(resolveWeappAutoRoutesConfig({})).toEqual({
       enabled: true,
       typedRouter: true,
-      include: ['pages/**', '**/pages/**'],
+      include: ['pages/**'],
       persistentCache: false,
       persistentCachePath: undefined,
       watch: true,
@@ -52,7 +52,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     })).toEqual({
       enabled: true,
       typedRouter: false,
-      include: ['pages/**', '**/pages/**'],
+      include: ['pages/**'],
       persistentCache: false,
       persistentCachePath: undefined,
       watch: false,
@@ -63,7 +63,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     })).toEqual({
       enabled: true,
       typedRouter: true,
-      include: ['pages/**', '**/pages/**'],
+      include: ['pages/**'],
       persistentCache: true,
       persistentCachePath: undefined,
       watch: true,
@@ -74,7 +74,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     })).toEqual({
       enabled: true,
       typedRouter: true,
-      include: ['pages/**', '**/pages/**'],
+      include: ['pages/**'],
       persistentCache: true,
       persistentCachePath: '.cache/custom-auto-routes.json',
       watch: true,

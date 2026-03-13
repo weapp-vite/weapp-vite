@@ -37,7 +37,7 @@ export default defineConfig({
     autoRoutes: {
       enabled: true,
       typedRouter: true,
-      include: ['pages/**', '**/pages/**'],
+      include: ['pages/**'],
       persistentCache: false,
       watch: true,
     },
@@ -102,7 +102,7 @@ export default defineConfig({
 
 路由识别规则：
 
-- 默认扫描 `pages/**` 与任意 `**/pages/**`，也可以通过 `include` 改成任意 glob / 正则；
+- 默认扫描主包 `pages/**`，以及已声明分包 root 下的 `pages/**`，也可以通过 `include` 改成任意 glob / 正则；
 - 同一路径下 **只要存在脚本 / 模板 / 配置之一** 即可作为页面；但若 `json.component === true` 会被排除（视为组件）；
 - 分包归属优先参考 `weapp.subPackages` 的 root；如果未声明，则回退到传统的 `root/pages/**` 目录约定自动推断。
 
@@ -171,7 +171,7 @@ export default defineAppJson({
 ## 常见问题
 
 - **为什么没有生成路由？**
-  - 确认页面文件命中了 `autoRoutes.include` 规则；默认是 `srcRoot/pages/**` 或 `<root>/pages/**`。
+  - 确认页面文件命中了 `autoRoutes.include` 规则；默认是 `srcRoot/pages/**`，以及已声明分包 root 下的 `pages/**`。
   - 确认页面目录下至少存在脚本 / 模板 / `json` 文件之一，且 `json.component !== true`。
   - 确认 `autoRoutes: true` 已开启。
   - 首次开启后如果没看到变化，重启一次 `pnpm dev`，让监听器重新初始化。

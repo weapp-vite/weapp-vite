@@ -225,6 +225,23 @@ describe('auto-routes plugin alias fallback', () => {
     expect(ensureFresh).not.toHaveBeenCalled()
   })
 
+  it('does not treat nested components pages directory as default watch target', async () => {
+    const {
+      plugin,
+      handleFileChange,
+      isRouteFile,
+    } = createPlugin()
+
+    plugin.configResolved?.({
+      command: 'serve',
+    } as any)
+
+    isRouteFile.mockReturnValue(false)
+    await plugin.watchChange?.('/virtual/project/src/components/pages/card/index.ts', { event: 'create' } as any)
+
+    expect(handleFileChange).not.toHaveBeenCalledWith('/virtual/project/src/components/pages/card/index.ts', 'rename')
+  })
+
   it('routes watchChange events to route files and pages paths', async () => {
     const {
       plugin,
