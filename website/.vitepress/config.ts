@@ -9,6 +9,7 @@ import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-i
 import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { createSeoHead, transformPageDataForSeo } from './seo'
+import { WEAPI_CAPABILITY_GROUPS } from './shared/weapiCapabilities'
 
 const vueSharedEsmPath = fileURLToPath(
   new URL('../node_modules/@vue/shared/dist/shared.esm-bundler.js', import.meta.url),
@@ -354,45 +355,25 @@ const weapiSidebarItems: DefaultTheme.SidebarItem[] = [
     collapsed: false,
     items: [
       { text: 'Docs 首页', link: '/packages/weapi/' },
+      { text: 'wpi 概览', link: '/packages/weapi/overview' },
       { text: '兼容总览', link: '/packages/weapi/compat-overview' },
       {
         text: 'API 全量清单',
         link: '/packages/weapi/wx-method-list',
         collapsed: false,
-        items: [
-          { text: 'A-C', link: '/packages/weapi/wx-method-list/a-c' },
-          { text: 'D-G', link: '/packages/weapi/wx-method-list/d-g' },
-          { text: 'H-M', link: '/packages/weapi/wx-method-list/h-m' },
-          { text: 'N-O', link: '/packages/weapi/wx-method-list/n-o' },
-          { text: 'P-R', link: '/packages/weapi/wx-method-list/p-r' },
-          { text: 'S-Z', link: '/packages/weapi/wx-method-list/s-z' },
-        ],
+        items: WEAPI_CAPABILITY_GROUPS.map(group => ({ text: group.label, link: `/packages/weapi/wx-method-list#${group.key}` })),
       },
       {
         text: '支付宝兼容矩阵',
         link: '/packages/weapi/alipay-compat-matrix',
         collapsed: true,
-        items: [
-          { text: 'A-C', link: '/packages/weapi/alipay-compat-matrix/a-c' },
-          { text: 'D-G', link: '/packages/weapi/alipay-compat-matrix/d-g' },
-          { text: 'H-M', link: '/packages/weapi/alipay-compat-matrix/h-m' },
-          { text: 'N-O', link: '/packages/weapi/alipay-compat-matrix/n-o' },
-          { text: 'P-R', link: '/packages/weapi/alipay-compat-matrix/p-r' },
-          { text: 'S-Z', link: '/packages/weapi/alipay-compat-matrix/s-z' },
-        ],
+        items: WEAPI_CAPABILITY_GROUPS.map(group => ({ text: group.label, link: `/packages/weapi/alipay-compat-matrix#${group.key}` })),
       },
       {
         text: '抖音兼容矩阵',
         link: '/packages/weapi/douyin-compat-matrix',
         collapsed: true,
-        items: [
-          { text: 'A-C', link: '/packages/weapi/douyin-compat-matrix/a-c' },
-          { text: 'D-G', link: '/packages/weapi/douyin-compat-matrix/d-g' },
-          { text: 'H-M', link: '/packages/weapi/douyin-compat-matrix/h-m' },
-          { text: 'N-O', link: '/packages/weapi/douyin-compat-matrix/n-o' },
-          { text: 'P-R', link: '/packages/weapi/douyin-compat-matrix/p-r' },
-          { text: 'S-Z', link: '/packages/weapi/douyin-compat-matrix/s-z' },
-        ],
+        items: WEAPI_CAPABILITY_GROUPS.map(group => ({ text: group.label, link: `/packages/weapi/douyin-compat-matrix#${group.key}` })),
       },
       { text: '兼容差异说明', link: '/packages/weapi/gap-notes' },
       { text: '平台独有 API 清单', link: '/packages/weapi/platform-only-methods' },

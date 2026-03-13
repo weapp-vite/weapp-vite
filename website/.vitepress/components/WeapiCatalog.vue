@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { WEAPI_METHOD_SUPPORT_MATRIX } from '../../../packages/weapi/src/core/methodMapping/supportMatrix'
-import { matchWeapiDocGroup } from '../shared/weapiGroups'
+import { matchWeapiCapability, WEAPI_CAPABILITY_GROUPS } from '../shared/weapiCapabilities'
 
 interface WeapiCatalogItem {
   method: string
@@ -13,14 +13,45 @@ interface WeapiCatalogItem {
 }
 
 const props = withDefaults(defineProps<{
-  group?: string
+  capability?: string
   searchable?: boolean
 }>(), {
-  group: '',
+  capability: '',
   searchable: true,
 })
 
+const HASH_PREFIX = '#'
 const keyword = ref('')
+const selectedCapability = ref(props.capability || 'base')
+
+function syncCapabilityFromHash() {
+  if (typeof window === 'undefined') {
+    return
+  }
+  const hash = decodeURIComponent(window.location.hash.startsWith(HASH_PREFIX)
+    ? window.location.hash.slice(1)
+    : window.location.hash)
+  const matched = WEAPI_CAPABILITY_GROUPS.find(item => item.key === hash)
+  if (matched) {
+    selectedCapability.value = matched.key
+  }
+}
+
+function selectCapability(key: string) {
+  selectedCapability.value = key
+  if (typeof window !== 'undefined') {
+    window.history.replaceState(null, '', `${window.location.pathname}#${key}`)
+  }
+}
+
+onMounted(() => {
+  syncCapabilityFromHash()
+  window.addEventListener('hashchange', syncCapabilityFromHash)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('hashchange', syncCapabilityFromHash)
+})
 
 function createExample(method: string) {
   if (method.startsWith('on')) {
@@ -57,7 +88,11 @@ function createOfficialLink(method: string) {
 
 const baseRows = computed(() => {
   const source = WEAPI_METHOD_SUPPORT_MATRIX as readonly WeapiCatalogItem[]
-  return source.filter(item => matchWeapiDocGroup(item.method, props.group))
+  return source.filter(item => matchWeapiCapability(item.method, selectedCapability.value))
+})
+
+const activeCapability = computed(() => {
+  return WEAPI_CAPABILITY_GROUPS.find(item => item.key === selectedCapability.value) ?? WEAPI_CAPABILITY_GROUPS[0]
 })
 
 const rows = computed(() => {
@@ -76,6 +111,18 @@ const rows = computed(() => {
 <template>
   <div class="weapi-catalog">
     <div v-if="props.searchable" class="weapi-catalog__toolbar">
+      <div class="weapi-catalog__caps">
+        <button
+          v-for="group in WEAPI_CAPABILITY_GROUPS"
+          :key="group.key"
+          class="weapi-catalog__cap"
+          :class="{ 'is-active': selectedCapability === group.key }"
+          type="button"
+          @click="selectCapability(group.key)"
+        >
+          {{ group.label }}
+        </button>
+      </div>
       <input
         v-model="keyword"
         class="weapi-catalog__search"
@@ -83,9 +130,13 @@ const rows = computed(() => {
         placeholder="搜索 API 名称或说明，例如 showToast / 登录 / 蓝牙"
       >
       <p class="weapi-catalog__meta">
-        共 {{ rows.length }} / {{ baseRows.length }} 个当前分组 API
+        共 {{ rows.length }} / {{ baseRows.length }} 个当前能力域 API
       </p>
     </div>
+
+    <h2 :id="activeCapability.key" class="weapi-catalog__title">
+      {{ activeCapability.label }}
+    </h2>
 
     <div
       v-for="item in rows"
@@ -157,10 +208,35 @@ const rows = computed(() => {
   border-radius: 12px;
 }
 
+.weapi-catalog__caps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.weapi-catalog__cap {
+  padding: 6px 12px;
+  cursor: pointer;
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 999px;
+}
+
+.weapi-catalog__cap.is-active {
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  border-color: var(--vp-c-brand-1);
+}
+
 .weapi-catalog__meta {
   margin: 10px 0 0;
   font-size: 13px;
   color: var(--vp-c-text-2);
+}
+
+.weapi-catalog__title {
+  margin: 0;
 }
 
 .weapi-catalog__card {
