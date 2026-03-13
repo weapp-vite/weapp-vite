@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-12T08:23:16.670Z",
+  "generatedAt": "2026-03-13T05:44:26.265Z",
   "site": "https://vite.icebreaker.top",
-  "count": 186,
+  "count": 196,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -3224,7 +3224,7 @@
         "已有独立文档模块",
         "说明"
       ],
-      "updatedAt": "2026-03-02",
+      "updatedAt": "2026-03-13",
       "source": "packages/index.md"
     },
     {
@@ -3482,11 +3482,99 @@
       "source": "packages/volar.md"
     },
     {
-      "id": "doc-88c8eadf0e",
+      "id": "doc-b3ba14bc74",
+      "title": "支付宝兼容矩阵",
+      "summary": "@wevu/api 按微信命名调用时的支付宝兼容矩阵。",
+      "url": "/packages/weapi/alipay-compat-matrix",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/alipay-compat-matrix",
+      "keywords": [
+        "@wevu/api",
+        "支付宝",
+        "兼容矩阵",
+        "alipay",
+        "my",
+        "api",
+        "packages",
+        "weapi"
+      ],
+      "headings": [
+        "支付宝兼容矩阵"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/alipay-compat-matrix.md"
+    },
+    {
+      "id": "doc-47b06895de",
+      "title": "@wevu/api 兼容总览",
+      "summary": "@wevu/api 三端 API 兼容报告总览，覆盖覆盖率、对齐结论与核心差异映射。",
+      "url": "/packages/weapi/compat-overview",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/compat-overview",
+      "keywords": [
+        "@wevu/api",
+        "兼容报告",
+        "微信",
+        "支付宝",
+        "抖音",
+        "wevu",
+        "api",
+        "packages"
+      ],
+      "headings": [
+        "@wevu/api 兼容总览"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/compat-overview.md"
+    },
+    {
+      "id": "doc-78b1b7024b",
+      "title": "抖音兼容矩阵",
+      "summary": "@wevu/api 按微信命名调用时的抖音兼容矩阵。",
+      "url": "/packages/weapi/douyin-compat-matrix",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/douyin-compat-matrix",
+      "keywords": [
+        "@wevu/api",
+        "抖音",
+        "兼容矩阵",
+        "douyin",
+        "tt",
+        "api",
+        "packages",
+        "weapi"
+      ],
+      "headings": [
+        "抖音兼容矩阵"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/douyin-compat-matrix.md"
+    },
+    {
+      "id": "doc-e1b8e95c46",
+      "title": "兼容差异说明",
+      "summary": "@wevu/api 兼容报告中的特殊命名、类型来源差异与 gap 说明。",
+      "url": "/packages/weapi/gap-notes",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/gap-notes",
+      "keywords": [
+        "@wevu/api",
+        "gap",
+        "差异说明",
+        "兼容",
+        "api",
+        "packages",
+        "weapi",
+        "notes"
+      ],
+      "headings": [
+        "兼容差异说明"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/gap-notes.md"
+    },
+    {
+      "id": "doc-d4b54403eb",
       "title": "@wevu/api",
       "summary": "@wevu/api 提供跨平台小程序 API 封装，默认推荐 Promise 调用方式，同时兼容传统回调风格。",
-      "url": "/packages/weapi",
-      "canonical": "https://vite.icebreaker.top/packages/weapi",
+      "url": "/packages/weapi/",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/",
       "keywords": [
         "wevu",
         "api",
@@ -3501,13 +3589,60 @@
         "@wevu/api",
         "何时使用",
         "安装",
+        "基本用法",
         "Promise 风格（推荐）",
         "回调风格（兼容）",
         "显式注入平台",
-        "行为说明"
+        "这组文档怎么读",
+        "行为说明",
+        "与 Wevu 的关系"
       ],
-      "updatedAt": "2026-02-27",
-      "source": "packages/weapi.md"
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/index.md"
+    },
+    {
+      "id": "doc-7aa4d6d43b",
+      "title": "平台独有 API 清单",
+      "summary": "@wevu/api 三端类型来源中，相对微信命名体系的支付宝/抖音独有 API 清单。",
+      "url": "/packages/weapi/platform-only-methods",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/platform-only-methods",
+      "keywords": [
+        "@wevu/api",
+        "平台独有",
+        "支付宝",
+        "抖音",
+        "API 清单",
+        "api",
+        "packages",
+        "weapi"
+      ],
+      "headings": [
+        "平台独有 API 清单"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/platform-only-methods.md"
+    },
+    {
+      "id": "doc-0f0650d092",
+      "title": "微信基准 API 全量清单",
+      "summary": "@wevu/api 基于微信命名体系的全量 API 基准清单。",
+      "url": "/packages/weapi/wx-method-list",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list",
+      "keywords": [
+        "@wevu/api",
+        "微信 API",
+        "基准清单",
+        "wx",
+        "微信小程序",
+        "api",
+        "packages",
+        "weapi"
+      ],
+      "headings": [
+        "微信基准 API 全量清单"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/wx-method-list.md"
     },
     {
       "id": "doc-70402715ac",
@@ -4033,6 +4168,39 @@
       "source": "typedoc-api/type-aliases/UserConfig.md"
     },
     {
+      "id": "doc-dd0bc17fa3",
+      "title": "wevu/api",
+      "summary": "说明 wevu/api 的跨端 API 门面定位、与 uni/taro 风格对象的类比关系，以及在 Wevu 项目中的完整调用方式。",
+      "url": "/wevu/api-package",
+      "canonical": "https://vite.icebreaker.top/wevu/api-package",
+      "keywords": [
+        "wevu/api",
+        "@wevu/api",
+        "wevu",
+        "namespace",
+        "uni",
+        "taro",
+        "运行时",
+        "api"
+      ],
+      "headings": [
+        "wevu/api",
+        "它和 @wevu/api 的关系",
+        "推荐怎么理解它",
+        "适合什么场景",
+        "导出项总览",
+        "wpi",
+        "createWeapi",
+        "可调用方式一览",
+        "1. 默认实例调用",
+        "2. Promise 风格调用",
+        "3. 回调风格调用",
+        "4. *Sync 直连调用"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "wevu/api-package.md"
+    },
+    {
       "id": "doc-588f3be686",
       "title": "Core API",
       "summary": "本页聚焦 Wevu 的“最先接触”能力：应用入口、组件定义、宏，以及模板辅助函数。",
@@ -4086,9 +4254,9 @@
         "进阶 API",
         "运行时桥接",
         "类型与工具",
-        "建议阅读路径"
+        "子路径导出"
       ],
-      "updatedAt": "2026-03-09",
+      "updatedAt": "2026-03-13",
       "source": "wevu/api-reference/index.md"
     },
     {
@@ -4547,6 +4715,32 @@
       "source": "wevu/component.md"
     },
     {
+      "id": "doc-7ce752c1e0",
+      "title": "wevu/fetch",
+      "summary": "基于 @wevu/api 的 request 能力提供 Fetch 风格接口，说明 wevu/fetch 的定位、限制与推荐用法。",
+      "url": "/wevu/fetch",
+      "canonical": "https://vite.icebreaker.top/wevu/fetch",
+      "keywords": [
+        "wevu/fetch",
+        "fetch",
+        "wevu",
+        "request"
+      ],
+      "headings": [
+        "wevu/fetch",
+        "导出内容",
+        "行为特点",
+        "常见示例",
+        "JSON 请求",
+        "取消请求",
+        "与浏览器原生 Fetch 的差异",
+        "适合什么场景",
+        "相关页面"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "wevu/fetch.md"
+    },
+    {
       "id": "doc-8da5f687d8",
       "title": "Wevu 概览",
       "summary": "Wevu 是一个面向小程序（以微信小程序为主）的轻量运行时。可以把它看作“把 Vue 3 的响应式心智模型带到小程序里”，但不引入 Virtual DOM，而是用快照 diff 来尽量减少 setData 的更新量。",
@@ -4567,12 +4761,40 @@
         "Wevu 在整套体系里的位置",
         "诞生的小故事",
         "你会用到的能力",
+        "其他子路径导出",
         "编译侧桥接（wevu/compiler）",
         "推荐学习顺序（按“最短上手 → 深入理解”）",
         "扩展阅读"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-13",
       "source": "wevu/index.md"
+    },
+    {
+      "id": "doc-896069f8c4",
+      "title": "wevu/jsx-runtime",
+      "summary": "说明 wevu/jsx-runtime 的用途、适用范围与 TypeScript JSX 配置方式。",
+      "url": "/wevu/jsx-runtime",
+      "canonical": "https://vite.icebreaker.top/wevu/jsx-runtime",
+      "keywords": [
+        "wevu/jsx-runtime",
+        "jsx",
+        "typescript",
+        "wevu",
+        "配置",
+        "运行时",
+        "runtime"
+      ],
+      "headings": [
+        "wevu/jsx-runtime",
+        "当前定位",
+        "什么时候需要它",
+        "TypeScript 配置示例",
+        "它解决什么问题",
+        "注意事项",
+        "相关页面"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "wevu/jsx-runtime.md"
     },
     {
       "id": "doc-e341d32955",
@@ -4632,8 +4854,39 @@
         "5. 组件 props / emit（运行时约定）",
         "6. 接入 Store（可选但常用）"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-13",
       "source": "wevu/quick-start.md"
+    },
+    {
+      "id": "doc-d782e1af0d",
+      "title": "wevu/router",
+      "summary": "wevu/router 子路径文档，介绍路由器初始化、命名路由、守卫、动态路由与小程序环境下的边界。",
+      "url": "/wevu/router",
+      "canonical": "https://vite.icebreaker.top/wevu/router",
+      "keywords": [
+        "wevu/router",
+        "router",
+        "wevu",
+        "navigation",
+        "微信小程序",
+        "迁移指南",
+        "调试"
+      ],
+      "headings": [
+        "wevu/router",
+        "什么时候使用",
+        "最小示例",
+        "核心能力",
+        "常见心智",
+        "命名路由优先",
+        "routes 是推荐入口",
+        "小程序不支持真正 forward 栈",
+        "动态路由管理",
+        "调试与迁移建议",
+        "相关页面"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "wevu/router.md"
     },
     {
       "id": "doc-4645be464c",
