@@ -11,35 +11,7 @@ import {
 } from 'wevu/router'
 
 const route = useRoute()
-const router = useRouter({
-  routes: [
-    {
-      name: 'router-showcase-home',
-      path: '/pages/router-showcase/index',
-      meta: {
-        zone: 'showcase',
-      },
-    },
-    {
-      name: 'router-showcase-profile',
-      path: '/pages/router-showcase/profile/:id',
-      alias: '/router-profile/:id',
-      meta: {
-        zone: 'profile',
-      },
-      children: [
-        {
-          name: 'router-showcase-profile-detail',
-          path: 'detail/:tab',
-          alias: 'detail-alias/:tab',
-          meta: {
-            zone: 'profile-detail',
-          },
-        },
-      ],
-    },
-  ],
-})
+const router = useRouter()
 
 const parseSummary = ref('pending')
 const stringifySummary = ref('pending')
@@ -69,20 +41,11 @@ async function runE2E() {
     count: 2,
   })
 
-  const namedResolved = router.resolve({
-    name: 'router-showcase-profile-detail',
-    params: {
-      id: 12,
-      tab: 'logs',
-    },
-    query: {
-      from: 'named',
-    },
-  })
+  const namedResolved = router.resolve('/pages/router-showcase/profile/12/detail/logs?from=named')
   namedRouteSummary.value = `${namedResolved.fullPath}|${namedResolved.matched?.length ?? 0}`
 
   const aliasResolved = router.resolve('/router-profile/9/detail-alias/trace')
-  const aliasLeaf = aliasResolved.matched?.[aliasResolved.matched.length - 1]
+  const aliasLeaf = aliasResolved.matched.at(-1)
   aliasSummary.value = `${aliasResolved.fullPath}|${aliasLeaf?.aliasPath ?? 'none'}`
 
   const relativeResolved = resolveRouteLocation('./profile/3/detail/metrics?from=relative', 'pages/router-showcase/index')

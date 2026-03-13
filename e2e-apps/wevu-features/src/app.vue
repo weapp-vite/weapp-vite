@@ -1,28 +1,21 @@
 <script setup lang="ts">
+import routes from 'weapp-vite/auto-routes'
 import { onLaunch } from 'wevu'
+import { ensureWevuFeaturesRouter } from './shared/appRouter'
+
+const extraPages = [
+  'components/router-origin-probe/target/index',
+] as const
 
 defineAppJson({
-  pages: [
-    'pages/index/index',
-    'pages/use-attrs/index',
-    'pages/use-slots/index',
-    'pages/use-model/index',
-    'pages/use-provide-inject/index',
-    'pages/use-store/index',
-    'pages/subpath-entries/index',
-    'pages/router-showcase/index',
-    'pages/router-dynamic/index',
-    'pages/native-uses-vue/index',
-    'pages/router-stability/index',
-    'pages/router-stability/sub/index',
-    'pages/router-stability/target/index',
-    'pages/router-stability/sub/target/index',
-    'components/router-origin-probe/target/index',
-  ],
+  pages: [...routes.pages, ...extraPages],
+  subPackages: routes.subPackages,
   window: {
     navigationBarTitleText: 'wevu-features',
   },
 })
+
+ensureWevuFeaturesRouter()
 
 onLaunch(() => {})
 </script>

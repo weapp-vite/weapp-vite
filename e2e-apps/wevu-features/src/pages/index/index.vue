@@ -37,6 +37,12 @@ const featureList = [
     path: '/pages/subpath-entries/index',
   },
   {
+    key: 'router-coverage',
+    title: 'router coverage',
+    summary: '展示主包/分包/独立分包跳转与完整路由守卫日志',
+    path: '/pages/router-coverage/index',
+  },
+  {
     key: 'router-showcase',
     title: 'router showcase',
     summary: '展示命名路由、alias、query 编解码与 hash-only/forward/go',

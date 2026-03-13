@@ -25,11 +25,13 @@
 ### 第一步：先接管入口
 
 ```ts
-import { useRouter } from 'wevu/router'
+import { createRouter, useRouter } from 'wevu/router'
 
-const router = useRouter({
+createRouter({
   paramsMode: 'loose',
 })
+
+const router = useRouter()
 ```
 
 先用 `loose` 兼容模式稳定接管，避免一次性暴露所有历史问题。
@@ -37,12 +39,14 @@ const router = useRouter({
 ### 第二步：补命名路由
 
 ```ts
-const router = useRouter({
+createRouter({
   routes: [
     { name: 'home', path: '/pages/home/index' },
     { name: 'post-detail', path: '/pages/post/:id/index' },
   ],
 })
+
+const router = useRouter()
 ```
 
 把高频路径先改成命名路由，降低硬编码路径风险。
@@ -50,7 +54,7 @@ const router = useRouter({
 ### 第三步：迁移守卫
 
 ```ts
-const router = useRouter({
+createRouter({
   routes: [
     {
       name: 'dashboard',
@@ -59,6 +63,8 @@ const router = useRouter({
     },
   ],
 })
+
+const router = useRouter()
 ```
 
 把“路由级规则”放到 `beforeEnter`，把“全局规则”放到 `beforeEach/beforeResolve`。
@@ -66,12 +72,14 @@ const router = useRouter({
 ### 第四步：切 strict
 
 ```ts
-const router = useRouter({
+createRouter({
   paramsMode: 'strict',
   routes: [
     { name: 'post-detail', path: '/pages/post/:id/index' },
   ],
 })
+
+const router = useRouter()
 ```
 
 切 `strict` 后，如果还存在多余参数，会得到明确失败提示，可逐步修正。

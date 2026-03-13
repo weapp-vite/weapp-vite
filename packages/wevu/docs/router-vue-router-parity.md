@@ -46,7 +46,7 @@
 
 ## 4. 迁移建议
 
-1. 先使用 `useRouter({ paramsMode: 'loose' })` 平滑接管。
+1. 先使用 `createRouter({ paramsMode: 'loose' })` 创建实例，再通过 `useRouter()` 平滑接管。
 2. 把高频路径迁移到 `routes`（或兼容入口 `namedRoutes`），逐步替换字符串拼接。
 3. 守卫逻辑优先收敛到 `beforeEach/beforeResolve/beforeEnter`。
 4. 核心流程切换到 `paramsMode: 'strict'`，及时暴露历史参数问题。

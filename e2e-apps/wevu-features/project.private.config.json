@@ -71,6 +71,34 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/router-coverage/index",
+          "pathName": "pages/router-coverage/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "pages/router-coverage/main-target/index",
+          "pathName": "pages/router-coverage/main-target/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "packages/router-demo/pages/normal-target/index",
+          "pathName": "packages/router-demo/pages/normal-target/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "packages/router-demo-independent/pages/independent-target/index",
+          "pathName": "packages/router-demo-independent/pages/independent-target/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/router-showcase/index",
           "pathName": "pages/router-showcase/index",
           "query": "",

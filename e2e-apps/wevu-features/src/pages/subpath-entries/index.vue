@@ -40,18 +40,7 @@ const scenarioRefs = storeToRefs(scenarioStore)
 const scenarioCount = computed(() => scenarioRefs.count.value)
 const scenarioLabel = computed(() => scenarioRefs.label.value)
 
-const router = useRouter({
-  routes: [
-    {
-      name: 'subpath-entries',
-      path: '/pages/subpath-entries/index',
-    },
-    {
-      name: 'router-target',
-      path: '/pages/router-stability/target/index',
-    },
-  ],
-})
+const router = useRouter()
 
 const routerFullPath = ref('pending')
 const apiStatus = ref('pending')
@@ -90,13 +79,7 @@ async function runE2E() {
   scenarioStore.bump()
   scenarioStore.rename('subpath-ready')
 
-  const resolvedRoute = router.resolve({
-    name: 'router-target',
-    query: {
-      from: 'subpath-entry',
-      step: scenarioRefs.count.value,
-    },
-  })
+  const resolvedRoute = router.resolve(`/pages/router-stability/target/index?from=subpath-entry&step=${scenarioRefs.count.value}`)
   routerFullPath.value = resolvedRoute.fullPath
 
   const adapter = createMockRequestAdapter()
