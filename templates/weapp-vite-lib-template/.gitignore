@@ -34,3 +34,4 @@ dist
 dist-lib
 vite.config.ts.timestamp-*.mjs
 dist-web
+.weapp-vite/

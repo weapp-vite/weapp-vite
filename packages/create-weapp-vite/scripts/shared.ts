@@ -21,18 +21,61 @@ async function ensureGitignoreForTemplate(templateRoot: string) {
   }
 }
 
+function shouldSkipTemplateFile(filePath: string) {
+  return (
+    filePath.includes('node_modules')
+    || filePath.includes(`${path.sep}.weapp-vite${path.sep}`)
+    || filePath.includes('vite.config.ts.timestamp')
+    || filePath.includes('dist')
+    || filePath.includes('CHANGELOG.md')
+    || filePath.includes('.turbo')
+    || filePath.includes('.DS_Store')
+  )
+}
+
+async function collectTemplateFiles(root: string) {
+  const files: string[] = []
+
+  async function walk(currentDir: string) {
+    const entries = await fs.readdir(currentDir, { withFileTypes: true })
+    for (const entry of entries) {
+      const absolutePath = path.join(currentDir, entry.name)
+      if (shouldSkipTemplateFile(absolutePath)) {
+        continue
+      }
+
+      if (entry.isDirectory()) {
+        await walk(absolutePath)
+        continue
+      }
+
+      if (entry.isFile()) {
+        files.push(absolutePath)
+      }
+    }
+  }
+
+  await walk(root)
+  files.sort((a, b) => a.localeCompare(b))
+  return files
+}
+
 async function getTemplateSyncSignature() {
   const hasher = crypto.createHash('sha256')
 
   for (const { target } of templates) {
     const absTarget = path.resolve(import.meta.dirname, target)
-    const pkgJsonPath = path.resolve(absTarget, 'package.json')
     hasher.update(target)
-    try {
-      hasher.update(await fs.readFile(pkgJsonPath, 'utf8'))
-    }
-    catch {
+
+    if (!await fs.pathExists(absTarget)) {
       hasher.update('missing')
+      continue
+    }
+
+    const files = await collectTemplateFiles(absTarget)
+    for (const filePath of files) {
+      hasher.update(path.relative(absTarget, filePath))
+      hasher.update(await fs.readFile(filePath))
     }
   }
 
@@ -79,14 +122,7 @@ export async function main() {
         absDest,
         {
           filter(src: string) {
-            if (
-              src.includes('node_modules')
-              || src.includes('vite.config.ts.timestamp')
-              || src.includes('dist')
-              || src.includes('CHANGELOG.md')
-              || src.includes('.turbo')
-              || src.includes('.DS_Store')
-            ) {
+            if (shouldSkipTemplateFile(src)) {
               return false
             }
             return true
