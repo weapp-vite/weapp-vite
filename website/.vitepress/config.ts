@@ -348,6 +348,58 @@ const wevuApiSidebarItems: DefaultTheme.SidebarItem[] = [
   },
 ]
 
+const weapiSidebarItems: DefaultTheme.SidebarItem[] = [
+  {
+    text: '@wevu/api',
+    collapsed: false,
+    items: [
+      { text: 'Docs 首页', link: '/packages/weapi/' },
+      { text: '兼容总览', link: '/packages/weapi/compat-overview' },
+      {
+        text: 'API 全量清单',
+        link: '/packages/weapi/wx-method-list',
+        collapsed: false,
+        items: [
+          { text: 'A-C', link: '/packages/weapi/wx-method-list/a-c' },
+          { text: 'D-G', link: '/packages/weapi/wx-method-list/d-g' },
+          { text: 'H-M', link: '/packages/weapi/wx-method-list/h-m' },
+          { text: 'N-O', link: '/packages/weapi/wx-method-list/n-o' },
+          { text: 'P-R', link: '/packages/weapi/wx-method-list/p-r' },
+          { text: 'S-Z', link: '/packages/weapi/wx-method-list/s-z' },
+        ],
+      },
+      {
+        text: '支付宝兼容矩阵',
+        link: '/packages/weapi/alipay-compat-matrix',
+        collapsed: true,
+        items: [
+          { text: 'A-C', link: '/packages/weapi/alipay-compat-matrix/a-c' },
+          { text: 'D-G', link: '/packages/weapi/alipay-compat-matrix/d-g' },
+          { text: 'H-M', link: '/packages/weapi/alipay-compat-matrix/h-m' },
+          { text: 'N-O', link: '/packages/weapi/alipay-compat-matrix/n-o' },
+          { text: 'P-R', link: '/packages/weapi/alipay-compat-matrix/p-r' },
+          { text: 'S-Z', link: '/packages/weapi/alipay-compat-matrix/s-z' },
+        ],
+      },
+      {
+        text: '抖音兼容矩阵',
+        link: '/packages/weapi/douyin-compat-matrix',
+        collapsed: true,
+        items: [
+          { text: 'A-C', link: '/packages/weapi/douyin-compat-matrix/a-c' },
+          { text: 'D-G', link: '/packages/weapi/douyin-compat-matrix/d-g' },
+          { text: 'H-M', link: '/packages/weapi/douyin-compat-matrix/h-m' },
+          { text: 'N-O', link: '/packages/weapi/douyin-compat-matrix/n-o' },
+          { text: 'P-R', link: '/packages/weapi/douyin-compat-matrix/p-r' },
+          { text: 'S-Z', link: '/packages/weapi/douyin-compat-matrix/s-z' },
+        ],
+      },
+      { text: '兼容差异说明', link: '/packages/weapi/gap-notes' },
+      { text: '平台独有 API 清单', link: '/packages/weapi/platform-only-methods' },
+    ],
+  },
+]
+
 const _handbookSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: '教程总览',
@@ -467,6 +519,7 @@ export default withMermaid(defineConfig({
       // { text: '教程', link: '/handbook/' }, // 暂时隐藏：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
       { text: 'Wevu', link: '/wevu/' },
       { text: 'Wevu API', link: '/wevu/api/' },
+      { text: 'Wpi', link: '/packages/weapi/' },
       { text: 'AI', link: '/ai' },
       { text: '社区', link: '/community/group' },
       { text: '周边包', link: '/packages/' },
@@ -490,6 +543,7 @@ export default withMermaid(defineConfig({
       '/integration/': communitySidebarItems,
       '/blog/': blogSidebarItems,
       '/config/': configSidebarItems,
+      '/packages/weapi/': weapiSidebarItems,
       '/packages/': packagesSidebarItems,
       '/wevu/api/': wevuApiSidebarItems,
       '/wevu/api-reference/': wevuApiSidebarItems,

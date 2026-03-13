@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { WEAPI_METHOD_SUPPORT_MATRIX } from '../../../packages/weapi/src/core/methodMapping/supportMatrix'
+import { matchWeapiDocGroup } from '../shared/weapiGroups'
 
 interface WeapiCatalogItem {
   method: string
@@ -10,6 +11,14 @@ interface WeapiCatalogItem {
   douyinStrategy: string
   support: string
 }
+
+const props = withDefaults(defineProps<{
+  group?: string
+  searchable?: boolean
+}>(), {
+  group: '',
+  searchable: true,
+})
 
 const keyword = ref('')
 
@@ -46,14 +55,18 @@ function createOfficialLink(method: string) {
   return `https://developers.weixin.qq.com/miniprogram/dev/api/?search-key=${encodeURIComponent(method)}`
 }
 
+const baseRows = computed(() => {
+  const source = WEAPI_METHOD_SUPPORT_MATRIX as readonly WeapiCatalogItem[]
+  return source.filter(item => matchWeapiDocGroup(item.method, props.group))
+})
+
 const rows = computed(() => {
   const normalized = keyword.value.trim().toLowerCase()
-  const source = WEAPI_METHOD_SUPPORT_MATRIX as readonly WeapiCatalogItem[]
   if (!normalized) {
-    return source
+    return baseRows.value
   }
 
-  return source.filter((item) => {
+  return baseRows.value.filter((item) => {
     return item.method.toLowerCase().includes(normalized)
       || item.description.toLowerCase().includes(normalized)
   })
@@ -62,7 +75,7 @@ const rows = computed(() => {
 
 <template>
   <div class="weapi-catalog">
-    <div class="weapi-catalog__toolbar">
+    <div v-if="props.searchable" class="weapi-catalog__toolbar">
       <input
         v-model="keyword"
         class="weapi-catalog__search"
@@ -70,7 +83,7 @@ const rows = computed(() => {
         placeholder="搜索 API 名称或说明，例如 showToast / 登录 / 蓝牙"
       >
       <p class="weapi-catalog__meta">
-        共 {{ rows.length }} / {{ WEAPI_METHOD_SUPPORT_MATRIX.length }} 个微信命名 API
+        共 {{ rows.length }} / {{ baseRows.length }} 个当前分组 API
       </p>
     </div>
 

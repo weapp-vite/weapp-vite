@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-03-13T05:52:32.762Z",
+  "generatedAt": "2026-03-13T06:23:14.070Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
-    "files": 196,
-    "docs": 181,
+    "files": 214,
+    "docs": 199,
     "blog": 10,
     "page": 5,
-    "withFrontmatter": 196,
+    "withFrontmatter": 214,
     "missingFrontmatter": 0
   },
   "coverage": {
     "all": {
-      "total": 196,
-      "title": 196,
-      "description": 196,
+      "total": 214,
+      "title": 214,
+      "description": 214,
       "keywords": 196,
       "date": 9
     },
     "docs": {
-      "total": 181,
-      "title": 181,
-      "description": 181,
+      "total": 199,
+      "title": 199,
+      "description": 199,
       "keywords": 181,
       "date": 1
     },
@@ -43,14 +43,14 @@
     "all": {
       "title": 100,
       "description": 100,
-      "keywords": 100,
-      "date": 4.6
+      "keywords": 91.6,
+      "date": 4.2
     },
     "docs": {
       "title": 100,
       "description": 100,
-      "keywords": 100,
-      "date": 0.6
+      "keywords": 91,
+      "date": 0.5
     },
     "blog": {
       "title": 100,
@@ -107,8 +107,101 @@
     "seoQualityReportPublic": true
   },
   "quality": {
-    "checked": 196,
-    "issues": []
+    "checked": 214,
+    "issues": [
+      {
+        "path": "packages/weapi/alipay-compat-matrix/a-c.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/alipay-compat-matrix/d-g.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/alipay-compat-matrix/h-m.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/alipay-compat-matrix/n-o.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/alipay-compat-matrix/p-r.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/alipay-compat-matrix/s-z.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/douyin-compat-matrix/a-c.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/douyin-compat-matrix/d-g.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/douyin-compat-matrix/h-m.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/douyin-compat-matrix/n-o.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/douyin-compat-matrix/p-r.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/douyin-compat-matrix/s-z.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/wx-method-list/a-c.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/wx-method-list/d-g.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/wx-method-list/h-m.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/wx-method-list/n-o.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/wx-method-list/p-r.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "packages/weapi/wx-method-list/s-z.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      }
+    ]
   },
-  "qualityIssueCounts": {}
+  "qualityIssueCounts": {
+    "missing-keywords": 18
+  }
 }
