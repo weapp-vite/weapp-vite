@@ -244,34 +244,53 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
     items: [
       { text: '概览', link: '/wevu/' },
       { text: '快速上手', link: '/wevu/quick-start' },
-      {
-        text: 'Vue SFC 开发',
-        collapsed: false,
-        items: [
-          { text: '总览', link: '/wevu/vue-sfc/' },
-          { text: '基础与组成', link: '/wevu/vue-sfc/basics' },
-          { text: '配置与宏', link: '/wevu/vue-sfc/config' },
-          { text: '模板与指令', link: '/wevu/vue-sfc/template' },
-          { text: '示例', link: '/wevu/vue-sfc/examples' },
-          { text: '调试与排错', link: '/wevu/vue-sfc/troubleshoot' },
-        ],
-      },
       { text: '运行时与生命周期', link: '/wevu/runtime' },
       { text: 'defineComponent（组件）', link: '/wevu/component' },
       { text: 'Store（状态管理）', link: '/wevu/store' },
-      { text: '兼容性与注意事项', link: '/wevu/compatibility' },
+      { text: 'API 参考', link: '/wevu/api/', target: '_blank', rel: 'noreferrer' },
+    ],
+  },
+  {
+    text: 'Vue SFC 开发',
+    collapsed: false,
+    items: [
+      { text: '总览', link: '/wevu/vue-sfc/' },
+      { text: '基础与组成', link: '/wevu/vue-sfc/basics' },
+      { text: '配置与宏', link: '/wevu/vue-sfc/config' },
+      { text: '模板与指令', link: '/wevu/vue-sfc/template' },
+      { text: '示例', link: '/wevu/vue-sfc/examples' },
+      { text: '调试与排错', link: '/wevu/vue-sfc/troubleshoot' },
+    ],
+  },
+  {
+    text: 'Namespace 导出',
+    collapsed: false,
+    items: [
+      { text: 'wevu/api', link: '/wevu/api-package' },
+      { text: 'wevu/fetch', link: '/wevu/fetch' },
+      { text: 'wevu/router', link: '/wevu/router' },
+      { text: 'wevu/jsx-runtime', link: '/wevu/jsx-runtime' },
+    ],
+  },
+  {
+    text: '进阶与迁移',
+    collapsed: false,
+    items: [
+      {
+        text: '兼容性与注意事项',
+        link: '/wevu/compatibility',
+      },
       { text: 'Vue 3 兼容性说明（完整）', link: '/wevu/vue3-compat' },
       { text: '从原生小程序迁移到 Vue SFC', link: '/wevu/migration/from-native-to-vue-sfc' },
       { text: 'Wevu vs Vue 3（核心差异）', link: '/wevu/vue3-vs-wevu' },
-      {
-        text: '扩展阅读',
-        collapsed: false,
-        items: [
-          { text: '为什么没有使用 @vue/runtime-core 的 createRenderer 来实现', link: '/wevu/why-not-runtime-core-create-renderer' },
-          { text: 'Wevu 中的 setData 什么时候触发？', link: '/wevu/when-setdata-triggers' },
-        ],
-      },
-      { text: 'API 参考 ↗', link: '/wevu/api-reference/' },
+    ],
+  },
+  {
+    text: '扩展阅读',
+    collapsed: false,
+    items: [
+      { text: '为什么没有使用 @vue/runtime-core 的 createRenderer 来实现', link: '/wevu/why-not-runtime-core-create-renderer' },
+      { text: 'Wevu 中的 setData 什么时候触发？', link: '/wevu/when-setdata-triggers' },
     ],
   },
 ]
