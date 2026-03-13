@@ -4,6 +4,7 @@ import path from 'pathe'
 import { afterEach, vi } from 'vitest'
 import { __internal as createProjectInternal } from '@/createProject'
 import { TemplateName } from '@/enums'
+import { TEMPLATE_CATALOG } from '@/generated/catalog'
 import { createProject } from '@/index'
 import * as npm from '@/npm'
 import { logger } from '../vitest.setup'
@@ -246,7 +247,7 @@ describe('createProject', () => {
     expect(pkgJson.dependencies['tdesign-miniprogram']).toBe('1.12.3')
     expect(pkgJson.devDependencies['tailwindcss']).toBe('^4.2.1')
     expect(pkgJson.devDependencies['typescript']).toBe('^5.9.3')
-    expect(pkgJson.devDependencies['miniprogram-api-typings']).toBe('^5.1.1')
+    expect(pkgJson.devDependencies['miniprogram-api-typings']).toBe(TEMPLATE_CATALOG['miniprogram-api-typings'])
     expect(pkgJson.devDependencies['postcss']).toBe('^8.5.6')
     expect(pkgJson.devDependencies['sass']).toBe('^1.98.0')
     expect(pkgJson.devDependencies['weapp-vite']).not.toContain('workspace:')
