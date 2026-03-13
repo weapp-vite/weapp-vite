@@ -54,12 +54,23 @@ describe('auto-routes module exports', () => {
   })
 
   it('wxRouter proxies route methods to global mini-program object', async () => {
+    const callLog = {
+      navigateTo: [] as Array<Record<string, any>>,
+      redirectTo: [] as Array<Record<string, any>>,
+      navigateBack: [] as Array<Record<string, any>>,
+    }
     const wx = {
-      switchTab: vi.fn(),
-      reLaunch: vi.fn(),
-      redirectTo: vi.fn(),
-      navigateTo: vi.fn(),
-      navigateBack: vi.fn(),
+      switchTab() {},
+      reLaunch() {},
+      redirectTo(option: Record<string, any>) {
+        callLog.redirectTo.push(option)
+      },
+      navigateTo(option: Record<string, any>) {
+        callLog.navigateTo.push(option)
+      },
+      navigateBack(option: Record<string, any>) {
+        callLog.navigateBack.push(option)
+      },
     }
     ;(globalThis as any).wx = wx
 
@@ -75,9 +86,9 @@ describe('auto-routes module exports', () => {
     module.wxRouter.redirectTo({ url: '/pages/about/index' })
     module.wxRouter.navigateBack({ delta: 1 })
 
-    expect(wx.navigateTo).toHaveBeenCalledWith({ url: '/pages/index/index' })
-    expect(wx.redirectTo).toHaveBeenCalledWith({ url: '/pages/about/index' })
-    expect(wx.navigateBack).toHaveBeenCalledWith({ delta: 1 })
+    expect(callLog.navigateTo).toEqual([{ url: '/pages/index/index' }])
+    expect(callLog.redirectTo).toEqual([{ url: '/pages/about/index' }])
+    expect(callLog.navigateBack).toEqual([{ delta: 1 }])
   })
 
   it('wxRouter throws when route capability is unavailable', async () => {
