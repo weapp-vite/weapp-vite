@@ -16,6 +16,7 @@ import type {
   UseRouterOptions,
 } from 'wevu/router'
 import { expectType } from 'tsd'
+import { createApp } from 'wevu'
 import {
   createNavigationFailure,
   createRouter,
@@ -87,6 +88,7 @@ const navigationOptions: UseRouterOptions = {
 const navigation = createRouter(navigationOptions)
 expectType<RouterNavigation>(navigation)
 expectType<RouterNavigation>(useRouter())
+expectType<ReturnType<typeof createApp>>(createApp({ setup() {} }).use(navigation))
 expectType<AddRoute>(navigation.addRoute)
 expectType<Readonly<UseRouterOptions>>(navigation.options)
 expectType<readonly RouteRecordRaw[] | undefined>(navigation.options.routes)

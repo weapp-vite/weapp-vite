@@ -68,11 +68,7 @@ createApp({
   setup() {
     // 这里通常不需要额外返回 router
   },
-}).use({
-  install(app) {
-    router.install(app)
-  },
-})
+}).use(router)
 ```
 
 如果你只是想让后续页面/组件里的 `useRouter()` 能拿到默认实例，最关键的是这句：
@@ -81,7 +77,7 @@ createApp({
 const router = createRouter()
 ```
 
-`createRouter()` 创建时就会注册当前默认 router；`router.install(app)` 则用于把实例同步挂到 `app.config.globalProperties.$router`。
+`createRouter()` 创建时就会注册当前默认 router；`createApp(...).use(router)` 则会把它同步挂到 `app.config.globalProperties.$router`。
 
 ### `app.vue` + `<script setup>` 写法
 
