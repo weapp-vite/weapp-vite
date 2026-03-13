@@ -66,6 +66,10 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     return resolveWeappAutoRoutesConfig(ctx.configService?.weappViteConfig?.autoRoutes)
   }
 
+  function getSubPackageRoots() {
+    return Object.keys(ctx.configService?.weappViteConfig?.subPackages ?? {})
+  }
+
   function isEnabled() {
     return Boolean(ctx.configService) && getResolvedConfig().enabled
   }
@@ -354,7 +358,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     const absoluteSrcRoot = configService.absoluteSrcRoot
     // 全量重扫必须从 srcRoot 开始，不能只扫描历史 watchDirs；
     // 否则新增同级 pages 目录（例如 pages/foo -> pages/bar）会被漏掉。
-    const candidates = await collectCandidates(absoluteSrcRoot, getResolvedConfig().include)
+    const candidates = await collectCandidates(absoluteSrcRoot, getResolvedConfig().include, getSubPackageRoots())
 
     state.candidates.clear()
     for (const candidate of candidates.values()) {

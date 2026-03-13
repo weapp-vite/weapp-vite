@@ -3,7 +3,7 @@ import path from 'pathe'
 import picomatch from 'picomatch'
 import { normalizePath, toPosixPath } from '../../utils/path'
 
-export const DEFAULT_AUTO_ROUTE_INCLUDE = ['pages/**', '**/pages/**'] as const
+export const DEFAULT_AUTO_ROUTE_INCLUDE = ['pages/**'] as const
 
 interface AutoRoutesRule {
   pattern: WeappAutoRoutesIncludePattern
@@ -83,10 +83,17 @@ export interface AutoRoutesMatcher {
   getWatchRoots: (absoluteSrcRoot: string) => string[]
 }
 
-export function createAutoRoutesMatcher(include?: WeappAutoRoutesInclude): AutoRoutesMatcher {
+export function createAutoRoutesMatcher(
+  include?: WeappAutoRoutesInclude,
+  subPackageRoots: Iterable<string> = [],
+): AutoRoutesMatcher {
   const normalizedInclude = toArray(include)
   const rules = normalizedInclude.map(createRule)
   const isDefault = isDefaultAutoRouteInclude(normalizedInclude)
+  const normalizedSubPackageRoots = [...subPackageRoots]
+    .filter(Boolean)
+    .map(root => normalizeRuleCandidate(root))
+    .filter(Boolean)
 
   function matches(candidate: string) {
     const normalizedCandidate = normalizeRuleCandidate(candidate)
@@ -94,12 +101,24 @@ export function createAutoRoutesMatcher(include?: WeappAutoRoutesInclude): AutoR
       return false
     }
 
+    if (isDefault) {
+      if (normalizedCandidate.startsWith('pages/')) {
+        return true
+      }
+
+      return normalizedSubPackageRoots.some(root => normalizedCandidate.startsWith(`${root}/pages/`))
+    }
+
     return rules.some(rule => rule.match(normalizedCandidate))
   }
 
   function getRoots(absoluteSrcRoot: string) {
     if (isDefault) {
-      return [path.join(absoluteSrcRoot, 'pages')]
+      const roots = new Set<string>([path.join(absoluteSrcRoot, 'pages')])
+      for (const root of normalizedSubPackageRoots) {
+        roots.add(path.join(absoluteSrcRoot, root, 'pages'))
+      }
+      return Array.from(roots, root => normalizePath(root))
     }
 
     const roots = new Set<string>()

@@ -89,7 +89,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     }
 
     const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
-    const matcher = createAutoRoutesMatcher(autoRoutesConfig.include)
+    const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, Object.keys(configService.weappViteConfig?.subPackages ?? {}))
 
     if (matcher.matches(removeExtensionDeep(relative))) {
       return true
@@ -130,7 +130,8 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     }
 
     const srcRoot = configService.absoluteSrcRoot
-    const matcher = createAutoRoutesMatcher(autoRoutesConfig.include)
+    const subPackageRoots = Object.keys(configService.weappViteConfig?.subPackages ?? {})
+    const resolvedMatcher = createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots)
     const allowedExtensions = new Set(vueExtensions.map(ext => `.${ext}`))
     const watchDirs = new Set<string>()
 
@@ -138,7 +139,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       watchDirs.add(dir)
     }
 
-    for (const dir of matcher.getWatchRoots(srcRoot)) {
+    for (const dir of resolvedMatcher.getWatchRoots(srcRoot)) {
       watchDirs.add(dir)
     }
 

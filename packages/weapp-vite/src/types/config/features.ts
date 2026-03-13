@@ -113,7 +113,7 @@ export interface WeappAutoRoutesConfig {
   typedRouter?: boolean
   /**
    * @description 自动路由扫描规则，支持字符串 glob、正则以及它们的数组
-   * @remarks 默认会扫描主包 pages 目录与传统分包 pages 目录
+   * @remarks 默认会扫描主包 `pages/**`，以及已声明分包 root 下的 `pages/**`
    */
   include?: WeappAutoRoutesInclude
   /**

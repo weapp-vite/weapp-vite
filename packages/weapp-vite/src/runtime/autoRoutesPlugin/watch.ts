@@ -45,7 +45,7 @@ export function matchesRouteFile(
   }
 
   const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
-  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include)
+  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, Object.keys(configService.weappViteConfig?.subPackages ?? {}))
   if (!matcher.matches(removeExtensionDeep(relative))) {
     return false
   }
@@ -155,7 +155,7 @@ export async function updateCandidateFromFile(
     return removed
   }
 
-  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include)
+  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, Object.keys(ctx.configService.weappViteConfig?.subPackages ?? {}))
   if (!matcher.matches(relativeBase)) {
     const removed = stateCandidates.delete(base)
     return removed
