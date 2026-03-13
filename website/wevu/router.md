@@ -43,14 +43,63 @@ pnpm add -D wevu
 ```ts
 import { createRouter, useRouter } from 'wevu/router'
 
+// 在应用入口或上层 setup 中先创建一次
 createRouter()
 
+// 业务代码里只负责获取实例
 const router = useRouter()
 
 await router.push('/pages/home/index')
 await router.replace('/pages/profile/index?tab=security')
 await router.back(1)
 ```
+
+## 在 App 中注册
+
+推荐在应用入口或 App 级 `setup()` 中创建一次 router：
+
+```ts
+import { createApp } from 'wevu'
+import { createRouter } from 'wevu/router'
+
+const router = createRouter()
+
+createApp({
+  setup() {
+    // 这里通常不需要额外返回 router
+  },
+}).use({
+  install(app) {
+    router.install(app)
+  },
+})
+```
+
+如果你只是想让后续页面/组件里的 `useRouter()` 能拿到默认实例，最关键的是这句：
+
+```ts
+const router = createRouter()
+```
+
+`createRouter()` 创建时就会注册当前默认 router；`router.install(app)` 则用于把实例同步挂到 `app.config.globalProperties.$router`。
+
+### `app.vue` + `<script setup>` 写法
+
+如果你使用的是 Weapp-vite + Vue SFC，通常可以直接在 `app.vue` 顶层创建：
+
+```vue
+<script setup lang="ts">
+import { createRouter } from 'wevu/router'
+
+createRouter()
+</script>
+```
+
+关键点：
+
+- 必须是顶层语句
+- 不要放进 `onLaunch()`、`onShow()` 或其他 hook 里
+- 这样后续页面/组件里的 `useRouter()` 才能直接拿到默认实例
 
 ## 核心能力
 
@@ -77,6 +126,7 @@ await router.push('/pages/post/1/index?preview=0')
 ```ts
 import { createRouter } from 'wevu/router'
 
+// 常见做法是在应用入口统一创建 router
 const router = createRouter({
   beforeEach(to) {
     if (to.path.startsWith('/pages/private/') && !isLoggedIn()) {
