@@ -286,6 +286,25 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     }
   }
 
+  async function removeTypedRouterDefinition() {
+    const outputPath = resolveTypedRouterOutputPath()
+    if (!outputPath) {
+      lastWrittenTypedDefinition = undefined
+      return
+    }
+
+    try {
+      if (await fs.pathExists(outputPath)) {
+        await fs.remove(outputPath)
+      }
+      lastWrittenTypedDefinition = undefined
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logger.error(`移除 typed-router.d.ts 失败: ${message}`)
+    }
+  }
+
   async function writeTypedRouterDefinition() {
     const autoRoutesConfig = getResolvedConfig()
     if (!autoRoutesConfig.enabled || !autoRoutesConfig.typedRouter) {
@@ -313,25 +332,6 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     }
   }
 
-  async function removeTypedRouterDefinition() {
-    const outputPath = resolveTypedRouterOutputPath()
-    if (!outputPath) {
-      lastWrittenTypedDefinition = undefined
-      return
-    }
-
-    try {
-      if (await fs.pathExists(outputPath)) {
-        await fs.remove(outputPath)
-      }
-      lastWrittenTypedDefinition = undefined
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logger.error(`移除 typed-router.d.ts 失败: ${message}`)
-    }
-  }
-
   function markNeedsFullRescan() {
     state.needsFullRescan = true
   }
@@ -354,7 +354,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     const absoluteSrcRoot = configService.absoluteSrcRoot
     // 全量重扫必须从 srcRoot 开始，不能只扫描历史 watchDirs；
     // 否则新增同级 pages 目录（例如 pages/foo -> pages/bar）会被漏掉。
-    const candidates = await collectCandidates(absoluteSrcRoot)
+    const candidates = await collectCandidates(absoluteSrcRoot, getResolvedConfig().include)
 
     state.candidates.clear()
     for (const candidate of candidates.values()) {

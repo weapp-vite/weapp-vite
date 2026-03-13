@@ -3,6 +3,7 @@ import type { ChangeEvent } from '../../types'
 import type { CandidateEntry } from './candidates'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
+import { resolveWeappAutoRoutesConfig } from '../../autoRoutesConfig'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../utils/file'
 import { normalizePath, toPosixPath } from '../../utils/path'
 import {
@@ -13,6 +14,7 @@ import {
   isTemplateFile,
   isVueFile,
 } from './candidates'
+import { createAutoRoutesMatcher } from './matcher'
 import { resolveRoute } from './routes'
 
 export type AutoRoutesFileEvent = ChangeEvent | 'rename'
@@ -42,10 +44,9 @@ export function matchesRouteFile(
     return false
   }
 
-  const isPagesPath = relative.startsWith('pages/')
-    || relative.includes('/pages/')
-
-  if (!isPagesPath) {
+  const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
+  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include)
+  if (!matcher.matches(removeExtensionDeep(relative))) {
     return false
   }
 
@@ -147,8 +148,15 @@ export async function updateCandidateFromFile(
     return true
   }
 
-  const route = resolveRoute(relativeBase)
+  const autoRoutesConfig = resolveWeappAutoRoutesConfig(ctx.configService.weappViteConfig?.autoRoutes)
+  const route = resolveRoute(relativeBase, Object.keys(ctx.configService.weappViteConfig?.subPackages ?? {}))
   if (!route) {
+    const removed = stateCandidates.delete(base)
+    return removed
+  }
+
+  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include)
+  if (!matcher.matches(relativeBase)) {
     const removed = stateCandidates.delete(base)
     return removed
   }

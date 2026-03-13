@@ -6,6 +6,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     expect(resolveWeappAutoRoutesConfig()).toEqual({
       enabled: false,
       typedRouter: false,
+      include: ['pages/**', '**/pages/**'],
       persistentCache: false,
       persistentCachePath: undefined,
       watch: false,
@@ -16,6 +17,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     expect(resolveWeappAutoRoutesConfig(true)).toEqual({
       enabled: true,
       typedRouter: true,
+      include: ['pages/**', '**/pages/**'],
       persistentCache: false,
       persistentCachePath: undefined,
       watch: true,
@@ -26,6 +28,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     expect(resolveWeappAutoRoutesConfig(false)).toEqual({
       enabled: false,
       typedRouter: false,
+      include: ['pages/**', '**/pages/**'],
       persistentCache: false,
       persistentCachePath: undefined,
       watch: false,
@@ -36,6 +39,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     expect(resolveWeappAutoRoutesConfig({})).toEqual({
       enabled: true,
       typedRouter: true,
+      include: ['pages/**', '**/pages/**'],
       persistentCache: false,
       persistentCachePath: undefined,
       watch: true,
@@ -48,6 +52,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     })).toEqual({
       enabled: true,
       typedRouter: false,
+      include: ['pages/**', '**/pages/**'],
       persistentCache: false,
       persistentCachePath: undefined,
       watch: false,
@@ -58,6 +63,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     })).toEqual({
       enabled: true,
       typedRouter: true,
+      include: ['pages/**', '**/pages/**'],
       persistentCache: true,
       persistentCachePath: undefined,
       watch: true,
@@ -68,8 +74,21 @@ describe('resolveWeappAutoRoutesConfig', () => {
     })).toEqual({
       enabled: true,
       typedRouter: true,
+      include: ['pages/**', '**/pages/**'],
       persistentCache: true,
       persistentCachePath: '.cache/custom-auto-routes.json',
+      watch: true,
+    })
+    const customRule = /^features\/[^/]+\/screens\/.+$/
+    expect(resolveWeappAutoRoutesConfig({
+      enabled: true,
+      include: ['views/**', customRule],
+    })).toEqual({
+      enabled: true,
+      typedRouter: true,
+      include: ['views/**', customRule],
+      persistentCache: false,
+      persistentCachePath: undefined,
       watch: true,
     })
   })

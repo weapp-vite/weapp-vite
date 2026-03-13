@@ -4,6 +4,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { configExtensions, jsExtensions, supportedCssLangs, templateExtensions, vueExtensions } from '../../constants'
 import { toPosixPath } from '../../utils/path'
+import { createAutoRoutesMatcher } from './matcher'
 
 export interface CandidateEntry {
   base: string
@@ -106,8 +107,13 @@ function ensureCandidate(map: Map<string, CandidateEntry>, base: string) {
   return candidate
 }
 
-export async function collectCandidates(absoluteSrcRoot: string, searchRoots?: Iterable<string>) {
+export async function collectCandidates(
+  absoluteSrcRoot: string,
+  include?: string | RegExp | Array<string | RegExp>,
+  searchRoots?: Iterable<string>,
+) {
   const candidates = new Map<string, CandidateEntry>()
+  const matcher = createAutoRoutesMatcher(include)
   const roots = searchRoots
     ? [...new Set(searchRoots)]
     : (() => {
@@ -115,12 +121,17 @@ export async function collectCandidates(absoluteSrcRoot: string, searchRoots?: I
       })()
 
   if (!searchRoots) {
-    const discoveredPagesRoots = await discoverPagesRoots(absoluteSrcRoot)
-    if (discoveredPagesRoots.size > 0) {
-      roots.push(...discoveredPagesRoots)
+    if (matcher.isDefault) {
+      const discoveredPagesRoots = await discoverPagesRoots(absoluteSrcRoot)
+      if (discoveredPagesRoots.size > 0) {
+        roots.push(...discoveredPagesRoots)
+      }
+      else {
+        roots.push(absoluteSrcRoot)
+      }
     }
     else {
-      roots.push(absoluteSrcRoot)
+      roots.push(...matcher.getSearchRoots(absoluteSrcRoot))
     }
   }
 
@@ -161,10 +172,8 @@ export async function collectCandidates(absoluteSrcRoot: string, searchRoots?: I
         continue
       }
 
-      const isPagesCandidate = normalizedRelative.startsWith('pages/')
-        || normalizedRelative.includes('/pages/')
-
-      if (!isPagesCandidate) {
+      const relativeBase = removeExtensionDeep(normalizedRelative)
+      if (!matcher.matches(relativeBase)) {
         continue
       }
 

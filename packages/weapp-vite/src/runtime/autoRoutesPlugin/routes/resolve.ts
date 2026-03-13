@@ -1,12 +1,39 @@
-import path from 'pathe'
-
 interface ResolvedRoute {
   entry: string
   pagePath: string
   root?: string
 }
 
-export function resolveRoute(normalizedBase: string): ResolvedRoute | undefined {
+function resolveConfiguredSubPackageRoute(normalizedBase: string, subPackageRoots: Iterable<string>) {
+  const roots = [...subPackageRoots].sort((a, b) => b.length - a.length)
+  for (const root of roots) {
+    if (!root || normalizedBase === root || !normalizedBase.startsWith(`${root}/`)) {
+      continue
+    }
+
+    const pagePath = normalizedBase.slice(root.length + 1)
+    if (!pagePath) {
+      continue
+    }
+
+    return {
+      root,
+      pagePath,
+      entry: normalizedBase,
+    }
+  }
+}
+
+export function resolveRoute(normalizedBase: string, subPackageRoots: Iterable<string> = []): ResolvedRoute | undefined {
+  if (!normalizedBase) {
+    return undefined
+  }
+
+  const configuredSubPackageRoute = resolveConfiguredSubPackageRoute(normalizedBase, subPackageRoots)
+  if (configuredSubPackageRoute) {
+    return configuredSubPackageRoute
+  }
+
   if (normalizedBase.startsWith('pages/')) {
     return {
       entry: normalizedBase,
@@ -16,7 +43,10 @@ export function resolveRoute(normalizedBase: string): ResolvedRoute | undefined 
 
   const idx = normalizedBase.indexOf('/pages/')
   if (idx === -1) {
-    return undefined
+    return {
+      entry: normalizedBase,
+      pagePath: normalizedBase,
+    }
   }
 
   const root = normalizedBase.slice(0, idx)
@@ -30,21 +60,4 @@ export function resolveRoute(normalizedBase: string): ResolvedRoute | undefined 
     pagePath,
     entry: `${root}/${pagePath}`,
   }
-}
-
-export function resolvePagesDirectory(normalizedBase: string, absoluteSrcRoot: string) {
-  if (normalizedBase.startsWith('pages/')) {
-    return path.join(absoluteSrcRoot, 'pages')
-  }
-
-  const idx = normalizedBase.indexOf('/pages/')
-  if (idx === -1) {
-    return undefined
-  }
-
-  const root = normalizedBase.slice(0, idx)
-  if (!root) {
-    return undefined
-  }
-  return path.join(absoluteSrcRoot, root, 'pages')
 }
