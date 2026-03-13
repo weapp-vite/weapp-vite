@@ -130,7 +130,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     return path.resolve(baseDir, 'typed-router.d.ts')
   }
 
-  function resolvePersistentCachePath() {
+  function resolvePersistentCacheBaseDir() {
     const configService = ctx.configService
     if (!configService) {
       return undefined
@@ -140,6 +140,29 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       ? path.dirname(configService.configFilePath)
       : configService.cwd
 
+    if (!baseDir) {
+      return undefined
+    }
+
+    return baseDir
+  }
+
+  function resolvePersistentCachePath() {
+    const autoRoutesConfig = getResolvedConfig()
+    if (!autoRoutesConfig.persistentCache) {
+      return undefined
+    }
+
+    const baseDir = resolvePersistentCacheBaseDir()
+    if (!baseDir) {
+      return undefined
+    }
+
+    return path.resolve(baseDir, autoRoutesConfig.persistentCachePath ?? AUTO_ROUTES_CACHE_FILE)
+  }
+
+  function resolveDefaultPersistentCachePath() {
+    const baseDir = resolvePersistentCacheBaseDir()
     if (!baseDir) {
       return undefined
     }
@@ -247,7 +270,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
   }
 
   async function removePersistentCache() {
-    const cachePath = resolvePersistentCachePath()
+    const cachePath = resolvePersistentCachePath() ?? resolveDefaultPersistentCachePath()
     if (!cachePath) {
       return
     }

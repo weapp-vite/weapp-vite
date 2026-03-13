@@ -4,6 +4,7 @@ export interface ResolvedWeappAutoRoutesConfig {
   enabled: boolean
   typedRouter: boolean
   persistentCache: boolean
+  persistentCachePath?: string
   watch: boolean
 }
 
@@ -24,7 +25,10 @@ export function resolveWeappAutoRoutesConfig(config?: boolean | WeappAutoRoutesC
   return {
     enabled: config === true || record.enabled !== false,
     typedRouter: record.typedRouter !== false,
-    persistentCache: record.persistentCache === true,
+    persistentCache: typeof record.persistentCache === 'string' || record.persistentCache === true,
+    persistentCachePath: typeof record.persistentCache === 'string'
+      ? record.persistentCache
+      : undefined,
     watch: record.watch !== false,
   }
 }

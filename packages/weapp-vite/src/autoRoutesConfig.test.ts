@@ -7,6 +7,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
       enabled: false,
       typedRouter: false,
       persistentCache: false,
+      persistentCachePath: undefined,
       watch: false,
     })
   })
@@ -16,6 +17,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
       enabled: true,
       typedRouter: true,
       persistentCache: false,
+      persistentCachePath: undefined,
       watch: true,
     })
   })
@@ -25,6 +27,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
       enabled: false,
       typedRouter: false,
       persistentCache: false,
+      persistentCachePath: undefined,
       watch: false,
     })
   })
@@ -34,6 +37,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
       enabled: true,
       typedRouter: true,
       persistentCache: false,
+      persistentCachePath: undefined,
       watch: true,
     })
     expect(resolveWeappAutoRoutesConfig({
@@ -45,6 +49,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
       enabled: true,
       typedRouter: false,
       persistentCache: false,
+      persistentCachePath: undefined,
       watch: false,
     })
     expect(resolveWeappAutoRoutesConfig({
@@ -54,6 +59,17 @@ describe('resolveWeappAutoRoutesConfig', () => {
       enabled: true,
       typedRouter: true,
       persistentCache: true,
+      persistentCachePath: undefined,
+      watch: true,
+    })
+    expect(resolveWeappAutoRoutesConfig({
+      enabled: true,
+      persistentCache: '.cache/custom-auto-routes.json',
+    })).toEqual({
+      enabled: true,
+      typedRouter: true,
+      persistentCache: true,
+      persistentCachePath: '.cache/custom-auto-routes.json',
       watch: true,
     })
   })
