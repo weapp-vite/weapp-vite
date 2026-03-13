@@ -24,7 +24,7 @@ export function resolveWeappAutoRoutesConfig(config?: boolean | WeappAutoRoutesC
   return {
     enabled: config === true || record.enabled !== false,
     typedRouter: record.typedRouter !== false,
-    persistentCache: record.persistentCache !== false,
+    persistentCache: record.persistentCache === true,
     watch: record.watch !== false,
   }
 }

@@ -42,7 +42,7 @@ export default defineConfig({
     autoRoutes: {
       enabled: true,
       typedRouter: true,
-      persistentCache: true,
+      persistentCache: false,
       watch: true,
     },
   },
@@ -69,7 +69,7 @@ export default defineConfig({
 
 - `enabled`：总开关；设为 `false` 时完全关闭自动路由。
 - `typedRouter`：是否输出 `typed-router.d.ts`。
-- `persistentCache`：是否启用 `.weapp-vite/auto-routes.cache.json` 持久化缓存。
+- `persistentCache`：是否启用 `.weapp-vite/auto-routes.cache.json` 持久化缓存，默认关闭。
 - `watch`：开发模式下是否监听页面目录变化并实时刷新路由清单。
 
 > [!NOTE]

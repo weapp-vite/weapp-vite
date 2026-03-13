@@ -101,6 +101,10 @@ export interface WeappMcpConfig {
 export interface WeappAutoRoutesConfig {
   enabled?: boolean
   typedRouter?: boolean
+  /**
+   * @description 是否启用 `.weapp-vite/auto-routes.cache.json` 持久化缓存
+   * @default false
+   */
   persistentCache?: boolean
   watch?: boolean
 }

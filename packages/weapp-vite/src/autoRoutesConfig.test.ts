@@ -15,7 +15,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     expect(resolveWeappAutoRoutesConfig(true)).toEqual({
       enabled: true,
       typedRouter: true,
-      persistentCache: true,
+      persistentCache: false,
       watch: true,
     })
   })
@@ -33,7 +33,7 @@ describe('resolveWeappAutoRoutesConfig', () => {
     expect(resolveWeappAutoRoutesConfig({})).toEqual({
       enabled: true,
       typedRouter: true,
-      persistentCache: true,
+      persistentCache: false,
       watch: true,
     })
     expect(resolveWeappAutoRoutesConfig({
@@ -46,6 +46,15 @@ describe('resolveWeappAutoRoutesConfig', () => {
       typedRouter: false,
       persistentCache: false,
       watch: false,
+    })
+    expect(resolveWeappAutoRoutesConfig({
+      enabled: true,
+      persistentCache: true,
+    })).toEqual({
+      enabled: true,
+      typedRouter: true,
+      persistentCache: true,
+      watch: true,
     })
   })
 })
