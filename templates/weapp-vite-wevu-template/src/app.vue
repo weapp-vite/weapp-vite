@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import routes from 'weapp-vite/auto-routes'
 import { onHide, onLaunch, onShow } from 'wevu'
 
 defineAppJson({
-  pages: [
-    'pages/index/index',
-  ],
+  pages: routes.pages,
+  subPackages: routes.subPackages,
   window: {
     navigationBarTitleText: 'Wepp-Vite + WeVU Template',
     navigationBarBackgroundColor: '#4c6ef5',
