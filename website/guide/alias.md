@@ -25,7 +25,7 @@ keywords:
 
 ## JS/TS 别名
 
-项目默认启用了 `vite-tsconfig-paths`，所以你只要在 `tsconfig.json` / `jsconfig.json` 里配置 `baseUrl` 和 `paths`，就能在代码中直接使用别名。
+项目默认会在检测到 `tsconfig.json` / `jsconfig.json` 中存在 `baseUrl` 或 `paths` 时启用 Vite 8 原生的 `resolve.tsconfigPaths`，所以你只要完成这些配置，就能在代码中直接使用别名。
 
 例如：
 
@@ -51,7 +51,7 @@ import utils from '@/utils'
 运行 `weapp-vite dev` / `weapp-vite build` 时，别名会被自动解析成真实文件位置。
 
 > [!TIP]
-> 如果需要控制 `vite-tsconfig-paths` 的行为（例如指定多个 `tsconfig` 或忽略某些目录），可在 `vite.config.ts` 中调整 [`weapp.tsconfigPaths`](/config/js.md#weapp-tsconfigpaths)。
+> 默认场景建议直接使用原生 `resolve.tsconfigPaths`。如果需要指定多个 `tsconfig` 或忽略某些目录，再在 `vite.config.ts` 中通过 [`weapp.tsconfigPaths`](/config/js.md#weapp-tsconfigpaths) 传入对象启用 `vite-tsconfig-paths` 的高级选项。
 
 ## JSON / JSONC 别名
 

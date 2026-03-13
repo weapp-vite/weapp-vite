@@ -240,6 +240,60 @@ describe('runtime config internal loadConfig', () => {
     })
   })
 
+  it('enables native resolve.tsconfigPaths when auto-detected without advanced options', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+    shouldEnableTsconfigPathsPluginMock.mockResolvedValueOnce(true)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.config.resolve?.tsconfigPaths).toBe(true)
+    expect(result.config.plugins?.some((plugin: any) => plugin?.name === 'tsconfig-paths')).toBe(false)
+    expect(tsconfigPathsMock).not.toHaveBeenCalled()
+  })
+
+  it('enables native resolve.tsconfigPaths when weapp.tsconfigPaths is true', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+          tsconfigPaths: true,
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.config.resolve?.tsconfigPaths).toBe(true)
+    expect(result.config.plugins?.some((plugin: any) => plugin?.name === 'tsconfig-paths')).toBe(false)
+    expect(tsconfigPathsMock).not.toHaveBeenCalled()
+  })
+
   it('throws when es5 is enabled but jsFormat is not cjs', async () => {
     loadConfigFromFileMock.mockResolvedValueOnce({
       config: {
