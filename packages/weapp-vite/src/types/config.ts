@@ -1,5 +1,5 @@
 import type { GenerateType } from '@weapp-core/schematics'
-import type { WeappWebPluginOptions } from '@weapp-vite/web'
+import type { WeappWebPluginOptions } from '@weapp-vite/web/plugin'
 import type { InputOption } from 'rolldown'
 import type { Options as RolldownDtsOptions } from 'rolldown-plugin-dts'
 import type { CompilerOptions } from 'typescript'
