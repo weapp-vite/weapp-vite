@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-13T05:44:26.838Z",
+  "generatedAt": "2026-03-13T05:52:32.762Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
     "files": 196,
@@ -101,8 +101,8 @@
   },
   "llmAssets": {
     "llmsEntry": true,
-    "llmsFullDist": false,
-    "llmsTxtDist": false,
+    "llmsFullDist": true,
+    "llmsTxtDist": true,
     "llmsIndexPublic": true,
     "seoQualityReportPublic": true
   },

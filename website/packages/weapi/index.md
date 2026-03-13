@@ -73,7 +73,7 @@ const api = createWeapi({
 ## 这组文档怎么读
 
 - [兼容总览](/packages/weapi/compat-overview)
-- [微信基准 API 全量清单](/packages/weapi/wx-method-list)
+- [API 全量清单](/packages/weapi/wx-method-list)
 - [支付宝兼容矩阵](/packages/weapi/alipay-compat-matrix)
 - [抖音兼容矩阵](/packages/weapi/douyin-compat-matrix)
 - [兼容差异说明](/packages/weapi/gap-notes)

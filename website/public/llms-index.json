@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-13T05:44:26.265Z",
+  "generatedAt": "2026-03-13T05:52:32.070Z",
   "site": "https://vite.icebreaker.top",
   "count": 196,
   "items": [
@@ -3624,22 +3624,22 @@
     },
     {
       "id": "doc-0f0650d092",
-      "title": "微信基准 API 全量清单",
-      "summary": "@wevu/api 基于微信命名体系的全量 API 基准清单。",
+      "title": "API 全量清单",
+      "summary": "@wevu/api 基于微信命名体系的全量 API 目录，包含每个 API 的用途、示例与微信开放文档搜索入口。",
       "url": "/packages/weapi/wx-method-list",
       "canonical": "https://vite.icebreaker.top/packages/weapi/wx-method-list",
       "keywords": [
         "@wevu/api",
+        "API 全量清单",
         "微信 API",
-        "基准清单",
         "wx",
-        "微信小程序",
         "api",
         "packages",
-        "weapi"
+        "weapi",
+        "method"
       ],
       "headings": [
-        "微信基准 API 全量清单"
+        "API 全量清单"
       ],
       "updatedAt": "2026-03-13",
       "source": "packages/weapi/wx-method-list.md"
