@@ -1,7 +1,19 @@
 import type { Plugin } from 'vite'
+import chokidar from 'chokidar'
 import path from 'pathe'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { autoRoutes } from './autoRoutes'
+
+const chokidarWatchMock = vi.hoisted(() => vi.fn(() => ({
+  on: vi.fn(),
+  close: vi.fn(),
+})))
+
+vi.mock('chokidar', () => ({
+  default: {
+    watch: chokidarWatchMock,
+  },
+}))
 
 function createPlugin(overrides: Record<string, unknown> = {}) {
   const ensureFresh = vi.fn(async () => {})
@@ -9,6 +21,7 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
   const getWatchFiles = vi.fn(() => [])
   const getWatchDirectories = vi.fn(() => [])
   const isRouteFile = vi.fn(() => false)
+  const isEnabled = vi.fn(() => true)
   const handleFileChange = vi.fn(async () => {})
   const ctx = {
     autoRoutesService: {
@@ -17,11 +30,21 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
       getWatchFiles,
       getWatchDirectories,
       isRouteFile,
+      isEnabled,
       handleFileChange,
+    },
+    runtimeState: {
+      watcher: {
+        sidecarWatcherMap: new Map(),
+      },
     },
     configService: {
       cwd: '/virtual/project',
       absoluteSrcRoot: '/virtual/project/src',
+      isDev: true,
+      weappViteConfig: {
+        autoRoutes: true,
+      },
       packageInfo: {
         rootPath: '/virtual/weapp-vite',
       },
@@ -40,12 +63,17 @@ function createPlugin(overrides: Record<string, unknown> = {}) {
     getWatchFiles,
     getWatchDirectories,
     isRouteFile,
+    isEnabled,
     handleFileChange,
     packageRoot: ctx.configService.packageInfo.rootPath,
   }
 }
 
 describe('auto-routes plugin alias fallback', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('maps aliased auto-routes source id to virtual module', async () => {
     const { plugin, packageRoot } = createPlugin()
     const aliasedId = path.resolve(packageRoot, 'src/auto-routes.ts')
@@ -74,6 +102,7 @@ describe('auto-routes plugin alias fallback', () => {
       code: 'export const pages = ["pages/home/index"]',
       map: { mappings: '' },
     })
+    expect(chokidar.watch).toHaveBeenCalledTimes(1)
   })
 
   it('handles built-in virtual ids and skips unrelated ids', async () => {
@@ -107,6 +136,37 @@ describe('auto-routes plugin alias fallback', () => {
     expect(plugin.buildStart?.call({ addWatchFile } as any)).toBeUndefined()
     expect(ensureFresh).not.toHaveBeenCalled()
     expect(addWatchFile).not.toHaveBeenCalled()
+  })
+
+  it('does not start route watcher when autoRoutes.watch is false', async () => {
+    const { plugin } = createPlugin({
+      configService: {
+        cwd: '/virtual/project',
+        absoluteSrcRoot: '/virtual/project/src',
+        isDev: true,
+        weappViteConfig: {
+          autoRoutes: {
+            enabled: true,
+            watch: false,
+          },
+        },
+        packageInfo: {
+          rootPath: '/virtual/weapp-vite',
+        },
+      },
+    })
+    chokidarWatchMock.mockClear()
+
+    plugin.configResolved?.({
+      command: 'serve',
+    } as any)
+
+    const loaded = await plugin.load?.call({ addWatchFile: vi.fn() } as any, path.resolve('/virtual/weapp-vite', 'src/auto-routes.ts'))
+    expect(loaded).toEqual({
+      code: 'export const pages = ["pages/home/index"]',
+      map: { mappings: '' },
+    })
+    expect(chokidarWatchMock).not.toHaveBeenCalled()
   })
 
   it('returns null in load for unrelated ids', async () => {

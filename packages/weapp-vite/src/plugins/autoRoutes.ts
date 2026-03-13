@@ -2,6 +2,7 @@ import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
 import chokidar from 'chokidar'
 import path from 'pathe'
+import { resolveWeappAutoRoutesConfig } from '../autoRoutesConfig'
 import { vueExtensions } from '../constants'
 import { logger } from '../context/shared'
 import { normalizePath, normalizeWatchPath, toPosixPath } from '../utils/path'
@@ -112,7 +113,8 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       return
     }
 
-    if (!service.isEnabled()) {
+    const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
+    if (!autoRoutesConfig.enabled || !autoRoutesConfig.watch || !service.isEnabled()) {
       return
     }
 

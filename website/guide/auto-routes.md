@@ -27,14 +27,19 @@ keywords:
 
 ## 快速开启
 
-自动路由默认关闭，在 `vite.config.ts` 中启用即可：
+自动路由默认开启；如果想显式声明或做细粒度控制，可以在 `vite.config.ts` 中配置：
 
 ```ts
 import { defineConfig } from 'weapp-vite'
 
 export default defineConfig({
   weapp: {
-    autoRoutes: true,
+    autoRoutes: {
+      enabled: true,
+      typedRouter: true,
+      persistentCache: true,
+      watch: true,
+    },
   },
 })
 ```
@@ -47,6 +52,16 @@ export default defineConfig({
 
 > [!TIP]
 > 扫描的“根目录”受 `weapp.srcRoot` 影响：如果你的源码在 `miniprogram/` 或 `src/`，先把 `weapp.srcRoot` 配对（参考 `/config/paths`），再开启自动路由会更顺滑。
+
+如果你只想快速开关，仍然可以继续使用：
+
+```ts
+export default defineConfig({
+  weapp: {
+    autoRoutes: true,
+  },
+})
+```
 
 ## 监听范围
 

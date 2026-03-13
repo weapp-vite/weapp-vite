@@ -89,7 +89,7 @@ vi.mock('./watch', () => ({
 }))
 
 function createContext(options?: {
-  autoRoutes?: boolean
+  autoRoutes?: boolean | Record<string, any>
   cwd?: string
   configFilePath?: string
   includeConfigService?: boolean
@@ -165,14 +165,14 @@ describe('createAutoRoutesService branch coverage', () => {
   })
 
   it('removes typed definition file when auto routes is disabled', async () => {
-    pathExistsMock.mockResolvedValueOnce(true)
+    pathExistsMock.mockResolvedValue(true)
     const ctx = createContext({ autoRoutes: false })
     const service = createAutoRoutesService(ctx)
 
     await service.ensureFresh()
 
-    expect(pathExistsMock).toHaveBeenCalledTimes(1)
-    expect(removeMock).toHaveBeenCalledTimes(1)
+    expect(pathExistsMock).toHaveBeenCalledTimes(2)
+    expect(removeMock).toHaveBeenCalledTimes(2)
   })
 
   it('logs an error when removing typed definition fails', async () => {
@@ -310,5 +310,38 @@ describe('createAutoRoutesService branch coverage', () => {
     await service.ensureFresh()
 
     expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('写入 auto-routes 缓存失败: cache-boom'))
+  })
+
+  it('removes typed router output when autoRoutes.typedRouter is false', async () => {
+    pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('typed-router.d.ts'))
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        typedRouter: false,
+      },
+    })
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(scanRoutesMock).toHaveBeenCalledTimes(1)
+    expect(outputFileMock).not.toHaveBeenCalled()
+    expect(removeMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('removes persistent cache when autoRoutes.persistentCache is false', async () => {
+    pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: false,
+      },
+    })
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(outputJsonMock).not.toHaveBeenCalled()
+    expect(removeMock).toHaveBeenCalledTimes(1)
   })
 })
