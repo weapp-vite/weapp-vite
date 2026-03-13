@@ -30,7 +30,7 @@ describe('createAutoRoutesService', () => {
     vi.restoreAllMocks()
   })
 
-  function createContext(autoRoutesEnabled: boolean = true): MutableCompilerContext {
+  function createContext(autoRoutesEnabled: boolean | Record<string, any> = true): MutableCompilerContext {
     const runtimeState = createRuntimeState()
 
     const configService = {

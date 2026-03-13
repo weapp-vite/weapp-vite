@@ -2,6 +2,7 @@ import type { Plugin } from 'vite'
 import type { CompilerContext } from '@/context'
 import type { SubPackageMetaValue, WeappVitePluginApi } from '@/types'
 import { wrapPlugin } from 'vite-plugin-performance'
+import { resolveWeappAutoRoutesConfig } from '@/autoRoutesConfig'
 import { asset } from './asset'
 import { autoImport } from './autoImport'
 import { autoRoutes } from './autoRoutes'
@@ -61,7 +62,7 @@ export function vitePluginWeapp(
   if (!libModeEnabled) {
     groups.push(wevu(ctx))
   }
-  const autoRoutesEnabled = ctx.configService?.weappViteConfig?.autoRoutes === true
+  const autoRoutesEnabled = resolveWeappAutoRoutesConfig(ctx.configService?.weappViteConfig?.autoRoutes).enabled
 
   if (!subPackageMeta) {
     groups.push(asset(ctx))

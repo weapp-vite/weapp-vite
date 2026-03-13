@@ -26,8 +26,8 @@ keywords:
 [[toc]]
 
 ## `weapp.autoRoutes` {#weapp-autoroutes}
-- **类型**：`boolean`
-- **默认值**：`false`
+- **类型**：`boolean | { enabled?: boolean; typedRouter?: boolean; persistentCache?: boolean; watch?: boolean }`
+- **默认值**：`true`
 - **适用场景**：
   - 希望从目录结构自动生成 `pages` 清单，不再手动维护 `app.json.pages`。
   - 希望在 TypeScript 里拿到“页面路径”的类型提示，避免字符串拼错。
@@ -39,7 +39,12 @@ import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
   weapp: {
-    autoRoutes: true,
+    autoRoutes: {
+      enabled: true,
+      typedRouter: true,
+      persistentCache: true,
+      watch: true,
+    },
   },
 })
 ```
@@ -49,6 +54,13 @@ export default defineConfig({
 - 持续扫描主包和分包下的页面目录，维护 `routes`、`entries`、`pages`、`subPackages` 等清单；
 - 在配置文件同级输出 `typed-router.d.ts`，提供 `AutoRoutes` 等类型；
 - 自动暴露虚拟模块 `weapp-vite/auto-routes`，支持在代码中直接导入最新的路由数据。
+
+字段说明：
+
+- `enabled`：总开关；设为 `false` 时完全关闭自动路由。
+- `typedRouter`：是否输出 `typed-router.d.ts`。
+- `persistentCache`：是否启用 `.weapp-vite/auto-routes.cache.json` 持久化缓存。
+- `watch`：开发模式下是否监听页面目录变化并实时刷新路由清单。
 
 > [!NOTE]
 > 自动路由只扫描 `srcRoot` 下的 `pages/` 目录（含 `packages/foo/pages` 这类分包结构），**不支持 `include/exclude` 自定义规则**。若目录结构完全不同，请继续手写 `app.json.pages`，或在 `app.json.ts` 中手动引入 `weapp-vite/auto-routes` 生成页面清单。

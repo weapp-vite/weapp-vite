@@ -622,6 +622,29 @@ export interface WeappMcpConfig {
   endpoint?: string
 }
 
+export interface WeappAutoRoutesConfig {
+  /**
+   * @description 是否启用自动路由能力
+   * @default true
+   */
+  enabled?: boolean
+  /**
+   * @description 是否生成 `typed-router.d.ts`
+   * @default true
+   */
+  typedRouter?: boolean
+  /**
+   * @description 是否启用 `.weapp-vite/auto-routes.cache.json` 持久化缓存
+   * @default true
+   */
+  persistentCache?: boolean
+  /**
+   * @description 开发模式下是否监听 pages 目录变化并实时刷新路由清单
+   * @default true
+   */
+  watch?: boolean
+}
+
 export interface WeappViteConfig {
   /**
    * 应用入口目录（`app.json` 所在目录）。
@@ -634,13 +657,17 @@ export interface WeappViteConfig {
   srcRoot?: string
 
   /**
-   * @description 是否启用自动路由模块 (`weapp-vite/auto-routes`)
-   * 默认关闭，需要显式启用后才会扫描 `pages/` 目录并生成路由清单。
-   * @default false
+   * @description 自动路由模块 (`weapp-vite/auto-routes`) 配置
+   * - `false`：完全关闭自动路由
+   * - `true`：启用默认自动路由配置
+   * - `object`：细粒度配置
+   * @default true
    * @example
    * autoRoutes: true
+   * @example
+   * autoRoutes: { enabled: true, typedRouter: false, persistentCache: true, watch: true }
    */
-  autoRoutes?: boolean
+  autoRoutes?: boolean | WeappAutoRoutesConfig
 
   /**
    * @description 插件入口目录 (plugin.json 所在的目录)

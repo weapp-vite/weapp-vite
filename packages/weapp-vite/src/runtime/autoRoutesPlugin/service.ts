@@ -4,6 +4,7 @@ import type { CandidateEntry } from './candidates'
 import type { AutoRoutesFileEvent } from './watch'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { resolveWeappAutoRoutesConfig } from '../../autoRoutesConfig'
 import { logger } from '../../context/shared'
 import { requireConfigService } from '../utils/requireConfigService'
 import { cloneCandidate, collectCandidates } from './candidates'
@@ -61,8 +62,12 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     state.dirty = true
   }
 
+  function getResolvedConfig() {
+    return resolveWeappAutoRoutesConfig(ctx.configService?.weappViteConfig?.autoRoutes)
+  }
+
   function isEnabled() {
-    return ctx.configService?.weappViteConfig?.autoRoutes === true
+    return Boolean(ctx.configService) && getResolvedConfig().enabled
   }
 
   function resetState() {
@@ -143,6 +148,9 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
   }
 
   async function readPersistentCache() {
+    if (!getResolvedConfig().persistentCache) {
+      return undefined
+    }
     const cachePath = resolvePersistentCachePath()
     if (!cachePath || !await fs.pathExists(cachePath)) {
       return undefined
@@ -202,7 +210,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
 
   async function writePersistentCache() {
     const cachePath = resolvePersistentCachePath()
-    if (!cachePath || !state.initialized) {
+    if (!cachePath || !state.initialized || !getResolvedConfig().persistentCache) {
       return
     }
 
@@ -238,8 +246,27 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     }
   }
 
+  async function removePersistentCache() {
+    const cachePath = resolvePersistentCachePath()
+    if (!cachePath) {
+      return
+    }
+
+    try {
+      if (await fs.pathExists(cachePath)) {
+        await fs.remove(cachePath)
+      }
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logger.warn(`移除 auto-routes 缓存失败: ${message}`)
+    }
+  }
+
   async function writeTypedRouterDefinition() {
-    if (!isEnabled()) {
+    const autoRoutesConfig = getResolvedConfig()
+    if (!autoRoutesConfig.enabled || !autoRoutesConfig.typedRouter) {
+      await removeTypedRouterDefinition()
       return
     }
 
@@ -321,7 +348,12 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
         resetState()
       }
       await removeTypedRouterDefinition()
+      await removePersistentCache()
       return
+    }
+
+    if (!getResolvedConfig().persistentCache) {
+      await removePersistentCache()
     }
 
     if (!state.initialized && state.needsFullRescan) {
