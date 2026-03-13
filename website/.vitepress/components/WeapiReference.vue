@@ -22,8 +22,8 @@ const sections: WeapiNavSection[] = [
     title: 'Overview',
     items: [
       {
-        text: '@wevu/api',
-        href: '/packages/weapi/',
+        text: 'wpi 概览',
+        href: '/packages/weapi/overview',
         summary: '入口说明、安装方式、Promise / 回调 / 显式实例的基本心智。',
         keywords: ['wpi', 'weapi', 'api', '跨端', '跨平台', '微信 api', '支付宝 api', '抖音 api'],
       },

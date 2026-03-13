@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-03-13T06:23:14.070Z",
+  "generatedAt": "2026-03-13T07:41:51.894Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
-    "files": 214,
-    "docs": 199,
+    "files": 215,
+    "docs": 200,
     "blog": 10,
     "page": 5,
-    "withFrontmatter": 214,
+    "withFrontmatter": 215,
     "missingFrontmatter": 0
   },
   "coverage": {
     "all": {
-      "total": 214,
-      "title": 214,
-      "description": 214,
-      "keywords": 196,
+      "total": 215,
+      "title": 215,
+      "description": 215,
+      "keywords": 197,
       "date": 9
     },
     "docs": {
-      "total": 199,
-      "title": 199,
-      "description": 199,
-      "keywords": 181,
+      "total": 200,
+      "title": 200,
+      "description": 200,
+      "keywords": 182,
       "date": 1
     },
     "blog": {
@@ -107,7 +107,7 @@
     "seoQualityReportPublic": true
   },
   "quality": {
-    "checked": 214,
+    "checked": 215,
     "issues": [
       {
         "path": "packages/weapi/alipay-compat-matrix/a-c.md",

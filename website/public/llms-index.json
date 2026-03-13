@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-13T06:23:13.417Z",
+  "generatedAt": "2026-03-13T07:41:51.235Z",
   "site": "https://vite.icebreaker.top",
-  "count": 214,
+  "count": 215,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -3850,6 +3850,36 @@
       "headings": [],
       "updatedAt": "2026-03-13",
       "source": "packages/weapi/index.md"
+    },
+    {
+      "id": "doc-5eadf3fe19",
+      "title": "wpi 概览",
+      "summary": "wpi 是 @wevu/api 提供的统一跨端 API 对象，支持 Promise、回调、能力探测与显式平台注入。",
+      "url": "/packages/weapi/overview",
+      "canonical": "https://vite.icebreaker.top/packages/weapi/overview",
+      "keywords": [
+        "wpi",
+        "@wevu/api",
+        "weapi",
+        "跨端 api",
+        "overview",
+        "api",
+        "packages",
+        "概览"
+      ],
+      "headings": [
+        "wpi 概览",
+        "何时使用",
+        "安装",
+        "基本用法",
+        "Promise 风格",
+        "回调风格",
+        "显式实例",
+        "行为说明",
+        "下一步"
+      ],
+      "updatedAt": "2026-03-13",
+      "source": "packages/weapi/overview.md"
     },
     {
       "id": "doc-7aa4d6d43b",

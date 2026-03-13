@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { generateMethodCompatibilityMatrix } from '../../../packages/weapi/src/core/methodMapping'
 import { WEAPI_METHOD_SUPPORT_MATRIX } from '../../../packages/weapi/src/core/methodMapping/supportMatrix'
-import { matchWeapiDocGroup } from '../shared/weapiGroups'
+import { matchWeapiCapability, WEAPI_CAPABILITY_GROUPS } from '../shared/weapiCapabilities'
 
 interface CompatibilityItem {
   method: string
@@ -25,15 +25,46 @@ interface MethodMeta {
 }
 
 const props = withDefaults(defineProps<{
-  group?: string
+  capability?: string
   platform: 'alipay' | 'douyin'
   searchable?: boolean
 }>(), {
-  group: '',
+  capability: '',
   searchable: true,
 })
 
+const HASH_PREFIX = '#'
 const keyword = ref('')
+const selectedCapability = ref(props.capability || 'base')
+
+function syncCapabilityFromHash() {
+  if (typeof window === 'undefined') {
+    return
+  }
+  const hash = decodeURIComponent(window.location.hash.startsWith(HASH_PREFIX)
+    ? window.location.hash.slice(1)
+    : window.location.hash)
+  const matched = WEAPI_CAPABILITY_GROUPS.find(item => item.key === hash)
+  if (matched) {
+    selectedCapability.value = matched.key
+  }
+}
+
+function selectCapability(key: string) {
+  selectedCapability.value = key
+  if (typeof window !== 'undefined') {
+    window.history.replaceState(null, '', `${window.location.pathname}#${key}`)
+  }
+}
+
+onMounted(() => {
+  syncCapabilityFromHash()
+  window.addEventListener('hashchange', syncCapabilityFromHash)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('hashchange', syncCapabilityFromHash)
+})
 
 const descriptionMap = new Map(
   (WEAPI_METHOD_SUPPORT_MATRIX as readonly MethodMeta[]).map(item => [item.method, item.description]),
@@ -45,7 +76,11 @@ function createOfficialLink(method: string) {
 
 const allRows = computed(() => {
   return (generateMethodCompatibilityMatrix() as readonly CompatibilityItem[])
-    .filter(item => matchWeapiDocGroup(item.method, props.group))
+    .filter(item => matchWeapiCapability(item.method, selectedCapability.value))
+})
+
+const activeCapability = computed(() => {
+  return WEAPI_CAPABILITY_GROUPS.find(item => item.key === selectedCapability.value) ?? WEAPI_CAPABILITY_GROUPS[0]
 })
 
 const rows = computed(() => {
@@ -66,6 +101,18 @@ const rows = computed(() => {
 <template>
   <div class="weapi-compat">
     <div v-if="props.searchable" class="weapi-compat__toolbar">
+      <div class="weapi-compat__caps">
+        <button
+          v-for="group in WEAPI_CAPABILITY_GROUPS"
+          :key="group.key"
+          class="weapi-compat__cap"
+          :class="{ 'is-active': selectedCapability === group.key }"
+          type="button"
+          @click="selectCapability(group.key)"
+        >
+          {{ group.label }}
+        </button>
+      </div>
       <input
         v-model="keyword"
         class="weapi-compat__search"
@@ -73,9 +120,13 @@ const rows = computed(() => {
         placeholder="搜索 API 名称、目标方法或策略"
       >
       <p class="weapi-compat__meta">
-        共 {{ rows.length }} / {{ allRows.length }} 个当前分组 API
+        共 {{ rows.length }} / {{ allRows.length }} 个当前能力域 API
       </p>
     </div>
+
+    <h2 :id="activeCapability.key" class="weapi-compat__title">
+      {{ activeCapability.label }}
+    </h2>
 
     <div
       v-for="item in rows"
@@ -152,10 +203,35 @@ const rows = computed(() => {
   border-radius: 12px;
 }
 
+.weapi-compat__caps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.weapi-compat__cap {
+  padding: 6px 12px;
+  cursor: pointer;
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 999px;
+}
+
+.weapi-compat__cap.is-active {
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  border-color: var(--vp-c-brand-1);
+}
+
 .weapi-compat__meta {
   margin: 10px 0 0;
   font-size: 13px;
   color: var(--vp-c-text-2);
+}
+
+.weapi-compat__title {
+  margin: 0;
 }
 
 .weapi-compat__card {
