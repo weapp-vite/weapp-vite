@@ -147,7 +147,7 @@
     "@oxc-project/types": "^0.118.0",
     "@tailwindcss/vite": "catalog:",
     "@types/semver": "catalog:",
-    "@vitejs/plugin-vue": "^6.0.4",
+    "@vitejs/plugin-vue": "^6.0.5",
     "bundle-require": "catalog:",
     "cac": "^7.0.0",
     "chokidar": "^5.0.0",
