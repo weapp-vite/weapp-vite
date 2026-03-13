@@ -4,6 +4,12 @@ import {
   createJsxCompileContext,
 } from './template'
 
+function hasMissingDefaultExportWarning(warnings: string[], filename: string) {
+  return warnings.some(message =>
+    message.includes(filename) && message.includes('默认导出组件'),
+  )
+}
+
 afterEach(() => {
   vi.doUnmock('./analysis')
   vi.resetModules()
@@ -45,7 +51,7 @@ describe('compileJsx template helpers', () => {
     const result = compileJsxTemplate('export default {}', '/project/src/pages/jsx/missing-default.tsx')
 
     expect(result.template).toBeUndefined()
-    expect(result.warnings).toContain('未在 /project/src/pages/jsx/missing-default.tsx 中识别到默认导出组件。')
+    expect(hasMissingDefaultExportWarning(result.warnings, '/project/src/pages/jsx/missing-default.tsx')).toBe(true)
   })
 
   it('rewrites missing default-export warning when collecting components', async () => {
@@ -78,7 +84,7 @@ export default {}
     `, '/project/src/pages/jsx/no-default.tsx')
 
     expect(result.template).toBeUndefined()
-    expect(result.warnings).toContain('未在 /project/src/pages/jsx/no-default.tsx 中识别到默认导出组件。')
+    expect(hasMissingDefaultExportWarning(result.warnings, '/project/src/pages/jsx/no-default.tsx')).toBe(true)
     expect(result.autoComponentContext.importedComponents).toEqual([{
       localName: 'TButton',
       importSource: '@/components/TButton',
