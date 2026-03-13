@@ -25,6 +25,19 @@ export interface AutoRoutesService {
   isEnabled: () => boolean
 }
 
+interface AutoRoutesPersistentCache {
+  version: 1
+  snapshot: AutoRoutes
+  serialized: string
+  moduleCode: string
+  typedDefinition: string
+  watchFiles: string[]
+  watchDirs: string[]
+  fileMtims: Record<string, number>
+}
+
+const AUTO_ROUTES_CACHE_FILE = '.weapp-vite/auto-routes.cache.json'
+
 function updateWatchTargets(target: Set<string>, next: Set<string>) {
   target.clear()
   for (const item of next) {
@@ -110,6 +123,119 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
     }
 
     return path.resolve(baseDir, 'typed-router.d.ts')
+  }
+
+  function resolvePersistentCachePath() {
+    const configService = ctx.configService
+    if (!configService) {
+      return undefined
+    }
+
+    const baseDir = typeof configService.configFilePath === 'string'
+      ? path.dirname(configService.configFilePath)
+      : configService.cwd
+
+    if (!baseDir) {
+      return undefined
+    }
+
+    return path.resolve(baseDir, AUTO_ROUTES_CACHE_FILE)
+  }
+
+  async function readPersistentCache() {
+    const cachePath = resolvePersistentCachePath()
+    if (!cachePath || !await fs.pathExists(cachePath)) {
+      return undefined
+    }
+
+    try {
+      const cache = await fs.readJson(cachePath) as AutoRoutesPersistentCache
+      if (cache?.version !== 1) {
+        return undefined
+      }
+      return cache
+    }
+    catch {
+      return undefined
+    }
+  }
+
+  async function restorePersistentCache() {
+    const cache = await readPersistentCache()
+    if (!cache) {
+      return false
+    }
+
+    const watchFiles = Array.isArray(cache.watchFiles) ? cache.watchFiles : []
+    if (watchFiles.length === 0) {
+      return false
+    }
+
+    for (const filePath of watchFiles) {
+      const expectedMtime = cache.fileMtims?.[filePath]
+      if (typeof expectedMtime !== 'number' || !Number.isFinite(expectedMtime)) {
+        return false
+      }
+
+      try {
+        const stat = await fs.stat(filePath)
+        if (stat.mtimeMs !== expectedMtime) {
+          return false
+        }
+      }
+      catch {
+        return false
+      }
+    }
+
+    updateRoutesReference(state.routes, cache.snapshot)
+    state.serialized = cache.serialized
+    state.moduleCode = cache.moduleCode
+    state.typedDefinition = cache.typedDefinition
+    updateWatchTargets(state.watchFiles, new Set(watchFiles))
+    updateWatchTargets(state.watchDirs, new Set(Array.isArray(cache.watchDirs) ? cache.watchDirs : []))
+    state.dirty = false
+    state.initialized = true
+    state.needsFullRescan = true
+    return true
+  }
+
+  async function writePersistentCache() {
+    const cachePath = resolvePersistentCachePath()
+    if (!cachePath || !state.initialized) {
+      return
+    }
+
+    const watchFiles = [...state.watchFiles]
+    const fileMtims: Record<string, number> = {}
+    for (const filePath of watchFiles) {
+      try {
+        const stat = await fs.stat(filePath)
+        fileMtims[filePath] = stat.mtimeMs
+      }
+      catch {
+        return
+      }
+    }
+
+    const payload: AutoRoutesPersistentCache = {
+      version: 1,
+      snapshot: cloneRoutes(state.routes),
+      serialized: state.serialized,
+      moduleCode: state.moduleCode,
+      typedDefinition: state.typedDefinition,
+      watchFiles,
+      watchDirs: [...state.watchDirs],
+      fileMtims,
+    }
+
+    try {
+      await fs.outputJson(cachePath, payload, { spaces: 2 })
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logger.warn(`写入 auto-routes 缓存失败: ${message}`)
+    }
   }
 
   async function writeTypedRouterDefinition() {
@@ -198,6 +324,14 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       return
     }
 
+    if (!state.initialized && state.needsFullRescan) {
+      const restored = await restorePersistentCache()
+      if (restored) {
+        await writeTypedRouterDefinition()
+        return
+      }
+    }
+
     const registryUpdated = await ensureCandidateRegistry()
     if (registryUpdated) {
       flagDirty()
@@ -232,6 +366,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
 
       await pendingScan
       await writeTypedRouterDefinition()
+      await writePersistentCache()
     }
   }
 

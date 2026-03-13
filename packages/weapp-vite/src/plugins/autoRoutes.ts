@@ -183,11 +183,8 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       refreshAutoRoutesAliasTargets()
     },
 
-    async buildStart() {
-      await service.ensureFresh()
+    buildStart() {
       refreshAutoRoutesAliasTargets()
-      addWatchTargets(this as any)
-      startRouteFileWatcher()
     },
 
     resolveId(id) {
@@ -210,6 +207,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
 
       await service.ensureFresh()
       addWatchTargets(this as any)
+      startRouteFileWatcher()
 
       return {
         code: service.getModuleCode(),

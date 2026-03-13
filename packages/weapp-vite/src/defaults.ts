@@ -43,7 +43,7 @@ export function getOutputExtensions(platform?: MpPlatform): OutputExtensions {
 
 export function getWeappViteConfig(): WeappViteConfig {
   return {
-    autoRoutes: false,
+    autoRoutes: true,
     wxml: true,
     wxs: true,
     enhance: {

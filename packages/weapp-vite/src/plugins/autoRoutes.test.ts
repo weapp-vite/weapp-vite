@@ -1,7 +1,6 @@
 import type { Plugin } from 'vite'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
-import { toPosixPath } from '../utils/path'
 import { autoRoutes } from './autoRoutes'
 
 function createPlugin(overrides: Record<string, unknown> = {}) {
@@ -86,7 +85,7 @@ describe('auto-routes plugin alias fallback', () => {
     expect(await plugin.resolveId?.call({}, '/virtual/project/src/pages/index.ts')).toBeNull()
   })
 
-  it('adds watch targets during buildStart and swallows registrar errors', async () => {
+  it('keeps buildStart lazy before auto-routes module is requested', async () => {
     const {
       plugin,
       ensureFresh,
@@ -105,15 +104,9 @@ describe('auto-routes plugin alias fallback', () => {
       command: 'serve',
     } as any)
 
-    await expect(plugin.buildStart?.call({ addWatchFile } as any)).resolves.toBeUndefined()
-    expect(ensureFresh).toHaveBeenCalled()
-    const watched = addWatchFile.mock.calls
-      .map(call => call[0])
-      .map((item: string) => toPosixPath(item))
-    expect(watched).toEqual(expect.arrayContaining([
-      '/virtual/project/src/pages/index/index.ts',
-      '/virtual/project/src/pages',
-    ]))
+    expect(plugin.buildStart?.call({ addWatchFile } as any)).toBeUndefined()
+    expect(ensureFresh).not.toHaveBeenCalled()
+    expect(addWatchFile).not.toHaveBeenCalled()
   })
 
   it('returns null in load for unrelated ids', async () => {
