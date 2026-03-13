@@ -5,7 +5,7 @@
 export const WEAPI_TYPE_SOURCES = {
   wx: {
     package: 'miniprogram-api-typings',
-    version: '5.1.1',
+    version: '5.1.2',
   },
   my: {
     package: '@mini-types/alipay',

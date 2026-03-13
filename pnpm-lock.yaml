@@ -109,8 +109,8 @@ catalogs:
       specifier: ^2.1.1
       version: 2.1.1
     miniprogram-api-typings:
-      specifier: ^5.1.1
-      version: 5.1.1
+      specifier: ^5.1.2
+      version: 5.1.2
     miniprogram-automator:
       specifier: ^0.12.1
       version: 0.12.1
@@ -167,8 +167,8 @@ catalogs:
       version: 4.3.6
   latest:
     miniprogram-api-typings:
-      specifier: latest
-      version: 5.1.1
+      specifier: ^5.1.2
+      version: 5.1.2
     typescript:
       specifier: latest
       version: 5.9.3
@@ -416,7 +416,7 @@ importers:
         version: 2.2.5
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       miniprogram-automator:
         specifier: 'catalog:'
         version: 0.12.1(bufferutil@4.0.9)
@@ -594,7 +594,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       sass:
         specifier: 'catalog:'
         version: 1.98.0
@@ -609,7 +609,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       sass:
         specifier: 'catalog:'
         version: 1.98.0
@@ -640,7 +640,7 @@ importers:
         version: 10.4.27(postcss@8.5.8)
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       postcss:
         specifier: 'catalog:'
         version: 8.5.8
@@ -676,7 +676,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: catalog:latest
-        version: 5.1.1
+        version: 5.1.2
       typescript:
         specifier: catalog:latest
         version: 5.9.3
@@ -692,7 +692,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
 
   apps/rollup-watcher: {}
 
@@ -706,7 +706,7 @@ importers:
         version: 3.1.3
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       sass:
         specifier: 'catalog:'
         version: 1.98.0
@@ -734,7 +734,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -764,7 +764,7 @@ importers:
         version: 2.3.0
       miniprogram-computed:
         specifier: ^7.1.0
-        version: 7.1.0(miniprogram-api-typings@5.1.1)
+        version: 7.1.0(miniprogram-api-typings@5.1.2)
       tdesign-miniprogram:
         specifier: 'catalog:'
         version: 1.12.3
@@ -792,7 +792,7 @@ importers:
         version: 0.30.21
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       miniprogram-simulate:
         specifier: ^1.6.1
         version: 1.6.1
@@ -859,7 +859,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -875,7 +875,7 @@ importers:
         version: 10.4.27(postcss@8.5.8)
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       postcss:
         specifier: 'catalog:'
         version: 8.5.8
@@ -893,7 +893,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       sass:
         specifier: 'catalog:'
         version: 1.98.0
@@ -915,7 +915,7 @@ importers:
         version: 10.4.27(postcss@8.5.8)
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       postcss:
         specifier: 'catalog:'
         version: 8.5.8
@@ -936,7 +936,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -970,7 +970,7 @@ importers:
         version: link:../../packages/volar
       miniprogram-api-typings:
         specifier: catalog:latest
-        version: 5.1.1
+        version: 5.1.2
       typescript:
         specifier: catalog:latest
         version: 5.9.3
@@ -985,7 +985,7 @@ importers:
         version: link:../../packages/volar
       miniprogram-api-typings:
         specifier: catalog:latest
-        version: 5.1.1
+        version: 5.1.2
       typescript:
         specifier: catalog:latest
         version: 5.9.3
@@ -1000,7 +1000,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: catalog:latest
-        version: 5.1.1
+        version: 5.1.2
       typescript:
         specifier: catalog:latest
         version: 5.9.3
@@ -1021,7 +1021,7 @@ importers:
         version: link:../../packages/volar
       miniprogram-api-typings:
         specifier: catalog:latest
-        version: 5.1.1
+        version: 5.1.2
       typescript:
         specifier: catalog:latest
         version: 5.9.3
@@ -1039,7 +1039,7 @@ importers:
         version: 4.2.1(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.3)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       tailwindcss:
         specifier: catalog:tailwind4
         version: 4.2.1
@@ -1321,7 +1321,7 @@ importers:
         version: 3.0.14
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
 
   packages/weapp-ide-cli:
     dependencies:
@@ -1616,7 +1616,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       sass:
         specifier: 'catalog:'
         version: 1.98.0
@@ -1647,7 +1647,7 @@ importers:
         version: 10.4.27(postcss@8.5.8)
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       postcss:
         specifier: 'catalog:'
         version: 8.5.8
@@ -1680,7 +1680,7 @@ importers:
         version: 10.4.27(postcss@8.5.8)
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       postcss:
         specifier: 'catalog:'
         version: 8.5.8
@@ -1717,7 +1717,7 @@ importers:
         version: 10.4.27(postcss@8.5.8)
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       postcss:
         specifier: 'catalog:'
         version: 8.5.8
@@ -1741,7 +1741,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       sass:
         specifier: 'catalog:'
         version: 1.98.0
@@ -1772,7 +1772,7 @@ importers:
         version: 10.4.27(postcss@8.5.8)
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       postcss:
         specifier: 'catalog:'
         version: 8.5.8
@@ -1809,7 +1809,7 @@ importers:
         version: 10.4.27(postcss@8.5.8)
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       postcss:
         specifier: 'catalog:'
         version: 8.5.8
@@ -1839,7 +1839,7 @@ importers:
     devDependencies:
       miniprogram-api-typings:
         specifier: 'catalog:'
-        version: 5.1.1
+        version: 5.1.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -11103,8 +11103,8 @@ packages:
   miniprogram-api-typings@5.0.0:
     resolution: {integrity: sha512-KQ1ZDk0cK3JrAaZtlFNlC/De/HwqhtToPZTzIYvFzi4FaW0Z8raIBN/qpjZ5QMiBaBNl/hJwTWwD+tfp8BwCZw==}
 
-  miniprogram-api-typings@5.1.1:
-    resolution: {integrity: sha512-9BmfNKguEIpIOfud9vpgcRF/nBFU0NshHWgKkmZzEVLrKIAYInS8U2syLL1XKfNazAVjy6s9dR4VPyb+9Hyy0w==}
+  miniprogram-api-typings@5.1.2:
+    resolution: {integrity: sha512-+4tABz3krRZu0EFO9obYwsfNC5Grpc5v49ZZc9qNzHRUHvKnM6G/n8/LnJBQCFht9dymhRnRx3FKcJ6TmzfmwA==}
 
   miniprogram-automator@0.12.1:
     resolution: {integrity: sha512-HIzpx9FuDJZjRCi8dx39E2IWNiSD6mAPEnZ3yC8ahl31o+2uphPINWhWSGN03CReb9ZvcNBuBGNjnwRBhVm4NQ==}
@@ -25560,7 +25560,7 @@ snapshots:
 
   miniprogram-api-typings@5.0.0: {}
 
-  miniprogram-api-typings@5.1.1: {}
+  miniprogram-api-typings@5.1.2: {}
 
   miniprogram-automator@0.12.1(bufferutil@4.0.9):
     dependencies:
@@ -25580,10 +25580,10 @@ snapshots:
       glob: 7.2.3
       unescape-js: 1.1.4
 
-  miniprogram-computed@7.1.0(miniprogram-api-typings@5.1.1):
+  miniprogram-computed@7.1.0(miniprogram-api-typings@5.1.2):
     dependencies:
       fast-deep-equal: 3.1.3
-      miniprogram-api-typings: 5.1.1
+      miniprogram-api-typings: 5.1.2
       rfdc: 1.4.1
 
   miniprogram-exparser@2.29.1: {}
