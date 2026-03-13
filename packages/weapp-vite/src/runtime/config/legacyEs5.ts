@@ -25,9 +25,11 @@ interface SwcTransformModule {
   transform: (code: string, options: SwcTransformOptions) => Promise<SwcTransformResult>
 }
 
-async function loadSwcTransformModule(): Promise<SwcTransformModule> {
+type SwcModuleImporter = () => Promise<unknown>
+
+export async function loadSwcTransformModule(importer: SwcModuleImporter = () => import('@swc/core')): Promise<SwcTransformModule> {
   try {
-    const module = await import('@swc/core') as SwcTransformModule
+    const module = await importer() as SwcTransformModule
     if (typeof module.transform !== 'function') {
       throw new TypeError('`@swc/core` 模块缺少 `transform` 方法。')
     }

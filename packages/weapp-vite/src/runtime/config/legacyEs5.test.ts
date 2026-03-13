@@ -33,11 +33,8 @@ describe('legacyEs5 runtime transform', () => {
   })
 
   it('throws installation hint when swc module is invalid', async () => {
-    vi.doMock('@swc/core', () => ({}))
-    const { transformWithSwc } = await import('./legacyEs5')
+    const { loadSwcTransformModule } = await import('./legacyEs5')
 
-    await expect(
-      transformWithSwc('const a = 1', { fileName: 'app.js' } as any, { sourcemap: false } as any),
-    ).rejects.toThrow('未安装 `@swc/core`')
+    await expect(loadSwcTransformModule(async () => ({}))).rejects.toThrow('未安装 `@swc/core`')
   })
 })
