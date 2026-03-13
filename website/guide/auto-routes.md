@@ -37,6 +37,7 @@ export default defineConfig({
     autoRoutes: {
       enabled: true,
       typedRouter: true,
+      include: ['pages/**', '**/pages/**'],
       persistentCache: false,
       watch: true,
     },
@@ -63,6 +64,31 @@ export default defineConfig({
 })
 ```
 
+如果你的目录不是传统的 `pages/**`，也可以手动指定多个 glob / 正则规则：
+
+```ts
+export default defineConfig({
+  weapp: {
+    autoRoutes: {
+      enabled: true,
+      include: [
+        'views/**',
+        'pkgA/screens/**',
+        /^features\/[^/]+\/screens\/.+$/,
+      ],
+    },
+    subPackages: {
+      pkgA: {},
+    },
+  },
+})
+```
+
+这里有两个关键点：
+
+- `include` 是按“路由基础路径”匹配的，不需要带文件扩展名；
+- 如果分包目录不再沿用 `root/pages/**` 约定，建议同时声明 `weapp.subPackages`，这样自动路由才能把它稳定归入 `subPackages`，而不是主包 `pages`。
+
 ## 监听范围
 
 当自动路由开启后，以下文件会纳入监听：
@@ -74,10 +100,11 @@ export default defineConfig({
 
 新增或删除这些文件（例如 `pages/foo/index.wxss`、`pages/foo/index.ts`）都会同步更新路由清单。
 
-路由识别规则（固定逻辑）：
+路由识别规则：
 
-- 只扫描 `srcRoot` 下的 `pages/` 目录（含 `packages/<root>/pages` 这类分包结构）。
-- 同一路径下 **只要存在脚本 / 模板 / 配置之一** 即可作为页面；但若 `json.component === true` 会被排除（视为组件）。
+- 默认扫描 `pages/**` 与任意 `**/pages/**`，也可以通过 `include` 改成任意 glob / 正则；
+- 同一路径下 **只要存在脚本 / 模板 / 配置之一** 即可作为页面；但若 `json.component === true` 会被排除（视为组件）；
+- 分包归属优先参考 `weapp.subPackages` 的 root；如果未声明，则回退到传统的 `root/pages/**` 目录约定自动推断。
 
 ## 在代码中使用
 
@@ -144,9 +171,9 @@ export default defineAppJson({
 ## 常见问题
 
 - **为什么没有生成路由？**
-  - 确认页面文件位于 `srcRoot/pages/**` 或 `<root>/pages/**`。
+  - 确认页面文件命中了 `autoRoutes.include` 规则；默认是 `srcRoot/pages/**` 或 `<root>/pages/**`。
   - 确认页面目录下至少存在脚本 / 模板 / `json` 文件之一，且 `json.component !== true`。
   - 确认 `autoRoutes: true` 已开启。
   - 首次开启后如果没看到变化，重启一次 `pnpm dev`，让监听器重新初始化。
-- **如何支持自定义目录结构？** 当前版本不支持自定义扫描规则。可改为手写 `app.json.pages`，或调整目录结构回到 `pages/**` 规范；monorepo 场景可为不同子项目分别设置 `weapp.srcRoot`。
+- **如何支持自定义目录结构？** 直接通过 `autoRoutes.include` 配置 glob / 正则即可；如果这些页面属于分包，同时补上 `weapp.subPackages` root，会比依赖目录约定更稳定。
 - **`typed-router.d.ts` 要不要提交到仓库？** 它会随构建自动更新，通常建议加入 `.gitignore`；只有在你确实想把类型“固定下来”时再提交。

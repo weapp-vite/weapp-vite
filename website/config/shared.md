@@ -26,7 +26,7 @@ keywords:
 [[toc]]
 
 ## `weapp.autoRoutes` {#weapp-autoroutes}
-- **类型**：`boolean | { enabled?: boolean; typedRouter?: boolean; persistentCache?: boolean | string; watch?: boolean }`
+- **类型**：`boolean | { enabled?: boolean; typedRouter?: boolean; include?: string | RegExp | Array<string | RegExp>; persistentCache?: boolean | string; watch?: boolean }`
 - **默认值**：`false`
 - **适用场景**：
   - 希望从目录结构自动生成 `pages` 清单，不再手动维护 `app.json.pages`。
@@ -42,6 +42,7 @@ export default defineConfig({
     autoRoutes: {
       enabled: true,
       typedRouter: true,
+      include: ['pages/**', '**/pages/**'],
       persistentCache: false,
       watch: true,
     },
@@ -69,11 +70,12 @@ export default defineConfig({
 
 - `enabled`：总开关；设为 `false` 时完全关闭自动路由。
 - `typedRouter`：是否输出 `typed-router.d.ts`。
+- `include`：自动路由扫描规则。支持单个 glob、正则或它们的数组；默认是 `['pages/**', '**/pages/**']`。
 - `persistentCache`：是否启用持久化缓存；传 `true` 时使用默认 `.weapp-vite/auto-routes.cache.json`，传字符串时表示自定义缓存文件路径，默认关闭。
 - `watch`：开发模式下是否监听页面目录变化并实时刷新路由清单。
 
 > [!NOTE]
-> 自动路由只扫描 `srcRoot` 下的 `pages/` 目录（含 `packages/foo/pages` 这类分包结构），**不支持 `include/exclude` 自定义规则**。若目录结构完全不同，请继续手写 `app.json.pages`，或在 `app.json.ts` 中手动引入 `weapp-vite/auto-routes` 生成页面清单。
+> 自动路由默认扫描 `srcRoot` 下的 `pages/**` 与任意 `**/pages/**` 结构；如果目录结构不同，可以通过 `include` 自定义 glob / 正则规则。分包页面若不再使用 `root/pages/**` 约定，建议同时声明 `weapp.subPackages`，这样 `autoRoutes` 才能稳定推断 `subPackages` 输出。
 
 ## `weapp.debug` {#weapp-debug}
 - **类型**：

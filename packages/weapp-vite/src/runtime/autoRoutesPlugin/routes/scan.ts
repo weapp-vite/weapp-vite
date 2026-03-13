@@ -2,9 +2,11 @@ import type { MutableCompilerContext } from '../../../context'
 import type { AutoRoutes, AutoRoutesSubPackage } from '../../../types/routes'
 import type { CandidateEntry } from '../candidates'
 import path from 'pathe'
+import { resolveWeappAutoRoutesConfig } from '../../../autoRoutesConfig'
 import { toPosixPath } from '../../../utils/path'
+import { createAutoRoutesMatcher } from '../matcher'
 import { createTypedRouterDefinition } from './format'
-import { resolvePagesDirectory, resolveRoute } from './resolve'
+import { resolveRoute } from './resolve'
 
 export interface ScanResult {
   snapshot: AutoRoutes
@@ -36,13 +38,15 @@ export async function scanRoutes(
   }
 
   const absoluteSrcRoot = configService.absoluteSrcRoot
+  const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
+  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include)
   const pagesSet = new Set<string>()
   const entriesSet = new Set<string>()
   const subPackages = new Map<string, Set<string>>()
   const watchFiles = new Set<string>()
   const watchDirs = new Set<string>()
 
-  const candidateList = Array.from(candidatesMap.values())
+  const candidateList = [...candidatesMap.values()]
   const jsonEntries = await Promise.all(candidateList.map(async (candidate) => {
     if (!candidate.jsonPath) {
       return { candidate, json: undefined as Record<string, any> | undefined }
@@ -57,8 +61,6 @@ export async function scanRoutes(
     jsonMap.set(candidate, json)
   }
 
-  const pagesRootSet = new Set<string>()
-
   for (const candidate of candidateList) {
     for (const file of candidate.files) {
       watchFiles.add(file)
@@ -69,14 +71,9 @@ export async function scanRoutes(
       continue
     }
 
-    const route = resolveRoute(normalizedBase)
+    const route = resolveRoute(normalizedBase, Object.keys(configService.weappViteConfig?.subPackages ?? {}))
     if (!route) {
       continue
-    }
-
-    const pagesDir = resolvePagesDirectory(normalizedBase, absoluteSrcRoot)
-    if (pagesDir) {
-      pagesRootSet.add(pagesDir)
     }
 
     watchDirs.add(path.dirname(candidate.base))
@@ -104,14 +101,14 @@ export async function scanRoutes(
     }
   }
 
-  for (const dir of pagesRootSet) {
+  for (const dir of matcher.getWatchRoots(absoluteSrcRoot)) {
     watchDirs.add(dir)
   }
 
-  const pages = Array.from(pagesSet)
-  const entries = Array.from(entriesSet)
-  const subPackageList: AutoRoutesSubPackage[] = Array.from(subPackages.entries()).map(([root, value]) => {
-    const pagesArray = Array.from(value)
+  const pages = [...pagesSet]
+  const entries = [...entriesSet]
+  const subPackageList: AutoRoutesSubPackage[] = Array.from(subPackages.entries(), ([root, value]) => {
+    const pagesArray = [...value]
     pagesArray.sort((a, b) => a.localeCompare(b))
     return {
       root,

@@ -169,6 +169,51 @@ describe('auto-routes plugin alias fallback', () => {
     expect(chokidarWatchMock).not.toHaveBeenCalled()
   })
 
+  it('supports custom include roots for watcher startup and change detection', async () => {
+    const { plugin, handleFileChange } = createPlugin({
+      configService: {
+        cwd: '/virtual/project',
+        absoluteSrcRoot: '/virtual/project/src',
+        isDev: true,
+        weappViteConfig: {
+          autoRoutes: {
+            enabled: true,
+            include: ['views/**', 'pkgA/screens/**'],
+          },
+          subPackages: {
+            pkgA: {},
+          },
+        },
+        packageInfo: {
+          rootPath: '/virtual/weapp-vite',
+        },
+      },
+    })
+    chokidarWatchMock.mockClear()
+
+    plugin.configResolved?.({
+      command: 'serve',
+    } as any)
+
+    await plugin.load?.call({ addWatchFile: vi.fn() } as any, path.resolve('/virtual/weapp-vite', 'src/auto-routes.ts'))
+
+    expect(chokidarWatchMock).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        '/virtual/project/src/views',
+        '/virtual/project/src/pkgA/screens',
+      ]),
+      expect.any(Object),
+    )
+
+    await plugin.watchChange?.('/virtual/project/src/views/home/index.ts', { event: 'create' } as any)
+    await plugin.watchChange?.('/virtual/project/src/pkgA/screens/detail/index.ts', { event: 'create' } as any)
+    await plugin.watchChange?.('/virtual/project/src/components/card/index.ts', { event: 'create' } as any)
+
+    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/views/home/index.ts', 'rename')
+    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pkgA/screens/detail/index.ts', 'rename')
+    expect(handleFileChange).not.toHaveBeenCalledWith('/virtual/project/src/components/card/index.ts', 'rename')
+  })
+
   it('returns null in load for unrelated ids', async () => {
     const { plugin, ensureFresh } = createPlugin()
     plugin.configResolved?.({

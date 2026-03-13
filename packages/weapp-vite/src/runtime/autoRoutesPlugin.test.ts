@@ -30,7 +30,10 @@ describe('createAutoRoutesService', () => {
     vi.restoreAllMocks()
   })
 
-  function createContext(autoRoutesEnabled: boolean | Record<string, any> = true): MutableCompilerContext {
+  function createContext(
+    autoRoutesEnabled: boolean | Record<string, any> = true,
+    weappViteConfigOverrides: Record<string, any> = {},
+  ): MutableCompilerContext {
     const runtimeState = createRuntimeState()
 
     const configService = {
@@ -39,6 +42,7 @@ describe('createAutoRoutesService', () => {
       isDev: true,
       weappViteConfig: {
         autoRoutes: autoRoutesEnabled,
+        ...weappViteConfigOverrides,
       },
     } as unknown as ConfigService
 
@@ -177,6 +181,39 @@ describe('createAutoRoutesService', () => {
       pages: ['pages/index/index'],
       entries: ['pages/index/index'],
       subPackages: [],
+    })
+  })
+
+  it('supports custom include rules for main package and configured subpackages', async () => {
+    await fs.ensureDir(path.join(srcRoot, 'views', 'home'))
+    await fs.writeFile(path.join(srcRoot, 'views', 'home', 'index.ts'), '// main view', 'utf8')
+    await fs.ensureDir(path.join(srcRoot, 'pkgA', 'screens', 'detail'))
+    await fs.writeFile(path.join(srcRoot, 'pkgA', 'screens', 'detail', 'index.ts'), '// subpackage view', 'utf8')
+
+    const ctx = createContext(
+      {
+        enabled: true,
+        include: ['views/**', 'pkgA/screens/**'],
+      },
+      {
+        subPackages: {
+          pkgA: {},
+        },
+      },
+    )
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(service.getSnapshot()).toEqual({
+      pages: ['views/home/index'],
+      entries: ['pkgA/screens/detail/index', 'views/home/index'],
+      subPackages: [
+        {
+          root: 'pkgA',
+          pages: ['screens/detail/index'],
+        },
+      ],
     })
   })
 

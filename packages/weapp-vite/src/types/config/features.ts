@@ -98,9 +98,24 @@ export interface WeappMcpConfig {
 /**
  * @description 自动路由配置
  */
+export type WeappAutoRoutesIncludePattern = string | RegExp
+
+/**
+ * @description 自动路由包含规则
+ */
+export type WeappAutoRoutesInclude = WeappAutoRoutesIncludePattern | WeappAutoRoutesIncludePattern[]
+
+/**
+ * @description 自动路由配置
+ */
 export interface WeappAutoRoutesConfig {
   enabled?: boolean
   typedRouter?: boolean
+  /**
+   * @description 自动路由扫描规则，支持字符串 glob、正则以及它们的数组
+   * @remarks 默认会扫描主包 pages 目录与传统分包 pages 目录
+   */
+  include?: WeappAutoRoutesInclude
   /**
    * @description 是否启用自动路由持久化缓存，或指定自定义缓存文件路径
    * @default false

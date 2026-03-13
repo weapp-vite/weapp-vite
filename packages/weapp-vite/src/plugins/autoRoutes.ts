@@ -1,10 +1,12 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
+import { removeExtensionDeep } from '@weapp-core/shared'
 import chokidar from 'chokidar'
 import path from 'pathe'
 import { resolveWeappAutoRoutesConfig } from '../autoRoutesConfig'
 import { vueExtensions } from '../constants'
 import { logger } from '../context/shared'
+import { createAutoRoutesMatcher } from '../runtime/autoRoutesPlugin/matcher'
 import { normalizePath, normalizeWatchPath, toPosixPath } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 
@@ -86,9 +88,18 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       return false
     }
 
-    return relative === 'pages'
-      || relative.startsWith('pages/')
-      || relative.includes('/pages/')
+    const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
+    const matcher = createAutoRoutesMatcher(autoRoutesConfig.include)
+
+    if (matcher.matches(removeExtensionDeep(relative))) {
+      return true
+    }
+
+    return matcher.getWatchRoots(configService.absoluteSrcRoot).some((root) => {
+      const normalizedRoot = normalizePath(root)
+      return normalizedCandidate === normalizedRoot
+        || normalizedCandidate.startsWith(`${normalizedRoot}/`)
+    })
   }
 
   /**
@@ -119,21 +130,19 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     }
 
     const srcRoot = configService.absoluteSrcRoot
+    const matcher = createAutoRoutesMatcher(autoRoutesConfig.include)
     const allowedExtensions = new Set(vueExtensions.map(ext => `.${ext}`))
-    const watchDirs: string[] = []
+    const watchDirs = new Set<string>()
 
-    // 收集所有 pages 目录
     for (const dir of service.getWatchDirectories()) {
-      watchDirs.push(dir)
+      watchDirs.add(dir)
     }
 
-    // 至少监听 srcRoot/pages
-    const defaultPagesDir = path.join(srcRoot, 'pages')
-    if (!watchDirs.some(d => normalizePath(d) === normalizePath(defaultPagesDir))) {
-      watchDirs.push(defaultPagesDir)
+    for (const dir of matcher.getWatchRoots(srcRoot)) {
+      watchDirs.add(dir)
     }
 
-    if (!watchDirs.length) {
+    if (watchDirs.size === 0) {
       return
     }
 
@@ -142,7 +151,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       return allowedExtensions.has(ext) && isPagesRelatedPath(filePath)
     }
 
-    const watcher = chokidar.watch(watchDirs, {
+    const watcher = chokidar.watch([...watchDirs], {
       ignoreInitial: true,
       persistent: true,
       awaitWriteFinish: {
