@@ -26,7 +26,7 @@ keywords:
 [[toc]]
 
 ## `weapp.autoRoutes` {#weapp-autoroutes}
-- **类型**：`boolean | { enabled?: boolean; typedRouter?: boolean; persistentCache?: boolean; watch?: boolean }`
+- **类型**：`boolean | { enabled?: boolean; typedRouter?: boolean; persistentCache?: boolean | string; watch?: boolean }`
 - **默认值**：`false`
 - **适用场景**：
   - 希望从目录结构自动生成 `pages` 清单，不再手动维护 `app.json.pages`。
@@ -69,7 +69,7 @@ export default defineConfig({
 
 - `enabled`：总开关；设为 `false` 时完全关闭自动路由。
 - `typedRouter`：是否输出 `typed-router.d.ts`。
-- `persistentCache`：是否启用 `.weapp-vite/auto-routes.cache.json` 持久化缓存，默认关闭。
+- `persistentCache`：是否启用持久化缓存；传 `true` 时使用默认 `.weapp-vite/auto-routes.cache.json`，传字符串时表示自定义缓存文件路径，默认关闭。
 - `watch`：开发模式下是否监听页面目录变化并实时刷新路由清单。
 
 > [!NOTE]

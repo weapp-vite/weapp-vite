@@ -102,10 +102,10 @@ export interface WeappAutoRoutesConfig {
   enabled?: boolean
   typedRouter?: boolean
   /**
-   * @description 是否启用 `.weapp-vite/auto-routes.cache.json` 持久化缓存
+   * @description 是否启用自动路由持久化缓存，或指定自定义缓存文件路径
    * @default false
    */
-  persistentCache?: boolean
+  persistentCache?: boolean | string
   watch?: boolean
 }
 

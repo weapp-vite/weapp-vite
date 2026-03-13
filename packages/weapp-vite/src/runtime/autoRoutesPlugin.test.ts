@@ -154,6 +154,32 @@ describe('createAutoRoutesService', () => {
     })
   })
 
+  it('writes and restores persistent cache from a custom relative path', async () => {
+    const customCachePath = path.join(tempDir, '.cache', 'custom-auto-routes.json')
+
+    const firstCtx = createContext({ enabled: true, persistentCache: '.cache/custom-auto-routes.json' })
+    const firstService = createAutoRoutesService(firstCtx)
+
+    await firstService.ensureFresh()
+
+    expect(await fs.pathExists(customCachePath)).toBe(true)
+
+    const readdirSpy = vi.spyOn(fs, 'readdir')
+    readdirSpy.mockClear()
+
+    const secondCtx = createContext({ enabled: true, persistentCache: '.cache/custom-auto-routes.json' })
+    const secondService = createAutoRoutesService(secondCtx)
+
+    await secondService.ensureFresh()
+
+    expect(readdirSpy).not.toHaveBeenCalled()
+    expect(secondService.getSnapshot()).toEqual({
+      pages: ['pages/index/index'],
+      entries: ['pages/index/index'],
+      subPackages: [],
+    })
+  })
+
   it('matches and handles route changes from Windows-style absolute paths', async () => {
     const ctx = createContext()
     const service = createAutoRoutesService(ctx)

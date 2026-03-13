@@ -293,6 +293,26 @@ describe('createAutoRoutesService branch coverage', () => {
     expect([...service.getWatchFiles()]).toEqual(['/project/src/pages/index/index.ts'])
   })
 
+  it('uses custom persistent cache path when configured as string', async () => {
+    const ctx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: '.cache/custom-auto-routes.json',
+      },
+      configFilePath: '/project/configs/vite.config.ts',
+    })
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(outputJsonMock).toHaveBeenCalledTimes(1)
+    expect(outputJsonMock).toHaveBeenCalledWith(
+      '/project/configs/.cache/custom-auto-routes.json',
+      expect.any(Object),
+      { spaces: 2 },
+    )
+  })
+
   it('falls back to a full scan when persistent cache mtimes do not match', async () => {
     pathExistsMock.mockImplementation(async (filePath: string) => filePath.endsWith('auto-routes.cache.json'))
     readJsonMock.mockResolvedValue({
@@ -373,5 +393,43 @@ describe('createAutoRoutesService branch coverage', () => {
 
     expect(outputJsonMock).not.toHaveBeenCalled()
     expect(removeMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('restores custom persistent cache path when configured as string', async () => {
+    pathExistsMock.mockImplementation(async (filePath: string) => filePath === '/project/configs/.cache/custom-auto-routes.json')
+    readJsonMock.mockResolvedValue({
+      version: 1,
+      snapshot: {
+        pages: ['pages/index/index'],
+        entries: ['pages/index/index'],
+        subPackages: [],
+      },
+      serialized: JSON.stringify({
+        pages: ['pages/index/index'],
+        entries: ['pages/index/index'],
+        subPackages: [],
+      }, null, 2),
+      moduleCode: 'export default ["pages/index/index"]',
+      typedDefinition: 'type TypedRouter = ["pages/index/index"]',
+      watchFiles: ['/project/src/pages/index/index.ts'],
+      watchDirs: ['/project/src/pages/index'],
+      fileMtims: {
+        '/project/src/pages/index/index.ts': 1,
+      },
+    })
+
+    const enabledCtx = createContext({
+      autoRoutes: {
+        enabled: true,
+        persistentCache: '.cache/custom-auto-routes.json',
+      },
+      configFilePath: '/project/configs/vite.config.ts',
+    })
+    const enabledService = createAutoRoutesService(enabledCtx)
+
+    await enabledService.ensureFresh()
+
+    expect(readJsonMock).toHaveBeenCalledWith('/project/configs/.cache/custom-auto-routes.json')
+    expect(scanRoutesMock).not.toHaveBeenCalled()
   })
 })
