@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { parseQuery, resolveRouteLocation, stringifyQuery, useRoute } from '@/router'
+import { createRouter, parseQuery, resolveRouteLocation, stringifyQuery, useRoute, useRouter } from '@/router'
 import { callHookList, setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 
 describe('router api', () => {
@@ -91,6 +91,71 @@ describe('router api', () => {
     setCurrentInstance({ __wevu: {}, __wevuHooks: {} } as any)
     setCurrentSetupContext(undefined)
     expect(() => useRoute()).toThrow('useRoute() 必须在 setup() 的同步阶段调用')
+  })
+
+  it('useRouter requires an existing router instance when called without options', () => {
+    const instance = { __wevu: {}, __wevuHooks: {} } as any
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    expect(() => useRouter()).toThrow('useRouter() 未找到已创建的 router 实例')
+  })
+
+  it('createRouter registers the active router instance for useRouter()', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const createdRouter = createRouter()
+
+    expect(useRouter()).toBe(createdRouter)
+  })
+
+  it('createRouter install registers router on app globalProperties', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const createdRouter = createRouter()
+    const app = { config: { globalProperties: {} as Record<string, unknown> } }
+
+    createdRouter.install(app)
+
+    expect(app.config.globalProperties.$router).toBe(createdRouter)
   })
 
   it('useRoute syncs with onLoad, onShow, and onRouteDone hooks', () => {

@@ -150,7 +150,7 @@ export function resolveNamedRouteLocation(
 
   const routeRecord = lookup.recordByName.get(routeName)
   if (!routeRecord) {
-    throw new Error(`Named route "${routeName}" is not defined in useRouter({ routes | namedRoutes })`)
+    throw new Error(`Named route "${routeName}" is not defined in createRouter({ routes | namedRoutes })`)
   }
 
   const params = to.params

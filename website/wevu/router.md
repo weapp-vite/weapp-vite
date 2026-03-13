@@ -14,6 +14,14 @@ keywords:
 
 如果你只需要拿到原生页面路由对象，请继续使用 `wevu` 主入口里的 `useNativeRouter()` / `useNativePageRouter()`；如果你需要守卫、失败分类、`resolve()` 与更统一的导航封装，请使用 `wevu/router`。
 
+:::tip 创建与获取
+
+- `createRouter()`：负责创建并注册默认 router 实例
+- `useRouter()`：负责获取当前已创建的 router 实例
+
+推荐在应用入口或上层 `setup()` 中先调用一次 `createRouter()`，后续业务代码里再通过 `useRouter()` 读取。
+:::
+
 :::warning 安装方式
 `wevu` 请安装到 `devDependencies`：
 
@@ -33,7 +41,9 @@ pnpm add -D wevu
 ## 最小示例
 
 ```ts
-import { useRouter } from 'wevu/router'
+import { createRouter, useRouter } from 'wevu/router'
+
+createRouter()
 
 const router = useRouter()
 
@@ -44,7 +54,8 @@ await router.back(1)
 
 ## 核心能力
 
-- `useRouter()`：创建带守卫、失败分类的高阶路由器
+- `useRouter()`：获取当前已创建的路由实例
+- `createRouter()`：创建带守卫、失败分类的高阶路由器
 - `useRoute()`：读取当前路由快照
 - `resolveRouteLocation()`：预解析目标位置
 - `parseQuery()` / `stringifyQuery()`：query 处理工具
@@ -64,7 +75,9 @@ await router.push('/pages/post/1/index?preview=0')
 ### 守卫用于统一前置判断
 
 ```ts
-const router = useRouter({
+import { createRouter } from 'wevu/router'
+
+const router = createRouter({
   beforeEach(to) {
     if (to.path.startsWith('/pages/private/') && !isLoggedIn()) {
       return '/pages/login/index'

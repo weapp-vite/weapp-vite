@@ -2,6 +2,9 @@ import { parseQuery, stringifyQuery } from './routerInternal/shared'
 
 export { parseQuery, stringifyQuery }
 export {
+  createRouter,
+} from './router/createRouter'
+export {
   createNavigationFailure,
   isNavigationFailure,
 } from './router/navigationCore'

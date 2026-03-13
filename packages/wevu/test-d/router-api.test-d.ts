@@ -18,6 +18,7 @@ import type {
 import { expectType } from 'tsd'
 import {
   createNavigationFailure,
+  createRouter,
   isNavigationFailure,
   NavigationFailureType,
   parseQuery,
@@ -83,8 +84,9 @@ const navigationOptions: UseRouterOptions = {
   },
   rejectOnError: true,
 }
-const navigation = useRouter(navigationOptions)
+const navigation = createRouter(navigationOptions)
 expectType<RouterNavigation>(navigation)
+expectType<RouterNavigation>(useRouter())
 expectType<AddRoute>(navigation.addRoute)
 expectType<Readonly<UseRouterOptions>>(navigation.options)
 expectType<readonly RouteRecordRaw[] | undefined>(navigation.options.routes)
