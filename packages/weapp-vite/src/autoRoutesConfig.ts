@@ -8,7 +8,7 @@ export interface ResolvedWeappAutoRoutesConfig {
 }
 
 export function resolveWeappAutoRoutesConfig(config?: boolean | WeappAutoRoutesConfig): ResolvedWeappAutoRoutesConfig {
-  if (config === false) {
+  if (config == null || config === false) {
     return {
       enabled: false,
       typedRouter: false,
@@ -22,7 +22,7 @@ export function resolveWeappAutoRoutesConfig(config?: boolean | WeappAutoRoutesC
     : {}
 
   return {
-    enabled: record.enabled !== false,
+    enabled: config === true || record.enabled !== false,
     typedRouter: record.typedRouter !== false,
     persistentCache: record.persistentCache !== false,
     watch: record.watch !== false,

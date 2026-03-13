@@ -61,6 +61,9 @@ export interface WeappViteConfig {
   srcRoot?: string
   /**
    * @description 自动路由模块配置
+   * - `undefined` / `false`: 默认关闭
+   * - `true`: 启用默认自动路由配置
+   * - `object`: 启用自动路由并允许细粒度控制
    */
   autoRoutes?: boolean | WeappAutoRoutesConfig
   /**
