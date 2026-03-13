@@ -26,7 +26,7 @@ export const TEMPLATE_CATALOG = {
   'gm-crypto': '^0.1.12',
   'lru-cache': '^11.2.6',
   'magic-string': '^0.30.21',
-  'miniprogram-api-typings': '^5.1.1',
+  'miniprogram-api-typings': '^5.1.2',
   'miniprogram-automator': '^0.12.1',
   'object-hash': '^3.0.0',
   'pkg-types': '^2.3.0',
@@ -65,7 +65,7 @@ export const TEMPLATE_NAMED_CATALOG = {
     'weapp-tailwindcss': '4.10.3'
   },
   latest: {
-    'miniprogram-api-typings': 'latest',
+    'miniprogram-api-typings': '^5.1.2',
     typescript: 'latest'
   },
   tailwind4: {
