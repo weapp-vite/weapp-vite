@@ -1,5 +1,7 @@
 # @wevu/compiler
 
+## 6.8.0
+
 ## 6.7.7
 
 ### Patch Changes

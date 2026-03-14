@@ -1,5 +1,57 @@
 # create-weapp-vite
 
+## 2.0.48
+
+### Patch Changes
+
+- 🐛 **放宽 `wevu/router` 的 `createRouter({ routes })` 类型约束，允许路由记录只传 `path`，无需显式提供 `name`。当未提供 `name` 时，运行时会基于规范化后的路由路径自动生成名称，现有按名称解析与路由守卫行为保持不变。** [`319ed39`](https://github.com/weapp-vite/weapp-vite/commit/319ed39e0312bec9ade9008a65d79877c83108a0) by @sonofmagic
+
+- 🐛 **修复 `autoRoutes` 在生产构建中的两个问题：普通 `build` 模式下不再错误注册 watch 目标，避免构建结束后进程无法退出；同时修复 `app.vue` 中通过 `defineAppJson` 引用 `weapp-vite/auto-routes` 时的递归解析问题，避免包含自动路由的项目在构建阶段卡死。** [`2ed7d3f`](https://github.com/weapp-vite/weapp-vite/commit/2ed7d3f01ac4fc6096351013a02e5f0d65cb8630) by @sonofmagic
+
+- 🐛 **修复 `weapp.autoImportComponents: true` 在含有 `wevu` 依赖的项目里未自动扫描 `src/components/**/\*.vue`的问题。现在 wevu 项目会默认补上主包和分包下的 Vue SFC 组件扫描规则，生成的`auto-import-components.json`、`typed-components.d.ts`与`components.d.ts`能正确包含这些组件，而`typed-router.d.ts` 仍只负责页面路由类型。** [`934fb62`](https://github.com/weapp-vite/weapp-vite/commit/934fb62102dc39a7b9511426719db9bb07f71476) by @sonofmagic
+
+- 🐛 **修复 `auto-routes` 在 dev watch 模式下的 sidecar watcher 启动时机，避免仅在虚拟模块加载后才开始监听，导致使用 `defineAppJson` 或运行时代码引用 auto-routes 时新增页面文件无法触发 typed-router、`app.json` 和 `app.js` 的 HMR 更新。** [`5433b5a`](https://github.com/weapp-vite/weapp-vite/commit/5433b5a8412d2c10f4ad4b148c08a2f0a23b0c2c) by @sonofmagic
+
+- 🐛 **扩展 `weapp.autoRoutes.persistentCache` 配置，除了 `boolean` 之外也支持传入字符串来自定义自动路由缓存文件位置，并保持默认关闭持久化缓存。** [`ae76f35`](https://github.com/weapp-vite/weapp-vite/commit/ae76f3567dba591d98b804fa55fc1f88797767c6) by @sonofmagic
+
+- 🐛 **将 `weapp` 平台默认 `build.target` 提升到 `es2020`，避免 `?.` / `??` 进入 Rolldown 的可选链降级分支；同时将历史上的 `weapp.es5` / `@swc/core` ES5 降级方案标记为已废弃，并统一将仓库内示例与 e2e 小程序的 `project.config.json` 打开 ES6 支持，配合开发者工具中的「将 JS 编译成 ES5」功能使用。** [`319ed39`](https://github.com/weapp-vite/weapp-vite/commit/319ed39e0312bec9ade9008a65d79877c83108a0) by @sonofmagic
+
+- 🐛 **扩展 `weapp.autoImportComponents` 配置，支持直接写成 `true` 来启用增强默认值：自动使用默认组件扫描规则，并额外开启 `typedComponents`、`vueComponents`，在检测到 `wevu` 依赖时还会自动补上 `vueComponentsModule: 'wevu'`，从而简化 wevu 模板和常见项目配置。** [`f6ea730`](https://github.com/weapp-vite/weapp-vite/commit/f6ea7302ba247682600a532f20d3b094616a9dfc) by @sonofmagic
+
+- 🐛 **将 `typed-router.d.ts`、`typed-components.d.ts` 与 `components.d.ts` 的默认生成位置统一调整到 `weapp.srcRoot` 下，减少模板与示例项目在 `tsconfig` 中对根目录生成文件的额外 `include` 与引用配置。** [`2eaebbb`](https://github.com/weapp-vite/weapp-vite/commit/2eaebbbd6e10ebcc0e29bb0a808cc38d90cf0bbb) by @sonofmagic
+
+- 🐛 **同步升级仓库内 `miniprogram-api-typings` 到 `5.1.2`，并更新 `create-weapp-vite` 模板 catalog 与 `@wevu/api` 的类型来源、微信 API 名单生成产物，确保脚手架生成结果和 API 类型基线与当前 workspace 保持一致。** [`f3bacb9`](https://github.com/weapp-vite/weapp-vite/commit/f3bacb9197ae3ec248876dcff917a272b2009d0e) by @sonofmagic
+
+- 🐛 **将 `weapp-vite-wevu-template` 的默认页面从功能演示风格调整为更正式的业务模板风格，统一首页、概览、工作台和设置页的信息架构、命名语义与视觉层级，减少生成项目后的演示痕迹，使模板更适合作为实际小程序项目的起点。** [`79b065e`](https://github.com/weapp-vite/weapp-vite/commit/79b065e2fed56f35bb1f07a736feaf623ea3dc38) by @sonofmagic
+
+- 🐛 **修复 `autoRoutes` 对显式分包根目录的默认扫描回归，补齐源码 CLI 在 Node 22 下的 `createRequire` 绝对路径处理，并将 `tsconfig paths` 解析提升为 `weapp-vite` 默认行为。同步更新 wevu 模板与相关 e2e 断言，确保模板构建、分包输出和自动导入类型产物保持一致。** [`77aac93`](https://github.com/weapp-vite/weapp-vite/commit/77aac9340bcc1505aaecc3cd0ac1d569949e50fb) by @sonofmagic
+
+- 🐛 **补充 `autoRoutes` 对 `app.json`/`defineAppJson` 中分包信息的读取，并同步更新 typed declaration 输出位置、配置类型提示与相关测试用例，确保自动路由、类型生成与配置智能提示行为保持一致。** [`d6e072a`](https://github.com/weapp-vite/weapp-vite/commit/d6e072af004daf9988255015e203f38a632ee089) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite` 在生成 DTS 时对 `@weapp-vite/web` 类型导出的解析问题：为 `@weapp-vite/web` 增加稳定的 `./plugin` 子路径导出，并让配置类型改为从该子路径引用 `WeappWebPluginOptions`，避免构建类型声明时出现缺失导出报错。** [`4b17371`](https://github.com/weapp-vite/weapp-vite/commit/4b17371069a13272d0e227c682a7d6cabaca9627) by @sonofmagic
+
+- 🐛 **修复 `create-weapp-vite` 中 catalog 占位符解析测试对 `miniprogram-api-typings` 版本的硬编码断言，改为跟随生成 catalog 的当前值校验，避免 workspace catalog 升级后出现误报失败。** [`3d96894`](https://github.com/weapp-vite/weapp-vite/commit/3d9689411ca61fd3a14150553663e61093efbc60) by @sonofmagic
+
+- 🐛 **扩展 `weapp.autoRoutes.include` 配置，支持使用多个 glob 或正则来自定义页面扫描目录与深度，并允许配合 `weapp.subPackages` 识别非 `pages/**` 结构下的分包页面。** [`1dd8f07`](https://github.com/weapp-vite/weapp-vite/commit/1dd8f07b389af15d3b8536891b1b72bf0516b0d9) by @sonofmagic
+
+- 🐛 **将 `weapp.autoRoutes` 的默认值恢复为关闭，避免项目在未显式声明时自动启用路由扫描；同时保留 `true` 和对象配置两种开启方式，方便在需要时再按需启用并细化控制。** [`d6ad5e1`](https://github.com/weapp-vite/weapp-vite/commit/d6ad5e1601161fd721e26730ef69e6bfe254f1f4) by @sonofmagic
+
+- 🐛 **将 `weapp-vite-wevu-template` 模板改造成基于 `autoRoutes` 生成 `app.json`，并补充一个同样由自动路由收集的普通分包页面，便于新项目直接使用主包与分包的约定式路由结构。** [`385f95b`](https://github.com/weapp-vite/weapp-vite/commit/385f95b8979133346994e4b7e22e6dc58d4e30b7) by @sonofmagic
+
+- 🐛 **修正自动路由默认扫描规则，不再把任意 `**/pages/**`目录视为页面目录，而是只默认扫描主包`pages/**`与已声明分包 root 下的`pages/**`，避免误匹配 `components/pages/**` 等非页面目录。** [`db9befb`](https://github.com/weapp-vite/weapp-vite/commit/db9befbe8865c2583f39c26449636c8cbe010749) by @sonofmagic
+
+- 🐛 **优化 `weapp.tsconfigPaths` 在 Vite 8 下的默认行为：自动探测或显式传入 `true` 时，改为优先启用原生 `resolve.tsconfigPaths`，不再默认注入 `vite-tsconfig-paths` 插件，从而避免构建时出现对应的提示信息。仅当传入对象形式的高级选项时，才继续回退到 `vite-tsconfig-paths` 以兼容多 `tsconfig`、`exclude` 等定制能力。** [`8d008fb`](https://github.com/weapp-vite/weapp-vite/commit/8d008fb07c25b638c03659517f3efc5a9efacb47) by @sonofmagic
+
+- 🐛 **扩展 `weapp.autoRoutes` 配置，除了继续支持 `boolean` 快速开关外，也支持传入对象进行细粒度控制，可分别配置 `enabled`、`typedRouter`、`persistentCache` 和 `watch`，以便按项目需要调整自动路由的类型输出、持久缓存与开发期监听行为。** [`25cfee0`](https://github.com/weapp-vite/weapp-vite/commit/25cfee0384a1049d4cfb236deed90446199510e6) by @sonofmagic
+
+- 🐛 **调整 `wevu/router` 的创建与获取语义：新增 `createRouter()` 作为显式创建入口，`useRouter()` 只负责获取已创建的 router 实例，不再承担创建职责。同步更新相关测试与文档说明，推荐在应用入口或上层 `setup()` 中先调用 `createRouter()`，后续业务代码再通过 `useRouter()` 读取当前实例。** [`efdf1ee`](https://github.com/weapp-vite/weapp-vite/commit/efdf1ee19ef0d4d76db02468ed083355c69082d7) by @sonofmagic
+
+- 🐛 **将 `weapp.autoRoutes.persistentCache` 的默认值调整为关闭。显式开启 `autoRoutes: true` 或对象配置后，不再默认生成 `.weapp-vite/auto-routes.cache.json`；只有在明确设置 `persistentCache: true` 时才会写入持久化缓存文件，减少仓库和示例应用中的本地状态产物。** [`871fba6`](https://github.com/weapp-vite/weapp-vite/commit/871fba60c48df171bb597294abd65ab58af6b3c8) by @sonofmagic
+
+- 🐛 **默认开启 `weapp.autoRoutes`，并同步优化自动路由的初始化与增量扫描性能：仅在真正加载自动路由模块时才触发扫描与监听，优先遍历 `pages` 目录收集候选页面，同时增加基于文件时间戳的持久化缓存，减少冷启动和无变更场景下的重复全量扫描开销。** [`5c90833`](https://github.com/weapp-vite/weapp-vite/commit/5c90833970fe25c03efa254df31afa62b48e73d9) by @sonofmagic
+
+- 🐛 **统一脚手架模板与仓库模板的忽略规则，默认忽略项目根目录下 `.weapp-vite/` 中的所有内容，为后续沉淀更多本地构建缓存和工具状态文件预留稳定目录约定，避免生成项目后误提交内部缓存产物。** [`2eee335`](https://github.com/weapp-vite/weapp-vite/commit/2eee33515a759635285e34104912558556551690) by @sonofmagic
+
 ## 2.0.47
 
 ### Patch Changes

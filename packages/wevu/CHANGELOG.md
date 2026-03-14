@@ -1,5 +1,17 @@
 # wevu
 
+## 6.8.0
+
+### Minor Changes
+
+- ✨ **调整 `wevu/router` 的创建与获取语义：新增 `createRouter()` 作为显式创建入口，`useRouter()` 只负责获取已创建的 router 实例，不再承担创建职责。同步更新相关测试与文档说明，推荐在应用入口或上层 `setup()` 中先调用 `createRouter()`，后续业务代码再通过 `useRouter()` 读取当前实例。** [`efdf1ee`](https://github.com/weapp-vite/weapp-vite/commit/efdf1ee19ef0d4d76db02468ed083355c69082d7) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **放宽 `wevu/router` 的 `createRouter({ routes })` 类型约束，允许路由记录只传 `path`，无需显式提供 `name`。当未提供 `name` 时，运行时会基于规范化后的路由路径自动生成名称，现有按名称解析与路由守卫行为保持不变。** [`319ed39`](https://github.com/weapp-vite/weapp-vite/commit/319ed39e0312bec9ade9008a65d79877c83108a0) by @sonofmagic
+- 📦 **Dependencies** [`f3bacb9`](https://github.com/weapp-vite/weapp-vite/commit/f3bacb9197ae3ec248876dcff917a272b2009d0e)
+  → `@wevu/api@0.2.1`, `@wevu/compiler@6.8.0`
+
 ## 6.7.7
 
 ### Patch Changes
