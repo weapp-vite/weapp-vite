@@ -19,6 +19,15 @@ export interface NamedRouteRecord {
   name: string
   path: string
 }
+export interface RouteRecordInput {
+  name?: string
+  path: string
+  meta?: RouteMeta
+  alias?: string | readonly string[]
+  children?: readonly RouteRecordInput[]
+  beforeEnter?: NavigationGuard | readonly NavigationGuard[]
+  redirect?: RouteRecordRedirect
+}
 export type NamedRoutes = Readonly<Record<string, string>> | readonly RouteRecordRaw[]
 
 export type RouteLocationRaw = string | {
@@ -69,12 +78,8 @@ export type RouteRecordRedirect = RouteLocationRaw | NavigationRedirect | ((
   to: RouteLocationNormalizedLoaded,
   from: RouteLocationNormalizedLoaded,
 ) => RouteLocationRaw | NavigationRedirect | Promise<RouteLocationRaw | NavigationRedirect>)
-export interface RouteRecordRaw extends NamedRouteRecord {
-  meta?: RouteMeta
-  alias?: string | readonly string[]
+export interface RouteRecordRaw extends Omit<RouteRecordInput, 'name' | 'children'>, NamedRouteRecord {
   children?: readonly RouteRecordRaw[]
-  beforeEnter?: NavigationGuard | readonly NavigationGuard[]
-  redirect?: RouteRecordRedirect
 }
 
 export interface RouteRecordMatched {
@@ -142,7 +147,7 @@ export interface UseRouterOptions {
   /**
    * Vue Router 对齐入口：推荐使用 `routes`
    */
-  routes?: readonly RouteRecordRaw[]
+  routes?: readonly RouteRecordInput[]
   /**
    * 兼容入口：支持对象 map 或路由记录数组
    */

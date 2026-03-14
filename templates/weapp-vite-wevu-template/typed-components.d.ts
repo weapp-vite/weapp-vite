@@ -18,6 +18,14 @@ declare module 'weapp-vite/typed-components' {
       readonly description?: string;
       readonly title?: string;
     };
+    RouteBadge: {
+      readonly label?: string;
+      readonly tone?: string;
+    };
+    RouteFeature: {
+      readonly description?: string;
+      readonly title?: string;
+    };
   }
   export type ComponentPropName = keyof ComponentProps;
   export type ComponentProp<Name extends string> = Name extends ComponentPropName ? ComponentProps[Name] : Record<string, any>;

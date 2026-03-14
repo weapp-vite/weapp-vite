@@ -44,9 +44,7 @@
     }
   ],
   "include": [
-    "src/**/*.ts",
-    "src/**/*.js",
-    "src/**/*.vue"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",

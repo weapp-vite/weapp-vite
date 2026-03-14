@@ -60,7 +60,9 @@ export function warnDuplicateRouteEntries(routeEntries: readonly FlattenedRouteR
   const duplicateMessages: string[] = []
 
   for (const routeEntry of routeEntries) {
-    const routeName = routeEntry.route.name.trim()
+    const routeName = typeof routeEntry.route.name === 'string'
+      ? routeEntry.route.name.trim()
+      : ''
     if (!routeName) {
       continue
     }

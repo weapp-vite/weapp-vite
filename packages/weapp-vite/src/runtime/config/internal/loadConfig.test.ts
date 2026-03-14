@@ -25,6 +25,7 @@ const getDefaultBuildTargetMock = vi.hoisted(() => vi.fn(() => undefined))
 const isNonConcreteBuildTargetMock = vi.hoisted(() => vi.fn(() => false))
 const resolveWeappWebConfigMock = vi.hoisted(() => vi.fn(() => ({ enabled: false })))
 const shouldEnableTsconfigPathsPluginMock = vi.hoisted(() => vi.fn(async () => false))
+const loggerWarnMock = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => ({
   loadConfigFromFile: loadConfigFromFileMock,
@@ -37,6 +38,12 @@ vi.mock('vite-tsconfig-paths', () => ({
 vi.mock('../../../defaults', () => ({
   getOutputExtensions: getOutputExtensionsMock,
   getWeappViteConfig: getWeappViteConfigMock,
+}))
+
+vi.mock('../../../logger', () => ({
+  default: {
+    warn: loggerWarnMock,
+  },
 }))
 
 vi.mock('../../../platform', () => ({
@@ -229,6 +236,7 @@ describe('runtime config internal loadConfig', () => {
     const rolldownPlugins = result.config.build?.rolldownOptions?.plugins as any[]
     expect(rolldownPlugins[0]).toBe(oxcRolldownPlugin)
     expect(rolldownPlugins.some(plugin => plugin?.name === 'weapp-runtime:swc-es5-transform')).toBe(true)
+    expect(loggerWarnMock).toHaveBeenCalledWith(expect.stringContaining('`weapp.es5` / `@swc/core` 降级方案已废弃'))
     expect(result.config.plugins?.[0]).toBe(oxcVitePlugin)
     expect(result.config.plugins?.some((plugin: any) => plugin?.name === 'tsconfig-paths')).toBe(true)
     expect(result.config.build?.outDir).toBe('dist/weapp/dist')
@@ -648,7 +656,7 @@ describe('runtime config internal loadConfig', () => {
       hasTarget: true,
       sanitized: 'esnext',
     })
-    getDefaultBuildTargetMock.mockReturnValueOnce('es2018')
+    getDefaultBuildTargetMock.mockReturnValueOnce('es2020')
     isNonConcreteBuildTargetMock.mockReturnValueOnce(true)
     resolveProjectConfigRootMock.mockReturnValueOnce('dist')
 
@@ -662,7 +670,7 @@ describe('runtime config internal loadConfig', () => {
       configFile: '/project/vite.config.ts',
     } as any)
 
-    expect(result.config.build?.target).toBe('es2018')
+    expect(result.config.build?.target).toBe('es2020')
   })
 
   it('loads weapp-specific config file and keeps target from sanitize result', async () => {

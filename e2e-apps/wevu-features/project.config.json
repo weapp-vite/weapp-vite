@@ -4,7 +4,7 @@
   "miniprogramRoot": "dist/",
   "setting": {
     "minifyWXML": true,
-    "es6": false,
+    "es6": true,
     "postcss": false,
     "compileWorklet": false,
     "minified": false,

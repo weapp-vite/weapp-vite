@@ -76,12 +76,13 @@ export default defineConfig({
 - `esm`：输出 ESM；在微信开发者工具中建议开启「ES6 转 ES5」以降低预览差异。
 
 > [!WARNING]
-> 如果你手动把 `build.target` 设为 **ES2015 以下**，会直接报错；只有启用 `weapp.es5` 才允许降级到 ES5。
+> 如果你手动把 `build.target` 设为 **ES2015 以下**，会直接报错；历史上的 `weapp.es5` 兼容方案已废弃，不建议继续依赖。
 
 ## `weapp.es5` {#weapp-es5}
 - **类型**：`boolean`
 - **默认值**：`false`
-- **作用**：在输出 CommonJS 的基础上，用 `@swc/core` 进行 **ES5 降级**。
+- **状态**：**已废弃**
+- **历史作用**：在输出 CommonJS 的基础上，用 `@swc/core` 进行 **ES5 降级**。
 
 ```ts
 import { defineConfig } from 'weapp-vite/config'
@@ -95,9 +96,15 @@ export default defineConfig({
 ```
 
 使用须知：
+- 不建议在新项目中继续开启。
 - 仅支持 `jsFormat: 'cjs'`，与 `esm` 同用会直接报错。
 - 需要安装 `@swc/core`：`pnpm add -D @swc/core`。
 - 开启后，`build.target` 会被强制收敛到 `es2015`，再由 SWC 降级到 ES5。
+
+迁移建议：
+- 默认保持 `build.target >= es2020`，让 `?.` / `??` 不再进入 Rolldown 的降级分支。
+- 在微信开发者工具中开启「将 JS 编译成 ES5」功能。
+- 如果必须兼容极旧环境，再评估是否继续保留 `weapp.es5`。
 
 ## `build.minify` 与 `build.sourcemap` {#build-minify-sourcemap}
 

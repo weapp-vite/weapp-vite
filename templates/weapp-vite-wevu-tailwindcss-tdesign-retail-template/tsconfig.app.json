@@ -48,14 +48,7 @@
     "skipTemplateCodegen": false
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.js",
-    "src/**/*.jsx",
-    "src/**/*.mts",
-    "src/**/*.cts",
-    "src/**/*.json",
-    "src/**/*.d.ts",
+    "src/**/*",
     "types/**/*.d.ts",
     "env.d.ts"
   ]

@@ -15,6 +15,8 @@ declare module 'wevu' {
   export interface GlobalComponents {
     HelloWorld: typeof import("./src/components/HelloWorld/index.vue")['default'];
     InfoBanner: typeof import("./src/components/InfoBanner/index.vue")['default'];
+    RouteBadge: typeof import("./src/components/RouteBadge/index.vue")['default'];
+    RouteFeature: typeof import("./src/components/RouteFeature/index.vue")['default'];
   }
 }
 
@@ -22,4 +24,6 @@ declare module 'wevu' {
 declare global {
   const HelloWorld: typeof import("./src/components/HelloWorld/index.vue")['default']
   const InfoBanner: typeof import("./src/components/InfoBanner/index.vue")['default']
+  const RouteBadge: typeof import("./src/components/RouteBadge/index.vue")['default']
+  const RouteFeature: typeof import("./src/components/RouteFeature/index.vue")['default']
 }
