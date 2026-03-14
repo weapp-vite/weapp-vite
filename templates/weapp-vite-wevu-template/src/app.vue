@@ -7,8 +7,8 @@ defineAppJson({
   pages: autoRoutes.pages,
   subPackages: autoRoutes.subPackages,
   window: {
-    navigationBarTitleText: 'wevu/router Demo',
-    navigationBarBackgroundColor: '#4c6ef5',
+    navigationBarTitleText: '业务模板',
+    navigationBarBackgroundColor: '#0f172a',
     navigationBarTextStyle: 'white',
   },
   style: 'v2',
@@ -72,7 +72,7 @@ onLaunch(() => {
 
 <style>
 page {
-  color: #1c1c3c;
-  background: #f6f7fb;
+  color: #0f172a;
+  background: #f3f6fb;
 }
 </style>
