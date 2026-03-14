@@ -13,17 +13,13 @@ type __WeappComponentImport<TModule, Fallback = {}> = 0 extends 1 & TModule ? Fa
 
 declare module 'wevu' {
   export interface GlobalComponents {
-    HelloWorld: typeof import("./src/components/HelloWorld/index.vue")['default'];
-    InfoBanner: typeof import("./src/components/InfoBanner/index.vue")['default'];
-    RouteBadge: typeof import("./src/components/RouteBadge/index.vue")['default'];
-    RouteFeature: typeof import("./src/components/RouteFeature/index.vue")['default'];
+    RouteBadge: typeof import("./components/RouteBadge/index.vue")['default'];
+    RouteFeature: typeof import("./components/RouteFeature/index.vue")['default'];
   }
 }
 
 // 用于 TSX 支持
 declare global {
-  const HelloWorld: typeof import("./src/components/HelloWorld/index.vue")['default']
-  const InfoBanner: typeof import("./src/components/InfoBanner/index.vue")['default']
-  const RouteBadge: typeof import("./src/components/RouteBadge/index.vue")['default']
-  const RouteFeature: typeof import("./src/components/RouteFeature/index.vue")['default']
+  const RouteBadge: typeof import("./components/RouteBadge/index.vue")['default']
+  const RouteFeature: typeof import("./components/RouteFeature/index.vue")['default']
 }

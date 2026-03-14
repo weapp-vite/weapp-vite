@@ -123,15 +123,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       return undefined
     }
 
-    const baseDir = typeof configService.configFilePath === 'string'
-      ? path.dirname(configService.configFilePath)
-      : configService.cwd
-
-    if (!baseDir) {
-      return undefined
-    }
-
-    return path.resolve(baseDir, 'typed-router.d.ts')
+    return path.resolve(configService.absoluteSrcRoot, 'typed-router.d.ts')
   }
 
   function resolvePersistentCacheBaseDir() {
