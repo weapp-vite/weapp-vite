@@ -16,6 +16,7 @@ import {
 } from './candidates'
 import { createAutoRoutesMatcher } from './matcher'
 import { resolveRoute } from './routes'
+import { getAutoRoutesSubPackageRoots } from './subPackageRoots'
 
 export type AutoRoutesFileEvent = ChangeEvent | 'rename'
 
@@ -45,7 +46,8 @@ export function matchesRouteFile(
   }
 
   const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
-  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, Object.keys(configService.weappViteConfig?.subPackages ?? {}))
+  const subPackageRoots = getAutoRoutesSubPackageRoots(ctx)
+  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots)
   if (!matcher.matches(removeExtensionDeep(relative))) {
     return false
   }
@@ -149,13 +151,14 @@ export async function updateCandidateFromFile(
   }
 
   const autoRoutesConfig = resolveWeappAutoRoutesConfig(ctx.configService.weappViteConfig?.autoRoutes)
-  const route = resolveRoute(relativeBase, Object.keys(ctx.configService.weappViteConfig?.subPackages ?? {}))
+  const subPackageRoots = getAutoRoutesSubPackageRoots(ctx)
+  const route = resolveRoute(relativeBase, subPackageRoots)
   if (!route) {
     const removed = stateCandidates.delete(base)
     return removed
   }
 
-  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, Object.keys(ctx.configService.weappViteConfig?.subPackages ?? {}))
+  const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots)
   if (!matcher.matches(relativeBase)) {
     const removed = stateCandidates.delete(base)
     return removed

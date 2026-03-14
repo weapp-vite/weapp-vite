@@ -56,26 +56,26 @@ export interface WeappDebugConfig {
  */
 export interface WeappViteConfig {
   /**
-   * @description 应用入口目录（`app.json` 所在目录）
+   * 应用入口目录（`app.json` 所在目录）。
    */
   srcRoot?: string
   /**
-   * @description 自动路由模块配置
+   * 自动路由模块配置。
    * - `undefined` / `false`: 默认关闭
    * - `true`: 启用默认自动路由配置
    * - `object`: 启用自动路由并允许细粒度控制
    */
   autoRoutes?: boolean | WeappAutoRoutesConfig
   /**
-   * @description 插件入口目录（`plugin.json` 所在目录）
+   * 插件入口目录（`plugin.json` 所在目录）。
    */
   pluginRoot?: string
   /**
-   * @description 日志输出配置
+   * 日志输出配置。
    */
   logger?: LoggerConfig
   /**
-   * @description 主包/分包体积告警阈值（字节）
+   * 主包/分包体积告警阈值（字节）。
    */
   packageSizeWarningBytes?: number
   jsonAlias?: AliasOptions

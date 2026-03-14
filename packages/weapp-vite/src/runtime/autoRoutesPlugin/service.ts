@@ -9,6 +9,7 @@ import { logger } from '../../context/shared'
 import { requireConfigService } from '../utils/requireConfigService'
 import { cloneCandidate, collectCandidates } from './candidates'
 import { cloneRoutes, createTypedRouterDefinition, scanRoutes, updateRoutesReference } from './routes'
+import { getAutoRoutesSubPackageRoots } from './subPackageRoots'
 import { matchesRouteFile, updateCandidateFromFile } from './watch'
 
 export interface AutoRoutesService {
@@ -67,7 +68,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
   }
 
   function getSubPackageRoots() {
-    return Object.keys(ctx.configService?.weappViteConfig?.subPackages ?? {})
+    return getAutoRoutesSubPackageRoots(ctx)
   }
 
   function isEnabled() {
@@ -345,6 +346,15 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
 
     if (!state.needsFullRescan && state.candidates.size > 0) {
       return false
+    }
+
+    state.loadingAppConfig = true
+    try {
+      await ctx.scanService?.loadAppEntry?.()
+    }
+    catch { }
+    finally {
+      state.loadingAppConfig = false
     }
 
     const absoluteSrcRoot = configService.absoluteSrcRoot

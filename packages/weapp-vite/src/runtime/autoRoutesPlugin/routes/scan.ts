@@ -5,6 +5,7 @@ import path from 'pathe'
 import { resolveWeappAutoRoutesConfig } from '../../../autoRoutesConfig'
 import { toPosixPath } from '../../../utils/path'
 import { createAutoRoutesMatcher } from '../matcher'
+import { getAutoRoutesSubPackageRoots } from '../subPackageRoots'
 import { createTypedRouterDefinition } from './format'
 import { resolveRoute } from './resolve'
 
@@ -39,7 +40,7 @@ export async function scanRoutes(
 
   const absoluteSrcRoot = configService.absoluteSrcRoot
   const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
-  const subPackageRoots = Object.keys(configService.weappViteConfig?.subPackages ?? {})
+  const subPackageRoots = getAutoRoutesSubPackageRoots(ctx)
   const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots)
   const pagesSet = new Set<string>()
   const entriesSet = new Set<string>()

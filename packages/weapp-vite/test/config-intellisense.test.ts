@@ -77,10 +77,16 @@ describe('defineConfig editor intellisense', () => {
   it('should resolve config property definitions to types file', () => {
     const languageService = createLanguageService({ fileName, source, root })
 
-    for (const key of ['srcRoot', 'autoImportComponents', 'vueComponents']) {
+    const expectedFiles = {
+      srcRoot: 'packages/weapp-vite/src/types/config/main.ts',
+      autoImportComponents: 'packages/weapp-vite/src/types/config/main.ts',
+      vueComponents: 'packages/weapp-vite/src/types/config/features.ts',
+    } as const
+
+    for (const key of Object.keys(expectedFiles) as Array<keyof typeof expectedFiles>) {
       const position = getTokenPosition(source, key)
       const definitions = languageService.getDefinitionAtPosition(fileName, position)
-      expect(definitions?.[0]?.fileName).toContain('packages/weapp-vite/src/types/config.ts')
+      expect(definitions?.[0]?.fileName).toContain(expectedFiles[key])
     }
   })
 
