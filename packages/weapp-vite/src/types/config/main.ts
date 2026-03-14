@@ -90,6 +90,10 @@ export interface WeappViteConfig {
   platform?: MpPlatform
   multiPlatform?: boolean | MultiPlatformConfig
   jsFormat?: JsFormat
+  /**
+   * @deprecated 已废弃，不建议继续使用。请改为保持 `build.target >= es2020`，并在开发者工具中开启“将 JS 编译成 ES5”功能。
+   * 该选项依赖 `@swc/core` 做额外 ES5 降级，后续版本将移除。
+   */
   es5?: boolean
   wxml?: EnhanceOptions['wxml']
   wxs?: EnhanceOptions['wxs']

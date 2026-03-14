@@ -975,6 +975,57 @@ describe('router navigation helpers', () => {
     warn.mockRestore()
   })
 
+  it('allows routes records without explicit names and derives names from normalized paths', () => {
+    const instance = {
+      __wevu: {},
+      __wevuHooks: {},
+      router: {
+        switchTab: vi.fn(),
+        reLaunch: vi.fn(),
+        redirectTo: vi.fn(),
+        navigateTo: vi.fn(),
+        navigateBack: vi.fn(),
+      },
+    } as any
+
+    setCurrentInstance(instance)
+    setCurrentSetupContext({ instance, emit: vi.fn(), attrs: {}, slots: {} })
+
+    ;(globalThis as any).getCurrentPages = vi.fn(() => [
+      {
+        route: 'pages/home/index',
+        options: {},
+      },
+    ])
+
+    const router = createRouter({
+      routes: [
+        {
+          path: '/pages/home/index',
+        },
+        {
+          path: 'packageA/pages/demo/index',
+        },
+      ],
+    })
+
+    expect(router.hasRoute('pages/home/index')).toBe(true)
+    expect(router.hasRoute('packageA/pages/demo/index')).toBe(true)
+    expect(router.resolve({
+      name: 'packageA/pages/demo/index',
+    }).fullPath).toBe('/packageA/pages/demo/index')
+    expect(router.getRoutes()).toEqual([
+      {
+        name: 'pages/home/index',
+        path: '/pages/home/index',
+      },
+      {
+        name: 'packageA/pages/demo/index',
+        path: '/packageA/pages/demo/index',
+      },
+    ])
+  })
+
   it('warns and skips route records with missing name or path', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const instance = {
@@ -1025,7 +1076,6 @@ describe('router navigation helpers', () => {
     expect(router.hasRoute('valid-map-route')).toBe(true)
     expect(router.hasRoute('invalid-path')).toBe(false)
     expect(warn.mock.calls.map(call => String(call[0]))).toEqual(expect.arrayContaining([
-      expect.stringContaining('ignored route record at routes[0]: route name is required'),
       expect.stringContaining('ignored route record "invalid-path" at routes[1]: route path is required'),
       expect.stringContaining('ignored route record at namedRoutes: route name is required'),
       expect.stringContaining('ignored route record "invalid-map-path" at namedRoutes: route path is required'),

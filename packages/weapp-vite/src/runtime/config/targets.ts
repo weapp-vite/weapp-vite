@@ -15,9 +15,11 @@ const ECMASCRIPT_SHORTHAND_YEAR_MAP: Record<number, number> = {
 
 const MIN_SUPPORTED_ECMA_YEAR = 2015
 const NON_CONCRETE_BUILD_TARGETS = new Set(['esnext', 'latest', 'modules'])
+const ECMASCRIPT_YEAR_TARGET_RE = /^es(\d{4})$/
+const ECMASCRIPT_SHORTHAND_TARGET_RE = /^es(\d{1,2})$/
 
 function unsupportedTargetMessage(target: string) {
-  return `build.target "${target}" 低于 ES2015。Rolldown 仅支持 ES2015 及以上，如需 ES5 请在 weapp 配置中启用 \`weapp.es5\` 并安装 \`@swc/core\`。`
+  return `build.target "${target}" 低于 ES2015。Rolldown 仅支持 ES2015 及以上；\`weapp.es5\` / \`@swc/core\` 方案已废弃，请改为保持 \`build.target >= es2020\`，并在开发者工具中开启“将 JS 编译成 ES5”功能。`
 }
 
 export interface SanitizeTargetOptions {
@@ -30,7 +32,7 @@ export interface SanitizedTargetResult {
 }
 
 const PLATFORM_DEFAULT_BUILD_TARGETS: Partial<Record<MpPlatform, string>> = {
-  weapp: 'es2018',
+  weapp: 'es2020',
   alipay: 'es2015',
 }
 
@@ -66,7 +68,7 @@ function sanitizeEcmaTarget(rawTarget: string, options: SanitizeTargetOptions) {
     throw new Error(unsupportedTargetMessage(rawTarget))
   }
 
-  const yearMatch = normalized.match(/^es(\d{4})$/)
+  const yearMatch = normalized.match(ECMASCRIPT_YEAR_TARGET_RE)
   if (yearMatch) {
     const year = Number(yearMatch[1])
     if (Number.isFinite(year) && year < MIN_SUPPORTED_ECMA_YEAR) {
@@ -78,7 +80,7 @@ function sanitizeEcmaTarget(rawTarget: string, options: SanitizeTargetOptions) {
     return `es${year}`
   }
 
-  const shorthandMatch = normalized.match(/^es(\d{1,2})$/)
+  const shorthandMatch = normalized.match(ECMASCRIPT_SHORTHAND_TARGET_RE)
   if (shorthandMatch) {
     const edition = Number(shorthandMatch[1])
     if (Number.isNaN(edition)) {

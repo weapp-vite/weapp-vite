@@ -11,30 +11,34 @@ describe('legacyEs5 runtime transform', () => {
       code: 'transformed-code',
       map: '{"version":3,"mappings":""}',
     }))
-    vi.doMock('@swc/core', () => ({
+
+    const { transformWithSwc } = await import('./legacyEs5')
+    const importer = vi.fn(async () => ({
       transform,
     }))
-
-    const { transformWithSwc, createLegacyEs5Plugin } = await import('./legacyEs5')
 
     const transformed = await transformWithSwc(
       'const a = 1',
       { fileName: 'app.js' } as any,
       { sourcemap: true } as any,
+      importer,
     )
     expect(transform).toHaveBeenCalled()
     expect(transformed.code).toBe('transformed-code')
     expect(transformed.map).toMatchObject({ version: 3 })
 
-    const plugin = createLegacyEs5Plugin() as any
-    expect(await plugin.renderChunk('', { fileName: 'empty.js' }, { sourcemap: false })).toBeNull()
-    const pluginResult = await plugin.renderChunk('const b = 2', { fileName: 'chunk.js' }, { sourcemap: 'inline' })
+    const pluginResult = await transformWithSwc(
+      'const b = 2',
+      { fileName: 'chunk.js' } as any,
+      { sourcemap: 'inline' } as any,
+      importer,
+    )
     expect(pluginResult.code).toBe('transformed-code')
   })
 
   it('throws installation hint when swc module is invalid', async () => {
     const { loadSwcTransformModule } = await import('./legacyEs5')
 
-    await expect(loadSwcTransformModule(async () => ({}))).rejects.toThrow('未安装 `@swc/core`')
+    await expect(loadSwcTransformModule(async () => ({}))).rejects.toThrow('已废弃的 `weapp.es5`')
   })
 })

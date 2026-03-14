@@ -7,17 +7,27 @@ import 'wevu/router';
 
 declare module 'weapp-vite/auto-routes' {
     export type AutoRoutesPages = [
-        "pages/index/index"
+        "pages/index/index",
+        "pages/guide/index"
     ];
     export type AutoRoutesEntries = [
         "pages/index/index",
-        "packageA/pages/demo/index"
+        "packageA/pages/demo/index",
+        "packageB/pages/entry/index",
+        "pages/guide/index"
     ];
     export type AutoRoutesSubPackages = [
         {
             readonly root: "packageA";
             readonly pages: [
                 "pages/demo/index"
+            ];
+            [k: string]: unknown;
+        },
+        {
+            readonly root: "packageB";
+            readonly pages: [
+                "pages/entry/index"
             ];
             [k: string]: unknown;
         }

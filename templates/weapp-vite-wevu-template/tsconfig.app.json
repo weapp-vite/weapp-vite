@@ -46,15 +46,7 @@
     "lib": "wevu"
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.js",
-    "src/**/*.jsx",
-    "src/**/*.mts",
-    "src/**/*.cts",
-    "src/**/*.vue",
-    "src/**/*.json",
-    "src/**/*.d.ts",
+    "src/**/*",
     "types/**/*.d.ts",
     "env.d.ts",
     "components.d.ts",

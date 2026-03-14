@@ -33,12 +33,7 @@
     }
   ],
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.js",
-    "src/**/*.jsx",
-    "src/**/*.vue",
-    "src/**/*.d.ts"
+    "src/**/*"
   ],
   "exclude": ["node_modules", "dist"]
 }

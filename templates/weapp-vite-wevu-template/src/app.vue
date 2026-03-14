@@ -1,18 +1,60 @@
 <script setup lang="ts">
-import routes from 'weapp-vite/auto-routes'
+import autoRoutes from 'weapp-vite/auto-routes'
 import { onHide, onLaunch, onShow } from 'wevu'
+import { createRouter } from 'wevu/router'
 
 defineAppJson({
-  pages: routes.pages,
-  subPackages: routes.subPackages,
+  pages: autoRoutes.pages,
+  subPackages: autoRoutes.subPackages,
   window: {
-    navigationBarTitleText: 'Wepp-Vite + WeVU Template',
+    navigationBarTitleText: 'wevu/router Demo',
     navigationBarBackgroundColor: '#4c6ef5',
     navigationBarTextStyle: 'white',
   },
   style: 'v2',
   componentFramework: 'glass-easel',
   sitemapLocation: 'sitemap.json',
+})
+
+const router = createRouter({
+  routes: autoRoutes.entries.map(path => ({
+    name: path,
+    path: `/${path}`,
+  })),
+})
+
+router.beforeEach((to, from) => {
+  console.log('[wevu-template-router] beforeEach', {
+    to: to?.fullPath,
+    from: from.fullPath,
+  })
+  return true
+})
+
+router.beforeResolve((to, from) => {
+  console.log('[wevu-template-router] beforeResolve', {
+    to: to?.fullPath,
+    from: from.fullPath,
+  })
+  return true
+})
+
+router.afterEach((to, from, failure) => {
+  console.log('[wevu-template-router] afterEach', {
+    to: to?.fullPath,
+    from: from.fullPath,
+    failureType: failure?.type,
+  })
+})
+
+router.onError((error, context) => {
+  console.log('[wevu-template-router] onError', {
+    error: error instanceof Error ? error.message : String(error),
+    mode: context.mode,
+    to: context.to?.fullPath,
+    from: context.from.fullPath,
+    failureType: context.failure.type,
+  })
 })
 
 onShow(() => {

@@ -1,285 +1,60 @@
 <script setup lang="ts">
-import { wxRouter } from 'weapp-vite/auto-routes'
-import { computed, ref, watch } from 'wevu'
-
-interface HelloActionPayload {
-  type: 'toggle' | 'copy' | 'select' | 'stats'
-  value?: string
-}
-
-type HighlightTone = 'up' | 'down' | 'flat'
-
-interface HighlightItem {
-  key: string
-  label: string
-  value: string | number
-  tone?: HighlightTone
-  note?: string
-}
+import { computed } from 'wevu'
+import { useRoute, useRouter } from 'wevu/router'
 
 definePageJson({
-  navigationBarTitleText: '首页示例',
+  navigationBarTitleText: 'Router Home',
 })
 
-const count = ref(0)
-const message = ref('Hello WeVU!')
-const activeGroup = ref('概览')
+const HOME_PATH = '/pages/index/index'
+const GUIDE_PATH = '/pages/guide/index'
+const PACKAGE_A_DEMO_PATH = '/packageA/pages/demo/index'
+const PACKAGE_B_ENTRY_PATH = '/packageB/pages/entry/index'
 
-const todos = ref([
-  {
-    id: 'sfc',
-    title: '自动编译 SFC 到小程序四件套',
-    group: 'template' as const,
-    done: true,
-    level: 'advanced' as const,
-  },
-  {
-    id: 'components',
-    title: '自动注入 usingComponents 与组件类型提示',
-    group: 'template' as const,
-    done: true,
-    level: 'base' as const,
-  },
-  {
-    id: 'pipeline',
-    title: 'WXML/WXSS/WXS 全链路处理与平台适配',
-    group: 'engineering' as const,
-    done: true,
-    level: 'advanced' as const,
-  },
-  {
-    id: 'events',
-    title: '支持 @tap.catch / @tap.stop 等事件语义',
-    group: 'core' as const,
-    done: true,
-    level: 'base' as const,
-  },
-  {
-    id: 'reactivity',
-    title: '通过 wevu 使用 ref/computed/watch 写业务逻辑',
-    group: 'core' as const,
-    done: true,
-    level: 'advanced' as const,
-  },
-])
+const route = useRoute()
+const router = useRouter()
+const routeSummary = computed(() => route.fullPath || `/${route.path}`)
 
-const doubled = computed(() => count.value * 2)
+async function pushTo(path: string) {
+  await router.push(path)
+}
 
-const pageClass = computed(() => {
-  return {
-    'page-empty': count.value === 0,
-    'page-energetic': count.value > 0,
-  }
-})
-
-const pageStyle = computed(() => {
-  return [
-    {
-      background: count.value > 0 ? '#eaf0ff' : '#f6f7ff',
-    },
-    {
-      borderTop: count.value > 0 ? '4rpx solid #4c6ef5' : '4rpx solid transparent',
-    },
-  ]
-})
-
-const cardClass = computed(() => {
-  return [
-    {
-      'card-active': count.value > 0,
-    },
-    count.value >= 3 ? 'card-boost' : '',
-  ]
-})
-
-const cardStyle = computed(() => {
-  return [
-    {
-      borderColor: count.value > 0 ? '#4c6ef5' : 'transparent',
-    },
-    {
-      borderWidth: count.value > 0 ? '2rpx' : '1rpx',
-    },
-  ]
-})
-
-const primaryBtnClass = computed(() => {
-  return [
-    {
-      'btn-boost': count.value > 0,
-    },
-    count.value >= 3 ? 'btn-boost-strong' : '',
-  ]
-})
-
-const primaryBtnStyle = computed(() => {
-  return [
-    {
-      opacity: count.value > 0 ? 0.88 : 1,
-    },
-    count.value > 0
-      ? {
-          boxShadow: '0 8rpx 20rpx rgba(76, 110, 245, 0.28)',
-        }
-      : null,
-  ]
-})
-
-const helloHighlights = computed<HighlightItem[]>(() => {
-  return [
-    {
-      key: 'count',
-      label: '当前计数',
-      value: count.value,
-      tone: 'up' as const,
-      note: '来自 ref 状态',
-    },
-    {
-      key: 'double',
-      label: '双倍值',
-      value: doubled.value,
-      tone: 'flat' as const,
-      note: '来自 computed',
-    },
-    {
-      key: 'feature',
-      label: '能力条目',
-      value: todos.value.length,
-      tone: 'flat' as const,
-      note: '模板清单',
-    },
-    {
-      key: 'title',
-      label: '标题长度',
-      value: message.value.length,
-      tone: message.value.length > 10 ? 'up' : 'down',
-      note: '来自 v-model',
-    },
-  ]
-})
-
-function showToast(title: string) {
-  wx.showToast({
-    title,
-    icon: 'none',
-    duration: 1200,
+async function relaunchToHome() {
+  await router.nativeRouter.reLaunch({
+    url: HOME_PATH,
   })
 }
-
-function increment() {
-  count.value += 1
-}
-
-function reset() {
-  count.value = 0
-  showToast('计数已重置')
-}
-
-function openSubPackageDemo() {
-  wxRouter.navigateTo({
-    url: '/packageA/pages/demo/index',
-  })
-}
-
-function handleHelloAction(payload: HelloActionPayload) {
-  if (payload.type === 'copy' && payload.value) {
-    wx.setClipboardData({
-      data: payload.value,
-    })
-    return
-  }
-
-  if (payload.type === 'toggle') {
-    showToast(`面板状态：${payload.value === 'true' ? '展开' : '收起'}`)
-    return
-  }
-
-  if (payload.type === 'select' && payload.value) {
-    activeGroup.value = payload.value
-    showToast(`当前焦点：${payload.value}`)
-    return
-  }
-
-  if (payload.type === 'stats' && payload.value) {
-    console.log(`[wevu] hello progress: ${payload.value}%`)
-  }
-}
-
-watch(count, (newValue, oldValue) => {
-  console.log(`[wevu] count changed: ${oldValue} -> ${newValue}`)
-})
 </script>
 
 <template>
-  <view class="page" :class="pageClass" :style="pageStyle">
-    <InfoBanner
-      :title="message"
-      :description="`group=${activeGroup}, count=${count}, doubled=${doubled}`"
-      badge="Demo"
-    />
-
-    <HelloWorld
-      :title="`欢迎，${message}`"
-      :subtitle="`HelloWorld 示例面板（当前分组：${activeGroup}）`"
-      :highlights="helloHighlights"
-      :features="todos"
-      @action="handleHelloAction"
-    >
-      <template #footer>
-        <view class="hello-footer">
-          <text class="hello-footer-text">
-            此区域来自父组件 slot，展示 wevu + weapp-vite 组合能力。
-          </text>
-        </view>
-      </template>
-    </HelloWorld>
-
-    <view class="card" :class="cardClass" :style="cardStyle">
-      <view class="row">
-        <text class="label">
-          当前计数：{{ count }}
-        </text>
-        <text class="label">
-          双倍：{{ doubled }}
-        </text>
+  <view class="page">
+    <view class="card">
+      <view class="card__title">
+        wevu/router + auto-routes
       </view>
-
-      <view class="row actions">
-        <button class="btn primary" :class="primaryBtnClass" :style="primaryBtnStyle" @tap.catch="increment">
-          +1
-        </button>
-        <button class="btn danger" @tap.stop="reset">
-          重置
-        </button>
-        <button class="btn ghost" @tap="openSubPackageDemo">
-          打开分包页
-        </button>
-      </view>
-
-      <view class="row">
-        <text class="label">
-          文本双向绑定：
-        </text>
-      </view>
-      <input v-model="message" class="input" placeholder="输入标题…">
-
-      <view class="row">
-        <text class="label">
-          Checklist
-        </text>
-      </view>
-      <view class="todo">
-        <view v-for="(todo, index) in todos" :key="index" class="todo-item">
-          <text>• {{ todo.title }}</text>
-        </view>
-      </view>
-
-      <view class="route-tip">
-        <text class="route-tip-text">
-          这个模板已经默认启用 autoRoutes，主包页面和 packageA 普通分包页面都会自动进入 app.json。
-        </text>
+      <RouteFeature
+        title="最小演示"
+        description="router 直接在 app.vue 中创建，页面和分包路由都来自 auto-routes。"
+      />
+      <view class="card__route">
+        当前路由：{{ routeSummary }}
       </view>
     </view>
+
+    <RouteBadge label="src/components 内组件通过自动导入直接可用" tone="info" />
+
+    <button class="action-btn" @tap="pushTo(GUIDE_PATH)">
+      跳到主包 guide
+    </button>
+    <button class="action-btn action-btn--secondary" @tap="pushTo(PACKAGE_A_DEMO_PATH)">
+      跳到普通分包
+    </button>
+    <button class="action-btn action-btn--ghost" @tap="pushTo(PACKAGE_B_ENTRY_PATH)">
+      跳到独立分包
+    </button>
+    <button class="action-btn action-btn--light" @tap="relaunchToHome">
+      reLaunch 当前首页
+    </button>
   </view>
 </template>
 
@@ -287,118 +62,48 @@ watch(count, (newValue, oldValue) => {
 .page {
   box-sizing: border-box;
   min-height: 100vh;
-  padding: 0 32rpx 64rpx;
-  background: #f6f7ff;
-}
-
-.page-empty {
-  opacity: 0.98;
-}
-
-.page-energetic {
-  background: #f1f4ff;
+  padding: 28rpx;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
 }
 
 .card {
-  padding: 32rpx;
-  margin-top: 24rpx;
+  padding: 28rpx;
   background: #fff;
-  border: 2rpx solid transparent;
+  border: 2rpx solid #dbeafe;
   border-radius: 24rpx;
-  box-shadow: 0 12rpx 32rpx rgb(44 44 84 / 10%);
 }
 
-.card-active {
-  box-shadow: 0 14rpx 36rpx rgb(76 110 245 / 14%);
+.card__title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #0f172a;
 }
 
-.card-boost {
-  transform: translateY(-2rpx);
-}
-
-.row {
-  display: flex;
-  gap: 16rpx;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16rpx;
-}
-
-.label {
-  font-size: 30rpx;
-  color: #1c1c3c;
-}
-
-.actions {
-  margin: 24rpx 0;
-}
-
-.btn {
-  flex: 1;
-  line-height: 96rpx;
-  color: #fff;
-  border-radius: 16rpx;
-}
-
-.btn.primary {
-  background: #4c6ef5;
-}
-
-.btn-boost {
-  transform: scale(1.02);
-}
-
-.btn-boost-strong {
-  transform: scale(1.04);
-}
-
-.btn.danger {
-  background: #f03e3e;
-}
-
-.btn.ghost {
-  color: #3d5af1;
-  background: #edf2ff;
-}
-
-.input {
-  box-sizing: border-box;
-  height: 88rpx;
-  padding: 0 24rpx;
-  margin: 0 0 24rpx;
-  background: #fff;
-  border: 2rpx solid #e9ecef;
-  border-radius: 16rpx;
-}
-
-.todo-item {
-  margin-bottom: 12rpx;
-  font-size: 26rpx;
-  color: #4f4f7a;
-}
-
-.route-tip {
-  padding: 20rpx 24rpx;
-  margin-top: 24rpx;
-  background: #eef2ff;
-  border-radius: 16rpx;
-}
-
-.route-tip-text {
+.card__desc,
+.card__route {
+  margin-top: 14rpx;
   font-size: 24rpx;
   line-height: 1.6;
-  color: #42558b;
+  color: #334155;
 }
 
-.hello-footer {
-  padding: 12rpx 14rpx;
-  margin-top: 16rpx;
-  background: #eef2ff;
-  border-radius: 12rpx;
+.action-btn {
+  margin-top: 18rpx;
+  color: #fff;
+  background: #2563eb;
+  border-radius: 999rpx;
 }
 
-.hello-footer-text {
-  font-size: 22rpx;
-  color: #4f5ea0;
+.action-btn--secondary {
+  background: #0f766e;
+}
+
+.action-btn--ghost {
+  background: #7c3aed;
+}
+
+.action-btn--light {
+  color: #1d4ed8;
+  background: #dbeafe;
 }
 </style>

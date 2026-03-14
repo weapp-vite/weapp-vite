@@ -40,6 +40,7 @@ export type {
   RouteParamValueRaw,
   RouteQueryParser,
   RouteQueryStringifier,
+  RouteRecordInput,
   RouteRecordMatched,
   RouteRecordRaw,
   RouteRecordRedirect,

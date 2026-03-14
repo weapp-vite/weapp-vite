@@ -7,7 +7,7 @@ describe('runtime/config/targets', () => {
   })
 
   it('returns platform default build target for weapp', () => {
-    expect(getDefaultBuildTarget('weapp')).toBe('es2018')
+    expect(getDefaultBuildTarget('weapp')).toBe('es2020')
   })
 
   it('keeps existing sanitize behavior', () => {
@@ -18,7 +18,7 @@ describe('runtime/config/targets', () => {
   it('detects non-concrete build targets', () => {
     expect(isNonConcreteBuildTarget('modules')).toBe(true)
     expect(isNonConcreteBuildTarget('esnext')).toBe(true)
-    expect(isNonConcreteBuildTarget('es2018')).toBe(false)
+    expect(isNonConcreteBuildTarget('es2020')).toBe(false)
     expect(isNonConcreteBuildTarget(['modules', 'es2020'])).toBe(true)
   })
 })

@@ -35,8 +35,7 @@
     }
   ],
   "include": [
-    "src/**/*.ts",
-    "src/**/*.js",
+    "src/**/*",
     "miniprogram/**/*.ts",
     "miniprogram/**/*.js"
   ]
