@@ -6,13 +6,14 @@
 // 由 weapp-vite 自动生成，请勿编辑。
 declare module 'weapp-vite/typed-components' {
   export interface ComponentProps {
-    RouteBadge: {
+    InfoPanel: {
+      readonly description?: string;
+      readonly eyebrow?: string;
+      readonly title?: string;
+    };
+    StatusPill: {
       readonly label?: string;
       readonly tone?: string;
-    };
-    RouteFeature: {
-      readonly description?: string;
-      readonly title?: string;
     };
   }
   export type ComponentPropName = keyof ComponentProps;
