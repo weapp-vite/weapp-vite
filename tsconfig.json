@@ -5,6 +5,12 @@
     "jsxImportSource": "vue",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "packages/weapp-vite/src/*"
+      ]
+    },
     "resolveJsonModule": true,
     "types": [
       "node",

@@ -24,7 +24,6 @@ const sanitizeBuildTargetMock = vi.hoisted(() => vi.fn(() => ({ hasTarget: false
 const getDefaultBuildTargetMock = vi.hoisted(() => vi.fn(() => undefined))
 const isNonConcreteBuildTargetMock = vi.hoisted(() => vi.fn(() => false))
 const resolveWeappWebConfigMock = vi.hoisted(() => vi.fn(() => ({ enabled: false })))
-const shouldEnableTsconfigPathsPluginMock = vi.hoisted(() => vi.fn(async () => false))
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => ({
@@ -85,10 +84,6 @@ vi.mock('../targets', () => ({
 
 vi.mock('../web', () => ({
   resolveWeappWebConfig: resolveWeappWebConfigMock,
-}))
-
-vi.mock('./tsconfigPaths', () => ({
-  shouldEnableTsconfigPathsPlugin: shouldEnableTsconfigPathsPluginMock,
 }))
 
 function createFactory() {
@@ -209,8 +204,6 @@ describe('runtime config internal loadConfig', () => {
       path: '/project/vite.config.ts',
     })
     hasLibEntryMock.mockReturnValueOnce(false)
-    shouldEnableTsconfigPathsPluginMock.mockResolvedValueOnce(true)
-
     const injectBuiltinAliases = vi.fn()
     const oxcRolldownPlugin = { name: 'oxc-rolldown' } as any
     const oxcVitePlugin = { name: 'oxc-vite' } as any
@@ -248,7 +241,7 @@ describe('runtime config internal loadConfig', () => {
     })
   })
 
-  it('enables native resolve.tsconfigPaths when auto-detected without advanced options', async () => {
+  it('enables native resolve.tsconfigPaths by default without advanced options', async () => {
     loadConfigFromFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
@@ -258,7 +251,6 @@ describe('runtime config internal loadConfig', () => {
       path: '/project/vite.config.ts',
     })
     hasLibEntryMock.mockReturnValueOnce(false)
-    shouldEnableTsconfigPathsPluginMock.mockResolvedValueOnce(true)
 
     const loadConfig = createFactory()
     const result = await loadConfig({

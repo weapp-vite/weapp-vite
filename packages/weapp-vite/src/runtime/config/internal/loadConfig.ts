@@ -27,7 +27,6 @@ import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { createLegacyEs5Plugin } from '../legacyEs5'
 import { getDefaultBuildTarget, isNonConcreteBuildTarget, sanitizeBuildTarget } from '../targets'
 import { resolveWeappWebConfig } from '../web'
-import { shouldEnableTsconfigPathsPlugin } from './tsconfigPaths'
 
 const TRAILING_SLASH_RE = /\/+$/
 
@@ -457,17 +456,12 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     const tsconfigPathsOptions = config.weapp?.tsconfigPaths
     if (tsconfigPathsOptions !== false) {
       const usesAdvancedTsconfigPathsOptions = typeof tsconfigPathsOptions === 'object' && tsconfigPathsOptions !== null
-      const shouldEnable = tsconfigPathsOptions
-        ? true
-        : await shouldEnableTsconfigPathsPlugin(cwd)
-      if (shouldEnable) {
+      if (usesAdvancedTsconfigPathsOptions) {
+        config.plugins.push(tsconfigPaths(tsconfigPathsOptions))
+      }
+      else {
         config.resolve ??= {}
-        if (usesAdvancedTsconfigPathsOptions) {
-          config.plugins.push(tsconfigPaths(tsconfigPathsOptions))
-        }
-        else {
-          config.resolve.tsconfigPaths ??= true
-        }
+        config.resolve.tsconfigPaths ??= true
       }
     }
 

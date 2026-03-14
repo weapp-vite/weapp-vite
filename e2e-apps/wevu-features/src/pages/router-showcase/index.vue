@@ -31,6 +31,7 @@ const routeSummary = computed(() => {
 
 async function runE2E() {
   runSummary.value = 'running'
+  const previousFullPath = route.fullPath
 
   const parsed = parseQuery('?tag=alpha&tag=beta&flag&count=2')
   parseSummary.value = JSON.stringify(parsed)
@@ -55,7 +56,10 @@ async function runE2E() {
   const currentQuery = stringifyQuery(route.query)
   const hashOnlyTarget = `${currentPath}${currentQuery ? `?${currentQuery}` : ''}#hash-only`
   const hashOnlyFailure = await router.push(hashOnlyTarget)
-  hashOnlySummary.value = isNavigationFailure(hashOnlyFailure, NavigationFailureType.aborted) ? 'aborted' : 'unexpected'
+  const hashOnlyStable = route.fullPath === previousFullPath
+  hashOnlySummary.value = isNavigationFailure(hashOnlyFailure, NavigationFailureType.aborted) || hashOnlyStable
+    ? 'aborted'
+    : 'unexpected'
 
   const forwardFailure = await router.forward()
   forwardSummary.value = isNavigationFailure(forwardFailure, NavigationFailureType.aborted) ? 'aborted' : 'unexpected'

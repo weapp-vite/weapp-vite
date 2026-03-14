@@ -130,6 +130,13 @@ export async function collectCandidates(
       else {
         roots.push(absoluteSrcRoot)
       }
+
+      for (const root of subPackageRoots ?? []) {
+        if (!root) {
+          continue
+        }
+        roots.push(path.resolve(absoluteSrcRoot, root))
+      }
     }
     else {
       roots.push(...matcher.getSearchRoots(absoluteSrcRoot))
