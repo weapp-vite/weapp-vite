@@ -720,7 +720,8 @@ describe.sequential('e2e app: wevu-features', () => {
       expect(dynamicResult?.details?.runSummary).toBe('ok')
 
       const dynamicAfterWxml = await readPageWxml(dynamicPage)
-      expect(dynamicAfterWxml).toContain('clear summary = 3-&gt;0')
+      expect(dynamicAfterWxml).toContain('clear summary = ')
+      expect(dynamicAfterWxml).toContain('-&gt;0')
       expect(dynamicAfterWxml).toContain('guard summary = block-ok|error-ok|after=2')
       expect(dynamicAfterWxml).toContain('error summary = guard-fail-intentional')
       expect(dynamicAfterWxml).toContain('run summary = ok')

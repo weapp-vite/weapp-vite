@@ -10,7 +10,7 @@ import { createHmrMarker, waitForFileContains } from '../utils/hmr-helpers'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/auto-routes-define-app-json')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
-const TYPED_ROUTER_PATH = path.join(APP_ROOT, 'typed-router.d.ts')
+const TYPED_ROUTER_PATH = path.join(APP_ROOT, 'src/typed-router.d.ts')
 
 const LOGS_VUE_PATH = path.join(APP_ROOT, 'src/pages/logs/index.vue')
 const ADDED_ROUTE_VUE_PATH = path.join(APP_ROOT, 'src/pages/logs/hmr-added.vue')

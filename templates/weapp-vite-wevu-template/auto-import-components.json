@@ -1,8 +1,4 @@
 {
-  "HelloWorld": "/components/HelloWorld/index",
-  "InfoBanner": "/components/InfoBanner/index",
   "InfoPanel": "/components/InfoPanel/index",
-  "RouteBadge": "/components/RouteBadge/index",
-  "RouteFeature": "/components/RouteFeature/index",
   "StatusPill": "/components/StatusPill/index"
 }
