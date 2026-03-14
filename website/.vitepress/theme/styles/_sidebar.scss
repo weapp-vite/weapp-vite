@@ -6,6 +6,10 @@
   @return url("data:image/svg+xml,#{$svg}");
 }
 
+@function guide-icon($svg) {
+  @return url("data:image/svg+xml,#{$svg}");
+}
+
 .VPSidebar {
   background: color.change(#fff, $alpha: 0.7);
   backdrop-filter: saturate(150%) blur(10px);
@@ -67,6 +71,217 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
 /* add a little breathing room between the left indicator and the text */
 .VPSidebarItem .link .text {
   padding-left: 10px;
+}
+
+.VPSidebar .group > .text,
+.VPSidebar .group > button .text,
+.VPSidebar .group > .item > .text,
+.VPSidebar .group > .item > button .text {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.VPSidebar .group > .text::before,
+.VPSidebar .group > button .text::before,
+.VPSidebar .group > .item > .text::before,
+.VPSidebar .group > .item > button .text::before {
+  --guide-group-bg: rgb(15 23 42 / 6%);
+  --guide-group-border: rgb(100 116 139 / 16%);
+
+  content: '';
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 30%), transparent),
+    var(--guide-group-bg);
+  border: 1px solid var(--guide-group-border);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 55%) inset;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 10px 10px;
+  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23475569%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223.5%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar .group:has(a[href='/guide/what-is-weapp-vite.html']) > .text::before,
+.VPSidebar .group:has(a[href='/guide/what-is-weapp-vite.html']) > button .text::before,
+.VPSidebar .group:has(a[href='/guide/what-is-weapp-vite.html']) > .item > .text::before,
+.VPSidebar .group:has(a[href='/guide/what-is-weapp-vite.html']) > .item > button .text::before {
+  --guide-group-bg: rgb(16 185 129 / 12%);
+  --guide-group-border: rgb(16 185 129 / 24%);
+
+  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 4v6%22/%3E%3Cpath d=%22M17 14h3v6h-6v-3%22/%3E%3Cpath d=%22M4 11h10v9H4z%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar .group:has(a[href='/guide/vue-sfc/']) > .text::before,
+.VPSidebar .group:has(a[href='/guide/vue-sfc/']) > button .text::before,
+.VPSidebar .group:has(a[href='/guide/vue-sfc/']) > .item > .text::before,
+.VPSidebar .group:has(a[href='/guide/vue-sfc/']) > .item > button .text::before {
+  --guide-group-bg: rgb(20 184 166 / 12%);
+  --guide-group-border: rgb(20 184 166 / 24%);
+
+  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22m4 5 8 14 8-14%22/%3E%3Cpath d=%22m8 5 4 7 4-7%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar .group:has(a[href='/guide/auto-import.html']) > .text::before,
+.VPSidebar .group:has(a[href='/guide/auto-import.html']) > button .text::before,
+.VPSidebar .group:has(a[href='/guide/auto-import.html']) > .item > .text::before,
+.VPSidebar .group:has(a[href='/guide/auto-import.html']) > .item > button .text::before {
+  --guide-group-bg: rgb(99 102 241 / 12%);
+  --guide-group-border: rgb(99 102 241 / 24%);
+
+  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M5 7h14%22/%3E%3Cpath d=%22M5 12h10%22/%3E%3Cpath d=%22M5 17h6%22/%3E%3Cpath d=%22M17 14v6%22/%3E%3Cpath d=%22M14 17h6%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar .group:has(a[href='/deep/init.html']) > .text::before,
+.VPSidebar .group:has(a[href='/deep/init.html']) > button .text::before,
+.VPSidebar .group:has(a[href='/deep/init.html']) > .item > .text::before,
+.VPSidebar .group:has(a[href='/deep/init.html']) > .item > button .text::before {
+  --guide-group-bg: rgb(249 115 22 / 12%);
+  --guide-group-border: rgb(249 115 22 / 24%);
+
+  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23c2410c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v4%22/%3E%3Cpath d=%22M12 16v4%22/%3E%3Cpath d=%22M4 12h4%22/%3E%3Cpath d=%22M16 12h4%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href^='/guide/'] .text,
+.VPSidebar a[href='/config.html'] .text,
+.VPSidebar a[href='/config/'] .text,
+.VPSidebar a[href^='/troubleshoot/'] .text,
+.VPSidebar a[href^='/deep/'] .text,
+.VPSidebar a[href^='/integration/'] .text {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.VPSidebar a[href^='/guide/'] .text::before,
+.VPSidebar a[href='/config.html'] .text::before,
+.VPSidebar a[href='/config/'] .text::before,
+.VPSidebar a[href^='/troubleshoot/'] .text::before,
+.VPSidebar a[href^='/deep/'] .text::before,
+.VPSidebar a[href^='/integration/'] .text::before {
+  --guide-icon-bg: rgb(100 116 139 / 9%);
+  --guide-icon-border: rgb(100 116 139 / 16%);
+
+  content: '';
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 1px solid var(--guide-icon-border);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 24%), transparent),
+    var(--guide-icon-bg);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 65%) inset;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px 12px;
+  background-image: var(--guide-icon);
+}
+
+.VPSidebar a[href='/guide/what-is-weapp-vite.html'] .text::before {
+  --guide-icon-bg: rgb(14 165 233 / 11%);
+  --guide-icon-border: rgb(14 165 233 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230369a1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7v10l8 4 8-4V7l-8-4Z%22/%3E%3Cpath d=%22M12 11v4%22/%3E%3Cpath d=%22M12 8h.01%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href='/guide/'] .text::before {
+  --guide-icon-bg: rgb(16 185 129 / 11%);
+  --guide-icon-border: rgb(16 185 129 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 4v6%22/%3E%3Cpath d=%22M17 14h3v6h-6v-3%22/%3E%3Cpath d=%22M4 11h10v9H4z%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href='/guide/cli.html'] .text::before,
+.VPSidebar a[href='/guide/debug.html'] .text::before {
+  --guide-icon-bg: rgb(245 158 11 / 11%);
+  --guide-icon-border: rgb(245 158 11 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23b45309%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M9 8 5 12l4 4%22/%3E%3Cpath d=%22m15 8 4 4-4 4%22/%3E%3Cpath d=%22M13 6 11 18%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href='/guide/ai.html'] .text::before {
+  --guide-icon-bg: rgb(244 63 94 / 11%);
+  --guide-icon-border: rgb(244 63 94 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be185d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%227%22 y=%227%22 width=%2210%22 height=%229%22 rx=%222%22/%3E%3Cpath d=%22M9 7V5%22/%3E%3Cpath d=%22M15 7V5%22/%3E%3Cpath d=%22M10 11h.01%22/%3E%3Cpath d=%22M14 11h.01%22/%3E%3Cpath d=%22M12 16v3%22/%3E%3Cpath d=%22M9 19h6%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href^='/guide/directory-structure'] .text::before {
+  --guide-icon-bg: rgb(16 185 129 / 12%);
+  --guide-icon-border: rgb(16 185 129 / 24%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 4v6%22/%3E%3Cpath d=%22M17 14h3v6h-6v-3%22/%3E%3Cpath d=%22M4 11h10v9H4z%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href='/guide/manual-integration.html'] .text::before {
+  --guide-icon-bg: rgb(99 102 241 / 11%);
+  --guide-icon-border: rgb(99 102 241 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 4h12v16H6z%22/%3E%3Cpath d=%22M9 8h6%22/%3E%3Cpath d=%22M9 12h6%22/%3E%3Cpath d=%22M9 16h4%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href='/guide/vue-sfc/'] .text::before,
+.VPSidebar a[href='/guide/wxml.html'] .text::before,
+.VPSidebar a[href='/guide/wxs.html'] .text::before,
+.VPSidebar a[href='/guide/wxss.html'] .text::before {
+  --guide-icon-bg: rgb(20 184 166 / 11%);
+  --guide-icon-border: rgb(20 184 166 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22m4 5 8 14 8-14%22/%3E%3Cpath d=%22m8 5 4 7 4-7%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href='/guide/alias.html'] .text::before,
+.VPSidebar a[href='/guide/vite-plugin-host.html'] .text::before {
+  --guide-icon-bg: rgb(168 85 247 / 11%);
+  --guide-icon-border: rgb(168 85 247 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237c3aed%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M7 7h10v10H7z%22/%3E%3Cpath d=%22M3 12h4%22/%3E%3Cpath d=%22M17 12h4%22/%3E%3Cpath d=%22M12 3v4%22/%3E%3Cpath d=%22M12 17v4%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href='/guide/npm.html'] .text::before,
+.VPSidebar a[href='/guide/plugin.html'] .text::before,
+.VPSidebar a[href='/guide/lib-mode.html'] .text::before {
+  --guide-icon-bg: rgb(34 197 94 / 11%);
+  --guide-icon-border: rgb(34 197 94 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2315803d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 2l8 4.5v11L12 22l-8-4.5v-11L12 2Z%22/%3E%3Cpath d=%22M12 9v4%22/%3E%3Cpath d=%22M10 11h4%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href='/guide/generate.html'] .text::before,
+.VPSidebar a[href='/guide/auto-routes.html'] .text::before,
+.VPSidebar a[href='/guide/auto-import.html'] .text::before,
+.VPSidebar a[href='/guide/auto-import-resolver.html'] .text::before,
+.VPSidebar a[href='/guide/json-intelli-sense.html'] .text::before,
+.VPSidebar a[href='/guide/json-enhance.html'] .text::before {
+  --guide-icon-bg: rgb(99 102 241 / 11%);
+  --guide-icon-border: rgb(99 102 241 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M5 7h14%22/%3E%3Cpath d=%22M5 12h10%22/%3E%3Cpath d=%22M5 17h6%22/%3E%3Cpath d=%22M17 14v6%22/%3E%3Cpath d=%22M14 17h6%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href='/guide/subpackage.html'] .text::before,
+.VPSidebar a[href='/guide/chunks.html'] .text::before {
+  --guide-icon-bg: rgb(132 204 22 / 12%);
+  --guide-icon-border: rgb(132 204 22 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234d7c0f%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7l8 4 8-4-8-4Z%22/%3E%3Cpath d=%22m4 12 8 4 8-4%22/%3E%3Cpath d=%22m4 8 8 4 8-4%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href='/guide/image-optimize.html'] .text::before,
+.VPSidebar a[href^='/integration/'] .text::before {
+  --guide-icon-bg: rgb(6 182 212 / 11%);
+  --guide-icon-border: rgb(6 182 212 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 12h6%22/%3E%3Cpath d=%22M14 12h6%22/%3E%3Cpath d=%22M12 4v6%22/%3E%3Cpath d=%22M12 14v6%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%222%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href='/guide/web-compat-matrix.html'] .text::before,
+.VPSidebar a[href='/guide/seo-governance.html'] .text::before,
+.VPSidebar a[href='/guide/module.html'] .text::before,
+.VPSidebar a[href^='/troubleshoot/'] .text::before,
+.VPSidebar a[href='/config.html'] .text::before,
+.VPSidebar a[href='/config/'] .text::before {
+  --guide-icon-bg: rgb(120 113 108 / 11%);
+  --guide-icon-border: rgb(120 113 108 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2357534e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7v10l8 4 8-4V7l-8-4Z%22/%3E%3Cpath d=%22M12 9v3%22/%3E%3Cpath d=%22M12 16h.01%22/%3E%3C/svg%3E')};
+}
+
+.VPSidebar a[href^='/deep/'] .text::before {
+  --guide-icon-bg: rgb(249 115 22 / 12%);
+  --guide-icon-border: rgb(249 115 22 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23c2410c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v4%22/%3E%3Cpath d=%22M12 16v4%22/%3E%3Cpath d=%22M4 12h4%22/%3E%3Cpath d=%22M16 12h4%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E')};
 }
 
 .VPSidebar a[href*='/guide/directory-structure/'] .text {
