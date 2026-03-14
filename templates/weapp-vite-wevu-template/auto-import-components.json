@@ -1,6 +1,4 @@
 {
-  "HelloWorld": "/components/HelloWorld/index",
-  "InfoBanner": "/components/InfoBanner/index",
   "RouteBadge": "/components/RouteBadge/index",
   "RouteFeature": "/components/RouteFeature/index"
 }

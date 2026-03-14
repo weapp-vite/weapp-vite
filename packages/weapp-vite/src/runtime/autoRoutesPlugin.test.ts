@@ -67,7 +67,7 @@ describe('createAutoRoutesService', () => {
 
     expect(service.isInitialized()).toBe(true)
 
-    const typedRouterPath = path.join(tempDir, 'typed-router.d.ts')
+    const typedRouterPath = path.join(srcRoot, 'typed-router.d.ts')
     expect(await fs.pathExists(typedRouterPath)).toBe(true)
     const typedRouterContent = await fs.readFile(typedRouterPath, 'utf8')
     expect(typedRouterContent).toContain('"pages/index/index"')
@@ -114,7 +114,7 @@ describe('createAutoRoutesService', () => {
     expect(service.isInitialized()).toBe(true)
     expect(service.isRouteFile(subPackagePage)).toBe(true)
 
-    const typedRouterPath = path.join(tempDir, 'typed-router.d.ts')
+    const typedRouterPath = path.join(srcRoot, 'typed-router.d.ts')
     const updatedTypedRouterContent = await fs.readFile(typedRouterPath, 'utf8')
     expect(updatedTypedRouterContent).toContain('"packageA/pages/cat"')
 
@@ -304,7 +304,7 @@ describe('createAutoRoutesService', () => {
     expect(snapshot.pages).toContain('pages/renamed/index')
     expect(snapshot.pages).not.toContain('pages/index/index')
 
-    const typedRouterPath = path.join(tempDir, 'typed-router.d.ts')
+    const typedRouterPath = path.join(srcRoot, 'typed-router.d.ts')
     const typedRouterContent = await fs.readFile(typedRouterPath, 'utf8')
     expect(typedRouterContent).toContain('"pages/renamed/index"')
     expect(typedRouterContent).not.toContain('"pages/index/index"')
@@ -336,7 +336,7 @@ describe('createAutoRoutesService', () => {
 
     expect(service.isEnabled()).toBe(false)
     expect(spy).not.toHaveBeenCalled()
-    const typedRouterPath = path.join(tempDir, 'typed-router.d.ts')
+    const typedRouterPath = path.join(srcRoot, 'typed-router.d.ts')
     expect(await fs.pathExists(typedRouterPath)).toBe(false)
     expect(service.isInitialized()).toBe(true)
     expect(service.getSnapshot()).toEqual({

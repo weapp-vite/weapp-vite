@@ -9,7 +9,6 @@
     ]
   },
   "include": [
-    "typed-router.d.ts",
     "src/**/*"
   ]
 }

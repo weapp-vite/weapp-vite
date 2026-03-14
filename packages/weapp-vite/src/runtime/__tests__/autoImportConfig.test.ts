@@ -266,7 +266,7 @@ describe('autoImport config helpers', () => {
       })
       const result = getTypedComponentsSettings(ctx)
       expect(result.enabled).toBe(true)
-      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, 'typed-components.d.ts'))
+      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, 'src', 'typed-components.d.ts'))
     })
 
     it('resolves relative output paths for typed components', () => {
@@ -299,7 +299,7 @@ describe('autoImport config helpers', () => {
       })
       const result = getTypedComponentsSettings(ctx)
       expect(result.enabled).toBe(true)
-      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, 'typed-components.d.ts'))
+      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, 'src', 'typed-components.d.ts'))
     })
 
     it('prefers scoped subpackage settings when building independent bundles', () => {

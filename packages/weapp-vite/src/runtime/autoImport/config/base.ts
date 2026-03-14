@@ -12,7 +12,7 @@ export function resolveBaseDir(configService: NonNullable<MutableCompilerContext
 }
 
 export function resolveTypedComponentsDefaultPath(configService: NonNullable<MutableCompilerContext['configService']>) {
-  return path.resolve(resolveBaseDir(configService), 'typed-components.d.ts')
+  return path.resolve(configService.absoluteSrcRoot, 'typed-components.d.ts')
 }
 
 export function resolveHtmlCustomDataDefaultPath(configService: NonNullable<MutableCompilerContext['configService']>) {
@@ -20,5 +20,5 @@ export function resolveHtmlCustomDataDefaultPath(configService: NonNullable<Muta
 }
 
 export function resolveVueComponentsDefaultPath(configService: NonNullable<MutableCompilerContext['configService']>) {
-  return path.resolve(resolveBaseDir(configService), 'components.d.ts')
+  return path.resolve(configService.absoluteSrcRoot, 'components.d.ts')
 }
