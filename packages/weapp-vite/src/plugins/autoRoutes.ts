@@ -203,6 +203,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
 
     buildStart() {
       refreshAutoRoutesAliasTargets()
+      startRouteFileWatcher()
     },
 
     resolveId(id) {

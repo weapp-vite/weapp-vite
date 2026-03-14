@@ -16,3 +16,587 @@ exports[`template e2e: wevu-features-app > renders all pages from app config > w
 </view>
 "
 `;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::packages/router-demo/pages/normal-target/index 1`] = `
+"<view class="router-subpackage-page">
+  <view class="router-subpackage-page__badge">普通分包目标页</view>
+  <view class="router-subpackage-page__line" id="router-target-subpackage-route">
+    route = /packages/router-demo/pages/normal-target/index
+  </view>
+  <view class="router-subpackage-page__line">
+    这个页面用于验证 wevu/router 到普通分包页的真实跳转。
+  </view>
+  <view class="router-subpackage-page__actions">
+    <view class="router-subpackage-page__btn">返回 coverage 首页</view>
+    <view class="router-subpackage-page__btn router-subpackage-page__btn--secondary">去主包页</view>
+    <view class="router-subpackage-page__btn router-subpackage-page__btn--accent">
+      去独立分包页
+    </view>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::packages/router-demo-independent/pages/independent-target/index 1`] = `
+"<view class="router-independent-page">
+  <view class="router-independent-page__badge">独立分包目标页</view>
+  <view class="router-independent-page__line" id="router-target-independent-route">
+    route = /packages/router-demo-independent/pages/independent-target/index
+  </view>
+  <view class="router-independent-page__line">
+    这个页面用于验证 wevu/router 到独立分包页的真实跳转。
+  </view>
+  <view class="router-independent-page__actions">
+    <view class="router-independent-page__btn">返回 coverage 首页</view>
+    <view class="router-independent-page__btn router-independent-page__btn--secondary">
+      去主包页
+    </view>
+    <view class="router-independent-page__btn router-independent-page__btn--accent">
+      去普通分包页
+    </view>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/index/index 1`] = `
+"<view class="feature-nav-page">
+  <view class="feature-nav-title">wevu 特性展示</view>
+  <view class="feature-nav-subtitle">选择一个特性场景进入</view>
+  <view class="feature-nav-list">
+    <navigator class="feature-nav-item" url="/pages/use-attrs/index" role="link">
+      <view class="feature-nav-item-title">useAttrs</view>
+      <view class="feature-nav-item-summary">展示 setup 中 attrs 的响应式变化</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/use-slots/index" role="link">
+      <view class="feature-nav-item-title">useSlots</view>
+      <view class="feature-nav-item-summary">展示 setup 中 slots 的键集合与兜底语义</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/use-model/index" role="link">
+      <view class="feature-nav-item-title">useModel</view>
+      <view class="feature-nav-item-summary">展示 setup 中 useModel 与 update:modelValue 事件</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/use-provide-inject/index" role="link">
+      <view class="feature-nav-item-title">provide / inject</view>
+      <view class="feature-nav-item-summary">展示跨层共享状态与交互式响应更新</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/use-store/index" role="link">
+      <view class="feature-nav-item-title">store</view>
+      <view class="feature-nav-item-summary">展示 setup/options store 与 patch/reset/订阅能力</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/subpath-entries/index" role="link">
+      <view class="feature-nav-item-title">subpath entries</view>
+      <view class="feature-nav-item-summary">展示 wevu/router|store|api|fetch 子路径入口联动</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/router-coverage/index" role="link">
+      <view class="feature-nav-item-title">router coverage</view>
+      <view class="feature-nav-item-summary">展示主包/分包/独立分包跳转与完整路由守卫日志</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/router-showcase/index" role="link">
+      <view class="feature-nav-item-title">router showcase</view>
+      <view class="feature-nav-item-summary">
+        展示命名路由、alias、query 编解码与 hash-only/forward/go
+      </view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/router-dynamic/index" role="link">
+      <view class="feature-nav-item-title">router dynamic</view>
+      <view class="feature-nav-item-summary">展示 add/remove/clear 路由与守卫链路</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/native-uses-vue/index" role="link">
+      <view class="feature-nav-item-title">native -&gt; vue</view>
+      <view class="feature-nav-item-summary">展示原生组件通过 usingComponents 引入 Vue 组件</view>
+    </navigator>
+    <navigator class="feature-nav-item" url="/pages/router-stability/index" role="link">
+      <view class="feature-nav-item-title">router stability</view>
+      <view class="feature-nav-item-summary">
+        展示 wx/pageRouter/router 在相对路径上的基路径差异
+      </view>
+    </navigator>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/native-uses-vue/index 1`] = `
+"<view class="native-interop-page">
+  <view class="native-interop-page__title">原生组件引入 Vue 组件</view>
+  <view class="native-interop-page__subtitle">
+    验证 native usingComponents -&amp;gt; Vue SFC 链路
+  </view>
+  <view class="native-interop-page__toolbar">
+    <view class="native-interop-page__btn" id="native-interop-toggle">mode: basic</view>
+    <view class="native-interop-page__btn" id="native-interop-count">count: 1</view>
+  </view>
+  <nativeusesvue is="native/native-uses-vue/index">
+    <view class="native-uses-vue vue-index--native-uses-vue">
+      <native-card is="components/native-card/index">
+        <view class="native-card index--native-card">
+          <view class="native-card__head index--native-card__head">
+            <text class="native-card__title index--native-card__title"></text>
+            <text class="native-card__badge index--native-card__badge"></text>
+          </view>
+          <text class="native-card__subtitle index--native-card__subtitle"></text>
+          <view class="native-card__body index--native-card__body">
+            <text class="native-uses-vue__note vue-index--native-uses-vue__note"></text>
+          </view>
+        </view>
+      </native-card>
+    </view>
+  </nativeusesvue>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-coverage/index 1`] = `
+"<view class="router-coverage-page">
+  <view class="router-coverage-page__title">wevu/router 页面跳转覆盖</view>
+  <view class="router-coverage-page__subtitle">
+    覆盖主包、普通分包、独立分包跳转，以及 beforeEach / beforeEnter / beforeResolve / afterEach /
+    onError
+  </view>
+  <view class="router-coverage-page__panel">
+    <view class="router-coverage-page__line" id="router-coverage-route">
+      current route = /pages/router-coverage/index
+    </view>
+    <view class="router-coverage-page__line" id="router-coverage-action">last action = idle</view>
+  </view>
+  <view class="router-coverage-page__section-title">页面跳转</view>
+  <view class="router-coverage-page__card">
+    <view class="router-coverage-page__card-title">主包页面</view>
+    <view class="router-coverage-page__card-summary">通过 wevu/router 跳转到主包页面</view>
+    <view class="router-coverage-page__actions">
+      <view
+        class="router-coverage-page__btn"
+        data-wv-i0="0"
+        data-wv-inline-id-tap="__wv_inline_0"
+        data-wv-s0="[object Object]">
+        push 到当前页
+      </view>
+    </view>
+  </view>
+  <view class="router-coverage-page__card">
+    <view class="router-coverage-page__card-title">普通分包页面</view>
+    <view class="router-coverage-page__card-summary">通过 wevu/router 跳转到普通分包页面</view>
+    <view class="router-coverage-page__actions">
+      <view
+        class="router-coverage-page__btn"
+        data-wv-i0="1"
+        data-wv-inline-id-tap="__wv_inline_0"
+        data-wv-s0="[object Object]">
+        push 到当前页
+      </view>
+    </view>
+  </view>
+  <view class="router-coverage-page__card">
+    <view class="router-coverage-page__card-title">独立分包页面</view>
+    <view class="router-coverage-page__card-summary">通过 wevu/router 跳转到独立分包页面</view>
+    <view class="router-coverage-page__actions">
+      <view
+        class="router-coverage-page__btn"
+        data-wv-i0="2"
+        data-wv-inline-id-tap="__wv_inline_0"
+        data-wv-s0="[object Object]">
+        push 到当前页
+      </view>
+      <view
+        class="router-coverage-page__btn router-coverage-page__btn--secondary"
+        data-wv-i0="2"
+        data-wv-inline-id-tap="__wv_inline_1"
+        data-wv-s0="[object Object]">
+        replace 到当前页
+      </view>
+    </view>
+  </view>
+  <view class="router-coverage-page__section-title">守卫触发</view>
+  <view class="router-coverage-page__actions">
+    <view class="router-coverage-page__btn" id="router-coverage-blocked">触发 beforeEach 阻断</view>
+    <view
+      class="router-coverage-page__btn router-coverage-page__btn--warn"
+      id="router-coverage-error">
+      触发 beforeResolve 报错
+    </view>
+    <view
+      class="router-coverage-page__btn router-coverage-page__btn--secondary"
+      id="router-coverage-back">
+      调用 router.back()
+    </view>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-coverage/main-target/index 1`] = `
+"<view class="router-target-page">
+  <view class="router-target-page__badge">主包目标页</view>
+  <view class="router-target-page__line" id="router-target-main-route">
+    route = /pages/router-coverage/main-target/index
+  </view>
+  <view class="router-target-page__line">这个页面用于验证 wevu/router 到主包页的真实跳转。</view>
+  <view class="router-target-page__actions">
+    <view class="router-target-page__btn">返回 coverage 首页</view>
+    <view class="router-target-page__btn router-target-page__btn--secondary">去普通分包页</view>
+    <view class="router-target-page__btn router-target-page__btn--accent">去独立分包页</view>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-dynamic/index 1`] = `
+"<view class="router-dynamic-page">
+  <view class="router-dynamic-page__title">wevu/router 能力展示 (dynamic + guards)</view>
+  <view class="router-dynamic-page__subtitle">
+    展示 add/remove/clear、options 快照、beforeEach/beforeResolve/afterEach/onError
+  </view>
+  <view class="router-dynamic-page__line" id="router-dynamic-base">base routes = pending</view>
+  <view class="router-dynamic-page__line" id="router-dynamic-add-remove">
+    add/remove summary = pending
+  </view>
+  <view class="router-dynamic-page__line" id="router-dynamic-clear">clear summary = pending</view>
+  <view class="router-dynamic-page__line" id="router-dynamic-options">
+    options summary = pending
+  </view>
+  <view class="router-dynamic-page__line" id="router-dynamic-guard">guard summary = pending</view>
+  <view class="router-dynamic-page__line" id="router-dynamic-error">error summary = pending</view>
+  <view class="router-dynamic-page__line" id="router-dynamic-run">run summary = idle</view>
+  <view class="router-dynamic-page__btn" id="router-dynamic-run-e2e">run router dynamic e2e</view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-showcase/index 1`] = `
+"<view class="router-showcase-page">
+  <view class="router-showcase-page__title">wevu/router 能力展示 (showcase)</view>
+  <view class="router-showcase-page__subtitle">
+    展示 query 编解码、命名路由、alias、hash-only 失败、forward/go/isReady
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-route">
+    route summary = /pages/router-showcase/index|/pages/router-showcase/index
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-parse">parse summary = pending</view>
+  <view class="router-showcase-page__line" id="router-showcase-stringify">
+    stringify summary = pending
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-named">named summary = pending</view>
+  <view class="router-showcase-page__line" id="router-showcase-alias">alias summary = pending</view>
+  <view class="router-showcase-page__line" id="router-showcase-relative">
+    relative summary = pending
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-hash-only">
+    hash-only summary = pending
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-forward">
+    forward summary = pending
+  </view>
+  <view class="router-showcase-page__line" id="router-showcase-go">go summary = pending</view>
+  <view class="router-showcase-page__line" id="router-showcase-ready">ready summary = pending</view>
+  <view class="router-showcase-page__line" id="router-showcase-run">run summary = idle</view>
+  <view class="router-showcase-page__btn" id="router-showcase-run-e2e">
+    run router showcase e2e
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-stability/index 1`] = `
+"<view class="router-stability-page">
+  <view class="router-stability-page__title">router stability (page context)</view>
+  <view class="router-stability-page__desc">
+    用于验证 wx.navigateTo 与 this.pageRouter.navigateTo 的相对路径基准差异。
+  </view>
+  <view class="router-stability-page__btn" id="router-open-sub">打开 sub 页面</view>
+  <view class="router-stability-page__btn" id="router-index-wx">
+    当前页触发 wx.navigateTo('./target/index')
+  </view>
+  <view class="router-stability-page__btn" id="router-index-page-router">
+    当前页触发 pageRouter.navigateTo('./target/index')
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-stability/sub/index 1`] = `
+"<view class="router-sub-page">
+  <view class="router-sub-page__title">router stability (sub page)</view>
+  <view class="router-sub-page__desc">本页会调用上一个页面的方法，验证相对路径基准是否稳定。</view>
+  <view class="router-sub-page__btn" id="router-sub-call-prev-wx">
+    调用上页 wx.navigateTo('./target/index')
+  </view>
+  <view class="router-sub-page__btn" id="router-sub-call-prev-page-router">
+    调用上页 pageRouter.navigateTo('./target/index')
+  </view>
+  <routeroriginprobe is="components/router-origin-probe/index" class="__wv-ref-0">
+    <view class="index--router-origin-probe">
+      <view class="index--router-origin-probe__title">component router origin probe</view>
+      <view class="index--router-origin-probe__btn" id="cmp-router-nav">
+        this.router.navigateTo('./target/index')
+      </view>
+      <view class="index--router-origin-probe__btn" id="cmp-page-router-nav">
+        this.pageRouter.navigateTo('./target/index')
+      </view>
+    </view>
+  </routeroriginprobe>
+  <view class="router-sub-page__btn" id="router-sub-call-component-router">
+    组件 this.router.navigateTo('./target/index')
+  </view>
+  <view class="router-sub-page__btn" id="router-sub-call-component-page-router">
+    组件 this.pageRouter.navigateTo('./target/index')
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-stability/sub/target/index 1`] = `
+"<view class="router-sub-target-page">
+  <view id="router-target-sub-marker">
+    route=pages/router-stability/sub/target/index source=unknown
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/router-stability/target/index 1`] = `
+"<view class="router-target-page">
+  <view id="router-target-main-marker">
+    route=pages/router-stability/target/index source=unknown
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/subpath-entries/index 1`] = `
+"<view class="subpath-entries-page">
+  <view class="subpath-entries-page__title">wevu 子路径入口综合场景</view>
+  <view class="subpath-entries-page__subtitle">
+    覆盖 wevu/router、wevu/store、wevu/api、wevu/fetch 的联动使用
+  </view>
+  <view class="subpath-entries-page__line" id="subpath-router-fullpath">
+    router fullPath = pending
+  </view>
+  <view class="subpath-entries-page__line" id="subpath-store-summary">
+    store count/label = 0 / init
+  </view>
+  <view class="subpath-entries-page__line" id="subpath-api-status">api status = pending</view>
+  <view class="subpath-entries-page__line" id="subpath-fetch-status">fetch status = pending</view>
+  <view class="subpath-entries-page__line" id="subpath-fetch-payload">fetch payload = pending</view>
+  <view class="subpath-entries-page__line" id="subpath-request-count">request count = 0</view>
+  <view class="subpath-entries-page__line" id="subpath-request-echo">request body echo =</view>
+  <view class="subpath-entries-page__line" id="subpath-run-summary">run summary = idle</view>
+  <view class="subpath-entries-page__btn" id="subpath-run-e2e">run e2e scenario</view>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/use-attrs/index 1`] = `
+"<view class="use-attrs-page">
+  <view class="use-attrs-page__title">wevu useAttrs 特性展示</view>
+  <view class="use-attrs-page__subtitle">下面按钮控制的是组件的非 props 参数（attrs）</view>
+  <view class="use-attrs-page__toolbar">
+    <view id="ctrl-cycle-tone" class="use-attrs-page__btn wevu-features-btn-cycle-tone tone-blue">
+      切换 tone：tone-blue
+    </view>
+    <view
+      id="ctrl-toggle-visible"
+      class="use-attrs-page__btn wevu-features-btn-toggle-visible ctrl-on">
+      切换 visible：true
+    </view>
+    <view
+      id="ctrl-toggle-border"
+      style="border: 1px dashed #64748b; padding: 4px 8px"
+      class="use-attrs-page__btn wevu-features-btn-toggle-border ctrl-dash">
+      边框模式：dash
+    </view>
+    <view class="use-attrs-page__btn wevu-features-btn-bump-seed" id="ctrl-bump-seed">
+      递增 seed：1
+    </view>
+  </view>
+  <useattrsfeature is="components/use-attrs-feature/index">
+    <view class="index--use-attrs-feature">
+      <view class="index--use-attrs-feature__title">组件内 useAttrs()</view>
+      <view
+        id="attrs-badge"
+        style="border: 1px dashed #64748b; padding: 4px 8px"
+        class="index--use-attrs-feature__badge index--tone-blue">
+        state-class = tone-blue
+      </view>
+      <view id="attrs-flag" class="index--use-attrs-feature__flag index--is-on">
+        visible = true
+      </view>
+      <view class="index--use-attrs-feature__extra" id="attrs-extra">extra-label = seed-1</view>
+      <view class="index--use-attrs-feature__rows">
+        <view class="index--use-attrs-feature__row">__wv_cls_0: use-attrs-feature__badge</view>
+        <view class="index--use-attrs-feature__row">__wv_cls_1: use-attrs-feature__flag</view>
+        <view class="index--use-attrs-feature__row">__wv_style_0:</view>
+        <view class="index--use-attrs-feature__row">
+          badge-style: border: 2rpx dashed #64748b; padding: 8rpx 16rpx;
+        </view>
+        <view class="index--use-attrs-feature__row">extra-label: seed-1</view>
+        <view class="index--use-attrs-feature__row">seed-tag: 1</view>
+        <view class="index--use-attrs-feature__row">state-class: tone-blue</view>
+        <view class="index--use-attrs-feature__row">visible: true</view>
+      </view>
+    </view>
+  </useattrsfeature>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/use-model/index 1`] = `
+"<view class="use-model-page">
+  <view class="use-model-page__title">wevu useModel 特性展示</view>
+  <view class="use-model-page__subtitle">
+    父组件与子组件双向更新 modelValue，并记录 update:modelValue
+  </view>
+  <view class="use-model-page__toolbar">
+    <view class="use-model-page__btn" id="model-parent-alpha">parent -&amp;gt; alpha</view>
+    <view class="use-model-page__btn" id="model-parent-beta">parent -&amp;gt; beta</view>
+  </view>
+  <view class="use-model-page__value" id="model-parent-value">parent modelValue = seed-model</view>
+  <view class="use-model-page__value" id="model-log-size">emit logs = 0</view>
+  <usemodelfeature
+    is="components/use-model-feature/index"
+    data-wv-event-detail-update-modelvalue="1"
+    data-wv-inline-id-update-modelvalue="__wv_inline_0">
+    <view class="index--use-model-feature">
+      <view class="index--use-model-feature__title">组件内 useModel()</view>
+      <view class="index--use-model-feature__value" id="model-inner-value">
+        inner model = seed-model
+      </view>
+      <view class="index--use-model-feature__actions">
+        <view
+          class="index--use-model-feature__btn"
+          data-wv-inline-id-tap="__wv_inline_0"
+          id="model-inner-alpha">
+          child -&amp;gt; alpha
+        </view>
+        <view
+          class="index--use-model-feature__btn"
+          data-wv-inline-id-tap="__wv_inline_1"
+          id="model-inner-beta">
+          child -&amp;gt; beta
+        </view>
+      </view>
+    </view>
+  </usemodelfeature>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/use-provide-inject/index 1`] = `
+"<view class="use-provide-inject-page">
+  <view class="use-provide-inject-page__title">wevu provide / inject 特性展示</view>
+  <view class="use-provide-inject-page__subtitle">
+    provider 与 inject 共同操作同一份状态，验证跨层响应式同步
+  </view>
+  <view class="use-provide-inject-page__toolbar">
+    <view class="use-provide-inject-page__btn" id="provide-inc">provider -&amp;gt; increment</view>
+    <view class="use-provide-inject-page__btn" id="provide-toggle-theme">
+      provider -&amp;gt; toggle theme
+    </view>
+  </view>
+  <view id="provide-state" class="use-provide-inject-page__state theme-teal">
+    provider theme = teal
+  </view>
+  <view class="use-provide-inject-page__line" id="provide-count">provider count = 1</view>
+  <view class="use-provide-inject-page__line" id="provide-last-action">
+    last action = init:provider
+  </view>
+  <useprovideinjectfeature is="components/use-provide-inject-feature/index">
+    <view class="index--provide-inject-feature">
+      <view class="index--provide-inject-feature__title">组件内 inject()</view>
+      <view id="inject-panel" class="index--provide-inject-feature__panel index--theme-teal">
+        inject theme = teal
+      </view>
+      <view class="index--provide-inject-feature__line" id="inject-count">inject count = 1</view>
+      <view class="index--provide-inject-feature__line" id="inject-last-action">
+        last action = init:provider
+      </view>
+      <view class="index--provide-inject-feature__actions">
+        <view class="index--provide-inject-feature__btn" id="inject-inc">
+          inject -&amp;gt; increment
+        </view>
+        <view class="index--provide-inject-feature__btn" id="inject-toggle-theme">
+          inject -&amp;gt; toggle theme
+        </view>
+      </view>
+    </view>
+  </useprovideinjectfeature>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/use-slots/index 1`] = `
+"<view class="use-slots-page">
+  <view class="use-slots-page__title">wevu useSlots 特性展示</view>
+  <view class="use-slots-page__subtitle">控制 slot 展示和内容，查看 slots 键与 class 变化</view>
+  <view class="use-slots-page__toolbar">
+    <view id="slots-ctrl-open" class="use-slots-page__btn ctrl-on">panel: open</view>
+    <view id="slots-ctrl-header" class="use-slots-page__btn ctrl-on">header slot: on</view>
+    <view class="use-slots-page__btn" id="slots-ctrl-count">count: 1</view>
+  </view>
+  <view id="slots-open-state" class="use-slots-page__state state-open">open state: open</view>
+  <useslotsfeature is="components/use-slots-feature/index">
+    <view class="index--use-slots-feature">
+      <view class="index--use-slots-feature__title">组件内 useSlots()</view>
+      <view id="slots-panel" class="index--use-slots-feature__panel index--slot-panel-open">
+        panel: open
+      </view>
+      <view class="index--use-slots-feature__summary" id="slots-summary">slots: []</view>
+      <view class="index--use-slots-feature__content">
+        <view><view class="use-slots-page__header">header slot content</view></view>
+        <view class="use-slots-page__body">default slot content 1</view>
+      </view>
+    </view>
+  </useslotsfeature>
+</view>
+"
+`;
+
+exports[`template e2e: wevu-features-app > renders all pages from app config > wevu-features-app::pages/use-store/index 1`] = `
+"<view class="use-store-page">
+  <view class="use-store-page__title">wevu store 特性展示</view>
+  <view class="use-store-page__subtitle">
+    展示 setup/options store、storeToRefs、patch/reset、subscribe/onAction/plugin
+  </view>
+  <view class="use-store-page__meta" id="store-plugin-records">
+    plugin records = ["featureSetupCounter","featureOptionsCounter"]
+  </view>
+  <view class="use-store-page__meta" id="store-subscribe-count">subscribe count = 0</view>
+  <view class="use-store-page__meta" id="store-subscribe-last">subscribe last = none</view>
+  <view class="use-store-page__meta" id="store-action-counts">
+    action before/after/error = 0/0/0
+  </view>
+  <view class="use-store-page__meta" id="store-action-last">action last = none</view>
+  <view class="use-store-page__section panel-calm">
+    <view class="use-store-page__section-title">setup store</view>
+    <view class="use-store-page__line" id="store-setup-count">setup count = 0</view>
+    <view class="use-store-page__line" id="store-setup-doubled">setup doubled = 0</view>
+    <view class="use-store-page__line" id="store-setup-label">setup label = init</view>
+    <view class="use-store-page__line" id="store-setup-visits">setup visits = 0</view>
+    <view class="use-store-page__toolbar">
+      <view class="use-store-page__btn" id="store-setup-inc">setup inc</view>
+      <view class="use-store-page__btn" id="store-setup-visit">setup visit</view>
+      <view class="use-store-page__btn" id="store-setup-rename">setup rename</view>
+      <view class="use-store-page__btn" id="store-setup-patch-object">setup patch object</view>
+      <view class="use-store-page__btn" id="store-setup-patch-fn">setup patch fn</view>
+      <view class="use-store-page__btn" id="store-setup-ref-write">setup refs write</view>
+      <view class="use-store-page__btn" id="store-setup-reset">setup reset</view>
+    </view>
+  </view>
+  <view class="use-store-page__section panel-calm">
+    <view class="use-store-page__section-title">options store</view>
+    <view class="use-store-page__line" id="store-options-count">options count = 0</view>
+    <view class="use-store-page__line" id="store-options-doubled">options doubled = 0</view>
+    <view class="use-store-page__line" id="store-options-label">options label = zero</view>
+    <view class="use-store-page__line" id="store-options-items-size">options items = 0</view>
+    <view class="use-store-page__toolbar">
+      <view class="use-store-page__btn" id="store-options-inc">options inc</view>
+      <view class="use-store-page__btn" id="store-options-rename">options rename</view>
+      <view class="use-store-page__btn" id="store-options-patch-object">options patch object</view>
+      <view class="use-store-page__btn" id="store-options-patch-fn">options patch fn</view>
+      <view class="use-store-page__btn" id="store-options-ref-write">options refs write</view>
+      <view class="use-store-page__btn" id="store-options-reset">options reset</view>
+    </view>
+  </view>
+</view>
+"
+`;
