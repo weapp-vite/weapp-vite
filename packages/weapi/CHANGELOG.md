@@ -1,5 +1,11 @@
 # @wevu/api
 
+## 0.2.1
+
+### Patch Changes
+
+- 🐛 **同步升级仓库内 `miniprogram-api-typings` 到 `5.1.2`，并更新 `create-weapp-vite` 模板 catalog 与 `@wevu/api` 的类型来源、微信 API 名单生成产物，确保脚手架生成结果和 API 类型基线与当前 workspace 保持一致。** [`f3bacb9`](https://github.com/weapp-vite/weapp-vite/commit/f3bacb9197ae3ec248876dcff917a272b2009d0e) by @sonofmagic
+
 ## 0.2.0
 
 ### Minor Changes
