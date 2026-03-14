@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-03-13T08:20:00.832Z",
+  "generatedAt": "2026-03-14T03:19:06.327Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
-    "files": 263,
-    "docs": 248,
+    "files": 249,
+    "docs": 234,
     "blog": 10,
     "page": 5,
-    "withFrontmatter": 263,
-    "missingFrontmatter": 0
+    "withFrontmatter": 248,
+    "missingFrontmatter": 1
   },
   "coverage": {
     "all": {
-      "total": 263,
-      "title": 263,
-      "description": 263,
-      "keywords": 197,
-      "date": 9
-    },
-    "docs": {
-      "total": 248,
+      "total": 249,
       "title": 248,
       "description": 248,
       "keywords": 182,
+      "date": 9
+    },
+    "docs": {
+      "total": 234,
+      "title": 233,
+      "description": 233,
+      "keywords": 167,
       "date": 1
     },
     "blog": {
@@ -41,15 +41,15 @@
   },
   "coveragePercent": {
     "all": {
-      "title": 100,
-      "description": 100,
-      "keywords": 74.9,
-      "date": 3.4
+      "title": 99.6,
+      "description": 99.6,
+      "keywords": 73.1,
+      "date": 3.6
     },
     "docs": {
-      "title": 100,
-      "description": 100,
-      "keywords": 73.4,
+      "title": 99.6,
+      "description": 99.6,
+      "keywords": 71.4,
       "date": 0.4
     },
     "blog": {
@@ -107,8 +107,18 @@
     "seoQualityReportPublic": true
   },
   "quality": {
-    "checked": 263,
+    "checked": 249,
     "issues": [
+      {
+        "path": "demos/my-app/README.md",
+        "type": "missing-description",
+        "message": "缺少 description。"
+      },
+      {
+        "path": "demos/my-app/README.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
       {
         "path": "packages/weapi/alipay-compat-matrix/ad.md",
         "type": "missing-keywords",
@@ -520,7 +530,8 @@
     ]
   },
   "qualityIssueCounts": {
-    "missing-keywords": 66,
+    "missing-description": 1,
+    "missing-keywords": 67,
     "short-description": 13
   }
 }

@@ -62,7 +62,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '快速开始', link: '/guide/' },
       { text: 'CLI 命令参考', link: '/guide/cli' },
       { text: 'AI 协作指南', link: '/guide/ai' },
-      { text: '目录结构', link: '/guide/directory-structure' },
+      { text: '目录结构', link: '/guide/directory-structure/' },
       { text: '手动集成', link: '/guide/manual-integration' },
     ],
   },
@@ -121,6 +121,70 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       {
         text: '配置服务内部结构',
         link: '/deep/config-service',
+      },
+    ],
+  },
+]
+
+const directoryStructureSidebarItems: DefaultTheme.SidebarItem[] = [
+  {
+    text: '目录结构',
+    collapsed: false,
+    items: [
+      { text: '总览', link: '/guide/directory-structure/' },
+      {
+        text: '根目录',
+        collapsed: false,
+        items: [
+          { text: 'vite.config.ts', link: '/guide/directory-structure/vite-config' },
+          { text: 'project.config.json', link: '/guide/directory-structure/project-config' },
+          { text: 'package.json', link: '/guide/directory-structure/package-json' },
+          { text: 'public/', link: '/guide/directory-structure/public' },
+        ],
+      },
+      {
+        text: '源码根目录',
+        collapsed: false,
+        items: [
+          { text: '&lt;srcRoot&gt;/', link: '/guide/directory-structure/src-root' },
+        ],
+      },
+      {
+        text: '应用入口',
+        collapsed: false,
+        items: [
+          { text: 'app.(js|ts)', link: '/guide/directory-structure/app-ts' },
+          { text: 'app.vue', link: '/guide/directory-structure/app-vue' },
+          { text: 'app.json(.js|.ts)?', link: '/guide/directory-structure/app-json' },
+          { text: 'app.(css|scss|wxss|...)', link: '/guide/directory-structure/app-style' },
+          { text: 'custom-tab-bar/', link: '/guide/directory-structure/custom-tab-bar' },
+          { text: 'app-bar/', link: '/guide/directory-structure/app-bar' },
+        ],
+      },
+      {
+        text: '页面与组件',
+        collapsed: false,
+        items: [
+          { text: 'pages/', link: '/guide/directory-structure/pages' },
+          { text: 'components/', link: '/guide/directory-structure/components' },
+        ],
+      },
+      {
+        text: '分包与共享',
+        collapsed: false,
+        items: [
+          { text: '&lt;subPackageRoot&gt;/', link: '/guide/directory-structure/subpackages' },
+          { text: 'shared/', link: '/guide/directory-structure/shared' },
+          { text: 'utils/', link: '/guide/directory-structure/utils' },
+          { text: 'workers/', link: '/guide/directory-structure/workers' },
+        ],
+      },
+      {
+        text: '生成文件',
+        collapsed: false,
+        items: [
+          { text: '类型声明文件', link: '/guide/directory-structure/generated-files' },
+        ],
       },
     ],
   },
@@ -512,6 +576,7 @@ export default withMermaid(defineConfig({
     logo: '/logo.svg',
 
     sidebar: {
+      '/guide/directory-structure/': directoryStructureSidebarItems,
       //  [{
       //   text: '配置',
       //   collapsed: false,

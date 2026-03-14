@@ -127,7 +127,7 @@ export default defineConfig({
 2. 如果存在 `sitemap.json`、`theme.json` 等静态文件，可放在 `src/` 或 `public/`，`weapp-vite` 都会自动处理。
 3. 若项目包含分包，把每个分包放在 `src/packages/<name>/`，再在 `app.json` 中保持原本定义即可。
 
-建议同步创建以下结构（可参考 [目录结构](/guide/directory-structure)）：
+建议同步创建以下结构（可参考 [目录结构](/guide/directory-structure/)）：
 
 ```text
 src/
