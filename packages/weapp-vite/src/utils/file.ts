@@ -15,10 +15,12 @@ const vueConfigCache = new Map<string, {
 }>()
 const configMtimeInFlight = new Map<string, Promise<number | undefined>>()
 const NODE_MODULES_RE = /[\\/]node_modules[\\/]/
+const JS_OR_TS_RE = /\.[jt]s$/
 const nodeRequire = createRequire(import.meta.url)
 const AUTO_ROUTES_SPECIFIER_RE = /(['"])(?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)\1/g
 const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
 const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
+const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
 
 function resolveAutoRoutesMacroImportPath() {
   const fallbackCandidates = [
@@ -48,13 +50,22 @@ function resolveAutoRoutesMacroImportPath() {
 async function resolveAutoRoutesInlineSnapshot() {
   try {
     const { getCompilerContext } = await import('../context/getInstance')
-    const service = getCompilerContext().autoRoutesService
-    await service?.ensureFresh?.()
+    const compilerContext = getCompilerContext()
+    const service = compilerContext.autoRoutesService
     const reference = service?.getReference?.()
+
+    // 解析 app.vue 的 JSON 宏期间，auto-routes 可能正处于首次扫描阶段。
+    // 这里如果再次 ensureFresh 会递归回到 loadAppEntry -> extractConfigFromVue，
+    // 从而让 build 卡死。此时直接复用当前快照或回退为空结果即可。
+    if (!compilerContext.runtimeState.autoRoutes.loadingAppConfig) {
+      await service?.ensureFresh?.()
+    }
+
+    const nextReference = service?.getReference?.() ?? reference
     return {
-      pages: reference?.pages ?? [],
-      entries: reference?.entries ?? [],
-      subPackages: reference?.subPackages ?? [],
+      pages: nextReference?.pages ?? [],
+      entries: nextReference?.entries ?? [],
+      subPackages: nextReference?.subPackages ?? [],
     }
   }
   catch {
@@ -120,7 +131,7 @@ async function isVueConfigCacheValid(vueFilePath: string, cache: {
 
 export function isJsOrTs(name?: string) {
   if (typeof name === 'string') {
-    return /\.[jt]s$/.test(name)
+    return JS_OR_TS_RE.test(name)
   }
   return false
 }
@@ -308,7 +319,7 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
     // 注意：这些宏是 build-time 的，需要在 Node.js 侧执行一次来得到配置对象。
     const setupContent = descriptor.scriptSetup?.content
     const hasMacroHint = typeof setupContent === 'string'
-      && /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/.test(setupContent)
+      && JSON_MACRO_HINT_RE.test(setupContent)
 
     if (hasMacroHint) {
       const { extractJsonMacroFromScriptSetup } = await import('wevu/compiler')
@@ -341,13 +352,11 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
       }
     }
 
-    const normalizedDependencies = Array.from(
-      new Set(
-        macroDependencies
-          .filter(dep => dep && !NODE_MODULES_RE.test(dep))
-          .map(dep => path.normalize(dep)),
-      ),
-    )
+    const normalizedDependencies = [...new Set(
+      macroDependencies
+        .filter(dep => dep && !NODE_MODULES_RE.test(dep))
+        .map(dep => path.normalize(dep)),
+    )]
     const dependencyMtimeMs = new Map<string, number>()
     await Promise.all(
       normalizedDependencies.map(async (dep) => {

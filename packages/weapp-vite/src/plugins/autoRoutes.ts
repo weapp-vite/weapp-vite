@@ -7,6 +7,7 @@ import { resolveWeappAutoRoutesConfig } from '../autoRoutesConfig'
 import { vueExtensions } from '../constants'
 import { logger } from '../context/shared'
 import { createAutoRoutesMatcher } from '../runtime/autoRoutesPlugin/matcher'
+import { getAutoRoutesSubPackageRoots } from '../runtime/autoRoutesPlugin/subPackageRoots'
 import { normalizePath, normalizeWatchPath, toPosixPath } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 
@@ -24,6 +25,11 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
   let resolvedConfig: ResolvedConfig | undefined
   const autoRoutesAliasTargets = new Set<string>()
   let routeWatcherStarted = false
+
+  const isWatchMode = () => {
+    const configService = ctx.configService
+    return Boolean(configService?.isDev || configService?.inlineConfig?.build?.watch)
+  }
 
   const normalizeTargetId = (id: string) => {
     return path.normalize(normalizeFsResolvedId(id))
@@ -89,7 +95,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     }
 
     const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
-    const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, Object.keys(configService.weappViteConfig?.subPackages ?? {}))
+    const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, getAutoRoutesSubPackageRoots(ctx))
 
     if (matcher.matches(removeExtensionDeep(relative))) {
       return true
@@ -130,7 +136,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     }
 
     const srcRoot = configService.absoluteSrcRoot
-    const subPackageRoots = Object.keys(configService.weappViteConfig?.subPackages ?? {})
+    const subPackageRoots = getAutoRoutesSubPackageRoots(ctx)
     const resolvedMatcher = createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots)
     const allowedExtensions = new Set(vueExtensions.map(ext => `.${ext}`))
     const watchDirs = new Set<string>()
@@ -218,7 +224,9 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       }
 
       await service.ensureFresh()
-      addWatchTargets(this as any)
+      if (isWatchMode()) {
+        addWatchTargets(this as any)
+      }
       startRouteFileWatcher()
 
       return {

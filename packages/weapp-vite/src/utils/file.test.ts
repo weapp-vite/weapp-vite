@@ -343,6 +343,54 @@ defineAppJson({
       }
     })
 
+    it('does not recursively ensure auto-routes while loading app config from app.vue', async () => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
+      const file = path.join(root, 'app.vue')
+      const ensureFresh = vi.fn(async () => {})
+
+      vi.doMock('../context/getInstance', () => ({
+        getCompilerContext: () => ({
+          autoRoutesService: {
+            ensureFresh,
+            getReference: () => ({
+              pages: ['pages/home/index'],
+              entries: ['pages/home/index'],
+              subPackages: [],
+            }),
+          },
+          runtimeState: {
+            autoRoutes: {
+              loadingAppConfig: true,
+            },
+          },
+        }),
+      }))
+
+      try {
+        await fs.writeFile(
+          file,
+          `
+<script setup lang="ts">
+import routes from 'weapp-vite/auto-routes'
+
+defineAppJson({
+  pages: routes.pages,
+})
+</script>
+          `.trim(),
+          'utf8',
+        )
+
+        const config = await extractConfigFromVue(file)
+        expect(config?.pages).toEqual(['pages/home/index'])
+        expect(ensureFresh).not.toHaveBeenCalled()
+      }
+      finally {
+        vi.doUnmock('../context/getInstance')
+        await fs.remove(root)
+      }
+    })
+
     it('returns undefined when vue parse reports errors', async () => {
       const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-extract-vue-'))
       const file = path.join(root, 'broken.vue')
@@ -402,7 +450,7 @@ defineAppJson(nonExistentMacroValue)
   describe('findJsEntry', () => {
     it('dedupes concurrent pathExists lookups', async () => {
       const spy = vi.spyOn(fs, 'pathExists').mockImplementation(() => {
-        return new Promise(resolve => setTimeout(() => resolve(false), 10))
+        return new Promise(resolve => setTimeout(resolve, 10, false))
       })
       const base = path.join(os.tmpdir(), `weapp-vite-entry-${Date.now()}-${Math.random().toString(36).slice(2)}`, 'entry')
 
