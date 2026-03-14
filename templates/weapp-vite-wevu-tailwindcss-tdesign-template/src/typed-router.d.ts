@@ -7,66 +7,34 @@ import 'wevu/router';
 
 declare module 'weapp-vite/auto-routes' {
     export type AutoRoutesPages = [
-        "pages/issue-289/computed-class/index",
-        "pages/issue-289/index",
-        "pages/issue-289/map-class/index",
-        "pages/issue-289/object-literal/index",
-        "pages/issue-289/root-class/index",
-        "pages/issue-294/index",
-        "pages/issue-297-setup-method-calls/index",
-        "pages/issue-297/index",
-        "pages/issue-300/index",
-        "pages/issue-302/index",
-        "pages/issue-309-created/index",
-        "pages/issue-309/index",
-        "pages/issue-312/index",
-        "pages/issue-316/index",
-        "pages/issue-318/index",
-        "pages/issue-320/index",
-        "pages/issue-322/index",
-        "pages/issue-328/index"
+        "pages/index/index",
+        "pages/ability/index",
+        "pages/data/index",
+        "pages/form/index",
+        "pages/list/index"
     ];
     export type AutoRoutesEntries = [
-        "pages/issue-289/computed-class/index",
-        "pages/issue-289/index",
-        "pages/issue-289/map-class/index",
-        "pages/issue-289/object-literal/index",
-        "pages/issue-289/root-class/index",
-        "pages/issue-294/index",
-        "pages/issue-297-setup-method-calls/index",
-        "pages/issue-297/index",
-        "pages/issue-300/index",
-        "pages/issue-302/index",
-        "pages/issue-309-created/index",
-        "pages/issue-309/index",
-        "pages/issue-312/index",
-        "pages/issue-316/index",
-        "pages/issue-318/index",
-        "pages/issue-320/index",
-        "pages/issue-322/index",
-        "pages/issue-328/index",
-        "subpackages/issue-327/index",
-        "subpackages/item/index",
-        "subpackages/user/index"
+        "pages/index/index",
+        "pages/ability/index",
+        "pages/data/index",
+        "pages/form/index",
+        "pages/list/index",
+        "subpackages/ability/index",
+        "subpackages/lab/class-binding/index",
+        "subpackages/lab/index"
     ];
     export type AutoRoutesSubPackages = [
         {
-            readonly root: "subpackages/issue-327";
+            readonly root: "subpackages/ability";
             readonly pages: [
                 "index"
             ];
             [k: string]: unknown;
         },
         {
-            readonly root: "subpackages/item";
+            readonly root: "subpackages/lab";
             readonly pages: [
-                "index"
-            ];
-            [k: string]: unknown;
-        },
-        {
-            readonly root: "subpackages/user";
-            readonly pages: [
+                "class-binding/index",
                 "index"
             ];
             [k: string]: unknown;

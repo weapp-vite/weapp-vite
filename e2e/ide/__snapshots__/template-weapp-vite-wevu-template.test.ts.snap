@@ -2,205 +2,331 @@
 
 exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config > weapp-vite-wevu-template::app.wxss 1`] = `
 "page {
-  color: #1c1c3c;
-  background: #f6f7fb;
+  color: #0f172a;
+  background: #f3f6fb;
 }
 /*$vite$:1*/
 "
 `;
 
+exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config > weapp-vite-wevu-template::packageA/pages/workspace/index 1`] = `
+"<view class="page">
+  <view class="card">
+    <view class="card__eyebrow">Workspace</view>
+    <view class="card__title">项目工作台</view>
+    <view class="card__desc">
+      这里适合作为分包内的业务处理入口，例如待办、进度、看板或内部运营模块。
+    </view>
+    <view class="card__summary">当前路由：/packageA/pages/workspace/index</view>
+  </view>
+  <view class="panel-wrap">
+    <infopanel is="components/InfoPanel/index">
+      <view class="index--feature">
+        <view class="index--feature__eyebrow">TASK</view>
+        <view class="index--feature__title">待处理任务</view>
+        <view class="index--feature__desc">整理本周迭代的交付清单，确保需求与开发状态同步。</view>
+      </view>
+    </infopanel>
+  </view>
+  <view class="panel-wrap">
+    <infopanel is="components/InfoPanel/index">
+      <view class="index--feature">
+        <view class="index--feature__eyebrow">TASK</view>
+        <view class="index--feature__title">风险跟踪</view>
+        <view class="index--feature__desc">识别阻塞项和依赖项，适合继续扩展为真实项目看板。</view>
+      </view>
+    </infopanel>
+  </view>
+  <view class="panel-wrap">
+    <infopanel is="components/InfoPanel/index">
+      <view class="index--feature">
+        <view class="index--feature__eyebrow">TASK</view>
+        <view class="index--feature__title">版本准备</view>
+        <view class="index--feature__desc">预留提测、回归和上线前检查的展示区域。</view>
+      </view>
+    </infopanel>
+  </view>
+  <button
+    activity-type="0"
+    entrance-path=""
+    need-show-entrance=""
+    class="action-btn action-btn--secondary"
+    role="button"
+    aria-disabled="false">
+    前往系统设置
+  </button>
+  <button
+    activity-type="0"
+    entrance-path=""
+    need-show-entrance=""
+    class="action-btn action-btn--ghost"
+    role="button"
+    aria-disabled="false">
+    返回业务门户
+  </button>
+</view>
+"
+`;
+
+exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config > weapp-vite-wevu-template::packageB/pages/settings/index 1`] = `
+"<view class="page">
+  <view class="card">
+    <view class="card__eyebrow">Settings</view>
+    <view class="card__title">系统设置</view>
+    <view class="card__desc">独立分包适合作为设置、配置或低频但相对独立的业务模块承载区。</view>
+    <view class="card__summary">当前路由：/packageB/pages/settings/index</view>
+  </view>
+  <view class="panel-wrap">
+    <infopanel is="components/InfoPanel/index">
+      <view class="index--feature">
+        <view class="index--feature__eyebrow">SETTING</view>
+        <view class="index--feature__title">通知策略</view>
+        <view class="index--feature__desc">预留站内消息、邮件提醒和审批通知等配置位置。</view>
+      </view>
+    </infopanel>
+  </view>
+  <view class="panel-wrap">
+    <infopanel is="components/InfoPanel/index">
+      <view class="index--feature">
+        <view class="index--feature__eyebrow">SETTING</view>
+        <view class="index--feature__title">角色权限</view>
+        <view class="index--feature__desc">适合接入组织结构、角色分级与操作授权等业务能力。</view>
+      </view>
+    </infopanel>
+  </view>
+  <view class="panel-wrap">
+    <infopanel is="components/InfoPanel/index">
+      <view class="index--feature">
+        <view class="index--feature__eyebrow">SETTING</view>
+        <view class="index--feature__title">环境信息</view>
+        <view class="index--feature__desc">可以继续扩展版本号、发布通道和系统参数等正式模块。</view>
+      </view>
+    </infopanel>
+  </view>
+  <button
+    activity-type="0"
+    entrance-path=""
+    need-show-entrance=""
+    class="action-btn"
+    data-wv-inline-id-tap="__wv_inline_0"
+    role="button"
+    aria-disabled="false">
+    查看运营概览
+  </button>
+  <button
+    activity-type="0"
+    entrance-path=""
+    need-show-entrance=""
+    class="action-btn action-btn--ghost"
+    role="button"
+    aria-disabled="false">
+    reLaunch 回业务门户
+  </button>
+</view>
+"
+`;
+
 exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config > weapp-vite-wevu-template::pages/index/index 1`] = `
-"<view style="background: #f6f7ff; border-top: 2px solid transparent" class="page page-empty">
-  <infobanner is="components/InfoBanner/index">
-    <view class="InfoBanner-index--banner">
-      <view class="InfoBanner-index--main">
-        <text class="InfoBanner-index--title"></text>
-        <text class="InfoBanner-index--description"></text>
-      </view>
-      <text class="InfoBanner-index--badge"></text>
+"<view class="page">
+  <view class="hero">
+    <view class="hero__eyebrow">企业业务模板</view>
+    <view class="hero__title">适合作为正式项目起点的首页框架</view>
+    <view class="hero__desc">
+      内置主包与分包页面结构、统一导航入口与简洁信息模块，默认呈现正式、克制且便于继续扩展的业务模板风格。
     </view>
-  </infobanner>
-  <helloworld
-    is="components/HelloWorld/index"
-    data-wv-event-detail-action="1"
-    data-wv-inline-id-action="__wv_inline_0">
-    <view class="index--hello-panel">
-      <view class="index--head-row">
-        <view class="index--head-main">
-          <text class="index--title"></text>
-          <text class="index--subtitle"></text>
-          <text class="index--summary"></text>
-          <text class="index--summary"></text>
-        </view>
-        <button
-          activity-type="0"
-          entrance-path=""
-          need-show-entrance=""
-          class="index--tiny-btn"
-          role="button"
-          aria-disabled="false">
-          收起
-        </button>
-      </view>
-      <view class="index--panel-body">
-        <view class="index--metrics">
-          <view class="index--metric-item">
-            <text class="index--metric-label"></text>
-            <text class="index--metric-value index--metric-up"></text>
-            <text class="index--metric-note"></text>
-          </view>
-          <view class="index--metric-item">
-            <text class="index--metric-label"></text>
-            <text class="index--metric-value index--metric-flat"></text>
-            <text class="index--metric-note"></text>
-          </view>
-          <view class="index--metric-item">
-            <text class="index--metric-label"></text>
-            <text class="index--metric-value index--metric-flat"></text>
-            <text class="index--metric-note"></text>
-          </view>
-          <view class="index--metric-item">
-            <text class="index--metric-label"></text>
-            <text class="index--metric-value index--metric-up"></text>
-            <text class="index--metric-note"></text>
-          </view>
-        </view>
-        <view class="index--feature-toolbar">
-          <input
-            class="index--search-input"
-            data-wv-model="keyword"
-            placeholder="筛选能力关键词…"
-            value="" />
-          筛选能力关键词…
-          <button
-            activity-type="0"
-            entrance-path=""
-            need-show-entrance=""
-            class="index--tiny-btn index--tiny-btn-light"
-            role="button"
-            aria-disabled="false">
-            复制当前
-          </button>
-        </view>
-        <view class="index--group-tabs">
-          <view
-            class="index--group-tab index--group-tab-active"
-            data-wv-i0="0"
-            data-wv-inline-id-tap="__wv_inline_0"
-            data-wv-s0="[object Object]">
-            全部
-          </view>
-          <view
-            class="index--group-tab"
-            data-wv-i0="1"
-            data-wv-inline-id-tap="__wv_inline_0"
-            data-wv-s0="[object Object]">
-            核心
-          </view>
-          <view
-            class="index--group-tab"
-            data-wv-i0="2"
-            data-wv-inline-id-tap="__wv_inline_0"
-            data-wv-s0="[object Object]">
-            模板
-          </view>
-          <view
-            class="index--group-tab"
-            data-wv-i0="3"
-            data-wv-inline-id-tap="__wv_inline_0"
-            data-wv-s0="[object Object]">
-            工程化
-          </view>
-        </view>
-        <view class="index--chips">
-          <view
-            class="index--chip index--chip-active"
-            data-wv-i0="0"
-            data-wv-inline-id-tap="__wv_inline_1"
-            data-wv-s0="[object Object]">
-            自动编译 SFC 到小程序四件套
-          </view>
-          <view
-            class="index--chip"
-            data-wv-i0="1"
-            data-wv-inline-id-tap="__wv_inline_1"
-            data-wv-s0="[object Object]">
-            自动注入 usingComponents 与组件类型提示
-          </view>
-          <view
-            class="index--chip"
-            data-wv-i0="2"
-            data-wv-inline-id-tap="__wv_inline_1"
-            data-wv-s0="[object Object]">
-            WXML/WXSS/WXS 全链路处理与平台适配
-          </view>
-          <view
-            class="index--chip"
-            data-wv-i0="3"
-            data-wv-inline-id-tap="__wv_inline_1"
-            data-wv-s0="[object Object]">
-            支持 @tap.catch / @tap.stop 等事件语义
-          </view>
-          <view
-            class="index--chip"
-            data-wv-i0="4"
-            data-wv-inline-id-tap="__wv_inline_1"
-            data-wv-s0="[object Object]">
-            通过 wevu 使用 ref/computed/watch 写业务逻辑
-          </view>
-        </view>
-        <view class="index--search-stat">
-          <text></text>
-          <text></text>
-        </view>
-        <view class="index--selected-card">
-          <text class="index--selected-label"></text>
-          <text class="index--selected-value"></text>
-          <text class="index--selected-meta"></text>
-        </view>
-        <view>
-          <view class="hello-footer"><text class="hello-footer-text"></text></view>
-        </view>
-      </view>
+    <view class="hero__pills">
+      <statuspill is="components/StatusPill/index">
+        <view class="StatusPill-index--badge StatusPill-index--badge--accent">主包首页</view>
+      </statuspill>
+      <statuspill is="components/StatusPill/index">
+        <view class="StatusPill-index--badge StatusPill-index--badge--neutral">可扩展分包</view>
+      </statuspill>
+      <statuspill is="components/StatusPill/index">
+        <view class="StatusPill-index--badge StatusPill-index--badge--success">适合二次开发</view>
+      </statuspill>
     </view>
-  </helloworld>
-  <view style="border-color: transparent; border-width: 1px" class="card">
-    <view class="row">
-      <text class="label"></text>
-      <text class="label"></text>
+  </view>
+  <view class="section">
+    <view class="section__title">核心指标</view>
+    <view class="metric-card">
+      <view class="metric-card__label">本周跟进事项</view>
+      <view class="metric-card__value">12</view>
+      <view class="metric-card__detail">含 3 项需今日确认</view>
     </view>
-    <view class="row actions">
+    <view class="metric-card">
+      <view class="metric-card__label">交付进度</view>
+      <view class="metric-card__value">86%</view>
+      <view class="metric-card__detail">版本提测准备完成</view>
+    </view>
+    <view class="metric-card">
+      <view class="metric-card__label">服务可用率</view>
+      <view class="metric-card__value">99.95%</view>
+      <view class="metric-card__detail">核心链路运行稳定</view>
+    </view>
+  </view>
+  <view class="section">
+    <view class="section__title">常用入口</view>
+    <view class="entry-card">
+      <infopanel is="components/InfoPanel/index">
+        <view class="index--feature">
+          <view class="index--feature__eyebrow">PAGE</view>
+          <view class="index--feature__title">运营概览</view>
+          <view class="index--feature__desc">查看阶段目标、团队协同与项目节奏。</view>
+        </view>
+      </infopanel>
       <button
         activity-type="0"
         entrance-path=""
         need-show-entrance=""
-        style="opacity: 1"
-        role="button"
-        aria-disabled="false"
-        class="btn primary">
-        +1
-      </button>
-      <button
-        activity-type="0"
-        entrance-path=""
-        need-show-entrance=""
-        class="btn danger"
+        class="action-btn"
+        data-wv-i0="0"
+        data-wv-inline-id-tap="__wv_inline_0"
+        data-wv-s0="[object Object]"
         role="button"
         aria-disabled="false">
-        重置
+        进入概览
       </button>
     </view>
-    <view class="row"><text class="label"></text></view>
-    <input class="input" data-wv-model="message" placeholder="输入标题…" value="Hello WeVU!" />
-    输入标题…
-    <view class="row"><text class="label"></text></view>
-    <view class="todo">
-      <view class="todo-item"><text></text></view>
-      <view class="todo-item"><text></text></view>
-      <view class="todo-item"><text></text></view>
-      <view class="todo-item"><text></text></view>
-      <view class="todo-item"><text></text></view>
+    <view class="entry-card">
+      <infopanel is="components/InfoPanel/index">
+        <view class="index--feature">
+          <view class="index--feature__eyebrow">PAGE</view>
+          <view class="index--feature__title">项目工作台</view>
+          <view class="index--feature__desc">集中处理待办任务、优先级与排期。</view>
+        </view>
+      </infopanel>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        class="action-btn"
+        data-wv-i0="1"
+        data-wv-inline-id-tap="__wv_inline_0"
+        data-wv-s0="[object Object]"
+        role="button"
+        aria-disabled="false">
+        打开工作台
+      </button>
     </view>
+    <view class="entry-card">
+      <infopanel is="components/InfoPanel/index">
+        <view class="index--feature">
+          <view class="index--feature__eyebrow">PAGE</view>
+          <view class="index--feature__title">系统设置</view>
+          <view class="index--feature__desc">统一管理通知、权限与环境配置。</view>
+        </view>
+      </infopanel>
+      <button
+        activity-type="0"
+        entrance-path=""
+        need-show-entrance=""
+        class="action-btn"
+        data-wv-i0="2"
+        data-wv-inline-id-tap="__wv_inline_0"
+        data-wv-s0="[object Object]"
+        role="button"
+        aria-disabled="false">
+        前往设置
+      </button>
+    </view>
+  </view>
+  <view class="section">
+    <infopanel is="components/InfoPanel/index">
+      <view class="index--feature">
+        <view class="index--feature__eyebrow">ROUTER</view>
+        <view class="index--feature__title">导航状态</view>
+        <view class="index--feature__desc">
+          模板保留路由能力作为底层基础，但将其放在辅助信息层，避免首页呈现为技术功能演示页。
+        </view>
+      </view>
+    </infopanel>
+    <view class="route-note">当前路由：/pages/index/index</view>
+    <button
+      activity-type="0"
+      entrance-path=""
+      need-show-entrance=""
+      class="action-btn action-btn--light"
+      role="button"
+      aria-disabled="false">
+      reLaunch 当前首页
+    </button>
+  </view>
+</view>
+"
+`;
+
+exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config > weapp-vite-wevu-template::pages/overview/index 1`] = `
+"<view class="page">
+  <view class="card">
+    <view class="card__eyebrow">Overview</view>
+    <view class="card__title">运营概览</view>
+    <view class="card__desc">
+      用正式模板的方式承载项目状态、团队节奏和阶段重点，而不是单纯展示路由跳转能力。
+    </view>
+    <view class="card__summary">当前路由：/pages/overview/index</view>
+  </view>
+  <view class="panel-wrap">
+    <infopanel is="components/InfoPanel/index">
+      <view class="index--feature">
+        <view class="index--feature__eyebrow">FOCUS</view>
+        <view class="index--feature__title">项目节奏稳定</view>
+        <view class="index--feature__desc">
+          需求冻结、设计评审与联调时间线已经对齐，适合继续扩展到实际业务场景。
+        </view>
+      </view>
+    </infopanel>
+  </view>
+  <view class="panel-wrap">
+    <infopanel is="components/InfoPanel/index">
+      <view class="index--feature">
+        <view class="index--feature__eyebrow">FOCUS</view>
+        <view class="index--feature__title">协作角色清晰</view>
+        <view class="index--feature__desc">
+          可在此基础上继续接入团队成员、审批流或项目动态等正式模块。
+        </view>
+      </view>
+    </infopanel>
+  </view>
+  <view class="panel-wrap">
+    <infopanel is="components/InfoPanel/index">
+      <view class="index--feature">
+        <view class="index--feature__eyebrow">FOCUS</view>
+        <view class="index--feature__title">模板结构简洁</view>
+        <view class="index--feature__desc">
+          页面布局保留必要层级，既能做展示页，也能平滑承接后台工作流。
+        </view>
+      </view>
+    </infopanel>
+  </view>
+  <view class="actions">
+    <button
+      activity-type="0"
+      entrance-path=""
+      need-show-entrance=""
+      class="action-btn"
+      data-wv-inline-id-tap="__wv_inline_0"
+      role="button"
+      aria-disabled="false">
+      进入项目工作台
+    </button>
+    <button
+      activity-type="0"
+      entrance-path=""
+      need-show-entrance=""
+      class="action-btn action-btn--secondary"
+      role="button"
+      aria-disabled="false">
+      查看系统设置
+    </button>
+    <button
+      activity-type="0"
+      entrance-path=""
+      need-show-entrance=""
+      class="action-btn action-btn--ghost"
+      role="button"
+      aria-disabled="false">
+      返回业务门户
+    </button>
   </view>
 </view>
 "

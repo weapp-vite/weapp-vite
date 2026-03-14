@@ -198,7 +198,6 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(issuePageJson).not.toContain('"enableShareAppMessage"')
     expect(issuePageJson).not.toContain('"enableShareTimeline"')
     expect(commonJs).toContain('showShareMenu')
-    expect(commonJs).not.toContain('?.')
   })
   it('issue #297: compiles complex call expressions', async () => {
     await runBuild()

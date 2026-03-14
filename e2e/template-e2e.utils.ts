@@ -10,6 +10,7 @@ import { runWeappViteBuildWithLogCapture } from './utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
 const APP_JSON_PATH = 'src/app.json'
 const APP_VUE_PATH = 'src/app.vue'
+const DIST_APP_JSON_PATH = 'dist/app.json'
 const TEMPLATE_E2E_DEBUG = process.env.WEAPP_VITE_TEMPLATE_E2E_DEBUG === '1'
 
 function debugTemplateE2E(templateName: string, phase: string, detail?: string) {
@@ -212,6 +213,11 @@ async function waitForPageRoot(page: any, timeoutMs = 12_000) {
 }
 
 async function loadAppConfig(templateRoot: string) {
+  const distAppJsonPath = path.resolve(templateRoot, DIST_APP_JSON_PATH)
+  if (await fs.pathExists(distAppJsonPath)) {
+    return await fs.readJson(distAppJsonPath)
+  }
+
   const appJsonPath = path.resolve(templateRoot, APP_JSON_PATH)
   if (await fs.pathExists(appJsonPath)) {
     const raw = await fs.readFile(appJsonPath, 'utf-8')
@@ -300,6 +306,8 @@ async function runBuild(templateRoot: string) {
 export async function runTemplateE2E(options: TemplateE2EOptions) {
   const { templateRoot, templateName } = options
   debugTemplateE2E(templateName, 'start')
+  await runBuild(templateRoot)
+  debugTemplateE2E(templateName, 'build-done')
   const config = await loadAppConfig(templateRoot)
   debugTemplateE2E(templateName, 'config-loaded')
   const pages = resolvePages(config)
@@ -308,9 +316,6 @@ export async function runTemplateE2E(options: TemplateE2EOptions) {
   if (pages.length === 0) {
     throw new Error(`[${templateName}] No pages found in app config`)
   }
-
-  await runBuild(templateRoot)
-  debugTemplateE2E(templateName, 'build-done')
 
   const appWxssPath = path.join(templateRoot, 'dist', 'app.wxss')
   if (!(await fs.pathExists(appWxssPath))) {
