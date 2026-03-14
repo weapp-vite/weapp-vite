@@ -45,5 +45,5 @@ src/
 
 ## 相关链接
 
-- 目录结构：`/guide/directory-structure`
+- 目录结构：`/guide/directory-structure/`
 - 分包：`/guide/subpackage`
