@@ -143,14 +143,14 @@ describe('createAutoRoutesService branch coverage', () => {
     expect(removeMock).not.toHaveBeenCalled()
   })
 
-  it('skips writing typed definition when output path cannot be resolved', async () => {
+  it('writes typed definition into srcRoot by default', async () => {
     const ctx = createContext({ autoRoutes: true, cwd: '' })
     const service = createAutoRoutesService(ctx)
 
     await service.ensureFresh()
 
     expect(scanRoutesMock).toHaveBeenCalledTimes(1)
-    expect(outputFileMock).not.toHaveBeenCalled()
+    expect(outputFileMock).toHaveBeenCalledWith('/project/src/typed-router.d.ts', 'type TypedRouter = []', 'utf8')
   })
 
   it('logs an error when writing typed router definition fails', async () => {

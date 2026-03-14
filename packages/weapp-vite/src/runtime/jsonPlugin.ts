@@ -10,6 +10,9 @@ import { debug, logger } from '../context/shared'
 import { parseCommentJson, resolveJson } from '../utils'
 import { requireConfigService } from './utils/requireConfigService'
 
+const APP_CONFIG_RE = /app\.json(?:\.[jt]s)?$/
+const SCRIPT_JSON_CONFIG_RE = /\.json\.[jt]s$/
+
 export interface JsonService {
   read: (filepath: string) => Promise<any>
   resolve: (entry: JsonResolvableEntry) => string | undefined
@@ -24,9 +27,9 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
     const configService = requireConfigService(ctx, '读取 JSON 前必须初始化 configService。')
 
     try {
-      const isAppConfig = /app\.json(?:\.[jt]s)?$/.test(filepath)
+      const isAppConfig = APP_CONFIG_RE.test(filepath)
       let autoRoutesSignature: string | undefined
-      if (isAppConfig) {
+      if (isAppConfig && !ctx.runtimeState.autoRoutes.loadingAppConfig) {
         await ctx.autoRoutesService?.ensureFresh()
         autoRoutesSignature = ctx.autoRoutesService?.getSignature?.()
       }
@@ -39,7 +42,7 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
         return cache.get(filepath)
       }
       let resultJson: any
-      if (/\.json\.[jt]s$/.test(filepath)) {
+      if (SCRIPT_JSON_CONFIG_RE.test(filepath)) {
         const routesReference = ctx.autoRoutesService?.getReference()
         const fallbackRoutes = routesReference ?? { pages: [], entries: [], subPackages: [] }
         const routesModule = {

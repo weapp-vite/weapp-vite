@@ -80,6 +80,7 @@ export interface RuntimeState {
     initialized: boolean
     candidates: Map<string, AutoRoutesCandidateState>
     needsFullRescan: boolean
+    loadingAppConfig: boolean
   }
   autoImport: {
     registry: Map<string, LocalAutoImportMatch>
@@ -183,6 +184,7 @@ export function createRuntimeState(): RuntimeState {
       initialized: false,
       candidates: new Map<string, AutoRoutesCandidateState>(),
       needsFullRescan: true,
+      loadingAppConfig: false,
     },
     autoImport: {
       registry: new Map<string, LocalAutoImportMatch>(),

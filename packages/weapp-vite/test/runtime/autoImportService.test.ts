@@ -62,9 +62,9 @@ describe('autoImportService', () => {
     helloWorldTemplate = path.resolve(cwd, 'src/components/HelloWorld/index.wxml')
     helloWorldJson = path.resolve(cwd, 'src/components/HelloWorld/index.json')
     manifestPath = path.resolve(cwd, 'auto-import-components.json')
-    typedDefinitionPath = path.resolve(cwd, 'typed-components.d.ts')
+    typedDefinitionPath = path.resolve(cwd, 'src/typed-components.d.ts')
     htmlDataPath = path.resolve(cwd, 'mini-program.html-data.json')
-    vueComponentsDefinitionPath = path.resolve(cwd, 'components.d.ts')
+    vueComponentsDefinitionPath = path.resolve(cwd, 'src/components.d.ts')
     componentTemplates = [
       path.resolve(cwd, 'src/components/Avatar/Avatar.wxml'),
       path.resolve(cwd, 'src/components/HelloWorld/index.wxml'),
