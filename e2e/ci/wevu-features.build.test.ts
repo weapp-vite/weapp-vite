@@ -41,20 +41,33 @@ describe.sequential('e2e app: wevu-features (build)', () => {
 
     expect(appJson.pages).toEqual([
       'pages/index/index',
-      'pages/use-attrs/index',
-      'pages/use-slots/index',
-      'pages/use-model/index',
-      'pages/use-provide-inject/index',
-      'pages/use-store/index',
-      'pages/subpath-entries/index',
-      'pages/router-showcase/index',
-      'pages/router-dynamic/index',
       'pages/native-uses-vue/index',
+      'pages/router-coverage/index',
+      'pages/router-coverage/main-target/index',
+      'pages/router-dynamic/index',
+      'pages/router-showcase/index',
       'pages/router-stability/index',
       'pages/router-stability/sub/index',
-      'pages/router-stability/target/index',
       'pages/router-stability/sub/target/index',
+      'pages/router-stability/target/index',
+      'pages/subpath-entries/index',
+      'pages/use-attrs/index',
+      'pages/use-model/index',
+      'pages/use-provide-inject/index',
+      'pages/use-slots/index',
+      'pages/use-store/index',
       'components/router-origin-probe/target/index',
+    ])
+
+    expect(appJson.subPackages).toEqual([
+      {
+        root: 'packages/router-demo',
+        pages: ['pages/normal-target/index'],
+      },
+      {
+        root: 'packages/router-demo-independent',
+        pages: ['pages/independent-target/index'],
+      },
     ])
 
     expect(indexWxml).toContain('url="{{item.path}}"')
@@ -268,7 +281,8 @@ describe.sequential('e2e app: wevu-features (build)', () => {
     expect(routerShowcasePageWxml).toContain('id="router-showcase-run-e2e"')
     expect(routerShowcasePageJs).toContain('runE2E')
     expect(routerShowcasePageJs).toContain('hash-only')
-    expect(routerShowcasePageJs).toContain('router-showcase-profile-detail')
+    expect(routerShowcasePageJs).toContain('/pages/router-showcase/profile/12/detail/logs?from=named')
+    expect(routerShowcasePageJs).toContain('/router-profile/9/detail-alias/trace')
 
     expect(routerDynamicPageWxml).toContain('id="router-dynamic-base"')
     expect(routerDynamicPageWxml).toContain('id="router-dynamic-add-remove"')

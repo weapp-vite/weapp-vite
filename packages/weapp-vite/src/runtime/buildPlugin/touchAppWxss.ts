@@ -35,7 +35,7 @@ export function resolveTouchAppWxssEnabled(options: {
     return true
   }
   const resolve = options.resolve
-    ?? createRequire(path.join(options.cwd, 'package.json')).resolve
+    ?? createRequire(path.resolve(options.cwd, 'package.json')).resolve
   try {
     resolve(tailwindPackageName)
     return true

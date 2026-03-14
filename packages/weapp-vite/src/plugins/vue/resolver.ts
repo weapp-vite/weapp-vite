@@ -44,7 +44,7 @@ function ensureWevuInstalled(ctx: CompilerContext) {
   }
   const configService = ctx.configService
   const cwd = configService?.cwd ?? process.cwd()
-  const require = createRequire(path.join(cwd, 'package.json'))
+  const require = createRequire(path.resolve(cwd, 'package.json'))
   try {
     require.resolve('wevu')
     wevuInstallState = 'present'

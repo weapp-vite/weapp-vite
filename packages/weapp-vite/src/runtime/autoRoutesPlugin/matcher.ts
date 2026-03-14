@@ -106,7 +106,9 @@ export function createAutoRoutesMatcher(
         return true
       }
 
-      return normalizedSubPackageRoots.some(root => normalizedCandidate.startsWith(`${root}/pages/`))
+      return normalizedSubPackageRoots.some((root) => {
+        return normalizedCandidate.startsWith(`${root}/`)
+      })
     }
 
     return rules.some(rule => rule.match(normalizedCandidate))
@@ -116,7 +118,7 @@ export function createAutoRoutesMatcher(
     if (isDefault) {
       const roots = new Set<string>([path.join(absoluteSrcRoot, 'pages')])
       for (const root of normalizedSubPackageRoots) {
-        roots.add(path.join(absoluteSrcRoot, root, 'pages'))
+        roots.add(path.join(absoluteSrcRoot, root))
       }
       return Array.from(roots, root => normalizePath(root))
     }

@@ -269,20 +269,20 @@ describe.sequential('e2e app: wevu-features', () => {
 
       await page.waitFor(500)
 
-      const visibleToggleButton = await page.$('#ctrl-toggle-visible')
-      const toneButton = await page.$('#ctrl-cycle-tone')
-      const borderButton = await page.$('#ctrl-toggle-border')
-      const seedButton = await page.$('#ctrl-bump-seed')
+      const visibleToggleSelector = await resolveSelectorById(page, 'ctrl-toggle-visible')
+      const toneSelector = await resolveSelectorById(page, 'ctrl-cycle-tone')
+      const borderSelector = await resolveSelectorById(page, 'ctrl-toggle-border')
+      const seedSelector = await resolveSelectorById(page, 'ctrl-bump-seed')
 
-      if (!visibleToggleButton || !toneButton || !borderButton || !seedButton) {
+      if (!visibleToggleSelector || !toneSelector || !borderSelector || !seedSelector) {
         throw new Error('Failed to find useAttrs runtime elements')
       }
 
       const beforeWxml = await readPageWxml(page)
-      const beforeToneClass = await readClassName(page, '#ctrl-cycle-tone')
-      const beforeVisibleClass = await readClassName(page, '#ctrl-toggle-visible')
-      const beforeBorderClass = await readClassName(page, '#ctrl-toggle-border')
-      const beforeBorderStyle = await readStyleValue(page, '#ctrl-toggle-border')
+      const beforeToneClass = await readClassName(page, toneSelector)
+      const beforeVisibleClass = await readClassName(page, visibleToggleSelector)
+      const beforeBorderClass = await readClassName(page, borderSelector)
+      const beforeBorderStyle = await readStyleValue(page, borderSelector)
 
       expect(beforeToneClass).toContain('tone-blue')
       expect(beforeVisibleClass).toContain('ctrl-on')
@@ -297,18 +297,18 @@ describe.sequential('e2e app: wevu-features', () => {
       expect(beforeWxml).toContain('state-class: tone-blue')
       expect(beforeWxml).toContain('visible: true')
 
-      const toneApplied = await tapControlUntil(page, '#ctrl-cycle-tone', async () => {
+      const toneApplied = await tapControlUntil(page, toneSelector, async () => {
         const afterToneWxml = await readPageWxml(page)
         return afterToneWxml.includes('切换 tone：tone-green')
           && afterToneWxml.includes('state-class = tone-green')
           && afterToneWxml.includes('state-class: tone-green')
       })
       expect(toneApplied).toBe(true)
-      const afterToneClass = await readClassName(page, '#ctrl-cycle-tone')
+      const afterToneClass = await readClassName(page, toneSelector)
       expect(afterToneClass).toContain('tone-green')
       expect(afterToneClass).not.toBe(beforeToneClass)
 
-      const borderApplied = await tapControlUntil(page, '#ctrl-toggle-border', async () => {
+      const borderApplied = await tapControlUntil(page, borderSelector, async () => {
         const afterBorderWxml = await readPageWxml(page)
         return afterBorderWxml.includes('边框模式：strong')
           && afterBorderWxml.includes('state-class = tone-green')
@@ -316,20 +316,20 @@ describe.sequential('e2e app: wevu-features', () => {
           && afterBorderWxml.includes('badge-style: border: 2rpx solid')
       })
       expect(borderApplied).toBe(true)
-      const afterBorderClass = await readClassName(page, '#ctrl-toggle-border')
-      const afterBorderStyle = await readStyleValue(page, '#ctrl-toggle-border')
+      const afterBorderClass = await readClassName(page, borderSelector)
+      const afterBorderStyle = await readStyleValue(page, borderSelector)
       expect(afterBorderClass).toContain('ctrl-solid')
       expect(afterBorderClass).not.toContain('ctrl-dash')
       expect(afterBorderStyle).toContain('solid')
       expect(afterBorderStyle).not.toBe(beforeBorderStyle)
 
-      const seedBumped = await tapControlUntil(page, '#ctrl-bump-seed', async () => {
+      const seedBumped = await tapControlUntil(page, seedSelector, async () => {
         const afterSeedWxml = await readPageWxml(page)
         return afterSeedWxml.includes('递增 seed：2') && afterSeedWxml.includes('extra-label = seed-2')
       })
       expect(seedBumped).toBe(true)
 
-      const visibleToggled = await tapControlUntil(page, '#ctrl-toggle-visible', async () => {
+      const visibleToggled = await tapControlUntil(page, visibleToggleSelector, async () => {
         const afterVisibleWxml = await readPageWxml(page)
         return afterVisibleWxml.includes('切换 visible：false')
           && afterVisibleWxml.includes('visible = false')
@@ -337,7 +337,7 @@ describe.sequential('e2e app: wevu-features', () => {
       })
       expect(visibleToggled).toBe(true)
 
-      const afterVisibleClass = await readClassName(page, '#ctrl-toggle-visible')
+      const afterVisibleClass = await readClassName(page, visibleToggleSelector)
       expect(afterVisibleClass).toContain('ctrl-off')
 
       const finalWxml = await readPageWxml(page)

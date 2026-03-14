@@ -27,7 +27,7 @@ function getMetadataCache(resolvers?: Resolver[]) {
 
 function safeCreateRequire(cwd: string) {
   try {
-    return createRequire(path.join(cwd, 'package.json'))
+    return createRequire(path.resolve(cwd, 'package.json'))
   }
   catch {
     return createRequire(import.meta.url)

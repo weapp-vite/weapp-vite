@@ -1,10 +1,17 @@
+import path from 'node:path'
 import { UnifiedViteWeappTailwindcssPlugin } from 'weapp-tailwindcss/vite'
 import { TDesignResolver } from 'weapp-vite/auto-import-components/resolvers'
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(import.meta.dirname, 'src'),
+    },
+  },
   weapp: {
     srcRoot: 'src',
+    autoRoutes: true,
     autoImportComponents: {
       resolvers: [TDesignResolver()],
       htmlCustomData: true,

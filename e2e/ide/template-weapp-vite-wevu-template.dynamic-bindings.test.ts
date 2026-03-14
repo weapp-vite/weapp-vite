@@ -1,20 +1,11 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { afterAll, describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import { describe, expect, it } from 'vitest'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-template')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
-
-function hasClassGroup(wxml: string, required: string[]) {
-  const classAttributes = [...wxml.matchAll(/class="([^"]+)"/g)].map(match => match[1])
-  return classAttributes.some((classValue) => {
-    const normalized = classValue.split(/\s+/).filter(Boolean)
-    return required.every(className => normalized.includes(className))
-  })
-}
 
 async function runBuild() {
   await fs.remove(DIST_ROOT)
@@ -24,85 +15,52 @@ async function runBuild() {
     platform: 'weapp',
     skipNpm: true,
     cwd: TEMPLATE_ROOT,
-    label: 'ide:template-wevu-dynamic-bindings',
+    label: 'ide:template-wevu-simplified-portal',
   })
 }
 
-let sharedMiniProgram: any = null
-let sharedBuildPrepared = false
-
-async function getSharedMiniProgram() {
-  if (!sharedBuildPrepared) {
+describe.sequential('template e2e: weapp-vite-wevu-template simplified portal', () => {
+  it('emits the simplified portal structure and auto-imported component usage', async () => {
     await runBuild()
-    sharedBuildPrepared = true
-  }
-  if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
-      projectPath: TEMPLATE_ROOT,
-    })
-  }
-  return sharedMiniProgram
-}
 
-async function releaseSharedMiniProgram(miniProgram: any) {
-  if (!sharedMiniProgram || sharedMiniProgram === miniProgram) {
-    return
-  }
-  await miniProgram.close()
-}
+    const indexWxmlPath = path.join(DIST_ROOT, 'pages/index/index.wxml')
+    const indexJsPath = path.join(DIST_ROOT, 'pages/index/index.js')
+    const appJsonPath = path.join(DIST_ROOT, 'app.json')
 
-async function closeSharedMiniProgram() {
-  if (!sharedMiniProgram) {
-    return
-  }
-  const miniProgram = sharedMiniProgram
-  sharedMiniProgram = null
-  await miniProgram.close()
-}
+    expect(await fs.pathExists(indexWxmlPath)).toBe(true)
+    expect(await fs.pathExists(indexJsPath)).toBe(true)
+    expect(await fs.pathExists(appJsonPath)).toBe(true)
 
-describe.sequential('template e2e: weapp-vite-wevu-template dynamic object/array class style', () => {
-  afterAll(async () => {
-    await closeSharedMiniProgram()
-  })
+    const indexWxml = await fs.readFile(indexWxmlPath, 'utf8')
+    const indexJs = await fs.readFile(indexJsPath, 'utf8')
+    const appJson = await fs.readJson(appJsonPath)
 
-  it('supports object and array bindings merged with static class/style', async () => {
-    const miniProgram = await getSharedMiniProgram()
+    expect(appJson.pages).toEqual([
+      'pages/index/index',
+      'pages/overview/index',
+    ])
+    expect(appJson.subPackages).toEqual([
+      {
+        root: 'packageA',
+        pages: ['pages/workspace/index'],
+      },
+      {
+        root: 'packageB',
+        pages: ['pages/settings/index'],
+      },
+    ])
 
-    try {
-      const page = await miniProgram.reLaunch('/pages/index/index')
-      if (!page) {
-        throw new Error('Failed to launch index page')
-      }
+    expect(indexWxml).toContain('企业业务模板')
+    expect(indexWxml).toContain('当前路由：{{routeSummary}}')
+    expect(indexWxml).toContain('<StatusPill')
+    expect(indexWxml).toContain('<InfoPanel')
 
-      const initialRoot = await page.$('page')
-      if (!initialRoot) {
-        throw new Error('Failed to find page element')
-      }
-      const initialWxml = await initialRoot.wxml()
-
-      expect(hasClassGroup(initialWxml, ['page'])).toBe(true)
-      expect(hasClassGroup(initialWxml, ['card'])).toBe(true)
-      expect(hasClassGroup(initialWxml, ['btn', 'primary'])).toBe(true)
-
-      await page.callMethod('increment')
-      await page.waitFor(120)
-
-      const updatedRoot = await page.$('page')
-      if (!updatedRoot) {
-        throw new Error('Failed to find page element after increment')
-      }
-      const updatedWxml = await updatedRoot.wxml()
-      expect(hasClassGroup(updatedWxml, ['page', 'page-energetic'])).toBe(true)
-      expect(updatedWxml).toMatch(/background:\s*#eaf0ff\s*;/)
-      expect(updatedWxml).toMatch(/border-top:\s*(?:4rpx|2px)\s+solid\s+#4c6ef5\s*;?/)
-      expect(hasClassGroup(updatedWxml, ['card', 'card-active'])).toBe(true)
-      expect(updatedWxml).toMatch(/border-color:\s*#4c6ef5\s*;?/)
-      expect(hasClassGroup(updatedWxml, ['btn', 'primary', 'btn-boost'])).toBe(true)
-      expect(updatedWxml).toMatch(/opacity:\s*0\.88\s*;?/)
-      expect(updatedWxml).toMatch(/box-shadow:\s*0\s+(?:8rpx|4px)\s+(?:20rpx|10px)\s+rgba\(76,\s*110,\s*245,\s*0\.28\)\s*;?/)
-    }
-    finally {
-      await releaseSharedMiniProgram(miniProgram)
-    }
+    expect(indexJs).toContain('/pages/overview/index')
+    expect(indexJs).toContain('/packageA/pages/workspace/index')
+    expect(indexJs).toContain('/packageB/pages/settings/index')
+    expect(indexJs).toContain('进入概览')
+    expect(indexJs).toContain('打开工作台')
+    expect(indexJs).toContain('前往设置')
+    expect(indexJs).toContain('nativeRouter.reLaunch')
   })
 })
