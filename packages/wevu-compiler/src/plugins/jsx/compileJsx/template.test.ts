@@ -1,8 +1,4 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  collectJsxAutoComponents,
-  createJsxCompileContext,
-} from './template'
 
 function hasMissingDefaultExportWarning(warnings: string[], filename: string) {
   return warnings.some(message =>
@@ -16,7 +12,8 @@ afterEach(() => {
 })
 
 describe('compileJsx template helpers', () => {
-  it('creates compile context from defaults and template overrides', () => {
+  it('creates compile context from defaults and template overrides', async () => {
+    const { createJsxCompileContext } = await import('./template')
     const defaultContext = createJsxCompileContext()
     expect(defaultContext.mustacheInterpolation).toBe('compact')
     expect(defaultContext.inlineExpressions).toEqual([])
@@ -94,7 +91,8 @@ export default {}
     expect([...result.autoComponentContext.templateTags]).toEqual([])
   })
 
-  it('collects non-builtin JSX tags from nested expressions and fragments', () => {
+  it('collects non-builtin JSX tags from nested expressions and fragments', async () => {
+    const { collectJsxAutoComponents } = await import('./template')
     const result = collectJsxAutoComponents(`
 import TButton from '@/components/TButton'
 
