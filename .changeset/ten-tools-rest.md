@@ -1,5 +1,5 @@
 ---
-'wevu': major
+'wevu': minor
 'create-weapp-vite': patch
 ---
 
