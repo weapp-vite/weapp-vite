@@ -173,6 +173,7 @@ describe('auto-routes plugin alias fallback', () => {
     expect(plugin.buildStart?.call({ addWatchFile } as any)).toBeUndefined()
     expect(ensureFresh).not.toHaveBeenCalled()
     expect(addWatchFile).not.toHaveBeenCalled()
+    expect(chokidar.watch).toHaveBeenCalledTimes(1)
   })
 
   it('does not start route watcher when autoRoutes.watch is false', async () => {
