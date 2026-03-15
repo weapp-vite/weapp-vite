@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mayContainPlatformApiAccess, mayContainStaticRequireLiteral, parseJsLikeWithEngine } from './index'
 import { collectComponentPropsFromCode } from './operations/componentProps'
 import { collectFeatureFlagsFromCode } from './operations/featureFlags'
+import { collectJsxAutoComponentsFromCode } from './operations/jsxAutoComponents'
 import { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
 
 describe('@weapp-vite/ast', () => {
@@ -74,5 +75,58 @@ wevuNs.onShow?.(() => {})
       ...options,
       astEngine: 'oxc',
     })).toEqual(expected)
+  })
+
+  it('collects jsx auto components with babel and oxc', () => {
+    const source = `
+import { defineComponent as defineWevuComponent } from 'wevu'
+import TButton from '@/components/TButton'
+import { CardItem as TCard } from '@/components/TCard'
+
+const page = defineWevuComponent({
+  render() {
+    return <view>
+      <TButton />
+      {ok ? <TCard /> : <text />}
+    </view>
+  },
+})
+
+export default page
+`
+
+    const babelResult = collectJsxAutoComponentsFromCode(source, {
+      astEngine: 'babel',
+      isCollectableTag: tag => !['view', 'text'].includes(tag),
+      isDefineComponentSource: source => source === 'wevu' || source === 'vue',
+    })
+    const oxcResult = collectJsxAutoComponentsFromCode(source, {
+      astEngine: 'oxc',
+      isCollectableTag: tag => !['view', 'text'].includes(tag),
+      isDefineComponentSource: source => source === 'wevu' || source === 'vue',
+    })
+
+    expect(babelResult).toEqual(oxcResult)
+    expect([...oxcResult.templateTags]).toEqual(['TButton', 'TCard'])
+    expect(oxcResult.importedComponents).toEqual([
+      {
+        localName: 'defineWevuComponent',
+        importSource: 'wevu',
+        importedName: 'defineComponent',
+        kind: 'named',
+      },
+      {
+        localName: 'TButton',
+        importSource: '@/components/TButton',
+        importedName: 'default',
+        kind: 'default',
+      },
+      {
+        localName: 'TCard',
+        importSource: '@/components/TCard',
+        importedName: 'CardItem',
+        kind: 'named',
+      },
+    ])
   })
 })
