@@ -1605,6 +1605,12 @@ importers:
       merge:
         specifier: 'catalog:'
         version: 2.1.1
+      oxc-parser:
+        specifier: ^0.119.0
+        version: 0.119.0
+      oxc-walker:
+        specifier: ^0.7.0
+        version: 0.7.0(oxc-parser@0.119.0)
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
