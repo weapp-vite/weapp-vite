@@ -1,5 +1,4 @@
 export { resolveAstEngine } from './config'
-export { parseJsLikeWithEngine } from './engine'
 export { collectComponentPropsFromCode } from './operations/componentProps'
 export { collectOnPageScrollPerformanceWarnings } from './operations/onPageScroll'
 export { mayContainPlatformApiAccess } from './operations/platformApi'
@@ -7,4 +6,5 @@ export { collectRequireTokens, mayContainStaticRequireLiteral } from './operatio
 export type { RequireToken } from './operations/require'
 export { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
 export { collectSetDataPickKeysFromTemplateCode } from './operations/setDataPick'
-export type { AstEngineName, AstParserLike, WeappAstConfig } from './types'
+export { parseJsLikeWithEngine } from '@weapp-vite/ast'
+export type { AstEngineName, AstParserLike, WeappAstConfig } from '@weapp-vite/ast'

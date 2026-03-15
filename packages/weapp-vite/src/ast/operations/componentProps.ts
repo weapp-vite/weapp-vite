@@ -69,7 +69,7 @@ function resolveTypeFromNode(node: any): string {
   if (node.type === 'ArrayExpression') {
     const elements = Array.isArray(node.elements) ? node.elements : []
     const types = elements
-      .map((element) => {
+      .map((element: any) => {
         if (!element) {
           return undefined
         }
@@ -78,7 +78,7 @@ function resolveTypeFromNode(node: any): string {
         }
         return resolveTypeFromNode(element)
       })
-      .filter((value): value is string => Boolean(value))
+      .filter((value: string | undefined): value is string => Boolean(value))
     if (types.length === 0) {
       return 'any'
     }
