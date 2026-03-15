@@ -52,6 +52,10 @@
       "types": "./dist/operations/featureFlags.d.mts",
       "import": "./dist/operations/featureFlags.mjs"
     },
+    "./operations/jsxAutoComponents": {
+      "types": "./dist/operations/jsxAutoComponents.d.mts",
+      "import": "./dist/operations/jsxAutoComponents.mjs"
+    },
     "./operations/require": {
       "types": "./dist/operations/require.d.mts",
       "import": "./dist/operations/require.mjs"

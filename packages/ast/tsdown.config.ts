@@ -8,6 +8,7 @@ export default defineConfig({
     './src/types.ts',
     './src/operations/componentProps.ts',
     './src/operations/featureFlags.ts',
+    './src/operations/jsxAutoComponents.ts',
     './src/operations/platformApi.ts',
     './src/operations/require.ts',
     './src/operations/scriptSetupImports.ts',

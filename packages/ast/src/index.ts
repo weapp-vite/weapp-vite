@@ -6,6 +6,12 @@ export { collectComponentPropsFromCode } from './operations/componentProps'
 export type { ComponentPropMap } from './operations/componentProps'
 export { collectFeatureFlagsFromCode } from './operations/featureFlags'
 export type { FeatureFlagOptions } from './operations/featureFlags'
+export { collectJsxAutoComponentsFromCode } from './operations/jsxAutoComponents'
+export type {
+  JsxAutoComponentAnalysisOptions,
+  JsxAutoComponentContext,
+  JsxImportedComponent,
+} from './operations/jsxAutoComponents'
 export { mayContainPlatformApiAccess, platformApiIdentifiers } from './operations/platformApi'
 export { collectRequireTokens, mayContainStaticRequireLiteral } from './operations/require'
 export type { RequireToken } from './operations/require'
