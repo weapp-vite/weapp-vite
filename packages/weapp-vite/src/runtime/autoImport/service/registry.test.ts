@@ -319,6 +319,11 @@ describe('autoImport registry helpers', () => {
 
   it('registers component with metadata merge and extraction fallback', async () => {
     const state = createState()
+    state.ctx.configService.weappViteConfig = {
+      ast: {
+        engine: 'oxc',
+      },
+    }
     getTypedComponentsSettingsMock.mockReturnValue({ enabled: true })
     getHtmlCustomDataSettingsMock.mockReturnValue({ enabled: true })
     getVueComponentsSettingsMock.mockReturnValue({ enabled: true })
@@ -345,6 +350,9 @@ describe('autoImport registry helpers', () => {
         ['fromScript', 'string'],
       ]),
       docs: new Map([['fromJson', 'doc']]),
+    })
+    expect(extractComponentPropsMock).toHaveBeenCalledWith('export default {}', {
+      astEngine: 'oxc',
     })
     expect(state.scheduleManifestWrite).toHaveBeenCalledWith(true)
     expect(state.scheduleTypedComponentsWrite).toHaveBeenCalledWith(true)
@@ -411,6 +419,11 @@ describe('autoImport registry helpers', () => {
 
   it('extracts props from vue component script and handles missing compiled script', async () => {
     const state = createState()
+    state.ctx.configService.weappViteConfig = {
+      ast: {
+        engine: 'oxc',
+      },
+    }
     findJsEntryMock.mockResolvedValue({ path: undefined })
     findJsonEntryMock.mockResolvedValue({ path: undefined })
     findTemplateEntryMock.mockResolvedValue({ path: undefined })
@@ -435,12 +448,15 @@ describe('autoImport registry helpers', () => {
       '<script setup lang="ts">const x = 1</script>',
       '/project/src/components/vue-rich/index.vue',
       {
+        astEngine: 'oxc',
         json: {
           kind: 'component',
         },
       },
     )
-    expect(extractComponentPropsMock).toHaveBeenCalledWith('export default { properties: { fromVue: String } }')
+    expect(extractComponentPropsMock).toHaveBeenCalledWith('export default { properties: { fromVue: String } }', {
+      astEngine: 'oxc',
+    })
     expect(state.componentMetadataMap.get('VueRichProps')).toEqual({
       types: new Map([
         ['fromJson', 'number'],

@@ -35,6 +35,9 @@ export async function resolveExternalFunction(
   source: string,
   exportName: string,
   moduleCache: Map<string, ModuleAnalysis>,
+  options?: {
+    astEngine?: 'babel' | 'oxc'
+  },
 ): Promise<ResolvedFunctionRef> {
   if (source === WE_VU_MODULE_ID) {
     return null
@@ -52,7 +55,7 @@ export async function resolveExternalFunction(
 
   let analysis = moduleCache.get(resolvedId)
   if (!analysis) {
-    analysis = getOrCreateExternalModuleAnalysis(resolvedId, code)
+    analysis = getOrCreateExternalModuleAnalysis(resolvedId, code, options)
     moduleCache.set(resolvedId, analysis)
   }
 

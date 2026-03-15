@@ -1,9 +1,10 @@
+import type { AstEngineName } from '../../../ast/types'
 import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
 import * as t from '@babel/types'
 import { WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from '../../../constants'
 import { traverse } from '../../../utils/babel'
 import { isStaticObjectKeyMatch, isTopLevel } from './astUtils'
-import { createModuleAnalysis } from './moduleAnalysis'
+import { createModuleAnalysis, createModuleAnalysisFromCode } from './moduleAnalysis'
 
 function unwrapTypeLikeExpression(node: t.Expression): t.Expression {
   if (t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node) || t.isTSNonNullExpression(node) || t.isTypeCastExpression(node)) {
@@ -197,4 +198,17 @@ export function collectTargetOptionsObjects(
   }
 
   return { optionsObjects, module }
+}
+
+export function collectTargetOptionsObjectsFromCode(
+  code: string,
+  moduleId: string,
+  options?: {
+    astEngine?: AstEngineName
+  },
+): { optionsObjects: t.ObjectExpression[], module: ModuleAnalysis } {
+  // 这里仍然沿用 Babel AST 作为 options 对象的可变数据结构；
+  // `astEngine` 先用于统一入口，后续如需引入 Oxc 预分析，可在此扩展。
+  const ast = createModuleAnalysisFromCode(moduleId, code, options).ast
+  return collectTargetOptionsObjects(ast, moduleId)
 }

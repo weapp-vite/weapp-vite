@@ -1,10 +1,12 @@
 import type { PluginContext } from 'rolldown'
+import type { AstEngineName } from '../../../../ast'
 import type { CompilerContext } from '../../../../context'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { resolveAstEngine } from '../../../../ast'
+import { collectScriptSetupImportsFromCode } from '../../../../ast/operations/scriptSetupImports'
 import logger from '../../../../logger'
-import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../../utils/babel'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { resolveEntryPath } from '../../../../utils/entryResolve'
 import { resolveReExportedName } from '../../../../utils/reExport'
@@ -15,12 +17,7 @@ import { pathExists as pathExistsCached, readFile as readFileCached } from '../.
 import { getSfcCheckMtime, readAndParseSfc } from '../../../utils/vueSfc'
 import { ensureTemplateScanned } from './watch'
 
-export interface ScriptSetupImport {
-  localName: string
-  importSource: string
-  importedName?: string
-  kind: 'default' | 'named'
-}
+const JS_LIKE_FILE_RE = /\.(?:[cm]?ts|[cm]?js)$/
 
 export function collectVueTemplateComponentNames(template: string, filename: string) {
   return collectVueTemplateTags(template, {
@@ -38,46 +35,14 @@ export function collectVueTemplateAutoImportTags(template: string, filename: str
   })
 }
 
-export function collectScriptSetupImports(scriptSetup: string, templateComponentNames: Set<string>) {
-  const results: ScriptSetupImport[] = []
-  const ast = babelParse(scriptSetup, BABEL_TS_MODULE_PARSER_OPTIONS)
-
-  for (const node of ast.program.body) {
-    if (node.type !== 'ImportDeclaration') {
-      continue
-    }
-    // @ts-ignore - Babel AST 结构
-    const importKind = (node as any).importKind
-    if (importKind === 'type') {
-      continue
-    }
-
-    const importSource = node.source.value
-    for (const specifier of node.specifiers) {
-      // @ts-ignore - Babel AST 结构
-      if ((specifier as any).importKind === 'type') {
-        continue
-      }
-      const localName = specifier.local?.name
-      if (!localName || !templateComponentNames.has(localName)) {
-        continue
-      }
-      if (specifier.type === 'ImportDefaultSpecifier') {
-        results.push({ localName, importSource, importedName: 'default', kind: 'default' })
-      }
-      else if (specifier.type === 'ImportSpecifier') {
-        const imported = (specifier as any).imported
-        const importedName = imported?.type === 'Identifier'
-          ? imported.name
-          : imported?.type === 'StringLiteral'
-            ? imported.value
-            : undefined
-        results.push({ localName, importSource, importedName, kind: 'named' })
-      }
-    }
-  }
-
-  return results
+export function collectScriptSetupImports(
+  scriptSetup: string,
+  templateComponentNames: Set<string>,
+  options?: {
+    astEngine?: AstEngineName
+  },
+) {
+  return collectScriptSetupImportsFromCode(scriptSetup, templateComponentNames, options)
 }
 
 export async function scanTemplateEntry(
@@ -127,7 +92,7 @@ export async function applyScriptSetupUsingComponents(options: {
       const tags = collectVueTemplateAutoImportTags(descriptor.template.content, vueEntryPath)
       if (tags.size) {
         const components = Object.fromEntries(
-          Array.from(tags).map(tag => [tag, [{ start: 0, end: 0 }]]),
+          Array.from(tags, tag => [tag, [{ start: 0, end: 0 }]]),
         )
         wxmlService?.setWxmlComponentsMap(vueEntryPath, components)
       }
@@ -136,7 +101,10 @@ export async function applyScriptSetupUsingComponents(options: {
     if (!errors?.length && descriptor?.scriptSetup && descriptor?.template) {
       const templateComponentNames = collectVueTemplateComponentNames(descriptor.template.content, vueEntryPath)
       if (templateComponentNames.size) {
-        const imports = collectScriptSetupImports(descriptor.scriptSetup.content, templateComponentNames)
+        const astEngine = resolveAstEngine(configService.weappViteConfig)
+        const imports = collectScriptSetupImports(descriptor.scriptSetup.content, templateComponentNames, {
+          astEngine,
+        })
         if (imports.length) {
           const usingComponents: Record<string, string> = (
             json && typeof json.usingComponents === 'object' && json.usingComponents && !Array.isArray(json.usingComponents)
@@ -165,8 +133,9 @@ export async function applyScriptSetupUsingComponents(options: {
             }
 
             // 桶文件（barrel）支持：import { X } from '.../components' => 解析 re-export 到真实组件文件
-            if (kind === 'named' && importedName && resolvedId && path.isAbsolute(resolvedId) && /\.(?:[cm]?ts|[cm]?js)$/.test(resolvedId)) {
+            if (kind === 'named' && importedName && resolvedId && path.isAbsolute(resolvedId) && JS_LIKE_FILE_RE.test(resolvedId)) {
               const mapped = await resolveReExportedName(resolvedId, importedName, {
+                astEngine: resolveAstEngine(configService.weappViteConfig),
                 cache: reExportResolutionCache,
                 maxDepth: 4,
                 readFile: file => readFileCached(file, { checkMtime: configService.isDev }),

@@ -1,3 +1,4 @@
+import type { AstEngineName } from '../../ast'
 import type { ExternalMetadataFileCandidates, Resolver } from '../../auto-import-components/resolvers'
 import type { ComponentPropMap } from '../componentProps'
 import { createRequire } from 'node:module'
@@ -181,9 +182,16 @@ function resolveExternalMetadataFiles(from: string, cwd: string, resolvers: Reso
     ?? resolveGenericMetadataFiles(from, cwd)
 }
 
-export function loadExternalComponentMetadata(from: string, cwd: string, resolvers?: Resolver[]): ExternalComponentMetadata | undefined {
+export function loadExternalComponentMetadata(
+  from: string,
+  cwd: string,
+  resolvers?: Resolver[],
+  options?: {
+    astEngine?: AstEngineName
+  },
+): ExternalComponentMetadata | undefined {
   const cache = getMetadataCache(resolvers)
-  const cacheKey = `${cwd}\n${from}`
+  const cacheKey = `${options?.astEngine ?? 'babel'}\n${cwd}\n${from}`
   const cached = cache.get(cacheKey)
   if (cached !== undefined) {
     return cached ?? undefined
@@ -219,7 +227,9 @@ export function loadExternalComponentMetadata(from: string, cwd: string, resolve
       continue
     }
     try {
-      const types = extractComponentProps(code)
+      const types = extractComponentProps(code, {
+        astEngine: options?.astEngine,
+      })
       if (types.size > 0) {
         const result = { types }
         cache.set(cacheKey, result)

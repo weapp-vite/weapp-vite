@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { parseSync } from 'oxc-parser'
+import { describe, expect, it, vi } from 'vitest'
 import { createTransformHook } from './transform'
 
 describe('core lifecycle transform hook injectWeapi', () => {
@@ -81,5 +82,56 @@ describe('core lifecycle transform hook injectWeapi', () => {
 
     const result = await transform('const wx = createMock(); export const a = wx.showToast({ title: "ok" })', '/project/src/a.ts')
     expect(result).toBeNull()
+  })
+
+  it('keeps babel as default ast engine', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        },
+      },
+    } as any)
+
+    const parseSpy = {
+      parse: vi.fn((code: string) => parseSync('/project/src/a.ts', code).program),
+    }
+
+    const result = await transform.call(parseSpy, 'export const value = foo.bar({ title: "ok" })', '/project/src/a.ts')
+    expect(result).toBeNull()
+    expect(parseSpy.parse).not.toHaveBeenCalled()
+  })
+
+  it('uses rolldown parse for fast rejection when ast engine is oxc', async () => {
+    const transform = createTransformHook({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+          weappViteConfig: {
+            ast: {
+              engine: 'oxc',
+            },
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        },
+      },
+    } as any)
+
+    const parseSpy = {
+      parse: vi.fn((code: string) => parseSync('/project/src/a.ts', code).program),
+    }
+
+    const result = await transform.call(parseSpy, 'export const value = foo.bar({ title: "ok" })', '/project/src/a.ts')
+    expect(result).toBeNull()
+    expect(parseSpy.parse).toHaveBeenCalledOnce()
   })
 })

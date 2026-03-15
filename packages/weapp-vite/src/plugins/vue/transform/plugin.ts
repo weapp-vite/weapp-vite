@@ -5,6 +5,7 @@ import type { CompilerContext } from '../../../context'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
+import { resolveAstEngine } from '../../../ast'
 import logger from '../../../logger'
 import { normalizeWatchPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -24,6 +25,7 @@ import { buildWeappVueStyleRequest, parseWeappVueStyleRequest } from './styleReq
 
 const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
 const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
+const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 
 function registerVueTemplateToken(
   ctx: CompilerContext,
@@ -74,7 +76,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     return filename
   }
 
-  const isAppEntry = (filename: string) => /[\\/]app\.(?:vue|jsx|tsx)$/.test(filename)
+  const isAppEntry = (filename: string) => APP_ENTRY_RE.test(filename)
 
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
@@ -261,7 +263,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         }
 
         if (isPage && result.script) {
-          for (const warning of collectOnPageScrollPerformanceWarnings(result.script, filename)) {
+          for (const warning of collectOnPageScrollPerformanceWarnings(result.script, filename, {
+            engine: resolveAstEngine(configService.weappViteConfig),
+          })) {
             logger.warn(warning)
           }
           const injected = await injectWevuPageFeaturesInJsWithViteResolver(this, result.script, filename, {
@@ -272,7 +276,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           }
         }
         if (!isApp && result.script && result.template && isAutoSetDataPickEnabled(configService.weappViteConfig)) {
-          const keys = collectSetDataPickKeysFromTemplate(result.template)
+          const keys = collectSetDataPickKeysFromTemplate(result.template, {
+            astEngine: resolveAstEngine(configService.weappViteConfig),
+          })
           const injectedPick = injectSetDataPickInJs(result.script, keys)
           if (injectedPick.transformed) {
             result.script = injectedPick.code

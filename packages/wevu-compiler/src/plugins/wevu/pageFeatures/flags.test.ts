@@ -1,5 +1,6 @@
 import * as t from '@babel/types'
 import { describe, expect, it } from 'vitest'
+import { collectWevuPageFeatureFlagsFromCode } from '../../../ast/operations/pageFeatures'
 import { generate, parseJsLike } from '../../../utils/babel'
 import { collectWevuPageFeatureFlags, injectWevuPageFeatureFlagsIntoOptionsObject } from './flags'
 import { collectTargetOptionsObjects } from './optionsObjects'
@@ -14,6 +15,20 @@ wevu.onPageScroll?.(() => ({}))
     `.trim())
 
     const enabled = collectWevuPageFeatureFlags(ast)
+    expect(enabled.has('enableOnShareTimeline')).toBe(true)
+    expect(enabled.has('enableOnPageScroll')).toBe(true)
+  })
+
+  it('collects flags from source code with oxc engine', () => {
+    const enabled = collectWevuPageFeatureFlagsFromCode(`
+import { onShareTimeline as onTimeline } from 'wevu'
+import * as wevu from 'wevu'
+onTimeline(() => ({}))
+wevu.onPageScroll(() => ({}))
+    `.trim(), {
+      astEngine: 'oxc',
+    })
+
     expect(enabled.has('enableOnShareTimeline')).toBe(true)
     expect(enabled.has('enableOnPageScroll')).toBe(true)
   })

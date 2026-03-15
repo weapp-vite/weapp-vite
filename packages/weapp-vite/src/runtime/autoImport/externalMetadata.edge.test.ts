@@ -72,10 +72,15 @@ describe('loadExternalComponentMetadata edge branches', () => {
     await fs.outputFile(path.join(root, 'local/button.mjs'), 'js-hit', 'utf8')
 
     const { loadExternalComponentMetadata } = await import('./externalMetadata')
-    const meta = loadExternalComponentMetadata('./local/button.mjs', root)
+    const meta = loadExternalComponentMetadata('./local/button.mjs', root, undefined, {
+      astEngine: 'oxc',
+    })
 
     expect(meta?.types.get('fromJs')).toBe('string')
     expect(extractComponentPropsMock).toHaveBeenCalledTimes(1)
+    expect(extractComponentPropsMock).toHaveBeenCalledWith('js-hit', {
+      astEngine: 'oxc',
+    })
   })
 
   it('falls back to js metadata when dts parsing throws', async () => {
@@ -140,6 +145,20 @@ describe('loadExternalComponentMetadata edge branches', () => {
     expect(loadExternalComponentMetadata('mock-empty/component', root, resolvers)).toBeUndefined()
     expect(extractComponentPropsFromDtsMock.mock.calls.length).toBe(firstDtsCount)
     expect(extractComponentPropsMock.mock.calls.length).toBe(firstJsCount)
+  })
+
+  it('separates cache entries by ast engine', async () => {
+    const root = await createRoot('weapp-vite-meta-edge-engine-cache-')
+    await fs.outputFile(path.join(root, 'local/cache.mjs'), 'js-hit', 'utf8')
+
+    const { loadExternalComponentMetadata } = await import('./externalMetadata')
+    loadExternalComponentMetadata('./local/cache.mjs', root, undefined, { astEngine: 'babel' })
+    loadExternalComponentMetadata('./local/cache.mjs', root, undefined, { astEngine: 'babel' })
+    loadExternalComponentMetadata('./local/cache.mjs', root, undefined, { astEngine: 'oxc' })
+
+    expect(extractComponentPropsMock).toHaveBeenCalledTimes(2)
+    expect(extractComponentPropsMock.mock.calls[0]?.[1]).toEqual({ astEngine: 'babel' })
+    expect(extractComponentPropsMock.mock.calls[1]?.[1]).toEqual({ astEngine: 'oxc' })
   })
 
   it('falls back to import.meta require when cwd is invalid', async () => {

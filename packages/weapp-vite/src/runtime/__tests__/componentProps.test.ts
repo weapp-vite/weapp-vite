@@ -23,7 +23,7 @@ Component({
 
     const result = extractComponentProps(code)
 
-    expect(Array.from(result.entries())).toEqual([
+    expect([...result.entries()]).toEqual([
       ['title', 'string'],
       ['count', 'number | string'],
       ['visible', 'boolean'],
@@ -57,7 +57,7 @@ export default defineComponent(__default__)
 
     const result = extractComponentProps(code)
 
-    expect(Array.from(result.entries())).toEqual([
+    expect([...result.entries()]).toEqual([
       ['title', 'string'],
       ['score', 'number | string'],
       ['enabled', 'boolean'],
@@ -80,7 +80,7 @@ Component(options as any)
 `
 
     const result = extractComponentProps(code)
-    expect(Array.from(result.entries())).toEqual([
+    expect([...result.entries()]).toEqual([
       ['level', 'number'],
     ])
   })
@@ -102,7 +102,7 @@ Component({
 
     const result = extractComponentProps(code)
 
-    expect(Array.from(result.entries())).toEqual([
+    expect([...result.entries()]).toEqual([
       ['mixed', 'any | string'],
     ])
   })
@@ -124,8 +124,8 @@ Component({
 })
 `
 
-    expect(Array.from(extractComponentProps(codeWithSpread).entries())).toEqual([])
-    expect(Array.from(extractComponentProps(codeWithoutProps).entries())).toEqual([])
+    expect([...extractComponentProps(codeWithSpread).entries()]).toEqual([])
+    expect([...extractComponentProps(codeWithoutProps).entries()]).toEqual([])
   })
 
   it('skips unsupported property/option node shapes while keeping valid entries', () => {
@@ -148,7 +148,7 @@ Component({
 `
 
     const result = extractComponentProps(code)
-    expect(Array.from(result.entries())).toEqual([
+    expect([...result.entries()]).toEqual([
       ['supported', 'string'],
     ])
   })
@@ -173,7 +173,7 @@ Component({
 `
 
     const result = extractComponentProps(code)
-    expect(Array.from(result.entries())).toEqual([
+    expect([...result.entries()]).toEqual([
       ['1', 'string'],
       ['memberByIdentifier', 'string'],
       ['memberByLiteral', 'boolean'],
@@ -192,7 +192,7 @@ Component(optionsFromCall)
 Component(getOptions())
 `
 
-    expect(Array.from(extractComponentProps(code).entries())).toEqual([])
+    expect([...extractComponentProps(code).entries()]).toEqual([])
   })
 
   it('keeps the first extracted props map when later call expressions are visited', () => {
@@ -211,8 +211,53 @@ Component({
 `
 
     const result = extractComponentProps(code)
-    expect(Array.from(result.entries())).toEqual([
+    expect([...result.entries()]).toEqual([
       ['first', 'string'],
     ])
+  })
+
+  it('supports extracting props with the oxc engine', () => {
+    const code = `
+const options = {
+  props: {
+    title: String,
+    score: {
+      type: Number,
+      optionalTypes: [String],
+    },
+  },
+}
+
+Component(options as any)
+`
+
+    const result = extractComponentProps(code, { astEngine: 'oxc' })
+    expect([...result.entries()]).toEqual([
+      ['title', 'string'],
+      ['score', 'number | string'],
+    ])
+  })
+
+  it('keeps babel and oxc results aligned for unsupported shapes', () => {
+    const code = `
+const extraTypes = [Boolean]
+const wxTypes = [String]
+
+Component({
+  properties: {
+    mixed: {
+      type: wxTypes[0],
+      optionalTypes: [, ...extraTypes, String],
+    },
+    supported: {
+      optionalTypes: [String],
+    },
+  },
+})
+`
+
+    expect([...extractComponentProps(code, { astEngine: 'babel' }).entries()]).toEqual(
+      [...extractComponentProps(code, { astEngine: 'oxc' }).entries()],
+    )
   })
 })

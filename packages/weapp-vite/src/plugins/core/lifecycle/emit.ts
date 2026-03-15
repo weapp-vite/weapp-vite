@@ -4,6 +4,7 @@ import type { SubPackageMetaValue } from '../../../types'
 import type { WxmlEmitRuntime } from '../../utils/wxmlEmit'
 import type { CorePluginState } from '../helpers'
 import path from 'pathe'
+import { mayContainPlatformApiAccess, mayContainStaticRequireLiteral, resolveAstEngine } from '../../../ast'
 import logger from '../../../logger'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
 import { toPosixPath } from '../../../utils'
@@ -43,8 +44,18 @@ function resolveInjectWeapiGlobalName(state: CorePluginState) {
   return injectWeapi.globalName?.trim() || 'wpi'
 }
 
-function replacePlatformApiAccess(code: string, globalName: string) {
+function replacePlatformApiAccess(
+  code: string,
+  globalName: string,
+  options?: {
+    astEngine?: 'babel' | 'oxc'
+  },
+) {
   const injectedApiIdentifier = '__weappViteInjectedApi__'
+
+  if (!mayContainPlatformApiAccess(code, { engine: options?.astEngine })) {
+    return code
+  }
 
   try {
     const ast = parseJsLike(code)
@@ -144,7 +155,18 @@ function normalizeNpmImportForAlipay(importee: string, dependencies: Record<stri
   return normalizeAlipayNpmImportPath(normalized, mode)
 }
 
-function rewriteChunkNpmImportsForAlipay(code: string, dependencies: Record<string, string> | undefined, mode?: string) {
+function rewriteChunkNpmImportsForAlipay(
+  code: string,
+  dependencies: Record<string, string> | undefined,
+  mode?: string,
+  options?: {
+    astEngine?: 'babel' | 'oxc'
+  },
+) {
+  if (!mayContainStaticRequireLiteral(code, { engine: options?.astEngine })) {
+    return code
+  }
+
   try {
     const ast = parseJsLike(code)
     let mutated = false
@@ -220,6 +242,9 @@ function rewriteBundleNpmImportsForAlipay(
   bundle: OutputBundle,
   dependencies: Record<string, string> | undefined,
   mode?: string,
+  options?: {
+    astEngine?: 'babel' | 'oxc'
+  },
 ) {
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
@@ -227,7 +252,7 @@ function rewriteBundleNpmImportsForAlipay(
     }
 
     const chunk = output as OutputChunk
-    const nextCode = rewriteChunkNpmImportsForAlipay(chunk.code, dependencies, mode)
+    const nextCode = rewriteChunkNpmImportsForAlipay(chunk.code, dependencies, mode, options)
     if (nextCode === chunk.code) {
       continue
     }
@@ -235,14 +260,20 @@ function rewriteBundleNpmImportsForAlipay(
   }
 }
 
-function rewriteBundlePlatformApi(bundle: OutputBundle, globalName: string) {
+function rewriteBundlePlatformApi(
+  bundle: OutputBundle,
+  globalName: string,
+  options?: {
+    astEngine?: 'babel' | 'oxc'
+  },
+) {
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'chunk') {
       continue
     }
 
     const chunk = output as OutputChunk
-    const nextCode = replacePlatformApiAccess(chunk.code, globalName)
+    const nextCode = replacePlatformApiAccess(chunk.code, globalName, options)
     if (nextCode === chunk.code) {
       continue
     }
@@ -319,7 +350,18 @@ function toRelativeRuntimeNpmImport(fileName: string, root: string, importee: st
   return relative.startsWith('.') ? relative : `./${relative}`
 }
 
-function rewriteChunkNpmImportsToLocalSubPackage(chunk: OutputChunk, meta: SubPackageMetaValue, dependencies: Record<string, string> | undefined) {
+function rewriteChunkNpmImportsToLocalSubPackage(
+  chunk: OutputChunk,
+  meta: SubPackageMetaValue,
+  dependencies: Record<string, string> | undefined,
+  options?: {
+    astEngine?: 'babel' | 'oxc'
+  },
+) {
+  if (!mayContainStaticRequireLiteral(chunk.code, { engine: options?.astEngine })) {
+    return
+  }
+
   try {
     const ast = parseJsLike(chunk.code)
     let mutated = false
@@ -427,6 +469,7 @@ export function createRenderStartHook(state: CorePluginState) {
 export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: boolean) {
   const { ctx, subPackageMeta } = state
   const { scanService, configService } = ctx
+  const astEngine = resolveAstEngine(configService.weappViteConfig)
 
   return async function generateBundle(this: any, _options: any, bundle: any) {
     const rolldownBundle = bundle as unknown as OutputBundle
@@ -627,7 +670,12 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     })
 
     if (configService.platform === 'alipay') {
-      rewriteBundleNpmImportsForAlipay(rolldownBundle, configService.packageJson.dependencies, configService.weappViteConfig?.npm?.alipayNpmMode)
+      rewriteBundleNpmImportsForAlipay(
+        rolldownBundle,
+        configService.packageJson.dependencies,
+        configService.weappViteConfig?.npm?.alipayNpmMode,
+        { astEngine },
+      )
     }
     else {
       const subPackageMap = scanService.subPackageMap ?? new Map<string, SubPackageMetaValue>()
@@ -644,7 +692,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           if (chunk.fileName === meta.subPackage.root || !chunk.fileName.startsWith(`${meta.subPackage.root}/`)) {
             continue
           }
-          rewriteChunkNpmImportsToLocalSubPackage(chunk, meta, configService.packageJson.dependencies)
+          rewriteChunkNpmImportsToLocalSubPackage(chunk, meta, configService.packageJson.dependencies, {
+            astEngine,
+          })
         }
 
         rewriteJsonNpmImportsToLocalSubPackage(rolldownBundle, meta, configService.packageJson.dependencies)
@@ -653,7 +703,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
     const injectWeapiGlobalName = resolveInjectWeapiGlobalName(state)
     if (injectWeapiGlobalName) {
-      rewriteBundlePlatformApi(rolldownBundle, injectWeapiGlobalName)
+      rewriteBundlePlatformApi(rolldownBundle, injectWeapiGlobalName, {
+        astEngine,
+      })
     }
 
     refreshModuleGraph(this, state)

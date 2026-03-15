@@ -1,22 +1,26 @@
+import type { AstEngineName } from '../../../ast/types'
 import type { ModuleAnalysis } from './analysis'
 import type { ModuleResolver, WevuPageFeatureFlag } from './types'
+import { collectWevuPageFeatureFlagsFromCode } from '../../../ast/operations/pageFeatures'
 import { generate, parseJsLike } from '../../../utils/babel'
 import { collectTargetOptionsObjects, collectWevuFeaturesFromSetupReachableImports, getSetupFunctionFromOptionsObject } from './analysis'
-import { collectWevuPageFeatureFlags, injectWevuPageFeatureFlagsIntoOptionsObject } from './flags'
+import { injectWevuPageFeatureFlagsIntoOptionsObject } from './flags'
 
 /**
  * 在 JS 源码中注入 wevu 页面特性（基于本文件分析）。
  */
 export function injectWevuPageFeaturesInJs(
   source: string,
+  options?: {
+    astEngine?: AstEngineName
+  },
 ): { code: string, transformed: boolean } {
-  const ast = parseJsLike(source)
-
-  const enabled = collectWevuPageFeatureFlags(ast)
+  const enabled = collectWevuPageFeatureFlagsFromCode(source, options)
   if (!enabled.size) {
     return { code: source, transformed: false }
   }
 
+  const ast = parseJsLike(source)
   const { optionsObjects } = collectTargetOptionsObjects(ast, '<inline>')
   if (!optionsObjects.length) {
     return { code: source, transformed: false }
@@ -40,7 +44,7 @@ export function injectWevuPageFeaturesInJs(
  */
 export async function injectWevuPageFeaturesInJsWithResolver(
   source: string,
-  options: { id: string, resolver: ModuleResolver },
+  options: { id: string, resolver: ModuleResolver, astEngine?: AstEngineName },
 ): Promise<{ code: string, transformed: boolean }> {
   const ast = parseJsLike(source)
   const { optionsObjects, module } = collectTargetOptionsObjects(ast, options.id)
@@ -49,7 +53,7 @@ export async function injectWevuPageFeaturesInJsWithResolver(
   }
 
   const enabled = new Set<WevuPageFeatureFlag>()
-  for (const flag of collectWevuPageFeatureFlags(ast)) {
+  for (const flag of collectWevuPageFeatureFlagsFromCode(source, options)) {
     enabled.add(flag)
   }
 
@@ -61,7 +65,9 @@ export async function injectWevuPageFeaturesInJsWithResolver(
     if (!setupFn) {
       continue
     }
-    const fromImports = await collectWevuFeaturesFromSetupReachableImports(module, setupFn, options.resolver, moduleCache)
+    const fromImports = await collectWevuFeaturesFromSetupReachableImports(module, setupFn, options.resolver, moduleCache, {
+      astEngine: options.astEngine,
+    })
     for (const flag of fromImports) {
       enabled.add(flag)
     }

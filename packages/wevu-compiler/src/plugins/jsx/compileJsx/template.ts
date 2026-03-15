@@ -45,7 +45,10 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
 
 export function collectJsxAutoComponents(source: string, filename: string, options?: CompileVueFileOptions) {
   const context = createJsxCompileContext(options)
-  return collectJsxAutoComponentContext(source, filename, context, options?.warn)
+  return collectJsxAutoComponentContext(source, filename, context, {
+    astEngine: options?.astEngine,
+    warn: options?.warn,
+  })
 }
 
 /**

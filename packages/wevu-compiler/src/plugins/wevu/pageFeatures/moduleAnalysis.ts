@@ -1,3 +1,4 @@
+import type { AstEngineName } from '../../../ast/types'
 import type { WevuPageFeatureFlag, WevuPageHookName } from './types'
 import * as t from '@babel/types'
 import { LRUCache } from 'lru-cache'
@@ -37,15 +38,8 @@ const externalModuleAnalysisCache = new LRUCache<
   max: 256,
 })
 
-export function getOrCreateExternalModuleAnalysis(moduleId: string, code: string) {
-  const cached = externalModuleAnalysisCache.get(moduleId)
-  if (cached && cached.code === code) {
-    return cached.analysis
-  }
-  const ast = parseJsLike(code)
-  const analysis = createModuleAnalysis(moduleId, ast)
-  externalModuleAnalysisCache.set(moduleId, { code, analysis })
-  return analysis
+function createExternalModuleAnalysisCacheKey(moduleId: string, astEngine?: AstEngineName) {
+  return `${astEngine ?? 'babel'}::${moduleId}`
 }
 
 function getFunctionLikeFromExpression(node: t.Expression | null | undefined): FunctionLike | null {
@@ -202,4 +196,34 @@ export function createModuleAnalysis(id: string, ast: t.File): ModuleAnalysis {
     localFunctions,
     exports,
   }
+}
+
+export function createModuleAnalysisFromCode(
+  id: string,
+  code: string,
+  _options?: {
+    astEngine?: AstEngineName
+  },
+) {
+  // 这里仍返回 Babel AST 驱动的分析结果；`astEngine` 目前用于统一入口与缓存维度，
+  // 后续若引入 Oxc 版结构化分析，可在此替换实现而不改调用方。
+  const ast = parseJsLike(code)
+  return createModuleAnalysis(id, ast)
+}
+
+export function getOrCreateExternalModuleAnalysis(
+  moduleId: string,
+  code: string,
+  options?: {
+    astEngine?: AstEngineName
+  },
+) {
+  const cacheKey = createExternalModuleAnalysisCacheKey(moduleId, options?.astEngine)
+  const cached = externalModuleAnalysisCache.get(cacheKey)
+  if (cached && cached.code === code) {
+    return cached.analysis
+  }
+  const analysis = createModuleAnalysisFromCode(moduleId, code, options)
+  externalModuleAnalysisCache.set(cacheKey, { code, analysis })
+  return analysis
 }

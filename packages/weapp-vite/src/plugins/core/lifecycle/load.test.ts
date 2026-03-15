@@ -1,5 +1,6 @@
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import os from 'node:os'
+import { parseSync } from 'oxc-parser'
 import path from 'pathe'
 import { describe, expect, it, vi } from 'vitest'
 import { createLoadHook, createOptionsHook } from './load'
@@ -368,6 +369,81 @@ describe('core lifecycle load hook injectWeapi', () => {
     )
 
     expect(unavailableResult).toEqual(rawResult)
+  })
+
+  it('keeps babel as default ast engine for component load result', async () => {
+    const sourceId = '/project/src/components/panel.ts'
+    const rawResult = {
+      code: 'Component({ methods: { run() { return foo.bar() } } })',
+    }
+
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          platform: 'weapp',
+          weappViteConfig: {
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'components/panel',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry: vi.fn(async () => rawResult),
+      loadedEntrySet: new Set<string>([sourceId]),
+    } as any)
+
+    const pluginContext = {
+      resolve: vi.fn(async () => ({ id: '@wevu/api' })),
+      parse: vi.fn((code: string) => parseSync(sourceId, code).program),
+    }
+
+    const result = await load.call(pluginContext, sourceId)
+
+    expect(result).toEqual(rawResult)
+    expect(pluginContext.parse).not.toHaveBeenCalled()
+  })
+
+  it('uses rolldown parse for fast rejection when ast engine is oxc', async () => {
+    const sourceId = '/project/src/components/panel.ts'
+    const rawResult = {
+      code: 'Component({ methods: { run() { return foo.bar() } } })',
+    }
+
+    const load = createLoadHook({
+      ctx: {
+        configService: {
+          platform: 'weapp',
+          weappViteConfig: {
+            ast: {
+              engine: 'oxc',
+            },
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'components/panel',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry: vi.fn(async () => rawResult),
+      loadedEntrySet: new Set<string>([sourceId]),
+    } as any)
+
+    const pluginContext = {
+      resolve: vi.fn(async () => ({ id: '@wevu/api' })),
+      parse: vi.fn((code: string) => parseSync(sourceId, code).program),
+    }
+
+    const result = await load.call(pluginContext, sourceId)
+
+    expect(result).toEqual(rawResult)
+    expect(pluginContext.parse).toHaveBeenCalledOnce()
   })
 })
 
