@@ -4,6 +4,7 @@ import * as t from '@babel/types'
 import { parseSync } from 'oxc-parser'
 import { walk as walkOxc } from 'oxc-walker'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../babel'
+import { getObjectPropertyByKey, resolveRenderableExpression } from '../babelNodes'
 
 export interface JsxImportedComponent {
   localName: string
@@ -27,6 +28,15 @@ export interface JsxAutoComponentAnalysisOptions {
     defineComponentAliases: Set<string>,
   ) => Expression | null
   resolveBabelRenderExpression?: (componentExpr: Expression) => Expression | null
+}
+
+export interface JsxBabelModuleAnalysisOptions {
+  isDefineComponentSource?: (source: string) => boolean
+  resolveBabelComponentExpression?: (
+    declaration: t.Declaration | t.Expression | null,
+    defineComponentDecls: Map<string, ObjectExpression>,
+    defineComponentAliases: Set<string>,
+  ) => Expression | null
 }
 
 function defaultIsDefineComponentSource(source: string) {
@@ -63,72 +73,6 @@ function defaultResolveBabelComponentExpression(
   return null
 }
 
-function getObjectPropertyByKey(node: ObjectExpression, key: string) {
-  for (const prop of node.properties) {
-    if (t.isObjectMethod(prop)) {
-      const name = t.isIdentifier(prop.key)
-        ? prop.key.name
-        : t.isStringLiteral(prop.key)
-          ? prop.key.value
-          : null
-      if (name === key) {
-        return prop
-      }
-      continue
-    }
-    if (!t.isObjectProperty(prop) || prop.computed) {
-      continue
-    }
-    const name = t.isIdentifier(prop.key)
-      ? prop.key.name
-      : t.isStringLiteral(prop.key)
-        ? prop.key.value
-        : null
-    if (name === key) {
-      return prop
-    }
-  }
-  return null
-}
-
-function defaultResolveRenderableExpression(node: t.ObjectMethod | t.ObjectProperty) {
-  if (t.isObjectMethod(node)) {
-    for (const statement of node.body.body) {
-      if (t.isReturnStatement(statement) && statement.argument) {
-        return statement.argument as Expression
-      }
-    }
-    return null
-  }
-
-  if (!node.value) {
-    return null
-  }
-
-  const value = node.value
-  if (t.isArrowFunctionExpression(value)) {
-    if (t.isBlockStatement(value.body)) {
-      for (const statement of value.body.body) {
-        if (t.isReturnStatement(statement) && statement.argument) {
-          return statement.argument as Expression
-        }
-      }
-      return null
-    }
-    return value.body as Expression
-  }
-
-  if (t.isFunctionExpression(value)) {
-    for (const statement of value.body.body) {
-      if (t.isReturnStatement(statement) && statement.argument) {
-        return statement.argument as Expression
-      }
-    }
-  }
-
-  return null
-}
-
 function defaultResolveBabelRenderExpression(componentExpr: Expression) {
   if (!t.isObjectExpression(componentExpr)) {
     return null
@@ -143,13 +87,17 @@ function defaultResolveBabelRenderExpression(componentExpr: Expression) {
     return null
   }
 
-  return defaultResolveRenderableExpression(renderNode)
+  return resolveRenderableExpression(renderNode)
 }
 
-function collectImportsAndExportDefault(
+export function collectJsxImportedComponentsAndDefaultExportFromBabelAst(
   ast: t.File,
-  options: Required<Pick<JsxAutoComponentAnalysisOptions, 'isDefineComponentSource' | 'resolveBabelComponentExpression'>>,
+  options: JsxBabelModuleAnalysisOptions = {},
 ) {
+  const resolvedOptions = {
+    isDefineComponentSource: options.isDefineComponentSource ?? defaultIsDefineComponentSource,
+    resolveBabelComponentExpression: options.resolveBabelComponentExpression ?? defaultResolveBabelComponentExpression,
+  }
   const defineComponentAliases = new Set<string>(['defineComponent', '_defineComponent'])
   const defineComponentDecls = new Map<string, ObjectExpression>()
   const imports = new Map<string, JsxImportedComponent>()
@@ -159,7 +107,7 @@ function collectImportsAndExportDefault(
     ImportDeclaration(path) {
       const source = path.node.source.value
 
-      if (options.isDefineComponentSource(source)) {
+      if (resolvedOptions.isDefineComponentSource(source)) {
         for (const specifier of path.node.specifiers) {
           if (!t.isImportSpecifier(specifier)) {
             continue
@@ -236,7 +184,7 @@ function collectImportsAndExportDefault(
       if (t.isDeclaration(declaration)) {
         return
       }
-      exportDefaultExpression = options.resolveBabelComponentExpression(
+      exportDefaultExpression = resolvedOptions.resolveBabelComponentExpression(
         declaration,
         defineComponentDecls,
         defineComponentAliases,
@@ -461,7 +409,7 @@ function collectJsxTemplateTagsFromOxc(renderExpression: any, isCollectableTag: 
 
 function collectWithBabel(source: string, options: Required<JsxAutoComponentAnalysisOptions>): JsxAutoComponentContext {
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as t.File
-  const { importedComponents, exportDefaultExpression } = collectImportsAndExportDefault(ast, options)
+  const { importedComponents, exportDefaultExpression } = collectJsxImportedComponentsAndDefaultExportFromBabelAst(ast, options)
   if (!exportDefaultExpression) {
     return {
       templateTags: new Set<string>(),

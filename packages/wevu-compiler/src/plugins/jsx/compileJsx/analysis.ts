@@ -1,10 +1,10 @@
-import type { Expression, ObjectExpression } from '@babel/types'
+import type { Expression } from '@babel/types'
 import type { AstEngineName } from '../../../ast/types'
-import type { JsxAutoComponentContext, JsxCompileContext, JsxImportedComponent } from './types'
+import type { JsxAutoComponentContext, JsxCompileContext } from './types'
 import * as t from '@babel/types'
+import { collectJsxImportedComponentsAndDefaultExportFromBabelAst } from '@weapp-vite/ast'
 import { collectJsxAutoComponentsFromCode } from '../../../ast/operations/jsxAutoComponents'
 import { isBuiltinComponent } from '../../../auto-import-components/builtin'
-import { traverse } from '../../../utils/babel'
 import { RESERVED_VUE_COMPONENT_TAGS } from '../../../utils/vueTemplateTags'
 import { resolveComponentExpression } from '../../vue/transform/scriptComponent'
 import { getObjectPropertyByKey, resolveRenderableExpression } from './ast'
@@ -27,109 +27,6 @@ function resolveRenderExpression(componentExpr: Expression, context: JsxCompileC
   }
 
   return resolveRenderableExpression(renderNode)
-}
-
-/**
- * 单次遍历同时收集导入组件信息和默认导出表达式，避免多次 traverse 开销。
- */
-function collectImportsAndExportDefault(ast: t.File) {
-  const defineComponentAliases = new Set<string>(['defineComponent', '_defineComponent'])
-  const defineComponentDecls = new Map<string, ObjectExpression>()
-  const imports = new Map<string, JsxImportedComponent>()
-  let exportDefaultExpression: Expression | null = null
-
-  traverse(ast, {
-    ImportDeclaration(path) {
-      const source = path.node.source.value
-
-      // 收集 defineComponent 别名
-      if (source === 'wevu' || source === 'vue') {
-        for (const specifier of path.node.specifiers) {
-          if (!t.isImportSpecifier(specifier)) {
-            continue
-          }
-          if (!t.isIdentifier(specifier.imported, { name: 'defineComponent' })) {
-            continue
-          }
-          defineComponentAliases.add(specifier.local.name)
-        }
-      }
-
-      // 收集导入的组件
-      if (path.node.importKind === 'type') {
-        return
-      }
-      if (!t.isStringLiteral(path.node.source)) {
-        return
-      }
-      const importSource = path.node.source.value
-      for (const specifier of path.node.specifiers) {
-        if ('importKind' in specifier && specifier.importKind === 'type') {
-          continue
-        }
-        if (!('local' in specifier) || !t.isIdentifier(specifier.local)) {
-          continue
-        }
-        const localName = specifier.local.name
-        if (t.isImportDefaultSpecifier(specifier)) {
-          imports.set(localName, {
-            localName,
-            importSource,
-            importedName: 'default',
-            kind: 'default',
-          })
-          continue
-        }
-        if (!t.isImportSpecifier(specifier)) {
-          continue
-        }
-        const importedName = t.isIdentifier(specifier.imported)
-          ? specifier.imported.name
-          : t.isStringLiteral(specifier.imported)
-            ? specifier.imported.value
-            : undefined
-        imports.set(localName, {
-          localName,
-          importSource,
-          importedName,
-          kind: 'named',
-        })
-      }
-    },
-    VariableDeclarator(path) {
-      if (!t.isIdentifier(path.node.id) || !path.node.init) {
-        return
-      }
-      if (t.isObjectExpression(path.node.init)) {
-        defineComponentDecls.set(path.node.id.name, t.cloneNode(path.node.init, true))
-        return
-      }
-      if (!t.isCallExpression(path.node.init)) {
-        return
-      }
-      const callee = path.node.init.callee
-      if (!t.isIdentifier(callee) || !defineComponentAliases.has(callee.name)) {
-        return
-      }
-      const first = path.node.init.arguments[0]
-      if (t.isObjectExpression(first)) {
-        defineComponentDecls.set(path.node.id.name, t.cloneNode(first, true))
-      }
-    },
-    ExportDefaultDeclaration(path) {
-      const declaration = path.node.declaration
-      if (t.isDeclaration(declaration)) {
-        return
-      }
-      const resolved = resolveComponentExpression(declaration, defineComponentDecls, defineComponentAliases)
-      exportDefaultExpression = resolved
-    },
-  })
-
-  return {
-    importedComponents: [...imports.values()],
-    exportDefaultExpression,
-  }
 }
 
 function isCollectableJsxTemplateTag(tag: string) {
@@ -269,7 +166,12 @@ export function collectJsxAutoComponentContext(
  * 内部只调用一次 collectImportsAndExportDefault，避免重复遍历。
  */
 export function analyzeJsxAst(ast: t.File, context: JsxCompileContext) {
-  const { importedComponents, exportDefaultExpression } = collectImportsAndExportDefault(ast)
+  const { importedComponents, exportDefaultExpression } = collectJsxImportedComponentsAndDefaultExportFromBabelAst(ast, {
+    isDefineComponentSource(source) {
+      return source === 'wevu' || source === 'vue'
+    },
+    resolveBabelComponentExpression: resolveComponentExpression,
+  })
 
   let renderExpression: Expression | null = null
   let templateTags = new Set<string>()
