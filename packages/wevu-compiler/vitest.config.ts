@@ -8,6 +8,10 @@ export default defineProject({
         find: '@',
         replacement: path.resolve(__dirname, './src'),
       },
+      {
+        find: '@weapp-vite/ast',
+        replacement: path.resolve(__dirname, '../ast/src/index.ts'),
+      },
     ],
     globals: true,
     testTimeout: 60_000,

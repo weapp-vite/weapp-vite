@@ -3,12 +3,18 @@
     "target": "ESNext",
     "jsx": "preserve",
     "jsxImportSource": "vue",
+    "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "packages/weapp-vite/src/*"
+      ],
+      "@weapp-vite/ast": [
+        "packages/ast/src/index.ts"
+      ],
+      "@weapp-vite/ast/*": [
+        "packages/ast/src/*"
       ]
     },
     "resolveJsonModule": true,

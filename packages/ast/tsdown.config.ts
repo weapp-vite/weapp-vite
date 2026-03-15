@@ -6,6 +6,8 @@ export default defineConfig({
     './src/babel.ts',
     './src/engine.ts',
     './src/types.ts',
+    './src/operations/componentProps.ts',
+    './src/operations/featureFlags.ts',
     './src/operations/platformApi.ts',
     './src/operations/require.ts',
     './src/operations/scriptSetupImports.ts',
