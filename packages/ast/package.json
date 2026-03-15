@@ -73,14 +73,19 @@
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
   "files": [
+    "README.md",
     "dist"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsdown -w",
     "build": "tsdown",
-    "test": "vitest run",
-    "test:dev": "vitest",
-    "typecheck": "tsc --noEmit",
+    "check:release": "pnpm build && pnpm typecheck && pnpm test && npm pack --dry-run . --cache ../../.cache/npm",
+    "test": "vitest run --config ./vitest.config.ts",
+    "test:dev": "vitest --config ./vitest.config.ts",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

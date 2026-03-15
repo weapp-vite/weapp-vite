@@ -63,15 +63,53 @@ const result = collectJsxAutoComponentsFromCode(code, {
 })
 ```
 
-## 导出能力
+## 稳定 API
+
+建议优先从根入口导入稳定 API：
 
 - `parseJsLikeWithEngine`
 - `collectComponentPropsFromCode`
 - `collectFeatureFlagsFromCode`
 - `collectJsxAutoComponentsFromCode`
+- `collectJsxImportedComponentsAndDefaultExportFromBabelAst`
+- `collectJsxTemplateTagsFromBabelExpression`
 - `mayContainPlatformApiAccess`
 - `collectRequireTokens`
 - `collectScriptSetupImportsFromCode`
+- `unwrapTypeScriptExpression`
+- `getObjectPropertyByKey`
+- `getRenderPropertyFromComponentOptions`
+- `resolveRenderExpressionFromComponentOptions`
+
+## 子路径导出
+
+如果需要更细粒度地按能力引用，也可以使用这些子路径导出：
+
+- `@weapp-vite/ast/babel`
+- `@weapp-vite/ast/babelNodes`
+- `@weapp-vite/ast/engine`
+- `@weapp-vite/ast/types`
+- `@weapp-vite/ast/operations/componentProps`
+- `@weapp-vite/ast/operations/featureFlags`
+- `@weapp-vite/ast/operations/jsxAutoComponents`
+- `@weapp-vite/ast/operations/platformApi`
+- `@weapp-vite/ast/operations/require`
+- `@weapp-vite/ast/operations/scriptSetupImports`
+
+默认建议：
+
+- 业务侧优先使用根入口
+- 只有在需要低层 helper 或做更细粒度 tree-shaking 时，再使用子路径导入
+
+## 发布校验
+
+包内可直接运行以下命令做独立校验：
+
+```bash
+pnpm build
+pnpm test
+pnpm run check:release
+```
 
 ## 相关链接
 
