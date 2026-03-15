@@ -32,6 +32,10 @@
       "types": "./dist/babel.d.mts",
       "import": "./dist/babel.mjs"
     },
+    "./babelNodes": {
+      "types": "./dist/babelNodes.d.mts",
+      "import": "./dist/babelNodes.mjs"
+    },
     "./engine": {
       "types": "./dist/engine.d.mts",
       "import": "./dist/engine.mjs"

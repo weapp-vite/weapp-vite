@@ -1,5 +1,17 @@
+import * as t from '@babel/types'
 import { describe, expect, it } from 'vitest'
-import { mayContainPlatformApiAccess, mayContainStaticRequireLiteral, parseJsLikeWithEngine } from './index'
+import {
+  BABEL_TS_MODULE_PARSER_OPTIONS,
+  collectJsxImportedComponentsAndDefaultExportFromBabelAst,
+  getObjectPropertyByKey,
+  mayContainPlatformApiAccess,
+  mayContainStaticRequireLiteral,
+  parse,
+  parseJsLikeWithEngine,
+  resolveRenderableExpression,
+  toStaticObjectKey,
+  unwrapTypeScriptExpression,
+} from './index'
 import { collectComponentPropsFromCode } from './operations/componentProps'
 import { collectFeatureFlagsFromCode } from './operations/featureFlags'
 import { collectJsxAutoComponentsFromCode } from './operations/jsxAutoComponents'
@@ -9,6 +21,30 @@ describe('@weapp-vite/ast', () => {
   it('supports babel and oxc engines', () => {
     expect(parseJsLikeWithEngine('export const value = 1')).toMatchObject({ type: 'File' })
     expect(parseJsLikeWithEngine('export const value = 1', { engine: 'oxc' })).toMatchObject({ type: 'Program' })
+  })
+
+  it('exposes reusable babel node helpers', () => {
+    const wrapped = t.tsAsExpression(
+      t.parenthesizedExpression(t.identifier('foo')),
+      t.tsTypeReference(t.identifier('Foo')),
+    )
+    expect(unwrapTypeScriptExpression(wrapped)).toEqual(t.identifier('foo'))
+    expect(toStaticObjectKey(t.identifier('render'))).toBe('render')
+
+    const componentExpr = t.objectExpression([
+      t.objectMethod(
+        'method',
+        t.identifier('render'),
+        [],
+        t.blockStatement([
+          t.returnStatement(t.tsNonNullExpression(t.identifier('view'))),
+        ]),
+      ),
+    ])
+
+    const renderProp = getObjectPropertyByKey(componentExpr, 'render')
+    expect(renderProp).not.toBeNull()
+    expect(renderProp && resolveRenderableExpression(renderProp)).toEqual(t.identifier('view'))
   })
 
   it('keeps script setup import analysis aligned', () => {
@@ -128,5 +164,40 @@ export default page
         kind: 'named',
       },
     ])
+  })
+
+  it('collects imported components and default export from babel ast', () => {
+    const ast = parse(`
+import { defineComponent as defineWevuComponent } from 'wevu'
+import TButton from '@/components/TButton'
+
+const page = defineWevuComponent({
+  render() {
+    return <TButton />
+  },
+})
+
+export default page
+`, BABEL_TS_MODULE_PARSER_OPTIONS) as t.File
+
+    const result = collectJsxImportedComponentsAndDefaultExportFromBabelAst(ast, {
+      isDefineComponentSource: source => source === 'wevu' || source === 'vue',
+    })
+
+    expect(result.importedComponents).toEqual([
+      {
+        localName: 'defineWevuComponent',
+        importSource: 'wevu',
+        importedName: 'defineComponent',
+        kind: 'named',
+      },
+      {
+        localName: 'TButton',
+        importSource: '@/components/TButton',
+        importedName: 'default',
+        kind: 'default',
+      },
+    ])
+    expect(result.exportDefaultExpression).toMatchObject({ type: 'ObjectExpression' })
   })
 })

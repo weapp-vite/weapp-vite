@@ -9,6 +9,7 @@
   "commit": false,
   "fixed": [
     [
+      "@weapp-vite/ast",
       "weapp-vite",
       "wevu",
       "@wevu/compiler"
