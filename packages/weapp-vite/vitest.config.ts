@@ -12,6 +12,14 @@ export default defineProject({
         replacement: path.resolve(__dirname, './src'),
       },
       {
+        find: '@weapp-vite/ast',
+        replacement: path.resolve(__dirname, '../ast/src/index.ts'),
+      },
+      {
+        find: '@wevu/compiler',
+        replacement: path.resolve(__dirname, '../wevu-compiler/src/index.ts'),
+      },
+      {
         find: 'weapp-vite/auto-routes',
         replacement: path.resolve(__dirname, './src/auto-routes.ts'),
       },
