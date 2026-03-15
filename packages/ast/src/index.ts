@@ -1,5 +1,12 @@
 export { BABEL_TS_MODULE_PARSER_OPTIONS, BABEL_TS_MODULE_PLUGINS, generate, getVisitorKeys, parse, parseJsLike, traverse } from './babel'
-export { getObjectPropertyByKey, resolveRenderableExpression, toStaticObjectKey, unwrapTypeScriptExpression } from './babelNodes'
+export {
+  getObjectPropertyByKey,
+  getRenderPropertyFromComponentOptions,
+  resolveRenderableExpression,
+  resolveRenderExpressionFromComponentOptions,
+  toStaticObjectKey,
+  unwrapTypeScriptExpression,
+} from './babelNodes'
 export { parseJsLikeWithEngine } from './engine'
 export { babelAstEngine } from './engines/babel'
 export { oxcAstEngine } from './engines/oxc'
@@ -9,6 +16,7 @@ export { collectFeatureFlagsFromCode } from './operations/featureFlags'
 export type { FeatureFlagOptions } from './operations/featureFlags'
 export { collectJsxAutoComponentsFromCode } from './operations/jsxAutoComponents'
 export { collectJsxImportedComponentsAndDefaultExportFromBabelAst } from './operations/jsxAutoComponents'
+export { collectJsxTemplateTagsFromBabelExpression } from './operations/jsxAutoComponents'
 export type {
   JsxAutoComponentAnalysisOptions,
   JsxAutoComponentContext,

@@ -3,12 +3,15 @@ import { describe, expect, it } from 'vitest'
 import {
   BABEL_TS_MODULE_PARSER_OPTIONS,
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
+  collectJsxTemplateTagsFromBabelExpression,
   getObjectPropertyByKey,
+  getRenderPropertyFromComponentOptions,
   mayContainPlatformApiAccess,
   mayContainStaticRequireLiteral,
   parse,
   parseJsLikeWithEngine,
   resolveRenderableExpression,
+  resolveRenderExpressionFromComponentOptions,
   toStaticObjectKey,
   unwrapTypeScriptExpression,
 } from './index'
@@ -45,6 +48,8 @@ describe('@weapp-vite/ast', () => {
     const renderProp = getObjectPropertyByKey(componentExpr, 'render')
     expect(renderProp).not.toBeNull()
     expect(renderProp && resolveRenderableExpression(renderProp)).toEqual(t.identifier('view'))
+    expect(getRenderPropertyFromComponentOptions(componentExpr)).toEqual(renderProp)
+    expect(resolveRenderExpressionFromComponentOptions(componentExpr)).toEqual(t.identifier('view'))
   })
 
   it('keeps script setup import analysis aligned', () => {
@@ -199,5 +204,40 @@ export default page
       },
     ])
     expect(result.exportDefaultExpression).toMatchObject({ type: 'ObjectExpression' })
+  })
+
+  it('collects jsx template tags from babel expression', () => {
+    const renderExpression = t.jsxFragment(
+      t.jsxOpeningFragment(),
+      t.jsxClosingFragment(),
+      [
+        t.jsxElement(
+          t.jsxOpeningElement(t.jsxIdentifier('TButton'), [], true),
+          null,
+          [],
+          true,
+        ),
+        t.jsxExpressionContainer(
+          t.conditionalExpression(
+            t.identifier('ok'),
+            t.jsxElement(
+              t.jsxOpeningElement(t.jsxIdentifier('FooCell'), [], true),
+              null,
+              [],
+              true,
+            ),
+            t.jsxElement(
+              t.jsxOpeningElement(t.jsxIdentifier('view'), [], true),
+              null,
+              [],
+              true,
+            ),
+          ),
+        ),
+      ],
+    )
+
+    const tags = collectJsxTemplateTagsFromBabelExpression(renderExpression, tag => tag !== 'view')
+    expect([...tags]).toEqual(['TButton', 'FooCell'])
   })
 })

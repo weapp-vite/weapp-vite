@@ -198,7 +198,10 @@ export function collectJsxImportedComponentsAndDefaultExportFromBabelAst(
   }
 }
 
-function collectJsxTemplateTags(renderExpression: Expression, isCollectableTag: (tag: string) => boolean) {
+export function collectJsxTemplateTagsFromBabelExpression(
+  renderExpression: Expression,
+  isCollectableTag: (tag: string) => boolean,
+) {
   const tags = new Set<string>()
 
   function walk(node: t.Node) {
@@ -426,7 +429,7 @@ function collectWithBabel(source: string, options: Required<JsxAutoComponentAnal
   }
 
   return {
-    templateTags: collectJsxTemplateTags(renderExpression, options.isCollectableTag),
+    templateTags: collectJsxTemplateTagsFromBabelExpression(renderExpression, options.isCollectableTag),
     importedComponents,
   }
 }

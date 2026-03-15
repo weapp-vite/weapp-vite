@@ -2,12 +2,16 @@ import type { Expression } from '@babel/types'
 import type { AstEngineName } from '../../../ast/types'
 import type { JsxAutoComponentContext, JsxCompileContext } from './types'
 import * as t from '@babel/types'
-import { collectJsxImportedComponentsAndDefaultExportFromBabelAst } from '@weapp-vite/ast'
+import {
+  collectJsxImportedComponentsAndDefaultExportFromBabelAst,
+  collectJsxTemplateTagsFromBabelExpression,
+  getRenderPropertyFromComponentOptions,
+  resolveRenderExpressionFromComponentOptions,
+} from '@weapp-vite/ast'
 import { collectJsxAutoComponentsFromCode } from '../../../ast/operations/jsxAutoComponents'
 import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import { RESERVED_VUE_COMPONENT_TAGS } from '../../../utils/vueTemplateTags'
 import { resolveComponentExpression } from '../../vue/transform/scriptComponent'
-import { getObjectPropertyByKey, resolveRenderableExpression } from './ast'
 
 function resolveRenderExpression(componentExpr: Expression, context: JsxCompileContext): Expression | null {
   if (!t.isObjectExpression(componentExpr)) {
@@ -15,18 +19,17 @@ function resolveRenderExpression(componentExpr: Expression, context: JsxCompileC
     return null
   }
 
-  const renderNode = getObjectPropertyByKey(componentExpr, 'render')
-  if (!renderNode) {
-    context.warnings.push('未找到 render()，请在默认导出组件中声明 render 函数。')
-    return null
-  }
-
-  if (!t.isObjectMethod(renderNode) && !t.isObjectProperty(renderNode)) {
+  const renderExpression = resolveRenderExpressionFromComponentOptions(componentExpr)
+  if (!renderExpression) {
+    if (!getRenderPropertyFromComponentOptions(componentExpr)) {
+      context.warnings.push('未找到 render()，请在默认导出组件中声明 render 函数。')
+      return null
+    }
     context.warnings.push('render 不是可执行函数。')
     return null
   }
 
-  return resolveRenderableExpression(renderNode)
+  return renderExpression
 }
 
 function isCollectableJsxTemplateTag(tag: string) {
@@ -37,91 +40,6 @@ function isCollectableJsxTemplateTag(tag: string) {
     return false
   }
   return !isBuiltinComponent(tag)
-}
-
-/**
- * 递归收集 JSX 表达式中的自定义组件标签名。
- * 直接遍历 AST 节点，无需 cloneNode 和 Babel traverse。
- */
-function collectJsxTemplateTags(renderExpression: Expression) {
-  const tags = new Set<string>()
-
-  function walk(node: t.Node) {
-    if (t.isJSXElement(node)) {
-      const { name } = node.openingElement
-      if (!t.isJSXMemberExpression(name)) {
-        let tag: string | null = null
-        if (t.isJSXIdentifier(name)) {
-          tag = name.name
-        }
-        else if (t.isJSXNamespacedName(name)) {
-          tag = `${name.namespace.name}:${name.name.name}`
-        }
-        if (tag && isCollectableJsxTemplateTag(tag)) {
-          tags.add(tag)
-        }
-      }
-      for (const child of node.children) {
-        walk(child)
-      }
-      return
-    }
-    if (t.isJSXFragment(node)) {
-      for (const child of node.children) {
-        walk(child)
-      }
-      return
-    }
-    if (t.isJSXExpressionContainer(node) && !t.isJSXEmptyExpression(node.expression)) {
-      walk(node.expression)
-      return
-    }
-    if (t.isConditionalExpression(node)) {
-      walk(node.consequent)
-      walk(node.alternate)
-      return
-    }
-    if (t.isLogicalExpression(node)) {
-      walk(node.left)
-      walk(node.right)
-      return
-    }
-    if (t.isCallExpression(node)) {
-      for (const arg of node.arguments) {
-        if (t.isExpression(arg)) {
-          walk(arg)
-        }
-      }
-      return
-    }
-    if (t.isArrowFunctionExpression(node) || t.isFunctionExpression(node)) {
-      if (t.isBlockStatement(node.body)) {
-        for (const stmt of node.body.body) {
-          if (t.isReturnStatement(stmt) && stmt.argument) {
-            walk(stmt.argument)
-          }
-        }
-      }
-      else {
-        walk(node.body)
-      }
-      return
-    }
-    if (t.isArrayExpression(node)) {
-      for (const element of node.elements) {
-        if (element && t.isExpression(element)) {
-          walk(element)
-        }
-      }
-      return
-    }
-    if (t.isParenthesizedExpression(node) || t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node) || t.isTSNonNullExpression(node)) {
-      walk((node as t.ParenthesizedExpression).expression)
-    }
-  }
-
-  walk(renderExpression)
-  return tags
 }
 
 export function collectJsxAutoComponentContext(
@@ -179,7 +97,7 @@ export function analyzeJsxAst(ast: t.File, context: JsxCompileContext) {
   if (exportDefaultExpression) {
     renderExpression = resolveRenderExpression(exportDefaultExpression, context)
     if (renderExpression) {
-      templateTags = collectJsxTemplateTags(renderExpression)
+      templateTags = collectJsxTemplateTagsFromBabelExpression(renderExpression, isCollectableJsxTemplateTag)
     }
   }
 

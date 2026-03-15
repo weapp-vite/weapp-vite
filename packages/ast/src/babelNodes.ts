@@ -55,6 +55,23 @@ export function getObjectPropertyByKey(node: ObjectExpression, key: string) {
   return null
 }
 
+export function getRenderPropertyFromComponentOptions(componentExpr: Expression) {
+  if (!t.isObjectExpression(componentExpr)) {
+    return null
+  }
+
+  const renderNode = getObjectPropertyByKey(componentExpr, 'render')
+  if (!renderNode) {
+    return null
+  }
+
+  if (!t.isObjectMethod(renderNode) && !t.isObjectProperty(renderNode)) {
+    return null
+  }
+
+  return renderNode
+}
+
 export function resolveRenderableExpression(
   node: ObjectMethod | ObjectProperty,
 ) {
@@ -93,4 +110,13 @@ export function resolveRenderableExpression(
   }
 
   return null
+}
+
+export function resolveRenderExpressionFromComponentOptions(componentExpr: Expression) {
+  const renderNode = getRenderPropertyFromComponentOptions(componentExpr)
+  if (!renderNode) {
+    return null
+  }
+
+  return resolveRenderableExpression(renderNode)
 }
