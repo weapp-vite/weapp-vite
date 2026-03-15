@@ -24,7 +24,7 @@ export const TEMPLATE_CATALOG = {
   'estree-walker': '^3.0.3',
   'fs-extra': '^11.3.4',
   'gm-crypto': '^0.1.12',
-  'lru-cache': '^11.2.6',
+  'lru-cache': '^11.2.7',
   'magic-string': '^0.30.21',
   'miniprogram-api-typings': '^5.1.2',
   'miniprogram-automator': '^0.12.1',
