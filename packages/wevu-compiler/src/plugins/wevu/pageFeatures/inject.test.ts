@@ -34,6 +34,22 @@ defineComponent({
     expect(result.code).toContain('enableOnShareTimeline')
   })
 
+  it('injects features with oxc ast engine option', () => {
+    const result = injectWevuPageFeaturesInJs(`
+import { defineComponent, onShareTimeline } from 'wevu'
+defineComponent({
+  setup() {
+    onShareTimeline(() => ({}))
+  },
+})
+    `.trim(), {
+      astEngine: 'oxc',
+    })
+
+    expect(result.transformed).toBe(true)
+    expect(result.code).toContain('enableOnShareTimeline')
+  })
+
   it('injects features resolved from setup reachable imported functions', async () => {
     const pageId = '/project/src/pages/index.ts'
     const helperId = '/project/src/pages/useShare.ts'

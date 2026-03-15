@@ -267,4 +267,49 @@ export default defineComponent({
     expect(JSON.parse(result.config!).usingComponents.TButton).toBe('tdesign-miniprogram/button/button-from-import')
     expect(autoUsingWarn).toHaveBeenCalledTimes(1)
   })
+
+  it('supports oxc auto-component analysis through compileJsxFile options', async () => {
+    const resolveUsingComponentPath = vi.fn(async (_importSource: string, _filename: string, info?: { localName: string }) => {
+      if (info?.localName === 'TButton') {
+        return 'tdesign-miniprogram/button/button'
+      }
+      return undefined
+    })
+
+    const source = `
+import { defineComponent as defineWevuComponent } from 'wevu'
+import TButton from '@/components/TButton'
+
+const page = defineWevuComponent({
+  render() {
+    return <view><TButton /></view>
+  },
+})
+
+export default page
+`
+
+    const result = await compileJsxFile(source, '/project/src/pages/jsx/oxc-auto.tsx', {
+      astEngine: 'oxc',
+      autoUsingComponents: {
+        resolveUsingComponentPath,
+      },
+    })
+
+    expect(result.config).toBeTruthy()
+    expect(JSON.parse(result.config!)).toEqual({
+      usingComponents: {
+        TButton: 'tdesign-miniprogram/button/button',
+      },
+    })
+    expect(resolveUsingComponentPath).toHaveBeenCalledWith(
+      '@/components/TButton',
+      '/project/src/pages/jsx/oxc-auto.tsx',
+      expect.objectContaining({
+        localName: 'TButton',
+        importedName: 'default',
+        kind: 'default',
+      }),
+    )
+  })
 })

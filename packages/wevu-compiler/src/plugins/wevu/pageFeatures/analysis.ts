@@ -1,3 +1,3 @@
 export type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
-export { collectTargetOptionsObjects, getSetupFunctionFromOptionsObject } from './optionsObjects'
-export { collectWevuFeaturesFromSetupReachableImports } from './reachability'
+export { collectTargetOptionsObjects, collectTargetOptionsObjectsFromCode, getSetupFunctionFromOptionsObject } from './optionsObjects'
+export { collectWevuFeaturesFromCodeReachableImports, collectWevuFeaturesFromSetupReachableImports } from './reachability'

@@ -1,12 +1,15 @@
 import type { AutoUsingComponentsOptions } from 'wevu/compiler'
 import type { CompilerContext } from '../../../context'
 import fs from 'fs-extra'
+import { resolveAstEngine } from '../../../ast'
 import { getPathExistsTtlMs, getReadFileCheckMtime } from '../../../utils/cachePolicy'
 import { resolveEntryPath } from '../../../utils/entryResolve'
 import { resolveReExportedName } from '../../../utils/reExport'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../../utils/cache'
+
+const JS_LIKE_FILE_RE = /\.(?:[cm]?ts|[cm]?js)$/
 
 export interface ViteResolverLike {
   resolve: (source: string, importer?: string) => Promise<{ id?: string } | null>
@@ -38,9 +41,10 @@ async function resolveUsingComponentPath(
     clean = resolvedEntry
   }
 
-  if (info?.kind === 'named' && info.importedName && /\.(?:[cm]?ts|[cm]?js)$/.test(clean)) {
+  if (info?.kind === 'named' && info.importedName && JS_LIKE_FILE_RE.test(clean)) {
     const exportName = info.importedName
     const mapped = await resolveReExportedName(clean, exportName, {
+      astEngine: resolveAstEngine(configService.weappViteConfig),
       cache: reExportResolutionCache,
       maxDepth: 4,
       readFile: file => readFileCached(file, { checkMtime: getReadFileCheckMtime(configService) }),

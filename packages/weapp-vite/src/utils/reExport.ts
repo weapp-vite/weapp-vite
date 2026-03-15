@@ -1,3 +1,5 @@
+import type { AstEngineName } from '../ast'
+import { parseSync } from 'oxc-parser'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from './babel'
 
 export interface ReExportResolutionCache {
@@ -18,6 +20,11 @@ export interface ResolveReExportOptions {
    * 缓存：key 为 exporter 文件路径，value 为该文件导出的 name -> resolved file。
    */
   cache: Map<string, Map<string, string | undefined>>
+  /**
+   * AST 引擎。
+   * @default 'babel'
+   */
+  astEngine?: AstEngineName
   /**
    * 最大递归深度。
    * @default 4
@@ -41,10 +48,21 @@ function getExportedName(spec: any) {
 
 function getSourceValue(node: any) {
   const source = node?.source
-  if (!source || source.type !== 'StringLiteral') {
+  if (!source || (source.type !== 'StringLiteral' && source.type !== 'Literal')) {
     return undefined
   }
   return source.value as string
+}
+
+function getCacheKey(file: string, astEngine?: AstEngineName) {
+  return `${astEngine ?? 'babel'}::${file}`
+}
+
+function parseModuleForReExport(code: string, astEngine?: AstEngineName) {
+  if (astEngine === 'oxc') {
+    return parseSync('inline.ts', code).program
+  }
+  return babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS).program as any
 }
 
 async function resolveReExportedInternal(
@@ -62,10 +80,11 @@ async function resolveReExportedInternal(
   }
   visited.add(exporterFile)
 
-  let entry = options.cache.get(exporterFile)
+  const cacheKey = getCacheKey(exporterFile, options.astEngine)
+  let entry = options.cache.get(cacheKey)
   if (!entry) {
     entry = new Map()
-    options.cache.set(exporterFile, entry)
+    options.cache.set(cacheKey, entry)
   }
 
   if (entry.has(exportName)) {
@@ -81,9 +100,9 @@ async function resolveReExportedInternal(
     return undefined
   }
 
-  let ast: ReturnType<typeof babelParse>
+  let ast: any
   try {
-    ast = babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS)
+    ast = parseModuleForReExport(code, options.astEngine)
   }
   catch {
     entry.set(exportName, undefined)
@@ -92,7 +111,7 @@ async function resolveReExportedInternal(
 
   const exportAllSources: string[] = []
 
-  for (const node of (ast.program.body as any[]) ?? []) {
+  for (const node of (ast.body as any[]) ?? []) {
     if (node?.type === 'ExportNamedDeclaration') {
       const source = getSourceValue(node)
       if (!source) {

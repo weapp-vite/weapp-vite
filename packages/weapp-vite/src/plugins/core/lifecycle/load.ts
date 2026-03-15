@@ -1,6 +1,8 @@
 import type { CorePluginState, IndependentBuildResult } from '../helpers'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
+import { resolveAstEngine } from '../../../ast'
+import { mayContainPlatformApiAccess, platformApiIdentifiers } from '../../../ast/operations/platformApi'
 import logger from '../../../logger'
 import { resolveWeappLibEntries } from '../../../runtime/lib'
 import { isCSSRequest } from '../../../utils'
@@ -103,6 +105,7 @@ export function createOptionsHook(state: CorePluginState) {
 export function createLoadHook(state: CorePluginState) {
   const { ctx, subPackageMeta, loadEntry, loadedEntrySet } = state
   const { configService } = ctx
+  const astEngine = resolveAstEngine(configService.weappViteConfig)
   const weapiResolution = { checked: false, available: false }
 
   function resolveInjectWeapiOptions() {
@@ -182,9 +185,19 @@ export function createLoadHook(state: CorePluginState) {
     ].join('\n')
   }
 
-  function replacePlatformApiAccess(code: string, globalName: string) {
-    const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
+  function replacePlatformApiAccess(
+    code: string,
+    globalName: string,
+    options?: {
+      engine?: 'babel' | 'oxc'
+      parserLike?: { parse?: (input: string, options?: unknown) => unknown }
+    },
+  ) {
     const injectedApiIdentifier = '__weappViteInjectedApi__'
+
+    if (!mayContainPlatformApiAccess(code, options)) {
+      return code
+    }
 
     try {
       const ast = parseJsLike(code)
@@ -227,14 +240,21 @@ export function createLoadHook(state: CorePluginState) {
     }
   }
 
-  function replacePlatformApiInLoadResult(result: any, options: { replaceWx: boolean, globalName: string }) {
+  function replacePlatformApiInLoadResult(
+    result: any,
+    options: { replaceWx: boolean, globalName: string },
+    parserLike?: { parse?: (input: string, options?: unknown) => unknown },
+  ) {
     if (!options.replaceWx) {
       return result
     }
     if (!result || typeof result !== 'object' || !('code' in result) || typeof result.code !== 'string') {
       return result
     }
-    const replacedCode = replacePlatformApiAccess(result.code, options.globalName)
+    const replacedCode = replacePlatformApiAccess(result.code, options.globalName, {
+      engine: astEngine,
+      parserLike,
+    })
     if (replacedCode === result.code) {
       return result
     }
@@ -311,7 +331,7 @@ export function createLoadHook(state: CorePluginState) {
         return replacePlatformApiInLoadResult({
           ...result,
           code: `${injectedCode}${result.code}`,
-        }, injectOptions)
+        }, injectOptions, this)
       }
       return result
     }
@@ -326,7 +346,7 @@ export function createLoadHook(state: CorePluginState) {
       if (!available) {
         return result
       }
-      return replacePlatformApiInLoadResult(result, injectOptions)
+      return replacePlatformApiInLoadResult(result, injectOptions, this)
     }
   }
 }

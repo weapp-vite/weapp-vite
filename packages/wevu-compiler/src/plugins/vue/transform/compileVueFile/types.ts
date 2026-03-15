@@ -1,3 +1,4 @@
+import type { AstEngineName } from '../../../../ast/types'
 import type { JsonConfig, JsonMergeStrategy } from '../../../../types/json'
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { ResolveSfcBlockSrcOptions } from '../../../utils/vueSfc'
@@ -57,6 +58,7 @@ export interface AutoImportTagsOptions {
  * 编译 Vue SFC 的选项集合。
  */
 export interface CompileVueFileOptions {
+  astEngine?: AstEngineName
   isPage?: boolean
   isApp?: boolean
   warn?: (message: string) => void

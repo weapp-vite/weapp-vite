@@ -116,4 +116,21 @@ export default {
       kind: 'default',
     })
   })
+
+  it('accepts astEngine on auto-component collection without changing current behavior', async () => {
+    const { collectJsxAutoComponents } = await import('./template')
+    const source = `
+import TButton from '@/components/TButton'
+
+export default {
+  render() {
+    return <TButton />
+  },
+}
+    `
+
+    expect(collectJsxAutoComponents(source, '/project/src/pages/jsx/a.tsx', { astEngine: 'babel' })).toEqual(
+      collectJsxAutoComponents(source, '/project/src/pages/jsx/a.tsx', { astEngine: 'oxc' }),
+    )
+  })
 })

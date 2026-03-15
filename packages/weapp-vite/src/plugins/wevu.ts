@@ -5,6 +5,7 @@ import {
   createPageEntryMatcher,
   injectWevuPageFeaturesInJsWithResolver,
 } from 'wevu/compiler'
+import { resolveAstEngine } from '../ast'
 import logger from '../logger'
 import { getReadFileCheckMtime } from '../utils/cachePolicy'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
@@ -12,6 +13,8 @@ import { toAbsoluteId } from '../utils/toAbsoluteId'
 import { collectOnPageScrollPerformanceWarnings } from './performance/onPageScrollDiagnostics'
 import { readFile as readFileCached } from './utils/cache'
 import { createViteResolverAdapter } from './utils/viteResolverAdapter'
+
+const JS_LIKE_SOURCE_RE = /\.[cm]?[jt]sx?$/
 
 export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
   let matcher: ReturnType<typeof createPageEntryMatcher> | null = null
@@ -58,7 +61,7 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
       if (sourceId.endsWith('.vue')) {
         return null
       }
-      if (!/\.[cm]?[jt]sx?$/.test(sourceId)) {
+      if (!JS_LIKE_SOURCE_RE.test(sourceId)) {
         return null
       }
 
@@ -71,7 +74,9 @@ export function createWevuAutoPageFeaturesPlugin(ctx: CompilerContext): Plugin {
         return null
       }
 
-      for (const warning of collectOnPageScrollPerformanceWarnings(code, filename)) {
+      for (const warning of collectOnPageScrollPerformanceWarnings(code, filename, {
+        engine: resolveAstEngine(configService.weappViteConfig),
+      })) {
         logger.warn(warning)
       }
 

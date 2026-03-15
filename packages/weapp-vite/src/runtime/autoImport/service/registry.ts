@@ -5,12 +5,15 @@ import type { LocalAutoImportMatch } from '../types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import fs from 'fs-extra'
 import pm from 'picomatch'
+import { resolveAstEngine } from '../../../ast'
 import { logger, resolvedComponentName } from '../../../context/shared'
 import { extractConfigFromVue, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../../utils'
 import { extractComponentProps } from '../../componentProps'
 import { requireConfigService } from '../../utils/requireConfigService'
 import { getAutoImportConfig, getHtmlCustomDataSettings, getTypedComponentsSettings, getVueComponentsSettings } from '../config'
 import { extractJsonPropMetadata, mergePropMaps } from '../metadata'
+
+const JSON_LIKE_FILE_RE = /\.(?:json|jsonc|json5)$/i
 
 export interface RegistryHelpers {
   registerLocalComponent: (filePath: string) => Promise<void>
@@ -39,8 +42,10 @@ interface RegistryState {
 export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
   async function extractComponentPropsFromVue(vuePath: string): Promise<ComponentPropMap> {
     const source = await fs.readFile(vuePath, 'utf8')
+    const astEngine = resolveAstEngine(state.ctx.configService?.weappViteConfig)
     const { compileVueFile } = await import('wevu/compiler')
     const compiled = await compileVueFile(source, vuePath, {
+      astEngine,
       json: {
         kind: 'component',
       },
@@ -50,7 +55,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
       return new Map()
     }
 
-    return extractComponentProps(compiled.script)
+    return extractComponentProps(compiled.script, { astEngine })
   }
 
   function removeRegisteredComponent(paths: {
@@ -199,9 +204,10 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
     const shouldCollectProps = typedSettings.enabled || htmlSettings.enabled
 
     if (shouldCollectProps) {
+      const astEngine = resolveAstEngine(state.ctx.configService.weappViteConfig)
       let metadataSource: Record<string, any> | undefined = json
       try {
-        if (/\.(?:json|jsonc|json5)$/i.test(resolvedJsonPath)) {
+        if (JSON_LIKE_FILE_RE.test(resolvedJsonPath)) {
           metadataSource = await fs.readJson(resolvedJsonPath)
         }
       }
@@ -217,7 +223,7 @@ export function createRegistryHelpers(state: RegistryState): RegistryHelpers {
         try {
           const props = resolvedJsEntry.endsWith('.vue')
             ? await extractComponentPropsFromVue(resolvedJsEntry)
-            : extractComponentProps(await fs.readFile(resolvedJsEntry, 'utf8'))
+            : extractComponentProps(await fs.readFile(resolvedJsEntry, 'utf8'), { astEngine })
           propMap = mergePropMaps(baseProps, props)
         }
         catch (error) {

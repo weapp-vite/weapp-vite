@@ -1,3 +1,5 @@
+export { collectWevuPageFeatureFlagsFromCode } from '../../ast/operations/pageFeatures'
+export { collectTargetOptionsObjectsFromCode, collectWevuFeaturesFromCodeReachableImports } from './pageFeatures/analysis'
 export { collectWevuPageFeatureFlags, injectWevuPageFeatureFlagsIntoOptionsObject } from './pageFeatures/flags'
 export { injectWevuPageFeaturesInJs, injectWevuPageFeaturesInJsWithResolver } from './pageFeatures/inject'
 export { createPageEntryMatcher } from './pageFeatures/matcher'

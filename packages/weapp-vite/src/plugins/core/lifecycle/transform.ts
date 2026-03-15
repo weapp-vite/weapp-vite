@@ -1,9 +1,10 @@
 import type { CorePluginState } from '../helpers'
+import { resolveAstEngine } from '../../../ast'
+import { mayContainPlatformApiAccess, platformApiIdentifiers } from '../../../ast/operations/platformApi'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { createWeapiAccessExpression } from '../../../utils/weapi'
 
-const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
 const injectedApiIdentifier = '__weappViteInjectedApi__'
 
 function resolveInjectWeapiOptions(configService: CorePluginState['ctx']['configService']) {
@@ -36,7 +37,18 @@ function shouldTransformId(id: string, absoluteSrcRoot: string) {
   return sourceId.startsWith(`${absoluteSrcRoot}/`)
 }
 
-function replacePlatformApiAccess(code: string, globalName: string) {
+function replacePlatformApiAccess(
+  code: string,
+  globalName: string,
+  options?: {
+    engine?: 'babel' | 'oxc'
+    parserLike?: { parse?: (input: string, options?: unknown) => unknown }
+  },
+) {
+  if (!mayContainPlatformApiAccess(code, options)) {
+    return code
+  }
+
   try {
     const ast = parseJsLike(code)
     let mutated = false
@@ -80,8 +92,9 @@ function replacePlatformApiAccess(code: string, globalName: string) {
 
 export function createTransformHook(state: CorePluginState) {
   const { configService } = state.ctx
+  const astEngine = resolveAstEngine(configService.weappViteConfig)
 
-  return async function transform(code: string, id: string) {
+  return async function transform(this: { parse?: (input: string, options?: unknown) => unknown }, code: string, id: string) {
     const injectOptions = resolveInjectWeapiOptions(configService)
     if (!injectOptions) {
       return null
@@ -91,7 +104,10 @@ export function createTransformHook(state: CorePluginState) {
       return null
     }
 
-    const replaced = replacePlatformApiAccess(code, injectOptions.globalName)
+    const replaced = replacePlatformApiAccess(code, injectOptions.globalName, {
+      engine: astEngine,
+      parserLike: this,
+    })
     if (replaced === code) {
       return null
     }

@@ -4,10 +4,13 @@ import type { ComponentMetadata } from '../metadata'
 import type { LocalAutoImportMatch } from '../types'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { resolveAstEngine } from '../../../ast'
 import { logger } from '../../../context/shared'
 import { getAutoImportConfig } from '../config'
 import { loadExternalComponentMetadata } from '../externalMetadata'
 import { extractJsonPropMetadata } from '../metadata'
+
+const LEADING_SLASH_RE = /^\//
 
 export interface MetadataHelpers {
   getComponentMetadata: (name: string) => ComponentMetadata
@@ -40,7 +43,9 @@ export function createMetadataHelpers(state: MetadataState): MetadataHelpers {
       if (from && cwd) {
         try {
           const resolvers = getAutoImportConfig(state.ctx.configService)?.resolvers as Resolver[] | undefined
-          const loaded = loadExternalComponentMetadata(from, cwd, resolvers)
+          const loaded = loadExternalComponentMetadata(from, cwd, resolvers, {
+            astEngine: resolveAstEngine(state.ctx.configService.weappViteConfig),
+          })
           if (loaded?.types?.size) {
             state.componentMetadataMap.set(name, { types: new Map(loaded.types), docs: new Map() })
             return {
@@ -72,11 +77,11 @@ export function createMetadataHelpers(state: MetadataState): MetadataHelpers {
       }
       const configService = state.ctx.configService
       if (configService) {
-        const from = record.value.from?.replace(/^\//, '')
+        const from = record.value.from?.replace(LEADING_SLASH_RE, '')
         if (from) {
           candidatePaths.add(path.resolve(configService.absoluteSrcRoot, `${from}.json`))
         }
-        const manifestFrom = state.manifestCache.get(name)?.replace(/^\//, '')
+        const manifestFrom = state.manifestCache.get(name)?.replace(LEADING_SLASH_RE, '')
         if (manifestFrom) {
           candidatePaths.add(path.resolve(configService.absoluteSrcRoot, `${manifestFrom}.json`))
         }
@@ -127,7 +132,9 @@ export function createMetadataHelpers(state: MetadataState): MetadataHelpers {
         continue
       }
       try {
-        const loaded = loadExternalComponentMetadata(from, cwd, resolvers)
+        const loaded = loadExternalComponentMetadata(from, cwd, resolvers, {
+          astEngine: resolveAstEngine(state.ctx.configService.weappViteConfig),
+        })
         if (loaded?.types?.size) {
           state.componentMetadataMap.set(name, { types: new Map(loaded.types), docs: new Map() })
         }

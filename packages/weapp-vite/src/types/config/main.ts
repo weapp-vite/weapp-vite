@@ -28,6 +28,7 @@ import type {
   WeappLibConfig,
   WeappWebConfig,
 } from './foundation'
+import type { WeappAstConfig } from '@/ast'
 import type { LoggerConfig } from '@/logger'
 
 /**
@@ -74,6 +75,10 @@ export interface WeappViteConfig {
    * 日志输出配置。
    */
   logger?: LoggerConfig
+  /**
+   * AST 引擎配置。
+   */
+  ast?: WeappAstConfig
   /**
    * 主包/分包体积告警阈值（字节）。
    */

@@ -1,8 +1,10 @@
 import type { Expression, ObjectExpression } from '@babel/types'
+import type { AstEngineName } from '../../../ast/types'
 import type { JsxAutoComponentContext, JsxCompileContext, JsxImportedComponent } from './types'
 import * as t from '@babel/types'
+import { collectJsxAutoComponentsFromCode } from '../../../ast/operations/jsxAutoComponents'
 import { isBuiltinComponent } from '../../../auto-import-components/builtin'
-import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../utils/babel'
+import { traverse } from '../../../utils/babel'
 import { RESERVED_VUE_COMPONENT_TAGS } from '../../../utils/vueTemplateTags'
 import { resolveComponentExpression } from '../../vue/transform/scriptComponent'
 import { getObjectPropertyByKey, resolveRenderableExpression } from './ast'
@@ -228,43 +230,37 @@ function collectJsxTemplateTags(renderExpression: Expression) {
 export function collectJsxAutoComponentContext(
   source: string,
   filename: string,
-  context: JsxCompileContext,
-  warn?: (message: string) => void,
+  _context: JsxCompileContext,
+  options?: {
+    astEngine?: AstEngineName
+    warn?: (message: string) => void
+  },
 ): JsxAutoComponentContext {
   const empty: JsxAutoComponentContext = {
     templateTags: new Set<string>(),
     importedComponents: [],
   }
 
-  let ast: t.File
+  // 这里先统一调用入口，后续再按 `astEngine` 拆分真正的 Oxc 分析后端。
+  const warn = options?.warn
+
   try {
-    ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as t.File
+    const collected = collectJsxAutoComponentsFromCode(source, {
+      astEngine: options?.astEngine,
+    })
+
+    // 保留现有警告语义：只有在完整 render 编译链下才发出组件选项/缺失 render 警告，
+    // 自动组件收集本身仅返回可推导结果。
+    if (options?.astEngine === 'oxc') {
+      return collected
+    }
+
+    return collected
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     warn?.(`[JSX 编译] 解析 ${filename} 失败，已跳过自动 usingComponents 推导：${message}`)
     return empty
-  }
-
-  const { importedComponents, exportDefaultExpression } = collectImportsAndExportDefault(ast)
-  if (!exportDefaultExpression) {
-    return {
-      templateTags: new Set<string>(),
-      importedComponents,
-    }
-  }
-
-  const renderExpression = resolveRenderExpression(exportDefaultExpression, context)
-  if (!renderExpression) {
-    return {
-      templateTags: new Set<string>(),
-      importedComponents,
-    }
-  }
-
-  return {
-    templateTags: collectJsxTemplateTags(renderExpression),
-    importedComponents,
   }
 }
 

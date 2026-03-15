@@ -62,6 +62,8 @@
     "lru-cache": "catalog:",
     "magic-string": "catalog:",
     "merge": "catalog:",
+    "oxc-parser": "^0.119.0",
+    "oxc-walker": "^0.7.0",
     "pathe": "catalog:",
     "rolldown-require": "workspace:*",
     "vue": "catalog:"

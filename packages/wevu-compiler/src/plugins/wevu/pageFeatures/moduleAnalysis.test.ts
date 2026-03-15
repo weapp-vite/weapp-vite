@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseJsLike } from '../../../utils/babel'
-import { createModuleAnalysis, getOrCreateExternalModuleAnalysis } from './moduleAnalysis'
+import { createModuleAnalysis, createModuleAnalysisFromCode, getOrCreateExternalModuleAnalysis } from './moduleAnalysis'
 
 describe('moduleAnalysis', () => {
   it('collects imports, locals and exports from module AST', () => {
@@ -59,5 +59,23 @@ export default function defaultFn() {}
 
     expect(a1).toBe(a2)
     expect(b).not.toBe(a1)
+  })
+
+  it('creates module analysis from source with ast engine option and keeps cache isolated by engine', () => {
+    const source = `export function useA() {}`
+    const fromCode = createModuleAnalysisFromCode('/project/src/page.ts', source, {
+      astEngine: 'oxc',
+    })
+
+    expect(fromCode.id).toBe('/project/src/page.ts')
+
+    const babelCached = getOrCreateExternalModuleAnalysis('/virtual/a.ts', source, {
+      astEngine: 'babel',
+    })
+    const oxcCached = getOrCreateExternalModuleAnalysis('/virtual/a.ts', source, {
+      astEngine: 'oxc',
+    })
+
+    expect(babelCached).not.toBe(oxcCached)
   })
 })

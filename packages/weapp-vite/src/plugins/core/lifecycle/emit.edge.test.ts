@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const parseJsLikeMock = vi.hoisted(() => vi.fn(() => ({ type: 'Program' })))
 const traverseMock = vi.hoisted(() => vi.fn())
 const generateMock = vi.hoisted(() => vi.fn(() => ({ code: 'generated' })))
+const mayContainPlatformApiAccessMock = vi.hoisted(() => vi.fn(() => true))
+const mayContainStaticRequireLiteralMock = vi.hoisted(() => vi.fn(() => true))
+const resolveAstEngineMock = vi.hoisted(() => vi.fn(() => 'babel'))
 
 const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
@@ -12,6 +15,12 @@ vi.mock('../../../runtime/chunkStrategy', () => ({
   DEFAULT_SHARED_CHUNK_STRATEGY: 'copy',
   applySharedChunkStrategy: vi.fn(),
   applyRuntimeChunkLocalization: vi.fn(),
+}))
+
+vi.mock('../../../ast', () => ({
+  mayContainPlatformApiAccess: mayContainPlatformApiAccessMock,
+  mayContainStaticRequireLiteral: mayContainStaticRequireLiteralMock,
+  resolveAstEngine: resolveAstEngineMock,
 }))
 
 vi.mock('../../../utils/babel', () => ({
@@ -91,6 +100,9 @@ function createState(overrides: Record<string, any> = {}) {
 describe('core lifecycle emit edge branches', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mayContainPlatformApiAccessMock.mockReturnValue(true)
+    mayContainStaticRequireLiteralMock.mockReturnValue(true)
+    resolveAstEngineMock.mockReturnValue('babel')
   })
 
   it('covers guarded call/member branches when dependencies are undefined', async () => {
@@ -198,5 +210,87 @@ describe('core lifecycle emit edge branches', () => {
     await hook.call({}, {}, bundle)
 
     expect(bundle['main.js'].code).toBe('const y = 2')
+  })
+
+  it('skips babel rewrite when oxc fast path finds no platform api access', async () => {
+    const { createGenerateBundleHook } = await import('./emit')
+    const state = createState({
+      ctx: {
+        configService: {
+          weappViteConfig: {
+            ast: {
+              engine: 'oxc',
+            },
+            injectWeapi: {
+              enabled: true,
+              replaceWx: true,
+            },
+          },
+        },
+      },
+    })
+    resolveAstEngineMock.mockReturnValue('oxc')
+    mayContainPlatformApiAccessMock.mockReturnValue(false)
+    mayContainStaticRequireLiteralMock.mockReturnValue(false)
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'main.js': {
+        type: 'chunk',
+        fileName: 'main.js',
+        code: 'const answer = 42',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['main.js'].code).toBe('const answer = 42')
+    expect(parseJsLikeMock).not.toHaveBeenCalled()
+    expect(traverseMock).not.toHaveBeenCalled()
+    expect(generateMock).not.toHaveBeenCalled()
+  })
+
+  it('skips babel require rewrite when oxc fast path finds no static require literal', async () => {
+    const { createGenerateBundleHook } = await import('./emit')
+    const state = createState({
+      ctx: {
+        configService: {
+          platform: 'alipay',
+          packageJson: {
+            dependencies: {
+              dayjs: '^1.0.0',
+            },
+          },
+          weappViteConfig: {
+            ast: {
+              engine: 'oxc',
+            },
+          },
+        },
+      },
+    })
+    resolveAstEngineMock.mockReturnValue('oxc')
+    mayContainPlatformApiAccessMock.mockReturnValue(false)
+    mayContainStaticRequireLiteralMock.mockReturnValue(false)
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'main.js': {
+        type: 'chunk',
+        fileName: 'main.js',
+        code: 'const value = getLoader()',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['main.js'].code).toBe('const value = getLoader()')
+    expect(parseJsLikeMock).not.toHaveBeenCalled()
+    expect(traverseMock).not.toHaveBeenCalled()
+    expect(generateMock).not.toHaveBeenCalled()
   })
 })

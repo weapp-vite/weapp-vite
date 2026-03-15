@@ -13,6 +13,7 @@ interface WalkOptions {
   setupFn: FunctionLike
   resolver: ModuleResolver
   moduleCache: Map<string, ModuleAnalysis>
+  astEngine?: 'babel' | 'oxc'
 }
 
 export async function walkReachableWevuFeatures(options: WalkOptions): Promise<Set<WevuPageFeatureFlag>> {
@@ -97,7 +98,14 @@ export async function walkReachableWevuFeatures(options: WalkOptions): Promise<S
       continue
     }
 
-    const resolved = await resolveExternalFunction(resolver, item.importerId, item.source, item.exportName, moduleCache)
+    const resolved = await resolveExternalFunction(
+      resolver,
+      item.importerId,
+      item.source,
+      item.exportName,
+      moduleCache,
+      { astEngine: options.astEngine },
+    )
     if (!resolved) {
       continue
     }

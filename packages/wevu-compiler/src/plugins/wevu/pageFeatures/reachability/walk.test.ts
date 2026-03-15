@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseJsLike } from '../../../../utils/babel'
 import { createModuleAnalysis } from '../moduleAnalysis'
+import { collectWevuFeaturesFromCodeReachableImports } from './index'
 import { walkReachableWevuFeatures } from './walk'
 
 describe('reachability walk', () => {
@@ -126,5 +127,40 @@ export function setup() {
     })
 
     expect(enabled.size).toBe(0)
+  })
+
+  it('collects reachable features from source with ast engine option', async () => {
+    const pageSource = `
+import { defineComponent } from 'wevu'
+import { helper } from './ext'
+
+defineComponent({
+  setup() {
+    helper()
+  },
+})
+    `.trim()
+
+    const moduleCodeById: Record<string, string> = {
+      '/project/src/ext.ts': `
+import { onPageScroll } from 'wevu'
+export function helper() {
+  onPageScroll()
+}
+      `.trim(),
+    }
+
+    const resolver = {
+      resolveId: async (source: string) => source === './ext' ? '/project/src/ext.ts' : undefined,
+      loadCode: async (id: string) => moduleCodeById[id],
+    }
+
+    const enabled = await collectWevuFeaturesFromCodeReachableImports(pageSource, {
+      id: '/project/src/page.ts',
+      resolver,
+      astEngine: 'oxc',
+    })
+
+    expect(enabled.has('enableOnPageScroll')).toBe(true)
   })
 })

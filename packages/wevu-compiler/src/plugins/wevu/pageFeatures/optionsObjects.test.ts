@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseJsLike } from '../../../utils/babel'
-import { collectTargetOptionsObjects, getSetupFunctionFromOptionsObject } from './optionsObjects'
+import { collectTargetOptionsObjects, collectTargetOptionsObjectsFromCode, getSetupFunctionFromOptionsObject } from './optionsObjects'
 
 describe('optionsObjects analysis', () => {
   it('collects options objects from wevu component factory calls', () => {
@@ -51,5 +51,22 @@ defineComponent({
 
     expect(getSetupFunctionFromOptionsObject(methodOptions)).toBeTruthy()
     expect(getSetupFunctionFromOptionsObject(functionOptions)).toBeTruthy()
+  })
+
+  it('collects options objects from source with ast engine option', () => {
+    const source = `
+import { defineComponent } from 'wevu'
+const optionsRef = {
+  setup() {},
+}
+defineComponent(optionsRef)
+    `.trim()
+
+    const { optionsObjects } = collectTargetOptionsObjectsFromCode(source, '/project/src/page.ts', {
+      astEngine: 'oxc',
+    })
+
+    expect(optionsObjects).toHaveLength(1)
+    expect(getSetupFunctionFromOptionsObject(optionsObjects[0])).toBeTruthy()
   })
 })
