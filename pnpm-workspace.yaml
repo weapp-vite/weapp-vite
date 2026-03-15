@@ -40,7 +40,7 @@ catalog:
   gm-crypto: ^0.1.12
   htmlparser2: ^10.1.0
   lodash: ^4.17.23
-  lru-cache: ^11.2.6
+  lru-cache: ^11.2.7
   magic-string: ^0.30.21
   merge: ^2.1.1
   miniprogram-api-typings: ^5.1.2
