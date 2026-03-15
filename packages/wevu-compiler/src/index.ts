@@ -1,4 +1,3 @@
-export type { AstEngineName } from './ast/types'
 export { builtinComponentsSet, isBuiltinComponent } from './auto-import-components/builtin'
 export * from './constants'
 export { compileJsxFile } from './plugins/jsx/compileJsxFile'
@@ -77,5 +76,5 @@ export {
   RESERVED_VUE_COMPONENT_TAGS,
   VUE_COMPONENT_TAG_RE,
 } from './utils/vueTemplateTags'
-
 export type { CollectVueTemplateTagsOptions } from './utils/vueTemplateTags'
+export type { AstEngineName } from '@weapp-vite/ast'

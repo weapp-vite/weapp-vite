@@ -113,6 +113,7 @@
     "@weapp-core/logger": "workspace:*",
     "@weapp-core/schematics": "workspace:*",
     "@weapp-core/shared": "workspace:*",
+    "@weapp-vite/ast": "workspace:*",
     "@weapp-vite/mcp": "workspace:*",
     "@weapp-vite/volar": "workspace:*",
     "@weapp-vite/web": "workspace:*",

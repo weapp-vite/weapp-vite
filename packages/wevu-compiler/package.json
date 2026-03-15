@@ -57,6 +57,7 @@
     "@babel/types": "catalog:",
     "@vue/compiler-core": "catalog:",
     "@weapp-core/shared": "workspace:*",
+    "@weapp-vite/ast": "workspace:*",
     "comment-json": "catalog:",
     "fs-extra": "catalog:",
     "lru-cache": "catalog:",
