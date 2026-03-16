@@ -1,5 +1,7 @@
 # @weapp-vite/ast
 
+## 6.9.1
+
 ## 6.9.0
 
 ### Minor Changes
