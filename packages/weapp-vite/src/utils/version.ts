@@ -1,7 +1,7 @@
 import process from 'node:process'
-import semverGte from 'semver/functions/gte'
-import semverSatisfies from 'semver/functions/satisfies'
-import semverValid from 'semver/functions/valid'
+import semverGte from 'semver/functions/gte.js'
+import semverSatisfies from 'semver/functions/satisfies.js'
+import semverValid from 'semver/functions/valid.js'
 import logger from '../logger'
 
 const LEADING_V = /^v/
