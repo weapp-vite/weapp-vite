@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => {
     enableDeferredSetData: vi.fn(),
     setRuntimeSetDataVisibility: vi.fn(),
     teardownRuntimeInstance: vi.fn(),
-    attachOptionalPageLifecycleHooks: vi.fn((hooks: Record<string, any>) => hooks),
+    attachOptionalPageLifecycleHooks: vi.fn((hooks: Record<string, any>, _options?: any) => hooks),
     bindCurrentPageInstance: vi.fn(),
     ensurePageShareMenus: vi.fn(),
     ensureWxPatched: vi.fn(),

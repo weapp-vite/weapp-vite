@@ -1,7 +1,7 @@
 import type * as t from '@babel/types'
 import type { AstEngineName } from '../types'
-import { parseJsLikeWithEngine } from '../engine'
 import { parseJsLike, traverse } from '../babel'
+import { parseJsLikeWithEngine } from '../engine'
 
 interface PageScrollInspection {
   empty: boolean

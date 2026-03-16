@@ -70,7 +70,7 @@ export function collectCalledBindingsFromFunctionBody(
     return called
   }
 
-  t.traverseFast(fn, (node) => {
+  t.traverseFast(fn as t.Node, (node) => {
     if (t.isCallExpression(node)) {
       const name = getCallCalleeName(node.callee)
       if (name) {

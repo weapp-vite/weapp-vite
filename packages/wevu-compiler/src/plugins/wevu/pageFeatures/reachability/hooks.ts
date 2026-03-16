@@ -60,7 +60,7 @@ export function collectWevuHookCallsInFunctionBody(module: ModuleAnalysis, fn: F
     return enabled
   }
 
-  t.traverseFast(fn, (node) => {
+  t.traverseFast(fn as t.Node, (node) => {
     if (t.isCallExpression(node)) {
       const callee = node.callee
       if (t.isIdentifier(callee)) {
