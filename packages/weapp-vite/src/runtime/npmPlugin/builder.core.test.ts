@@ -160,6 +160,48 @@ describe('runtime npm package builder core', () => {
     expect(getPackageInfoMock).not.toHaveBeenCalledWith('lodash')
   })
 
+  it('prefers exports.import and module entries over main for non-miniprogram packages', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'demo')
+    const cjsEntry = path.resolve(pkgRoot, 'dist/index.cjs')
+    const esmEntry = path.resolve(pkgRoot, 'esm/index.mjs')
+    await fs.ensureDir(path.dirname(cjsEntry))
+    await fs.ensureDir(path.dirname(esmEntry))
+    await fs.writeFile(cjsEntry, 'module.exports = 1', 'utf8')
+    await fs.writeFile(esmEntry, 'export const value = 1', 'utf8')
+
+    const ctx = createMockContext()
+    const builder = createPackageBuilder(ctx)
+    getPackageInfoMock.mockResolvedValue({
+      rootPath: pkgRoot,
+      packageJson: {
+        name: 'demo',
+        version: '0.0.0',
+        main: 'dist/index.cjs',
+        module: 'esm/index.mjs',
+        exports: {
+          '.': {
+            require: './dist/index.cjs',
+            import: './esm/index.mjs',
+            default: './dist/index.cjs',
+          },
+        },
+        dependencies: {},
+      },
+    })
+    resolveModuleMock.mockReturnValue(cjsEntry)
+
+    await builder.buildPackage({
+      dep: 'demo',
+      outDir: path.resolve(root, 'dist/miniprogram_npm'),
+      isDependenciesCacheOutdate: true,
+    })
+
+    expect(viteBuildMock).toHaveBeenCalledTimes(1)
+    const finalOptions = viteBuildMock.mock.calls[0]?.[0] as any
+    expect(finalOptions?.build?.lib?.entry?.index).toBe(esmEntry)
+  })
+
   it('does not copy upstream entry sourcemap after rebundling npm package', async () => {
     const root = await createTempDir()
     const sourceEntry = path.resolve(root, 'demo/index.js')
