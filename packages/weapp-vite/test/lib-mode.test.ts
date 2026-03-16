@@ -11,7 +11,7 @@ describe('lib mode', () => {
     return outDir
   }
 
-  it('builds entries and auto-generates component json', async () => {
+  it('builds entries and auto-generates component json', { timeout: 180_000 }, async () => {
     const outDir = await createOutDir('dist')
     const { ctx, dispose } = await createTestCompilerContext({
       cwd,

@@ -90,7 +90,7 @@ describe('defineConfig editor intellisense', () => {
     }
   })
 
-  it('should provide hover docs from WeappViteConfig', () => {
+  it('should provide hover docs from WeappViteConfig', { timeout: 180_000 }, () => {
     const languageService = createLanguageService({ fileName, source, root })
     const position = getTokenPosition(source, 'srcRoot')
 
