@@ -1,5 +1,5 @@
 import type { TransformState } from '../utils'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { stripOptionalFlag, stripOptionalFromPattern } from './optional'
 
 export function createStripTypesVisitors(state: TransformState) {

@@ -1,6 +1,6 @@
-import type { NodePath } from '@babel/traverse'
+import type { NodePath } from '@weapp-vite/ast/babelTraverse'
 import type { WevuPageFeatureFlag } from './types'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 
 export function isStaticObjectKeyMatch(key: t.Expression | t.PrivateName, expected: string) {
   if (t.isIdentifier(key)) {

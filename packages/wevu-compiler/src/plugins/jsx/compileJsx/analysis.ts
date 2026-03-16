@@ -1,13 +1,13 @@
-import type { Expression } from '@babel/types'
+import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { AstEngineName } from '../../../ast/types'
 import type { JsxAutoComponentContext, JsxCompileContext } from './types'
-import * as t from '@babel/types'
 import {
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
   collectJsxTemplateTagsFromBabelExpression,
   getRenderPropertyFromComponentOptions,
   resolveRenderExpressionFromComponentOptions,
 } from '@weapp-vite/ast'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { collectJsxAutoComponentsFromCode } from '../../../ast/operations/jsxAutoComponents'
 import { isBuiltinComponent } from '../../../auto-import-components/builtin'
 import { RESERVED_VUE_COMPONENT_TAGS } from '../../../utils/vueTemplateTags'

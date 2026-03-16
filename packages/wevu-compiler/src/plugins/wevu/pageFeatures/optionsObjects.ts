@@ -1,6 +1,6 @@
 import type { AstEngineName } from '../../../ast/types'
 import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from '../../../constants'
 import { traverse } from '../../../utils/babel'
 import { isStaticObjectKeyMatch, isTopLevel } from './astUtils'

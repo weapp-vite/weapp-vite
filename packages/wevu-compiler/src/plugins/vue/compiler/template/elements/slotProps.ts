@@ -1,7 +1,7 @@
 import type { ElementNode } from '@vue/compiler-core'
 import type { TransformContext } from '../types'
-import * as t from '@babel/types'
 import { NodeTypes } from '@vue/compiler-core'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { parse as babelParse } from '../../../../../utils/babel'
 import { normalizeWxmlExpressionWithContext } from '../expression'
 import { toWxmlStringLiteral } from './helpers'

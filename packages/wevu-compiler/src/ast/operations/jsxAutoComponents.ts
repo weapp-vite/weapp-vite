@@ -1,4 +1,4 @@
-import type { Expression } from '@babel/types'
+import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { JsxAutoComponentContext } from '../../plugins/jsx/compileJsx/types'
 import type { AstEngineName } from '../types'
 import {

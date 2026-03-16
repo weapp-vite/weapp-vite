@@ -1,7 +1,7 @@
-import type { NodePath } from '@babel/traverse'
+import type { NodePath } from '@weapp-vite/ast/babelTraverse'
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { ClassStyleBinding, ClassStyleRuntime, InlineExpressionAsset, TemplateRefBinding } from '../../compiler/template/types'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 
 /**
  * 使用 Babel AST 转换脚本

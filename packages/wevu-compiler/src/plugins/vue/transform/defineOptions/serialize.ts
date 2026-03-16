@@ -1,4 +1,4 @@
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate } from '../../../../utils/babel'
 
 function getErrorMessage(error: unknown) {

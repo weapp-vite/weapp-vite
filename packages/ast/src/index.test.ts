@@ -18,7 +18,9 @@ import {
 import { collectComponentPropsFromCode } from './operations/componentProps'
 import { collectFeatureFlagsFromCode } from './operations/featureFlags'
 import { collectJsxAutoComponentsFromCode } from './operations/jsxAutoComponents'
+import { collectOnPageScrollPerformanceWarnings } from './operations/onPageScroll'
 import { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
+import { collectSetDataPickKeysFromTemplateCode } from './operations/setDataPick'
 
 describe('@weapp-vite/ast', () => {
   it('supports babel and oxc engines', () => {
@@ -239,5 +241,32 @@ export default page
 
     const tags = collectJsxTemplateTagsFromBabelExpression(renderExpression, tag => tag !== 'view')
     expect([...tags]).toEqual(['TButton', 'FooCell'])
+  })
+
+  it('collects onPageScroll warnings', () => {
+    const source = `import { onPageScroll as onScroll } from 'wevu'
+
+onScroll(() => {
+  this.setData({ top: 1 })
+  wx.getStorageSync('k')
+})`
+
+    const warnings = collectOnPageScrollPerformanceWarnings(source, '/src/pages/index.ts')
+    expect(warnings.length).toBe(2)
+    expect(warnings[0]).toContain('onPageScroll(...) 内调用 setData')
+    expect(warnings[1]).toContain('wx.getStorageSync')
+  })
+
+  it('collects setData pick keys across engine options', () => {
+    const template = `
+<view wx:for="{{ list }}" wx:for-item="row" wx:for-index="i">
+  <text>{{ row.name }}</text>
+  <text>{{ __wv_bind_0[i] }}</text>
+</view>
+<text>{{ count > 0 ? count : 0 }}</text>
+    `.trim()
+
+    expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'babel' })).toEqual(['__wv_bind_0', 'count', 'list'])
+    expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'oxc' })).toEqual(['__wv_bind_0', 'count', 'list'])
   })
 })

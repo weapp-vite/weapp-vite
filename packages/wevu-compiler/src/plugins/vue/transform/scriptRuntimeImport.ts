@@ -1,4 +1,4 @@
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { RUNTIME_IMPORT_PATH } from './constants'
 
 export function ensureRuntimeImport(program: t.Program, importedName: string, localName = importedName) {

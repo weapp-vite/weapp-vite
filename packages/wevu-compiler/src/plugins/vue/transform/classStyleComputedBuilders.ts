@@ -1,6 +1,6 @@
 import type { ClassStyleBinding, ForParseResult } from '../compiler/template/types'
 import type { ClassStyleHelperIds } from './classStyleComputed'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 
 export function createStaticObjectKey(key: string) {
   return t.isValidIdentifier(key) ? t.identifier(key) : t.stringLiteral(key)

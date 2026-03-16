@@ -1,4 +1,4 @@
-import type { Expression } from '@babel/types'
+import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { MiniProgramPlatform } from './platform'
 
 /**

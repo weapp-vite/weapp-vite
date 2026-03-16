@@ -1,5 +1,5 @@
-import type * as BabelParser from '@babel/parser'
-import type { File } from '@babel/types'
+import type * as BabelParser from '@weapp-vite/ast/babel'
+import type { File } from '@weapp-vite/ast/babelTypes'
 import { createRequire } from 'node:module'
 import { print } from 'esrap'
 import ts from 'esrap/languages/ts'
@@ -18,25 +18,25 @@ interface RequireToken {
 const nodeRequire = createRequire(import.meta.url)
 
 function getBabelParse() {
-  return (nodeRequire('@babel/parser') as typeof BabelParser).parse
+  return (nodeRequire('@weapp-vite/ast/babel') as typeof BabelParser).parse
 }
 
 function getBabelTraverse() {
-  const mod = nodeRequire('@babel/traverse') as { default?: unknown }
+  const mod = nodeRequire('@weapp-vite/ast/babelTraverse') as { default?: unknown }
   const traverse = typeof mod === 'function' ? mod : mod.default
   if (typeof traverse !== 'function') {
-    throw new TypeError('Invalid @babel/traverse export shape')
+    throw new TypeError('Invalid @weapp-vite/ast/babelTraverse export shape')
   }
-  return traverse as typeof import('@babel/traverse').default
+  return traverse as typeof import('@weapp-vite/ast/babelTraverse').default
 }
 
 function getBabelGenerate() {
-  const mod = nodeRequire('@babel/generator') as { default?: unknown }
-  const generate = typeof mod === 'function' ? mod : mod.default
+  const mod = nodeRequire('@weapp-vite/ast/babel') as { generate?: unknown }
+  const generate = mod.generate
   if (typeof generate !== 'function') {
-    throw new TypeError('Invalid @babel/generator export shape')
+    throw new TypeError('Invalid @weapp-vite/ast/babel generate export shape')
   }
-  return generate as typeof import('@babel/generator').default
+  return generate as typeof import('@weapp-vite/ast/babel').generate
 }
 
 function collectRequireTokensWithOxc(ast: unknown) {

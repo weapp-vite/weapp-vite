@@ -1,5 +1,5 @@
-import type { File as BabelFile } from '@babel/types'
-import * as t from '@babel/types'
+import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, traverse } from '../../../../utils/babel'
 
 export const JSON_MACROS = new Set([

@@ -1,7 +1,7 @@
 import type { AttributeNode } from '@vue/compiler-core'
 import type { ClassStyleBinding, TransformContext } from './types'
-import * as t from '@babel/types'
 import { NodeTypes } from '@vue/compiler-core'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { generate } from '../../../../utils/babel'
 import {
   normalizeClassBindingExpression,

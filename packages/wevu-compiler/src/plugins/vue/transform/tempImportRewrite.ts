@@ -1,4 +1,4 @@
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { parseJsLike, traverse } from '../../../utils/babel'

@@ -1,4 +1,4 @@
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { describe, expect, it } from 'vitest'
 import { parse as babelParse } from '../../../utils/babel'
 import { compileJsxAttributes, extractJsxKeyExpression } from './attributes'

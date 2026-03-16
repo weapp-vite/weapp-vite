@@ -1,5 +1,5 @@
-import type { NodePath } from '@babel/traverse'
-import type * as t from '@babel/types'
+import type { NodePath } from '@weapp-vite/ast/babelTraverse'
+import type * as t from '@weapp-vite/ast/babelTypes'
 import type { AstEngineName } from '../../../ast'
 import type { WeappViteConfig } from '../../../types'
 import { collectSetDataPickKeysFromTemplateCode } from '../../../ast/operations/setDataPick'

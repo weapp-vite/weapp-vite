@@ -1,5 +1,5 @@
 import babel from '@babel/core'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { normalizeWxsFilename } from './utils'
 
 export interface TransformWxsCodeOptions {

@@ -1,5 +1,5 @@
-import type { NodePath } from '@babel/traverse'
-import * as t from '@babel/types'
+import type { NodePath } from '@weapp-vite/ast/babelTraverse'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { WE_VU_RUNTIME_APIS } from '../../../constants'
 
 /**

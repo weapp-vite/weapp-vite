@@ -1,5 +1,5 @@
 import type { TransformContext } from '../types'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { traverse } from '../../../../../utils/babel'
 import { generateExpression, parseBabelExpression, parseBabelExpressionFile } from './parse'
 import { normalizeWxmlExpression } from './wxml'
@@ -66,7 +66,7 @@ function collectForAliasMapping(context: TransformContext): Record<string, strin
   return mapping
 }
 
-function replaceIdentifierWithExpression(path: import('@babel/traverse').NodePath<t.Identifier>, replacement: t.Expression) {
+function replaceIdentifierWithExpression(path: import('@weapp-vite/ast/babelTraverse').NodePath<t.Identifier>, replacement: t.Expression) {
   const parent = path.parentPath
   if (parent.isObjectProperty() && parent.node.shorthand && parent.node.key === path.node) {
     parent.node.shorthand = false

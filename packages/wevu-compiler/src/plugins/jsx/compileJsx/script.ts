@@ -1,5 +1,5 @@
-import type { ObjectExpression } from '@babel/types'
-import * as t from '@babel/types'
+import type { ObjectExpression } from '@weapp-vite/ast/babelTypes'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../utils/babel'
 import { JSON_MACROS } from '../../vue/transform/jsonMacros/parse'
 import { toStaticObjectKey } from './ast'

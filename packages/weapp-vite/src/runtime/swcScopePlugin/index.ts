@@ -15,7 +15,7 @@
  *
  * Babel：
  * ```ts
- * import traverse from '@babel/traverse'
+ * import traverse from '@weapp-vite/ast/babelTraverse'
  *
  * traverse(ast, {
  *   Identifier(path) {

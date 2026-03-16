@@ -1,6 +1,6 @@
 import type { FunctionLike, ModuleAnalysis } from '../moduleAnalysis'
 import type { WevuPageFeatureFlag, WevuPageHookName } from '../types'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../../constants'
 
 export function collectWevuHookCallsInFunctionBody(module: ModuleAnalysis, fn: FunctionLike): Set<WevuPageFeatureFlag> {

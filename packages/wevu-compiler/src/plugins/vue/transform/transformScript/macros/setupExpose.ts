@@ -1,5 +1,5 @@
 import type { TransformState } from '../utils'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 
 export function createSetupExposeVisitors(state: TransformState) {
   return {

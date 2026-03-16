@@ -1,6 +1,6 @@
 import type { WevuDefaults } from '../../../../../types/wevu'
 import type { TransformScriptOptions } from '../utils'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { WE_VU_RUNTIME_APIS } from '../../../../../constants'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { ensureRuntimeImport } from '../../scriptRuntimeImport'

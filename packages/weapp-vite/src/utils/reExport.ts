@@ -1,5 +1,5 @@
 import type { AstEngineName } from '../ast'
-import { parseSync } from 'oxc-parser'
+import { parseJsLikeWithEngine } from '@weapp-vite/ast'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from './babel'
 
 export interface ReExportResolutionCache {
@@ -60,7 +60,10 @@ function getCacheKey(file: string, astEngine?: AstEngineName) {
 
 function parseModuleForReExport(code: string, astEngine?: AstEngineName) {
   if (astEngine === 'oxc') {
-    return parseSync('inline.ts', code).program
+    return parseJsLikeWithEngine(code, {
+      engine: 'oxc',
+      filename: 'inline.ts',
+    })
   }
   return babelParse(code, BABEL_TS_MODULE_PARSER_OPTIONS).program as any
 }

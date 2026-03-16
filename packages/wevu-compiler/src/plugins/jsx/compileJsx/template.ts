@@ -1,4 +1,4 @@
-import type { File } from '@babel/types'
+import type { File } from '@weapp-vite/ast/babelTypes'
 import type { CompileVueFileOptions } from '../../vue/transform/compileVueFile/types'
 import type { JsxCompileContext } from './types'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'

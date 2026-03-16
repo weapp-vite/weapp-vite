@@ -1,5 +1,5 @@
 import type { TemplateRefBinding } from '../../../compiler/template/types'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { createStaticObjectKey, getObjectPropertyByKey } from '../utils'
 

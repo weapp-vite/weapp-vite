@@ -32,6 +32,14 @@
       "types": "./dist/babel.d.mts",
       "import": "./dist/babel.mjs"
     },
+    "./babelTraverse": {
+      "types": "./dist/babelTraverse.d.mts",
+      "import": "./dist/babelTraverse.mjs"
+    },
+    "./babelTypes": {
+      "types": "./dist/babelTypes.d.mts",
+      "import": "./dist/babelTypes.mjs"
+    },
     "./babelNodes": {
       "types": "./dist/babelNodes.d.mts",
       "import": "./dist/babelNodes.mjs"
@@ -47,6 +55,10 @@
     "./operations/platformApi": {
       "types": "./dist/operations/platformApi.d.mts",
       "import": "./dist/operations/platformApi.mjs"
+    },
+    "./operations/onPageScroll": {
+      "types": "./dist/operations/onPageScroll.d.mts",
+      "import": "./dist/operations/onPageScroll.mjs"
     },
     "./operations/componentProps": {
       "types": "./dist/operations/componentProps.d.mts",
@@ -67,6 +79,10 @@
     "./operations/scriptSetupImports": {
       "types": "./dist/operations/scriptSetupImports.d.mts",
       "import": "./dist/operations/scriptSetupImports.mjs"
+    },
+    "./operations/setDataPick": {
+      "types": "./dist/operations/setDataPick.d.mts",
+      "import": "./dist/operations/setDataPick.mjs"
     }
   },
   "main": "./dist/index.mjs",
