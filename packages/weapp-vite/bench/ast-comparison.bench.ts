@@ -1,6 +1,6 @@
-import type * as BabelParser from '@weapp-vite/ast/babel'
 import type { File } from '@weapp-vite/ast/babelTypes'
-import { createRequire } from 'node:module'
+import { generate, parse } from '@weapp-vite/ast/babel'
+import babelTraverse from '@weapp-vite/ast/babelTraverse'
 import { print } from 'esrap'
 import ts from 'esrap/languages/ts'
 import { parseSync } from 'oxc-parser'
@@ -13,30 +13,6 @@ interface RequireToken {
   end: number
   value: string
   async?: boolean
-}
-
-const nodeRequire = createRequire(import.meta.url)
-
-function getBabelParse() {
-  return (nodeRequire('@weapp-vite/ast/babel') as typeof BabelParser).parse
-}
-
-function getBabelTraverse() {
-  const mod = nodeRequire('@weapp-vite/ast/babelTraverse') as { default?: unknown }
-  const traverse = typeof mod === 'function' ? mod : mod.default
-  if (typeof traverse !== 'function') {
-    throw new TypeError('Invalid @weapp-vite/ast/babelTraverse export shape')
-  }
-  return traverse as typeof import('@weapp-vite/ast/babelTraverse').default
-}
-
-function getBabelGenerate() {
-  const mod = nodeRequire('@weapp-vite/ast/babel') as { generate?: unknown }
-  const generate = mod.generate
-  if (typeof generate !== 'function') {
-    throw new TypeError('Invalid @weapp-vite/ast/babel generate export shape')
-  }
-  return generate as typeof import('@weapp-vite/ast/babel').generate
 }
 
 function collectRequireTokensWithOxc(ast: unknown) {
@@ -71,7 +47,7 @@ function collectRequireTokensWithOxc(ast: unknown) {
 function collectRequireTokensWithBabel(ast: File) {
   const requireTokens: RequireToken[] = []
 
-  getBabelTraverse()(ast, {
+  babelTraverse(ast, {
     CallExpression(path) {
       const { node } = path
       if (
@@ -98,7 +74,7 @@ function collectRequireTokensWithBabel(ast: File) {
 }
 
 function parseWithBabel(source: string) {
-  return getBabelParse()(source, {
+  return parse(source, {
     sourceType: 'module',
     plugins: ['typescript'],
   }) as File
@@ -172,7 +148,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     'babel parse + generator',
     () => {
       const parsed = parseWithBabel(source)
-      getBabelGenerate()(parsed, {})
+      generate(parsed, {})
     },
     defaultBenchOptions,
   )
@@ -192,7 +168,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
     () => {
       const parsed = parseWithBabel(source)
       collectRequireTokensWithBabel(parsed)
-      getBabelGenerate()(parsed, {})
+      generate(parsed, {})
     },
     defaultBenchOptions,
   )
@@ -208,7 +184,7 @@ describe('ast comparison: oxc stack vs babel stack', () => {
   bench(
     'babel generator only',
     () => {
-      getBabelGenerate()(babelParsed, {})
+      generate(babelParsed, {})
     },
     defaultBenchOptions,
   )

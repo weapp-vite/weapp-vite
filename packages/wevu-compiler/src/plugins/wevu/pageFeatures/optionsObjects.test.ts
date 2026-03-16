@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { parseJsLike } from '../../../utils/babel'
+import * as babelUtils from '../../../utils/babel'
 import { collectTargetOptionsObjects, collectTargetOptionsObjectsFromCode, getSetupFunctionFromOptionsObject } from './optionsObjects'
 
 describe('optionsObjects analysis', () => {
@@ -68,5 +69,27 @@ defineComponent(optionsRef)
 
     expect(optionsObjects).toHaveLength(1)
     expect(getSetupFunctionFromOptionsObject(optionsObjects[0])).toBeTruthy()
+  })
+
+  it('fast rejects unrelated files with oxc engine before babel parsing', () => {
+    const parseSpy = vi.spyOn(babelUtils, 'parseJsLike')
+    const source = `
+import { ref } from 'vue'
+
+export function setupStore() {
+  return ref(1)
+}
+    `.trim()
+
+    const result = collectTargetOptionsObjectsFromCode(source, '/project/src/store.ts', {
+      astEngine: 'oxc',
+    })
+
+    expect(result.optionsObjects).toEqual([])
+    expect(result.module.engine).toBe('oxc')
+    expect(result.module.importedBindings.size).toBe(0)
+    expect(parseSpy).not.toHaveBeenCalled()
+
+    parseSpy.mockRestore()
   })
 })

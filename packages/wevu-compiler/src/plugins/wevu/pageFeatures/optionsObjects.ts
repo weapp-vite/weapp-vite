@@ -2,9 +2,10 @@ import type { AstEngineName } from '../../../ast/types'
 import type { FunctionLike, ModuleAnalysis } from './moduleAnalysis'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from '../../../constants'
+import { parseJsLike } from '../../../utils/babel'
 import { traverse } from '../../../utils/babel'
 import { isStaticObjectKeyMatch, isTopLevel } from './astUtils'
-import { createModuleAnalysis, createModuleAnalysisFromCode } from './moduleAnalysis'
+import { createEmptyModuleAnalysis, createModuleAnalysis, createModuleAnalysisFromCode } from './moduleAnalysis'
 
 function unwrapTypeLikeExpression(node: t.Expression): t.Expression {
   if (t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node) || t.isTSNonNullExpression(node) || t.isTypeCastExpression(node)) {
@@ -207,8 +208,48 @@ export function collectTargetOptionsObjectsFromCode(
     astEngine?: AstEngineName
   },
 ): { optionsObjects: t.ObjectExpression[], module: ModuleAnalysis } {
-  // 这里仍然沿用 Babel AST 作为 options 对象的可变数据结构；
-  // `astEngine` 先用于统一入口，后续如需引入 Oxc 预分析，可在此扩展。
-  const ast = createModuleAnalysisFromCode(moduleId, code, options).ast
+  if (options?.astEngine === 'oxc') {
+    const mayReferenceWevuFactory = code.includes(WE_VU_MODULE_ID)
+      && (
+        code.includes(WE_VU_RUNTIME_APIS.defineComponent)
+        || code.includes(WE_VU_RUNTIME_APIS.createWevuComponent)
+      )
+
+    if (!mayReferenceWevuFactory) {
+      return {
+        optionsObjects: [],
+        module: createEmptyModuleAnalysis(moduleId, 'oxc'),
+      }
+    }
+
+    const module = createModuleAnalysisFromCode(moduleId, code, options)
+    const mayCallWevuFactory = [...module.importedBindings.values()].some(binding => (
+      binding.source === WE_VU_MODULE_ID
+      && (
+        binding.kind === 'namespace'
+        || (binding.kind === 'named'
+          && (
+            binding.importedName === WE_VU_RUNTIME_APIS.defineComponent
+            || binding.importedName === WE_VU_RUNTIME_APIS.createWevuComponent
+          ))
+      )
+    ))
+
+    if (!mayCallWevuFactory) {
+      return {
+        optionsObjects: [],
+        module,
+      }
+    }
+
+    // options 对象抽取仍然依赖 Babel AST 可变结构，暂时保持这条链路不变。
+    const result = collectTargetOptionsObjects(parseJsLike(code), moduleId)
+    return {
+      optionsObjects: result.optionsObjects,
+      module,
+    }
+  }
+
+  const ast = createModuleAnalysisFromCode(moduleId, code, options).ast!
   return collectTargetOptionsObjects(ast, moduleId)
 }

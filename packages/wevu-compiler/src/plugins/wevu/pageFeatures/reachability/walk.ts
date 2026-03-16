@@ -21,7 +21,7 @@ export async function walkReachableWevuFeatures(options: WalkOptions): Promise<S
   const enabled = new Set<WevuPageFeatureFlag>()
 
   // 初始：先收集 setup() 内的调用点
-  const seedCalls = collectCalledBindingsFromFunctionBody(setupFn)
+  const seedCalls = collectCalledBindingsFromFunctionBody(setupFn, pageModule.engine)
 
   const queue: QueueItem[] = []
   const visitedLocal = new Set<string>()
@@ -91,7 +91,7 @@ export async function walkReachableWevuFeatures(options: WalkOptions): Promise<S
         enabled.add(f)
       }
 
-      const calls = collectCalledBindingsFromFunctionBody(fn)
+      const calls = collectCalledBindingsFromFunctionBody(fn, pageModule.engine)
       for (const call of calls) {
         seedFromCall(call)
       }
@@ -119,7 +119,7 @@ export async function walkReachableWevuFeatures(options: WalkOptions): Promise<S
     }
 
     // 继续在导入函数内部向下追踪：跟随该模块中的本地调用与导入调用
-    const calls = collectCalledBindingsFromFunctionBody(resolved.fn)
+    const calls = collectCalledBindingsFromFunctionBody(resolved.fn, resolved.module.engine)
     for (const call of calls) {
       if (call.type === 'ident') {
         const binding = resolved.module.importedBindings.get(call.name)
@@ -139,7 +139,7 @@ export async function walkReachableWevuFeatures(options: WalkOptions): Promise<S
               for (const f of collectWevuHookCallsInFunctionBody(resolved.module, localFn)) {
                 enabled.add(f)
               }
-              for (const inner of collectCalledBindingsFromFunctionBody(localFn)) {
+              for (const inner of collectCalledBindingsFromFunctionBody(localFn, resolved.module.engine)) {
                 if (inner.type === 'ident') {
                   const innerBinding = resolved.module.importedBindings.get(inner.name)
                   if (innerBinding?.kind === 'named') {
