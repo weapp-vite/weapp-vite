@@ -1,5 +1,21 @@
 # create-weapp-vite
 
+## 2.0.49
+
+### Patch Changes
+
+- 🐛 **将仓库内原先使用 `tsup` 的发布包统一迁移到 `tsdown` 构建链路，并按现有产物约定保留对应的 ESM/CJS 输出后缀、声明文件生成与多入口导出结构。其中 `@weapp-vite/web` 额外改为由 `tsdown` 负责 JavaScript 产物、`tsc --emitDeclarationOnly` 负责类型声明，以规避当前 `rolldown-plugin-dts` 在该包上的类型生成异常，确保迁移后各包的发布结果与现有消费方式保持兼容。** [`d49d790`](https://github.com/weapp-vite/weapp-vite/commit/d49d79011253552daf088695bb52d158816dfec8) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` 与 `@wevu/compiler` 新增统一的 AST 抽象层，默认继续使用 Babel，并允许在多条纯分析链路中通过配置切换到 Oxc。此次调整同时把组件 props 提取、`usingComponents` 推导、JSX 自动组件分析、`setData.pick` 模板 key 收集、re-export 解析、页面特性分析与部分 emit 阶段快判等能力逐步下沉到可复用的 `ast/operations`，并补充高层配置透传测试，确保 `weapp.ast.engine = 'oxc'` 能从真实插件入口传到对应分析逻辑。** [`3836235`](https://github.com/weapp-vite/weapp-vite/commit/3836235d8784ce0e5e1bd4c920f33a82d4c28844) by @sonofmagic
+
+- 🐛 **新增 `@weapp-vite/ast` 共享 AST 分析包，统一封装 Babel/Oxc 解析能力以及平台 API、require、`<script setup>` 导入分析等通用操作，并让 `weapp-vite` 与 `@wevu/compiler` 复用这套内核，降低后续编译分析工具的维护分叉成本。** [`7bc7ecc`](https://github.com/weapp-vite/weapp-vite/commit/7bc7ecca2aef913b0751d18f9c0f586bd582dc01) by @sonofmagic
+
+- 🐛 **修复 Windows 环境下 HMR 对侧车文件 `rename` 保存模式的识别问题。现在对于模板、样式、页面配置等文件的原子重命名保存以及连续快速修改，会在短暂 settle 后按已知文件状态正确判定为更新或删除，避免热更新丢失；同时补充了对应的 rename-save 与连续修改 CI 用例。** [#336](https://github.com/weapp-vite/weapp-vite/pull/336) by @sonofmagic
+
+- 🐛 **修复 npm 依赖构建在 `exports.import`、`module` 与 `main` 并存时错误回退到 CommonJS 入口的问题。现在会优先选择 ESM 入口，避免把已经转译成 `_defineProperty` helper 的 CJS 产物错误带入小程序构建结果。** [#336](https://github.com/weapp-vite/weapp-vite/pull/336) by @sonofmagic
+- 📦 **Dependencies** [`d49d790`](https://github.com/weapp-vite/weapp-vite/commit/d49d79011253552daf088695bb52d158816dfec8)
+  → `@weapp-core/logger@3.1.1`
+
 ## 2.0.48
 
 ### Patch Changes
