@@ -26,40 +26,40 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     },
     "./config": {
-      "types": "./dist/config.d.ts",
+      "types": "./dist/config.d.mts",
       "import": "./dist/config.mjs"
     },
     "./json": {
-      "types": "./dist/json.d.ts",
+      "types": "./dist/json.d.mts",
       "import": "./dist/json.mjs"
     },
     "./volar": {
-      "types": "./dist/volar.d.ts",
+      "types": "./dist/volar.d.mts",
       "import": "./dist/volar.mjs",
       "require": "./volar.cjs"
     },
     "./runtime": {
-      "types": "./dist/runtime.d.ts",
+      "types": "./dist/runtime.d.mts",
       "import": "./dist/runtime.mjs"
     },
     "./mcp": {
-      "types": "./dist/mcp.d.ts",
+      "types": "./dist/mcp.d.mts",
       "import": "./dist/mcp.mjs"
     },
     "./types": {
-      "types": "./dist/types.d.ts",
+      "types": "./dist/types.d.mts",
       "import": "./dist/types.mjs"
     },
     "./auto-import-components/resolvers": {
-      "types": "./dist/auto-import-components/resolvers.d.ts",
+      "types": "./dist/auto-import-components/resolvers.d.mts",
       "import": "./dist/auto-import-components/resolvers.mjs"
     },
     "./auto-routes": {
-      "types": "./dist/auto-routes.d.ts",
+      "types": "./dist/auto-routes.d.mts",
       "import": "./dist/auto-routes.mjs"
     },
     "./client": {
@@ -70,7 +70,7 @@
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "bin": {
     "weapp-vite": "bin/weapp-vite.js",
     "wv": "bin/weapp-vite.js"
