@@ -30,6 +30,7 @@ interface MetadataState {
 export function createMetadataHelpers(state: MetadataState): MetadataHelpers {
   function getComponentMetadata(name: string): ComponentMetadata {
     if (state.resolverComponentNames.has(name)) {
+      const configService = state.ctx.configService
       const existing = state.componentMetadataMap.get(name)
       if (existing && existing.types.size > 0) {
         return {
@@ -39,12 +40,12 @@ export function createMetadataHelpers(state: MetadataState): MetadataHelpers {
       }
 
       const from = state.resolverComponentsMapRef.value[name]
-      const cwd = state.ctx.configService?.cwd
+      const cwd = configService?.cwd
       if (from && cwd) {
         try {
-          const resolvers = getAutoImportConfig(state.ctx.configService)?.resolvers as Resolver[] | undefined
+          const resolvers = getAutoImportConfig(configService)?.resolvers as Resolver[] | undefined
           const loaded = loadExternalComponentMetadata(from, cwd, resolvers, {
-            astEngine: resolveAstEngine(state.ctx.configService.weappViteConfig),
+            astEngine: resolveAstEngine(configService.weappViteConfig),
           })
           if (loaded?.types?.size) {
             state.componentMetadataMap.set(name, { types: new Map(loaded.types), docs: new Map() })
@@ -112,12 +113,13 @@ export function createMetadataHelpers(state: MetadataState): MetadataHelpers {
   }
 
   function preloadResolverComponentMetadata() {
-    const cwd = state.ctx.configService?.cwd
-    if (!cwd) {
+    const configService = state.ctx.configService
+    const cwd = configService?.cwd
+    if (!configService || !cwd) {
       return
     }
 
-    const resolvers = getAutoImportConfig(state.ctx.configService)?.resolvers as Resolver[] | undefined
+    const resolvers = getAutoImportConfig(configService)?.resolvers as Resolver[] | undefined
     const resolverEntries = state.collectResolverComponents()
     if (!resolverEntries || Object.keys(resolverEntries).length === 0) {
       return
@@ -133,7 +135,7 @@ export function createMetadataHelpers(state: MetadataState): MetadataHelpers {
       }
       try {
         const loaded = loadExternalComponentMetadata(from, cwd, resolvers, {
-          astEngine: resolveAstEngine(state.ctx.configService.weappViteConfig),
+          astEngine: resolveAstEngine(configService.weappViteConfig),
         })
         if (loaded?.types?.size) {
           state.componentMetadataMap.set(name, { types: new Map(loaded.types), docs: new Map() })

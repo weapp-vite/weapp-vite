@@ -186,7 +186,7 @@ export function flattenNamedRouteRecords(
   parentAliasPaths: readonly string[] = [],
   source?: RouteOptionSource,
   pathPrefix = 'namedRoutes',
-  ancestorRecords: ReadonlySet<RouteRecordRaw> = new Set<RouteRecordRaw>(),
+  ancestorRecords: ReadonlySet<RouteRecordInput> = new Set<RouteRecordInput>(),
 ): FlattenedRouteRecordSeed[] {
   const flattenedRecords: FlattenedRouteRecordSeed[] = []
 
@@ -245,10 +245,12 @@ export function flattenNamedRouteRecords(
       ...normalizedInheritedAliasPaths,
     ])
     const normalizedRecord: RouteRecordRaw = {
-      ...record,
       name: routeName,
       path: normalizedPath ? createAbsoluteRoutePath(normalizedPath) : '/',
       alias: createRouteRecordAliasValue(normalizedAliasPaths),
+      meta: record.meta,
+      beforeEnter: record.beforeEnter,
+      redirect: record.redirect,
     }
     flattenedRecords.push({
       route: normalizedRecord,

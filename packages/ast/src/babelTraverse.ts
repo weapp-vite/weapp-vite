@@ -5,5 +5,4 @@ export type {
   Scope,
   TraverseOptions,
   Visitor,
-  VisitorBase,
 } from '@babel/traverse'

@@ -1,3 +1,5 @@
+import type { Plugin } from 'vite'
+import type { AstParserLike } from '../../../ast'
 import type { CorePluginState } from '../helpers'
 import { resolveAstEngine } from '../../../ast'
 import { mayContainPlatformApiAccess, platformApiIdentifiers } from '../../../ast/operations/platformApi'
@@ -42,7 +44,7 @@ function replacePlatformApiAccess(
   globalName: string,
   options?: {
     engine?: 'babel' | 'oxc'
-    parserLike?: { parse?: (input: string, options?: unknown) => unknown }
+    parserLike?: AstParserLike
   },
 ) {
   if (!mayContainPlatformApiAccess(code, options)) {
@@ -94,7 +96,7 @@ export function createTransformHook(state: CorePluginState) {
   const { configService } = state.ctx
   const astEngine = resolveAstEngine(configService.weappViteConfig)
 
-  return async function transform(this: { parse?: (input: string, options?: unknown) => unknown }, code: string, id: string) {
+  const transform: NonNullable<Plugin['transform']> = async function transform(code, id) {
     const injectOptions = resolveInjectWeapiOptions(configService)
     if (!injectOptions) {
       return null
@@ -106,7 +108,7 @@ export function createTransformHook(state: CorePluginState) {
 
     const replaced = replacePlatformApiAccess(code, injectOptions.globalName, {
       engine: astEngine,
-      parserLike: this,
+      parserLike: this as unknown as AstParserLike,
     })
     if (replaced === code) {
       return null
@@ -117,4 +119,6 @@ export function createTransformHook(state: CorePluginState) {
       map: null,
     }
   }
+
+  return transform
 }

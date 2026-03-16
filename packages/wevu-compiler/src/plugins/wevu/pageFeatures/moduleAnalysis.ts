@@ -1,9 +1,9 @@
 import type { AstEngineName } from '../../../ast/types'
 import type { WevuPageFeatureFlag, WevuPageHookName } from './types'
-import * as t from '@weapp-vite/ast/babelTypes'
 import { parseJsLikeWithEngine } from '@weapp-vite/ast'
-import path from 'pathe'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { LRUCache } from 'lru-cache'
+import path from 'pathe'
 import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../constants'
 import { parseJsLike } from '../../../utils/babel'
 

@@ -1,12 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
 import { runPatchUpdate } from '@/runtime/app/setData/patchScheduler'
 
-function createBaseOptions() {
-  const adapter = { setData: vi.fn() }
+type PatchUpdateOptions = Parameters<typeof runPatchUpdate>[0]
+
+function createBaseOptions(): {
+  adapter: PatchUpdateOptions['currentAdapter']
+  runDiffUpdate: ReturnType<typeof vi.fn>
+  emitDebug: ReturnType<typeof vi.fn>
+  needsFullSnapshot: { value: boolean }
+  latestSnapshot: Record<string, any>
+  options: PatchUpdateOptions
+} {
+  const adapter: PatchUpdateOptions['currentAdapter'] = { setData: vi.fn() }
   const runDiffUpdate = vi.fn()
   const emitDebug = vi.fn()
   const needsFullSnapshot = { value: false }
-  const latestSnapshot = { a: { b: 1 } }
+  const latestSnapshot: Record<string, any> = { a: { b: 1 } }
 
   return {
     adapter,
@@ -19,11 +28,11 @@ function createBaseOptions() {
       computedRefs: {},
       dirtyComputedKeys: new Set<string>(),
       includeComputed: false,
-      computedCompare: 'reference' as const,
+      computedCompare: 'reference',
       computedCompareMaxDepth: 2,
       computedCompareMaxKeys: 10,
       currentAdapter: adapter,
-      shouldIncludeKey: () => true,
+      shouldIncludeKey: (_key: string) => true,
       maxPatchKeys: 10,
       maxPayloadBytes: Number.POSITIVE_INFINITY,
       mergeSiblingThreshold: 0,
@@ -41,7 +50,7 @@ function createBaseOptions() {
       needsFullSnapshot,
       emitDebug,
       runDiffUpdate,
-    },
+    } satisfies PatchUpdateOptions,
   }
 }
 
@@ -85,7 +94,7 @@ describe('runtime: patch scheduler helpers', () => {
 
   it('elevates dense sibling patches to top-level payloads and swallows async setData rejection', async () => {
     const { options, latestSnapshot } = createBaseOptions()
-    const setData = vi.fn(() => Promise.reject(new Error('async boom')))
+    const setData: NonNullable<PatchUpdateOptions['currentAdapter']['setData']> = vi.fn(() => Promise.reject(new Error('async boom')))
     options.currentAdapter = { setData }
     options.elevateTopKeyThreshold = 2
     options.state = {
@@ -149,7 +158,7 @@ describe('runtime: patch scheduler helpers', () => {
     options.computedCompare = 'deep'
     options.dirtyComputedKeys.add('same')
     options.dirtyComputedKeys.add('skip')
-    options.currentAdapter = {}
+    options.currentAdapter = {} as PatchUpdateOptions['currentAdapter']
 
     runPatchUpdate(options)
 

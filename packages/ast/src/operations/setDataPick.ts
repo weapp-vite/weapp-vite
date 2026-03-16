@@ -204,7 +204,6 @@ function collectIdentifiersFromExpressionWithOxc(expression: string): Set<string
       return
     }
 
-    // eslint-disable-next-line no-fallthrough
     switch (node.type) {
       case 'Program':
         for (const statement of node.body ?? []) {
@@ -228,8 +227,9 @@ function collectIdentifiersFromExpressionWithOxc(expression: string): Set<string
       case 'VariableDeclarator': {
         const bindings = new Set<string>()
         collectPatternBindingNames(node.id, bindings)
+        const currentScope = scopes.at(-1)
         for (const binding of bindings) {
-          scopes[scopes.length - 1].add(binding)
+          currentScope?.add(binding)
         }
         visit(node.init)
         return
@@ -344,10 +344,10 @@ function collectIdentifiersFromExpressionWithOxc(expression: string): Set<string
           visit(statement)
         }
         scopes.shift()
-        return
+        break
       }
       default:
-        return
+        break
     }
   }
 
