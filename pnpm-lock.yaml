@@ -1076,12 +1076,18 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/auto-import-vue-sfc:
     devDependencies:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/auto-routes-define-app-json:
     devDependencies:
@@ -1122,6 +1128,9 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/issue-814-tailwind3:
     devDependencies:
@@ -1179,36 +1188,54 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/lifecycle-compare:
     devDependencies:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/object-literal-bind-prop:
     devDependencies:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/script-setup-macros-js-with-defaults-invalid:
     devDependencies:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/script-setup-macros-mapping:
     devDependencies:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/style-import-vue:
     devDependencies:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/subpackage-shared-strategy-complex-a:
     devDependencies:
@@ -1218,6 +1245,9 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/subpackage-shared-strategy-complex-b:
     devDependencies:
@@ -1227,18 +1257,27 @@ importers:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/wevu-features:
     devDependencies:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/wevu-runtime-e2e:
     devDependencies:
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
 
   e2e-apps/wevu-subpackage-placement:
     devDependencies:
@@ -19995,8 +20034,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@5.9.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.0(typescript@5.9.3)
+      '@typescript-eslint/types': 8.57.0
       debug: 4.4.3
       typescript: 5.9.3
     transitivePeerDependencies:

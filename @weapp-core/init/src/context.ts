@@ -1,5 +1,21 @@
-import type { PackageJson, TSConfig } from 'pkg-types'
 import type { ProjectConfig } from './types'
+
+type JsonPrimitive = string | number | boolean | null
+type JsonValue = JsonPrimitive | JsonObject | JsonValue[]
+
+interface JsonObject {
+  [key: string]: JsonValue | undefined
+}
+
+export interface PackageJsonData extends JsonObject {
+  name?: string
+  homepage?: string
+  type?: string
+  scripts?: Record<string, string>
+  devDependencies?: Record<string, string>
+}
+
+export interface TsConfigData extends JsonObject {}
 
 /**
  * @description init 过程中单个文件的上下文结构
@@ -15,11 +31,11 @@ export interface ContextDocument<T> {
  */
 export interface Context {
   projectConfig: ContextDocument<ProjectConfig>
-  packageJson: ContextDocument<PackageJson>
+  packageJson: ContextDocument<PackageJsonData>
   viteConfig: ContextDocument<string>
-  tsconfig: ContextDocument<TSConfig>
-  tsconfigApp: ContextDocument<TSConfig>
-  tsconfigNode: ContextDocument<TSConfig>
+  tsconfig: ContextDocument<TsConfigData>
+  tsconfigApp: ContextDocument<TsConfigData>
+  tsconfigNode: ContextDocument<TsConfigData>
   dts: ContextDocument<string>
 }
 
@@ -37,11 +53,11 @@ function createDocument<T>(): ContextDocument<T> {
 export function createContext(): Context {
   return {
     projectConfig: createDocument<ProjectConfig>(),
-    packageJson: createDocument<PackageJson>(),
+    packageJson: createDocument<PackageJsonData>(),
     viteConfig: createDocument<string>(),
-    tsconfig: createDocument<TSConfig>(),
-    tsconfigApp: createDocument<TSConfig>(),
-    tsconfigNode: createDocument<TSConfig>(),
+    tsconfig: createDocument<TsConfigData>(),
+    tsconfigApp: createDocument<TsConfigData>(),
+    tsconfigNode: createDocument<TsConfigData>(),
     dts: createDocument<string>(),
   }
 }

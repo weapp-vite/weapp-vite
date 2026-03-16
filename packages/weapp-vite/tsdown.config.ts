@@ -26,6 +26,7 @@ export default defineConfig({
     NODE_ENV: 'production',
   },
   deps: {
+    onlyBundle: false,
     neverBundle: [
       '@swc/core',
       '@weapp-vite/ast',

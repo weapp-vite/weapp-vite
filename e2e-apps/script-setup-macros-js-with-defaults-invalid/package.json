@@ -8,6 +8,7 @@
     "build": "node -e \"const fs=require('fs'); fs.mkdirSync('dist',{recursive:true}); fs.writeFileSync('dist/.skip-build','skip build: this fixture is intentionally invalid and is verified by negative e2e tests\\n'); console.log('skip build: this fixture is intentionally invalid and is verified by negative e2e tests')\""
   },
   "devDependencies": {
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
   }
 }

@@ -5,6 +5,9 @@ function createConfig(entry: Record<string, string>, clean: boolean) {
     entry,
     dts: true,
     clean,
+    deps: {
+      onlyBundle: false,
+    },
     format: ['esm'],
     shims: true,
     tsconfig: './tsconfig.build.json',

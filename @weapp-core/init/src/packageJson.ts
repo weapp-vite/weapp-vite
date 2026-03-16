@@ -1,4 +1,4 @@
-import type { PackageJson } from 'pkg-types'
+import type { PackageJsonData } from './context'
 import type { UpdatePackageJsonOptions } from './types'
 import logger from '@weapp-core/logger'
 import { defu, get, set } from '@weapp-core/shared'
@@ -18,7 +18,7 @@ const FALLBACK_DEP_VERSIONS: Record<string, string> = {
 /**
  * @description 创建默认 package.json 模板
  */
-export function createDefaultPackageJson(): PackageJson {
+export function createDefaultPackageJson(): PackageJsonData {
   return {
     name: 'weapp-vite-app',
     homepage: 'https://vite.icebreaker.top/',
@@ -32,7 +32,7 @@ export function createDefaultPackageJson(): PackageJson {
  * @description 写入/更新依赖版本
  */
 export async function upsertDependencyVersion(
-  packageJson: PackageJson,
+  packageJson: PackageJsonData,
   keyPath: string,
   packageName: string,
   options: { skipNetwork?: boolean } = {},
@@ -69,7 +69,7 @@ export async function createOrUpdatePackageJson(options: UpdatePackageJsonOption
   const outputPath = resolveOutputPath(root, dest, packageJsonPath)
 
   try {
-    let packageJson = await readJsonIfExists<PackageJson>(packageJsonPath)
+    let packageJson = await readJsonIfExists<PackageJsonData>(packageJsonPath)
 
     if (!packageJson) {
       packageJson = createDefaultPackageJson()
