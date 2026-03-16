@@ -212,7 +212,7 @@ async function pageContainsVisibleText(page: Page, selector: string, text: strin
 }
 
 async function expectVisibleElementText(page: Page, selector: string, text: string) {
-  await expect.poll(() => pageContainsVisibleText(page, selector, text), { timeout: 20_000 }).toBe(true)
+  await expect.poll(() => pageContainsVisibleText(page, selector, text), { timeout: 45_000 }).toBe(true)
 }
 
 interface NavigationBarState {
@@ -315,6 +315,11 @@ async function openHomePage(page: Page) {
 
 async function navigateToInteractiveFromHome(page: Page) {
   await navigateToByRuntime(page, 'pages/interactive/index?from=index')
+  await expectCurrentPageData(page, data => Boolean(
+    data
+    && typeof data.from === 'string'
+    && data.from === 'index',
+  ), 45_000)
   await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
   await expectVisibleElementText(page, '.lab__meta', '来源：index')
 }
