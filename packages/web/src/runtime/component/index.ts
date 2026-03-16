@@ -6,7 +6,7 @@ import { FallbackElement, supportsLit } from './constants'
 import { createComponentElementClass } from './element'
 import { createComponentRuntimeState, updateComponentRuntimeState } from './state'
 
-function emitBehaviorWarnings(warnings: string[]) {
+function emitBehaviorWarnings(warnings: string[]): void {
   for (const warning of warnings) {
     emitRuntimeWarning(warning, {
       key: `component-behaviors:${warning}`,
@@ -15,7 +15,7 @@ function emitBehaviorWarnings(warnings: string[]) {
   }
 }
 
-export function defineComponent(tagName: string, options: DefineComponentOptions) {
+export function defineComponent(tagName: string, options: DefineComponentOptions): ComponentConstructor {
   if (!options || typeof options !== 'object') {
     throw new TypeError('[@weapp-vite/web] defineComponent 需要提供配置对象。')
   }

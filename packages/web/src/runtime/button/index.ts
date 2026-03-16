@@ -25,20 +25,18 @@ const BaseElement = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement
 let formConfig: Required<ButtonFormConfig> = { ...DEFAULT_FORM_CONFIG }
 
 class WeappButton extends BaseElement {
-  static get observedAttributes() {
-    return [
-      'type',
-      'plain',
-      'size',
-      'loading',
-      'disabled',
-      'hover-class',
-      'hover-start-time',
-      'hover-stay-time',
-      'form-type',
-      'open-type',
-    ]
-  }
+  static observedAttributes = [
+    'type',
+    'plain',
+    'size',
+    'loading',
+    'disabled',
+    'hover-class',
+    'hover-start-time',
+    'hover-stay-time',
+    'form-type',
+    'open-type',
+  ]
 
   #button?: HTMLButtonElement
   #content?: HTMLSpanElement
@@ -93,7 +91,7 @@ class WeappButton extends BaseElement {
     content.append(loading, text)
     button.append(content)
 
-    const existing = Array.from(this.childNodes).filter(node => !isInternalNode(node))
+    const existing = [...this.childNodes].filter(node => !isInternalNode(node))
     for (const node of existing) {
       text.appendChild(node)
     }
@@ -110,7 +108,7 @@ class WeappButton extends BaseElement {
           return
         }
         for (const record of records) {
-          for (const node of Array.from(record.addedNodes)) {
+          for (const node of [...record.addedNodes]) {
             if (isInternalNode(node)) {
               continue
             }
@@ -146,7 +144,7 @@ class WeappButton extends BaseElement {
 
     if (openType) {
       const openTypeClass = `weapp-btn--open-type-${openType}`
-      for (const className of Array.from(this.classList)) {
+      for (const className of [...this.classList]) {
         if (className.startsWith('weapp-btn--open-type-') && className !== openTypeClass) {
           this.classList.remove(className)
         }
@@ -154,7 +152,7 @@ class WeappButton extends BaseElement {
       this.classList.add(openTypeClass)
     }
     else {
-      for (const className of Array.from(this.classList)) {
+      for (const className of [...this.classList]) {
         if (className.startsWith('weapp-btn--open-type-')) {
           this.classList.remove(className)
         }
@@ -279,7 +277,7 @@ class WeappButton extends BaseElement {
   }
 }
 
-export function ensureButtonDefined() {
+export function ensureButtonDefined(): void {
   if (typeof customElements === 'undefined') {
     return
   }
@@ -288,7 +286,7 @@ export function ensureButtonDefined() {
   }
 }
 
-export function setButtonFormConfig(next: ButtonFormConfig) {
+export function setButtonFormConfig(next: ButtonFormConfig): void {
   formConfig = {
     ...formConfig,
     ...next,

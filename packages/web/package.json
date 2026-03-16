@@ -22,25 +22,25 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/src/index.d.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs"
     },
     "./plugin": {
-      "types": "./dist/src/plugin.d.ts",
+      "types": "./dist/plugin.d.ts",
       "import": "./dist/plugin.mjs"
     },
     "./runtime": {
-      "types": "./dist/src/runtime/index.d.ts",
+      "types": "./dist/runtime/index.d.ts",
       "import": "./dist/runtime/index.mjs"
     },
     "./runtime/polyfill": {
-      "types": "./dist/src/runtime/index.d.ts",
+      "types": "./dist/runtime/index.d.ts",
       "import": "./dist/runtime/index.mjs"
     }
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
