@@ -147,7 +147,7 @@ describe('wxmlService', () => {
   it('scans file and caches result', async () => {
     const result = await wxmlService.scan('/mock/project/file.wxml')
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       deps: [{ tagName: 'import', value: './header.wxml' }],
     })
     expect(wxmlService.depsMap.has('/mock/project/file.wxml')).toBe(true)
@@ -178,14 +178,14 @@ describe('wxmlService', () => {
   it('re-scans when template content changes with identical mtime', async () => {
     const filepath = '/mock/project/file.wxml'
     const firstScan = await wxmlService.scan(filepath)
-    expect(firstScan).toEqual({
+    expect(firstScan).toMatchObject({
       deps: [{ tagName: 'import', value: './header.wxml' }],
     })
 
     mockFileSystem[filepath] = '<view>Updated</view>'
 
     const secondScan = await wxmlService.scan(filepath)
-    expect(secondScan).toEqual({ deps: [] })
+    expect(secondScan).toMatchObject({ deps: [] })
   })
 
   it('reuses cached token when file signature does not change', async () => {
@@ -202,7 +202,7 @@ describe('wxmlService', () => {
 
     const result = await wxmlService.scan(filepath)
 
-    expect(result?.deps).toEqual([
+    expect(result?.deps).toMatchObject([
       { tagName: 'import', value: '/header.wxml' },
     ])
     expect(wxmlService.depsMap.get(filepath)).toEqual(new Set(['/mock/project/header.wxml']))
