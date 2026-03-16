@@ -1,6 +1,8 @@
 import type { AstEngineName } from '../../../ast/types'
 import type { WevuPageFeatureFlag, WevuPageHookName } from './types'
 import * as t from '@weapp-vite/ast/babelTypes'
+import { parseJsLikeWithEngine } from '@weapp-vite/ast'
+import path from 'pathe'
 import { LRUCache } from 'lru-cache'
 import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../../constants'
 import { parseJsLike } from '../../../utils/babel'
@@ -10,6 +12,7 @@ export type FunctionLike
     | t.FunctionExpression
     | t.ArrowFunctionExpression
     | t.ObjectMethod
+    | { type: string, [key: string]: any }
 
 type ExportTarget
   = | { type: 'local', localName: string }
@@ -23,12 +26,25 @@ type ImportBinding
 
 export interface ModuleAnalysis {
   id: string
-  ast: t.File
+  engine: AstEngineName
+  ast?: t.File
   wevuNamedHookLocals: Map<string, WevuPageFeatureFlag>
   wevuNamespaceLocals: Set<string>
   importedBindings: Map<string, ImportBinding>
   localFunctions: Map<string, FunctionLike>
   exports: Map<string, ExportTarget>
+}
+
+export function createEmptyModuleAnalysis(id: string, engine: AstEngineName): ModuleAnalysis {
+  return {
+    id,
+    engine,
+    wevuNamedHookLocals: new Map(),
+    wevuNamespaceLocals: new Set(),
+    importedBindings: new Map(),
+    localFunctions: new Map(),
+    exports: new Map(),
+  }
 }
 
 const externalModuleAnalysisCache = new LRUCache<
@@ -38,7 +54,18 @@ const externalModuleAnalysisCache = new LRUCache<
   max: 256,
 })
 
+const moduleAnalysisCache = new LRUCache<
+  string,
+  { code: string, analysis: ModuleAnalysis }
+>({
+  max: 512,
+})
+
 function createExternalModuleAnalysisCacheKey(moduleId: string, astEngine?: AstEngineName) {
+  return `${astEngine ?? 'babel'}::${moduleId}`
+}
+
+function createModuleAnalysisCacheKey(moduleId: string, astEngine?: AstEngineName) {
   return `${astEngine ?? 'babel'}::${moduleId}`
 }
 
@@ -189,7 +216,178 @@ export function createModuleAnalysis(id: string, ast: t.File): ModuleAnalysis {
 
   return {
     id,
+    engine: 'babel',
     ast,
+    wevuNamedHookLocals,
+    wevuNamespaceLocals,
+    importedBindings,
+    localFunctions,
+    exports,
+  }
+}
+
+function isOxcFunctionLike(node: any): node is FunctionLike {
+  return node?.type === 'FunctionDeclaration'
+    || node?.type === 'FunctionExpression'
+    || node?.type === 'ArrowFunctionExpression'
+}
+
+function getImportedSpecifierName(node: any) {
+  if (node?.type === 'Identifier') {
+    return node.name as string
+  }
+  if (
+    (node?.type === 'StringLiteral' || node?.type === 'Literal')
+    && typeof node.value === 'string'
+  ) {
+    return node.value as string
+  }
+  return undefined
+}
+
+function resolveOxcParseFilename(id: string) {
+  const extension = path.extname(id)
+  if (extension) {
+    return id
+  }
+  return `${id}.js`
+}
+
+function createModuleAnalysisWithOxc(id: string, code: string): ModuleAnalysis {
+  const ast = parseJsLikeWithEngine(code, {
+    engine: 'oxc',
+    filename: resolveOxcParseFilename(id),
+  }) as any
+  const localFunctions = new Map<string, FunctionLike>()
+  const exports = new Map<string, ExportTarget>()
+  const importedBindings = new Map<string, ImportBinding>()
+  const wevuNamedHookLocals = new Map<string, WevuPageFeatureFlag>()
+  const wevuNamespaceLocals = new Set<string>()
+
+  function registerFunctionDeclaration(node: any) {
+    if (node?.id?.type === 'Identifier') {
+      localFunctions.set(node.id.name, node)
+    }
+  }
+
+  function registerVariableFunction(node: any) {
+    if (node?.id?.type !== 'Identifier' || !isOxcFunctionLike(node.init)) {
+      return
+    }
+    localFunctions.set(node.id.name, node.init)
+  }
+
+  for (const stmt of ast.body ?? []) {
+    if (stmt?.type === 'FunctionDeclaration') {
+      registerFunctionDeclaration(stmt)
+      continue
+    }
+
+    if (stmt?.type === 'VariableDeclaration') {
+      for (const decl of stmt.declarations ?? []) {
+        registerVariableFunction(decl)
+      }
+      continue
+    }
+
+    if (stmt?.type === 'ImportDeclaration') {
+      const source = getImportedSpecifierName(stmt.source)
+      if (!source) {
+        continue
+      }
+      for (const specifier of stmt.specifiers ?? []) {
+        if (specifier.type === 'ImportSpecifier' && specifier.local?.type === 'Identifier') {
+          const importedName = getImportedSpecifierName(specifier.imported)
+          if (!importedName) {
+            continue
+          }
+          if (source === WE_VU_MODULE_ID) {
+            const matched = WE_VU_PAGE_HOOK_TO_FEATURE[importedName as WevuPageHookName]
+            if (matched) {
+              wevuNamedHookLocals.set(specifier.local.name, matched)
+            }
+          }
+          importedBindings.set(specifier.local.name, {
+            kind: 'named',
+            source,
+            importedName,
+          })
+        }
+        else if (specifier.type === 'ImportDefaultSpecifier' && specifier.local?.type === 'Identifier') {
+          importedBindings.set(specifier.local.name, { kind: 'default', source })
+        }
+        else if (specifier.type === 'ImportNamespaceSpecifier' && specifier.local?.type === 'Identifier') {
+          importedBindings.set(specifier.local.name, { kind: 'namespace', source })
+          if (source === WE_VU_MODULE_ID) {
+            wevuNamespaceLocals.add(specifier.local.name)
+          }
+        }
+      }
+      continue
+    }
+
+    if (stmt?.type === 'ExportNamedDeclaration') {
+      if (stmt.declaration?.type === 'FunctionDeclaration') {
+        registerFunctionDeclaration(stmt.declaration)
+        if (stmt.declaration.id?.type === 'Identifier') {
+          exports.set(stmt.declaration.id.name, { type: 'local', localName: stmt.declaration.id.name })
+        }
+        continue
+      }
+
+      if (stmt.declaration?.type === 'VariableDeclaration') {
+        for (const decl of stmt.declaration.declarations ?? []) {
+          registerVariableFunction(decl)
+          if (decl.id?.type === 'Identifier') {
+            exports.set(decl.id.name, { type: 'local', localName: decl.id.name })
+          }
+        }
+        continue
+      }
+
+      const source = getImportedSpecifierName(stmt.source)
+      for (const spec of stmt.specifiers ?? []) {
+        if (spec?.type !== 'ExportSpecifier') {
+          continue
+        }
+        const exportedName = getImportedSpecifierName(spec.exported)
+        const localName = getImportedSpecifierName(spec.local)
+        if (!exportedName || !localName) {
+          continue
+        }
+        if (source) {
+          exports.set(exportedName, { type: 'reexport', source, importedName: localName })
+        }
+        else {
+          exports.set(exportedName, { type: 'local', localName })
+        }
+      }
+      continue
+    }
+
+    if (stmt?.type === 'ExportDefaultDeclaration') {
+      const decl = stmt.declaration
+      if (decl?.type === 'FunctionDeclaration') {
+        registerFunctionDeclaration(decl)
+        if (decl.id?.type === 'Identifier') {
+          exports.set('default', { type: 'local', localName: decl.id.name })
+        }
+        else {
+          exports.set('default', { type: 'inline', node: decl })
+        }
+      }
+      else if (decl?.type === 'Identifier') {
+        exports.set('default', { type: 'local', localName: decl.name })
+      }
+      else if (isOxcFunctionLike(decl)) {
+        exports.set('default', { type: 'inline', node: decl })
+      }
+    }
+  }
+
+  return {
+    id,
+    engine: 'oxc',
     wevuNamedHookLocals,
     wevuNamespaceLocals,
     importedBindings,
@@ -201,14 +399,33 @@ export function createModuleAnalysis(id: string, ast: t.File): ModuleAnalysis {
 export function createModuleAnalysisFromCode(
   id: string,
   code: string,
-  _options?: {
+  options?: {
     astEngine?: AstEngineName
   },
 ) {
-  // 这里仍返回 Babel AST 驱动的分析结果；`astEngine` 目前用于统一入口与缓存维度，
-  // 后续若引入 Oxc 版结构化分析，可在此替换实现而不改调用方。
-  const ast = parseJsLike(code)
-  return createModuleAnalysis(id, ast)
+  const engine = options?.astEngine ?? 'babel'
+  const cacheKey = createModuleAnalysisCacheKey(id, engine)
+  const cached = moduleAnalysisCache.get(cacheKey)
+  if (cached && cached.code === code) {
+    return cached.analysis
+  }
+
+  let analysis: ModuleAnalysis
+  if (engine === 'oxc') {
+    if (!code.includes('import') && !code.includes('export')) {
+      analysis = createEmptyModuleAnalysis(id, 'oxc')
+    }
+    else {
+      analysis = createModuleAnalysisWithOxc(id, code)
+    }
+  }
+  else {
+    const ast = parseJsLike(code)
+    analysis = createModuleAnalysis(id, ast)
+  }
+
+  moduleAnalysisCache.set(cacheKey, { code, analysis })
+  return analysis
 }
 
 export function getOrCreateExternalModuleAnalysis(

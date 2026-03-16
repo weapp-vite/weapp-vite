@@ -3,7 +3,7 @@ import type { ModuleAnalysis } from './analysis'
 import type { ModuleResolver, WevuPageFeatureFlag } from './types'
 import { collectWevuPageFeatureFlagsFromCode } from '../../../ast/operations/pageFeatures'
 import { generate, parseJsLike } from '../../../utils/babel'
-import { collectTargetOptionsObjects, collectWevuFeaturesFromSetupReachableImports, getSetupFunctionFromOptionsObject } from './analysis'
+import { collectTargetOptionsObjects, collectTargetOptionsObjectsFromCode, collectWevuFeaturesFromSetupReachableImports, getSetupFunctionFromOptionsObject } from './analysis'
 import { injectWevuPageFeatureFlagsIntoOptionsObject } from './flags'
 
 /**
@@ -46,8 +46,15 @@ export async function injectWevuPageFeaturesInJsWithResolver(
   source: string,
   options: { id: string, resolver: ModuleResolver, astEngine?: AstEngineName },
 ): Promise<{ code: string, transformed: boolean }> {
+  const preflight = collectTargetOptionsObjectsFromCode(source, options.id, {
+    astEngine: options.astEngine,
+  })
+  if (!preflight.optionsObjects.length) {
+    return { code: source, transformed: false }
+  }
+
   const ast = parseJsLike(source)
-  const { optionsObjects, module } = collectTargetOptionsObjects(ast, options.id)
+  const { optionsObjects } = collectTargetOptionsObjects(ast, options.id)
   if (!optionsObjects.length) {
     return { code: source, transformed: false }
   }
@@ -58,14 +65,14 @@ export async function injectWevuPageFeaturesInJsWithResolver(
   }
 
   const moduleCache = new Map<string, ModuleAnalysis>()
-  moduleCache.set(options.id, module)
+  moduleCache.set(options.id, preflight.module)
 
   for (const optionsObject of optionsObjects) {
     const setupFn = getSetupFunctionFromOptionsObject(optionsObject)
     if (!setupFn) {
       continue
     }
-    const fromImports = await collectWevuFeaturesFromSetupReachableImports(module, setupFn, options.resolver, moduleCache, {
+    const fromImports = await collectWevuFeaturesFromSetupReachableImports(preflight.module, setupFn, options.resolver, moduleCache, {
       astEngine: options.astEngine,
     })
     for (const flag of fromImports) {

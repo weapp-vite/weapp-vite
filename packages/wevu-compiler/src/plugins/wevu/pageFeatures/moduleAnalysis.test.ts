@@ -62,12 +62,25 @@ export default function defaultFn() {}
   })
 
   it('creates module analysis from source with ast engine option and keeps cache isolated by engine', () => {
-    const source = `export function useA() {}`
+    const source = `
+import { onPageScroll as onScroll } from 'wevu'
+export function useA() {
+  onScroll()
+}
+    `.trim()
     const fromCode = createModuleAnalysisFromCode('/project/src/page.ts', source, {
       astEngine: 'oxc',
     })
 
     expect(fromCode.id).toBe('/project/src/page.ts')
+    expect(fromCode.engine).toBe('oxc')
+    expect(fromCode.ast).toBeUndefined()
+    expect(fromCode.wevuNamedHookLocals.get('onScroll')).toBe('enableOnPageScroll')
+    expect(fromCode.localFunctions.has('useA')).toBe(true)
+    expect(fromCode.exports.get('useA')).toMatchObject({
+      type: 'local',
+      localName: 'useA',
+    })
 
     const babelCached = getOrCreateExternalModuleAnalysis('/virtual/a.ts', source, {
       astEngine: 'babel',
@@ -77,5 +90,46 @@ export default function defaultFn() {}
     })
 
     expect(babelCached).not.toBe(oxcCached)
+  })
+
+  it('fast rejects source without module syntax when ast engine is oxc', () => {
+    const source = `
+const count = 1
+function localOnly() {
+  return count
+}
+    `.trim()
+
+    const result = createModuleAnalysisFromCode('/project/src/local.ts', source, {
+      astEngine: 'oxc',
+    })
+
+    expect(result.engine).toBe('oxc')
+    expect(result.ast).toBeUndefined()
+    expect(result.importedBindings.size).toBe(0)
+    expect(result.localFunctions.size).toBe(0)
+    expect(result.exports.size).toBe(0)
+  })
+
+  it('reuses createModuleAnalysisFromCode cache for identical source and engine', () => {
+    const source = `
+import { onPageScroll } from 'wevu'
+export function usePage() {
+  onPageScroll()
+}
+    `.trim()
+
+    const a = createModuleAnalysisFromCode('/project/src/page.ts', source, {
+      astEngine: 'oxc',
+    })
+    const b = createModuleAnalysisFromCode('/project/src/page.ts', source, {
+      astEngine: 'oxc',
+    })
+    const babel = createModuleAnalysisFromCode('/project/src/page.ts', source, {
+      astEngine: 'babel',
+    })
+
+    expect(a).toBe(b)
+    expect(a).not.toBe(babel)
   })
 })

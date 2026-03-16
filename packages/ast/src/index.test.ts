@@ -257,6 +257,41 @@ onScroll(() => {
     expect(warnings[1]).toContain('wx.getStorageSync')
   })
 
+  it('keeps onPageScroll warnings aligned across engines', () => {
+    const source = `import * as wevu from 'wevu'
+
+const page = {
+  onPageScroll() {
+    this.setData({ top: 1 })
+    wx.getStorageSync('k')
+  },
+}
+
+wevu.onPageScroll?.(() => {})`
+
+    const babelWarnings = collectOnPageScrollPerformanceWarnings(source, '/src/pages/index.ts', { engine: 'babel' })
+    const oxcWarnings = collectOnPageScrollPerformanceWarnings(source, '/src/pages/index.ts', { engine: 'oxc' })
+    const normalize = (warning: string) => warning.replace(/^.*?:\d+:\d+\s/, '')
+
+    expect(oxcWarnings.map(normalize)).toEqual(babelWarnings.map(normalize))
+  })
+
+  it('ignores nested function body calls in onPageScroll inspection across engines', () => {
+    const source = `import { onPageScroll } from 'wevu'
+
+onPageScroll(() => {
+  const run = () => {
+    this.setData({ top: 1 })
+    wx.getStorageSync('k')
+  }
+
+  return run
+})`
+
+    expect(collectOnPageScrollPerformanceWarnings(source, '/src/pages/index.ts', { engine: 'babel' })).toEqual([])
+    expect(collectOnPageScrollPerformanceWarnings(source, '/src/pages/index.ts', { engine: 'oxc' })).toEqual([])
+  })
+
   it('collects setData pick keys across engine options', () => {
     const template = `
 <view wx:for="{{ list }}" wx:for-item="row" wx:for-index="i">
@@ -268,5 +303,14 @@ onScroll(() => {
 
     expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'babel' })).toEqual(['__wv_bind_0', 'count', 'list'])
     expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'oxc' })).toEqual(['__wv_bind_0', 'count', 'list'])
+  })
+
+  it('keeps setData pick scope analysis aligned across engines', () => {
+    const template = `
+<text>{{ list.map((item, index) => item.name + index + count + this.extra) }}</text>
+    `.trim()
+
+    expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'babel' })).toEqual(['count', 'extra', 'list'])
+    expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'oxc' })).toEqual(['count', 'extra', 'list'])
   })
 })

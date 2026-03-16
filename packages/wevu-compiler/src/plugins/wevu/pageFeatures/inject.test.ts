@@ -96,4 +96,30 @@ defineComponent({
     expect(result.transformed).toBe(true)
     expect(result.code).toContain('enableOnReachBottom')
   })
+
+  it('fast rejects unrelated files with resolver when ast engine is oxc', async () => {
+    const source = `
+import { ref } from 'vue'
+
+export function useStore() {
+  return ref(1)
+}
+    `.trim()
+
+    const result = await injectWevuPageFeaturesInJsWithResolver(source, {
+      id: '/project/src/store.ts',
+      astEngine: 'oxc',
+      resolver: {
+        async resolveId() {
+          return undefined
+        },
+        async loadCode() {
+          return undefined
+        },
+      },
+    })
+
+    expect(result.transformed).toBe(false)
+    expect(result.code).toBe(source)
+  })
 })
