@@ -1,6 +1,6 @@
 # 04 抖音兼容矩阵（按微信命名）
 
-总计：479，支持：133，不支持：346
+总计：481，支持：133，不支持：348
 
 | 微信 API                                      | 抖音目标 API                                  | 支持 | 支持级别      | 语义对齐 | 策略                                                                              |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | --------------------------------------------------------------------------------- |
@@ -241,13 +241,14 @@
 | `offMenuButtonBoundingClientRectWeightChange` | `offMenuButtonBoundingClientRectWeightChange` | ❌   | `unsupported` | ❌       | 未提供 tt.offMenuButtonBoundingClientRectWeightChange，调用时将返回 not supported |
 | `offNetworkStatusChange`                      | `offNetworkStatusChange`                      | ✅   | `native`      | ✅       | 直连 `tt.offNetworkStatusChange`                                                  |
 | `offNetworkWeakChange`                        | `offNetworkWeakChange`                        | ❌   | `unsupported` | ❌       | 未提供 tt.offNetworkWeakChange，调用时将返回 not supported                        |
-| `offOnUserTriggerTranslation`                 | `offOnUserTriggerTranslation`                 | ❌   | `unsupported` | ❌       | 未提供 tt.offOnUserTriggerTranslation，调用时将返回 not supported                 |
 | `offPageNotFound`                             | `offPageNotFound`                             | ✅   | `native`      | ✅       | 直连 `tt.offPageNotFound`                                                         |
 | `offParallelStateChange`                      | `offParallelStateChange`                      | ❌   | `unsupported` | ❌       | 未提供 tt.offParallelStateChange，调用时将返回 not supported                      |
 | `offScreenRecordingStateChanged`              | `offScreenRecordingStateChanged`              | ❌   | `unsupported` | ❌       | 未提供 tt.offScreenRecordingStateChanged，调用时将返回 not supported              |
 | `offThemeChange`                              | `offThemeChange`                              | ❌   | `unsupported` | ❌       | 未提供 tt.offThemeChange，调用时将返回 not supported                              |
 | `offUnhandledRejection`                       | `offUnhandledRejection`                       | ✅   | `native`      | ✅       | 直连 `tt.offUnhandledRejection`                                                   |
 | `offUserCaptureScreen`                        | `offUserCaptureScreen`                        | ✅   | `native`      | ✅       | 直连 `tt.offUserCaptureScreen`                                                    |
+| `offUserOffTranslation`                       | `offUserOffTranslation`                       | ❌   | `unsupported` | ❌       | 未提供 tt.offUserOffTranslation，调用时将返回 not supported                       |
+| `offUserTriggerTranslation`                   | `offUserTriggerTranslation`                   | ❌   | `unsupported` | ❌       | 未提供 tt.offUserTriggerTranslation，调用时将返回 not supported                   |
 | `offVoIPChatInterrupted`                      | `offVoIPChatInterrupted`                      | ❌   | `unsupported` | ❌       | 未提供 tt.offVoIPChatInterrupted，调用时将返回 not supported                      |
 | `offVoIPChatMembersChanged`                   | `offVoIPChatMembersChanged`                   | ❌   | `unsupported` | ❌       | 未提供 tt.offVoIPChatMembersChanged，调用时将返回 not supported                   |
 | `offVoIPChatSpeakersChanged`                  | `offVoIPChatSpeakersChanged`                  | ❌   | `unsupported` | ❌       | 未提供 tt.offVoIPChatSpeakersChanged，调用时将返回 not supported                  |
@@ -307,7 +308,6 @@
 | `onNeedPrivacyAuthorization`                  | `onNeedPrivacyAuthorization`                  | ❌   | `unsupported` | ❌       | 未提供 tt.onNeedPrivacyAuthorization，调用时将返回 not supported                  |
 | `onNetworkStatusChange`                       | `onNetworkStatusChange`                       | ✅   | `native`      | ✅       | 直连 `tt.onNetworkStatusChange`                                                   |
 | `onNetworkWeakChange`                         | `onNetworkWeakChange`                         | ❌   | `unsupported` | ❌       | 未提供 tt.onNetworkWeakChange，调用时将返回 not supported                         |
-| `onOnUserTriggerTranslation`                  | `onOnUserTriggerTranslation`                  | ❌   | `unsupported` | ❌       | 未提供 tt.onOnUserTriggerTranslation，调用时将返回 not supported                  |
 | `onPageNotFound`                              | `onPageNotFound`                              | ✅   | `native`      | ✅       | 直连 `tt.onPageNotFound`                                                          |
 | `onParallelStateChange`                       | `onParallelStateChange`                       | ❌   | `unsupported` | ❌       | 未提供 tt.onParallelStateChange，调用时将返回 not supported                       |
 | `onScreenRecordingStateChanged`               | `onScreenRecordingStateChanged`               | ❌   | `unsupported` | ❌       | 未提供 tt.onScreenRecordingStateChanged，调用时将返回 not supported               |
@@ -318,6 +318,8 @@
 | `onThemeChange`                               | `onThemeChange`                               | ❌   | `unsupported` | ❌       | 未提供 tt.onThemeChange，调用时将返回 not supported                               |
 | `onUnhandledRejection`                        | `onUnhandledRejection`                        | ✅   | `native`      | ✅       | 直连 `tt.onUnhandledRejection`                                                    |
 | `onUserCaptureScreen`                         | `onUserCaptureScreen`                         | ✅   | `native`      | ✅       | 直连 `tt.onUserCaptureScreen`                                                     |
+| `onUserOffTranslation`                        | `onUserOffTranslation`                        | ❌   | `unsupported` | ❌       | 未提供 tt.onUserOffTranslation，调用时将返回 not supported                        |
+| `onUserTriggerTranslation`                    | `onUserTriggerTranslation`                    | ❌   | `unsupported` | ❌       | 未提供 tt.onUserTriggerTranslation，调用时将返回 not supported                    |
 | `onVoIPChatInterrupted`                       | `onVoIPChatInterrupted`                       | ❌   | `unsupported` | ❌       | 未提供 tt.onVoIPChatInterrupted，调用时将返回 not supported                       |
 | `onVoIPChatMembersChanged`                    | `onVoIPChatMembersChanged`                    | ❌   | `unsupported` | ❌       | 未提供 tt.onVoIPChatMembersChanged，调用时将返回 not supported                    |
 | `onVoIPChatSpeakersChanged`                   | `onVoIPChatSpeakersChanged`                   | ❌   | `unsupported` | ❌       | 未提供 tt.onVoIPChatSpeakersChanged，调用时将返回 not supported                   |
