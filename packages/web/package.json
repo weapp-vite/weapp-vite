@@ -50,7 +50,7 @@
   "scripts": {
     "dev": "tsdown -w --sourcemap",
     "build:watch": "tsdown -w --sourcemap",
-    "build": "tsdown --no-dts && tsc -p tsconfig.build.json",
+    "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
     "typecheck": "tsc --noEmit"
