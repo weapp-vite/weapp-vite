@@ -1,4 +1,4 @@
-import babel from '@babel/core'
+import babel from '@weapp-vite/ast/babelCore'
 import * as t from '@weapp-vite/ast/babelTypes'
 import { normalizeWxsFilename } from './utils'
 

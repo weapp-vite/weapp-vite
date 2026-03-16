@@ -4,6 +4,7 @@ export default defineConfig({
   entry: [
     './src/index.ts',
     './src/babel.ts',
+    './src/babelCore.ts',
     './src/babelTraverse.ts',
     './src/babelTypes.ts',
     './src/babelNodes.ts',

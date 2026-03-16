@@ -39,7 +39,7 @@ export default defineConfig({
     '@swc/core',
     // Babel 相关包 - 只在开发时使用，不需要打包
     '@weapp-vite/ast/babel',
-    '@babel/core',
+    '@weapp-vite/ast/babelCore',
     '@weapp-vite/ast/babel',
     '@weapp-vite/ast/babelTraverse',
     '@weapp-vite/ast/babelTypes',
