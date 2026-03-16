@@ -33,8 +33,8 @@
   },
   "scripts": {
     "catalog:sync": "node --import tsx scripts/generate-template-catalog.ts",
-    "dev": "tsup --watch --sourcemap",
-    "build": "tsup",
+    "dev": "tsdown -w --sourcemap",
+    "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
     "typecheck": "tsc --noEmit",
