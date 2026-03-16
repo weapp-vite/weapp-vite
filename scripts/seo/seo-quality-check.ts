@@ -1,5 +1,8 @@
+import path from 'node:path'
 import process from 'node:process'
+import { execFileSync } from 'node:child_process'
 import { collectMarkdownPaths, isPartialDocument } from './frontmatter'
+import { repoRoot, websiteRoot } from './constants'
 import { summarizeQuality } from './metadata'
 import { collectDocuments, pickQualityIssueCounts } from './report'
 
@@ -7,10 +10,44 @@ function hasFlag(flag: string) {
   return process.argv.includes(flag)
 }
 
+function readOption(name: string) {
+  const flag = `--${name}`
+  const index = process.argv.indexOf(flag)
+  if (index === -1) {
+    return
+  }
+
+  return process.argv[index + 1]
+}
+
+function getChangedMarkdownPaths(baseRef: string) {
+  const output = execFileSync(
+    'git',
+    ['diff', '--name-only', '--diff-filter=ACMR', `${baseRef}...HEAD`, '--', 'website'],
+    {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    },
+  )
+
+  return output
+    .split(/\r?\n/)
+    .map(item => item.trim())
+    .filter(Boolean)
+    .filter(item => item.endsWith('.md') || item.endsWith('.mdx'))
+    .map((item) => {
+      const absolutePath = path.resolve(repoRoot, item)
+      return path.relative(websiteRoot, absolutePath).replace(/\\/g, '/')
+    })
+    .filter(item => !item.startsWith('..') && item.length > 0)
+    .sort((a, b) => a.localeCompare(b))
+}
+
 async function main() {
   const strict = hasFlag('--strict')
+  const diffBase = readOption('git-diff-base')
 
-  const paths = await collectMarkdownPaths()
+  const paths = diffBase ? getChangedMarkdownPaths(diffBase) : await collectMarkdownPaths()
   const targets = paths.filter(relativePath => !isPartialDocument(relativePath))
   const documents = await collectDocuments(targets)
 
