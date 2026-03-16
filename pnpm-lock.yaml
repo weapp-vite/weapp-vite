@@ -1256,6 +1256,9 @@ importers:
 
   packages/ast:
     dependencies:
+      '@babel/core':
+        specifier: 'catalog:'
+        version: 7.29.0
       '@babel/generator':
         specifier: 'catalog:'
         version: 7.29.1
@@ -1370,21 +1373,6 @@ importers:
 
   packages/weapp-vite:
     dependencies:
-      '@babel/core':
-        specifier: 'catalog:'
-        version: 7.29.0
-      '@babel/generator':
-        specifier: 'catalog:'
-        version: 7.29.1
-      '@babel/parser':
-        specifier: 'catalog:'
-        version: 7.29.0
-      '@babel/traverse':
-        specifier: 'catalog:'
-        version: 7.29.0
-      '@babel/types':
-        specifier: 'catalog:'
-        version: 7.29.0
       '@volar/typescript':
         specifier: ^2.4.28
         version: 2.4.28
@@ -1436,12 +1424,6 @@ importers:
       magic-string:
         specifier: 'catalog:'
         version: 0.30.21
-      oxc-parser:
-        specifier: ^0.119.0
-        version: 0.119.0
-      oxc-walker:
-        specifier: ^0.7.0
-        version: 0.7.0(oxc-parser@0.119.0)
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
@@ -1485,9 +1467,6 @@ importers:
         specifier: workspace:*
         version: link:../wevu
     devDependencies:
-      '@oxc-project/types':
-        specifier: ^0.119.0
-        version: 0.119.0
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.2.1(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
@@ -1527,6 +1506,12 @@ importers:
       lru-cache:
         specifier: 'catalog:'
         version: 11.2.7
+      oxc-parser:
+        specifier: ^0.119.0
+        version: 0.119.0
+      oxc-walker:
+        specifier: ^0.7.0
+        version: 0.7.0(oxc-parser@0.119.0)
       p-queue:
         specifier: ^9.1.0
         version: 9.1.0
@@ -1599,18 +1584,6 @@ importers:
 
   packages/wevu-compiler:
     dependencies:
-      '@babel/generator':
-        specifier: 'catalog:'
-        version: 7.29.1
-      '@babel/parser':
-        specifier: 'catalog:'
-        version: 7.29.0
-      '@babel/traverse':
-        specifier: 'catalog:'
-        version: 7.29.0
-      '@babel/types':
-        specifier: 'catalog:'
-        version: 7.29.0
       '@vue/compiler-core':
         specifier: 'catalog:'
         version: 3.5.30
@@ -1635,12 +1608,6 @@ importers:
       merge:
         specifier: 'catalog:'
         version: 2.1.1
-      oxc-parser:
-        specifier: ^0.119.0
-        version: 0.119.0
-      oxc-walker:
-        specifier: ^0.7.0
-        version: 0.7.0(oxc-parser@0.119.0)
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
