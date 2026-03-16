@@ -161,7 +161,6 @@
     "oxc-walker": "^0.7.0",
     "resolve.exports": "^2.0.3",
     "tailwindcss": "catalog:tailwind4",
-    "ts-morph": "catalog:",
-    "vue": "^3.5.26"
+    "ts-morph": "catalog:"
   }
 }
