@@ -5,7 +5,7 @@ export default defineConfig({
   shims: true,
   format: ['esm', 'cjs'],
   clean: true,
-  dts: true,
+  dts: false,
   outExtensions({ format }) {
     return {
       js: `.${format === 'es' ? 'mjs' : 'cjs'}`,
