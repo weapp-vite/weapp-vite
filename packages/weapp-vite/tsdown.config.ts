@@ -28,9 +28,6 @@ export default defineConfig({
   deps: {
     onlyBundle: false,
     neverBundle: [
-      '@modelcontextprotocol/sdk',
-      '@modelcontextprotocol/sdk/server/streamableHttp.js',
-      '@modelcontextprotocol/sdk/types.js',
       '@swc/core',
       '@weapp-vite/ast',
       '@weapp-vite/ast/babel',
