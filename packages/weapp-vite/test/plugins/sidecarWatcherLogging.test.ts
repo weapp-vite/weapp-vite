@@ -55,6 +55,7 @@ function createContext(rootDir: string): CompilerContext {
 
 describe('ensureSidecarWatcher logging', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
     chokidarHandlers.clear()
     watcherMock.on.mockClear()
     watcherMock.close.mockClear()
@@ -64,6 +65,7 @@ describe('ensureSidecarWatcher logging', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     process.env.NODE_ENV = originalNodeEnv
     if (originalVitest === undefined) {
       delete process.env.VITEST
@@ -133,15 +135,19 @@ describe('ensureSidecarWatcher logging', () => {
       expect(rawHandler).toBeTypeOf('function')
 
       const relativeTarget = 'foo.wxss'
+      const addHandler = chokidarHandlers.get('add')
 
       infoSpy.mockClear()
       renameExists = true
       rawHandler?.('rename', relativeTarget)
+      await vi.advanceTimersByTimeAsync(120)
       expect(infoSpy).toHaveBeenCalledWith('[watch:rename->create] foo.wxss')
 
       infoSpy.mockClear()
+      addHandler?.(renameAbsolute)
       renameExists = false
       rawHandler?.('rename', relativeTarget)
+      await vi.advanceTimersByTimeAsync(120)
       expect(infoSpy).toHaveBeenCalledWith('[watch:rename->delete] foo.wxss')
     }
     finally {

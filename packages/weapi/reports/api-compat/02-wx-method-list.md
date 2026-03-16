@@ -1,6 +1,6 @@
 # 02 微信基准 API 全量清单
 
-总计：479
+总计：481
 
 - `addCard`
 - `addFileToFavorites`
@@ -239,13 +239,14 @@
 - `offMenuButtonBoundingClientRectWeightChange`
 - `offNetworkStatusChange`
 - `offNetworkWeakChange`
-- `offOnUserTriggerTranslation`
 - `offPageNotFound`
 - `offParallelStateChange`
 - `offScreenRecordingStateChanged`
 - `offThemeChange`
 - `offUnhandledRejection`
 - `offUserCaptureScreen`
+- `offUserOffTranslation`
+- `offUserTriggerTranslation`
 - `offVoIPChatInterrupted`
 - `offVoIPChatMembersChanged`
 - `offVoIPChatSpeakersChanged`
@@ -305,7 +306,6 @@
 - `onNeedPrivacyAuthorization`
 - `onNetworkStatusChange`
 - `onNetworkWeakChange`
-- `onOnUserTriggerTranslation`
 - `onPageNotFound`
 - `onParallelStateChange`
 - `onScreenRecordingStateChanged`
@@ -316,6 +316,8 @@
 - `onThemeChange`
 - `onUnhandledRejection`
 - `onUserCaptureScreen`
+- `onUserOffTranslation`
+- `onUserTriggerTranslation`
 - `onVoIPChatInterrupted`
 - `onVoIPChatMembersChanged`
 - `onVoIPChatSpeakersChanged`

@@ -1,6 +1,6 @@
 # 03 支付宝兼容矩阵（按微信命名）
 
-总计：479，支持：201，不支持：278
+总计：481，支持：201，不支持：280
 
 | 微信 API                                      | 支付宝目标 API                                | 支持 | 支持级别      | 语义对齐 | 策略                                                                                                          |
 | --------------------------------------------- | --------------------------------------------- | ---- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
@@ -241,13 +241,14 @@
 | `offMenuButtonBoundingClientRectWeightChange` | `offMenuButtonBoundingClientRectWeightChange` | ❌   | `unsupported` | ❌       | 未提供 my.offMenuButtonBoundingClientRectWeightChange，调用时将返回 not supported                             |
 | `offNetworkStatusChange`                      | `offNetworkStatusChange`                      | ✅   | `native`      | ✅       | 直连 `my.offNetworkStatusChange`                                                                              |
 | `offNetworkWeakChange`                        | `offNetworkWeakChange`                        | ❌   | `unsupported` | ❌       | 未提供 my.offNetworkWeakChange，调用时将返回 not supported                                                    |
-| `offOnUserTriggerTranslation`                 | `offOnUserTriggerTranslation`                 | ❌   | `unsupported` | ❌       | 未提供 my.offOnUserTriggerTranslation，调用时将返回 not supported                                             |
 | `offPageNotFound`                             | `offPageNotFound`                             | ✅   | `native`      | ✅       | 直连 `my.offPageNotFound`                                                                                     |
 | `offParallelStateChange`                      | `offParallelStateChange`                      | ❌   | `unsupported` | ❌       | 未提供 my.offParallelStateChange，调用时将返回 not supported                                                  |
 | `offScreenRecordingStateChanged`              | `offScreenRecordingStateChanged`              | ❌   | `unsupported` | ❌       | 未提供 my.offScreenRecordingStateChanged，调用时将返回 not supported                                          |
 | `offThemeChange`                              | `offThemeChange`                              | ❌   | `unsupported` | ❌       | 未提供 my.offThemeChange，调用时将返回 not supported                                                          |
 | `offUnhandledRejection`                       | `offUnhandledRejection`                       | ✅   | `native`      | ✅       | 直连 `my.offUnhandledRejection`                                                                               |
 | `offUserCaptureScreen`                        | `offUserCaptureScreen`                        | ✅   | `native`      | ✅       | 直连 `my.offUserCaptureScreen`                                                                                |
+| `offUserOffTranslation`                       | `offUserOffTranslation`                       | ❌   | `unsupported` | ❌       | 未提供 my.offUserOffTranslation，调用时将返回 not supported                                                   |
+| `offUserTriggerTranslation`                   | `offUserTriggerTranslation`                   | ❌   | `unsupported` | ❌       | 未提供 my.offUserTriggerTranslation，调用时将返回 not supported                                               |
 | `offVoIPChatInterrupted`                      | `offVoIPChatInterrupted`                      | ❌   | `unsupported` | ❌       | 未提供 my.offVoIPChatInterrupted，调用时将返回 not supported                                                  |
 | `offVoIPChatMembersChanged`                   | `offVoIPChatMembersChanged`                   | ❌   | `unsupported` | ❌       | 未提供 my.offVoIPChatMembersChanged，调用时将返回 not supported                                               |
 | `offVoIPChatSpeakersChanged`                  | `offVoIPChatSpeakersChanged`                  | ❌   | `unsupported` | ❌       | 未提供 my.offVoIPChatSpeakersChanged，调用时将返回 not supported                                              |
@@ -307,7 +308,6 @@
 | `onNeedPrivacyAuthorization`                  | `onNeedPrivacyAuthorization`                  | ❌   | `unsupported` | ❌       | 未提供 my.onNeedPrivacyAuthorization，调用时将返回 not supported                                              |
 | `onNetworkStatusChange`                       | `onNetworkStatusChange`                       | ✅   | `native`      | ✅       | 直连 `my.onNetworkStatusChange`                                                                               |
 | `onNetworkWeakChange`                         | `onNetworkWeakChange`                         | ❌   | `unsupported` | ❌       | 未提供 my.onNetworkWeakChange，调用时将返回 not supported                                                     |
-| `onOnUserTriggerTranslation`                  | `onOnUserTriggerTranslation`                  | ❌   | `unsupported` | ❌       | 未提供 my.onOnUserTriggerTranslation，调用时将返回 not supported                                              |
 | `onPageNotFound`                              | `onPageNotFound`                              | ✅   | `native`      | ✅       | 直连 `my.onPageNotFound`                                                                                      |
 | `onParallelStateChange`                       | `onParallelStateChange`                       | ❌   | `unsupported` | ❌       | 未提供 my.onParallelStateChange，调用时将返回 not supported                                                   |
 | `onScreenRecordingStateChanged`               | `onScreenRecordingStateChanged`               | ❌   | `unsupported` | ❌       | 未提供 my.onScreenRecordingStateChanged，调用时将返回 not supported                                           |
@@ -318,6 +318,8 @@
 | `onThemeChange`                               | `onThemeChange`                               | ❌   | `unsupported` | ❌       | 未提供 my.onThemeChange，调用时将返回 not supported                                                           |
 | `onUnhandledRejection`                        | `onUnhandledRejection`                        | ✅   | `native`      | ✅       | 直连 `my.onUnhandledRejection`                                                                                |
 | `onUserCaptureScreen`                         | `onUserCaptureScreen`                         | ✅   | `native`      | ✅       | 直连 `my.onUserCaptureScreen`                                                                                 |
+| `onUserOffTranslation`                        | `onUserOffTranslation`                        | ❌   | `unsupported` | ❌       | 未提供 my.onUserOffTranslation，调用时将返回 not supported                                                    |
+| `onUserTriggerTranslation`                    | `onUserTriggerTranslation`                    | ❌   | `unsupported` | ❌       | 未提供 my.onUserTriggerTranslation，调用时将返回 not supported                                                |
 | `onVoIPChatInterrupted`                       | `onVoIPChatInterrupted`                       | ❌   | `unsupported` | ❌       | 未提供 my.onVoIPChatInterrupted，调用时将返回 not supported                                                   |
 | `onVoIPChatMembersChanged`                    | `onVoIPChatMembersChanged`                    | ❌   | `unsupported` | ❌       | 未提供 my.onVoIPChatMembersChanged，调用时将返回 not supported                                                |
 | `onVoIPChatSpeakersChanged`                   | `onVoIPChatSpeakersChanged`                   | ❌   | `unsupported` | ❌       | 未提供 my.onVoIPChatSpeakersChanged，调用时将返回 not supported                                               |
