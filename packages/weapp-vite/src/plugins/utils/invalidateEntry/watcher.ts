@@ -33,6 +33,9 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
   }
 
   let isReady = false
+  const knownSidecarFiles = new Set<string>()
+  const renameTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  const RENAME_SETTLE_MS = 120
 
   const handleSidecarChange = (event: ChangeEvent, filePath: string, ready: boolean) => {
     if (!isSidecarFile(filePath)) {
@@ -86,6 +89,12 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
       return
     }
     const normalizedPath = path.normalize(input)
+    if (event === 'create' || event === 'update') {
+      knownSidecarFiles.add(normalizedPath)
+    }
+    else if (event === 'delete') {
+      knownSidecarFiles.delete(normalizedPath)
+    }
     if (!options?.silent) {
       logger.info(`[watch:${event}] ${ctx.configService.relativeCwd(normalizedPath)}`)
     }
@@ -117,11 +126,42 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
     if (ignoredMatcher(resolved)) {
       return
     }
-    const exists = fs.existsSync(resolved)
-    const derivedEvent: ChangeEvent = exists ? 'create' : 'delete'
-    const relativeResolved = ctx.configService.relativeCwd(resolved)
-    logger.info(`[watch:rename->${derivedEvent}] ${relativeResolved}`)
-    forwardChange(derivedEvent, resolved, { silent: true })
+    const pending = renameTimers.get(resolved)
+    if (pending) {
+      clearTimeout(pending)
+    }
+
+    renameTimers.set(resolved, setTimeout(() => {
+      renameTimers.delete(resolved)
+
+      const exists = fs.existsSync(resolved)
+      const wasKnown = knownSidecarFiles.has(resolved)
+      let derivedEvent: ChangeEvent | undefined
+
+      if (exists) {
+        derivedEvent = wasKnown ? 'update' : 'create'
+        knownSidecarFiles.add(resolved)
+      }
+      else if (wasKnown) {
+        derivedEvent = 'delete'
+        knownSidecarFiles.delete(resolved)
+      }
+
+      if (!derivedEvent) {
+        return
+      }
+
+      const relativeResolved = ctx.configService.relativeCwd(resolved)
+      logger.info(`[watch:rename->${derivedEvent}] ${relativeResolved}`)
+
+      if (derivedEvent === 'update') {
+        handleSidecarChange('update', resolved, true)
+        void invalidateEntryForSidecar(ctx, resolved, 'update')
+        return
+      }
+
+      forwardChange(derivedEvent, resolved, { silent: true })
+    }, RENAME_SETTLE_MS))
   })
 
   watcher.on('ready', () => {
@@ -138,7 +178,13 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
   })
 
   sidecarWatcherMap.set(absRoot, {
-    close: () => void watcher.close(),
+    close: () => {
+      for (const timer of renameTimers.values()) {
+        clearTimeout(timer)
+      }
+      renameTimers.clear()
+      return watcher.close()
+    },
   })
 }
 
