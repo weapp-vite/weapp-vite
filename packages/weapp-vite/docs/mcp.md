@@ -2,7 +2,7 @@
 
 ## 1. 能力概览
 
-`weapp-vite` 现在内置了对 `@weapp-vite/mcp` 的集成，支持直接通过 `weapp-vite mcp` 启动 MCP Server（`stdio` 传输）。
+`weapp-vite` 现在内置了对 `weapp-vite/mcp` 的集成，支持直接通过 `weapp-vite mcp` 启动 MCP Server（`stdio` 传输）。
 
 这个 MCP Server 主要面向 AI 编程助手，暴露了 `weapp-vite / wevu / wevu-compiler` 的关键研发能力：
 
@@ -87,17 +87,30 @@ await startWeappViteMcpServer({
 })
 ```
 
-如果你需要自定义生命周期，可以使用 `createWeappViteMcpServer`：
+如果你需要自定义生命周期，继续通过 `weapp-vite/mcp` 即可：
 
 ```ts
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { createWeappViteMcpServer } from 'weapp-vite/mcp'
+import { startStdioServer } from 'weapp-vite/mcp'
 
-const { server } = await createWeappViteMcpServer({
+await startStdioServer({
   workspaceRoot: process.cwd(),
 })
+```
 
-await server.connect(new StdioServerTransport())
+如果你需要手动控制 `stdio` / `streamable-http` 两种 transport，也可以直接调用：
+
+```ts
+import { startWeappViteMcpServer } from 'weapp-vite/mcp'
+
+const handle = await startWeappViteMcpServer({
+  workspaceRoot: process.cwd(),
+  transport: 'streamable-http',
+  host: '127.0.0.1',
+  port: 3088,
+  endpoint: '/mcp',
+})
+
+await handle.close?.()
 ```
 
 ## 3. 客户端接入示例

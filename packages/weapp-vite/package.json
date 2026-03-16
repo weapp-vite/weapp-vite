@@ -101,7 +101,6 @@
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.27.1",
     "@volar/typescript": "^2.4.28",
     "@vue/compiler-core": "catalog:",
     "@vue/language-core": "catalog:",

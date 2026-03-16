@@ -11,12 +11,28 @@
 - 文档/变更记录资源暴露
 - 调试/改造提示词模板
 
-默认通过 `stdio` 运行，适合接入任意 MCP Client。
+默认通过 `stdio` 运行，适合接入任意 MCP Client，也支持 `streamable-http`。
 
 ## 启动
 
 ```bash
 pnpm --filter @weapp-vite/mcp start
+```
+
+也可以在 Node 脚本里直接调用：
+
+```ts
+import { startWeappViteMcpServer } from '@weapp-vite/mcp'
+
+const handle = await startWeappViteMcpServer({
+  workspaceRoot: process.cwd(),
+  transport: 'streamable-http',
+  host: '127.0.0.1',
+  port: 3088,
+  endpoint: '/mcp',
+})
+
+await handle.close?.()
 ```
 
 ## 主要 Tools
