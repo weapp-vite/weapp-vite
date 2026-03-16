@@ -550,7 +550,11 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1
 
-  '@weapp-core/schematics': {}
+  '@weapp-core/schematics':
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
 
   '@weapp-core/shared':
     dependencies:
@@ -1445,6 +1449,12 @@ importers:
       '@wevu/api':
         specifier: workspace:*
         version: link:../weapi
+      cac:
+        specifier: ^7.0.0
+        version: 7.0.0
+      chokidar:
+        specifier: ^5.0.0
+        version: 5.0.0
       comment-json:
         specifier: 'catalog:'
         version: 4.6.2
@@ -1457,9 +1467,21 @@ importers:
       fs-extra:
         specifier: 'catalog:'
         version: 11.3.4
+      htmlparser2:
+        specifier: 'catalog:'
+        version: 10.1.0
+      local-pkg:
+        specifier: ^1.1.2
+        version: 1.1.2
+      lru-cache:
+        specifier: 'catalog:'
+        version: 11.2.7
       magic-string:
         specifier: 'catalog:'
         version: 0.30.21
+      merge:
+        specifier: 'catalog:'
+        version: 2.1.1
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
@@ -1515,12 +1537,6 @@ importers:
       bundle-require:
         specifier: 'catalog:'
         version: 5.1.0(esbuild@0.27.4)
-      cac:
-        specifier: ^7.0.0
-        version: 7.0.0
-      chokidar:
-        specifier: ^5.0.0
-        version: 5.0.0
       del:
         specifier: ^8.0.1
         version: 8.0.1
@@ -1533,15 +1549,6 @@ importers:
       estree-walker:
         specifier: 'catalog:'
         version: 3.0.3
-      htmlparser2:
-        specifier: 'catalog:'
-        version: 10.1.0
-      local-pkg:
-        specifier: ^1.1.2
-        version: 1.1.2
-      lru-cache:
-        specifier: 'catalog:'
-        version: 11.2.7
       oxc-parser:
         specifier: ^0.120.0
         version: 0.120.0

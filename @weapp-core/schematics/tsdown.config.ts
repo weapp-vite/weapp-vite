@@ -8,6 +8,9 @@ export default defineConfig({
   dts: true,
   deps: {
     onlyBundle: false,
+    neverBundle: [
+      'zod',
+    ],
   },
   outExtensions({ format }) {
     return {

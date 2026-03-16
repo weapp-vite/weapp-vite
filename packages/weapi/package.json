@@ -21,14 +21,10 @@
       "import": {
         "types": "./types/index.d.ts",
         "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./types/index.d.ts",
-        "default": "./dist/index.cjs"
       }
     }
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./types/index.d.ts",
   "files": [
