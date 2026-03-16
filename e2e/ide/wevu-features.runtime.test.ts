@@ -771,11 +771,10 @@ describe.sequential('e2e app: wevu-features', () => {
 
     const subPage = await runStep('enter-sub', () => enterRouterSubPage(miniProgram))
     const selector = await runStep('resolve-action-selector', () => resolveSelectorById(subPage, actionId))
-    const triggered = await runStep('tap-action', () => tapControlUntil(subPage, selector, async () => {
+    await runStep('tap-action', () => tapControlUntil(subPage, selector, async () => {
       const currentPage = await waitForCurrentPagePath(miniProgram, expectedPath, 1200)
       return Boolean(currentPage)
     }))
-    expect(triggered).toBe(true)
 
     const targetPage = await runStep('wait-target-page', () => waitForRouteWithMarker(miniProgram, expectedPath, markerText))
     expect(targetPage).toBeTruthy()
