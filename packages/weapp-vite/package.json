@@ -152,7 +152,7 @@
     "local-pkg": "^1.1.2",
     "lru-cache": "catalog:",
     "magic-string": "catalog:",
-    "oxc-parser": "^0.119.0",
+    "oxc-parser": "^0.120.0",
     "oxc-walker": "^0.7.0",
     "p-queue": "^9.1.0",
     "package-manager-detector": "^1.6.0",
