@@ -7,6 +7,10 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-subpackage-placement')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
 
+function toPosixPath(value: string) {
+  return value.replace(/\\/g, '/')
+}
+
 async function runBuild() {
   await fs.remove(DIST_ROOT)
   await runWeappViteBuildWithLogCapture({
@@ -122,6 +126,7 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
 
     const distJsFiles = (await fs.readdir(DIST_ROOT, { recursive: true }))
       .filter(file => typeof file === 'string' && file.endsWith('.js'))
+      .map(file => toPosixPath(file))
 
     expect(distJsFiles.includes('common.js')).toBe(true)
     expect(distJsFiles.some(file => file.includes('subpackages/normal-wevu/common.js'))).toBe(true)
