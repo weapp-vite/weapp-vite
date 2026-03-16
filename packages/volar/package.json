@@ -41,7 +41,7 @@
   },
   "scripts": {
     "dev": "tsdown -w --sourcemap",
-    "build": "tsdown",
+    "build": "tsdown --no-dts && tsc -p tsconfig.build.json",
     "test": "vitest run",
     "test:dev": "vitest",
     "typecheck": "tsc --noEmit",
