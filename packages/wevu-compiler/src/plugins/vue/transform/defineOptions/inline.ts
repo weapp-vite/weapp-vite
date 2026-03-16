@@ -1,4 +1,4 @@
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
 import path from 'pathe'

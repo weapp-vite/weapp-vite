@@ -1,4 +1,4 @@
-import type { File as BabelFile, ObjectExpression } from '@babel/types'
+import type { File as BabelFile, ObjectExpression } from '@weapp-vite/ast/babelTypes'
 import type { WevuDefaults } from '../../../../types/wevu'
 import type { WevuPageFeatureFlag } from '../../../wevu/pageFeatures'
 import type { TransformResult, TransformScriptOptions, TransformState } from './utils'

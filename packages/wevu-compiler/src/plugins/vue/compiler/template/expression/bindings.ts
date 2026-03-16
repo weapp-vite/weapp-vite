@@ -1,5 +1,5 @@
 import type { TransformContext } from '../types'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { generateExpression, parseBabelExpression } from './parse'
 import { normalizeWxmlExpressionWithContext } from './scopedSlot'
 

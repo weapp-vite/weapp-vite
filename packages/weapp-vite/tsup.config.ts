@@ -38,11 +38,11 @@ export default defineConfig({
   external: [
     '@swc/core',
     // Babel 相关包 - 只在开发时使用，不需要打包
-    '@babel/generator',
+    '@weapp-vite/ast/babel',
     '@babel/core',
-    '@babel/parser',
-    '@babel/traverse',
-    '@babel/types',
+    '@weapp-vite/ast/babel',
+    '@weapp-vite/ast/babelTraverse',
+    '@weapp-vite/ast/babelTypes',
     '@babel/preset-env',
     '@babel/preset-typescript',
     'vue/compiler-sfc',

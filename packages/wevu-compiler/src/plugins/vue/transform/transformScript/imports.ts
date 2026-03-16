@@ -1,5 +1,5 @@
 import type { TransformState } from './utils'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { WE_VU_RUNTIME_APIS } from '../../../../constants'
 import { ensureRuntimeImport } from '../scriptRuntimeImport'
 

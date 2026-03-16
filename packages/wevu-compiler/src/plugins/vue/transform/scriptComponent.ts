@@ -1,4 +1,4 @@
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 
 function isDefineComponentCall(node: t.CallExpression, aliases: Set<string>) {
   return t.isIdentifier(node.callee) && aliases.has(node.callee.name)

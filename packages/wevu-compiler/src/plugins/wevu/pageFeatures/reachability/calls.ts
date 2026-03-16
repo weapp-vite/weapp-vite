@@ -1,5 +1,5 @@
 import type { FunctionLike } from '../moduleAnalysis'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 
 export type CallCalleeName
   = | { type: 'ident', name: string }

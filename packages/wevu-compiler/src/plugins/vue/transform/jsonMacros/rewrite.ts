@@ -1,5 +1,5 @@
-import type { Statement } from '@babel/types'
-import * as t from '@babel/types'
+import type { Statement } from '@weapp-vite/ast/babelTypes'
+import * as t from '@weapp-vite/ast/babelTypes'
 import MagicString from 'magic-string'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, parseJsLike, traverse } from '../../../../utils/babel'
 import { JSON_MACROS } from './parse'

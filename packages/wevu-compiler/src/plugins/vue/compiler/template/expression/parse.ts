@@ -1,5 +1,5 @@
-import type { File as BabelFile } from '@babel/types'
-import * as t from '@babel/types'
+import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { LRUCache } from 'lru-cache'
 import { parse as babelParse, generate } from '../../../../../utils/babel'
 

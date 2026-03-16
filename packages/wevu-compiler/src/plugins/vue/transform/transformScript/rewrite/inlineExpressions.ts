@@ -1,5 +1,5 @@
 import type { InlineExpressionAsset } from '../../../compiler/template/types'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { parseBabelExpression } from '../../../compiler/template/expression/parse'
 import { createStaticObjectKey, getObjectPropertyByKey } from '../utils'
 

@@ -23,9 +23,11 @@ export type {
   JsxBabelModuleAnalysisOptions,
   JsxImportedComponent,
 } from './operations/jsxAutoComponents'
+export { collectOnPageScrollPerformanceWarnings } from './operations/onPageScroll'
 export { mayContainPlatformApiAccess, platformApiIdentifiers } from './operations/platformApi'
 export { collectRequireTokens, mayContainStaticRequireLiteral } from './operations/require'
 export type { RequireToken } from './operations/require'
 export { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
 export type { ScriptSetupImport } from './operations/scriptSetupImports'
+export { collectSetDataPickKeysFromTemplateCode } from './operations/setDataPick'
 export type { AstEngineName, AstParserLike, WeappAstConfig } from './types'

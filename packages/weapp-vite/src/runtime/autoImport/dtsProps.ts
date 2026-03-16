@@ -1,4 +1,4 @@
-import type * as t from '@babel/types'
+import type * as t from '@weapp-vite/ast/babelTypes'
 import type { ComponentPropMap } from '../componentProps'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, generate, getVisitorKeys, parse, traverse } from '../../utils/babel'
 import { mapConstructorName } from '../utils/constructorType'
@@ -87,7 +87,7 @@ function mapConstructorType(node: t.TSType | undefined): string | undefined {
     const items = node.types
       .map(item => mapConstructorType(item))
       .filter((value): value is string => Boolean(value))
-    return items.length ? Array.from(new Set(items)).join(' | ') : undefined
+    return items.length ? [...new Set(items)].join(' | ') : undefined
   }
   if (node.type === 'TSNullKeyword') {
     return 'any'

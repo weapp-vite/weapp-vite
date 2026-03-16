@@ -1,5 +1,5 @@
-import type { ArrowFunctionExpression, Expression, FunctionExpression, ObjectExpression, ObjectMethod } from '@babel/types'
-import * as t from '@babel/types'
+import type { ArrowFunctionExpression, Expression, FunctionExpression, ObjectExpression, ObjectMethod } from '@weapp-vite/ast/babelTypes'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { createStaticObjectKey, getObjectPropertyByKey, isStaticObjectKeyMatch } from '../utils'
 
 type SetupFunctionNode = ObjectMethod | FunctionExpression | ArrowFunctionExpression

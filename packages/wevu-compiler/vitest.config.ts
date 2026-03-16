@@ -5,12 +5,8 @@ export default defineProject({
   test: {
     alias: [
       {
-        find: '@',
+        find: /^@\//,
         replacement: path.resolve(__dirname, './src'),
-      },
-      {
-        find: '@weapp-vite/ast',
-        replacement: path.resolve(__dirname, '../ast/src/index.ts'),
       },
     ],
     globals: true,

@@ -1,5 +1,5 @@
-import type { Statement } from '@babel/types'
-import * as t from '@babel/types'
+import type { Statement } from '@weapp-vite/ast/babelTypes'
+import * as t from '@weapp-vite/ast/babelTypes'
 
 function collectPatternNames(pattern: any, out: Set<string>) {
   if (!pattern) {

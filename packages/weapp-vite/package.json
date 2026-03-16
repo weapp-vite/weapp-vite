@@ -102,10 +102,6 @@
   },
   "dependencies": {
     "@babel/core": "catalog:",
-    "@babel/generator": "catalog:",
-    "@babel/parser": "catalog:",
-    "@babel/traverse": "catalog:",
-    "@babel/types": "catalog:",
     "@volar/typescript": "^2.4.28",
     "@vue/compiler-core": "catalog:",
     "@vue/language-core": "catalog:",
@@ -123,8 +119,6 @@
     "fdir": "catalog:",
     "fs-extra": "catalog:",
     "magic-string": "catalog:",
-    "oxc-parser": "^0.119.0",
-    "oxc-walker": "^0.7.0",
     "pathe": "catalog:",
     "picomatch": "^4.0.3",
     "postcss": "catalog:",
@@ -145,7 +139,6 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@oxc-project/types": "^0.119.0",
     "@tailwindcss/vite": "catalog:",
     "@types/semver": "catalog:",
     "@vitejs/plugin-vue": "^6.0.5",
@@ -160,6 +153,8 @@
     "local-pkg": "^1.1.2",
     "lru-cache": "catalog:",
     "magic-string": "catalog:",
+    "oxc-parser": "^0.119.0",
+    "oxc-walker": "^0.7.0",
     "p-queue": "^9.1.0",
     "package-manager-detector": "^1.6.0",
     "resolve.exports": "^2.0.3",

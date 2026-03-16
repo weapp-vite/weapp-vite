@@ -1,5 +1,5 @@
-import { parse as babelParse } from '@babel/parser'
-import traverse from '@babel/traverse'
+import { parse as babelParse } from '@weapp-vite/ast/babel'
+import traverse from '@weapp-vite/ast/babelTraverse'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { injectWevuPageFeaturesInJs, injectWevuPageFeaturesInJsWithResolver } from '../../src/plugins/wevu'

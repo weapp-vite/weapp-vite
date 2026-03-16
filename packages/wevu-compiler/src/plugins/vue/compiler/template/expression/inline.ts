@@ -4,7 +4,7 @@ import type {
   InlineExpressionScopeResolverAsset,
   TransformContext,
 } from '../types'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { traverse } from '../../../../../utils/babel'
 import { generateExpression, parseBabelExpressionFile } from './parse'
 import { collectScopedSlotLocals, collectSlotPropMapping } from './scopedSlot'

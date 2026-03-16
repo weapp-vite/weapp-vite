@@ -1,5 +1,5 @@
-import type { Expression } from '@babel/types'
 import type { DirectiveNode } from '@vue/compiler-core'
+import type { Expression } from '@weapp-vite/ast/babelTypes'
 import type { ForParseResult, TransformContext } from '../types'
 import { NodeTypes } from '@vue/compiler-core'
 import { normalizeWxmlExpressionWithContext } from '../expression'

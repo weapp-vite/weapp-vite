@@ -1,5 +1,5 @@
 import type { ForParseResult } from '../types'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { parseJsLike } from '../../../../../utils/babel'
 import { generateExpression } from '../expression/parse'
 

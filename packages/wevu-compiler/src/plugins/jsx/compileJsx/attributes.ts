@@ -3,9 +3,9 @@ import type {
   JSXAttribute,
   JSXElement,
   JSXSpreadAttribute,
-} from '@babel/types'
+} from '@weapp-vite/ast/babelTypes'
 import type { JsxCompileContext } from './types'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import {
   escapeAttr,
   normalizeInterpolationExpression,

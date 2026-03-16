@@ -1,5 +1,5 @@
 import type { TransformContext } from '../types'
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { parseJsLike, traverse } from '../../../../../utils/babel'
 import { parseBabelExpression } from './parse'
 import { collectScopedSlotLocals, collectSlotPropMapping } from './scopedSlot'

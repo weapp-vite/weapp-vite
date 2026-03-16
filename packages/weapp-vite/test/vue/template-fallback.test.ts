@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 describe('Vue Template Compiler - fallback normalization', () => {
   it('rewrites template literal bindings when babel parse fails', async () => {
-    vi.doMock('@babel/parser', () => ({
+    vi.doMock('@weapp-vite/ast/babel', () => ({
       parse: () => {
         throw new Error('parse-fail')
       },
@@ -23,6 +23,6 @@ describe('Vue Template Compiler - fallback normalization', () => {
     expect(result.code).not.toContain('${')
 
     vi.resetModules()
-    vi.doUnmock('@babel/parser')
+    vi.doUnmock('@weapp-vite/ast/babel')
   })
 })

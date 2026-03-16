@@ -2,15 +2,15 @@ import type {
   Expression,
   JSXIdentifier,
   JSXNamespacedName,
-} from '@babel/types'
+} from '@weapp-vite/ast/babelTypes'
 import type { JsxCompileContext } from './types'
-import * as t from '@babel/types'
 import {
   getObjectPropertyByKey,
   resolveRenderableExpression,
   toStaticObjectKey,
   unwrapTypeScriptExpression,
 } from '@weapp-vite/ast'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { generate, traverse } from '../../../utils/babel'
 import { normalizeWxmlExpression } from '../../vue/compiler/template/expression/wxml'
 

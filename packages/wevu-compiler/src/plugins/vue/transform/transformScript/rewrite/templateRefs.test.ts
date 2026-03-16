@@ -1,4 +1,4 @@
-import * as t from '@babel/types'
+import * as t from '@weapp-vite/ast/babelTypes'
 import { describe, expect, it, vi } from 'vitest'
 import { generate } from '../../../../../utils/babel'
 import { injectTemplateRefs } from './templateRefs'
