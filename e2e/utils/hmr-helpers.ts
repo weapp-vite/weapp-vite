@@ -1,5 +1,6 @@
 import type { RuntimePlatform } from '../wevu-runtime.utils'
 import fs from 'fs-extra'
+import path from 'pathe'
 import { resolvePlatformMatrix } from './platform-matrix'
 
 export type { RuntimePlatform }
@@ -84,4 +85,27 @@ export async function waitForFileRemoved(filePath: string, timeoutMs = 90_000): 
  */
 export function createHmrMarker(prefix: string, platform: string): string {
   return `HMR-${prefix}-${platform.toUpperCase()}`
+}
+
+/**
+ * 通过“先重命名旧文件，再写回同名新文件”的方式模拟 Windows 常见的原子保存流程。
+ *
+ * @param filePath - 目标文件路径
+ * @param content - 写入的新内容
+ */
+export async function replaceFileByRename(filePath: string, content: string) {
+  const dir = path.dirname(filePath)
+  const base = path.basename(filePath)
+  const backupPath = path.join(dir, `.${base}.hmr-backup-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+
+  if (await fs.pathExists(filePath)) {
+    await fs.move(filePath, backupPath, { overwrite: true })
+  }
+
+  try {
+    await fs.writeFile(filePath, content, 'utf8')
+  }
+  finally {
+    await fs.remove(backupPath)
+  }
 }
