@@ -32,6 +32,10 @@
       "types": "./dist/babel.d.mts",
       "import": "./dist/babel.mjs"
     },
+    "./babelCore": {
+      "types": "./dist/babelCore.d.mts",
+      "import": "./dist/babelCore.mjs"
+    },
     "./babelTraverse": {
       "types": "./dist/babelTraverse.d.mts",
       "import": "./dist/babelTraverse.mjs"
@@ -107,6 +111,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@babel/core": "catalog:",
     "@babel/generator": "catalog:",
     "@babel/parser": "catalog:",
     "@babel/traverse": "catalog:",
