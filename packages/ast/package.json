@@ -56,6 +56,7 @@
       "types": "./dist/types.d.mts",
       "import": "./dist/types.mjs"
     },
+    "./package.json": "./package.json",
     "./operations/platformApi": {
       "types": "./dist/operations/platformApi.d.mts",
       "import": "./dist/operations/platformApi.mjs"
