@@ -10,12 +10,13 @@ const NAVIGATION_BAR_TAG = 'weapp-navigation-bar'
 const BaseElement = (globalThis.HTMLElement ?? class {}) as typeof HTMLElement
 const navigationBarInstances = new Set<WeappNavigationBar>()
 let navigationBarMetrics: NavigationBarMetrics = {}
+const IOS_DEVICE_RE = /iphone|ipad|ipod/i
 
 function isIOS() {
   if (typeof navigator === 'undefined') {
     return false
   }
-  return /iphone|ipad|ipod/i.test(navigator.userAgent)
+  return IOS_DEVICE_RE.test(navigator.userAgent)
 }
 
 function getDefaultHeights() {
@@ -82,9 +83,7 @@ export function setNavigationBarMetrics(next: NavigationBarMetrics) {
 }
 
 class WeappNavigationBar extends BaseElement {
-  static get observedAttributes() {
-    return ['title', 'background-color', 'text-style', 'front-color', 'loading']
-  }
+  static observedAttributes = ['title', 'background-color', 'text-style', 'front-color', 'loading']
 
   #nav?: HTMLDivElement
   #title?: HTMLSpanElement

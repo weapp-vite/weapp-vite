@@ -22,7 +22,7 @@ let runtimeWarningOptions: Required<RuntimeWarningOptions> = {
 
 const warnedKeys = new Set<string>()
 
-function withContext(message: string, context?: string) {
+function withContext(message: string, context?: string): string {
   if (!context) {
     return message
   }
@@ -32,11 +32,11 @@ function withContext(message: string, context?: string) {
   return `[@weapp-vite/web][${context}] ${message}`
 }
 
-function getConsole() {
+function getConsole(): Console | undefined {
   return (globalThis as { console?: Console }).console
 }
 
-export function setRuntimeWarningOptions(options?: RuntimeWarningOptions) {
+export function setRuntimeWarningOptions(options?: RuntimeWarningOptions): void {
   runtimeWarningOptions = {
     ...defaultWarningOptions,
     ...(options ?? {}),
@@ -44,7 +44,7 @@ export function setRuntimeWarningOptions(options?: RuntimeWarningOptions) {
   warnedKeys.clear()
 }
 
-export function emitRuntimeWarning(message: string, options: RuntimeWarningEmitOptions = {}) {
+export function emitRuntimeWarning(message: string, options: RuntimeWarningEmitOptions = {}): void {
   const level = options.level ?? runtimeWarningOptions.level
   if (level === 'off') {
     return

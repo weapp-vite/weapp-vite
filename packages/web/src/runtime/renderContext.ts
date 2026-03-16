@@ -16,16 +16,19 @@ export interface RenderContext {
 }
 
 const expressionCache = new Map<string, (scope: TemplateScope) => any>()
+const MUSTACHE_PREFIX_RE = /^\{\{\s*/
+const MUSTACHE_SUFFIX_RE = /\s*\}\}$/
+const SIMPLE_KEY_PATH_RE = /[.[()]/
 
-function createScope(initial?: TemplateScope) {
+function createScope(initial?: TemplateScope): TemplateScope {
   return Object.assign(Object.create(null), initial ?? {})
 }
 
-function createChildScope(parent: TemplateScope, locals?: Record<string, any>) {
+function createChildScope(parent: TemplateScope, locals?: Record<string, any>): TemplateScope {
   return Object.assign(Object.create(parent), locals ?? {})
 }
 
-function evaluateExpression(expression: string, scope: TemplateScope) {
+function evaluateExpression(expression: string, scope: TemplateScope): any {
   if (!expression) {
     return undefined
   }
@@ -94,7 +97,7 @@ function normalizeList(value: any): any[] {
   return []
 }
 
-function normalizeKey(rawKey: string, item: any, index: number, scope: TemplateScope) {
+function normalizeKey(rawKey: string, item: any, index: number, scope: TemplateScope): any {
   const key = rawKey?.trim()
   if (!key) {
     if (item != null && (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean')) {
@@ -106,10 +109,10 @@ function normalizeKey(rawKey: string, item: any, index: number, scope: TemplateS
     return item
   }
   if (key.includes('{{') && key.includes('}}')) {
-    const expr = key.replace(/^\{\{\s*/, '').replace(/\s*\}\}$/, '')
+    const expr = key.replace(MUSTACHE_PREFIX_RE, '').replace(MUSTACHE_SUFFIX_RE, '')
     return evaluateExpression(expr, scope)
   }
-  if (!/[.[()]/.test(key) && item && typeof item === 'object' && key in item) {
+  if (!SIMPLE_KEY_PATH_RE.test(key) && item && typeof item === 'object' && key in item) {
     return (item as Record<string, any>)[key]
   }
   return evaluateExpression(key, scope)

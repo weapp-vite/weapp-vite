@@ -13,7 +13,18 @@ export function getRuntimeExecutionMode(): RuntimeExecutionMode {
   return currentRuntimeExecutionMode
 }
 
-export function setRuntimeExecutionMode(mode?: RuntimeExecutionMode | string) {
+export function warnRuntimeExecutionOnce(key: string, message: string): void {
+  if (warnedMessages.has(key)) {
+    return
+  }
+  warnedMessages.add(key)
+  emitRuntimeWarning(message, {
+    key: `execution:${key}`,
+    context: 'runtime:execution',
+  })
+}
+
+export function setRuntimeExecutionMode(mode?: RuntimeExecutionMode | string): void {
   if (mode === undefined) {
     currentRuntimeExecutionMode = 'compat'
     warnedMessages.clear()
@@ -29,15 +40,4 @@ export function setRuntimeExecutionMode(mode?: RuntimeExecutionMode | string) {
     `[@weapp-vite/web] 未知 executionMode "${String(mode)}"，已回退到 compat。`,
   )
   currentRuntimeExecutionMode = 'compat'
-}
-
-export function warnRuntimeExecutionOnce(key: string, message: string) {
-  if (warnedMessages.has(key)) {
-    return
-  }
-  warnedMessages.add(key)
-  emitRuntimeWarning(message, {
-    key: `execution:${key}`,
-    context: 'runtime:execution',
-  })
 }

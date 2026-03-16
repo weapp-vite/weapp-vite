@@ -28,9 +28,7 @@ export function createComponentElementClass({
   instances,
 }: CreateComponentElementClassOptions) {
   class WeappWebComponent extends BaseElement implements WeappComponentInstance {
-    static get observedAttributes() {
-      return runtimeState.observedAttributes
-    }
+    static observedAttributes = runtimeState.observedAttributes
 
     #state: DataRecord
     #properties: DataRecord
@@ -41,6 +39,8 @@ export function createComponentElementClass({
     #readyFired = false
     #observerInitDone = false
     #observedKeys = new Set<string>()
+    readonly data!: DataRecord
+    readonly properties!: DataRecord
 
     constructor() {
       super()
@@ -51,6 +51,18 @@ export function createComponentElementClass({
       this.#state = { ...cloneValue(this.#properties), ...cloneValue(dataOption) }
       this.#methods = {}
       this.#syncMethods(runtimeState.componentRef.methods ?? {})
+      Object.defineProperties(this, {
+        data: {
+          configurable: true,
+          enumerable: true,
+          get: () => this.#state,
+        },
+        properties: {
+          configurable: true,
+          enumerable: true,
+          get: () => this.#properties,
+        },
+      })
       for (const [propName] of runtimeState.propertyEntries) {
         Object.defineProperty(this, propName, {
           configurable: true,
@@ -70,8 +82,6 @@ export function createComponentElementClass({
       runtimeState.lifetimes.created?.call(this)
     }
 
-    get data() { return this.#state }
-    get properties() { return this.#properties }
     setData(patch: DataRecord) {
       this.#applyDataPatch(patch)
     }
@@ -130,7 +140,7 @@ export function createComponentElementClass({
         superAttributeChanged.call(this, attrName, oldValue, newValue)
       }
       const propName = toCamelCase(attrName)
-      if (!Object.prototype.hasOwnProperty.call(this.#properties, propName)) {
+      if (!Object.hasOwn(this.#properties, propName)) {
         return
       }
       const propOption = runtimeState.componentRef.properties?.[propName]
@@ -195,7 +205,7 @@ export function createComponentElementClass({
         }
         const oldValue = this.#state[key]
         this.#state[key] = value
-        if (Object.prototype.hasOwnProperty.call(this.#properties, key)) {
+        if (Object.hasOwn(this.#properties, key)) {
           this.#properties[key] = value
           const propOption = runtimeState.componentRef.properties?.[key]
           if (propOption?.observer) {
