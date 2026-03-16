@@ -1,5 +1,12 @@
 # @weapp-vite/volar
 
+## 2.0.7
+
+### Patch Changes
+
+- 📦 **Dependencies** [`43a68e2`](https://github.com/weapp-vite/weapp-vite/commit/43a68e28e7ffcc9c6e40fa033d2f346452157140)
+  → `@weapp-core/schematics@6.0.4`
+
 ## 2.0.6
 
 ### Patch Changes
