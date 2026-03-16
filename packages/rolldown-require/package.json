@@ -49,8 +49,8 @@
   },
   "scripts": {
     "dev": "unbuild --stub",
-    "build:watch": "tsup --watch --sourcemap",
-    "build": "tsup",
+    "build:watch": "tsdown -w --sourcemap",
+    "build": "tsdown",
     "test": "vitest run",
     "test:dev": "vitest",
     "typecheck": "tsc --noEmit",

@@ -87,8 +87,8 @@
   },
   "scripts": {
     "stub": "unbuild --stub",
-    "dev": "tsup --watch --sourcemap",
-    "build": "pnpm run build:dashboard && tsup",
+    "dev": "tsdown -w --sourcemap",
+    "build": "pnpm run build:dashboard && tsdown",
     "build:dashboard": "node scripts/build-analyze-dashboard.mjs",
     "dev:dashboard": "vite --config analyze-dashboard/vite.config.ts",
     "preview:dashboard": "vite preview --config analyze-dashboard/vite.config.ts",

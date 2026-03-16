@@ -22,25 +22,25 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/src/index.d.ts",
       "import": "./dist/index.mjs"
     },
     "./plugin": {
-      "types": "./dist/plugin.d.ts",
+      "types": "./dist/src/plugin.d.ts",
       "import": "./dist/plugin.mjs"
     },
     "./runtime": {
-      "types": "./dist/runtime/index.d.ts",
+      "types": "./dist/src/runtime/index.d.ts",
       "import": "./dist/runtime/index.mjs"
     },
     "./runtime/polyfill": {
-      "types": "./dist/runtime/index.d.ts",
+      "types": "./dist/src/runtime/index.d.ts",
       "import": "./dist/runtime/index.mjs"
     }
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/src/index.d.ts",
   "files": [
     "dist"
   ],
@@ -48,9 +48,9 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
-    "dev": "tsup --watch --sourcemap",
-    "build:watch": "tsup --watch --sourcemap",
-    "build": "tsup",
+    "dev": "tsdown -w --sourcemap",
+    "build:watch": "tsdown -w --sourcemap",
+    "build": "tsdown --no-dts && tsc -p tsconfig.build.json",
     "test": "vitest run",
     "test:dev": "vitest",
     "typecheck": "tsc --noEmit"
