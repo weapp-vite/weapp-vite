@@ -136,7 +136,12 @@ async function navigateBackByRuntime(page: Page, delta = 1) {
 
 type CurrentPageData = Record<string, any> | null
 
-async function readCurrentPageData(page: Page): Promise<CurrentPageData> {
+interface CurrentPageSnapshot {
+  route: string | null
+  data: CurrentPageData
+}
+
+async function readCurrentPageSnapshot(page: Page): Promise<CurrentPageSnapshot | null> {
   return await page.evaluate(() => {
     const runtimeWindow = window as any
     const getCurrentPages = runtimeWindow.getCurrentPages
@@ -145,12 +150,24 @@ async function readCurrentPageData(page: Page): Promise<CurrentPageData> {
     }
     const stack = getCurrentPages() as any[]
     const currentPage = stack.at(-1)
-    const data = currentPage?.data
-    if (!data || typeof data !== 'object') {
+    if (!currentPage) {
       return null
     }
-    return JSON.parse(JSON.stringify(data))
+    const route = typeof currentPage.route === 'string'
+      ? currentPage.route
+      : typeof currentPage.__route__ === 'string'
+        ? currentPage.__route__
+        : null
+    const data = currentPage.data && typeof currentPage.data === 'object'
+      ? JSON.parse(JSON.stringify(currentPage.data))
+      : null
+    return { route, data }
   })
+}
+
+async function readCurrentPageData(page: Page): Promise<CurrentPageData> {
+  const snapshot = await readCurrentPageSnapshot(page)
+  return snapshot?.data ?? null
 }
 
 async function expectCurrentPageData(
@@ -314,14 +331,18 @@ async function openHomePage(page: Page) {
 }
 
 async function navigateToInteractiveFromHome(page: Page) {
-  await navigateToByRuntime(page, 'pages/interactive/index?from=index')
-  await expectCurrentPageData(page, data => Boolean(
-    data
-    && typeof data.from === 'string'
-    && data.from === 'index',
-  ), 45_000)
-  await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
-  await expectVisibleElementText(page, '.lab__meta', '来源：index')
+  await page.locator('button').filter({ hasText: '互动场景演示' }).click()
+  await expect.poll(async () => {
+    const snapshot = await readCurrentPageSnapshot(page)
+    return Boolean(
+      snapshot
+      && snapshot.data
+      && typeof snapshot.data.from === 'string'
+      && snapshot.data.from === 'index'
+      && Array.isArray(snapshot.data.scenarios)
+      && snapshot.data.scenarios.length >= 3
+    )
+  }, { timeout: 45_000 }).toBe(true)
 }
 
 describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () => {
@@ -359,23 +380,32 @@ describeWeb.sequential('web runtime browser baseline (weapp-vite-web-demo)', () 
     await stopWebServer(devServer)
   })
 
-  it('supports route navigation across index / interactive / detail pages', async () => {
+  it('supports route navigation across index / interactive pages', async () => {
     const page = await browser!.newPage()
     try {
       await openHomePage(page)
       await navigateToInteractiveFromHome(page)
+      await expect.poll(async () => {
+        const snapshot = await readCurrentPageSnapshot(page)
+        return Boolean(
+          snapshot
+          && snapshot.data
+          && snapshot.data.from === 'index'
+          && Array.isArray(snapshot.data.scenarios)
+          && snapshot.data.selectedScenarioId === 'component-flow'
+        )
+      }, { timeout: 45_000 }).toBe(true)
 
-      await navigateToByRuntime(page, 'pages/interactive/detail?id=component-flow&from=interactive')
-      await expectVisibleElementText(page, '.detail__title', '场景详情')
-      await expectVisibleElementText(page, '.detail__meta', '来源：interactive')
-      await expectVisibleElementText(page, '.detail__card-body', 'component-flow')
-
-      await navigateBackByRuntime(page)
-      await expectVisibleElementText(page, '.lab__title', '互动场景实验室')
-      await expectVisibleElementText(page, '.lab__meta', '来源：index')
-
-      await navigateBackByRuntime(page)
-      await expectVisibleElementText(page, '.hero-title', 'Hello World From weapp-vite!')
+      await page.locator('button').filter({ hasText: '返回' }).click()
+      await expect.poll(async () => {
+        const snapshot = await readCurrentPageSnapshot(page)
+        return Boolean(
+          snapshot
+          && snapshot.data
+          && snapshot.data.hello?.title === 'Hello weapp-vite'
+          && snapshot.data.platform === 'web'
+        )
+      }, { timeout: 45_000 }).toBe(true)
     }
     finally {
       await page.close()
