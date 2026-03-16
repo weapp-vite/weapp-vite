@@ -14,6 +14,7 @@
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
   }
 }

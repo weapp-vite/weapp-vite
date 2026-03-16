@@ -11,6 +11,7 @@
     "test:types": "tsd"
   },
   "devDependencies": {
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "wevu": "workspace:*"
   }
 }

@@ -1,5 +1,4 @@
-import type { Plugin } from 'vite'
-
+import type { SourceMap } from 'magic-string'
 import type { WeappWebPluginOptions } from './types'
 import process from 'node:process'
 
@@ -13,6 +12,37 @@ import { cleanUrl, isHtmlEntry, isInsideDir, normalizePath, resolveTemplatePathS
 import { transformScriptModule } from './register'
 import { scanProject } from './scan'
 import { createEmptyScanState } from './state'
+
+interface WebPluginContext {
+  warn?: (message: string) => void
+  addWatchFile?: (id: string) => void
+}
+
+type WebTransformResult = { code: string, map: SourceMap | null } | null
+
+interface WebResolvedConfig {
+  root: string
+  command: string
+}
+
+interface WebHmrContext {
+  file: string
+}
+
+interface WeappWebVitePlugin {
+  name: string
+  enforce?: 'pre' | 'post'
+  configResolved?: (this: WebPluginContext, config: WebResolvedConfig) => void | Promise<void>
+  buildStart?: (this: WebPluginContext) => void | Promise<void>
+  resolveId?: (id: string) => string | null | Promise<string | null>
+  load?: (id: string) => string | null | Promise<string | null>
+  handleHotUpdate?: (this: WebPluginContext, ctx: WebHmrContext) => void | Promise<void>
+  transform?: (
+    this: WebPluginContext,
+    code: string,
+    id: string,
+  ) => WebTransformResult | Promise<WebTransformResult>
+}
 
 function isTemplateFile(id: string) {
   const lower = id.toLowerCase()
@@ -77,7 +107,7 @@ function createInlineStyleModule(css: string) {
   ].join('\n')
 }
 
-export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
+export function weappWebPlugin(options: WeappWebPluginOptions = {}): WeappWebVitePlugin {
   let root = process.cwd()
   let srcRoot = resolve(root, options.srcDir ?? 'src')
   let enableHmr = false
@@ -91,34 +121,34 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
   return {
     name: '@weapp-vite/web',
     enforce: 'pre',
-    async configResolved(config) {
+    async configResolved(this: WebPluginContext, config: WebResolvedConfig) {
       root = config.root
       srcRoot = resolve(root, options.srcDir ?? 'src')
       enableHmr = config.command === 'serve'
       await scanProject({ srcRoot, warn: this.warn?.bind(this), state })
     },
-    async buildStart() {
+    async buildStart(this: WebPluginContext) {
       await scanProject({ srcRoot, warn: this.warn?.bind(this), state })
     },
-    resolveId(id) {
+    resolveId(id: string) {
       if (id === '/@weapp-vite/web/entry' || id === '@weapp-vite/web/entry') {
         return ENTRY_ID
       }
       return null
     },
-    load(id) {
+    load(id: string) {
       if (id === ENTRY_ID) {
         return generateEntryModule(state.scanResult, root, wxssOptions, options)
       }
       return null
     },
-    async handleHotUpdate(ctx) {
+    async handleHotUpdate(this: WebPluginContext, ctx: WebHmrContext) {
       const clean = cleanUrl(ctx.file)
       if (clean.endsWith('.json') || isTemplateFile(clean) || isWxsFile(clean) || clean.endsWith('.wxss') || SCRIPT_EXTS.includes(extname(clean))) {
         await scanProject({ srcRoot, warn: this.warn?.bind(this), state })
       }
     },
-    transform(code, id) {
+    transform(this: WebPluginContext, code: string, id: string) {
       const clean = cleanUrl(id)
 
       if (isTemplateFile(clean)) {
@@ -144,14 +174,16 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
           navigationBar: navigationConfig ? { config: navigationConfig } : undefined,
           componentTags,
         })
-        if (dependencies.length > 0 && 'addWatchFile' in this) {
+        const addWatchFile = this.addWatchFile
+        if (dependencies.length > 0 && addWatchFile) {
           for (const dep of dependencies) {
-            this.addWatchFile(dep)
+            addWatchFile.call(this, dep)
           }
         }
-        if (warnings?.length && 'warn' in this) {
+        const warn = this.warn
+        if (warnings?.length && warn) {
           for (const warning of warnings) {
-            this.warn(warning)
+            warn.call(this, warning)
           }
         }
         return { code: compiled, map: null }
@@ -162,14 +194,16 @@ export function weappWebPlugin(options: WeappWebPluginOptions = {}): Plugin {
           resolvePath: resolveWxsPath,
           toImportPath: (resolved, importer) => normalizePath(toRelativeImport(importer, resolved)),
         })
-        if (dependencies.length > 0 && 'addWatchFile' in this) {
+        const addWatchFile = this.addWatchFile
+        if (dependencies.length > 0 && addWatchFile) {
           for (const dep of dependencies) {
-            this.addWatchFile(dep)
+            addWatchFile.call(this, dep)
           }
         }
-        if (warnings?.length && 'warn' in this) {
+        const warn = this.warn
+        if (warnings?.length && warn) {
           for (const warning of warnings) {
-            this.warn(warning)
+            warn.call(this, warning)
           }
         }
         return { code: compiled, map: null }
