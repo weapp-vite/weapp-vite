@@ -36,7 +36,14 @@ jobs:
         run: pnpm check:create-weapp-vite-changeset
 
       - name: SEO quality strict gate
-        run: pnpm seo:quality:strict
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            git fetch origin "${{ github.base_ref }}":"refs/remotes/origin/${{ github.base_ref }}"
+            pnpm seo:quality:strict -- --git-diff-base "origin/${{ github.base_ref }}"
+          else
+            pnpm seo:quality:strict
+          fi
 
       - name: Security Audit
         run: pnpm audit --audit-level=moderate
