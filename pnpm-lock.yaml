@@ -432,6 +432,12 @@ importers:
       only-allow:
         specifier: ^1.2.2
         version: 1.2.2
+      oxc-parser:
+        specifier: ^0.120.0
+        version: 0.120.0
+      oxc-walker:
+        specifier: ^0.7.0
+        version: 0.7.0(oxc-parser@0.120.0)
       pathe:
         specifier: 'catalog:'
         version: 2.0.3
@@ -474,6 +480,9 @@ importers:
       supertest:
         specifier: ^7.2.2
         version: 7.2.2
+      tailwindcss:
+        specifier: catalog:tailwind4
+        version: 4.2.1
       tinypool:
         specifier: ^2.1.0
         version: 2.1.0
