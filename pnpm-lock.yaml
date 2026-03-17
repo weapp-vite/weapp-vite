@@ -223,14 +223,14 @@ importers:
         specifier: ^1.2.12
         version: 1.2.12(conventional-changelog-conventionalcommits@9.3.0)
       '@icebreakers/eslint-config':
-        specifier: ^1.6.31
-        version: 1.6.31(@typescript-eslint/rule-tester@8.56.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.57.1(typescript@5.9.3))(@typescript-eslint/utils@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@vue/compiler-sfc@3.5.30)(eslint-plugin-pnpm@1.6.0(eslint@10.0.3(jiti@2.6.1)))(eslint@10.0.3(jiti@2.6.1))(globals@17.4.0)(tailwindcss@4.2.1)(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)))
+        specifier: ^1.6.33
+        version: 1.6.33(@typescript-eslint/rule-tester@8.56.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.57.1(typescript@5.9.3))(@typescript-eslint/utils@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@vue/compiler-sfc@3.5.30)(eslint-plugin-pnpm@1.6.0(eslint@10.0.3(jiti@2.6.1)))(eslint@10.0.3(jiti@2.6.1))(globals@17.4.0)(tailwindcss@4.2.1)(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)))
       '@icebreakers/monorepo':
-        specifier: ^3.2.17
-        version: 3.2.17(@types/node@25.5.0)(magicast@0.5.2)(typanion@3.14.0)
+        specifier: ^3.2.18
+        version: 3.2.18(@types/node@25.5.0)(magicast@0.5.2)(typanion@3.14.0)
       '@icebreakers/stylelint-config':
-        specifier: ^2.0.6
-        version: 2.0.6(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1)
+        specifier: ^2.0.7
+        version: 2.0.7(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1)
       '@oxc-node/cli':
         specifier: ^0.0.35
         version: 0.0.35
@@ -3696,25 +3696,25 @@ packages:
     peerDependencies:
       conventional-changelog-conventionalcommits: '>=9.0.0'
 
-  '@icebreakers/eslint-config@1.6.31':
-    resolution: {integrity: sha512-ZxTYR7MQFgtotsBzReeozHlUQ+rlWJlZBsdPofccuLReU48Y+jHMGPbJWl2eCKV3lGUx4489QUAJVVn+JZdmGQ==}
+  '@icebreakers/eslint-config@1.6.33':
+    resolution: {integrity: sha512-ZLd6bxtC/tFIgciBtaJwh9WWNxzzz4LDC8eeJ/5HjJyyv8u9eYpCTE76a7D+zruf5QQgaLXVor1tkI8U1HiNpw==}
     peerDependencies:
       eslint-plugin-pnpm: ^1.4.3
     peerDependenciesMeta:
       eslint-plugin-pnpm:
         optional: true
 
-  '@icebreakers/monorepo-templates@0.1.15':
-    resolution: {integrity: sha512-o8z+5q3F0O9X2891bF7k8THw91k1oopf3DdAsrrZSsZZycdeVtUtAEN1IBwCPQ/lW8YndSoVP5tElU+Nwefc0Q==}
+  '@icebreakers/monorepo-templates@0.1.16':
+    resolution: {integrity: sha512-7+s756uHo8+0y08A5g4vxmjV+P/WmZ8UhMXlrkgjKaMGiGJADXIZ80NbDWpWtMWJB+sozHuzP2maoDKnhNMpWQ==}
     engines: {node: '>=18.0.0'}
 
-  '@icebreakers/monorepo@3.2.17':
-    resolution: {integrity: sha512-2d69dToWQHikFrjbD9txNfdho7uSsDJstzo8DIAAjXqsIr3qW0VYS4mKriF/cVxA0chSfO2hUfOG8dxa7Uk12g==}
+  '@icebreakers/monorepo@3.2.18':
+    resolution: {integrity: sha512-0RURX3ZgBS9N4Lh7jHABjbWGM2lzbuSbM+vcjweCzO2zpvJILmc1KCIWrJskHfQYp/RftEGSL4fAc/FabirRoQ==}
     engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
     hasBin: true
 
-  '@icebreakers/stylelint-config@2.0.6':
-    resolution: {integrity: sha512-NcjXo+LsRo8zaPiUxvYwSXF7zvZgSDZ2uvRYU9gVnlnY1Ruegxws+fNHePAb13FdnSwg781uVxrU2NerHuQuUA==}
+  '@icebreakers/stylelint-config@2.0.7':
+    resolution: {integrity: sha512-XW+BBEvcMdb5GmIKSTHKU+NN88w8LhRJ9tmitSORBXGC+LwGqOQdp1jrti3rFKQcaOqkjYBny7uJ7fDwXQJ6Lw==}
     hasBin: true
 
   '@iconify-json/bi@1.2.7':
@@ -3900,15 +3900,6 @@ packages:
     resolution: {integrity: sha512-DpcZrQObd7S0R/U3bFdkcT5ebRwbTTC4D3tCc1vsJizmgPLxNJBo+AAFmrZwe8zk30P2QzgzGWZ3Q9uJwWuhIg==}
     engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
 
-  '@inquirer/checkbox@5.1.0':
-    resolution: {integrity: sha512-/HjF1LN0a1h4/OFsbGKHNDtWICFU/dqXCdym719HFTyJo9IG7Otr+ziGWc9S0iQuohRZllh+WprSgd5UW5Fw0g==}
-    engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
-    peerDependencies:
-      '@types/node': '>=18'
-    peerDependenciesMeta:
-      '@types/node':
-        optional: true
-
   '@inquirer/checkbox@5.1.2':
     resolution: {integrity: sha512-PubpMPO2nJgMufkoB3P2wwxNXEMUXnBIKi/ACzDUYfaoPuM7gSTmuxJeMscoLVEsR4qqrCMf5p0SiYGWnVJ8kw==}
     engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
@@ -3985,15 +3976,6 @@ packages:
       '@types/node':
         optional: true
 
-  '@inquirer/input@5.0.8':
-    resolution: {integrity: sha512-p0IJslw0AmedLEkOU+yrEX3Aj2RTpQq7ZOf8nc1DIhjzaxRWrrgeuE5Kyh39fVRgtcACaMXx/9WNo8+GjgBOfw==}
-    engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
-    peerDependencies:
-      '@types/node': '>=18'
-    peerDependenciesMeta:
-      '@types/node':
-        optional: true
-
   '@inquirer/number@4.0.10':
     resolution: {integrity: sha512-Ht8OQstxiS3APMGjHV0aYAjRAysidWdwurWEo2i8yI5xbhOBWqizT0+MU1S2GCcuhIBg+3SgWVjEoXgfhY+XaA==}
     engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
@@ -4032,15 +4014,6 @@ packages:
 
   '@inquirer/search@4.1.6':
     resolution: {integrity: sha512-3/6kTRae98hhDevENScy7cdFEuURnSpM3JbBNg8yfXLw88HgTOl+neUuy/l9W0No5NzGsLVydhBzTIxZP7yChQ==}
-    engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
-    peerDependencies:
-      '@types/node': '>=18'
-    peerDependenciesMeta:
-      '@types/node':
-        optional: true
-
-  '@inquirer/select@5.1.0':
-    resolution: {integrity: sha512-OyYbKnchS1u+zRe14LpYrN8S0wH1vD0p2yKISvSsJdH2TpI87fh4eZdWnpdbrGauCRWDph3NwxRmM4Pcm/hx1Q==}
     engines: {node: '>=23.5.0 || ^22.13.0 || ^21.7.0 || ^20.12.0'}
     peerDependencies:
       '@types/node': '>=18'
@@ -13294,8 +13267,8 @@ packages:
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
 
-  stacktracey@2.1.8:
-    resolution: {integrity: sha512-Kpij9riA+UNg7TnphqjH7/CzctQ/owJGNbFkfEeve4Z4uxT5+JapVLFXcsurIfN34gnTWZNJ/f7NMG0E8JDzTw==}
+  stacktracey@2.2.0:
+    resolution: {integrity: sha512-ETyQEz+CzXiLjEbyJqpbp+/T79RQD/6wqFucRBIlVNZfYq2Ay7wbretD4cxpbymZlaPWx58aIhPEY1Cr8DlVvg==}
 
   statuses@2.0.1:
     resolution: {integrity: sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==}
@@ -13463,11 +13436,11 @@ packages:
       postcss-html: ^1.0.0
       stylelint: '>=14.0.0'
 
-  stylelint-config-recess-order@7.6.1:
-    resolution: {integrity: sha512-ac0H/Iy2chh1YBADrua87G+nJCmG/SdG7gjnoLvtfpN0D+RuNfuADawfbCKvm0LMp5hvuRFNkJsu6xNoLM5ToA==}
+  stylelint-config-recess-order@7.7.0:
+    resolution: {integrity: sha512-TWRkg+BrwHOki4pi9y1emWgx6pFwZXOYZhNsbEObke/mzYUJVJvDEzJJQXhH7ajslQJGcrExy8ZvJqDiUbhFpA==}
     peerDependencies:
       stylelint: ^16.18.0 || ^17.0.0
-      stylelint-order: ^7.0.0
+      stylelint-order: ^7.0.0 || ^8.0.0
 
   stylelint-config-recommended-scss@17.0.0:
     resolution: {integrity: sha512-VkVD9r7jfUT/dq3mA3/I1WXXk2U71rO5wvU2yIil9PW5o1g3UM7Xc82vHmuVJHV7Y8ok5K137fmW5u3HbhtTOA==}
@@ -13513,8 +13486,8 @@ packages:
     peerDependencies:
       stylelint: ^14.0.0 || ^15.0.0 || ^16.0.1
 
-  stylelint-plugin-tailwindcss@0.0.2:
-    resolution: {integrity: sha512-zTXgiXqbB9Xu6pqWpjr8XCCYlPPZmHQiS0uyUbn1J6SEn7HKXmQEnXmRnmH7Gu51sfILMAexEAhvQgD8gU2w5Q==}
+  stylelint-plugin-tailwindcss@0.0.3:
+    resolution: {integrity: sha512-je5bu9j+AtFxVGvHNsq5A6gEyW4aDatydxnG8J2DZKwi4TUjxu0jHWo9VrUU/vlukBLLQF1rnFCvdW3YPCQbZw==}
     peerDependencies:
       stylelint: ^17.4.0
       tailwindcss: ^3.4.0 || ^4.0.0
@@ -14300,8 +14273,8 @@ packages:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
     hasBin: true
 
-  valibot@1.2.0:
-    resolution: {integrity: sha512-mm1rxUsmOxzrwnX5arGS+U4T25RdvpPjPN4yR0u9pUBov9+zGVtO84tif1eY4r6zWxVxu3KzIyknJy3rxfRZZg==}
+  valibot@1.3.0:
+    resolution: {integrity: sha512-SItIaOFnWYho/AcRU5gOtyfkTsuDTC3tRv+jy4/py8xERPnvHdM+ybD1iIqWTATVWG1nZetOfwZKq5upBjSqzw==}
     peerDependencies:
       typescript: '>=5'
     peerDependenciesMeta:
@@ -16802,7 +16775,7 @@ snapshots:
       '@commitlint/types': 20.5.0
       conventional-changelog-conventionalcommits: 9.3.0
 
-  '@icebreakers/eslint-config@1.6.31(@typescript-eslint/rule-tester@8.56.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.57.1(typescript@5.9.3))(@typescript-eslint/utils@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@vue/compiler-sfc@3.5.30)(eslint-plugin-pnpm@1.6.0(eslint@10.0.3(jiti@2.6.1)))(eslint@10.0.3(jiti@2.6.1))(globals@17.4.0)(tailwindcss@4.2.1)(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)))':
+  '@icebreakers/eslint-config@1.6.33(@typescript-eslint/rule-tester@8.56.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.57.1(typescript@5.9.3))(@typescript-eslint/utils@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@vue/compiler-sfc@3.5.30)(eslint-plugin-pnpm@1.6.0(eslint@10.0.3(jiti@2.6.1)))(eslint@10.0.3(jiti@2.6.1))(globals@17.4.0)(tailwindcss@4.2.1)(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)))':
     dependencies:
       '@antfu/eslint-config': 7.7.3(@eslint-react/eslint-plugin@3.0.0(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@next/eslint-plugin-next@16.1.7)(@typescript-eslint/rule-tester@8.56.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.57.1(typescript@5.9.3))(@typescript-eslint/utils@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@unocss/eslint-plugin@66.6.6(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@vue/compiler-sfc@3.5.30)(eslint-plugin-format@2.0.1(eslint@10.0.3(jiti@2.6.1)))(eslint-plugin-jsx-a11y@6.10.2(eslint@10.0.3(jiti@2.6.1)))(eslint-plugin-react-hooks@7.0.1(eslint@10.0.3(jiti@2.6.1)))(eslint-plugin-react-refresh@0.5.2(eslint@10.0.3(jiti@2.6.1)))(eslint-plugin-vuejs-accessibility@2.5.0(eslint@10.0.3(jiti@2.6.1))(globals@17.4.0))(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)))
       '@eslint-react/eslint-plugin': 3.0.0(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3)
@@ -16847,19 +16820,19 @@ snapshots:
       - typescript
       - vitest
 
-  '@icebreakers/monorepo-templates@0.1.15(@types/node@25.5.0)':
+  '@icebreakers/monorepo-templates@0.1.16(@types/node@25.5.0)':
     dependencies:
-      '@inquirer/checkbox': 5.1.0(@types/node@25.5.0)
-      '@inquirer/input': 5.0.8(@types/node@25.5.0)
-      '@inquirer/select': 5.1.0(@types/node@25.5.0)
+      '@inquirer/checkbox': 5.1.2(@types/node@25.5.0)
+      '@inquirer/input': 5.0.10(@types/node@25.5.0)
+      '@inquirer/select': 5.1.2(@types/node@25.5.0)
       commander: 14.0.3
       nanoexec: 1.1.0(@types/node@25.5.0)
     transitivePeerDependencies:
       - '@types/node'
 
-  '@icebreakers/monorepo@3.2.17(@types/node@25.5.0)(magicast@0.5.2)(typanion@3.14.0)':
+  '@icebreakers/monorepo@3.2.18(@types/node@25.5.0)(magicast@0.5.2)(typanion@3.14.0)':
     dependencies:
-      '@icebreakers/monorepo-templates': 0.1.15(@types/node@25.5.0)
+      '@icebreakers/monorepo-templates': 0.1.16(@types/node@25.5.0)
       '@pnpm/find-workspace-dir': 1000.1.4
       '@pnpm/logger': 1001.0.1
       '@pnpm/types': 1001.3.0
@@ -16884,15 +16857,15 @@ snapshots:
       - supports-color
       - typanion
 
-  '@icebreakers/stylelint-config@2.0.6(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1)':
+  '@icebreakers/stylelint-config@2.0.7(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1)':
     dependencies:
       comment-json: 4.6.2
       postcss-html: 1.8.1
-      stylelint-config-recess-order: 7.6.1(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))
+      stylelint-config-recess-order: 7.7.0(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))
       stylelint-config-recommended-scss: 17.0.0(postcss@8.5.8)(stylelint@17.4.0(typescript@5.9.3))
       stylelint-config-recommended-vue: 1.6.1(postcss-html@1.8.1)(stylelint@17.4.0(typescript@5.9.3))
       stylelint-config-standard-scss: 17.0.0(postcss@8.5.8)(stylelint@17.4.0(typescript@5.9.3))
-      stylelint-plugin-tailwindcss: 0.0.2(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1)
+      stylelint-plugin-tailwindcss: 0.0.3(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1)
     transitivePeerDependencies:
       - postcss
       - stylelint
@@ -17030,15 +17003,6 @@ snapshots:
 
   '@inquirer/ansi@2.0.4': {}
 
-  '@inquirer/checkbox@5.1.0(@types/node@25.5.0)':
-    dependencies:
-      '@inquirer/ansi': 2.0.4
-      '@inquirer/core': 11.1.7(@types/node@25.5.0)
-      '@inquirer/figures': 2.0.4
-      '@inquirer/type': 4.0.4(@types/node@25.5.0)
-    optionalDependencies:
-      '@types/node': 25.5.0
-
   '@inquirer/checkbox@5.1.2(@types/node@25.5.0)':
     dependencies:
       '@inquirer/ansi': 2.0.4
@@ -17105,13 +17069,6 @@ snapshots:
     optionalDependencies:
       '@types/node': 25.5.0
 
-  '@inquirer/input@5.0.8(@types/node@25.5.0)':
-    dependencies:
-      '@inquirer/core': 11.1.7(@types/node@25.5.0)
-      '@inquirer/type': 4.0.4(@types/node@25.5.0)
-    optionalDependencies:
-      '@types/node': 25.5.0
-
   '@inquirer/number@4.0.10(@types/node@25.5.0)':
     dependencies:
       '@inquirer/core': 11.1.7(@types/node@25.5.0)
@@ -17151,15 +17108,6 @@ snapshots:
 
   '@inquirer/search@4.1.6(@types/node@25.5.0)':
     dependencies:
-      '@inquirer/core': 11.1.7(@types/node@25.5.0)
-      '@inquirer/figures': 2.0.4
-      '@inquirer/type': 4.0.4(@types/node@25.5.0)
-    optionalDependencies:
-      '@types/node': 25.5.0
-
-  '@inquirer/select@5.1.0(@types/node@25.5.0)':
-    dependencies:
-      '@inquirer/ansi': 2.0.4
       '@inquirer/core': 11.1.7(@types/node@25.5.0)
       '@inquirer/figures': 2.0.4
       '@inquirer/type': 4.0.4(@types/node@25.5.0)
@@ -18324,7 +18272,7 @@ snapshots:
       ramda: '@pnpm/ramda@0.28.1'
       rxjs: 7.8.2
       semver: 7.7.4
-      stacktracey: 2.1.8
+      stacktracey: 2.2.0
       string-length: 4.0.2
 
   '@pnpm/default-resolver@1002.3.7(@pnpm/logger@1001.0.1)(@pnpm/worker@1000.6.6(@pnpm/logger@1001.0.1)(@types/node@25.5.0))(typanion@3.14.0)':
@@ -20252,9 +20200,9 @@ snapshots:
       d3-selection: 3.0.0
       d3-transition: 3.0.1(d3-selection@3.0.0)
 
-  '@valibot/to-json-schema@1.5.0(valibot@1.2.0(typescript@5.9.3))':
+  '@valibot/to-json-schema@1.5.0(valibot@1.3.0(typescript@5.9.3))':
     dependencies:
-      valibot: 1.2.0(typescript@5.9.3)
+      valibot: 1.3.0(typescript@5.9.3)
 
   '@vant/weapp@1.11.7': {}
 
@@ -22571,14 +22519,14 @@ snapshots:
   eslint-plugin-better-tailwindcss@4.3.2(eslint@10.0.3(jiti@2.6.1))(tailwindcss@4.2.1)(typescript@5.9.3):
     dependencies:
       '@eslint/css-tree': 3.6.9
-      '@valibot/to-json-schema': 1.5.0(valibot@1.2.0(typescript@5.9.3))
+      '@valibot/to-json-schema': 1.5.0(valibot@1.3.0(typescript@5.9.3))
       enhanced-resolve: 5.20.1
       jiti: 2.6.1
       synckit: 0.11.12
       tailwind-csstree: 0.1.5
       tailwindcss: 4.2.1
       tsconfig-paths-webpack-plugin: 4.2.0
-      valibot: 1.2.0(typescript@5.9.3)
+      valibot: 1.3.0(typescript@5.9.3)
     optionalDependencies:
       eslint: 10.0.3(jiti@2.6.1)
     transitivePeerDependencies:
@@ -28026,7 +27974,7 @@ snapshots:
 
   stackback@0.0.2: {}
 
-  stacktracey@2.1.8:
+  stacktracey@2.2.0:
     dependencies:
       as-table: 1.0.55
       get-source: 2.0.12
@@ -28194,7 +28142,7 @@ snapshots:
       postcss-html: 1.8.1
       stylelint: 17.4.0(typescript@5.9.3)
 
-  stylelint-config-recess-order@7.6.1(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3)):
+  stylelint-config-recess-order@7.7.0(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3)):
     dependencies:
       stylelint: 17.4.0(typescript@5.9.3)
       stylelint-order: 6.0.4(stylelint@17.4.0(typescript@5.9.3))
@@ -28239,7 +28187,7 @@ snapshots:
       postcss-sorting: 8.0.2(postcss@8.5.8)
       stylelint: 17.4.0(typescript@5.9.3)
 
-  stylelint-plugin-tailwindcss@0.0.2(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1):
+  stylelint-plugin-tailwindcss@0.0.3(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1):
     dependencies:
       postcss-tailwindcss: 0.0.2
       stylelint: 17.4.0(typescript@5.9.3)
@@ -29215,7 +29163,7 @@ snapshots:
 
   uuid@9.0.1: {}
 
-  valibot@1.2.0(typescript@5.9.3):
+  valibot@1.3.0(typescript@5.9.3):
     optionalDependencies:
       typescript: 5.9.3
 
