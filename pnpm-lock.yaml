@@ -1453,9 +1453,6 @@ importers:
       '@volar/typescript':
         specifier: ^2.4.28
         version: 2.4.28
-      '@vue/compiler-core':
-        specifier: 'catalog:'
-        version: 3.5.30
       '@vue/language-core':
         specifier: 'catalog:'
         version: 3.2.5

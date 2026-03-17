@@ -99,7 +99,6 @@
   },
   "dependencies": {
     "@volar/typescript": "^2.4.28",
-    "@vue/compiler-core": "catalog:",
     "@vue/language-core": "catalog:",
     "@weapp-core/init": "workspace:*",
     "@weapp-core/logger": "workspace:*",
