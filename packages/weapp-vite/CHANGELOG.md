@@ -1,5 +1,19 @@
 # weapp-vite
 
+## 6.10.0
+
+### Minor Changes
+
+- ✨ **将 `weapp-vite analyze` 的仪表盘资源从主包中拆分为独立的可选安装包 `@weapp-vite/dashboard`。未安装该包时，CLI 会提示对应的安装命令并自动降级为仅输出分析结果，不再要求主包默认携带大体积 dashboard 静态资源。** [`be412dd`](https://github.com/weapp-vite/weapp-vite/commit/be412dda3507e7c29cb25be0e90d5e5374f18fde) by @sonofmagic
+
+### Patch Changes
+
+- 🐛 **修复跨分包复制共享 chunk 时的 runtime 本地化遗漏问题。当子包 A 的 chunk 因被子包 B 引用而复制到子包 B 的 `weapp-shared` 目录后，构建流程现在会继续为子包 B 发出对应的 `rolldown-runtime.js`，避免运行时出现 `module 'subpackages/user/rolldown-runtime.js' is not defined` 一类错误。** [#342](https://github.com/weapp-vite/weapp-vite/pull/342) by @sonofmagic
+
+- 🐛 **修复 `plugin-demo` 这类同时构建主小程序与插件的场景里，`app` 构建错误地把 `plugin.json` 里的插件入口纳入同一编译图、以及插件主入口导出在独立构建中被错误裁剪的问题。现在插件入口仅会在 `plugin` target 下单独解析与产出，`project.config.json` 指定的 `dist/` 与 `dist-plugin/` 会各自独立 emit 正确产物，不再共享不必要的 JS chunk，并且 `requirePlugin()` 可以正确拿到插件导出。** [`5a11167`](https://github.com/weapp-vite/weapp-vite/commit/5a111674cf4a19ca466e9453f8363a7eebe1c449) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.10.0`, `wevu@6.10.0`
+
 ## 6.9.1
 
 ### Patch Changes
