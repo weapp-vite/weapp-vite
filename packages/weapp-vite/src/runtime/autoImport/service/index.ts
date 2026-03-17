@@ -47,6 +47,7 @@ export interface AutoImportService {
   resolve: (componentName: string, importerBaseName?: string) => AutoImportMatch | undefined
   filter: (id: string, meta?: SubPackageMetaValue) => boolean
   getRegisteredLocalComponents: () => LocalAutoImportMatch[]
+  awaitPendingRegistrations?: () => Promise<void>
   awaitManifestWrites: () => Promise<void>
 }
 
@@ -58,6 +59,7 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
   const componentMetadataMap = new Map<string, ComponentMetadata>()
   const resolverComponentNames = new Set<string>()
   const resolverComponentsMapRef = { value: {} as Record<string, string> }
+  const pendingRegistrations = new Set<Promise<void>>()
   const outputsState: OutputsState = {
     pendingWrite: undefined,
     writeRequested: false,
@@ -150,7 +152,15 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
     },
 
     async registerPotentialComponent(filePath: string) {
-      await registryHelpers.registerLocalComponent(filePath)
+      const task = Promise.resolve()
+        .then(async () => {
+          await registryHelpers.registerLocalComponent(filePath)
+        })
+        .finally(() => {
+          pendingRegistrations.delete(task)
+        })
+      pendingRegistrations.add(task)
+      await task
     },
 
     removePotentialComponent(filePath: string) {
@@ -221,8 +231,13 @@ export function createAutoImportService(ctx: MutableCompilerContext): AutoImport
       return Array.from(registry.values())
     },
 
+    awaitPendingRegistrations() {
+      return Promise.all([...pendingRegistrations]).then(() => {})
+    },
+
     awaitManifestWrites() {
       return Promise.all([
+        Promise.all([...pendingRegistrations]),
         outputsState.pendingWrite ?? Promise.resolve(),
         outputsState.pendingTypedWrite ?? Promise.resolve(),
         outputsState.pendingHtmlCustomDataWrite ?? Promise.resolve(),
