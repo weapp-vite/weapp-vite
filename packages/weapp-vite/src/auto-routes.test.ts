@@ -1,11 +1,11 @@
 import type { AutoRoutes } from './types/routes'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-describe('auto-routes module exports', () => {
+describe.sequential('auto-routes module exports', () => {
   const modulePath = './auto-routes'
 
   afterEach(() => {
-    delete (globalThis as any).wx
+    vi.unstubAllGlobals()
     vi.doUnmock('./context')
     vi.resetModules()
     vi.restoreAllMocks()
@@ -72,7 +72,7 @@ describe('auto-routes module exports', () => {
         callLog.navigateBack.push(option)
       },
     }
-    ;(globalThis as any).wx = wx
+    vi.stubGlobal('wx', wx)
 
     vi.doMock('./context', () => {
       return {
