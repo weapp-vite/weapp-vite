@@ -11,6 +11,7 @@
     [
       "@weapp-vite/ast",
       "weapp-vite",
+      "@weapp-vite/dashboard",
       "wevu",
       "@wevu/compiler"
     ]
