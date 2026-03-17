@@ -89,8 +89,6 @@
     "stub": "unbuild --stub",
     "dev": "tsdown -w --sourcemap",
     "build": "tsdown",
-    "dev:dashboard": "vite --config analyze-dashboard/vite.config.ts",
-    "preview:dashboard": "vite preview --config analyze-dashboard/vite.config.ts",
     "release": "tsx scripts/release.ts",
     "bench": "vitest bench -c vitest.bench.config.ts",
     "test:dev": "vitest",
