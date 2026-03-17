@@ -108,7 +108,7 @@ describe('core lifecycle transform hook injectWeapi', () => {
     expect(parseSpy.parse).not.toHaveBeenCalled()
   })
 
-  it('uses rolldown parse for fast rejection when ast engine is oxc', async () => {
+  it('fast rejects without rolldown parse when ast engine is oxc and source has no platform api access', async () => {
     const transform = createTransformHook({
       ctx: {
         configService: {
@@ -132,6 +132,6 @@ describe('core lifecycle transform hook injectWeapi', () => {
 
     const result = await transform.call(parseSpy, 'export const value = foo.bar({ title: "ok" })', '/project/src/a.ts')
     expect(result).toBeNull()
-    expect(parseSpy.parse).toHaveBeenCalledOnce()
+    expect(parseSpy.parse).not.toHaveBeenCalled()
   })
 })
