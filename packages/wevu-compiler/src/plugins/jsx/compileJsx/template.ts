@@ -3,7 +3,7 @@ import type { CompileVueFileOptions } from '../../vue/transform/compileVueFile/t
 import type { JsxCompileContext } from './types'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
 import { wechatPlatform } from '../../vue/compiler/template/platforms'
-import { analyzeJsxAst, collectJsxAutoComponentContext } from './analysis'
+import * as analysis from './analysis'
 import { compileRenderableExpression } from './render'
 
 export function createJsxCompileContext(options?: CompileVueFileOptions): JsxCompileContext {
@@ -21,7 +21,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
   const context = createJsxCompileContext(options)
 
-  const { renderExpression } = analyzeJsxAst(ast, context)
+  const { renderExpression } = analysis.analyzeJsxAst(ast, context)
   if (!renderExpression) {
     context.warnings = context.warnings.map(message => (
       message === '未识别到默认导出组件。'
@@ -45,7 +45,7 @@ export function compileJsxTemplate(source: string, filename: string, options?: C
 
 export function collectJsxAutoComponents(source: string, filename: string, options?: CompileVueFileOptions) {
   const context = createJsxCompileContext(options)
-  return collectJsxAutoComponentContext(source, filename, context, {
+  return analysis.collectJsxAutoComponentContext(source, filename, context, {
     astEngine: options?.astEngine,
     warn: options?.warn,
   })
@@ -58,7 +58,7 @@ export function compileJsxTemplateAndCollectComponents(source: string, filename:
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as File
   const context = createJsxCompileContext(options)
 
-  const { renderExpression, autoComponentContext } = analyzeJsxAst(ast, context)
+  const { renderExpression, autoComponentContext } = analysis.analyzeJsxAst(ast, context)
 
   let template: string | undefined
   if (renderExpression) {
