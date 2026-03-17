@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -7,6 +8,7 @@ interface WorkspacePackage {
   dir: string
   name: string
   relativeDir: string
+  private: boolean
 }
 
 interface DistSizeEntry extends WorkspacePackage {
@@ -14,20 +16,25 @@ interface DistSizeEntry extends WorkspacePackage {
   fileCount: number
 }
 
-interface DistSizeGroup {
+interface PublishSizeEntry extends WorkspacePackage {
+  packedBytes: number
+  unpackedBytes: number
+  fileCount: number
+  filename: string
+}
+
+interface SizeGroup<TEntry> {
   key: 'packages' | 'e2e-apps'
   label: string
-  entries: DistSizeEntry[]
+  entries: TEntry[]
 }
 
 const ROOT = process.cwd()
 const WORKSPACE_DIRS = ['packages', '@weapp-core', 'e2e-apps', 'extensions']
 const INFO_COLOR = colors.cyan
 const MUTED_COLOR = colors.dim
+const NPM_PACK_CACHE_DIR = path.join(ROOT, '.cache', 'npm-pack-report')
 
-/**
- * @description 将字节数格式化为易读体积。
- */
 function formatBytes(bytes: number) {
   if (bytes < 1024) {
     return `${bytes} B`
@@ -46,9 +53,6 @@ function formatBytes(bytes: number) {
   return `${value.toFixed(precision)} ${units[unitIndex]}`
 }
 
-/**
- * @description 递归统计目录体积与文件数。
- */
 async function getDirectorySize(dir: string): Promise<{ bytes: number, fileCount: number }> {
   let bytes = 0
   let fileCount = 0
@@ -75,9 +79,6 @@ async function getDirectorySize(dir: string): Promise<{ bytes: number, fileCount
   return { bytes, fileCount }
 }
 
-/**
- * @description 根据体积分级返回染色函数。
- */
 function resolveSizeColor(bytes: number) {
   if (bytes >= 1024 * 1024) {
     return colors.red
@@ -88,25 +89,27 @@ function resolveSizeColor(bytes: number) {
   return colors.green
 }
 
-/**
- * @description 返回包所属展示分组。
- */
-function resolveGroupKey(relativeDir: string): DistSizeGroup['key'] {
+function resolveGroupKey(relativeDir: string): SizeGroup<unknown>['key'] {
   return relativeDir.startsWith('e2e-apps/') ? 'e2e-apps' : 'packages'
 }
 
-/**
- * @description 输出单个分组的体积列表。
- */
-function printGroup(group: DistSizeGroup, totalBytes: number) {
+function printGroup<TEntry extends { bytes?: number, packedBytes?: number, unpackedBytes?: number, fileCount: number, name: string, relativeDir: string }>(
+  group: SizeGroup<TEntry>,
+  totalBytes: number,
+  options: {
+    title: string
+    getSize: (entry: TEntry) => number
+    renderSuffix?: (entry: TEntry) => string
+  },
+) {
   if (group.entries.length === 0) {
     return
   }
 
-  const groupBytes = group.entries.reduce((sum, item) => sum + item.bytes, 0)
+  const groupBytes = group.entries.reduce((sum, item) => sum + options.getSize(item), 0)
   const groupFiles = group.entries.reduce((sum, item) => sum + item.fileCount, 0)
   const nameWidth = Math.max('Package'.length, ...group.entries.map(item => item.name.length))
-  const sizeWidth = Math.max('Dist Size'.length, ...group.entries.map(item => formatBytes(item.bytes).length))
+  const sizeWidth = Math.max(options.title.length, ...group.entries.map(item => formatBytes(options.getSize(item)).length))
   const fileWidth = Math.max('Files'.length, ...group.entries.map(item => String(item.fileCount).length))
   const separator = '─'.repeat(Math.max(72, nameWidth + sizeWidth + fileWidth + 24))
 
@@ -115,14 +118,19 @@ function printGroup(group: DistSizeGroup, totalBytes: number) {
   console.log(MUTED_COLOR(separator))
 
   for (const item of group.entries) {
-    const sizeText = formatBytes(item.bytes).padStart(sizeWidth)
-    const color = resolveSizeColor(item.bytes)
+    const itemBytes = options.getSize(item)
+    const sizeText = formatBytes(itemBytes).padStart(sizeWidth)
+    const color = resolveSizeColor(itemBytes)
     const name = item.name.padEnd(nameWidth)
     const files = String(item.fileCount).padStart(fileWidth)
-    const barUnits = Math.max(1, Math.min(24, Math.round((item.bytes / Math.max(totalBytes, 1)) * 24)))
+    const barUnits = Math.max(1, Math.min(24, Math.round((itemBytes / Math.max(totalBytes, 1)) * 24)))
     const bar = color('█'.repeat(barUnits)) + MUTED_COLOR('░'.repeat(24 - barUnits))
     console.log(`${INFO_COLOR(name)}  ${color(sizeText)}  ${MUTED_COLOR(`${files} files`)}  ${bar}`)
     console.log(`${MUTED_COLOR(' '.repeat(nameWidth + 2))}${MUTED_COLOR(item.relativeDir)}`)
+    const suffix = options.renderSuffix?.(item)
+    if (suffix) {
+      console.log(`${MUTED_COLOR(' '.repeat(nameWidth + 2))}${MUTED_COLOR(suffix)}`)
+    }
   }
 
   console.log(MUTED_COLOR(separator))
@@ -131,9 +139,6 @@ function printGroup(group: DistSizeGroup, totalBytes: number) {
   )
 }
 
-/**
- * @description 读取工作区包信息。
- */
 async function collectWorkspacePackages() {
   const packages: WorkspacePackage[] = []
 
@@ -155,11 +160,12 @@ async function collectWorkspacePackages() {
       const dir = path.join(baseDir, child.name)
       const packageJsonPath = path.join(dir, 'package.json')
       try {
-        const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8')) as { name?: string }
+        const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8')) as { name?: string, private?: boolean }
         packages.push({
           dir,
           name: packageJson.name ?? path.relative(ROOT, dir),
           relativeDir: path.relative(ROOT, dir),
+          private: Boolean(packageJson.private),
         })
       }
       catch {
@@ -171,11 +177,7 @@ async function collectWorkspacePackages() {
   return packages
 }
 
-/**
- * @description 输出已构建包 dist 体积汇总。
- */
-async function printDistSizeReport() {
-  const workspacePackages = await collectWorkspacePackages()
+async function collectDistEntries(workspacePackages: WorkspacePackage[]) {
   const entries: DistSizeEntry[] = []
 
   for (const item of workspacePackages) {
@@ -198,10 +200,73 @@ async function printDistSizeReport() {
   }
 
   entries.sort((a, b) => b.bytes - a.bytes || a.name.localeCompare(b.name))
+  return entries
+}
 
+function collectPublishEntries(workspacePackages: WorkspacePackage[]) {
+  const entries: PublishSizeEntry[] = []
+
+  for (const item of workspacePackages) {
+    if (item.private) {
+      continue
+    }
+
+    const result = spawnSync('npm', ['pack', '--json', '--dry-run'], {
+      cwd: item.dir,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        npm_config_cache: NPM_PACK_CACHE_DIR,
+      },
+    })
+
+    if (result.status !== 0) {
+      continue
+    }
+
+    const stdout = result.stdout.trim()
+    if (!stdout) {
+      continue
+    }
+
+    try {
+      const parsed = JSON.parse(stdout) as Array<{
+        filename?: string
+        size?: number
+        unpackedSize?: number
+        files?: Array<unknown>
+      }> | {
+        filename?: string
+        size?: number
+        unpackedSize?: number
+        files?: Array<unknown>
+      }
+      const pack = Array.isArray(parsed) ? parsed[0] : parsed
+      if (!pack?.size || !pack?.unpackedSize) {
+        continue
+      }
+      entries.push({
+        ...item,
+        packedBytes: pack.size,
+        unpackedBytes: pack.unpackedSize,
+        fileCount: pack.files?.length ?? 0,
+        filename: pack.filename ?? '',
+      })
+    }
+    catch {
+      continue
+    }
+  }
+
+  entries.sort((a, b) => b.unpackedBytes - a.unpackedBytes || a.name.localeCompare(b.name))
+  return entries
+}
+
+async function printDistSizeReport(workspacePackages: WorkspacePackage[]) {
+  const entries = await collectDistEntries(workspacePackages)
   const totalBytes = entries.reduce((sum, item) => sum + item.bytes, 0)
   const totalFiles = entries.reduce((sum, item) => sum + item.fileCount, 0)
-  const groups: DistSizeGroup[] = [
+  const groups: Array<SizeGroup<DistSizeEntry>> = [
     {
       key: 'packages',
       label: 'Packages',
@@ -218,7 +283,10 @@ async function printDistSizeReport() {
   console.log(colors.bold(colors.bgCyan(colors.black(' Dist Size Report '))))
   console.log(MUTED_COLOR(`Built packages with dist output: ${entries.length}`))
   for (const group of groups) {
-    printGroup(group, totalBytes)
+    printGroup(group, totalBytes, {
+      title: 'Dist Size',
+      getSize: entry => entry.bytes,
+    })
   }
   console.log('')
   console.log(
@@ -226,4 +294,47 @@ async function printDistSizeReport() {
   )
 }
 
-await printDistSizeReport()
+function printPublishSizeReport(workspacePackages: WorkspacePackage[]) {
+  const entries = collectPublishEntries(workspacePackages)
+  const totalPackedBytes = entries.reduce((sum, item) => sum + item.packedBytes, 0)
+  const totalUnpackedBytes = entries.reduce((sum, item) => sum + item.unpackedBytes, 0)
+  const totalFiles = entries.reduce((sum, item) => sum + item.fileCount, 0)
+  const groups: Array<SizeGroup<PublishSizeEntry>> = [
+    {
+      key: 'packages',
+      label: 'Publishable Packages',
+      entries: entries.filter(item => resolveGroupKey(item.relativeDir) === 'packages'),
+    },
+    {
+      key: 'e2e-apps',
+      label: 'Publishable E2E Apps',
+      entries: entries.filter(item => resolveGroupKey(item.relativeDir) === 'e2e-apps'),
+    },
+  ]
+
+  console.log('')
+  console.log(colors.bold(colors.bgMagenta(colors.black(' NPM Publish Size Report '))))
+  console.log(MUTED_COLOR(`Publishable packages: ${entries.length}`))
+  for (const group of groups) {
+    printGroup(group, totalUnpackedBytes, {
+      title: 'Unpacked',
+      getSize: entry => entry.unpackedBytes,
+      renderSuffix: entry => `packed ${formatBytes(entry.packedBytes)} · ${entry.filename || 'npm pack --dry-run'}`,
+    })
+  }
+  console.log('')
+  console.log(
+    `${colors.bold('Packed Total')}  ${colors.bold(formatBytes(totalPackedBytes))}  ${MUTED_COLOR(`${totalFiles} files`)}`,
+  )
+  console.log(
+    `${colors.bold('Unpacked Total')}  ${colors.bold(formatBytes(totalUnpackedBytes))}  ${MUTED_COLOR(`${totalFiles} files`)}`,
+  )
+}
+
+async function main() {
+  const workspacePackages = await collectWorkspacePackages()
+  await printDistSizeReport(workspacePackages)
+  printPublishSizeReport(workspacePackages)
+}
+
+await main()
