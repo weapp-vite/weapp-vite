@@ -47,7 +47,10 @@ declare module 'weapp-vite/auto-routes' {
         "pages/issue-328/index",
         "subpackages/issue-327/index",
         "subpackages/item/index",
-        "subpackages/user/index"
+        "subpackages/item/issue-340-shared",
+        "subpackages/item/login-required/index",
+        "subpackages/user/index",
+        "subpackages/user/register/form"
     ];
     export type AutoRoutesSubPackages = [
         {
@@ -60,14 +63,17 @@ declare module 'weapp-vite/auto-routes' {
         {
             readonly root: "subpackages/item";
             readonly pages: [
-                "index"
+                "index",
+                "issue-340-shared",
+                "login-required/index"
             ];
             [k: string]: unknown;
         },
         {
             readonly root: "subpackages/user";
             readonly pages: [
-                "index"
+                "index",
+                "register/form"
             ];
             [k: string]: unknown;
         }
