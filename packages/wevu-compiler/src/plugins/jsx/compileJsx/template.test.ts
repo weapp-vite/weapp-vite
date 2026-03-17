@@ -8,10 +8,11 @@ function hasMissingDefaultExportWarning(warnings: string[], filename: string) {
 
 afterEach(() => {
   vi.doUnmock('./analysis')
+  vi.restoreAllMocks()
   vi.resetModules()
 })
 
-describe('compileJsx template helpers', () => {
+describe.sequential('compileJsx template helpers', () => {
   it('creates compile context from defaults and template overrides', async () => {
     const { createJsxCompileContext } = await import('./template')
     const defaultContext = createJsxCompileContext()
