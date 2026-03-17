@@ -718,6 +718,167 @@ describe('applySharedChunkStrategy', () => {
     }
   })
 
+  it('marks cross-subpackage duplicated chunks for runtime localization in target roots', () => {
+    const sharedFileName = 'subpackages/item/common.js'
+    const sharedChunk: OutputChunk = {
+      type: 'chunk',
+      code: 'const runtime = require("../rolldown-runtime.js");',
+      fileName: sharedFileName,
+      name: 'subpackages/item/common',
+      modules: {},
+      imports: ['subpackages/item/rolldown-runtime.js'],
+      dynamicImports: [],
+      exports: [],
+      isEntry: false,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${sharedFileName}.map`,
+      preliminaryFileName: sharedFileName,
+    }
+
+    const crossImporterFile = 'subpackages/user/register/form.js'
+    const crossImporter: OutputChunk = {
+      type: 'chunk',
+      code: 'const shared = require("../../item/common.js");',
+      fileName: crossImporterFile,
+      name: 'subpackages/user/register/form',
+      modules: {},
+      imports: [sharedFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${crossImporterFile}.map`,
+      preliminaryFileName: crossImporterFile,
+    }
+
+    const sameRootImporterFile = 'subpackages/item/login-required/index.js'
+    const sameRootImporter: OutputChunk = {
+      type: 'chunk',
+      code: 'const shared = require("../common.js");',
+      fileName: sameRootImporterFile,
+      name: 'subpackages/item/login-required/index',
+      modules: {},
+      imports: [sharedFileName],
+      dynamicImports: [],
+      exports: [],
+      isEntry: true,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${sameRootImporterFile}.map`,
+      preliminaryFileName: sameRootImporterFile,
+    }
+
+    const runtimeFileName = 'rolldown-runtime.js'
+    const runtimeChunk: OutputChunk = {
+      type: 'chunk',
+      code: '// runtime chunk',
+      fileName: runtimeFileName,
+      name: 'rolldown-runtime',
+      modules: {},
+      imports: [],
+      dynamicImports: [],
+      exports: [],
+      isEntry: false,
+      facadeModuleId: null,
+      isDynamicEntry: false,
+      moduleIds: [],
+      map: null,
+      sourcemapFileName: `${runtimeFileName}.map`,
+      preliminaryFileName: runtimeFileName,
+    }
+
+    const bundle: OutputBundle = {
+      [runtimeFileName]: runtimeChunk,
+      [sharedFileName]: sharedChunk,
+      [crossImporterFile]: crossImporter,
+      [sameRootImporterFile]: sameRootImporter,
+    }
+
+    const emitted: Array<{ fileName: string, source: string }> = []
+    const duplicateEvents: SharedChunkDuplicatePayload[] = []
+    const runtimeDuplicateEvents: RuntimeChunkDuplicatePayload[] = []
+    const pluginContext = {
+      pluginName: 'test',
+      meta: {
+        rollupVersion: '0',
+        rolldownVersion: '0',
+        watchMode: false,
+      },
+      emitFile: (file: { type: 'asset', fileName?: string, source: any }) => {
+        if (file.type === 'asset' && file.fileName) {
+          emitted.push({ fileName: file.fileName, source: String(file.source) })
+          return file.fileName
+        }
+        return ''
+      },
+      * getModuleIds() {},
+      getModuleInfo: () => null,
+      addWatchFile: () => {},
+      load: async () => {
+        throw new Error('未实现')
+      },
+      parse: () => {
+        throw new Error('未实现')
+      },
+      resolve: async () => null,
+      fs: {} as any,
+      getFileName: () => '',
+      error: (e: any) => {
+        throw (e instanceof Error ? e : new Error(String(e)))
+      },
+      warn: () => {},
+      info: () => {},
+      debug: () => {},
+    } as unknown as PluginContext
+
+    applySharedChunkStrategy.call(pluginContext, bundle, {
+      strategy: 'duplicate',
+      subPackageRoots: ['subpackages/item', 'subpackages/user'],
+      onDuplicate: event => duplicateEvents.push(event),
+    })
+
+    const runtimeLocalizationRoots = new Set<string>()
+    for (const event of duplicateEvents) {
+      if (!event.requiresRuntimeLocalization) {
+        continue
+      }
+      for (const { fileName } of event.duplicates) {
+        const match = fileName.startsWith('subpackages/item/')
+          ? 'subpackages/item'
+          : fileName.startsWith('subpackages/user/')
+            ? 'subpackages/user'
+            : null
+        if (match) {
+          runtimeLocalizationRoots.add(match)
+        }
+      }
+    }
+
+    applyRuntimeChunkLocalization.call(pluginContext, bundle, {
+      subPackageRoots: ['subpackages/item', 'subpackages/user'],
+      forceRoots: runtimeLocalizationRoots,
+      onDuplicate: event => runtimeDuplicateEvents.push(event),
+    })
+
+    const duplicatedSharedFile = `subpackages/user/${SUB_PACKAGE_SHARED_DIR}/subpackages_item.common.js`
+    const duplicatedRuntimeFile = 'subpackages/user/rolldown-runtime.js'
+    expect(emitted.map(item => item.fileName)).toContain(duplicatedSharedFile)
+    expect(emitted.map(item => item.fileName)).toContain(duplicatedRuntimeFile)
+
+    const duplicatedSharedSource = emitted.find(item => item.fileName === duplicatedSharedFile)?.source
+    expect(duplicatedSharedSource).toContain('require("../rolldown-runtime.js")')
+    expect(runtimeDuplicateEvents).toHaveLength(1)
+    expect(runtimeDuplicateEvents[0].duplicates.map(item => item.fileName)).toContain(duplicatedRuntimeFile)
+  })
+
   it('rewrites runtime import when duplicating shared chunk asset into sub-package', () => {
     const sharedFileName = `${SHARED_CHUNK_VIRTUAL_PREFIX}/pages/order/common.js`
     const sharedChunk: OutputChunk = {
