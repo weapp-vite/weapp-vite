@@ -223,6 +223,26 @@ describe('createConfigService', () => {
     expect(service.relativeOutputPath('/project/src/plugin/components/card.js')).toBe('plugin/components/card.js')
   })
 
+  it('falls back to plugin source base when plugin output root is outside outDir', () => {
+    const service = createConfigService(createCtx({
+      config: {
+        weapp: {
+          pluginRoot: 'plugin',
+        },
+      },
+      projectConfig: {
+        pluginRoot: 'dist-plugin',
+      },
+      srcRoot: 'miniprogram',
+      relativeSrcRoot: (p: string) => path.relative('/project/miniprogram', p) || '.',
+    }))
+
+    expect(service.absolutePluginRoot).toBe('/project/plugin')
+    expect(service.absolutePluginOutputRoot).toBe('/project/dist-plugin')
+    expect(service.relativeAbsoluteSrcRoot('/project/plugin/components/card.ts')).toBe('plugin/components/card.ts')
+    expect(service.relativeOutputPath('/project/plugin/components/card.ts')).toBe('plugin/components/card.ts')
+  })
+
   it('falls back to cwd-relative path when file is outside src and plugin root', () => {
     const service = createConfigService(createCtx({
       config: {

@@ -1,4 +1,5 @@
 import type { MutableCompilerContext } from '../../context'
+import { cp, mkdir, stat } from 'node:fs/promises'
 import path from 'pathe'
 import { rimraf } from 'rimraf'
 import { debug, logger } from '../../context/shared'
@@ -51,4 +52,35 @@ export async function cleanOutputs(
       logger.success(`已清空 ${configService.relativeCwd(pluginOutputRoot)} 目录`)
     }
   }
+}
+
+export async function syncExternalPluginOutputs(
+  configService: NonNullable<MutableCompilerContext['configService']>,
+) {
+  const pluginOutputRoot = configService.absolutePluginOutputRoot
+  const pluginRoot = configService.absolutePluginRoot
+  if (!pluginOutputRoot || !pluginRoot) {
+    return
+  }
+
+  const relativeToOutDir = path.relative(configService.outDir, pluginOutputRoot)
+  const isInsideOutDir = relativeToOutDir === '' || (!relativeToOutDir.startsWith('..') && !path.isAbsolute(relativeToOutDir))
+  if (isInsideOutDir) {
+    return
+  }
+
+  const pluginBundleRoot = path.resolve(configService.outDir, path.basename(pluginRoot))
+  try {
+    await stat(pluginBundleRoot)
+  }
+  catch {
+    return
+  }
+
+  await mkdir(pluginOutputRoot, { recursive: true })
+  await cp(pluginBundleRoot, pluginOutputRoot, {
+    recursive: true,
+    force: true,
+  })
+  logger.success(`已同步插件产物到 ${configService.relativeCwd(pluginOutputRoot)} 目录`)
 }

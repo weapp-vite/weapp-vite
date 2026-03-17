@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { cleanOutputs } from './outputs'
+import { cleanOutputs, syncExternalPluginOutputs } from './outputs'
 
 const rimrafMock = vi.hoisted(() => vi.fn(async () => []))
 const debugMock = vi.hoisted(() => vi.fn())
@@ -8,6 +8,19 @@ const loggerMock = vi.hoisted(() => ({
   success: vi.fn(),
 }))
 const getAlipayNpmDistDirNameMock = vi.hoisted(() => vi.fn(() => 'miniprogram_npm_alipay'))
+const statMock = vi.hoisted(() => vi.fn(async () => {
+  throw new Error('ENOENT')
+}))
+const mkdirMock = vi.hoisted(() => vi.fn(async () => undefined))
+const cpMock = vi.hoisted(() => vi.fn(async () => undefined))
+
+vi.mock('node:fs/promises', () => {
+  return {
+    stat: statMock,
+    mkdir: mkdirMock,
+    cp: cpMock,
+  }
+})
 
 vi.mock('rimraf', () => {
   return {
@@ -48,6 +61,12 @@ describe('buildPlugin outputs', () => {
     loggerMock.success.mockReset()
     getAlipayNpmDistDirNameMock.mockReset()
     getAlipayNpmDistDirNameMock.mockReturnValue('miniprogram_npm_alipay')
+    statMock.mockReset()
+    statMock.mockImplementation(async () => {
+      throw new Error('ENOENT')
+    })
+    mkdirMock.mockReset()
+    cpMock.mockReset()
   })
 
   it('cleans mp output and keeps miniprogram_npm for wechat', async () => {
@@ -110,5 +129,35 @@ describe('buildPlugin outputs', () => {
     await cleanOutputs(configService)
     expect(rimrafMock).not.toHaveBeenCalled()
     expect(loggerMock.success).not.toHaveBeenCalled()
+  })
+
+  it('syncs plugin outputs when plugin output root is outside outDir', async () => {
+    const configService = createConfigService({
+      absolutePluginRoot: '/project/plugin',
+      absolutePluginOutputRoot: '/project/dist-plugin',
+    })
+    statMock.mockResolvedValue({} as any)
+
+    await syncExternalPluginOutputs(configService)
+
+    expect(mkdirMock).toHaveBeenCalledWith('/project/dist-plugin', { recursive: true })
+    expect(cpMock).toHaveBeenCalledWith('/project/dist/plugin', '/project/dist-plugin', {
+      recursive: true,
+      force: true,
+    })
+    expect(loggerMock.success).toHaveBeenCalledWith('已同步插件产物到 dist-plugin 目录')
+  })
+
+  it('does not sync plugin outputs when plugin output root stays inside outDir', async () => {
+    const configService = createConfigService({
+      absolutePluginRoot: '/project/plugin',
+      absolutePluginOutputRoot: '/project/dist/plugin',
+    })
+    statMock.mockResolvedValue({} as any)
+
+    await syncExternalPluginOutputs(configService)
+
+    expect(mkdirMock).not.toHaveBeenCalled()
+    expect(cpMock).not.toHaveBeenCalled()
   })
 })

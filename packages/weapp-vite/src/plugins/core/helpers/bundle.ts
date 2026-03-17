@@ -5,21 +5,29 @@ import { isEmptyObject, isObject } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { changeFileExtension } from '../../../utils/file'
+import { normalizeRelativePath } from '../../../utils/path'
 import { emitJsonAsset } from '../../utils/wxmlEmit'
+
+const IMPLICIT_REQUIRE_RE = /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
 
 export function filterPluginBundleOutputs(
   bundle: OutputBundle,
   configService: CompilerContext['configService'],
 ) {
   const pluginOutputRoot = configService.absolutePluginOutputRoot
+  const pluginRoot = configService.absolutePluginRoot
+  const pluginBase = pluginRoot ? path.basename(pluginRoot) : 'plugin'
+  const relativeToOutDir = pluginOutputRoot
+    ? path.relative(configService.outDir, pluginOutputRoot)
+    : ''
+  const isPluginOutputInsideOutDir = pluginOutputRoot
+    ? relativeToOutDir === '' || (!relativeToOutDir.startsWith('..') && !path.isAbsolute(relativeToOutDir))
+    : false
+  const pluginBundleBase = pluginOutputRoot && isPluginOutputInsideOutDir
+    ? normalizeRelativePath(relativeToOutDir) || pluginBase
+    : pluginBase
   for (const [fileName] of Object.entries(bundle)) {
-    const absolute = path.resolve(configService.outDir, fileName)
-    const relative = pluginOutputRoot
-      ? path.relative(pluginOutputRoot, absolute)
-      : ''
-    const isPluginFile = pluginOutputRoot
-      ? !relative.startsWith('..') && !path.isAbsolute(relative)
-      : fileName.startsWith(path.basename(configService.absolutePluginRoot ?? 'plugin'))
+    const isPluginFile = fileName === pluginBundleBase || fileName.startsWith(`${pluginBundleBase}/`)
     if (!isPluginFile) {
       delete bundle[fileName]
     }
@@ -138,9 +146,8 @@ function findImplicitRequireRemovalRanges(
 ): RemovalRange[] {
   const code = chunk.code
   const ranges: RemovalRange[] = []
-  const requireRE = /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
 
-  for (const match of code.matchAll(requireRE)) {
+  for (const match of code.matchAll(IMPLICIT_REQUIRE_RE)) {
     const specifier = stripQuotes(match[1])
     const resolved = resolveRelativeImport(chunk.fileName, specifier)
 
@@ -161,7 +168,7 @@ function stripQuotes(value: string) {
     return value
   }
   const first = value[0]
-  const last = value[value.length - 1]
+  const last = value.at(-1)
   if ((first === last && (first === '"' || first === '\'')) || (first === '`' && last === '`')) {
     return value.slice(1, -1)
   }

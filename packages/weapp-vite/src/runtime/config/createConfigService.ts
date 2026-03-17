@@ -63,7 +63,13 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       return undefined
     }
     const outDir = path.resolve(options.cwd, options.mpDistRoot ?? '')
-    const normalized = normalizeRelativePath(path.relative(outDir, absoluteOutputRoot))
+    const relativeToOutDir = path.relative(outDir, absoluteOutputRoot)
+    const isInsideOutDir = relativeToOutDir === ''
+      || (!relativeToOutDir.startsWith('..') && !path.isAbsolute(relativeToOutDir))
+    if (!isInsideOutDir) {
+      return resolvePluginSourceBase()
+    }
+    const normalized = normalizeRelativePath(relativeToOutDir)
     if (!normalized || normalized === '.') {
       return resolvePluginSourceBase()
     }
