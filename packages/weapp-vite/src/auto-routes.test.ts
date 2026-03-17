@@ -94,6 +94,11 @@ describe.sequential('auto-routes module exports', () => {
   })
 
   it('wxRouter throws when route capability is unavailable', async () => {
+    delete (globalThis as Record<string | symbol, unknown>)[routeRuntimeOverrideKey]
+    vi.stubGlobal('wx', undefined)
+    vi.stubGlobal('tt', undefined)
+    vi.stubGlobal('my', undefined)
+
     vi.doMock('./context', () => {
       return {
         getCompilerContext: () => ({}),
