@@ -1,0 +1,57 @@
+name: Create Weapp Vite Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      package-spec:
+        description: npm dist-tag or version for create-weapp-vite
+        required: false
+        default: latest
+        type: string
+  schedule:
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Create Smoke (${{ matrix.os }} / Node ${{ matrix.node-version }})
+    timeout-minutes: 90
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [20, 22, 24]
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Enable Corepack
+        shell: bash
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
+
+      - name: Print package manager versions
+        shell: bash
+        run: |
+          node -v
+          npm -v
+          pnpm -v
+          yarn -v
+
+      - name: Run create-weapp-vite smoke matrix
+        env:
+          CREATE_WEAPP_VITE_SPEC: ${{ github.event.inputs['package-spec'] || 'latest' }}
+        run: node ./scripts/create-weapp-vite-smoke.mjs
