@@ -145,18 +145,9 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "catalog:",
-    "@types/semver": "catalog:",
-    "@vitejs/plugin-vue": "^6.0.5",
-    "bundle-require": "catalog:",
-    "del": "^8.0.1",
-    "echarts": "catalog:",
-    "esbuild": "catalog:",
-    "estree-walker": "catalog:",
     "magic-string": "catalog:",
     "oxc-parser": "^0.120.0",
     "oxc-walker": "^0.7.0",
-    "resolve.exports": "^2.0.3",
     "tailwindcss": "catalog:tailwind4",
     "ts-morph": "catalog:"
   }
