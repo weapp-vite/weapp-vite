@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
+import VueRouter from 'vue-router/vite'
 
 export default defineConfig({
   root: __dirname,
@@ -9,6 +10,13 @@ export default defineConfig({
   appType: 'spa',
   publicDir: false,
   plugins: [
+    VueRouter({
+      root: __dirname,
+      routesFolder: 'src/pages',
+      extensions: ['.vue'],
+      dts: 'typed-router.d.ts',
+      watch: false,
+    }),
     vue(),
     tailwindcss(),
   ],

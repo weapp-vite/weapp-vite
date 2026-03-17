@@ -19,7 +19,8 @@
     "skipLibCheck": true
   },
   "include": [
-    "src"
+    "src",
+    "typed-router.d.ts"
   ],
   "exclude": [
     "dist",
