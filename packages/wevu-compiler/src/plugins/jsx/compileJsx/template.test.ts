@@ -7,9 +7,7 @@ function hasMissingDefaultExportWarning(warnings: string[], filename: string) {
 }
 
 afterEach(() => {
-  vi.doUnmock('./analysis')
   vi.restoreAllMocks()
-  vi.resetModules()
 })
 
 describe.sequential('compileJsx template helpers', () => {
@@ -28,20 +26,14 @@ describe.sequential('compileJsx template helpers', () => {
   })
 
   it('rewrites missing default-export warning with filename', async () => {
-    vi.resetModules()
-    vi.doMock('./analysis', async () => {
-      const actual = await vi.importActual<typeof import('./analysis')>('./analysis')
+    const analysis = await import('./analysis')
+    vi.spyOn(analysis, 'analyzeJsxAst').mockImplementation((_ast: any, context: any) => {
+      context.warnings.push('未识别到默认导出组件。')
       return {
-        ...actual,
-        analyzeJsxAst: (_ast: any, context: any) => {
-          context.warnings.push('未识别到默认导出组件。')
-          return {
-            renderExpression: null,
-            autoComponentContext: {
-              templateTags: new Set<string>(),
-              importedComponents: [],
-            },
-          }
+        renderExpression: null,
+        autoComponentContext: {
+          templateTags: new Set<string>(),
+          importedComponents: [],
         },
       }
     })
@@ -53,25 +45,19 @@ describe.sequential('compileJsx template helpers', () => {
   })
 
   it('rewrites missing default-export warning when collecting components', async () => {
-    vi.resetModules()
-    vi.doMock('./analysis', async () => {
-      const actual = await vi.importActual<typeof import('./analysis')>('./analysis')
+    const analysis = await import('./analysis')
+    vi.spyOn(analysis, 'analyzeJsxAst').mockImplementation((_ast: any, context: any) => {
+      context.warnings.push('未识别到默认导出组件。')
       return {
-        ...actual,
-        analyzeJsxAst: (_ast: any, context: any) => {
-          context.warnings.push('未识别到默认导出组件。')
-          return {
-            renderExpression: null,
-            autoComponentContext: {
-              templateTags: new Set<string>(),
-              importedComponents: [{
-                localName: 'TButton',
-                importSource: '@/components/TButton',
-                importedName: 'default',
-                kind: 'default',
-              }],
-            },
-          }
+        renderExpression: null,
+        autoComponentContext: {
+          templateTags: new Set<string>(),
+          importedComponents: [{
+            localName: 'TButton',
+            importSource: '@/components/TButton',
+            importedName: 'default',
+            kind: 'default',
+          }],
         },
       }
     })
