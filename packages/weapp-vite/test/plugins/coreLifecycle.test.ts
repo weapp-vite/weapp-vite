@@ -133,7 +133,7 @@ describe('core plugin watchChange', () => {
 
     expect(wxmlService.scan).toHaveBeenCalledWith('/project/src/pages/index/index.wxml')
     expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
-    expect(markEntryDirty).toHaveBeenCalledWith('/project/src/pages/index/index.ts')
+    expect(markEntryDirty).toHaveBeenCalledWith('/project/src/pages/index/index.ts', 'direct')
   })
 
   it.each([
@@ -156,7 +156,7 @@ describe('core plugin watchChange', () => {
       )
 
     expect(findJsEntryMock).toHaveBeenCalledWith('/project/src/pages/index/index')
-    expect(markEntryDirty).toHaveBeenCalledWith('/project/src/pages/index/index.ts')
+    expect(markEntryDirty).toHaveBeenCalledWith('/project/src/pages/index/index.ts', 'direct')
   })
 
   it.each([
@@ -173,6 +173,6 @@ describe('core plugin watchChange', () => {
         { event: 'update' } as any,
       )
 
-    expect(markEntryDirty).toHaveBeenCalledWith(filePath)
+    expect(markEntryDirty).toHaveBeenCalledWith(filePath, 'direct')
   })
 })
