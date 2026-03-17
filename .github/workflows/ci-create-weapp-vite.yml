@@ -40,11 +40,6 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
       - name: Enable Corepack
         shell: bash
         run: |
@@ -70,10 +65,50 @@ jobs:
           print_version pnpm pnpm -v
           print_version yarn yarn -v
           print_version bun bun --version
-          print_version deno deno --version
 
       - name: Run create-weapp-vite smoke matrix
         env:
           CREATE_WEAPP_VITE_SPEC: ${{ github.event.inputs['package-spec'] || 'latest' }}
           CREATE_WEAPP_VITE_TEMPLATES: default,lib,wevu,wevu-tdesign,tailwindcss,vant,tdesign
+          CREATE_WEAPP_VITE_SCENARIOS: pnpm,yarn,npm,bun
+          CREATE_WEAPP_VITE_REPORT_FILE: ${{ runner.temp }}/create-weapp-vite-smoke-report/report.json
+          CREATE_WEAPP_VITE_REPORT_OS: ${{ matrix.os }}
+          CREATE_WEAPP_VITE_REPORT_NODE: ${{ matrix.node-version }}
         run: node ./scripts/create-weapp-vite-smoke.mjs
+
+      - name: Upload smoke report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: create-weapp-vite-smoke-report-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: ${{ runner.temp }}/create-weapp-vite-smoke-report/report.json
+          if-no-files-found: warn
+
+  report:
+    name: Smoke Report
+    if: always()
+    needs: [smoke]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Download smoke report artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: create-weapp-vite-smoke-report-*
+          path: artifacts/create-weapp-vite-smoke-report
+          merge-multiple: false
+
+      - name: Merge smoke reports
+        run: node ./scripts/merge-create-weapp-vite-smoke-reports.mjs artifacts/create-weapp-vite-smoke-report artifacts/create-weapp-vite-smoke-report-summary
+
+      - name: Append report to workflow summary
+        run: cat artifacts/create-weapp-vite-smoke-report-summary/create-weapp-vite-smoke-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload merged smoke report
+        uses: actions/upload-artifact@v4
+        with:
+          name: create-weapp-vite-smoke-report-summary
+          path: artifacts/create-weapp-vite-smoke-report-summary

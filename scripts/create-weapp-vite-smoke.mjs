@@ -12,7 +12,7 @@ const DEFAULT_TEMPLATE_NAMES = ['default', 'lib', 'wevu', 'wevu-tdesign', 'tailw
 const TEMPLATE_NAMES = (process.env.CREATE_WEAPP_VITE_TEMPLATES?.split(',') ?? DEFAULT_TEMPLATE_NAMES)
   .map(name => name.trim())
   .filter(Boolean)
-const DEFAULT_SCENARIO_NAMES = ['pnpm', 'yarn', 'npm', 'bun', 'deno']
+const DEFAULT_SCENARIO_NAMES = ['pnpm', 'yarn', 'npm', 'bun']
 const ENABLED_SCENARIO_NAMES = new Set(
   (process.env.CREATE_WEAPP_VITE_SCENARIOS?.split(',') ?? DEFAULT_SCENARIO_NAMES)
     .map(name => name.trim())
@@ -22,6 +22,14 @@ const INSTALL_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_INSTALL_TIMEOUT_
 const BUILD_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_BUILD_TIMEOUT_MS || 10 * 60 * 1000)
 const DEV_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_TIMEOUT_MS || 3 * 60 * 1000)
 const DEV_SETTLE_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_SETTLE_MS || 3 * 1000)
+const UPDATE_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_UPDATE_TIMEOUT_MS || 60 * 1000)
+const REPORT_FILE = process.env.CREATE_WEAPP_VITE_REPORT_FILE?.trim()
+const REPORT_META = {
+  os: process.env.CREATE_WEAPP_VITE_REPORT_OS?.trim() || process.platform,
+  nodeVersion: process.env.CREATE_WEAPP_VITE_REPORT_NODE?.trim() || process.version,
+  runId: process.env.GITHUB_RUN_ID?.trim() || '',
+  runAttempt: process.env.GITHUB_RUN_ATTEMPT?.trim() || '',
+}
 const NEWLINE_RE = /\r?\n/
 
 function getExecutableName(command) {
@@ -146,33 +154,6 @@ const SCENARIOS = [
       }
     },
   },
-  {
-    name: 'deno',
-    createCommand(projectName, templateName, packageSpec) {
-      return {
-        command: 'deno',
-        args: ['run', '-A', `npm:${getCreatePackageSpecifier('npm', packageSpec)}`, projectName, templateName],
-      }
-    },
-    installCommand() {
-      return {
-        command: 'deno',
-        args: ['install', '--allow-scripts', '--node-modules-dir=auto'],
-      }
-    },
-    buildCommand() {
-      return {
-        command: 'deno',
-        args: ['task', 'build'],
-      }
-    },
-    devCommand() {
-      return {
-        command: 'deno',
-        args: ['task', 'dev'],
-      }
-    },
-  },
 ].filter(scenario => ENABLED_SCENARIO_NAMES.has(scenario.name))
 
 function formatCommand(command, args) {
@@ -247,6 +228,12 @@ async function runCommand({ cwd, command, args, timeoutMs, label }) {
   })
 }
 
+async function timedRunCommand(input) {
+  const startedAt = Date.now()
+  await runCommand(input)
+  return Date.now() - startedAt
+}
+
 async function terminateProcess(child) {
   if (!child.pid || child.killed || child.exitCode !== null) {
     return
@@ -281,6 +268,65 @@ async function distHasOutputs(projectDir) {
   }
   catch {
     return false
+  }
+}
+
+async function findExistingFile(paths) {
+  for (const file of paths) {
+    try {
+      await fs.access(file)
+      return file
+    }
+    catch {
+      continue
+    }
+  }
+  return null
+}
+
+async function waitForFileChange(file, previousMtimeMs, timeoutMs) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      const stat = await fs.stat(file)
+      if (stat.mtimeMs > previousMtimeMs) {
+        return Date.now() - startedAt
+      }
+    }
+    catch {
+      // noop
+    }
+    await delay(500)
+  }
+  throw new Error(`Timed out waiting for file update: ${file}`)
+}
+
+async function measureDevUpdate(projectDir, label) {
+  const sourceFile = await findExistingFile([
+    path.join(projectDir, 'src/app.json'),
+    path.join(projectDir, 'src/app.ts'),
+    path.join(projectDir, 'src/app.js'),
+    path.join(projectDir, 'src/app.vue'),
+  ])
+  const distFile = await findExistingFile([
+    path.join(projectDir, 'dist/app.json'),
+    path.join(projectDir, 'dist/app.js'),
+  ])
+
+  if (!sourceFile || !distFile) {
+    throw new Error(`[${label}] Missing source/dist file for dev update measurement`)
+  }
+
+  const original = await fs.readFile(sourceFile, 'utf8')
+  const marker = `\n/* create-weapp-vite-smoke:${Date.now()} */\n`
+  const previousMtimeMs = (await fs.stat(distFile)).mtimeMs
+
+  try {
+    await fs.writeFile(sourceFile, `${original}${marker}`, 'utf8')
+    return await waitForFileChange(distFile, previousMtimeMs, UPDATE_TIMEOUT_MS)
+  }
+  finally {
+    await fs.writeFile(sourceFile, original, 'utf8')
   }
 }
 
@@ -326,6 +372,7 @@ async function runDevSmoke(projectDir, label, devCommand) {
       }
 
       if (await distHasOutputs(projectDir)) {
+        const readyMs = Date.now() - start
         await delay(DEV_SETTLE_MS)
         if (child.exitCode !== null) {
           throw new Error(
@@ -336,7 +383,11 @@ async function runDevSmoke(projectDir, label, devCommand) {
             ].filter(Boolean).join('\n\n'),
           )
         }
-        return
+        const updateMs = await measureDevUpdate(projectDir, label)
+        return {
+          readyMs,
+          updateMs,
+        }
       }
 
       if (Date.now() - start > DEV_TIMEOUT_MS) {
@@ -367,7 +418,7 @@ async function runScenario({ scenario, templateName, packageSpec, scenarioRoot }
 
   await fs.mkdir(scenarioRoot, { recursive: true })
 
-  await runCommand({
+  const createMs = await timedRunCommand({
     cwd: scenarioRoot,
     command: createCommand.command,
     args: createCommand.args,
@@ -377,7 +428,7 @@ async function runScenario({ scenario, templateName, packageSpec, scenarioRoot }
 
   const projectDir = path.join(scenarioRoot, projectName)
 
-  await runCommand({
+  const installMs = await timedRunCommand({
     cwd: projectDir,
     command: installCommand.command,
     args: installCommand.args,
@@ -385,7 +436,7 @@ async function runScenario({ scenario, templateName, packageSpec, scenarioRoot }
     label: `${labelPrefix} install`,
   })
 
-  await runCommand({
+  const buildMs = await timedRunCommand({
     cwd: projectDir,
     command: buildCommand.command,
     args: buildCommand.args,
@@ -393,7 +444,28 @@ async function runScenario({ scenario, templateName, packageSpec, scenarioRoot }
     label: `${labelPrefix} build`,
   })
 
-  await runDevSmoke(projectDir, `${labelPrefix} dev`, devCommand)
+  const dev = await runDevSmoke(projectDir, `${labelPrefix} dev`, devCommand)
+
+  return {
+    scenario: scenario.name,
+    template: templateName,
+    createMs,
+    installMs,
+    buildMs,
+    devReadyMs: dev.readyMs,
+    devUpdateMs: dev.updateMs,
+    projectDir,
+  }
+}
+
+async function writeReport(report) {
+  if (!REPORT_FILE) {
+    return
+  }
+
+  const dir = path.dirname(REPORT_FILE)
+  await fs.mkdir(dir, { recursive: true })
+  await fs.writeFile(REPORT_FILE, `${JSON.stringify(report, null, 2)}\n`, 'utf8')
 }
 
 async function main() {
@@ -405,18 +477,20 @@ async function main() {
   console.log(`Scenarios: ${SCENARIOS.map(scenario => scenario.name).join(', ')}`)
   console.log(`Workspace: ${tmpRoot}`)
 
+  const results = []
   const failures = []
 
   for (const scenario of SCENARIOS) {
     for (const templateName of TEMPLATE_NAMES) {
       const scenarioRoot = path.join(tmpRoot, `${scenario.name}-${templateName}`)
       try {
-        await runScenario({
+        const result = await runScenario({
           scenario,
           templateName,
           packageSpec: DEFAULT_PACKAGE_SPEC,
           scenarioRoot,
         })
+        results.push(result)
         console.log(`\n[${scenario.name}/${templateName}] OK`)
       }
       catch (error) {
@@ -430,6 +504,19 @@ async function main() {
       }
     }
   }
+
+  await writeReport({
+    ...REPORT_META,
+    packageSpec: DEFAULT_PACKAGE_SPEC,
+    templates: TEMPLATE_NAMES,
+    scenarios: SCENARIOS.map(scenario => scenario.name),
+    results,
+    failures: failures.map(failure => ({
+      scenario: failure.packageManager,
+      template: failure.templateName,
+      error: failure.error instanceof Error ? failure.error.message : String(failure.error),
+    })),
+  })
 
   if (failures.length > 0) {
     console.error(`\n${failures.length} scenario(s) failed.`)
