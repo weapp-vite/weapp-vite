@@ -4,7 +4,7 @@
 export const TEMPLATE_CATALOG = {
   '@babel/core': '^7.29.0',
   '@babel/generator': '^7.29.1',
-  '@babel/parser': '^7.29.0',
+  '@babel/parser': '^7.29.2',
   '@babel/traverse': '^7.29.0',
   '@babel/types': '^7.29.0',
   '@egoist/tailwindcss-icons': '^1.9.2',
