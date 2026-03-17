@@ -1,5 +1,5 @@
 ---
-'weapp-vite': patch
+'weapp-vite': minor
 'create-weapp-vite': patch
 '@weapp-vite/dashboard': minor
 ---
