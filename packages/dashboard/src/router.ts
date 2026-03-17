@@ -1,5 +1,12 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import { routes } from 'vue-router/auto-routes'
+
+const routes = [
+  {
+    path: '/',
+    name: 'dashboard-home',
+    component: () => import('./pages/index.vue'),
+  },
+]
 
 export const router = createRouter({
   history: createWebHashHistory(),
