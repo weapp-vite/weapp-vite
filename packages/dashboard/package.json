@@ -1,5 +1,5 @@
 {
-  "name": "weapp-vite-analyze-dashboard",
+  "name": "@weapp-vite/dashboard",
   "type": "module",
   "version": "6.9.1",
   "description": "Optional analyze dashboard for weapp-vite",
@@ -8,7 +8,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
-    "directory": "packages/weapp-vite-analyze-dashboard"
+    "directory": "packages/dashboard"
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
