@@ -39,7 +39,6 @@
     "@vitejs/plugin-vue": "^6.0.5",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
-    "unplugin-vue-router": "^0.19.2",
     "vite": "catalog:"
   },
   "publishConfig": {
