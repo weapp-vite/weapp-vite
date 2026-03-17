@@ -23,7 +23,7 @@ catalog:
   '@types/semver': ^7.7.1
   '@vant/weapp': ^1.11.7
   '@vue/compiler-core': ^3.5.30
-  '@vue/language-core': ^3.2.5
+  '@vue/language-core': ^3.2.6
   antd-mini: ^3.4.3
   autoprefixer: ^10.4.27
   bundle-require: ^5.1.0
@@ -59,7 +59,7 @@ catalog:
   vite: 8.0.0
   vite-plugin-inspect: ^11.3.3
   vue: ^3.5.30
-  vue-tsc: ^3.2.5
+  vue-tsc: ^3.2.6
   weapp-tailwindcss: ^4.10.3
   zod: ^4.3.6
 
