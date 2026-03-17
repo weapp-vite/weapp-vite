@@ -6,7 +6,6 @@ import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { pathToFileURL } from 'node:url'
 
-const PACKAGE_MANAGERS = ['pnpm', 'yarn', 'npm']
 const CREATE_PACKAGE_NAME = 'weapp-vite'
 const DEFAULT_PACKAGE_SPEC = process.env.CREATE_WEAPP_VITE_SPEC?.trim() || 'latest'
 const INSTALL_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_INSTALL_TIMEOUT_MS || 10 * 60 * 1000)
@@ -29,26 +28,143 @@ function getCreatePackageSpecifier(packageManager, packageSpec) {
   return `${CREATE_PACKAGE_NAME}@${packageSpec}`
 }
 
-function getCreateCommand(packageManager, projectName, templateName, packageSpec) {
-  const packageSpecifier = getCreatePackageSpecifier(packageManager, packageSpec)
-  return {
-    command: packageManager,
-    args: ['create', packageSpecifier, projectName, templateName],
-  }
-}
-
-function getInstallCommand(packageManager) {
-  if (packageManager === 'yarn') {
-    return {
-      command: packageManager,
-      args: ['install'],
-    }
-  }
-  return {
-    command: packageManager,
-    args: ['install'],
-  }
-}
+const SCENARIOS = [
+  {
+    name: 'pnpm',
+    createCommand(projectName, templateName, packageSpec) {
+      return {
+        command: 'pnpm',
+        args: ['create', getCreatePackageSpecifier('pnpm', packageSpec), projectName, templateName],
+      }
+    },
+    installCommand() {
+      return {
+        command: 'pnpm',
+        args: ['install'],
+      }
+    },
+    buildCommand() {
+      return {
+        command: 'pnpm',
+        args: ['build'],
+      }
+    },
+    devCommand() {
+      return {
+        command: 'pnpm',
+        args: ['dev'],
+      }
+    },
+  },
+  {
+    name: 'yarn',
+    createCommand(projectName, templateName, packageSpec) {
+      return {
+        command: 'yarn',
+        args: ['create', getCreatePackageSpecifier('yarn', packageSpec), projectName, templateName],
+      }
+    },
+    installCommand() {
+      return {
+        command: 'yarn',
+        args: ['install'],
+      }
+    },
+    buildCommand() {
+      return {
+        command: 'pnpm',
+        args: ['build'],
+      }
+    },
+    devCommand() {
+      return {
+        command: 'pnpm',
+        args: ['dev'],
+      }
+    },
+  },
+  {
+    name: 'npm',
+    createCommand(projectName, templateName, packageSpec) {
+      return {
+        command: 'npm',
+        args: ['create', getCreatePackageSpecifier('npm', packageSpec), projectName, templateName],
+      }
+    },
+    installCommand() {
+      return {
+        command: 'npm',
+        args: ['install'],
+      }
+    },
+    buildCommand() {
+      return {
+        command: 'pnpm',
+        args: ['build'],
+      }
+    },
+    devCommand() {
+      return {
+        command: 'pnpm',
+        args: ['dev'],
+      }
+    },
+  },
+  {
+    name: 'bun',
+    createCommand(projectName, templateName, packageSpec) {
+      return {
+        command: 'bun',
+        args: ['create', getCreatePackageSpecifier('bun', packageSpec), projectName, templateName],
+      }
+    },
+    installCommand() {
+      return {
+        command: 'bun',
+        args: ['install'],
+      }
+    },
+    buildCommand() {
+      return {
+        command: 'bun',
+        args: ['run', 'build'],
+      }
+    },
+    devCommand() {
+      return {
+        command: 'bun',
+        args: ['run', 'dev'],
+      }
+    },
+  },
+  {
+    name: 'deno',
+    createCommand(projectName, templateName, packageSpec) {
+      return {
+        command: 'deno',
+        args: ['run', '-A', `npm:${getCreatePackageSpecifier('npm', packageSpec)}`, projectName, templateName],
+      }
+    },
+    installCommand() {
+      return {
+        command: 'deno',
+        args: ['install', '--allow-scripts', '--node-modules-dir=auto'],
+      }
+    },
+    buildCommand() {
+      return {
+        command: 'deno',
+        args: ['task', 'build'],
+      }
+    },
+    devCommand() {
+      return {
+        command: 'deno',
+        args: ['task', 'dev'],
+      }
+    },
+  },
+]
 
 function formatCommand(command, args) {
   return [command, ...args].join(' ')
@@ -159,14 +275,14 @@ async function distHasOutputs(projectDir) {
   }
 }
 
-async function runDevSmoke(projectDir, label) {
+async function runDevSmoke(projectDir, label, devCommand) {
   await fs.rm(path.join(projectDir, 'dist'), { recursive: true, force: true })
 
-  console.log(`\n[${label}] pnpm dev`)
+  console.log(`\n[${label}] ${formatCommand(devCommand.command, devCommand.args)}`)
 
   const stdoutChunks = []
   const stderrChunks = []
-  const child = spawn(getExecutableName('pnpm'), ['dev'], {
+  const child = spawn(getExecutableName(devCommand.command), devCommand.args, {
     cwd: projectDir,
     env: {
       ...process.env,
@@ -193,7 +309,7 @@ async function runDevSmoke(projectDir, label) {
       if (child.exitCode !== null) {
         throw new Error(
           [
-            `[${label}] pnpm dev exited before outputs were ready with code ${child.exitCode}`,
+            `[${label}] dev command exited before outputs were ready with code ${child.exitCode}`,
             tail(stdoutChunks.join('')) ? `stdout:\n${tail(stdoutChunks.join(''))}` : '',
             tail(stderrChunks.join('')) ? `stderr:\n${tail(stderrChunks.join(''))}` : '',
           ].filter(Boolean).join('\n\n'),
@@ -205,7 +321,7 @@ async function runDevSmoke(projectDir, label) {
         if (child.exitCode !== null) {
           throw new Error(
             [
-              `[${label}] pnpm dev exited during settle window with code ${child.exitCode}`,
+              `[${label}] dev command exited during settle window with code ${child.exitCode}`,
               tail(stdoutChunks.join('')) ? `stdout:\n${tail(stdoutChunks.join(''))}` : '',
               tail(stderrChunks.join('')) ? `stderr:\n${tail(stderrChunks.join(''))}` : '',
             ].filter(Boolean).join('\n\n'),
@@ -217,7 +333,7 @@ async function runDevSmoke(projectDir, label) {
       if (Date.now() - start > DEV_TIMEOUT_MS) {
         throw new Error(
           [
-            `[${label}] Timed out waiting for pnpm dev outputs after ${DEV_TIMEOUT_MS}ms`,
+            `[${label}] Timed out waiting for dev outputs after ${DEV_TIMEOUT_MS}ms`,
             tail(stdoutChunks.join('')) ? `stdout:\n${tail(stdoutChunks.join(''))}` : '',
             tail(stderrChunks.join('')) ? `stderr:\n${tail(stderrChunks.join(''))}` : '',
           ].filter(Boolean).join('\n\n'),
@@ -241,17 +357,20 @@ async function listTemplateNames() {
     .sort((a, b) => a.localeCompare(b))
 }
 
-async function runScenario({ packageManager, templateName, packageSpec, scenarioRoot }) {
-  const projectName = `${packageManager}-${templateName}`
-  const labelPrefix = `${packageManager}/${templateName}`
-  const { command: createCommand, args: createArgs } = getCreateCommand(packageManager, projectName, templateName, packageSpec)
+async function runScenario({ scenario, templateName, packageSpec, scenarioRoot }) {
+  const projectName = `${scenario.name}-${templateName}`
+  const labelPrefix = `${scenario.name}/${templateName}`
+  const createCommand = scenario.createCommand(projectName, templateName, packageSpec)
+  const installCommand = scenario.installCommand(projectName, templateName, packageSpec)
+  const buildCommand = scenario.buildCommand(projectName, templateName, packageSpec)
+  const devCommand = scenario.devCommand(projectName, templateName, packageSpec)
 
   await fs.mkdir(scenarioRoot, { recursive: true })
 
   await runCommand({
     cwd: scenarioRoot,
-    command: createCommand,
-    args: createArgs,
+    command: createCommand.command,
+    args: createCommand.args,
     timeoutMs: INSTALL_TIMEOUT_MS,
     label: `${labelPrefix} create`,
   })
@@ -260,21 +379,21 @@ async function runScenario({ packageManager, templateName, packageSpec, scenario
 
   await runCommand({
     cwd: projectDir,
-    command: getInstallCommand(packageManager).command,
-    args: getInstallCommand(packageManager).args,
+    command: installCommand.command,
+    args: installCommand.args,
     timeoutMs: INSTALL_TIMEOUT_MS,
     label: `${labelPrefix} install`,
   })
 
   await runCommand({
     cwd: projectDir,
-    command: 'pnpm',
-    args: ['build'],
+    command: buildCommand.command,
+    args: buildCommand.args,
     timeoutMs: BUILD_TIMEOUT_MS,
-    label: `${labelPrefix} pnpm build`,
+    label: `${labelPrefix} build`,
   })
 
-  await runDevSmoke(projectDir, `${labelPrefix} pnpm dev`)
+  await runDevSmoke(projectDir, `${labelPrefix} dev`, devCommand)
 }
 
 async function main() {
@@ -283,32 +402,32 @@ async function main() {
   console.log(`Node ${process.version}`)
   console.log(`Package spec: ${DEFAULT_PACKAGE_SPEC}`)
   console.log(`Templates: ${templateNames.join(', ')}`)
-  console.log(`Package managers: ${PACKAGE_MANAGERS.join(', ')}`)
+  console.log(`Scenarios: ${SCENARIOS.map(scenario => scenario.name).join(', ')}`)
   console.log(`Workspace: ${TMP_ROOT}`)
 
   await fs.mkdir(TMP_ROOT, { recursive: true })
 
   const failures = []
 
-  for (const packageManager of PACKAGE_MANAGERS) {
+  for (const scenario of SCENARIOS) {
     for (const templateName of templateNames) {
-      const scenarioRoot = path.join(TMP_ROOT, `${packageManager}-${templateName}`)
+      const scenarioRoot = path.join(TMP_ROOT, `${scenario.name}-${templateName}`)
       try {
         await runScenario({
-          packageManager,
+          scenario,
           templateName,
           packageSpec: DEFAULT_PACKAGE_SPEC,
           scenarioRoot,
         })
-        console.log(`\n[${packageManager}/${templateName}] OK`)
+        console.log(`\n[${scenario.name}/${templateName}] OK`)
       }
       catch (error) {
         failures.push({
-          packageManager,
+          packageManager: scenario.name,
           templateName,
           error,
         })
-        console.error(`\n[${packageManager}/${templateName}] FAILED`)
+        console.error(`\n[${scenario.name}/${templateName}] FAILED`)
         console.error(error instanceof Error ? error.message : String(error))
       }
     }
