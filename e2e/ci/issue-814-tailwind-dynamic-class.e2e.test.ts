@@ -13,7 +13,14 @@ const CASES = {
 
 async function buildCase(appRoot: string) {
   const distRoot = path.resolve(appRoot, 'dist')
+  const patchCacheRoot = path.resolve(appRoot, 'node_modules/.cache/weapp-tailwindcss')
   await fs.remove(distRoot)
+  await fs.remove(patchCacheRoot)
+
+  await execa('pnpm', ['exec', 'weapp-tw', 'patch'], {
+    cwd: appRoot,
+    stdio: 'inherit',
+  })
 
   await execa('node', [CLI_PATH, 'build', appRoot, '--platform', 'weapp', '--skipNpm'], {
     cwd: appRoot,
