@@ -394,6 +394,10 @@ export function collectOnPageScrollPerformanceWarnings(
     engine?: AstEngineName
   },
 ): string[] {
+  if (!code.includes('onPageScroll')) {
+    return []
+  }
+
   if (options?.engine === 'oxc') {
     try {
       return collectWithOxc(code, filename)

@@ -6,6 +6,52 @@ import { parseJsLike, traverse } from '../../../utils/babel'
 import { isStaticObjectKeyMatch, isTopLevel } from './astUtils'
 import { createEmptyModuleAnalysis, createModuleAnalysis, createModuleAnalysisFromCode } from './moduleAnalysis'
 
+const WEVU_FACTORY_NAMES = new Set([
+  WE_VU_RUNTIME_APIS.defineComponent,
+  WE_VU_RUNTIME_APIS.createWevuComponent,
+])
+const REGEXP_META_CHARS_RE = /[.*+?^${}()|[\]\\]/g
+
+function escapeRegExp(value: string) {
+  return value.replace(REGEXP_META_CHARS_RE, '\\$&')
+}
+
+function mayContainNamedFactoryCall(code: string, localName: string) {
+  const pattern = new RegExp(
+    `\\b${escapeRegExp(localName)}\\b(?:\\s*<[^(){};]+>)?\\s*(?:\\?\\.)?\\s*\\(`,
+    'm',
+  )
+  return pattern.test(code)
+}
+
+function mayContainNamespaceFactoryCall(code: string, namespaceName: string) {
+  const factoryAlternation = Array.from(WEVU_FACTORY_NAMES, name => escapeRegExp(name))
+    .join('|')
+  const pattern = new RegExp(
+    `\\b${escapeRegExp(namespaceName)}\\b\\s*\\.\\s*(?:${factoryAlternation})\\b(?:\\s*<[^(){};]+>)?\\s*(?:\\?\\.)?\\s*\\(`,
+    'm',
+  )
+  return pattern.test(code)
+}
+
+function mayCallWevuFactoryByText(code: string, module: ModuleAnalysis) {
+  for (const [localName, binding] of module.importedBindings.entries()) {
+    if (binding.source !== WE_VU_MODULE_ID) {
+      continue
+    }
+    if (binding.kind === 'named' && WEVU_FACTORY_NAMES.has(binding.importedName)) {
+      if (mayContainNamedFactoryCall(code, localName)) {
+        return true
+      }
+      continue
+    }
+    if (binding.kind === 'namespace' && mayContainNamespaceFactoryCall(code, localName)) {
+      return true
+    }
+  }
+  return false
+}
+
 function unwrapTypeLikeExpression(node: t.Expression): t.Expression {
   if (t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node) || t.isTSNonNullExpression(node) || t.isTypeCastExpression(node)) {
     return unwrapTypeLikeExpression(node.expression as t.Expression)
@@ -61,12 +107,10 @@ export function getSetupFunctionFromOptionsObject(options: t.ObjectExpression): 
   return null
 }
 
-export function collectTargetOptionsObjects(
+function collectTargetOptionsObjectsWithModule(
   ast: t.File,
-  moduleId: string,
+  module: ModuleAnalysis,
 ): { optionsObjects: t.ObjectExpression[], module: ModuleAnalysis } {
-  const module = createModuleAnalysis(moduleId, ast)
-
   const optionsObjects: t.ObjectExpression[] = []
   const constObjectBindings = new Map<string, t.ObjectExpression>()
   const pendingConstObjectRefs: string[] = []
@@ -200,6 +244,14 @@ export function collectTargetOptionsObjects(
   return { optionsObjects, module }
 }
 
+export function collectTargetOptionsObjects(
+  ast: t.File,
+  moduleId: string,
+): { optionsObjects: t.ObjectExpression[], module: ModuleAnalysis } {
+  const module = createModuleAnalysis(moduleId, ast)
+  return collectTargetOptionsObjectsWithModule(ast, module)
+}
+
 export function collectTargetOptionsObjectsFromCode(
   code: string,
   moduleId: string,
@@ -241,6 +293,13 @@ export function collectTargetOptionsObjectsFromCode(
       }
     }
 
+    if (!mayCallWevuFactoryByText(code, module)) {
+      return {
+        optionsObjects: [],
+        module,
+      }
+    }
+
     // options 对象抽取仍然依赖 Babel AST 可变结构，暂时保持这条链路不变。
     const result = collectTargetOptionsObjects(parseJsLike(code), moduleId)
     return {
@@ -249,6 +308,6 @@ export function collectTargetOptionsObjectsFromCode(
     }
   }
 
-  const ast = createModuleAnalysisFromCode(moduleId, code, options).ast!
-  return collectTargetOptionsObjects(ast, moduleId)
+  const module = createModuleAnalysisFromCode(moduleId, code, options)
+  return collectTargetOptionsObjectsWithModule(module.ast!, module)
 }

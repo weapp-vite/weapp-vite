@@ -9,6 +9,24 @@ export interface ScriptSetupImport {
   kind: 'default' | 'named'
 }
 
+function mayContainRelevantScriptSetupImports(
+  scriptSetup: string,
+  templateComponentNames: Set<string>,
+) {
+  if (templateComponentNames.size === 0) {
+    return false
+  }
+  if (!scriptSetup.includes('import')) {
+    return false
+  }
+  for (const componentName of templateComponentNames) {
+    if (scriptSetup.includes(componentName)) {
+      return true
+    }
+  }
+  return false
+}
+
 function collectWithOxc(scriptSetup: string, templateComponentNames: Set<string>) {
   const results: ScriptSetupImport[] = []
   const ast = parseJsLikeWithEngine(scriptSetup, {
@@ -101,6 +119,10 @@ export function collectScriptSetupImportsFromCode(
     astEngine?: AstEngineName
   },
 ) {
+  if (!mayContainRelevantScriptSetupImports(scriptSetup, templateComponentNames)) {
+    return []
+  }
+
   const engine = options?.astEngine ?? 'babel'
 
   try {

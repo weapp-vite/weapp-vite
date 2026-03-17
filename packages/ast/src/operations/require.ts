@@ -10,6 +10,10 @@ export interface RequireToken {
   async?: boolean
 }
 
+function mayContainRequireCallByText(code: string) {
+  return code.includes('require(') || code.includes('require (') || code.includes('require`')
+}
+
 function getStaticRequireLiteralValue(node: any) {
   if (!node) {
     return null
@@ -81,6 +85,10 @@ export function mayContainStaticRequireLiteral(
 
   if (engine !== 'oxc') {
     return true
+  }
+
+  if (!mayContainRequireCallByText(code)) {
+    return false
   }
 
   try {

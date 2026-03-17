@@ -39,6 +39,10 @@ export interface JsxBabelModuleAnalysisOptions {
   ) => Expression | null
 }
 
+function mayContainJsxAutoComponentEntry(source: string) {
+  return source.includes('import') || source.includes('export default')
+}
+
 function defaultIsDefineComponentSource(source: string) {
   return source === 'vue'
 }
@@ -556,6 +560,13 @@ export function collectJsxAutoComponentsFromCode(
   source: string,
   options: JsxAutoComponentAnalysisOptions,
 ): JsxAutoComponentContext {
+  if (!mayContainJsxAutoComponentEntry(source)) {
+    return {
+      templateTags: new Set<string>(),
+      importedComponents: [],
+    }
+  }
+
   const normalizedOptions = {
     astEngine: options.astEngine ?? 'babel',
     isCollectableTag: options.isCollectableTag,
