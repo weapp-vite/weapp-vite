@@ -1,0 +1,20 @@
+@import 'tailwindcss';
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    color: rgb(241 245 249);
+    background-color: rgb(2 6 23);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #app {
+    min-height: 100vh;
+  }
+}

@@ -1,6 +1,6 @@
+import fs from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import fs from 'fs-extra'
 
 function findPackageRoot(from: string) {
   let current = from
@@ -21,4 +21,3 @@ function findPackageRoot(from: string) {
 const CURRENT_DIR = dirname(fileURLToPath(import.meta.url))
 
 export const PACKAGE_ROOT = findPackageRoot(CURRENT_DIR)
-export const ANALYZE_DASHBOARD_ROOT = join(PACKAGE_ROOT, 'modules/analyze-dashboard')

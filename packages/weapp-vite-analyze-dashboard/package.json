@@ -1,0 +1,47 @@
+{
+  "name": "weapp-vite-analyze-dashboard",
+  "type": "module",
+  "version": "6.9.1",
+  "description": "Optional analyze dashboard for weapp-vite",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "packages/weapp-vite-analyze-dashboard"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp-vite",
+    "analyze",
+    "dashboard"
+  ],
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "echarts": "catalog:",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "catalog:",
+    "@vitejs/plugin-vue": "^6.0.5",
+    "tailwindcss": "catalog:tailwind4",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

@@ -65,7 +65,11 @@ export function registerBuildCommand(cli: CAC) {
         }
         if (enableAnalyze) {
           const analyzeResult = await analyzeSubpackages(ctx)
-          analyzeHandle = await startAnalyzeDashboard(analyzeResult, { watch: true }) ?? undefined
+          analyzeHandle = await startAnalyzeDashboard(analyzeResult, {
+            watch: true,
+            cwd: configService.cwd,
+            packageManagerAgent: configService.packageManager.agent,
+          }) ?? undefined
         }
       }
       const webConfig = configService.weappWebConfig

@@ -246,7 +246,10 @@ export function registerAnalyzeCommand(cli: CAC) {
         }
         else {
           printAnalysisSummary(result)
-          await startAnalyzeDashboard(result)
+          await startAnalyzeDashboard(result, {
+            cwd: ctx.configService.cwd,
+            packageManagerAgent: ctx.configService.packageManager.agent,
+          })
         }
       }
       catch (error) {

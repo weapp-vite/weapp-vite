@@ -1,22 +1,42 @@
+import type { Agent } from 'package-manager-detector/commands'
 import type { PluginOption, ViteDevServer } from 'vite'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
+import fs from 'node:fs'
 import process from 'node:process'
-import fs from 'fs-extra'
+import { getPackageInfoSync } from 'local-pkg'
+import { resolveCommand } from 'package-manager-detector/commands'
+import path from 'pathe'
 import { createServer } from 'vite'
-import logger from '../../logger'
-import { ANALYZE_DASHBOARD_ROOT } from '../../packagePaths'
+import logger, { colors } from '../../logger'
 
 const ANALYZE_GLOBAL_KEY = '__WEAPP_VITE_ANALYZE_RESULT__'
+const ANALYZE_DASHBOARD_PACKAGE_NAME = 'weapp-vite-analyze-dashboard'
 
-function resolveDashboardRoot() {
-  if (fs.existsSync(ANALYZE_DASHBOARD_ROOT)) {
+function createInstallCommand(agent: Agent | undefined) {
+  const resolved = resolveCommand(agent ?? 'npm', 'install', [ANALYZE_DASHBOARD_PACKAGE_NAME])
+  if (!resolved) {
+    return `npm install ${ANALYZE_DASHBOARD_PACKAGE_NAME}`
+  }
+  return `${resolved.command} ${resolved.args.join(' ')}`
+}
+
+function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: Agent }) {
+  const packageInfo = getPackageInfoSync(ANALYZE_DASHBOARD_PACKAGE_NAME, {
+    paths: options?.cwd ? [options.cwd] : undefined,
+  })
+  const dashboardRoot = packageInfo
+    ? path.resolve(packageInfo.rootPath, 'dist')
+    : undefined
+
+  if (dashboardRoot && fs.existsSync(dashboardRoot)) {
     return {
-      root: ANALYZE_DASHBOARD_ROOT,
+      root: dashboardRoot,
     }
   }
-  throw new Error(
-    '[weapp-vite analyze] 未找到仪表盘产物，请先执行 `pnpm --filter weapp-vite run build:dashboard` 生成。',
-  )
+
+  logger.warn(`[weapp-vite analyze] 未安装可选仪表盘包 ${colors.bold(colors.green(ANALYZE_DASHBOARD_PACKAGE_NAME))}，已自动降级关闭 dashboard 能力。`)
+  logger.info(`如需启用，请执行 ${colors.bold(colors.green(createInstallCommand(options?.packageManagerAgent)))}`)
+  return undefined
 }
 
 function createAnalyzeHtmlPlugin(
@@ -87,9 +107,13 @@ export interface AnalyzeDashboardHandle {
 
 export async function startAnalyzeDashboard(
   result: AnalyzeSubpackagesResult,
-  options?: { watch?: boolean },
+  options?: { watch?: boolean, cwd?: string, packageManagerAgent?: Agent },
 ): Promise<AnalyzeDashboardHandle | void> {
-  const { root } = resolveDashboardRoot()
+  const resolved = resolveDashboardRoot(options)
+  if (!resolved) {
+    return
+  }
+  const { root } = resolved
 
   const state = { current: result }
   let serverRef: ViteDevServer | undefined
