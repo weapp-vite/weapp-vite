@@ -1,6 +1,3 @@
-import { deleteAsync } from 'del'
-// import { deleteAsync } from 'del'
-// import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { createCompilerContext } from '@/createContext'
@@ -13,7 +10,7 @@ describe('build-npm', () => {
     //   cwd: targetDir,
     //   stdio: 'inherit',
     // })
-    await deleteAsync(path.resolve(targetDir, 'dist'))
+    await fs.remove(path.resolve(targetDir, 'dist'))
 
     const ctx = await createCompilerContext({
       cwd: targetDir,
@@ -67,20 +64,19 @@ describe('build-npm', () => {
   })
 
   it('dedupes concurrent buildPackage tasks for the same dependency output', async () => {
-    await deleteAsync(path.resolve(targetDir, 'dist'))
+    await fs.remove(path.resolve(targetDir, 'dist'))
     const ctx = await createCompilerContext({
       cwd: targetDir,
     })
     const [mainRelation] = ctx.npmService.getPackNpmRelationList()
     const outDir = path.resolve(targetDir, mainRelation.miniprogramNpmDistDir, 'miniprogram_npm')
+    const buildTask = () => ctx.npmService.buildPackage({
+      dep: 'tdesign-miniprogram',
+      outDir,
+      isDependenciesCacheOutdate: true,
+    })
     await Promise.all(
-      Array.from({ length: 4 }, () => {
-        return ctx.npmService.buildPackage({
-          dep: 'tdesign-miniprogram',
-          outDir,
-          isDependenciesCacheOutdate: true,
-        })
-      }),
+      Array.from({ length: 4 }, (_, index) => index).map(() => buildTask()),
     )
 
     expect(await fs.pathExists(path.resolve(outDir, 'tdesign-miniprogram/button'))).toBe(true)
