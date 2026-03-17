@@ -36,6 +36,17 @@ function getExecutableName(command) {
   return process.platform === 'win32' ? `${command}.cmd` : command
 }
 
+function createChildProcess(command, args, options) {
+  if (process.platform === 'win32') {
+    return spawn(formatCommand(getExecutableName(command), args), {
+      ...options,
+      shell: true,
+    })
+  }
+
+  return spawn(getExecutableName(command), args, options)
+}
+
 function getCreatePackageSpecifier(packageManager, packageSpec) {
   if (!packageSpec || packageSpec === 'latest') {
     return packageManager === 'yarn'
@@ -173,7 +184,7 @@ async function runCommand({ cwd, command, args, timeoutMs, label }) {
   console.log(`\n[${label}] ${printableCommand}`)
 
   return await new Promise((resolve, reject) => {
-    const child = spawn(getExecutableName(command), args, {
+    const child = createChildProcess(command, args, {
       cwd,
       env: {
         ...process.env,
@@ -337,7 +348,7 @@ async function runDevSmoke(projectDir, label, devCommand) {
 
   const stdoutChunks = []
   const stderrChunks = []
-  const child = spawn(getExecutableName(devCommand.command), devCommand.args, {
+  const child = createChildProcess(devCommand.command, devCommand.args, {
     cwd: projectDir,
     env: {
       ...process.env,
