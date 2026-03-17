@@ -75,4 +75,5 @@ jobs:
       - name: Run create-weapp-vite smoke matrix
         env:
           CREATE_WEAPP_VITE_SPEC: ${{ github.event.inputs['package-spec'] || 'latest' }}
+          CREATE_WEAPP_VITE_TEMPLATES: default,lib,wevu,wevu-tdesign,tailwindcss,vant,tdesign
         run: node ./scripts/create-weapp-vite-smoke.mjs
