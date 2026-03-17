@@ -34,6 +34,7 @@ const WORKSPACE_DIRS = ['packages', '@weapp-core', 'e2e-apps', 'extensions']
 const INFO_COLOR = colors.cyan
 const MUTED_COLOR = colors.dim
 const NPM_PACK_CACHE_DIR = path.join(ROOT, '.cache', 'npm-pack-report')
+const ENABLE_PUBLISH_SIZE_REPORT = process.env.WEAPP_VITE_REPORT_PUBLISH_SIZE === '1'
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) {
@@ -334,7 +335,13 @@ function printPublishSizeReport(workspacePackages: WorkspacePackage[]) {
 async function main() {
   const workspacePackages = await collectWorkspacePackages()
   await printDistSizeReport(workspacePackages)
-  printPublishSizeReport(workspacePackages)
+  if (ENABLE_PUBLISH_SIZE_REPORT) {
+    printPublishSizeReport(workspacePackages)
+  }
+  else {
+    console.log('')
+    console.log(MUTED_COLOR('NPM publish size report disabled. Set WEAPP_VITE_REPORT_PUBLISH_SIZE=1 to enable.'))
+  }
 }
 
 await main()
