@@ -3,6 +3,7 @@ import { getCompilerContext } from './context'
 
 type RouteMethodName = 'switchTab' | 'reLaunch' | 'redirectTo' | 'navigateTo' | 'navigateBack'
 type RouteOption = Record<string, any> | undefined
+const ROUTE_RUNTIME_OVERRIDE_KEY = '__WEAPP_VITE_ROUTE_RUNTIME__'
 
 function createGetter<T>(resolver: () => T) {
   return {
@@ -34,6 +35,10 @@ const subPackages = routes.subPackages
 
 function resolveMiniProgramGlobal() {
   const runtime = globalThis as Record<string, any>
+  const overrideRuntime = runtime[ROUTE_RUNTIME_OVERRIDE_KEY]
+  if (overrideRuntime) {
+    return overrideRuntime
+  }
   return runtime.wx ?? runtime.tt ?? runtime.my
 }
 

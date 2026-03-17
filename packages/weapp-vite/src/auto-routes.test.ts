@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 describe.sequential('auto-routes module exports', () => {
   const modulePath = './auto-routes'
+  const routeRuntimeOverrideKey = '__WEAPP_VITE_ROUTE_RUNTIME__'
 
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -72,7 +73,7 @@ describe.sequential('auto-routes module exports', () => {
         callLog.navigateBack.push(option)
       },
     }
-    vi.stubGlobal('wx', wx)
+    vi.stubGlobal(routeRuntimeOverrideKey, wx)
 
     vi.doMock('./context', () => {
       return {
