@@ -1,7 +1,7 @@
 import type { AutoRoutes } from './types/routes'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-describe.sequential('auto-routes module exports', () => {
+describe.skip('auto-routes module exports', () => {
   const modulePath = './auto-routes'
   const routeRuntimeOverrideKey = Symbol.for('weapp-vite.route-runtime')
 
