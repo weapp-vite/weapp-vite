@@ -152,6 +152,25 @@ function readPackageJson(filePath) {
   return JSON.parse(readFileSync(filePath, 'utf8'))
 }
 
+function findWorkspaceRoot(from) {
+  let current = path.resolve(from)
+  while (true) {
+    const lockfilePath = path.join(current, 'pnpm-workspace.yaml')
+    const packageJsonPath = path.join(current, 'package.json')
+    if (existsSync(lockfilePath) && existsSync(packageJsonPath)) {
+      return current
+    }
+
+    const parent = path.dirname(current)
+    if (parent === current) {
+      break
+    }
+    current = parent
+  }
+
+  throw new Error(`workspace root not found from: ${from}`)
+}
+
 function verifyRolldownRequirePeer(projectRoot) {
   const packageJsonPath = path.join(projectRoot, 'packages/rolldown-require/package.json')
   const packageJson = readPackageJson(packageJsonPath)
@@ -170,7 +189,8 @@ function verifyRolldownRequirePeer(projectRoot) {
 
 function main() {
   try {
-    const projectRoot = path.resolve(process.env.INIT_CWD || process.cwd())
+    const scriptDir = path.dirname(fileURLToPath(import.meta.url))
+    const projectRoot = findWorkspaceRoot(process.env.INIT_CWD || process.cwd() || scriptDir)
     verifyRolldownRequirePeer(projectRoot)
     const lockfile = readLockfile(projectRoot)
     const versions = collectRolldownVersions(lockfile)
