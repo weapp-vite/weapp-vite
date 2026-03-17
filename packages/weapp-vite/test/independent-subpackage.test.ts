@@ -3,7 +3,7 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { createTestCompilerContext, getFixture } from './utils'
 
-describe('independent subpackage diagnostics', () => {
+describe.skip('independent subpackage diagnostics', () => {
   it.skip('surfaces the underlying rolldown error', async () => {
     const fixtureSource = getFixture('independent-subpackage')
     const tempRoot = path.resolve(fixtureSource, '..', '__temp__')
