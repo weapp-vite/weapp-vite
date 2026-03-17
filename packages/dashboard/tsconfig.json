@@ -10,6 +10,7 @@
     "types": [
       "node",
       "vite/client",
+      "unplugin-vue-router/client",
       "vue/jsx"
     ],
     "strict": true,
@@ -20,7 +21,7 @@
   },
   "include": [
     "src",
-    "env.d.ts"
+    "typed-router.d.ts"
   ],
   "exclude": [
     "dist",
