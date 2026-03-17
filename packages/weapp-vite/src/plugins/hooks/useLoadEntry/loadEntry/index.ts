@@ -219,6 +219,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
         })
       }
 
+      await ctx.autoImportService?.awaitPendingRegistrations?.()
       applyAutoImports(baseName, json)
       entries.push(...analyzeCommonJson(json))
     }

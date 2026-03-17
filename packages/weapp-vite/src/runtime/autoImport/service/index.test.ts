@@ -367,4 +367,52 @@ describe('autoImport service index', () => {
     service.removePotentialComponent('/project/src/components/comp-a.vue')
     expect(outputsHelpers.scheduleManifestWrite).toHaveBeenCalledWith(true)
   })
+
+  it('awaits pending local component registrations', async () => {
+    let releaseRegistration: (() => void) | undefined
+    const registerLocalComponent = vi.fn(() => new Promise<void>((resolve) => {
+      releaseRegistration = resolve
+    }))
+
+    createResolverHelpersMock.mockReturnValue({
+      collectResolverComponents: vi.fn(() => ({})),
+      syncResolverComponentProps: vi.fn(),
+      resolveWithResolvers: vi.fn(),
+      resolveNavigationImport: vi.fn(),
+    })
+    createMetadataHelpersMock.mockReturnValue({
+      preloadResolverComponentMetadata: vi.fn(),
+      getComponentMetadata: vi.fn(),
+    })
+    createOutputsHelpersMock.mockReturnValue({
+      scheduleManifestWrite: vi.fn(),
+      scheduleTypedComponentsWrite: vi.fn(),
+      scheduleHtmlCustomDataWrite: vi.fn(),
+      scheduleVueComponentsWrite: vi.fn(),
+    })
+    createRegistryHelpersMock.mockReturnValue({
+      registerLocalComponent,
+      removeRegisteredComponent: vi.fn(() => ({ removed: false, removedNames: [] })),
+      ensureMatcher: vi.fn(() => undefined),
+    })
+
+    const service = createAutoImportService(createContext())
+    const registerPromise = service.registerPotentialComponent('/project/src/components/hot-card/index.vue')
+    const pendingPromise = service.awaitPendingRegistrations?.()
+    await Promise.resolve()
+
+    expect(registerLocalComponent).toHaveBeenCalledWith('/project/src/components/hot-card/index.vue')
+
+    let settled = false
+    void pendingPromise?.then(() => {
+      settled = true
+    })
+    await Promise.resolve()
+    expect(settled).toBe(false)
+
+    releaseRegistration?.()
+    await registerPromise
+    await pendingPromise
+    expect(settled).toBe(true)
+  })
 })
