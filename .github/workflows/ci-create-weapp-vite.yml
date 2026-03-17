@@ -54,12 +54,23 @@ jobs:
       - name: Print package manager versions
         shell: bash
         run: |
-          node -v
-          npm -v
-          pnpm -v
-          yarn -v
-          bun --version
-          deno --version
+          print_version() {
+            local name="$1"
+            shift
+            echo "==> ${name}"
+            if "$@"; then
+              return 0
+            fi
+            echo "${name} unavailable"
+            return 0
+          }
+
+          print_version node node -v
+          print_version npm npm -v
+          print_version pnpm pnpm -v
+          print_version yarn yarn -v
+          print_version bun bun --version
+          print_version deno deno --version
 
       - name: Run create-weapp-vite smoke matrix
         env:

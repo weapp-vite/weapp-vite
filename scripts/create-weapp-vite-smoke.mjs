@@ -12,7 +12,6 @@ const INSTALL_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_INSTALL_TIMEOUT_
 const BUILD_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_BUILD_TIMEOUT_MS || 10 * 60 * 1000)
 const DEV_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_TIMEOUT_MS || 3 * 60 * 1000)
 const DEV_SETTLE_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_SETTLE_MS || 3 * 1000)
-const TMP_ROOT = path.join(os.tmpdir(), `create-weapp-vite-smoke-${Date.now()}-${process.pid}`)
 const NEWLINE_RE = /\r?\n/
 
 function getExecutableName(command) {
@@ -398,20 +397,19 @@ async function runScenario({ scenario, templateName, packageSpec, scenarioRoot }
 
 async function main() {
   const templateNames = await listTemplateNames()
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'create-weapp-vite-smoke-'))
 
   console.log(`Node ${process.version}`)
   console.log(`Package spec: ${DEFAULT_PACKAGE_SPEC}`)
   console.log(`Templates: ${templateNames.join(', ')}`)
   console.log(`Scenarios: ${SCENARIOS.map(scenario => scenario.name).join(', ')}`)
-  console.log(`Workspace: ${TMP_ROOT}`)
-
-  await fs.mkdir(TMP_ROOT, { recursive: true })
+  console.log(`Workspace: ${tmpRoot}`)
 
   const failures = []
 
   for (const scenario of SCENARIOS) {
     for (const templateName of templateNames) {
-      const scenarioRoot = path.join(TMP_ROOT, `${scenario.name}-${templateName}`)
+      const scenarioRoot = path.join(tmpRoot, `${scenario.name}-${templateName}`)
       try {
         await runScenario({
           scenario,
