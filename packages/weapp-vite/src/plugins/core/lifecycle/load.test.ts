@@ -447,7 +447,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(pluginContext.parse).not.toHaveBeenCalled()
   })
 
-  it('uses rolldown parse for fast rejection when ast engine is oxc', async () => {
+  it('fast rejects without rolldown parse when ast engine is oxc and source has no platform api access', async () => {
     const sourceId = '/project/src/components/panel.ts'
     const rawResult = {
       code: 'Component({ methods: { run() { return foo.bar() } } })',
@@ -483,7 +483,7 @@ describe('core lifecycle load hook injectWeapi', () => {
     const result = await load.call(pluginContext, sourceId)
 
     expect(result).toEqual(rawResult)
-    expect(pluginContext.parse).toHaveBeenCalledOnce()
+    expect(pluginContext.parse).not.toHaveBeenCalled()
   })
 })
 
