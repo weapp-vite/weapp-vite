@@ -12,6 +12,12 @@ const DEFAULT_TEMPLATE_NAMES = ['default', 'lib', 'wevu', 'wevu-tdesign', 'tailw
 const TEMPLATE_NAMES = (process.env.CREATE_WEAPP_VITE_TEMPLATES?.split(',') ?? DEFAULT_TEMPLATE_NAMES)
   .map(name => name.trim())
   .filter(Boolean)
+const DEFAULT_SCENARIO_NAMES = ['pnpm', 'yarn', 'npm', 'bun', 'deno']
+const ENABLED_SCENARIO_NAMES = new Set(
+  (process.env.CREATE_WEAPP_VITE_SCENARIOS?.split(',') ?? DEFAULT_SCENARIO_NAMES)
+    .map(name => name.trim())
+    .filter(Boolean),
+)
 const INSTALL_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_INSTALL_TIMEOUT_MS || 10 * 60 * 1000)
 const BUILD_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_BUILD_TIMEOUT_MS || 10 * 60 * 1000)
 const DEV_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_TIMEOUT_MS || 3 * 60 * 1000)
@@ -167,7 +173,7 @@ const SCENARIOS = [
       }
     },
   },
-]
+].filter(scenario => ENABLED_SCENARIO_NAMES.has(scenario.name))
 
 function formatCommand(command, args) {
   return [command, ...args].join(' ')
