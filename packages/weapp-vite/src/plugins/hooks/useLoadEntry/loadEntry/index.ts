@@ -152,6 +152,14 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       })
       entries.push(...appResult.entries)
       pluginResolvedRecords = appResult.pluginResolvedRecords
+      if (appResult.pluginEntryTypes?.length) {
+        for (const entryType of appResult.pluginEntryTypes) {
+          entriesMap.set(entryType.entry, {
+            type: entryType.type,
+            path: entryType.entry,
+          } as Entry)
+        }
+      }
       pluginJsonPathForRegistration = appResult.pluginJsonPathForRegistration
       pluginJsonForRegistration = appResult.pluginJsonForRegistration
       shouldSkipAppEntries = Boolean(
@@ -223,7 +231,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           jsonPath,
           templatePath,
           id,
-          isPluginBuild,
+          skipOwnEntries: isPluginBuild && type === 'app',
           entriesMap,
           normalizeEntry,
           extendedLibManager,

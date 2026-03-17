@@ -131,7 +131,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
   const { injectBuiltinAliases, oxcRolldownPlugin, oxcVitePlugin } = options
 
   return async function loadConfig(opts: LoadConfigOptions): Promise<LoadConfigResult> {
-    const { cwd, isDev, mode, inlineConfig, configFile, cliPlatform, projectConfigPath } = opts
+    const { cwd, isDev, mode, pluginOnly = false, inlineConfig, configFile, cliPlatform, projectConfigPath } = opts
 
     const packageJsonPath = path.resolve(cwd, 'package.json')
     let packageJson: PackageJson = {}
@@ -332,6 +332,9 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
 
     const rdOptions = buildConfig.rolldownOptions ?? (buildConfig.rolldownOptions = {})
+    if (pluginOnly) {
+      rdOptions.preserveEntrySignatures = 'exports-only'
+    }
     if (Array.isArray(rdOptions.output)) {
       rdOptions.output = rdOptions.output.map((output) => {
         return {
@@ -450,6 +453,9 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       buildConfig.outDir ??= libOutDir
       mpDistRoot = libOutDir
     }
+    if (pluginOnly && buildConfig.outDir) {
+      mpDistRoot = buildConfig.outDir
+    }
     const aliasEntries = getAliasEntries(config.weapp?.jsonAlias)
 
     config.plugins ??= []
@@ -492,6 +498,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
       packageJsonPath,
       platform,
       srcRoot,
+      pluginOnly,
       configFilePath,
       currentSubPackageRoot: undefined,
       weappWeb: resolvedWebConfig,

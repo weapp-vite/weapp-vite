@@ -3,18 +3,20 @@ import type {
   RolldownOutput,
   RolldownWatcher,
 } from 'rolldown'
+import type { InlineConfig } from 'vite'
 import type { BuildTarget, MutableCompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import process from 'node:process'
 import path from 'pathe'
 import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
+import { createCompilerContext } from '../../createContext'
 import { touch } from '../../utils/file'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { generateLibDts } from '../libDts'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { createIndependentBuilder } from './independent'
-import { cleanOutputs, syncExternalPluginOutputs } from './outputs'
+import { cleanOutputs } from './outputs'
 import { resolveTouchAppWxssEnabled } from './touchAppWxss'
 import { buildWorkers, checkWorkersOptions, devWorkers, watchWorkers } from './workers'
 
@@ -82,9 +84,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     debug?.(`[${target}] dev build watcher start`)
     const { hasWorkersDir, workersDir } = checkWorkersOptions(target, configService, scanService)
-    const buildOptions = configService.merge(
-      undefined,
-      createSharedBuildConfig(configService, scanService),
+    const buildOptions = applyTargetBuildOverride(
+      configService.merge(
+        undefined,
+        createSharedBuildConfig(configService, scanService),
+        resolveTargetBuildOverride(target),
+      ),
+      target,
     )
     const watcherPromise = build(
       buildOptions,
@@ -143,9 +149,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     debug?.(`[${target}] prod build start`)
     const { hasWorkersDir } = checkWorkersOptions(target, configService, scanService)
     const bundlerPromise = build(
-      configService.merge(
-        undefined,
-        createSharedBuildConfig(configService, scanService),
+      applyTargetBuildOverride(
+        configService.merge(
+          undefined,
+          createSharedBuildConfig(configService, scanService),
+          resolveTargetBuildOverride(target),
+        ),
+        target,
       ),
     )
     const workerPromise = target === 'app' && hasWorkersDir ? buildWorkers(configService) : Promise.resolve()
@@ -187,6 +197,80 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     return task
   }
 
+  function resolveTargetBuildOverride(target: BuildTarget) {
+    if (target !== 'plugin') {
+      return undefined
+    }
+
+    const pluginOutputRoot = configService.absolutePluginOutputRoot
+    if (!pluginOutputRoot) {
+      return undefined
+    }
+
+    const relativeToMainOutDir = path.relative(configService.outDir, pluginOutputRoot)
+    const isOutsideMainOutDir = relativeToMainOutDir.startsWith('..') || path.isAbsolute(relativeToMainOutDir)
+    if (!isOutsideMainOutDir) {
+      return undefined
+    }
+
+    return {
+      build: {
+        outDir: pluginOutputRoot,
+      },
+    }
+  }
+
+  function applyTargetBuildOverride<T extends { build?: { outDir?: string } }>(config: T, target: BuildTarget): T {
+    const override = resolveTargetBuildOverride(target)
+    if (!override?.build?.outDir) {
+      return config
+    }
+
+    return {
+      ...config,
+      build: {
+        ...(config.build ?? {}),
+        outDir: override.build.outDir,
+      },
+    }
+  }
+
+  async function runIsolatedPluginBuild(options?: BuildOptions) {
+    const pluginOutputRoot = configService.absolutePluginOutputRoot
+    if (!pluginOutputRoot) {
+      return undefined
+    }
+
+    const inlineConfig: InlineConfig = {
+      build: {
+        outDir: pluginOutputRoot,
+      },
+    }
+    const isolatedKey = `plugin-build:${configService.cwd}`
+    const isolatedCtx = await createCompilerContext({
+      key: isolatedKey,
+      cwd: configService.cwd,
+      isDev: configService.isDev,
+      mode: configService.mode,
+      pluginOnly: true,
+      configFile: configService.configFilePath,
+      cliPlatform: configService.platform,
+      projectConfigPath: configService.projectConfigPath,
+      inlineConfig,
+    })
+
+    isolatedCtx.currentBuildTarget = 'plugin'
+    const result = await isolatedCtx.buildService.build({
+      ...options,
+      skipNpm: true,
+    })
+    if (configService.isDev && result && typeof (result as RolldownWatcher).on === 'function') {
+      const watcherRoot = configService.absolutePluginRoot ?? configService.absoluteSrcRoot
+      watcherService.setRollupWatcher(result as RolldownWatcher, watcherRoot)
+    }
+    return result
+  }
+
   async function runBuildTarget(target: BuildTarget) {
     ctx.currentBuildTarget = target
     if (configService.isDev) {
@@ -197,6 +281,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
 
   async function buildEntry(options?: BuildOptions) {
     await cleanOutputs(configService)
+    const pluginOnly = configService.pluginOnly
     const multiPlatformConfig = configService.weappViteConfig.multiPlatform
     const isMultiPlatformEnabled = Boolean(
       multiPlatformConfig
@@ -208,7 +293,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       && configService.weappLibConfig?.dts?.enabled !== false
       && !configService.isDev,
     )
-    if (!isLibMode) {
+    if (!isLibMode && !pluginOnly) {
       await syncProjectConfigToOutput({
         outDir: configService.outDir,
         projectConfigPath: configService.projectConfigPath,
@@ -217,15 +302,14 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       })
     }
     debug?.('build start')
-    const npmBuildTask = isLibMode ? Promise.resolve() : scheduleNpmBuild(options)
-    const result = await runBuildTarget('app')
+    const npmBuildTask = isLibMode || pluginOnly ? Promise.resolve() : scheduleNpmBuild(options)
+    const result = await runBuildTarget(pluginOnly ? 'plugin' : 'app')
     if (shouldEmitLibDts) {
       await generateLibDts(configService)
     }
     await npmBuildTask
-    if (!isLibMode && configService.absolutePluginRoot) {
-      await runBuildTarget('plugin')
-      await syncExternalPluginOutputs(configService)
+    if (!pluginOnly && !isLibMode && configService.absolutePluginRoot) {
+      await runIsolatedPluginBuild(options)
     }
     debug?.('build end')
     return result

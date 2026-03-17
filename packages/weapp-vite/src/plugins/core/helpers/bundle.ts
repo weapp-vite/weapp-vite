@@ -5,7 +5,7 @@ import { isEmptyObject, isObject } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { changeFileExtension } from '../../../utils/file'
-import { normalizeRelativePath } from '../../../utils/path'
+import { isPathInside, normalizeRelativePath } from '../../../utils/path'
 import { emitJsonAsset } from '../../utils/wxmlEmit'
 
 const IMPLICIT_REQUIRE_RE = /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=\s*require\((`[^`]+`|'[^']+'|"[^"]+")\);?/g
@@ -14,6 +14,10 @@ export function filterPluginBundleOutputs(
   bundle: OutputBundle,
   configService: CompilerContext['configService'],
 ) {
+  if (configService.pluginOnly) {
+    return
+  }
+
   const pluginOutputRoot = configService.absolutePluginOutputRoot
   const pluginRoot = configService.absolutePluginRoot
   const pluginBase = pluginRoot ? path.basename(pluginRoot) : 'plugin'
@@ -26,8 +30,12 @@ export function filterPluginBundleOutputs(
   const pluginBundleBase = pluginOutputRoot && isPluginOutputInsideOutDir
     ? normalizeRelativePath(relativeToOutDir) || pluginBase
     : pluginBase
-  for (const [fileName] of Object.entries(bundle)) {
-    const isPluginFile = fileName === pluginBundleBase || fileName.startsWith(`${pluginBundleBase}/`)
+  for (const [fileName, output] of Object.entries(bundle)) {
+    const matchesPluginFileName = fileName === pluginBundleBase || fileName.startsWith(`${pluginBundleBase}/`)
+    const matchesPluginSource = output.type === 'chunk'
+      ? isPathInside(pluginRoot, output.facadeModuleId ?? '')
+      : (output.originalFileNames ?? []).some(originalFile => isPathInside(pluginRoot, originalFile))
+    const isPluginFile = matchesPluginFileName || matchesPluginSource
     if (!isPluginFile) {
       delete bundle[fileName]
     }

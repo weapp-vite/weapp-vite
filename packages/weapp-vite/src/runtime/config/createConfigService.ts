@@ -48,6 +48,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     if (!absolutePluginRoot) {
       return undefined
     }
+    if (options.pluginOnly) {
+      return path.resolve(options.cwd, options.mpDistRoot ?? options.config.build?.outDir ?? '')
+    }
     const configured = options.projectConfig?.pluginRoot
     if (configured) {
       return path.resolve(options.cwd, configured)
@@ -58,6 +61,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   }
 
   const resolvePluginOutputBasePosix = () => {
+    if (options.pluginOnly) {
+      return ''
+    }
     const absoluteOutputRoot = resolveAbsolutePluginOutputRoot()
     if (!absoluteOutputRoot) {
       return undefined
@@ -247,6 +253,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     get srcRoot() {
       return options.srcRoot
     },
+    get pluginOnly() {
+      return options.pluginOnly === true
+    },
     get pluginRoot() {
       return options.config.weapp?.pluginRoot
     },
@@ -292,6 +301,9 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
       if (absolutePluginRoot) {
         const relativeToPlugin = normalizeRelativePath(path.relative(absolutePluginRoot, p))
         if (!relativeToPlugin.startsWith('..')) {
+          if (options.pluginOnly) {
+            return relativeToPlugin
+          }
           const pluginBase = path.basename(absolutePluginRoot)
           const posixBase = toPosixPath(pluginBase)
           return relativeToPlugin ? `${posixBase}/${relativeToPlugin}` : posixBase

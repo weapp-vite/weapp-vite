@@ -144,6 +144,8 @@ interface CreateLoaderOptions {
     absoluteRoot: string
     pluginJsonPath: string
   }
+  buildTarget?: 'app' | 'plugin'
+  pluginOnly?: boolean
 }
 
 function createLoader(options?: CreateLoaderOptions) {
@@ -155,6 +157,7 @@ function createLoader(options?: CreateLoaderOptions) {
     absoluteSrcRoot: '/project/src',
     options: { cwd: '/project' },
     weappViteConfig: {},
+    pluginOnly: options?.pluginOnly === true,
     relativeAbsoluteSrcRoot: vi.fn((id: string) => id.replace('/project/src/', '')),
     relativeOutputPath: vi.fn((id: string) => id.replace('/project/src/', '')),
     absolutePluginRoot: options?.plugin?.absoluteRoot,
@@ -183,6 +186,9 @@ function createLoader(options?: CreateLoaderOptions) {
   if (options?.plugin) {
     configService.relativeAbsoluteSrcRoot = vi.fn((id: string) => {
       if (id.startsWith(`${options.plugin!.absoluteRoot}/`)) {
+        if (options.pluginOnly) {
+          return id.replace(`${options.plugin!.absoluteRoot}/`, '')
+        }
         return id.replace('/project/', '')
       }
       return id.replace('/project/src/', '')
@@ -206,6 +212,7 @@ function createLoader(options?: CreateLoaderOptions) {
     emitEntriesChunks,
     applyAutoImports,
     extendedLibManager,
+    buildTarget: options?.buildTarget,
   })
 
   return {
@@ -423,7 +430,7 @@ describe('createEntryLoader', () => {
     expect(resolveSpy).not.toHaveBeenCalledWith(expect.stringContaining('weui-miniprogram'))
   })
 
-  it('emits plugin entries discovered via plugin.json', async () => {
+  it('ignores plugin entries during app build', async () => {
     const pluginJsonPath = '/project/plugin/plugin.json'
     const pluginRoot = '/project/plugin'
     const {
@@ -437,6 +444,46 @@ describe('createEntryLoader', () => {
         absoluteRoot: pluginRoot,
         pluginJsonPath,
       },
+      buildTarget: 'app',
+    })
+
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === pluginJsonPath) {
+        return {
+          main: 'plugin/index',
+          pages: {
+            guide: 'pages/guide/index',
+          },
+        }
+      }
+      return {}
+    })
+
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/app.js', 'app')
+
+    expect(jsonService.read).not.toHaveBeenCalledWith(pluginJsonPath)
+    expect(scanService?.pluginJson).toBeUndefined()
+    expect(emitEntriesChunks).not.toHaveBeenCalled()
+    expect(registerJsonAsset.mock.calls.find(([entry]) => entry.type === 'plugin')).toBeUndefined()
+  })
+
+  it('emits plugin entries discovered via plugin.json during plugin build', async () => {
+    const pluginJsonPath = '/project/plugin/plugin.json'
+    const pluginRoot = '/project/plugin'
+    const {
+      loader,
+      jsonService,
+      emitEntriesChunks,
+      registerJsonAsset,
+      scanService,
+    } = createLoader({
+      plugin: {
+        absoluteRoot: pluginRoot,
+        pluginJsonPath,
+      },
+      buildTarget: 'plugin',
     })
 
     jsonService.read.mockImplementation(async (filepath: string) => {
@@ -487,6 +534,120 @@ describe('createEntryLoader', () => {
 
     const pluginJsonRegistration = registerJsonAsset.mock.calls.find(([entry]) => entry.type === 'plugin')
     expect(pluginJsonRegistration?.[0].jsonPath).toBe(pluginJsonPath)
+  })
+
+  it('skips preloading plugin main when current root entry already is plugin main', async () => {
+    const pluginJsonPath = '/project/plugin/plugin.json'
+    const pluginRoot = '/project/plugin'
+    const {
+      loader,
+      jsonService,
+      emitEntriesChunks,
+    } = createLoader({
+      plugin: {
+        absoluteRoot: pluginRoot,
+        pluginJsonPath,
+      },
+      buildTarget: 'plugin',
+      pluginOnly: true,
+    })
+
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === pluginJsonPath) {
+        return {
+          main: 'index.js',
+          pages: {
+            guide: 'pages/guide/index',
+          },
+          publicComponents: {
+            card: 'components/card/index',
+          },
+        }
+      }
+      return {}
+    })
+
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/plugin/index.ts', 'app')
+
+    const emittedIdPaths = emitEntriesChunks.mock.calls.flatMap((call) => {
+      const [records] = call
+      return (records ?? []).map((record: { id: string }) => record.id)
+    })
+
+    expect(emittedIdPaths).not.toContain(`${pluginRoot}/index.js`)
+    expect(emittedIdPaths.slice().sort()).toEqual([
+      `${pluginRoot}/components/card/index`,
+      `${pluginRoot}/pages/guide/index`,
+    ])
+  })
+
+  it('registers plugin page and component json assets during plugin build', async () => {
+    const pluginRoot = '/project/plugin'
+    const pageScript = `${pluginRoot}/pages/guide/index.js`
+    const componentScript = `${pluginRoot}/components/card/index.js`
+
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === pageScript) {
+        return {
+          path: `${pluginRoot}/pages/guide/index.json`,
+          predictions: [],
+        }
+      }
+      if (filepath === componentScript) {
+        return {
+          path: `${pluginRoot}/components/card/index.json`,
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader, jsonService, registerJsonAsset } = createLoader({
+      plugin: {
+        absoluteRoot: pluginRoot,
+        pluginJsonPath: `${pluginRoot}/plugin.json`,
+      },
+      buildTarget: 'plugin',
+    })
+
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === `${pluginRoot}/pages/guide/index.json`) {
+        return {
+          navigationBarTitleText: 'Guide',
+        }
+      }
+      if (filepath === `${pluginRoot}/components/card/index.json`) {
+        return {
+          component: true,
+        }
+      }
+      return {}
+    })
+
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, pageScript, 'page')
+    await loader.call(pluginCtx, componentScript, 'component')
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      jsonPath: `${pluginRoot}/pages/guide/index.json`,
+      json: {
+        navigationBarTitleText: 'Guide',
+      },
+      type: 'page',
+    })
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      jsonPath: `${pluginRoot}/components/card/index.json`,
+      json: {
+        component: true,
+      },
+      type: 'component',
+    })
   })
 
   it('caches resolved entry ids across invocations', async () => {

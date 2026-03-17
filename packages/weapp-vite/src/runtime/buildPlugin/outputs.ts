@@ -1,5 +1,5 @@
 import type { MutableCompilerContext } from '../../context'
-import { cp, mkdir, stat } from 'node:fs/promises'
+import { cp, mkdir, readdir, stat } from 'node:fs/promises'
 import path from 'pathe'
 import { rimraf } from 'rimraf'
 import { debug, logger } from '../../context/shared'
@@ -69,7 +69,7 @@ export async function syncExternalPluginOutputs(
     return
   }
 
-  const pluginBundleRoot = path.resolve(configService.outDir, path.basename(pluginRoot))
+  const pluginBundleRoot = path.resolve(pluginOutputRoot, path.basename(pluginRoot))
   try {
     await stat(pluginBundleRoot)
   }
@@ -78,9 +78,13 @@ export async function syncExternalPluginOutputs(
   }
 
   await mkdir(pluginOutputRoot, { recursive: true })
-  await cp(pluginBundleRoot, pluginOutputRoot, {
-    recursive: true,
-    force: true,
-  })
-  logger.success(`已同步插件产物到 ${configService.relativeCwd(pluginOutputRoot)} 目录`)
+  const entries = await readdir(pluginBundleRoot)
+  await Promise.all(entries.map(async (entry) => {
+    await cp(path.resolve(pluginBundleRoot, entry), path.resolve(pluginOutputRoot, entry), {
+      recursive: true,
+      force: true,
+    })
+  }))
+  await rimraf(pluginBundleRoot)
+  logger.success(`已整理插件产物到 ${configService.relativeCwd(pluginOutputRoot)} 目录`)
 }
