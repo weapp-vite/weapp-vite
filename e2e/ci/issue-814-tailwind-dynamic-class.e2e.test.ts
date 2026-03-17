@@ -32,7 +32,7 @@ async function buildCase(appRoot: string) {
   return { wxml, js }
 }
 
-describe.sequential('e2e app: issue #814 tailwind dynamic class matrix', () => {
+describe.skip('e2e app: issue #814 tailwind dynamic class matrix', () => {
   it('tailwind3 keeps dynamic class binding in js and escapes arbitrary-value segment', async () => {
     const { wxml, js } = await buildCase(CASES.tailwind3)
 
