@@ -77,12 +77,12 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
     seedResolvedEntries(hook.resolvedEntryMap, ids)
     sharedChunkImporters.set('common.js', new Set([ids[0], ids[1]]))
-    hook.markEntryDirty(ids[0])
+    hook.markEntryDirty(ids[0], 'dependency')
 
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(2)
   })
 
   it('keeps partial rebuild when shared chunk importers are fully dirty', async () => {
@@ -98,8 +98,8 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
     seedResolvedEntries(hook.resolvedEntryMap, ids)
     sharedChunkImporters.set('common.js', new Set([ids[0], ids[1]]))
-    hook.markEntryDirty(ids[0])
-    hook.markEntryDirty(ids[1])
+    hook.markEntryDirty(ids[0], 'dependency')
+    hook.markEntryDirty(ids[1], 'dependency')
 
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
@@ -147,7 +147,7 @@ describe('useLoadEntry emitDirtyEntries', () => {
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
   })
 
-  it('falls back to full when shared chunk importers are unavailable', async () => {
+  it('keeps direct entry updates incremental when shared chunk importers are unavailable', async () => {
     const ctx = createContext()
     const hook = useLoadEntry(ctx, {
       hmr: {
@@ -162,10 +162,10 @@ describe('useLoadEntry emitDirtyEntries', () => {
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
-    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(3)
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
   })
 
-  it('forces full rebuild when any shared chunk is partially dirty', async () => {
+  it('expands dependency-driven updates across all affected shared chunk importers', async () => {
     const ctx = createContext()
     const sharedChunkImporters = new Map<string, Set<string>>()
     const hook = useLoadEntry(ctx, {
@@ -179,11 +179,33 @@ describe('useLoadEntry emitDirtyEntries', () => {
     seedResolvedEntries(hook.resolvedEntryMap, ids)
     sharedChunkImporters.set('common-a.js', new Set([ids[0], ids[1]]))
     sharedChunkImporters.set('common-b.js', new Set([ids[2], ids[3]]))
-    hook.markEntryDirty(ids[0])
+    sharedChunkImporters.set('common-c.js', new Set([ids[0], ids[2], ids[3]]))
+    hook.markEntryDirty(ids[0], 'dependency')
 
     const pluginCtx = createPluginContext()
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(4)
+  })
+
+  it('keeps direct entry updates incremental even when they import shared chunks', async () => {
+    const ctx = createContext()
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+      },
+    })
+
+    const ids = ['/project/src/a.js', '/project/src/b.js', '/project/src/c.js']
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('common.js', new Set([ids[0], ids[1], ids[2]]))
+    hook.markEntryDirty(ids[0], 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
   })
 })

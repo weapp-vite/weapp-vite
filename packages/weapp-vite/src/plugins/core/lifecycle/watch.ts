@@ -74,18 +74,18 @@ export function createWatchChangeHook(state: CorePluginState) {
             })()
         const primaryScript = await findJsEntry(basePath)
         if (primaryScript.path) {
-          markEntryDirty(normalizeFsResolvedId(primaryScript.path))
+          markEntryDirty(normalizeFsResolvedId(primaryScript.path), 'direct')
         }
       }
     }
     if (loadedEntrySet.has(normalizedId)) {
-      markEntryDirty(normalizedId)
+      markEntryDirty(normalizedId, 'direct')
     }
     else if (state.moduleImporters.size && state.entryModuleIds.size) {
       const affected = collectAffectedEntries(state, normalizedId)
       if (affected.size) {
         for (const entryId of affected) {
-          markEntryDirty(entryId)
+          markEntryDirty(entryId, 'dependency')
         }
       }
     }

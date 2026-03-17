@@ -19,6 +19,7 @@ import {
   flushIndependentBuilds,
   formatBytes,
   refreshModuleGraph,
+  refreshPartialSharedChunkImporters,
   refreshSharedChunkImporters,
   removeImplicitPagePreloads,
 } from '../helpers'
@@ -491,6 +492,9 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       if (configService.isDev && state.hmrSharedChunksMode === 'auto') {
         if (state.hmrState.didEmitAllEntries || !state.hmrState.hasBuiltOnce) {
           refreshSharedChunkImporters(rolldownBundle, state)
+        }
+        else if (state.hmrState.lastEmittedEntryIds?.size) {
+          refreshPartialSharedChunkImporters(rolldownBundle, state, state.hmrState.lastEmittedEntryIds)
         }
         state.hmrState.hasBuiltOnce = true
       }
