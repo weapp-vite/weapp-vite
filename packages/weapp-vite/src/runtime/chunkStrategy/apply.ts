@@ -15,6 +15,8 @@ import {
 import { consumeSharedChunkDiagnostics, hasForceDuplicateSharedChunks, isForceDuplicateSharedChunk } from './state'
 
 const ROLLDOWN_RUNTIME_FILE_NAME = 'rolldown-runtime.js'
+const SLASHES_PATTERN = /[\\/]+/g
+const REGEXP_ESCAPE_PATTERN = /[.*+?^${}()|[\]\\]/g
 
 export interface SharedChunkDuplicateDetail {
   fileName: string
@@ -397,10 +399,16 @@ function localizeCrossSubPackageChunkLeaks(
     const redundantBytes = typeof chunkBytes === 'number'
       ? chunkBytes * duplicates.length
       : undefined
+    const requiresRuntimeLocalization = chunkReferencesRuntime(
+      chunk,
+      ROLLDOWN_RUNTIME_FILE_NAME,
+      new Set([path.join(sourceRoot, ROLLDOWN_RUNTIME_FILE_NAME), ROLLDOWN_RUNTIME_FILE_NAME]),
+    )
 
     onDuplicate?.({
       sharedFileName: fileName,
       duplicates,
+      requiresRuntimeLocalization,
       chunkBytes,
       redundantBytes,
       retainedInMain: true,
@@ -409,7 +417,7 @@ function localizeCrossSubPackageChunkLeaks(
 }
 
 function createCrossSubPackageDuplicateBaseName(sourceRoot: string, fileName: string) {
-  const rootTag = sourceRoot.replace(/[\\/]+/g, '_')
+  const rootTag = sourceRoot.replace(SLASHES_PATTERN, '_')
   return `${rootTag}.${path.basename(fileName)}`
 }
 
@@ -696,7 +704,7 @@ function replaceQuotedImportLiteralValue(sourceCode: string, sourcePath: string,
 }
 
 function escapeRegExpForPattern(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return value.replace(REGEXP_ESCAPE_PATTERN, '\\$&')
 }
 
 function createRelativeImportPath(fromFileName: string, toFileName: string) {
