@@ -155,6 +155,13 @@
           "launchMode": "default"
         },
         {
+          "name": "subpackages/item/login-required/index",
+          "pathName": "subpackages/item/login-required/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "subpackages/issue-327/index",
           "pathName": "subpackages/issue-327/index",
           "query": "",
@@ -164,6 +171,13 @@
         {
           "name": "subpackages/user/index",
           "pathName": "subpackages/user/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
+          "name": "subpackages/user/register/form",
+          "pathName": "subpackages/user/register/form",
           "query": "",
           "scene": null,
           "launchMode": "default"

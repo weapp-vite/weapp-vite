@@ -460,6 +460,35 @@ describe.sequential('e2e app: github-issues (build)', () => {
     expect(await fs.pathExists(userRuntimePath)).toBe(true)
   })
 
+  it('issue #340: keeps cross-subpackage source imports runnable for item/login-required and user/register/form', async () => {
+    await runBuild()
+
+    const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
+    const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
+    const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
+    const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
+    const itemRuntimePath = path.join(DIST_ROOT, 'subpackages/item/rolldown-runtime.js')
+    const userRuntimePath = path.join(DIST_ROOT, 'subpackages/user/rolldown-runtime.js')
+
+    const itemPageJs = await fs.readFile(itemPageJsPath, 'utf-8')
+    const userPageJs = await fs.readFile(userPageJsPath, 'utf-8')
+    const itemShared = await fs.readFile(itemSharedPath, 'utf-8')
+    const userShared = await fs.readFile(userSharedPath, 'utf-8')
+
+    expect(itemPageJs).toContain('item-login-required:issue-340:shared')
+    expect(userPageJs).toContain('user-register-form:issue-340:shared')
+    expect(itemPageJs).toMatch(/require\((['"`])\.\.\/weapp-shared\/common(?:\.\d+)?\.js\1\)/)
+    expect(userPageJs).toMatch(/require\((['"`])\.\.\/weapp-shared\/common(?:\.\d+)?\.js\1\)/)
+
+    expect(itemShared).toContain('issue-340')
+    expect(userShared).toContain('issue-340')
+    expect(itemShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
+    expect(userShared).not.toMatch(/require\((['"`])\.\.\/\.\.\/rolldown-runtime\.js\1\)/)
+
+    expect(await fs.pathExists(itemRuntimePath)).toBe(true)
+    expect(await fs.pathExists(userRuntimePath)).toBe(true)
+  })
+
   it('issue #327: routes npm deps by mainPackage/subPackages config without emitting main-package npm output', async () => {
     await runBuild()
 
