@@ -10,6 +10,17 @@ export interface FeatureFlagOptions<TFeature extends string> {
   hookToFeature: Record<string, TFeature>
 }
 
+function mayContainFeatureFlagHints<TFeature extends string>(
+  code: string,
+  moduleId: string,
+  hookToFeature: Record<string, TFeature>,
+) {
+  if (!code.includes(moduleId)) {
+    return false
+  }
+  return Object.keys(hookToFeature).some(hookName => code.includes(hookName))
+}
+
 function collectWithBabel<TFeature extends string>(
   code: string,
   moduleId: string,
@@ -165,6 +176,10 @@ export function collectFeatureFlagsFromCode<TFeature extends string>(
   code: string,
   options: FeatureFlagOptions<TFeature>,
 ): Set<TFeature> {
+  if (!mayContainFeatureFlagHints(code, options.moduleId, options.hookToFeature)) {
+    return new Set<TFeature>()
+  }
+
   const engine = options.astEngine ?? 'babel'
 
   try {

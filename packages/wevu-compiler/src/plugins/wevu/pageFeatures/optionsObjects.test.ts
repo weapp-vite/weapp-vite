@@ -92,4 +92,51 @@ export function setupStore() {
 
     parseSpy.mockRestore()
   })
+
+  it('fast rejects files that import wevu factories but never call them', () => {
+    const parseSpy = vi.spyOn(babelUtils, 'parseJsLike')
+    const source = `
+import { defineComponent } from 'wevu'
+import * as wevu from 'wevu'
+
+const local = defineComponent
+const namespaceFactory = wevu.defineComponent
+
+export function setupStore() {
+  return [local, namespaceFactory]
+}
+    `.trim()
+
+    const result = collectTargetOptionsObjectsFromCode(source, '/project/src/store.ts', {
+      astEngine: 'oxc',
+    })
+
+    expect(result.optionsObjects).toEqual([])
+    expect(result.module.engine).toBe('oxc')
+    expect(result.module.importedBindings.size).toBe(2)
+    expect(parseSpy).not.toHaveBeenCalled()
+
+    parseSpy.mockRestore()
+  })
+
+  it('keeps babel fallback when wevu factory call is textually present', () => {
+    const parseSpy = vi.spyOn(babelUtils, 'parseJsLike')
+    const source = `
+import * as wevu from 'wevu'
+
+wevu.defineComponent({
+  setup() {},
+})
+    `.trim()
+
+    const result = collectTargetOptionsObjectsFromCode(source, '/project/src/page.ts', {
+      astEngine: 'oxc',
+    })
+
+    expect(result.optionsObjects).toHaveLength(1)
+    expect(getSetupFunctionFromOptionsObject(result.optionsObjects[0])).toBeTruthy()
+    expect(parseSpy).toHaveBeenCalledTimes(1)
+
+    parseSpy.mockRestore()
+  })
 })

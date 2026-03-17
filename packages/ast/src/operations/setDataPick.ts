@@ -402,6 +402,10 @@ export function collectSetDataPickKeysFromTemplateCode(
     astEngine?: AstEngineName
   },
 ): string[] {
+  if (!template.includes('{{')) {
+    return []
+  }
+
   const engine = options?.astEngine ?? 'babel'
 
   try {

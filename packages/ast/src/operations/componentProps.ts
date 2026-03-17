@@ -7,6 +7,12 @@ import { parseJsLikeWithEngine } from '../engine'
 
 export type ComponentPropMap = Map<string, string>
 
+const COMPONENT_PROPS_TEXT_HINTS = ['properties', 'props']
+
+function mayContainComponentPropsShape(code: string) {
+  return COMPONENT_PROPS_TEXT_HINTS.some(hint => code.includes(hint))
+}
+
 const CONSTRUCTOR_TYPE_MAP: Record<string, string> = {
   String: 'string',
   StringConstructor: 'string',
@@ -342,6 +348,10 @@ export function collectComponentPropsFromCode(
     astEngine?: AstEngineName
   },
 ): ComponentPropMap {
+  if (!mayContainComponentPropsShape(code)) {
+    return new Map()
+  }
+
   const engine = options?.astEngine ?? 'babel'
 
   try {

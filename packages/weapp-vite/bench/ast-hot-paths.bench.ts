@@ -1,10 +1,10 @@
-import { collectOnPageScrollPerformanceWarnings, collectSetDataPickKeysFromTemplateCode } from '@weapp-vite/ast'
+import { collectComponentPropsFromCode, collectFeatureFlagsFromCode, collectOnPageScrollPerformanceWarnings, collectSetDataPickKeysFromTemplateCode } from '@weapp-vite/ast'
 import { parseSync } from 'oxc-parser'
 import { bench, describe } from 'vitest'
+import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../wevu-compiler/src/constants'
 import { createModuleAnalysis, createModuleAnalysisFromCode } from '../../wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis'
 import { collectTargetOptionsObjectsFromCode } from '../../wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects'
 import { parseJsLike } from '../../wevu-compiler/src/utils/babel'
-import { WE_VU_MODULE_ID, WE_VU_PAGE_HOOK_TO_FEATURE } from '../../wevu-compiler/src/constants'
 import { defaultBenchOptions } from './utils'
 
 function createSetDataPickTemplate(options?: {
@@ -104,6 +104,47 @@ function createUnrelatedSource(options?: {
     lines.push(`export function useFeature${index}() {`)
     lines.push(`  const state = ref(${index})`)
     lines.push(`  return computed(() => sum(state.value, ${index}))`)
+    lines.push(`}`)
+  }
+
+  return lines.join('\n')
+}
+
+function createImportedButUnusedWevuFactorySource(options?: {
+  fnCount?: number
+}) {
+  const { fnCount = 180 } = options ?? {}
+  const lines = [
+    `import { defineComponent } from 'wevu'`,
+    `import * as wevu from 'wevu'`,
+    ``,
+    `const localFactory = defineComponent`,
+    `const namespaceFactory = wevu.defineComponent`,
+    ``,
+  ]
+
+  for (let index = 0; index < fnCount; index += 1) {
+    lines.push(`export function useFeature${index}() {`)
+    lines.push(`  return localFactory && namespaceFactory && ${index}`)
+    lines.push(`}`)
+  }
+
+  return lines.join('\n')
+}
+
+function createComponentPropsUnrelatedSource(options?: {
+  fnCount?: number
+}) {
+  const { fnCount = 240 } = options ?? {}
+  const lines = [
+    `import { ref, computed } from 'vue'`,
+    ``,
+  ]
+
+  for (let index = 0; index < fnCount; index += 1) {
+    lines.push(`export function useCounter${index}() {`)
+    lines.push(`  const value = ref(${index})`)
+    lines.push(`  return computed(() => value.value + ${index})`)
     lines.push(`}`)
   }
 
@@ -273,6 +314,8 @@ describe('ast hot paths: babel vs oxc', () => {
   const pageScrollSource = createOnPageScrollSource()
   const moduleSource = createModuleAnalysisSource()
   const unrelatedSource = createUnrelatedSource()
+  const importedButUnusedWevuFactorySource = createImportedButUnusedWevuFactorySource()
+  const componentPropsUnrelatedSource = createComponentPropsUnrelatedSource()
   const parsedBabelModule = parseJsLike(moduleSource)
   const parsedOxcModule = parseSync('bench.ts', moduleSource).program
   let moduleAnalysisColdSeq = 0
@@ -306,6 +349,46 @@ describe('ast hot paths: babel vs oxc', () => {
     'onPageScroll warnings / oxc',
     () => {
       collectOnPageScrollPerformanceWarnings(pageScrollSource, '/src/pages/index.ts', { engine: 'oxc' })
+    },
+    defaultBenchOptions,
+  )
+
+  bench(
+    'componentProps unrelated / babel',
+    () => {
+      collectComponentPropsFromCode(componentPropsUnrelatedSource, { astEngine: 'babel' })
+    },
+    defaultBenchOptions,
+  )
+
+  bench(
+    'componentProps unrelated / oxc',
+    () => {
+      collectComponentPropsFromCode(componentPropsUnrelatedSource, { astEngine: 'oxc' })
+    },
+    defaultBenchOptions,
+  )
+
+  bench(
+    'featureFlags unrelated / babel',
+    () => {
+      collectFeatureFlagsFromCode(componentPropsUnrelatedSource, {
+        astEngine: 'babel',
+        moduleId: WE_VU_MODULE_ID,
+        hookToFeature: WE_VU_PAGE_HOOK_TO_FEATURE,
+      })
+    },
+    defaultBenchOptions,
+  )
+
+  bench(
+    'featureFlags unrelated / oxc',
+    () => {
+      collectFeatureFlagsFromCode(componentPropsUnrelatedSource, {
+        astEngine: 'oxc',
+        moduleId: WE_VU_MODULE_ID,
+        hookToFeature: WE_VU_PAGE_HOOK_TO_FEATURE,
+      })
     },
     defaultBenchOptions,
   )
@@ -410,6 +493,14 @@ describe('ast hot paths: babel vs oxc', () => {
     'pageFeatures optionsObjects unrelated / oxc fast reject (cached)',
     () => {
       collectTargetOptionsObjectsFromCode(unrelatedSource, '/src/store.cached.ts', { astEngine: 'oxc' })
+    },
+    defaultBenchOptions,
+  )
+
+  bench(
+    'pageFeatures optionsObjects imported-but-unused wevu factory / oxc fast reject (cold)',
+    () => {
+      collectTargetOptionsObjectsFromCode(importedButUnusedWevuFactorySource, `/src/store-wevu-unused-${optionsObjectsColdSeq++}.ts`, { astEngine: 'oxc' })
     },
     defaultBenchOptions,
   )

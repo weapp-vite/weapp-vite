@@ -5,6 +5,15 @@ import { parseJsLikeWithEngine } from '../engine'
 
 export const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
 
+function mayContainPlatformApiIdentifierByText(code: string) {
+  for (const identifier of platformApiIdentifiers) {
+    if (code.includes(`${identifier}.`)) {
+      return true
+    }
+  }
+  return false
+}
+
 /**
  * 使用统一 AST 入口做平台 API 访问预判。
  */
@@ -19,6 +28,10 @@ export function mayContainPlatformApiAccess(
 
   if (engine !== 'oxc') {
     return true
+  }
+
+  if (!mayContainPlatformApiIdentifierByText(code)) {
+    return false
   }
 
   try {

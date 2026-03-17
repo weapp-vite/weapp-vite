@@ -1,5 +1,7 @@
 import * as t from '@babel/types'
 import { describe, expect, it } from 'vitest'
+import * as babelModule from './babel'
+import * as engineModule from './engine'
 import {
   BABEL_TS_MODULE_PARSER_OPTIONS,
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
@@ -66,11 +68,49 @@ import FooCard, { BarButton as RenamedButton, BazText } from './components'
     )
   })
 
+  it('fast rejects unrelated script setup import analysis before parsing', () => {
+    const babelParseSpy = vi.spyOn(babelModule, 'parse')
+    const engineParseSpy = vi.spyOn(engineModule, 'parseJsLikeWithEngine')
+    const source = `
+const count = 1
+export function useCounter() {
+  return count
+}
+`
+
+    expect(collectScriptSetupImportsFromCode(source, new Set(['FooCard']), { astEngine: 'babel' })).toEqual([])
+    expect(collectScriptSetupImportsFromCode(source, new Set(['FooCard']), { astEngine: 'oxc' })).toEqual([])
+    expect(collectScriptSetupImportsFromCode(`import Bar from './Bar'`, new Set(['FooCard']), { astEngine: 'babel' })).toEqual([])
+    expect(collectScriptSetupImportsFromCode(`import Bar from './Bar'`, new Set(['FooCard']), { astEngine: 'oxc' })).toEqual([])
+    expect(babelParseSpy).not.toHaveBeenCalled()
+    expect(engineParseSpy).not.toHaveBeenCalled()
+
+    babelParseSpy.mockRestore()
+    engineParseSpy.mockRestore()
+  })
+
   it('supports oxc fast prechecks', () => {
     expect(mayContainPlatformApiAccess('const value = wx.getStorageSync("x")', { engine: 'oxc' })).toBe(true)
     expect(mayContainPlatformApiAccess('const value = localStorage.getItem("x")', { engine: 'oxc' })).toBe(false)
     expect(mayContainStaticRequireLiteral('const mod = require("./dep")', { engine: 'oxc' })).toBe(true)
     expect(mayContainStaticRequireLiteral('const mod = require(name)', { engine: 'oxc' })).toBe(false)
+  })
+
+  it('fast rejects oxc prechecks before parsing when text hints are absent', () => {
+    const engineParseSpy = vi.spyOn(engineModule, 'parseJsLikeWithEngine')
+    const source = `
+import { ref } from 'vue'
+
+export function useCounter() {
+  return ref(1)
+}
+`
+
+    expect(mayContainPlatformApiAccess(source, { engine: 'oxc' })).toBe(false)
+    expect(mayContainStaticRequireLiteral(source, { engine: 'oxc' })).toBe(false)
+    expect(engineParseSpy).not.toHaveBeenCalled()
+
+    engineParseSpy.mockRestore()
   })
 
   it('collects component props with babel and oxc', () => {
@@ -91,6 +131,26 @@ Component(options)
 
     expect(collectComponentPropsFromCode(source, { astEngine: 'babel' })).toEqual(expected)
     expect(collectComponentPropsFromCode(source, { astEngine: 'oxc' })).toEqual(expected)
+  })
+
+  it('fast rejects unrelated component prop sources before parsing', () => {
+    const babelParseSpy = vi.spyOn(babelModule, 'parse')
+    const engineParseSpy = vi.spyOn(engineModule, 'parseJsLikeWithEngine')
+    const source = `
+import { ref } from 'vue'
+
+export function useCounter() {
+  return ref(1)
+}
+`
+
+    expect(collectComponentPropsFromCode(source, { astEngine: 'babel' })).toEqual(new Map())
+    expect(collectComponentPropsFromCode(source, { astEngine: 'oxc' })).toEqual(new Map())
+    expect(babelParseSpy).not.toHaveBeenCalled()
+    expect(engineParseSpy).not.toHaveBeenCalled()
+
+    babelParseSpy.mockRestore()
+    engineParseSpy.mockRestore()
   })
 
   it('collects generic feature flags with babel and oxc', () => {
@@ -118,6 +178,39 @@ wevuNs.onShow?.(() => {})
       ...options,
       astEngine: 'oxc',
     })).toEqual(expected)
+  })
+
+  it('fast rejects unrelated feature flag sources before parsing', () => {
+    const babelParseSpy = vi.spyOn(babelModule, 'parseJsLike')
+    const engineParseSpy = vi.spyOn(engineModule, 'parseJsLikeWithEngine')
+    const source = `
+import { ref } from 'vue'
+
+export function useCounter() {
+  return ref(1)
+}
+`
+    const options = {
+      moduleId: 'wevu',
+      hookToFeature: {
+        onLoad: 'enableLoad',
+        onShow: 'enableShow',
+      } as const,
+    }
+
+    expect(collectFeatureFlagsFromCode(source, {
+      ...options,
+      astEngine: 'babel',
+    })).toEqual(new Set())
+    expect(collectFeatureFlagsFromCode(source, {
+      ...options,
+      astEngine: 'oxc',
+    })).toEqual(new Set())
+    expect(babelParseSpy).not.toHaveBeenCalled()
+    expect(engineParseSpy).not.toHaveBeenCalled()
+
+    babelParseSpy.mockRestore()
+    engineParseSpy.mockRestore()
   })
 
   it('collects jsx auto components with babel and oxc', () => {
@@ -171,6 +264,37 @@ export default page
         kind: 'named',
       },
     ])
+  })
+
+  it('fast rejects jsx auto component analysis without imports or default export', () => {
+    const babelParseSpy = vi.spyOn(babelModule, 'parse')
+    const source = `
+const count = 1
+export function useCounter() {
+  return count + 1
+}
+`
+
+    const babelResult = collectJsxAutoComponentsFromCode(source, {
+      astEngine: 'babel',
+      isCollectableTag: () => true,
+    })
+    const oxcResult = collectJsxAutoComponentsFromCode(source, {
+      astEngine: 'oxc',
+      isCollectableTag: () => true,
+    })
+
+    expect(babelResult).toEqual({
+      templateTags: new Set(),
+      importedComponents: [],
+    })
+    expect(oxcResult).toEqual({
+      templateTags: new Set(),
+      importedComponents: [],
+    })
+    expect(babelParseSpy).not.toHaveBeenCalled()
+
+    babelParseSpy.mockRestore()
   })
 
   it('collects imported components and default export from babel ast', () => {
@@ -292,6 +416,23 @@ onPageScroll(() => {
     expect(collectOnPageScrollPerformanceWarnings(source, '/src/pages/index.ts', { engine: 'oxc' })).toEqual([])
   })
 
+  it('fast rejects onPageScroll diagnostics when source text is absent', () => {
+    const parseSpy = vi.spyOn(babelModule, 'parseJsLike')
+    const source = `
+import { ref } from 'vue'
+
+export function useCounter() {
+  return ref(1)
+}
+`
+
+    expect(collectOnPageScrollPerformanceWarnings(source, '/src/pages/index.ts', { engine: 'babel' })).toEqual([])
+    expect(collectOnPageScrollPerformanceWarnings(source, '/src/pages/index.ts', { engine: 'oxc' })).toEqual([])
+    expect(parseSpy).not.toHaveBeenCalled()
+
+    parseSpy.mockRestore()
+  })
+
   it('collects setData pick keys across engine options', () => {
     const template = `
 <view wx:for="{{ list }}" wx:for-item="row" wx:for-index="i">
@@ -312,5 +453,19 @@ onPageScroll(() => {
 
     expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'babel' })).toEqual(['count', 'extra', 'list'])
     expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'oxc' })).toEqual(['count', 'extra', 'list'])
+  })
+
+  it('fast rejects setData pick analysis without mustache expressions', () => {
+    const babelParseSpy = vi.spyOn(babelModule, 'parse')
+    const engineParseSpy = vi.spyOn(engineModule, 'parseJsLikeWithEngine')
+    const template = `<view class="plain"><text>static</text></view>`
+
+    expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'babel' })).toEqual([])
+    expect(collectSetDataPickKeysFromTemplateCode(template, { astEngine: 'oxc' })).toEqual([])
+    expect(babelParseSpy).not.toHaveBeenCalled()
+    expect(engineParseSpy).not.toHaveBeenCalled()
+
+    babelParseSpy.mockRestore()
+    engineParseSpy.mockRestore()
   })
 })
