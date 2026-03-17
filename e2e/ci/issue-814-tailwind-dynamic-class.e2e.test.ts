@@ -17,8 +17,8 @@ async function buildCase(appRoot: string) {
   await fs.remove(distRoot)
   await fs.remove(patchCacheRoot)
 
-  await execa('pnpm', ['exec', 'weapp-tw', 'patch'], {
-    cwd: appRoot,
+  await execa('pnpm', ['exec', 'weapp-tw', 'patch', '--cwd', appRoot, '--clear-cache'], {
+    cwd: path.resolve(import.meta.dirname, '../..'),
     stdio: 'inherit',
   })
 
