@@ -1,5 +1,7 @@
 # @weapp-vite/dashboard
 
+## 6.10.1
+
 ## 6.10.0
 
 ### Minor Changes
