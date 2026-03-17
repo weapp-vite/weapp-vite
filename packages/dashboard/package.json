@@ -31,13 +31,15 @@
   },
   "dependencies": {
     "echarts": "catalog:",
-    "vue": "catalog:"
+    "vue": "catalog:",
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "^6.0.5",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
+    "unplugin-vue-router": "^0.19.2",
     "vite": "catalog:"
   },
   "publishConfig": {
