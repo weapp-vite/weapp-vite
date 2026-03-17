@@ -1,0 +1,331 @@
+import { spawn } from 'node:child_process'
+import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import process from 'node:process'
+import { setTimeout as delay } from 'node:timers/promises'
+import { pathToFileURL } from 'node:url'
+
+const PACKAGE_MANAGERS = ['pnpm', 'yarn', 'npm']
+const CREATE_PACKAGE_NAME = 'weapp-vite'
+const DEFAULT_PACKAGE_SPEC = process.env.CREATE_WEAPP_VITE_SPEC?.trim() || 'latest'
+const INSTALL_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_INSTALL_TIMEOUT_MS || 10 * 60 * 1000)
+const BUILD_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_BUILD_TIMEOUT_MS || 10 * 60 * 1000)
+const DEV_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_TIMEOUT_MS || 3 * 60 * 1000)
+const DEV_SETTLE_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_SETTLE_MS || 3 * 1000)
+const TMP_ROOT = path.join(os.tmpdir(), `create-weapp-vite-smoke-${Date.now()}-${process.pid}`)
+const NEWLINE_RE = /\r?\n/
+
+function getExecutableName(command) {
+  return process.platform === 'win32' ? `${command}.cmd` : command
+}
+
+function getCreatePackageSpecifier(packageManager, packageSpec) {
+  if (!packageSpec || packageSpec === 'latest') {
+    return packageManager === 'yarn'
+      ? CREATE_PACKAGE_NAME
+      : `${CREATE_PACKAGE_NAME}@latest`
+  }
+  return `${CREATE_PACKAGE_NAME}@${packageSpec}`
+}
+
+function getCreateCommand(packageManager, projectName, templateName, packageSpec) {
+  const packageSpecifier = getCreatePackageSpecifier(packageManager, packageSpec)
+  return {
+    command: packageManager,
+    args: ['create', packageSpecifier, projectName, templateName],
+  }
+}
+
+function getInstallCommand(packageManager) {
+  if (packageManager === 'yarn') {
+    return {
+      command: packageManager,
+      args: ['install'],
+    }
+  }
+  return {
+    command: packageManager,
+    args: ['install'],
+  }
+}
+
+function formatCommand(command, args) {
+  return [command, ...args].join(' ')
+}
+
+function tail(text, maxLines = 80) {
+  const lines = text.trim().split(NEWLINE_RE).filter(Boolean)
+  return lines.slice(-maxLines).join('\n')
+}
+
+async function runCommand({ cwd, command, args, timeoutMs, label }) {
+  const stdoutChunks = []
+  const stderrChunks = []
+  const printableCommand = formatCommand(command, args)
+
+  console.log(`\n[${label}] ${printableCommand}`)
+
+  return await new Promise((resolve, reject) => {
+    const child = spawn(getExecutableName(command), args, {
+      cwd,
+      env: {
+        ...process.env,
+        CI: 'true',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+
+    const timer = setTimeout(async () => {
+      await terminateProcess(child)
+      reject(new Error(`[${label}] Timed out after ${timeoutMs}ms\n${printableCommand}`))
+    }, timeoutMs)
+
+    child.stdout.on('data', (chunk) => {
+      const text = chunk.toString()
+      stdoutChunks.push(text)
+      process.stdout.write(text)
+    })
+
+    child.stderr.on('data', (chunk) => {
+      const text = chunk.toString()
+      stderrChunks.push(text)
+      process.stderr.write(text)
+    })
+
+    child.on('error', (error) => {
+      clearTimeout(timer)
+      reject(error)
+    })
+
+    child.on('close', (code, signal) => {
+      clearTimeout(timer)
+      if (code === 0) {
+        resolve({
+          stdout: stdoutChunks.join(''),
+          stderr: stderrChunks.join(''),
+        })
+        return
+      }
+
+      const stdout = tail(stdoutChunks.join(''))
+      const stderr = tail(stderrChunks.join(''))
+      reject(new Error(
+        [
+          `[${label}] Command failed with code ${code ?? 'null'} signal ${signal ?? 'null'}`,
+          printableCommand,
+          stdout ? `stdout:\n${stdout}` : '',
+          stderr ? `stderr:\n${stderr}` : '',
+        ].filter(Boolean).join('\n\n'),
+      ))
+    })
+  })
+}
+
+async function terminateProcess(child) {
+  if (!child.pid || child.killed || child.exitCode !== null) {
+    return
+  }
+
+  if (process.platform === 'win32') {
+    await new Promise((resolve) => {
+      const killer = spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], {
+        stdio: 'ignore',
+      })
+      killer.on('close', resolve)
+      killer.on('error', resolve)
+    })
+    return
+  }
+
+  child.kill('SIGTERM')
+  const start = Date.now()
+  while (child.exitCode === null && Date.now() - start < 10_000) {
+    await delay(200)
+  }
+  if (child.exitCode === null) {
+    child.kill('SIGKILL')
+  }
+}
+
+async function distHasOutputs(projectDir) {
+  const distDir = path.join(projectDir, 'dist')
+  try {
+    const entries = await fs.readdir(distDir)
+    return entries.length > 0
+  }
+  catch {
+    return false
+  }
+}
+
+async function runDevSmoke(projectDir, label) {
+  await fs.rm(path.join(projectDir, 'dist'), { recursive: true, force: true })
+
+  console.log(`\n[${label}] pnpm dev`)
+
+  const stdoutChunks = []
+  const stderrChunks = []
+  const child = spawn(getExecutableName('pnpm'), ['dev'], {
+    cwd: projectDir,
+    env: {
+      ...process.env,
+      CI: 'true',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+
+  child.stdout.on('data', (chunk) => {
+    const text = chunk.toString()
+    stdoutChunks.push(text)
+    process.stdout.write(text)
+  })
+
+  child.stderr.on('data', (chunk) => {
+    const text = chunk.toString()
+    stderrChunks.push(text)
+    process.stderr.write(text)
+  })
+
+  const start = Date.now()
+  try {
+    while (true) {
+      if (child.exitCode !== null) {
+        throw new Error(
+          [
+            `[${label}] pnpm dev exited before outputs were ready with code ${child.exitCode}`,
+            tail(stdoutChunks.join('')) ? `stdout:\n${tail(stdoutChunks.join(''))}` : '',
+            tail(stderrChunks.join('')) ? `stderr:\n${tail(stderrChunks.join(''))}` : '',
+          ].filter(Boolean).join('\n\n'),
+        )
+      }
+
+      if (await distHasOutputs(projectDir)) {
+        await delay(DEV_SETTLE_MS)
+        if (child.exitCode !== null) {
+          throw new Error(
+            [
+              `[${label}] pnpm dev exited during settle window with code ${child.exitCode}`,
+              tail(stdoutChunks.join('')) ? `stdout:\n${tail(stdoutChunks.join(''))}` : '',
+              tail(stderrChunks.join('')) ? `stderr:\n${tail(stderrChunks.join(''))}` : '',
+            ].filter(Boolean).join('\n\n'),
+          )
+        }
+        return
+      }
+
+      if (Date.now() - start > DEV_TIMEOUT_MS) {
+        throw new Error(
+          [
+            `[${label}] Timed out waiting for pnpm dev outputs after ${DEV_TIMEOUT_MS}ms`,
+            tail(stdoutChunks.join('')) ? `stdout:\n${tail(stdoutChunks.join(''))}` : '',
+            tail(stderrChunks.join('')) ? `stderr:\n${tail(stderrChunks.join(''))}` : '',
+          ].filter(Boolean).join('\n\n'),
+        )
+      }
+
+      await delay(1000)
+    }
+  }
+  finally {
+    await terminateProcess(child)
+  }
+}
+
+async function listTemplateNames() {
+  const templatesDir = path.resolve('packages/create-weapp-vite/templates')
+  const entries = await fs.readdir(templatesDir, { withFileTypes: true })
+  return entries
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name)
+    .sort((a, b) => a.localeCompare(b))
+}
+
+async function runScenario({ packageManager, templateName, packageSpec, scenarioRoot }) {
+  const projectName = `${packageManager}-${templateName}`
+  const labelPrefix = `${packageManager}/${templateName}`
+  const { command: createCommand, args: createArgs } = getCreateCommand(packageManager, projectName, templateName, packageSpec)
+
+  await fs.mkdir(scenarioRoot, { recursive: true })
+
+  await runCommand({
+    cwd: scenarioRoot,
+    command: createCommand,
+    args: createArgs,
+    timeoutMs: INSTALL_TIMEOUT_MS,
+    label: `${labelPrefix} create`,
+  })
+
+  const projectDir = path.join(scenarioRoot, projectName)
+
+  await runCommand({
+    cwd: projectDir,
+    command: getInstallCommand(packageManager).command,
+    args: getInstallCommand(packageManager).args,
+    timeoutMs: INSTALL_TIMEOUT_MS,
+    label: `${labelPrefix} install`,
+  })
+
+  await runCommand({
+    cwd: projectDir,
+    command: 'pnpm',
+    args: ['build'],
+    timeoutMs: BUILD_TIMEOUT_MS,
+    label: `${labelPrefix} pnpm build`,
+  })
+
+  await runDevSmoke(projectDir, `${labelPrefix} pnpm dev`)
+}
+
+async function main() {
+  const templateNames = await listTemplateNames()
+
+  console.log(`Node ${process.version}`)
+  console.log(`Package spec: ${DEFAULT_PACKAGE_SPEC}`)
+  console.log(`Templates: ${templateNames.join(', ')}`)
+  console.log(`Package managers: ${PACKAGE_MANAGERS.join(', ')}`)
+  console.log(`Workspace: ${TMP_ROOT}`)
+
+  await fs.mkdir(TMP_ROOT, { recursive: true })
+
+  const failures = []
+
+  for (const packageManager of PACKAGE_MANAGERS) {
+    for (const templateName of templateNames) {
+      const scenarioRoot = path.join(TMP_ROOT, `${packageManager}-${templateName}`)
+      try {
+        await runScenario({
+          packageManager,
+          templateName,
+          packageSpec: DEFAULT_PACKAGE_SPEC,
+          scenarioRoot,
+        })
+        console.log(`\n[${packageManager}/${templateName}] OK`)
+      }
+      catch (error) {
+        failures.push({
+          packageManager,
+          templateName,
+          error,
+        })
+        console.error(`\n[${packageManager}/${templateName}] FAILED`)
+        console.error(error instanceof Error ? error.message : String(error))
+      }
+    }
+  }
+
+  if (failures.length > 0) {
+    console.error(`\n${failures.length} scenario(s) failed.`)
+    for (const failure of failures) {
+      console.error(`- ${failure.packageManager}/${failure.templateName}`)
+    }
+    process.exitCode = 1
+    return
+  }
+
+  console.log('\nAll create-weapp-vite smoke scenarios passed.')
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main()
+}
