@@ -39,7 +39,7 @@ describe.sequential('HMR add — page-level file additions (dev watch)', () => {
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
-      stdio: 'inherit',
+      all: true,
     })
 
     try {
@@ -192,6 +192,7 @@ describe.sequential('HMR add — component-level file additions (dev watch)', ()
       await fs.writeFile(srcStyle, `.hmr-temp-comp { /* ${marker} */ }`, 'utf8')
       await fs.writeFile(srcJson, JSON.stringify({ component: true, hmrMarker: marker }, null, 2), 'utf8')
       await dev.waitFor(waitForStable(), `${platform} dev stable after full component add`)
+      expect(dev.getOutput()).not.toContain('Build failed')
     }
     finally {
       await dev.stop(5_000)

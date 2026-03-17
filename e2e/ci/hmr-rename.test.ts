@@ -35,7 +35,7 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
-      stdio: 'inherit',
+      all: true,
     })
 
     try {
@@ -112,6 +112,7 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
         `${platform} rename-saved script marker`,
       )
       expect(content).toContain(marker)
+      expect(dev.getOutput()).not.toContain('Build failed')
     }
     finally {
       await dev.stop(5_000)

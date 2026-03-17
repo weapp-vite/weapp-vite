@@ -40,8 +40,11 @@ describe.sequential('HMR app.json config (dev watch)', () => {
 
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      env: createDevProcessEnv(),
-      stdio: 'inherit',
+      env: {
+        ...createDevProcessEnv(),
+        DEBUG: 'weapp-vite:load-entry',
+      },
+      all: true,
     })
 
     try {
