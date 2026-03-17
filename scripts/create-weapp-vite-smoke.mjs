@@ -8,6 +8,10 @@ import { pathToFileURL } from 'node:url'
 
 const CREATE_PACKAGE_NAME = 'weapp-vite'
 const DEFAULT_PACKAGE_SPEC = process.env.CREATE_WEAPP_VITE_SPEC?.trim() || 'latest'
+const DEFAULT_TEMPLATE_NAMES = ['default', 'lib', 'wevu', 'wevu-tdesign', 'tailwindcss', 'vant', 'tdesign']
+const TEMPLATE_NAMES = (process.env.CREATE_WEAPP_VITE_TEMPLATES?.split(',') ?? DEFAULT_TEMPLATE_NAMES)
+  .map(name => name.trim())
+  .filter(Boolean)
 const INSTALL_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_INSTALL_TIMEOUT_MS || 10 * 60 * 1000)
 const BUILD_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_BUILD_TIMEOUT_MS || 10 * 60 * 1000)
 const DEV_TIMEOUT_MS = Number(process.env.CREATE_WEAPP_VITE_DEV_TIMEOUT_MS || 3 * 60 * 1000)
@@ -347,15 +351,6 @@ async function runDevSmoke(projectDir, label, devCommand) {
   }
 }
 
-async function listTemplateNames() {
-  const templatesDir = path.resolve('packages/create-weapp-vite/templates')
-  const entries = await fs.readdir(templatesDir, { withFileTypes: true })
-  return entries
-    .filter(entry => entry.isDirectory())
-    .map(entry => entry.name)
-    .sort((a, b) => a.localeCompare(b))
-}
-
 async function runScenario({ scenario, templateName, packageSpec, scenarioRoot }) {
   const projectName = `${scenario.name}-${templateName}`
   const labelPrefix = `${scenario.name}/${templateName}`
@@ -396,19 +391,18 @@ async function runScenario({ scenario, templateName, packageSpec, scenarioRoot }
 }
 
 async function main() {
-  const templateNames = await listTemplateNames()
   const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'create-weapp-vite-smoke-'))
 
   console.log(`Node ${process.version}`)
   console.log(`Package spec: ${DEFAULT_PACKAGE_SPEC}`)
-  console.log(`Templates: ${templateNames.join(', ')}`)
+  console.log(`Templates: ${TEMPLATE_NAMES.join(', ')}`)
   console.log(`Scenarios: ${SCENARIOS.map(scenario => scenario.name).join(', ')}`)
   console.log(`Workspace: ${tmpRoot}`)
 
   const failures = []
 
   for (const scenario of SCENARIOS) {
-    for (const templateName of templateNames) {
+    for (const templateName of TEMPLATE_NAMES) {
       const scenarioRoot = path.join(tmpRoot, `${scenario.name}-${templateName}`)
       try {
         await runScenario({
