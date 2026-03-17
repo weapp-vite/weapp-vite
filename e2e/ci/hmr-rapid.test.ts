@@ -41,7 +41,7 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
-      stdio: 'inherit',
+      all: true,
     })
 
     try {
@@ -108,6 +108,7 @@ describe.sequential('HMR rapid modifications (dev watch)', () => {
       )
       expect(content).toContain(secondMarker)
       expect(content).not.toContain(firstMarker)
+      expect(dev.getOutput()).not.toContain('Build failed')
     }
     finally {
       await dev.stop(5_000)

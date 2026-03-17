@@ -259,8 +259,11 @@ describe.sequential('auto import local components (e2e)', () => {
     }
 
     const devProcess = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      env: createDevProcessEnv(),
-      stdio: 'inherit',
+      env: {
+        ...createDevProcessEnv(),
+        DEBUG: 'weapp-vite:load-entry',
+      },
+      all: true,
     })
 
     try {
@@ -286,6 +289,11 @@ describe.sequential('auto import local components (e2e)', () => {
           `${platform} autoCard removal retry`,
         )
       }
+      const removalOutput = await devProcess.waitForOutput(
+        /hmr emit dirty=1 resolved=\d+ emitAll=false pending=1/,
+        `${platform} autoCard removal incremental hmr log`,
+      )
+      expect(removalOutput).toMatch(/emitAll=false pending=1/)
 
       await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
       await devProcess.waitFor(
@@ -295,6 +303,11 @@ describe.sequential('auto import local components (e2e)', () => {
 
       const autoCardTemplatePath = path.join(DIST_ROOT, `components/AutoCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`)
       expect(await fs.pathExists(autoCardTemplatePath)).toBe(true)
+      const restoreOutput = await devProcess.waitForOutput(
+        /hmr emit dirty=1 resolved=\d+ emitAll=false pending=1/,
+        `${platform} autoCard restore incremental hmr log`,
+      )
+      expect(restoreOutput).toMatch(/emitAll=false pending=1/)
     }
     finally {
       await devProcess.stop(3_000)
@@ -322,8 +335,11 @@ describe.sequential('auto import local components (e2e)', () => {
     await fs.writeFile(PAGE_SOURCE_PATH, pageSourceCrlf, 'utf8')
 
     const devProcess = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
-      env: createDevProcessEnv(),
-      stdio: 'inherit',
+      env: {
+        ...createDevProcessEnv(),
+        DEBUG: 'weapp-vite:load-entry',
+      },
+      all: true,
     })
 
     try {
@@ -349,12 +365,22 @@ describe.sequential('auto import local components (e2e)', () => {
           `${platform} crlf autoCard removal retry`,
         )
       }
+      const removalOutput = await devProcess.waitForOutput(
+        /hmr emit dirty=1 resolved=\d+ emitAll=false pending=1/,
+        `${platform} crlf autoCard removal incremental hmr log`,
+      )
+      expect(removalOutput).toMatch(/emitAll=false pending=1/)
 
       await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithAutoCard, 'utf8')
       await devProcess.waitFor(
         waitForUsingComponent(pageJsonPath, autoCardKey, '/components/AutoCard/index'),
         `${platform} crlf autoCard re-registration`,
       )
+      const restoreOutput = await devProcess.waitForOutput(
+        /hmr emit dirty=1 resolved=\d+ emitAll=false pending=1/,
+        `${platform} crlf autoCard restore incremental hmr log`,
+      )
+      expect(restoreOutput).toMatch(/emitAll=false pending=1/)
     }
     finally {
       await devProcess.stop(3_000)

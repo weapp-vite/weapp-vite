@@ -98,8 +98,11 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', 'weapp', '--skipNpm'], {
       cwd: APP_ROOT,
-      env: createDevProcessEnv(),
-      stdio: 'inherit',
+      env: {
+        ...createDevProcessEnv(),
+        DEBUG: 'weapp-vite:load-entry',
+      },
+      all: true,
     })
 
     try {
@@ -111,6 +114,11 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
       const modifiedLogsSource = originalLogsSource.replace('logs', modifyMarker)
       await fs.writeFile(LOGS_VUE_PATH, modifiedLogsSource, 'utf8')
       await dev.waitFor(waitForFileContains(LOGS_WXML_DIST, modifyMarker), 'dist template updated after modify')
+      const modifyOutput = await dev.waitForOutput(
+        /hmr emit dirty=1 resolved=\d+ emitAll=false pending=1/,
+        'auto-routes existing route incremental hmr log',
+      )
+      expect(modifyOutput).toMatch(/emitAll=false pending=1/)
 
       // add route — small delay lets the watcher settle after the previous modify event
       await sleep(1_000)

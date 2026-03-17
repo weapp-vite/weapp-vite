@@ -39,7 +39,7 @@ describe.sequential('HMR delete — page-level file deletions (dev watch)', () =
     // @ts-expect-error execa v9 overload resolution
     const dev = startDevProcess('node', ['--import', 'tsx', CLI_PATH, 'dev', APP_ROOT, '--platform', platform, '--skipNpm'], {
       env: createDevProcessEnv(),
-      stdio: 'inherit',
+      all: true,
     })
 
     try {
@@ -205,6 +205,7 @@ describe.sequential('HMR delete — component-level file deletions (dev watch)',
 
       await fs.remove(srcTemplate)
       await dev.waitFor(waitForStable(), `${platform} dev stable after component template delete`)
+      expect(dev.getOutput()).not.toContain('Build failed')
     }
     finally {
       await dev.stop(5_000)

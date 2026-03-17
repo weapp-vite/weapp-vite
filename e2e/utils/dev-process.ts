@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import process from 'node:process'
 import { execa } from 'execa'
 
@@ -9,6 +10,8 @@ interface DevProcessExitInfo {
 
 interface DevProcessController {
   waitFor: <T>(task: Promise<T>, description: string) => Promise<T>
+  waitForOutput: (matcher: string | RegExp, description: string, timeoutMs?: number) => Promise<string>
+  getOutput: () => string
   stop: (forceKillDelayMs?: number) => Promise<void>
 }
 
@@ -93,6 +96,21 @@ export function startDevProcess(
   if (typeof child.pid === 'number') {
     TRACKED_DEV_PIDS.add(child.pid)
   }
+  const outputChunks: string[] = []
+
+  const appendOutput = (chunk: unknown) => {
+    if (typeof chunk === 'string') {
+      outputChunks.push(chunk)
+      return
+    }
+    if (chunk instanceof Uint8Array) {
+      outputChunks.push(Buffer.from(chunk).toString('utf8'))
+    }
+  }
+
+  child.stdout?.on('data', appendOutput)
+  child.stderr?.on('data', appendOutput)
+  child.all?.on('data', appendOutput)
 
   const settledExit = child.then<DevProcessExitInfo>(
     result => ({
@@ -133,6 +151,27 @@ export function startDevProcess(
     throw new Error(`Dev process exited before ${description}: ${formatExitInfo(winner.info)}`)
   }
 
+  const waitForOutput = async (matcher: string | RegExp, description: string, timeoutMs = 90_000) => {
+    const start = Date.now()
+    while (Date.now() - start < timeoutMs) {
+      const output = outputChunks.join('')
+      const matched = typeof matcher === 'string'
+        ? output.includes(matcher)
+        : matcher.test(output)
+      if (matched) {
+        return output
+      }
+      const exited = await Promise.race([
+        sleep(200).then(() => false),
+        settledExit.then(() => true),
+      ])
+      if (exited) {
+        break
+      }
+    }
+    throw new Error(`Timed out waiting for dev output: ${description}`)
+  }
+
   const stop = async (forceKillDelayMs = 3_000) => {
     if (typeof child.pid === 'number') {
       await terminatePid(child.pid, forceKillDelayMs)
@@ -145,6 +184,8 @@ export function startDevProcess(
 
   return {
     waitFor,
+    waitForOutput,
+    getOutput: () => outputChunks.join(''),
     stop,
   }
 }
