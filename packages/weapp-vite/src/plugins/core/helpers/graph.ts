@@ -84,7 +84,27 @@ export function refreshModuleGraph(
 
 export function refreshSharedChunkImporters(bundle: OutputBundle, state: CorePluginState) {
   state.hmrSharedChunkImporters.clear()
+  appendSharedChunkImporters(bundle, state)
+}
 
+export function refreshPartialSharedChunkImporters(bundle: OutputBundle, state: CorePluginState, entryIds: Set<string>) {
+  if (!entryIds.size) {
+    return
+  }
+
+  for (const [chunkId, importers] of state.hmrSharedChunkImporters) {
+    for (const entryId of entryIds) {
+      importers.delete(entryId)
+    }
+    if (importers.size === 0) {
+      state.hmrSharedChunkImporters.delete(chunkId)
+    }
+  }
+
+  appendSharedChunkImporters(bundle, state, entryIds)
+}
+
+function appendSharedChunkImporters(bundle: OutputBundle, state: CorePluginState, onlyEntryIds?: Set<string>) {
   const isEntryChunk = (chunk: OutputChunk) => {
     if (chunk.isEntry) {
       return true
@@ -109,6 +129,9 @@ export function refreshSharedChunkImporters(bundle: OutputBundle, state: CorePlu
       continue
     }
     const entryId = normalizeFsResolvedId(chunk.facadeModuleId)
+    if (onlyEntryIds && !onlyEntryIds.has(entryId)) {
+      continue
+    }
     entryChunks.push({ entryId, chunk })
   }
 

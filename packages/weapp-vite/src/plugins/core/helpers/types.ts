@@ -28,6 +28,7 @@ export interface CorePluginState {
   hmrState: {
     didEmitAllEntries: boolean
     hasBuiltOnce: boolean
+    lastEmittedEntryIds?: Set<string>
   }
   hmrSharedChunksMode: 'full' | 'auto' | 'off'
   hmrSharedChunkImporters: Map<string, Set<string>>

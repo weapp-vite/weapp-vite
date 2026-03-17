@@ -13,11 +13,13 @@ import { createTemplateScanner } from './template'
 export { type JsonEmitFileEntry } from './jsonEmit'
 
 type HmrSharedChunksMode = 'full' | 'auto' | 'off'
+type DirtyEntryReason = 'direct' | 'dependency'
 
 interface HmrOptions {
   sharedChunks?: HmrSharedChunksMode
   sharedChunkImporters?: Map<string, Set<string>>
   setDidEmitAllEntries?: (value: boolean) => void
+  setLastEmittedEntries?: (entryIds: Set<string>) => void
 }
 
 export function useLoadEntry(
@@ -33,6 +35,7 @@ export function useLoadEntry(
   const entriesMap = new Map<string, Entry | undefined>()
   const loadedEntrySet = new Set<string>()
   const dirtyEntrySet = new Set<string>()
+  const dirtyEntryReasons = new Map<string, DirtyEntryReason>()
   const resolvedEntryMap = new Map<string, ResolvedId>()
 
   const jsonEmitManager = createJsonEmitManager(ctx.configService)
@@ -71,51 +74,40 @@ export function useLoadEntry(
     resolvedEntryMap,
     jsonEmitFilesMap: jsonEmitManager.map,
     normalizeEntry,
-    markEntryDirty(entryId: string) {
+    markEntryDirty(entryId: string, reason: DirtyEntryReason = 'direct') {
       dirtyEntrySet.add(entryId)
+      dirtyEntryReasons.set(entryId, reason)
       loadedEntrySet.delete(entryId)
     },
     async emitDirtyEntries(this: PluginContext) {
       if (!dirtyEntrySet.size) {
         options?.hmr?.setDidEmitAllEntries?.(false)
+        options?.hmr?.setLastEmittedEntries?.(new Set())
         return
       }
 
       const dirtyCount = dirtyEntrySet.size
-      const pending: ResolvedId[] = []
-      const shouldEmitAllEntries = resolveShouldEmitAllEntries({
+      const pendingEntryIds = resolvePendingEntryIds({
         isDev: Boolean(ctx.configService?.isDev),
         mode: hmrSharedChunksMode,
-        dirtyEntrySet,
         resolvedEntryMap,
+        dirtyEntrySet,
+        dirtyEntryReasons,
         sharedChunkImporters: hmrSharedChunkImporters,
       })
+      const pending: ResolvedId[] = []
+      const shouldEmitAllEntries = pendingEntryIds.size > 0 && pendingEntryIds.size === resolvedEntryMap.size
       options?.hmr?.setDidEmitAllEntries?.(shouldEmitAllEntries)
+      options?.hmr?.setLastEmittedEntries?.(new Set(pendingEntryIds))
 
-      if (shouldEmitAllEntries) {
-        const seen = new Set<string>()
-        for (const resolvedId of resolvedEntryMap.values()) {
-          if (!resolvedId) {
-            continue
-          }
-          const key = resolvedId.id
-          if (seen.has(key)) {
-            continue
-          }
-          seen.add(key)
-          pending.push(resolvedId)
+      for (const entryId of pendingEntryIds) {
+        const resolvedId = resolvedEntryMap.get(entryId)
+        if (!resolvedId) {
+          continue
         }
-        dirtyEntrySet.clear()
-      }
-      else {
-        for (const entryId of Array.from(dirtyEntrySet)) {
-          const resolvedId = resolvedEntryMap.get(entryId)
-          if (!resolvedId) {
-            continue
-          }
-          pending.push(resolvedId)
-          dirtyEntrySet.delete(entryId)
-        }
+        pending.push(resolvedId)
+        dirtyEntrySet.delete(entryId)
+        dirtyEntryReasons.delete(entryId)
       }
 
       if (debug) {
@@ -129,47 +121,58 @@ export function useLoadEntry(
   }
 }
 
-function resolveShouldEmitAllEntries(options: {
+function resolvePendingEntryIds(options: {
   isDev: boolean
   mode: HmrSharedChunksMode
-  dirtyEntrySet: Set<string>
   resolvedEntryMap: Map<string, ResolvedId>
+  dirtyEntrySet: Set<string>
+  dirtyEntryReasons: Map<string, DirtyEntryReason>
   sharedChunkImporters?: Map<string, Set<string>>
 }) {
-  if (!options.isDev || options.resolvedEntryMap.size === 0) {
-    return false
-  }
+  const pending = new Set(options.dirtyEntrySet)
 
   if (options.mode === 'full') {
-    return true
+    return new Set(options.resolvedEntryMap.keys())
   }
 
-  if (options.mode === 'off') {
-    return false
+  if (!options.isDev || options.mode === 'off') {
+    return pending
   }
 
-  if (!options.sharedChunkImporters) {
-    return true
+  let hasDependencyDrivenEntry = false
+  for (const entryId of options.dirtyEntrySet) {
+    if (options.dirtyEntryReasons.get(entryId) === 'dependency') {
+      hasDependencyDrivenEntry = true
+      break
+    }
   }
 
-  if (options.sharedChunkImporters.size === 0) {
-    return false
+  if (!hasDependencyDrivenEntry) {
+    return pending
+  }
+
+  if (!options.sharedChunkImporters?.size) {
+    return pending
   }
 
   for (const importers of options.sharedChunkImporters.values()) {
     if (importers.size <= 1) {
       continue
     }
-    let dirtyCount = 0
+    let hasDependencyDrivenImporter = false
     for (const importer of importers) {
-      if (options.dirtyEntrySet.has(importer)) {
-        dirtyCount += 1
+      if (options.dirtyEntrySet.has(importer) && options.dirtyEntryReasons.get(importer) === 'dependency') {
+        hasDependencyDrivenImporter = true
+        break
       }
     }
-    if (dirtyCount > 0 && dirtyCount < importers.size) {
-      return true
+    if (!hasDependencyDrivenImporter) {
+      continue
+    }
+    for (const importer of importers) {
+      pending.add(importer)
     }
   }
 
-  return false
+  return pending
 }

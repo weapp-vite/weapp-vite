@@ -9,6 +9,7 @@ export { formatBytes } from './bytes'
 export {
   collectAffectedEntries,
   refreshModuleGraph,
+  refreshPartialSharedChunkImporters,
   refreshSharedChunkImporters,
 } from './graph'
 
