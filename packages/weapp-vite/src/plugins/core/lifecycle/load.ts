@@ -5,7 +5,7 @@ import { resolveAstEngine } from '../../../ast'
 import { mayContainPlatformApiAccess, platformApiIdentifiers } from '../../../ast/operations/platformApi'
 import logger from '../../../logger'
 import { resolveWeappLibEntries } from '../../../runtime/lib'
-import { isCSSRequest } from '../../../utils'
+import { findJsEntry, findVueEntry, isCSSRequest } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { normalizeWatchPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
@@ -16,6 +16,28 @@ import { getCssRealPath, parseRequest } from '../../utils/parse'
 export function createOptionsHook(state: CorePluginState) {
   const { ctx, subPackageMeta } = state
   const { scanService, configService, buildService } = ctx
+
+  async function resolvePluginOnlyInput() {
+    const pluginJson = scanService.pluginJson
+    const pluginJsonPath = scanService.pluginJsonPath
+    const pluginMain = typeof pluginJson?.main === 'string' ? pluginJson.main.trim() : ''
+    if (!pluginJsonPath || !pluginMain) {
+      throw new Error('插件独立构建需要在 plugin.json 中声明有效的 main 入口。')
+    }
+
+    const pluginEntryBase = path.resolve(path.dirname(pluginJsonPath), removeExtensionDeep(pluginMain))
+    const { path: pluginEntryPath } = await findJsEntry(pluginEntryBase)
+    const pluginVueEntryPath = pluginEntryPath ? undefined : await findVueEntry(pluginEntryBase)
+    const resolvedPath = pluginEntryPath ?? pluginVueEntryPath
+
+    if (!resolvedPath) {
+      throw new Error(`未找到插件主入口 ${pluginMain} 对应的脚本文件。`)
+    }
+
+    return {
+      [removeExtensionDeep(pluginMain)]: resolvedPath,
+    }
+  }
 
   return async function options(options: any) {
     state.pendingIndependentBuilds = []
@@ -60,42 +82,47 @@ export function createOptionsHook(state: CorePluginState) {
         }
       }
       const appEntry = await scanService.loadAppEntry()
-      scanService.loadSubPackages()
-      const dirtyIndependentRoots = scanService.drainIndependentDirtyRoots()
-      const pendingIndependentBuilds: Promise<IndependentBuildResult>[] = []
-      // Serialize prod builds to avoid shared runtime state races.
-      const shouldSerializeIndependentBuilds = !configService.isDev && dirtyIndependentRoots.length > 0
-      const previousSubPackageRoot = shouldSerializeIndependentBuilds
-        ? configService.currentSubPackageRoot
-        : undefined
-      for (const root of dirtyIndependentRoots) {
-        const meta = scanService.independentSubPackageMap.get(root)
-        if (!meta) {
-          continue
-        }
-        const buildTask = buildService.buildIndependentBundle(root, meta).then((rollup) => {
-          return {
-            meta,
-            rollup,
-          }
-        })
-        buildTask.catch(() => {})
-        pendingIndependentBuilds.push(buildTask)
-        if (shouldSerializeIndependentBuilds) {
-          try {
-            await buildTask
-          }
-          catch {}
-        }
+      if (configService.pluginOnly) {
+        scannedInput = await resolvePluginOnlyInput()
       }
-      if (shouldSerializeIndependentBuilds && configService.currentSubPackageRoot !== previousSubPackageRoot) {
-        configService.options = {
-          ...configService.options,
-          currentSubPackageRoot: previousSubPackageRoot,
+      else {
+        scanService.loadSubPackages()
+        const dirtyIndependentRoots = scanService.drainIndependentDirtyRoots()
+        const pendingIndependentBuilds: Promise<IndependentBuildResult>[] = []
+        // Serialize prod builds to avoid shared runtime state races.
+        const shouldSerializeIndependentBuilds = !configService.isDev && dirtyIndependentRoots.length > 0
+        const previousSubPackageRoot = shouldSerializeIndependentBuilds
+          ? configService.currentSubPackageRoot
+          : undefined
+        for (const root of dirtyIndependentRoots) {
+          const meta = scanService.independentSubPackageMap.get(root)
+          if (!meta) {
+            continue
+          }
+          const buildTask = buildService.buildIndependentBundle(root, meta).then((rollup) => {
+            return {
+              meta,
+              rollup,
+            }
+          })
+          buildTask.catch(() => {})
+          pendingIndependentBuilds.push(buildTask)
+          if (shouldSerializeIndependentBuilds) {
+            try {
+              await buildTask
+            }
+            catch {}
+          }
         }
+        if (shouldSerializeIndependentBuilds && configService.currentSubPackageRoot !== previousSubPackageRoot) {
+          configService.options = {
+            ...configService.options,
+            currentSubPackageRoot: previousSubPackageRoot,
+          }
+        }
+        state.pendingIndependentBuilds = pendingIndependentBuilds
+        scannedInput = { app: appEntry.path }
       }
-      state.pendingIndependentBuilds = pendingIndependentBuilds
-      scannedInput = { app: appEntry.path }
     }
 
     options.input = scannedInput
@@ -283,6 +310,16 @@ export function createLoadHook(state: CorePluginState) {
     return true
   }
 
+  function resolveRootEntryBasename() {
+    if (!configService.pluginOnly) {
+      return 'app'
+    }
+    const pluginMain = typeof ctx.scanService?.pluginJson?.main === 'string'
+      ? ctx.scanService.pluginJson.main.trim()
+      : ''
+    return pluginMain ? removeExtensionDeep(pluginMain) : 'app'
+  }
+
   return async function load(this: any, id: string) {
     configService.weappViteConfig?.debug?.load?.(id, subPackageMeta)
 
@@ -311,7 +348,7 @@ export function createLoadHook(state: CorePluginState) {
     }
     const relativeBasename = removeExtensionDeep(configService.relativeAbsoluteSrcRoot(sourceId))
 
-    if (relativeBasename === 'app') {
+    if (relativeBasename === resolveRootEntryBasename()) {
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
       const result = await loadEntry.call(this, sourceId, 'app')
       if (!injectOptions || configService.weappLibConfig?.enabled) {
@@ -337,8 +374,10 @@ export function createLoadHook(state: CorePluginState) {
     }
 
     if (loadedEntrySet.has(sourceId) || subPackageMeta?.entries.includes(relativeBasename)) {
+      const declaredEntryType = state.entriesMap?.get(relativeBasename)?.type
+      const loadType = declaredEntryType === 'page' ? 'page' : 'component'
       // @ts-ignore Rolldown 的 PluginContext 类型不完整
-      const result = await loadEntry.call(this, sourceId, 'component')
+      const result = await loadEntry.call(this, sourceId, loadType)
       if (!injectOptions || !injectOptions.replaceWx || configService.weappLibConfig?.enabled) {
         return result
       }

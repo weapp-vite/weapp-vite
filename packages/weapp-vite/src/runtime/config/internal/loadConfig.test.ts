@@ -579,6 +579,41 @@ describe('runtime config internal loadConfig', () => {
     expect(getProjectConfigMock).not.toHaveBeenCalled()
   })
 
+  it('preserves plugin entry exports in pluginOnly mode', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        build: {
+          rolldownOptions: {},
+        },
+        weapp: {
+          platform: 'weapp',
+          pluginRoot: 'plugin',
+          tsconfigPaths: false,
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {
+        build: {
+          outDir: 'dist-plugin',
+        },
+      },
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+      pluginOnly: true,
+    } as any)
+
+    expect(result.config.build?.rolldownOptions?.preserveEntrySignatures).toBe('exports-only')
+    expect(result.mpDistRoot).toBe('dist-plugin')
+  })
+
   it('removes rollupOptions and applies lib entryFileNames on array outputs', async () => {
     const entryFileNames = vi.fn((chunk: { name: string }) => `lib/${chunk.name}.js`)
     loadConfigFromFileMock.mockResolvedValueOnce({

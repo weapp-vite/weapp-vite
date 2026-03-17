@@ -6,10 +6,21 @@ import { describe, expect, it, vi } from 'vitest'
 import { createLoadHook, createOptionsHook } from './load'
 
 const resolveWeappLibEntriesMock = vi.hoisted(() => vi.fn())
+const findJsEntryMock = vi.hoisted(() => vi.fn())
+const findVueEntryMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../runtime/lib', () => ({
   resolveWeappLibEntries: resolveWeappLibEntriesMock,
 }))
+
+vi.mock('../../../utils', async () => {
+  const actual = await vi.importActual<typeof import('../../../utils')>('../../../utils')
+  return {
+    ...actual,
+    findJsEntry: findJsEntryMock,
+    findVueEntry: findVueEntryMock,
+  }
+})
 
 describe('core lifecycle load hook injectWeapi', () => {
   it('injects wpi and replaces wx/my/platform global when replaceWx is enabled', async () => {
@@ -314,6 +325,35 @@ describe('core lifecycle load hook injectWeapi', () => {
     expect(result).toBe('AppRawCode')
   })
 
+  it('treats plugin main entry as root app entry in pluginOnly mode', async () => {
+    const sourceId = '/project/plugin/index.ts'
+    const loadEntry = vi.fn(async () => ({ code: 'App({})' }))
+    const load = createLoadHook({
+      ctx: {
+        scanService: {
+          pluginJson: {
+            main: 'index.js',
+          },
+        },
+        configService: {
+          pluginOnly: true,
+          platform: 'weapp',
+          weappViteConfig: {},
+          weappLibConfig: undefined,
+          relativeAbsoluteSrcRoot: () => 'index',
+        },
+      },
+      subPackageMeta: undefined,
+      loadEntry,
+      loadedEntrySet: new Set<string>(),
+    } as any)
+
+    const result = await load.call({}, sourceId)
+
+    expect(loadEntry).toHaveBeenCalledWith(sourceId, 'app')
+    expect(result).toEqual({ code: 'App({})' })
+  })
+
   it('returns component result when replaceWx is disabled or weapi resolve fails', async () => {
     const sourceId = '/project/src/components/panel.ts'
     const rawResult = {
@@ -579,5 +619,62 @@ describe('core lifecycle options hook', () => {
     expect(configService.options.currentSubPackageRoot).toBe('pkgA')
     expect(state.pendingIndependentBuilds).toHaveLength(1)
     expect(buildService.buildIndependentBundle).toHaveBeenCalledWith('pkgA', pkgAMeta)
+  })
+
+  it('uses plugin main entry as root input in pluginOnly mode', async () => {
+    findJsEntryMock.mockResolvedValueOnce({
+      path: '/project/plugin/index.ts',
+      predictions: ['/project/plugin/index.ts'],
+    })
+    findVueEntryMock.mockResolvedValueOnce(undefined)
+
+    const runtimeState = {
+      lib: {
+        enabled: false,
+        entries: new Map(),
+      },
+    }
+    const configService = {
+      absoluteSrcRoot: '/project/src',
+      weappLibConfig: {
+        enabled: false,
+      },
+      pluginOnly: true,
+      isDev: false,
+      options: {},
+    }
+
+    const scanService = {
+      pluginJson: {
+        main: 'index.js',
+      },
+      pluginJsonPath: '/project/plugin/plugin.json',
+      loadAppEntry: vi.fn(async () => ({ path: '/project/src/app.ts' })),
+      loadSubPackages: vi.fn(),
+      drainIndependentDirtyRoots: vi.fn(() => []),
+      independentSubPackageMap: new Map(),
+    }
+
+    const state = {
+      ctx: {
+        runtimeState,
+        configService,
+        scanService,
+        buildService: {
+          buildIndependentBundle: vi.fn(),
+        },
+      },
+      subPackageMeta: undefined,
+      pendingIndependentBuilds: [],
+    } as any
+
+    const optionsHook = createOptionsHook(state)
+    const options: Record<string, any> = {}
+    await optionsHook(options)
+
+    expect(options.input).toEqual({
+      index: '/project/plugin/index.ts',
+    })
+    expect(scanService.loadSubPackages).not.toHaveBeenCalled()
   })
 })

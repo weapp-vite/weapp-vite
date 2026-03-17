@@ -9,6 +9,7 @@ export interface LoadConfigOptions {
   cwd: string
   isDev: boolean
   mode: string
+  pluginOnly?: boolean
   inlineConfig?: InlineConfig
   configFile?: string
   cliPlatform?: string
@@ -34,6 +35,7 @@ export interface LoadConfigResult {
   packageJsonPath: string
   platform: MpPlatform
   srcRoot: string
+  pluginOnly?: boolean
   configFilePath?: string
   currentSubPackageRoot?: string
   weappWeb?: ResolvedWeappWebConfig
@@ -83,6 +85,7 @@ export interface ConfigService {
   readonly projectConfigPath?: string
   readonly projectPrivateConfigPath?: string
   readonly srcRoot: string
+  readonly pluginOnly: boolean
   readonly pluginRoot: string | undefined
   readonly absolutePluginRoot: string | undefined
   readonly absolutePluginOutputRoot: string | undefined

@@ -1,8 +1,7 @@
 import type { BuildTarget, CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
-import path from 'pathe'
 import { changeFileExtension } from '../../utils/file'
-import { normalizeWatchPath } from '../../utils/path'
+import { isPathInside, normalizeWatchPath } from '../../utils/path'
 import { resolveScriptModuleTagByPlatform } from '../../utils/wxmlScriptModule'
 import { handleWxml } from '../../wxml/handle'
 
@@ -48,7 +47,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
         fileName: outputFileName,
       }
     })
-    .filter(({ fileName }) => {
+    .filter(({ id, fileName }) => {
       if (subPackageMeta) {
         return fileName.startsWith(subPackageMeta.subPackage.root)
       }
@@ -57,8 +56,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
         if (!pluginRoot) {
           return false
         }
-        const pluginBase = path.basename(pluginRoot)
-        return fileName.startsWith(pluginBase)
+        return isPathInside(pluginRoot, id)
       }
       return scanService.isMainPackageFileName(fileName)
     })

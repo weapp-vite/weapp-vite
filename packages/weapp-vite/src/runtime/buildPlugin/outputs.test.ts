@@ -12,12 +12,14 @@ const statMock = vi.hoisted(() => vi.fn(async () => {
   throw new Error('ENOENT')
 }))
 const mkdirMock = vi.hoisted(() => vi.fn(async () => undefined))
+const readdirMock = vi.hoisted(() => vi.fn(async () => []))
 const cpMock = vi.hoisted(() => vi.fn(async () => undefined))
 
 vi.mock('node:fs/promises', () => {
   return {
     stat: statMock,
     mkdir: mkdirMock,
+    readdir: readdirMock,
     cp: cpMock,
   }
 })
@@ -66,6 +68,8 @@ describe('buildPlugin outputs', () => {
       throw new Error('ENOENT')
     })
     mkdirMock.mockReset()
+    readdirMock.mockReset()
+    readdirMock.mockResolvedValue([])
     cpMock.mockReset()
   })
 
@@ -137,15 +141,21 @@ describe('buildPlugin outputs', () => {
       absolutePluginOutputRoot: '/project/dist-plugin',
     })
     statMock.mockResolvedValue({} as any)
+    readdirMock.mockResolvedValue(['index.js', 'pages'])
 
     await syncExternalPluginOutputs(configService)
 
     expect(mkdirMock).toHaveBeenCalledWith('/project/dist-plugin', { recursive: true })
-    expect(cpMock).toHaveBeenCalledWith('/project/dist/plugin', '/project/dist-plugin', {
+    expect(cpMock).toHaveBeenCalledWith('/project/dist-plugin/plugin/index.js', '/project/dist-plugin/index.js', {
       recursive: true,
       force: true,
     })
-    expect(loggerMock.success).toHaveBeenCalledWith('已同步插件产物到 dist-plugin 目录')
+    expect(cpMock).toHaveBeenCalledWith('/project/dist-plugin/plugin/pages', '/project/dist-plugin/pages', {
+      recursive: true,
+      force: true,
+    })
+    expect(rimrafMock).toHaveBeenCalledWith('/project/dist-plugin/plugin')
+    expect(loggerMock.success).toHaveBeenCalledWith('已整理插件产物到 dist-plugin 目录')
   })
 
   it('does not sync plugin outputs when plugin output root stays inside outDir', async () => {

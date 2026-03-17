@@ -18,7 +18,7 @@ interface NormalizedEntryOptions {
   jsonPath: string
   templatePath: string
   id: string
-  isPluginBuild: boolean
+  skipOwnEntries?: boolean
   entriesMap: Map<string, Entry | undefined>
   normalizeEntry: (entry: string, jsonPath: string) => string
   extendedLibManager: ExtendedLibManager
@@ -32,20 +32,20 @@ export function prepareNormalizedEntries(options: NormalizedEntryOptions) {
     jsonPath,
     templatePath,
     id,
-    isPluginBuild,
+    skipOwnEntries,
     entriesMap,
     normalizeEntry,
     extendedLibManager,
     entryType,
   } = options
 
-  const filteredEntries = isPluginBuild
+  const filteredEntries = skipOwnEntries
     ? []
     : entries.filter(entry => !extendedLibManager.shouldIgnoreEntry(entry))
-  const normalizedEntries = isPluginBuild
+  const normalizedEntries = skipOwnEntries
     ? []
     : filteredEntries.map(entry => normalizeEntry(entry, jsonPath))
-  if (!isPluginBuild) {
+  if (!skipOwnEntries) {
     for (const normalizedEntry of normalizedEntries) {
       entriesMap.set(normalizedEntry, {
         type: entryType ?? (json.component ? 'component' : 'page'),
@@ -175,7 +175,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
 
   debug?.(`emitEntriesChunks ${relativeCwdId} 耗时 ${getTime()}`)
 
-  if (!isPluginBuild) {
+  if (!isPluginBuild || type !== 'app') {
     registerJsonAsset({
       jsonPath,
       json,
