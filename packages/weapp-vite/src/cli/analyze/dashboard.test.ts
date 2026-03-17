@@ -10,7 +10,7 @@ const getPackageInfoSyncMock = vi.hoisted(() => vi.fn(() => ({
 })))
 const resolveCommandMock = vi.hoisted(() => vi.fn(() => ({
   command: 'pnpm',
-  args: ['add', 'weapp-vite-analyze-dashboard'],
+  args: ['add', '@weapp-vite/dashboard'],
 })))
 const createServerMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
@@ -107,7 +107,7 @@ describe('analyze dashboard', () => {
     })).resolves.toBeUndefined()
     expect(createServerMock).not.toHaveBeenCalled()
     expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('已自动降级关闭 dashboard 能力'))
-    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('pnpm add weapp-vite-analyze-dashboard'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('pnpm add @weapp-vite/dashboard'))
   })
 
   it('starts in watch mode and supports update/close/waitForExit', async () => {

@@ -10,7 +10,7 @@ import { createServer } from 'vite'
 import logger, { colors } from '../../logger'
 
 const ANALYZE_GLOBAL_KEY = '__WEAPP_VITE_ANALYZE_RESULT__'
-const ANALYZE_DASHBOARD_PACKAGE_NAME = 'weapp-vite-analyze-dashboard'
+const ANALYZE_DASHBOARD_PACKAGE_NAME = '@weapp-vite/dashboard'
 
 function createInstallCommand(agent: Agent | undefined) {
   const resolved = resolveCommand(agent ?? 'npm', 'install', [ANALYZE_DASHBOARD_PACKAGE_NAME])
