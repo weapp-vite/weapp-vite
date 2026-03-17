@@ -89,6 +89,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - If a case must use an isolated launch, document the reason in test comments.
 - For GitHub issue fixes (especially cases mapped to `e2e-apps/github-issues`), follow this order strictly:
   - Before starting the fix, create a local `git worktree` from the mainline branch and do the issue work inside that isolated worktree.
+  - Create the worktree inside this repository's writable area (for example `.codex-tmp/<issue>`); do not place issue worktrees in directories outside the repository root, because external directories may not be writable in the agent environment.
   - Reproduce the issue first in `e2e-apps/github-issues` with a minimal, reviewable case.
   - Analyze and identify root cause before editing source.
   - Fix the relevant source package(s) only after reproduction is stable.
@@ -96,6 +97,7 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - Add or update e2e tests (including the `e2e-apps/github-issues` case when applicable) to verify end-to-end regression coverage.
   - Run targeted unit + e2e verification and confirm the bug is fixed before opening review.
   - Open a PR back to the mainline branch after local verification is complete.
+  - PR title, PR body, and follow-up review comments for this repository should default to Chinese unless the user explicitly requests another language.
   - Ensure the PR CI/CD checks are all passing before considering the fix ready to merge.
   - After the PR is merged, delete the temporary local worktree used for that issue.
 - All `e2e-apps/*/project.config.json` must use a real AppID (no `touristappid`).
