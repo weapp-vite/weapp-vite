@@ -45,6 +45,9 @@ function createContext(overrides: Record<string, unknown> = {}) {
       cwd: '/virtual/project',
       mode: 'production',
       platform: 'weapp',
+      packageManager: {
+        agent: 'pnpm',
+      },
       configFilePath: '/virtual/project/vite.config.ts',
       weappWebConfig: {
         enabled: true,
@@ -178,7 +181,10 @@ describe('analyze command web branch', () => {
     })
 
     expect(analyzeSubpackages).toHaveBeenCalledTimes(1)
-    expect(startAnalyzeDashboard).toHaveBeenCalledWith(miniResult)
+    expect(startAnalyzeDashboard).toHaveBeenCalledWith(miniResult, {
+      cwd: '/virtual/project',
+      packageManagerAgent: 'pnpm',
+    })
     expect(logger.success).toHaveBeenCalledWith('分包分析完成')
   })
 
@@ -270,7 +276,10 @@ describe('analyze command web branch', () => {
       platform: 'weapp',
     })
 
-    expect(startAnalyzeDashboard).toHaveBeenCalledWith(miniResult)
+    expect(startAnalyzeDashboard).toHaveBeenCalledWith(miniResult, {
+      cwd: '/virtual/project',
+      packageManagerAgent: 'pnpm',
+    })
     expect(logger.info).toHaveBeenCalledWith('分包配置：')
     expect(logger.info).toHaveBeenCalledWith('- pkg-a，别名：pkgAlias，独立构建')
     expect(logger.info).toHaveBeenCalledWith('跨包复用/复制源码共 11 项：')
