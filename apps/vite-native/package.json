@@ -52,7 +52,7 @@
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
-    "@vue/language-plugin-pug": "^3.2.5",
+    "@vue/language-plugin-pug": "^3.2.6",
     "@weapp-core/shared": "workspace:*",
     "@weapp-tailwindcss/merge": "2.1.6",
     "autoprefixer": "catalog:",

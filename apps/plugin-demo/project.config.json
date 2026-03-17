@@ -2,7 +2,7 @@
   "miniprogramRoot": "dist/",
   "pluginRoot": "dist-plugin/",
   "compileType": "plugin",
-  "libVersion": "latest",
+  "libVersion": "3.13.2",
   "srcMiniprogramRoot": "dist/",
   "appid": "wxb3d842a4a7e3440d",
   "setting": {
