@@ -37,6 +37,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: Enable Corepack
         shell: bash
         run: |
@@ -50,6 +58,8 @@ jobs:
           npm -v
           pnpm -v
           yarn -v
+          bun --version
+          deno --version
 
       - name: Run create-weapp-vite smoke matrix
         env:
