@@ -19,7 +19,8 @@
     "skipLibCheck": true
   },
   "include": [
-    "."
+    "src",
+    "env.d.ts"
   ],
   "exclude": [
     "dist",
