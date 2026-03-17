@@ -67,7 +67,11 @@ export function registerServeCommand(cli: CAC) {
 
         if (enableAnalyze) {
           const initialResult = await analyzeSubpackages(ctx)
-          analyzeHandle = await startAnalyzeDashboard(initialResult, { watch: true }) ?? undefined
+          analyzeHandle = await startAnalyzeDashboard(initialResult, {
+            watch: true,
+            cwd: configService.cwd,
+            packageManagerAgent: configService.packageManager.agent,
+          }) ?? undefined
 
           if (analyzeHandle && buildResult && typeof (buildResult as RolldownWatcher).on === 'function') {
             const watcher = buildResult as RolldownWatcher

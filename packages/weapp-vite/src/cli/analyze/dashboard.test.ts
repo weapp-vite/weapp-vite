@@ -5,24 +5,45 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startAnalyzeDashboard } from './dashboard'
 
 const existsSyncMock = vi.hoisted(() => vi.fn(() => true))
+const getPackageInfoSyncMock = vi.hoisted(() => vi.fn(() => ({
+  rootPath: '/mock/dashboard',
+})))
+const resolveCommandMock = vi.hoisted(() => vi.fn(() => ({
+  command: 'pnpm',
+  args: ['add', 'weapp-vite-analyze-dashboard'],
+})))
 const createServerMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
   error: vi.fn(),
+  warn: vi.fn(),
 }))
 
-vi.mock('fs-extra', () => ({
+vi.mock('node:fs', () => ({
   default: {
     existsSync: existsSyncMock,
   },
+  existsSync: existsSyncMock,
 }))
 
 vi.mock('vite', () => ({
   createServer: createServerMock,
 }))
 
+vi.mock('local-pkg', () => ({
+  getPackageInfoSync: getPackageInfoSyncMock,
+}))
+
+vi.mock('package-manager-detector/commands', () => ({
+  resolveCommand: resolveCommandMock,
+}))
+
 vi.mock('../../logger', () => ({
   default: loggerMock,
+  colors: {
+    bold: (value: string) => value,
+    green: (value: string) => value,
+  },
 }))
 
 interface MockServer {
@@ -68,17 +89,25 @@ describe('analyze dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     existsSyncMock.mockReturnValue(true)
+    getPackageInfoSyncMock.mockReturnValue({
+      rootPath: '/mock/dashboard',
+    })
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('throws when dashboard assets are missing', async () => {
-    existsSyncMock.mockReturnValue(false)
+  it('downgrades when optional dashboard package is unavailable', async () => {
+    getPackageInfoSyncMock.mockReturnValue(undefined)
 
-    await expect(startAnalyzeDashboard(createAnalyzeResult('missing'))).rejects.toThrow('未找到仪表盘产物')
+    await expect(startAnalyzeDashboard(createAnalyzeResult('missing'), {
+      cwd: '/project',
+      packageManagerAgent: 'pnpm',
+    })).resolves.toBeUndefined()
     expect(createServerMock).not.toHaveBeenCalled()
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('已自动降级关闭 dashboard 能力'))
+    expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('pnpm add weapp-vite-analyze-dashboard'))
   })
 
   it('starts in watch mode and supports update/close/waitForExit', async () => {
@@ -92,7 +121,7 @@ describe('analyze dashboard', () => {
     })
 
     const initial = createAnalyzeResult('initial')
-    const handle = await startAnalyzeDashboard(initial, { watch: true })
+    const handle = await startAnalyzeDashboard(initial, { watch: true, cwd: '/project' })
 
     expect(handle).toBeDefined()
     expect(handle?.urls).toEqual([
@@ -116,6 +145,7 @@ describe('analyze dashboard', () => {
     })
 
     const createServerArg = createServerMock.mock.calls[0]?.[0] as any
+    expect(createServerArg.root).toBe('/mock/dashboard/dist')
     const plugin = createServerArg.plugins[0]
     const transformed = plugin.transformIndexHtml('<!doctype html>')
     const script = transformed.tags[0]?.children as string
@@ -144,7 +174,7 @@ describe('analyze dashboard', () => {
       return server
     })
 
-    const runPromise = startAnalyzeDashboard(createAnalyzeResult('static'))
+    const runPromise = startAnalyzeDashboard(createAnalyzeResult('static'), { cwd: '/project' })
     setTimeout(() => {
       server.httpServer?.emit('close')
     }, 0)
@@ -177,7 +207,7 @@ describe('analyze dashboard', () => {
       return server
     })
 
-    const handle = await startAnalyzeDashboard(createAnalyzeResult('signal'), { watch: true })
+    const handle = await startAnalyzeDashboard(createAnalyzeResult('signal'), { watch: true, cwd: '/project' })
     await signalHandlers.get('SIGINT')?.()
     await handle?.waitForExit()
 

@@ -79,7 +79,7 @@
     "bin",
     "client.d.ts",
     "dist",
-    "modules",
+    "modules/__weapp-vite-workers.js",
     "volar.cjs"
   ],
   "engines": {
@@ -88,8 +88,7 @@
   "scripts": {
     "stub": "unbuild --stub",
     "dev": "tsdown -w --sourcemap",
-    "build": "pnpm run build:dashboard && tsdown",
-    "build:dashboard": "node scripts/build-analyze-dashboard.mjs",
+    "build": "tsdown",
     "dev:dashboard": "vite --config analyze-dashboard/vite.config.ts",
     "preview:dashboard": "vite preview --config analyze-dashboard/vite.config.ts",
     "release": "tsx scripts/release.ts",
