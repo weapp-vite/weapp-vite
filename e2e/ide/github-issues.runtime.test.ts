@@ -960,6 +960,46 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
+  it('issue #340: loads cross-subpackage source imports in item/login-required and user/register/form', async () => {
+    const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
+    const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
+    const itemRuntimePath = path.join(DIST_ROOT, 'subpackages/item/rolldown-runtime.js')
+    const userRuntimePath = path.join(DIST_ROOT, 'subpackages/user/rolldown-runtime.js')
+
+    const itemPageJs = await fs.readFile(itemPageJsPath, 'utf-8')
+    const userPageJs = await fs.readFile(userPageJsPath, 'utf-8')
+
+    expect(itemPageJs).toContain('item-login-required:issue-340:shared')
+    expect(userPageJs).toContain('user-register-form:issue-340:shared')
+    expect(await fs.pathExists(itemRuntimePath)).toBe(true)
+    expect(await fs.pathExists(userRuntimePath)).toBe(true)
+
+    const miniProgram = await getSharedMiniProgram()
+
+    try {
+      const itemPage = await miniProgram.reLaunch('/subpackages/item/login-required/index')
+      if (!itemPage) {
+        throw new Error('Failed to launch issue-340 item page')
+      }
+      await itemPage.waitFor(500)
+      const itemResult = await itemPage.callMethod('_runE2E')
+      expect(itemResult?.ok).toBe(true)
+      expect(itemResult?.message).toBe('item-login-required:issue-340:shared')
+
+      const userPage = await miniProgram.reLaunch('/subpackages/user/register/form')
+      if (!userPage) {
+        throw new Error('Failed to launch issue-340 user page')
+      }
+      await userPage.waitFor(500)
+      const userResult = await userPage.callMethod('_runE2E')
+      expect(userResult?.ok).toBe(true)
+      expect(userResult?.message).toBe('user-register-form:issue-340:shared')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
   it('issue #322: keeps static class and hidden v-show state on first render before errors object exists', async () => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-322/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-322/index.js')
