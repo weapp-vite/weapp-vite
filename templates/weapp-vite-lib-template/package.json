@@ -21,7 +21,8 @@
     "build": "weapp-vite build",
     "build:lib": "weapp-vite build --config weapp-vite.lib.config.ts",
     "open": "weapp-vite open",
-    "g": "weapp-vite generate"
+    "g": "weapp-vite generate",
+    "postinstall": "weapp-vite prepare"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",

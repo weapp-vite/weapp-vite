@@ -21,7 +21,7 @@
     "build": "weapp-vite build",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "open": "weapp-vite open",
-    "postinstall": "weapp-tw patch"
+    "postinstall": "weapp-tw patch && weapp-vite prepare"
   },
   "dependencies": {
     "dayjs": "catalog:",

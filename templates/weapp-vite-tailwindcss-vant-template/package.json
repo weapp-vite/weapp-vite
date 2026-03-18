@@ -21,7 +21,7 @@
     "build": "weapp-vite build",
     "open": "weapp-vite open",
     "g": "weapp-vite generate",
-    "postinstall": "weapp-tw patch"
+    "postinstall": "weapp-tw patch && weapp-vite prepare"
   },
   "dependencies": {
     "@vant/weapp": "catalog:"
