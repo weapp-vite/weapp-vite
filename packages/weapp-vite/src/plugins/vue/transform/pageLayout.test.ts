@@ -96,6 +96,38 @@ definePageMeta({
     })
   })
 
+  it('resolves default layout from weapp.routeRules when page meta is absent', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    const pageFile = path.join(srcRoot, 'pages', 'dashboard', 'index.vue')
+    const layoutFile = path.join(srcRoot, 'layouts', 'admin.vue')
+
+    await fs.ensureDir(path.dirname(layoutFile))
+    await fs.writeFile(layoutFile, '<template><slot /></template>', 'utf8')
+
+    const resolved = await resolvePageLayout(
+      '<template><view>dashboard</view></template>',
+      pageFile,
+      {
+        absoluteSrcRoot: srcRoot,
+        relativeOutputPath: (input: string) => path.relative(srcRoot, input),
+        weappViteConfig: {
+          routeRules: {
+            '/dashboard': { appLayout: 'admin' },
+          },
+        },
+      } as any,
+    )
+
+    expect(resolved).toEqual({
+      file: layoutFile,
+      importPath: '/layouts/admin',
+      kind: 'vue',
+      layoutName: 'admin',
+      tagName: 'weapp-layout-admin',
+    })
+  })
+
   it('resolves native mini-program layout entries', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')

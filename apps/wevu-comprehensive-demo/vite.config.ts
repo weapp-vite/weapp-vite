@@ -4,6 +4,17 @@ import { defineConfig } from 'weapp-vite/config'
 export default defineConfig(() => ({
   weapp: {
     srcRoot: 'src', // 源代码目录
+    routeRules: {
+      '/layouts/route-rules-demo': {
+        appLayout: {
+          name: 'admin',
+          props: {
+            sidebar: true,
+            title: 'Route Rules',
+          },
+        },
+      },
+    },
     hmr: {
       sharedChunks: 'auto',
     },

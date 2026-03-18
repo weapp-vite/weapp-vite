@@ -1,5 +1,5 @@
 import type { InlineConfig } from 'vite'
-import type { WevuDefaults } from 'wevu'
+import type { PageLayoutMeta, WevuDefaults } from 'wevu'
 import type {
   AlipayNpmMode,
   BuildNpmPackageMeta,
@@ -203,3 +203,9 @@ export interface WeappWevuConfig {
   defaults?: WevuDefaults
   autoSetDataPick?: boolean
 }
+
+export interface WeappRouteRule {
+  appLayout?: PageLayoutMeta
+}
+
+export type WeappRouteRules = Record<string, WeappRouteRule>
