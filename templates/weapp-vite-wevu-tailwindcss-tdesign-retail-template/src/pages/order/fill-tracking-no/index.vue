@@ -60,7 +60,7 @@ defineOptions({
     keys.slice(0, -1).forEach((k) => {
       lastData = lastData[k]
     })
-    const lastKey = keys[keys.length - 1]
+    const lastKey = keys.at(-1)
     this.observe(lastData, lastKey, callback)
   },
   observe(data, k, callback) {

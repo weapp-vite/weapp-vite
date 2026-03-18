@@ -49,11 +49,13 @@ defineOptions({
     })
   },
 })
+
+function isUrl(value: string) {
+  return value.includes('http')
+}
 </script>
 
 <template>
-  <wxs src="./isUrl.wxs" module="isUrl" />
-
   <view v-if="logisticsData.logisticsNo || logisticsData.company" class="page-section cells [margin-top:24rpx] [background-color:white] [&_.order-group__left]:[margin-right:0]">
     <t-cell-group>
       <t-cell
@@ -118,7 +120,7 @@ defineOptions({
         :title="item.title"
         icon="slot"
       >
-        <block v-if="isUrl.isUrl(item.icon)">
+        <block v-if="isUrl(item.icon)">
           <template #icon>
             <t-image
               class="cell-steps__imgWrapper [width:48rpx] [height:48rpx]"

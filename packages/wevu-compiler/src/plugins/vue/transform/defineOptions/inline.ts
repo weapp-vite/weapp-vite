@@ -1,3 +1,4 @@
+import vm from 'node:vm'
 import * as t from '@weapp-vite/ast/babelTypes'
 import fs from 'fs-extra'
 import MagicString from 'magic-string'
@@ -18,6 +19,12 @@ interface DefineOptionsStatement {
   statementPath: any
   callPath: any
   argPath: any
+}
+
+interface EvaluateDefineOptionsResult {
+  values: unknown[]
+  dependencies: string[]
+  scopeValues: Record<string, unknown>
 }
 
 function collectDefineOptionsStatements(content: string, filename: string) {
@@ -48,12 +55,79 @@ function collectDefineOptionsStatements(content: string, filename: string) {
   return { statements }
 }
 
+function evaluateStaticExpression(source: string) {
+  return vm.runInNewContext(`(${source})`, {})
+}
+
+function collectStaticTopLevelScopeValues(content: string) {
+  const ast = babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS)
+  const scopeValues: Record<string, unknown> = {}
+
+  for (const statement of ast.program.body) {
+    if (!t.isVariableDeclaration(statement) || statement.kind !== 'const') {
+      continue
+    }
+    for (const declarator of statement.declarations) {
+      if (!t.isIdentifier(declarator.id) || !declarator.init) {
+        continue
+      }
+      try {
+        scopeValues[declarator.id.name] = evaluateStaticExpression(declarator.init.end != null && declarator.init.start != null
+          ? content.slice(declarator.init.start, declarator.init.end)
+          : '')
+      }
+      catch {
+        // ignore non-static top-level constants
+      }
+    }
+  }
+
+  return scopeValues
+}
+
+function collectKeptBindingNames(keptStatementPaths: Set<any>) {
+  const names = new Set<string>()
+
+  for (const statementPath of keptStatementPaths) {
+    if (statementPath.isImportDeclaration()) {
+      for (const specifier of statementPath.get('specifiers')) {
+        if (specifier.isImportSpecifier() || specifier.isImportDefaultSpecifier() || specifier.isImportNamespaceSpecifier()) {
+          const local = specifier.node.local
+          if (t.isIdentifier(local)) {
+            names.add(local.name)
+          }
+        }
+      }
+      continue
+    }
+
+    if (statementPath.isVariableDeclaration()) {
+      for (const declarator of statementPath.get('declarations')) {
+        const id = declarator.get('id')
+        if (id.isIdentifier()) {
+          names.add(id.node.name)
+        }
+      }
+      continue
+    }
+
+    if (statementPath.isFunctionDeclaration() || statementPath.isClassDeclaration()) {
+      const id = statementPath.node.id
+      if (t.isIdentifier(id)) {
+        names.add(id.name)
+      }
+    }
+  }
+
+  return [...names]
+}
+
 async function evaluateDefineOptionsValues(params: {
   content: string
   filename: string
   lang?: string
   statements: DefineOptionsStatement[]
-}): Promise<{ values: unknown[], dependencies: string[] }> {
+}): Promise<EvaluateDefineOptionsResult> {
   const { content, filename, lang, statements } = params
   const ms = new MagicString(content)
   const dir = path.dirname(filename)
@@ -63,12 +137,14 @@ async function evaluateDefineOptionsValues(params: {
     return {
       values: [],
       dependencies: [],
+      scopeValues: {},
     }
   }
   const bodyPaths = programPath?.get('body') ?? []
   const macroStatementPaths = statements.map(item => item.statementPath)
 
   const { keptStatementPaths } = collectKeptStatementPaths(programPath, macroStatementPaths)
+  const keptBindingNames = collectKeptBindingNames(keptStatementPaths)
 
   for (const statementPath of keptStatementPaths) {
     if (!statementPath.isImportDeclaration()) {
@@ -110,10 +186,18 @@ async function evaluateDefineOptionsValues(params: {
   const extension = resolveScriptSetupExtension(lang)
   const header = `
 const __weapp_define_options_values = []
+const __weapp_define_scope_values = {}
 const __weapp_defineOptions = (value) => (__weapp_define_options_values.push(value), value)
 `.trimStart()
+  const scopeFooter = keptBindingNames
+    .map(name => `__weapp_define_scope_values[${JSON.stringify(name)}] = ${name}`)
+    .join('\n')
   const footer = '\nexport default __weapp_define_options_values\n'
-  const evalSource = header + ms.toString() + footer
+  const evalSource = `${header
+    + ms.toString()
+    + (scopeFooter ? `\n${scopeFooter}\n` : '\n')
+  }export const __weapp_define_scope = __weapp_define_scope_values\n${
+    footer}`
 
   return await withTempDirLock(tempDir, async () => {
     await fs.ensureDir(tempDir)
@@ -122,7 +206,7 @@ const __weapp_defineOptions = (value) => (__weapp_define_options_values.push(val
     const tempFile = path.join(tempDir, `${basename}.define-options.${unique}.${extension}`)
     await fs.writeFile(tempFile, evalSource, 'utf8')
     try {
-      const { mod, dependencies } = await bundleRequire<{ default?: unknown[] }>({
+      const { mod, dependencies } = await bundleRequire<{ default?: unknown[], __weapp_define_scope?: Record<string, unknown> }>({
         filepath: tempFile,
         cwd: dir,
       })
@@ -131,6 +215,7 @@ const __weapp_defineOptions = (value) => (__weapp_define_options_values.push(val
       return {
         values,
         dependencies,
+        scopeValues: mod?.__weapp_define_scope ?? {},
       }
     }
     finally {
@@ -187,6 +272,7 @@ export async function inlineScriptSetupDefineOptionsArgs(
 
   let values: unknown[] = []
   let dependencies: string[] = []
+  let scopeValues: Record<string, unknown> = collectStaticTopLevelScopeValues(content)
   try {
     const evaluated = await evaluateDefineOptionsValues({
       content,
@@ -196,6 +282,10 @@ export async function inlineScriptSetupDefineOptionsArgs(
     })
     values = evaluated.values
     dependencies = evaluated.dependencies
+    scopeValues = {
+      ...scopeValues,
+      ...evaluated.scopeValues,
+    }
   }
   catch (error) {
     if (shouldFallbackToRawDefineOptions(error)) {
@@ -215,7 +305,7 @@ export async function inlineScriptSetupDefineOptionsArgs(
       continue
     }
     const value = await resolveDefineOptionsValue(values[index])
-    const literal = serializeStaticValueToExpression(value)
+    const literal = serializeStaticValueToExpression(value, new WeakSet<object>(), scopeValues)
     ms.overwrite(argNode.start, argNode.end, literal)
   }
 

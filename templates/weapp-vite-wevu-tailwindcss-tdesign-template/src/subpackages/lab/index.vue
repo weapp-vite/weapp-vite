@@ -22,6 +22,22 @@ const tabs = [
   { value: 'display', label: '展示' },
 ]
 
+function handleTabChange(e: any) {
+  activeTab.value = String(e.detail.value)
+}
+
+function handleRateChange(e: any) {
+  rating.value = Number(e.detail.value)
+}
+
+function handleSliderChange(e: any) {
+  slider.value = Number(e.detail.value)
+}
+
+function handleToggleChange(e: any) {
+  toggle.value = Boolean(e.detail.value)
+}
+
 function navigateTo(url: string) {
   wx.navigateTo({
     url,
@@ -34,7 +50,7 @@ function navigateTo(url: string) {
     <view class="rounded-[28rpx] bg-gradient-to-br from-[#f5f3ff] via-[#ffffff] to-[#eef2ff] p-[20rpx]">
       <SectionTitle title="TDesign 组件实验室" subtitle="常用组件的组合应用" />
       <view class="mt-[12rpx]">
-        <t-tabs :value="activeTab" @change="(e) => (activeTab = e.detail.value)">
+        <t-tabs :value="activeTab" @change="handleTabChange">
           <t-tab-panel v-for="tab in tabs" :key="tab.value" :value="tab.value" :label="tab.label" />
         </t-tabs>
       </view>
@@ -68,7 +84,7 @@ function navigateTo(url: string) {
               B
             </t-avatar>
           </t-badge>
-          <t-avatar-group max="3" size="small">
+          <t-avatar-group :max="3" size="small">
             <t-avatar>U1</t-avatar>
             <t-avatar>U2</t-avatar>
             <t-avatar>U3</t-avatar>
@@ -92,14 +108,14 @@ function navigateTo(url: string) {
           <text class="text-[22rpx] text-[#6f6b8a]">
             满意度评分
           </text>
-          <t-rate :value="rating" @change="(e) => (rating = e.detail.value)" />
+          <t-rate :value="rating" @change="handleRateChange" />
         </view>
         <view class="flex items-center justify-between">
           <text class="text-[22rpx] text-[#6f6b8a]">
             阈值调整
           </text>
           <view class="flex items-center gap-[12rpx]">
-            <t-slider :value="slider" @change="(e) => (slider = e.detail.value)" />
+            <t-slider :value="slider" @change="handleSliderChange" />
             <text class="text-[22rpx] text-[#6f6b8a]">
               {{ slider }}%
             </text>
@@ -109,7 +125,7 @@ function navigateTo(url: string) {
           <text class="text-[22rpx] text-[#6f6b8a]">
             自动提醒
           </text>
-          <t-switch :value="toggle" @change="(e) => (toggle = e.detail.value)" />
+          <t-switch :value="toggle" @change="handleToggleChange" />
         </view>
       </view>
 
@@ -142,7 +158,7 @@ function navigateTo(url: string) {
           <text class="text-[22rpx] text-[#6f6b8a]">
             扫码体验
           </text>
-          <t-qrcode value="https://vite.icebreaker.top" size="90" />
+          <t-qrcode value="https://vite.icebreaker.top" :size="90" />
         </view>
       </view>
     </view>

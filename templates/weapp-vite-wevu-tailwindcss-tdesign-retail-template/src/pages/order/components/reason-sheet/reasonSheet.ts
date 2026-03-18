@@ -1,7 +1,7 @@
 function getInstance(context, selector = '#wr-reason-sheet') {
   if (!context) {
     const pages = getCurrentPages()
-    const page = pages[pages.length - 1]
+    const page = pages.at(-1)
     context = page
   }
   const instance = context && context.selectComponent(selector)
