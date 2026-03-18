@@ -20,6 +20,7 @@ const EDGE_DASH_RE = /^-|-$/g
 const PATH_SEGMENT_RE = /[\\/]/
 const TRAILING_INDEX_RE = /\/index$/
 const LEADING_SLASHES_RE = /^\/+/
+const ROUTE_RULE_GLOB_TOKEN_RE = /[*?[\]{}()!+@]/g
 
 export interface ResolvedPageLayout {
   file: string
@@ -350,16 +351,46 @@ function resolveRouteRuleLayoutMeta(
   }
 
   const routeCandidates = normalizePageRouteCandidates(filename, configService)
-  let matched: ResolvedLayoutMeta | undefined
+  let matched: { meta: ResolvedLayoutMeta | undefined, score: number[] } | undefined
   for (const [pattern, rule] of Object.entries(routeRules)) {
     const isMatched = routeCandidates.some(candidate => picomatch(pattern)(candidate))
     if (!isMatched) {
       continue
     }
-    matched = normalizeRouteRuleLayoutMeta(rule?.appLayout)
+    const normalizedMeta = normalizeRouteRuleLayoutMeta(rule?.appLayout)
+    const patternSegments = pattern.split('/').filter(Boolean)
+    const wildcardMatches = pattern.match(ROUTE_RULE_GLOB_TOKEN_RE) ?? []
+    const staticSegments = patternSegments.filter(segment => !ROUTE_RULE_GLOB_TOKEN_RE.test(segment)).length
+    const score = [
+      staticSegments,
+      pattern.replace(ROUTE_RULE_GLOB_TOKEN_RE, '').length,
+      -wildcardMatches.length,
+      patternSegments.length,
+      pattern.length,
+    ]
+
+    if (!matched || compareRuleScore(score, matched.score) > 0) {
+      matched = {
+        meta: normalizedMeta,
+        score,
+      }
+    }
   }
 
-  return matched
+  return matched?.meta
+}
+
+function compareRuleScore(left: number[], right: number[]) {
+  const maxLength = Math.max(left.length, right.length)
+  for (let index = 0; index < maxLength; index += 1) {
+    const leftValue = left[index] ?? 0
+    const rightValue = right[index] ?? 0
+    if (leftValue === rightValue) {
+      continue
+    }
+    return leftValue > rightValue ? 1 : -1
+  }
+  return 0
 }
 
 async function collectLayoutFiles(root: string): Promise<Map<string, DiscoveredLayoutFile>> {
