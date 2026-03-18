@@ -22,7 +22,7 @@
     "open": "weapp-vite open",
     "lint:fix": "eslint . --fix",
     "open:dev": "weapp open -p",
-    "postinstall": "weapp-tw patch"
+    "postinstall": "weapp-tw patch && weapp-vite prepare"
   },
   "dependencies": {
     "tdesign-miniprogram": "catalog:"

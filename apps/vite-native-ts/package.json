@@ -21,7 +21,8 @@
     "build": "weapp-vite build",
     "open": "weapp-vite open",
     "g": "weapp-vite g",
-    "build-npm": "weapp-vite build-npm"
+    "build-npm": "weapp-vite build-npm",
+    "postinstall": "weapp-vite prepare"
   },
   "dependencies": {
     "gm-crypto": "catalog:"

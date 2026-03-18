@@ -13,7 +13,7 @@
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "open": "weapp-vite open",
     "video:prepare": "bash ../../docs/recording/wevu-vue-sfc-recording-demo/export-ppt-video.sh",
-    "postinstall": "weapp-tw patch"
+    "postinstall": "weapp-tw patch && weapp-vite prepare"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",

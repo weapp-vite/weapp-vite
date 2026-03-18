@@ -22,7 +22,7 @@
     "build": "weapp-vite build",
     "open": "weapp-vite open",
     "build-npm": "weapp-vite build-npm",
-    "postinstall": "weapp-tw patch",
+    "postinstall": "weapp-tw patch && weapp-vite prepare",
     "g": "weapp-vite g"
   },
   "devDependencies": {

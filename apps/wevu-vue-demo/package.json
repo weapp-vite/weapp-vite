@@ -9,7 +9,8 @@
     "build": "weapp-vite build",
     "gen:api-list": "node scripts/gen-miniprogram-api.js",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
-    "open": "weapp-vite open"
+    "open": "weapp-vite open",
+    "postinstall": "weapp-vite prepare"
   },
   "devDependencies": {
     "@weapp-core/schematics": "workspace:*",

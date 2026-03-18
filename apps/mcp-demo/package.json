@@ -27,7 +27,8 @@
     "g": "weapp-vite generate",
     "mcp:stdio": "weapp-vite mcp --workspace-root ../..",
     "mcp:http": "weapp-vite mcp --workspace-root ../.. --transport streamable-http --host 127.0.0.1 --port 3188 --endpoint /mcp",
-    "mcp:smoke": "pnpm run build && node ./scripts/mcp-smoke.mjs"
+    "mcp:smoke": "pnpm run build && node ./scripts/mcp-smoke.mjs",
+    "postinstall": "weapp-vite prepare"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",
