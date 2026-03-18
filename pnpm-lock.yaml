@@ -1154,6 +1154,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/wevu
 
+  e2e-apps/issue-340-hoist:
+    devDependencies:
+      weapp-vite:
+        specifier: workspace:*
+        version: link:../../packages/weapp-vite
+      wevu:
+        specifier: workspace:*
+        version: link:../../packages/wevu
+
   e2e-apps/issue-814-tailwind3:
     devDependencies:
       tailwindcss:
