@@ -35,9 +35,14 @@ export function resolveScriptSetupExtension(lang?: string) {
 }
 
 const IDENTIFIER_LIKE_KEY_RE = /^[A-Z_$][\w$]*$/i
+const OBJECT_TO_STRING = Object.prototype.toString
 
 function isIdentifierLikeKey(key: string) {
   return IDENTIFIER_LIKE_KEY_RE.test(key)
+}
+
+function getObjectTag(value: unknown) {
+  return OBJECT_TO_STRING.call(value)
 }
 
 type SerializableNativeFunction
@@ -218,10 +223,10 @@ export function serializeStaticValueToExpression(
     return `(${rewritten})`
   }
 
-  if (value instanceof Date) {
+  if (getObjectTag(value) === '[object Date]') {
     return `new Date(${JSON.stringify(value.toISOString())})`
   }
-  if (value instanceof RegExp) {
+  if (getObjectTag(value) === '[object RegExp]') {
     return value.toString()
   }
 

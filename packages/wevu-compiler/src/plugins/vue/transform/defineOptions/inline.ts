@@ -90,8 +90,14 @@ function collectKeptBindingNames(keptStatementPaths: Set<any>) {
 
   for (const statementPath of keptStatementPaths) {
     if (statementPath.isImportDeclaration()) {
+      if (statementPath.node.importKind === 'type') {
+        continue
+      }
       for (const specifier of statementPath.get('specifiers')) {
         if (specifier.isImportSpecifier() || specifier.isImportDefaultSpecifier() || specifier.isImportNamespaceSpecifier()) {
+          if (specifier.isImportSpecifier() && specifier.node.importKind === 'type') {
+            continue
+          }
           const local = specifier.node.local
           if (t.isIdentifier(local)) {
             names.add(local.name)
