@@ -14,9 +14,6 @@ on:
 permissions:
   contents: read
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 jobs:
   smoke:
     name: Create Smoke (${{ matrix.os }} / Node ${{ matrix.node-version }})
@@ -82,7 +79,7 @@ jobs:
 
       - name: Upload smoke report artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: create-weapp-vite-smoke-report-${{ matrix.os }}-node${{ matrix.node-version }}
           path: ${{ runner.temp }}/create-weapp-vite-smoke-report/report.json
@@ -99,7 +96,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download smoke report artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.1
         with:
           pattern: create-weapp-vite-smoke-report-*
           path: artifacts/create-weapp-vite-smoke-report
@@ -112,7 +109,7 @@ jobs:
         run: cat artifacts/create-weapp-vite-smoke-report-summary/create-weapp-vite-smoke-report.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload merged smoke report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: create-weapp-vite-smoke-report-summary
           path: artifacts/create-weapp-vite-smoke-report-summary
