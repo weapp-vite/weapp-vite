@@ -188,4 +188,29 @@ defineOptions({
     expect(result.code).toContain('behaviors: [FooBehavior]')
     expect(result.dependencies).toEqual([])
   })
+
+  it('ignores type-only imports when collecting defineOptions scope values', async () => {
+    const projectDir = await createTempProject()
+    const filename = path.join(projectDir, 'app.ts')
+    const typesFile = path.join(projectDir, 'types.ts')
+
+    await fs.writeFile(typesFile, 'export interface AppGlobalData { title: string }\n', 'utf8')
+
+    const source = `
+import type { AppGlobalData } from './types'
+
+const globalData: AppGlobalData = {
+  title: 'demo',
+}
+
+defineOptions({
+  globalData,
+})
+    `.trim()
+
+    const result = await inlineScriptSetupDefineOptionsArgs(source, filename, 'ts')
+
+    expect(result.code).toContain('globalData: { title: "demo" }')
+    expect(result.code).toContain(`import type { AppGlobalData } from './types'`)
+  })
 })
