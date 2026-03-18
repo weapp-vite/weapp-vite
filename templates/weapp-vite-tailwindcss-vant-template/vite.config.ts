@@ -5,6 +5,15 @@ import { defineConfig } from 'weapp-vite/config'
 export default defineConfig({
   weapp: {
     srcRoot: 'src',
+    typescript: {
+      app: {
+        compilerOptions: {
+          paths: {
+            '@vant/weapp/*': ['./node_modules/@vant/weapp/dist/*'],
+          },
+        },
+      },
+    },
     autoImportComponents: {
       resolvers: [VantResolver()],
     },

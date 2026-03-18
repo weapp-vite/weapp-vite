@@ -11,6 +11,15 @@ export default defineConfig({
   },
   weapp: {
     srcRoot: 'src',
+    typescript: {
+      app: {
+        compilerOptions: {
+          paths: {
+            'tdesign-miniprogram/*': ['./node_modules/tdesign-miniprogram/miniprogram_dist/*'],
+          },
+        },
+      },
+    },
     autoRoutes: true,
     autoImportComponents: {
       resolvers: [TDesignResolver()],
