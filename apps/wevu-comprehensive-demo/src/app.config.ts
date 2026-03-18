@@ -11,6 +11,10 @@ export const tdesignComponentPages = tdesignComponentTags.map(tag => `pages/ui-t
 export const vantComponentPages = vantComponentTags.map(tag => `pages/ui-vant/components/${toVantComponentName(tag)}/index`)
 
 export const extraPages = [
+  'pages/layouts/index',
+  'pages/layouts/default-demo/index',
+  'pages/layouts/admin-demo/index',
+  'pages/layouts/native-demo/index',
   'pages/subpackage-scenarios/index',
   'pages/basic/index',
   'pages/computed/index',

@@ -5,7 +5,7 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
-import { findJsonEntry, findTemplateEntry } from '../../../utils'
+import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
 import { normalizeWatchPath, toPosixPath } from '../../../utils/path'
 import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
@@ -24,6 +24,13 @@ export interface ResolvedPageLayout {
   kind: 'native' | 'vue'
   layoutName: string
   tagName: string
+}
+
+export interface NativeLayoutAssets {
+  json?: string
+  template?: string
+  style?: string
+  script?: string
 }
 
 interface DiscoveredLayoutFile {
@@ -339,4 +346,20 @@ export function isLayoutFile(
   const layoutsRoot = `${normalizeWatchPath(path.join(configService.absoluteSrcRoot, 'layouts'))}/`
   const normalizedFile = normalizeWatchPath(filename)
   return normalizedFile.startsWith(layoutsRoot)
+}
+
+export async function collectNativeLayoutAssets(basePath: string): Promise<NativeLayoutAssets> {
+  const [jsonEntry, templateEntry, styleEntry, scriptEntry] = await Promise.all([
+    findJsonEntry(basePath),
+    findTemplateEntry(basePath),
+    findCssEntry(basePath),
+    findJsEntry(basePath),
+  ])
+
+  return {
+    json: jsonEntry.path,
+    template: templateEntry.path,
+    style: styleEntry.path,
+    script: scriptEntry.path,
+  }
 }

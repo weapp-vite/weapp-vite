@@ -17,7 +17,7 @@ import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissin
 import { collectFallbackPageEntryIds } from './fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from './injectSetDataPick'
-import { applyPageLayout, resolvePageLayout } from './pageLayout'
+import { applyPageLayout, collectNativeLayoutAssets, resolvePageLayout } from './pageLayout'
 import { emitScopedSlotAssets } from './scopedSlot'
 
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
@@ -41,6 +41,8 @@ interface ClassStyleWxsAsset {
   fileName: string
   source: string
 }
+
+const JS_OUTPUT_RE = /\.[cm]?js$/
 
 function getEntryBaseName(filename: string) {
   const extIndex = filename.lastIndexOf('.')
@@ -84,6 +86,14 @@ async function compileVueLikeFile(options: {
         applyPageLayout(result, filename, resolvedLayout)
         if (typeof pluginCtx.addWatchFile === 'function') {
           pluginCtx.addWatchFile(normalizeWatchPath(resolvedLayout.file))
+          if (resolvedLayout.kind === 'native') {
+            const nativeAssets = await collectNativeLayoutAssets(resolvedLayout.file)
+            for (const asset of Object.values(nativeAssets)) {
+              if (asset) {
+                pluginCtx.addWatchFile(normalizeWatchPath(asset))
+              }
+            }
+          }
         }
       }
     }
@@ -96,10 +106,74 @@ async function compileVueLikeFile(options: {
       applyPageLayout(result, filename, resolvedLayout)
       if (typeof pluginCtx.addWatchFile === 'function') {
         pluginCtx.addWatchFile(normalizeWatchPath(resolvedLayout.file))
+        if (resolvedLayout.kind === 'native') {
+          const nativeAssets = await collectNativeLayoutAssets(resolvedLayout.file)
+          for (const asset of Object.values(nativeAssets)) {
+            if (asset) {
+              pluginCtx.addWatchFile(normalizeWatchPath(asset))
+            }
+          }
+        }
       }
     }
   }
   return result
+}
+
+async function emitNativeLayoutAssetsIfNeeded(options: {
+  pluginCtx: any
+  bundle: Record<string, any>
+  layoutBasePath: string
+  configService: NonNullable<CompilerContext['configService']>
+  outputExtensions: OutputExtensions | undefined
+}) {
+  const { pluginCtx, bundle, layoutBasePath, configService, outputExtensions } = options
+  const relativeBase = configService.relativeOutputPath(layoutBasePath)
+  if (!relativeBase) {
+    return
+  }
+
+  const assets = await collectNativeLayoutAssets(layoutBasePath)
+  const jsonExtension = outputExtensions?.json ?? 'json'
+  const templateExtension = outputExtensions?.wxml ?? 'wxml'
+  const styleExtension = outputExtensions?.wxss ?? 'wxss'
+  const scriptExtension = outputExtensions?.js ?? 'js'
+
+  if (assets.json) {
+    const source = await fs.readFile(assets.json, 'utf8')
+    emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: source }, {
+      emitIfMissingOnly: true,
+      extension: jsonExtension,
+      kind: 'component',
+    })
+  }
+
+  if (assets.template) {
+    const source = await fs.readFile(assets.template, 'utf8')
+    emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, source, templateExtension)
+  }
+
+  if (assets.style) {
+    const source = await fs.readFile(assets.style, 'utf8')
+    emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, source, styleExtension)
+  }
+
+  if (assets.script) {
+    if (!JS_OUTPUT_RE.test(assets.script)) {
+      logger.warn(`[layouts] 原生 layout 脚本目前仅自动发射 JS 文件，已跳过：${assets.script}`)
+      return
+    }
+    const source = await fs.readFile(assets.script, 'utf8')
+    const fileName = `${relativeBase}.${scriptExtension}`
+    const existing = bundle[fileName]
+    if (existing && existing.type === 'asset') {
+      if ((existing.source?.toString?.() ?? '') !== source) {
+        existing.source = source
+      }
+      return
+    }
+    pluginCtx.emitFile({ type: 'asset', fileName, source })
+  }
 }
 
 function normalizeVueConfigForPlatform(
@@ -332,6 +406,18 @@ export async function emitVueBundleAssets(
     const shouldMergeJsonAsset = isAppVue
     const jsonConfig = configService.weappViteConfig?.json
     const jsonKind = isAppVue ? 'app' : cached.isPage ? 'page' : 'component'
+    if (cached.isPage && cached.source) {
+      const resolvedLayout = await resolvePageLayout(cached.source, filename, configService)
+      if (resolvedLayout?.kind === 'native') {
+        await emitNativeLayoutAssetsIfNeeded({
+          pluginCtx,
+          bundle,
+          layoutBasePath: resolvedLayout.file,
+          configService,
+          outputExtensions,
+        })
+      }
+    }
 
     // 发出模板文件
     if (result.template) {
@@ -447,6 +533,17 @@ export async function emitVueBundleAssets(
         if (injectedPick.transformed) {
           result.script = injectedPick.code
         }
+      }
+
+      const resolvedLayout = await resolvePageLayout(source, entryFilePath, configService)
+      if (resolvedLayout?.kind === 'native') {
+        await emitNativeLayoutAssetsIfNeeded({
+          pluginCtx,
+          bundle,
+          layoutBasePath: resolvedLayout.file,
+          configService,
+          outputExtensions,
+        })
       }
 
       // 注意：后备产物仅用于补齐未被 Vite 引用时缺失的 template/style/json。
