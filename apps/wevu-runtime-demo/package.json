@@ -7,7 +7,8 @@
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
-    "open": "weapp-vite open"
+    "open": "weapp-vite open",
+    "postinstall": "weapp-vite prepare"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:latest",

@@ -14,7 +14,8 @@
     "build": "weapp-vite build",
     "typecheck": "vue-tsc --noEmit",
     "open": "weapp-vite open",
-    "g": "weapp-vite generate"
+    "g": "weapp-vite generate",
+    "postinstall": "weapp-vite prepare"
   },
   "devDependencies": {
     "@weapp-vite/volar": "workspace:*",

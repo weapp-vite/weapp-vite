@@ -37,7 +37,7 @@
     "build:web": "weapp-vite build -p h5",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "open": "weapp-vite open",
-    "postinstall": "weapp-tw patch"
+    "postinstall": "weapp-tw patch && weapp-vite prepare"
   },
   "dependencies": {
     "antd-mini": "catalog:",

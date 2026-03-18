@@ -35,7 +35,8 @@
     "build:xhs": "weapp-vite build -p xhs",
     "build:web": "weapp-vite build -p h5",
     "open": "weapp-vite open",
-    "g": "weapp-vite generate"
+    "g": "weapp-vite generate",
+    "postinstall": "weapp-vite prepare"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",

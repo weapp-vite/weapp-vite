@@ -11,7 +11,8 @@
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
-    "g": "weapp-vite generate"
+    "g": "weapp-vite generate",
+    "postinstall": "weapp-vite prepare"
   },
   "dependencies": {
     "dayjs": "catalog:",
