@@ -12,7 +12,7 @@ export function cloneSnapshotValue<T>(value: T): T {
   if (!isPlainObjectLike(value)) {
     return value
   }
-  const out: Record<string, any> = Object.create(null)
+  const out: Record<string, any> = {}
   for (const key of Object.keys(value as Record<string, any>)) {
     out[key] = cloneSnapshotValue((value as Record<string, any>)[key])
   }
@@ -121,7 +121,7 @@ export function applySnapshotUpdate(
   for (let i = 0; i < segments.length - 1; i++) {
     const key = segments[i]
     if (!Object.hasOwn(current, key) || current[key] == null || typeof current[key] !== 'object') {
-      current[key] = Object.create(null)
+      current[key] = {}
     }
     current = current[key]
   }
@@ -158,7 +158,7 @@ export function collectSnapshot(options: {
     toPlainMaxKeys,
   } = options
   const seen = new WeakMap<object, any>()
-  const out: Record<string, any> = Object.create(null)
+  const out: Record<string, any> = {}
   const budget = Number.isFinite(toPlainMaxKeys) ? { keys: toPlainMaxKeys } : undefined
 
   const rawState = (isReactive(state) ? toRaw(state as any) : state) as Record<string, any>

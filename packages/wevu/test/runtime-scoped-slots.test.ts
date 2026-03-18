@@ -228,4 +228,35 @@ describe('runtime: scoped slots', () => {
     opts.observers.title.call(inst, 'Next', '')
     expect(getOwnerSnapshot(ownerId)?.title).toBe('Next')
   })
+
+  it('stores owner snapshots as plain objects for view-layer compatibility', () => {
+    defineComponent({
+      props: {
+        title: { type: String, default: '' },
+      } as any,
+      setup() {
+        return {
+          nested: {
+            ok: true,
+          },
+        }
+      },
+    })
+
+    const opts = registeredComponents.pop()!
+    expect(opts).toBeTruthy()
+
+    const inst: any = { setData: vi.fn(), triggerEvent: vi.fn(), properties: { title: 'demo' } }
+    opts.lifetimes.created.call(inst)
+    opts.lifetimes.attached.call(inst)
+
+    const ownerId = inst.__wvOwnerId
+    const snapshot = getOwnerSnapshot(ownerId)
+    expect(snapshot).toMatchObject({
+      title: 'demo',
+      nested: { ok: true },
+    })
+    expect(Object.getPrototypeOf(snapshot)).toBe(Object.prototype)
+    expect(Object.getPrototypeOf(snapshot?.nested)).toBe(Object.prototype)
+  })
 })
