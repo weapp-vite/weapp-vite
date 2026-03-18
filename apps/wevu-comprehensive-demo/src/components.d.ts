@@ -320,9 +320,15 @@ declare module 'vue' {
 
 declare module 'wevu' {
   interface WevuPageLayoutMap {
-    admin: Record<string, any>;
+    admin: {
+  readonly sidebar?: boolean;
+  readonly title?: string;
+};
     default: Record<string, any>;
-    'native-shell': Record<string, any>;
+    'native-shell': {
+  readonly sidebar?: boolean;
+  readonly title?: string;
+};
   }
 }
 

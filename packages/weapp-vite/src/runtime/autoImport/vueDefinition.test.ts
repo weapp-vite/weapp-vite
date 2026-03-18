@@ -66,12 +66,26 @@ describe('createVueComponentsDefinition', () => {
     const code = createVueComponentsDefinition(
       ['t-empty'],
       () => ({ types: new Map(), docs: new Map() }),
-      { useTypedComponents: true, layoutNames: ['admin', 'native-shell'] },
+      {
+        useTypedComponents: true,
+        layoutNames: ['admin', 'native-shell'],
+        layoutPropsMap: new Map([
+          ['admin', new Map([
+            ['sidebar', 'boolean'],
+            ['title', 'string'],
+          ])],
+          ['native-shell', new Map([
+            ['title', 'string'],
+          ])],
+        ]),
+      },
     )
 
     expect(code).toContain('declare module \'wevu\'')
     expect(code).toContain('interface WevuPageLayoutMap')
-    expect(code).toContain('admin: Record<string, any>;')
-    expect(code).toContain('\'native-shell\': Record<string, any>;')
+    expect(code).toContain('admin: {')
+    expect(code).toContain('readonly sidebar?: boolean;')
+    expect(code).toContain('readonly title?: string;')
+    expect(code).toContain('\'native-shell\': {')
   })
 })

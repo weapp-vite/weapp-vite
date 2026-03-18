@@ -1,14 +1,19 @@
 import type { MutableCompilerContext } from '../../../../context'
+import type { ComponentPropMap } from '../../../componentProps'
 import type { HtmlCustomDataSettings, TypedComponentsSettings, VueComponentsSettings } from '../../config'
 import type { ComponentMetadata } from '../../metadata'
 import type { OutputsState } from './state'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { resolveAstEngine } from '../../../../ast'
 import { logger } from '../../../../context/shared'
+import { extractComponentProps } from '../../../componentProps'
 import {
   getTypedComponentsSettings,
 } from '../../config'
+import { extractInlinePropsTypeFromCode } from '../../dtsProps'
 import { createHtmlCustomDataDefinition } from '../../htmlCustomData'
+import { extractJsonPropMetadata, mergePropMaps } from '../../metadata'
 import { createTypedComponentsDefinition } from '../../typedDefinition'
 import { createVueComponentsDefinition } from '../../vueDefinition'
 import { loadWeappBuiltinHtmlTags } from '../../weappBuiltinHtmlTags'
@@ -96,6 +101,101 @@ async function collectLayoutNames(srcRoot: string) {
   return [...names].sort((a, b) => a.localeCompare(b))
 }
 
+async function collectLayoutPropsMap(ctx: MutableCompilerContext) {
+  const srcRoot = ctx.configService.absoluteSrcRoot
+  const layoutsRoot = path.join(srcRoot, 'layouts')
+  const result = new Map<string, ComponentPropMap>()
+
+  async function walk(dir: string) {
+    let entries: string[]
+    try {
+      entries = await fs.readdir(dir)
+    }
+    catch {
+      return
+    }
+
+    for (const entry of entries) {
+      const full = path.join(dir, entry)
+      const stat = await fs.stat(full)
+      if (stat.isDirectory()) {
+        await walk(full)
+        continue
+      }
+
+      const ext = path.extname(full)
+      if (!VUE_LIKE_EXTENSIONS.includes(ext as '.vue' | '.tsx' | '.jsx') && ext !== '.wxml') {
+        continue
+      }
+
+      const base = ext === '.wxml' ? full.slice(0, -ext.length) : full
+      const relativePath = path.relative(layoutsRoot, base)
+      const withoutExt = ext === '.wxml'
+        ? relativePath
+        : relativePath.slice(0, -path.extname(relativePath).length)
+      const normalized = withoutExt.replaceAll('\\', '/').replace(TRAILING_INDEX_SEGMENT_RE, '')
+      if (!normalized) {
+        continue
+      }
+      const layoutName = normalized
+        .split('/')
+        .filter(Boolean)
+        .map(segment => segment.replace(CAMEL_TO_KEBAB_RE, '$1-$2').replaceAll('_', '-').toLowerCase())
+        .join('-')
+      if (!layoutName) {
+        continue
+      }
+
+      let propMap: ComponentPropMap = new Map()
+      if (ext === '.wxml') {
+        try {
+          const json = await fs.readJson(`${base}.json`)
+          const scriptSource = await fs.readFile(`${base}.js`, 'utf8').catch(() => '')
+          const jsonProps = extractJsonPropMetadata(json).props
+          const scriptProps = scriptSource
+            ? extractComponentProps(scriptSource, {
+                astEngine: resolveAstEngine(ctx.configService.weappViteConfig),
+              })
+            : new Map()
+          propMap = mergePropMaps(jsonProps, scriptProps)
+        }
+        catch {
+          propMap = new Map()
+        }
+      }
+      else {
+        try {
+          const source = await fs.readFile(full, 'utf8')
+          const inlineProps = extractInlinePropsTypeFromCode(source)
+          if (inlineProps.size > 0) {
+            propMap = inlineProps
+          }
+          else {
+            const { compileVueFile } = await import('wevu/compiler')
+            const compiled = await compileVueFile(source, full, {
+              astEngine: resolveAstEngine(ctx.configService.weappViteConfig),
+              json: { kind: 'component' },
+            })
+            propMap = compiled.script
+              ? extractComponentProps(compiled.script, {
+                  astEngine: resolveAstEngine(ctx.configService.weappViteConfig),
+                })
+              : new Map()
+          }
+        }
+        catch {
+          propMap = new Map()
+        }
+      }
+
+      result.set(layoutName, propMap)
+    }
+  }
+
+  await walk(layoutsRoot)
+  return result
+}
+
 export async function syncTypedComponentsDefinition(
   settings: TypedComponentsSettings,
   options: CommonSyncOptions,
@@ -164,10 +264,13 @@ export async function syncVueComponentsDefinition(
   const outputPath = settings.outputPath
 
   const componentNames = collectAllComponentNames(options)
+  const layoutNames = await collectLayoutNames(ctx.configService.absoluteSrcRoot)
+  const layoutPropsMap = await collectLayoutPropsMap(ctx)
   const nextDefinition = createVueComponentsDefinition(componentNames, options.getComponentMetadata, {
     useTypedComponents: getTypedComponentsSettings(ctx).enabled,
     moduleName: settings.moduleName,
-    layoutNames: await collectLayoutNames(ctx.configService.absoluteSrcRoot),
+    layoutNames,
+    layoutPropsMap,
     resolveComponentImport: (name) => {
       const local = options.registry.get(name)
       if (local?.kind === 'local') {

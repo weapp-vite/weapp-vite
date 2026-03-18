@@ -1,5 +1,6 @@
 import type * as t from '@weapp-vite/ast/babelTypes'
 import type { ComponentPropMap } from '../componentProps'
+import { parse as parseSfc } from 'vue/compiler-sfc'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, generate, getVisitorKeys, parse, traverse } from '../../utils/babel'
 import { mapConstructorName } from '../utils/constructorType'
 
@@ -233,6 +234,92 @@ export function extractComponentPropsFromDts(code: string): ComponentPropMap {
           props = extractFromPropertiesTypeLiteral(typeNode)
           path.stop()
           return
+        }
+      }
+    },
+  })
+
+  return props
+}
+
+export function extractInlinePropsTypeFromCode(code: string): ComponentPropMap {
+  const source = code.includes('<script')
+    ? (() => {
+        const parsed = parseSfc(code, { filename: 'layout.vue' })
+        return parsed.descriptor.scriptSetup?.content ?? parsed.descriptor.script?.content ?? code
+      })()
+    : code
+  const props: ComponentPropMap = new Map()
+  const ast = parse(source, {
+    ...BABEL_TS_MODULE_PARSER_OPTIONS,
+    errorRecovery: true,
+  })
+
+  const typeAliases = new Map<string, t.TSType>()
+  const interfaces = new Map<string, t.TSInterfaceDeclaration>()
+
+  traverse(ast, {
+    TSTypeAliasDeclaration(path) {
+      typeAliases.set(path.node.id.name, path.node.typeAnnotation)
+    },
+    TSInterfaceDeclaration(path) {
+      interfaces.set(path.node.id.name, path.node)
+    },
+  })
+
+  const pushTypeLiteralMembers = (node: t.TSTypeLiteral) => {
+    for (const member of node.members) {
+      if (member.type !== 'TSPropertySignature') {
+        continue
+      }
+      const propName = getPropertyName(member.key)
+      if (!propName) {
+        continue
+      }
+      const typeNode = unwrapTypeAnnotation(member.typeAnnotation)
+      props.set(propName, typeNode ? getNodeText(typeNode) : 'any')
+    }
+  }
+
+  const pushInterfaceMembers = (node: t.TSInterfaceDeclaration) => {
+    for (const member of node.body.body) {
+      if (member.type !== 'TSPropertySignature') {
+        continue
+      }
+      const propName = getPropertyName(member.key)
+      if (!propName) {
+        continue
+      }
+      const typeNode = unwrapTypeAnnotation(member.typeAnnotation)
+      props.set(propName, typeNode ? getNodeText(typeNode) : 'any')
+    }
+  }
+
+  traverse(ast, {
+    CallExpression(path) {
+      if (!path.node.callee || path.node.callee.type !== 'Identifier' || path.node.callee.name !== 'defineProps') {
+        return
+      }
+      const typeParameter = path.node.typeParameters?.params?.[0]
+      if (!typeParameter) {
+        return
+      }
+      if (typeParameter.type === 'TSTypeLiteral') {
+        pushTypeLiteralMembers(typeParameter)
+        path.stop()
+        return
+      }
+      if (typeParameter.type === 'TSTypeReference' && typeParameter.typeName.type === 'Identifier') {
+        const alias = typeAliases.get(typeParameter.typeName.name)
+        if (alias?.type === 'TSTypeLiteral') {
+          pushTypeLiteralMembers(alias)
+          path.stop()
+          return
+        }
+        const iface = interfaces.get(typeParameter.typeName.name)
+        if (iface) {
+          pushInterfaceMembers(iface)
+          path.stop()
         }
       }
     },

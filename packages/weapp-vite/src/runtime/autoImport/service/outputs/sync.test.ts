@@ -5,6 +5,8 @@ const fsRemoveMock = vi.hoisted(() => vi.fn())
 const fsOutputFileMock = vi.hoisted(() => vi.fn())
 const fsReaddirMock = vi.hoisted(() => vi.fn())
 const fsStatMock = vi.hoisted(() => vi.fn())
+const fsReadFileMock = vi.hoisted(() => vi.fn())
+const fsReadJsonMock = vi.hoisted(() => vi.fn())
 const loggerErrorMock = vi.hoisted(() => vi.fn())
 const getTypedComponentsSettingsMock = vi.hoisted(() => vi.fn())
 const createTypedComponentsDefinitionMock = vi.hoisted(() => vi.fn())
@@ -12,6 +14,7 @@ const createVueComponentsDefinitionMock = vi.hoisted(() => vi.fn())
 const createHtmlCustomDataDefinitionMock = vi.hoisted(() => vi.fn())
 const loadWeappBuiltinHtmlTagsMock = vi.hoisted(() => vi.fn())
 const collectAllComponentNamesMock = vi.hoisted(() => vi.fn())
+const extractComponentPropsMock = vi.hoisted(() => vi.fn())
 
 vi.mock('fs-extra', () => {
   const mocked = {
@@ -19,6 +22,8 @@ vi.mock('fs-extra', () => {
     outputFile: fsOutputFileMock,
     readdir: fsReaddirMock,
     stat: fsStatMock,
+    readFile: fsReadFileMock,
+    readJson: fsReadJsonMock,
   }
   return {
     ...mocked,
@@ -39,6 +44,15 @@ vi.mock('../../config', () => ({
 vi.mock('../../typedDefinition', () => ({
   createTypedComponentsDefinition: createTypedComponentsDefinitionMock,
 }))
+
+vi.mock('../../../componentProps', () => ({
+  extractComponentProps: extractComponentPropsMock,
+}))
+
+vi.mock('../../metadata', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../metadata')>()
+  return actual
+})
 
 vi.mock('../../vueDefinition', () => ({
   createVueComponentsDefinition: createVueComponentsDefinitionMock,
@@ -135,6 +149,42 @@ describe('autoImport outputs sync helpers', () => {
       return {
         isDirectory: () => normalized.endsWith('/native-shell') || normalized.endsWith('/layouts'),
       }
+    })
+    fsReadFileMock.mockImplementation(async (target: string) => {
+      const normalized = target.replaceAll('\\', '/')
+      if (normalized.endsWith('/src/layouts/admin.vue')) {
+        return `<script setup lang="ts">defineProps<{ sidebar?: boolean; title?: string }>()</script><template><slot /></template>`
+      }
+      if (normalized.endsWith('/src/layouts/native-shell/index.js')) {
+        return `Component({ properties: { title: { type: String }, sidebar: { type: Boolean } } })`
+      }
+      return ''
+    })
+    fsReadJsonMock.mockImplementation(async (target: string) => {
+      const normalized = target.replaceAll('\\', '/')
+      if (normalized.endsWith('/src/layouts/native-shell/index.json')) {
+        return {
+          component: true,
+          properties: {
+            title: {
+              type: 'String',
+            },
+            sidebar: {
+              type: 'Boolean',
+            },
+          },
+        }
+      }
+      return {}
+    })
+    extractComponentPropsMock.mockImplementation((code: string) => {
+      if (code.includes('sidebar') || code.includes('title')) {
+        return new Map([
+          ['sidebar', 'boolean'],
+          ['title', 'string'],
+        ])
+      }
+      return new Map()
     })
   })
 
@@ -279,6 +329,16 @@ describe('autoImport outputs sync helpers', () => {
       expect.any(Function),
       expect.objectContaining({
         layoutNames: ['admin', 'native-shell'],
+        layoutPropsMap: new Map([
+          ['admin', new Map([
+            ['sidebar', 'boolean'],
+            ['title', 'string'],
+          ])],
+          ['native-shell', new Map([
+            ['title', 'string'],
+            ['sidebar', 'boolean'],
+          ])],
+        ]),
       }),
     )
     expect(options.outputsState.lastWrittenVueComponentsDefinition).toContain('"moduleName":"auto-components"')
