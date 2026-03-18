@@ -16,13 +16,12 @@
   },
   "keywords": [],
   "scripts": {
-    "prepare": "weapp-vite prepare",
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
     "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
     "open": "weapp-vite open",
-    "postinstall": "weapp-tw patch"
+    "postinstall": "weapp-tw patch && weapp-vite prepare"
   },
   "dependencies": {
     "tdesign-miniprogram": "catalog:"
