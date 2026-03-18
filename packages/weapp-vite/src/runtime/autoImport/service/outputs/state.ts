@@ -13,6 +13,8 @@ export interface OutputsState {
   vueComponentsWriteRequested: boolean
   lastWrittenVueComponentsDefinition?: string
   lastVueComponentsOutputPath?: string
+  lastWrittenLayoutTypesDefinition?: string
+  lastLayoutTypesOutputPath?: string
   lastHtmlCustomDataEnabled: boolean
   lastHtmlCustomDataOutput?: string
   lastTypedComponentsEnabled: boolean
