@@ -59,7 +59,7 @@
     "@babel/parser": "catalog:",
     "@babel/traverse": "catalog:",
     "@babel/types": "catalog:",
-    "domhandler": "^5.0.3",
+    "domhandler": "^6.0.1",
     "fs-extra": "catalog:",
     "htmlparser2": "catalog:",
     "lit": "^3.3.1",

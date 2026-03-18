@@ -4,7 +4,7 @@ import path from 'pathe'
 import { afterEach, vi } from 'vitest'
 import { __internal as createProjectInternal } from '@/createProject'
 import { TemplateName } from '@/enums'
-import { TEMPLATE_CATALOG } from '@/generated/catalog'
+import { TEMPLATE_CATALOG, TEMPLATE_NAMED_CATALOG } from '@/generated/catalog'
 import { createProject } from '@/index'
 import * as npm from '@/npm'
 import { logger } from '../vitest.setup'
@@ -245,10 +245,12 @@ describe('createProject', () => {
     await createProject(root, TemplateName.default)
     const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
 
-    expect(pkgJson.dependencies['@vant/weapp']).toBe('^1.11.7')
-    expect(pkgJson.dependencies['tdesign-miniprogram']).toBe('1.12.3')
-    expect(pkgJson.devDependencies['tailwindcss']).toBe('^4.2.1')
-    expect(pkgJson.devDependencies['typescript']).toBe('^5.9.3')
+    expect(pkgJson.dependencies['@vant/weapp']).toBe(TEMPLATE_CATALOG['@vant/weapp'])
+    expect(pkgJson.dependencies['tdesign-miniprogram']).toBe(
+      TEMPLATE_NAMED_CATALOG['tdesign-miniprogram-fixed']['tdesign-miniprogram'],
+    )
+    expect(pkgJson.devDependencies['tailwindcss']).toBe(TEMPLATE_NAMED_CATALOG.tailwind4.tailwindcss)
+    expect(pkgJson.devDependencies['typescript']).toBe(TEMPLATE_CATALOG.typescript)
     expect(pkgJson.devDependencies['miniprogram-api-typings']).toBe(TEMPLATE_CATALOG['miniprogram-api-typings'])
     expect(pkgJson.devDependencies['postcss']).toBe('^8.5.6')
     expect(pkgJson.devDependencies['sass']).toBe('^1.98.0')
