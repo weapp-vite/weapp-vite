@@ -5,6 +5,7 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
+import { findJsonEntry, findTemplateEntry } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
 import { normalizeWatchPath, toPosixPath } from '../../../utils/path'
 import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
@@ -20,6 +21,14 @@ const PATH_SEGMENT_RE = /[\\/]/
 export interface ResolvedPageLayout {
   file: string
   importPath: string
+  kind: 'native' | 'vue'
+  layoutName: string
+  tagName: string
+}
+
+interface DiscoveredLayoutFile {
+  file: string
+  kind: 'native' | 'vue'
   layoutName: string
   tagName: string
 }
@@ -152,8 +161,8 @@ export function extractPageLayoutName(source: string, filename: string) {
   return extractLayoutFromProgram(parseScriptAst(source, filename), filename)
 }
 
-async function collectLayoutFiles(root: string): Promise<Map<string, string>> {
-  const layoutMap = new Map<string, string>()
+async function collectLayoutFiles(root: string): Promise<Map<string, DiscoveredLayoutFile>> {
+  const layoutMap = new Map<string, DiscoveredLayoutFile>()
 
   async function walk(dir: string) {
     let entries: string[]
@@ -172,6 +181,36 @@ async function collectLayoutFiles(root: string): Promise<Map<string, string>> {
         continue
       }
       if (!VUE_LIKE_EXTENSIONS.some(ext => full.endsWith(ext))) {
+        const templateEntry = await findTemplateEntry(full)
+        if (!templateEntry.path || templateEntry.path !== full) {
+          continue
+        }
+
+        const base = full.slice(0, -path.extname(full).length)
+        const jsonEntry = await findJsonEntry(base)
+        if (!jsonEntry.path) {
+          continue
+        }
+
+        const relativePath = path.relative(root, base)
+        const parts = relativePath.split(PATH_SEGMENT_RE).filter(Boolean)
+        if (parts.at(-1) === 'index') {
+          parts.pop()
+        }
+        const layoutName = normalizeLayoutName(parts.join('/'))
+        if (!layoutName) {
+          continue
+        }
+        const duplicated = layoutMap.get(layoutName)
+        if (duplicated && duplicated.file !== base) {
+          throw new Error(`layouts 目录中存在重复布局名 "${layoutName}"：${duplicated.file} 与 ${base}`)
+        }
+        layoutMap.set(layoutName, {
+          file: base,
+          kind: 'native',
+          layoutName,
+          tagName: toLayoutTagName(layoutName),
+        })
         continue
       }
 
@@ -187,10 +226,15 @@ async function collectLayoutFiles(root: string): Promise<Map<string, string>> {
         continue
       }
       const duplicated = layoutMap.get(layoutName)
-      if (duplicated && duplicated !== full) {
-        throw new Error(`layouts 目录中存在重复布局名 "${layoutName}"：${duplicated} 与 ${full}`)
+      if (duplicated && duplicated.file !== full) {
+        throw new Error(`layouts 目录中存在重复布局名 "${layoutName}"：${duplicated.file} 与 ${full}`)
       }
-      layoutMap.set(layoutName, full)
+      layoutMap.set(layoutName, {
+        file: full,
+        kind: 'vue',
+        layoutName,
+        tagName: toLayoutTagName(layoutName),
+      })
     }
   }
 
@@ -248,16 +292,14 @@ export async function resolvePageLayout(
     throw new Error(`${filename} 指定的 layout "${selectedName}" 不存在，请检查 ${layoutsRoot} 目录。`)
   }
 
-  const importPath = usingComponentFromResolvedFile(layoutFile, configService)
+  const importPath = usingComponentFromResolvedFile(layoutFile.file, configService)
   if (!importPath) {
-    throw new Error(`无法为 layout "${selectedName}" 解析 usingComponents 路径：${layoutFile}`)
+    throw new Error(`无法为 layout "${selectedName}" 解析 usingComponents 路径：${layoutFile.file}`)
   }
 
   return {
-    file: layoutFile,
+    ...layoutFile,
     importPath,
-    layoutName: selectedName,
-    tagName: toLayoutTagName(selectedName),
   }
 }
 
@@ -276,10 +318,12 @@ export function applyPageLayout(
   result.template = `<${layout.tagName}>${result.template}</${layout.tagName}>`
   result.config = mergeLayoutUsingComponent(result.config, layout.tagName, layout.importPath)
 
-  const layoutImport = ensureRelativeImportPath(filename, layout.file)
-  const sideEffectImport = `import ${JSON.stringify(layoutImport)}\n`
-  if (!result.script?.includes(sideEffectImport)) {
-    result.script = `${sideEffectImport}${result.script ?? 'export default {}'}`
+  if (layout.kind === 'vue') {
+    const layoutImport = ensureRelativeImportPath(filename, layout.file)
+    const sideEffectImport = `import ${JSON.stringify(layoutImport)}\n`
+    if (!result.script?.includes(sideEffectImport)) {
+      result.script = `${sideEffectImport}${result.script ?? 'export default {}'}`
+    }
   }
 
   return result
