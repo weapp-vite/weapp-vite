@@ -42,6 +42,7 @@ export interface RuntimeInstance<D extends object, C extends ComputedDefinitions
 
 export interface InternalRuntimeStateFields {
   __wevu?: RuntimeInstance<any, any, any>
+  __wevuSetPageLayout?: (layout: string | false) => void
   __wevuWatchStops?: WatchStopHandle[]
   $wevu?: RuntimeInstance<any, any, any>
   __wevuHooks?: Record<string, any>

@@ -17,7 +17,7 @@ import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissin
 import { collectFallbackPageEntryIds } from './fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from './injectSetDataPick'
-import { applyPageLayout, collectNativeLayoutAssets, resolvePageLayout } from './pageLayout'
+import { applyPageLayoutPlan, collectNativeLayoutAssets, resolvePageLayoutPlan } from './pageLayout'
 import { emitScopedSlotAssets } from './scopedSlot'
 
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
@@ -81,16 +81,18 @@ async function compileVueLikeFile(options: {
   if (filename.endsWith('.vue')) {
     const result = await compileVueFile(source, filename, compileOptions)
     if (isPage && result.template) {
-      const resolvedLayout = await resolvePageLayout(source, filename, configService)
-      if (resolvedLayout) {
-        applyPageLayout(result, filename, resolvedLayout)
+      const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
+      if (resolvedLayoutPlan) {
+        applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
         if (typeof pluginCtx.addWatchFile === 'function') {
-          pluginCtx.addWatchFile(normalizeWatchPath(resolvedLayout.file))
-          if (resolvedLayout.kind === 'native') {
-            const nativeAssets = await collectNativeLayoutAssets(resolvedLayout.file)
-            for (const asset of Object.values(nativeAssets)) {
-              if (asset) {
-                pluginCtx.addWatchFile(normalizeWatchPath(asset))
+          for (const layout of resolvedLayoutPlan.layouts) {
+            pluginCtx.addWatchFile(normalizeWatchPath(layout.file))
+            if (layout.kind === 'native') {
+              const nativeAssets = await collectNativeLayoutAssets(layout.file)
+              for (const asset of Object.values(nativeAssets)) {
+                if (asset) {
+                  pluginCtx.addWatchFile(normalizeWatchPath(asset))
+                }
               }
             }
           }
@@ -101,16 +103,18 @@ async function compileVueLikeFile(options: {
   }
   const result = await compileJsxFile(source, filename, compileOptions)
   if (isPage && result.template) {
-    const resolvedLayout = await resolvePageLayout(source, filename, configService)
-    if (resolvedLayout) {
-      applyPageLayout(result, filename, resolvedLayout)
+    const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
+    if (resolvedLayoutPlan) {
+      applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
       if (typeof pluginCtx.addWatchFile === 'function') {
-        pluginCtx.addWatchFile(normalizeWatchPath(resolvedLayout.file))
-        if (resolvedLayout.kind === 'native') {
-          const nativeAssets = await collectNativeLayoutAssets(resolvedLayout.file)
-          for (const asset of Object.values(nativeAssets)) {
-            if (asset) {
-              pluginCtx.addWatchFile(normalizeWatchPath(asset))
+        for (const layout of resolvedLayoutPlan.layouts) {
+          pluginCtx.addWatchFile(normalizeWatchPath(layout.file))
+          if (layout.kind === 'native') {
+            const nativeAssets = await collectNativeLayoutAssets(layout.file)
+            for (const asset of Object.values(nativeAssets)) {
+              if (asset) {
+                pluginCtx.addWatchFile(normalizeWatchPath(asset))
+              }
             }
           }
         }
@@ -407,18 +411,23 @@ export async function emitVueBundleAssets(
     const jsonConfig = configService.weappViteConfig?.json
     const jsonKind = isAppVue ? 'app' : cached.isPage ? 'page' : 'component'
     if (cached.isPage && cached.source) {
-      const resolvedLayout = await resolvePageLayout(cached.source, filename, configService)
-      if (resolvedLayout) {
-        applyPageLayout(result, filename, resolvedLayout)
+      const resolvedLayoutPlan = await resolvePageLayoutPlan(cached.source, filename, configService)
+      if (resolvedLayoutPlan) {
+        applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
       }
-      if (resolvedLayout?.kind === 'native') {
-        await emitNativeLayoutAssetsIfNeeded({
-          pluginCtx,
-          bundle,
-          layoutBasePath: resolvedLayout.file,
-          configService,
-          outputExtensions,
-        })
+      if (resolvedLayoutPlan?.layouts.some(layout => layout.kind === 'native')) {
+        for (const layout of resolvedLayoutPlan.layouts) {
+          if (layout.kind !== 'native') {
+            continue
+          }
+          await emitNativeLayoutAssetsIfNeeded({
+            pluginCtx,
+            bundle,
+            layoutBasePath: layout.file,
+            configService,
+            outputExtensions,
+          })
+        }
       }
     }
 
@@ -538,15 +547,20 @@ export async function emitVueBundleAssets(
         }
       }
 
-      const resolvedLayout = await resolvePageLayout(source, entryFilePath, configService)
-      if (resolvedLayout?.kind === 'native') {
-        await emitNativeLayoutAssetsIfNeeded({
-          pluginCtx,
-          bundle,
-          layoutBasePath: resolvedLayout.file,
-          configService,
-          outputExtensions,
-        })
+      const resolvedLayoutPlan = await resolvePageLayoutPlan(source, entryFilePath, configService)
+      if (resolvedLayoutPlan?.layouts.some(layout => layout.kind === 'native')) {
+        for (const layout of resolvedLayoutPlan.layouts) {
+          if (layout.kind !== 'native') {
+            continue
+          }
+          await emitNativeLayoutAssetsIfNeeded({
+            pluginCtx,
+            bundle,
+            layoutBasePath: layout.file,
+            configService,
+            outputExtensions,
+          })
+        }
       }
 
       // 注意：后备产物仅用于补齐未被 Vite 引用时缺失的 template/style/json。
