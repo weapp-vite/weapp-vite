@@ -17,7 +17,11 @@ import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissin
 import { collectFallbackPageEntryIds } from './fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from './injectSetDataPick'
+import { applyPageLayout, resolvePageLayout } from './pageLayout'
 import { emitScopedSlotAssets } from './scopedSlot'
+
+const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
+const LEADING_DOT_SLASH_RE = /^\.\//
 
 export interface CompilationCacheEntry {
   result: VueTransformResult
@@ -47,7 +51,7 @@ function getEntryBaseName(filename: string) {
 }
 
 function isAppVueLikeFile(filename: string) {
-  return /[\\/]app\.(?:vue|jsx|tsx)$/.test(filename)
+  return APP_VUE_LIKE_FILE_RE.test(filename)
 }
 
 async function compileVueLikeFile(options: {
@@ -73,9 +77,29 @@ async function compileVueLikeFile(options: {
 
   const compileOptions = createCompileVueFileOptions(ctx, pluginCtx, filename, isPage, isApp, configService, compileOptionsState)
   if (filename.endsWith('.vue')) {
-    return await compileVueFile(source, filename, compileOptions)
+    const result = await compileVueFile(source, filename, compileOptions)
+    if (isPage && result.template) {
+      const resolvedLayout = await resolvePageLayout(source, filename, configService)
+      if (resolvedLayout) {
+        applyPageLayout(result, filename, resolvedLayout)
+        if (typeof pluginCtx.addWatchFile === 'function') {
+          pluginCtx.addWatchFile(normalizeWatchPath(resolvedLayout.file))
+        }
+      }
+    }
+    return result
   }
-  return await compileJsxFile(source, filename, compileOptions)
+  const result = await compileJsxFile(source, filename, compileOptions)
+  if (isPage && result.template) {
+    const resolvedLayout = await resolvePageLayout(source, filename, configService)
+    if (resolvedLayout) {
+      applyPageLayout(result, filename, resolvedLayout)
+      if (typeof pluginCtx.addWatchFile === 'function') {
+        pluginCtx.addWatchFile(normalizeWatchPath(resolvedLayout.file))
+      }
+    }
+  }
+  return result
 }
 
 function normalizeVueConfigForPlatform(
@@ -203,7 +227,7 @@ function emitAlipayGenericPlaceholderAssets(
   const scriptExtension = outputExtensions?.js ?? 'js'
   const dirIndex = relativeBase.lastIndexOf('/')
   const dir = dirIndex >= 0 ? relativeBase.slice(0, dirIndex) : ''
-  const placeholderName = ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.replace(/^\.\//, '')
+  const placeholderName = ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.replace(LEADING_DOT_SLASH_RE, '')
   const placeholderBase = dir ? `${dir}/${placeholderName}` : placeholderName
 
   emitSfcTemplateIfMissing(ctx, bundle, placeholderBase, '<view />', templateExtension)

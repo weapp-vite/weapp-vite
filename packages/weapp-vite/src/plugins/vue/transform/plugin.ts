@@ -20,6 +20,7 @@ import { emitVueBundleAssets } from './bundle'
 import { createCompileVueFileOptions } from './compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from './injectSetDataPick'
+import { applyPageLayout, isLayoutFile, resolvePageLayout } from './pageLayout'
 import { emitScopedSlotChunks, loadScopedSlotModule, resolveScopedSlotVirtualId } from './scopedSlot'
 import { buildWeappVueStyleRequest, parseWeappVueStyleRequest } from './styleRequest'
 
@@ -254,6 +255,16 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
               filename,
               compileOptions,
             )
+
+        if (isPage && result.template) {
+          const resolvedLayout = await resolvePageLayout(transformedSource, filename, configService)
+          if (resolvedLayout) {
+            applyPageLayout(result, filename, resolvedLayout)
+            if (typeof (this as any).addWatchFile === 'function') {
+              ;(this as any).addWatchFile(normalizeWatchPath(resolvedLayout.file))
+            }
+          }
+        }
         registerVueTemplateToken(ctx, filename, result.template)
 
         if (Array.isArray(result.meta?.sfcSrcDeps) && typeof (this as any).addWatchFile === 'function') {
@@ -339,6 +350,14 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
     watchChange(id) {
       const normalizedId = normalizeFsResolvedId(id)
+      if (ctx.configService && isLayoutFile(normalizedId, ctx.configService)) {
+        for (const [cachedId, cached] of compilationCache.entries()) {
+          if (cached.isPage) {
+            cached.source = undefined
+          }
+          styleBlocksCache.delete(cachedId)
+        }
+      }
       if (!isVueLikeId(normalizedId)) {
         return
       }
@@ -356,6 +375,16 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
     // 处理模板和样式作为额外文件
     async handleHotUpdate({ file }) {
+      if (ctx.configService && isLayoutFile(file, ctx.configService)) {
+        for (const [cachedId, cached] of compilationCache.entries()) {
+          if (cached.isPage) {
+            cached.source = undefined
+          }
+          styleBlocksCache.delete(cachedId)
+        }
+        return []
+      }
+
       if (!isVueLikeId(file)) {
         return
       }

@@ -39,4 +39,16 @@ const qux = foo!.a
     expect(result.code).not.toContain('as {')
     expect(result.code).not.toContain('!.')
   })
+
+  it('strips definePageMeta macro calls from runtime output', () => {
+    const result = transformScript(`
+definePageMeta({
+  layout: 'default',
+})
+
+export default {}
+`)
+
+    expect(result.code).not.toContain('definePageMeta')
+  })
 })
