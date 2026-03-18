@@ -408,6 +408,9 @@ export async function emitVueBundleAssets(
     const jsonKind = isAppVue ? 'app' : cached.isPage ? 'page' : 'component'
     if (cached.isPage && cached.source) {
       const resolvedLayout = await resolvePageLayout(cached.source, filename, configService)
+      if (resolvedLayout) {
+        applyPageLayout(result, filename, resolvedLayout)
+      }
       if (resolvedLayout?.kind === 'native') {
         await emitNativeLayoutAssetsIfNeeded({
           pluginCtx,

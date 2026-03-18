@@ -15,6 +15,7 @@ export const extraPages = [
   'pages/layouts/default-demo/index',
   'pages/layouts/admin-demo/index',
   'pages/layouts/native-demo/index',
+  'pages/layouts/no-layout-demo/index',
   'pages/subpackage-scenarios/index',
   'pages/basic/index',
   'pages/computed/index',
