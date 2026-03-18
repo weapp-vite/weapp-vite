@@ -1,2 +1,9 @@
 #!/usr/bin/env node
-import '../dist/cli.mjs'
+import process from 'node:process'
+import { runWeappViteCLI } from './bootstrap.js'
+
+runWeappViteCLI().catch((error) => {
+  process.nextTick(() => {
+    throw error
+  })
+})

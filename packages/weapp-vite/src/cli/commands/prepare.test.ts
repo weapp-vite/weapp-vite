@@ -145,4 +145,20 @@ describe('prepare cli command', () => {
     )
     expect(loggerInfoMock).not.toHaveBeenCalled()
   })
+
+  it('warns and skips on unexpected prepare failures', async () => {
+    createCompilerContextMock.mockRejectedValue(new Error('boom'))
+
+    const { registerPrepareCommand } = await import('./prepare')
+    const cli = cac('weapp-vite')
+    registerPrepareCommand(cli)
+
+    cli.parse(['node', 'weapp-vite', 'prepare', '/project'], { run: false })
+    await expect(cli.runMatchedCommand()).resolves.toBeUndefined()
+
+    expect(loggerWarnMock).toHaveBeenCalledWith(
+      '[prepare] 跳过 .weapp-vite 支持文件预生成：boom',
+    )
+    expect(loggerInfoMock).not.toHaveBeenCalled()
+  })
 })
