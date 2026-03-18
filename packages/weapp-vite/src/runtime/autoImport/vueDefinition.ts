@@ -41,6 +41,11 @@ export interface VueComponentsDefinitionOptions {
    * 自动扫描得到的 layout 名集合，会生成 WevuPageLayoutMap 模块增强。
    */
   layoutNames?: string[]
+
+  /**
+   * 自动扫描得到的 layout props 类型映射。
+   */
+  layoutPropsMap?: Map<string, ComponentPropMap>
 }
 
 function toPascalCase(name: string) {
@@ -251,7 +256,8 @@ export function createVueComponentsDefinition(
     lines.push('declare module \'wevu\' {')
     lines.push('  interface WevuPageLayoutMap {')
     for (const name of layoutNames) {
-      lines.push(`    ${formatPropertyKey(name)}: Record<string, any>;`)
+      const layoutProps = options.layoutPropsMap?.get(name)
+      lines.push(`    ${formatPropertyKey(name)}: ${formatPropsType(layoutProps)};`)
     }
     lines.push('  }')
     lines.push('}')
