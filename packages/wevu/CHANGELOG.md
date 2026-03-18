@@ -1,5 +1,13 @@
 # wevu
 
+## 6.10.2
+
+### Patch Changes
+
+- 🐛 **修复 wevu 运行时在微信开发者工具热重载场景下可能产出无原型对象，导致 scoped slot 与 setData 快照参与 WXML 更新时触发 `hasOwnProperty is not a function` 报错的问题。** [`602143a`](https://github.com/weapp-vite/weapp-vite/commit/602143a906e2cdb04534cd9238ba7bcb438282c6) by @sonofmagic
+- 📦 **Dependencies**
+  → `@wevu/compiler@6.10.2`
+
 ## 6.10.1
 
 ### Patch Changes
