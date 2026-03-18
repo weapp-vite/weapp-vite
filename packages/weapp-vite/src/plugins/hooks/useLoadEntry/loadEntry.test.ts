@@ -146,6 +146,7 @@ interface CreateLoaderOptions {
   }
   buildTarget?: 'app' | 'plugin'
   pluginOnly?: boolean
+  normalizeEntry?: (entry: string, jsonPath: string) => string
 }
 
 function createLoader(options?: CreateLoaderOptions) {
@@ -175,7 +176,7 @@ function createLoader(options?: CreateLoaderOptions) {
   const registerJsonAsset = vi.fn()
   const scanTemplateEntry = vi.fn()
   const applyAutoImports = vi.fn()
-  const normalizeEntry = vi.fn((entry: string) => entry)
+  const normalizeEntry = vi.fn(options?.normalizeEntry ?? ((entry: string) => entry))
   const scanService: { pluginJsonPath?: string, pluginJson?: any } | undefined = options?.plugin
     ? {
         pluginJsonPath: options.plugin.pluginJsonPath,
@@ -648,6 +649,56 @@ describe('createEntryLoader', () => {
       },
       type: 'component',
     })
+  })
+
+  it('resolves plugin-local usingComponents from plugin root during plugin build', async () => {
+    const pluginRoot = '/project/plugin'
+    const pageScript = `${pluginRoot}/pages/guide/index.js`
+
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === pageScript) {
+        return {
+          path: `${pluginRoot}/pages/guide/index.json`,
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader, jsonService, emitEntriesChunks } = createLoader({
+      plugin: {
+        absoluteRoot: pluginRoot,
+        pluginJsonPath: `${pluginRoot}/plugin.json`,
+      },
+      buildTarget: 'plugin',
+      normalizeEntry: (entry: string) => entry.replace(/^\//, ''),
+    })
+
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === `${pluginRoot}/pages/guide/index.json`) {
+        return {
+          usingComponents: {
+            'demo-card': '/components/card/index',
+          },
+        }
+      }
+      return {}
+    })
+
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, pageScript, 'page')
+
+    const emittedIdPaths = emitEntriesChunks.mock.calls.flatMap((call) => {
+      const [records] = call
+      return (records ?? []).map((record: { id: string }) => record.id)
+    })
+
+    expect(emittedIdPaths).toContain(`${pluginRoot}/components/card/index`)
+    expect(logger.warn).not.toHaveBeenCalledWith('没有找到 `components/card/index` 的入口文件，请检查路径是否正确!')
   })
 
   it('caches resolved entry ids across invocations', async () => {

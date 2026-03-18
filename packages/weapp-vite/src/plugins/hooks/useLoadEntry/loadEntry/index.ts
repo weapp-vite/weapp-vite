@@ -9,7 +9,7 @@ import { performance } from 'node:perf_hooks'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
-import { normalizeWatchPath } from '../../../../utils/path'
+import { isPathInside, normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
 import { collectAppEntries } from './app'
@@ -239,6 +239,14 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           entryType: entryTypeOverride,
         })
 
+    const entryResolveRoot = (
+      isPluginBuild
+      && configService.absolutePluginRoot
+      && isPathInside(configService.absolutePluginRoot, id)
+    )
+      ? configService.absolutePluginRoot
+      : configService.absoluteSrcRoot
+
     const result = await emitEntryOutput({
       pluginCtx: this,
       id,
@@ -251,6 +259,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       pluginJsonPathForRegistration,
       pluginJsonForRegistration,
       resolveEntriesWithCache: entryResolver.resolveEntriesWithCache,
+      entryResolveRoot,
       configService,
       resolvedEntryMap,
       loadedEntrySet,

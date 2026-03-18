@@ -1,0 +1,30 @@
+<view class="page">
+  <view class="hero">
+    <text class="hero__eyebrow">plugin native page</text>
+    <text class="hero__title">原生 `Page` 继续可用</text>
+    <text class="hero__desc">
+      这个页面保持原生小程序组织方式，但同样可以 import 插件内部的 TS 数据模块，并挂载 Vue SFC 组件。
+    </text>
+  </view>
+
+  <view class="panel">
+    <text class="panel__title">当前聚焦能力</text>
+    <text class="panel__line">{{ currentCard.title }}</text>
+    <text class="panel__line">{{ currentCard.summary }}</text>
+    <text class="panel__line">{{ pluginSummary }}</text>
+    <native-meter
+      label="{{ currentCard.kindLabel }}"
+      value="{{ currentCard.score }}"
+      tone="{{ meterTone }}"
+    />
+    <button class="panel__button" bindtap="nextCard">
+      查看下一项能力
+    </button>
+  </view>
+
+  <hello-showcase
+    title="原生页中组合插件 Vue SFC 组件"
+    note="说明原生入口和 Vue SFC 入口可以在同一个插件工程里并存。"
+    entries="{{ cards }}"
+  />
+</view>

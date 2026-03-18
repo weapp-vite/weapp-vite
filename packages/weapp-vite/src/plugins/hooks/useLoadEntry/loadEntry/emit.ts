@@ -84,6 +84,7 @@ interface EmitEntryOutputOptions {
   relativeCwdId: string
   getTime: () => string
   skipEntries?: boolean
+  entryResolveRoot: string
 }
 
 export async function emitEntryOutput(options: EmitEntryOutputOptions) {
@@ -99,6 +100,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     pluginJsonPathForRegistration,
     pluginJsonForRegistration,
     resolveEntriesWithCache,
+    entryResolveRoot,
     configService,
     resolvedEntryMap,
     loadedEntrySet,
@@ -119,7 +121,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       ? await resolveEntriesWithCache(
           pluginCtx,
           normalizedEntries,
-          configService.absoluteSrcRoot,
+          entryResolveRoot,
         )
       : []
 
