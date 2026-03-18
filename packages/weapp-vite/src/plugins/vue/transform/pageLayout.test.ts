@@ -128,6 +128,36 @@ definePageMeta({
     })
   })
 
+  it('prefers more specific routeRules over broader wildcard matches', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    const pageFile = path.join(srcRoot, 'pages', 'dashboard', 'settings', 'index.vue')
+    const dashboardLayout = path.join(srcRoot, 'layouts', 'dashboard.vue')
+    const adminLayout = path.join(srcRoot, 'layouts', 'admin.vue')
+
+    await fs.ensureDir(path.dirname(dashboardLayout))
+    await fs.writeFile(dashboardLayout, '<template><slot /></template>', 'utf8')
+    await fs.writeFile(adminLayout, '<template><slot /></template>', 'utf8')
+
+    const resolved = await resolvePageLayout(
+      '<template><view>settings</view></template>',
+      pageFile,
+      {
+        absoluteSrcRoot: srcRoot,
+        relativeOutputPath: (input: string) => path.relative(srcRoot, input),
+        weappViteConfig: {
+          routeRules: {
+            '/dashboard/**': { appLayout: 'dashboard' },
+            '/dashboard/settings': { appLayout: 'admin' },
+          },
+        },
+      } as any,
+    )
+
+    expect(resolved?.layoutName).toBe('admin')
+    expect(resolved?.importPath).toBe('/layouts/admin')
+  })
+
   it('resolves native mini-program layout entries', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')
