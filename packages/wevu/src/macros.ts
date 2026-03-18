@@ -77,7 +77,7 @@ export declare function defineSlots<T extends Record<string, any> = Record<strin
 
 export type PageLayoutMeta = string | false | {
   name: string
-  props?: Record<string, string | number | boolean | null>
+  props?: Record<string, unknown>
 }
 
 export interface PageMeta {

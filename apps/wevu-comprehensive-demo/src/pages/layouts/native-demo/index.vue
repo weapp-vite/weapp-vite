@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import { computed } from 'wevu'
+
+const sidebarEnabled = computed(() => true)
+const layoutTitle = computed(() => 'Native Dashboard')
+
 definePageMeta({
   layout: {
     name: 'native-shell',
     props: {
-      sidebar: true,
-      title: 'Native Dashboard',
+      sidebar: sidebarEnabled.value,
+      title: layoutTitle.value,
     },
   },
 })

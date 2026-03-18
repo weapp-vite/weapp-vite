@@ -6,7 +6,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry } from '../../../utils'
-import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
+import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../utils/babel'
 import { normalizeWatchPath, toPosixPath } from '../../../utils/path'
 import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
 
@@ -41,7 +41,10 @@ interface DiscoveredLayoutFile {
   tagName: string
 }
 
-export type LayoutPropValue = string | number | boolean | null
+export type LayoutPropValue = string | number | boolean | null | {
+  kind: 'expression'
+  expression: string
+}
 
 interface ResolvedLayoutMeta {
   name?: string
@@ -96,7 +99,14 @@ function extractStaticLayoutPropValue(node: t.Expression, filename: string, keyN
     return null
   }
 
-  throw new Error(`${filename} 中 definePageMeta().layout.props.${keyName} 仅支持静态字符串、数字、布尔值或 null。`)
+  const expression = generate(normalized, { compact: true }).code
+  if (!expression) {
+    throw new Error(`${filename} 中 definePageMeta().layout.props.${keyName} 无法解析为表达式。`)
+  }
+  return {
+    kind: 'expression',
+    expression,
+  }
 }
 
 function extractLayoutPropsFromObject(node: t.ObjectExpression, filename: string) {
@@ -431,6 +441,151 @@ function toKebabAttrName(key: string) {
   return toKebabCase(key)
 }
 
+function stripTypeSyntaxFromAst(ast: BabelFile) {
+  traverse(ast, {
+    CallExpression(path: any) {
+      if (path.node.typeParameters) {
+        path.node.typeParameters = null
+      }
+    },
+    NewExpression(path: any) {
+      if (path.node.typeParameters) {
+        path.node.typeParameters = null
+      }
+    },
+    TSAsExpression(path: any) {
+      path.replaceWith(path.node.expression)
+    },
+    TSSatisfiesExpression(path: any) {
+      path.replaceWith(path.node.expression)
+    },
+    TSTypeAssertion(path: any) {
+      path.replaceWith(path.node.expression)
+    },
+    TSNonNullExpression(path: any) {
+      path.replaceWith(path.node.expression)
+    },
+  })
+}
+
+function parseExpressionAst(expression: string) {
+  const file = babelParse(`const __wv_layout_expr__ = ${expression}`, BABEL_TS_MODULE_PARSER_OPTIONS) as BabelFile
+  stripTypeSyntaxFromAst(file)
+  const stmt = file.program.body[0]
+  if (!stmt || !t.isVariableDeclaration(stmt)) {
+    return null
+  }
+  const declarator = stmt.declarations[0]
+  if (!declarator || !declarator.init || !t.isExpression(declarator.init)) {
+    return null
+  }
+  return declarator.init
+}
+
+function createStaticObjectKey(key: string) {
+  return t.isValidIdentifier(key) ? t.identifier(key) : t.stringLiteral(key)
+}
+
+function getObjectPropertyByKey(node: t.ObjectExpression, key: string): t.ObjectProperty | null {
+  for (const prop of node.properties) {
+    if (!t.isObjectProperty(prop) || prop.computed) {
+      continue
+    }
+    if ((t.isIdentifier(prop.key) && prop.key.name === key) || (t.isStringLiteral(prop.key) && prop.key.value === key)) {
+      return prop
+    }
+  }
+  return null
+}
+
+function findWevuOptionsObject(ast: BabelFile) {
+  let matched: t.ObjectExpression | null = null
+
+  traverse(ast, {
+    VariableDeclarator(path: any) {
+      if (!t.isIdentifier(path.node.id, { name: '__wevuOptions' }) || !t.isObjectExpression(path.node.init)) {
+        return
+      }
+      matched = path.node.init
+      path.stop()
+    },
+    ExportDefaultDeclaration(path: any) {
+      if (matched || !t.isObjectExpression(path.node.declaration)) {
+        return
+      }
+      matched = path.node.declaration
+      path.stop()
+    },
+  })
+
+  return matched
+}
+
+function injectLayoutBindingComputed(script: string | undefined, props: Record<string, LayoutPropValue> | undefined) {
+  if (!script || !props) {
+    return script
+  }
+
+  const runtimeEntries = Object.entries(props)
+    .filter((entry): entry is [string, { kind: 'expression', expression: string }] => typeof entry[1] === 'object' && entry[1] !== null && 'kind' in entry[1] && entry[1].kind === 'expression')
+
+  if (runtimeEntries.length === 0) {
+    return script
+  }
+
+  const ast = babelParse(script, BABEL_TS_MODULE_PARSER_OPTIONS) as BabelFile
+  const optionsObject = findWevuOptionsObject(ast)
+  if (!optionsObject) {
+    return script
+  }
+
+  const computedEntries = runtimeEntries.map(([key, value]) => {
+    const expressionAst = parseExpressionAst(value.expression) ?? t.identifier('undefined')
+    return t.objectProperty(
+      createStaticObjectKey(`__wv_layout_bind_${key}`),
+      t.functionExpression(
+        null,
+        [],
+        t.blockStatement([
+          t.tryStatement(
+            t.blockStatement([
+              t.returnStatement(expressionAst),
+            ]),
+            t.catchClause(
+              t.identifier('__wv_expr_err'),
+              t.blockStatement([
+                t.returnStatement(t.identifier('undefined')),
+              ]),
+            ),
+            null,
+          ),
+        ]),
+      ),
+    )
+  })
+
+  const computedProp = getObjectPropertyByKey(optionsObject, 'computed')
+  if (!computedProp) {
+    optionsObject.properties.unshift(
+      t.objectProperty(createStaticObjectKey('computed'), t.objectExpression(computedEntries)),
+    )
+  }
+  else if (t.isObjectExpression(computedProp.value)) {
+    computedProp.value.properties.push(...computedEntries)
+  }
+  else if (t.isIdentifier(computedProp.value) || t.isMemberExpression(computedProp.value)) {
+    computedProp.value = t.objectExpression([
+      ...computedEntries,
+      t.spreadElement(t.cloneNode(computedProp.value, true)),
+    ])
+  }
+  else {
+    return script
+  }
+
+  return generate(ast, { retainLines: true }).code
+}
+
 function serializeLayoutProps(props: Record<string, LayoutPropValue> | undefined) {
   if (!props || Object.keys(props).length === 0) {
     return ''
@@ -440,6 +595,9 @@ function serializeLayoutProps(props: Record<string, LayoutPropValue> | undefined
     const attrName = toKebabAttrName(key)
     if (typeof value === 'string') {
       return `${attrName}="${escapeDoubleQuotedAttr(value)}"`
+    }
+    if (typeof value === 'object' && value && 'kind' in value && value.kind === 'expression') {
+      return `${attrName}="{{__wv_layout_bind_${key}}}"`
     }
     if (typeof value === 'number' || typeof value === 'boolean' || value === null) {
       return `${attrName}="{{${String(value)}}}"`
@@ -484,10 +642,12 @@ export function applyPageLayout(
   const serializedProps = serializeLayoutProps(layout.props)
   if (result.template.startsWith(`<${layout.tagName}`)) {
     result.template = collapseNestedLayoutWrapper(result.template, layout.tagName)
+    result.script = injectLayoutBindingComputed(result.script, layout.props)
     result.config = mergeLayoutUsingComponent(result.config, layout.tagName, layout.importPath)
     return result
   }
   result.template = `<${layout.tagName}${serializedProps}>${result.template}</${layout.tagName}>`
+  result.script = injectLayoutBindingComputed(result.script, layout.props)
   result.config = mergeLayoutUsingComponent(result.config, layout.tagName, layout.importPath)
 
   if (layout.kind === 'vue') {
