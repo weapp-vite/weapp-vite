@@ -2,7 +2,7 @@ import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
-import { applyPageLayout, applyPageLayoutPlan, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
+import { applyPageLayout, applyPageLayoutPlan, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
 
 const tempDirs: string[] = []
 
@@ -75,6 +75,18 @@ import { setPageLayout } from 'wevu'
 setPageLayout('admin')
 </script>
     `.trim(), '/project/src/pages/index/index.vue')).toBe(true)
+  })
+
+  it('collects static prop keys from setPageLayout second argument', () => {
+    expect(collectSetPageLayoutPropKeys(`
+<script setup lang="ts">
+import { setPageLayout } from 'wevu'
+setPageLayout('panel', {
+  sidebar: true,
+  title: computedTitle.value,
+})
+</script>
+    `.trim(), '/project/src/pages/index/index.vue')).toEqual(['sidebar', 'title'])
   })
 
   it('resolves default layout when page meta is absent', async () => {
@@ -167,6 +179,7 @@ setPageLayout('dashboard')
     expect(plan?.dynamicSwitch).toBe(true)
     expect(plan?.layouts.map(layout => layout.layoutName)).toEqual(['admin', 'dashboard'])
     expect(plan?.currentLayout?.layoutName).toBeUndefined()
+    expect(plan?.dynamicPropKeys).toEqual([])
   })
 
   it('prefers more specific routeRules over broader wildcard matches', async () => {
@@ -483,9 +496,12 @@ definePageMeta({
             tagName: 'weapp-layout-dashboard',
           },
         ],
+        dynamicPropKeys: ['sidebar', 'title'],
       },
     )
 
+    expect(result.template).toContain(`sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}"`)
+    expect(result.template).toContain(`title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"`)
     expect(result.template).toContain(`wx:if="{{!__wv_page_layout_name || __wv_page_layout_name === 'admin'}}"`)
     expect(result.template).toContain(`wx:elif="{{__wv_page_layout_name === 'dashboard'}}"`)
     expect(result.template).toContain('<block wx:else><view>content</view></block>')

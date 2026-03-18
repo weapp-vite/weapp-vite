@@ -34,6 +34,7 @@ export interface ResolvedPageLayoutPlan {
   currentLayout?: ResolvedPageLayout
   dynamicSwitch: boolean
   layouts: ResolvedPageLayout[]
+  dynamicPropKeys: string[]
 }
 
 export interface NativeLayoutAssets {
@@ -276,6 +277,38 @@ function hasSetPageLayoutCallInProgram(ast: BabelFile) {
   return matched
 }
 
+function collectSetPageLayoutPropKeysFromProgram(ast: BabelFile) {
+  const keys = new Set<string>()
+
+  traverse(ast, {
+    CallExpression(path: any) {
+      if (!t.isIdentifier(path.node.callee, { name: 'setPageLayout' })) {
+        return
+      }
+      const secondArg = path.node.arguments[1]
+      if (!secondArg || t.isSpreadElement(secondArg) || !t.isObjectExpression(secondArg)) {
+        return
+      }
+      for (const property of secondArg.properties) {
+        if (!t.isObjectProperty(property) || property.computed) {
+          continue
+        }
+        const key = property.key
+        const keyName = t.isIdentifier(key)
+          ? key.name
+          : t.isStringLiteral(key)
+            ? key.value
+            : undefined
+        if (keyName) {
+          keys.add(keyName)
+        }
+      }
+    },
+  })
+
+  return [...keys]
+}
+
 function parseScriptAst(content: string, _filename: string) {
   return babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS) as BabelFile
 }
@@ -314,6 +347,26 @@ export function hasSetPageLayoutUsage(source: string, filename: string) {
   }
 
   return hasSetPageLayoutCallInProgram(parseScriptAst(source, filename))
+}
+
+export function collectSetPageLayoutPropKeys(source: string, filename: string) {
+  if (filename.endsWith('.vue')) {
+    const { descriptor } = parseSfc(source, { filename })
+    const keys = new Set<string>()
+    if (descriptor.script?.content) {
+      for (const key of collectSetPageLayoutPropKeysFromProgram(parseScriptAst(descriptor.script.content, filename))) {
+        keys.add(key)
+      }
+    }
+    if (descriptor.scriptSetup?.content) {
+      for (const key of collectSetPageLayoutPropKeysFromProgram(parseScriptAst(descriptor.scriptSetup.content, filename))) {
+        keys.add(key)
+      }
+    }
+    return [...keys]
+  }
+
+  return collectSetPageLayoutPropKeysFromProgram(parseScriptAst(source, filename))
 }
 
 export function extractPageLayoutName(source: string, filename: string) {
@@ -573,6 +626,12 @@ export async function resolvePageLayoutPlan(
     currentLayout,
     dynamicSwitch,
     layouts,
+    dynamicPropKeys: dynamicSwitch
+      ? Array.from(new Set([
+          ...Object.keys(currentLayout?.props ?? {}),
+          ...collectSetPageLayoutPropKeys(source, filename),
+        ]))
+      : [],
   }
 }
 
@@ -794,15 +853,38 @@ function collapseNestedLayoutWrapper(template: string, tagName: string) {
   return next
 }
 
+function serializeFallbackLayoutValue(value: LayoutPropValue | undefined, keyName: string) {
+  if (value === undefined) {
+    return `(__wv_page_layout_props&&__wv_page_layout_props.${keyName})`
+  }
+  if (typeof value === 'object' && value && 'kind' in value && value.kind === 'expression') {
+    return `(__wv_page_layout_props&&__wv_page_layout_props.${keyName})!==undefined?__wv_page_layout_props.${keyName}:__wv_layout_bind_${keyName}`
+  }
+  return `(__wv_page_layout_props&&__wv_page_layout_props.${keyName})!==undefined?__wv_page_layout_props.${keyName}:${JSON.stringify(value)}`
+}
+
+function buildDynamicLayoutAttrs(
+  propKeys: string[],
+  currentLayout: ResolvedPageLayout | undefined,
+) {
+  if (propKeys.length === 0) {
+    return ''
+  }
+
+  return ` ${propKeys.map((key) => {
+    const attrName = toKebabAttrName(key)
+    return `${attrName}="{{${serializeFallbackLayoutValue(currentLayout?.props?.[key], key)}}}"`
+  }).join(' ')}`
+}
+
 function buildDynamicLayoutTemplate(
   innerTemplate: string,
   currentLayout: ResolvedPageLayout | undefined,
   layouts: ResolvedPageLayout[],
+  propKeys: string[],
 ) {
   const blocks = layouts.map((layout, index) => {
-    const attrs = currentLayout?.layoutName === layout.layoutName
-      ? serializeLayoutProps(currentLayout.props)
-      : ''
+    const attrs = buildDynamicLayoutAttrs(propKeys, currentLayout)
     const condition = currentLayout?.layoutName === layout.layoutName
       ? `{{!__wv_page_layout_name || __wv_page_layout_name === '${layout.layoutName}'}}`
       : `{{__wv_page_layout_name === '${layout.layoutName}'}}`
@@ -856,7 +938,7 @@ export function applyPageLayoutPlan(
     return applyPageLayout(result, filename, plan.currentLayout)
   }
 
-  result.template = buildDynamicLayoutTemplate(result.template, plan.currentLayout, plan.layouts)
+  result.template = buildDynamicLayoutTemplate(result.template, plan.currentLayout, plan.layouts, plan.dynamicPropKeys)
   result.script = injectLayoutBindingComputed(result.script, plan.currentLayout?.props)
   result.script = injectVueLayoutImports(result.script, filename, plan.layouts)
   result.config = mergeLayoutUsingComponents(result.config, plan.layouts)

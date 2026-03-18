@@ -1034,7 +1034,7 @@ export default {
       [
         dynamicPage,
         {
-          source: '<script setup>import { setPageLayout } from \'wevu\'; setPageLayout(\'dashboard\')</script><template><view>dynamic page</view></template>',
+          source: '<script setup>import { setPageLayout } from \'wevu\'; setPageLayout(\'dashboard\', { title: dynamicTitle.value, sidebar: true })</script><template><view>dynamic page</view></template>',
           result: {
             template: '<view>dynamic page</view>',
             config: JSON.stringify({ navigationBarTitleText: 'dynamic' }),
@@ -1065,7 +1065,9 @@ export default {
     const template = assets.get('pages/dynamic-layout/index.wxml')!
     expect(template).toContain(`wx:if="{{__wv_page_layout_name === 'admin'}}"`)
     expect(template).toContain(`wx:elif="{{__wv_page_layout_name === 'dashboard'}}"`)
-    expect(template).toContain('<weapp-layout-dashboard>')
+    expect(template).toContain('<weapp-layout-dashboard title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}" sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}">')
+    expect(template).toContain(`title="{{(__wv_page_layout_props&&__wv_page_layout_props.title)}}"`)
+    expect(template).toContain(`sidebar="{{(__wv_page_layout_props&&__wv_page_layout_props.sidebar)}}"`)
     expect(JSON.parse(assets.get('pages/dynamic-layout/index.json')!)).toEqual({
       navigationBarTitleText: 'dynamic',
       usingComponents: {
