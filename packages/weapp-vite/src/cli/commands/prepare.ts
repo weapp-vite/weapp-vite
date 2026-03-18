@@ -10,16 +10,26 @@ import { filterDuplicateOptions, resolveConfigFile } from '../options'
 
 export function registerPrepareCommand(cli: CAC) {
   cli
-    .command('prepare [root]', 'generate .weapp-vite support files')
-    .action(async (root: string | undefined, options: GlobalCLIOptions) => {
+    .command('prepare [...input]', 'generate .weapp-vite support files')
+    .action(async (input: string[] | undefined, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
-      const cwd = path.resolve(root ?? '.')
-      const ctx = await createCompilerContext({
-        cwd,
-        isDev: false,
-        mode: typeof options.mode === 'string' ? options.mode : 'development',
-        configFile: resolveConfigFile(options),
-      })
+      const cwd = path.resolve(resolvePrepareRoot(input))
+      let ctx: Awaited<ReturnType<typeof createCompilerContext>>
+      try {
+        ctx = await createCompilerContext({
+          cwd,
+          isDev: false,
+          mode: typeof options.mode === 'string' ? options.mode : 'development',
+          configFile: resolveConfigFile(options),
+        })
+      }
+      catch (error) {
+        if (shouldSkipPrepareError(error)) {
+          logger.warn(`[prepare] ${formatPrepareSkipMessage(error)}`)
+          return
+        }
+        throw error
+      }
 
       if (ctx.autoRoutesService.isEnabled()) {
         await ctx.autoRoutesService.ensureFresh()
@@ -49,4 +59,25 @@ export function registerPrepareCommand(cli: CAC) {
 
       logger.info('已生成 .weapp-vite 支持文件。')
     })
+}
+
+function resolvePrepareRoot(input: string[] | undefined) {
+  const values = Array.isArray(input) ? input.filter(item => typeof item === 'string' && item.length > 0) : []
+  if (values.length === 0) {
+    return '.'
+  }
+  const normalized = values[0] === 'prepare' ? values.slice(1) : values
+  return normalized[0] ?? '.'
+}
+
+function shouldSkipPrepareError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('找不到项目配置文件')
+    || message.includes('请在 ')
+    || message.includes('已开启 weapp.multiPlatform，请通过 --platform 指定目标小程序平台')
+}
+
+function formatPrepareSkipMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return `跳过 .weapp-vite 支持文件预生成：${message}`
 }
