@@ -15,8 +15,8 @@ export default defineConfig({
         'components/**/*.wxml',
         'components/**/*.html',
       ],
-      typedComponents: 'typed-components.d.ts',
-      htmlCustomData: 'mini-program.html-data.json',
+      typedComponents: '.weapp-vite/typed-components.d.ts',
+      htmlCustomData: '.weapp-vite/mini-program.html-data.json',
     },
     web: {
       vite: {

@@ -1,6 +1,6 @@
 {
   "html.customData": [
-    "./mini-program.html-data.json"
+    "./.weapp-vite/mini-program.html-data.json"
   ],
   "files.associations": {
     "src/**/*.html": "html",

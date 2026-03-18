@@ -23,13 +23,13 @@
 
 - 生成 `typed-components.d.ts`，供 TypeScript 识别组件属性类型（已在 `tsconfig.json` 中纳入 `include`）；
 - 输出 `auto-import-components.json`，记录可自动导入的组件；
-- 自动生成 `mini-program.html-data.json`，供 VS Code `html.customData` 读取，在 `.html` / `.wxml` 模板中提供属性与事件补全。
+- 自动生成 `.weapp-vite/mini-program.html-data.json`，供 VS Code `html.customData` 读取，在 `.html` / `.wxml` 模板中提供属性与事件补全。
 
 如需扩展：
 
 1. 在组件的 `*.json` / `*.ts` 中完善属性定义；
 2. 按需调整 `typedComponents` / `htmlCustomData` 的输出路径；
-3. 将 `mini-program.html-data.json` 配置到 `.vscode/settings.json`（本仓库已提供 `.vscode/settings.json` 示例，其中也将 `*.wxml` 映射到 HTML 语言服务）。
+3. 将 `.weapp-vite/mini-program.html-data.json` 配置到 `.vscode/settings.json`（本仓库已提供 `.vscode/settings.json` 示例，其中也将 `*.wxml` 映射到 HTML 语言服务）。
 
 # 环境变量
 
