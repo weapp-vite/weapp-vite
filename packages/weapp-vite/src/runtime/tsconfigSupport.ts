@@ -1,5 +1,6 @@
 import type { CompilerOptions } from 'typescript'
 import type { MutableCompilerContext } from '../context'
+import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { resolveBaseDir, WEAPP_VITE_INTERNAL_DIRNAME } from './autoImport/config/base'
@@ -12,21 +13,44 @@ interface ManagedTsconfigFile {
 interface ManagedTypeScriptConfig {
   shared?: {
     compilerOptions?: CompilerOptions
+    include?: string[]
+    exclude?: string[]
+    files?: string[]
   }
   app?: {
     compilerOptions?: CompilerOptions
     vueCompilerOptions?: Record<string, any>
     include?: string[]
+    exclude?: string[]
+    files?: string[]
   }
   node?: {
     compilerOptions?: CompilerOptions
     include?: string[]
+    exclude?: string[]
+    files?: string[]
   }
   server?: {
     compilerOptions?: CompilerOptions
     include?: string[]
+    exclude?: string[]
     files?: string[]
   }
+}
+
+interface LegacyManagedTsconfigFile {
+  compilerOptions?: CompilerOptions
+  include?: string[]
+  exclude?: string[]
+  files?: string[]
+  vueCompilerOptions?: Record<string, any>
+}
+
+interface LegacyManagedTypeScriptConfig {
+  shared?: LegacyManagedTsconfigFile
+  app?: LegacyManagedTsconfigFile
+  node?: LegacyManagedTsconfigFile
+  server?: LegacyManagedTsconfigFile
 }
 
 const DEFAULT_APP_INCLUDE = [
@@ -86,12 +110,52 @@ function getManagedTypeScriptConfig(ctx: MutableCompilerContext): ManagedTypeScr
   return ctx.configService.weappViteConfig.typescript as ManagedTypeScriptConfig | undefined
 }
 
-function getAppTypes(ctx: MutableCompilerContext) {
+async function readLegacyManagedTsconfigFile(filePath: string): Promise<LegacyManagedTsconfigFile | undefined> {
+  if (!await fs.pathExists(filePath)) {
+    return undefined
+  }
+
+  try {
+    const content = await fs.readFile(filePath, 'utf8')
+    const parsed = parseJson(content, undefined, true)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return undefined
+    }
+    return parsed as LegacyManagedTsconfigFile
+  }
+  catch {
+    return undefined
+  }
+}
+
+async function getLegacyManagedTypeScriptConfig(ctx: MutableCompilerContext): Promise<LegacyManagedTypeScriptConfig> {
+  const root = resolveBaseDir(ctx.configService)
+  const [shared, app, node, server] = await Promise.all([
+    readLegacyManagedTsconfigFile(path.join(root, 'tsconfig.shared.json')),
+    readLegacyManagedTsconfigFile(path.join(root, 'tsconfig.app.json')),
+    readLegacyManagedTsconfigFile(path.join(root, 'tsconfig.node.json')),
+    readLegacyManagedTsconfigFile(path.join(root, 'tsconfig.server.json')),
+  ])
+
+  return {
+    shared,
+    app,
+    node,
+    server,
+  }
+}
+
+function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const packageJson = ctx.configService.packageJson
   const config = ctx.configService.weappViteConfig
   const userTypes = getManagedTypeScriptConfig(ctx)?.app?.compilerOptions?.types
   if (Array.isArray(userTypes) && userTypes.length > 0) {
     return [...userTypes]
+  }
+
+  const legacyTypes = legacyConfig?.app?.compilerOptions?.types
+  if (Array.isArray(legacyTypes) && legacyTypes.length > 0) {
+    return [...legacyTypes]
   }
 
   const types = [
@@ -107,7 +171,7 @@ function getAppTypes(ctx: MutableCompilerContext) {
   return unique(types)
 }
 
-function getAppPaths(ctx: MutableCompilerContext) {
+function getAppPaths(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const userConfig = getManagedTypeScriptConfig(ctx)
   const defaultPaths: Record<string, string[]> = {
     '@/*': ['src/*'],
@@ -117,12 +181,14 @@ function getAppPaths(ctx: MutableCompilerContext) {
   }
   return mergePaths(
     defaultPaths,
+    legacyConfig?.shared?.compilerOptions?.paths as Record<string, string[]> | undefined,
+    legacyConfig?.app?.compilerOptions?.paths as Record<string, string[]> | undefined,
     userConfig?.shared?.compilerOptions?.paths as Record<string, string[]> | undefined,
     userConfig?.app?.compilerOptions?.paths as Record<string, string[]> | undefined,
   )
 }
 
-function createSharedTsconfig(ctx: MutableCompilerContext) {
+function createSharedTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const userConfig = getManagedTypeScriptConfig(ctx)
   const compilerOptions: CompilerOptions = {
     target: 'ES2023',
@@ -140,16 +206,38 @@ function createSharedTsconfig(ctx: MutableCompilerContext) {
     noUncheckedSideEffectImports: true,
     erasableSyntaxOnly: true,
     skipLibCheck: true,
+    ...(legacyConfig?.shared?.compilerOptions ?? {}),
     ...(userConfig?.shared?.compilerOptions ?? {}),
   }
 
-  return {
+  const config = {
     compilerOptions,
+  }
+
+  const exclude = unique([
+    ...(legacyConfig?.shared?.exclude ?? []),
+    ...(userConfig?.shared?.exclude ?? []),
+  ])
+  const files = unique([
+    ...(legacyConfig?.shared?.files ?? []),
+    ...(userConfig?.shared?.files ?? []),
+  ])
+  const include = unique([
+    ...(legacyConfig?.shared?.include ?? []),
+    ...(userConfig?.shared?.include ?? []),
+  ])
+
+  return {
+    ...config,
+    ...(exclude.length ? { exclude } : {}),
+    ...(files.length ? { files } : {}),
+    ...(include.length ? { include } : {}),
   }
 }
 
-function createAppTsconfig(ctx: MutableCompilerContext) {
+function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const userConfig = getManagedTypeScriptConfig(ctx)
+  const legacyAppCompilerOptions = legacyConfig?.app?.compilerOptions ?? {}
   const userAppCompilerOptions = userConfig?.app?.compilerOptions ?? {}
   const compilerOptions: CompilerOptions = {
     tsBuildInfoFile: '../node_modules/.tmp/tsconfig.app.tsbuildinfo',
@@ -158,77 +246,118 @@ function createAppTsconfig(ctx: MutableCompilerContext) {
     jsx: 'preserve',
     baseUrl: '..',
     resolveJsonModule: true,
-    types: getAppTypes(ctx),
+    types: getAppTypes(ctx, legacyConfig),
     allowJs: true,
     allowSyntheticDefaultImports: true,
     esModuleInterop: true,
     isolatedModules: true,
+    ...legacyAppCompilerOptions,
     ...userAppCompilerOptions,
-    types: getAppTypes(ctx),
-    paths: getAppPaths(ctx),
+    types: getAppTypes(ctx, legacyConfig),
+    paths: getAppPaths(ctx, legacyConfig),
   }
 
   const vueCompilerOptions = {
     plugins: ['weapp-vite/volar'],
     ...(hasDependency(ctx.configService.packageJson, 'wevu') ? { lib: 'wevu' } : {}),
+    ...(legacyConfig?.app?.vueCompilerOptions ?? {}),
     ...(userConfig?.app?.vueCompilerOptions ?? {}),
   }
+
+  const include = unique([
+    ...DEFAULT_APP_INCLUDE,
+    ...(legacyConfig?.app?.include ?? []),
+    ...(userConfig?.app?.include ?? []),
+  ])
+  const exclude = unique([
+    ...(legacyConfig?.app?.exclude ?? []),
+    ...(userConfig?.app?.exclude ?? []),
+  ])
+  const files = unique([
+    ...(legacyConfig?.app?.files ?? []),
+    ...(userConfig?.app?.files ?? []),
+  ])
 
   return {
     extends: './tsconfig.shared.json',
     compilerOptions,
     vueCompilerOptions,
-    include: unique([
-      ...DEFAULT_APP_INCLUDE,
-      ...(userConfig?.app?.include ?? []),
-    ]),
+    include,
+    ...(exclude.length ? { exclude } : {}),
+    ...(files.length ? { files } : {}),
   }
 }
 
-function createNodeTsconfig(ctx: MutableCompilerContext) {
+function createNodeTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const userConfig = getManagedTypeScriptConfig(ctx)
   const compilerOptions: CompilerOptions = {
     tsBuildInfoFile: '../node_modules/.tmp/tsconfig.node.tsbuildinfo',
     target: 'ES2023',
     lib: ['ES2023'],
     types: ['node'],
+    ...(legacyConfig?.node?.compilerOptions ?? {}),
     ...(userConfig?.node?.compilerOptions ?? {}),
   }
+
+  const include = unique([
+    ...DEFAULT_NODE_INCLUDE,
+    ...(legacyConfig?.node?.include ?? []),
+    ...(userConfig?.node?.include ?? []),
+  ])
+  const exclude = unique([
+    ...(legacyConfig?.node?.exclude ?? []),
+    ...(userConfig?.node?.exclude ?? []),
+  ])
+  const files = unique([
+    ...(legacyConfig?.node?.files ?? []),
+    ...(userConfig?.node?.files ?? []),
+  ])
 
   return {
     extends: './tsconfig.shared.json',
     compilerOptions,
-    include: unique([
-      ...DEFAULT_NODE_INCLUDE,
-      ...(userConfig?.node?.include ?? []),
-    ]),
+    include,
+    ...(exclude.length ? { exclude } : {}),
+    ...(files.length ? { files } : {}),
   }
 }
 
-function createServerTsconfig(ctx: MutableCompilerContext) {
+function createServerTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const userConfig = getManagedTypeScriptConfig(ctx)
   const compilerOptions: CompilerOptions = {
     tsBuildInfoFile: '../node_modules/.tmp/tsconfig.server.tsbuildinfo',
     target: 'ES2023',
     lib: ['ES2023'],
     types: ['node'],
+    ...(legacyConfig?.server?.compilerOptions ?? {}),
     ...(userConfig?.server?.compilerOptions ?? {}),
   }
+
+  const files = unique([
+    ...(legacyConfig?.server?.files ?? []),
+    ...(userConfig?.server?.files ?? []),
+  ])
+  const include = unique([
+    ...(legacyConfig?.server?.include ?? []),
+    ...(userConfig?.server?.include ?? []),
+  ])
+  const exclude = unique([
+    ...(legacyConfig?.server?.exclude ?? []),
+    ...(userConfig?.server?.exclude ?? []),
+  ])
 
   return {
     extends: './tsconfig.shared.json',
     compilerOptions,
-    files: unique(userConfig?.server?.files ?? []),
-    ...(userConfig?.server?.include?.length
-      ? {
-          include: unique(userConfig.server.include),
-        }
-      : {}),
+    files,
+    ...(include.length ? { include } : {}),
+    ...(exclude.length ? { exclude } : {}),
   }
 }
 
-export function createManagedTsconfigFiles(ctx: MutableCompilerContext): ManagedTsconfigFile[] {
+export async function createManagedTsconfigFiles(ctx: MutableCompilerContext): Promise<ManagedTsconfigFile[]> {
   const managedDir = resolveManagedDir(ctx)
+  const legacyConfig = await getLegacyManagedTypeScriptConfig(ctx)
   const sharedPath = path.join(managedDir, 'tsconfig.shared.json')
   const appPath = path.join(managedDir, 'tsconfig.app.json')
   const nodePath = path.join(managedDir, 'tsconfig.node.json')
@@ -237,25 +366,25 @@ export function createManagedTsconfigFiles(ctx: MutableCompilerContext): Managed
   return [
     {
       path: sharedPath,
-      content: toJson(createSharedTsconfig(ctx)),
+      content: toJson(createSharedTsconfig(ctx, legacyConfig)),
     },
     {
       path: appPath,
-      content: toJson(createAppTsconfig(ctx)),
+      content: toJson(createAppTsconfig(ctx, legacyConfig)),
     },
     {
       path: nodePath,
-      content: toJson(createNodeTsconfig(ctx)),
+      content: toJson(createNodeTsconfig(ctx, legacyConfig)),
     },
     {
       path: serverPath,
-      content: toJson(createServerTsconfig(ctx)),
+      content: toJson(createServerTsconfig(ctx, legacyConfig)),
     },
   ]
 }
 
 export async function syncManagedTsconfigFiles(ctx: MutableCompilerContext) {
-  for (const file of createManagedTsconfigFiles(ctx)) {
+  for (const file of await createManagedTsconfigFiles(ctx)) {
     await fs.outputFile(file.path, file.content, 'utf8')
   }
 }
