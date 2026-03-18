@@ -6,6 +6,7 @@
   "packageManager": "pnpm@10.29.3",
   "description": "wevu + Vue SFC 录屏演示项目",
   "scripts": {
+    "prepare:weapp": "weapp-vite prepare",
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",

@@ -144,13 +144,13 @@ describe('createAutoRoutesService branch coverage', () => {
   })
 
   it('writes typed definition into srcRoot by default', async () => {
-    const ctx = createContext({ autoRoutes: true, cwd: '' })
+    const ctx = createContext({ autoRoutes: true })
     const service = createAutoRoutesService(ctx)
 
     await service.ensureFresh()
 
     expect(scanRoutesMock).toHaveBeenCalledTimes(1)
-    expect(outputFileMock).toHaveBeenCalledWith('/project/src/typed-router.d.ts', 'type TypedRouter = []', 'utf8')
+    expect(outputFileMock).toHaveBeenCalledWith('/project/.weapp-vite/typed-router.d.ts', 'type TypedRouter = []', 'utf8')
   })
 
   it('logs an error when writing typed router definition fails', async () => {

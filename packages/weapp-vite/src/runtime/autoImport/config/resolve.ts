@@ -1,6 +1,6 @@
 import type { MutableCompilerContext } from '../../../context'
 import path from 'pathe'
-import { DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME, resolveBaseDir } from './base'
+import { DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME, resolveBaseDir, WEAPP_VITE_INTERNAL_DIRNAME } from './base'
 import { getAutoImportConfig } from './defaults'
 
 export function resolveManifestOutputPath(
@@ -26,5 +26,5 @@ export function resolveManifestOutputPath(
     return path.isAbsolute(outputOption) ? outputOption : path.resolve(baseDir, outputOption)
   }
 
-  return path.resolve(baseDir, manifestFileName)
+  return path.resolve(baseDir, WEAPP_VITE_INTERNAL_DIRNAME, manifestFileName)
 }

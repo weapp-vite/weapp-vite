@@ -8,6 +8,7 @@ import { registerInitCommand } from './cli/commands/init'
 import { registerMcpCommand } from './cli/commands/mcp'
 import { registerNpmCommand } from './cli/commands/npm'
 import { registerOpenCommand } from './cli/commands/open'
+import { registerPrepareCommand } from './cli/commands/prepare'
 import { registerServeCommand } from './cli/commands/serve'
 import { handleCLIError } from './cli/error'
 import { tryRunIdeCommand } from './cli/ide'
@@ -45,6 +46,7 @@ registerBuildCommand(cli)
 registerAnalyzeCommand(cli)
 registerInitCommand(cli)
 registerOpenCommand(cli)
+registerPrepareCommand(cli)
 registerNpmCommand(cli)
 registerGenerateCommand(cli)
 registerMcpCommand(cli)

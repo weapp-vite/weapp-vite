@@ -17,6 +17,11 @@ interface WatchFileRegistrar {
   addWatchFile?: (id: string) => void
 }
 
+const LEADING_DOT_SLASH_RE = /^\.\//
+const LEADING_SLASHES_RE = /^\/+/
+const GLOB_WILDCARD_RE = /[*?[{]/
+const TRAILING_SLASHES_RE = /\/+$/
+
 function isEnabledOutputOption(option: unknown) {
   if (option === true) {
     return true
@@ -27,7 +32,7 @@ function isEnabledOutputOption(option: unknown) {
   return false
 }
 
-function shouldBootstrapWithoutGlobs(autoImportConfig: ReturnType<typeof getAutoImportConfig>) {
+export function shouldBootstrapAutoImportWithoutGlobs(autoImportConfig: ReturnType<typeof getAutoImportConfig>) {
   if (!autoImportConfig) {
     return false
   }
@@ -108,7 +113,7 @@ function matchesAutoImportGlobs(ctx: AutoImportState['ctx'], candidate: string) 
   return false
 }
 
-async function findAutoImportCandidates(state: AutoImportState, globs: string[]) {
+export async function findAutoImportCandidates(state: AutoImportState, globs: string[]) {
   const { ctx, resolvedConfig } = state
   const { configService } = ctx
 
@@ -148,10 +153,10 @@ function registerAutoImportWatchTargets(
   const watchTargets = new Set<string>([configService.absoluteSrcRoot])
 
   for (const pattern of globs) {
-    const normalizedPattern = toPosixPath(pattern).replace(/^\.\//, '').replace(/^\/+/, '')
-    const wildcardIndex = normalizedPattern.search(/[*?[{]/)
+    const normalizedPattern = toPosixPath(pattern).replace(LEADING_DOT_SLASH_RE, '').replace(LEADING_SLASHES_RE, '')
+    const wildcardIndex = normalizedPattern.search(GLOB_WILDCARD_RE)
     const base = wildcardIndex >= 0 ? normalizedPattern.slice(0, wildcardIndex) : normalizedPattern
-    const cleanedBase = base.replace(/\/+$/, '')
+    const cleanedBase = base.replace(TRAILING_SLASHES_RE, '')
 
     if (!cleanedBase) {
       continue
@@ -192,7 +197,7 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       }
 
       if (!globs?.length) {
-        if (!state.initialScanDone && shouldBootstrapWithoutGlobs(autoImportConfig)) {
+        if (!state.initialScanDone && shouldBootstrapAutoImportWithoutGlobs(autoImportConfig)) {
           autoImportService.reset()
           state.initialScanDone = true
         }

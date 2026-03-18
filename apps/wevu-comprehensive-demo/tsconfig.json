@@ -2,8 +2,17 @@
   "compilerOptions": {
     "target": "ES2020",
     "lib": ["ES2020"],
+    "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "weapp-vite/typed-components": [
+        "./.weapp-vite/typed-components.d.ts"
+      ]
+    },
     "resolveJsonModule": true,
     "types": ["miniprogram-api-typings"],
     "allowJs": true,
@@ -16,6 +25,6 @@
       "weapp-vite/volar"
     ]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", ".weapp-vite/**/*.d.ts", "vite.config.ts"],
   "exclude": ["node_modules", ".wevu"]
 }

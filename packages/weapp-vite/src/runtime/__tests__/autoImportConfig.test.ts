@@ -8,6 +8,7 @@ import {
   getHtmlCustomDataSettings,
   getTypedComponentsSettings,
   resolveManifestOutputPath,
+  WEAPP_VITE_INTERNAL_DIRNAME,
 } from '../autoImport/config'
 import { createRuntimeState } from '../runtimeState'
 
@@ -47,7 +48,7 @@ describe('autoImport config helpers', () => {
 
     it('falls back to default config when auto import is not configured', () => {
       const ctx = createContext()
-      const expected = path.join(PROJECT_ROOT, DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME)
+      const expected = path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME)
       expect(resolveManifestOutputPath(ctx.configService)).toBe(expected)
     })
 
@@ -55,7 +56,7 @@ describe('autoImport config helpers', () => {
       const ctx = createContext({
         autoImportComponents: {},
       })
-      const expected = path.join(PROJECT_ROOT, DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME)
+      const expected = path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME)
       expect(resolveManifestOutputPath(ctx.configService)).toBe(expected)
     })
 
@@ -85,7 +86,7 @@ describe('autoImport config helpers', () => {
           autoImportComponents: {},
         },
       })
-      const expected = path.join(PROJECT_ROOT, DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME)
+      const expected = path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME)
       expect(resolveManifestOutputPath(ctx.configService)).toBe(expected)
     })
 
@@ -266,7 +267,7 @@ describe('autoImport config helpers', () => {
       })
       const result = getTypedComponentsSettings(ctx)
       expect(result.enabled).toBe(true)
-      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, 'src', 'typed-components.d.ts'))
+      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, 'typed-components.d.ts'))
     })
 
     it('resolves relative output paths for typed components', () => {
@@ -299,7 +300,7 @@ describe('autoImport config helpers', () => {
       })
       const result = getTypedComponentsSettings(ctx)
       expect(result.enabled).toBe(true)
-      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, 'src', 'typed-components.d.ts'))
+      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, 'typed-components.d.ts'))
     })
 
     it('prefers scoped subpackage settings when building independent bundles', () => {
@@ -337,7 +338,7 @@ describe('autoImport config helpers', () => {
       })
       const result = getHtmlCustomDataSettings(ctx)
       expect(result.enabled).toBe(true)
-      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, 'mini-program.html-data.json'))
+      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, 'mini-program.html-data.json'))
     })
 
     it('resolves relative html custom data paths', () => {
@@ -370,7 +371,7 @@ describe('autoImport config helpers', () => {
       })
       const result = getHtmlCustomDataSettings(ctx)
       expect(result.enabled).toBe(true)
-      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, 'mini-program.html-data.json'))
+      expect(result.outputPath).toBe(path.join(PROJECT_ROOT, WEAPP_VITE_INTERNAL_DIRNAME, 'mini-program.html-data.json'))
     })
   })
 })

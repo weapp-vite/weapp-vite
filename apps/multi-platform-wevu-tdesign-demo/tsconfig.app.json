@@ -17,7 +17,7 @@
         "./src/*"
       ],
       "weapp-vite/typed-components": [
-        "./src/typed-components.d.ts"
+        "./.weapp-vite/typed-components.d.ts"
       ],
       "tdesign-miniprogram/*": [
         "./node_modules/tdesign-miniprogram/miniprogram_dist/*"
@@ -49,6 +49,7 @@
     "lib": "wevu"
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    ".weapp-vite/**/*.d.ts"
   ]
 }
