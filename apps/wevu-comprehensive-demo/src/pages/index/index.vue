@@ -5,6 +5,7 @@ export default {
       features: [
         { title: 'Vant 组件', desc: '@vant/weapp：一个组件一个页面', path: '/pages/ui-vant/index', icon: '🧱' },
         { title: 'TDesign 组件', desc: 'tdesign-miniprogram：一个组件一个页面', path: '/pages/ui-tdesign/index', icon: '🧱' },
+        { title: '页面布局', desc: 'default / admin / 原生 layout + slot', path: '/pages/layouts/index', icon: '🪟' },
         { title: '分包场景', desc: '多个普通分包与多个独立分包', path: '/pages/subpackage-scenarios/index', icon: '📦' },
         { title: '基础响应式', desc: 'reactive, ref, 嵌套对象响应式', path: '/pages/basic/index', icon: '🎯' },
         { title: '计算属性', desc: 'computed 只读和可写模式', path: '/pages/computed/index', icon: '🧮' },

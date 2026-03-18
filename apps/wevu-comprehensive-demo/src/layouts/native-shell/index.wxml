@@ -1,0 +1,10 @@
+<view class="native-shell">
+  <view class="native-shell__hero">
+    <text class="native-shell__eyebrow">layouts/native-shell/index.wxml</text>
+    <text class="native-shell__title">Native Layout</text>
+    <text class="native-shell__subtitle">页面内容通过原生组件的 slot 投递到这个布局里。</text>
+  </view>
+  <view class="native-shell__body">
+    <slot />
+  </view>
+</view>

@@ -51,4 +51,19 @@ export default {}
 
     expect(result.code).not.toContain('definePageMeta')
   })
+
+  it('keeps stripping type parameters when definePageMeta is present', () => {
+    const result = transformScript(`
+definePageMeta({
+  layout: 'admin',
+})
+
+const count = ref<number>(0)
+
+export default {}
+`)
+
+    expect(result.code).not.toContain('definePageMeta')
+    expect(result.code).not.toContain('ref<number>')
+  })
 })

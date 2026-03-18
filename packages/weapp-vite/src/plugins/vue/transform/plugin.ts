@@ -20,7 +20,7 @@ import { emitVueBundleAssets } from './bundle'
 import { createCompileVueFileOptions } from './compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from './injectSetDataPick'
-import { applyPageLayout, isLayoutFile, resolvePageLayout } from './pageLayout'
+import { applyPageLayout, collectNativeLayoutAssets, isLayoutFile, resolvePageLayout } from './pageLayout'
 import { emitScopedSlotChunks, loadScopedSlotModule, resolveScopedSlotVirtualId } from './scopedSlot'
 import { buildWeappVueStyleRequest, parseWeappVueStyleRequest } from './styleRequest'
 
@@ -262,6 +262,14 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             applyPageLayout(result, filename, resolvedLayout)
             if (typeof (this as any).addWatchFile === 'function') {
               ;(this as any).addWatchFile(normalizeWatchPath(resolvedLayout.file))
+              if (resolvedLayout.kind === 'native') {
+                const nativeAssets = await collectNativeLayoutAssets(resolvedLayout.file)
+                for (const asset of Object.values(nativeAssets)) {
+                  if (asset) {
+                    ;(this as any).addWatchFile(normalizeWatchPath(asset))
+                  }
+                }
+              }
             }
           }
         }

@@ -1,0 +1,43 @@
+/* stylelint-disable order/properties-order */
+.native-shell {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgb(59 130 246 / 14%), transparent 36%),
+    linear-gradient(180deg, #f6faff 0%, #edf5ff 100%);
+}
+
+.native-shell__hero {
+  padding: 36rpx 32rpx;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 52%, #60a5fa 100%);
+  color: #fff;
+  border-radius: 0 0 28rpx 28rpx;
+  box-shadow: 0 16rpx 40rpx rgb(37 99 235 / 18%);
+}
+
+.native-shell__eyebrow {
+  display: inline-block;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgb(255 255 255 / 14%);
+  font-size: 22rpx;
+}
+
+.native-shell__title {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 48rpx;
+  font-weight: 700;
+}
+
+.native-shell__subtitle {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  opacity: 0.92;
+}
+
+.native-shell__body {
+  padding-bottom: 32rpx;
+}
+/* stylelint-enable order/properties-order */
