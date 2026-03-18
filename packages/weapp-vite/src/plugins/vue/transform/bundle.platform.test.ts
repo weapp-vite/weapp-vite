@@ -778,7 +778,7 @@ export default {
       [
         adminPage,
         {
-          source: '<script setup>definePageMeta({ layout: \'admin\' })</script><template><view>admin page</view></template>',
+          source: '<script setup>definePageMeta({ layout: { name: \'admin\', props: { sidebar: true, title: \'Dashboard\' } } })</script><template><view>admin page</view></template>',
           result: {
             template: '<view>admin page</view>',
             config: JSON.stringify({ navigationBarTitleText: 'admin' }),
@@ -819,7 +819,7 @@ export default {
     }
 
     expect(assets.get('pages/layouts/default-demo/index.wxml')).toContain('<weapp-layout-default>')
-    expect(assets.get('pages/layouts/admin-demo/index.wxml')).toContain('<weapp-layout-admin>')
+    expect(assets.get('pages/layouts/admin-demo/index.wxml')).toContain('<weapp-layout-admin sidebar="{{true}}" title="Dashboard">')
     expect(assets.get('pages/layouts/no-layout-demo/index.wxml')).toBe('<view>plain page</view>')
 
     expect(JSON.parse(assets.get('pages/layouts/default-demo/index.json')!)).toEqual({
@@ -879,7 +879,7 @@ export default {
       [
         nativePage,
         {
-          source: '<script setup>definePageMeta({ layout: \'native-shell\' })</script><template><view>native page</view></template>',
+          source: '<script setup>definePageMeta({ layout: { name: \'native-shell\', props: { sidebar: true, title: \'Native Dashboard\' } } })</script><template><view>native page</view></template>',
           result: {
             template: '<view>native page</view>',
             config: JSON.stringify({ navigationBarTitleText: 'native' }),
@@ -907,7 +907,7 @@ export default {
       assets.set(asset.fileName, String(asset.source))
     }
 
-    expect(assets.get('pages/layouts/native-demo/index.wxml')).toContain('<weapp-layout-native-shell>')
+    expect(assets.get('pages/layouts/native-demo/index.wxml')).toContain('<weapp-layout-native-shell sidebar="{{true}}" title="Native Dashboard">')
     expect(JSON.parse(assets.get('pages/layouts/native-demo/index.json')!)).toEqual({
       navigationBarTitleText: 'native',
       usingComponents: {

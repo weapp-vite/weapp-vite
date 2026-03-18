@@ -40,4 +40,28 @@
 .native-shell__body {
   padding-bottom: 32rpx;
 }
+
+.native-shell__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 24rpx 24rpx 0;
+  padding: 18rpx 20rpx;
+  border-radius: 18rpx;
+  background: rgb(37 99 235 / 10%);
+  color: #1d4ed8;
+}
+
+.native-shell__toolbar-badge {
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgb(37 99 235 / 14%);
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.native-shell__toolbar-text {
+  flex: 1;
+  font-size: 22rpx;
+}
 /* stylelint-enable order/properties-order */
