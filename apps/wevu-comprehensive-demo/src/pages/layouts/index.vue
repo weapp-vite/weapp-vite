@@ -24,6 +24,12 @@ const demos = [
     path: '/pages/layouts/no-layout-demo/index',
     badge: 'false',
   },
+  {
+    title: 'Route Rules',
+    desc: '不写 definePageMeta，由 vite.config.ts 中的 weapp.routeRules 指定默认布局。',
+    path: '/pages/layouts/route-rules-demo/index',
+    badge: 'config',
+  },
 ]
 
 function openDemo(path: string) {

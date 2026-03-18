@@ -839,6 +839,88 @@ export default {
     })
   })
 
+  it('applies layout defaults from weapp.routeRules when page meta is absent', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    await fs.ensureDir(path.join(srcRoot, 'layouts'))
+    await fs.writeFile(path.join(srcRoot, 'layouts', 'dashboard.vue'), '<template><slot /></template>', 'utf8')
+
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+        routeRules: {
+          '/dashboard': {
+            appLayout: {
+              name: 'dashboard',
+              props: {
+                title: 'Rule Layout',
+              },
+            },
+          },
+        },
+      },
+      relativeOutputPath: (p: string) => path.relative(srcRoot, p),
+      absoluteSrcRoot: srcRoot,
+    } as unknown as CompilerContext['configService']
+
+    const ctx = {
+      configService,
+      scanService: {
+        independentSubPackageMap: new Map(),
+      },
+    } as CompilerContext
+
+    const routeRulePage = path.join(srcRoot, 'pages', 'dashboard', 'index.vue')
+    const compilationCache = new Map([
+      [
+        routeRulePage,
+        {
+          source: '<template><view>rule page</view></template>',
+          result: {
+            template: '<view>rule page</view>',
+            config: JSON.stringify({ navigationBarTitleText: 'route-rule' }),
+            script: 'export default {}',
+          },
+          isPage: true,
+        },
+      ],
+    ])
+
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    await emitVueBundleAssets(bundle, {
+      ctx,
+      pluginCtx: { emitFile, addWatchFile: vi.fn() },
+      compilationCache,
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })
+
+    const assets = new Map<string, string>()
+    for (const call of emitFile.mock.calls) {
+      const asset = call[0]
+      assets.set(asset.fileName, String(asset.source))
+    }
+
+    expect(assets.get('pages/dashboard/index.wxml')).toContain('<weapp-layout-dashboard title="Rule Layout">')
+    expect(JSON.parse(assets.get('pages/dashboard/index.json')!)).toEqual({
+      navigationBarTitleText: 'route-rule',
+      usingComponents: {
+        'weapp-layout-dashboard': '/layouts/dashboard',
+      },
+    })
+  })
+
   it('emits native layout assets when a page selects a native layout', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')

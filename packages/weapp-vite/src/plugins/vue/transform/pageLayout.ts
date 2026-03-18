@@ -4,6 +4,7 @@ import type { ConfigService } from '../../../runtime/config/types'
 import * as t from '@weapp-vite/ast/babelTypes'
 import fs from 'fs-extra'
 import path from 'pathe'
+import picomatch from 'picomatch'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry } from '../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../utils/babel'
@@ -17,6 +18,8 @@ const LAYOUT_NAME_SEPARATORS_RE = /[_\s]+/g
 const DUPLICATE_DASH_RE = /-+/g
 const EDGE_DASH_RE = /^-|-$/g
 const PATH_SEGMENT_RE = /[\\/]/
+const TRAILING_INDEX_RE = /\/index$/
+const LEADING_SLASHES_RE = /^\/+/
 
 export interface ResolvedPageLayout {
   file: string
@@ -287,6 +290,78 @@ export function extractPageLayoutName(source: string, filename: string) {
   return meta?.disabled ? false : meta?.name
 }
 
+function removeFileExtension(filename: string) {
+  const ext = path.extname(filename)
+  return ext ? filename.slice(0, -ext.length) : filename
+}
+
+function normalizePageRouteCandidates(
+  filename: string,
+  configService: Pick<ConfigService, 'relativeOutputPath'>,
+) {
+  const relativeBase = toPosixPath(configService.relativeOutputPath(removeFileExtension(filename)))
+  const fullPath = `/${relativeBase.replace(LEADING_SLASHES_RE, '')}`
+  const shorthand = (() => {
+    let next = fullPath
+    if (next.startsWith('/pages/')) {
+      next = next.slice('/pages'.length)
+    }
+    else {
+      next = next.replace('/pages/', '/')
+    }
+    next = next.replace(TRAILING_INDEX_RE, '')
+    return next === '' ? '/' : next
+  })()
+
+  return Array.from(new Set([shorthand, fullPath]))
+}
+
+function normalizeRouteRuleLayoutMeta(input: unknown): ResolvedLayoutMeta | undefined {
+  if (input === false) {
+    return { disabled: true }
+  }
+  if (typeof input === 'string') {
+    return { name: normalizeLayoutName(input) }
+  }
+  if (!input || typeof input !== 'object') {
+    return undefined
+  }
+
+  const record = input as Record<string, unknown>
+  const name = typeof record.name === 'string' ? normalizeLayoutName(record.name) : undefined
+  const props = record.props && typeof record.props === 'object'
+    ? record.props as Record<string, LayoutPropValue>
+    : undefined
+
+  return {
+    name,
+    props,
+    disabled: record.disabled === true,
+  }
+}
+
+function resolveRouteRuleLayoutMeta(
+  filename: string,
+  configService: Pick<ConfigService, 'relativeOutputPath' | 'weappViteConfig'>,
+) {
+  const routeRules = configService.weappViteConfig?.routeRules
+  if (!routeRules) {
+    return undefined
+  }
+
+  const routeCandidates = normalizePageRouteCandidates(filename, configService)
+  let matched: ResolvedLayoutMeta | undefined
+  for (const [pattern, rule] of Object.entries(routeRules)) {
+    const isMatched = routeCandidates.some(candidate => picomatch(pattern)(candidate))
+    if (!isMatched) {
+      continue
+    }
+    matched = normalizeRouteRuleLayoutMeta(rule?.appLayout)
+  }
+
+  return matched
+}
+
 async function collectLayoutFiles(root: string): Promise<Map<string, DiscoveredLayoutFile>> {
   const layoutMap = new Map<string, DiscoveredLayoutFile>()
 
@@ -394,9 +469,9 @@ function mergeLayoutUsingComponent(config: string | undefined, tagName: string, 
 export async function resolvePageLayout(
   source: string,
   filename: string,
-  configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath'>,
+  configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath' | 'weappViteConfig'>,
 ): Promise<ResolvedPageLayout | undefined> {
-  const layoutMeta = extractPageLayoutMeta(source, filename)
+  const layoutMeta = extractPageLayoutMeta(source, filename) ?? resolveRouteRuleLayoutMeta(filename, configService)
   if (layoutMeta?.disabled) {
     return undefined
   }

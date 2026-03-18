@@ -10,6 +10,7 @@ import type {
   WeappInjectWeapiConfig,
   WeappMcpConfig,
   WeappNpmConfig,
+  WeappRouteRules,
   WeappSubPackageConfig,
   WeappVueConfig,
   WeappWevuConfig,
@@ -109,6 +110,7 @@ export interface WeappViteConfig {
   worker?: WeappWorkerConfig
   vue?: WeappVueConfig
   wevu?: WeappWevuConfig
+  routeRules?: WeappRouteRules
   injectWeapi?: boolean | WeappInjectWeapiConfig
   mcp?: boolean | WeappMcpConfig
   chunks?: ChunksConfig
