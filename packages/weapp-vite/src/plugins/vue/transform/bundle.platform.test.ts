@@ -1,6 +1,8 @@
 import type { CompilerContext } from '../../../context'
+import os from 'node:os'
 import fs from 'fs-extra'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import path from 'pathe'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { scanWxml } from '../../../wxml'
 import { emitVueBundleAssets } from './bundle'
 
@@ -15,6 +17,7 @@ const compileJsxFileMock = vi.hoisted(() => vi.fn(async () => ({
   script: 'Page({})',
 })))
 const pathExistsCachedMock = vi.hoisted(() => vi.fn(async () => false))
+const tempDirs: string[] = []
 
 vi.mock('./fallbackEntries', () => ({
   collectFallbackPageEntryIds: collectFallbackPageEntryIdsMock,
@@ -50,6 +53,21 @@ describe('emitVueBundleAssets platform output', () => {
     })
     pathExistsCachedMock.mockResolvedValue(false)
   })
+
+  afterEach(async () => {
+    while (tempDirs.length) {
+      const dir = tempDirs.pop()
+      if (dir) {
+        await fs.remove(dir)
+      }
+    }
+  })
+
+  async function createTempProject() {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-layout-bundle-'))
+    tempDirs.push(dir)
+    return dir
+  }
 
   it('uses platform output extensions for template, json, and wxs assets', async () => {
     const configService = {
@@ -412,7 +430,13 @@ describe('emitVueBundleAssets platform output', () => {
   })
 
   it('recompiles cached jsx entries in dev mode and updates transformed page script', async () => {
-    const readFileSpy = vi.spyOn(fs, 'readFile').mockResolvedValue('new jsx source' as never)
+    const readFileSpy = vi.spyOn(fs, 'readFile').mockResolvedValue(`
+export default {
+  setup() {
+    return () => <view>new jsx source</view>
+  },
+}
+` as never)
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValueOnce({
       transformed: true,
       code: '/* injected page */',
@@ -467,7 +491,7 @@ describe('emitVueBundleAssets platform output', () => {
 
     expect(addWatchFile).toHaveBeenCalled()
     expect(compileJsxFileMock).toHaveBeenCalledTimes(1)
-    expect(cached.source).toBe('new jsx source')
+    expect(cached.source).toContain('new jsx source')
     expect(cached.result.script).toBe('/* injected page */')
     readFileSpy.mockRestore()
   })
@@ -701,5 +725,200 @@ describe('emitVueBundleAssets platform output', () => {
     const emittedFiles = emitFile.mock.calls.map(call => call[0]?.fileName)
     expect(emittedFiles).toContain('__weapp_vite_class_style.wxs')
     readFileSpy.mockRestore()
+  })
+
+  it('wraps page templates for default and named vue layouts and respects layout false', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    await fs.ensureDir(path.join(srcRoot, 'layouts'))
+    await fs.writeFile(path.join(srcRoot, 'layouts', 'default.vue'), '<template><slot /></template>', 'utf8')
+    await fs.writeFile(path.join(srcRoot, 'layouts', 'admin.vue'), '<template><slot /></template>', 'utf8')
+
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+      },
+      relativeOutputPath: (p: string) => path.relative(srcRoot, p),
+      absoluteSrcRoot: srcRoot,
+    } as unknown as CompilerContext['configService']
+
+    const ctx = {
+      configService,
+      scanService: {
+        independentSubPackageMap: new Map(),
+      },
+    } as CompilerContext
+
+    const defaultPage = path.join(srcRoot, 'pages', 'layouts', 'default-demo', 'index.vue')
+    const adminPage = path.join(srcRoot, 'pages', 'layouts', 'admin-demo', 'index.vue')
+    const noLayoutPage = path.join(srcRoot, 'pages', 'layouts', 'no-layout-demo', 'index.vue')
+
+    const compilationCache = new Map([
+      [
+        defaultPage,
+        {
+          source: '<template><view>default page</view></template>',
+          result: {
+            template: '<view>default page</view>',
+            config: JSON.stringify({ navigationBarTitleText: 'default' }),
+            script: 'export default {}',
+          },
+          isPage: true,
+        },
+      ],
+      [
+        adminPage,
+        {
+          source: '<script setup>definePageMeta({ layout: \'admin\' })</script><template><view>admin page</view></template>',
+          result: {
+            template: '<view>admin page</view>',
+            config: JSON.stringify({ navigationBarTitleText: 'admin' }),
+            script: 'export default {}',
+          },
+          isPage: true,
+        },
+      ],
+      [
+        noLayoutPage,
+        {
+          source: '<script setup>definePageMeta({ layout: false })</script><template><view>plain page</view></template>',
+          result: {
+            template: '<view>plain page</view>',
+            config: JSON.stringify({ navigationBarTitleText: 'plain' }),
+            script: 'export default {}',
+          },
+          isPage: true,
+        },
+      ],
+    ])
+
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    await emitVueBundleAssets(bundle, {
+      ctx,
+      pluginCtx: { emitFile, addWatchFile: vi.fn() },
+      compilationCache,
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })
+
+    const assets = new Map<string, string>()
+    for (const call of emitFile.mock.calls) {
+      const asset = call[0]
+      assets.set(asset.fileName, String(asset.source))
+    }
+
+    expect(assets.get('pages/layouts/default-demo/index.wxml')).toContain('<weapp-layout-default>')
+    expect(assets.get('pages/layouts/admin-demo/index.wxml')).toContain('<weapp-layout-admin>')
+    expect(assets.get('pages/layouts/no-layout-demo/index.wxml')).toBe('<view>plain page</view>')
+
+    expect(JSON.parse(assets.get('pages/layouts/default-demo/index.json')!)).toEqual({
+      navigationBarTitleText: 'default',
+      usingComponents: {
+        'weapp-layout-default': '/layouts/default',
+      },
+    })
+    expect(JSON.parse(assets.get('pages/layouts/admin-demo/index.json')!)).toEqual({
+      navigationBarTitleText: 'admin',
+      usingComponents: {
+        'weapp-layout-admin': '/layouts/admin',
+      },
+    })
+    expect(JSON.parse(assets.get('pages/layouts/no-layout-demo/index.json')!)).toEqual({
+      navigationBarTitleText: 'plain',
+    })
+  })
+
+  it('emits native layout assets when a page selects a native layout', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    const nativeLayoutBase = path.join(srcRoot, 'layouts', 'native-shell', 'index')
+
+    await fs.ensureDir(path.dirname(nativeLayoutBase))
+    await fs.writeFile(`${nativeLayoutBase}.json`, JSON.stringify({ component: true }, null, 2), 'utf8')
+    await fs.writeFile(`${nativeLayoutBase}.wxml`, '<view class="shell"><slot /></view>', 'utf8')
+    await fs.writeFile(`${nativeLayoutBase}.wxss`, '.shell { color: #1677ff; }', 'utf8')
+    await fs.writeFile(`${nativeLayoutBase}.js`, 'Component({})', 'utf8')
+
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+      },
+      relativeOutputPath: (p: string) => path.relative(srcRoot, p),
+      absoluteSrcRoot: srcRoot,
+    } as unknown as CompilerContext['configService']
+
+    const ctx = {
+      configService,
+      scanService: {
+        independentSubPackageMap: new Map(),
+      },
+    } as CompilerContext
+
+    const nativePage = path.join(srcRoot, 'pages', 'layouts', 'native-demo', 'index.vue')
+    const compilationCache = new Map([
+      [
+        nativePage,
+        {
+          source: '<script setup>definePageMeta({ layout: \'native-shell\' })</script><template><view>native page</view></template>',
+          result: {
+            template: '<view>native page</view>',
+            config: JSON.stringify({ navigationBarTitleText: 'native' }),
+            script: 'export default {}',
+          },
+          isPage: true,
+        },
+      ],
+    ])
+
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    await emitVueBundleAssets(bundle, {
+      ctx,
+      pluginCtx: { emitFile, addWatchFile: vi.fn() },
+      compilationCache,
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })
+
+    const assets = new Map<string, string>()
+    for (const call of emitFile.mock.calls) {
+      const asset = call[0]
+      assets.set(asset.fileName, String(asset.source))
+    }
+
+    expect(assets.get('pages/layouts/native-demo/index.wxml')).toContain('<weapp-layout-native-shell>')
+    expect(JSON.parse(assets.get('pages/layouts/native-demo/index.json')!)).toEqual({
+      navigationBarTitleText: 'native',
+      usingComponents: {
+        'weapp-layout-native-shell': '/layouts/native-shell/index',
+      },
+    })
+    expect(JSON.parse(assets.get('layouts/native-shell/index.json')!)).toEqual({
+      component: true,
+    })
+    expect(assets.get('layouts/native-shell/index.wxml')).toContain('<slot />')
+    expect(assets.get('layouts/native-shell/index.wxss')).toContain('.shell')
+    expect(assets.get('layouts/native-shell/index.js')).toContain('Component({})')
   })
 })

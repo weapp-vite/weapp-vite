@@ -18,6 +18,12 @@ const demos = [
     path: '/pages/layouts/native-demo/index',
     badge: 'native',
   },
+  {
+    title: '关闭布局',
+    desc: '通过 definePageMeta({ layout: false }) 禁用默认布局。',
+    path: '/pages/layouts/no-layout-demo/index',
+    badge: 'false',
+  },
 ]
 
 function openDemo(path: string) {
@@ -54,7 +60,7 @@ function openDemo(path: string) {
 
     <view class="section">
       <view class="section-title">
-        试试这三种布局
+        试试这四种布局路径
       </view>
       <view v-for="demo in demos" :key="demo.path" class="demo-card" @tap="openDemo(demo.path)">
         <view class="demo-card__head">
