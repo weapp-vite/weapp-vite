@@ -48,12 +48,12 @@ describe('configFiles', () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-config-ts-'))
     ctx.viteConfig.name = 'vite.config.custom.ts'
 
-    const { tsconfigNode } = await initTsJsonFiles({ root, write: false })
+    const { tsconfig } = await initTsJsonFiles({ root, write: false })
 
-    expect(tsconfigNode.include).toContain('vite.config.custom.ts')
+    expect(tsconfig.references?.map(ref => ref.path)).toContain('./.weapp-vite/tsconfig.node.json')
     expect(ctx.tsconfig.name).toBe('tsconfig.json')
-    expect(ctx.tsconfigApp.name).toBe('tsconfig.app.json')
-    expect(ctx.tsconfigNode.name).toBe('tsconfig.node.json')
+    expect(ctx.tsconfigApp.name).toBe('.weapp-vite/tsconfig.app.json')
+    expect(ctx.tsconfigNode.name).toBe('.weapp-vite/tsconfig.node.json')
   })
 
   it('writes tsconfig files to disk by default', async () => {
@@ -61,7 +61,7 @@ describe('configFiles', () => {
     await initTsJsonFiles({ root })
 
     expect(await fs.pathExists(path.join(root, 'tsconfig.json'))).toBe(true)
-    expect(await fs.pathExists(path.join(root, 'tsconfig.app.json'))).toBe(true)
-    expect(await fs.pathExists(path.join(root, 'tsconfig.node.json'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, 'tsconfig.app.json'))).toBe(false)
+    expect(await fs.pathExists(path.join(root, 'tsconfig.node.json'))).toBe(false)
   })
 })

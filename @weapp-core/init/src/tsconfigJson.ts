@@ -19,10 +19,13 @@ export function getDefaultTsconfigJson() {
   return {
     references: [
       {
-        path: './tsconfig.app.json',
+        path: './.weapp-vite/tsconfig.app.json',
       },
       {
-        path: './tsconfig.node.json',
+        path: './.weapp-vite/tsconfig.node.json',
+      },
+      {
+        path: './.weapp-vite/tsconfig.shared.json',
       },
     ],
     files: [],

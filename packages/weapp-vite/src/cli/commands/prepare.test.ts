@@ -9,6 +9,7 @@ const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 const filterDuplicateOptionsMock = vi.hoisted(() => vi.fn())
 const resolveConfigFileMock = vi.hoisted(() => vi.fn())
+const syncManagedTsconfigFilesMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../createContext', () => ({
   createCompilerContext: createCompilerContextMock,
@@ -21,6 +22,10 @@ vi.mock('../../plugins/autoImport', () => ({
 
 vi.mock('../../runtime/autoImport/config', () => ({
   getAutoImportConfig: getAutoImportConfigMock,
+}))
+
+vi.mock('../../runtime/tsconfigSupport', () => ({
+  syncManagedTsconfigFiles: syncManagedTsconfigFilesMock,
 }))
 
 vi.mock('../../logger', () => ({
@@ -40,6 +45,7 @@ describe('prepare cli command', () => {
     vi.clearAllMocks()
     resolveConfigFileMock.mockReturnValue(undefined)
     shouldBootstrapAutoImportWithoutGlobsMock.mockReturnValue(false)
+    syncManagedTsconfigFilesMock.mockResolvedValue(undefined)
   })
 
   it('pre-generates auto routes and auto import outputs', async () => {
@@ -83,6 +89,7 @@ describe('prepare cli command', () => {
       mode: 'development',
       configFile: undefined,
     })
+    expect(syncManagedTsconfigFilesMock).toHaveBeenCalledTimes(1)
     expect(ensureFreshMock).toHaveBeenCalledTimes(1)
     expect(resetMock).toHaveBeenCalledTimes(1)
     expect(findAutoImportCandidatesMock).toHaveBeenCalledTimes(1)
@@ -125,6 +132,7 @@ describe('prepare cli command', () => {
       mode: 'development',
       configFile: undefined,
     })
+    expect(syncManagedTsconfigFilesMock).toHaveBeenCalledTimes(1)
     expect(ensureFreshMock).toHaveBeenCalledTimes(1)
     expect(resetMock).not.toHaveBeenCalled()
     expect(awaitManifestWritesMock).not.toHaveBeenCalled()
@@ -160,5 +168,34 @@ describe('prepare cli command', () => {
       '[prepare] 跳过 .weapp-vite 支持文件预生成：boom',
     )
     expect(loggerInfoMock).not.toHaveBeenCalled()
+  })
+
+  it('warns and skips when managed tsconfig generation fails', async () => {
+    createCompilerContextMock.mockResolvedValue({
+      configService: {
+        outDir: 'dist',
+      },
+      autoRoutesService: {
+        isEnabled: () => false,
+        ensureFresh: vi.fn(),
+      },
+      autoImportService: {
+        reset: vi.fn(),
+        registerPotentialComponent: vi.fn(),
+        awaitManifestWrites: vi.fn(),
+      },
+    })
+    syncManagedTsconfigFilesMock.mockRejectedValue(new Error('tsconfig failed'))
+
+    const { registerPrepareCommand } = await import('./prepare')
+    const cli = cac('weapp-vite')
+    registerPrepareCommand(cli)
+
+    cli.parse(['node', 'weapp-vite', 'prepare', '/project'], { run: false })
+    await expect(cli.runMatchedCommand()).resolves.toBeUndefined()
+
+    expect(loggerWarnMock).toHaveBeenCalledWith(
+      '[prepare] 跳过 .weapp-vite 支持文件预生成：tsconfig failed',
+    )
   })
 })

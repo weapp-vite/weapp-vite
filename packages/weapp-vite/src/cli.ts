@@ -1,6 +1,7 @@
 import type { GlobalCLIOptions } from './cli/types'
 import process from 'node:process'
 import { cac } from 'cac'
+import path from 'pathe'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
 import { registerBuildCommand } from './cli/commands/build'
 import { registerGenerateCommand } from './cli/commands/generate'
@@ -15,6 +16,7 @@ import { tryRunIdeCommand } from './cli/ide'
 import { maybeAutoStartMcpServer } from './cli/mcpAutoStart'
 import { convertBase } from './cli/options'
 import { VERSION } from './constants'
+import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
 import { checkRuntime } from './utils'
 
 const cli = cac('weapp-vite')
@@ -54,15 +56,48 @@ registerMcpCommand(cli)
 cli.help()
 cli.version(VERSION)
 
+const skipManagedTsconfigBootstrapCommands = new Set([
+  'g',
+  'generate',
+  'init',
+  'mcp',
+  'npm',
+])
+
+function resolveManagedTsconfigBootstrapRoot(args: string[]) {
+  const [firstArg, secondArg] = args
+  if (!firstArg || firstArg === '--help' || firstArg === '-h' || firstArg === '--version' || firstArg === '-v') {
+    return undefined
+  }
+  if (firstArg.startsWith('-')) {
+    return process.cwd()
+  }
+  if (skipManagedTsconfigBootstrapCommands.has(firstArg)) {
+    return undefined
+  }
+  if (['analyze', 'build', 'dev', 'open', 'prepare', 'serve'].includes(firstArg)) {
+    if (secondArg && !secondArg.startsWith('-')) {
+      return path.resolve(secondArg)
+    }
+    return process.cwd()
+  }
+  return path.resolve(firstArg)
+}
+
 try {
   Promise.resolve()
     .then(async () => {
-      const forwarded = await tryRunIdeCommand(process.argv.slice(2))
+      const args = process.argv.slice(2)
+      const forwarded = await tryRunIdeCommand(args)
       if (forwarded) {
         return
       }
+      const managedTsconfigBootstrapRoot = resolveManagedTsconfigBootstrapRoot(args)
+      if (managedTsconfigBootstrapRoot) {
+        await syncManagedTsconfigBootstrapFiles(managedTsconfigBootstrapRoot)
+      }
       cli.parse(process.argv, { run: false })
-      await maybeAutoStartMcpServer(process.argv.slice(2), cli.options as GlobalCLIOptions)
+      await maybeAutoStartMcpServer(args, cli.options as GlobalCLIOptions)
       await cli.runMatchedCommand()
     })
     .catch((error) => {

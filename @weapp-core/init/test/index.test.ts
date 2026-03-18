@@ -24,8 +24,6 @@ describe('init', () => {
       '.gitignore',
       'vite.config.ts',
       'tsconfig.json',
-      'tsconfig.app.json',
-      'tsconfig.node.json',
       'vite-env.d.ts',
     ]
     for (const file of files) {
