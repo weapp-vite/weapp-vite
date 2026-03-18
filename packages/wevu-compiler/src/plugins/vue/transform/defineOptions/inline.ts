@@ -198,7 +198,7 @@ const __weapp_defineOptions = (value) => (__weapp_define_options_values.push(val
   const scopeFooter = keptBindingNames
     .map(name => `__weapp_define_scope_values[${JSON.stringify(name)}] = ${name}`)
     .join('\n')
-  const footer = '\nexport default __weapp_define_options_values\n'
+  const footer = '\nexport const __weapp_define_options = __weapp_define_options_values\n'
   const evalSource = `${header
     + ms.toString()
     + (scopeFooter ? `\n${scopeFooter}\n` : '\n')
@@ -212,11 +212,11 @@ const __weapp_defineOptions = (value) => (__weapp_define_options_values.push(val
     const tempFile = path.join(tempDir, `${basename}.define-options.${unique}.${extension}`)
     await fs.writeFile(tempFile, evalSource, 'utf8')
     try {
-      const { mod, dependencies } = await bundleRequire<{ default?: unknown[], __weapp_define_scope?: Record<string, unknown> }>({
+      const { mod, dependencies } = await bundleRequire<{ __weapp_define_options?: unknown[], __weapp_define_scope?: Record<string, unknown> }>({
         filepath: tempFile,
         cwd: dir,
       })
-      const exported = mod?.default ?? mod
+      const exported = mod?.__weapp_define_options ?? mod
       const values = Array.isArray(exported) ? exported : [exported]
       return {
         values,

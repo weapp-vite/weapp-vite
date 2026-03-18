@@ -362,7 +362,7 @@ describe('autoImport outputs sync helpers', () => {
         lastWrittenVueComponentsDefinition: 'vue-same',
         lastVueComponentsOutputPath: '/project/types/components.d.ts',
         lastWrittenLayoutTypesDefinition: 'layout-types-next',
-        lastLayoutTypesOutputPath: '/Users/icebreaker/Documents/GitHub/weapp-vite/wevu-layouts.d.ts',
+        lastLayoutTypesOutputPath: '/Users/yangqiming/Documents/GitHub/weapp-vite/.weapp-vite/wevu-layouts.d.ts',
       },
       resolverComponentsMapRef: { value: {} },
       resolveNavigationImport: vi.fn(),

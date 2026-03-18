@@ -5,8 +5,9 @@ import path from 'pathe'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/src/cli.ts')
 const TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-template')
 const DIST_ROOT = path.join(TEMPLATE_ROOT, 'dist')
-const COMPONENTS_DTS = path.join(TEMPLATE_ROOT, 'src/components.d.ts')
-const TYPED_COMPONENTS_DTS = path.join(TEMPLATE_ROOT, 'src/typed-components.d.ts')
+const INTERNAL_OUTPUT_ROOT = path.join(TEMPLATE_ROOT, '.weapp-vite')
+const COMPONENTS_DTS = path.join(INTERNAL_OUTPUT_ROOT, 'components.d.ts')
+const TYPED_COMPONENTS_DTS = path.join(INTERNAL_OUTPUT_ROOT, 'typed-components.d.ts')
 
 async function runBuild(root: string) {
   await execa('node', ['--import', 'tsx', CLI_PATH, 'build', root, '--platform', 'weapp', '--skipNpm'], {
@@ -36,8 +37,8 @@ describe.sequential('template e2e: weapp-vite-wevu-template auto-import dts', ()
 
     const componentsDts = await fs.readFile(COMPONENTS_DTS, 'utf8')
     expect(componentsDts).toContain('declare module \'wevu\'')
-    expect(componentsDts).toContain('InfoPanel: typeof import("./components/InfoPanel/index.vue")[\'default\'];')
-    expect(componentsDts).toContain('StatusPill: typeof import("./components/StatusPill/index.vue")[\'default\'];')
+    expect(componentsDts).toContain('InfoPanel: typeof import("../src/components/InfoPanel/index.vue")[\'default\'];')
+    expect(componentsDts).toContain('StatusPill: typeof import("../src/components/StatusPill/index.vue")[\'default\'];')
     expect(componentsDts).not.toContain('ComponentProp<"InfoPanel">')
 
     const typedDts = await fs.readFile(TYPED_COMPONENTS_DTS, 'utf8')
