@@ -12,6 +12,12 @@ declare module 'weapp-vite/typed-components' {
       readonly links?: any[];
       readonly title?: string;
     };
+    ScenarioPanel: {
+      readonly items?: any[];
+      readonly selectedId?: string;
+      readonly summary?: string;
+      readonly title?: string;
+    };
   }
   export type ComponentPropName = keyof ComponentProps;
   export type ComponentProp<Name extends string> = Name extends ComponentPropName ? ComponentProps[Name] : Record<string, any>;

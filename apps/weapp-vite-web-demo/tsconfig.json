@@ -24,6 +24,6 @@
   "include": [
     "src",
     "vite.config.ts",
-    "typed-components.d.ts"
+    ".weapp-vite/typed-components.d.ts"
   ]
 }
