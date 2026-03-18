@@ -42,6 +42,7 @@ declare global {
   type __WEAPP_APP_JSON__ = import('@weapp-core/schematics').App
   type __WEAPP_PAGE_JSON__ = import('@weapp-core/schematics').Page
   type __WEAPP_COMPONENT_JSON__ = import('@weapp-core/schematics').Component
+  type __WEAPP_PAGE_META__ = import('wevu').PageMeta
 
   function defineAppJson(config: () => __WEAPP_APP_JSON__): () => __WEAPP_APP_JSON__
   function defineAppJson(config: () => Promise<__WEAPP_APP_JSON__>): () => Promise<__WEAPP_APP_JSON__>
@@ -50,6 +51,7 @@ declare global {
   function definePageJson(config: () => __WEAPP_PAGE_JSON__): () => __WEAPP_PAGE_JSON__
   function definePageJson(config: () => Promise<__WEAPP_PAGE_JSON__>): () => Promise<__WEAPP_PAGE_JSON__>
   function definePageJson(config: __WEAPP_PAGE_JSON__): __WEAPP_PAGE_JSON__
+  function definePageMeta(meta: __WEAPP_PAGE_META__): void
 
   function defineComponentJson(config: () => __WEAPP_COMPONENT_JSON__): () => __WEAPP_COMPONENT_JSON__
   function defineComponentJson(config: () => Promise<__WEAPP_COMPONENT_JSON__>): () => Promise<__WEAPP_COMPONENT_JSON__>

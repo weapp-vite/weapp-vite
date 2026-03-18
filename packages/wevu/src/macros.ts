@@ -75,6 +75,16 @@ export declare function defineOptions<
  */
 export declare function defineSlots<T extends Record<string, any> = Record<string, any>>(): T
 
+export interface PageMeta {
+  layout?: string | false
+  [key: string]: unknown
+}
+
+/**
+ * definePageMeta 声明页面级元信息（仅类型层）。
+ */
+export declare function definePageMeta(meta: PageMeta): void
+
 /**
  * defineModel 声明 v-model 绑定（类型层宏）。
  */

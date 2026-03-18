@@ -1,0 +1,298 @@
+import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
+import type { VueTransformResult } from 'wevu/compiler'
+import type { ConfigService } from '../../../runtime/config/types'
+import * as t from '@weapp-vite/ast/babelTypes'
+import fs from 'fs-extra'
+import path from 'pathe'
+import { parse as parseSfc } from 'vue/compiler-sfc'
+import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../utils/babel'
+import { normalizeWatchPath, toPosixPath } from '../../../utils/path'
+import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
+
+const PAGE_META_MACRO_NAME = 'definePageMeta'
+const VUE_LIKE_EXTENSIONS = ['.vue', '.tsx', '.jsx'] as const
+const CAMEL_TO_KEBAB_RE = /([a-z0-9])([A-Z])/g
+const LAYOUT_NAME_SEPARATORS_RE = /[_\s]+/g
+const DUPLICATE_DASH_RE = /-+/g
+const EDGE_DASH_RE = /^-|-$/g
+const PATH_SEGMENT_RE = /[\\/]/
+
+export interface ResolvedPageLayout {
+  file: string
+  importPath: string
+  layoutName: string
+  tagName: string
+}
+
+function toKebabCase(input: string) {
+  return input
+    .replace(CAMEL_TO_KEBAB_RE, '$1-$2')
+    .replace(LAYOUT_NAME_SEPARATORS_RE, '-')
+    .replace(DUPLICATE_DASH_RE, '-')
+    .replace(EDGE_DASH_RE, '')
+    .toLowerCase()
+}
+
+function normalizeLayoutName(input: string) {
+  return input
+    .split(PATH_SEGMENT_RE)
+    .filter(Boolean)
+    .map(segment => toKebabCase(segment))
+    .filter(Boolean)
+    .join('-')
+}
+
+function toLayoutTagName(layoutName: string) {
+  return `weapp-layout-${layoutName}`
+}
+
+function unwrapStaticExpression(node: t.Expression): t.Expression {
+  if (t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node) || t.isTSNonNullExpression(node) || t.isTypeCastExpression(node)) {
+    return unwrapStaticExpression(node.expression as t.Expression)
+  }
+  if (t.isParenthesizedExpression(node)) {
+    return unwrapStaticExpression(node.expression)
+  }
+  return node
+}
+
+function extractLayoutValueFromObject(node: t.ObjectExpression, filename: string) {
+  let layout: string | false | undefined
+
+  for (const property of node.properties) {
+    if (!t.isObjectProperty(property) || property.computed) {
+      continue
+    }
+    const key = property.key
+    const isLayoutKey = (t.isIdentifier(key) && key.name === 'layout')
+      || (t.isStringLiteral(key) && key.value === 'layout')
+    if (!isLayoutKey || !t.isExpression(property.value)) {
+      continue
+    }
+
+    const normalized = unwrapStaticExpression(property.value)
+    if (t.isBooleanLiteral(normalized, { value: false })) {
+      layout = false
+      continue
+    }
+    if (t.isStringLiteral(normalized)) {
+      const next = normalizeLayoutName(normalized.value)
+      if (!next) {
+        throw new Error(`${filename} 中 definePageMeta().layout 不能为空字符串。`)
+      }
+      layout = next
+      continue
+    }
+
+    throw new Error(`${filename} 中 definePageMeta().layout 仅支持静态字符串或 false。`)
+  }
+
+  return layout
+}
+
+function extractLayoutFromProgram(ast: BabelFile, filename: string) {
+  let layout: string | false | undefined
+  let macroCount = 0
+
+  for (const statement of ast.program.body) {
+    if (!t.isExpressionStatement(statement) || !t.isCallExpression(statement.expression)) {
+      continue
+    }
+    const call = statement.expression
+    if (!t.isIdentifier(call.callee, { name: PAGE_META_MACRO_NAME })) {
+      continue
+    }
+    macroCount += 1
+    if (call.arguments.length !== 1) {
+      throw new Error(`${filename} 中 definePageMeta() 必须且只能接收一个对象参数。`)
+    }
+    const firstArg = call.arguments[0]
+    if (t.isSpreadElement(firstArg) || !t.isExpression(firstArg)) {
+      throw new Error(`${filename} 中 definePageMeta() 仅支持对象字面量参数。`)
+    }
+    const normalized = unwrapStaticExpression(firstArg)
+    if (!t.isObjectExpression(normalized)) {
+      throw new Error(`${filename} 中 definePageMeta() 仅支持对象字面量参数。`)
+    }
+    layout = extractLayoutValueFromObject(normalized, filename)
+  }
+
+  if (macroCount > 1) {
+    throw new Error(`${filename} 中 definePageMeta() 只能声明一次。`)
+  }
+
+  return layout
+}
+
+function parseScriptAst(content: string, _filename: string) {
+  return babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS) as BabelFile
+}
+
+export function extractPageLayoutName(source: string, filename: string) {
+  if (filename.endsWith('.vue')) {
+    const { descriptor } = parseSfc(source, { filename })
+    let layout: string | false | undefined
+
+    if (descriptor.script?.content) {
+      layout = extractLayoutFromProgram(parseScriptAst(descriptor.script.content, filename), filename)
+    }
+    if (descriptor.scriptSetup?.content) {
+      const setupLayout = extractLayoutFromProgram(parseScriptAst(descriptor.scriptSetup.content, filename), filename)
+      if (layout !== undefined && setupLayout !== undefined) {
+        throw new Error(`${filename} 中的 <script> 与 <script setup> 不能同时声明 definePageMeta().`)
+      }
+      if (setupLayout !== undefined) {
+        layout = setupLayout
+      }
+    }
+
+    return layout
+  }
+
+  return extractLayoutFromProgram(parseScriptAst(source, filename), filename)
+}
+
+async function collectLayoutFiles(root: string): Promise<Map<string, string>> {
+  const layoutMap = new Map<string, string>()
+
+  async function walk(dir: string) {
+    let entries: string[]
+    try {
+      entries = await fs.readdir(dir)
+    }
+    catch {
+      return
+    }
+
+    for (const entry of entries) {
+      const full = path.join(dir, entry)
+      const stat = await fs.stat(full)
+      if (stat.isDirectory()) {
+        await walk(full)
+        continue
+      }
+      if (!VUE_LIKE_EXTENSIONS.some(ext => full.endsWith(ext))) {
+        continue
+      }
+
+      const relativePath = path.relative(root, full)
+      const ext = path.extname(relativePath)
+      const withoutExt = relativePath.slice(0, -ext.length)
+      const parts = withoutExt.split(PATH_SEGMENT_RE).filter(Boolean)
+      if (parts.at(-1) === 'index') {
+        parts.pop()
+      }
+      const layoutName = normalizeLayoutName(parts.join('/'))
+      if (!layoutName) {
+        continue
+      }
+      const duplicated = layoutMap.get(layoutName)
+      if (duplicated && duplicated !== full) {
+        throw new Error(`layouts 目录中存在重复布局名 "${layoutName}"：${duplicated} 与 ${full}`)
+      }
+      layoutMap.set(layoutName, full)
+    }
+  }
+
+  await walk(root)
+  return layoutMap
+}
+
+function ensureRelativeImportPath(fromFile: string, targetFile: string) {
+  const relativePath = path.relative(path.dirname(fromFile), targetFile)
+  const normalized = toPosixPath(relativePath)
+  if (normalized.startsWith('.')) {
+    return normalized
+  }
+  return `./${normalized}`
+}
+
+function mergeLayoutUsingComponent(config: string | undefined, tagName: string, importPath: string) {
+  const parsed = config ? JSON.parse(config) : {}
+  const usingComponents = parsed.usingComponents && typeof parsed.usingComponents === 'object' && !Array.isArray(parsed.usingComponents)
+    ? parsed.usingComponents
+    : {}
+
+  usingComponents[tagName] = importPath
+  parsed.usingComponents = usingComponents
+  return JSON.stringify(parsed, null, 2)
+}
+
+/**
+ * 解析页面布局配置，默认回退到 `layouts/default.*`。
+ */
+export async function resolvePageLayout(
+  source: string,
+  filename: string,
+  configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath'>,
+): Promise<ResolvedPageLayout | undefined> {
+  const layoutName = extractPageLayoutName(source, filename)
+  if (layoutName === false) {
+    return undefined
+  }
+
+  const layoutsRoot = path.join(configService.absoluteSrcRoot, 'layouts')
+  const layoutFiles = await collectLayoutFiles(layoutsRoot)
+  const selectedName = typeof layoutName === 'string'
+    ? layoutName
+    : layoutFiles.has('default')
+      ? 'default'
+      : undefined
+
+  if (!selectedName) {
+    return undefined
+  }
+
+  const layoutFile = layoutFiles.get(selectedName)
+  if (!layoutFile) {
+    throw new Error(`${filename} 指定的 layout "${selectedName}" 不存在，请检查 ${layoutsRoot} 目录。`)
+  }
+
+  const importPath = usingComponentFromResolvedFile(layoutFile, configService)
+  if (!importPath) {
+    throw new Error(`无法为 layout "${selectedName}" 解析 usingComponents 路径：${layoutFile}`)
+  }
+
+  return {
+    file: layoutFile,
+    importPath,
+    layoutName: selectedName,
+    tagName: toLayoutTagName(selectedName),
+  }
+}
+
+/**
+ * 将页面模板包裹进 layout 组件，并补齐 usingComponents 与依赖导入。
+ */
+export function applyPageLayout(
+  result: VueTransformResult,
+  filename: string,
+  layout: ResolvedPageLayout | undefined,
+) {
+  if (!layout || !result.template) {
+    return result
+  }
+
+  result.template = `<${layout.tagName}>${result.template}</${layout.tagName}>`
+  result.config = mergeLayoutUsingComponent(result.config, layout.tagName, layout.importPath)
+
+  const layoutImport = ensureRelativeImportPath(filename, layout.file)
+  const sideEffectImport = `import ${JSON.stringify(layoutImport)}\n`
+  if (!result.script?.includes(sideEffectImport)) {
+    result.script = `${sideEffectImport}${result.script ?? 'export default {}'}`
+  }
+
+  return result
+}
+
+/**
+ * 判断文件是否位于 `layouts/` 目录下，用于失效页面编译缓存。
+ */
+export function isLayoutFile(
+  filename: string,
+  configService: Pick<ConfigService, 'absoluteSrcRoot'>,
+) {
+  const layoutsRoot = `${normalizeWatchPath(path.join(configService.absoluteSrcRoot, 'layouts'))}/`
+  const normalizedFile = normalizeWatchPath(filename)
+  return normalizedFile.startsWith(layoutsRoot)
+}
