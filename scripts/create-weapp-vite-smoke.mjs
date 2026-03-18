@@ -47,6 +47,10 @@ function createChildProcess(command, args, options) {
   return spawn(getExecutableName(command), args, options)
 }
 
+function isFilePresent(file) {
+  return fs.access(file).then(() => true).catch(() => false)
+}
+
 function getCreatePackageSpecifier(packageManager, packageSpec) {
   if (!packageSpec || packageSpec === 'latest') {
     return packageManager === 'yarn'
@@ -261,25 +265,47 @@ async function terminateProcess(child) {
     return
   }
 
-  child.kill('SIGTERM')
+  try {
+    process.kill(-child.pid, 'SIGTERM')
+  }
+  catch {
+    child.kill('SIGTERM')
+  }
   const start = Date.now()
   while (child.exitCode === null && Date.now() - start < 10_000) {
     await delay(200)
   }
   if (child.exitCode === null) {
-    child.kill('SIGKILL')
+    try {
+      process.kill(-child.pid, 'SIGKILL')
+    }
+    catch {
+      child.kill('SIGKILL')
+    }
   }
 }
 
-async function distHasOutputs(projectDir) {
-  const distDir = path.join(projectDir, 'dist')
-  try {
-    const entries = await fs.readdir(distDir)
-    return entries.length > 0
+async function waitForChildClose(child, timeoutMs = 10_000) {
+  if (child.exitCode !== null) {
+    return
   }
-  catch {
-    return false
-  }
+
+  await Promise.race([
+    new Promise((resolve) => {
+      child.once('close', resolve)
+      child.once('error', resolve)
+    }),
+    delay(timeoutMs),
+  ])
+}
+
+async function distHasRequiredOutputs(projectDir) {
+  const requiredFiles = [
+    path.join(projectDir, 'dist/app.json'),
+    path.join(projectDir, 'dist/app.js'),
+  ]
+  const checks = await Promise.all(requiredFiles.map(isFilePresent))
+  return checks.every(Boolean)
 }
 
 async function findExistingFile(paths) {
@@ -354,6 +380,7 @@ async function runDevSmoke(projectDir, label, devCommand) {
       ...process.env,
       CI: 'true',
     },
+    detached: process.platform !== 'win32',
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 
@@ -382,7 +409,7 @@ async function runDevSmoke(projectDir, label, devCommand) {
         )
       }
 
-      if (await distHasOutputs(projectDir)) {
+      if (await distHasRequiredOutputs(projectDir)) {
         const readyMs = Date.now() - start
         await delay(DEV_SETTLE_MS)
         if (child.exitCode !== null) {
@@ -416,6 +443,7 @@ async function runDevSmoke(projectDir, label, devCommand) {
   }
   finally {
     await terminateProcess(child)
+    await waitForChildClose(child)
   }
 }
 
