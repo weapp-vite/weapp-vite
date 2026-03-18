@@ -15,6 +15,7 @@ export function resetContext() {
   Object.assign(ctx.viteConfig, next.viteConfig)
   Object.assign(ctx.tsconfig, next.tsconfig)
   Object.assign(ctx.tsconfigApp, next.tsconfigApp)
+  Object.assign(ctx.tsconfigServer, next.tsconfigServer)
   Object.assign(ctx.tsconfigNode, next.tsconfigNode)
   Object.assign(ctx.dts, next.dts)
 }

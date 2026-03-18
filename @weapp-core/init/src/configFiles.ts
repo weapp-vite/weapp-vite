@@ -50,6 +50,8 @@ export async function initTsJsonFiles(options: SharedUpdateOptions) {
   const tsJsonFilePath = ctx.tsconfig.path = path.resolve(root, tsJsonFilename)
   ctx.tsconfigApp.name = '.weapp-vite/tsconfig.app.json'
   ctx.tsconfigApp.path = path.resolve(root, ctx.tsconfigApp.name)
+  ctx.tsconfigServer.name = '.weapp-vite/tsconfig.server.json'
+  ctx.tsconfigServer.path = path.resolve(root, ctx.tsconfigServer.name)
   ctx.tsconfigNode.name = '.weapp-vite/tsconfig.node.json'
   ctx.tsconfigNode.path = path.resolve(root, ctx.tsconfigNode.name)
 
@@ -57,6 +59,7 @@ export async function initTsJsonFiles(options: SharedUpdateOptions) {
 
   ctx.tsconfig.value = tsconfig
   ctx.tsconfigApp.value = null
+  ctx.tsconfigServer.value = null
   ctx.tsconfigNode.value = null
 
   if (write) {
@@ -69,6 +72,7 @@ export async function initTsJsonFiles(options: SharedUpdateOptions) {
   return {
     tsconfig,
     tsconfigApp: null,
+    tsconfigServer: null,
     tsconfigNode: null,
   }
 }

@@ -9,6 +9,7 @@ describe('tsconfigJson', () => {
     const config = getDefaultTsconfigJson()
     expect(config.references?.map(ref => ref.path)).toEqual([
       './.weapp-vite/tsconfig.app.json',
+      './.weapp-vite/tsconfig.server.json',
       './.weapp-vite/tsconfig.node.json',
       './.weapp-vite/tsconfig.shared.json',
     ])
