@@ -20,7 +20,7 @@ import { emitVueBundleAssets } from './bundle'
 import { createCompileVueFileOptions } from './compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from './injectSetDataPick'
-import { applyPageLayout, collectNativeLayoutAssets, isLayoutFile, resolvePageLayout } from './pageLayout'
+import { applyPageLayoutPlan, collectNativeLayoutAssets, isLayoutFile, resolvePageLayoutPlan } from './pageLayout'
 import { emitScopedSlotChunks, loadScopedSlotModule, resolveScopedSlotVirtualId } from './scopedSlot'
 import { buildWeappVueStyleRequest, parseWeappVueStyleRequest } from './styleRequest'
 
@@ -257,16 +257,18 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             )
 
         if (isPage && result.template) {
-          const resolvedLayout = await resolvePageLayout(transformedSource, filename, configService)
-          if (resolvedLayout) {
-            applyPageLayout(result, filename, resolvedLayout)
+          const resolvedLayoutPlan = await resolvePageLayoutPlan(transformedSource, filename, configService)
+          if (resolvedLayoutPlan) {
+            applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
             if (typeof (this as any).addWatchFile === 'function') {
-              ;(this as any).addWatchFile(normalizeWatchPath(resolvedLayout.file))
-              if (resolvedLayout.kind === 'native') {
-                const nativeAssets = await collectNativeLayoutAssets(resolvedLayout.file)
-                for (const asset of Object.values(nativeAssets)) {
-                  if (asset) {
-                    ;(this as any).addWatchFile(normalizeWatchPath(asset))
+              for (const layout of resolvedLayoutPlan.layouts) {
+                ;(this as any).addWatchFile(normalizeWatchPath(layout.file))
+                if (layout.kind === 'native') {
+                  const nativeAssets = await collectNativeLayoutAssets(layout.file)
+                  for (const asset of Object.values(nativeAssets)) {
+                    if (asset) {
+                      ;(this as any).addWatchFile(normalizeWatchPath(asset))
+                    }
                   }
                 }
               }

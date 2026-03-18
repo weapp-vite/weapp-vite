@@ -2,7 +2,7 @@ import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
-import { applyPageLayout, extractPageLayoutMeta, extractPageLayoutName, resolvePageLayout } from './pageLayout'
+import { applyPageLayout, applyPageLayoutPlan, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
 
 const tempDirs: string[] = []
 
@@ -68,6 +68,15 @@ definePageMeta({
     })
   })
 
+  it('detects setPageLayout usage inside page source', () => {
+    expect(hasSetPageLayoutUsage(`
+<script setup lang="ts">
+import { setPageLayout } from 'wevu'
+setPageLayout('admin')
+</script>
+    `.trim(), '/project/src/pages/index/index.vue')).toBe(true)
+  })
+
   it('resolves default layout when page meta is absent', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')
@@ -126,6 +135,38 @@ definePageMeta({
       layoutName: 'admin',
       tagName: 'weapp-layout-admin',
     })
+  })
+
+  it('resolves dynamic layout plan when page uses setPageLayout', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    const pageFile = path.join(srcRoot, 'pages', 'dynamic', 'index.vue')
+    const adminLayout = path.join(srcRoot, 'layouts', 'admin.vue')
+    const dashboardLayout = path.join(srcRoot, 'layouts', 'dashboard.vue')
+
+    await fs.ensureDir(path.dirname(adminLayout))
+    await fs.writeFile(adminLayout, '<template><slot /></template>', 'utf8')
+    await fs.writeFile(dashboardLayout, '<template><slot /></template>', 'utf8')
+
+    const plan = await resolvePageLayoutPlan(
+      `
+<script setup lang="ts">
+import { setPageLayout } from 'wevu'
+setPageLayout('dashboard')
+</script>
+<template><view>dynamic</view></template>
+      `.trim(),
+      pageFile,
+      {
+        absoluteSrcRoot: srcRoot,
+        relativeOutputPath: (input: string) => path.relative(srcRoot, input),
+        weappViteConfig: {},
+      } as any,
+    )
+
+    expect(plan?.dynamicSwitch).toBe(true)
+    expect(plan?.layouts.map(layout => layout.layoutName)).toEqual(['admin', 'dashboard'])
+    expect(plan?.currentLayout?.layoutName).toBeUndefined()
   })
 
   it('prefers more specific routeRules over broader wildcard matches', async () => {
@@ -405,6 +446,54 @@ definePageMeta({
       navigationBarTitleText: '原生布局',
       usingComponents: {
         'weapp-layout-native-shell': '/layouts/native-shell/index',
+      },
+    })
+  })
+
+  it('wraps compiled page output with dynamic layout branches when setPageLayout is used', () => {
+    const result = applyPageLayoutPlan(
+      {
+        script: 'export default {}',
+        template: '<view>content</view>',
+        config: JSON.stringify({ navigationBarTitleText: '动态布局' }),
+      },
+      '/project/src/pages/home/index.vue',
+      {
+        dynamicSwitch: true,
+        currentLayout: {
+          file: '/project/src/layouts/admin.vue',
+          importPath: '/layouts/admin',
+          kind: 'vue',
+          layoutName: 'admin',
+          tagName: 'weapp-layout-admin',
+        },
+        layouts: [
+          {
+            file: '/project/src/layouts/admin.vue',
+            importPath: '/layouts/admin',
+            kind: 'vue',
+            layoutName: 'admin',
+            tagName: 'weapp-layout-admin',
+          },
+          {
+            file: '/project/src/layouts/dashboard.vue',
+            importPath: '/layouts/dashboard',
+            kind: 'vue',
+            layoutName: 'dashboard',
+            tagName: 'weapp-layout-dashboard',
+          },
+        ],
+      },
+    )
+
+    expect(result.template).toContain(`wx:if="{{!__wv_page_layout_name || __wv_page_layout_name === 'admin'}}"`)
+    expect(result.template).toContain(`wx:elif="{{__wv_page_layout_name === 'dashboard'}}"`)
+    expect(result.template).toContain('<block wx:else><view>content</view></block>')
+    expect(JSON.parse(result.config!)).toEqual({
+      navigationBarTitleText: '动态布局',
+      usingComponents: {
+        'weapp-layout-admin': '/layouts/admin',
+        'weapp-layout-dashboard': '/layouts/dashboard',
       },
     })
   })

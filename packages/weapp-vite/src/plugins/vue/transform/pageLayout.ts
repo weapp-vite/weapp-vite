@@ -21,7 +21,6 @@ const PATH_SEGMENT_RE = /[\\/]/
 const TRAILING_INDEX_RE = /\/index$/
 const LEADING_SLASHES_RE = /^\/+/
 const ROUTE_RULE_GLOB_TOKEN_RE = /[*?[\]{}()!+@]/g
-
 export interface ResolvedPageLayout {
   file: string
   importPath: string
@@ -29,6 +28,12 @@ export interface ResolvedPageLayout {
   layoutName: string
   tagName: string
   props?: Record<string, LayoutPropValue>
+}
+
+export interface ResolvedPageLayoutPlan {
+  currentLayout?: ResolvedPageLayout
+  dynamicSwitch: boolean
+  layouts: ResolvedPageLayout[]
 }
 
 export interface NativeLayoutAssets {
@@ -258,6 +263,19 @@ function extractLayoutFromProgram(ast: BabelFile, filename: string) {
   return layout
 }
 
+function hasSetPageLayoutCallInProgram(ast: BabelFile) {
+  let matched = false
+  traverse(ast, {
+    CallExpression(path: any) {
+      if (t.isIdentifier(path.node.callee, { name: 'setPageLayout' })) {
+        matched = true
+        path.stop()
+      }
+    },
+  })
+  return matched
+}
+
 function parseScriptAst(content: string, _filename: string) {
   return babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS) as BabelFile
 }
@@ -284,6 +302,18 @@ export function extractPageLayoutMeta(source: string, filename: string) {
   }
 
   return extractLayoutFromProgram(parseScriptAst(source, filename), filename)
+}
+
+export function hasSetPageLayoutUsage(source: string, filename: string) {
+  if (filename.endsWith('.vue')) {
+    const { descriptor } = parseSfc(source, { filename })
+    return Boolean(
+      (descriptor.script?.content && hasSetPageLayoutCallInProgram(parseScriptAst(descriptor.script.content, filename)))
+      || (descriptor.scriptSetup?.content && hasSetPageLayoutCallInProgram(parseScriptAst(descriptor.scriptSetup.content, filename))),
+    )
+  }
+
+  return hasSetPageLayoutCallInProgram(parseScriptAst(source, filename))
 }
 
 export function extractPageLayoutName(source: string, filename: string) {
@@ -502,37 +532,47 @@ export async function resolvePageLayout(
   filename: string,
   configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath' | 'weappViteConfig'>,
 ): Promise<ResolvedPageLayout | undefined> {
+  const plan = await resolvePageLayoutPlan(source, filename, configService)
+  return plan?.currentLayout
+}
+
+export async function resolvePageLayoutPlan(
+  source: string,
+  filename: string,
+  configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath' | 'weappViteConfig'>,
+): Promise<ResolvedPageLayoutPlan | undefined> {
   const layoutMeta = extractPageLayoutMeta(source, filename) ?? resolveRouteRuleLayoutMeta(filename, configService)
-  if (layoutMeta?.disabled) {
+  const dynamicSwitch = hasSetPageLayoutUsage(source, filename)
+  if (layoutMeta?.disabled && !dynamicSwitch) {
     return undefined
   }
 
-  const layoutsRoot = path.join(configService.absoluteSrcRoot, 'layouts')
-  const layoutFiles = await collectLayoutFiles(layoutsRoot)
+  const layouts = await resolveAllLayouts(configService)
+  const layoutMap = new Map(layouts.map(layout => [layout.layoutName, layout]))
+  const defaultLayout = layoutMap.get('default')
   const selectedName = typeof layoutMeta?.name === 'string'
     ? layoutMeta.name
-    : layoutFiles.has('default')
-      ? 'default'
-      : undefined
+    : defaultLayout?.layoutName
 
-  if (!selectedName) {
+  if (typeof selectedName === 'string' && !layoutMap.has(selectedName)) {
+    throw new Error(`${filename} 指定的 layout "${selectedName}" 不存在，请检查 ${path.join(configService.absoluteSrcRoot, 'layouts')} 目录。`)
+  }
+
+  const currentLayout = selectedName
+    ? {
+        ...layoutMap.get(selectedName)!,
+        props: layoutMeta?.props,
+      }
+    : undefined
+
+  if (!currentLayout && !dynamicSwitch) {
     return undefined
-  }
-
-  const layoutFile = layoutFiles.get(selectedName)
-  if (!layoutFile) {
-    throw new Error(`${filename} 指定的 layout "${selectedName}" 不存在，请检查 ${layoutsRoot} 目录。`)
-  }
-
-  const importPath = usingComponentFromResolvedFile(layoutFile.file, configService)
-  if (!importPath) {
-    throw new Error(`无法为 layout "${selectedName}" 解析 usingComponents 路径：${layoutFile.file}`)
   }
 
   return {
-    ...layoutFile,
-    importPath,
-    props: layoutMeta?.props,
+    currentLayout,
+    dynamicSwitch,
+    layouts,
   }
 }
 
@@ -625,6 +665,27 @@ function findWevuOptionsObject(ast: BabelFile) {
   })
 
   return matched
+}
+
+async function resolveAllLayouts(
+  configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath'>,
+) {
+  const layoutsRoot = path.join(configService.absoluteSrcRoot, 'layouts')
+  const layoutFiles = await collectLayoutFiles(layoutsRoot)
+  const resolvedLayouts: ResolvedPageLayout[] = []
+
+  for (const layoutFile of layoutFiles.values()) {
+    const importPath = usingComponentFromResolvedFile(layoutFile.file, configService)
+    if (!importPath) {
+      continue
+    }
+    resolvedLayouts.push({
+      ...layoutFile,
+      importPath,
+    })
+  }
+
+  return resolvedLayouts
 }
 
 function injectLayoutBindingComputed(script: string | undefined, props: Record<string, LayoutPropValue> | undefined) {
@@ -731,6 +792,75 @@ function collapseNestedLayoutWrapper(template: string, tagName: string) {
   }
 
   return next
+}
+
+function buildDynamicLayoutTemplate(
+  innerTemplate: string,
+  currentLayout: ResolvedPageLayout | undefined,
+  layouts: ResolvedPageLayout[],
+) {
+  const blocks = layouts.map((layout, index) => {
+    const attrs = currentLayout?.layoutName === layout.layoutName
+      ? serializeLayoutProps(currentLayout.props)
+      : ''
+    const condition = currentLayout?.layoutName === layout.layoutName
+      ? `{{!__wv_page_layout_name || __wv_page_layout_name === '${layout.layoutName}'}}`
+      : `{{__wv_page_layout_name === '${layout.layoutName}'}}`
+    const directive = index === 0 ? 'wx:if' : 'wx:elif'
+    return `<block ${directive}="${condition}"><${layout.tagName}${attrs}>${innerTemplate}</${layout.tagName}></block>`
+  })
+
+  return `${blocks.join('')}<block wx:else>${innerTemplate}</block>`
+}
+
+function mergeLayoutUsingComponents(
+  config: string | undefined,
+  layouts: ResolvedPageLayout[],
+) {
+  let next = config
+  for (const layout of layouts) {
+    next = mergeLayoutUsingComponent(next, layout.tagName, layout.importPath)
+  }
+  return next
+}
+
+function injectVueLayoutImports(
+  script: string | undefined,
+  filename: string,
+  layouts: ResolvedPageLayout[],
+) {
+  let next = script ?? 'export default {}'
+  for (const layout of layouts) {
+    if (layout.kind !== 'vue') {
+      continue
+    }
+    const layoutImport = ensureRelativeImportPath(filename, layout.file)
+    const sideEffectImport = `import ${JSON.stringify(layoutImport)}\n`
+    if (!next.includes(sideEffectImport)) {
+      next = `${sideEffectImport}${next}`
+    }
+  }
+  return next
+}
+
+export function applyPageLayoutPlan(
+  result: VueTransformResult,
+  filename: string,
+  plan: ResolvedPageLayoutPlan | undefined,
+) {
+  if (!plan || !result.template) {
+    return result
+  }
+
+  if (!plan.dynamicSwitch) {
+    return applyPageLayout(result, filename, plan.currentLayout)
+  }
+
+  result.template = buildDynamicLayoutTemplate(result.template, plan.currentLayout, plan.layouts)
+  result.script = injectLayoutBindingComputed(result.script, plan.currentLayout?.props)
+  result.script = injectVueLayoutImports(result.script, filename, plan.layouts)
+  result.config = mergeLayoutUsingComponents(result.config, plan.layouts)
+  return result
 }
 
 /**

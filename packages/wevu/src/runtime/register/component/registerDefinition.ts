@@ -9,6 +9,7 @@ import type {
 } from '../../types'
 import type { WatchMap } from '../watch'
 import { callHookList } from '../../hooks'
+import { resolveRuntimePageLayoutName } from '../../pageLayout'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 
@@ -54,6 +55,18 @@ export function registerComponentDefinition<D extends object, C extends Computed
   } = options
 
   const pageShareMethodBridges: Record<string, (...args: any[]) => any> = {}
+  const attachPageLayoutSetter = (instance: InternalRuntimeState) => {
+    if (!isPage) {
+      return
+    }
+    instance.__wevuSetPageLayout = (layout: string | false) => {
+      const runtimeState = instance.__wevu?.state as Record<string, any> | undefined
+      if (!runtimeState || typeof runtimeState !== 'object') {
+        return
+      }
+      runtimeState.__wv_page_layout_name = resolveRuntimePageLayoutName(layout)
+    }
+  }
   if (isPage) {
     const shareHookNames = ['onShareAppMessage', 'onShareTimeline', 'onAddToFavorites']
     for (const hookName of shareHookNames) {
@@ -96,6 +109,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
             throw new Error(`[wevu] mount runtime failed in created (${label}): ${error instanceof Error ? error.message : String(error)}`)
           }
           syncWevuPropsFromInstance(this)
+          attachPageLayoutSetter(this)
         }
         // 兼容：若用户使用旧式 created（非 lifetimes.created），在定义 lifetimes.created 后会被覆盖，这里手动补齐调用
         if (typeof legacyCreated === 'function') {
@@ -132,6 +146,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
           }
         }
         syncWevuPropsFromInstance(this)
+        attachPageLayoutSetter(this)
         if (setupLifecycle === 'created') {
           enableDeferredSetData(this)
         }

@@ -30,6 +30,12 @@ const demos = [
     path: '/pages/layouts/route-rules-demo/index',
     badge: 'config',
   },
+  {
+    title: 'setPageLayout',
+    desc: '通过显式 API 在运行时切换 admin/native-shell/false 三种 layout。',
+    path: '/pages/layouts/set-page-layout-demo/index',
+    badge: 'api',
+  },
 ]
 
 function openDemo(path: string) {
