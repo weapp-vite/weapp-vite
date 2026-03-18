@@ -3,6 +3,8 @@ export function collapsePayload(input: Record<string, any>) {
   if (keys.length <= 1) {
     return input
   }
+  // 折叠后的 payload 会直接传给原生 setData，并可能被微信开发者工具热重载脚本递归遍历。
+  // 这里不能使用 Object.create(null)，否则运行时内部的 o.hasOwnProperty(...) 会抛错。
   const out: Record<string, any> = {}
   const prefixStack: string[] = []
   for (const key of keys) {
@@ -169,6 +171,8 @@ export function mergeSiblingPayload(options: {
     return { out: input, merged: 0 }
   }
 
+  // mergeSiblingPayload 的输出仍然属于对外 payload，必须保持普通对象原型。
+  // 后续如果为了“纯字典”语义改成 null-prototype，会重新引入热重载兼容性问题。
   const out: Record<string, any> = {}
   Object.assign(out, input)
 

@@ -12,6 +12,8 @@ export function cloneSnapshotValue<T>(value: T): T {
   if (!isPlainObjectLike(value)) {
     return value
   }
+  // 这里的快照对象会继续进入 setData / WXML / DevTools 热重载链路。
+  // 不能使用 Object.create(null)，否则微信运行时内部直接调用 hasOwnProperty 时会报错。
   const out: Record<string, any> = {}
   for (const key of Object.keys(value as Record<string, any>)) {
     out[key] = cloneSnapshotValue((value as Record<string, any>)[key])
@@ -121,6 +123,7 @@ export function applySnapshotUpdate(
   for (let i = 0; i < segments.length - 1; i++) {
     const key = segments[i]
     if (!Object.hasOwn(current, key) || current[key] == null || typeof current[key] !== 'object') {
+      // 中间节点同样会被同步到最新快照并可能参与视图层更新，必须保持普通对象原型。
       current[key] = {}
     }
     current = current[key]
@@ -158,6 +161,8 @@ export function collectSnapshot(options: {
     toPlainMaxKeys,
   } = options
   const seen = new WeakMap<object, any>()
+  // collectSnapshot 的返回值会被 owner snapshot / patch scheduler 复用。
+  // 后续维护不要改回 null-prototype 对象，否则热重载下会再次触发 hasOwnProperty 兼容问题。
   const out: Record<string, any> = {}
   const budget = Number.isFinite(toPlainMaxKeys) ? { keys: toPlainMaxKeys } : undefined
 
