@@ -11,11 +11,12 @@ import { extractComponentProps } from '../../../componentProps'
 import {
   getTypedComponentsSettings,
 } from '../../config'
+import { resolveLayoutTypesDefaultPath } from '../../config/base'
 import { extractInlinePropsTypeFromCode } from '../../dtsProps'
 import { createHtmlCustomDataDefinition } from '../../htmlCustomData'
 import { extractJsonPropMetadata, mergePropMaps } from '../../metadata'
 import { createTypedComponentsDefinition } from '../../typedDefinition'
-import { createVueComponentsDefinition } from '../../vueDefinition'
+import { createLayoutTypesDefinition, createVueComponentsDefinition } from '../../vueDefinition'
 import { loadWeappBuiltinHtmlTags } from '../../weappBuiltinHtmlTags'
 import { collectAllComponentNames } from './manifest'
 
@@ -254,8 +255,16 @@ export async function syncVueComponentsDefinition(
       }
       catch { }
     }
+    if (outputsState.lastLayoutTypesOutputPath) {
+      try {
+        await fs.remove(outputsState.lastLayoutTypesOutputPath)
+      }
+      catch { }
+    }
     outputsState.lastVueComponentsOutputPath = undefined
     outputsState.lastWrittenVueComponentsDefinition = undefined
+    outputsState.lastLayoutTypesOutputPath = undefined
+    outputsState.lastWrittenLayoutTypesDefinition = undefined
     return
   }
 
@@ -266,6 +275,8 @@ export async function syncVueComponentsDefinition(
   const componentNames = collectAllComponentNames(options)
   const layoutNames = await collectLayoutNames(ctx.configService.absoluteSrcRoot)
   const layoutPropsMap = await collectLayoutPropsMap(ctx)
+  const layoutTypesOutputPath = resolveLayoutTypesDefaultPath(ctx.configService)
+  const layoutTypesDefinition = createLayoutTypesDefinition(layoutNames, layoutPropsMap)
   const nextDefinition = createVueComponentsDefinition(componentNames, options.getComponentMetadata, {
     useTypedComponents: getTypedComponentsSettings(ctx).enabled,
     moduleName: settings.moduleName,
@@ -290,7 +301,9 @@ export async function syncVueComponentsDefinition(
       return resolveNavigationImport(from)
     },
   })
-  if (nextDefinition === outputsState.lastWrittenVueComponentsDefinition && outputPath === outputsState.lastVueComponentsOutputPath) {
+  const vueUnchanged = nextDefinition === outputsState.lastWrittenVueComponentsDefinition && outputPath === outputsState.lastVueComponentsOutputPath
+  const layoutTypesUnchanged = layoutTypesDefinition === outputsState.lastWrittenLayoutTypesDefinition && layoutTypesOutputPath === outputsState.lastLayoutTypesOutputPath
+  if (vueUnchanged && layoutTypesUnchanged) {
     return
   }
 
@@ -301,9 +314,16 @@ export async function syncVueComponentsDefinition(
       }
       catch { }
     }
-    await fs.outputFile(outputPath, nextDefinition, 'utf8')
+    if (!vueUnchanged) {
+      await fs.outputFile(outputPath, nextDefinition, 'utf8')
+    }
+    if (!layoutTypesUnchanged && layoutTypesDefinition) {
+      await fs.outputFile(layoutTypesOutputPath, layoutTypesDefinition, 'utf8')
+    }
     outputsState.lastWrittenVueComponentsDefinition = nextDefinition
     outputsState.lastVueComponentsOutputPath = outputPath
+    outputsState.lastWrittenLayoutTypesDefinition = layoutTypesDefinition
+    outputsState.lastLayoutTypesOutputPath = layoutTypesOutputPath
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error)

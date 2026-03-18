@@ -22,3 +22,7 @@ export function resolveHtmlCustomDataDefaultPath(configService: NonNullable<Muta
 export function resolveVueComponentsDefaultPath(configService: NonNullable<MutableCompilerContext['configService']>) {
   return path.resolve(configService.absoluteSrcRoot, 'components.d.ts')
 }
+
+export function resolveLayoutTypesDefaultPath(configService: NonNullable<MutableCompilerContext['configService']>) {
+  return path.resolve(resolveBaseDir(configService), 'wevu-layouts.d.ts')
+}

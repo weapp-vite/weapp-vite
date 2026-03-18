@@ -48,6 +48,38 @@ export interface VueComponentsDefinitionOptions {
   layoutPropsMap?: Map<string, ComponentPropMap>
 }
 
+export function createLayoutTypesDefinition(
+  layoutNames: string[],
+  layoutPropsMap?: Map<string, ComponentPropMap>,
+) {
+  const normalized = Array.from(new Set(layoutNames)).sort((a, b) => a.localeCompare(b))
+  if (normalized.length === 0) {
+    return ''
+  }
+
+  const lines = [
+    '/* eslint-disable */',
+    '// biome-ignore lint: disable',
+    '// oxlint-disable',
+    '// ------',
+    '// 由 weapp-vite 自动生成，请勿编辑。',
+    'export {}',
+    '',
+    'declare module \'wevu\' {',
+    '  interface WevuPageLayoutMap {',
+  ]
+
+  for (const name of normalized) {
+    lines.push(`    ${formatPropertyKey(name)}: ${formatPropsType(layoutPropsMap?.get(name))};`)
+  }
+
+  lines.push('  }')
+  lines.push('}')
+  lines.push('')
+
+  return lines.join('\n')
+}
+
 function toPascalCase(name: string) {
   if (!name.includes('-')) {
     return undefined
@@ -251,16 +283,9 @@ export function createVueComponentsDefinition(
   lines.push('  }')
   lines.push('}')
   lines.push('')
-  const layoutNames = Array.from(new Set(options.layoutNames ?? [])).sort((a, b) => a.localeCompare(b))
-  if (layoutNames.length > 0) {
-    lines.push('declare module \'wevu\' {')
-    lines.push('  interface WevuPageLayoutMap {')
-    for (const name of layoutNames) {
-      const layoutProps = options.layoutPropsMap?.get(name)
-      lines.push(`    ${formatPropertyKey(name)}: ${formatPropsType(layoutProps)};`)
-    }
-    lines.push('  }')
-    lines.push('}')
+  const layoutDefinition = createLayoutTypesDefinition(options.layoutNames ?? [], options.layoutPropsMap)
+  if (layoutDefinition) {
+    lines.push(...layoutDefinition.trimEnd().split('\n'))
     lines.push('')
   }
   lines.push('// 用于 TSX 支持')

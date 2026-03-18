@@ -11,6 +11,7 @@ const loggerErrorMock = vi.hoisted(() => vi.fn())
 const getTypedComponentsSettingsMock = vi.hoisted(() => vi.fn())
 const createTypedComponentsDefinitionMock = vi.hoisted(() => vi.fn())
 const createVueComponentsDefinitionMock = vi.hoisted(() => vi.fn())
+const createLayoutTypesDefinitionMock = vi.hoisted(() => vi.fn())
 const createHtmlCustomDataDefinitionMock = vi.hoisted(() => vi.fn())
 const loadWeappBuiltinHtmlTagsMock = vi.hoisted(() => vi.fn())
 const collectAllComponentNamesMock = vi.hoisted(() => vi.fn())
@@ -56,6 +57,7 @@ vi.mock('../../metadata', async (importOriginal) => {
 
 vi.mock('../../vueDefinition', () => ({
   createVueComponentsDefinition: createVueComponentsDefinitionMock,
+  createLayoutTypesDefinition: createLayoutTypesDefinitionMock,
 }))
 
 vi.mock('../../htmlCustomData', () => ({
@@ -86,6 +88,8 @@ function createOutputsState() {
     vueComponentsWriteRequested: false,
     lastWrittenVueComponentsDefinition: undefined,
     lastVueComponentsOutputPath: undefined,
+    lastWrittenLayoutTypesDefinition: undefined,
+    lastLayoutTypesOutputPath: undefined,
     lastHtmlCustomDataEnabled: false,
     lastHtmlCustomDataOutput: undefined,
     lastTypedComponentsEnabled: false,
@@ -131,6 +135,7 @@ describe('autoImport outputs sync helpers', () => {
     collectAllComponentNamesMock.mockReturnValue(['CompA', 'CompB'])
     createTypedComponentsDefinitionMock.mockReturnValue('typed-next')
     createVueComponentsDefinitionMock.mockReturnValue('vue-next')
+    createLayoutTypesDefinitionMock.mockReturnValue('layout-types-next')
     createHtmlCustomDataDefinitionMock.mockReturnValue('html-next')
     loadWeappBuiltinHtmlTagsMock.mockReturnValue([])
     getTypedComponentsSettingsMock.mockReturnValue({ enabled: false })
@@ -341,6 +346,11 @@ describe('autoImport outputs sync helpers', () => {
         ]),
       }),
     )
+    expect(fsOutputFileMock).toHaveBeenCalledWith(
+      expect.stringMatching(/wevu-layouts\.d\.ts$/),
+      'layout-types-next',
+      'utf8',
+    )
     expect(options.outputsState.lastWrittenVueComponentsDefinition).toContain('"moduleName":"auto-components"')
     expect(options.outputsState.lastVueComponentsOutputPath).toBe('/project/types/components.d.ts')
   })
@@ -351,6 +361,8 @@ describe('autoImport outputs sync helpers', () => {
         ...createOutputsState(),
         lastWrittenVueComponentsDefinition: 'vue-same',
         lastVueComponentsOutputPath: '/project/types/components.d.ts',
+        lastWrittenLayoutTypesDefinition: 'layout-types-next',
+        lastLayoutTypesOutputPath: '/Users/icebreaker/Documents/GitHub/weapp-vite/wevu-layouts.d.ts',
       },
       resolverComponentsMapRef: { value: {} },
       resolveNavigationImport: vi.fn(),
