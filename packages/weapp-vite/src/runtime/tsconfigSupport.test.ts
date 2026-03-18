@@ -17,8 +17,8 @@ function createCtx(overrides: Record<string, any> = {}) {
 }
 
 describe('tsconfig support', () => {
-  it('creates managed tsconfig files with standard defaults', () => {
-    const files = createManagedTsconfigFiles(createCtx())
+  it('creates managed tsconfig files with standard defaults', async () => {
+    const files = await createManagedTsconfigFiles(createCtx())
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
     const node = JSON.parse(files.find(file => file.path.endsWith('tsconfig.node.json'))!.content)
     const server = JSON.parse(files.find(file => file.path.endsWith('tsconfig.server.json'))!.content)
@@ -37,8 +37,8 @@ describe('tsconfig support', () => {
     expect(server.files).toEqual([])
   })
 
-  it('adds wevu and web-aware settings and merges user overrides', () => {
-    const files = createManagedTsconfigFiles(createCtx({
+  it('adds wevu and web-aware settings and merges user overrides', async () => {
+    const files = await createManagedTsconfigFiles(createCtx({
       packageJson: {
         dependencies: {
           wevu: '^1.0.0',
@@ -71,6 +71,58 @@ describe('tsconfig support', () => {
     expect(app.vueCompilerOptions.lib).toBe('wevu')
     expect(app.vueCompilerOptions.target).toBe(3.5)
     expect(app.include).toContain('../playground/**/*.ts')
+  })
+
+  it('merges legacy root tsconfig files into managed outputs', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-legacy-tsconfig-'))
+    await fs.writeFile(path.join(root, 'tsconfig.shared.json'), `{
+      // legacy shared config
+      "compilerOptions": {
+        "strict": false
+      }
+    }`)
+    await fs.writeFile(path.join(root, 'tsconfig.app.json'), `{
+      "compilerOptions": {
+        "paths": {
+          "tdesign-miniprogram/*": ["./node_modules/tdesign-miniprogram/miniprogram_dist/*"]
+        }
+      },
+      "include": ["../legacy/**/*.ts"],
+      "exclude": ["../legacy-exclude/**"]
+    }`)
+    await fs.writeFile(path.join(root, 'tsconfig.server.json'), `{
+      "files": ["../server/entry.ts"]
+    }`)
+
+    const files = await createManagedTsconfigFiles(createCtx({
+      cwd: root,
+      configFilePath: path.join(root, 'vite.config.ts'),
+      weappViteConfig: {},
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+    const server = JSON.parse(files.find(file => file.path.endsWith('tsconfig.server.json'))!.content)
+    const shared = JSON.parse(files.find(file => file.path.endsWith('tsconfig.shared.json'))!.content)
+
+    expect(shared.compilerOptions.strict).toBe(false)
+    expect(app.compilerOptions.paths['tdesign-miniprogram/*']).toEqual(['./node_modules/tdesign-miniprogram/miniprogram_dist/*'])
+    expect(app.include).toContain('../legacy/**/*.ts')
+    expect(app.exclude).toContain('../legacy-exclude/**')
+    expect(server.files).toContain('../server/entry.ts')
+  })
+
+  it('ignores invalid legacy root tsconfig files', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-invalid-legacy-tsconfig-'))
+    await fs.writeFile(path.join(root, 'tsconfig.app.json'), '{ invalid jsonc')
+
+    const files = await createManagedTsconfigFiles(createCtx({
+      cwd: root,
+      configFilePath: path.join(root, 'vite.config.ts'),
+      weappViteConfig: {},
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+
+    expect(app.include).toContain('../src/**/*')
+    expect(app.compilerOptions.paths['@/*']).toEqual(['src/*'])
   })
 
   it('writes managed tsconfig files into .weapp-vite', async () => {

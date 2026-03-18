@@ -188,23 +188,38 @@ export interface WeappWebConfig {
 
 export interface WeappManagedSharedTsconfigConfig {
   compilerOptions?: CompilerOptions
+  include?: string[]
+  exclude?: string[]
+  files?: string[]
 }
 
 export interface WeappManagedAppTsconfigConfig {
   compilerOptions?: CompilerOptions
   vueCompilerOptions?: Record<string, any>
   include?: string[]
+  exclude?: string[]
+  files?: string[]
 }
 
 export interface WeappManagedNodeTsconfigConfig {
   compilerOptions?: CompilerOptions
   include?: string[]
+  exclude?: string[]
+  files?: string[]
+}
+
+export interface WeappManagedServerTsconfigConfig {
+  compilerOptions?: CompilerOptions
+  include?: string[]
+  exclude?: string[]
+  files?: string[]
 }
 
 export interface WeappManagedTypeScriptConfig {
   shared?: WeappManagedSharedTsconfigConfig
   app?: WeappManagedAppTsconfigConfig
   node?: WeappManagedNodeTsconfigConfig
+  server?: WeappManagedServerTsconfigConfig
 }
 
 export interface WeappLibEntryContext {
