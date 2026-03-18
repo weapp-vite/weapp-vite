@@ -116,13 +116,13 @@ describe.sequential('e2e app: wevu-subpackage-placement (build)', () => {
     expect(independentDetailJs).toContain('require(`../../independentState.js`)')
     expect(independentDetailJs).toContain('from.value')
 
-    expect(normalSharedChunk).toContain('count:t')
-    expect(normalSharedChunk).toContain('from:e.o(`direct`)')
-    expect(normalSharedChunk).toContain('double:e.a(()=>t.value*2)')
+    expect(normalSharedChunk).toMatch(/count:\w+/)
+    expect(normalSharedChunk).toMatch(/from:\w+\.\w+\(`direct`\)/)
+    expect(normalSharedChunk).toMatch(/double:\w+\.\w+\(\(\)=>\w+\.value\*2\)/)
 
-    expect(independentSharedChunk).toContain('count:ai')
-    expect(independentSharedChunk).toContain('from:Se(`direct`)')
-    expect(independentSharedChunk).toContain('double:we(()=>ai.value*2)')
+    expect(independentSharedChunk).toMatch(/count:\w+/)
+    expect(independentSharedChunk).toMatch(/from:\w+\(`direct`\)/)
+    expect(independentSharedChunk).toMatch(/double:\w+\(\(\)=>\w+\.value\*2\)/)
 
     const distJsFiles = (await fs.readdir(DIST_ROOT, { recursive: true }))
       .filter(file => typeof file === 'string' && file.endsWith('.js'))

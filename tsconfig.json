@@ -26,7 +26,7 @@
   },
   "vueCompilerOptions": {
     "plugins": [
-      "./packages/volar/dist/index"
+      "weapp-vite/volar"
     ],
     "lib": "wevu"
   },

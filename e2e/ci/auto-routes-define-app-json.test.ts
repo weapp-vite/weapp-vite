@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/auto-routes-define-app-json')
 const DIST_ROOT = path.join(APP_ROOT, 'dist')
-const TYPED_ROUTER_PATH = path.join(APP_ROOT, 'src/typed-router.d.ts')
+const TYPED_ROUTER_PATH = path.join(APP_ROOT, '.weapp-vite/typed-router.d.ts')
 
 describe.sequential('e2e app: auto-routes defineAppJson', () => {
   it('builds with routes.pages, generates mutable tuple typings, and shares routes to runtime globalData', async () => {
