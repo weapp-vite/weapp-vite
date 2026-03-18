@@ -27,10 +27,13 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "isolatedModules": true,
     "skipLibCheck": true
   },
   "vueCompilerOptions": {
+    "lib": "wevu",
     "plugins": [
       "weapp-vite/volar"
     ]
@@ -43,6 +46,7 @@
   "include": [
     "**/*.ts",
     "**/*.js",
+    "**/*.vue",
     "vite-env.d.ts"
   ],
   "exclude": [

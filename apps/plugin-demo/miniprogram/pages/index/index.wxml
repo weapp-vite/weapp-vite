@@ -1,7 +1,45 @@
-<navigator id="nav" url="plugin://hello-plugin/hello-page">
-  Go to Plugin page
-</navigator>
+<view class="page">
+  <view class="hero">
+    <text class="hero__eyebrow">weapp-vite plugin demo</text>
+    <text class="hero__title">插件能力混合演示</text>
+    <text class="hero__desc">
+      宿主页面直接消费插件导出的 TS API，同时挂载插件公开组件，验证 plugin 场景下的多种编译入口。
+    </text>
+  </view>
 
-<button id="add" bindtap="addItem">Add item</button>
+  <view class="panel">
+    <text class="panel__title">宿主拿到的插件信息</text>
+    <text class="panel__line">plugin.answer = {{ pluginAnswer }}</text>
+    <text class="panel__line">{{ hostMessage }}</text>
+    <text class="panel__line">{{ pluginSummary }}</text>
+  </view>
 
-<hello-list items="{{ items }}" />
+  <view class="nav-grid">
+    <navigator class="nav-card" url="plugin://hello-plugin/hello-page">
+      <text class="nav-card__title">插件 Vue SFC 页面</text>
+      <text class="nav-card__desc">`script setup lang="ts"` + `lang="scss"` + wevu 响应式</text>
+    </navigator>
+    <navigator class="nav-card nav-card--alt" url="plugin://hello-plugin/native-playground">
+      <text class="nav-card__title">插件原生 TS 页面</text>
+      <text class="nav-card__desc">原生 `Page` + `ts` + 独立 `.scss` + 组件组合</text>
+    </navigator>
+  </view>
+
+  <hello-showcase
+    title="宿主直接渲染插件公开 Vue SFC 组件"
+    note="组件数据来自插件导出的 TS 模块，宿主只负责绑定。"
+    entries="{{ featureCards }}"
+  />
+
+  <view class="panel">
+    <text class="panel__title">宿主直接渲染插件公开原生组件</text>
+    <native-meter
+      label="Plugin Native Meter"
+      value="{{ showcaseProgress }}"
+      tone="success"
+    />
+    <button class="panel__button" bindtap="boostShowcase">
+      切换插件原生组件进度
+    </button>
+  </view>
+</view>

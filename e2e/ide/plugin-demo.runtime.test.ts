@@ -68,14 +68,14 @@ async function tapElement(page: any, selector: string) {
   await page.waitFor(260)
 }
 
-async function waitForPluginPage(miniProgram: any, timeoutMs = 12_000) {
+async function waitForPageContains(miniProgram: any, expectedText: string, timeoutMs = 12_000) {
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
       const page = await miniProgram.currentPage()
       if (page) {
         const wxml = await readPageWxml(page)
-        if (wxml.includes('This is a plugin page!')) {
+        if (wxml.includes(expectedText)) {
           return page
         }
       }
@@ -92,7 +92,7 @@ describe.sequential('plugin-demo runtime (ide)', () => {
     await closeSharedMiniProgram()
   })
 
-  it('loads miniprogram page, renders plugin component, and opens plugin page without runtime errors', async () => {
+  it('loads host page, renders plugin public components, and opens both plugin pages without runtime errors', async () => {
     const miniProgram = await getSharedMiniProgram()
     const errorCollector = attachRuntimeErrorCollector(miniProgram)
     const marker = errorCollector.mark()
@@ -103,19 +103,49 @@ describe.sequential('plugin-demo runtime (ide)', () => {
         throw new Error('Failed to launch /pages/index/index')
       }
 
-      await page.waitFor(400)
-      await tapElement(page, '#add')
+      await page.waitFor(500)
 
       const indexWxml = await readPageWxml(page)
-      expect(indexWxml).toContain('Go to Plugin page')
+      expect(indexWxml).toContain('插件能力混合演示')
+      expect(indexWxml).toContain('宿主直接渲染插件公开 Vue SFC 组件')
       expect(indexWxml).toContain('plugin-private://wxb3d842a4a7e3440d/components/hello-component')
+      expect(indexWxml).toContain('plugin-private://wxb3d842a4a7e3440d/components/native-meter')
+      expect(indexWxml).toContain('插件页面支持 Vue SFC')
+      expect(indexWxml).toContain('Plugin Native Meter')
 
-      await tapElement(page, '#nav')
-      const pluginPage = await waitForPluginPage(miniProgram)
-      expect(pluginPage).not.toBeNull()
+      await tapElement(page, '.panel__button')
+      const updatedIndexWxml = await readPageWxml(page)
+      expect(updatedIndexWxml).toContain('84%')
 
-      const pluginWxml = await readPageWxml(pluginPage)
-      expect(pluginWxml).toContain('This is a plugin page!')
+      await tapElement(page, '.nav-card')
+      const vuePluginPage = await waitForPageContains(miniProgram, '插件页直接使用 Vue SFC')
+      expect(vuePluginPage).not.toBeNull()
+
+      const vuePluginWxml = await readPageWxml(vuePluginPage)
+      expect(vuePluginWxml).toContain('插件页直接使用 Vue SFC')
+      expect(vuePluginWxml).toContain('插件页内直接消费 Vue SFC 公开组件')
+      expect(vuePluginWxml).toContain('Vue SFC 页面中的 Native Meter')
+
+      await tapElement(vuePluginPage, '.panel__button')
+      const updatedVuePluginWxml = await readPageWxml(vuePluginPage)
+      expect(updatedVuePluginWxml).toContain('100%')
+
+      const relaunchedNativePage = await miniProgram.reLaunch('plugin://hello-plugin/native-playground')
+      if (!relaunchedNativePage) {
+        throw new Error('Failed to launch plugin://hello-plugin/native-playground')
+      }
+
+      const nativePluginPage = await waitForPageContains(miniProgram, '原生 `Page` 继续可用')
+      expect(nativePluginPage).not.toBeNull()
+
+      const nativePluginWxml = await readPageWxml(nativePluginPage)
+      expect(nativePluginWxml).toContain('原生 `Page` 继续可用')
+      expect(nativePluginWxml).toContain('原生页中组合插件 Vue SFC 组件')
+      expect(nativePluginWxml).toContain('插件页支持 Vue SFC')
+
+      await tapElement(nativePluginPage, '.panel__button')
+      const updatedNativePluginWxml = await readPageWxml(nativePluginPage)
+      expect(updatedNativePluginWxml).toContain('插件公开组件也可以是 Vue SFC')
 
       const runtimeErrors = errorCollector.getSince(marker)
       expect(runtimeErrors).toEqual([])
