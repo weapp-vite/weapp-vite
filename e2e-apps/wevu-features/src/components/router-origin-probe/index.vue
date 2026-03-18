@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { useNativeInstance } from 'wevu'
+import { useNativePageRouter, useNativeRouter } from 'wevu'
 
 const props = defineProps<{
   title: string
 }>()
 
-const nativeInstance = useNativeInstance()
+const nativeRouter = useNativeRouter()
+const nativePageRouter = useNativePageRouter()
 
 function navByRouter() {
-  nativeInstance.router?.navigateTo({
+  nativeRouter.navigateTo({
     url: './target/index?source=component-router',
   })
 }
 
 function navByPageRouter() {
-  nativeInstance.pageRouter?.navigateTo({
+  nativePageRouter.navigateTo({
     url: './target/index?source=component-page-router',
   })
 }

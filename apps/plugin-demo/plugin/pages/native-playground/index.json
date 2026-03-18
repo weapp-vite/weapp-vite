@@ -1,7 +1,7 @@
 {
   "navigationBarTitleText": "插件原生 TS 页",
   "usingComponents": {
-    "hello-showcase": "/components/hello-component/index",
-    "native-meter": "/components/native-meter/index"
+    "hello-showcase": "../../components/hello-component/index",
+    "native-meter": "../../components/native-meter/index"
   }
 }

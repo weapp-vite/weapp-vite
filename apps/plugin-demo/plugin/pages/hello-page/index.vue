@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'wevu'
+import { ref } from 'wevu'
 import { getFeatureCardsByKind, getFeatureKindLabel, getPluginShowcaseSummary, getScoreTone } from '../../utils/showcase'
 
 type KindFilter = 'all' | 'vue-sfc' | 'native-ts' | 'scss'
 
 const currentKind = ref<KindFilter>('all')
 const score = ref(94)
+const cards = ref(getFeatureCardsByKind('all'))
+const summary = getPluginShowcaseSummary()
+const meterTone = ref(getScoreTone(score.value))
 
 definePageJson({
   navigationBarTitleText: '插件 Vue SFC 能力页',
-  usingComponents: {
-    'hello-showcase': '/components/hello-component/index',
-    'native-meter': '/components/native-meter/index',
-  },
 })
 
 const filterOptions = [
@@ -22,16 +21,14 @@ const filterOptions = [
   { id: 'scss' as KindFilter, label: getFeatureKindLabel('scss') },
 ]
 
-const cards = computed(() => getFeatureCardsByKind(currentKind.value))
-const summary = computed(() => getPluginShowcaseSummary())
-const meterTone = computed(() => getScoreTone(score.value))
-
 function selectKind(kind: KindFilter) {
   currentKind.value = kind
+  cards.value = getFeatureCardsByKind(kind)
 }
 
 function pulseScore() {
   score.value = score.value >= 96 ? 78 : score.value + 6
+  meterTone.value = getScoreTone(score.value)
 }
 </script>
 
@@ -57,19 +54,39 @@ function pulseScore() {
       </view>
     </view>
 
-    <hello-showcase
-      title="插件页内直接消费 Vue SFC 公开组件"
-      :note="summary"
-      :entries="cards"
-    />
+    <view class="overview">
+      <text class="overview__title">插件 Vue 页内的数据渲染</text>
+      <text class="overview__summary">{{ summary }}</text>
+
+      <view
+        v-for="card in cards"
+        :key="card.id"
+        class="overview__item"
+      >
+        <view class="overview__item-head">
+          <text class="overview__item-title">{{ card.title }}</text>
+          <text class="overview__badge">{{ card.kindLabel }}</text>
+        </view>
+        <text class="overview__item-summary">{{ card.summary }}</text>
+        <text class="overview__item-score">完成度 {{ card.score }}%</text>
+      </view>
+    </view>
 
     <view class="panel">
-      <text class="panel__title">同页组合原生 TS + SCSS 组件</text>
-      <native-meter
-        label="Vue SFC 页面中的 Native Meter"
-        :tone="meterTone"
-        :value="score"
-      />
+      <text class="panel__title">当前页内的响应式评分条</text>
+      <view class="meter">
+        <view class="meter__head">
+          <text class="meter__label">Vue SFC Page Score</text>
+          <text class="meter__value">{{ score }}%</text>
+        </view>
+        <view class="meter__track">
+          <view
+            class="meter__bar"
+            :class="`meter__bar--${meterTone}`"
+            :style="`width: ${score}%`"
+          />
+        </view>
+      </view>
       <button class="panel__button" @tap="pulseScore">
         切换页面内评分
       </button>
@@ -168,6 +185,126 @@ page {
     background: #1d4f91;
     color: #fff;
     font-size: 26rpx;
+  }
+}
+
+.overview {
+  margin-top: 24rpx;
+  padding: 28rpx;
+  border-radius: 28rpx;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 12rpx 28rpx rgb(69 96 137 / 10%);
+
+  &__title,
+  &__summary,
+  &__item-title,
+  &__item-summary,
+  &__item-score {
+    display: block;
+  }
+
+  &__title {
+    font-size: 30rpx;
+    font-weight: 600;
+    color: #18355f;
+  }
+
+  &__summary {
+    margin-top: 12rpx;
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: #566883;
+  }
+
+  &__item {
+    margin-top: 18rpx;
+    padding: 22rpx;
+    border: 2rpx solid #e6edf9;
+    border-radius: 22rpx;
+    background: #fff;
+  }
+
+  &__item-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16rpx;
+    align-items: center;
+  }
+
+  &__item-title {
+    flex: 1;
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #1f314c;
+  }
+
+  &__badge {
+    padding: 8rpx 16rpx;
+    border-radius: 999rpx;
+    background: #244b87;
+    color: #fff;
+    font-size: 22rpx;
+  }
+
+  &__item-summary {
+    margin-top: 12rpx;
+    font-size: 24rpx;
+    line-height: 1.65;
+    color: #5c6d89;
+  }
+
+  &__item-score {
+    margin-top: 12rpx;
+    font-size: 23rpx;
+    color: #23508d;
+    font-weight: 600;
+  }
+}
+
+.meter {
+  margin-top: 10rpx;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16rpx;
+  }
+
+  &__label,
+  &__value {
+    font-size: 24rpx;
+    color: #21416e;
+  }
+
+  &__value {
+    font-weight: 700;
+  }
+
+  &__track {
+    height: 16rpx;
+    margin-top: 16rpx;
+    overflow: hidden;
+    background: #dce8fb;
+    border-radius: 999rpx;
+  }
+
+  &__bar {
+    height: 100%;
+    border-radius: 999rpx;
+    transition: width 0.25s ease;
+  }
+
+  &__bar--neutral {
+    background: linear-gradient(90deg, #5f7cff, #4d63dd);
+  }
+
+  &__bar--success {
+    background: linear-gradient(90deg, #0d9488, #22c55e);
+  }
+
+  &__bar--danger {
+    background: linear-gradient(90deg, #dc2626, #f97316);
   }
 }
 </style>

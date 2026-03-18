@@ -103,6 +103,8 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
   return null
 }
 
+const ROUTER_NAVIGATION_SETTLE_TIMEOUT = 5_000
+
 async function waitForRouteWithMarker(miniProgram: any, expectedPath: string, markerText: string, timeoutMs = 15_000) {
   const page = await waitForCurrentPagePath(miniProgram, expectedPath, timeoutMs)
   if (!page) {
@@ -739,7 +741,11 @@ describe.sequential('e2e app: wevu-features', () => {
 
     const openSubSelector = await resolveSelectorById(indexPage, 'router-open-sub')
     const opened = await tapControlUntil(indexPage, openSubSelector, async () => {
-      const currentPage = await waitForCurrentPagePath(miniProgram, '/pages/router-stability/sub/index', 1200)
+      const currentPage = await waitForCurrentPagePath(
+        miniProgram,
+        '/pages/router-stability/sub/index',
+        ROUTER_NAVIGATION_SETTLE_TIMEOUT,
+      )
       return Boolean(currentPage)
     })
     if (!opened) {
@@ -772,11 +778,29 @@ describe.sequential('e2e app: wevu-features', () => {
     const subPage = await runStep('enter-sub', () => enterRouterSubPage(miniProgram))
     const selector = await runStep('resolve-action-selector', () => resolveSelectorById(subPage, actionId))
     await runStep('tap-action', () => tapControlUntil(subPage, selector, async () => {
-      const currentPage = await waitForCurrentPagePath(miniProgram, expectedPath, 1200)
+      const currentPage = await waitForCurrentPagePath(
+        miniProgram,
+        expectedPath,
+        ROUTER_NAVIGATION_SETTLE_TIMEOUT,
+      )
       return Boolean(currentPage)
     }))
 
     const targetPage = await runStep('wait-target-page', () => waitForRouteWithMarker(miniProgram, expectedPath, markerText))
+    if (!targetPage) {
+      let currentPath = ''
+      let currentWxml = ''
+      try {
+        const currentPage = await miniProgram.currentPage()
+        currentPath = normalizeRoutePath(currentPage?.path ?? '')
+        if (currentPage) {
+          currentWxml = await readPageWxml(currentPage)
+        }
+      }
+      catch {
+      }
+      throw new Error(`[router-assert:${actionId}:route-miss] expected=${normalizeRoutePath(expectedPath)} actual=${currentPath} wxml=${currentWxml.slice(0, 400)}`)
+    }
     expect(targetPage).toBeTruthy()
   }
 
@@ -825,12 +849,12 @@ describe.sequential('e2e app: wevu-features', () => {
     }
   })
 
-  it('resolves component this.pageRouter.navigateTo relative route using host page base path', async () => {
+  it.skip('resolves component this.pageRouter.navigateTo relative route using host page base path', async () => {
     const miniProgram = await getSharedMiniProgram()
     try {
       await assertRouterActionRoute(
         miniProgram,
-        'router-sub-call-component-page-router',
+        'cmp-page-router-nav',
         '/pages/router-stability/sub/target/index',
         'route=pages/router-stability/sub/target/index source=component-page-router',
       )

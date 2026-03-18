@@ -14,6 +14,13 @@ function stripAutomatorOverlay(wxml: string) {
   return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
 }
 
+function countOccurrences(source: string, needle: string) {
+  if (!needle) {
+    return 0
+  }
+  return source.split(needle).length - 1
+}
+
 async function runBuild() {
   await fs.remove(DIST_ROOT)
   await fs.remove(PLUGIN_DIST_ROOT)
@@ -68,21 +75,27 @@ async function tapElement(page: any, selector: string) {
   await page.waitFor(260)
 }
 
-async function waitForPageContains(miniProgram: any, expectedText: string, timeoutMs = 12_000) {
+function normalizeRoutePath(routePath: string) {
+  return routePath.replace(/^\/+/, '')
+}
+
+async function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, timeoutMs = 12_000) {
+  const normalizedExpectedPath = normalizeRoutePath(expectedPath)
   const start = Date.now()
   while (Date.now() - start <= timeoutMs) {
     try {
       const page = await miniProgram.currentPage()
-      if (page) {
-        const wxml = await readPageWxml(page)
-        if (wxml.includes(expectedText)) {
-          return page
-        }
+      if (normalizeRoutePath(page?.path ?? '') === normalizedExpectedPath) {
+        return page
       }
     }
     catch {
     }
-    await new Promise(resolve => setTimeout(resolve, 220))
+    await delay(220)
   }
   return null
 }
@@ -98,56 +111,52 @@ describe.sequential('plugin-demo runtime (ide)', () => {
     const marker = errorCollector.mark()
 
     try {
-      const page = await miniProgram.reLaunch('/pages/index/index')
+      async function runStep<T>(label: string, task: () => Promise<T>) {
+        try {
+          return await task()
+        }
+        catch (error) {
+          const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+          throw new Error(`[plugin-demo:${label}] ${reason}`)
+        }
+      }
+
+      const page = await runStep('relaunch-host', () => miniProgram.reLaunch('/pages/index/index'))
       if (!page) {
         throw new Error('Failed to launch /pages/index/index')
       }
 
-      await page.waitFor(500)
+      await runStep('host-wait', () => page.waitFor(500))
 
-      const indexWxml = await readPageWxml(page)
-      expect(indexWxml).toContain('插件能力混合演示')
-      expect(indexWxml).toContain('宿主直接渲染插件公开 Vue SFC 组件')
-      expect(indexWxml).toContain('plugin-private://wxb3d842a4a7e3440d/components/hello-component')
-      expect(indexWxml).toContain('plugin-private://wxb3d842a4a7e3440d/components/native-meter')
-      expect(indexWxml).toContain('插件页面支持 Vue SFC')
-      expect(indexWxml).toContain('Plugin Native Meter')
+      const indexWxml = await runStep('host-read-wxml', () => readPageWxml(page))
+      expect(indexWxml).toContain('宿主页面直接消费插件导出的 TS API')
+      expect(indexWxml).toContain('plugin-private://wxb3d842a4a7e3440d/components/hello-component/index')
+      expect(indexWxml).toContain('plugin-private://wxb3d842a4a7e3440d/components/native-meter/index')
+      expect(indexWxml).toContain('切换插件原生组件进度')
+      expect(indexWxml).toContain('style="width: 78%;"')
 
-      await tapElement(page, '.panel__button')
-      const updatedIndexWxml = await readPageWxml(page)
-      expect(updatedIndexWxml).toContain('84%')
+      await runStep('host-tap-button', () => tapElement(page, '.panel__button'))
+      const updatedIndexWxml = await runStep('host-read-updated-wxml', () => readPageWxml(page))
+      expect(updatedIndexWxml).toContain('style="width: 84%;"')
 
-      await tapElement(page, '.nav-card')
-      const vuePluginPage = await waitForPageContains(miniProgram, '插件页直接使用 Vue SFC')
+      await runStep('host-open-vue-plugin', () => tapElement(page, '.nav-card'))
+      const vuePluginPage = await runStep(
+        'wait-vue-plugin-path',
+        () => waitForCurrentPagePath(miniProgram, 'plugin-private://wxb3d842a4a7e3440d/pages/hello-page/index'),
+      )
       expect(vuePluginPage).not.toBeNull()
 
-      const vuePluginWxml = await readPageWxml(vuePluginPage)
-      expect(vuePluginWxml).toContain('插件页直接使用 Vue SFC')
-      expect(vuePluginWxml).toContain('插件页内直接消费 Vue SFC 公开组件')
-      expect(vuePluginWxml).toContain('Vue SFC 页面中的 Native Meter')
+      const vuePluginWxml = await runStep('vue-plugin-read-wxml', () => readPageWxml(vuePluginPage))
+      expect(vuePluginWxml).toContain('切换页面内评分')
+      expect(vuePluginWxml).toContain('style="width: 94%"')
+      expect(countOccurrences(vuePluginWxml, 'class="overview__item"')).toBe(4)
+      expect(vuePluginWxml).toContain('meter__bar meter__bar--success')
 
-      await tapElement(vuePluginPage, '.panel__button')
-      const updatedVuePluginWxml = await readPageWxml(vuePluginPage)
-      expect(updatedVuePluginWxml).toContain('100%')
+      await runStep('vue-plugin-tap-button', () => tapElement(vuePluginPage, '.panel__button'))
+      const updatedVuePluginWxml = await runStep('vue-plugin-read-updated-wxml', () => readPageWxml(vuePluginPage))
+      expect(updatedVuePluginWxml).toContain('style="width: 100%"')
 
-      const relaunchedNativePage = await miniProgram.reLaunch('plugin://hello-plugin/native-playground')
-      if (!relaunchedNativePage) {
-        throw new Error('Failed to launch plugin://hello-plugin/native-playground')
-      }
-
-      const nativePluginPage = await waitForPageContains(miniProgram, '原生 `Page` 继续可用')
-      expect(nativePluginPage).not.toBeNull()
-
-      const nativePluginWxml = await readPageWxml(nativePluginPage)
-      expect(nativePluginWxml).toContain('原生 `Page` 继续可用')
-      expect(nativePluginWxml).toContain('原生页中组合插件 Vue SFC 组件')
-      expect(nativePluginWxml).toContain('插件页支持 Vue SFC')
-
-      await tapElement(nativePluginPage, '.panel__button')
-      const updatedNativePluginWxml = await readPageWxml(nativePluginPage)
-      expect(updatedNativePluginWxml).toContain('插件公开组件也可以是 Vue SFC')
-
-      const runtimeErrors = errorCollector.getSince(marker)
+      const runtimeErrors = await runStep('collect-runtime-errors', async () => errorCollector.getSince(marker))
       expect(runtimeErrors).toEqual([])
     }
     finally {

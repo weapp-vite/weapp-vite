@@ -48,13 +48,10 @@ describe('plugin-demo build regression', () => {
     expect(pluginIndexCode).toContain('exports.sayHello')
     expect(pluginIndexCode).toContain('exports.answer')
     expect(pluginIndexCode).toContain('exports.getFeatureCards')
-    expect(pluginPageJson.usingComponents).toMatchObject({
-      'hello-showcase': '/components/hello-component/index',
-      'native-meter': '/components/native-meter/index',
-    })
+    expect(pluginPageJson.usingComponents ?? {}).toEqual({})
     expect(nativePlaygroundJson.usingComponents).toMatchObject({
-      'hello-showcase': '/components/hello-component/index',
-      'native-meter': '/components/native-meter/index',
+      'hello-showcase': '../../components/hello-component/index',
+      'native-meter': '../../components/native-meter/index',
     })
     expect(pluginJson.publicComponents).toMatchObject({
       'hello-component': 'components/hello-component/index',
