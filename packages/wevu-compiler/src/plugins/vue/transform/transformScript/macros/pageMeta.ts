@@ -11,7 +11,7 @@ export function createPageMetaVisitors(state: TransformState) {
       if (!t.isIdentifier(path.node.callee, { name: PAGE_META_MACRO_NAME })) {
         return
       }
-      if (!path.parentPath?.isExpressionStatement() || !path.parentPath.parentPath?.isProgram()) {
+      if (!path.parentPath?.isExpressionStatement()) {
         return
       }
       path.parentPath.remove()

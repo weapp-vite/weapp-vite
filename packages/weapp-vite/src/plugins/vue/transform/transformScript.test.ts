@@ -52,6 +52,28 @@ export default {}
     expect(result.code).not.toContain('definePageMeta')
   })
 
+  it('strips definePageMeta when it is compiled inside setup body', () => {
+    const result = transformScript(`
+export default {
+  setup() {
+    definePageMeta({
+      layout: {
+        name: 'panel',
+        props: {
+          title: titleRef.value,
+        },
+      },
+    })
+    return {
+      titleRef,
+    }
+  },
+}
+`)
+
+    expect(result.code).not.toContain('definePageMeta')
+  })
+
   it('keeps stripping type parameters when definePageMeta is present', () => {
     const result = transformScript(`
 definePageMeta({

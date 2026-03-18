@@ -46,6 +46,7 @@ definePageMeta({
       title: 'Dashboard',
       count: 3,
       empty: null,
+      source: titleRef.value,
     },
   },
 })
@@ -59,6 +60,10 @@ definePageMeta({
         title: 'Dashboard',
         count: 3,
         empty: null,
+        source: {
+          kind: 'expression',
+          expression: 'titleRef.value',
+        },
       },
     })
   })
@@ -141,12 +146,13 @@ definePageMeta({
 definePageMeta({
   layout: {
     name: 'panel',
-    props: {
-      sidebar: true,
-      title: 'Dashboard',
-      count: 3,
+      props: {
+        sidebar: true,
+        title: 'Dashboard',
+        count: 3,
+        source: titleRef.value,
+      },
     },
-  },
 })
 </script>
 <template><view>panel</view></template>
@@ -168,6 +174,10 @@ definePageMeta({
         sidebar: true,
         title: 'Dashboard',
         count: 3,
+        source: {
+          kind: 'expression',
+          expression: 'titleRef.value',
+        },
       },
     })
   })
@@ -251,6 +261,40 @@ definePageMeta({
     )
 
     expect(result.template).toBe('<weapp-layout-panel sidebar="{{true}}" title="Dashboard" count="{{3}}" empty="{{null}}"><view>content</view></weapp-layout-panel>')
+  })
+
+  it('renders runtime layout prop bindings and injects computed entries into script', () => {
+    const result = applyPageLayout(
+      {
+        script: 'const __wevuOptions = { computed: baseComputed, data() { return {} } };export default __wevuOptions',
+        template: '<view>content</view>',
+        config: JSON.stringify({ navigationBarTitleText: '运行时布局' }),
+      },
+      '/project/src/pages/home/index.vue',
+      {
+        file: '/project/src/layouts/panel.vue',
+        importPath: '/layouts/panel',
+        kind: 'vue',
+        layoutName: 'panel',
+        tagName: 'weapp-layout-panel',
+        props: {
+          title: {
+            kind: 'expression',
+            expression: 'titleRef.value',
+          },
+          sidebar: {
+            kind: 'expression',
+            expression: 'sidebarVisible',
+          },
+        },
+      },
+    )
+
+    expect(result.template).toBe('<weapp-layout-panel title="{{__wv_layout_bind_title}}" sidebar="{{__wv_layout_bind_sidebar}}"><view>content</view></weapp-layout-panel>')
+    expect(result.script).toContain('__wv_layout_bind_title')
+    expect(result.script).toContain('__wv_layout_bind_sidebar')
+    expect(result.script).toContain('titleRef.value')
+    expect(result.script).toContain('sidebarVisible')
   })
 
   it('does not wrap layout twice when template is already wrapped', () => {

@@ -1,10 +1,15 @@
 <script setup lang="ts">
+import { computed } from 'wevu'
+
+const sidebarEnabled = computed(() => true)
+const layoutTitle = computed(() => 'Dashboard')
+
 definePageMeta({
   layout: {
     name: 'admin',
     props: {
-      sidebar: true,
-      title: 'Dashboard',
+      sidebar: sidebarEnabled.value,
+      title: layoutTitle.value,
     },
   },
 })
@@ -12,7 +17,7 @@ definePageMeta({
 const panels = [
   {
     title: '命名布局 + props',
-    desc: '这个页面通过 definePageMeta({ layout: { name: \'admin\', props } }) 切到 admin 布局，并把静态 props 传给布局组件。',
+    desc: '这个页面通过 definePageMeta({ layout: { name: \'admin\', props } }) 切到 admin 布局，并把 computed/ref 派生值作为 props 传给布局组件。',
   },
   {
     title: 'slot 承载页面内容',
