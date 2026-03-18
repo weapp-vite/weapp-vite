@@ -61,4 +61,17 @@ describe('createVueComponentsDefinition', () => {
     )
     expect(code).toContain('[component: string]: WeappComponent;')
   })
+
+  it('emits WevuPageLayoutMap augmentation when layout names are provided', () => {
+    const code = createVueComponentsDefinition(
+      ['t-empty'],
+      () => ({ types: new Map(), docs: new Map() }),
+      { useTypedComponents: true, layoutNames: ['admin', 'native-shell'] },
+    )
+
+    expect(code).toContain('declare module \'wevu\'')
+    expect(code).toContain('interface WevuPageLayoutMap')
+    expect(code).toContain('admin: Record<string, any>;')
+    expect(code).toContain('\'native-shell\': Record<string, any>;')
+  })
 })

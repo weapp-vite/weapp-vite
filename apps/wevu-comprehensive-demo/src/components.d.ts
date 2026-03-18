@@ -318,6 +318,14 @@ declare module 'vue' {
   }
 }
 
+declare module 'wevu' {
+  interface WevuPageLayoutMap {
+    admin: Record<string, any>;
+    default: Record<string, any>;
+    'native-shell': Record<string, any>;
+  }
+}
+
 // 用于 TSX 支持
 declare global {
   const TActionSheet: __WeappComponentImport<typeof import("tdesign-miniprogram/miniprogram_dist/action-sheet/action-sheet"), WeappComponent<ComponentProp<"t-action-sheet">>>

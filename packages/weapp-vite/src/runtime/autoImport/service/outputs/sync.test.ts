@@ -3,6 +3,8 @@ import { syncHtmlCustomData, syncTypedComponentsDefinition, syncVueComponentsDef
 
 const fsRemoveMock = vi.hoisted(() => vi.fn())
 const fsOutputFileMock = vi.hoisted(() => vi.fn())
+const fsReaddirMock = vi.hoisted(() => vi.fn())
+const fsStatMock = vi.hoisted(() => vi.fn())
 const loggerErrorMock = vi.hoisted(() => vi.fn())
 const getTypedComponentsSettingsMock = vi.hoisted(() => vi.fn())
 const createTypedComponentsDefinitionMock = vi.hoisted(() => vi.fn())
@@ -15,6 +17,8 @@ vi.mock('fs-extra', () => {
   const mocked = {
     remove: fsRemoveMock,
     outputFile: fsOutputFileMock,
+    readdir: fsReaddirMock,
+    stat: fsStatMock,
   }
   return {
     ...mocked,
@@ -116,6 +120,22 @@ describe('autoImport outputs sync helpers', () => {
     createHtmlCustomDataDefinitionMock.mockReturnValue('html-next')
     loadWeappBuiltinHtmlTagsMock.mockReturnValue([])
     getTypedComponentsSettingsMock.mockReturnValue({ enabled: false })
+    fsReaddirMock.mockImplementation(async (dir: string) => {
+      const normalized = dir.replaceAll('\\', '/')
+      if (normalized.endsWith('/src/layouts')) {
+        return ['admin.vue', 'native-shell']
+      }
+      if (normalized.endsWith('/src/layouts/native-shell')) {
+        return ['index.wxml']
+      }
+      return []
+    })
+    fsStatMock.mockImplementation(async (target: string) => {
+      const normalized = target.replaceAll('\\', '/')
+      return {
+        isDirectory: () => normalized.endsWith('/native-shell') || normalized.endsWith('/layouts'),
+      }
+    })
   })
 
   it('cleans previous typed output when typed components are disabled', async () => {
@@ -202,6 +222,11 @@ describe('autoImport outputs sync helpers', () => {
 
     const resolveNavigationImport = vi.fn((from: string) => `resolved:${from}`)
     const options = createCommonOptions({
+      ctx: {
+        configService: {
+          absoluteSrcRoot: '/project/src',
+        },
+      },
       outputsState: {
         ...createOutputsState(),
         lastVueComponentsOutputPath: '/project/types/old-components.d.ts',
@@ -248,6 +273,13 @@ describe('autoImport outputs sync helpers', () => {
       '/project/types/components.d.ts',
       expect.stringContaining('"useTypedComponents":true'),
       'utf8',
+    )
+    expect(createVueComponentsDefinitionMock).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Function),
+      expect.objectContaining({
+        layoutNames: ['admin', 'native-shell'],
+      }),
     )
     expect(options.outputsState.lastWrittenVueComponentsDefinition).toContain('"moduleName":"auto-components"')
     expect(options.outputsState.lastVueComponentsOutputPath).toBe('/project/types/components.d.ts')
