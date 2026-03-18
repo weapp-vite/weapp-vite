@@ -3,7 +3,7 @@ import { getCurrentInstance } from './hooks'
 const PAGE_LAYOUT_SETTER_KEY = '__wevuSetPageLayout'
 const NO_LAYOUT_RUNTIME_KEY = '__wv_no_layout'
 
-type PageLayoutSetter = (layout: string | false) => void
+type PageLayoutSetter = (layout: string | false, props?: Record<string, any>) => void
 
 function resolveCurrentPageInstance() {
   const getCurrentPagesFn = (globalThis as Record<string, unknown>).getCurrentPages
@@ -17,18 +17,18 @@ function resolveCurrentPageInstance() {
 /**
  * 显式切换当前页面使用的 layout。
  */
-export function setPageLayout(layout: string | false): void {
+export function setPageLayout(layout: string | false, props?: Record<string, any>): void {
   const currentInstance = getCurrentInstance() as Record<string, any> | undefined
   const directSetter = currentInstance?.[PAGE_LAYOUT_SETTER_KEY] as PageLayoutSetter | undefined
   if (typeof directSetter === 'function') {
-    directSetter(layout)
+    directSetter(layout, props)
     return
   }
 
   const currentPage = resolveCurrentPageInstance()
   const pageSetter = currentPage?.[PAGE_LAYOUT_SETTER_KEY] as PageLayoutSetter | undefined
   if (typeof pageSetter === 'function') {
-    pageSetter(layout)
+    pageSetter(layout, props)
     return
   }
 

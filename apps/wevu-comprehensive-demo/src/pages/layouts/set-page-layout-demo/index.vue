@@ -5,12 +5,18 @@ const currentLayout = ref<'admin' | 'native-shell' | 'none'>('admin')
 
 function applyAdmin() {
   currentLayout.value = 'admin'
-  setPageLayout('admin')
+  setPageLayout('admin', {
+    sidebar: true,
+    title: 'Runtime Admin',
+  })
 }
 
 function applyNative() {
   currentLayout.value = 'native-shell'
-  setPageLayout('native-shell')
+  setPageLayout('native-shell', {
+    sidebar: true,
+    title: 'Runtime Native',
+  })
 }
 
 function clearLayout() {

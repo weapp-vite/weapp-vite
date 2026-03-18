@@ -59,12 +59,13 @@ export function registerComponentDefinition<D extends object, C extends Computed
     if (!isPage) {
       return
     }
-    instance.__wevuSetPageLayout = (layout: string | false) => {
+    instance.__wevuSetPageLayout = (layout: string | false, props?: Record<string, any>) => {
       const runtimeState = instance.__wevu?.state as Record<string, any> | undefined
       if (!runtimeState || typeof runtimeState !== 'object') {
         return
       }
       runtimeState.__wv_page_layout_name = resolveRuntimePageLayoutName(layout)
+      runtimeState.__wv_page_layout_props = layout === false ? {} : (props ?? {})
     }
   }
   if (isPage) {
