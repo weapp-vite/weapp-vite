@@ -186,6 +186,27 @@ export interface WeappWebConfig {
   vite?: InlineConfig
 }
 
+export interface WeappManagedSharedTsconfigConfig {
+  compilerOptions?: CompilerOptions
+}
+
+export interface WeappManagedAppTsconfigConfig {
+  compilerOptions?: CompilerOptions
+  vueCompilerOptions?: Record<string, any>
+  include?: string[]
+}
+
+export interface WeappManagedNodeTsconfigConfig {
+  compilerOptions?: CompilerOptions
+  include?: string[]
+}
+
+export interface WeappManagedTypeScriptConfig {
+  shared?: WeappManagedSharedTsconfigConfig
+  app?: WeappManagedAppTsconfigConfig
+  node?: WeappManagedNodeTsconfigConfig
+}
+
 export interface WeappLibEntryContext {
   name: string
   input: string

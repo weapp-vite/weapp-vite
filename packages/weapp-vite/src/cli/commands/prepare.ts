@@ -6,6 +6,7 @@ import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
 import { findAutoImportCandidates, shouldBootstrapAutoImportWithoutGlobs } from '../../plugins/autoImport'
 import { getAutoImportConfig } from '../../runtime/autoImport/config'
+import { syncManagedTsconfigFiles } from '../../runtime/tsconfigSupport'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 
 function resolvePrepareRoot(input: string[] | undefined) {
@@ -35,6 +36,8 @@ export function registerPrepareCommand(cli: CAC) {
           mode: typeof options.mode === 'string' ? options.mode : 'development',
           configFile: resolveConfigFile(options),
         })
+
+        await syncManagedTsconfigFiles(ctx)
 
         if (ctx.autoRoutesService.isEnabled()) {
           await ctx.autoRoutesService.ensureFresh()

@@ -27,6 +27,7 @@ import type {
   SubPackage,
   SubPackageStyleEntry,
   WeappLibConfig,
+  WeappManagedTypeScriptConfig,
   WeappWebConfig,
 } from './foundation'
 import type { WeappAstConfig } from '@/ast'
@@ -91,6 +92,7 @@ export interface WeappViteConfig {
   subPackages?: Record<string, WeappSubPackageConfig>
   copy?: CopyOptions
   web?: WeappWebConfig
+  typescript?: WeappManagedTypeScriptConfig
   lib?: WeappLibConfig
   isAdditionalWxml?: (wxmlFilePath: string) => boolean
   platform?: MpPlatform

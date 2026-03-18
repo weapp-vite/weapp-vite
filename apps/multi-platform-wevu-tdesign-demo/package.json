@@ -35,7 +35,7 @@
     "build:jd": "weapp-vite build -p jd",
     "build:xhs": "weapp-vite build -p xhs",
     "build:web": "weapp-vite build -p h5",
-    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
+    "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
     "open": "weapp-vite open",
     "postinstall": "weapp-tw patch && weapp-vite prepare"
   },

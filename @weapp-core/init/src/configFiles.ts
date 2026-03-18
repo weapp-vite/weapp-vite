@@ -3,9 +3,7 @@ import logger from '@weapp-core/logger'
 import path from 'pathe'
 import { ctx } from './state'
 import {
-  getDefaultTsconfigAppJson,
   getDefaultTsconfigJson,
-  getDefaultTsconfigNodeJson,
 } from './tsconfigJson'
 import { getDefaultTsDts } from './tsDts'
 import { writeFile, writeJsonFile } from './utils/fs'
@@ -50,40 +48,27 @@ export async function initTsJsonFiles(options: SharedUpdateOptions) {
   const { root, dest, write = true } = options
   const tsJsonFilename = ctx.tsconfig.name = 'tsconfig.json'
   const tsJsonFilePath = ctx.tsconfig.path = path.resolve(root, tsJsonFilename)
-  const tsAppJsonFilename = ctx.tsconfigApp.name = 'tsconfig.app.json'
-  const tsAppJsonFilePath = ctx.tsconfigApp.path = path.resolve(root, tsAppJsonFilename)
-  const tsNodeJsonFilename = ctx.tsconfigNode.name = 'tsconfig.node.json'
-  const tsNodeJsonFilePath = ctx.tsconfigNode.path = path.resolve(root, tsNodeJsonFilename)
+  ctx.tsconfigApp.name = '.weapp-vite/tsconfig.app.json'
+  ctx.tsconfigApp.path = path.resolve(root, ctx.tsconfigApp.name)
+  ctx.tsconfigNode.name = '.weapp-vite/tsconfig.node.json'
+  ctx.tsconfigNode.path = path.resolve(root, ctx.tsconfigNode.name)
 
   const tsconfig = getDefaultTsconfigJson()
-  const tsconfigApp = getDefaultTsconfigAppJson()
-  const includeFiles = ctx.viteConfig.name ? [ctx.viteConfig.name] : []
-  const tsconfigNode = getDefaultTsconfigNodeJson(includeFiles)
 
   ctx.tsconfig.value = tsconfig
-  ctx.tsconfigApp.value = tsconfigApp
-  ctx.tsconfigNode.value = tsconfigNode
+  ctx.tsconfigApp.value = null
+  ctx.tsconfigNode.value = null
 
   if (write) {
     const tsconfigOutputPath = resolveOutputPath(root, dest, tsJsonFilePath)
-    const tsconfigAppOutputPath = resolveOutputPath(root, dest, tsAppJsonFilePath)
-    const tsconfigNodeOutputPath = resolveOutputPath(root, dest, tsNodeJsonFilePath)
 
     await writeJsonFile(tsconfigOutputPath, tsconfig)
-    await writeJsonFile(tsconfigAppOutputPath, tsconfigApp)
-    await writeJsonFile(tsconfigNodeOutputPath, tsconfigNode)
-    logger.log(
-      `✨ 写入 ${[
-        path.relative(root, tsconfigOutputPath),
-        path.relative(root, tsconfigAppOutputPath),
-        path.relative(root, tsconfigNodeOutputPath),
-      ].join(', ')} 成功!`,
-    )
+    logger.log(`✨ 写入 ${path.relative(root, tsconfigOutputPath)} 成功!`)
   }
 
   return {
     tsconfig,
-    tsconfigApp,
-    tsconfigNode,
+    tsconfigApp: null,
+    tsconfigNode: null,
   }
 }

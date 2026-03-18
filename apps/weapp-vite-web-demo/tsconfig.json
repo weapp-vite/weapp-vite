@@ -1,29 +1,14 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "target": "ESNext",
-    "baseUrl": ".",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "paths": {
-      "@weapp-vite/web": [
-        "../../packages/web/src/index.ts"
-      ]
+  "references": [
+    {
+      "path": "./.weapp-vite/tsconfig.app.json"
     },
-    "types": [
-      "miniprogram-api-typings",
-      "vite/client"
-    ],
-    "strict": true
-  },
-  "vueCompilerOptions": {
-    "plugins": [
-      "weapp-vite/volar"
-    ]
-  },
-  "include": [
-    "src",
-    "vite.config.ts",
-    ".weapp-vite/typed-components.d.ts"
-  ]
+    {
+      "path": "./.weapp-vite/tsconfig.node.json"
+    },
+    {
+      "path": "./.weapp-vite/tsconfig.shared.json"
+    }
+  ],
+  "files": []
 }
