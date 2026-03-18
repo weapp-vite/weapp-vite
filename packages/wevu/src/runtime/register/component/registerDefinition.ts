@@ -9,7 +9,7 @@ import type {
 } from '../../types'
 import type { WatchMap } from '../watch'
 import { callHookList } from '../../hooks'
-import { resolveRuntimePageLayoutName } from '../../pageLayout'
+import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../../pageLayout'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
 
@@ -65,7 +65,9 @@ export function registerComponentDefinition<D extends object, C extends Computed
         return
       }
       runtimeState.__wv_page_layout_name = resolveRuntimePageLayoutName(layout)
-      runtimeState.__wv_page_layout_props = layout === false ? {} : (props ?? {})
+      const nextProps = layout === false ? {} : (props ?? {})
+      runtimeState.__wv_page_layout_props = nextProps
+      syncRuntimePageLayoutState(instance as Record<string, any>, layout, nextProps)
     }
   }
   if (isPage) {
