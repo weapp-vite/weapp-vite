@@ -2,6 +2,8 @@ import type { ComponentPropMap } from '../componentProps'
 import type { ComponentMetadata } from './metadata'
 import { formatPropertyKey, isValidIdentifierName } from './definitionFormat'
 
+const VUE_SFC_IMPORT_RE = /\.vue(?:$|[?#])/i
+
 function formatPropsType(props?: ComponentPropMap) {
   if (!props || props.size === 0) {
     return 'Record<string, any>'
@@ -34,6 +36,11 @@ export interface VueComponentsDefinitionOptions {
    * （Cmd/Ctrl+Click）。
    */
   resolveComponentImport?: (name: string) => string | undefined
+
+  /**
+   * 自动扫描得到的 layout 名集合，会生成 WevuPageLayoutMap 模块增强。
+   */
+  layoutNames?: string[]
 }
 
 function toPascalCase(name: string) {
@@ -71,7 +78,7 @@ function formatSourceImportType(importPath: string, fallbackType?: string) {
 }
 
 function isVueSfcImport(importPath: string) {
-  return /\.vue(?:$|[?#])/i.test(importPath)
+  return VUE_SFC_IMPORT_RE.test(importPath)
 }
 
 function formatSourceDefaultImportType(importPath: string) {
@@ -239,6 +246,17 @@ export function createVueComponentsDefinition(
   lines.push('  }')
   lines.push('}')
   lines.push('')
+  const layoutNames = Array.from(new Set(options.layoutNames ?? [])).sort((a, b) => a.localeCompare(b))
+  if (layoutNames.length > 0) {
+    lines.push('declare module \'wevu\' {')
+    lines.push('  interface WevuPageLayoutMap {')
+    for (const name of layoutNames) {
+      lines.push(`    ${formatPropertyKey(name)}: Record<string, any>;`)
+    }
+    lines.push('  }')
+    lines.push('}')
+    lines.push('')
+  }
   lines.push('// 用于 TSX 支持')
   lines.push('declare global {')
 
