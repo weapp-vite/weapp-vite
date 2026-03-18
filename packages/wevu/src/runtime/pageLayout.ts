@@ -16,8 +16,26 @@ type ResolveTypedPageLayoutProps<Name extends string> = Name extends keyof WevuP
   ? WevuPageLayoutMap[Name]
   : Record<string, any>
 
-export interface PageLayoutState<Name extends string = ResolveTypedPageLayoutName> {
-  name?: Name | false
+type PageLayoutNamedState = {
+  [Name in ResolveTypedPageLayoutName]: {
+    name: Name
+    props: ResolveTypedPageLayoutProps<Name>
+  }
+}[ResolveTypedPageLayoutName]
+
+export type PageLayoutState
+  = | PageLayoutNamedState
+    | {
+      name: false
+      props: Record<string, any>
+    }
+    | {
+      name: undefined
+      props: Record<string, any>
+    }
+
+interface MutablePageLayoutState {
+  name: string | false | undefined
   props: Record<string, any>
 }
 
@@ -37,15 +55,15 @@ function normalizeRuntimePageLayoutName(layout: string | undefined) {
 /**
  * 获取当前页面 layout 状态。
  */
-export function usePageLayout<Name extends string = ResolveTypedPageLayoutName>(): Readonly<PageLayoutState<Name>> {
+export function usePageLayout(): Readonly<PageLayoutState> {
   if (!getCurrentSetupContext()) {
     throw new Error('usePageLayout() 必须在 setup() 的同步阶段调用')
   }
 
   const currentInstance = getCurrentInstance() as Record<string, any> | undefined
   const runtimeState = currentInstance?.__wevu?.state as Record<string, any> | undefined
-  const pageLayoutState = reactive<PageLayoutState<Name>>({
-    name: normalizeRuntimePageLayoutName(runtimeState?.__wv_page_layout_name) as Name | false | undefined,
+  const pageLayoutState = reactive<MutablePageLayoutState>({
+    name: normalizeRuntimePageLayoutName(runtimeState?.__wv_page_layout_name) as string | false | undefined,
     props: { ...(runtimeState?.__wv_page_layout_props ?? {}) },
   })
 
@@ -53,11 +71,11 @@ export function usePageLayout<Name extends string = ResolveTypedPageLayoutName>(
     currentInstance.__wevuPageLayoutState = pageLayoutState
   }
 
-  return readonly(pageLayoutState) as Readonly<PageLayoutState<Name>>
+  return readonly(pageLayoutState) as Readonly<PageLayoutState>
 }
 
 export function syncRuntimePageLayoutState(target: Record<string, any>, layout: string | false, props: Record<string, any>) {
-  const state = target.__wevuPageLayoutState as PageLayoutState | undefined
+  const state = target.__wevuPageLayoutState as MutablePageLayoutState | undefined
   if (!state) {
     return
   }
@@ -66,7 +84,7 @@ export function syncRuntimePageLayoutState(target: Record<string, any>, layout: 
 }
 
 export function syncRuntimePageLayoutStateFromRuntime(target: Record<string, any>) {
-  const state = target.__wevuPageLayoutState as PageLayoutState | undefined
+  const state = target.__wevuPageLayoutState as MutablePageLayoutState | undefined
   const runtimeState = target.__wevu?.state as Record<string, any> | undefined
   if (!state || !runtimeState) {
     return

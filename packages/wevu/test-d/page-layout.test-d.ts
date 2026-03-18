@@ -26,5 +26,14 @@ setPageLayout('native-shell', {
 setPageLayout(false)
 
 const pageLayout = usePageLayout()
-expectType<string | false | undefined>(pageLayout.name)
-expectType<Record<string, any>>(pageLayout.props)
+expectType<'admin' | 'native-shell' | false | undefined>(pageLayout.name)
+
+if (pageLayout.name === 'admin') {
+  expectType<boolean | undefined>(pageLayout.props.sidebar)
+  expectType<string | undefined>(pageLayout.props.title)
+}
+
+if (pageLayout.name === 'native-shell') {
+  expectType<boolean | undefined>(pageLayout.props.sidebar)
+  expectType<string | undefined>(pageLayout.props.title)
+}
