@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.10.2
+
+### Patch Changes
+
+- 🐛 **完善 plugin-demo 对小程序插件混合能力的演示，补充插件内 Vue SFC、TypeScript、SCSS、原生页面与公开组件组合示例；同时修复插件构建时插件内 `usingComponents` 绝对路径按主包根目录解析导致的误报告警，并补充对应构建回归测试。** [`3dc4ac2`](https://github.com/weapp-vite/weapp-vite/commit/3dc4ac25178678b85492ce235e9176dd7b635b23) by @sonofmagic
+- 📦 **Dependencies** [`602143a`](https://github.com/weapp-vite/weapp-vite/commit/602143a906e2cdb04534cd9238ba7bcb438282c6)
+  → `wevu@6.10.2`, `@weapp-vite/ast@6.10.2`
+
 ## 6.10.1
 
 ### Patch Changes
