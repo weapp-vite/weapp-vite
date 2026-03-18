@@ -3,7 +3,7 @@ export function collapsePayload(input: Record<string, any>) {
   if (keys.length <= 1) {
     return input
   }
-  const out: Record<string, any> = Object.create(null)
+  const out: Record<string, any> = {}
   const prefixStack: string[] = []
   for (const key of keys) {
     while (prefixStack.length) {
@@ -169,7 +169,7 @@ export function mergeSiblingPayload(options: {
     return { out: input, merged: 0 }
   }
 
-  const out: Record<string, any> = Object.create(null)
+  const out: Record<string, any> = {}
   Object.assign(out, input)
 
   let merged = 0

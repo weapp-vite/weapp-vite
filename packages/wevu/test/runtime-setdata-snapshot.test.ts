@@ -25,7 +25,8 @@ describe('runtime: setData snapshot helpers', () => {
     expect(cloned).not.toBe(source)
     expect(cloned.list).not.toBe(source.list)
     expect(cloned.list[1]).not.toBe(source.list[1])
-    expect(Object.getPrototypeOf(cloned.plain)).toBeNull()
+    expect(Object.getPrototypeOf(cloned)).toBe(Object.prototype)
+    expect(Object.getPrototypeOf(cloned.plain)).toBe(Object.prototype)
     expect(cloned.date).toBe(source.date)
   })
 
@@ -53,7 +54,7 @@ describe('runtime: setData snapshot helpers', () => {
   })
 
   it('applies set and delete updates with nested-path fallback handling', () => {
-    const snapshot: Record<string, any> = Object.create(null)
+    const snapshot: Record<string, any> = {}
 
     applySnapshotUpdate(snapshot, '', 1, 'set')
     expect(snapshot).toEqual({})
@@ -61,6 +62,8 @@ describe('runtime: setData snapshot helpers', () => {
     applySnapshotUpdate(snapshot, 'foo.bar', { count: 1 }, 'set')
     expect(snapshot.foo.bar).toEqual({ count: 1 })
     expect(snapshot.foo.bar).not.toBe(snapshot.foo)
+    expect(Object.getPrototypeOf(snapshot.foo)).toBe(Object.prototype)
+    expect(Object.getPrototypeOf(snapshot.foo.bar)).toBe(Object.prototype)
 
     applySnapshotUpdate(snapshot, 'foo.bar', undefined, 'delete')
     expect('bar' in snapshot.foo).toBe(false)
@@ -100,6 +103,7 @@ describe('runtime: setData snapshot helpers', () => {
       plain: { keep: true },
       nested: { value: 2 },
     })
+    expect(Object.getPrototypeOf(withoutComputed)).toBe(Object.prototype)
 
     const withComputed = collectSnapshot({
       state,
@@ -115,5 +119,6 @@ describe('runtime: setData snapshot helpers', () => {
       nested: { value: 2 },
       doubled: 4,
     })
+    expect(Object.getPrototypeOf(withComputed)).toBe(Object.prototype)
   })
 })
