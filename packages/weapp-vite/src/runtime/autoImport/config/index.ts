@@ -1,4 +1,4 @@
-export { DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME } from './base'
+export { DEFAULT_AUTO_IMPORT_MANIFEST_FILENAME, WEAPP_VITE_INTERNAL_DIRNAME } from './base'
 export { getAutoImportConfig } from './defaults'
 export { resolveManifestOutputPath } from './resolve'
 export {

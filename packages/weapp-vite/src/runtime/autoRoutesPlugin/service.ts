@@ -39,6 +39,7 @@ interface AutoRoutesPersistentCache {
 }
 
 const AUTO_ROUTES_CACHE_FILE = '.weapp-vite/auto-routes.cache.json'
+const TYPED_ROUTER_OUTPUT_FILE = '.weapp-vite/typed-router.d.ts'
 
 function updateWatchTargets(target: Set<string>, next: Set<string>) {
   target.clear()
@@ -124,7 +125,10 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       return undefined
     }
 
-    return path.resolve(configService.absoluteSrcRoot, 'typed-router.d.ts')
+    const baseDir = typeof configService.configFilePath === 'string'
+      ? path.dirname(configService.configFilePath)
+      : configService.cwd
+    return path.resolve(baseDir, TYPED_ROUTER_OUTPUT_FILE)
   }
 
   function resolvePersistentCacheBaseDir() {

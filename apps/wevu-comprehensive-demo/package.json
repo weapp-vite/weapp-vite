@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.26.0",
   "description": "WeVu comprehensive demo showcasing all features",
   "scripts": {
+    "prepare:weapp": "weapp-vite prepare",
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",

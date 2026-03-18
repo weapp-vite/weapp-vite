@@ -17,7 +17,7 @@
         "./src/*"
       ],
       "weapp-vite/typed-components": [
-        "./src/typed-components.d.ts"
+        "./.weapp-vite/typed-components.d.ts"
       ]
     },
     "resolveJsonModule": true,
@@ -46,6 +46,7 @@
     "lib": "wevu"
   },
   "include": [
-    "src/**/*"
+    "src/**/*",
+    ".weapp-vite/**/*.d.ts"
   ]
 }

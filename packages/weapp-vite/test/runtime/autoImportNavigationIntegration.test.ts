@@ -41,7 +41,7 @@ describe('autoImportComponents navigation integration', () => {
     await fs.writeFile(emptyDts, 'export {}', 'utf8')
 
     helloWorldTemplate = path.resolve(tempDir, 'src/components/HelloWorld/index.wxml')
-    componentsDefinitionPath = path.resolve(tempDir, 'src/components.d.ts')
+    componentsDefinitionPath = path.resolve(tempDir, '.weapp-vite/components.d.ts')
 
     const result = await createTestCompilerContext({ cwd: tempDir })
     ctx = result.ctx
@@ -71,6 +71,6 @@ describe('autoImportComponents navigation integration', () => {
     const content = await fs.readFile(componentsDefinitionPath, 'utf8')
     expect(content).toContain('mock-ui/miniprogram_dist/empty/empty')
     expect(content).not.toContain('mock-ui/miniprogram_dist/empty/empty.js')
-    expect(content).toContain('./components/HelloWorld/index')
+    expect(content).toContain('../src/components/HelloWorld/index')
   })
 })

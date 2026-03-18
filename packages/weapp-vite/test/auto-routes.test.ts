@@ -9,7 +9,7 @@ describe('auto-routes', () => {
       cwd: getFixture('watch'),
       isDev: true,
     })
-    const typedRouterPath = path.join(getFixture('watch'), 'src/typed-router.d.ts')
+    const typedRouterPath = path.join(getFixture('watch'), '.weapp-vite/typed-router.d.ts')
 
     try {
       const { autoRoutesService } = ctx
@@ -48,7 +48,7 @@ describe('auto-routes', () => {
       cwd: getFixture('asset'),
       isDev: true,
     })
-    const typedRouterPath = path.join(getFixture('asset'), 'src/typed-router.d.ts')
+    const typedRouterPath = path.join(getFixture('asset'), '.weapp-vite/typed-router.d.ts')
 
     try {
       const { autoRoutesService } = ctx
