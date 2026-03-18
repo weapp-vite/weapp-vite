@@ -1,3 +1,10 @@
+<script setup lang="ts">
+const props = defineProps<{
+  sidebar?: boolean
+  title?: string
+}>()
+</script>
+
 <template>
   <view class="admin-layout">
     <view class="admin-layout__hero">
@@ -5,10 +12,18 @@
         layouts/admin.vue
       </text>
       <text class="admin-layout__title">
-        Admin Layout
+        {{ props.title || 'Admin Layout' }}
       </text>
       <text class="admin-layout__subtitle">
         页面内容通过默认 slot 注入到这个布局里。
+      </text>
+    </view>
+    <view v-if="props.sidebar" class="admin-layout__toolbar">
+      <text class="admin-layout__toolbar-badge">
+        sidebar=true
+      </text>
+      <text class="admin-layout__toolbar-text">
+        这个标记来自 definePageMeta().layout.props
       </text>
     </view>
     <view class="admin-layout__body">
@@ -59,6 +74,30 @@
 
 .admin-layout__body {
   padding-bottom: 32rpx;
+}
+
+.admin-layout__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin: 24rpx 24rpx 0;
+  padding: 18rpx 20rpx;
+  border-radius: 18rpx;
+  background: rgb(20 83 45 / 8%);
+  color: #14532d;
+}
+
+.admin-layout__toolbar-badge {
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgb(20 83 45 / 12%);
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.admin-layout__toolbar-text {
+  flex: 1;
+  font-size: 22rpx;
 }
 /* stylelint-enable order/properties-order */
 </style>

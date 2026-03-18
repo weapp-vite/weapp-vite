@@ -24,6 +24,7 @@ export interface ResolvedPageLayout {
   kind: 'native' | 'vue'
   layoutName: string
   tagName: string
+  props?: Record<string, LayoutPropValue>
 }
 
 export interface NativeLayoutAssets {
@@ -38,6 +39,14 @@ interface DiscoveredLayoutFile {
   kind: 'native' | 'vue'
   layoutName: string
   tagName: string
+}
+
+export type LayoutPropValue = string | number | boolean | null
+
+interface ResolvedLayoutMeta {
+  name?: string
+  props?: Record<string, LayoutPropValue>
+  disabled?: boolean
 }
 
 function toKebabCase(input: string) {
@@ -72,8 +81,51 @@ function unwrapStaticExpression(node: t.Expression): t.Expression {
   return node
 }
 
+function extractStaticLayoutPropValue(node: t.Expression, filename: string, keyName: string): LayoutPropValue {
+  const normalized = unwrapStaticExpression(node)
+  if (t.isStringLiteral(normalized)) {
+    return normalized.value
+  }
+  if (t.isNumericLiteral(normalized)) {
+    return normalized.value
+  }
+  if (t.isBooleanLiteral(normalized)) {
+    return normalized.value
+  }
+  if (t.isNullLiteral(normalized)) {
+    return null
+  }
+
+  throw new Error(`${filename} 中 definePageMeta().layout.props.${keyName} 仅支持静态字符串、数字、布尔值或 null。`)
+}
+
+function extractLayoutPropsFromObject(node: t.ObjectExpression, filename: string) {
+  const props: Record<string, LayoutPropValue> = {}
+
+  for (const property of node.properties) {
+    if (!t.isObjectProperty(property) || property.computed || !t.isExpression(property.value)) {
+      throw new Error(`${filename} 中 definePageMeta().layout.props 仅支持普通对象字面量。`)
+    }
+
+    const key = property.key
+    const keyName = t.isIdentifier(key)
+      ? key.name
+      : t.isStringLiteral(key)
+        ? key.value
+        : undefined
+
+    if (!keyName) {
+      throw new Error(`${filename} 中 definePageMeta().layout.props 仅支持静态键名。`)
+    }
+
+    props[keyName] = extractStaticLayoutPropValue(property.value, filename, keyName)
+  }
+
+  return props
+}
+
 function extractLayoutValueFromObject(node: t.ObjectExpression, filename: string) {
-  let layout: string | false | undefined
+  let layout: ResolvedLayoutMeta | undefined
 
   for (const property of node.properties) {
     if (!t.isObjectProperty(property) || property.computed) {
@@ -88,7 +140,7 @@ function extractLayoutValueFromObject(node: t.ObjectExpression, filename: string
 
     const normalized = unwrapStaticExpression(property.value)
     if (t.isBooleanLiteral(normalized, { value: false })) {
-      layout = false
+      layout = { disabled: true }
       continue
     }
     if (t.isStringLiteral(normalized)) {
@@ -96,18 +148,70 @@ function extractLayoutValueFromObject(node: t.ObjectExpression, filename: string
       if (!next) {
         throw new Error(`${filename} 中 definePageMeta().layout 不能为空字符串。`)
       }
-      layout = next
+      layout = { name: next }
+      continue
+    }
+    if (t.isObjectExpression(normalized)) {
+      let nextName: string | undefined
+      let nextProps: Record<string, LayoutPropValue> | undefined
+
+      for (const nestedProperty of normalized.properties) {
+        if (!t.isObjectProperty(nestedProperty) || nestedProperty.computed || !t.isExpression(nestedProperty.value)) {
+          throw new Error(`${filename} 中 definePageMeta().layout 对象仅支持静态字面量字段。`)
+        }
+
+        const nestedKey = nestedProperty.key
+        const nestedKeyName = t.isIdentifier(nestedKey)
+          ? nestedKey.name
+          : t.isStringLiteral(nestedKey)
+            ? nestedKey.value
+            : undefined
+
+        if (!nestedKeyName) {
+          throw new Error(`${filename} 中 definePageMeta().layout 对象仅支持静态键名。`)
+        }
+
+        if (nestedKeyName === 'name') {
+          const nameValue = unwrapStaticExpression(nestedProperty.value)
+          if (!t.isStringLiteral(nameValue)) {
+            throw new Error(`${filename} 中 definePageMeta().layout.name 必须是静态字符串。`)
+          }
+          const normalizedName = normalizeLayoutName(nameValue.value)
+          if (!normalizedName) {
+            throw new Error(`${filename} 中 definePageMeta().layout.name 不能为空字符串。`)
+          }
+          nextName = normalizedName
+          continue
+        }
+
+        if (nestedKeyName === 'props') {
+          const propsValue = unwrapStaticExpression(nestedProperty.value)
+          if (!t.isObjectExpression(propsValue)) {
+            throw new Error(`${filename} 中 definePageMeta().layout.props 必须是对象字面量。`)
+          }
+          nextProps = extractLayoutPropsFromObject(propsValue, filename)
+          continue
+        }
+      }
+
+      if (!nextName) {
+        throw new Error(`${filename} 中 definePageMeta().layout 对象必须提供 name 字段。`)
+      }
+      layout = {
+        name: nextName,
+        props: nextProps,
+      }
       continue
     }
 
-    throw new Error(`${filename} 中 definePageMeta().layout 仅支持静态字符串或 false。`)
+    throw new Error(`${filename} 中 definePageMeta().layout 仅支持静态字符串、false，或 { name, props } 对象。`)
   }
 
   return layout
 }
 
 function extractLayoutFromProgram(ast: BabelFile, filename: string) {
-  let layout: string | false | undefined
+  let layout: ResolvedLayoutMeta | undefined
   let macroCount = 0
 
   for (const statement of ast.program.body) {
@@ -144,10 +248,10 @@ function parseScriptAst(content: string, _filename: string) {
   return babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS) as BabelFile
 }
 
-export function extractPageLayoutName(source: string, filename: string) {
+export function extractPageLayoutMeta(source: string, filename: string) {
   if (filename.endsWith('.vue')) {
     const { descriptor } = parseSfc(source, { filename })
-    let layout: string | false | undefined
+    let layout: ResolvedLayoutMeta | undefined
 
     if (descriptor.script?.content) {
       layout = extractLayoutFromProgram(parseScriptAst(descriptor.script.content, filename), filename)
@@ -166,6 +270,11 @@ export function extractPageLayoutName(source: string, filename: string) {
   }
 
   return extractLayoutFromProgram(parseScriptAst(source, filename), filename)
+}
+
+export function extractPageLayoutName(source: string, filename: string) {
+  const meta = extractPageLayoutMeta(source, filename)
+  return meta?.disabled ? false : meta?.name
 }
 
 async function collectLayoutFiles(root: string): Promise<Map<string, DiscoveredLayoutFile>> {
@@ -277,15 +386,15 @@ export async function resolvePageLayout(
   filename: string,
   configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath'>,
 ): Promise<ResolvedPageLayout | undefined> {
-  const layoutName = extractPageLayoutName(source, filename)
-  if (layoutName === false) {
+  const layoutMeta = extractPageLayoutMeta(source, filename)
+  if (layoutMeta?.disabled) {
     return undefined
   }
 
   const layoutsRoot = path.join(configService.absoluteSrcRoot, 'layouts')
   const layoutFiles = await collectLayoutFiles(layoutsRoot)
-  const selectedName = typeof layoutName === 'string'
-    ? layoutName
+  const selectedName = typeof layoutMeta?.name === 'string'
+    ? layoutMeta.name
     : layoutFiles.has('default')
       ? 'default'
       : undefined
@@ -307,7 +416,57 @@ export async function resolvePageLayout(
   return {
     ...layoutFile,
     importPath,
+    props: layoutMeta?.props,
   }
+}
+
+function escapeDoubleQuotedAttr(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('<', '&lt;')
+}
+
+function toKebabAttrName(key: string) {
+  return toKebabCase(key)
+}
+
+function serializeLayoutProps(props: Record<string, LayoutPropValue> | undefined) {
+  if (!props || Object.keys(props).length === 0) {
+    return ''
+  }
+
+  const attrs = Object.entries(props).map(([key, value]) => {
+    const attrName = toKebabAttrName(key)
+    if (typeof value === 'string') {
+      return `${attrName}="${escapeDoubleQuotedAttr(value)}"`
+    }
+    if (typeof value === 'number' || typeof value === 'boolean' || value === null) {
+      return `${attrName}="{{${String(value)}}}"`
+    }
+    return ''
+  }).filter(Boolean)
+
+  return attrs.length > 0 ? ` ${attrs.join(' ')}` : ''
+}
+
+function collapseNestedLayoutWrapper(template: string, tagName: string) {
+  const closeTag = `</${tagName}>`
+  let next = template
+
+  while (next.startsWith(`<${tagName}`) && next.endsWith(closeTag)) {
+    const openTagEnd = next.indexOf('>')
+    if (openTagEnd < 0) {
+      break
+    }
+    const inner = next.slice(openTagEnd + 1, -closeTag.length)
+    if (!inner.startsWith(`<${tagName}`)) {
+      break
+    }
+    next = inner
+  }
+
+  return next
 }
 
 /**
@@ -322,7 +481,13 @@ export function applyPageLayout(
     return result
   }
 
-  result.template = `<${layout.tagName}>${result.template}</${layout.tagName}>`
+  const serializedProps = serializeLayoutProps(layout.props)
+  if (result.template.startsWith(`<${layout.tagName}`)) {
+    result.template = collapseNestedLayoutWrapper(result.template, layout.tagName)
+    result.config = mergeLayoutUsingComponent(result.config, layout.tagName, layout.importPath)
+    return result
+  }
+  result.template = `<${layout.tagName}${serializedProps}>${result.template}</${layout.tagName}>`
   result.config = mergeLayoutUsingComponent(result.config, layout.tagName, layout.importPath)
 
   if (layout.kind === 'vue') {

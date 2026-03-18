@@ -2,7 +2,7 @@ import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
-import { applyPageLayout, extractPageLayoutName, resolvePageLayout } from './pageLayout'
+import { applyPageLayout, extractPageLayoutMeta, extractPageLayoutName, resolvePageLayout } from './pageLayout'
 
 const tempDirs: string[] = []
 
@@ -33,6 +33,34 @@ definePageMeta({
     `.trim(), '/project/src/pages/index/index.vue')
 
     expect(layoutName).toBe('admin-dashboard')
+  })
+
+  it('extracts layout object with props from definePageMeta', () => {
+    const layoutMeta = extractPageLayoutMeta(`
+<script setup lang="ts">
+definePageMeta({
+  layout: {
+    name: 'panel',
+    props: {
+      sidebar: true,
+      title: 'Dashboard',
+      count: 3,
+      empty: null,
+    },
+  },
+})
+</script>
+    `.trim(), '/project/src/pages/index/index.vue')
+
+    expect(layoutMeta).toEqual({
+      name: 'panel',
+      props: {
+        sidebar: true,
+        title: 'Dashboard',
+        count: 3,
+        empty: null,
+      },
+    })
   })
 
   it('resolves default layout when page meta is absent', async () => {
@@ -98,6 +126,52 @@ definePageMeta({
     })
   })
 
+  it('resolves layout object with props for vue layouts', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    const pageFile = path.join(srcRoot, 'pages', 'panel', 'index.vue')
+    const layoutFile = path.join(srcRoot, 'layouts', 'panel.vue')
+
+    await fs.ensureDir(path.dirname(layoutFile))
+    await fs.writeFile(layoutFile, '<template><slot /></template>', 'utf8')
+
+    const resolved = await resolvePageLayout(
+      `
+<script setup lang="ts">
+definePageMeta({
+  layout: {
+    name: 'panel',
+    props: {
+      sidebar: true,
+      title: 'Dashboard',
+      count: 3,
+    },
+  },
+})
+</script>
+<template><view>panel</view></template>
+      `.trim(),
+      pageFile,
+      {
+        absoluteSrcRoot: srcRoot,
+        relativeOutputPath: (input: string) => path.relative(srcRoot, input),
+      } as any,
+    )
+
+    expect(resolved).toEqual({
+      file: layoutFile,
+      importPath: '/layouts/panel',
+      kind: 'vue',
+      layoutName: 'panel',
+      tagName: 'weapp-layout-panel',
+      props: {
+        sidebar: true,
+        title: 'Dashboard',
+        count: 3,
+      },
+    })
+  })
+
   it('respects layout false and skips wrapping', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')
@@ -151,6 +225,55 @@ definePageMeta({
         'weapp-layout-default': '/layouts/default',
       },
     })
+  })
+
+  it('renders layout props as static attributes on wrapped layout tag', () => {
+    const result = applyPageLayout(
+      {
+        script: 'export default {}',
+        template: '<view>content</view>',
+        config: JSON.stringify({ navigationBarTitleText: '面板布局' }),
+      },
+      '/project/src/pages/home/index.vue',
+      {
+        file: '/project/src/layouts/panel.vue',
+        importPath: '/layouts/panel',
+        kind: 'vue',
+        layoutName: 'panel',
+        tagName: 'weapp-layout-panel',
+        props: {
+          sidebar: true,
+          title: 'Dashboard',
+          count: 3,
+          empty: null,
+        },
+      },
+    )
+
+    expect(result.template).toBe('<weapp-layout-panel sidebar="{{true}}" title="Dashboard" count="{{3}}" empty="{{null}}"><view>content</view></weapp-layout-panel>')
+  })
+
+  it('does not wrap layout twice when template is already wrapped', () => {
+    const result = applyPageLayout(
+      {
+        script: 'export default {}',
+        template: '<weapp-layout-panel sidebar="{{true}}"><weapp-layout-panel sidebar="{{true}}"><view>content</view></weapp-layout-panel></weapp-layout-panel>',
+        config: JSON.stringify({ navigationBarTitleText: '面板布局' }),
+      },
+      '/project/src/pages/home/index.vue',
+      {
+        file: '/project/src/layouts/panel.vue',
+        importPath: '/layouts/panel',
+        kind: 'vue',
+        layoutName: 'panel',
+        tagName: 'weapp-layout-panel',
+        props: {
+          sidebar: true,
+        },
+      },
+    )
+
+    expect(result.template).toBe('<weapp-layout-panel sidebar="{{true}}"><view>content</view></weapp-layout-panel>')
   })
 
   it('wraps compiled page output with native layout component without script import', () => {

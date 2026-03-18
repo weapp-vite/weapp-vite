@@ -1,6 +1,12 @@
 <script setup lang="ts">
 definePageMeta({
-  layout: 'native-shell',
+  layout: {
+    name: 'native-shell',
+    props: {
+      sidebar: true,
+      title: 'Native Dashboard',
+    },
+  },
 })
 
 const notes = [
@@ -39,7 +45,7 @@ function backToLayouts() {
         当前能力链路
       </text>
       <text class="status__value">
-        page -> native layout -> slot
+        page -> native layout props -> slot
       </text>
     </view>
 

@@ -1,12 +1,18 @@
 <script setup lang="ts">
 definePageMeta({
-  layout: 'admin',
+  layout: {
+    name: 'admin',
+    props: {
+      sidebar: true,
+      title: 'Dashboard',
+    },
+  },
 })
 
 const panels = [
   {
-    title: '命名布局切换',
-    desc: '这个页面通过 definePageMeta({ layout: \'admin\' }) 从默认布局切换到 admin 布局。',
+    title: '命名布局 + props',
+    desc: '这个页面通过 definePageMeta({ layout: { name: \'admin\', props } }) 切到 admin 布局，并把静态 props 传给布局组件。',
   },
   {
     title: 'slot 承载页面内容',
@@ -37,18 +43,18 @@ function backToLayouts() {
     <view class="section stat-grid">
       <view class="stat">
         <text class="stat__value">
-          admin
+          Dashboard
         </text>
         <text class="stat__label">
-          当前布局名
+          layout.props.title
         </text>
       </view>
       <view class="stat">
         <text class="stat__value">
-          vue
+          true
         </text>
         <text class="stat__label">
-          布局类型
+          layout.props.sidebar
         </text>
       </view>
     </view>
