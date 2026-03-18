@@ -22,6 +22,9 @@ export function getDefaultTsconfigJson() {
         path: './.weapp-vite/tsconfig.app.json',
       },
       {
+        path: './.weapp-vite/tsconfig.server.json',
+      },
+      {
         path: './.weapp-vite/tsconfig.node.json',
       },
       {

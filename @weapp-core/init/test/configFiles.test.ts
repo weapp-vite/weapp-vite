@@ -50,9 +50,11 @@ describe('configFiles', () => {
 
     const { tsconfig } = await initTsJsonFiles({ root, write: false })
 
+    expect(tsconfig.references?.map(ref => ref.path)).toContain('./.weapp-vite/tsconfig.server.json')
     expect(tsconfig.references?.map(ref => ref.path)).toContain('./.weapp-vite/tsconfig.node.json')
     expect(ctx.tsconfig.name).toBe('tsconfig.json')
     expect(ctx.tsconfigApp.name).toBe('.weapp-vite/tsconfig.app.json')
+    expect(ctx.tsconfigServer.name).toBe('.weapp-vite/tsconfig.server.json')
     expect(ctx.tsconfigNode.name).toBe('.weapp-vite/tsconfig.node.json')
   })
 

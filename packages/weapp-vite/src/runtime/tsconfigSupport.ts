@@ -22,6 +22,11 @@ interface ManagedTypeScriptConfig {
     compilerOptions?: CompilerOptions
     include?: string[]
   }
+  server?: {
+    compilerOptions?: CompilerOptions
+    include?: string[]
+    files?: string[]
+  }
 }
 
 const DEFAULT_APP_INCLUDE = [
@@ -200,11 +205,34 @@ function createNodeTsconfig(ctx: MutableCompilerContext) {
   }
 }
 
+function createServerTsconfig(ctx: MutableCompilerContext) {
+  const userConfig = getManagedTypeScriptConfig(ctx)
+  const compilerOptions: CompilerOptions = {
+    tsBuildInfoFile: '../node_modules/.tmp/tsconfig.server.tsbuildinfo',
+    target: 'ES2023',
+    lib: ['ES2023'],
+    types: ['node'],
+    ...(userConfig?.server?.compilerOptions ?? {}),
+  }
+
+  return {
+    extends: './tsconfig.shared.json',
+    compilerOptions,
+    files: unique(userConfig?.server?.files ?? []),
+    ...(userConfig?.server?.include?.length
+      ? {
+          include: unique(userConfig.server.include),
+        }
+      : {}),
+  }
+}
+
 export function createManagedTsconfigFiles(ctx: MutableCompilerContext): ManagedTsconfigFile[] {
   const managedDir = resolveManagedDir(ctx)
   const sharedPath = path.join(managedDir, 'tsconfig.shared.json')
   const appPath = path.join(managedDir, 'tsconfig.app.json')
   const nodePath = path.join(managedDir, 'tsconfig.node.json')
+  const serverPath = path.join(managedDir, 'tsconfig.server.json')
 
   return [
     {
@@ -218,6 +246,10 @@ export function createManagedTsconfigFiles(ctx: MutableCompilerContext): Managed
     {
       path: nodePath,
       content: toJson(createNodeTsconfig(ctx)),
+    },
+    {
+      path: serverPath,
+      content: toJson(createServerTsconfig(ctx)),
     },
   ]
 }

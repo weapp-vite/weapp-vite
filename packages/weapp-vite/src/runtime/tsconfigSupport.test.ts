@@ -21,6 +21,7 @@ describe('tsconfig support', () => {
     const files = createManagedTsconfigFiles(createCtx())
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
     const node = JSON.parse(files.find(file => file.path.endsWith('tsconfig.node.json'))!.content)
+    const server = JSON.parse(files.find(file => file.path.endsWith('tsconfig.server.json'))!.content)
     const shared = JSON.parse(files.find(file => file.path.endsWith('tsconfig.shared.json'))!.content)
 
     expect(shared.compilerOptions.target).toBe('ES2023')
@@ -31,6 +32,9 @@ describe('tsconfig support', () => {
     expect(node.extends).toBe('./tsconfig.shared.json')
     expect(node.compilerOptions.types).toContain('node')
     expect(node.include).toContain('../vite.config.ts')
+    expect(server.extends).toBe('./tsconfig.shared.json')
+    expect(server.compilerOptions.types).toContain('node')
+    expect(server.files).toEqual([])
   })
 
   it('adds wevu and web-aware settings and merges user overrides', () => {
@@ -82,6 +86,7 @@ describe('tsconfig support', () => {
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.shared.json'))).toBe(true)
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.app.json'))).toBe(true)
     expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.node.json'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.server.json'))).toBe(true)
   })
 
   it('bootstraps managed tsconfig files from cwd and package.json', async () => {
@@ -95,6 +100,8 @@ describe('tsconfig support', () => {
     await syncManagedTsconfigBootstrapFiles(root)
 
     const app = await fs.readJson(path.join(root, '.weapp-vite', 'tsconfig.app.json'))
+    const server = await fs.readJson(path.join(root, '.weapp-vite', 'tsconfig.server.json'))
     expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['.weapp-vite/typed-components.d.ts'])
+    expect(server.files).toEqual([])
   })
 })

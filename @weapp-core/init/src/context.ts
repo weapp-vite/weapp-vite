@@ -35,6 +35,7 @@ export interface Context {
   viteConfig: ContextDocument<string>
   tsconfig: ContextDocument<TsConfigData>
   tsconfigApp: ContextDocument<TsConfigData>
+  tsconfigServer: ContextDocument<TsConfigData>
   tsconfigNode: ContextDocument<TsConfigData>
   dts: ContextDocument<string>
 }
@@ -57,6 +58,7 @@ export function createContext(): Context {
     viteConfig: createDocument<string>(),
     tsconfig: createDocument<TsConfigData>(),
     tsconfigApp: createDocument<TsConfigData>(),
+    tsconfigServer: createDocument<TsConfigData>(),
     tsconfigNode: createDocument<TsConfigData>(),
     dts: createDocument<string>(),
   }
