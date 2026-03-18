@@ -1,6 +1,10 @@
 import dayjs from 'dayjs'
 
 const formatTime = (date: dayjs.ConfigType, template: string) => dayjs(date).format(template)
+const LEFT_BRACKET_RE = /\[/g
+const RIGHT_BRACKET_RE = /\]/g
+const PHONE_ENCRYPTION_RE = /(\d{3})\d{4}(\d{4})/
+const INNER_PHONE_REGEXP = /^1(?:3\d|4[4-9]|5[0-35-9]|6[67]|7[0-8]|8\d|9\d)\d{8}$/
 
 /**
  * 格式化价格数额为字符串
@@ -50,8 +54,8 @@ function cosThumb(url: string, width: number, height = width) {
 function get(source: any, paths: string | string[], defaultValue: unknown) {
   if (typeof paths === 'string') {
     paths = paths
-      .replace(/\[/g, '.')
-      .replace(/\]/g, '')
+      .replace(LEFT_BRACKET_RE, '.')
+      .replace(RIGHT_BRACKET_RE, '')
       .split('.')
       .filter(Boolean)
   }
@@ -106,7 +110,7 @@ function rpx2px(rpx: number, round = false) {
  * @returns
  */
 function phoneEncryption(phone: string) {
-  return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+  return phone.replace(PHONE_ENCRYPTION_RE, '$1****$2')
 }
 
 // 内置手机号正则字符串
@@ -120,8 +124,7 @@ const innerPhoneReg
  * @returns true - 校验通过 false - 校验失败
  */
 function phoneRegCheck(phone: string) {
-  const phoneRegExp = new RegExp(innerPhoneReg)
-  return phoneRegExp.test(phone)
+  return INNER_PHONE_REGEXP.test(phone)
 }
 
 export {

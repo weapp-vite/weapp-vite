@@ -26,6 +26,14 @@ const props = withDefaults(defineProps<{
 })
 
 const { type, symbol, decimalSmaller, lineThroughWidth } = toRefs(props)
+const LENGTH_REGEXP = /^\d+(?:\.\d+)?$/
+
+function addUnit(value: string | number | null | undefined) {
+  if (value == null) {
+    return ''
+  }
+  return LENGTH_REGEXP.test(`${value}`) ? `${value}rpx` : value
+}
 
 function format(priceLike: unknown) {
   let price = Number.parseFloat(`${priceLike}`)
@@ -74,20 +82,8 @@ defineExpose({
 </script>
 
 <template>
-  <wxs module="utils">
-    var REGEXP = getRegExp('^\\d+(\\.\\d+)?$');
-    function addUnit(value) {
-    if (value == null) {
-    return '';
-    }
-    return REGEXP.test('' + value) ? value + 'rpx' : value;
-    }
-    module.exports = {
-    addUnit: addUnit
-    };
-  </wxs>
   <view :class="`price ${type} wr-class [display:inline] [color:inherit] [font-size:inherit] [text-decoration:inherit] [white-space:nowrap]`">
-    <view v-if="type === 'delthrough'" class="line" :style="`height:${utils.addUnit(lineThroughWidth)};`" />
+    <view v-if="type === 'delthrough'" class="line" :style="`height:${addUnit(lineThroughWidth)};`" />
     <view class="symbol symbol-class [display:inline] [color:inherit] [font-size:inherit] [font-size:0.8em] [white-space:nowrap]">
       {{ symbol }}
     </view>

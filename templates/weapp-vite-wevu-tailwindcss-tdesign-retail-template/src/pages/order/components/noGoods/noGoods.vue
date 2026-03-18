@@ -55,11 +55,21 @@ defineOptions({
     },
   },
 })
+
+function isOnlyBack(data: Record<string, any>) {
+  return Boolean(data.limitGoodsList || (data.inValidGoodsList && !data.storeGoodsList))
+}
+
+function isShowChangeAddress(data: Record<string, any>) {
+  return Boolean(data.abnormalDeliveryGoodsList)
+}
+
+function isShowKeepPay(data: Record<string, any>) {
+  return Boolean(data.outOfStockGoodsList || (data.storeGoodsList && data.inValidGoodsList))
+}
 </script>
 
 <template>
-  <wxs src="./noGood.wxs" module="order" />
-
   <view class="goods-fail [display:block] [background:#fff] [font-size:30rpx] [border-radius:20rpx_20rpx_0_0] [&_.title]:[display:inline-block] [&_.title]:[width:100%] [&_.title]:[text-align:center] [&_.title]:[margin-top:30rpx] [&_.title]:[line-height:42rpx] [&_.title]:[font-weight:bold] [&_.title]:[font-size:32rpx] [&_.info]:[display:block] [&_.info]:[font-size:26rpx] [&_.info]:[font-weight:400] [&_.info]:[line-height:36rpx] [&_.info]:[margin:20rpx_auto_10rpx] [&_.info]:[text-align:center] [&_.info]:[width:560rpx] [&_.info]:[color:#999] [&_.goods-fail-btn]:[display:flex] [&_.goods-fail-btn]:[padding:30rpx] [&_.goods-fail-btn]:[justify-content:space-between] [&_.goods-fail-btn]:[align-items:center] [&_.goods-fail-btn]:[font-size:30rpx] [&_.goods-fail-btn_.btn]:[width:330rpx] [&_.goods-fail-btn_.btn]:[height:80rpx] [&_.goods-fail-btn_.btn]:[line-height:80rpx] [&_.goods-fail-btn_.btn]:[border-radius:8rpx] [&_.goods-fail-btn_.btn]:[text-align:center] [&_.goods-fail-btn_.btn]:[border:1rpx_solid_#999] [&_.goods-fail-btn_.btn]:[background:#fff] [&_.goods-fail-btn_.btn]:[font-size:32rpx] [&_.goods-fail-btn_.btn]:[color:#666] [&_.goods-fail-btn_.btn_.origin]:[color:#fa550f] [&_.goods-fail-btn_.btn_.origin]:[color:var(--color-primary,_#fa550f)] [&_.goods-fail-btn_.btn_.origin]:[border:1rpx_solid_#fa550f] [&_.goods-fail-btn_.btn_.origin]:[border:1rpx_solid_var(--color-primary,_#fa550f)] [&_.goods-fail-btn_.btn_.limit]:[color:#fa550f] [&_.goods-fail-btn_.btn_.limit]:[color:var(--color-primary,_#fa550f)] [&_.goods-fail-btn_.btn_.limit]:[border:1rpx_solid_#fa550f] [&_.goods-fail-btn_.btn_.limit]:[border:1rpx_solid_var(--color-primary,_#fa550f)] [&_.goods-fail-btn_.btn_.limit]:[flex-grow:1]">
     <block v-if="settleDetailData.limitGoodsList && settleDetailData.limitGoodsList.length > 0">
       <view class="title">
@@ -79,7 +89,7 @@ defineOptions({
         以下店铺的商品不支持配送，请更改地址或去掉对应店铺商品再进行结算
       </view>
     </block>
-    <block v-else-if="order.isShowKeepPay(settleDetailData)">
+    <block v-else-if="isShowKeepPay(settleDetailData)">
       <view class="title">
         部分商品库存不足或失效
       </view>
@@ -114,13 +124,13 @@ defineOptions({
       </view>
     </scroll-view>
     <view class="goods-fail-btn">
-      <view data-item="cart" :class="`btn ${order.isOnlyBack(settleDetailData) ? 'limit' : ''}`" @tap="onCard">
+      <view data-item="cart" :class="`btn ${isOnlyBack(settleDetailData) ? 'limit' : ''}`" @tap="onCard">
         返回购物车
       </view>
-      <view v-if="order.isShowChangeAddress(settleDetailData)" class="btn origin" @tap="onDelive">
+      <view v-if="isShowChangeAddress(settleDetailData)" class="btn origin" @tap="onDelive">
         修改配送地址
       </view>
-      <view v-else-if="order.isShowKeepPay(settleDetailData)" data-item="orderSure" class="btn origin" @tap="onCard">
+      <view v-else-if="isShowKeepPay(settleDetailData)" data-item="orderSure" class="btn origin" @tap="onCard">
         继续结算
       </view>
     </view>

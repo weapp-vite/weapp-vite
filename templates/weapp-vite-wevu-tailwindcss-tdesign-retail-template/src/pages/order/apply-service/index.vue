@@ -92,7 +92,7 @@ defineOptions({
     keys.slice(0, -1).forEach((k) => {
       lastData = lastData[k]
     })
-    const lastKey = keys[keys.length - 1]
+    const lastKey = keys.at(-1)
     this.observe(lastData, lastKey, callback)
   },
   observe(data, k, callback) {
@@ -360,6 +360,7 @@ defineOptions({
     let {
       value,
     } = e.detail
+    // eslint-disable-next-line e18e/prefer-static-regex
     const regRes = value.match(/\d+(\.?\d*)?/) // 输入中，允许末尾为小数点
     value = regRes ? regRes[0] : ''
     this.setData({
@@ -371,6 +372,7 @@ defineOptions({
     let {
       value,
     } = e.detail
+    // eslint-disable-next-line e18e/prefer-static-regex
     const regRes = value.match(/\d+(\.?\d+)?/) // 失去焦点时，不允许末尾为小数点
     value = regRes ? regRes[0] : '0'
     value = Number.parseFloat(value) * 100

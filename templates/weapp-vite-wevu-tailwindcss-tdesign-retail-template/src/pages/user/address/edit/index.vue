@@ -170,7 +170,7 @@ defineOptions({
     this.setData({
       visible: false,
       labels: [...labels, {
-        id: labels[labels.length - 1].id + 1,
+        id: (labels.at(-1)?.id ?? 0) + 1,
         name: labelValue,
       }],
       labelValue: '',

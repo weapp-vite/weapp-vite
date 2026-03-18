@@ -167,4 +167,27 @@ defineOptions(async () => {
       await fs.remove(tempDir)
     }
   })
+
+  it('supports defineOptions methods referencing local constants', async () => {
+    const source = `
+<script setup lang="ts">
+const amountInputRe = /\\d+(\\.\\d*)?/
+const amountLabel = 'refund'
+
+defineOptions({
+  methods: {
+    onInput(value: string) {
+      const matched = value.match(amountInputRe)
+      return matched ? amountLabel : ''
+    },
+  },
+})
+</script>
+`
+    const result = await compileVueFile(source, 'test.vue')
+
+    expect(result.script).toContain('value.match(/\\d+(\\.\\d*)?/)')
+    expect(result.script).toContain('? "refund" : ""')
+    expect(result.script).not.toContain('defineOptions(')
+  })
 })

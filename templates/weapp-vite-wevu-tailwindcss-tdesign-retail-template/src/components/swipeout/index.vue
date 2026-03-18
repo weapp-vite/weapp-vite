@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, toRefs } from 'wevu'
+import { onMounted, onUnmounted, ref, toRefs, useNativeInstance, watch } from 'wevu'
 
 interface SwipeoutController {
   close: () => void
@@ -40,9 +40,64 @@ function getSwipeoutInstances() {
 
 const { disabled, leftWidth, rightWidth } = toRefs(props)
 const closed = ref(true)
+const nativeInstance = useNativeInstance()
+const THRESHOLD = 0.3
+const MIN_DISTANCE = 10
+
+const touchState = {
+  leftWidth: 0,
+  rightWidth: 0,
+  offset: 0,
+  startOffset: 0,
+  direction: '',
+  deltaX: 0,
+  deltaY: 0,
+  offsetX: 0,
+  offsetY: 0,
+  startX: 0,
+  startY: 0,
+  dragging: false,
+}
+
+function getTouchPoint(event: any) {
+  return event?.touches?.[0] || event?.changedTouches?.[0]
+}
+
+function getDirection(x: number, y: number) {
+  if (x > y && x > MIN_DISTANCE) {
+    return 'horizontal'
+  }
+  if (y > x && y > MIN_DISTANCE) {
+    return 'vertical'
+  }
+  return ''
+}
+
+function range(num: number, min: number, max: number) {
+  return Math.min(Math.max(num, min), max)
+}
+
+function getWrapper() {
+  return (nativeInstance as any).selectComponent?.('#wrapper')
+}
+
+function swipeMove(nextOffset = 0) {
+  touchState.offset = range(nextOffset, -touchState.rightWidth, touchState.leftWidth)
+  const transform = `translate3d(${touchState.offset}px, 0, 0)`
+  const transition = touchState.dragging
+    ? 'none'
+    : 'transform .6s cubic-bezier(0.18, 0.89, 0.32, 1)'
+  getWrapper()?.setStyle?.({
+    '-webkit-transform': transform,
+    '-webkit-transition': transition,
+    transform,
+    transition,
+  })
+}
 
 function close() {
   closed.value = true
+  swipeMove(0)
 }
 
 const controller: SwipeoutController = {
@@ -55,6 +110,7 @@ function open(position: string) {
     position,
     instance: controller,
   })
+  swipeMove(position === 'left' ? touchState.leftWidth : -touchState.rightWidth)
 }
 
 function closeOther() {
@@ -64,6 +120,73 @@ function closeOther() {
 
 function noop() {
   return undefined
+}
+
+function resetTouchStatus() {
+  touchState.direction = ''
+  touchState.deltaX = 0
+  touchState.deltaY = 0
+  touchState.offsetX = 0
+  touchState.offsetY = 0
+}
+
+function startDrag(event: any) {
+  if (disabled.value) {
+    return
+  }
+  resetTouchStatus()
+  touchState.startOffset = touchState.offset
+  const touchPoint = getTouchPoint(event)
+  if (!touchPoint) {
+    return
+  }
+  touchState.startX = touchPoint.clientX
+  touchState.startY = touchPoint.clientY
+  closeOther()
+}
+
+function onDrag(event: any) {
+  if (disabled.value) {
+    return
+  }
+  const touchPoint = getTouchPoint(event)
+  if (!touchPoint) {
+    return
+  }
+  touchState.deltaX = touchPoint.clientX - touchState.startX
+  touchState.deltaY = touchPoint.clientY - touchState.startY
+  touchState.offsetX = Math.abs(touchState.deltaX)
+  touchState.offsetY = Math.abs(touchState.deltaY)
+  touchState.direction = touchState.direction || getDirection(touchState.offsetX, touchState.offsetY)
+  if (touchState.direction !== 'horizontal') {
+    return
+  }
+  touchState.dragging = true
+  swipeMove(touchState.startOffset + touchState.deltaX)
+}
+
+function endDrag() {
+  if (disabled.value) {
+    return
+  }
+  touchState.dragging = false
+  if (
+    touchState.rightWidth > 0
+    && -touchState.startOffset < touchState.rightWidth
+    && -touchState.offset > touchState.rightWidth * THRESHOLD
+  ) {
+    open('right')
+  }
+  else if (
+    touchState.leftWidth > 0
+    && touchState.startOffset < touchState.leftWidth
+    && touchState.offset > touchState.leftWidth * THRESHOLD
+  ) {
+    open('left')
+  }
+  else if (touchState.startOffset !== touchState.offset) {
+    close()
+  }
 }
 
 function onClick(event: any) {
@@ -92,7 +215,28 @@ defineExpose({
   close,
   closeOther,
   noop,
+  startDrag,
+  onDrag,
+  endDrag,
   onClick,
+})
+
+watch(leftWidth, (value = 0) => {
+  touchState.leftWidth = value
+  if (touchState.offset > 0) {
+    swipeMove(touchState.leftWidth)
+  }
+}, {
+  immediate: true,
+})
+
+watch(rightWidth, (value = 0) => {
+  touchState.rightWidth = value
+  if (touchState.offset < 0) {
+    swipeMove(-touchState.rightWidth)
+  }
+}, {
+  immediate: true,
 })
 
 onMounted(() => {
@@ -107,22 +251,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <wxs src="./swipe.wxs" module="swipe" />
-
   <view
     class="wr-class wr-swipeout [position:relative] [overflow:hidden]"
     data-key="cell"
     capture-bind:tap="onClick"
-    bindtouchstart="{{disabled || swipe.startDrag}}"
-    capture-bind:touchmove="{{disabled || swipe.onDrag}}"
-    bindtouchend="{{disabled || swipe.endDrag}}"
-    bindtouchcancel="{{disabled || swipe.endDrag}}"
-    :closed="closed"
-    :change:closed="swipe.onCloseChange"
-    :leftWidth="leftWidth"
-    :rightWidth="rightWidth"
-    :change:leftWidth="swipe.initLeftWidth"
-    :change:rightWidth="swipe.initRightWidth"
+    @touchstart="startDrag"
+    @touchmove.capture="onDrag"
+    @touchend="endDrag"
+    @touchcancel="endDrag"
   >
     <view id="wrapper">
       <view v-if="leftWidth" class="wr-swipeout__left [position:absolute] [top:0] [height:100%] [left:0] [transform:translate3d(-100%,_0,_0)]" data-key="left" @tap.stop="onClick">

@@ -23,7 +23,7 @@ export function useToast(options: ToastOptions = {}) {
       selector,
       context: mpContext as any,
       message,
-      theme,
+      ...(theme === 'default' ? {} : { theme }),
       duration,
     })
   }

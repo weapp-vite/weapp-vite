@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, toRefs } from 'wevu'
+import { getBigValues, isBigValue } from './tools'
 
 defineOptions({
   setupLifecycle: 'created',
@@ -13,8 +14,8 @@ defineOptions({
 const props = withDefaults(defineProps<{
   mask?: boolean
   superposable?: boolean
-  type?: string
-  value?: string
+  type?: string | number
+  value?: string | number
   tag?: string
   desc?: string
   title?: string
@@ -42,7 +43,10 @@ const CouponType = {
   MJ_COUPON: 1,
   ZK_COUPON: 2,
   MJF_COUPON: 3,
+  MYF_COUPON: 3,
   GIFT_COUPON: 4,
+  MERCHANT_MJ_COUPON: 1,
+  MERCHANT_ZK_COUPON: 2,
 } as const
 
 const theme = computed(() => (props.status === 'useless' || props.status === 'disabled' ? 'weak' : 'primary'))
@@ -81,7 +85,6 @@ defineExpose({
 </script>
 
 <template>
-  <wxs src="./tools.wxs" module="tools" />
   <view :class="`wr-coupon coupon-class theme-${theme} [display:flex] [background-image:url(https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-bg-nocorners.png)] [background-size:100%_100%] [background-repeat:no-repeat] [position:relative] [margin-bottom:24rpx] [overflow:hidden] [background-image:url('https://tdesign.gtimg.com/miniprogram/template/retail/coupon/coupon-bg-nocorners.png')]`">
     <view class="wr-coupon__left [width:200rpx] [height:180rpx] [display:flex] [flex-direction:column] [justify-content:center] [text-align:center] [color:#fa4126] [overflow:hidden] [position:relative]">
       <view v-if="type == CouponType.ZK_COUPON || type === CouponType.MERCHANT_ZK_COUPON">
@@ -96,12 +99,12 @@ defineExpose({
         </view>
       </view>
       <view v-if="type == CouponType.MJ_COUPON || type === CouponType.MERCHANT_MJ_COUPON">
-        <text v-if="tools.isBigValue(value)" class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]">
+        <text v-if="isBigValue(value)" class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]">
           <text class="wr-coupon__left--value-int [font-size:48rpx] [line-height:88rpx]">
-            {{ tools.getBigValues(value)[0] }}
+            {{ getBigValues(value)[0] }}
           </text>
           <text class="wr-coupon__left--value-decimal [font-size:36rpx] [line-height:48rpx]">
-            .{{ tools.getBigValues(value)[1] }}
+            .{{ getBigValues(value)[1] }}
           </text>
         </text>
         <text v-else class="wr-coupon__left--value [font-size:64rpx] [line-height:88rpx] [font-weight:bold] [font-family:\'DIN_Alternate\',_cursive] [font-family:'DIN_Alternate',_cursive]">

@@ -26,8 +26,9 @@ const emit = defineEmits<{
   onEdit: [detail: any]
 }>()
 
-// 编辑器未正确加载 Volar WXS 注入时，提供一个纯类型兜底声明。
-declare const phoneReg: Record<string, (...args: any[]) => any>
+function hidePhoneNumber(value: string) {
+  return `${value.substring(0, 3)}****${value.substring(7)}`
+}
 
 function onDelete(e: any) {
   emit('onDelete', e?.currentTarget?.dataset?.item)
@@ -49,7 +50,6 @@ defineExpose({
 </script>
 
 <template>
-  <wxs src="./phoneReg.wxs" module="phoneReg" />
   <view class="address-item-wrapper item-wrapper-class [overflow:hidden] [&_.swipe-out_.wr-swiper-cell]:[margin-top:20rpx] [&_.swipe-out_.swipe-right-del]:[display:flex] [&_.swipe-out_.swipe-right-del]:[justify-content:center] [&_.swipe-out_.swipe-right-del]:[align-items:center] [&_.swipe-out_.swipe-right-del]:[width:144rpx] [&_.swipe-out_.swipe-right-del]:[height:100%] [&_.swipe-out_.swipe-right-del]:[background-color:#fa4126] [&_.swipe-out_.swipe-right-del]:[color:#fff] [&_.swipe-out_.swipe-right-del]:[font-size:28rpx] [&_.swipe-out_.swipe-right-del]:[line-height:40rpx] [&_.draw-line]:[position:relative] [&_.address]:[display:flex] [&_.address]:[justify-content:space-between] [&_.address]:[align-items:center] [&_.address]:[padding:32rpx] [&_.address]:[background-color:#fff] [&_.address_.address-edit]:[padding:20rpx_0_20rpx_46rpx] [&_.address_.address-left]:[width:80rpx] [&_.address_.address-left]:[display:flex] [&_.address_.address-left]:[justify-content:center] [&_.address_.address-content]:[display:flex] [&_.address_.address-content]:[flex-direction:column] [&_.address_.address-content]:[flex:1] [&_.address_.address-content_.title]:[font-size:32rpx] [&_.address_.address-content_.title]:[line-height:48rpx] [&_.address_.address-content_.title]:[margin-bottom:16rpx] [&_.address_.address-content_.title]:[color:#333333] [&_.address_.address-content_.title]:[font-weight:bold] [&_.address_.address-content_.title]:[display:flex] [&_.address_.address-content_.title_.text-style]:[margin-right:8rpx] [&_.address_.address-content_.title_.text-style]:[overflow:hidden] [&_.address_.address-content_.title_.text-style]:[text-overflow:ellipsis] [&_.address_.address-content_.title_.text-style]:[white-space:nowrap] [&_.address_.address-content_.title_.text-style]:[max-width:280rpx] [&_.address_.address-content_.label-adds]:[display:flex] [&_.address_.address-content_.label-adds_.adds]:[display:-webkit-box] [&_.address_.address-content_.label-adds_.adds]:[overflow:hidden] [&_.address_.address-content_.label-adds_.adds]:[text-overflow:ellipsis] [&_.address_.address-content_.label-adds_.adds]:[-webkit-box-orient:vertical] [&_.address_.address-content_.label-adds_.adds]:[-webkit-line-clamp:2] [&_.address_.address-content_.label-adds_.adds]:[color:#999999] [&_.address_.address-content_.label-adds_.tag]:[display:inline-block] [&_.address_.address-content_.label-adds_.tag]:[padding:0rpx_8rpx] [&_.address_.address-content_.label-adds_.tag]:[min-width:40rpx] [&_.address_.address-content_.label-adds_.tag]:[height:32rpx] [&_.address_.address-content_.label-adds_.tag]:[border-radius:18rpx] [&_.address_.address-content_.label-adds_.tag]:[font-size:20rpx] [&_.address_.address-content_.label-adds_.tag]:[line-height:32rpx] [&_.address_.address-content_.label-adds_.tag]:[text-align:center] [&_.address_.address-content_.label-adds_.tag]:[margin-right:8rpx] [&_.address_.address-content_.label-adds_.tag]:[vertical-align:text-top] [&_.address_.address-content_.label-adds_.tag-default]:[background:#ffece9] [&_.address_.address-content_.label-adds_.tag-default]:[color:#fa4126] [&_.address_.address-content_.label-adds_.tag-primary]:[background:#f0f1ff] [&_.address_.address-content_.label-adds_.tag-primary]:[color:#5a66ff] [&_.address_.address-content_.label-adds_.address-text]:[font-size:28rpx] [&_.address_.address-content_.label-adds_.address-text]:[line-height:40rpx] [&_.address_.address-content_.label-adds_.address-text]:[color:#999999]">
     <t-swipe-cell class="swipe-out">
       <view :class="`address ${isDrawLine ? 'draw-line' : ''}`" :data-item="address" @tap="onSelect">
@@ -61,7 +61,7 @@ defineExpose({
             <text class="text-style">
               {{ address.name }}
             </text>
-            <text>{{ phoneReg.toHide(address.phoneNumber || '') }}</text>
+            <text>{{ hidePhoneNumber(address.phoneNumber || '') }}</text>
           </view>
           <view class="label-adds">
             <text class="adds address-info-class">

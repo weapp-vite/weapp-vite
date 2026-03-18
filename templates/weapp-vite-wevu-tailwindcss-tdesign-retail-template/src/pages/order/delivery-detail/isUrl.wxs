@@ -1,7 +1,0 @@
-var isUrl = function(item) {
-  return item.indexOf('http') > -1;
-};
-
-module.exports = {
-  isUrl: isUrl,
-};

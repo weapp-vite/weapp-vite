@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, toRefs, useNativeInstance } from 'wevu'
+import { getSrc } from './utils'
 
 defineOptions({
   setupLifecycle: 'created',
@@ -90,10 +91,9 @@ defineExpose({
 </script>
 
 <template>
-  <wxs src="./utils.wxs" module="Utils" />
   <t-image
     class="J-image"
-    :src="Utils.getSrc({ src, thumbWidth: thumbWidth || 0, thumbHeight: thumbHeight || 0, systemInfo, webp, mode })"
+    :src="getSrc({ src, thumbWidth: thumbWidth || 0, thumbHeight: thumbHeight || 0, systemInfo, webp, mode })"
     t-class="t-class"
     t-class-load="t-class-load"
     :mode="mode"

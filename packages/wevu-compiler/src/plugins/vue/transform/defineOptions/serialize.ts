@@ -1,5 +1,5 @@
 import * as t from '@weapp-vite/ast/babelTypes'
-import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate } from '../../../../utils/babel'
+import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate, traverse } from '../../../../utils/babel'
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -116,7 +116,58 @@ function normalizeFunctionSourceToExpression(source: string) {
   throw new Error('defineOptions 的参数中包含无法序列化的函数值。')
 }
 
-export function serializeStaticValueToExpression(value: unknown, seen = new WeakSet<object>()): string {
+function parseExpressionFromSource(source: string) {
+  const ast = babelParse(`(${source})`, BABEL_TS_MODULE_PARSER_OPTIONS)
+  const statement = ast.program.body[0]
+  if (!statement || !t.isExpressionStatement(statement)) {
+    throw new Error('defineOptions 的函数源码解析失败。')
+  }
+  return statement.expression
+}
+
+function rewriteFunctionSourceWithScopeValues(source: string, scopeValues: Record<string, unknown>) {
+  if (!Object.keys(scopeValues).length) {
+    return source
+  }
+
+  const wrappedAst = babelParse(`(${source})`, BABEL_TS_MODULE_PARSER_OPTIONS)
+
+  traverse(wrappedAst, {
+    Identifier(path) {
+      if (!path.isReferencedIdentifier()) {
+        return
+      }
+      if (path.scope.hasBinding(path.node.name)) {
+        return
+      }
+      if (!Object.hasOwn(scopeValues, path.node.name)) {
+        return
+      }
+
+      try {
+        const replacement = serializeStaticValueToExpression(scopeValues[path.node.name], new WeakSet<object>(), {})
+        path.replaceWith(parseExpressionFromSource(replacement) as any)
+      }
+      catch {
+        // ignore unsupported captured values and keep the original identifier
+      }
+    },
+  })
+
+  const statement = wrappedAst.program.body[0]
+  if (!statement || !t.isExpressionStatement(statement)) {
+    throw new Error('defineOptions 的函数源码解析失败。')
+  }
+
+  const expression = statement.expression
+  return generate(expression).code
+}
+
+export function serializeStaticValueToExpression(
+  value: unknown,
+  seen = new WeakSet<object>(),
+  scopeValues: Record<string, unknown> = {},
+): string {
   if (value === null) {
     return 'null'
   }
@@ -163,7 +214,8 @@ export function serializeStaticValueToExpression(value: unknown, seen = new Weak
       throw new Error('defineOptions 的参数中不支持原生函数值。')
     }
     const normalized = normalizeFunctionSourceToExpression(source)
-    return `(${normalized})`
+    const rewritten = normalizeFunctionSourceToExpression(rewriteFunctionSourceWithScopeValues(normalized, scopeValues))
+    return `(${rewritten})`
   }
 
   if (value instanceof Date) {
@@ -174,7 +226,7 @@ export function serializeStaticValueToExpression(value: unknown, seen = new Weak
   }
 
   if (Array.isArray(value)) {
-    return `[${value.map(item => serializeStaticValueToExpression(item, seen)).join(', ')}]`
+    return `[${value.map(item => serializeStaticValueToExpression(item, seen, scopeValues)).join(', ')}]`
   }
 
   if (value && typeof value === 'object') {
@@ -191,7 +243,7 @@ export function serializeStaticValueToExpression(value: unknown, seen = new Weak
     const objectValue = value as Record<string, unknown>
     const props = Object.keys(objectValue).map((key) => {
       const encodedKey = isIdentifierLikeKey(key) ? key : JSON.stringify(key)
-      return `${encodedKey}: ${serializeStaticValueToExpression(objectValue[key], seen)}`
+      return `${encodedKey}: ${serializeStaticValueToExpression(objectValue[key], seen, scopeValues)}`
     })
     return `{ ${props.join(', ')} }`
   }
