@@ -17,5 +17,10 @@ export default defineConfig({
   build: {
     outDir: 'dist-lib',
     minify: false,
+    rolldownOptions: {
+      external: [
+        /^wevu(?:\/.*)?$/,
+      ],
+    },
   },
 })

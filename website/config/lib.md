@@ -159,3 +159,41 @@ export default defineConfig({
 - lib 模式同样会应用 `weapp.chunks` 配置；多入口共享模块时是否生成 `common.js` 仍受 `sharedMode` 控制。
 - 若你同时需要“本地调试 App”和“发布组件库”，推荐拆成两份配置文件：例如 `vite.config.ts` 负责调试，`weapp-vite.lib.config.ts` 负责发布。
 - 若入口路径最终映射到同一个输出文件名，构建会报冲突错误；优先检查 `preservePath` 与 `fileName` 的组合。
+
+## npm 发布建议
+
+如果你的 lib 模式产物准备发布到 npm，并要求宿主项目自行安装 `wevu`：
+
+- 将 `wevu` 声明到 `peerDependencies`
+- 同时保留 `devDependencies.wevu`，用于本地调试、构建与类型检查
+- 在 `build.rolldownOptions.external` 里显式 external 掉 `wevu` 与全部 `wevu/*` 子路径
+
+```json
+{
+  "peerDependencies": {
+    "wevu": "^6.10.2"
+  },
+  "devDependencies": {
+    "wevu": "^6.10.2"
+  }
+}
+```
+
+```ts
+export default defineConfig({
+  weapp: {
+    lib: {
+      entry: ['components/button/index.vue'],
+    },
+  },
+  build: {
+    rolldownOptions: {
+      external: [
+        /^wevu(?:\/.*)?$/,
+      ],
+    },
+  },
+})
+```
+
+不建议只写 `external: ['wevu']`，因为这不能覆盖 `wevu/router`、`wevu/api`、`wevu/fetch` 等子路径导入。
