@@ -56,6 +56,7 @@ describe('core plugin watchChange', () => {
       jsonEmitFilesMap: new Map(),
       entriesMap: new Map(),
       resolvedEntryMap: new Map(),
+      layoutEntryDependents: new Map(),
     })
     const ctx = {
       configService: {
