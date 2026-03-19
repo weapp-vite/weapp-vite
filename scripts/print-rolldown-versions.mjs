@@ -103,6 +103,9 @@ function collectRolldownVersions(lockfile) {
 function formatRolldownVersionReport(projectRoot, versions) {
   const line = '='.repeat(78)
   const installedVersions = [...versions.keys()]
+  const summaryLine = installedVersions.length > 0
+    ? `rolldown summary: latest=${installedVersions[0]}; all=${installedVersions.join(', ')}`
+    : 'rolldown summary: none'
   const lines = [
     '',
     colorize(line, ANSI.dim, ANSI.cyan),
@@ -133,6 +136,8 @@ function formatRolldownVersionReport(projectRoot, versions) {
     }
   }
 
+  lines.push('')
+  lines.push(colorize('summary:', ANSI.bold, ANSI.magenta), summaryLine)
   lines.push(colorize(line, ANSI.dim, ANSI.cyan))
   return lines.join('\n')
 }
