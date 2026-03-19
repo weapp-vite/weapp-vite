@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="hero">
+    <view class="hero__eyebrow">Native Layouts</view>
+    <view class="hero__title">基础模板已接入 layouts</view>
+    <view class="hero__desc">当前状态：{{currentLayout}}</view>
+  </view>
+
+  <view wx:for="{{cards}}" wx:key="title" class="section">
+    <view class="section-title">{{item.title}}</view>
+    <view class="section-desc">{{item.desc}}</view>
+  </view>
+
+  <view class="section">
+    <button class="action-btn" bindtap="applyDefaultLayout">使用 default 布局</button>
+    <button class="action-btn action-btn--primary" bindtap="applyAdminLayout">切到 admin 布局</button>
+    <button class="action-btn action-btn--ghost" bindtap="clearLayout">关闭布局</button>
+    <button class="action-btn action-btn--light" bindtap="backHome">返回首页</button>
+  </view>
+</view>

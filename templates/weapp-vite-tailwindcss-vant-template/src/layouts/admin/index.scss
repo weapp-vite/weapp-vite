@@ -1,0 +1,40 @@
+.layout-admin {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top right, rgb(239 68 68 / 18%), transparent 28%),
+    linear-gradient(180deg, #fff8f8 0%, #fff1f2 100%);
+}
+
+.layout-admin__hero {
+  padding: 36rpx 32rpx 32rpx;
+  color: #fff;
+  background: linear-gradient(145deg, #7f1d1d 0%, #dc2626 64%, #f87171 100%);
+  border-radius: 0 0 28rpx 28rpx;
+}
+
+.layout-admin__eyebrow {
+  display: inline-flex;
+  padding: 8rpx 16rpx;
+  font-size: 22rpx;
+  background: rgb(255 255 255 / 14%);
+  border-radius: 999rpx;
+}
+
+.layout-admin__title {
+  display: block;
+  margin-top: 18rpx;
+  font-size: 42rpx;
+  font-weight: 700;
+}
+
+.layout-admin__subtitle {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  opacity: 0.92;
+}
+
+.layout-admin__body {
+  padding-bottom: 32rpx;
+}

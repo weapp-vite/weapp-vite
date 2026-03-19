@@ -21,4 +21,9 @@ Page({
     // eslint-disable-next-line no-console
     console.log('on click')
   },
+  goToLayouts() {
+    wx.navigateTo({
+      url: '/pages/layouts/index',
+    })
+  },
 })

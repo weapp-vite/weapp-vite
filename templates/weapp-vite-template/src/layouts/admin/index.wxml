@@ -1,0 +1,10 @@
+<view class="layout-admin">
+  <view class="layout-admin__hero">
+    <text class="layout-admin__eyebrow">layouts/admin/index.wxml</text>
+    <text class="layout-admin__title">{{title || 'Native Admin Layout'}}</text>
+    <text class="layout-admin__subtitle">{{subtitle || '原生基础模板也支持 setPageLayout()。'}}</text>
+  </view>
+  <view class="layout-admin__body">
+    <slot />
+  </view>
+</view>
