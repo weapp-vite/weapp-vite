@@ -18,8 +18,8 @@
     "postinstall": "weapp-vite prepare"
   },
   "dependencies": {
-    "dayjs": "catalog:latest",
-    "lodash": "catalog:latest"
+    "dayjs": "catalog:",
+    "lodash": "catalog:"
   },
   "devDependencies": {
     "@weapp-vite/volar": "workspace:*",
