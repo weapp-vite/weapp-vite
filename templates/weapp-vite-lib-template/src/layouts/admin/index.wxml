@@ -1,0 +1,10 @@
+<view class="layout-admin">
+  <view class="layout-admin__hero">
+    <text class="layout-admin__eyebrow">layouts/admin/index.wxml</text>
+    <text class="layout-admin__title">{{title || 'Library Admin Layout'}}</text>
+    <text class="layout-admin__subtitle">{{subtitle || '原生 Page 模板也可以通过 setPageLayout() 切换布局。'}}</text>
+  </view>
+  <view class="layout-admin__body">
+    <slot />
+  </view>
+</view>

@@ -305,8 +305,8 @@ describe('createProject', () => {
     await createProject(root, TemplateName.lib)
 
     const files = await scanFiles(root)
-    expect(files).toContain('src/layouts/default.vue')
-    expect(files).toContain('src/layouts/admin.vue')
+    expect(files).toContain('src/layouts/default/index.wxml')
+    expect(files).toContain('src/layouts/admin/index.wxml')
     expect(files).toContain('src/pages/layouts/index.ts')
     expect(files).toContain('src/pages/layouts/index.wxml')
   })
