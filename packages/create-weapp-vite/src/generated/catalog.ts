@@ -43,7 +43,7 @@ export const TEMPLATE_CATALOG = {
   echarts: '^6.0.0',
   esbuild: '^0.27.4',
   fdir: '^6.5.0',
-  htmlparser2: '^10.1.0',
+  htmlparser2: '^11.0.0',
   lodash: '^4.17.23',
   merge: '^2.1.1',
   pathe: '^2.0.3',
