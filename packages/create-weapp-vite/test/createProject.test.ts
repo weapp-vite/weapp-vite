@@ -176,7 +176,7 @@ describe('createProject', () => {
     expect(pkgWithResolved.devDependencies['weapp-tailwindcss']).toBe('^1.2.3')
   })
 
-  it('updates wevu version when present in dependencies or devDependencies', async () => {
+  it('updates wevu version when present in dependencies, devDependencies or peerDependencies', async () => {
     const root = await createTmpRoot('wevu-version')
     const templatePath = path.resolve(import.meta.dirname, '../templates', TemplateName.default)
     const templatePackagePath = path.join(templatePath, 'package.json')
@@ -200,6 +200,9 @@ describe('createProject', () => {
             'wevu': '^0.0.0',
             'weapp-vite': 'workspace:*',
           },
+          peerDependencies: {
+            wevu: 'workspace:*',
+          },
         }
       }
       return originalReadJSON(value as any)
@@ -212,6 +215,7 @@ describe('createProject', () => {
     expect(pkgJson.devDependencies['weapp-vite']).toBe(`^${weappViteVersion}`)
     expect(pkgJson.dependencies.wevu).toBe(`^${wevuVersion}`)
     expect(pkgJson.devDependencies.wevu).toBe(`^${wevuVersion}`)
+    expect(pkgJson.peerDependencies.wevu).toBe(`^${wevuVersion}`)
   })
 
   it('resolves catalog dependency placeholders from template package', async () => {
