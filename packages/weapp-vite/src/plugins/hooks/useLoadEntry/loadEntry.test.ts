@@ -108,6 +108,18 @@ vi.mock('fs-extra', () => {
   }
 })
 
+vi.mock('node:fs/promises', () => {
+  return {
+    __esModule: true,
+    default: {
+      readFile: readFileMock,
+      stat: statMock,
+    },
+    readFile: readFileMock,
+    stat: statMock,
+  }
+})
+
 vi.mock('../../../logger', () => {
   return {
     __esModule: true,
