@@ -93,7 +93,7 @@ defineExpose({
 <template>
   <t-image
     class="J-image"
-    :src="getSrc({ src, thumbWidth: thumbWidth || 0, thumbHeight: thumbHeight || 0, systemInfo, webp, mode })"
+    :src="getSrc({ src, thumbWidth: thumbWidth || 0, thumbHeight: thumbHeight || 0, systemInfo, webp, mode }) || ''"
     t-class="t-class"
     t-class-load="t-class-load"
     :mode="mode"
