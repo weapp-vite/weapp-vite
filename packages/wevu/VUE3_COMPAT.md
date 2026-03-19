@@ -23,6 +23,7 @@ The following APIs work exactly like Vue 3:
 - `isRef()` - Check if a value is a ref
 - `isReactive()` - Check if a value is reactive
 - `readonly()` - Create readonly objects
+- `shallowReadonly()` - Create shallow readonly objects
 - `markRaw()` - Mark objects to skip reactivity
 - `isRaw()` - Check if an object is marked raw
 
@@ -51,12 +52,14 @@ The following APIs work exactly like Vue 3:
 - `defineComponent()` - Define components/pages (registers via mini-program `Component()`)
 - `createApp()` - Create app instances
 - `getCurrentInstance()` - Get current instance
+- `getCurrentScope()` - Get current setup effect scope
 - `nextTick()` - Execute after update
 
 #### Dependency Injection
 
 - `provide()` - Provide values to descendants
 - `inject()` - Inject values from ancestors
+- `hasInjectionContext()` - Check whether current setup has injection context
 - `provideGlobal()` / `injectGlobal()` - Global provide/inject (deprecated)
 
 #### Store (Pinia Compatible)

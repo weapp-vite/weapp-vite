@@ -144,7 +144,7 @@ const onActiveChange = bindModel.model<boolean>('isActive').onChange
 
 - 更新被批量加入微任务队列，`nextTick` 与 Vue 3 行为一致。
 - 对状态做快照 diff，只把变更路径传给 `setData`，避免大对象全量下发。
-- 提供 `batch`/`startBatch`/`endBatch` 用于同步更新合并触发；以及 `effectScope`/`onScopeDispose` 统一管理 effect/watch 的销毁，便于避免泄漏。
+- 提供 `batch`/`startBatch`/`endBatch` 用于同步更新合并触发；以及 `effectScope`/`getCurrentScope`/`onScopeDispose` 统一管理 effect/watch 的销毁，`setup()` 同步阶段内创建的副作用会自动归属到实例级 scope，便于避免泄漏。
 
 ## 本地开发
 
