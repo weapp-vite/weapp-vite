@@ -1,30 +1,3 @@
-<script setup lang="ts">
-const props = defineProps<{
-  subtitle?: string
-  title?: string
-}>()
-</script>
-
-<template>
-  <view class="layout-admin">
-    <view class="layout-admin__hero">
-      <text class="layout-admin__eyebrow">
-        layouts/admin.vue
-      </text>
-      <text class="layout-admin__title">
-        {{ props.title || 'Library Admin Layout' }}
-      </text>
-      <text class="layout-admin__subtitle">
-        {{ props.subtitle || '原生 Page 模板也可以通过 setPageLayout() 切换布局。' }}
-      </text>
-    </view>
-    <view class="layout-admin__body">
-      <slot />
-    </view>
-  </view>
-</template>
-
-<style>
 .layout-admin {
   min-height: 100%;
   background:
@@ -66,10 +39,3 @@ const props = defineProps<{
 .layout-admin__body {
   padding-bottom: 32rpx;
 }
-</style>
-
-<json>
-{
-  "component": true
-}
-</json>
