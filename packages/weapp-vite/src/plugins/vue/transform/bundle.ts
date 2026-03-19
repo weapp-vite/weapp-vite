@@ -43,6 +43,7 @@ interface ClassStyleWxsAsset {
 }
 
 const JS_OUTPUT_RE = /\.[cm]?js$/
+const SCRIPTLESS_COMPONENT_STUB = 'Component({})'
 
 function getEntryBaseName(filename: string) {
   const extIndex = filename.lastIndexOf('.')
@@ -178,6 +179,25 @@ async function emitNativeLayoutAssetsIfNeeded(options: {
     }
     pluginCtx.emitFile({ type: 'asset', fileName, source })
   }
+}
+
+function emitScriptlessComponentJsFallbackIfMissing(options: {
+  pluginCtx: any
+  bundle: Record<string, any>
+  relativeBase: string
+  scriptExtension: string
+}) {
+  const { pluginCtx, bundle, relativeBase, scriptExtension } = options
+  const scriptFileName = `${relativeBase}.${scriptExtension}`
+  if (bundle[scriptFileName]) {
+    return
+  }
+
+  pluginCtx.emitFile({
+    type: 'asset',
+    fileName: scriptFileName,
+    source: SCRIPTLESS_COMPONENT_STUB,
+  })
 }
 
 function normalizeVueConfigForPlatform(
@@ -316,7 +336,7 @@ function emitAlipayGenericPlaceholderAssets(
 
   const scriptFileName = `${placeholderBase}.${scriptExtension}`
   const existing = bundle[scriptFileName]
-  const scriptSource = 'Component({})'
+  const scriptSource = SCRIPTLESS_COMPONENT_STUB
   if (existing && existing.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
     if (current !== scriptSource) {
@@ -343,6 +363,7 @@ export async function emitVueBundleAssets(
   const templateExtension = outputExtensions?.wxml ?? 'wxml'
   const styleExtension = outputExtensions?.wxss ?? 'wxss'
   const jsonExtension = outputExtensions?.json ?? 'json'
+  const scriptExtension = outputExtensions?.js ?? 'js'
 
   // 首先处理缓存中已有的编译结果
   for (const [filename, cached] of compilationCache.entries()) {
@@ -483,6 +504,15 @@ export async function emitVueBundleAssets(
         defaults: jsonConfig?.defaults?.[jsonKind],
         kind: jsonKind,
         extension: jsonExtension,
+      })
+    }
+
+    if (!isAppVue && !cached.isPage && !result.script?.trim()) {
+      emitScriptlessComponentJsFallbackIfMissing({
+        pluginCtx,
+        bundle,
+        relativeBase,
+        scriptExtension,
       })
     }
   }

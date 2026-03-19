@@ -7,16 +7,20 @@ import type { AppEntriesCache } from './app'
 import type { ResolvedEntryRecord } from './resolve'
 import { performance } from 'node:perf_hooks'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
+import fs from 'fs-extra'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { isPathInside, normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
+import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
 import { createEntryResolver } from './resolve'
 import { applyScriptSetupUsingComponents, scanTemplateEntry } from './template'
 import { addWatchTarget } from './watch'
+
+const SCRIPT_TAG_RE = /<script\b/i
 
 interface EntryLoaderOptions {
   ctx: CompilerContext
@@ -74,6 +78,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       resolveCacheVersion: number
     }
   } = {}
+  const emittedScriptlessVueLayoutJs = new Set<string>()
   let resolveCacheVersion = 0
 
   const loadEntry = async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
@@ -220,6 +225,39 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           wxmlService,
           reExportResolutionCache,
         })
+
+        if (type === 'page') {
+          const vueSource = await fs.readFile(vueEntryPath, 'utf-8')
+          const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
+          if (layoutPlan) {
+            for (const layout of layoutPlan.layouts) {
+              this.addWatchFile(normalizeWatchPath(layout.file))
+              if (layout.kind === 'native') {
+                continue
+              }
+              entries.push(layout.importPath)
+              explicitEntryTypes.set(normalizeEntry(layout.importPath, jsonPath), 'component')
+
+              if (!layout.file.endsWith('.vue')) {
+                continue
+              }
+              const layoutSource = await fs.readFile(layout.file, 'utf-8')
+              if (SCRIPT_TAG_RE.test(layoutSource)) {
+                continue
+              }
+              const relativeLayoutBase = configService.relativeOutputPath(removeExtensionDeep(layout.file))
+              if (!relativeLayoutBase || emittedScriptlessVueLayoutJs.has(relativeLayoutBase)) {
+                continue
+              }
+              emittedScriptlessVueLayoutJs.add(relativeLayoutBase)
+              this.emitFile({
+                type: 'asset',
+                fileName: `${relativeLayoutBase}.${configService.outputExtensions?.js ?? 'js'}`,
+                source: 'Component({})',
+              })
+            }
+          }
+        }
       }
 
       await ctx.autoImportService?.awaitPendingRegistrations?.()

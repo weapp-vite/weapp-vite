@@ -146,4 +146,41 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       map: null,
     })
   })
+
+  it('returns a component stub for scriptless vue components', async () => {
+    compileVueFileMock.mockResolvedValueOnce({
+      template: '<view />',
+      meta: {},
+    })
+    isAutoSetDataPickEnabledMock.mockReturnValue(false)
+
+    const { createVueTransformPlugin } = await import('./plugin')
+    const plugin = createVueTransformPlugin({
+      configService: {
+        isDev: false,
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        outputExtensions: {},
+        relativeOutputPath: vi.fn(() => undefined),
+        weappLibConfig: {
+          enabled: true,
+        },
+        weappViteConfig: {},
+      },
+      runtimeState: {
+        scan: {
+          isDirty: false,
+        },
+      },
+    } as any)
+
+    const result = await plugin.transform!.call({
+      addWatchFile: vi.fn(),
+    } as any, '<template><view /></template>', '/project/src/components/empty-shell.vue')
+
+    expect(result).toEqual({
+      code: 'Component({})',
+      map: null,
+    })
+  })
 })

@@ -839,6 +839,77 @@ export default {
     })
   })
 
+  it('emits a js stub for scriptless vue layouts required by page wrappers', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    await fs.ensureDir(path.join(srcRoot, 'layouts'))
+    await fs.writeFile(path.join(srcRoot, 'layouts', 'default.vue'), '<template><slot /></template>', 'utf8')
+
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+      },
+      relativeOutputPath: (p: string) => path.relative(srcRoot, p).replace(/\\/g, '/'),
+      absoluteSrcRoot: srcRoot,
+    } as unknown as CompilerContext['configService']
+
+    const scanService = {
+      independentSubPackageMap: new Map(),
+    } as unknown as CompilerContext['scanService']
+
+    const ctx = {
+      configService,
+      scanService,
+    } as CompilerContext
+
+    const layoutFile = path.join(srcRoot, 'layouts', 'default.vue')
+    const compilationCache = new Map([
+      [
+        layoutFile,
+        {
+          source: '<template><slot /></template>',
+          result: {
+            template: '<view><slot /></view>',
+            config: JSON.stringify({ component: true }),
+          },
+          isPage: false,
+        },
+      ],
+    ])
+
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    await emitVueBundleAssets(bundle, {
+      ctx,
+      pluginCtx: { emitFile, addWatchFile: vi.fn() },
+      compilationCache,
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })
+
+    const assets = new Map<string, string>()
+    for (const call of emitFile.mock.calls) {
+      const asset = call[0]
+      assets.set(asset.fileName, String(asset.source))
+    }
+
+    expect(assets.get('layouts/default.wxml')).toBe('<view><slot /></view>')
+    expect(JSON.parse(assets.get('layouts/default.json')!)).toEqual({
+      component: true,
+    })
+    expect(assets.get('layouts/default.js')).toBe('Component({})')
+  })
+
   it('applies layout defaults from weapp.routeRules when page meta is absent', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')

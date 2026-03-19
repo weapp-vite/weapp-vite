@@ -28,6 +28,10 @@ const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]
 const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 
+function resolveScriptlessVueEntryStub(isPage: boolean) {
+  return isPage ? 'Page({})' : 'Component({})'
+}
+
 function registerVueTemplateToken(
   ctx: CompilerContext,
   filename: string,
@@ -322,6 +326,10 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
             })
             .join('')
           returnedCode = styleImports + returnedCode
+        }
+
+        if (!isApp && !result.script?.trim()) {
+          returnedCode += resolveScriptlessVueEntryStub(isPage)
         }
 
         const macroHash = result.meta?.jsonMacroHash
