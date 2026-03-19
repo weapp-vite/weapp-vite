@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'vitest'
 
-import { formatRolldownVersionReport } from './print-rolldown-versions.mjs'
+import { formatRolldownVersionReport, verifySingleRolldownVersion } from './print-rolldown-versions.mjs'
 
 test('formatRolldownVersionReport appends a compact summary after detailed sections', () => {
   const report = formatRolldownVersionReport('/workspace', new Map([
@@ -14,4 +14,21 @@ test('formatRolldownVersionReport appends a compact summary after detailed secti
   assert.match(report, /- rolldown@/)
   assert.ok(report.includes(summary))
   assert.ok(report.indexOf(summary) > report.indexOf('- rolldown@'))
+})
+
+test('verifySingleRolldownVersion throws when lockfile resolves multiple rolldown versions', () => {
+  assert.throws(() => {
+    verifySingleRolldownVersion(new Map([
+      ['1.0.0-rc.10', new Set(['packages/weapp-vite'])],
+      ['1.0.0-rc.9', new Set(['packages/rolldown-require'])],
+    ]))
+  }, /multiple rolldown versions detected/)
+})
+
+test('verifySingleRolldownVersion accepts a single resolved rolldown version', () => {
+  assert.doesNotThrow(() => {
+    verifySingleRolldownVersion(new Map([
+      ['1.0.0-rc.10', new Set(['packages/weapp-vite', 'packages/rolldown-require'])],
+    ]))
+  })
 })
