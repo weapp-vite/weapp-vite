@@ -25,6 +25,11 @@ function resolveMainPackageDependencyScope(ctx: MutableCompilerContext) {
   return configService.weappViteConfig?.npm?.mainPackage?.dependencies
 }
 
+function resolvePluginPackageDependencyScope(ctx: MutableCompilerContext) {
+  const configService = requireConfigService(ctx, '读取插件包 npm 依赖范围前必须初始化 configService。')
+  return configService.weappViteConfig?.npm?.pluginPackage?.dependencies
+}
+
 export interface DependenciesCache {
   getDependenciesCacheFilePath: (key?: string) => string
   dependenciesCacheHash: () => string
@@ -42,6 +47,9 @@ export function createDependenciesCache(ctx: MutableCompilerContext): Dependenci
   function resolveDependencyScope(root?: string) {
     if (root === '__all__') {
       return undefined
+    }
+    if (root === '__plugin__') {
+      return resolvePluginPackageDependencyScope(ctx)
     }
     if (root && root !== '/') {
       return ctx.scanService?.subPackageMap.get(root)?.subPackage.dependencies

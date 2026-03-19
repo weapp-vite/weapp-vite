@@ -6,6 +6,7 @@ import type {
   MpPlatform,
   NpmBuildOptions,
   NpmMainPackageConfig,
+  NpmPluginPackageConfig,
   NpmSubPackageConfig,
   SubPackageStyleConfigEntry,
 } from './foundation'
@@ -140,6 +141,7 @@ export interface WeappNpmConfig {
   enable?: boolean
   cache?: boolean
   mainPackage?: NpmMainPackageConfig
+  pluginPackage?: NpmPluginPackageConfig
   subPackages?: Record<string, NpmSubPackageConfig>
   buildOptions?: (options: NpmBuildOptions, pkgMeta: BuildNpmPackageMeta) => NpmBuildOptions | undefined
   alipayNpmMode?: AlipayNpmMode

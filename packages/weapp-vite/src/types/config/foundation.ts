@@ -274,6 +274,10 @@ export interface NpmMainPackageConfig {
   dependencies?: false | (string | RegExp)[]
 }
 
+export interface NpmPluginPackageConfig {
+  dependencies?: false | (string | RegExp)[]
+}
+
 export type JsFormat = 'cjs' | 'esm'
 
 export type SharedChunkStrategy = 'hoist' | 'duplicate'

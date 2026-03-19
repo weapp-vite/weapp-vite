@@ -5,5 +5,11 @@ export default defineConfig({
     // weapp-vite options
     srcRoot: 'miniprogram',
     pluginRoot: 'plugin',
+    npm: {
+      enable: true,
+      pluginPackage: {
+        dependencies: ['dayjs'],
+      },
+    },
   },
 })

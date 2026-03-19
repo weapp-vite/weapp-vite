@@ -95,6 +95,10 @@ function resolveMainPackageDependencyPatterns(ctx: MutableCompilerContext) {
   return ctx.configService?.weappViteConfig?.npm?.mainPackage?.dependencies
 }
 
+function resolvePluginPackageDependencyPatterns(ctx: MutableCompilerContext) {
+  return ctx.configService?.weappViteConfig?.npm?.pluginPackage?.dependencies
+}
+
 function hasLocalSubPackageNpmConfig(ctx: MutableCompilerContext) {
   const npmSubPackages = ctx.configService?.weappViteConfig?.npm?.subPackages
   if (npmSubPackages && Object.values(npmSubPackages).some(config => Array.isArray(config?.dependencies) && config.dependencies.length > 0)) {
@@ -156,7 +160,9 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
       const localSubPackageOutRoot = ctx.configService.outDir || path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir)
       if (pkgJson.dependencies) {
         const allDependencies = Object.keys(pkgJson.dependencies)
-        const mainDependencyPatterns = resolveMainPackageDependencyPatterns(ctx)
+        const mainDependencyPatterns = ctx.configService.pluginOnly
+          ? resolvePluginPackageDependencyPatterns(ctx)
+          : resolveMainPackageDependencyPatterns(ctx)
         const mainDependencies = resolveTargetDependencies(allDependencies, mainDependencyPatterns)
         const sourceOutDir = hasSameDependencySet(allDependencies, mainDependencies) ? outDir : cachedSourceOutDir
         const localSubPackageMetas = [...ctx.scanService?.subPackageMap.values() ?? []]
@@ -202,6 +208,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
         }
 
         await buildTargetDependencies({
+          cacheKey: ctx.configService.pluginOnly ? '__plugin__' : undefined,
           dependencies: mainDependencies,
           npmDistDir: outDir,
         })
