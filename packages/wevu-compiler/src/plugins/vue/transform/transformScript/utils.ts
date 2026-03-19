@@ -56,6 +56,11 @@ export interface TransformScriptOptions {
    * 内联表达式元数据（用于事件处理）
    */
   inlineExpressions?: InlineExpressionAsset[]
+  /**
+   * 对 `<script setup>` 类型声明生成的结构化 props（如 Array/Object）放宽小程序运行时类型约束，
+   * 以避免小程序属性校验对复杂表达式/代理值产生误报。
+   */
+  relaxStructuredTypeOnlyProps?: boolean
 }
 
 export interface TransformState {

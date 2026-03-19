@@ -11,6 +11,8 @@ import { resolveWarnHandler } from '../../../../utils/warn'
 import { stripJsonMacroCallsFromCode } from '../jsonMacros'
 import { transformScript } from '../script'
 
+const TYPE_ONLY_DEFINE_PROPS_RE = /\bdefineProps\s*</
+
 export interface ScriptPhaseResult {
   script?: string
   autoUsingComponentsMap: Record<string, string>
@@ -40,6 +42,10 @@ export async function compileScriptPhase(
 ): Promise<ScriptPhaseResult> {
   const autoUsingComponentsMap: Record<string, string> = {}
   const autoComponentMeta: Record<string, string> = {}
+  const relaxStructuredTypeOnlyProps = Boolean(
+    descriptor.scriptSetup?.content
+    && TYPE_ONLY_DEFINE_PROPS_RE.test(descriptor.scriptSetup.content),
+  )
 
   if (autoUsingComponents && descriptor.scriptSetup && descriptor.template) {
     const templateComponentNames = collectTemplateComponentNames(descriptor.template.content, filename, autoUsingComponents.warn ?? options?.warn)
@@ -143,6 +149,7 @@ export async function compileScriptPhase(
       classStyleBindings: templateCompiled?.classStyleBindings,
       templateRefs: templateCompiled?.templateRefs,
       inlineExpressions: templateCompiled?.inlineExpressions,
+      relaxStructuredTypeOnlyProps,
     })
     return { script: transformed.code, autoUsingComponentsMap, autoComponentMeta }
   }
