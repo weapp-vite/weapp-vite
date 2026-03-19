@@ -257,4 +257,30 @@ describe('createProject', () => {
     expect(pkgJson.devDependencies['weapp-vite']).not.toContain('workspace:')
     expect(pkgJson.devDependencies['weapp-vite']).not.toContain('catalog:')
   })
+
+  it('keeps tailwind templates pinned to the named tailwind3 catalog when creating projects', async () => {
+    const root = await createTmpRoot('tailwind3-template')
+    const templatePath = path.resolve(import.meta.dirname, '../templates', TemplateName.tailwindcss)
+    const templatePackagePath = path.join(templatePath, 'package.json')
+    const originalReadJSON = fs.readJSON.bind(fs)
+
+    vi.spyOn(fs, 'readJSON').mockImplementation(async (value) => {
+      if (value === templatePackagePath) {
+        return {
+          name: 'tailwind3-template',
+          devDependencies: {
+            'tailwindcss': 'catalog:tailwind3',
+            'weapp-vite': 'workspace:*',
+          },
+        }
+      }
+      return originalReadJSON(value as any)
+    })
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, TemplateName.tailwindcss)
+
+    const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
+    expect(pkgJson.devDependencies['tailwindcss']).toBe(TEMPLATE_NAMED_CATALOG.tailwind3.tailwindcss)
+  })
 })
