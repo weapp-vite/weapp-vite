@@ -430,6 +430,77 @@ describe('createEntryLoader', () => {
     expect(watched).toContain('/project/src/components/hello/index.vue')
   })
 
+  it('marks usingComponents entries as components so native component loaders skip page layout injection', async () => {
+    const pageScript = '/project/src/pages/home.js'
+    const componentScript = '/project/src/components/HelloWorld/HelloWorld.js'
+    mockFindJsonEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === pageScript) {
+        return {
+          path: '/project/src/pages/home.json',
+          predictions: [],
+        }
+      }
+      if (filepath === componentScript) {
+        return {
+          path: '/project/src/components/HelloWorld/HelloWorld.json',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+    mockFindTemplateEntry.mockImplementation(async (filepath: string) => {
+      if (filepath === componentScript) {
+        return {
+          path: '/project/src/components/HelloWorld/HelloWorld.wxml',
+          predictions: [],
+        }
+      }
+      return {
+        path: undefined,
+        predictions: [],
+      }
+    })
+
+    const { loader, entriesMap, jsonService } = createLoader()
+    jsonService.read.mockImplementation(async (filepath: string) => {
+      if (filepath === '/project/src/pages/home.json') {
+        return {
+          usingComponents: {
+            HelloWorld: '/components/HelloWorld/HelloWorld',
+          },
+        }
+      }
+      if (filepath === '/project/src/components/HelloWorld/HelloWorld.json') {
+        return {
+          component: true,
+        }
+      }
+      return {}
+    })
+
+    const pluginCtx = createPluginContext()
+    await loader.call(pluginCtx, pageScript, 'page')
+
+    expect(entriesMap.get('/components/HelloWorld/HelloWorld')?.type).toBe('component')
+
+    await loader.call(pluginCtx, componentScript, 'component')
+
+    expect(mockResolvePageLayoutPlan).not.toHaveBeenCalledWith(
+      expect.anything(),
+      componentScript,
+      expect.anything(),
+    )
+    expect(mockApplyPageLayoutPlanToNativePage).not.toHaveBeenCalled()
+    expect(mockInjectNativePageLayoutRuntime).not.toHaveBeenCalledWith(
+      expect.anything(),
+      componentScript,
+      expect.anything(),
+    )
+  })
+
   it('skips warnings for weui components when useExtendedLib is enabled', async () => {
     const appScript = '/project/src/app.js'
     const pageScript = '/project/src/pages/home.js'
