@@ -15,6 +15,7 @@ import { handleCLIError } from './cli/error'
 import { tryRunIdeCommand } from './cli/ide'
 import { maybeAutoStartMcpServer } from './cli/mcpAutoStart'
 import { convertBase } from './cli/options'
+import { handlePrepareLifecycleError } from './cli/prepareGuard'
 import { VERSION } from './constants'
 import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
 import { checkRuntime } from './utils'
@@ -101,6 +102,10 @@ try {
       await cli.runMatchedCommand()
     })
     .catch((error) => {
+      const args = process.argv.slice(2)
+      if (handlePrepareLifecycleError(args, error)) {
+        return
+      }
       handleCLIError(error)
       process.exitCode = 1
     })
