@@ -86,6 +86,21 @@ describe('runtime: component lifetimes/pageLifetimes mapping', () => {
     expect(opts.options?.multipleSlots).toBe(true)
   })
 
+  it('accepts plain object data like native mini program components', () => {
+    defineComponent({
+      data: {
+        scriptMarker: 'DEFAULT-LAYOUT-SCRIPT-BASE',
+      },
+      setup() {
+        return {}
+      },
+    })
+    const opts = registeredComponents[0]
+    expect(opts.data).toEqual({
+      scriptMarker: 'DEFAULT-LAYOUT-SCRIPT-BASE',
+    })
+  })
+
   it('respects user options.multipleSlots override', () => {
     defineComponent({
       data: () => ({}),
