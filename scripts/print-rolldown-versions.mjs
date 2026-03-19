@@ -9,6 +9,7 @@ import { parse } from 'yaml'
 
 const EXPECTED_ROLLDOWN_REQUIRE_PEER = '1.0.0-rc.10'
 const DEFAULT_MODE = 'strict'
+let ansiEnabled = true
 const ANSI = {
   reset: '\x1B[0m',
   bold: '\x1B[1m',
@@ -22,7 +23,30 @@ const ANSI = {
 }
 
 function colorize(text, ...codes) {
+  if (!ansiEnabled) {
+    return text
+  }
   return `${codes.join('')}${text}${ANSI.reset}`
+}
+
+function resolveAnsiEnabled(env = process.env, stdout = process.stdout) {
+  const forceColor = env.FORCE_COLOR
+  if (forceColor === '0') {
+    return false
+  }
+  if (typeof forceColor === 'string' && forceColor.length > 0) {
+    return true
+  }
+  if ('NO_COLOR' in env) {
+    return false
+  }
+  if (env.CI === 'true' || env.CI === '1') {
+    return false
+  }
+  if (typeof stdout?.isTTY === 'boolean') {
+    return true
+  }
+  return true
 }
 
 function stripPeerSuffix(version = '') {
@@ -105,8 +129,8 @@ function formatRolldownVersionReport(projectRoot, versions) {
   const line = '='.repeat(78)
   const installedVersions = [...versions.keys()]
   const summaryLine = installedVersions.length > 0
-    ? `rolldown summary: latest=${installedVersions[0]}; all=${installedVersions.join(', ')}`
-    : 'rolldown summary: none'
+    ? `ROLLDOWN_SUMMARY latest=${installedVersions[0]} total=${installedVersions.length} all=${installedVersions.join(',')}`
+    : 'ROLLDOWN_SUMMARY latest=none total=0 all=none'
   const lines = [
     '',
     colorize(line, ANSI.dim, ANSI.cyan),
@@ -138,7 +162,7 @@ function formatRolldownVersionReport(projectRoot, versions) {
   }
 
   lines.push('')
-  lines.push(colorize('summary:', ANSI.bold, ANSI.magenta), summaryLine)
+  lines.push(summaryLine)
   lines.push(colorize(line, ANSI.dim, ANSI.cyan))
   return lines.join('\n')
 }
@@ -221,6 +245,7 @@ function resolveMode(argv = process.argv.slice(2)) {
 
 function main(options = {}) {
   try {
+    ansiEnabled = options.ansiEnabled ?? resolveAnsiEnabled()
     const mode = options.mode ?? resolveMode()
     const scriptDir = path.dirname(fileURLToPath(import.meta.url))
     const projectRoot = findWorkspaceRoot(process.env.INIT_CWD || process.cwd() || scriptDir)
@@ -247,6 +272,7 @@ export {
   collectRolldownVersions,
   formatRolldownVersionReport,
   main,
+  resolveAnsiEnabled,
   resolveMode,
   stripPeerSuffix,
   verifyRolldownRequirePeer,
