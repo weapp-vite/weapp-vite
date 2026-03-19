@@ -4,13 +4,14 @@ import type { Entry } from '../../../../types'
 import type { ExtendedLibManager } from '../extendedLib'
 import type { JsonEmitFileEntry } from '../jsonEmit'
 import type { ResolvedEntryRecord } from './resolve'
+import fs from 'node:fs/promises'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../../../logger'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
-import { applyPageLayoutPlanToNativePage, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
+import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectStyleImports } from './watch'
 
 const NON_VUE_PAGE_RE = /\.vue$|\.jsx$|\.tsx$/
@@ -122,6 +123,64 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
   } = options
   let json = initialJson
 
+  async function emitNativeLayoutAssets(layoutBasePath: string) {
+    if (typeof pluginCtx.emitFile !== 'function') {
+      return
+    }
+
+    const relativeBase = configService.relativeOutputPath(layoutBasePath)
+    if (!relativeBase) {
+      return
+    }
+
+    const assets = await collectNativeLayoutAssets(layoutBasePath)
+    const emittedLayoutAssets: Set<string> = (pluginCtx as any).__weappViteNativeLayoutAssets ?? ((pluginCtx as any).__weappViteNativeLayoutAssets = new Set<string>())
+    const templateExtension = configService.outputExtensions?.wxml ?? 'wxml'
+    const styleExtension = configService.outputExtensions?.wxss ?? 'wxss'
+    const scriptExtension = configService.outputExtensions?.js ?? 'js'
+
+    if (assets.json) {
+      registerJsonAsset({
+        jsonPath: assets.json,
+        json: JSON.parse(await fs.readFile(assets.json, 'utf8')),
+        type: 'component',
+      })
+    }
+
+    const assetEntries = [
+      assets.template
+        ? {
+            fileName: `${relativeBase}.${templateExtension}`,
+            source: await fs.readFile(assets.template, 'utf8'),
+          }
+        : undefined,
+      assets.style
+        ? {
+            fileName: `${relativeBase}.${styleExtension}`,
+            source: await fs.readFile(assets.style, 'utf8'),
+          }
+        : undefined,
+      assets.script
+        ? {
+            fileName: `${relativeBase}.${scriptExtension}`,
+            source: await fs.readFile(assets.script, 'utf8'),
+          }
+        : undefined,
+    ]
+
+    for (const asset of assetEntries) {
+      if (!asset || emittedLayoutAssets.has(asset.fileName)) {
+        continue
+      }
+      emittedLayoutAssets.add(asset.fileName)
+      pluginCtx.emitFile({
+        type: 'asset',
+        fileName: asset.fileName,
+        source: asset.source,
+      })
+    }
+  }
+
   const shouldSkipEntries = Boolean(options.skipEntries)
   const resolvedIds = shouldSkipEntries
     ? []
@@ -194,6 +253,18 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
   ) {
     const layoutPlan = await resolvePageLayoutPlan(code, id, configService as any)
     if (layoutPlan) {
+      for (const layout of layoutPlan.layouts) {
+        pluginCtx.addWatchFile(normalizeWatchPath(layout.file))
+        if (layout.kind === 'native') {
+          const nativeAssets = await collectNativeLayoutAssets(layout.file)
+          for (const asset of Object.values(nativeAssets)) {
+            if (asset) {
+              pluginCtx.addWatchFile(normalizeWatchPath(asset))
+            }
+          }
+        }
+      }
+
       const nativeTemplate = await readFileCached(templatePath, { checkMtime: configService.isDev })
       const transformed = applyPageLayoutPlanToNativePage(
         {
@@ -215,6 +286,12 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         const token = wxmlService.analyze(transformed.template)
         wxmlService.tokenMap.set(templatePath, token)
         wxmlService.setWxmlComponentsMap(templatePath, token.components)
+      }
+
+      for (const layout of layoutPlan.layouts) {
+        if (layout.kind === 'native') {
+          await emitNativeLayoutAssets(layout.file)
+        }
       }
     }
 
