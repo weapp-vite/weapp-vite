@@ -6,6 +6,7 @@ import * as t from '@weapp-vite/ast/babelTypes'
 import { resolveWarnHandler } from '../../../../../utils/warn'
 import { injectWevuPageFeatureFlagsIntoOptionsObject } from '../../../../wevu/pageFeatures'
 import { resolveComponentExpression, resolveComponentOptionsObject } from '../../scriptComponent'
+import { getObjectPropertyByKey } from '../utils'
 import { ensureClassStyleRuntimeImports, injectClassStyleComputed } from './classStyle'
 import { applyWevuDefaultsToComponentOptions, injectWevuDefaultsForApp } from './defaults'
 import { rewriteComponentExport } from './export'
@@ -29,13 +30,6 @@ function hasStaticProperty(target: ObjectExpression, keyName: string) {
   return false
 }
 
-function isObjectAssignCall(node: t.CallExpression) {
-  const callee = node.callee
-  return t.isMemberExpression(callee)
-    && t.isIdentifier(callee.object, { name: 'Object' })
-    && t.isIdentifier(callee.property, { name: 'assign' })
-}
-
 function unwrapTypeLikeExpression(node: t.Expression): t.Expression {
   if (t.isTSAsExpression(node) || t.isTSSatisfiesExpression(node) || t.isTSNonNullExpression(node) || t.isTypeCastExpression(node)) {
     return unwrapTypeLikeExpression(node.expression as t.Expression)
@@ -44,6 +38,66 @@ function unwrapTypeLikeExpression(node: t.Expression): t.Expression {
     return unwrapTypeLikeExpression(node.expression)
   }
   return node
+}
+
+function isStructuredRuntimeType(node: t.Expression) {
+  return (t.isIdentifier(node, { name: 'Array' }) || t.isIdentifier(node, { name: 'Object' }))
+}
+
+function shouldRelaxStructuredPropType(node: t.Expression) {
+  const normalized = unwrapTypeLikeExpression(node)
+  if (isStructuredRuntimeType(normalized)) {
+    return true
+  }
+  if (!t.isArrayExpression(normalized) || normalized.elements.length === 0) {
+    return false
+  }
+  return normalized.elements.every((element) => {
+    if (!element || t.isSpreadElement(element) || !t.isExpression(element)) {
+      return false
+    }
+    return isStructuredRuntimeType(unwrapTypeLikeExpression(element))
+  })
+}
+
+function relaxStructuredTypeOnlyProps(componentOptionsObject: ObjectExpression) {
+  const propsProp = getObjectPropertyByKey(componentOptionsObject, 'props')
+  if (!propsProp || !t.isExpression(propsProp.value)) {
+    return false
+  }
+  const propsValue = unwrapTypeLikeExpression(propsProp.value)
+  if (!t.isObjectExpression(propsValue)) {
+    return false
+  }
+
+  let changed = false
+  for (const prop of propsValue.properties) {
+    if (!t.isObjectProperty(prop) || prop.computed || !t.isExpression(prop.value)) {
+      continue
+    }
+    const definition = unwrapTypeLikeExpression(prop.value)
+    if (!t.isObjectExpression(definition)) {
+      continue
+    }
+    const typeProp = getObjectPropertyByKey(definition, 'type')
+    if (!typeProp || !t.isExpression(typeProp.value)) {
+      continue
+    }
+    if (!shouldRelaxStructuredPropType(typeProp.value)) {
+      continue
+    }
+    typeProp.value = t.nullLiteral()
+    changed = true
+  }
+
+  return changed
+}
+
+function isObjectAssignCall(node: t.CallExpression) {
+  const callee = node.callee
+  return t.isMemberExpression(callee)
+    && t.isIdentifier(callee.object, { name: 'Object' })
+    && t.isIdentifier(callee.property, { name: 'assign' })
 }
 
 function resolveObjectExpressionFromProgram(program: Program, name: string): ObjectExpression | null {
@@ -184,6 +238,10 @@ export function rewriteDefaultExport(
 
   if (componentOptionsObject) {
     transformed = injectSetupInitialData(componentOptionsObject) || transformed
+  }
+
+  if (componentOptionsObject && options?.relaxStructuredTypeOnlyProps) {
+    transformed = relaxStructuredTypeOnlyProps(componentOptionsObject) || transformed
   }
 
   const classStyleBindings = options?.classStyleBindings ?? []

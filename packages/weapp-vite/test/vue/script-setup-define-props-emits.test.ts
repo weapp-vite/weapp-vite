@@ -138,4 +138,31 @@ const props = defineProps<{
     expect(result.script).toMatch(/optDateOnly:\s*\{\s*type:\s*Date,\s*required:\s*false\s*\}/)
     expect(result.script).toMatch(/optLiteralOrNumber:\s*\{\s*type:\s*\[\s*String,\s*Number\s*\],\s*required:\s*false\s*\}/)
   })
+
+  it('relaxes structured type-only props to null runtime type for mini-program compatibility', async () => {
+    const source = `
+<template>
+  <view>{{ title }}</view>
+</template>
+
+<script setup lang="ts">
+const props = withDefaults(defineProps<{
+  title: string
+  items?: Array<{ label: string }>
+  payload?: Record<string, any>
+  matrix?: Array<Record<string, any>> | Record<string, any>
+}>(), {
+  items: () => [],
+  payload: () => ({}),
+  matrix: () => [],
+})
+</script>
+`
+    const result = await compileVueFile(source, 'test.vue')
+
+    expect(result.script).toMatch(/title:\s*\{\s*type:\s*String,\s*required:\s*true\s*\}/)
+    expect(result.script).toMatch(/items:\s*\{\s*type:\s*null,\s*required:\s*false,\s*default:\s*\(\)\s*=>\s*\[\]\s*\}/)
+    expect(result.script).toMatch(/payload:\s*\{\s*type:\s*null,\s*required:\s*false,\s*default:\s*\(\)\s*=>\s*\(\{\}\)\s*\}/)
+    expect(result.script).toMatch(/matrix:\s*\{\s*type:\s*null,\s*required:\s*false,\s*default:\s*\(\)\s*=>\s*\[\]\s*\}/)
+  })
 })

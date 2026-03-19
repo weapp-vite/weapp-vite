@@ -18,12 +18,6 @@ const props = withDefaults(defineProps<{
   columns: 2,
 })
 
-console.log('props', JSON.stringify(props))
-
-defineComponentJson({
-  styleIsolation: 'apply-shared',
-})
-
 type KpiTone = 'positive' | 'negative' | 'neutral'
 
 export interface KpiItem {
@@ -34,6 +28,10 @@ export interface KpiItem {
   delta?: number
   footnote?: string
 }
+
+defineComponentJson({
+  styleIsolation: 'apply-shared',
+})
 
 function resolveTone(delta?: number): KpiTone {
   if (delta === undefined || Number.isNaN(delta)) {
