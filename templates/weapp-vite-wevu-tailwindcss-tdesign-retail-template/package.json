@@ -33,7 +33,7 @@
     "autoprefixer": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",
-    "tailwindcss": "catalog:",
+    "tailwindcss": "catalog:tailwind3",
     "typescript": "catalog:",
     "vue-tsc": "catalog:",
     "weapp-tailwindcss": "catalog:",

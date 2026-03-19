@@ -30,7 +30,7 @@
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",
     "sass": "catalog:",
-    "tailwindcss": "catalog:",
+    "tailwindcss": "catalog:tailwind3",
     "typescript": "catalog:",
     "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*"

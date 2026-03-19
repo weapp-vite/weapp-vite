@@ -172,6 +172,10 @@ catalogs:
     typescript:
       specifier: latest
       version: 5.9.3
+  tailwind3:
+    tailwindcss:
+      specifier: 3.4.19
+      version: 3.4.19
   tailwind4:
     tailwindcss:
       specifier: ^4.2.2
@@ -1712,7 +1716,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
-        version: 1.9.2(tailwindcss@4.2.2)
+        version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       '@iconify-json/mdi':
         specifier: 'catalog:'
         version: 1.2.3
@@ -1729,14 +1733,14 @@ importers:
         specifier: 'catalog:'
         version: 1.98.0
       tailwindcss:
-        specifier: 'catalog:'
-        version: 4.2.2
+        specifier: catalog:tailwind3
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1745,7 +1749,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
-        version: 1.9.2(tailwindcss@4.2.2)
+        version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       '@iconify-json/mdi':
         specifier: 'catalog:'
         version: 1.2.3
@@ -1762,14 +1766,14 @@ importers:
         specifier: 'catalog:'
         version: 1.98.0
       tailwindcss:
-        specifier: 'catalog:'
-        version: 4.2.2
+        specifier: catalog:tailwind3
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1782,7 +1786,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
-        version: 1.9.2(tailwindcss@4.2.2)
+        version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       '@iconify-json/mdi':
         specifier: 'catalog:'
         version: 1.2.3
@@ -1799,14 +1803,14 @@ importers:
         specifier: 'catalog:'
         version: 1.98.0
       tailwindcss:
-        specifier: 'catalog:'
-        version: 4.2.2
+        specifier: catalog:tailwind3
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1851,8 +1855,8 @@ importers:
         specifier: 'catalog:'
         version: 8.5.8
       tailwindcss:
-        specifier: 'catalog:'
-        version: 4.2.2
+        specifier: catalog:tailwind3
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1861,7 +1865,7 @@ importers:
         version: 3.2.6(typescript@5.9.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1874,7 +1878,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
-        version: 1.9.2(tailwindcss@4.2.2)
+        version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       '@iconify-json/mdi':
         specifier: 'catalog:'
         version: 1.2.3
@@ -1891,8 +1895,8 @@ importers:
         specifier: 'catalog:'
         version: 1.98.0
       tailwindcss:
-        specifier: 'catalog:'
-        version: 4.2.2
+        specifier: catalog:tailwind3
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1901,7 +1905,7 @@ importers:
         version: 3.2.6(typescript@5.9.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -16416,6 +16420,11 @@ snapshots:
       buffer-crc32: 0.2.13
       fd-slicer2: 1.2.0
 
+  '@egoist/tailwindcss-icons@1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))':
+    dependencies:
+      '@iconify/utils': 3.1.0
+      tailwindcss: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+
   '@egoist/tailwindcss-icons@1.9.2(tailwindcss@4.2.2)':
     dependencies:
       '@iconify/utils': 3.1.0
@@ -20076,8 +20085,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@5.9.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.1(typescript@5.9.3)
+      '@typescript-eslint/types': 8.57.1
       debug: 4.4.3
       typescript: 5.9.3
     transitivePeerDependencies:

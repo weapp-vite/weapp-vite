@@ -10,8 +10,8 @@ export const TEMPLATE_CATALOG = {
   '@egoist/tailwindcss-icons': '^1.9.2',
   '@iconify-json/mdi': '^1.2.3',
   '@mini-types/alipay': '^3.0.14',
-  '@tailwindcss/postcss': '^4.2.1',
-  '@tailwindcss/vite': '^4.2.1',
+  '@tailwindcss/postcss': '^4.2.2',
+  '@tailwindcss/vite': '^4.2.2',
   '@types/node': '^25.5.0',
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
@@ -49,7 +49,7 @@ export const TEMPLATE_CATALOG = {
   pathe: '^2.0.3',
   postcss: '^8.5.8',
   sass: '^1.98.0',
-  tailwindcss: '^3.4.19',
+  tailwindcss: '^4.2.2',
   tslib: '^2.8.1',
   typescript: '^5.9.3',
   vite: '8.0.0',
@@ -72,6 +72,6 @@ export const TEMPLATE_NAMED_CATALOG = {
     tailwindcss: '3.4.19'
   },
   tailwind4: {
-    tailwindcss: '^4.2.1'
+    tailwindcss: '^4.2.2'
   }
 } as const
