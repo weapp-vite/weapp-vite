@@ -31,11 +31,11 @@ catalogs:
       specifier: ^3.0.14
       version: 3.0.14
     '@tailwindcss/postcss':
-      specifier: ^4.2.1
-      version: 4.2.1
+      specifier: ^4.2.2
+      version: 4.2.2
     '@tailwindcss/vite':
-      specifier: ^4.2.1
-      version: 4.2.1
+      specifier: ^4.2.2
+      version: 4.2.2
     '@types/node':
       specifier: ^25.5.0
       version: 25.5.0
@@ -133,8 +133,8 @@ catalogs:
       specifier: ^1.98.0
       version: 1.98.0
     tailwindcss:
-      specifier: ^3.4.19
-      version: 3.4.19
+      specifier: ^4.2.2
+      version: 4.2.2
     tdesign-miniprogram:
       specifier: ^1.13.0
       version: 1.13.0
@@ -174,8 +174,8 @@ catalogs:
       version: 5.9.3
   tailwind4:
     tailwindcss:
-      specifier: ^4.2.1
-      version: 4.2.1
+      specifier: ^4.2.2
+      version: 4.2.2
   tdesign-miniprogram-fixed:
     tdesign-miniprogram:
       specifier: 1.13.0
@@ -224,13 +224,13 @@ importers:
         version: 1.2.12(conventional-changelog-conventionalcommits@9.3.0)
       '@icebreakers/eslint-config':
         specifier: ^1.6.33
-        version: 1.6.33(@typescript-eslint/rule-tester@8.56.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.57.1(typescript@5.9.3))(@typescript-eslint/utils@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@vue/compiler-sfc@3.5.30)(eslint-plugin-pnpm@1.6.0(eslint@10.0.3(jiti@2.6.1)))(eslint@10.0.3(jiti@2.6.1))(globals@17.4.0)(tailwindcss@4.2.1)(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)))
+        version: 1.6.33(@typescript-eslint/rule-tester@8.56.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.57.1(typescript@5.9.3))(@typescript-eslint/utils@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@vue/compiler-sfc@3.5.30)(eslint-plugin-pnpm@1.6.0(eslint@10.0.3(jiti@2.6.1)))(eslint@10.0.3(jiti@2.6.1))(globals@17.4.0)(tailwindcss@4.2.2)(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)))
       '@icebreakers/monorepo':
         specifier: ^3.2.18
         version: 3.2.18(@types/node@25.5.0)(magicast@0.5.2)(typanion@3.14.0)
       '@icebreakers/stylelint-config':
         specifier: ^2.0.7
-        version: 2.0.7(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1)
+        version: 2.0.7(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.2)
       '@oxc-node/cli':
         specifier: ^0.0.35
         version: 0.0.35
@@ -482,7 +482,7 @@ importers:
         version: 7.2.2
       tailwindcss:
         specifier: catalog:tailwind4
-        version: 4.2.1
+        version: 4.2.2
       tinypool:
         specifier: ^2.1.0
         version: 2.1.0
@@ -502,8 +502,8 @@ importers:
         specifier: ^4.21.0
         version: 4.21.0
       turbo:
-        specifier: ^2.8.17
-        version: 2.8.17
+        specifier: ^2.8.19
+        version: 2.8.19
       type-fest:
         specifier: ^5.4.4
         version: 5.4.4
@@ -644,7 +644,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
-        version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 1.9.2(tailwindcss@4.2.2)
       '@iconify-json/mdi':
         specifier: 'catalog:'
         version: 1.2.3
@@ -662,7 +662,7 @@ importers:
         version: 1.98.0
       tailwindcss:
         specifier: 'catalog:'
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -671,7 +671,7 @@ importers:
         version: 3.2.6(typescript@5.9.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -737,7 +737,7 @@ importers:
         version: 5.9.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.1)
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -832,7 +832,7 @@ importers:
         version: 4.0.1
       tailwindcss:
         specifier: 'catalog:'
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -847,7 +847,7 @@ importers:
         version: 11.3.3(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -865,10 +865,10 @@ importers:
         version: 8.5.8
       tailwindcss:
         specifier: 'catalog:'
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.2.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -903,10 +903,10 @@ importers:
         version: 8.5.8
       tailwindcss:
         specifier: 'catalog:'
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.2.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -943,13 +943,13 @@ importers:
         version: 8.5.8
       tailwindcss:
         specifier: 'catalog:'
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.2.2
       weapp-ide-cli:
         specifier: workspace:*
         version: link:../../packages/weapp-ide-cli
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -964,7 +964,7 @@ importers:
         version: 5.9.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.1)
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1058,13 +1058,13 @@ importers:
     devDependencies:
       '@tailwindcss/vite':
         specifier: 'catalog:'
-        version: 4.2.1(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.2.2(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       miniprogram-api-typings:
         specifier: 'catalog:'
         version: 5.1.2
       tailwindcss:
         specifier: catalog:tailwind4
-        version: 4.2.1
+        version: 4.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1073,7 +1073,7 @@ importers:
         version: 3.2.6(typescript@5.9.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.1)
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1166,7 +1166,7 @@ importers:
   e2e-apps/issue-814-tailwind3:
     devDependencies:
       tailwindcss:
-        specifier: 3.4.19
+        specifier: catalog:tailwind3
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
@@ -1182,13 +1182,13 @@ importers:
     devDependencies:
       '@tailwindcss/postcss':
         specifier: 'catalog:'
-        version: 4.2.1
+        version: 4.2.2
       tailwindcss:
         specifier: catalog:tailwind4
-        version: 4.2.1
+        version: 4.2.2
       weapp-tailwindcss:
         specifier: catalog:weapp-tailwindcss-fixed
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.1)
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1200,13 +1200,13 @@ importers:
     devDependencies:
       '@tailwindcss/postcss':
         specifier: 'catalog:'
-        version: 4.2.1
+        version: 4.2.2
       tailwindcss:
         specifier: catalog:tailwind4
-        version: 4.2.1
+        version: 4.2.2
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.1)
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1380,13 +1380,13 @@ importers:
     devDependencies:
       '@tailwindcss/vite':
         specifier: 'catalog:'
-        version: 4.2.1(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.2.2(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       '@vitejs/plugin-vue':
         specifier: ^6.0.5
         version: 6.0.5(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.30(typescript@5.9.3))
       tailwindcss:
         specifier: catalog:tailwind4
-        version: 4.2.1
+        version: 4.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1597,7 +1597,7 @@ importers:
         version: 0.7.0(oxc-parser@0.120.0)
       tailwindcss:
         specifier: catalog:tailwind4
-        version: 4.2.1
+        version: 4.2.2
       ts-morph:
         specifier: 'catalog:'
         version: 27.0.2
@@ -1712,7 +1712,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
-        version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 1.9.2(tailwindcss@4.2.2)
       '@iconify-json/mdi':
         specifier: 'catalog:'
         version: 1.2.3
@@ -1730,13 +1730,13 @@ importers:
         version: 1.98.0
       tailwindcss:
         specifier: 'catalog:'
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1745,7 +1745,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
-        version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 1.9.2(tailwindcss@4.2.2)
       '@iconify-json/mdi':
         specifier: 'catalog:'
         version: 1.2.3
@@ -1763,13 +1763,13 @@ importers:
         version: 1.98.0
       tailwindcss:
         specifier: 'catalog:'
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1782,7 +1782,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
-        version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 1.9.2(tailwindcss@4.2.2)
       '@iconify-json/mdi':
         specifier: 'catalog:'
         version: 1.2.3
@@ -1800,13 +1800,13 @@ importers:
         version: 1.98.0
       tailwindcss:
         specifier: 'catalog:'
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1852,7 +1852,7 @@ importers:
         version: 8.5.8
       tailwindcss:
         specifier: 'catalog:'
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1861,7 +1861,7 @@ importers:
         version: 3.2.6(typescript@5.9.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1874,7 +1874,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
-        version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 1.9.2(tailwindcss@4.2.2)
       '@iconify-json/mdi':
         specifier: 'catalog:'
         version: 1.2.3
@@ -1892,7 +1892,7 @@ importers:
         version: 1.98.0
       tailwindcss:
         specifier: 'catalog:'
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1901,7 +1901,7 @@ importers:
         version: 3.2.6(typescript@5.9.3)
       weapp-tailwindcss:
         specifier: 'catalog:'
-        version: 4.10.3(magicast@0.5.2)(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.10.3(magicast@0.5.2)(tailwindcss@4.2.2)
       weapp-vite:
         specifier: workspace:*
         version: link:../../packages/weapp-vite
@@ -1956,7 +1956,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
-        version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
+        version: 1.9.2(tailwindcss@4.2.2)
       '@iconify-json/bi':
         specifier: ^1.2.1
         version: 1.2.7
@@ -1980,7 +1980,7 @@ importers:
         version: 11.13.0
       tailwindcss:
         specifier: 'catalog:'
-        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+        version: 4.2.2
       unplugin-auto-import:
         specifier: ^21.0.0
         version: 21.0.0(@vueuse/core@14.1.0(vue@3.5.30(typescript@5.9.3)))
@@ -6130,66 +6130,69 @@ packages:
   '@tailwindcss/node@4.2.1':
     resolution: {integrity: sha512-jlx6sLk4EOwO6hHe1oCGm1Q4AN/s0rSrTTPBGPM0/RQ6Uylwq17FuU8IeJJKEjtc6K6O07zsvP+gDO6MMWo7pg==}
 
-  '@tailwindcss/oxide-android-arm64@4.2.1':
-    resolution: {integrity: sha512-eZ7G1Zm5EC8OOKaesIKuw77jw++QJ2lL9N+dDpdQiAB/c/B2wDh0QPFHbkBVrXnwNugvrbJFk1gK2SsVjwWReg==}
+  '@tailwindcss/node@4.2.2':
+    resolution: {integrity: sha512-pXS+wJ2gZpVXqFaUEjojq7jzMpTGf8rU6ipJz5ovJV6PUGmlJ+jvIwGrzdHdQ80Sg+wmQxUFuoW1UAAwHNEdFA==}
+
+  '@tailwindcss/oxide-android-arm64@4.2.2':
+    resolution: {integrity: sha512-dXGR1n+P3B6748jZO/SvHZq7qBOqqzQ+yFrXpoOWWALWndF9MoSKAT3Q0fYgAzYzGhxNYOoysRvYlpixRBBoDg==}
     engines: {node: '>= 20'}
     cpu: [arm64]
     os: [android]
 
-  '@tailwindcss/oxide-darwin-arm64@4.2.1':
-    resolution: {integrity: sha512-q/LHkOstoJ7pI1J0q6djesLzRvQSIfEto148ppAd+BVQK0JYjQIFSK3JgYZJa+Yzi0DDa52ZsQx2rqytBnf8Hw==}
+  '@tailwindcss/oxide-darwin-arm64@4.2.2':
+    resolution: {integrity: sha512-iq9Qjr6knfMpZHj55/37ouZeykwbDqF21gPFtfnhCCKGDcPI/21FKC9XdMO/XyBM7qKORx6UIhGgg6jLl7BZlg==}
     engines: {node: '>= 20'}
     cpu: [arm64]
     os: [darwin]
 
-  '@tailwindcss/oxide-darwin-x64@4.2.1':
-    resolution: {integrity: sha512-/f/ozlaXGY6QLbpvd/kFTro2l18f7dHKpB+ieXz+Cijl4Mt9AI2rTrpq7V+t04nK+j9XBQHnSMdeQRhbGyt6fw==}
+  '@tailwindcss/oxide-darwin-x64@4.2.2':
+    resolution: {integrity: sha512-BlR+2c3nzc8f2G639LpL89YY4bdcIdUmiOOkv2GQv4/4M0vJlpXEa0JXNHhCHU7VWOKWT/CjqHdTP8aUuDJkuw==}
     engines: {node: '>= 20'}
     cpu: [x64]
     os: [darwin]
 
-  '@tailwindcss/oxide-freebsd-x64@4.2.1':
-    resolution: {integrity: sha512-5e/AkgYJT/cpbkys/OU2Ei2jdETCLlifwm7ogMC7/hksI2fC3iiq6OcXwjibcIjPung0kRtR3TxEITkqgn0TcA==}
+  '@tailwindcss/oxide-freebsd-x64@4.2.2':
+    resolution: {integrity: sha512-YUqUgrGMSu2CDO82hzlQ5qSb5xmx3RUrke/QgnoEx7KvmRJHQuZHZmZTLSuuHwFf0DJPybFMXMYf+WJdxHy/nQ==}
     engines: {node: '>= 20'}
     cpu: [x64]
     os: [freebsd]
 
-  '@tailwindcss/oxide-linux-arm-gnueabihf@4.2.1':
-    resolution: {integrity: sha512-Uny1EcVTTmerCKt/1ZuKTkb0x8ZaiuYucg2/kImO5A5Y/kBz41/+j0gxUZl+hTF3xkWpDmHX+TaWhOtba2Fyuw==}
+  '@tailwindcss/oxide-linux-arm-gnueabihf@4.2.2':
+    resolution: {integrity: sha512-FPdhvsW6g06T9BWT0qTwiVZYE2WIFo2dY5aCSpjG/S/u1tby+wXoslXS0kl3/KXnULlLr1E3NPRRw0g7t2kgaQ==}
     engines: {node: '>= 20'}
     cpu: [arm]
     os: [linux]
 
-  '@tailwindcss/oxide-linux-arm64-gnu@4.2.1':
-    resolution: {integrity: sha512-CTrwomI+c7n6aSSQlsPL0roRiNMDQ/YzMD9EjcR+H4f0I1SQ8QqIuPnsVp7QgMkC1Qi8rtkekLkOFjo7OlEFRQ==}
+  '@tailwindcss/oxide-linux-arm64-gnu@4.2.2':
+    resolution: {integrity: sha512-4og1V+ftEPXGttOO7eCmW7VICmzzJWgMx+QXAJRAhjrSjumCwWqMfkDrNu1LXEQzNAwz28NCUpucgQPrR4S2yw==}
     engines: {node: '>= 20'}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@tailwindcss/oxide-linux-arm64-musl@4.2.1':
-    resolution: {integrity: sha512-WZA0CHRL/SP1TRbA5mp9htsppSEkWuQ4KsSUumYQnyl8ZdT39ntwqmz4IUHGN6p4XdSlYfJwM4rRzZLShHsGAQ==}
+  '@tailwindcss/oxide-linux-arm64-musl@4.2.2':
+    resolution: {integrity: sha512-oCfG/mS+/+XRlwNjnsNLVwnMWYH7tn/kYPsNPh+JSOMlnt93mYNCKHYzylRhI51X+TbR+ufNhhKKzm6QkqX8ag==}
     engines: {node: '>= 20'}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@tailwindcss/oxide-linux-x64-gnu@4.2.1':
-    resolution: {integrity: sha512-qMFzxI2YlBOLW5PhblzuSWlWfwLHaneBE0xHzLrBgNtqN6mWfs+qYbhryGSXQjFYB1Dzf5w+LN5qbUTPhW7Y5g==}
+  '@tailwindcss/oxide-linux-x64-gnu@4.2.2':
+    resolution: {integrity: sha512-rTAGAkDgqbXHNp/xW0iugLVmX62wOp2PoE39BTCGKjv3Iocf6AFbRP/wZT/kuCxC9QBh9Pu8XPkv/zCZB2mcMg==}
     engines: {node: '>= 20'}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@tailwindcss/oxide-linux-x64-musl@4.2.1':
-    resolution: {integrity: sha512-5r1X2FKnCMUPlXTWRYpHdPYUY6a1Ar/t7P24OuiEdEOmms5lyqjDRvVY1yy9Rmioh+AunQ0rWiOTPE8F9A3v5g==}
+  '@tailwindcss/oxide-linux-x64-musl@4.2.2':
+    resolution: {integrity: sha512-XW3t3qwbIwiSyRCggeO2zxe3KWaEbM0/kW9e8+0XpBgyKU4ATYzcVSMKteZJ1iukJ3HgHBjbg9P5YPRCVUxlnQ==}
     engines: {node: '>= 20'}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@tailwindcss/oxide-wasm32-wasi@4.2.1':
-    resolution: {integrity: sha512-MGFB5cVPvshR85MTJkEvqDUnuNoysrsRxd6vnk1Lf2tbiqNlXpHYZqkqOQalydienEWOHHFyyuTSYRsLfxFJ2Q==}
+  '@tailwindcss/oxide-wasm32-wasi@4.2.2':
+    resolution: {integrity: sha512-eKSztKsmEsn1O5lJ4ZAfyn41NfG7vzCg496YiGtMDV86jz1q/irhms5O0VrY6ZwTUkFy/EKG3RfWgxSI3VbZ8Q==}
     engines: {node: '>=14.0.0'}
     cpu: [wasm32]
     bundledDependencies:
@@ -6200,29 +6203,29 @@ packages:
       - '@emnapi/wasi-threads'
       - tslib
 
-  '@tailwindcss/oxide-win32-arm64-msvc@4.2.1':
-    resolution: {integrity: sha512-YlUEHRHBGnCMh4Nj4GnqQyBtsshUPdiNroZj8VPkvTZSoHsilRCwXcVKnG9kyi0ZFAS/3u+qKHBdDc81SADTRA==}
+  '@tailwindcss/oxide-win32-arm64-msvc@4.2.2':
+    resolution: {integrity: sha512-qPmaQM4iKu5mxpsrWZMOZRgZv1tOZpUm+zdhhQP0VhJfyGGO3aUKdbh3gDZc/dPLQwW4eSqWGrrcWNBZWUWaXQ==}
     engines: {node: '>= 20'}
     cpu: [arm64]
     os: [win32]
 
-  '@tailwindcss/oxide-win32-x64-msvc@4.2.1':
-    resolution: {integrity: sha512-rbO34G5sMWWyrN/idLeVxAZgAKWrn5LiR3/I90Q9MkA67s6T1oB0xtTe+0heoBvHSpbU9Mk7i6uwJnpo4u21XQ==}
+  '@tailwindcss/oxide-win32-x64-msvc@4.2.2':
+    resolution: {integrity: sha512-1T/37VvI7WyH66b+vqHj/cLwnCxt7Qt3WFu5Q8hk65aOvlwAhs7rAp1VkulBJw/N4tMirXjVnylTR72uI0HGcA==}
     engines: {node: '>= 20'}
     cpu: [x64]
     os: [win32]
 
-  '@tailwindcss/oxide@4.2.1':
-    resolution: {integrity: sha512-yv9jeEFWnjKCI6/T3Oq50yQEOqmpmpfzG1hcZsAOaXFQPfzWprWrlHSdGPEF3WQTi8zu8ohC9Mh9J470nT5pUw==}
+  '@tailwindcss/oxide@4.2.2':
+    resolution: {integrity: sha512-qEUA07+E5kehxYp9BVMpq9E8vnJuBHfJEC0vPC5e7iL/hw7HR61aDKoVoKzrG+QKp56vhNZe4qwkRmMC0zDLvg==}
     engines: {node: '>= 20'}
 
-  '@tailwindcss/postcss@4.2.1':
-    resolution: {integrity: sha512-OEwGIBnXnj7zJeonOh6ZG9woofIjGrd2BORfvE5p9USYKDCZoQmfqLcfNiRWoJlRWLdNPn2IgVZuWAOM4iTYMw==}
+  '@tailwindcss/postcss@4.2.2':
+    resolution: {integrity: sha512-n4goKQbW8RVXIbNKRB/45LzyUqN451deQK0nzIeauVEqjlI49slUlgKYJM2QyUzap/PcpnS7kzSUmPb1sCRvYQ==}
 
-  '@tailwindcss/vite@4.2.1':
-    resolution: {integrity: sha512-TBf2sJjYeb28jD2U/OhwdW0bbOsxkWPwQ7SrqGf9sVcoYwZj7rkXljroBO9wKBut9XnmQLXanuDUeqQK0lGg/w==}
+  '@tailwindcss/vite@4.2.2':
+    resolution: {integrity: sha512-mEiF5HO1QqCLXoNEfXVA1Tzo+cYsrqV7w9Juj2wdUFyW07JRenqMG225MvPwr3ZD9N1bFQj46X7r33iHxLUW0w==}
     peerDependencies:
-      vite: ^5.2.0 || ^6 || ^7
+      vite: ^5.2.0 || ^6 || ^7 || ^8
 
   '@tanstack/eslint-plugin-query@5.91.4':
     resolution: {integrity: sha512-8a+GAeR7oxJ5laNyYBQ6miPK09Hi18o5Oie/jx8zioXODv/AUFLZQecKabPdpQSLmuDXEBPKFh+W5DKbWlahjQ==}
@@ -6243,6 +6246,36 @@ packages:
   '@tsd/typescript@5.9.2':
     resolution: {integrity: sha512-mSMM0QtEPdMd+rdMDd17yCUYD4yI3pKHap89+jEZrZ3KIO5PhDofBjER0OtgHdvOXF74KMLO3fyD6k3Hz0v03A==}
     engines: {node: '>=14.17'}
+
+  '@turbo/darwin-64@2.8.19':
+    resolution: {integrity: sha512-WNzpqJV7rO/oKmsxjtSFXuV87fZb/qxzeGWXJng4oHFz7iPOFSWrPb2gTazJgoTvXUfe1kOH2o0F+zFrerwzRw==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@turbo/darwin-arm64@2.8.19':
+    resolution: {integrity: sha512-KTq8/PH0/ml9bNFomZ2VjmOqW6RYPRqBqV5CfNeD5ekJMuNwJUdeQz0qXguxCzW4OkHCnTdPeKIehR0cdQObPg==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@turbo/linux-64@2.8.19':
+    resolution: {integrity: sha512-d0xcXiGUt1Q/HzMfgkqai5KyXrassLRuUZhxmUs4ZX99tQFbqRL2/CkSKCnMqyDv7c0K5eugLerVUY+DYr1DQg==}
+    cpu: [x64]
+    os: [linux]
+
+  '@turbo/linux-arm64@2.8.19':
+    resolution: {integrity: sha512-UX3r1iwqsOK8dMgKFtZpDqZk7feqHXZJ/EQAknh0SVQrnc4vkm6mZqjX4j2j3DVoSo4Ho8xGITYlor9Xxsyomw==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@turbo/windows-64@2.8.19':
+    resolution: {integrity: sha512-3MrvD/gMYWfQKZVZOeilKm1629zPG0+KlErZbI0n9Nr3L32+5qrZOF/cgWErukLnOSR38whgf8t2WaPJQALqxg==}
+    cpu: [x64]
+    os: [win32]
+
+  '@turbo/windows-arm64@2.8.19':
+    resolution: {integrity: sha512-j+8mi7kyEgT7cUTPOtPJS8KbTWxu4+OQBiDIo+zklz/RKV4hoN+k4+J8iCM9Nj+o+SVnzc01xSI+s3eBG0MDSA==}
+    cpu: [arm64]
+    os: [win32]
 
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -9236,10 +9269,6 @@ packages:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
     engines: {node: '>= 0.4'}
 
-  foreground-child@3.3.0:
-    resolution: {integrity: sha512-Ld2g8rrAyMYFXBhEqMz8ZAHBi4J4uS1i/CxGMDnjyFWddMXLVcDp051DZfu+t7+ab7Wv6SMqpWmyFIj5UbfFvg==}
-    engines: {node: '>=14'}
-
   foreground-child@3.3.1:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
     engines: {node: '>=14'}
@@ -9456,10 +9485,6 @@ packages:
 
   glob-to-regexp@0.4.1:
     resolution: {integrity: sha512-lkX1HJXwyMcprw/5YUZc2s7DrpAiHB21/V+E1rHUrVNokkvB6bqMzT0VfV6/86ZNabt1k14YOIaT7nDvOX3Iiw==}
-
-  glob@10.4.5:
-    resolution: {integrity: sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg==}
-    hasBin: true
 
   glob@10.5.0:
     resolution: {integrity: sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg==}
@@ -11852,10 +11877,6 @@ packages:
   pinyin-firstletter@1.0.2:
     resolution: {integrity: sha512-6dDsbmij6Cp/e/dg+ICU0s+hpr1OQj63f/TQ2i+WSjKxY0Cnrnp5ZFLMY9gSMiv9xCMS/VB9SqjHNZmbwrjTKA==}
 
-  pirates@4.0.6:
-    resolution: {integrity: sha512-saLsH7WeYYPiD25LDuLRRY/i+6HaPYr6G1OUlN39otzkSTxKnubR9RTxS3/Kk50s1g2JTgFwWQDQyplC5/SHZg==}
-    engines: {node: '>= 6'}
-
   pirates@4.0.7:
     resolution: {integrity: sha512-TfySrs/5nm8fQJDcBDuUng3VOUKsd7S+zqvbOTiGXHfxX4wK31ard+hoNuvkicM/2YFzlpDgABOevKSsB4G/FA==}
     engines: {node: '>= 6'}
@@ -12054,8 +12075,8 @@ packages:
     peerDependencies:
       postcss: ^8.0.0
 
-  postcss-js@4.0.1:
-    resolution: {integrity: sha512-dDLF8pEO191hJMtlHFPRa8xsizHaM82MLfNkUHdUtVEV3tgTp5oj+8qbEqYM57SLfc74KSbw//4SeJma2LRVIw==}
+  postcss-js@4.1.0:
+    resolution: {integrity: sha512-oIAOTqgIo7q2EOwbhb8UalYePMvYoIeRY2YKntdpFQXNosSu3vLrniGgmH9OKs/qAkfoj5oB3le/7mINW1LCfw==}
     engines: {node: ^12 || ^14 || >= 16}
     peerDependencies:
       postcss: ^8.4.21
@@ -13535,8 +13556,8 @@ packages:
   stylis@4.3.6:
     resolution: {integrity: sha512-yQ3rwFWRfwNUY7H5vpU0wfdkNSnvnJinhF9830Swlaxl03zsOjCfmX0ugac+3LtK0lYSgwL/KXc8oYL3mG4YFQ==}
 
-  sucrase@3.35.0:
-    resolution: {integrity: sha512-8EbVDiu9iN/nESwxeSxDKe0dunta1GOlHufmSSXxMD2z2/tMZpDMpvXQGsc+ajGo8y2uYUmixaSRUc/QPoQ0GA==}
+  sucrase@3.35.1:
+    resolution: {integrity: sha512-DhuTmvZWux4H1UOnWMB3sk0sbaCVOoQZjv8u1rDoTV0HTdGem9hkAZtl4JZy8P2z4Bg0nT+YMeOFyVr4zcG5Tw==}
     engines: {node: '>=16 || 14 >=14.17'}
     hasBin: true
 
@@ -13659,6 +13680,10 @@ packages:
 
   tailwindcss@4.2.1:
     resolution: {integrity: sha512-/tBrSQ36vCleJkAOsy9kbNTgaxvGbyOamC30PRePTQe/o1MFwEKHQk4Cn7BNGaPtjp+PuUrByJehM1hgxfq4sw==}
+
+  tailwindcss@4.2.2:
+    resolution: {integrity: sha512-KWBIxs1Xb6NoLdMVqhbhgwZf2PGBpPEiwOqgI4pFIYbNTfBXiKYyWoTsXgBQ9WFg/OlhnvHaY+AEpW7wSmFo2Q==}
+    hasBin: true
 
   tapable@2.3.0:
     resolution: {integrity: sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==}
@@ -13936,38 +13961,8 @@ packages:
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
 
-  turbo-darwin-64@2.8.17:
-    resolution: {integrity: sha512-ZFkv2hv7zHpAPEXBF6ouRRXshllOavYc+jjcrYyVHvxVTTwJWsBZwJ/gpPzmOKGvkSjsEyDO5V6aqqtZzwVF+Q==}
-    cpu: [x64]
-    os: [darwin]
-
-  turbo-darwin-arm64@2.8.17:
-    resolution: {integrity: sha512-5DXqhQUt24ycEryXDfMNKEkW5TBHs+QmU23a2qxXwwFDaJsWcPo2obEhBxxdEPOv7qmotjad+09RGeWCcJ9JDw==}
-    cpu: [arm64]
-    os: [darwin]
-
-  turbo-linux-64@2.8.17:
-    resolution: {integrity: sha512-KLUbz6w7F73D/Ihh51hVagrKR0/CTsPEbRkvXLXvoND014XJ4BCrQUqSxlQ4/hu+nqp1v5WlM85/h3ldeyujuA==}
-    cpu: [x64]
-    os: [linux]
-
-  turbo-linux-arm64@2.8.17:
-    resolution: {integrity: sha512-pJK67XcNJH40lTAjFu7s/rUlobgVXyB3A3lDoq+/JccB3hf+SysmkpR4Itlc93s8LEaFAI4mamhFuTV17Z6wOg==}
-    cpu: [arm64]
-    os: [linux]
-
-  turbo-windows-64@2.8.17:
-    resolution: {integrity: sha512-EijeQ6zszDMmGZLP2vT2RXTs/GVi9rM0zv2/G4rNu2SSRSGFapgZdxgW4b5zUYLVaSkzmkpWlGfPfj76SW9yUg==}
-    cpu: [x64]
-    os: [win32]
-
-  turbo-windows-arm64@2.8.17:
-    resolution: {integrity: sha512-crpfeMPkfECd4V1PQ/hMoiyVcOy04+bWedu/if89S15WhOalHZ2BYUi6DOJhZrszY+mTT99OwpOsj4wNfb/GHQ==}
-    cpu: [arm64]
-    os: [win32]
-
-  turbo@2.8.17:
-    resolution: {integrity: sha512-YwPsNSqU2f/RXU/+Kcb7cPkPZARxom4+me7LKEdN5jsvy2tpfze3zDZ4EiGrJnvOm9Avu9rK0aaYsP7qZ3iz7A==}
+  turbo@2.8.19:
+    resolution: {integrity: sha512-9NTKvQZ/02XnJCSU4mF5gvAPK+nuLbvCtft/NE8dJeOwaup0bJ14rYx7TxmSXp8JJuAN8nAjqfXWFsWwoQSFHg==}
     hasBin: true
 
   tweetnacl@0.14.5:
@@ -16421,10 +16416,10 @@ snapshots:
       buffer-crc32: 0.2.13
       fd-slicer2: 1.2.0
 
-  '@egoist/tailwindcss-icons@1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))':
+  '@egoist/tailwindcss-icons@1.9.2(tailwindcss@4.2.2)':
     dependencies:
       '@iconify/utils': 3.1.0
-      tailwindcss: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+      tailwindcss: 4.2.2
 
   '@element-plus/icons-vue@2.3.2(vue@3.5.30(typescript@5.9.3))':
     dependencies:
@@ -16801,18 +16796,18 @@ snapshots:
       '@commitlint/types': 20.5.0
       conventional-changelog-conventionalcommits: 9.3.0
 
-  '@icebreakers/eslint-config@1.6.33(@typescript-eslint/rule-tester@8.56.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.57.1(typescript@5.9.3))(@typescript-eslint/utils@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@vue/compiler-sfc@3.5.30)(eslint-plugin-pnpm@1.6.0(eslint@10.0.3(jiti@2.6.1)))(eslint@10.0.3(jiti@2.6.1))(globals@17.4.0)(tailwindcss@4.2.1)(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)))':
+  '@icebreakers/eslint-config@1.6.33(@typescript-eslint/rule-tester@8.56.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.57.1(typescript@5.9.3))(@typescript-eslint/utils@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@vue/compiler-sfc@3.5.30)(eslint-plugin-pnpm@1.6.0(eslint@10.0.3(jiti@2.6.1)))(eslint@10.0.3(jiti@2.6.1))(globals@17.4.0)(tailwindcss@4.2.2)(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)))':
     dependencies:
       '@antfu/eslint-config': 7.7.3(@eslint-react/eslint-plugin@3.0.0(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@next/eslint-plugin-next@16.1.7)(@typescript-eslint/rule-tester@8.56.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.57.1(typescript@5.9.3))(@typescript-eslint/utils@8.57.1(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@unocss/eslint-plugin@66.6.6(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3))(@vue/compiler-sfc@3.5.30)(eslint-plugin-format@2.0.1(eslint@10.0.3(jiti@2.6.1)))(eslint-plugin-jsx-a11y@6.10.2(eslint@10.0.3(jiti@2.6.1)))(eslint-plugin-react-hooks@7.0.1(eslint@10.0.3(jiti@2.6.1)))(eslint-plugin-react-refresh@0.5.2(eslint@10.0.3(jiti@2.6.1)))(eslint-plugin-vuejs-accessibility@2.5.0(eslint@10.0.3(jiti@2.6.1))(globals@17.4.0))(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3)(vitest@4.1.0(@types/node@25.5.0)(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)))
       '@eslint-react/eslint-plugin': 3.0.0(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3)
       '@next/eslint-plugin-next': 16.1.7
       '@tanstack/eslint-plugin-query': 5.91.4(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3)
-      eslint-plugin-better-tailwindcss: 4.3.2(eslint@10.0.3(jiti@2.6.1))(tailwindcss@4.2.1)(typescript@5.9.3)
+      eslint-plugin-better-tailwindcss: 4.3.2(eslint@10.0.3(jiti@2.6.1))(tailwindcss@4.2.2)(typescript@5.9.3)
       eslint-plugin-format: 2.0.1(eslint@10.0.3(jiti@2.6.1))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@10.0.3(jiti@2.6.1))
       eslint-plugin-react-hooks: 7.0.1(eslint@10.0.3(jiti@2.6.1))
       eslint-plugin-react-refresh: 0.5.2(eslint@10.0.3(jiti@2.6.1))
-      eslint-plugin-tailwindcss: 3.18.2(tailwindcss@4.2.1)
+      eslint-plugin-tailwindcss: 3.18.2(tailwindcss@4.2.2)
       eslint-plugin-vuejs-accessibility: 2.5.0(eslint@10.0.3(jiti@2.6.1))(globals@17.4.0)
     optionalDependencies:
       '@unocss/eslint-plugin': 66.6.6(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3)
@@ -16883,7 +16878,7 @@ snapshots:
       - supports-color
       - typanion
 
-  '@icebreakers/stylelint-config@2.0.7(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1)':
+  '@icebreakers/stylelint-config@2.0.7(postcss@8.5.8)(stylelint-order@6.0.4(stylelint@17.4.0(typescript@5.9.3)))(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.2)':
     dependencies:
       comment-json: 4.6.2
       postcss-html: 1.8.1
@@ -16891,7 +16886,7 @@ snapshots:
       stylelint-config-recommended-scss: 17.0.0(postcss@8.5.8)(stylelint@17.4.0(typescript@5.9.3))
       stylelint-config-recommended-vue: 1.6.1(postcss-html@1.8.1)(stylelint@17.4.0(typescript@5.9.3))
       stylelint-config-standard-scss: 17.0.0(postcss@8.5.8)(stylelint@17.4.0(typescript@5.9.3))
-      stylelint-plugin-tailwindcss: 0.0.3(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1)
+      stylelint-plugin-tailwindcss: 0.0.3(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.2)
     transitivePeerDependencies:
       - postcss
       - stylelint
@@ -19570,70 +19565,80 @@ snapshots:
       source-map-js: 1.2.1
       tailwindcss: 4.2.1
 
-  '@tailwindcss/oxide-android-arm64@4.2.1':
+  '@tailwindcss/node@4.2.2':
+    dependencies:
+      '@jridgewell/remapping': 2.3.5
+      enhanced-resolve: 5.20.1
+      jiti: 2.6.1
+      lightningcss: 1.32.0
+      magic-string: 0.30.21
+      source-map-js: 1.2.1
+      tailwindcss: 4.2.2
+
+  '@tailwindcss/oxide-android-arm64@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide-darwin-arm64@4.2.1':
+  '@tailwindcss/oxide-darwin-arm64@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide-darwin-x64@4.2.1':
+  '@tailwindcss/oxide-darwin-x64@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide-freebsd-x64@4.2.1':
+  '@tailwindcss/oxide-freebsd-x64@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide-linux-arm-gnueabihf@4.2.1':
+  '@tailwindcss/oxide-linux-arm-gnueabihf@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide-linux-arm64-gnu@4.2.1':
+  '@tailwindcss/oxide-linux-arm64-gnu@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide-linux-arm64-musl@4.2.1':
+  '@tailwindcss/oxide-linux-arm64-musl@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide-linux-x64-gnu@4.2.1':
+  '@tailwindcss/oxide-linux-x64-gnu@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide-linux-x64-musl@4.2.1':
+  '@tailwindcss/oxide-linux-x64-musl@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide-wasm32-wasi@4.2.1':
+  '@tailwindcss/oxide-wasm32-wasi@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide-win32-arm64-msvc@4.2.1':
+  '@tailwindcss/oxide-win32-arm64-msvc@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide-win32-x64-msvc@4.2.1':
+  '@tailwindcss/oxide-win32-x64-msvc@4.2.2':
     optional: true
 
-  '@tailwindcss/oxide@4.2.1':
+  '@tailwindcss/oxide@4.2.2':
     optionalDependencies:
-      '@tailwindcss/oxide-android-arm64': 4.2.1
-      '@tailwindcss/oxide-darwin-arm64': 4.2.1
-      '@tailwindcss/oxide-darwin-x64': 4.2.1
-      '@tailwindcss/oxide-freebsd-x64': 4.2.1
-      '@tailwindcss/oxide-linux-arm-gnueabihf': 4.2.1
-      '@tailwindcss/oxide-linux-arm64-gnu': 4.2.1
-      '@tailwindcss/oxide-linux-arm64-musl': 4.2.1
-      '@tailwindcss/oxide-linux-x64-gnu': 4.2.1
-      '@tailwindcss/oxide-linux-x64-musl': 4.2.1
-      '@tailwindcss/oxide-wasm32-wasi': 4.2.1
-      '@tailwindcss/oxide-win32-arm64-msvc': 4.2.1
-      '@tailwindcss/oxide-win32-x64-msvc': 4.2.1
+      '@tailwindcss/oxide-android-arm64': 4.2.2
+      '@tailwindcss/oxide-darwin-arm64': 4.2.2
+      '@tailwindcss/oxide-darwin-x64': 4.2.2
+      '@tailwindcss/oxide-freebsd-x64': 4.2.2
+      '@tailwindcss/oxide-linux-arm-gnueabihf': 4.2.2
+      '@tailwindcss/oxide-linux-arm64-gnu': 4.2.2
+      '@tailwindcss/oxide-linux-arm64-musl': 4.2.2
+      '@tailwindcss/oxide-linux-x64-gnu': 4.2.2
+      '@tailwindcss/oxide-linux-x64-musl': 4.2.2
+      '@tailwindcss/oxide-wasm32-wasi': 4.2.2
+      '@tailwindcss/oxide-win32-arm64-msvc': 4.2.2
+      '@tailwindcss/oxide-win32-x64-msvc': 4.2.2
 
-  '@tailwindcss/postcss@4.2.1':
+  '@tailwindcss/postcss@4.2.2':
     dependencies:
       '@alloc/quick-lru': 5.2.0
-      '@tailwindcss/node': 4.2.1
-      '@tailwindcss/oxide': 4.2.1
+      '@tailwindcss/node': 4.2.2
+      '@tailwindcss/oxide': 4.2.2
       postcss: 8.5.8
-      tailwindcss: 4.2.1
+      tailwindcss: 4.2.2
 
-  '@tailwindcss/vite@4.2.1(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))':
+  '@tailwindcss/vite@4.2.2(vite@8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))':
     dependencies:
-      '@tailwindcss/node': 4.2.1
-      '@tailwindcss/oxide': 4.2.1
-      tailwindcss: 4.2.1
+      '@tailwindcss/node': 4.2.2
+      '@tailwindcss/oxide': 4.2.2
+      tailwindcss: 4.2.2
       vite: 8.0.0(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
 
   '@tanstack/eslint-plugin-query@5.91.4(eslint@10.0.3(jiti@2.6.1))(typescript@5.9.3)':
@@ -19654,6 +19659,24 @@ snapshots:
       tinyglobby: 0.2.15
 
   '@tsd/typescript@5.9.2': {}
+
+  '@turbo/darwin-64@2.8.19':
+    optional: true
+
+  '@turbo/darwin-arm64@2.8.19':
+    optional: true
+
+  '@turbo/linux-64@2.8.19':
+    optional: true
+
+  '@turbo/linux-arm64@2.8.19':
+    optional: true
+
+  '@turbo/windows-64@2.8.19':
+    optional: true
+
+  '@turbo/windows-arm64@2.8.19':
+    optional: true
 
   '@tybys/wasm-util@0.10.1':
     dependencies:
@@ -22548,7 +22571,7 @@ snapshots:
     dependencies:
       eslint: 10.0.3(jiti@2.6.1)
 
-  eslint-plugin-better-tailwindcss@4.3.2(eslint@10.0.3(jiti@2.6.1))(tailwindcss@4.2.1)(typescript@5.9.3):
+  eslint-plugin-better-tailwindcss@4.3.2(eslint@10.0.3(jiti@2.6.1))(tailwindcss@4.2.2)(typescript@5.9.3):
     dependencies:
       '@eslint/css-tree': 3.6.9
       '@valibot/to-json-schema': 1.5.0(valibot@1.3.0(typescript@5.9.3))
@@ -22556,7 +22579,7 @@ snapshots:
       jiti: 2.6.1
       synckit: 0.11.12
       tailwind-csstree: 0.1.5
-      tailwindcss: 4.2.1
+      tailwindcss: 4.2.2
       tsconfig-paths-webpack-plugin: 4.2.0
       valibot: 1.3.0(typescript@5.9.3)
     optionalDependencies:
@@ -22824,11 +22847,11 @@ snapshots:
       regexp-ast-analysis: 0.7.1
       scslre: 0.3.0
 
-  eslint-plugin-tailwindcss@3.18.2(tailwindcss@4.2.1):
+  eslint-plugin-tailwindcss@3.18.2(tailwindcss@4.2.2):
     dependencies:
       fast-glob: 3.3.3
       postcss: 8.5.8
-      tailwindcss: 4.2.1
+      tailwindcss: 4.2.2
 
   eslint-plugin-toml@1.3.1(eslint@10.0.3(jiti@2.6.1)):
     dependencies:
@@ -23344,11 +23367,6 @@ snapshots:
     dependencies:
       is-callable: 1.2.7
 
-  foreground-child@3.3.0:
-    dependencies:
-      cross-spawn: 7.0.6
-      signal-exit: 4.1.0
-
   foreground-child@3.3.1:
     dependencies:
       cross-spawn: 7.0.6
@@ -23590,15 +23608,6 @@ snapshots:
       tslib: 2.8.1
 
   glob-to-regexp@0.4.1: {}
-
-  glob@10.4.5:
-    dependencies:
-      foreground-child: 3.3.0
-      jackspeak: 3.4.3
-      minimatch: 9.0.9
-      minipass: 7.1.2
-      package-json-from-dist: 1.0.1
-      path-scurry: 1.11.1
 
   glob@10.5.0:
     dependencies:
@@ -26346,8 +26355,6 @@ snapshots:
 
   pinyin-firstletter@1.0.2: {}
 
-  pirates@4.0.6: {}
-
   pirates@4.0.7: {}
 
   pixelmatch@4.0.2:
@@ -26544,7 +26551,7 @@ snapshots:
       read-cache: 1.0.0
       resolve: 1.22.11
 
-  postcss-js@4.0.1(postcss@8.5.8):
+  postcss-js@4.1.0(postcss@8.5.8):
     dependencies:
       camelcase-css: 2.0.1
       postcss: 8.5.8
@@ -28219,12 +28226,12 @@ snapshots:
       postcss-sorting: 8.0.2(postcss@8.5.8)
       stylelint: 17.4.0(typescript@5.9.3)
 
-  stylelint-plugin-tailwindcss@0.0.3(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.1):
+  stylelint-plugin-tailwindcss@0.0.3(stylelint@17.4.0(typescript@5.9.3))(tailwindcss@4.2.2):
     dependencies:
       postcss-tailwindcss: 0.0.2
       stylelint: 17.4.0(typescript@5.9.3)
     optionalDependencies:
-      tailwindcss: 4.2.1
+      tailwindcss: 4.2.2
 
   stylelint-scss@7.0.0(stylelint@17.4.0(typescript@5.9.3)):
     dependencies:
@@ -28283,14 +28290,14 @@ snapshots:
 
   stylis@4.3.6: {}
 
-  sucrase@3.35.0:
+  sucrase@3.35.1:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.13
       commander: 4.1.1
-      glob: 10.4.5
       lines-and-columns: 1.2.4
       mz: 2.7.0
-      pirates: 4.0.6
+      pirates: 4.0.7
+      tinyglobby: 0.2.15
       ts-interface-checker: 0.1.13
 
   superagent-proxy@3.0.0(superagent@6.1.0):
@@ -28439,7 +28446,7 @@ snapshots:
       - magicast
       - supports-color
 
-  tailwindcss-patch@8.7.3(magicast@0.5.2)(tailwindcss@4.2.1):
+  tailwindcss-patch@8.7.3(magicast@0.5.2)(tailwindcss@4.2.2):
     dependencies:
       '@babel/generator': 7.29.1
       '@babel/parser': 7.29.0
@@ -28456,7 +28463,7 @@ snapshots:
       semver: 7.7.4
       tailwindcss-config: 1.1.4
     optionalDependencies:
-      tailwindcss: 4.2.1
+      tailwindcss: 4.2.2
     transitivePeerDependencies:
       - magicast
       - supports-color
@@ -28479,17 +28486,19 @@ snapshots:
       picocolors: 1.1.1
       postcss: 8.5.8
       postcss-import: 15.1.0(postcss@8.5.8)
-      postcss-js: 4.0.1(postcss@8.5.8)
+      postcss-js: 4.1.0(postcss@8.5.8)
       postcss-load-config: 6.0.1(jiti@1.21.7)(postcss@8.5.8)(tsx@4.21.0)(yaml@2.8.2)
       postcss-nested: 6.2.0(postcss@8.5.8)
       postcss-selector-parser: 6.1.2
       resolve: 1.22.11
-      sucrase: 3.35.0
+      sucrase: 3.35.1
     transitivePeerDependencies:
       - tsx
       - yaml
 
   tailwindcss@4.2.1: {}
+
+  tailwindcss@4.2.2: {}
 
   tapable@2.3.0: {}
 
@@ -28756,32 +28765,14 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
 
-  turbo-darwin-64@2.8.17:
-    optional: true
-
-  turbo-darwin-arm64@2.8.17:
-    optional: true
-
-  turbo-linux-64@2.8.17:
-    optional: true
-
-  turbo-linux-arm64@2.8.17:
-    optional: true
-
-  turbo-windows-64@2.8.17:
-    optional: true
-
-  turbo-windows-arm64@2.8.17:
-    optional: true
-
-  turbo@2.8.17:
+  turbo@2.8.19:
     optionalDependencies:
-      turbo-darwin-64: 2.8.17
-      turbo-darwin-arm64: 2.8.17
-      turbo-linux-64: 2.8.17
-      turbo-linux-arm64: 2.8.17
-      turbo-windows-64: 2.8.17
-      turbo-windows-arm64: 2.8.17
+      '@turbo/darwin-64': 2.8.19
+      '@turbo/darwin-arm64': 2.8.19
+      '@turbo/linux-64': 2.8.19
+      '@turbo/linux-arm64': 2.8.19
+      '@turbo/windows-64': 2.8.19
+      '@turbo/windows-arm64': 2.8.19
 
   tweetnacl@0.14.5: {}
 
@@ -29586,7 +29577,7 @@ snapshots:
       - supports-color
       - tailwindcss
 
-  weapp-tailwindcss@4.10.3(magicast@0.5.2)(tailwindcss@4.2.1):
+  weapp-tailwindcss@4.10.3(magicast@0.5.2)(tailwindcss@4.2.2):
     dependencies:
       '@ast-core/escape': 1.0.1
       '@babel/parser': 7.29.0
@@ -29609,7 +29600,7 @@ snapshots:
       lru-cache: 10.4.3
       magic-string: 0.30.21
       semver: 7.7.4
-      tailwindcss-patch: 8.7.3(magicast@0.5.2)(tailwindcss@4.2.1)
+      tailwindcss-patch: 8.7.3(magicast@0.5.2)(tailwindcss@4.2.2)
       webpack-sources: 3.3.4
       yaml: 2.8.2
     transitivePeerDependencies:

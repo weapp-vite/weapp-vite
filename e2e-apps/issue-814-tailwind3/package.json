@@ -9,7 +9,7 @@
     "build": "weapp-vite build"
   },
   "devDependencies": {
-    "tailwindcss": "3.4.19",
+    "tailwindcss": "catalog:tailwind3",
     "weapp-tailwindcss": "catalog:weapp-tailwindcss-fixed",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"

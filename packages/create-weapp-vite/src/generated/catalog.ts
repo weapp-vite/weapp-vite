@@ -68,6 +68,9 @@ export const TEMPLATE_NAMED_CATALOG = {
     'miniprogram-api-typings': '^5.1.2',
     typescript: 'latest'
   },
+  tailwind3: {
+    tailwindcss: '3.4.19'
+  },
   tailwind4: {
     tailwindcss: '^4.2.1'
   }
