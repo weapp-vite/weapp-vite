@@ -4,6 +4,7 @@ import { onHide, onLaunch, onShow } from 'wevu'
 defineAppJson({
   pages: [
     'pages/index/index',
+    'pages/layouts/index',
     'pages/data/index',
     'pages/form/index',
     'pages/list/index',

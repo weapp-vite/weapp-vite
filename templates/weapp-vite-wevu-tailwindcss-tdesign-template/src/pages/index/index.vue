@@ -99,6 +99,16 @@ const quickActions = ref<QuickActionItem[]>([
     type: 'tab',
   },
   {
+    key: 'layouts',
+    title: '布局能力',
+    description: 'default / admin / false',
+    icon: 'layers',
+    tag: 'Layout',
+    tone: 'brand',
+    path: '/pages/layouts/index',
+    type: 'sub',
+  },
+  {
     key: 'lab',
     title: '组件实验室',
     description: 'TDesign 组件',
