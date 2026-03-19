@@ -25,7 +25,7 @@
     "postinstall": "weapp-vite prepare"
   },
   "peerDependencies": {
-    "wevu": "^6.10.2"
+    "wevu": "workspace:*"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",

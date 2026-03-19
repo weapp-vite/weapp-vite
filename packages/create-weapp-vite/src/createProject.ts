@@ -65,6 +65,9 @@ function upsertExistingDependencyVersion(pkgJson: PackageJson, packageName: stri
   if (pkgJson.devDependencies?.[packageName]) {
     pkgJson.devDependencies[packageName] = resolvedVersion
   }
+  if (pkgJson.peerDependencies?.[packageName]) {
+    pkgJson.peerDependencies[packageName] = resolvedVersion
+  }
 }
 
 function toCaretVersion(version: string) {
