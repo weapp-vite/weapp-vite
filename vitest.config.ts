@@ -107,6 +107,7 @@ const projects = resolveProjects()
 export default defineConfig(() => {
   return {
     test: {
+      globalSetup: ['./vitest.globalSetup.ts'],
       projects,
       coverage: {
         enabled: true,
