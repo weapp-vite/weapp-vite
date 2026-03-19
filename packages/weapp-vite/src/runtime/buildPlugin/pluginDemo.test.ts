@@ -24,12 +24,13 @@ describe('plugin-demo build regression', () => {
       mode: 'production',
     })
 
-    await ctx.buildService.build({ skipNpm: true })
+    await ctx.buildService.build()
 
     expect(await fs.pathExists(path.join(DIST_ROOT, 'app.json'))).toBe(true)
     expect(await fs.pathExists(path.join(DIST_ROOT, 'pages/index/index.js'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'plugin.json'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'index.js'))).toBe(true)
+    expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'miniprogram_npm/dayjs/index.js'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'components/hello-component/index.json'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/hello-page/index.wxml'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.js'))).toBe(true)
@@ -41,6 +42,7 @@ describe('plugin-demo build regression', () => {
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/index/index.js'))).toBe(false)
 
     const pluginIndexCode = await readFile(path.join(PLUGIN_DIST_ROOT, 'index.js'))
+    const pluginCommonCode = await readFile(path.join(PLUGIN_DIST_ROOT, 'common.js'))
     const pluginPageJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'pages/hello-page/index.json')))
     const nativePlaygroundJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.json')))
     const pluginJson = JSON.parse(await readFile(path.join(PLUGIN_DIST_ROOT, 'plugin.json')))
@@ -48,6 +50,9 @@ describe('plugin-demo build regression', () => {
     expect(pluginIndexCode).toContain('exports.sayHello')
     expect(pluginIndexCode).toContain('exports.answer')
     expect(pluginIndexCode).toContain('exports.getFeatureCards')
+    expect(pluginCommonCode).toContain('miniprogram_npm/dayjs/index')
+    expect(pluginCommonCode).toContain('2026-03-19T12:34:00')
+    expect(pluginCommonCode).toContain('npm(dayjs) 构建标记')
     expect(pluginPageJson.usingComponents ?? {}).toEqual({})
     expect(nativePlaygroundJson.usingComponents).toMatchObject({
       'hello-showcase': '../../components/hello-component/index',

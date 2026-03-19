@@ -1,3 +1,5 @@
+import dayjs from 'dayjs'
+
 export type PluginFeatureKind = 'vue-sfc' | 'native-ts' | 'scss'
 
 export interface PluginFeatureCard {
@@ -43,6 +45,8 @@ const featureCards: PluginFeatureCard[] = [
     score: 93,
   },
 ]
+
+const pluginNpmBuildStamp = dayjs('2026-03-19T12:34:00').format('YYYY/MM/DD HH:mm')
 
 /**
  * 返回用于展示的插件能力卡片。
@@ -94,5 +98,5 @@ export function getScoreTone(score: number) {
 export function getPluginShowcaseSummary() {
   const total = featureCards.length
   const average = Math.round(featureCards.reduce((sum, item) => sum + item.score, 0) / total)
-  return `插件共暴露 ${total} 个示例切面，平均完成度 ${average}%`
+  return `插件共暴露 ${total} 个示例切面，平均完成度 ${average}%，npm(dayjs) 构建标记 ${pluginNpmBuildStamp}`
 }

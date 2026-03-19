@@ -21,6 +21,76 @@ function countOccurrences(source: string, needle: string) {
   return source.split(needle).length - 1
 }
 
+async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let settled = false
+  const task = Promise.resolve()
+    .then(factory)
+    .then((value) => {
+      settled = true
+      return value
+    })
+    .catch((error) => {
+      settled = true
+      throw error
+    })
+  try {
+    return await Promise.race([
+      task,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`Timeout in ${label} after ${timeoutMs}ms`))
+        }, timeoutMs)
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+    if (!settled) {
+      void task.catch(() => {})
+    }
+  }
+}
+
+function shouldRetryAutomatorError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('Wait timed out after')
+    || message.includes('Timeout in ')
+    || message.includes('Execution context was destroyed')
+    || message.includes('Target closed')
+}
+
+async function runAutomatorOp<T>(
+  label: string,
+  factory: () => Promise<T>,
+  options: { timeoutMs?: number, retries?: number, retryDelayMs?: number } = {},
+) {
+  const {
+    timeoutMs = 8_000,
+    retries = 2,
+    retryDelayMs = 220,
+  } = options
+
+  let lastError: unknown
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      return await runWithTimeout(factory, timeoutMs, `${label}#${attempt}`)
+    }
+    catch (error) {
+      lastError = error
+      if (attempt < retries && shouldRetryAutomatorError(error)) {
+        await delay(retryDelayMs)
+        continue
+      }
+      throw error
+    }
+  }
+
+  throw lastError
+}
+
 async function runBuild() {
   await fs.remove(DIST_ROOT)
   await fs.remove(PLUGIN_DIST_ROOT)
@@ -28,7 +98,6 @@ async function runBuild() {
     cliPath: CLI_PATH,
     projectRoot: APP_ROOT,
     platform: 'weapp',
-    skipNpm: true,
     label: 'ide:plugin-demo',
   })
 }
@@ -42,8 +111,12 @@ async function getSharedMiniProgram() {
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
+    sharedMiniProgram = await runAutomatorOp('launch automator', () => launchAutomator({
       projectPath: APP_ROOT,
+    }), {
+      timeoutMs: 24_000,
+      retries: 3,
+      retryDelayMs: 320,
     })
   }
   return sharedMiniProgram
@@ -55,15 +128,20 @@ async function closeSharedMiniProgram() {
   }
   const miniProgram = sharedMiniProgram
   sharedMiniProgram = null
-  await miniProgram.close()
+  await runAutomatorOp('close mini program', () => miniProgram.close(), {
+    timeoutMs: 12_000,
+    retries: 2,
+    retryDelayMs: 200,
+  }).catch(() => {})
 }
 
 async function readPageWxml(page: any) {
-  const element = await page.$('page')
+  const element = await runAutomatorOp('query page root', () => page.$('page'))
   if (!element) {
     throw new Error('Failed to find page element')
   }
-  return stripAutomatorOverlay(await element.wxml())
+  const wxml = await runAutomatorOp('read page wxml', () => element.wxml())
+  return stripAutomatorOverlay(wxml)
 }
 
 async function tapElement(page: any, selector: string) {
@@ -100,12 +178,40 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
   return null
 }
 
+async function waitForWxmlContains(page: any, text: string, timeoutMs = 12_000) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    try {
+      const wxml = await readPageWxml(page)
+      if (wxml.includes(text)) {
+        return true
+      }
+    }
+    catch {
+    }
+    await delay(220)
+  }
+  return false
+}
+
+async function waitForRouteWithMarker(miniProgram: any, expectedPath: string, markerText: string, timeoutMs = 12_000) {
+  const page = await waitForCurrentPagePath(miniProgram, expectedPath, timeoutMs)
+  if (!page) {
+    return null
+  }
+  const ready = await waitForWxmlContains(page, markerText, timeoutMs)
+  if (!ready) {
+    return null
+  }
+  return page
+}
+
 describe.sequential('plugin-demo runtime (ide)', () => {
   afterAll(async () => {
     await closeSharedMiniProgram()
   })
 
-  it('loads host page, renders plugin public components, and opens both plugin pages without runtime errors', async () => {
+  it('loads host page, renders plugin public components, and opens plugin vue page without runtime errors', async () => {
     const miniProgram = await getSharedMiniProgram()
     const errorCollector = attachRuntimeErrorCollector(miniProgram)
     const marker = errorCollector.mark()
@@ -121,12 +227,20 @@ describe.sequential('plugin-demo runtime (ide)', () => {
         }
       }
 
-      const page = await runStep('relaunch-host', () => miniProgram.reLaunch('/pages/index/index'))
+      const page = await runStep('relaunch-host', () => runAutomatorOp('relaunch host', () => miniProgram.reLaunch('/pages/index/index'), {
+        timeoutMs: 16_000,
+        retries: 2,
+      }))
       if (!page) {
         throw new Error('Failed to launch /pages/index/index')
       }
 
-      await runStep('host-wait', () => page.waitFor(500))
+      await runStep('host-ready', async () => {
+        const ready = await waitForWxmlContains(page, '宿主页面直接消费插件导出的 TS API')
+        if (!ready) {
+          throw new Error('Host page did not reach ready marker')
+        }
+      })
 
       const indexWxml = await runStep('host-read-wxml', () => readPageWxml(page))
       expect(indexWxml).toContain('宿主页面直接消费插件导出的 TS API')
@@ -142,7 +256,7 @@ describe.sequential('plugin-demo runtime (ide)', () => {
       await runStep('host-open-vue-plugin', () => tapElement(page, '.nav-card'))
       const vuePluginPage = await runStep(
         'wait-vue-plugin-path',
-        () => waitForCurrentPagePath(miniProgram, 'plugin-private://wxb3d842a4a7e3440d/pages/hello-page/index'),
+        () => waitForRouteWithMarker(miniProgram, 'plugin-private://wxb3d842a4a7e3440d/pages/hello-page/index', '切换页面内评分'),
       )
       expect(vuePluginPage).not.toBeNull()
 

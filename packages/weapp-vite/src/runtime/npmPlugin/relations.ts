@@ -5,8 +5,10 @@ import { toPosixPath } from '../../utils/path'
 import { resolveProjectConfigRoot } from '../../utils/projectConfig'
 import { requireConfigService } from '../utils/requireConfigService'
 
+const TRAILING_SLASHES_RE = /\/+$/
+
 function normalizeRelativeDir(value: string) {
-  const normalized = toPosixPath(value).replace(/\/+$/, '')
+  const normalized = toPosixPath(value).replace(TRAILING_SLASHES_RE, '')
   const trimmed = normalized.startsWith('./') ? normalized.slice(2) : normalized
   return trimmed || '.'
 }
@@ -52,6 +54,21 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext) {
           packageJsonPath: './package.json',
         },
       ]
+
+  if (configService.pluginOnly) {
+    const pluginOutputRoot = configService.absolutePluginOutputRoot ?? configService.outDir
+    const [mainRelation] = packNpmRelationList
+    if (!mainRelation) {
+      return []
+    }
+
+    return [
+      {
+        ...mainRelation,
+        miniprogramNpmDistDir: pluginOutputRoot,
+      },
+    ]
+  }
 
   if (!isMultiPlatformEnabled) {
     if (!hasManualRelations && shouldUseProjectRootNpmStrategy(configService.platform)) {
