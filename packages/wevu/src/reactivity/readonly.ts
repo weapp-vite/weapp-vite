@@ -2,14 +2,7 @@ import type { Ref } from './ref'
 import { isObject } from './reactive'
 import { isRef, markAsRef } from './ref'
 
-/**
- * readonly 会为对象/数组创建一个“浅层”只读代理，并为 Ref 创建只读包装。
- * 选择浅层而非深层递归，是为了在小程序环境中保持实现和运行时开销最小，
- * 仅阻止直接属性写入/删除，嵌套对象仍按原样透传。
- */
-export function readonly<T extends object>(target: T): T
-export function readonly<T>(target: Ref<T>): Readonly<Ref<T>>
-export function readonly(target: any): any {
+function createReadonlyWrapper(target: any): any {
   if (isRef(target)) {
     const source = target
     return markAsRef({
@@ -40,4 +33,27 @@ export function readonly(target: any): any {
       return res
     },
   })
+}
+
+/**
+ * readonly 会为对象/数组创建一个“浅层”只读代理，并为 Ref 创建只读包装。
+ * 选择浅层而非深层递归，是为了在小程序环境中保持实现和运行时开销最小，
+ * 仅阻止直接属性写入/删除，嵌套对象仍按原样透传。
+ */
+export function readonly<T extends object>(target: T): T
+export function readonly<T>(target: Ref<T>): Readonly<Ref<T>>
+export function readonly(target: any): any {
+  return createReadonlyWrapper(target)
+}
+
+/**
+ * 与 Vue 3 的 `shallowReadonly()` 对齐。
+ *
+ * 当前 wevu 的只读语义本身就是浅层只读，因此这里直接复用同一套实现，
+ * 让依赖 Vue 兼容 API 的代码可以无缝迁移。
+ */
+export function shallowReadonly<T extends object>(target: T): Readonly<T>
+export function shallowReadonly<T>(target: Ref<T>): Readonly<Ref<T>>
+export function shallowReadonly(target: any): any {
+  return createReadonlyWrapper(target)
 }

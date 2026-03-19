@@ -1,6 +1,6 @@
 import type { RuntimeApp } from '@/runtime/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from '@/index'
+import { getCurrentScope, nextTick, onScopeDispose, ref, watchEffect } from '@/index'
 import { createApp } from '@/runtime/app'
 import { callHookReturn, setCurrentInstance } from '@/runtime/hooks'
 import {
@@ -208,6 +208,40 @@ describe('mountRuntimeInstance and teardown', () => {
     expect(target.$wevu.state.value1.value).toBe('111')
 
     teardownRuntimeInstance(target)
+  })
+
+  it('creates a setup effect scope and disposes scoped effects on teardown', async () => {
+    const app = createApp({})
+    const target: any = {
+      route: 'pages/scope/index',
+      setData: vi.fn(),
+    }
+    const source = ref(0)
+    const cleanup = vi.fn()
+    const calls: number[] = []
+
+    mountRuntimeInstance(target, app as any, undefined, () => {
+      expect(getCurrentScope()).toBeTruthy()
+      onScopeDispose(cleanup)
+      watchEffect(() => {
+        calls.push(source.value)
+      })
+      return {}
+    })
+
+    await nextTick()
+    expect(calls).toEqual([0])
+
+    source.value = 1
+    await nextTick()
+    expect(calls).toEqual([0, 1])
+
+    teardownRuntimeInstance(target)
+    expect(cleanup).toHaveBeenCalledTimes(1)
+
+    source.value = 2
+    await nextTick()
+    expect(calls).toEqual([0, 1])
   })
 })
 

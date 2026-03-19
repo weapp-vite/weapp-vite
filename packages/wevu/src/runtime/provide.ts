@@ -12,6 +12,16 @@ const PROVIDE_SCOPE_KEY = Symbol('wevu.provideScope')
 const __wevuGlobalProvideStore = new Map<any, any>()
 
 /**
+ * 判断当前是否存在可用的注入上下文。
+ *
+ * wevu 目前的依赖注入上下文来自同步 `setup()` 阶段的当前实例；
+ * 若未来补充 app 级 provider，这里可继续扩展判断来源。
+ */
+export function hasInjectionContext(): boolean {
+  return Boolean(getCurrentInstance())
+}
+
+/**
  * 在组件上下文中向后代注入值（与 Vue 3 行为兼容），若没有当前实例则回落到全局存储。
  *
  * @param key 注入键，可为字符串、Symbol 或对象

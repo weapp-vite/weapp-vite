@@ -11,6 +11,7 @@ import {
   createApp,
   createWevuComponent,
   defineComponent,
+  hasInjectionContext,
   inject,
   injectGlobal,
   nextTick,
@@ -44,6 +45,7 @@ import {
   registerComponent,
   resetWevuDefaults,
   setWevuDefaults,
+  shallowReadonly,
   useDisposables,
   useIntersectionObserver,
   useNativeInstance,
@@ -115,6 +117,7 @@ defineComponent({
     count: { type: Number, default: 1 },
   },
   setup(props, ctx) {
+    expectType<boolean>(hasInjectionContext())
     expectType<string | undefined>(props.title)
     expectType<number>(props.count)
     expectType<void>(ctx.emit('update', props.count))
@@ -136,6 +139,8 @@ defineComponent({
     expectType<number>(injected)
     provide(TOKEN, props.count)
     expectType<number>(inject<number>(TOKEN))
+    const readonlyProps = shallowReadonly(props)
+    expectType<string | undefined>(readonlyProps.title)
     onMounted(() => {})
     onShow(() => {})
     onHide(() => {})
