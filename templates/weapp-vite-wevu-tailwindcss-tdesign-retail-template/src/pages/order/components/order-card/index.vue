@@ -8,31 +8,37 @@ defineOptions({
     '../order-goods-card/index': {
       type: 'descendant',
       linked(target) {
-        this.children.push(target)
+        const children = Array.isArray(this.children) ? this.children : (this.children = [])
+        children.push(target)
         this.setHidden()
       },
       unlinked(target) {
-        this.children = this.children.filter(item => item !== target)
+        const children = Array.isArray(this.children) ? this.children : []
+        this.children = children.filter(item => item !== target)
       },
     },
     '../goods-card/index': {
       type: 'descendant',
       linked(target) {
-        this.children.push(target)
+        const children = Array.isArray(this.children) ? this.children : (this.children = [])
+        children.push(target)
         this.setHidden()
       },
       unlinked(target) {
-        this.children = this.children.filter(item => item !== target)
+        const children = Array.isArray(this.children) ? this.children : []
+        this.children = children.filter(item => item !== target)
       },
     },
     '../specs-goods-card/index': {
       type: 'descendant',
       linked(target) {
-        this.children.push(target)
+        const children = Array.isArray(this.children) ? this.children : (this.children = [])
+        children.push(target)
         this.setHidden()
       },
       unlinked(target) {
-        this.children = this.children.filter(item => item !== target)
+        const children = Array.isArray(this.children) ? this.children : []
+        this.children = children.filter(item => item !== target)
       },
     },
   },
@@ -71,7 +77,8 @@ defineOptions({
   methods: {
     setHidden() {
       const isHidden = !this.data.showAll
-      this.children.forEach((c, i) => i >= this.properties.defaultShowNum && c.setHidden(isHidden))
+      const children = Array.isArray(this.children) ? this.children : []
+      children.forEach((c, i) => i >= this.properties.defaultShowNum && c.setHidden(isHidden))
     },
     onOrderCardTap() {
       this.triggerEvent('cardtap')

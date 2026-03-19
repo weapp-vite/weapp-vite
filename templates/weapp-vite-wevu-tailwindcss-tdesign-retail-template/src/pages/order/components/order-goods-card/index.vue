@@ -24,7 +24,6 @@ defineOptions({
   },
   data() {
     return {
-      goods: {},
       hidden: false,
     }
   },

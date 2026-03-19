@@ -11,9 +11,13 @@ defineOptions({
     order: {
       type: Object,
       observer(order) {
+        if (!order) { return }
+
+        const goodsList = Array.isArray(order.goodsList) ? order.goodsList : []
+
         // 判定有传goodsIndex ，则认为是商品button bar, 仅显示申请售后按钮
         if (this.properties?.goodsIndex !== null) {
-          const goods = order.goodsList[Number(this.properties.goodsIndex)]
+          const goods = goodsList[Number(this.properties.goodsIndex)] || {}
           this.setData({
             buttons: {
               left: [],
@@ -35,7 +39,6 @@ defineOptions({
                 remainMember,
                 groupPrice,
               },
-              goodsList,
             } = order
             const goodsImg = goodsList[0] && goodsList[0].imgUrl
             const goodsName = goodsList[0] && goodsList[0].name
@@ -80,7 +83,6 @@ defineOptions({
   },
   data() {
     return {
-      order: {},
       buttons: {
         left: [],
         right: [],
@@ -169,7 +171,8 @@ defineOptions({
       })
     },
     onApplyRefund(order) {
-      const goods = order.goodsList[this.properties.goodsIndex]
+      const goodsList = Array.isArray(order?.goodsList) ? order.goodsList : []
+      const goods = goodsList[this.properties.goodsIndex]
       const params = {
         orderNo: order.orderNo,
         skuId: goods?.skuId ?? '19384938948343',
@@ -198,9 +201,9 @@ defineOptions({
     },
     /** 添加订单评论 */
     onAddComment(order) {
-      const imgUrl = order?.goodsList?.[0]?.thumb
-      const title = order?.goodsList?.[0]?.title
-      const specs = order?.goodsList?.[0]?.specs
+      const imgUrl = order?.goodsList?.[0]?.thumb || ''
+      const title = order?.goodsList?.[0]?.title || ''
+      const specs = order?.goodsList?.[0]?.specs || ''
       wx.navigateTo({
         url: `/pages/goods/comments/create/index?specs=${specs}&title=${title}&orderNo=${order?.orderNo}&imgUrl=${imgUrl}`,
       })
@@ -235,7 +238,7 @@ defineOptions({
         :t-class="`${isBtnMax ? 't-button--max' : 't-button'} order-btn ${rightBtn.primary ? 'primary' : 'normal'}`"
         hover-class="order-btn--active"
         :data-type="rightBtn.type"
-        :open-type="rightBtn.openType"
+        :open-type="rightBtn.openType || ''"
         :data-share="rightBtn.dataShare"
         @tap.stop="onOrderBtnTap"
       >
