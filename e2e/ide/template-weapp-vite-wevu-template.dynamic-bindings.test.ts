@@ -37,6 +37,7 @@ describe.sequential('template e2e: weapp-vite-wevu-template simplified portal', 
 
     expect(appJson.pages).toEqual([
       'pages/index/index',
+      'pages/layouts/index',
       'pages/overview/index',
     ])
     expect(appJson.subPackages).toEqual([
