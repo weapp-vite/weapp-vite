@@ -23,4 +23,10 @@
       <sfc-both />
     </view>
   </view>
+
+  <view class="section">
+    <view class="section-title">Page layouts</view>
+    <view class="subtitle subtitle--section">原生页面也可使用 src/layouts 与 setPageLayout()。</view>
+    <button class="layout-btn" bindtap="goToLayouts">打开布局演示页</button>
+  </view>
 </view>

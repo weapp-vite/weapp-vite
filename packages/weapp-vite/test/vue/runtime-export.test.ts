@@ -1,11 +1,16 @@
 import type { ComputedDefinitions, MethodDefinitions, WevuComponentOptions } from 'weapp-vite'
 import { describe, expect, it } from 'vitest'
-import { createWevuComponent } from 'weapp-vite'
+import { createWevuComponent, setPageLayout } from 'weapp-vite'
 
 describe('Runtime API Exports', () => {
   it('should export createWevuComponent function', () => {
     expect(createWevuComponent).toBeDefined()
     expect(typeof createWevuComponent).toBe('function')
+  })
+
+  it('should export setPageLayout function', () => {
+    expect(setPageLayout).toBeDefined()
+    expect(typeof setPageLayout).toBe('function')
   })
 
   it('should export WevuComponentOptions type', () => {

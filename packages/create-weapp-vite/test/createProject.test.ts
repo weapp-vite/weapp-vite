@@ -296,4 +296,18 @@ describe('createProject', () => {
     expect(files).toContain('src/layouts/admin.vue')
     expect(files).toContain('src/pages/layouts/index.vue')
   })
+
+  it('creates lib template with native layout scaffold files', async () => {
+    const root = await createTmpRoot('lib-layouts')
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, TemplateName.lib)
+
+    const files = await scanFiles(root)
+    expect(files).toContain('src/layouts/default.vue')
+    expect(files).toContain('src/layouts/admin.vue')
+    expect(files).toContain('src/pages/layouts/index.ts')
+    expect(files).toContain('src/pages/layouts/index.wxml')
+  })
 })
