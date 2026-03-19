@@ -1423,8 +1423,8 @@ importers:
         specifier: ^4.13.6
         version: 4.13.6
       rolldown:
-        specifier: '>=1.0.0-rc.9'
-        version: 1.0.0-rc.9
+        specifier: 1.0.0-rc.10
+        version: 1.0.0-rc.10
     devDependencies:
       '@types/pnpapi':
         specifier: ^0.0.5
@@ -4431,9 +4431,6 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
-
-  '@napi-rs/wasm-runtime@1.1.0':
-    resolution: {integrity: sha512-Fq6DJW+Bb5jaWE69/qOE0D1TUN9+6uWhCeZpdnSBk14pjLcCWR7Q8n49PTSPHazM37JqrsdpEthXy2xn6jWWiA==}
 
   '@napi-rs/wasm-runtime@1.1.1':
     resolution: {integrity: sha512-p64ah1M1ld8xjWv3qbvFwHiFVWrq1yFvV4f7w+mzaqiR4IlSgkqhcRdHwsGgomwzBH51sRY4NEowLxnaBjcW/A==}
@@ -17783,13 +17780,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@napi-rs/wasm-runtime@1.1.0':
-    dependencies:
-      '@emnapi/core': 1.7.1
-      '@emnapi/runtime': 1.7.1
-      '@tybys/wasm-util': 0.10.1
-    optional: true
-
   '@napi-rs/wasm-runtime@1.1.1':
     dependencies:
       '@emnapi/core': 1.7.1
@@ -17934,7 +17924,7 @@ snapshots:
 
   '@oxc-node/core-wasm32-wasi@0.0.35':
     dependencies:
-      '@napi-rs/wasm-runtime': 1.1.0
+      '@napi-rs/wasm-runtime': 1.1.1
     optional: true
 
   '@oxc-node/core-win32-arm64-msvc@0.0.35':

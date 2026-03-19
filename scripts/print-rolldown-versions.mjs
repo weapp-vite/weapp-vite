@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 
 import { parse } from 'yaml'
 
-const EXPECTED_ROLLDOWN_REQUIRE_PEER = '>=1.0.0-rc.9'
+const EXPECTED_ROLLDOWN_REQUIRE_PEER = '1.0.0-rc.10'
 const ANSI = {
   reset: '\x1B[0m',
   bold: '\x1B[1m',
@@ -192,6 +192,19 @@ function verifyRolldownRequirePeer(projectRoot) {
   }
 }
 
+function verifySingleRolldownVersion(versions) {
+  if (versions.size > 1) {
+    const installedVersions = [...versions.keys()]
+    throw new Error(
+      [
+        'multiple rolldown versions detected in pnpm-lock.yaml',
+        `versions: ${installedVersions.join(', ')}`,
+        'release is blocked until rolldown versions are unified',
+      ].join('\n'),
+    )
+  }
+}
+
 function main() {
   try {
     const scriptDir = path.dirname(fileURLToPath(import.meta.url))
@@ -199,6 +212,7 @@ function main() {
     verifyRolldownRequirePeer(projectRoot)
     const lockfile = readLockfile(projectRoot)
     const versions = collectRolldownVersions(lockfile)
+    verifySingleRolldownVersion(versions)
     console.log(formatRolldownVersionReport(projectRoot, versions))
   }
   catch (error) {
@@ -217,6 +231,7 @@ export {
   main,
   stripPeerSuffix,
   verifyRolldownRequirePeer,
+  verifySingleRolldownVersion,
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
