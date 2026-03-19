@@ -24,6 +24,9 @@
     "g": "weapp-vite generate",
     "postinstall": "weapp-vite prepare"
   },
+  "peerDependencies": {
+    "wevu": "^6.10.2"
+  },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",
