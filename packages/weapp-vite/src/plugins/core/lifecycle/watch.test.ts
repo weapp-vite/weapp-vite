@@ -63,6 +63,7 @@ function createState(overrides: Record<string, any> = {}) {
       invalidateResolveCache: vi.fn(),
     },
     loadedEntrySet: new Set<string>(),
+    layoutEntryDependents: new Map<string, Set<string>>(),
     markEntryDirty: vi.fn(),
     moduleImporters: new Map(),
     entryModuleIds: new Set(),
@@ -100,6 +101,21 @@ describe('core lifecycle watch hook', () => {
     const hook = createWatchChangeHook(state)
 
     await hook(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+  })
+
+  it('marks native layout dependency updates as direct entry dirties', async () => {
+    const entryId = '/project/src/pages/layouts/index.ts'
+    const layoutId = '/project/src/layouts/default/index.ts'
+    const state = createState({
+      layoutEntryDependents: new Map([
+        [layoutId, new Set([entryId])],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(layoutId, { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
   })

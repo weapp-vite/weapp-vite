@@ -113,6 +113,13 @@
           "launchMode": "default"
         },
         {
+          "name": "pages/layouts/index",
+          "pathName": "pages/layouts/index",
+          "query": "",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "pages/wevu-inline-object-reactivity-repro/index",
           "pathName": "pages/wevu-inline-object-reactivity-repro/index",
           "query": "",

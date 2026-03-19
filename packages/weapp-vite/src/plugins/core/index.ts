@@ -20,6 +20,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     jsonEmitFilesMap,
     entriesMap,
     resolvedEntryMap,
+    layoutEntryDependents,
     markEntryDirty,
     emitDirtyEntries,
   } = useLoadEntry(ctx, {
@@ -45,6 +46,7 @@ export function weappVite(ctx: CompilerContext, subPackageMeta?: SubPackageMetaV
     entriesMap,
     jsonEmitFilesMap,
     resolvedEntryMap,
+    layoutEntryDependents,
     requireAsyncEmittedChunks: new Set<string>(),
     pendingIndependentBuilds: [],
     watchFilesSnapshot: [],

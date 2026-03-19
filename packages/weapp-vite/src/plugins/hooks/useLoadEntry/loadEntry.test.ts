@@ -207,6 +207,7 @@ function createLoader(options?: CreateLoaderOptions) {
   const loadedEntrySet = new Set<string>()
   const dirtyEntrySet = new Set<string>()
   const resolvedEntryMap = new Map<string, any>()
+  const replaceLayoutDependencies = vi.fn()
 
   const emitEntriesChunks = vi.fn((_resolvedIds: any[]) => {
     return _resolvedIds.map(async () => {})
@@ -246,6 +247,7 @@ function createLoader(options?: CreateLoaderOptions) {
     loadedEntrySet,
     dirtyEntrySet,
     resolvedEntryMap,
+    replaceLayoutDependencies,
     normalizeEntry,
     registerJsonAsset,
     scanTemplateEntry,
@@ -262,6 +264,7 @@ function createLoader(options?: CreateLoaderOptions) {
     entriesMap,
     loadedEntrySet,
     resolvedEntryMap,
+    replaceLayoutDependencies,
     emitEntriesChunks,
     registerJsonAsset,
     scanTemplateEntry,
@@ -1008,7 +1011,7 @@ import { VueCard } from '../../components'
       return 'console.log("noop")'
     })
 
-    const { loader, jsonService, registerJsonAsset } = createLoader()
+    const { loader, jsonService, registerJsonAsset, replaceLayoutDependencies } = createLoader()
     jsonService.read.mockResolvedValue({ navigationBarTitleText: 'Home' })
     const pluginCtx = createPluginContext()
 
@@ -1031,6 +1034,18 @@ import { VueCard } from '../../components'
       },
       type: 'component',
     })
+    expect(replaceLayoutDependencies).toHaveBeenNthCalledWith(1, '/project/src/pages/index/index.ts', [])
+    expect(replaceLayoutDependencies).toHaveBeenNthCalledWith(
+      2,
+      '/project/src/pages/index/index.ts',
+      new Set([
+        '/project/src/layouts/default/index',
+        '/project/src/layouts/default/index.json',
+        '/project/src/layouts/default/index.wxml',
+        '/project/src/layouts/default/index.wxss',
+        '/project/src/layouts/default/index.ts',
+      ]),
+    )
 
     const emitFile = pluginCtx.emitFile as unknown as Mock
     expect(emitFile).toHaveBeenCalledWith({

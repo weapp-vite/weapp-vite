@@ -37,6 +37,8 @@ export function useLoadEntry(
   const dirtyEntrySet = new Set<string>()
   const dirtyEntryReasons = new Map<string, DirtyEntryReason>()
   const resolvedEntryMap = new Map<string, ResolvedId>()
+  const layoutEntryDependents = new Map<string, Set<string>>()
+  const entryLayoutDependencies = new Map<string, Set<string>>()
 
   const jsonEmitManager = createJsonEmitManager(ctx.configService)
   const registerJsonAsset = jsonEmitManager.register.bind(jsonEmitManager)
@@ -53,6 +55,37 @@ export function useLoadEntry(
     loadedEntrySet,
     dirtyEntrySet,
     resolvedEntryMap,
+    replaceLayoutDependencies(entryId: string, dependencies: Iterable<string>) {
+      const previousDependencies = entryLayoutDependencies.get(entryId)
+      if (previousDependencies) {
+        for (const dependency of previousDependencies) {
+          const dependents = layoutEntryDependents.get(dependency)
+          if (!dependents) {
+            continue
+          }
+          dependents.delete(entryId)
+          if (dependents.size === 0) {
+            layoutEntryDependents.delete(dependency)
+          }
+        }
+      }
+
+      const normalizedDependencies = new Set(dependencies)
+      if (normalizedDependencies.size === 0) {
+        entryLayoutDependencies.delete(entryId)
+        return
+      }
+
+      entryLayoutDependencies.set(entryId, normalizedDependencies)
+      for (const dependency of normalizedDependencies) {
+        let dependents = layoutEntryDependents.get(dependency)
+        if (!dependents) {
+          dependents = new Set<string>()
+          layoutEntryDependents.set(dependency, dependents)
+        }
+        dependents.add(entryId)
+      }
+    },
     normalizeEntry,
     registerJsonAsset,
     scanTemplateEntry,
@@ -72,6 +105,7 @@ export function useLoadEntry(
     loadedEntrySet,
     dirtyEntrySet,
     resolvedEntryMap,
+    layoutEntryDependents,
     jsonEmitFilesMap: jsonEmitManager.map,
     normalizeEntry,
     markEntryDirty(entryId: string, reason: DirtyEntryReason = 'direct') {

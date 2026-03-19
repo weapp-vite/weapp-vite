@@ -19,6 +19,7 @@ export interface CorePluginState {
   entriesMap: LoadEntryApi['entriesMap']
   jsonEmitFilesMap: LoadEntryApi['jsonEmitFilesMap']
   resolvedEntryMap: LoadEntryApi['resolvedEntryMap']
+  layoutEntryDependents: LoadEntryApi['layoutEntryDependents']
   requireAsyncEmittedChunks: Set<string>
   pendingIndependentBuilds: Promise<IndependentBuildResult>[]
   watchFilesSnapshot: string[]

@@ -6,6 +6,7 @@
     "pages/store-share/index",
     "pages/diff/index",
     "pages/hmr/index",
+    "pages/layouts/index",
     "pages/class-style/index",
     "pages/class-computed/index",
     "pages/root-guard/index",

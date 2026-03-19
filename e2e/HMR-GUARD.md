@@ -28,6 +28,8 @@ pnpm run e2e:hmr:guard:config
 
 - `e2e/ci/hmr-modify.test.ts`
   验证页面与组件在模板、脚本、样式、JSON、SFC 修改后的输出更新。
+- `e2e/ci/hmr-layouts.test.ts`
+  验证 layouts 页面及 `src/layouts/default|admin` 在模板、脚本、样式、JSON 修改后的输出更新。
 - `e2e/ci/hmr-rename.test.ts`
   验证编辑器常见 rename-save 流程不会打挂 dev 过程。
 - `e2e/ci/hmr-rapid.test.ts`
@@ -50,7 +52,7 @@ pnpm run e2e:hmr:guard:config
 ## 分组策略
 
 - `e2e:hmr:guard`
-  串行执行稳定子集：`hmr-modify`、`hmr-rename`、`hmr-rapid`、`hmr-add`、`hmr-delete`、`hmr-app-config`、`auto-import-vue-sfc`、`auto-routes-hmr`、`wevu-runtime.hmr`。
+  串行执行稳定子集：`hmr-modify`、`hmr-layouts`、`hmr-rename`、`hmr-rapid`、`hmr-add`、`hmr-delete`、`hmr-app-config`、`auto-import-vue-sfc`、`auto-routes-hmr`、`wevu-runtime.hmr`。
 - `e2e:hmr:guard:smoke`
   串行执行本地高频回归子集：`auto-import-vue-sfc`、`auto-routes-hmr`、`hmr-rename`、`hmr-rapid`。
 - `e2e:hmr:guard:shared-chunks-auto`

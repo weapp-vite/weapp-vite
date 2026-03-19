@@ -1,0 +1,11 @@
+.layout-default {
+  --layout-default-style-marker: 'DEFAULT-LAYOUT-STYLE-BASE';
+  min-height: 100%;
+  padding: 12rpx;
+}
+
+.layout-default__marker {
+  display: block;
+  margin-bottom: 12rpx;
+  color: #2563eb;
+}
