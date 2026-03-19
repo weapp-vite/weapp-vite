@@ -16,7 +16,7 @@ import {
 } from '@/runtime/hooks'
 import { parseModelEventValue } from '@/runtime/internal'
 import { markNoSetData } from '@/runtime/noSetData'
-import { inject, injectGlobal, provide, provideGlobal } from '@/runtime/provide'
+import { hasInjectionContext, inject, injectGlobal, provide, provideGlobal } from '@/runtime/provide'
 import { mergeModels, useAttrs, useModel, useSlots } from '@/runtime/vueCompat'
 
 afterEach(() => {
@@ -65,11 +65,14 @@ describe('runtime diff/toPlain coverage', () => {
 describe('provide/inject', () => {
   it('supports instance and global injection', () => {
     const instance: any = {}
+    expect(hasInjectionContext()).toBe(false)
     setCurrentInstance(instance)
+    expect(hasInjectionContext()).toBe(true)
     provide('token', 'value')
     expect(inject('token')).toBe('value')
 
     setCurrentInstance(undefined)
+    expect(hasInjectionContext()).toBe(false)
     provide('global', 123)
     expect(inject('global')).toBe(123)
     expect(inject('missing', 'fallback')).toBe('fallback')

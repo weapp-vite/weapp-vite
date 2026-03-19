@@ -1,4 +1,4 @@
-import type { Ref, WatchOptions, WatchStopHandle } from '../../reactivity'
+import type { EffectScope, Ref, WatchOptions, WatchStopHandle } from '../../reactivity'
 import type {
   ComponentPublicInstance,
   ComputedDefinitions,
@@ -48,6 +48,7 @@ export interface InternalRuntimeStateFields {
   __wevuHooks?: Record<string, any>
   __wevuExposed?: Record<string, any>
   __wevuAttrs?: Record<string, any>
+  __wevuEffectScope?: EffectScope
   __wevuPropKeys?: string[]
   __wevuTemplateRefs?: unknown[]
   __wevuTemplateRefMap?: Map<string, Ref<any>>

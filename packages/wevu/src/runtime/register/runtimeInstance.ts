@@ -287,6 +287,8 @@ export function teardownRuntimeInstance(target: InternalRuntimeState) {
     }
   }
   target.__wevuWatchStops = undefined
+  target.__wevuEffectScope?.stop()
+  target.__wevuEffectScope = undefined
   if (runtime) {
     runtime.unmount()
   }

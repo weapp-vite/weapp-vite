@@ -12,6 +12,7 @@ import {
   ref,
   setDeepWatchStrategy,
   shallowReactive,
+  shallowReadonly,
   toRef,
   toRefs,
   watch,
@@ -251,5 +252,18 @@ describe('shallowReactive and raw helpers', () => {
     const rawObj = markRaw({})
     expect(isRaw(rawObj)).toBe(true)
     expect(isRaw(1 as any)).toBe(false)
+  })
+
+  it('exposes shallowReadonly with readonly-compatible shallow semantics', () => {
+    const nested = { count: 1 }
+    const state = shallowReadonly({
+      nested,
+      value: 1,
+    })
+
+    expect(state.nested).toBe(nested)
+    expect(() => {
+      ;(state as any).value = 2
+    }).toThrow('无法在只读对象上设置属性')
   })
 })

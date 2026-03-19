@@ -35,7 +35,7 @@ export {
   toRaw,
   touchReactive,
 } from './reactive'
-export { readonly } from './readonly'
+export { readonly, shallowReadonly } from './readonly'
 export {
   customRef,
   type CustomRefFactory,

@@ -7,7 +7,7 @@ import type {
   MethodDefinitions,
   RuntimeInstance,
 } from '../../types'
-import { isReactive, shallowReactive, toRaw } from '../../../reactivity'
+import { effectScope, isReactive, shallowReactive, toRaw } from '../../../reactivity'
 import { setCurrentInstance, setCurrentSetupContext } from '../../hooks'
 import { runSetupFunction } from '../setup'
 import {
@@ -157,10 +157,12 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
   }) as any
 
   // 仅在同步 setup 执行期间暴露 current instance
+  const instanceScope = effectScope(true)
+  target.__wevuEffectScope = instanceScope
   setCurrentInstance(target)
   setCurrentSetupContext(context)
   try {
-    const result = runSetupFunction(setup, props, context)
+    const result = instanceScope.run(() => runSetupFunction(setup, props, context))
     let methodsChanged = false
     if (result && typeof result === 'object') {
       const runtimeRawState = isReactive(runtime.state)
@@ -213,6 +215,11 @@ export function runRuntimeSetupPhase<D extends object, C extends ComputedDefinit
     if (methodsChanged) {
       ;(runtime as any).__wevu_touchSetupMethodsVersion?.()
     }
+  }
+  catch (error) {
+    instanceScope.stop()
+    target.__wevuEffectScope = undefined
+    throw error
   }
   finally {
     setCurrentSetupContext(undefined)
