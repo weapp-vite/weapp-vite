@@ -27,6 +27,7 @@ interface NormalizedEntryOptions {
   normalizeEntry: (entry: string, jsonPath: string) => string
   extendedLibManager: ExtendedLibManager
   entryType?: Entry['type']
+  explicitEntryTypes?: Map<string, Entry['type']>
 }
 
 export function prepareNormalizedEntries(options: NormalizedEntryOptions) {
@@ -41,6 +42,7 @@ export function prepareNormalizedEntries(options: NormalizedEntryOptions) {
     normalizeEntry,
     extendedLibManager,
     entryType,
+    explicitEntryTypes,
   } = options
 
   const filteredEntries = skipOwnEntries
@@ -51,8 +53,9 @@ export function prepareNormalizedEntries(options: NormalizedEntryOptions) {
     : filteredEntries.map(entry => normalizeEntry(entry, jsonPath))
   if (!skipOwnEntries) {
     for (const normalizedEntry of normalizedEntries) {
+      const resolvedEntryType = explicitEntryTypes?.get(normalizedEntry) ?? entryType ?? (json.component ? 'component' : 'page')
       entriesMap.set(normalizedEntry, {
-        type: entryType ?? (json.component ? 'component' : 'page'),
+        type: resolvedEntryType,
         templatePath,
         jsonPath,
         json,

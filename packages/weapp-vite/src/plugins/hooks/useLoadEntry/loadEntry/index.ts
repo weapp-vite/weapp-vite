@@ -126,6 +126,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
 
     const entries: string[] = []
+    const explicitEntryTypes = new Map<string, Entry['type']>()
     let templatePath = ''
     let entryTypeOverride: Entry['type'] | undefined
     let pluginResolvedRecords: ResolvedEntryRecord[] | undefined
@@ -223,7 +224,11 @@ export function createEntryLoader(options: EntryLoaderOptions) {
 
       await ctx.autoImportService?.awaitPendingRegistrations?.()
       applyAutoImports(baseName, json)
-      entries.push(...analyzeCommonJson(json))
+      const componentEntries = analyzeCommonJson(json)
+      entries.push(...componentEntries)
+      for (const componentEntry of componentEntries) {
+        explicitEntryTypes.set(normalizeEntry(componentEntry, jsonPath), 'component')
+      }
     }
 
     const normalizedEntries = shouldSkipAppEntries
@@ -239,6 +244,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           normalizeEntry,
           extendedLibManager,
           entryType: entryTypeOverride,
+          explicitEntryTypes,
         })
 
     const entryResolveRoot = (
