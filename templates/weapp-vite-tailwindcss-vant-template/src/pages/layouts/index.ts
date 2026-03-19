@@ -1,5 +1,5 @@
 import Dialog from '@vant/weapp/dialog/dialog'
-import { setPageLayout } from 'weapp-vite'
+import { setPageLayout } from 'weapp-vite/runtime'
 
 Page({
   data: {

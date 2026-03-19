@@ -1,5 +1,5 @@
 import Toast from 'tdesign-miniprogram/toast/index'
-import { setPageLayout } from 'weapp-vite'
+import { setPageLayout } from 'weapp-vite/runtime'
 
 Page({
   data: {

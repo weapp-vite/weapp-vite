@@ -2,7 +2,7 @@ import type {
   ComputedDefinitions,
   MethodDefinitions,
 } from 'wevu'
-import { defineComponent } from 'wevu'
+import { defineComponent, setPageLayout } from 'wevu'
 
 export interface WevuComponentOptions<D extends object = Record<string, any>, C extends ComputedDefinitions = ComputedDefinitions, M extends MethodDefinitions = MethodDefinitions> {
   data?: () => D
@@ -57,3 +57,5 @@ export function defineProps<T extends Record<string, any>>(props: T): T {
 export function defineEmits<T extends Record<string, any> | string[]>(emits: T): T {
   return emits
 }
+
+export { setPageLayout }

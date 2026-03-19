@@ -1,4 +1,4 @@
-import { setPageLayout } from 'weapp-vite'
+import { setPageLayout } from 'weapp-vite/runtime'
 
 Page({
   data: {
