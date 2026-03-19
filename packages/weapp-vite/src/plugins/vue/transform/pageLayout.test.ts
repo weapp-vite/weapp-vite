@@ -2,7 +2,7 @@ import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
-import { applyPageLayout, applyPageLayoutPlan, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
+import { applyPageLayout, applyPageLayoutPlan, applyPageLayoutPlanToNativePage, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, injectNativePageLayoutRuntime, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
 
 const tempDirs: string[] = []
 
@@ -512,5 +512,81 @@ definePageMeta({
         'weapp-layout-dashboard': '/layouts/dashboard',
       },
     })
+  })
+
+  it('wraps native page template with dynamic layout branches', () => {
+    const result = applyPageLayoutPlanToNativePage(
+      {
+        script: 'Page({})',
+        template: '<view>native content</view>',
+        config: JSON.stringify({ navigationBarTitleText: '原生动态布局' }),
+      },
+      '/project/src/pages/home/index.ts',
+      {
+        dynamicSwitch: true,
+        currentLayout: {
+          file: '/project/src/layouts/default.vue',
+          importPath: '/layouts/default',
+          kind: 'vue',
+          layoutName: 'default',
+          tagName: 'weapp-layout-default',
+        },
+        layouts: [
+          {
+            file: '/project/src/layouts/default.vue',
+            importPath: '/layouts/default',
+            kind: 'vue',
+            layoutName: 'default',
+            tagName: 'weapp-layout-default',
+          },
+          {
+            file: '/project/src/layouts/admin.vue',
+            importPath: '/layouts/admin',
+            kind: 'vue',
+            layoutName: 'admin',
+            tagName: 'weapp-layout-admin',
+          },
+        ],
+        dynamicPropKeys: ['title'],
+      },
+    )
+
+    expect(result.template).toContain(`wx:if="{{!__wv_page_layout_name || __wv_page_layout_name === 'default'}}"`)
+    expect(result.template).toContain(`wx:elif="{{__wv_page_layout_name === 'admin'}}"`)
+    expect(JSON.parse(result.config!)).toEqual({
+      navigationBarTitleText: '原生动态布局',
+      usingComponents: {
+        'weapp-layout-default': '/layouts/default',
+        'weapp-layout-admin': '/layouts/admin',
+      },
+    })
+  })
+
+  it('injects native page layout setter and strips definePageMeta from runtime code', () => {
+    const result = injectNativePageLayoutRuntime(
+      `
+definePageMeta({
+  layout: 'admin',
+})
+
+Page({
+  data: {
+    count: 1,
+  },
+})
+      `.trim(),
+      '/project/src/pages/native/index.ts',
+      {
+        dynamicSwitch: true,
+        currentLayout: undefined,
+        layouts: [],
+        dynamicPropKeys: [],
+      },
+    )
+
+    expect(result).toContain('__wevuSetPageLayout(layout, props)')
+    expect(result).toContain('__wv_page_layout_name')
+    expect(result).toContain('this.setData')
+    expect(result).not.toContain('definePageMeta')
   })
 })

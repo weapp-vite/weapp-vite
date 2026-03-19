@@ -10,7 +10,10 @@ import logger from '../../../../logger'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
+import { applyPageLayoutPlanToNativePage, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectStyleImports } from './watch'
+
+const NON_VUE_PAGE_RE = /\.vue$|\.jsx$|\.tsx$/
 
 interface NormalizedEntryOptions {
   entries: string[]
@@ -66,6 +69,7 @@ interface EmitEntryOutputOptions {
   type: 'app' | 'page' | 'component'
   json: any
   jsonPath: string
+  templatePath: string
   isPluginBuild: boolean
   normalizedEntries: string[]
   pluginResolvedRecords?: ResolvedEntryRecord[]
@@ -73,6 +77,7 @@ interface EmitEntryOutputOptions {
   pluginJsonForRegistration?: any
   resolveEntriesWithCache: (pluginCtx: PluginContext, entries: string[], absoluteRoot: string) => Promise<ResolvedEntryRecord[]>
   configService: CompilerContext['configService']
+  wxmlService?: CompilerContext['wxmlService']
   resolvedEntryMap: Map<string, ResolvedId>
   loadedEntrySet: Set<string>
   dirtyEntrySet: Set<string>
@@ -92,8 +97,9 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     pluginCtx,
     id,
     type,
-    json,
+    json: initialJson,
     jsonPath,
+    templatePath,
     isPluginBuild,
     normalizedEntries,
     pluginResolvedRecords,
@@ -102,6 +108,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     resolveEntriesWithCache,
     entryResolveRoot,
     configService,
+    wxmlService,
     resolvedEntryMap,
     loadedEntrySet,
     dirtyEntrySet,
@@ -113,6 +120,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     relativeCwdId,
     getTime,
   } = options
+  let json = initialJson
 
   const shouldSkipEntries = Boolean(options.skipEntries)
   const resolvedIds = shouldSkipEntries
@@ -177,6 +185,42 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
 
   debug?.(`emitEntriesChunks ${relativeCwdId} 耗时 ${getTime()}`)
 
+  let code = await readFileCached(id, { checkMtime: configService.isDev })
+
+  if (
+    type === 'page'
+    && templatePath
+    && !NON_VUE_PAGE_RE.test(id)
+  ) {
+    const layoutPlan = await resolvePageLayoutPlan(code, id, configService as any)
+    if (layoutPlan) {
+      const nativeTemplate = await readFileCached(templatePath, { checkMtime: configService.isDev })
+      const transformed = applyPageLayoutPlanToNativePage(
+        {
+          script: code,
+          template: nativeTemplate,
+          config: JSON.stringify(json),
+        },
+        id,
+        layoutPlan,
+      )
+
+      code = transformed.script ?? code
+
+      if (transformed.config) {
+        json = JSON.parse(transformed.config)
+      }
+
+      if (transformed.template && wxmlService) {
+        const token = wxmlService.analyze(transformed.template)
+        wxmlService.tokenMap.set(templatePath, token)
+        wxmlService.setWxmlComponentsMap(templatePath, token.components)
+      }
+    }
+
+    code = injectNativePageLayoutRuntime(code, id, layoutPlan) ?? code
+  }
+
   if (!isPluginBuild || type !== 'app') {
     registerJsonAsset({
       jsonPath,
@@ -192,7 +236,6 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     })
   }
 
-  const code = await readFileCached(id, { checkMtime: configService.isDev })
   const styleImports = await collectStyleImports(pluginCtx, id, existsCache, pathExistsTtlMs)
 
   debug?.(`loadEntry ${relativeCwdId} 耗时 ${getTime()}`)

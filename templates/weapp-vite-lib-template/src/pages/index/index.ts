@@ -17,4 +17,9 @@ Page({
       ],
     },
   },
+  goToLayouts() {
+    wx.navigateTo({
+      url: '/pages/layouts/index',
+    })
+  },
 })

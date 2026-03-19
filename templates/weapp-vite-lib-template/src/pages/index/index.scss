@@ -7,12 +7,12 @@
 .hero {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 12rpx;
+  align-items: center;
   padding: 24rpx;
-  background: #ffffff;
+  background: #fff;
   border-radius: 24rpx;
-  box-shadow: 0 12rpx 28rpx rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12rpx 28rpx rgb(15 23 42 / 8%);
 }
 
 .logo {
@@ -32,6 +32,10 @@
   text-align: center;
 }
 
+.subtitle--section {
+  text-align: left;
+}
+
 .section {
   margin-top: 32rpx;
 }
@@ -47,4 +51,11 @@
   display: flex;
   flex-direction: column;
   gap: 16rpx;
+}
+
+.layout-btn {
+  margin-top: 16rpx;
+  color: #fff;
+  background: #2563eb;
+  border-radius: 999rpx;
 }

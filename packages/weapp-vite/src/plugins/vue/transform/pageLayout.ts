@@ -44,6 +44,12 @@ export interface NativeLayoutAssets {
   script?: string
 }
 
+interface LayoutTransformLikeResult {
+  script?: string
+  template?: string
+  config?: string
+}
+
 interface DiscoveredLayoutFile {
   file: string
   kind: 'native' | 'vue'
@@ -726,6 +732,100 @@ function findWevuOptionsObject(ast: BabelFile) {
   return matched
 }
 
+function findNativePageOptionsObject(ast: BabelFile) {
+  let matched: t.ObjectExpression | null = null
+
+  traverse(ast, {
+    CallExpression(path: any) {
+      if (!t.isIdentifier(path.node.callee, { name: 'Page' })) {
+        return
+      }
+      const firstArg = path.node.arguments[0]
+      if (!firstArg || t.isSpreadElement(firstArg) || !t.isObjectExpression(firstArg)) {
+        return
+      }
+      matched = firstArg
+      path.stop()
+    },
+  })
+
+  return matched
+}
+
+function hasDynamicExpressionLayoutProps(props: Record<string, LayoutPropValue> | undefined) {
+  if (!props) {
+    return false
+  }
+  return Object.values(props).some(value => typeof value === 'object' && value !== null && 'kind' in value && value.kind === 'expression')
+}
+
+function injectNativePageLayoutSetter(
+  pageOptions: t.ObjectExpression,
+) {
+  const existing = getObjectPropertyByKey(pageOptions, '__wevuSetPageLayout')
+  if (existing) {
+    return
+  }
+
+  pageOptions.properties.push(
+    t.objectMethod(
+      'method',
+      createStaticObjectKey('__wevuSetPageLayout'),
+      [t.identifier('layout'), t.identifier('props')],
+      t.blockStatement([
+        t.variableDeclaration('const', [
+          t.variableDeclarator(
+            t.identifier('__wv_next_layout_name'),
+            t.conditionalExpression(
+              t.binaryExpression('===', t.identifier('layout'), t.booleanLiteral(false)),
+              t.stringLiteral('__wv_no_layout'),
+              t.identifier('layout'),
+            ),
+          ),
+        ]),
+        t.variableDeclaration('const', [
+          t.variableDeclarator(
+            t.identifier('__wv_next_layout_props'),
+            t.conditionalExpression(
+              t.binaryExpression('===', t.identifier('layout'), t.booleanLiteral(false)),
+              t.objectExpression([]),
+              t.logicalExpression('||', t.identifier('props'), t.objectExpression([])),
+            ),
+          ),
+        ]),
+        t.expressionStatement(
+          t.callExpression(
+            t.memberExpression(t.thisExpression(), t.identifier('setData')),
+            [
+              t.objectExpression([
+                t.objectProperty(t.identifier('__wv_page_layout_name'), t.identifier('__wv_next_layout_name')),
+                t.objectProperty(t.identifier('__wv_page_layout_props'), t.identifier('__wv_next_layout_props')),
+              ]),
+            ],
+          ),
+        ),
+      ]),
+    ),
+  )
+}
+
+function stripDefinePageMetaCalls(ast: BabelFile) {
+  let mutated = false
+
+  traverse(ast, {
+    ExpressionStatement(path: any) {
+      const expression = path.node.expression
+      if (!t.isCallExpression(expression) || !t.isIdentifier(expression.callee, { name: PAGE_META_MACRO_NAME })) {
+        return
+      }
+      mutated = true
+      path.remove()
+    },
+  })
+
+  return mutated
+}
+
 async function resolveAllLayouts(
   configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath'>,
 ) {
@@ -943,6 +1043,53 @@ export function applyPageLayoutPlan(
   result.script = injectVueLayoutImports(result.script, filename, plan.layouts)
   result.config = mergeLayoutUsingComponents(result.config, plan.layouts)
   return result
+}
+
+export function applyPageLayoutPlanToNativePage(
+  result: LayoutTransformLikeResult,
+  filename: string,
+  plan: ResolvedPageLayoutPlan | undefined,
+) {
+  if (!plan || !result.template) {
+    return result
+  }
+
+  if (hasDynamicExpressionLayoutProps(plan.currentLayout?.props)) {
+    throw new Error(`${filename} 中原生 Page 的 layout.props 暂不支持表达式，请改用静态字面量或在运行时调用 setPageLayout()。`)
+  }
+
+  return applyPageLayoutPlan(result as VueTransformResult, filename, plan)
+}
+
+export function injectNativePageLayoutRuntime(
+  script: string | undefined,
+  filename: string,
+  plan: ResolvedPageLayoutPlan | undefined,
+) {
+  if (!script) {
+    return script
+  }
+
+  const ast = babelParse(script, BABEL_TS_MODULE_PARSER_OPTIONS) as BabelFile
+  stripTypeSyntaxFromAst(ast)
+  const strippedMeta = stripDefinePageMetaCalls(ast)
+  const shouldInjectSetter = Boolean(plan?.dynamicSwitch)
+
+  if (!shouldInjectSetter && !strippedMeta) {
+    return script
+  }
+
+  if (!shouldInjectSetter) {
+    return generate(ast, { retainLines: true }).code
+  }
+
+  const pageOptions = findNativePageOptionsObject(ast)
+  if (!pageOptions) {
+    throw new Error(`${filename} 中未找到可注入 layout 运行时的 Page({}) 定义。`)
+  }
+
+  injectNativePageLayoutSetter(pageOptions)
+  return generate(ast, { retainLines: true }).code
 }
 
 /**
