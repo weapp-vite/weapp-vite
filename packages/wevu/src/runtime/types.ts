@@ -31,7 +31,7 @@ export type {
   MiniProgramPageLifetimes,
   TriggerEventOptions,
 } from './types/miniprogram'
-export type { CreateAppOptions, DefineAppOptions, DefineComponentOptions, PageFeatures } from './types/options'
+export type { CreateAppOptions, DataOption, DefineAppOptions, DefineComponentOptions, PageFeatures } from './types/options'
 export type {
   ComponentPropsOptions,
   ExtractDefaultPropTypes,

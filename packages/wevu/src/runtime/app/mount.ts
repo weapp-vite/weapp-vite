@@ -41,6 +41,13 @@ type RuntimeInstanceWithSetupMethodsVersion<
   __wevu_flushSetupSnapshotSync?: () => void
 }
 
+function resolveDataOption<D extends object>(data: CreateAppOptions<D, any, any>['data']): D {
+  if (typeof data === 'function') {
+    return data()
+  }
+  return (data ?? {}) as D
+}
+
 export function createRuntimeMount<D extends object, C extends ComputedDefinitions, M extends MethodDefinitions>(options: {
   data: CreateAppOptions<D, C, M>['data']
   resolvedComputed: C
@@ -57,8 +64,7 @@ export function createRuntimeMount<D extends object, C extends ComputedDefinitio
   } = options
 
   return (adapter?: MiniProgramAdapter): RuntimeInstance<D, C, M> => {
-    const dataFn = data ?? (() => ({}) as D)
-    const rawState = dataFn()
+    const rawState = resolveDataOption(data)
     // 预置 props 容器，确保编译器生成的 this.__wevuProps 回退表达式
     // 在 computed 首次求值阶段即可建立响应式依赖。
     if (rawState && typeof rawState === 'object' && !Object.hasOwn(rawState as object, '__wevuProps')) {

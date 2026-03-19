@@ -3,6 +3,8 @@ import type { MiniProgramAppOptions, MiniProgramComponentOptions, MiniProgramPag
 import type { ComponentPropsOptions, SetupContext, SetupFunction } from './props'
 import type { SetDataSnapshotOptions } from './setData'
 
+export type DataOption<D extends object> = D | (() => D)
+
 export interface DefineComponentOptions<
   P extends ComponentPropsOptions = ComponentPropsOptions,
   D extends object = Record<string, any>,
@@ -40,7 +42,7 @@ export interface DefineComponentOptions<
   /**
    * 组件 data（建议使用函数返回初始值）。
    */
-  data?: () => D
+  data?: DataOption<D>
 
   /**
    * 组件 computed（会参与快照 diff）。
@@ -82,7 +84,7 @@ export interface CreateAppOptions<
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
 > extends MiniProgramAppOptions {
-  data?: () => D
+  data?: DataOption<D>
   computed?: C
   methods?: M
   setData?: SetDataSnapshotOptions

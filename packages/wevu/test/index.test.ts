@@ -38,6 +38,46 @@ function createMockAdapter() {
 }
 
 describe('runtime', () => {
+  it('accepts object data when creating apps', async () => {
+    const { calls, adapter } = createMockAdapter()
+    const app = createApp({
+      data: {
+        count: 0,
+        nested: {
+          message: 'hello',
+        },
+      },
+      computed: {
+        doubled(this: any) {
+          return this.count * 2
+        },
+      },
+      methods: {
+        increment(this: any) {
+          this.count += 1
+        },
+      },
+    })
+
+    const instance = app.mount(adapter)
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]).toEqual({
+      count: 0,
+      nested: {
+        message: 'hello',
+      },
+      doubled: 0,
+    })
+
+    instance.methods.increment()
+    await flushJobs()
+    expect(calls.at(-1)).toEqual({
+      count: 1,
+      doubled: 2,
+    })
+  })
+
   it('syncs reactive state to the adapter', async () => {
     const { calls, adapter } = createMockAdapter()
     const app = createApp({

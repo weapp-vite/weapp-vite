@@ -78,6 +78,12 @@ setWevuDefaults({
 resetWevuDefaults()
 
 defineComponent({
+  data: {
+    scriptMarker: 'DEFAULT-LAYOUT-SCRIPT-BASE',
+  },
+})
+
+defineComponent({
   behaviors: [],
   externalClasses: ['custom-class'],
   options: {
@@ -236,6 +242,12 @@ expectType<number>(globalVal)
 expectType<string>(injectGlobal<string>(TOKEN, 'fallback'))
 
 nextTick().then(() => {})
+
+createApp({
+  data: {
+    count: 0,
+  },
+})
 
 createApp({
   setup() {
