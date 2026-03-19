@@ -1,7 +1,9 @@
-import process from 'node:process'
-
 export function isPrepareCommand(argv) {
   return Array.isArray(argv) && argv[0] === 'prepare'
+}
+
+function getGlobalProcess() {
+  return Reflect.get(globalThis, 'process')
 }
 
 export function formatPrepareSkipMessage(error) {
@@ -14,10 +16,12 @@ export function guardPrepareProcessExit(argv) {
     return () => {}
   }
 
-  const originalExit = process.exit.bind(process)
+  const currentProcess = getGlobalProcess()
+  const originalExit = currentProcess.exit.bind(currentProcess)
+  const originalGlobalProcessDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'process')
   const forceSuccessExitCode = () => {
-    if (process.exitCode != null && Number(process.exitCode) !== 0) {
-      process.exitCode = 0
+    if (currentProcess.exitCode != null && Number(currentProcess.exitCode) !== 0) {
+      currentProcess.exitCode = 0
     }
   }
 
@@ -25,23 +29,52 @@ export function guardPrepareProcessExit(argv) {
     forceSuccessExitCode()
   }
 
-  process.exit = (code) => {
-    process.exitCode = code == null || Number(code) === 0 ? 0 : 0
+  currentProcess.exit = () => {
+    currentProcess.exitCode = 0
     return undefined
   }
-  process.on('beforeExit', onBeforeExit)
+  Object.defineProperty(globalThis, 'process', {
+    configurable: true,
+    enumerable: originalGlobalProcessDescriptor?.enumerable ?? false,
+    get() {
+      return new Proxy(currentProcess, {
+        get(target, property, receiver) {
+          if (property === 'exit') {
+            return target.exit
+          }
+          return Reflect.get(target, property, receiver)
+        },
+        set(target, property, value, receiver) {
+          if (property === 'exitCode') {
+            Reflect.set(target, property, value == null || Number(value) === 0 ? 0 : 0, receiver)
+            return true
+          }
+          return Reflect.set(target, property, value, receiver)
+        },
+      })
+    },
+    set(value) {
+      if (originalGlobalProcessDescriptor?.set) {
+        originalGlobalProcessDescriptor.set.call(globalThis, value)
+      }
+    },
+  })
+  currentProcess.on('beforeExit', onBeforeExit)
 
   return () => {
-    process.exit = originalExit
-    process.off('beforeExit', onBeforeExit)
+    currentProcess.exit = originalExit
+    currentProcess.off('beforeExit', onBeforeExit)
+    if (originalGlobalProcessDescriptor) {
+      Object.defineProperty(globalThis, 'process', originalGlobalProcessDescriptor)
+    }
   }
 }
 
 export async function runWeappViteCLI(options = {}) {
   const {
-    argv = process.argv.slice(2),
+    argv = getGlobalProcess().argv.slice(2),
     importer = () => import('../dist/cli.mjs'),
-    write = message => process.stderr.write(`\n WARN  ${message}\n\n`),
+    write = message => getGlobalProcess().stderr.write(`\n WARN  ${message}\n\n`),
   } = options
   const restorePrepareGuard = guardPrepareProcessExit(argv)
 
