@@ -9,8 +9,8 @@ const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 
 const ALL_PLATFORM_OUTPUTS = [
   { platform: 'weapp', templateExt: 'wxml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
-  // { platform: 'alipay', templateExt: 'axml', scriptExt: 'sjs', eventAttr: 'onTap', scriptTag: '<import-sjs' },
-  // { platform: 'tt', templateExt: 'ttml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
+  { platform: 'alipay', templateExt: 'axml', scriptExt: 'sjs', eventAttr: 'onTap', scriptTag: '<import-sjs' },
+  { platform: 'tt', templateExt: 'ttml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
   // { platform: 'swan', templateExt: 'swan', scriptExt: 'sjs', eventAttr: 'bind:tap', scriptTag: '<sjs' },
   // { platform: 'jd', templateExt: 'jxml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },
   // { platform: 'xhs', templateExt: 'xhsml', scriptExt: 'wxs', eventAttr: 'bind:tap', scriptTag: '<wxs' },

@@ -9,8 +9,8 @@ const BASE_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/base')
 const RUNTIME_APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-runtime-e2e')
 const SUPPORTED_PLATFORMS = [
   'weapp',
-  // 'alipay',
-  // 'tt',
+  'alipay',
+  'tt',
 ] as const
 
 type RuntimePlatform = typeof SUPPORTED_PLATFORMS[number]
