@@ -283,4 +283,17 @@ describe('createProject', () => {
     const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies['tailwindcss']).toBe(TEMPLATE_NAMED_CATALOG.tailwind3.tailwindcss)
   })
+
+  it('creates wevu template with layout scaffold files', async () => {
+    const root = await createTmpRoot('wevu-layouts')
+
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
+
+    await createProject(root, TemplateName.wevu)
+
+    const files = await scanFiles(root)
+    expect(files).toContain('src/layouts/default.vue')
+    expect(files).toContain('src/layouts/admin.vue')
+    expect(files).toContain('src/pages/layouts/index.vue')
+  })
 })

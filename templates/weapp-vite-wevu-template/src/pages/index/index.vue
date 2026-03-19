@@ -10,6 +10,7 @@ const HOME_PATH = '/pages/index/index'
 const OVERVIEW_PATH = '/pages/overview/index'
 const WORKSPACE_PATH = '/packageA/pages/workspace/index'
 const SETTINGS_PATH = '/packageB/pages/settings/index'
+const LAYOUTS_PATH = '/pages/layouts/index'
 
 const route = useRoute()
 const router = useRouter()
@@ -39,6 +40,12 @@ const quickLinks = [
     description: '统一管理通知、权限与环境配置。',
     action: '前往设置',
     path: SETTINGS_PATH,
+  },
+  {
+    title: '页面布局',
+    description: '体验 default/admin/false 三种页面壳切换方式。',
+    action: '打开布局页',
+    path: LAYOUTS_PATH,
   },
 ]
 
