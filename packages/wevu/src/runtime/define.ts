@@ -70,22 +70,22 @@ export interface WevuComponentConstructor<
 > {
   new (): ComponentPublicInstance<D, C, M, Props> & ShallowUnwrapRef<RawBindings>
 }
-interface SetupContextWithTypeProps<TypeProps> {
+export interface SetupContextWithTypeProps<TypeProps> {
   props: TypeProps
   [key: string]: any
 }
-type SetupFunctionWithTypeProps<
+export type SetupFunctionWithTypeProps<
   TypeProps,
 > = (
   props: TypeProps,
   ctx: SetupContextWithTypeProps<TypeProps>,
 ) => Record<string, any> | void
-interface DefineComponentTypePropsOptions<TypeProps> {
+export interface DefineComponentTypePropsOptions<TypeProps> {
   __typeProps: TypeProps
   setup?: SetupFunctionWithTypeProps<TypeProps>
   [key: string]: any
 }
-interface DefineComponentWithTypeProps<TypeProps> {
+export interface DefineComponentWithTypeProps<TypeProps> {
   new (): { $props: TypeProps } & Record<string, any>
 }
 

@@ -228,6 +228,42 @@ describe('runtime lib dts generation', () => {
     expect(options.compilerOptions.preserveSymlinks).toBe(true)
   })
 
+  it('enables rolldown dts build mode when tsconfig uses project references', async () => {
+    const root = await createTempDir()
+    const outDir = path.resolve(root, 'dist')
+    const tsconfigPath = path.resolve(root, 'tsconfig.json')
+    await fs.writeJson(tsconfigPath, {
+      references: [
+        { path: './tsconfig.app.json' },
+      ],
+      files: [],
+    }, { spaces: 2 })
+
+    resolveWeappLibEntriesMock.mockResolvedValue([
+      {
+        input: path.resolve(root, 'src/components/card/index.ts'),
+        outputBase: 'components/card/index',
+      },
+    ])
+
+    await generateLibDts(createConfig({
+      cwd: root,
+      outDir,
+      weappLibConfig: {
+        enabled: true,
+        root: path.resolve(root, 'src'),
+        dts: {
+          enabled: true,
+        },
+      },
+    }))
+
+    expect(dtsMock).toHaveBeenCalledTimes(1)
+    const options = dtsMock.mock.calls[0]?.[0] as any
+    expect(options.tsconfig).toBe(tsconfigPath)
+    expect(options.build).toBe(true)
+  })
+
   it('keeps non-stub expected dts when deconflicted file also exists', async () => {
     const root = await createTempDir()
     const outDir = path.resolve(root, 'dist')
