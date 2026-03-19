@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { parse } from 'yaml'
 
 const EXPECTED_ROLLDOWN_REQUIRE_PEER = '1.0.0-rc.10'
+const DEFAULT_MODE = 'strict'
 const ANSI = {
   reset: '\x1B[0m',
   bold: '\x1B[1m',
@@ -205,15 +206,32 @@ function verifySingleRolldownVersion(versions) {
   }
 }
 
-function main() {
+function resolveMode(argv = process.argv.slice(2)) {
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index]
+    if (arg === '--mode' && typeof argv[index + 1] === 'string') {
+      return argv[index + 1]
+    }
+    if (arg.startsWith('--mode=')) {
+      return arg.slice('--mode='.length)
+    }
+  }
+  return DEFAULT_MODE
+}
+
+function main(options = {}) {
   try {
+    const mode = options.mode ?? resolveMode()
     const scriptDir = path.dirname(fileURLToPath(import.meta.url))
     const projectRoot = findWorkspaceRoot(process.env.INIT_CWD || process.cwd() || scriptDir)
-    verifyRolldownRequirePeer(projectRoot)
     const lockfile = readLockfile(projectRoot)
     const versions = collectRolldownVersions(lockfile)
-    verifySingleRolldownVersion(versions)
     console.log(formatRolldownVersionReport(projectRoot, versions))
+    if (mode === 'report') {
+      return
+    }
+    verifyRolldownRequirePeer(projectRoot)
+    verifySingleRolldownVersion(versions)
   }
   catch (error) {
     const line = '!'.repeat(78)
@@ -229,6 +247,7 @@ export {
   collectRolldownVersions,
   formatRolldownVersionReport,
   main,
+  resolveMode,
   stripPeerSuffix,
   verifyRolldownRequirePeer,
   verifySingleRolldownVersion,

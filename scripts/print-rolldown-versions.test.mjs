@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'vitest'
 
-import { formatRolldownVersionReport, verifySingleRolldownVersion } from './print-rolldown-versions.mjs'
+import { formatRolldownVersionReport, resolveMode, verifySingleRolldownVersion } from './print-rolldown-versions.mjs'
 
 test('formatRolldownVersionReport appends a compact summary after detailed sections', () => {
   const report = formatRolldownVersionReport('/workspace', new Map([
@@ -31,4 +31,10 @@ test('verifySingleRolldownVersion accepts a single resolved rolldown version', (
       ['1.0.0-rc.10', new Set(['packages/weapp-vite', 'packages/rolldown-require'])],
     ]))
   })
+})
+
+test('resolveMode reads explicit report mode from cli args', () => {
+  assert.equal(resolveMode(['--mode', 'report']), 'report')
+  assert.equal(resolveMode(['--mode=report']), 'report')
+  assert.equal(resolveMode([]), 'strict')
 })
