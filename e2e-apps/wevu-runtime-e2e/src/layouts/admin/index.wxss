@@ -1,0 +1,28 @@
+.layout-admin {
+  --layout-admin-style-marker: 'ADMIN-LAYOUT-STYLE-BASE';
+  min-height: 100%;
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.layout-admin__hero {
+  padding: 24rpx;
+  color: #fff;
+  background: linear-gradient(145deg, #0f172a 0%, #2563eb 100%);
+}
+
+.layout-admin__eyebrow {
+  display: inline-flex;
+  padding: 6rpx 12rpx;
+  background: rgb(255 255 255 / 14%);
+  border-radius: 999rpx;
+}
+
+.layout-admin__title,
+.layout-admin__subtitle {
+  display: block;
+  margin-top: 12rpx;
+}
+
+.layout-admin__body {
+  padding: 20rpx 0;
+}

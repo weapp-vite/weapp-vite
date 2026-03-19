@@ -6,6 +6,7 @@ function resolveCiTest(testPath: string) {
 
 export const HMR_GUARD_STABLE_TESTS = [
   'hmr-modify.test.ts',
+  'hmr-layouts.test.ts',
   'hmr-rename.test.ts',
   'hmr-rapid.test.ts',
   'hmr-add.test.ts',

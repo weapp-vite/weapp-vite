@@ -1,0 +1,10 @@
+<view class="layout-admin">
+  <view class="layout-admin__hero">
+    <text class="layout-admin__eyebrow">ADMIN-LAYOUT-TEMPLATE-BASE</text>
+    <text class="layout-admin__title">{{title || 'admin layout title'}}</text>
+    <text class="layout-admin__subtitle">{{subtitle || 'admin layout subtitle'}}</text>
+  </view>
+  <view class="layout-admin__body">
+    <slot />
+  </view>
+</view>

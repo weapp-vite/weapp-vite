@@ -82,6 +82,7 @@ interface EmitEntryOutputOptions {
   resolvedEntryMap: Map<string, ResolvedId>
   loadedEntrySet: Set<string>
   dirtyEntrySet: Set<string>
+  replaceLayoutDependencies: (entryId: string, dependencies: Iterable<string>) => void
   emitEntriesChunks: (this: PluginContext, resolvedIds: (ResolvedId | null)[]) => Promise<unknown>[]
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
   existsCache: Map<string, boolean>
@@ -113,6 +114,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     resolvedEntryMap,
     loadedEntrySet,
     dirtyEntrySet,
+    replaceLayoutDependencies,
     emitEntriesChunks,
     registerJsonAsset,
     existsCache,
@@ -251,19 +253,24 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     && templatePath
     && !NON_VUE_PAGE_RE.test(id)
   ) {
+    replaceLayoutDependencies(id, [])
     const layoutPlan = await resolvePageLayoutPlan(code, id, configService as any)
     if (layoutPlan) {
+      const layoutDependencies = new Set<string>()
       for (const layout of layoutPlan.layouts) {
         pluginCtx.addWatchFile(normalizeWatchPath(layout.file))
+        layoutDependencies.add(normalizeFsResolvedId(layout.file))
         if (layout.kind === 'native') {
           const nativeAssets = await collectNativeLayoutAssets(layout.file)
           for (const asset of Object.values(nativeAssets)) {
             if (asset) {
               pluginCtx.addWatchFile(normalizeWatchPath(asset))
+              layoutDependencies.add(normalizeFsResolvedId(asset))
             }
           }
         }
       }
+      replaceLayoutDependencies(id, layoutDependencies)
 
       const nativeTemplate = await readFileCached(templatePath, { checkMtime: configService.isDev })
       const transformed = applyPageLayoutPlanToNativePage(

@@ -1,0 +1,4 @@
+<view class="layout-default">
+  <text class="layout-default__marker">DEFAULT-LAYOUT-TEMPLATE-BASE</text>
+  <slot />
+</view>

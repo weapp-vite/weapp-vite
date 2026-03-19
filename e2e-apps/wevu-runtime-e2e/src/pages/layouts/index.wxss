@@ -1,0 +1,46 @@
+.page {
+  --layouts-page-style-marker: 'LAYOUTS-PAGE-STYLE-BASE';
+  padding: 24rpx;
+}
+
+.hero,
+.card,
+.actions {
+  padding: 20rpx;
+  margin-top: 16rpx;
+  background: #fff;
+  border-radius: 20rpx;
+}
+
+.hero {
+  margin-top: 0;
+}
+
+.hero__eyebrow {
+  color: #2563eb;
+}
+
+.hero__title,
+.card__title {
+  font-weight: 600;
+}
+
+.hero__desc,
+.card__desc {
+  margin-top: 8rpx;
+  color: #475569;
+}
+
+.action-btn {
+  margin-top: 12rpx;
+}
+
+.action-btn--primary {
+  color: #fff;
+  background: #2563eb;
+}
+
+.action-btn--ghost {
+  color: #0f172a;
+  background: #e2e8f0;
+}

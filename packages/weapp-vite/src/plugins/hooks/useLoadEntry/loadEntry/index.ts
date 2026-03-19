@@ -24,6 +24,7 @@ interface EntryLoaderOptions {
   loadedEntrySet: Set<string>
   dirtyEntrySet: Set<string>
   resolvedEntryMap: Map<string, ResolvedId>
+  replaceLayoutDependencies: (entryId: string, dependencies: Iterable<string>) => void
   normalizeEntry: (entry: string, jsonPath: string) => string
   registerJsonAsset: (entry: JsonEmitFileEntry) => void
   scanTemplateEntry: (templateEntry: string) => Promise<void>
@@ -46,6 +47,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     loadedEntrySet,
     dirtyEntrySet,
     resolvedEntryMap,
+    replaceLayoutDependencies,
     normalizeEntry,
     registerJsonAsset,
     scanTemplateEntry: scanTemplateEntryFn,
@@ -266,6 +268,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       resolvedEntryMap,
       loadedEntrySet,
       dirtyEntrySet,
+      replaceLayoutDependencies,
       emitEntriesChunks,
       registerJsonAsset,
       existsCache,

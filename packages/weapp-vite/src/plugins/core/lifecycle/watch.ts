@@ -81,6 +81,12 @@ export function createWatchChangeHook(state: CorePluginState) {
     if (loadedEntrySet.has(normalizedId)) {
       markEntryDirty(normalizedId, 'direct')
     }
+    else if (state.layoutEntryDependents.size && state.layoutEntryDependents.get(normalizedId)?.size) {
+      const affectedEntries = state.layoutEntryDependents.get(normalizedId)
+      for (const entryId of affectedEntries!) {
+        markEntryDirty(entryId, 'direct')
+      }
+    }
     else if (state.moduleImporters.size && state.entryModuleIds.size) {
       const affected = collectAffectedEntries(state, normalizedId)
       if (affected.size) {
