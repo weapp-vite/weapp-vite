@@ -690,6 +690,13 @@ importers:
         version: link:../../packages/create-weapp-vite
 
   apps/plugin-demo:
+    dependencies:
+      dayjs:
+        specifier: 'catalog:'
+        version: 1.11.20
+      lodash:
+        specifier: 'catalog:'
+        version: 4.17.23
     devDependencies:
       '@weapp-vite/volar':
         specifier: workspace:*
@@ -20237,8 +20244,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@5.9.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.1(typescript@5.9.3)
+      '@typescript-eslint/types': 8.57.1
       debug: 4.4.3
       typescript: 5.9.3
     transitivePeerDependencies:
