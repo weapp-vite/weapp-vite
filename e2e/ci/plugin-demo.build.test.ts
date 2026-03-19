@@ -26,6 +26,7 @@ describe.sequential('plugin-demo build e2e', () => {
     })
 
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'miniprogram_npm/dayjs/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'miniprogram_npm/lodash/index.js'))).toBe(false)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.js'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.wxml'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'components/native-meter/index.js'))).toBe(true)

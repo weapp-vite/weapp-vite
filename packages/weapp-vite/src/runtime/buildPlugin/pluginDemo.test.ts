@@ -31,6 +31,7 @@ describe('plugin-demo build regression', () => {
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'plugin.json'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'index.js'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'miniprogram_npm/dayjs/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'miniprogram_npm/lodash/index.js'))).toBe(false)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'components/hello-component/index.json'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/hello-page/index.wxml'))).toBe(true)
     expect(await fs.pathExists(path.join(PLUGIN_DIST_ROOT, 'pages/native-playground/index.js'))).toBe(true)

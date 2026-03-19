@@ -246,4 +246,75 @@ describe('runtime npm service', () => {
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageA')
     expect(writeDependenciesCacheMock).toHaveBeenCalledWith('packageB')
   })
+
+  it('uses pluginPackage dependency scope in pluginOnly mode', async () => {
+    const cwd = await createTempDir()
+    const packageJson = {
+      dependencies: {
+        dayjs: '^1.11.13',
+        lodash: '^4.17.21',
+      },
+    }
+
+    await fs.writeJson(path.resolve(cwd, 'package.json'), packageJson)
+    buildPackageMock.mockImplementation(async ({ dep, outDir }) => {
+      await fs.outputFile(path.resolve(outDir, dep, 'index.js'), `module.exports = "${dep}"`)
+    })
+    checkDependenciesCacheOutdateMock.mockResolvedValue(true)
+    getPackNpmRelationListMock.mockReturnValue([
+      {
+        packageJsonPath: './package.json',
+        miniprogramNpmDistDir: './dist-plugin',
+      },
+    ])
+
+    const ctx = {
+      configService: {
+        cwd,
+        outDir: path.resolve(cwd, 'dist-plugin'),
+        pluginOnly: true,
+        platform: 'weapp',
+        packageJson,
+        weappViteConfig: {
+          npm: {
+            enable: true,
+            pluginPackage: {
+              dependencies: ['dayjs'],
+            },
+          },
+        },
+      },
+      scanService: {
+        subPackageMap: new Map(),
+      },
+    } as any
+
+    const service = createNpmService(ctx)
+    await service.build()
+
+    expect(await fs.pathExists(path.resolve(cwd, 'dist-plugin/miniprogram_npm/dayjs/index.js'))).toBe(true)
+    expect(await fs.pathExists(path.resolve(cwd, 'dist-plugin/miniprogram_npm/lodash/index.js'))).toBe(false)
+
+    const buildCalls = buildPackageMock.mock.calls.map(([args]) => ({
+      dep: args.dep,
+      outDir: path.relative(cwd, args.outDir).replace(/\\/g, '/'),
+    }))
+
+    expect(buildCalls).toEqual([
+      {
+        dep: 'dayjs',
+        outDir: 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm',
+      },
+      {
+        dep: 'lodash',
+        outDir: 'node_modules/weapp-vite/.cache/npm-source/miniprogram_npm',
+      },
+      {
+        dep: 'dayjs',
+        outDir: 'dist-plugin/miniprogram_npm',
+      },
+    ])
+    expect(writeDependenciesCacheMock).toHaveBeenCalledWith('__all__')
+    expect(writeDependenciesCacheMock).toHaveBeenCalledWith('__plugin__')
+  })
 })
