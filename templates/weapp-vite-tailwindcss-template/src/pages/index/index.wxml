@@ -20,5 +20,8 @@
     <view class="underline" mark:url="https://tw.icebreaker.top/" bind:tap="copy">
       https://tw.icebreaker.top/
     </view>
+    <button class="rounded-full bg-sky-600 px-6 py-2 text-white" bindtap="goToLayouts">
+      打开布局演示页
+    </button>
   </view>
 </view>

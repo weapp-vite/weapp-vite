@@ -2,7 +2,8 @@
   "$schema": "https://vite.icebreaker.top/app.json",
   "pages": [
     "pages/index/index",
-    "pages/profile/index"
+    "pages/profile/index",
+    "pages/layouts/index"
   ],
   "window": {},
   "style": "v2",

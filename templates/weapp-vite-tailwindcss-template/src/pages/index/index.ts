@@ -45,4 +45,9 @@ Page({
     // eslint-disable-next-line no-console
     console.log(hello())
   },
+  goToLayouts() {
+    wx.navigateTo({
+      url: '/pages/layouts/index',
+    })
+  },
 })

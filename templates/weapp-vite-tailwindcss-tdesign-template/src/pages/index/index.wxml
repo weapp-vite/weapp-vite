@@ -19,6 +19,9 @@
     <view>
       <t-button theme="primary" ghost bind:tap="handleAction">TDesign Button</t-button>
     </view>
+    <view>
+      <t-button theme="success" variant="outline" bind:tap="goToLayouts">打开布局演示页</t-button>
+    </view>
   </view>
   <t-action-sheet id="t-action-sheet" bind:selected="handleSelected" />
 </view>

@@ -23,6 +23,9 @@
     <view>
       <van-button type="default" @tap="showDialog">Vant 按钮</van-button>
     </view>
+    <view>
+      <van-button type="primary" plain bind:tap="goToLayouts">打开布局演示页</van-button>
+    </view>
   </view>
 </view>
 <van-dialog id="van-dialog" />

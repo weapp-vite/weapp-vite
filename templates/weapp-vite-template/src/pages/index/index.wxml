@@ -11,4 +11,7 @@
     docs="{{hello.docs}}"
     links="{{hello.links}}"
   />
+  <view style="padding: 24rpx 32rpx 48rpx;">
+    <button bindtap="goToLayouts">打开布局演示页</button>
+  </view>
 </view>
