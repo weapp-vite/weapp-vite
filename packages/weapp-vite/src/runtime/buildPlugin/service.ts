@@ -260,10 +260,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     })
 
     isolatedCtx.currentBuildTarget = 'plugin'
-    const result = await isolatedCtx.buildService.build({
-      ...options,
-      skipNpm: true,
-    })
+    const result = await isolatedCtx.buildService.build(options)
     if (configService.isDev && result && typeof (result as RolldownWatcher).on === 'function') {
       const watcherRoot = configService.absolutePluginRoot ?? configService.absoluteSrcRoot
       watcherService.setRollupWatcher(result as RolldownWatcher, watcherRoot)
@@ -302,7 +299,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       })
     }
     debug?.('build start')
-    const npmBuildTask = isLibMode || pluginOnly ? Promise.resolve() : scheduleNpmBuild(options)
+    const npmBuildTask = isLibMode ? Promise.resolve() : scheduleNpmBuild(options)
     const result = await runBuildTarget(pluginOnly ? 'plugin' : 'app')
     if (shouldEmitLibDts) {
       await generateLibDts(configService)

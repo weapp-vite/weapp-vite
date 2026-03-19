@@ -17,6 +17,9 @@
     "g": "weapp-vite generate",
     "postinstall": "weapp-vite prepare"
   },
+  "dependencies": {
+    "dayjs": "catalog:latest"
+  },
   "devDependencies": {
     "@weapp-vite/volar": "workspace:*",
     "miniprogram-api-typings": "catalog:latest",

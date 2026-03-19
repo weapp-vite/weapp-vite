@@ -307,9 +307,7 @@ describe('runtime buildPlugin service', () => {
       },
     })
     const isolatedCtx = await createCompilerContextMock.mock.results[0].value
-    expect(isolatedCtx.buildService.build).toHaveBeenCalledWith({
-      skipNpm: true,
-    })
+    expect(isolatedCtx.buildService.build).toHaveBeenCalledWith(undefined)
     expect(queueStartSpy).toHaveBeenCalled()
     expect(ctx.npmService.build).toHaveBeenCalledTimes(1)
     expect(syncProjectConfigToOutputMock).toHaveBeenCalledWith({

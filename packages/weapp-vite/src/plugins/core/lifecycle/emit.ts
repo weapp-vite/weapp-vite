@@ -347,13 +347,17 @@ function setRequireImportLiteral(node: any, nextValue: string) {
 
 function toRelativeRuntimeNpmImport(fileName: string, root: string, importee: string) {
   const normalized = normalizeWeappLocalNpmImport(importee)
-  const relative = toPosixPath(path.relative(path.dirname(fileName), `${root}/miniprogram_npm/${normalized}`))
+  const target = root
+    ? `${root}/miniprogram_npm/${normalized}`
+    : `miniprogram_npm/${normalized}`
+  const relative = toPosixPath(path.relative(path.dirname(fileName), target))
   return relative.startsWith('.') ? relative : `./${relative}`
 }
 
-function rewriteChunkNpmImportsToLocalSubPackage(
+function rewriteChunkNpmImportsToLocalRoot(
   chunk: OutputChunk,
-  meta: SubPackageMetaValue,
+  root: string,
+  dependencyPatterns: (string | RegExp)[] | undefined,
   dependencies: Record<string, string> | undefined,
   options?: {
     astEngine?: 'babel' | 'oxc'
@@ -384,11 +388,11 @@ function rewriteChunkNpmImportsToLocalSubPackage(
 
         const firstArg = args[0]
         const currentValue = getRequireImportLiteral(firstArg)
-        if (typeof currentValue !== 'string' || !matchesSubPackageDependency(meta.subPackage.dependencies, currentValue, dependencies)) {
+        if (typeof currentValue !== 'string' || !matchesSubPackageDependency(dependencyPatterns, currentValue, dependencies)) {
           return
         }
 
-        const nextValue = toRelativeRuntimeNpmImport(chunk.fileName, meta.subPackage.root, currentValue)
+        const nextValue = toRelativeRuntimeNpmImport(chunk.fileName, root, currentValue)
         if (nextValue === currentValue) {
           return
         }
@@ -406,12 +410,17 @@ function rewriteChunkNpmImportsToLocalSubPackage(
   }
 }
 
-function rewriteJsonNpmImportsToLocalSubPackage(bundle: OutputBundle, meta: SubPackageMetaValue, dependencies: Record<string, string> | undefined) {
+function rewriteJsonNpmImportsToLocalRoot(
+  bundle: OutputBundle,
+  root: string,
+  dependencyPatterns: (string | RegExp)[] | undefined,
+  dependencies: Record<string, string> | undefined,
+) {
   for (const output of Object.values(bundle)) {
     if (output?.type !== 'asset' || typeof output.fileName !== 'string' || !output.fileName.endsWith('.json')) {
       continue
     }
-    if (output.fileName === `${meta.subPackage.root}.json` || !output.fileName.startsWith(`${meta.subPackage.root}/`)) {
+    if (root && (output.fileName === `${root}.json` || !output.fileName.startsWith(`${root}/`))) {
       continue
     }
 
@@ -428,10 +437,10 @@ function rewriteJsonNpmImportsToLocalSubPackage(bundle: OutputBundle, meta: SubP
 
       let mutated = false
       for (const [componentName, importee] of Object.entries(parsed.usingComponents as Record<string, string>)) {
-        if (typeof importee !== 'string' || !matchesSubPackageDependency(meta.subPackage.dependencies, importee, dependencies)) {
+        if (typeof importee !== 'string' || !matchesSubPackageDependency(dependencyPatterns, importee, dependencies)) {
           continue
         }
-        parsed.usingComponents[componentName] = toRelativeRuntimeNpmImport(output.fileName, meta.subPackage.root, importee)
+        parsed.usingComponents[componentName] = toRelativeRuntimeNpmImport(output.fileName, root, importee)
         mutated = true
       }
 
@@ -478,6 +487,19 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
     if (isPluginBuild) {
       filterPluginBundleOutputs(rolldownBundle, configService)
+      if (configService.platform !== 'alipay') {
+        for (const output of Object.values(rolldownBundle)) {
+          if (output?.type !== 'chunk') {
+            continue
+          }
+
+          rewriteChunkNpmImportsToLocalRoot(output as OutputChunk, '', undefined, configService.packageJson.dependencies, {
+            astEngine,
+          })
+        }
+
+        rewriteJsonNpmImportsToLocalRoot(rolldownBundle, '', undefined, configService.packageJson.dependencies)
+      }
       return
     }
 
@@ -696,12 +718,12 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
           if (chunk.fileName === meta.subPackage.root || !chunk.fileName.startsWith(`${meta.subPackage.root}/`)) {
             continue
           }
-          rewriteChunkNpmImportsToLocalSubPackage(chunk, meta, configService.packageJson.dependencies, {
+          rewriteChunkNpmImportsToLocalRoot(chunk, meta.subPackage.root, meta.subPackage.dependencies, configService.packageJson.dependencies, {
             astEngine,
           })
         }
 
-        rewriteJsonNpmImportsToLocalSubPackage(rolldownBundle, meta, configService.packageJson.dependencies)
+        rewriteJsonNpmImportsToLocalRoot(rolldownBundle, meta.subPackage.root, meta.subPackage.dependencies, configService.packageJson.dependencies)
       }
     }
 

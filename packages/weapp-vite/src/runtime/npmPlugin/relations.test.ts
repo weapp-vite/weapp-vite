@@ -3,12 +3,17 @@ import { describe, expect, it } from 'vitest'
 import { getPackNpmRelationList } from './relations'
 
 function createContext(options: {
+  pluginOnly?: boolean
+  absolutePluginOutputRoot?: string
   platform?: string
   multiPlatform?: boolean
   projectConfig?: Record<string, any>
 }) {
   return {
     configService: {
+      absolutePluginOutputRoot: options.absolutePluginOutputRoot,
+      outDir: '/project/dist',
+      pluginOnly: options.pluginOnly ?? false,
       platform: options.platform ?? 'weapp',
       weappViteConfig: {
         multiPlatform: !!options.multiPlatform,
@@ -146,6 +151,31 @@ describe('runtime npmPlugin relations', () => {
       {
         packageJsonPath: './package.json',
         miniprogramNpmDistDir: 'dist/alipay',
+      },
+    ])
+  })
+
+  it('routes pluginOnly npm output to the plugin output root', () => {
+    const ctx = createContext({
+      pluginOnly: true,
+      absolutePluginOutputRoot: '/project/dist-plugin',
+      projectConfig: {
+        setting: {
+          packNpmManually: true,
+          packNpmRelationList: [
+            {
+              packageJsonPath: './package.json',
+              miniprogramNpmDistDir: './dist',
+            },
+          ],
+        },
+      },
+    })
+
+    expect(getPackNpmRelationList(ctx)).toEqual([
+      {
+        packageJsonPath: './package.json',
+        miniprogramNpmDistDir: '/project/dist-plugin',
       },
     ])
   })
