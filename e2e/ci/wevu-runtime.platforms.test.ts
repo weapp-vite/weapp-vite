@@ -17,8 +17,8 @@ import {
 
 const PLATFORM_LIST = resolvePlatformMatrix<RuntimePlatform>([
   'weapp',
-  // 'alipay',
-  // 'tt',
+  'alipay',
+  'tt',
 ], {
   localDefault: 'weapp',
 })

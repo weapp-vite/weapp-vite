@@ -10,8 +10,8 @@ export type { RuntimePlatform }
  */
 export const SUPPORTED_PLATFORMS = [
   'weapp',
-  // 'alipay',
-  // 'tt',
+  'alipay',
+  'tt',
 ] as const
 
 /**

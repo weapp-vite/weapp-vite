@@ -6,32 +6,113 @@ exports[`template e2e: weapp-vite-template > renders all pages from app config >
 `;
 
 exports[`template e2e: weapp-vite-template > renders all pages from app config > weapp-vite-template::pages/index/index 1`] = `
-"<view>
-  <view style="display: flex; align-items: center; justify-content: center">
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-default">
     <view>
-      <image src="/logo.png" style="width: 200px; height: 190px" role="img"></image>
-      <view>Hello World From Weapp-vite!</view>
+      <view style="display: flex; align-items: center; justify-content: center">
+        <view>
+          <image src="/logo.png" style="width: 200px; height: 190px" role="img"></image>
+          <view>Hello World From Weapp-vite!</view>
+        </view>
+      </view>
+      <helloworld is="components/HelloWorld/HelloWorld">
+        <view class="hello-card HelloWorld--hello-card">
+          <view class="hello-title HelloWorld--hello-title">Hello weapp-vite</view>
+          <view class="hello-body HelloWorld--hello-body">
+            这是最基础的 weapp-vite 模板，包含快速开发所需的构建与热更新能力。
+          </view>
+          <view class="hello-actions HelloWorld--hello-actions">
+            <view
+              class="hello-button HelloWorld--hello-button"
+              data-url="https://vite.icebreaker.top">
+              复制文档链接
+            </view>
+            <view
+              class="hello-button HelloWorld--hello-button hello-button--ghost HelloWorld--hello-button--ghost"
+              data-url="https://github.com/weapp-vite/weapp-vite">
+              GitHub 仓库
+            </view>
+          </view>
+          <view class="hello-tip HelloWorld--hello-tip">复制后即可在浏览器中打开对应链接</view>
+        </view>
+      </helloworld>
+      <view style="padding: 12px 16px 24px">
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          role="button"
+          aria-disabled="false">
+          打开布局演示页
+        </button>
+      </view>
     </view>
   </view>
-  <helloworld is="components/HelloWorld/HelloWorld">
-    <view class="hello-card HelloWorld--hello-card">
-      <view class="hello-title HelloWorld--hello-title">Hello weapp-vite</view>
-      <view class="hello-body HelloWorld--hello-body">
-        这是最基础的 weapp-vite 模板，包含快速开发所需的构建与热更新能力。
+</weapp-layout-default>
+"
+`;
+
+exports[`template e2e: weapp-vite-template > renders all pages from app config > weapp-vite-template::pages/layouts/index 1`] = `
+"<weapp-layout-default is="layouts/default/index">
+  <view class="index--layout-default">
+    <view class="page">
+      <view class="hero">
+        <view class="hero__eyebrow">Native Layouts</view>
+        <view class="hero__title">基础模板已接入 layouts</view>
+        <view class="hero__desc">当前状态：default</view>
       </view>
-      <view class="hello-actions HelloWorld--hello-actions">
-        <view class="hello-button HelloWorld--hello-button" data-url="https://vite.icebreaker.top">
-          复制文档链接
-        </view>
-        <view
-          class="hello-button HelloWorld--hello-button hello-button--ghost HelloWorld--hello-button--ghost"
-          data-url="https://github.com/weapp-vite/weapp-vite">
-          GitHub 仓库
-        </view>
+      <view class="section">
+        <view class="section-title">default 布局</view>
+        <view class="section-desc">页面默认命中 src/layouts/default 作为轻量外壳。</view>
       </view>
-      <view class="hello-tip HelloWorld--hello-tip">复制后即可在浏览器中打开对应链接</view>
+      <view class="section">
+        <view class="section-title">admin 布局</view>
+        <view class="section-desc">调用 setPageLayout("admin", props) 后会切换到命名布局。</view>
+      </view>
+      <view class="section">
+        <view class="section-title">关闭布局</view>
+        <view class="section-desc">调用 setPageLayout(false) 可恢复为无布局状态。</view>
+      </view>
+      <view class="section">
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn"
+          role="button"
+          aria-disabled="false">
+          使用 default 布局
+        </button>
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn action-btn--primary"
+          role="button"
+          aria-disabled="false">
+          切到 admin 布局
+        </button>
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn action-btn--ghost"
+          role="button"
+          aria-disabled="false">
+          关闭布局
+        </button>
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn action-btn--light"
+          role="button"
+          aria-disabled="false">
+          返回首页
+        </button>
+      </view>
     </view>
-  </helloworld>
-</view>
+  </view>
+</weapp-layout-default>
 "
 `;
