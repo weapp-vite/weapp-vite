@@ -14,6 +14,11 @@ import { dts } from 'rolldown-plugin-dts'
 import { resolveWeappLibEntries } from './lib'
 
 const DTS_INPUT_EXTENSIONS = new Set(['.ts', '.tsx', '.mts', '.cts'])
+const NUMERIC_SUFFIX_RE = /^\d+$/
+const EMPTY_EXPORT_RE = /^export\s*\{\s*\};?\s*$/
+const DTS_OUTPUT_FILE_RE = /\.d\.(?:m|c)?ts$/
+const DTS_MAP_OUTPUT_FILE_RE = /\.d\.(?:m|c)?ts\.map$/
+const SOURCE_MAPPING_URL_RE = /# sourceMappingURL=.*$/gm
 
 function isBundledDtsEntry(entryPath: string) {
   const ext = path.extname(entryPath)
@@ -56,7 +61,7 @@ async function findDeconflictedDtsPath(expectedPath: string) {
       continue
     }
     const suffix = name.slice(baseName.length, -'.d.ts'.length)
-    if (!/^\d+$/.test(suffix)) {
+    if (!NUMERIC_SUFFIX_RE.test(suffix)) {
       continue
     }
     const index = Number.parseInt(suffix, 10)
@@ -71,7 +76,7 @@ async function findDeconflictedDtsPath(expectedPath: string) {
 
 async function isStubDts(filePath: string) {
   const content = await fs.readFile(filePath, 'utf8')
-  return /^export\s*\{\s*\};?\s*$/.test(content.trim())
+  return EMPTY_EXPORT_RE.test(content.trim())
 }
 
 async function normalizeRolldownDtsOutput(entries: ResolvedWeappLibEntry[], outDir: string) {
@@ -138,6 +143,19 @@ async function resolveInternalTsconfig(cwd: string, tsconfig: string | false | u
   return await fs.pathExists(defaultPath) ? defaultPath : undefined
 }
 
+async function tsconfigHasProjectReferences(tsconfigPath: string | false | undefined) {
+  if (!tsconfigPath) {
+    return false
+  }
+  try {
+    const config = await fs.readJson(tsconfigPath)
+    return Array.isArray(config?.references) && config.references.length > 0
+  }
+  catch {
+    return false
+  }
+}
+
 function ensureModuleResolution(ts: typeof import('typescript'), compilerOptions: import('typescript').CompilerOptions) {
   if (compilerOptions.moduleResolution) {
     return
@@ -169,15 +187,15 @@ function ensureModuleResolution(ts: typeof import('typescript'), compilerOptions
 }
 
 function isDtsOutputFile(filePath: string) {
-  return /\.d\.(?:m|c)?ts$/.test(filePath) && !filePath.endsWith('.map')
+  return DTS_OUTPUT_FILE_RE.test(filePath) && !filePath.endsWith('.map')
 }
 
 function isDtsMapOutputFile(filePath: string) {
-  return /\.d\.(?:m|c)?ts\.map$/.test(filePath)
+  return DTS_MAP_OUTPUT_FILE_RE.test(filePath)
 }
 
 function replaceSourceMappingUrl(content: string, mapFileName: string) {
-  const normalized = content.replace(/# sourceMappingURL=.*$/gm, `# sourceMappingURL=${mapFileName}`)
+  const normalized = content.replace(SOURCE_MAPPING_URL_RE, `# sourceMappingURL=${mapFileName}`)
   return normalized
 }
 
@@ -600,12 +618,14 @@ export async function generateLibDts(configService: ConfigService) {
     const tsconfigPath = path.resolve(configService.cwd, 'tsconfig.json')
     const hasTsconfig = await fs.pathExists(tsconfigPath)
     const userRolldownOptions: RolldownDtsOptions = dtsOptions?.rolldown ?? {}
-    const hasUserTsconfig = Object.prototype.hasOwnProperty.call(userRolldownOptions, 'tsconfig')
+    const hasUserTsconfig = Object.hasOwn(userRolldownOptions, 'tsconfig')
+    const hasUserBuild = Object.hasOwn(userRolldownOptions, 'build')
     const resolvedTsconfig = hasUserTsconfig
       ? userRolldownOptions.tsconfig
       : hasTsconfig
         ? tsconfigPath
         : false
+    const shouldUseBuildMode = !hasUserBuild && await tsconfigHasProjectReferences(resolvedTsconfig)
     const compilerOptions: NonNullable<RolldownDtsOptions['compilerOptions']> = {
       allowImportingTsExtensions: true,
       allowJs: true,
@@ -616,6 +636,7 @@ export async function generateLibDts(configService: ConfigService) {
       plugins: dts({
         ...userRolldownOptions,
         tsconfig: resolvedTsconfig,
+        build: shouldUseBuildMode ? true : userRolldownOptions.build,
         compilerOptions,
         cwd: configService.cwd,
         emitDtsOnly: true,
