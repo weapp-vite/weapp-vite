@@ -23,6 +23,10 @@ const {
   mockFindVueEntry,
   mockFindJsEntry,
   mockExtractConfigFromVue,
+  mockResolvePageLayoutPlan,
+  mockApplyPageLayoutPlanToNativePage,
+  mockInjectNativePageLayoutRuntime,
+  mockCollectNativeLayoutAssets,
 } = vi.hoisted(() => {
   const innerMagicStringPrepend = vi.fn()
   const innerMagicStringToString = vi.fn().mockReturnValue('transformed')
@@ -52,6 +56,15 @@ const {
   const innerFindVueEntry = vi.fn(async () => undefined) as unknown as Mock<(filepath: string) => Promise<string | undefined>>
   const innerFindJsEntry = vi.fn(async () => ({ path: undefined, predictions: [] as string[] })) as unknown as Mock<(filepath: string) => Promise<{ path?: string, predictions: string[] }>>
   const innerExtractConfigFromVue = vi.fn(async () => undefined) as unknown as Mock<(vueFilePath: string) => Promise<Record<string, any> | undefined>>
+  const innerResolvePageLayoutPlan = vi.fn(async () => undefined)
+  const innerApplyPageLayoutPlanToNativePage = vi.fn((result: any) => result)
+  const innerInjectNativePageLayoutRuntime = vi.fn((script: string | undefined) => script)
+  const innerCollectNativeLayoutAssets = vi.fn(async () => ({
+    json: undefined,
+    template: undefined,
+    style: undefined,
+    script: undefined,
+  }))
 
   return {
     magicStringPrependMock: innerMagicStringPrepend,
@@ -65,6 +78,10 @@ const {
     mockFindVueEntry: innerFindVueEntry,
     mockFindJsEntry: innerFindJsEntry,
     mockExtractConfigFromVue: innerExtractConfigFromVue,
+    mockResolvePageLayoutPlan: innerResolvePageLayoutPlan,
+    mockApplyPageLayoutPlanToNativePage: innerApplyPageLayoutPlanToNativePage,
+    mockInjectNativePageLayoutRuntime: innerInjectNativePageLayoutRuntime,
+    mockCollectNativeLayoutAssets: innerCollectNativeLayoutAssets,
   }
 })
 
@@ -124,6 +141,16 @@ vi.mock('../../../utils', () => {
     findVueEntry: mockFindVueEntry,
     findJsEntry: mockFindJsEntry,
     extractConfigFromVue: mockExtractConfigFromVue,
+  }
+})
+
+vi.mock('../../vue/transform/pageLayout', () => {
+  return {
+    __esModule: true,
+    resolvePageLayoutPlan: mockResolvePageLayoutPlan,
+    applyPageLayoutPlanToNativePage: mockApplyPageLayoutPlanToNativePage,
+    injectNativePageLayoutRuntime: mockInjectNativePageLayoutRuntime,
+    collectNativeLayoutAssets: mockCollectNativeLayoutAssets,
   }
 })
 
@@ -251,6 +278,15 @@ describe('createEntryLoader', () => {
     mockFindVueEntry.mockResolvedValue(undefined)
     mockFindJsEntry.mockResolvedValue({ path: undefined, predictions: [] })
     mockExtractConfigFromVue.mockResolvedValue(undefined)
+    mockResolvePageLayoutPlan.mockResolvedValue(undefined)
+    mockApplyPageLayoutPlanToNativePage.mockImplementation((result: any) => result)
+    mockInjectNativePageLayoutRuntime.mockImplementation((script: string | undefined) => script)
+    mockCollectNativeLayoutAssets.mockResolvedValue({
+      json: undefined,
+      template: undefined,
+      style: undefined,
+      script: undefined,
+    })
   })
 
   it('skips MagicString when no style imports exist', async () => {
@@ -886,6 +922,119 @@ import { VueCard } from '../../components'
       usingComponents: {
         VueCard: '/components/vue-card/index',
       },
+    })
+  })
+
+  it('emits native layout assets for native pages using layouts', async () => {
+    mockFindJsonEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.json',
+      predictions: ['/project/src/pages/index/index.json'],
+    })
+    mockFindTemplateEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.wxml',
+      predictions: ['/project/src/pages/index/index.wxml'],
+    })
+    mockResolvePageLayoutPlan.mockResolvedValue({
+      currentLayout: {
+        kind: 'native',
+        file: '/project/src/layouts/default/index',
+        importPath: '/layouts/default/index',
+        layoutName: 'default',
+        tagName: 'weapp-layout-default',
+      },
+      layouts: [
+        {
+          kind: 'native',
+          file: '/project/src/layouts/default/index',
+          importPath: '/layouts/default/index',
+          layoutName: 'default',
+          tagName: 'weapp-layout-default',
+        },
+      ],
+      dynamicSwitch: false,
+      dynamicPropKeys: [],
+    })
+    mockApplyPageLayoutPlanToNativePage.mockImplementation((result: any) => {
+      const parsed = JSON.parse(result.config)
+      return {
+        ...result,
+        config: JSON.stringify({
+          ...parsed,
+          usingComponents: {
+            ...parsed.usingComponents,
+            'weapp-layout-default': '/layouts/default/index',
+          },
+        }),
+      }
+    })
+    mockCollectNativeLayoutAssets.mockResolvedValue({
+      json: '/project/src/layouts/default/index.json',
+      template: '/project/src/layouts/default/index.wxml',
+      style: '/project/src/layouts/default/index.wxss',
+      script: '/project/src/layouts/default/index.ts',
+    })
+
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/pages/index/index.ts') {
+        return 'Page({})'
+      }
+      if (target === '/project/src/pages/index/index.wxml') {
+        return '<view>home</view>'
+      }
+      if (target === '/project/src/layouts/default/index.json') {
+        return '{"component":true}'
+      }
+      if (target === '/project/src/layouts/default/index.wxml') {
+        return '<view><slot /></view>'
+      }
+      if (target === '/project/src/layouts/default/index.wxss') {
+        return '.layout {}'
+      }
+      if (target === '/project/src/layouts/default/index.ts') {
+        return 'Component({})'
+      }
+      return 'console.log("noop")'
+    })
+
+    const { loader, jsonService, registerJsonAsset } = createLoader()
+    jsonService.read.mockResolvedValue({ navigationBarTitleText: 'Home' })
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
+
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      jsonPath: '/project/src/pages/index/index.json',
+      json: {
+        navigationBarTitleText: 'Home',
+        usingComponents: {
+          'weapp-layout-default': '/layouts/default/index',
+        },
+      },
+      type: 'page',
+    })
+    expect(registerJsonAsset).toHaveBeenCalledWith({
+      jsonPath: '/project/src/layouts/default/index.json',
+      json: {
+        component: true,
+      },
+      type: 'component',
+    })
+
+    const emitFile = pluginCtx.emitFile as unknown as Mock
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'layouts/default/index.wxml',
+      source: '<view><slot /></view>',
+    })
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'layouts/default/index.wxss',
+      source: '.layout {}',
+    })
+    expect(emitFile).toHaveBeenCalledWith({
+      type: 'asset',
+      fileName: 'layouts/default/index.js',
+      source: 'Component({})',
     })
   })
 })
