@@ -213,7 +213,7 @@
     "tsdown": "0.21.4",
     "tslib": "catalog:",
     "tsx": "^4.21.0",
-    "turbo": "^2.8.17",
+    "turbo": "^2.8.19",
     "type-fest": "^5.4.4",
     "typescript": "catalog:",
     "unbuild": "^3.6.1",
