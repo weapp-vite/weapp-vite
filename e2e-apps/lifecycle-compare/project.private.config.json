@@ -39,5 +39,8 @@
         }
       ]
     }
+  },
+  "setting": {
+    "compileHotReLoad": true
   }
 }

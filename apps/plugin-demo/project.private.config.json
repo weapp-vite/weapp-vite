@@ -14,7 +14,7 @@
     "useStaticServer": false,
     "useLanDebug": false,
     "showES6CompileOption": false,
-    "compileHotReLoad": false,
+    "compileHotReLoad": true,
     "bigPackageSizeSupport": false,
     "checkInvalidKey": true,
     "ignoreDevUnusedFiles": true

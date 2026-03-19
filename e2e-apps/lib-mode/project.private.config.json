@@ -4,5 +4,8 @@
     "miniprogram": {
       "list": []
     }
+  },
+  "setting": {
+    "compileHotReLoad": true
   }
 }

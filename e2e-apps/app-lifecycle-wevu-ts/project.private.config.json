@@ -11,5 +11,8 @@
         }
       ]
     }
+  },
+  "setting": {
+    "compileHotReLoad": true
   }
 }
