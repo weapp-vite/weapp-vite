@@ -1,7 +1,8 @@
+import fsNative from 'node:fs'
 import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyPageLayout, applyPageLayoutPlan, applyPageLayoutPlanToNativePage, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, injectNativePageLayoutRuntime, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
 
 const tempDirs: string[] = []
@@ -115,6 +116,44 @@ setPageLayout('panel', {
       layoutName: 'default',
       tagName: 'weapp-layout-default',
     })
+  })
+
+  it('resolves default layout when page file and src root use different real paths', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    const pageFile = path.join(srcRoot, 'pages', 'index', 'index.vue')
+    const layoutFile = path.join(srcRoot, 'layouts', 'default.vue')
+
+    await fs.ensureDir(path.dirname(pageFile))
+    await fs.ensureDir(path.dirname(layoutFile))
+    await fs.writeFile(layoutFile, '<template><slot /></template>', 'utf8')
+
+    const nativeSpy = vi.spyOn(fsNative.realpathSync, 'native').mockImplementation((input: fsNative.PathLike) => {
+      const next = String(input)
+      if (next.startsWith(projectDir)) {
+        return next.replace('/var/', '/private/var/')
+      }
+      return next
+    })
+
+    const resolved = await resolvePageLayout(
+      '<template><view>home</view></template>',
+      pageFile.replace('/var/', '/private/var/'),
+      {
+        absoluteSrcRoot: srcRoot,
+        relativeOutputPath: (input: string) => path.relative(srcRoot, input),
+      } as any,
+    )
+
+    expect(resolved).toEqual({
+      file: layoutFile,
+      importPath: '/layouts/default',
+      kind: 'vue',
+      layoutName: 'default',
+      tagName: 'weapp-layout-default',
+    })
+
+    nativeSpy.mockRestore()
   })
 
   it('resolves default layout from weapp.routeRules when page meta is absent', async () => {
