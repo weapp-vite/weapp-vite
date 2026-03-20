@@ -184,7 +184,7 @@ src/
 1. 确保已安装依赖:
 
    ```bash
-   cd /Users/icebreaker/Documents/GitHub/weapp-vite
+   cd /path/to/weapp-vite
    pnpm install
    ```
 

@@ -17,7 +17,7 @@
 
 文件：
 
-- [packages/ast/src/operations/setDataPick.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/setDataPick.ts)
+- [packages/ast/src/operations/setDataPick.ts](../../packages/ast/src/operations/setDataPick.ts)
 
 现状：
 
@@ -29,7 +29,7 @@
 
 文件：
 
-- [packages/ast/src/operations/onPageScroll.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/onPageScroll.ts)
+- [packages/ast/src/operations/onPageScroll.ts](../../packages/ast/src/operations/onPageScroll.ts)
 
 现状：
 
@@ -45,7 +45,7 @@
 
 文件：
 
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
+- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
 
 现状：
 
@@ -59,7 +59,7 @@
 
 文件：
 
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts)
+- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts)
 
 现状：
 
@@ -71,7 +71,7 @@
 
 文件：
 
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts)
+- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts)
 
 现状：
 
@@ -83,8 +83,8 @@
 
 本轮新增/更新：
 
-- [packages/weapp-vite/bench/ast-hot-paths.bench.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/bench/ast-hot-paths.bench.ts)
-- [packages/weapp-vite/bench/ast-comparison.bench.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/bench/ast-comparison.bench.ts)
+- [packages/weapp-vite/bench/ast-hot-paths.bench.ts](../../packages/weapp-vite/bench/ast-hot-paths.bench.ts)
+- [packages/weapp-vite/bench/ast-comparison.bench.ts](../../packages/weapp-vite/bench/ast-comparison.bench.ts)
 
 执行命令：
 
@@ -94,7 +94,7 @@ pnpm -C packages/weapp-vite bench
 
 最新结果文件：
 
-- [packages/weapp-vite/bench/results/1773667743624.json](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/bench/results/1773667743624.json)
+- [packages/weapp-vite/bench/results/1773667743624.json](../../packages/weapp-vite/bench/results/1773667743624.json)
 
 ## 4. 关键 benchmark 结果
 
@@ -206,9 +206,9 @@ pnpm -C packages/weapp-vite bench
 
 ## 9. 附：本轮重点文件
 
-- [packages/ast/src/operations/setDataPick.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/setDataPick.ts)
-- [packages/ast/src/operations/onPageScroll.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/onPageScroll.ts)
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts)
-- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts)
-- [packages/weapp-vite/bench/ast-hot-paths.bench.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/bench/ast-hot-paths.bench.ts)
+- [packages/ast/src/operations/setDataPick.ts](../../packages/ast/src/operations/setDataPick.ts)
+- [packages/ast/src/operations/onPageScroll.ts](../../packages/ast/src/operations/onPageScroll.ts)
+- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
+- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/optionsObjects.ts)
+- [packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/inject.ts)
+- [packages/weapp-vite/bench/ast-hot-paths.bench.ts](../../packages/weapp-vite/bench/ast-hot-paths.bench.ts)

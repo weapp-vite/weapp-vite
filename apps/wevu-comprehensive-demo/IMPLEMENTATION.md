@@ -244,7 +244,7 @@ apps/wevu-comprehensive-demo/
 ### 1. 安装依赖
 
 ```bash
-cd /Users/icebreaker/Documents/GitHub/weapp-vite
+cd /path/to/weapp-vite
 pnpm install
 ```
 

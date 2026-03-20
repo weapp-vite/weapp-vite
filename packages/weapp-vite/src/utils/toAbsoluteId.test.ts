@@ -8,7 +8,7 @@ describe('toAbsoluteId', () => {
   }
 
   it('returns normalized absolute ids', () => {
-    expect(toAbsoluteId('/@fs/Users/me/a.ts?import', configService as any)).toBe('/Users/me/a.ts')
+    expect(toAbsoluteId('/@fs/project/a.ts?import', configService as any)).toBe('/project/a.ts')
     expect(toAbsoluteId('C:\\project\\src\\pages\\index.vue?weapp-vite-vue&type=style', configService as any)).toBe(
       'C:/project/src/pages/index.vue',
     )

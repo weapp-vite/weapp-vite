@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { resolveLayoutTypesDefaultPath } from '../../config/base'
 import { syncHtmlCustomData, syncTypedComponentsDefinition, syncVueComponentsDefinition } from './sync'
 
 const fsRemoveMock = vi.hoisted(() => vi.fn())
@@ -356,13 +357,19 @@ describe('autoImport outputs sync helpers', () => {
   })
 
   it('skips vue definition write when output content and path are unchanged', async () => {
+    const configService = {
+      cwd: '/project',
+    }
     const options = createCommonOptions({
+      ctx: {
+        configService,
+      },
       outputsState: {
         ...createOutputsState(),
         lastWrittenVueComponentsDefinition: 'vue-same',
         lastVueComponentsOutputPath: '/project/types/components.d.ts',
         lastWrittenLayoutTypesDefinition: 'layout-types-next',
-        lastLayoutTypesOutputPath: '/Users/yangqiming/Documents/GitHub/weapp-vite/.weapp-vite/wevu-layouts.d.ts',
+        lastLayoutTypesOutputPath: resolveLayoutTypesDefaultPath(configService as any),
       },
       resolverComponentsMapRef: { value: {} },
       resolveNavigationImport: vi.fn(),

@@ -7,7 +7,7 @@ import {
 
 describe('weapp-vite vue style request', () => {
   it('round-trips windows path without query in filename', () => {
-    const winPath = 'C:\\Users\\foo\\proj\\src\\pages\\index.vue'
+    const winPath = 'C:\\project\\src\\pages\\index.vue'
     const id = buildWeappVueStyleRequest(winPath, { lang: 'css' } as any, 0)
     const parsed = parseWeappVueStyleRequest(id)
 
@@ -15,11 +15,11 @@ describe('weapp-vite vue style request', () => {
     expect(parsed).toBeTruthy()
     expect(parsed?.index).toBe(0)
     expect(parsed?.filename.includes('?')).toBe(false)
-    expect(parsed?.filename).toBe('C:/Users/foo/proj/src/pages/index.vue')
+    expect(parsed?.filename).toBe('C:/project/src/pages/index.vue')
   })
 
   it('round-trips posix path without query in filename', () => {
-    const posixPath = '/Users/foo/proj/src/pages/index.vue'
+    const posixPath = '/project/src/pages/index.vue'
     const id = buildWeappVueStyleRequest(posixPath, { lang: 'css' } as any, 1)
     const parsed = parseWeappVueStyleRequest(id)
 
@@ -31,12 +31,12 @@ describe('weapp-vite vue style request', () => {
   })
 
   it('parses legacy non-virtual style request', () => {
-    const winPath = 'C:\\Users\\foo\\proj\\src\\pages\\index.vue'
+    const winPath = 'C:\\project\\src\\pages\\index.vue'
     const legacyId = `${winPath}?weapp-vite-vue&type=style&index=2&lang.css`
     const parsed = parseWeappVueStyleRequest(legacyId)
 
     expect(parsed).toBeTruthy()
     expect(parsed?.index).toBe(2)
-    expect(parsed?.filename).toBe('C:/Users/foo/proj/src/pages/index.vue')
+    expect(parsed?.filename).toBe('C:/project/src/pages/index.vue')
   })
 })
