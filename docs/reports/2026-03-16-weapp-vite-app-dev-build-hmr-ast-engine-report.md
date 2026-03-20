@@ -13,16 +13,16 @@
 
 本次选了 3 个代表性 app：
 
-1. [`apps/vite-native-ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/apps/vite-native-ts)
+1. [`apps/vite-native-ts`](../../apps/vite-native-ts)
    原生 TS 小程序项目，`srcRoot = miniprogram`
-2. [`apps/wevu-vue-demo`](/Users/yangqiming/Documents/GitHub/weapp-vite/apps/wevu-vue-demo)
+2. [`apps/wevu-vue-demo`](../../apps/wevu-vue-demo)
    Vue SFC + wevu 项目
-3. [`apps/tdesign-miniprogram-starter-retail`](/Users/yangqiming/Documents/GitHub/weapp-vite/apps/tdesign-miniprogram-starter-retail)
+3. [`apps/tdesign-miniprogram-starter-retail`](../../apps/tdesign-miniprogram-starter-retail)
    更接近真实业务体量的原生商城 demo
 
 额外说明：
 
-- 我尝试了 [`apps/wevu-comprehensive-demo`](/Users/yangqiming/Documents/GitHub/weapp-vite/apps/wevu-comprehensive-demo)，但它在当前环境下 build 链过长且存在多阶段长时间 transform，难以在同一口径下稳定拿到干净数据，因此没有纳入最终对比表。
+- 我尝试了 [`apps/wevu-comprehensive-demo`](../../apps/wevu-comprehensive-demo)，但它在当前环境下 build 链过长且存在多阶段长时间 transform，难以在同一口径下稳定拿到干净数据，因此没有纳入最终对比表。
 
 ## 3. 测试环境
 
@@ -90,9 +90,9 @@ HMR 场景直接在 dev 进程存活状态下修改真实源文件，等待 CLI 
 
 本次 HMR 改动点：
 
-- `vite-native-ts`：修改 [`apps/vite-native-ts/miniprogram/pages/index/index.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/apps/vite-native-ts/miniprogram/pages/index/index.ts) 的 `motto`
-- `wevu-vue-demo`：修改 [`apps/wevu-vue-demo/src/pages/index/index.vue`](/Users/yangqiming/Documents/GitHub/weapp-vite/apps/wevu-vue-demo/src/pages/index/index.vue) 的 `navigationBarTitleText`
-- `tdesign-miniprogram-starter-retail`：修改 [`apps/tdesign-miniprogram-starter-retail/pages/home/home.js`](/Users/yangqiming/Documents/GitHub/weapp-vite/apps/tdesign-miniprogram-starter-retail/pages/home/home.js) 的 `Toast message`
+- `vite-native-ts`：修改 [`apps/vite-native-ts/miniprogram/pages/index/index.ts`](../../apps/vite-native-ts/miniprogram/pages/index/index.ts) 的 `motto`
+- `wevu-vue-demo`：修改 [`apps/wevu-vue-demo/src/pages/index/index.vue`](../../apps/wevu-vue-demo/src/pages/index/index.vue) 的 `navigationBarTitleText`
+- `tdesign-miniprogram-starter-retail`：修改 [`apps/tdesign-miniprogram-starter-retail/pages/home/home.js`](../../apps/tdesign-miniprogram-starter-retail/pages/home/home.js) 的 `Toast message`
 
 ## 5. 实测结果
 

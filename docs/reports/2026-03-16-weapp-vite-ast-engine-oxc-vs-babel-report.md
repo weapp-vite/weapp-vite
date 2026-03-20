@@ -19,7 +19,7 @@
 
 ### 2.2 更准确的工程结论
 
-1. `Babel` 仍然是默认引擎，默认值来自 [`packages/weapp-vite/src/ast/config.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/ast/config.ts)。
+1. `Babel` 仍然是默认引擎，默认值来自 [`packages/weapp-vite/src/ast/config.ts`](../../packages/weapp-vite/src/ast/config.ts)。
 2. `Oxc` 已经可以在若干静态分析场景中实际工作，并且已经接入 `weapp-vite` / `@weapp-vite/ast` / `@wevu/compiler` 的统一调用链。
 3. 当前切换收益主要体现在“解析速度更快、轻量分析更适合 Oxc、为后续脱 Babel 做好了边界隔离”。
 4. 当前最大的现实限制不是“能不能 parse”，而是“很多历史分析逻辑、语义稳定逻辑和节点工具仍以 Babel AST 为中心”。
@@ -29,9 +29,9 @@
 
 ### 3.1 关键变化不是 parser 替换，而是抽象层建立
 
-这次 AST 引擎切换最重要的工程动作，不是把某个地方的 `@babel/parser` 替成 `oxc-parser`，而是抽出独立包 [`packages/ast`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast) 作为统一 AST 能力层。
+这次 AST 引擎切换最重要的工程动作，不是把某个地方的 `@babel/parser` 替成 `oxc-parser`，而是抽出独立包 [`packages/ast`](../../packages/ast) 作为统一 AST 能力层。
 
-统一入口见 [`packages/ast/src/index.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/index.ts)，统一解析入口见 [`packages/ast/src/engine.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/engine.ts)：
+统一入口见 [`packages/ast/src/index.ts`](../../packages/ast/src/index.ts)，统一解析入口见 [`packages/ast/src/engine.ts`](../../packages/ast/src/engine.ts)：
 
 - `parseJsLikeWithEngine(code, { engine })`
 - `babelAstEngine`
@@ -81,12 +81,12 @@
 
 具体体现包括：
 
-- 默认解析是 Babel：[`packages/ast/src/engine.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/engine.ts)
-- `setDataPick` 仍明确保留 Babel 语义：[`packages/ast/src/operations/setDataPick.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/setDataPick.ts)
-- `onPageScroll` 性能诊断仍完全基于 Babel AST：[`packages/ast/src/operations/onPageScroll.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/onPageScroll.ts)
-- `wevu` page feature 的模块分析仍返回 Babel AST 驱动结果：[`packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
-- JSX 深层编译链仍以 Babel 表达式工具为中心：[`packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts)
-- WXS 转换仍直接依赖 Babel transform：[`packages/weapp-vite/src/wxs/index.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/wxs/index.ts)
+- 默认解析是 Babel：[`packages/ast/src/engine.ts`](../../packages/ast/src/engine.ts)
+- `setDataPick` 仍明确保留 Babel 语义：[`packages/ast/src/operations/setDataPick.ts`](../../packages/ast/src/operations/setDataPick.ts)
+- `onPageScroll` 性能诊断仍完全基于 Babel AST：[`packages/ast/src/operations/onPageScroll.ts`](../../packages/ast/src/operations/onPageScroll.ts)
+- `wevu` page feature 的模块分析仍返回 Babel AST 驱动结果：[`packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts`](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
+- JSX 深层编译链仍以 Babel 表达式工具为中心：[`packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts`](../../packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts)
+- WXS 转换仍直接依赖 Babel transform：[`packages/weapp-vite/src/wxs/index.ts`](../../packages/weapp-vite/src/wxs/index.ts)
 
 ### 4.2 Oxc 的当前定位
 
@@ -99,10 +99,10 @@
 
 具体体现包括：
 
-- `oxcAstEngine` 使用 `parseSync`：[`packages/ast/src/engines/oxc.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/engines/oxc.ts)
-- 若调用方提供了 `parserLike.parse`，Oxc 路径还可复用上层 parser：[`packages/ast/src/engine.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/engine.ts)
+- `oxcAstEngine` 使用 `parseSync`：[`packages/ast/src/engines/oxc.ts`](../../packages/ast/src/engines/oxc.ts)
+- 若调用方提供了 `parserLike.parse`，Oxc 路径还可复用上层 parser：[`packages/ast/src/engine.ts`](../../packages/ast/src/engine.ts)
 - 多个 operation 已经提供 Oxc 实现：`require`、`scriptSetupImports`、`componentProps`、`platformApi`、`featureFlags`、`jsxAutoComponents`
-- `weapp-vite` 已经补齐 `@oxc-project/runtime` helper 的 alias / plugin 兼容层：[`packages/weapp-vite/src/runtime/oxcRuntime.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/runtime/oxcRuntime.ts)
+- `weapp-vite` 已经补齐 `@oxc-project/runtime` helper 的 alias / plugin 兼容层：[`packages/weapp-vite/src/runtime/oxcRuntime.ts`](../../packages/weapp-vite/src/runtime/oxcRuntime.ts)
 
 ## 5. 当前哪些能力真正支持 Oxc
 
@@ -112,8 +112,8 @@
 
 #### 5.1.1 统一 JS-like 解析
 
-- 文件：[`packages/ast/src/engine.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/engine.ts)
-- Oxc 入口：[`packages/ast/src/engines/oxc.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/engines/oxc.ts)
+- 文件：[`packages/ast/src/engine.ts`](../../packages/ast/src/engine.ts)
+- Oxc 入口：[`packages/ast/src/engines/oxc.ts`](../../packages/ast/src/engines/oxc.ts)
 
 特点：
 
@@ -123,7 +123,7 @@
 
 #### 5.1.2 `require.async` 与静态 `require(...)` 预判
 
-- 文件：[`packages/ast/src/operations/require.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/require.ts)
+- 文件：[`packages/ast/src/operations/require.ts`](../../packages/ast/src/operations/require.ts)
 
 状态判断：
 
@@ -135,7 +135,7 @@
 
 #### 5.1.3 `<script setup>` 导入组件分析
 
-- 文件：[`packages/ast/src/operations/scriptSetupImports.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/scriptSetupImports.ts)
+- 文件：[`packages/ast/src/operations/scriptSetupImports.ts`](../../packages/ast/src/operations/scriptSetupImports.ts)
 
 状态判断：
 
@@ -146,7 +146,7 @@
 
 #### 5.1.4 组件 `props/properties` 静态提取
 
-- 文件：[`packages/ast/src/operations/componentProps.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/componentProps.ts)
+- 文件：[`packages/ast/src/operations/componentProps.ts`](../../packages/ast/src/operations/componentProps.ts)
 
 状态判断：
 
@@ -158,7 +158,7 @@
 
 #### 5.1.5 平台 API 访问预判
 
-- 文件：[`packages/ast/src/operations/platformApi.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/platformApi.ts)
+- 文件：[`packages/ast/src/operations/platformApi.ts`](../../packages/ast/src/operations/platformApi.ts)
 
 状态判断：
 
@@ -169,7 +169,7 @@
 
 #### 5.1.6 Feature flag 收集
 
-- 文件：[`packages/ast/src/operations/featureFlags.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/featureFlags.ts)
+- 文件：[`packages/ast/src/operations/featureFlags.ts`](../../packages/ast/src/operations/featureFlags.ts)
 
 状态判断：
 
@@ -179,7 +179,7 @@
 
 #### 5.1.7 JSX 自动组件分析
 
-- 文件：[`packages/ast/src/operations/jsxAutoComponents.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/jsxAutoComponents.ts)
+- 文件：[`packages/ast/src/operations/jsxAutoComponents.ts`](../../packages/ast/src/operations/jsxAutoComponents.ts)
 
 状态判断：
 
@@ -192,7 +192,7 @@
 
 #### 5.2.1 `setDataPick`
 
-- 文件：[`packages/ast/src/operations/setDataPick.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/setDataPick.ts)
+- 文件：[`packages/ast/src/operations/setDataPick.ts`](../../packages/ast/src/operations/setDataPick.ts)
 
 代码注释已经明确说明：
 
@@ -208,7 +208,7 @@
 
 #### 5.2.2 `onPageScroll` 性能诊断
 
-- 文件：[`packages/ast/src/operations/onPageScroll.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/operations/onPageScroll.ts)
+- 文件：[`packages/ast/src/operations/onPageScroll.ts`](../../packages/ast/src/operations/onPageScroll.ts)
 
 状态判断：
 
@@ -220,7 +220,7 @@
 
 #### 5.2.3 `wevu` pageFeatures 外部模块分析
 
-- 文件：[`packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
+- 文件：[`packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts`](../../packages/wevu-compiler/src/plugins/wevu/pageFeatures/moduleAnalysis.ts)
 
 该文件注释已经写明：
 
@@ -231,7 +231,7 @@
 
 #### 5.2.4 JSX 编译更深层分析
 
-- 文件：[`packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts)
+- 文件：[`packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts`](../../packages/wevu-compiler/src/plugins/jsx/compileJsx/analysis.ts)
 
 状态判断：
 
@@ -246,7 +246,7 @@
 #### Babel
 
 - 入口主要是 `@babel/parser`
-- 在仓库里通过 [`packages/ast/src/babel.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/babel.ts) 统一包装
+- 在仓库里通过 [`packages/ast/src/babel.ts`](../../packages/ast/src/babel.ts) 统一包装
 - 配套有 `traverse`、`types`、`generator`
 
 #### Oxc
@@ -324,7 +324,7 @@ Babel 目前仍更稳。
 
 ### 7.1 仓库内已有结论
 
-仓库已有文档 [`packages/weapp-vite/docs/oxc-parser-vs-babel-parser.md`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/docs/oxc-parser-vs-babel-parser.md)。
+仓库已有文档 [`packages/weapp-vite/docs/oxc-parser-vs-babel-parser.md`](../../packages/weapp-vite/docs/oxc-parser-vs-babel-parser.md)。
 
 基于 2026-03-15 的本地 benchmark：
 
@@ -339,11 +339,11 @@ Babel 目前仍更稳。
 
 ### 7.2 为什么当前选择 `parseSync`
 
-仓库另有文档 [`packages/weapp-vite/docs/oxc-parser-sync-vs-async.md`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/docs/oxc-parser-sync-vs-async.md)，结论是当前继续使用 `parseSync` 是合理的。
+仓库另有文档 [`packages/weapp-vite/docs/oxc-parser-sync-vs-async.md`](../../packages/weapp-vite/docs/oxc-parser-sync-vs-async.md)，结论是当前继续使用 `parseSync` 是合理的。
 
 当前实现也确实如此：
 
-- Oxc 引擎直接调用 `parseSync`：[`packages/ast/src/engines/oxc.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/engines/oxc.ts)
+- Oxc 引擎直接调用 `parseSync`：[`packages/ast/src/engines/oxc.ts`](../../packages/ast/src/engines/oxc.ts)
 
 这说明项目对 Oxc 的使用是“优先拿吞吐和简单性”，而不是为了异步 API 形式。
 
@@ -386,7 +386,7 @@ Babel 目前仍更稳。
 
 ### 8.3 运行时 helper 兼容已经被单独处理
 
-这次切换里一个很重要但容易被忽略的点，是 `@oxc-project/runtime` helper 的解析兼容已经在 [`packages/weapp-vite/src/runtime/oxcRuntime.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/runtime/oxcRuntime.ts) 中补上，且有测试覆盖 [`packages/weapp-vite/src/runtime/oxcRuntime.test.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/runtime/oxcRuntime.test.ts)。
+这次切换里一个很重要但容易被忽略的点，是 `@oxc-project/runtime` helper 的解析兼容已经在 [`packages/weapp-vite/src/runtime/oxcRuntime.ts`](../../packages/weapp-vite/src/runtime/oxcRuntime.ts) 中补上，且有测试覆盖 [`packages/weapp-vite/src/runtime/oxcRuntime.test.ts`](../../packages/weapp-vite/src/runtime/oxcRuntime.test.ts)。
 
 说明项目并不是只做了“编译期 AST 切换”，而是已经意识到：
 
@@ -401,12 +401,12 @@ Babel 目前仍更稳。
 
 仓库里已有多类测试在保护这次切换：
 
-- 引擎入口测试：[`packages/weapp-vite/test/ast/engine.test.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/ast/engine.test.ts)
-- 双引擎结果对齐测试：[`packages/weapp-vite/test/ast/scriptSetupImports.test.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/ast/scriptSetupImports.test.ts)
-- `setDataPick` 跨引擎结果稳定测试：[`packages/weapp-vite/test/ast/setDataPick.test.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/test/ast/setDataPick.test.ts)
-- Vue transform 配置透传测试：[`packages/weapp-vite/src/plugins/vue/transform/plugin.astEngine.test.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/plugins/vue/transform/plugin.astEngine.test.ts)
-- auto-import metadata 配置透传测试：[`packages/weapp-vite/src/runtime/autoImport/service/metadata.astEngine.test.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/runtime/autoImport/service/metadata.astEngine.test.ts)
-- `packages/ast` 级别的统一行为测试：[`packages/ast/src/index.test.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/ast/src/index.test.ts)
+- 引擎入口测试：[`packages/weapp-vite/test/ast/engine.test.ts`](../../packages/weapp-vite/test/ast/engine.test.ts)
+- 双引擎结果对齐测试：[`packages/weapp-vite/test/ast/scriptSetupImports.test.ts`](../../packages/weapp-vite/test/ast/scriptSetupImports.test.ts)
+- `setDataPick` 跨引擎结果稳定测试：[`packages/weapp-vite/test/ast/setDataPick.test.ts`](../../packages/weapp-vite/test/ast/setDataPick.test.ts)
+- Vue transform 配置透传测试：[`packages/weapp-vite/src/plugins/vue/transform/plugin.astEngine.test.ts`](../../packages/weapp-vite/src/plugins/vue/transform/plugin.astEngine.test.ts)
+- auto-import metadata 配置透传测试：[`packages/weapp-vite/src/runtime/autoImport/service/metadata.astEngine.test.ts`](../../packages/weapp-vite/src/runtime/autoImport/service/metadata.astEngine.test.ts)
+- `packages/ast` 级别的统一行为测试：[`packages/ast/src/index.test.ts`](../../packages/ast/src/index.test.ts)
 
 ### 9.2 这些测试说明了什么
 

@@ -27,7 +27,7 @@
 
 ## Babel 对比基线
 
-为了尽量贴近 `weapp-vite` 当前用法，本次 Babel 测试使用的插件集合与 [src/utils/babel.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/utils/babel.ts) 中的配置保持一致，并额外包含当前辅助解析里常见的：
+为了尽量贴近 `weapp-vite` 当前用法，本次 Babel 测试使用的插件集合与 [src/utils/babel.ts](../src/utils/babel.ts) 中的配置保持一致，并额外包含当前辅助解析里常见的：
 
 - `typescript`
 - `decorators-legacy`
@@ -45,7 +45,7 @@
 
 ### 样本一
 
-文件：[src/runtime/autoImport/weappBuiltinHtmlTagsData.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/runtime/autoImport/weappBuiltinHtmlTagsData.ts)
+文件：[src/runtime/autoImport/weappBuiltinHtmlTagsData.ts](../src/runtime/autoImport/weappBuiltinHtmlTagsData.ts)
 
 - 大小：`106058 bytes`
 - 每轮迭代：`80`
@@ -60,7 +60,7 @@
 
 ### 样本二
 
-文件：[src/runtime/npmPlugin/builder.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/runtime/npmPlugin/builder.ts)
+文件：[src/runtime/npmPlugin/builder.ts](../src/runtime/npmPlugin/builder.ts)
 
 - 大小：`22744 bytes`
 - 每轮迭代：`80`

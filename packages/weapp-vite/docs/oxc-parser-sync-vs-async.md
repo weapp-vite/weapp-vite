@@ -8,11 +8,11 @@
 
 对于 `oxc-parser` 这类 CPU 密集型任务，异步接口并不意味着解析吞吐更高。`parse` 会把 Rust 侧解析放到单独线程，但 AST 反序列化仍需要回到当前线程执行，因此异步接口存在线程调度和 Promise 包装的额外开销。
 
-`weapp-vite` 当前在 [src/ast/engines/oxc.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/ast/engines/oxc.ts) 中继续使用 `parseSync`，这是符合上游实现建议的。
+`weapp-vite` 当前在 [src/ast/engines/oxc.ts](../src/ast/engines/oxc.ts) 中继续使用 `parseSync`，这是符合上游实现建议的。
 
 ## 上游实现依据
 
-`oxc-parser` 在 [node_modules/oxc-parser/src-js/index.js](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/node_modules/oxc-parser/src-js/index.js) 的注释里明确说明：
+`oxc-parser` 在 [node_modules/oxc-parser/src-js/index.js](../node_modules/oxc-parser/src-js/index.js) 的注释里明确说明：
 
 - `parseSync` 在当前线程同步解析。
 - `parse` 会在单独线程做 Rust 侧解析。
@@ -27,7 +27,7 @@
 测试环境：
 
 - 仓库当前依赖版本：`oxc-parser@0.119.0`
-- 样本文件：[src/runtime/autoImport/weappBuiltinHtmlTagsData.ts](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/runtime/autoImport/weappBuiltinHtmlTagsData.ts)
+- 样本文件：[src/runtime/autoImport/weappBuiltinHtmlTagsData.ts](../src/runtime/autoImport/weappBuiltinHtmlTagsData.ts)
 - 文件大小：约 `106 KB`
 - 每轮迭代：`60` 次
 - 轮数：`5`

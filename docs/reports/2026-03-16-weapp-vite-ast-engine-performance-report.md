@@ -19,7 +19,7 @@
 - `oxc-parser`：`0.120.0`
 - `@babel/parser`：`7.29.0`
 - `vitest`：`4.1.0`
-- 仓库：`/Users/yangqiming/Documents/GitHub/weapp-vite`
+- 仓库：`weapp-vite`
 
 ## 3. 测试方法
 
@@ -27,8 +27,8 @@
 
 测试对象：
 
-1. [`packages/weapp-vite/src/runtime/autoImport/weappBuiltinHtmlTagsData.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/runtime/autoImport/weappBuiltinHtmlTagsData.ts)
-2. [`packages/weapp-vite/src/runtime/npmPlugin/builder.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/runtime/npmPlugin/builder.ts)
+1. [`packages/weapp-vite/src/runtime/autoImport/weappBuiltinHtmlTagsData.ts`](../../packages/weapp-vite/src/runtime/autoImport/weappBuiltinHtmlTagsData.ts)
+2. [`packages/weapp-vite/src/runtime/npmPlugin/builder.ts`](../../packages/weapp-vite/src/runtime/npmPlugin/builder.ts)
 
 测试配置：
 
@@ -74,7 +74,7 @@ Babel 插件集合与 `weapp-vite` 当前使用方式保持一致：
 
 ### 4.1 样本一：`weappBuiltinHtmlTagsData.ts`
 
-- 文件：[`packages/weapp-vite/src/runtime/autoImport/weappBuiltinHtmlTagsData.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/runtime/autoImport/weappBuiltinHtmlTagsData.ts)
+- 文件：[`packages/weapp-vite/src/runtime/autoImport/weappBuiltinHtmlTagsData.ts`](../../packages/weapp-vite/src/runtime/autoImport/weappBuiltinHtmlTagsData.ts)
 - 大小：`106058 bytes`
 - 每轮：`80` 次解析
 - 轮数：`7`
@@ -94,7 +94,7 @@ Babel 插件集合与 `weapp-vite` 当前使用方式保持一致：
 
 ### 4.2 样本二：`builder.ts`
 
-- 文件：[`packages/weapp-vite/src/runtime/npmPlugin/builder.ts`](/Users/yangqiming/Documents/GitHub/weapp-vite/packages/weapp-vite/src/runtime/npmPlugin/builder.ts)
+- 文件：[`packages/weapp-vite/src/runtime/npmPlugin/builder.ts`](../../packages/weapp-vite/src/runtime/npmPlugin/builder.ts)
 - 大小：`24482 bytes`
 - 每轮：`80` 次解析
 - 轮数：`7`
