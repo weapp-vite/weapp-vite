@@ -1,6 +1,7 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../context'
 import type { OutputExtensions } from '../../../platforms/types'
+import babel from '@weapp-vite/ast/babelCore'
 import fs from 'fs-extra'
 import { compileJsxFile, compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
 import logger from '../../../logger'
@@ -43,6 +44,7 @@ interface ClassStyleWxsAsset {
 }
 
 const JS_OUTPUT_RE = /\.[cm]?js$/
+const TS_OUTPUT_RE = /\.ts$/
 const SCRIPTLESS_COMPONENT_STUB = 'Component({})'
 
 function getEntryBaseName(filename: string) {
@@ -55,6 +57,18 @@ function getEntryBaseName(filename: string) {
 
 function isAppVueLikeFile(filename: string) {
   return APP_VUE_LIKE_FILE_RE.test(filename)
+}
+
+function transformNativeLayoutScriptToJs(source: string, filename: string) {
+  const result = babel.transformSync(source, {
+    babelrc: false,
+    configFile: false,
+    filename,
+    presets: [
+      ['@babel/preset-typescript'],
+    ],
+  })
+  return result?.code ?? source
 }
 
 async function compileVueLikeFile(options: {
@@ -164,20 +178,24 @@ async function emitNativeLayoutAssetsIfNeeded(options: {
   }
 
   if (assets.script) {
-    if (!JS_OUTPUT_RE.test(assets.script)) {
+    const source = await fs.readFile(assets.script, 'utf8')
+    let scriptSource = source
+    if (TS_OUTPUT_RE.test(assets.script)) {
+      scriptSource = transformNativeLayoutScriptToJs(source, assets.script)
+    }
+    else if (!JS_OUTPUT_RE.test(assets.script)) {
       logger.warn(`[layouts] 原生 layout 脚本目前仅自动发射 JS 文件，已跳过：${assets.script}`)
       return
     }
-    const source = await fs.readFile(assets.script, 'utf8')
     const fileName = `${relativeBase}.${scriptExtension}`
     const existing = bundle[fileName]
     if (existing && existing.type === 'asset') {
-      if ((existing.source?.toString?.() ?? '') !== source) {
-        existing.source = source
+      if ((existing.source?.toString?.() ?? '') !== scriptSource) {
+        existing.source = scriptSource
       }
       return
     }
-    pluginCtx.emitFile({ type: 'asset', fileName, source })
+    pluginCtx.emitFile({ type: 'asset', fileName, source: scriptSource })
   }
 }
 
