@@ -753,6 +753,146 @@ onPageScroll(() => {
     expect((loaded as any).code).toContain('__wevuUnref(')
   })
 
+  it('buildStart() pre-registers native layout chunks for fallback vue pages', async () => {
+    const pageFile = path.join(tmpDir!, 'pages', 'native', 'index.vue')
+    const layoutBase = path.join(tmpDir!, 'layouts', 'native-shell', 'index')
+    await fs.ensureDir(path.dirname(pageFile))
+    await fs.ensureDir(path.dirname(layoutBase))
+    await fs.writeFile(
+      pageFile,
+      `<script setup>definePageMeta({ layout: { name: 'native-shell' } })</script><template><view /></template>`,
+      'utf8',
+    )
+    await fs.writeFile(`${layoutBase}.wxml`, '<view><slot /></view>', 'utf8')
+    await fs.writeFile(`${layoutBase}.json`, JSON.stringify({ component: true }, null, 2), 'utf8')
+    await fs.writeFile(`${layoutBase}.wxss`, '.shell {}', 'utf8')
+    await fs.writeFile(`${layoutBase}.ts`, 'Component({})', 'utf8')
+
+    collectFallbackPageEntryIdsMock.mockResolvedValue([pageFile.slice(0, -4)])
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        absoluteSrcRoot: tmpDir!,
+        isDev: false,
+        platform: 'weapp',
+        relativeOutputPath: (abs: string) => path.relative(tmpDir!, abs),
+        outputExtensions: { js: 'js', json: 'json', wxml: 'wxml', wxss: 'wxss' },
+        weappViteConfig: {},
+      },
+      scanService: { appEntry: { json: { pages: ['pages/native/index'] } } },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+    const emitFile = vi.fn()
+    const addWatchFile = vi.fn()
+
+    await plugin.buildStart?.call({ emitFile, addWatchFile } as any)
+
+    expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id: `${layoutBase}.ts`,
+      fileName: 'layouts/native-shell/index.js',
+    }))
+    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(layoutBase))
+    expect(addWatchFile).toHaveBeenCalledWith(normalizeWatchPath(`${layoutBase}.ts`))
+  })
+
+  it('generateBundle() keeps native layout emission asset-only after chunk pre-registration', async () => {
+    const pageMatcher = {
+      markDirty: vi.fn(),
+      isPageFile: vi.fn(async () => true),
+    }
+    createPageEntryMatcherMock.mockReturnValue(pageMatcher)
+    compileVueFileMock.mockResolvedValue({
+      script: 'export default {}',
+      meta: {},
+      template: '<view />',
+      config: '{"navigationBarTitleText":"native"}',
+    })
+    injectPageFeaturesMock.mockResolvedValue({ transformed: false, code: 'export default {}' })
+
+    const pageFile = path.join(tmpDir!, 'pages', 'native', 'index.vue')
+    const layoutBase = path.join(tmpDir!, 'layouts', 'native-shell', 'index')
+    await fs.ensureDir(path.dirname(pageFile))
+    await fs.ensureDir(path.dirname(layoutBase))
+    await fs.writeFile(
+      pageFile,
+      `<script setup>definePageMeta({ layout: { name: 'native-shell' } })</script><template><view /></template>`,
+      'utf8',
+    )
+    await fs.writeFile(`${layoutBase}.wxml`, '<view><slot /></view>', 'utf8')
+    await fs.writeFile(`${layoutBase}.json`, JSON.stringify({ component: true }, null, 2), 'utf8')
+    await fs.writeFile(`${layoutBase}.wxss`, '.shell {}', 'utf8')
+    await fs.writeFile(`${layoutBase}.ts`, 'Component({})', 'utf8')
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      configService: {
+        cwd: tmpDir!,
+        absoluteSrcRoot: tmpDir!,
+        isDev: false,
+        platform: 'weapp',
+        relativeOutputPath: (abs: string) => path.relative(tmpDir!, abs),
+        outputExtensions: { js: 'js', json: 'json', wxml: 'wxml', wxss: 'wxss' },
+        weappViteConfig: { json: {} },
+      },
+      scanService: { appEntry: { json: { pages: ['pages/native/index'] } } },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+    const transformEmitFile = vi.fn()
+
+    await plugin.transform!.call(
+      { addWatchFile: vi.fn(), emitFile: transformEmitFile } as any,
+      await fs.readFile(pageFile, 'utf8'),
+      pageFile,
+    )
+
+    const generateBundleEmitFile = vi.fn((payload: any) => {
+      if (payload.type === 'chunk') {
+        throw new Error('chunk emission is not allowed in generateBundle')
+      }
+    })
+    await expect(
+      plugin.generateBundle!.call(
+        { addWatchFile: vi.fn(), emitFile: generateBundleEmitFile } as any,
+        {},
+        {},
+      ),
+    ).resolves.toBeUndefined()
+
+    expect(transformEmitFile).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id: `${layoutBase}.ts`,
+      fileName: 'layouts/native-shell/index.js',
+    }))
+    expect(emitSfcTemplateIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'layouts/native-shell/index',
+      expect.any(String),
+      'wxml',
+    )
+    expect(emitSfcStyleIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'layouts/native-shell/index',
+      expect.any(String),
+      'wxss',
+    )
+    expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'layouts/native-shell/index',
+      expect.objectContaining({
+        config: expect.any(String),
+      }),
+      expect.objectContaining({
+        kind: 'component',
+      }),
+    )
+  })
+
   it('transform() rethrows compilation errors', async () => {
     compileVueFileMock.mockRejectedValue(new Error('boom'))
 

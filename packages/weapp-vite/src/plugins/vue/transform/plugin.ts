@@ -16,8 +16,9 @@ import { getSfcCheckMtime, readAndParseSfc } from '../../utils/vueSfc'
 import { createPageEntryMatcher } from '../../wevu'
 import { VUE_PLUGIN_NAME } from '../index'
 import { getSourceFromVirtualId } from '../resolver'
-import { emitVueBundleAssets } from './bundle'
+import { emitNativeLayoutScriptChunkIfNeeded, emitVueBundleAssets } from './bundle'
 import { createCompileVueFileOptions } from './compileOptions'
+import { collectFallbackPageEntryIds } from './fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from './injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from './injectSetDataPick'
 import { applyPageLayoutPlan, collectNativeLayoutAssets, isLayoutFile, resolvePageLayoutPlan } from './pageLayout'
@@ -56,6 +57,49 @@ function registerVueTemplateToken(
   }
 }
 
+async function registerNativeLayoutChunksForEntry(
+  pluginCtx: any,
+  ctx: CompilerContext,
+  filename: string,
+  source: string,
+) {
+  const configService = ctx.configService
+  if (!configService) {
+    return
+  }
+
+  const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
+  if (!resolvedLayoutPlan) {
+    return
+  }
+
+  if (typeof pluginCtx.addWatchFile === 'function') {
+    for (const layout of resolvedLayoutPlan.layouts) {
+      pluginCtx.addWatchFile(normalizeWatchPath(layout.file))
+      if (layout.kind === 'native') {
+        const nativeAssets = await collectNativeLayoutAssets(layout.file)
+        for (const asset of Object.values(nativeAssets)) {
+          if (asset) {
+            pluginCtx.addWatchFile(normalizeWatchPath(asset))
+          }
+        }
+      }
+    }
+  }
+
+  for (const layout of resolvedLayoutPlan.layouts) {
+    if (layout.kind !== 'native') {
+      continue
+    }
+    await emitNativeLayoutScriptChunkIfNeeded({
+      pluginCtx,
+      layoutBasePath: layout.file,
+      configService,
+      outputExtensions: configService.outputExtensions,
+    })
+  }
+}
+
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const compilationCache = new Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>()
   let pageMatcher: ReturnType<typeof createPageEntryMatcher> | null = null
@@ -86,9 +130,33 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
 
-    buildStart() {
+    async buildStart() {
       scopedSlotModules.clear()
       emittedScopedSlotChunks.clear()
+
+      const configService = ctx.configService
+      const scanService = ctx.scanService
+      if (!configService || !scanService) {
+        return
+      }
+
+      const entryIds = await collectFallbackPageEntryIds(configService, scanService)
+      for (const entryId of entryIds) {
+        const candidatePaths = [`${entryId}.vue`, `${entryId}.tsx`, `${entryId}.jsx`]
+        for (const candidate of candidatePaths) {
+          if (!await fs.pathExists(candidate)) {
+            continue
+          }
+          try {
+            const source = await fs.readFile(candidate, 'utf8')
+            await registerNativeLayoutChunksForEntry(this, ctx, candidate, source)
+          }
+          catch {
+            // 忽略预扫描失败，交给后续 transform/generateBundle 兜底
+          }
+          break
+        }
+      }
     },
 
     resolveId(id) {
@@ -264,20 +332,8 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
           const resolvedLayoutPlan = await resolvePageLayoutPlan(transformedSource, filename, configService)
           if (resolvedLayoutPlan) {
             applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
-            if (typeof (this as any).addWatchFile === 'function') {
-              for (const layout of resolvedLayoutPlan.layouts) {
-                ;(this as any).addWatchFile(normalizeWatchPath(layout.file))
-                if (layout.kind === 'native') {
-                  const nativeAssets = await collectNativeLayoutAssets(layout.file)
-                  for (const asset of Object.values(nativeAssets)) {
-                    if (asset) {
-                      ;(this as any).addWatchFile(normalizeWatchPath(asset))
-                    }
-                  }
-                }
-              }
-            }
           }
+          await registerNativeLayoutChunksForEntry(this, ctx, filename, transformedSource)
         }
         registerVueTemplateToken(ctx, filename, result.template)
 

@@ -1211,9 +1211,6 @@ export default {
     })
 
     const assets = new Map<string, string>()
-    const emittedChunks = emitFile.mock.calls
-      .map(call => call[0])
-      .filter((asset: any) => asset.type === 'chunk')
     for (const call of emitFile.mock.calls) {
       const asset = call[0]
       if (asset.type === 'asset') {
@@ -1233,14 +1230,9 @@ export default {
     })
     expect(assets.get('layouts/native-shell/index.wxml')).toContain('<slot />')
     expect(assets.get('layouts/native-shell/index.wxss')).toContain('.shell')
-    expect(emittedChunks).toContainEqual(expect.objectContaining({
-      type: 'chunk',
-      id: `${nativeLayoutBase}.js`,
-      fileName: 'layouts/native-shell/index.js',
-    }))
   })
 
-  it('emits native layout ts scripts as fixed-path chunks', async () => {
+  it('does not emit native layout chunks during bundle emission', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')
     const nativeLayoutBase = path.join(srcRoot, 'layouts', 'native-shell', 'index')
@@ -1306,10 +1298,6 @@ export default {
       .map(call => call[0])
       .filter((asset: any) => asset.type === 'chunk')
 
-    expect(emittedChunks).toContainEqual(expect.objectContaining({
-      type: 'chunk',
-      id: `${nativeLayoutBase}.ts`,
-      fileName: 'layouts/native-shell/index.js',
-    }))
+    expect(emittedChunks).toEqual([])
   })
 })
