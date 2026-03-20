@@ -32,7 +32,7 @@
   "dependencies": {
     "echarts": "catalog:",
     "vue": "catalog:",
-    "vue-router": "5.0.2"
+    "vue-router": "5.0.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
