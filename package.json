@@ -163,7 +163,7 @@
     "defu": "^6.1.4",
     "es-toolkit": "^1.45.1",
     "esbuild": "catalog:",
-    "eslint": "^10.0.3",
+    "eslint": "^10.1.0",
     "esrap": "^2.2.4",
     "estree-walker": "catalog:",
     "execa": "^9.6.1",

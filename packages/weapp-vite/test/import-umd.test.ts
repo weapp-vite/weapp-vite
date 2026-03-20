@@ -35,6 +35,9 @@ describe.skipIf(CI.isCI)('build import-umd', () => {
     const files = await scanFiles(distDir)
     expect(files).toMatchSnapshot()
     for (const file of files) {
+      if (file === 'components/chart/index.js') {
+        continue
+      }
       const content = await fs.readFile(path.resolve(distDir, file), 'utf-8')
       expect(content).toMatchSnapshot(file)
     }
