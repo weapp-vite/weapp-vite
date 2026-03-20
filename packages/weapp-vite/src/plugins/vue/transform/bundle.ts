@@ -124,6 +124,40 @@ async function compileVueLikeFile(options: {
   return result
 }
 
+export async function emitNativeLayoutScriptChunkIfNeeded(options: {
+  pluginCtx: any
+  layoutBasePath: string
+  configService: NonNullable<CompilerContext['configService']>
+  outputExtensions: OutputExtensions | undefined
+}) {
+  const { pluginCtx, layoutBasePath, configService, outputExtensions } = options
+  const relativeBase = configService.relativeOutputPath(layoutBasePath)
+  if (!relativeBase) {
+    return
+  }
+
+  const assets = await collectNativeLayoutAssets(layoutBasePath)
+  if (!assets.script) {
+    return
+  }
+
+  const scriptExtension = outputExtensions?.js ?? 'js'
+  const fileName = `${relativeBase}.${scriptExtension}`
+  const emittedLayoutScripts: Set<string> = (pluginCtx as any).__weappViteNativeLayoutScripts ?? ((pluginCtx as any).__weappViteNativeLayoutScripts = new Set<string>())
+  if (emittedLayoutScripts.has(fileName)) {
+    return
+  }
+
+  emittedLayoutScripts.add(fileName)
+  pluginCtx.emitFile({
+    type: 'chunk',
+    id: assets.script,
+    fileName,
+    // @ts-ignore Rolldown 的 PluginContext 类型不完整
+    preserveSignature: 'exports-only',
+  })
+}
+
 async function emitNativeLayoutAssetsIfNeeded(options: {
   pluginCtx: any
   bundle: Record<string, any>
@@ -141,7 +175,6 @@ async function emitNativeLayoutAssetsIfNeeded(options: {
   const jsonExtension = outputExtensions?.json ?? 'json'
   const templateExtension = outputExtensions?.wxml ?? 'wxml'
   const styleExtension = outputExtensions?.wxss ?? 'wxss'
-  const scriptExtension = outputExtensions?.js ?? 'js'
 
   if (assets.json) {
     const source = await fs.readFile(assets.json, 'utf8')
@@ -160,22 +193,6 @@ async function emitNativeLayoutAssetsIfNeeded(options: {
   if (assets.style) {
     const source = await fs.readFile(assets.style, 'utf8')
     emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, source, styleExtension)
-  }
-
-  if (assets.script) {
-    const fileName = `${relativeBase}.${scriptExtension}`
-    const emittedLayoutScripts: Set<string> = (pluginCtx as any).__weappViteNativeLayoutScripts ?? ((pluginCtx as any).__weappViteNativeLayoutScripts = new Set<string>())
-    if (emittedLayoutScripts.has(fileName)) {
-      return
-    }
-    emittedLayoutScripts.add(fileName)
-    pluginCtx.emitFile({
-      type: 'chunk',
-      id: assets.script,
-      fileName,
-      // @ts-ignore Rolldown 的 PluginContext 类型不完整
-      preserveSignature: 'exports-only',
-    })
   }
 }
 
