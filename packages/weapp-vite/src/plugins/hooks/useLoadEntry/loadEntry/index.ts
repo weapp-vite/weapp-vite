@@ -13,7 +13,7 @@ import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { isPathInside, normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
-import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
+import { collectNativeLayoutAssets, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
 import { createEntryResolver } from './resolve'
@@ -139,6 +139,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     let pluginJsonForRegistration: any
     let appResult: Awaited<ReturnType<typeof collectAppEntries>> | undefined
     let shouldSkipAppEntries = false
+    const nativeLayoutScriptEntries = new Set<string>()
     const autoRoutesSignature = configService.isDev
       ? ctx.autoRoutesService?.getSignature?.()
       : undefined
@@ -233,6 +234,17 @@ export function createEntryLoader(options: EntryLoaderOptions) {
             for (const layout of layoutPlan.layouts) {
               this.addWatchFile(normalizeWatchPath(layout.file))
               if (layout.kind === 'native') {
+                const nativeAssets = await collectNativeLayoutAssets(layout.file)
+                for (const asset of Object.values(nativeAssets)) {
+                  if (asset) {
+                    this.addWatchFile(normalizeWatchPath(asset))
+                  }
+                }
+                if (nativeAssets.script) {
+                  entries.push(layout.importPath)
+                  nativeLayoutScriptEntries.add(normalizeEntry(layout.importPath, jsonPath))
+                  explicitEntryTypes.set(normalizeEntry(layout.importPath, jsonPath), 'component')
+                }
                 continue
               }
               entries.push(layout.importPath)
@@ -284,6 +296,14 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           entryType: entryTypeOverride,
           explicitEntryTypes,
         })
+
+    for (const nativeLayoutEntry of nativeLayoutScriptEntries) {
+      const mapped = entriesMap.get(nativeLayoutEntry)
+      if (!mapped) {
+        continue
+      }
+      mapped.type = 'component'
+    }
 
     const entryResolveRoot = (
       isPluginBuild
