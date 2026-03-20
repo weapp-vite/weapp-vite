@@ -1,6 +1,7 @@
 import type { MutableCompilerContext } from '../../context'
 import type { OutputExtensions } from '../../platforms/types'
 import type { ConfigService, LoadConfigOptions, LoadConfigResult } from './types'
+import fs from 'node:fs'
 import process from 'node:process'
 import { defu, removeExtensionDeep } from '@weapp-core/shared'
 import { getPackageInfoSync } from 'local-pkg'
@@ -26,6 +27,15 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   const builtinAliases = resolveBuiltinPackageAliases()
   const oxcRuntimeSupport = createOxcRuntimeSupport()
   const aliasManager = createAliasManager(oxcRuntimeSupport.alias, builtinAliases)
+
+  const normalizeComparablePath = (input: string) => {
+    try {
+      return normalizeRelativePath(fs.realpathSync.native(input))
+    }
+    catch {
+      return normalizeRelativePath(path.resolve(input))
+    }
+  }
 
   const resolveAbsolutePluginRoot = () => {
     const pluginRootConfig = options.config.weapp?.pluginRoot
@@ -297,9 +307,11 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
     },
     relativeAbsoluteSrcRoot(p: string) {
       const absoluteSrcRoot = path.resolve(options.cwd, options.srcRoot)
+      const comparableTarget = normalizeComparablePath(p)
+      const comparableSrcRoot = normalizeComparablePath(absoluteSrcRoot)
       const absolutePluginRoot = resolveAbsolutePluginRoot()
       if (absolutePluginRoot) {
-        const relativeToPlugin = normalizeRelativePath(path.relative(absolutePluginRoot, p))
+        const relativeToPlugin = normalizeRelativePath(path.relative(normalizeComparablePath(absolutePluginRoot), comparableTarget))
         if (!relativeToPlugin.startsWith('..')) {
           if (options.pluginOnly) {
             return relativeToPlugin
@@ -310,12 +322,12 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
         }
       }
 
-      const relativeFromSrc = normalizeRelativePath(path.relative(absoluteSrcRoot, p))
+      const relativeFromSrc = normalizeRelativePath(path.relative(comparableSrcRoot, comparableTarget))
       if (!relativeFromSrc.startsWith('..')) {
         return relativeFromSrc
       }
 
-      const relativeFromCwd = normalizeRelativePath(path.relative(options.cwd, p))
+      const relativeFromCwd = normalizeRelativePath(path.relative(normalizeComparablePath(options.cwd), comparableTarget))
       return relativeFromCwd
     },
     relativeOutputPath(p: string) {

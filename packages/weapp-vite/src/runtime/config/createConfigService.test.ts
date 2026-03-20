@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createConfigService } from './createConfigService'
@@ -254,6 +255,30 @@ describe('createConfigService', () => {
 
     expect(service.relativeAbsoluteSrcRoot('/project/src/pages/index.ts')).toBe('pages/index.ts')
     expect(service.relativeAbsoluteSrcRoot('/project/other/file.ts')).toBe('other/file.ts')
+  })
+
+  it('normalizes symlinked temp paths before computing src-relative output names', () => {
+    const nativeSpy = vi.spyOn(fs.realpathSync, 'native').mockImplementation((input: fs.PathLike) => {
+      const next = String(input)
+      if (input === '/var/folders/demo/project/src') {
+        return '/private/var/folders/demo/project/src'
+      }
+      if (input === '/var/folders/demo/project') {
+        return '/private/var/folders/demo/project'
+      }
+      return next
+    })
+
+    const service = createConfigService(createCtx({
+      cwd: '/var/folders/demo/project',
+      srcRoot: 'src',
+      relativeSrcRoot: (p: string) => path.relative('/var/folders/demo/project/src', p) || '.',
+    }))
+
+    expect(service.relativeAbsoluteSrcRoot('/private/var/folders/demo/project/src/app.vue')).toBe('app.vue')
+    expect(service.relativeAbsoluteSrcRoot('/private/var/folders/demo/project/src/app.json')).toBe('app.json')
+
+    nativeSpy.mockRestore()
   })
 
   it('switches define env to web runtime via mergeWeb factory hook', () => {
