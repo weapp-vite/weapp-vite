@@ -7,7 +7,6 @@ import { fileURLToPath } from 'node:url'
 
 import { parse } from 'yaml'
 
-const EXPECTED_ROLLDOWN_REQUIRE_PEER = '1.0.0-rc.10'
 const DEFAULT_MODE = 'strict'
 let ansiEnabled = true
 const ANSI = {
@@ -175,6 +174,51 @@ function readLockfile(projectRoot) {
   return parse(readFileSync(lockfilePath, 'utf8'))
 }
 
+function collectViteRolldownVersions(lockfile) {
+  const snapshots = lockfile.snapshots ?? {}
+  const versions = new Map()
+
+  for (const [snapshotKey, snapshot] of Object.entries(snapshots)) {
+    if (!snapshotKey.startsWith('vite@')) {
+      continue
+    }
+    const version = snapshot.dependencies?.rolldown
+    if (typeof version !== 'string' || isExternalReference(version)) {
+      continue
+    }
+    const resolvedVersion = stripPeerSuffix(version)
+    const requiredBy = versions.get(resolvedVersion) ?? new Set()
+    requiredBy.add(snapshotKey)
+    versions.set(resolvedVersion, requiredBy)
+  }
+
+  return new Map([...versions.entries()].sort((a, b) => a[0].localeCompare(b[0])))
+}
+
+function resolveExpectedRolldownRequirePeer(lockfile) {
+  const viteRolldownVersions = collectViteRolldownVersions(lockfile)
+  if (viteRolldownVersions.size === 0) {
+    throw new Error(
+      [
+        'failed to resolve rolldown version from vite snapshots in pnpm-lock.yaml',
+        'expected at least one vite snapshot with dependencies.rolldown',
+      ].join('\n'),
+    )
+  }
+
+  if (viteRolldownVersions.size > 1) {
+    throw new Error(
+      [
+        'multiple vite rolldown versions detected in pnpm-lock.yaml',
+        `versions: ${[...viteRolldownVersions.keys()].join(', ')}`,
+        'rolldown-require peer must match a single vite rolldown version',
+      ].join('\n'),
+    )
+  }
+
+  return [...viteRolldownVersions.keys()][0]
+}
+
 function readPackageJson(filePath) {
   if (!existsSync(filePath)) {
     throw new Error(`package.json not found: ${filePath}`)
@@ -201,15 +245,16 @@ function findWorkspaceRoot(from) {
   throw new Error(`workspace root not found from: ${from}`)
 }
 
-function verifyRolldownRequirePeer(projectRoot) {
+function verifyRolldownRequirePeer(projectRoot, lockfile = readLockfile(projectRoot)) {
   const packageJsonPath = path.join(projectRoot, 'packages/rolldown-require/package.json')
   const packageJson = readPackageJson(packageJsonPath)
+  const expected = resolveExpectedRolldownRequirePeer(lockfile)
   const actual = packageJson.peerDependencies?.rolldown
-  if (actual !== EXPECTED_ROLLDOWN_REQUIRE_PEER) {
+  if (actual !== expected) {
     throw new Error(
       [
         'packages/rolldown-require peerDependencies.rolldown is out of date',
-        `expected: ${EXPECTED_ROLLDOWN_REQUIRE_PEER}`,
+        `expected: ${expected}`,
         `actual: ${String(actual)}`,
         `file: ${packageJsonPath}`,
       ].join('\n'),
@@ -270,9 +315,11 @@ function main(options = {}) {
 
 export {
   collectRolldownVersions,
+  collectViteRolldownVersions,
   formatRolldownVersionReport,
   main,
   resolveAnsiEnabled,
+  resolveExpectedRolldownRequirePeer,
   resolveMode,
   stripPeerSuffix,
   verifyRolldownRequirePeer,
