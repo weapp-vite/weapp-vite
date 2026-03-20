@@ -6,6 +6,7 @@ const CI_TEST_GLOB = path.resolve(import.meta.dirname, './ci/**/*.test.ts').repl
 
 const DEV_WATCH_EXCLUDE = [
   './ci/hmr-*.test.ts',
+  './ci/auto-routes-hmr.test.ts',
   './ci/auto-import-vue-sfc.test.ts',
   './ci/style-import-vue.test.ts',
   './ci/wevu-runtime.hmr.test.ts',
