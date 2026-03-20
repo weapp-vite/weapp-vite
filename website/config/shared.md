@@ -22,6 +22,7 @@ keywords:
 - `weapp.mcp`：AI 协作时的 MCP 服务开关与监听配置
 
 组件自动导入已经拆到 [自动导入组件配置](/config/auto-import-components.md) 单独说明。
+共享 chunk 策略已经拆到 [共享 Chunk 配置](/config/chunks.md) 单独说明。
 
 [[toc]]
 
@@ -415,44 +416,9 @@ export default defineConfig({
 - `false`: 关闭。
 - `auto`: 检测到安装 `weapp-tailwindcss` 时启用。
 
-## `weapp.chunks` {#weapp-chunks}
-- **类型**：`ChunksConfig`
-- **适用场景**：控制跨分包共享代码如何输出，降低重复体积或减少主包依赖。
-
-```ts
-import { defineConfig } from 'weapp-vite/config'
-
-export default defineConfig({
-  weapp: {
-    chunks: {
-      sharedStrategy: 'duplicate',
-      sharedMode: 'common',
-      sharedOverrides: [{ test: 'components/**', mode: 'path' }],
-      sharedPathRoot: 'src',
-      dynamicImports: 'preserve',
-      logOptimization: true,
-      forceDuplicatePatterns: ['components/**', /legacy\//],
-      duplicateWarningBytes: 512 * 1024,
-    },
-  },
-})
-```
-
-字段说明：
-
-- `sharedStrategy`: `duplicate`（默认）复制到各分包，或 `hoist` 提到主包。
-- `sharedMode`: `common`（默认）输出 `common.js`，`path` 按源码路径输出，`inline` 内联到引用方。
-- `sharedOverrides`: 针对特定模块覆盖 `sharedMode` 的规则数组（`test` 支持字符串或正则）。
-- `sharedPathRoot`: `sharedMode: 'path'` 时用于计算输出路径的根目录（相对 `cwd`）。
-- `dynamicImports`: `preserve`（默认）保留动态 chunk，`inline` 尝试内联动态 import。
-- `logOptimization`: 输出分包优化日志，帮助确认复制/回退位置。
-- `forceDuplicatePatterns`: 强制按分包复制的模块匹配规则（字符串或正则）。
-- `duplicateWarningBytes`: 冗余体积超过阈值时发出警告；设置为 `0` 关闭。
-
-详细用法与示例请参考：[共享 Chunk 策略](/guide/chunks)。
-
 ## 关联阅读
 
 - [WXML 配置](/config/wxml.md)：了解模板增强与组件扫描的协作方式。
 - [WXS 配置](/config/wxs.md)：掌握脚本增强开关与调试方法。
 - [npm 配置](/config/npm.md)：在调试过程中同时控制 npm 构建策略。
+- [共享 Chunk 配置](/config/chunks.md)：控制跨分包共享代码如何输出与治理。

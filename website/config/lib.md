@@ -156,7 +156,7 @@ export default defineConfig({
 
 ## 注意事项
 
-- lib 模式同样会应用 `weapp.chunks` 配置；多入口共享模块时是否生成 `common.js` 仍受 `sharedMode` 控制。
+- lib 模式同样会应用 [`weapp.chunks`](/config/chunks.md) 配置；多入口共享模块时是否生成 `common.js` 仍受 `sharedMode` 控制。
 - 若你同时需要“本地调试 App”和“发布组件库”，推荐拆成两份配置文件：例如 `vite.config.ts` 负责调试，`weapp-vite.lib.config.ts` 负责发布。
 - 若入口路径最终映射到同一个输出文件名，构建会报冲突错误；优先检查 `preservePath` 与 `fileName` 的组合。
 

@@ -59,7 +59,8 @@ export default defineConfig({
 | [WXML 配置](./wxml.md) | WXML 扫描与模板处理行为 |
 | [WXS 配置](./wxs.md) <span class="wv-badge wv-badge--experimental">experimental</span> | WXS 处理与调试建议 |
 | [自动导入组件配置](./auto-import-components.md) | `weapp.autoImportComponents` 字段与产物输出 |
-| [共享配置](./shared.md) | 自动路由、Wevu 默认值、`injectWeapi`、日志、HMR 与 chunk |
+| [共享 Chunk 配置](./chunks.md) | `weapp.chunks` 的输出策略、`common.js` 治理、分包共享优化 |
+| [共享配置](./shared.md) | 自动路由、Wevu 默认值、`injectWeapi`、日志、HMR 与 MCP |
 | [Web 运行时配置](./web.md) <span class="wv-badge wv-badge--experimental">experimental</span> | `weapp.web` 浏览器端预览与调试 |
 
 > 仍在寻找 Vite 原生配置？可直接参考 [Vite 官方配置文档](https://cn.vitejs.dev/config/)。
