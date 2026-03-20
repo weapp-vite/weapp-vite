@@ -29,11 +29,30 @@ function createConfigService(ctx: MutableCompilerContext): ConfigService {
   const aliasManager = createAliasManager(oxcRuntimeSupport.alias, builtinAliases)
 
   const normalizeComparablePath = (input: string) => {
+    const resolved = path.resolve(input)
     try {
-      return normalizeRelativePath(fs.realpathSync.native(input))
+      return normalizeRelativePath(fs.realpathSync.native(resolved))
     }
     catch {
-      return normalizeRelativePath(path.resolve(input))
+      const suffixParts: string[] = []
+      let cursor = resolved
+      let parent = path.dirname(cursor)
+
+      while (parent !== cursor && !fs.existsSync(cursor)) {
+        suffixParts.unshift(path.basename(cursor))
+        cursor = parent
+        parent = path.dirname(cursor)
+      }
+
+      try {
+        const normalizedBase = normalizeRelativePath(fs.realpathSync.native(cursor))
+        return suffixParts.length > 0
+          ? normalizeRelativePath(path.join(normalizedBase, ...suffixParts))
+          : normalizedBase
+      }
+      catch {
+        return normalizeRelativePath(resolved)
+      }
     }
   }
 

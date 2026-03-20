@@ -1,6 +1,7 @@
 import type { File as BabelFile } from '@weapp-vite/ast/babelTypes'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { ConfigService } from '../../../runtime/config/types'
+import fsNative from 'node:fs'
 import * as t from '@weapp-vite/ast/babelTypes'
 import fs from 'fs-extra'
 import path from 'pathe'
@@ -66,6 +67,32 @@ interface ResolvedLayoutMeta {
   name?: string
   props?: Record<string, LayoutPropValue>
   disabled?: boolean
+}
+
+function normalizeComparablePath(input: string) {
+  const resolved = path.resolve(input)
+  try {
+    return toPosixPath(fsNative.realpathSync.native(resolved))
+  }
+  catch {
+    const suffixParts: string[] = []
+    let cursor = resolved
+    let parent = path.dirname(cursor)
+
+    while (parent !== cursor && !fsNative.existsSync(cursor)) {
+      suffixParts.unshift(path.basename(cursor))
+      cursor = parent
+      parent = path.dirname(cursor)
+    }
+
+    try {
+      const normalizedBase = toPosixPath(fsNative.realpathSync.native(cursor))
+      return suffixParts.length > 0 ? toPosixPath(path.join(normalizedBase, ...suffixParts)) : normalizedBase
+    }
+    catch {
+      return toPosixPath(resolved)
+    }
+  }
 }
 
 function toKebabCase(input: string) {
@@ -484,6 +511,7 @@ function compareRuleScore(left: number[], right: number[]) {
 
 async function collectLayoutFiles(root: string): Promise<Map<string, DiscoveredLayoutFile>> {
   const layoutMap = new Map<string, DiscoveredLayoutFile>()
+  const comparableRoot = normalizeComparablePath(root)
 
   async function walk(dir: string) {
     let entries: string[]
@@ -513,7 +541,7 @@ async function collectLayoutFiles(root: string): Promise<Map<string, DiscoveredL
           continue
         }
 
-        const relativePath = path.relative(root, base)
+        const relativePath = path.relative(comparableRoot, normalizeComparablePath(base))
         const parts = relativePath.split(PATH_SEGMENT_RE).filter(Boolean)
         if (parts.at(-1) === 'index') {
           parts.pop()
@@ -535,7 +563,7 @@ async function collectLayoutFiles(root: string): Promise<Map<string, DiscoveredL
         continue
       }
 
-      const relativePath = path.relative(root, full)
+      const relativePath = path.relative(comparableRoot, normalizeComparablePath(full))
       const ext = path.extname(relativePath)
       const withoutExt = relativePath.slice(0, -ext.length)
       const parts = withoutExt.split(PATH_SEGMENT_RE).filter(Boolean)
