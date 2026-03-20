@@ -1,3 +1,4 @@
+---
 'create-weapp-vite': patch
 'weapp-vite-wevu-tailwindcss-tdesign-retail-template': patch
 ---
