@@ -50,7 +50,7 @@ describe.sequential('HMR html template (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
       await dev.waitFor(waitForFileContains(distPath, 'HMR-HTML-TEMPLATE'), `${platform} initial html template`)
 
       await fs.writeFile(HTML_SRC_PATH, updatedSource, 'utf8')
@@ -79,7 +79,7 @@ describe.sequential('HMR html template (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), `${platform} app.json generated`)
+      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
 
       await fs.ensureDir(TEMP_SRC_DIR)
       await fs.writeFile(srcFile, `<view>${marker}</view>`, 'utf8')

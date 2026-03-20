@@ -31,5 +31,5 @@ export async function cleanupResidualDevProcesses() {
     stderr: 'ignore',
   })
 
-  await sleep(120)
+  await sleep(1_000)
 }
