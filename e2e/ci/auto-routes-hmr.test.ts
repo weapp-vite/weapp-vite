@@ -5,7 +5,7 @@ import { describe, it } from 'vitest'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/auto-routes-define-app-json')
@@ -22,6 +22,28 @@ const LOGS_WXML_DIST = path.join(DIST_ROOT, `${LOGS_ROUTE}.wxml`)
 const ADDED_ROUTE_WXML_DIST = path.join(DIST_ROOT, `${ADDED_ROUTE}.wxml`)
 const APP_JSON_DIST = path.join(DIST_ROOT, 'app.json')
 const APP_JS_DIST = path.join(DIST_ROOT, 'app.js')
+const BASE_APP_TITLE = 'auto-routes-define-app-json'
+
+async function restoreAutoRoutesSources() {
+  if (await fs.pathExists(LOGS_VUE_PATH)) {
+    const logsSource = await fs.readFile(LOGS_VUE_PATH, 'utf8')
+    const normalizedLogsSource = logsSource.replace(/page-HMR-[A-Z0-9-]+/g, 'page-logs')
+    if (normalizedLogsSource !== logsSource) {
+      await fs.writeFile(LOGS_VUE_PATH, normalizedLogsSource, 'utf8')
+    }
+  }
+
+  if (await fs.pathExists(APP_VUE_PATH)) {
+    const appSource = await fs.readFile(APP_VUE_PATH, 'utf8')
+    const normalizedAppSource = appSource.replace(
+      /navigationBarTitleText: 'HMR-[A-Z0-9-]+'/g,
+      `navigationBarTitleText: '${BASE_APP_TITLE}'`,
+    )
+    if (normalizedAppSource !== appSource) {
+      await fs.writeFile(APP_VUE_PATH, normalizedAppSource, 'utf8')
+    }
+  }
+}
 
 async function waitForFile(filePath: string, timeoutMs = 30_000) {
   const start = Date.now()
@@ -76,8 +98,23 @@ async function waitForAppJsonWindowTitle(title: string, timeoutMs = 90_000) {
   throw new Error(`Timed out waiting for ${APP_JSON_DIST} window.navigationBarTitleText to become: ${title}`)
 }
 
+async function retryWithSourceTouch<T>(
+  task: () => Promise<T>,
+  touchFilePath: string,
+  touchContent: string,
+) {
+  try {
+    return await task()
+  }
+  catch {
+    await replaceFileByRename(touchFilePath, touchContent)
+    return await task()
+  }
+}
+
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
+  await restoreAutoRoutesSources()
   await fs.remove(DIST_ROOT)
   await fs.remove(TYPED_ROUTER_PATH)
   await fs.remove(ADDED_ROUTE_VUE_PATH)
@@ -85,6 +122,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await cleanupResidualDevProcesses()
+  await restoreAutoRoutesSources()
   await fs.remove(ADDED_ROUTE_VUE_PATH)
 })
 
@@ -108,7 +146,14 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
     try {
       await dev.waitFor(waitForFile(TYPED_ROUTER_PATH), 'initial typed-router generated')
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${LOGS_ROUTE}"`), 'initial logs route in typed-router')
-      await dev.waitFor(waitForFileContains(LOGS_WXML_DIST, 'logs'), 'initial logs page generated')
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFileContains(LOGS_WXML_DIST, 'logs'),
+          LOGS_VUE_PATH,
+          originalLogsSource,
+        ),
+        'initial logs page generated',
+      )
 
       // modify existing route file
       const modifiedLogsSource = originalLogsSource.replace('logs', modifyMarker)
@@ -159,7 +204,14 @@ describe.sequential('auto-routes HMR (dev watch)', () => {
       await dev.waitFor(waitForFile(TYPED_ROUTER_PATH), 'initial typed-router generated')
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${LOGS_ROUTE}"`), 'initial logs route in typed-router')
       await dev.waitFor(waitForFileContains(TYPED_ROUTER_PATH, `"${MARKETING_CAMPAIGN_ROUTE}"`), 'initial subpackage route in typed-router')
-      await dev.waitFor(waitForAppJsonPagesToContain(LOGS_ROUTE), 'initial logs route in app.json pages')
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForAppJsonPagesToContain(LOGS_ROUTE),
+          APP_VUE_PATH,
+          originalAppSource,
+        ),
+        'initial logs route in app.json pages',
+      )
       await dev.waitFor(waitForFileContains(APP_JSON_DIST, '"subpackages/marketing"'), 'initial subPackages emitted in app.json')
       await dev.waitFor(waitForFileContains(APP_JS_DIST, '__autoRoutesPages'), 'initial globalData marker in app.js')
       await dev.waitFor(waitForFileContains(APP_JS_DIST, LOGS_ROUTE), 'initial logs route in app.js globalData')

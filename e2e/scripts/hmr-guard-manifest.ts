@@ -14,7 +14,6 @@ export const HMR_GUARD_STABLE_TESTS = [
   'hmr-delete.test.ts',
   'hmr-app-config.test.ts',
   'auto-import-vue-sfc.test.ts',
-  'auto-routes-hmr.test.ts',
   'wevu-runtime.hmr.test.ts',
 ].map(resolveCiTest)
 
@@ -26,10 +25,12 @@ export const HMR_GUARD_SMOKE_TESTS = [
 ].map(resolveCiTest)
 
 export const HMR_GUARD_SPECIAL_CASES = {
+  autoRoutesHmr: resolveCiTest('auto-routes-hmr.test.ts'),
   sharedChunksAuto: resolveCiTest('hmr-shared-chunks-auto.test.ts'),
 }
 
 export const HMR_GUARD_ALL_TESTS = [
   ...HMR_GUARD_STABLE_TESTS,
+  HMR_GUARD_SPECIAL_CASES.autoRoutesHmr,
   HMR_GUARD_SPECIAL_CASES.sharedChunksAuto,
 ]

@@ -2,10 +2,13 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { execa } from 'execa'
+import fsExtra from 'fs-extra'
 import { appendIdeReportEvent, resolveReportProjectPath } from './ideWarningReport'
 
 const WARN_PATTERN = /\[warn\]/i
 const ERROR_PATTERN = /\[error\]/i
+const CARRIAGE_RETURN_AT_EOL_PATTERN = /\r$/
+const MINIPROGRAM_NPM_EEXIST_PATTERN = /EEXIST: file already exists, mkdir .*miniprogram_npm/
 
 interface BuildLogStats {
   warn: number
@@ -24,6 +27,25 @@ interface BuildCommandOptions {
 interface DependencyMeta {
   count: number
   source: 'dependencies' | 'none'
+}
+
+async function removeDirWithRetry(target: string, retries = 3) {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await fsExtra.remove(target)
+      if (!(await fsExtra.pathExists(target))) {
+        return
+      }
+    }
+    catch (error) {
+      lastError = error
+    }
+    await new Promise(resolve => setTimeout(resolve, 200 * attempt))
+  }
+  if (lastError) {
+    throw lastError
+  }
 }
 
 function collectLineStats(line: string, stats: BuildLogStats, project: string, label: string) {
@@ -61,7 +83,7 @@ function createLineCollector(stats: BuildLogStats, project: string, label: strin
       pending += chunk
       let index = pending.indexOf('\n')
       while (index >= 0) {
-        const line = pending.slice(0, index).replace(/\r$/, '')
+        const line = pending.slice(0, index).replace(CARRIAGE_RETURN_AT_EOL_PATTERN, '')
         pending = pending.slice(index + 1)
         collectLineStats(line, stats, project, label)
         index = pending.indexOf('\n')
@@ -137,22 +159,39 @@ export async function runWeappViteBuildWithLogCapture(options: BuildCommandOptio
   if (safeSkipNpm) {
     args.push('--skipNpm')
   }
+  const distRoot = path.resolve(projectRoot, 'dist')
 
-  const subprocess = execa('node', args, {
-    cwd,
-    all: true,
-    reject: false,
-  })
+  async function runBuildCommand() {
+    await removeDirWithRetry(distRoot)
+    let fullOutput = ''
+    const subprocess = execa('node', args, {
+      cwd,
+      all: true,
+      reject: false,
+    })
 
-  const collector = createLineCollector(stats, reportProject, label)
-  subprocess.all?.on('data', (chunk) => {
-    const text = chunk.toString()
-    process.stdout.write(text)
-    collector.write(text)
-  })
+    const collector = createLineCollector(stats, reportProject, label)
+    subprocess.all?.on('data', (chunk) => {
+      const text = chunk.toString()
+      fullOutput += text
+      process.stdout.write(text)
+      collector.write(text)
+    })
 
-  const result = await subprocess
-  collector.flush()
+    const result = await subprocess
+    collector.flush()
+    return { result, fullOutput }
+  }
+
+  let { result, fullOutput } = await runBuildCommand()
+  if ((result.exitCode ?? 1) !== 0) {
+    const reason = MINIPROGRAM_NPM_EEXIST_PATTERN.test(fullOutput)
+      ? 'miniprogram_npm mkdir EEXIST'
+      : 'build exit non-zero'
+    const retryLine = `[e2e-build-retry] label=${label} reason=${reason}`
+    process.stdout.write(`${retryLine}\n`)
+    ;({ result, fullOutput } = await runBuildCommand())
+  }
 
   const summary = `[e2e-build-stats] label=${label} warn=${stats.warn} error=${stats.error} exit=${result.exitCode ?? 1}`
   if ((result.exitCode ?? 1) === 0) {

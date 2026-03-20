@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-03-14T03:19:06.327Z",
+  "generatedAt": "2026-03-20T06:16:14.341Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
-    "files": 249,
-    "docs": 234,
+    "files": 282,
+    "docs": 267,
     "blog": 10,
     "page": 5,
-    "withFrontmatter": 248,
-    "missingFrontmatter": 1
+    "withFrontmatter": 282,
+    "missingFrontmatter": 0
   },
   "coverage": {
     "all": {
-      "total": 249,
-      "title": 248,
-      "description": 248,
-      "keywords": 182,
+      "total": 282,
+      "title": 282,
+      "description": 282,
+      "keywords": 198,
       "date": 9
     },
     "docs": {
-      "total": 234,
-      "title": 233,
-      "description": 233,
-      "keywords": 167,
+      "total": 267,
+      "title": 267,
+      "description": 267,
+      "keywords": 183,
       "date": 1
     },
     "blog": {
@@ -41,15 +41,15 @@
   },
   "coveragePercent": {
     "all": {
-      "title": 99.6,
-      "description": 99.6,
-      "keywords": 73.1,
-      "date": 3.6
+      "title": 100,
+      "description": 100,
+      "keywords": 70.2,
+      "date": 3.2
     },
     "docs": {
-      "title": 99.6,
-      "description": 99.6,
-      "keywords": 71.4,
+      "title": 100,
+      "description": 100,
+      "keywords": 68.5,
       "date": 0.4
     },
     "blog": {
@@ -107,15 +107,125 @@
     "seoQualityReportPublic": true
   },
   "quality": {
-    "checked": 249,
+    "checked": 282,
     "issues": [
       {
-        "path": "demos/my-app/README.md",
-        "type": "missing-description",
-        "message": "缺少 description。"
+        "path": "guide/directory-structure/app-bar.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
       },
       {
-        "path": "demos/my-app/README.md",
+        "path": "guide/directory-structure/app-json.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/app-style.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/app-ts.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/app-vue.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/components.md",
+        "type": "short-description",
+        "message": "description 过短（少于 24 个字符）。",
+        "detail": "主包组件目录，默认参与自动导入组件扫描。"
+      },
+      {
+        "path": "guide/directory-structure/components.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/custom-tab-bar.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/generated-files.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/package-json.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/pages.md",
+        "type": "short-description",
+        "message": "description 过短（少于 24 个字符）。",
+        "detail": "主包页面目录，是自动路由的默认扫描入口之一。"
+      },
+      {
+        "path": "guide/directory-structure/pages.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/project-config.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/public.md",
+        "type": "short-description",
+        "message": "description 过短（少于 24 个字符）。",
+        "detail": "构建时原样复制到产物目录的静态资源目录。"
+      },
+      {
+        "path": "guide/directory-structure/public.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/shared.md",
+        "type": "short-description",
+        "message": "description 过短（少于 24 个字符）。",
+        "detail": "跨主包与分包共享模块的推荐目录。"
+      },
+      {
+        "path": "guide/directory-structure/shared.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/src-root.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/subpackages.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/utils.md",
+        "type": "short-description",
+        "message": "description 过短（少于 24 个字符）。",
+        "detail": "通用工具函数的推荐目录。"
+      },
+      {
+        "path": "guide/directory-structure/utils.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/vite-config.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
+      {
+        "path": "guide/directory-structure/workers.md",
         "type": "missing-keywords",
         "message": "缺少 keywords。"
       },
@@ -530,8 +640,7 @@
     ]
   },
   "qualityIssueCounts": {
-    "missing-description": 1,
-    "missing-keywords": 67,
-    "short-description": 13
+    "missing-keywords": 84,
+    "short-description": 18
   }
 }

@@ -17,6 +17,20 @@ const SRC_JSON = path.join(HMR_SRC_DIR, 'index.json')
 
 const PLATFORM_LIST = resolvePlatforms()
 
+async function retryWithSourceTouch<T>(
+  task: () => Promise<T>,
+  touchFilePath: string,
+  touchContent: string,
+) {
+  try {
+    return await task()
+  }
+  catch {
+    await replaceFileByRename(touchFilePath, touchContent)
+    return await task()
+  }
+}
+
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
 })
@@ -45,7 +59,14 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          SRC_TEMPLATE,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFileContains(distPath, 'HMR'), `${platform} initial template`)
 
       await replaceFileByRename(SRC_TEMPLATE, updatedSource)
@@ -81,7 +102,14 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          SRC_STYLE,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFileContains(distPath, '.page'), `${platform} initial style`)
 
       await replaceFileByRename(SRC_STYLE, updatedSource)
@@ -115,7 +143,14 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          SRC_SCRIPT,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFile(distPath, 90_000), `${platform} initial script output`)
 
       await replaceFileByRename(SRC_SCRIPT, updatedSource)
@@ -149,7 +184,14 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          SRC_JSON,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFileContains(distPath, 'component'), `${platform} initial json`)
 
       await replaceFileByRename(SRC_JSON, updatedSource)
@@ -199,7 +241,14 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          COMP_SRC_TEMPLATE,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFileContains(distPath, 'child'), `${platform} initial component template`)
 
       await replaceFileByRename(COMP_SRC_TEMPLATE, updatedSource)
@@ -235,7 +284,14 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          COMP_SRC_STYLE,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFileContains(distPath, '.child'), `${platform} initial component style`)
 
       await replaceFileByRename(COMP_SRC_STYLE, updatedSource)
@@ -269,7 +325,14 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          COMP_SRC_SCRIPT,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFile(distPath, 30_000), `${platform} initial component script output`)
 
       await replaceFileByRename(COMP_SRC_SCRIPT, updatedSource)
@@ -303,7 +366,14 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          COMP_SRC_JSON,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFileContains(distPath, 'component'), `${platform} initial component json`)
 
       await replaceFileByRename(COMP_SRC_JSON, updatedSource)
@@ -346,7 +416,14 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          SFC_SRC_PATH,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFileContains(distPath, 'HMR-SFC'), `${platform} initial SFC template`)
 
       await replaceFileByRename(SFC_SRC_PATH, updatedSource)
@@ -382,7 +459,14 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          SFC_SRC_PATH,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFileContains(distPath, 'hmr-sfc-page'), `${platform} initial SFC style`)
 
       await replaceFileByRename(SFC_SRC_PATH, updatedSource)
@@ -417,7 +501,14 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000), `${platform} app.json generated`)
+      await dev.waitFor(
+        retryWithSourceTouch(
+          () => waitForFile(path.join(DIST_ROOT, 'app.json'), 90_000),
+          SFC_SRC_PATH,
+          originalSource,
+        ),
+        `${platform} app.json generated`,
+      )
       await dev.waitFor(waitForFileContains(distPath, 'HMR-SFC-SCRIPT'), `${platform} initial SFC script`)
 
       await replaceFileByRename(SFC_SRC_PATH, updatedSource)

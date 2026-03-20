@@ -24,6 +24,10 @@ const SUITES = {
     description: 'sharedChunks=auto 特例，需独立运行避免与其他 dev-watch 用例互相干扰',
     tests: [HMR_GUARD_SPECIAL_CASES.sharedChunksAuto],
   },
+  'auto-routes-hmr': {
+    description: 'auto-routes HMR 特例，需独立运行避免与其他 dev-watch 用例互相干扰',
+    tests: [HMR_GUARD_SPECIAL_CASES.autoRoutesHmr],
+  },
 } as const
 
 type SuiteName = keyof typeof SUITES
