@@ -1967,7 +1967,7 @@ importers:
     devDependencies:
       '@egoist/tailwindcss-icons':
         specifier: 'catalog:'
-        version: 1.9.2(tailwindcss@4.2.2)
+        version: 1.9.2(tailwindcss@3.4.19(tsx@4.21.0)(yaml@2.8.2))
       '@iconify-json/bi':
         specifier: ^1.2.1
         version: 1.2.7
@@ -1983,15 +1983,21 @@ importers:
       '@shikijs/vitepress-twoslash':
         specifier: ^4.0.2
         version: 4.0.2(typescript@5.9.3)
+      autoprefixer:
+        specifier: 'catalog:'
+        version: 10.4.27(postcss@8.5.8)
       create-weapp-vite:
         specifier: workspace:*
         version: link:../packages/create-weapp-vite
       mermaid:
         specifier: ^11.13.0
         version: 11.13.0
-      tailwindcss:
+      postcss:
         specifier: 'catalog:'
-        version: 4.2.2
+        version: 8.5.8
+      tailwindcss:
+        specifier: catalog:tailwind3
+        version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
       unplugin-auto-import:
         specifier: ^21.0.0
         version: 21.0.0(@vueuse/core@14.1.0(vue@3.5.30(typescript@5.9.3)))
@@ -2000,16 +2006,16 @@ importers:
         version: 31.0.0(vue@3.5.30(typescript@5.9.3))
       vitepress:
         specifier: ^2.0.0-alpha.16
-        version: 2.0.0-alpha.16(@types/node@25.5.0)(async-validator@4.2.5)(axios@1.13.6(debug@4.4.3))(change-case@5.4.4)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(postcss@8.5.8)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+        version: 2.0.0-alpha.16(@types/node@25.5.0)(async-validator@4.2.5)(axios@1.13.6(debug@4.4.3))(change-case@5.4.4)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(postcss@8.5.8)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
       vitepress-plugin-group-icons:
         specifier: ^1.7.1
-        version: 1.7.1(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
+        version: 1.7.1(vite@7.3.1(@types/node@25.5.0)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))
       vitepress-plugin-llms:
         specifier: 1.11.1
         version: 1.11.1
       vitepress-plugin-mermaid:
         specifier: ^2.0.17
-        version: 2.0.17(mermaid@11.13.0)(vitepress@2.0.0-alpha.16(@types/node@25.5.0)(async-validator@4.2.5)(axios@1.13.6(debug@4.4.3))(change-case@5.4.4)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(postcss@8.5.8)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2))
+        version: 2.0.17(mermaid@11.13.0)(vitepress@2.0.0-alpha.16(@types/node@25.5.0)(async-validator@4.2.5)(axios@1.13.6(debug@4.4.3))(change-case@5.4.4)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(postcss@8.5.8)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2))
       weapp-vite:
         specifier: workspace:*
         version: link:../packages/weapp-vite
@@ -7658,9 +7664,6 @@ packages:
 
   caniuse-api@3.0.0:
     resolution: {integrity: sha512-bsTwuIg/BZZK/vreVTYYbSWoe2F+71P7K5QGEX+pT250DZbfU1MQ5prOKpPR+LL6uWKK3KMwMCAS74QB3Um1uw==}
-
-  caniuse-lite@1.0.30001767:
-    resolution: {integrity: sha512-34+zUAMhSH+r+9eKmYG+k2Rpt8XttfE4yXAjoZvkAPs15xcYQhyBYdalJ65BzivAvGRMViEjy6oKr/S91loekQ==}
 
   caniuse-lite@1.0.30001774:
     resolution: {integrity: sha512-DDdwPGz99nmIEv216hKSgLD+D4ikHQHjBC/seF98N9CPqRX4M5mSxT9eTV6oyisnJcuzxtZy4n17yKKQYmYQOA==}
@@ -20253,8 +20256,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@5.9.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.1(typescript@5.9.3)
+      '@typescript-eslint/types': 8.57.1
       debug: 4.4.3
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -20432,10 +20435,10 @@ snapshots:
 
   '@vant/weapp@1.11.7': {}
 
-  '@vitejs/plugin-vue@6.0.5(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.30(typescript@5.9.3))':
+  '@vitejs/plugin-vue@6.0.5(vite@7.3.1(@types/node@25.5.0)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.30(typescript@5.9.3))':
     dependencies:
       '@rolldown/pluginutils': 1.0.0-rc.2
-      vite: 7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
+      vite: 7.3.1(@types/node@25.5.0)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
       vue: 3.5.30(typescript@5.9.3)
 
   '@vitejs/plugin-vue@6.0.5(vite@8.0.1(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.30(typescript@5.9.3))':
@@ -21276,7 +21279,7 @@ snapshots:
   browserslist@4.28.1:
     dependencies:
       baseline-browser-mapping: 2.9.19
-      caniuse-lite: 1.0.30001767
+      caniuse-lite: 1.0.30001774
       electron-to-chromium: 1.5.283
       node-releases: 2.0.27
       update-browserslist-db: 1.2.3(browserslist@4.28.1)
@@ -21423,11 +21426,9 @@ snapshots:
   caniuse-api@3.0.0:
     dependencies:
       browserslist: 4.28.1
-      caniuse-lite: 1.0.30001767
+      caniuse-lite: 1.0.30001774
       lodash.memoize: 4.1.2
       lodash.uniq: 4.5.0
-
-  caniuse-lite@1.0.30001767: {}
 
   caniuse-lite@1.0.30001774: {}
 
@@ -29533,7 +29534,7 @@ snapshots:
       - supports-color
       - typescript
 
-  vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2):
+  vite@7.3.1(@types/node@25.5.0)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2):
     dependencies:
       esbuild: 0.27.4
       fdir: 6.5.0(picomatch@4.0.3)
@@ -29544,7 +29545,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 25.5.0
       fsevents: 2.3.3
-      jiti: 2.6.1
+      jiti: 1.21.7
       less: 4.6.4
       lightningcss: 1.32.0
       sass: 1.98.0
@@ -29572,13 +29573,13 @@ snapshots:
       tsx: 4.21.0
       yaml: 2.8.2
 
-  vitepress-plugin-group-icons@1.7.1(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)):
+  vitepress-plugin-group-icons@1.7.1(vite@7.3.1(@types/node@25.5.0)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
       '@iconify-json/logos': 1.2.10
       '@iconify-json/vscode-icons': 1.2.45
       '@iconify/utils': 3.1.0
     optionalDependencies:
-      vite: 7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
+      vite: 7.3.1(@types/node@25.5.0)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
 
   vitepress-plugin-llms@1.11.1:
     dependencies:
@@ -29599,14 +29600,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vitepress-plugin-mermaid@2.0.17(mermaid@11.13.0)(vitepress@2.0.0-alpha.16(@types/node@25.5.0)(async-validator@4.2.5)(axios@1.13.6(debug@4.4.3))(change-case@5.4.4)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(postcss@8.5.8)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)):
+  vitepress-plugin-mermaid@2.0.17(mermaid@11.13.0)(vitepress@2.0.0-alpha.16(@types/node@25.5.0)(async-validator@4.2.5)(axios@1.13.6(debug@4.4.3))(change-case@5.4.4)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(postcss@8.5.8)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)):
     dependencies:
       mermaid: 11.13.0
-      vitepress: 2.0.0-alpha.16(@types/node@25.5.0)(async-validator@4.2.5)(axios@1.13.6(debug@4.4.3))(change-case@5.4.4)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(postcss@8.5.8)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+      vitepress: 2.0.0-alpha.16(@types/node@25.5.0)(async-validator@4.2.5)(axios@1.13.6(debug@4.4.3))(change-case@5.4.4)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(postcss@8.5.8)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
     optionalDependencies:
       '@mermaid-js/mermaid-mindmap': 9.3.0
 
-  vitepress@2.0.0-alpha.16(@types/node@25.5.0)(async-validator@4.2.5)(axios@1.13.6(debug@4.4.3))(change-case@5.4.4)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(postcss@8.5.8)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2):
+  vitepress@2.0.0-alpha.16(@types/node@25.5.0)(async-validator@4.2.5)(axios@1.13.6(debug@4.4.3))(change-case@5.4.4)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(postcss@8.5.8)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2):
     dependencies:
       '@docsearch/css': 4.6.0
       '@docsearch/js': 4.6.0
@@ -29616,7 +29617,7 @@ snapshots:
       '@shikijs/transformers': 3.23.0
       '@shikijs/types': 3.23.0
       '@types/markdown-it': 14.1.2
-      '@vitejs/plugin-vue': 6.0.5(vite@7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.30(typescript@5.9.3))
+      '@vitejs/plugin-vue': 6.0.5(vite@7.3.1(@types/node@25.5.0)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2))(vue@3.5.30(typescript@5.9.3))
       '@vue/devtools-api': 8.0.5
       '@vue/shared': 3.5.30
       '@vueuse/core': 14.1.0(vue@3.5.30(typescript@5.9.3))
@@ -29625,7 +29626,7 @@ snapshots:
       mark.js: 8.11.1
       minisearch: 7.2.0
       shiki: 3.23.0
-      vite: 7.3.1(@types/node@25.5.0)(jiti@2.6.1)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
+      vite: 7.3.1(@types/node@25.5.0)(jiti@1.21.7)(less@4.6.4)(lightningcss@1.32.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.2)
       vue: 3.5.30(typescript@5.9.3)
     optionalDependencies:
       postcss: 8.5.8
