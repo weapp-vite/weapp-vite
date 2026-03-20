@@ -347,4 +347,66 @@ describe('weapp-vite:pre load', () => {
     expect(Array.from(mocked.sharedChunkImporters?.get('common.js') ?? [])).toEqual([indexEntry])
     expect(Array.from(mocked.sharedChunkImporters?.get('common-next.js') ?? [])).toEqual([dataEntry])
   })
+
+  it('tracks shared chunk importers for vue layout chunks', async () => {
+    mocked.loadEntry.mockClear()
+    mocked.loadedEntrySet.clear()
+    mocked.resolvedEntryMap.clear()
+
+    const pageEntry = '/project/src/pages/index/index.vue'
+    const layoutEntry = '/project/src/layouts/default.vue'
+    mocked.resolvedEntryMap.set(pageEntry, { id: pageEntry })
+    mocked.resolvedEntryMap.set(layoutEntry, { id: layoutEntry })
+
+    const plugins = weappVite({
+      currentBuildTarget: 'app',
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        isDev: true,
+        weappViteConfig: {
+          hmr: { sharedChunks: 'auto' },
+          chunks: { sharedStrategy: 'hoist' },
+        },
+        relativeAbsoluteSrcRoot(id: string) {
+          return id.replace('/project/src/', '')
+        },
+      },
+      scanService: {
+        subPackageMap: new Map(),
+      } as any,
+      buildService: {} as any,
+    } as any)
+
+    const core = plugins.find(p => p.name === 'weapp-vite:pre')!
+    const bundle = {
+      'pages/index/index.js': {
+        type: 'chunk',
+        isEntry: true,
+        facadeModuleId: pageEntry,
+        imports: ['layouts/default.js'],
+        dynamicImports: [],
+        code: '',
+      },
+      'layouts/default.js': {
+        type: 'chunk',
+        isEntry: true,
+        facadeModuleId: layoutEntry,
+        imports: ['common.js'],
+        dynamicImports: [],
+        code: '',
+      },
+      'common.js': {
+        type: 'chunk',
+        isEntry: false,
+        facadeModuleId: '/project/src/shared/layout.ts',
+        imports: [],
+        dynamicImports: [],
+        code: '',
+      },
+    } as any
+
+    await core.generateBundle!.call({} as any, {}, bundle)
+
+    expect(Array.from(mocked.sharedChunkImporters?.get('common.js') ?? [])).toEqual([layoutEntry])
+  })
 })
