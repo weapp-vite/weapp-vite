@@ -165,12 +165,6 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
             source: await fs.readFile(assets.style, 'utf8'),
           }
         : undefined,
-      assets.script
-        ? {
-            fileName: `${relativeBase}.${scriptExtension}`,
-            source: await fs.readFile(assets.script, 'utf8'),
-          }
-        : undefined,
     ]
 
     for (const asset of assetEntries) {
@@ -183,6 +177,21 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
         fileName: asset.fileName,
         source: asset.source,
       })
+    }
+
+    if (assets.script) {
+      const fileName = `${relativeBase}.${scriptExtension}`
+      const emittedLayoutScripts: Set<string> = (pluginCtx as any).__weappViteNativeLayoutScripts ?? ((pluginCtx as any).__weappViteNativeLayoutScripts = new Set<string>())
+      if (!emittedLayoutScripts.has(fileName)) {
+        emittedLayoutScripts.add(fileName)
+        pluginCtx.emitFile({
+          type: 'chunk',
+          id: assets.script,
+          fileName,
+          // @ts-ignore Rolldown 的 PluginContext 类型不完整
+          preserveSignature: 'exports-only',
+        })
+      }
     }
   }
 

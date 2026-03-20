@@ -1011,7 +1011,7 @@ import { VueCard } from '../../components'
     })
   })
 
-  it('emits native layout assets for native pages using layouts', async () => {
+  it('emits native layout sidecar assets and bundles native layout scripts for native pages using layouts', async () => {
     mockFindJsonEntry.mockResolvedValue({
       path: '/project/src/pages/index/index.json',
       predictions: ['/project/src/pages/index/index.json'],
@@ -1129,11 +1129,16 @@ import { VueCard } from '../../components'
       fileName: 'layouts/default/index.wxss',
       source: '.layout {}',
     })
-    expect(emitFile).toHaveBeenCalledWith({
+    expect(emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
       type: 'asset',
       fileName: 'layouts/default/index.js',
-      source: 'Component({})',
-    })
+    }))
+
+    expect(emitFile).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'chunk',
+      id: '/project/src/layouts/default/index.ts',
+      fileName: 'layouts/default/index.js',
+    }))
   })
 
   it('includes vue layout components in page dependency entries', async () => {

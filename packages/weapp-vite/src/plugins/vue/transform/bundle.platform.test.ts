@@ -1211,9 +1211,14 @@ export default {
     })
 
     const assets = new Map<string, string>()
+    const emittedChunks = emitFile.mock.calls
+      .map(call => call[0])
+      .filter((asset: any) => asset.type === 'chunk')
     for (const call of emitFile.mock.calls) {
       const asset = call[0]
-      assets.set(asset.fileName, String(asset.source))
+      if (asset.type === 'asset') {
+        assets.set(asset.fileName, String(asset.source))
+      }
     }
 
     expect(assets.get('pages/layouts/native-demo/index.wxml')).toContain('<weapp-layout-native-shell sidebar="{{true}}" title="{{__wv_layout_bind_title}}">')
@@ -1228,10 +1233,14 @@ export default {
     })
     expect(assets.get('layouts/native-shell/index.wxml')).toContain('<slot />')
     expect(assets.get('layouts/native-shell/index.wxss')).toContain('.shell')
-    expect(assets.get('layouts/native-shell/index.js')).toContain('Component({})')
+    expect(emittedChunks).toContainEqual(expect.objectContaining({
+      type: 'chunk',
+      id: `${nativeLayoutBase}.js`,
+      fileName: 'layouts/native-shell/index.js',
+    }))
   })
 
-  it('transforms native layout ts scripts to js assets', async () => {
+  it('emits native layout ts scripts as fixed-path chunks', async () => {
     const projectDir = await createTempProject()
     const srcRoot = path.join(projectDir, 'src')
     const nativeLayoutBase = path.join(srcRoot, 'layouts', 'native-shell', 'index')
@@ -1293,14 +1302,14 @@ export default {
       classStyleRuntimeWarned: { value: false },
     })
 
-    const assets = new Map<string, string>()
-    for (const call of emitFile.mock.calls) {
-      const asset = call[0]
-      assets.set(asset.fileName, String(asset.source))
-    }
+    const emittedChunks = emitFile.mock.calls
+      .map(call => call[0])
+      .filter((asset: any) => asset.type === 'chunk')
 
-    expect(assets.get('layouts/native-shell/index.js')).toContain('const marker = \'ts-layout\';')
-    expect(assets.get('layouts/native-shell/index.js')).toContain('Component({')
-    expect(assets.get('layouts/native-shell/index.js')).not.toContain(': string')
+    expect(emittedChunks).toContainEqual(expect.objectContaining({
+      type: 'chunk',
+      id: `${nativeLayoutBase}.ts`,
+      fileName: 'layouts/native-shell/index.js',
+    }))
   })
 })
