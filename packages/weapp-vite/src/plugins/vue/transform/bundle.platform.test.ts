@@ -1230,4 +1230,77 @@ export default {
     expect(assets.get('layouts/native-shell/index.wxss')).toContain('.shell')
     expect(assets.get('layouts/native-shell/index.js')).toContain('Component({})')
   })
+
+  it('transforms native layout ts scripts to js assets', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    const nativeLayoutBase = path.join(srcRoot, 'layouts', 'native-shell', 'index')
+
+    await fs.ensureDir(path.dirname(nativeLayoutBase))
+    await fs.writeFile(`${nativeLayoutBase}.json`, JSON.stringify({ component: true }, null, 2), 'utf8')
+    await fs.writeFile(`${nativeLayoutBase}.wxml`, '<view class="shell"><slot /></view>', 'utf8')
+    await fs.writeFile(`${nativeLayoutBase}.wxss`, '.shell { color: #1677ff; }', 'utf8')
+    await fs.writeFile(`${nativeLayoutBase}.ts`, 'const marker: string = \'ts-layout\'\nComponent({ data: { marker } })', 'utf8')
+
+    const configService = {
+      isDev: false,
+      platform: 'weapp',
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        wxs: 'wxs',
+        json: 'json',
+        js: 'js',
+      },
+      weappViteConfig: {
+        json: {},
+      },
+      relativeOutputPath: (p: string) => path.relative(srcRoot, p),
+      absoluteSrcRoot: srcRoot,
+    } as unknown as CompilerContext['configService']
+
+    const ctx = {
+      configService,
+      scanService: {
+        independentSubPackageMap: new Map(),
+      },
+    } as CompilerContext
+
+    const nativePage = path.join(srcRoot, 'pages', 'layouts', 'native-demo', 'index.vue')
+    const compilationCache = new Map([
+      [
+        nativePage,
+        {
+          source: '<script setup>definePageMeta({ layout: { name: \'native-shell\' } })</script><template><view>native page</view></template>',
+          result: {
+            template: '<view>native page</view>',
+            config: JSON.stringify({ navigationBarTitleText: 'native' }),
+            script: 'export default {}',
+          },
+          isPage: true,
+        },
+      ],
+    ])
+
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    await emitVueBundleAssets(bundle, {
+      ctx,
+      pluginCtx: { emitFile, addWatchFile: vi.fn() },
+      compilationCache,
+      reExportResolutionCache: new Map(),
+      classStyleRuntimeWarned: { value: false },
+    })
+
+    const assets = new Map<string, string>()
+    for (const call of emitFile.mock.calls) {
+      const asset = call[0]
+      assets.set(asset.fileName, String(asset.source))
+    }
+
+    expect(assets.get('layouts/native-shell/index.js')).toContain('const marker = \'ts-layout\';')
+    expect(assets.get('layouts/native-shell/index.js')).toContain('Component({')
+    expect(assets.get('layouts/native-shell/index.js')).not.toContain(': string')
+  })
 })
