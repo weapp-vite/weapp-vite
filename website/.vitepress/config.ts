@@ -541,6 +541,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'WXML 配置', link: '/config/wxml' },
       { text: '🧪 WXS 配置', link: '/config/wxs' },
       { text: '自动导入组件配置', link: '/config/auto-import-components' },
+      { text: '共享 Chunk 配置', link: '/config/chunks' },
       { text: '共享配置', link: '/config/shared' },
       { text: '🧪 Web 运行时配置', link: '/config/web' },
     ],

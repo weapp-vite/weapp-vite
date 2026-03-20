@@ -19,7 +19,7 @@ keywords:
 - **普通分包 vs 独立分包** 有什么区别（哪些能互相引用、哪些不能）
 - **Weapp-vite 会怎么分发产物**（共享代码/依赖/样式会落到哪里）
 
-如果你需要原理级配置（`weapp.subPackages`、`weapp.chunks` 等），请继续阅读 [配置文档 · 分包配置](/config/subpackages.md) 与 [配置文档 · Worker 配置](/config/worker.md)。
+如果你需要原理级配置（`weapp.subPackages`、`weapp.chunks` 等），请继续阅读 [配置文档 · 分包配置](/config/subpackages.md)、[配置文档 · 共享 Chunk 配置](/config/chunks.md) 与 [配置文档 · Worker 配置](/config/worker.md)。
 
 先记住 3 句话：
 
