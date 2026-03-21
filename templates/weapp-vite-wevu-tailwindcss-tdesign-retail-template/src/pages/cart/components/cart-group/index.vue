@@ -216,6 +216,18 @@ defineExpose({
   goGoodsDetail,
   gotoCoupons,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-stepper': 'tdesign-miniprogram/stepper/stepper',
+    'swipeout': '/components/swipeout/index',
+    'goods-card': '../../components/goods-card/index',
+    'specs-popup': '../../components/specs-popup/index',
+  },
+})
 </script>
 
 <template>
@@ -392,17 +404,3 @@ defineExpose({
 
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-stepper": "tdesign-miniprogram/stepper/stepper",
-    "swipeout": "/components/swipeout/index",
-    "goods-card": "../../components/goods-card/index",
-    "specs-popup": "../../components/specs-popup/index"
-  }
-}
-</json>

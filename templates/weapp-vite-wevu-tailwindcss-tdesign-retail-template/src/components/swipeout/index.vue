@@ -248,6 +248,11 @@ onUnmounted(() => {
   const globalStore = globalThis as any
   globalStore.__WEVU_SWIPEOUT_INSTANCES__ = instances.filter(item => item !== controller)
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {},
+})
 </script>
 
 <template>
@@ -271,10 +276,3 @@ onUnmounted(() => {
     </view>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {}
-}
-</json>

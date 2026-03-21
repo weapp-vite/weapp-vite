@@ -64,6 +64,13 @@ defineExpose({
   onAddCart,
   onClickGoodsThumb,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    'goods-card': '/components/goods-card/index',
+  },
+})
 </script>
 
 <template>
@@ -83,12 +90,3 @@ defineExpose({
     </block>
   </view>
 </template>
-
-<json>
-{
-    "component": true,
-    "usingComponents": {
-        "goods-card": "/components/goods-card/index"
-    }
-}
-</json>

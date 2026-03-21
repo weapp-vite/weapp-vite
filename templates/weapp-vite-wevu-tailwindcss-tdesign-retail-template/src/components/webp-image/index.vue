@@ -88,6 +88,13 @@ defineExpose({
   onLoad,
   onError,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-image': 'tdesign-miniprogram/image/image',
+  },
+})
 </script>
 
 <template>
@@ -105,12 +112,3 @@ defineExpose({
     @load="onLoad"
   />
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-image": "tdesign-miniprogram/image/image"
-  }
-}
-</json>

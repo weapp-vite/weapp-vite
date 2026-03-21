@@ -91,6 +91,14 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-image': '/components/webp-image/index',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+  },
+})
 </script>
 
 <template>
@@ -121,13 +129,3 @@ defineOptions({
     <slot name="more" />
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-image": "/components/webp-image/index",
-    "t-icon": "tdesign-miniprogram/icon/icon"
-  }
-}
-</json>

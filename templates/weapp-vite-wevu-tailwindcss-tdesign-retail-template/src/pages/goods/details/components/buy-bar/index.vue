@@ -64,6 +64,13 @@ defineExpose({
   toBuyNow,
   toNav,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-icon': 'tdesign-miniprogram/icon/icon',
+  },
+})
 </script>
 
 <template>
@@ -107,12 +114,3 @@ defineExpose({
     </block>
   </view>
 </template>
-
-<json>
-{
-    "component": true,
-    "usingComponents": {
-        "t-icon": "tdesign-miniprogram/icon/icon"
-    }
-}
-</json>

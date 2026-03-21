@@ -115,6 +115,10 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+})
 </script>
 
 <template>
@@ -122,9 +126,3 @@ defineOptions({
     <slot />
   </scroll-view>
 </template>
-
-<json>
-{
-  "component": true
-}
-</json>

@@ -73,6 +73,17 @@ defineExpose({
   goCouponCenterHandle,
   onPullDownRefresh_,
 })
+
+definePageJson({
+  navigationBarTitleText: '优惠券',
+  usingComponents: {
+    't-pull-down-refresh': 'tdesign-miniprogram/pull-down-refresh/pull-down-refresh',
+    't-tabs': 'tdesign-miniprogram/tabs/tabs',
+    't-tab-panel': 'tdesign-miniprogram/tab-panel/tab-panel',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    'coupon-card': '../components/coupon-card/index',
+  },
+})
 </script>
 
 <template>
@@ -116,16 +127,3 @@ defineExpose({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "优惠券",
-  "usingComponents": {
-    "t-pull-down-refresh": "tdesign-miniprogram/pull-down-refresh/pull-down-refresh",
-    "t-tabs": "tdesign-miniprogram/tabs/tabs",
-    "t-tab-panel": "tdesign-miniprogram/tab-panel/tab-panel",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "coupon-card": "../components/coupon-card/index"
-  }
-}
-</json>

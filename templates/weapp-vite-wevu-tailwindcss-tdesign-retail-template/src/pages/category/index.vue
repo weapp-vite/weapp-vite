@@ -33,6 +33,13 @@ defineExpose({
   list,
   onChange,
 })
+
+definePageJson({
+  navigationBarTitleText: '分类',
+  usingComponents: {
+    'goods-category': './components/goods-category/index',
+  },
+})
 </script>
 
 <template>
@@ -45,12 +52,3 @@ defineExpose({
     />
   </view>
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "分类",
-  "usingComponents": {
-    "goods-category": "./components/goods-category/index"
-  }
-}
-</json>

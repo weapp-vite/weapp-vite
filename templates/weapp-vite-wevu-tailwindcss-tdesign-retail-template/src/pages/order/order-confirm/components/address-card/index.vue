@@ -33,6 +33,14 @@ defineExpose({
   onAddressTap,
   onAddTap,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+  },
+})
 </script>
 
 <template>
@@ -77,13 +85,3 @@ defineExpose({
     <view class="top-line" />
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-icon": "tdesign-miniprogram/icon/icon"
-  }
-}
-</json>

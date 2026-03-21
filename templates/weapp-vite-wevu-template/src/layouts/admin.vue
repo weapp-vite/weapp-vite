@@ -3,6 +3,10 @@ const props = defineProps<{
   subtitle?: string
   title?: string
 }>()
+
+defineComponentJson({
+  component: true,
+})
 </script>
 
 <template>
@@ -67,9 +71,3 @@ const props = defineProps<{
   padding-bottom: 32rpx;
 }
 </style>
-
-<json>
-{
-  "component": true
-}
-</json>

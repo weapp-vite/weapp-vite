@@ -44,6 +44,14 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-stepper': 'tdesign-miniprogram/stepper/stepper',
+    'goods-card': '../specs-goods-card/index',
+  },
+})
 </script>
 
 <template>
@@ -79,13 +87,3 @@ defineOptions({
     <slot name="append-card" />
   </goods-card>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-stepper": "tdesign-miniprogram/stepper/stepper",
-    "goods-card": "../specs-goods-card/index"
-  }
-}
-</json>

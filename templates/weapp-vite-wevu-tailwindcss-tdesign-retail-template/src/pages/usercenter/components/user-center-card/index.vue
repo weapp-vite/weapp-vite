@@ -35,6 +35,14 @@ defineExpose({
   AuthStepType,
   gotoUserEditPage,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-avatar': 'tdesign-miniprogram/avatar/avatar',
+  },
+})
 </script>
 
 <template>
@@ -79,13 +87,3 @@ defineExpose({
     </block>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-avatar": "tdesign-miniprogram/avatar/avatar"
-  }
-}
-</json>

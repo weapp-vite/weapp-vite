@@ -139,6 +139,17 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-popup': 'tdesign-miniprogram/popup/popup',
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-button': 'tdesign-miniprogram/button/button',
+  },
+})
 </script>
 
 <template>
@@ -174,16 +185,3 @@ defineOptions({
   </t-popup>
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-popup": "tdesign-miniprogram/popup/popup",
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-button": "tdesign-miniprogram/button/button"
-  }
-}
-</json>

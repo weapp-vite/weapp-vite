@@ -1,3 +1,9 @@
+<script setup lang="ts">
+defineComponentJson({
+  component: true,
+})
+</script>
+
 <template>
   <view class="layout-default">
     <slot />
@@ -9,9 +15,3 @@
   min-height: 100%;
 }
 </style>
-
-<json>
-{
-  "component": true
-}
-</json>

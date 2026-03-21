@@ -434,6 +434,25 @@ defineOptions({
     this.getCommentsStatistics(spuId)
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '商品详情',
+  usingComponents: {
+    't-image': '/components/webp-image/index',
+    't-tag': 'tdesign-miniprogram/tag/tag',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-rate': 'tdesign-miniprogram/rate/rate',
+    't-swiper': 'tdesign-miniprogram/swiper/swiper',
+    't-swiper-nav': 'tdesign-miniprogram/swiper-nav/swiper-nav',
+    't-button': 'tdesign-miniprogram/button/button',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-popup': 'tdesign-miniprogram/popup/popup',
+    'price': '/components/price/index',
+    'buy-bar': './components/buy-bar/index',
+    'promotion-popup': './components/promotion-popup/index',
+    'goods-specs-popup': './components/goods-specs-popup/index',
+  },
+})
 </script>
 
 <template>
@@ -619,24 +638,3 @@ defineOptions({
   </view>
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "商品详情",
-  "usingComponents": {
-    "t-image": "/components/webp-image/index",
-    "t-tag": "tdesign-miniprogram/tag/tag",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-rate": "tdesign-miniprogram/rate/rate",
-    "t-swiper": "tdesign-miniprogram/swiper/swiper",
-    "t-swiper-nav": "tdesign-miniprogram/swiper-nav/swiper-nav",
-    "t-button": "tdesign-miniprogram/button/button",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-popup": "tdesign-miniprogram/popup/popup",
-    "price": "/components/price/index",
-    "buy-bar": "./components/buy-bar/index",
-    "promotion-popup": "./components/promotion-popup/index",
-    "goods-specs-popup": "./components/goods-specs-popup/index"
-  }
-}
-</json>

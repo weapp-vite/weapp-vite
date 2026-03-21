@@ -262,6 +262,15 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    'price': '/components/price/index',
+    't-image': '/components/webp-image/index',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+  },
+})
 </script>
 
 <template>
@@ -353,14 +362,3 @@ defineOptions({
     <slot name="append-card" />
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "price": "/components/price/index",
-    "t-image": "/components/webp-image/index",
-    "t-icon": "tdesign-miniprogram/icon/icon"
-  }
-}
-</json>

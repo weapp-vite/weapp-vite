@@ -387,6 +387,17 @@ defineExpose({
   onToSettle,
   onGotoHome,
 })
+
+definePageJson({
+  navigationBarTitleText: '购物车',
+  usingComponents: {
+    'cart-group': './components/cart-group/index',
+    'cart-empty': './components/cart-empty/index',
+    'cart-bar': './components/cart-bar/index',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+  },
+})
 </script>
 
 <template>
@@ -422,16 +433,3 @@ defineExpose({
   <t-toast id="t-toast" />
   <t-dialog id="t-dialog" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "购物车",
-  "usingComponents": {
-    "cart-group": "./components/cart-group/index",
-    "cart-empty": "./components/cart-empty/index",
-    "cart-bar": "./components/cart-bar/index",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-dialog": "tdesign-miniprogram/dialog/dialog"
-  }
-}
-</json>

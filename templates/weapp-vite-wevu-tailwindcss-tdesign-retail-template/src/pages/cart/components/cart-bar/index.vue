@@ -71,6 +71,14 @@ defineExpose({
   handleSelectAll,
   handleToSettle,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    'price': '/components/price/index',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+  },
+})
 </script>
 
 <template>
@@ -111,13 +119,3 @@ defineExpose({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "price": "/components/price/index",
-    "t-icon": "tdesign-miniprogram/icon/icon"
-  }
-}
-</json>

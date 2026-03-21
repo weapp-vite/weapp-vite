@@ -201,6 +201,21 @@ defineOptions({
     })
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '填写运单号',
+  usingComponents: {
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
+    't-textarea': 'tdesign-miniprogram/textarea/textarea',
+    't-input': 'tdesign-miniprogram/input/input',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+    't-button': 'tdesign-miniprogram/button/button',
+    'ui-reason-sheet': '../components/reason-sheet/index',
+  },
+})
 </script>
 
 <template>
@@ -267,20 +282,3 @@ defineOptions({
   <t-toast id="t-toast" />
   <t-dialog id="t-dialog" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "填写运单号",
-  "usingComponents": {
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
-    "t-textarea": "tdesign-miniprogram/textarea/textarea",
-    "t-input": "tdesign-miniprogram/input/input",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-dialog": "tdesign-miniprogram/dialog/dialog",
-    "t-button": "tdesign-miniprogram/button/button",
-    "ui-reason-sheet": "../components/reason-sheet/index"
-  }
-}
-</json>

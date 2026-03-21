@@ -241,6 +241,15 @@ defineOptions({
     this.init(false)
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '全部评价',
+  usingComponents: {
+    't-tag': 'tdesign-miniprogram/tag/tag',
+    'comments-card': './components/comments-card/index',
+    't-load-more': '/components/load-more/index',
+  },
+})
 </script>
 
 <template>
@@ -294,14 +303,3 @@ defineOptions({
     />
   </view>
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "全部评价",
-  "usingComponents": {
-    "t-tag": "tdesign-miniprogram/tag/tag",
-    "comments-card": "./components/comments-card/index",
-    "t-load-more": "/components/load-more/index"
-  }
-}
-</json>

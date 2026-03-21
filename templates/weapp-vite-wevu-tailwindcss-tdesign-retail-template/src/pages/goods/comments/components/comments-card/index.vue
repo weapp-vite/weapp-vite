@@ -51,6 +51,15 @@ defineOptions({
   },
   methods: {},
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-rate': 'tdesign-miniprogram/rate/rate',
+    'images-videos': './components/images-videos',
+    't-image': '/components/webp-image/index',
+  },
+})
 </script>
 
 <template>
@@ -94,14 +103,3 @@ defineOptions({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-rate": "tdesign-miniprogram/rate/rate",
-    "images-videos": "./components/images-videos",
-    "t-image": "/components/webp-image/index"
-  }
-}
-</json>

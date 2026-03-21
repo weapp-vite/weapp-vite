@@ -221,6 +221,28 @@ defineOptions({
     }
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '',
+  usingComponents: {
+    'wr-loading-content': '/components/loading-content/index',
+    'wr-price': '/components/price/index',
+    'wr-service-goods-card': '../components/order-goods-card/index',
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
+    't-pull-down-refresh': 'tdesign-miniprogram/pull-down-refresh/pull-down-refresh',
+    't-grid': 'tdesign-miniprogram/grid/grid',
+    't-grid-item': 'tdesign-miniprogram/grid-item/grid-item',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+    't-input': 'tdesign-miniprogram/input/input',
+    't-swiper': 'tdesign-miniprogram/swiper/swiper',
+    't-swiper-nav': 'tdesign-miniprogram/swiper-nav/swiper-nav',
+    'wr-after-service-button-bar': '../components/after-service-button-bar/index',
+    't-image': '/components/webp-image/index',
+  },
+})
 </script>
 
 <template>
@@ -450,27 +472,3 @@ defineOptions({
   </t-dialog>
   <t-dialog id="t-dialog" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "",
-  "usingComponents": {
-    "wr-loading-content": "/components/loading-content/index",
-    "wr-price": "/components/price/index",
-    "wr-service-goods-card": "../components/order-goods-card/index",
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
-    "t-pull-down-refresh": "tdesign-miniprogram/pull-down-refresh/pull-down-refresh",
-    "t-grid": "tdesign-miniprogram/grid/grid",
-    "t-grid-item": "tdesign-miniprogram/grid-item/grid-item",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-dialog": "tdesign-miniprogram/dialog/dialog",
-    "t-input": "tdesign-miniprogram/input/input",
-    "t-swiper": "tdesign-miniprogram/swiper/swiper",
-    "t-swiper-nav": "tdesign-miniprogram/swiper-nav/swiper-nav",
-    "wr-after-service-button-bar": "../components/after-service-button-bar/index",
-    "t-image": "/components/webp-image/index"
-  }
-}
-</json>

@@ -206,6 +206,22 @@ defineOptions({
     })
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '退款/售后',
+  usingComponents: {
+    'wr-load-more': '/components/load-more/index',
+    'wr-after-service-button-bar': '../components/after-service-button-bar/index',
+    'wr-price': '/components/price/index',
+    'wr-order-card': '../components/order-card/index',
+    'wr-goods-card': '../components/goods-card/index',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+    't-empty': 'tdesign-miniprogram/empty/empty',
+    't-pull-down-refresh': 'tdesign-miniprogram/pull-down-refresh/pull-down-refresh',
+  },
+})
 </script>
 
 <template>
@@ -281,21 +297,3 @@ defineOptions({
   <t-toast id="t-toast" />
   <t-dialog id="t-dialog" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "退款/售后",
-  "usingComponents": {
-    "wr-load-more": "/components/load-more/index",
-    "wr-after-service-button-bar": "../components/after-service-button-bar/index",
-    "wr-price": "/components/price/index",
-    "wr-order-card": "../components/order-card/index",
-    "wr-goods-card": "../components/goods-card/index",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-dialog": "tdesign-miniprogram/dialog/dialog",
-    "t-empty": "tdesign-miniprogram/empty/empty",
-    "t-pull-down-refresh": "tdesign-miniprogram/pull-down-refresh/pull-down-refresh"
-  }
-}
-</json>

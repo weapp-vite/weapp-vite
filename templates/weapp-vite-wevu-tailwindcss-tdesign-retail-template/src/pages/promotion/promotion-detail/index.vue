@@ -94,6 +94,17 @@ defineExpose({
   cardClickHandle,
   bannerClickHandle,
 })
+
+definePageJson({
+  navigationBarTitleText: '营销详情',
+  usingComponents: {
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-image': '/components/webp-image/index',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    'count-down': 'tdesign-miniprogram/count-down/count-down',
+    'goods-list': '/components/goods-list/index',
+  },
+})
 </script>
 
 <template>
@@ -190,16 +201,3 @@ defineExpose({
     <t-toast id="t-toast" />
   </view>
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "营销详情",
-  "usingComponents": {
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-image": "/components/webp-image/index",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "count-down": "tdesign-miniprogram/count-down/count-down",
-    "goods-list": "/components/goods-list/index"
-  }
-}
-</json>

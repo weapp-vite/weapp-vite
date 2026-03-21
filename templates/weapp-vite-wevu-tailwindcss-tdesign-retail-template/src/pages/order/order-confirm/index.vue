@@ -638,6 +638,23 @@ defineOptions({
   },
 })
 const stripeImg = `https://tdesign.gtimg.com/miniprogram/template/retail/order/stripe.png`
+
+definePageJson({
+  navigationBarTitleText: '订单确认',
+  usingComponents: {
+    't-popup': 'tdesign-miniprogram/popup/popup',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+    't-textarea': 'tdesign-miniprogram/textarea/textarea',
+    'price': '/components/price/index',
+    'select-coupons': '../components/selectCoupons/selectCoupons',
+    'no-goods': '../components/noGoods/noGoods',
+    't-image': '/components/webp-image/index',
+    'address-card': './components/address-card/index',
+  },
+})
 </script>
 
 <template>
@@ -801,22 +818,3 @@ const stripeImg = `https://tdesign.gtimg.com/miniprogram/template/retail/order/s
   <t-toast id="t-toast" />
   <t-dialog id="t-dialog" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "订单确认",
-  "usingComponents": {
-    "t-popup": "tdesign-miniprogram/popup/popup",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-dialog": "tdesign-miniprogram/dialog/dialog",
-    "t-textarea": "tdesign-miniprogram/textarea/textarea",
-    "price": "/components/price/index",
-    "select-coupons": "../components/selectCoupons/selectCoupons",
-    "no-goods": "../components/noGoods/noGoods",
-    "t-image": "/components/webp-image/index",
-    "address-card": "./components/address-card/index"
-  }
-}
-</json>

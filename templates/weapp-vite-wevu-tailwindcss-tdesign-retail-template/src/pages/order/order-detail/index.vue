@@ -270,6 +270,24 @@ defineOptions({
     })
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '订单详情',
+  usingComponents: {
+    't-pull-down-refresh': 'tdesign-miniprogram/pull-down-refresh/pull-down-refresh',
+    't-button': 'tdesign-miniprogram/button/button',
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-image': '/components/webp-image/index',
+    't-count-down': 'tdesign-miniprogram/count-down/count-down',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+    'price': '/components/price/index',
+    'order-card': '../components/order-card/index',
+    'order-goods-card': '../components/order-goods-card/index',
+    'order-button-bar': '../components/order-button-bar/index',
+  },
+})
 </script>
 
 <template>
@@ -463,23 +481,3 @@ defineOptions({
   <t-toast id="t-toast" />
   <t-dialog id="t-dialog" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "订单详情",
-  "usingComponents": {
-    "t-pull-down-refresh": "tdesign-miniprogram/pull-down-refresh/pull-down-refresh",
-    "t-button": "tdesign-miniprogram/button/button",
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-image": "/components/webp-image/index",
-    "t-count-down": "tdesign-miniprogram/count-down/count-down",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-dialog": "tdesign-miniprogram/dialog/dialog",
-    "price": "/components/price/index",
-    "order-card": "../components/order-card/index",
-    "order-goods-card": "../components/order-goods-card/index",
-    "order-button-bar": "../components/order-button-bar/index"
-  }
-}
-</json>

@@ -63,6 +63,13 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    'c-tabbar-more': './c-tabbar-more/index',
+  },
+})
 </script>
 
 <template>
@@ -92,12 +99,3 @@ defineOptions({
     <slot />
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "c-tabbar-more": "./c-tabbar-more/index"
-  }
-}
-</json>

@@ -37,6 +37,16 @@ defineExpose({
   onClickItem,
   onClickTop,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
+    't-badge': 'tdesign-miniprogram/badge/badge',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+  },
+})
 </script>
 
 <template>
@@ -79,15 +89,3 @@ defineExpose({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
-    "t-badge": "tdesign-miniprogram/badge/badge",
-    "t-icon": "tdesign-miniprogram/icon/icon"
-  }
-}
-</json>

@@ -278,6 +278,22 @@ defineExpose({
   reset,
   confirm,
 })
+
+definePageJson({
+  navigationBarTitleText: '搜索',
+  usingComponents: {
+    't-search': 'tdesign-miniprogram/search/search',
+    't-input': 'tdesign-miniprogram/input/input',
+    't-empty': 'tdesign-miniprogram/empty/empty',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    'goods-list': '/components/goods-list/index',
+    'filter': '/components/filter/index',
+    'filter-popup': '/components/filter-popup/index',
+    'load-more': '/components/load-more/index',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+  },
+  onReachBottomDistance: 50,
+})
 </script>
 
 <template>
@@ -358,21 +374,3 @@ defineExpose({
   </view>
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "搜索",
-  "usingComponents": {
-    "t-search": "tdesign-miniprogram/search/search",
-    "t-input": "tdesign-miniprogram/input/input",
-    "t-empty": "tdesign-miniprogram/empty/empty",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "goods-list": "/components/goods-list/index",
-    "filter": "/components/filter/index",
-    "filter-popup": "/components/filter-popup/index",
-    "load-more": "/components/load-more/index",
-    "t-icon": "tdesign-miniprogram/icon/icon"
-  },
-  "onReachBottomDistance": 50
-}
-</json>

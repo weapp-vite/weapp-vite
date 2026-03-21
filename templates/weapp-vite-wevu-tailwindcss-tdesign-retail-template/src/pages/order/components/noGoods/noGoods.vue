@@ -67,6 +67,15 @@ function isShowChangeAddress(data: Record<string, any>) {
 function isShowKeepPay(data: Record<string, any>) {
   return Boolean(data.outOfStockGoodsList || (data.storeGoodsList && data.inValidGoodsList))
 }
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    'wr-order-card': '/pages/order/components/order-card/index',
+    'wr-goods-card': '/components/goods-card/index',
+    'wr-order-goods-card': '/pages/order/components/order-goods-card/index',
+  },
+})
 </script>
 
 <template>
@@ -136,14 +145,3 @@ function isShowKeepPay(data: Record<string, any>) {
     </view>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "wr-order-card": "/pages/order/components/order-card/index",
-    "wr-goods-card": "/components/goods-card/index",
-    "wr-order-goods-card": "/pages/order/components/order-goods-card/index"
-  }
-}
-</json>

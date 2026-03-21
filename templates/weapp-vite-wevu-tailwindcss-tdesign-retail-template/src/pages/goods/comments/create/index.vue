@@ -104,6 +104,20 @@ defineOptions({
     wx.navigateBack()
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '评价商品',
+  usingComponents: {
+    't-image': '/components/webp-image/index',
+    't-rate': 'tdesign-miniprogram/rate/rate',
+    't-textarea': 'tdesign-miniprogram/textarea/textarea',
+    't-checkbox': 'tdesign-miniprogram/checkbox/checkbox',
+    't-button': 'tdesign-miniprogram/button/button',
+    't-upload': 'tdesign-miniprogram/upload/upload',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+  },
+})
 </script>
 
 <template>
@@ -212,19 +226,3 @@ defineOptions({
   </view>
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "评价商品",
-  "usingComponents": {
-    "t-image": "/components/webp-image/index",
-    "t-rate": "tdesign-miniprogram/rate/rate",
-    "t-textarea": "tdesign-miniprogram/textarea/textarea",
-    "t-checkbox": "tdesign-miniprogram/checkbox/checkbox",
-    "t-button": "tdesign-miniprogram/button/button",
-    "t-upload": "tdesign-miniprogram/upload/upload",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-toast": "tdesign-miniprogram/toast/toast"
-  }
-}
-</json>
