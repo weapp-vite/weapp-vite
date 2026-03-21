@@ -431,5 +431,15 @@ export async function syncManagedTsconfigBootstrapFiles(cwd: string) {
     },
   } as MutableCompilerContext
 
-  return await syncManagedTsconfigFiles(bootstrapCtx)
+  let changed = false
+  for (const file of await createManagedTsconfigFiles(bootstrapCtx)) {
+    const existing = await fs.readFile(file.path, 'utf8').catch(() => undefined)
+    if (existing != null) {
+      continue
+    }
+    await fs.outputFile(file.path, file.content, 'utf8')
+    changed = true
+  }
+
+  return changed
 }

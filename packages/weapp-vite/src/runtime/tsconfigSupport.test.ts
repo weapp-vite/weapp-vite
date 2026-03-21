@@ -195,4 +195,45 @@ describe('tsconfig support', () => {
 
     await expect(syncManagedTsconfigBootstrapFiles(root)).resolves.toBe(false)
   })
+
+  it('does not overwrite richer managed tsconfig files during bootstrap', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-bootstrap-tsconfig-preserve-'))
+    await fs.writeJson(path.join(root, 'package.json'), {
+      devDependencies: {
+        wevu: '^1.0.0',
+      },
+    })
+
+    const ctx = createCtx({
+      cwd: root,
+      configFilePath: path.join(root, 'vite.config.ts'),
+      packageJson: {
+        devDependencies: {
+          wevu: '^1.0.0',
+        },
+      },
+      weappViteConfig: {
+        typescript: {
+          app: {
+            compilerOptions: {
+              paths: {
+                'tdesign-miniprogram/*': ['./node_modules/tdesign-miniprogram/miniprogram_dist/*'],
+              },
+            },
+          },
+        },
+      },
+    })
+
+    await syncManagedTsconfigFiles(ctx)
+    const before = await fs.readFile(path.join(root, '.weapp-vite', 'tsconfig.app.json'), 'utf8')
+
+    await expect(syncManagedTsconfigBootstrapFiles(root)).resolves.toBe(false)
+
+    const after = await fs.readFile(path.join(root, '.weapp-vite', 'tsconfig.app.json'), 'utf8')
+    const app = JSON.parse(after)
+
+    expect(after).toBe(before)
+    expect(app.compilerOptions.paths['tdesign-miniprogram/*']).toEqual(['./node_modules/tdesign-miniprogram/miniprogram_dist/*'])
+  })
 })
