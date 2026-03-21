@@ -111,7 +111,6 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
   { text: '配置与 API', link: 'config' },
   { text: '常见问题', link: '/troubleshoot/index' },
   { text: '调试与贡献', link: '/guide/debug' },
-  { text: 'SEO/GEO 质量', link: '/guide/seo-governance' },
   { text: '模块化风格', link: '/guide/module' },
   {
     text: '深入 Weapp-vite',
