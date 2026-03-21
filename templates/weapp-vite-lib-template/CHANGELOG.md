@@ -1,5 +1,13 @@
 # weapp-vite-lib-template
 
+## 2.0.0
+
+### Patch Changes
+
+- 🐛 **为原生 `Page()` 页面补充 layout 运行时切换能力，并将 `setPageLayout` 从 `weapp-vite` 直接导出。`weapp-vite-lib-template` 现在也内置 `src/layouts` 与原生布局演示页，可在不使用 wevu 页面写法的前提下体验 default/admin/关闭布局三种模式。** [`072998a`](https://github.com/weapp-vite/weapp-vite/commit/072998acfe2a913fb2ecae2702cd3c0c0db4a8b9) by @sonofmagic
+- 📦 **Dependencies** [`35a6ee0`](https://github.com/weapp-vite/weapp-vite/commit/35a6ee06d7b8fa56435684011cc706ea5bf9f432)
+  → `wevu@6.11.0`
+
 ## 1.0.1
 
 ### Patch Changes

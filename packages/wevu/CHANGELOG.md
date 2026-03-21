@@ -1,5 +1,24 @@
 # wevu
 
+## 6.11.0
+
+### Minor Changes
+
+- ✨ **为 `weapp-vite` 新增了接近 Nuxt `app/layouts` 的页面布局能力：支持在 `src/layouts` 目录中约定 `default` 或命名布局，并通过 `definePageMeta({ layout })` 为页面声明使用的布局，同时支持 `layout: false` 显式关闭默认布局。布局组件既可以使用 Vue SFC，也可以使用原生小程序组件；编译阶段会自动包裹页面模板、注入布局组件的 `usingComponents` 配置，并让页面内容通过布局内的 `<slot></slot>` 渲染，同时提供对应的宏类型声明。** [`35a6ee0`](https://github.com/weapp-vite/weapp-vite/commit/35a6ee06d7b8fa56435684011cc706ea5bf9f432) by @sonofmagic
+  - 此外，`definePageMeta` 现已支持对象写法的布局配置，例如 `layout: { name: 'panel', props: { sidebar: true, title: 'Dashboard' } }`。当前会将静态字面量 `props` 编译为布局标签属性，并同时覆盖 Vue 布局与原生小程序布局场景。
+  - 同时，`weapp-vite` 现在会将默认生成的 `components.d.ts`、`typed-components.d.ts`、`typed-router.d.ts`、`auto-import-components.json` 等支持文件统一输出到项目根目录下的 `.weapp-vite/` 中，并建议通过 `.gitignore` 忽略该目录，减少源码目录中的生成噪音。CLI 新增了 `weapp-vite prepare` 命令，可在开发、构建或类型检查前预先生成这批文件；相关模板与示例项目的 `tsconfig` 和脚本也已同步调整到新的输出目录。仓库模板与 `apps/*` 现在默认在 `postinstall` 阶段执行 `weapp-vite prepare`，Tailwind 场景会在 `weapp-tw patch` 之后继续生成 `.weapp-vite` 支持文件，行为上更接近 Nuxt 的 `nuxt prepare`；`e2e-apps/*` 仍保持轻量，不默认加入这一步以避免放大测试夹具安装成本。
+
+### Patch Changes
+
+- 🐛 **放宽 `wevu` 组件与应用的 `data` 类型签名，使其同时支持对象字面量与函数返回对象两种写法。现在 `defineComponent({ data: { ... } })` 与 `createApp({ data: { ... } })` 都会被正确接受并初始化，更贴近微信原生 `Component` / `App` 的使用方式，同时保留原有函数写法的兼容性。** [`77b2437`](https://github.com/weapp-vite/weapp-vite/commit/77b2437fe701f6f902e04505e81d961747e9f1e0) by @sonofmagic
+
+- 🐛 **补齐并优化了 `wevu` 的一组 Vue 兼容 API。现在根入口正式导出 `shallowReadonly()` 与 `hasInjectionContext()`，其中 `shallowReadonly()` 复用现有浅只读语义，便于直接迁移依赖 Vue 兼容接口的组合式逻辑；`hasInjectionContext()` 则可用于在 `setup()` 同步阶段安全探测当前是否存在注入上下文。** [`4c39177`](https://github.com/weapp-vite/weapp-vite/commit/4c391770694c03c2c82065b5c419e337a2a14986) by @sonofmagic
+  - 同时，`wevu` 运行时会在组件/页面的 `setup()` 阶段建立实例级 `effectScope`，使 `getCurrentScope()`、`onScopeDispose()`、以及 setup 内创建的 `watch`/`watchEffect` 与 Vue 3 行为更一致，并在实例卸载时自动停止这些作用域副作用，避免残留监听泄漏到卸载后。
+
+- 🐛 **修复 lib 模式下的声明生成回归。`weapp-vite` 现在在调用 `rolldown-plugin-dts` 时会自动识别带有 `references` 的 `tsconfig`，并切换到 build mode，避免 `templates/weapp-vite-lib-template` 执行 `pnpm build:lib` 时因 project references 直接失败；同时 `wevu` 补充导出 `defineComponent` 类型 props 重载相关的公开类型，避免 Vue SFC 声明生成时泄漏到不可命名的内部类型，导致组件库 dts 产物构建报错。** [`8e78ad0`](https://github.com/weapp-vite/weapp-vite/commit/8e78ad02dee3a36ec411fbcf2fa143bf9a3766df) by @sonofmagic
+- 📦 **Dependencies** [`35a6ee0`](https://github.com/weapp-vite/weapp-vite/commit/35a6ee06d7b8fa56435684011cc706ea5bf9f432)
+  → `@wevu/compiler@6.11.0`
+
 ## 6.10.2
 
 ### Patch Changes

@@ -1,5 +1,69 @@
 # create-weapp-vite
 
+## 2.0.54
+
+### Patch Changes
+
+- 🐛 **升级 `htmlparser2` 到 `^11.0.0`，同步刷新工作区锁文件与相关包的依赖解析结果，确保 `weapp-vite` 与 `@weapp-vite/web` 在后续发布时携带一致的解析器版本。由于本次发布包含 `weapp-vite`，按仓库发布约定同时补充 `create-weapp-vite` 的版本变更。** [`526c0db`](https://github.com/weapp-vite/weapp-vite/commit/526c0dbc3e415095a87b661fb26d9624ef6b4b5d) by @sonofmagic
+
+- 🐛 **为其余原生基础模板补充全原生 `layouts` 能力。相关模板现在统一使用 `src/layouts/*/index.{json,ts,wxml,scss}` 作为布局实现，并提供原生页面版的布局演示页与首页入口，不再混入 Vue 布局文件。** [`3121e45`](https://github.com/weapp-vite/weapp-vite/commit/3121e4545d981e14b08352863134223c5328a757) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` 增加了由 `.weapp-vite/tsconfig.app.json`、`.weapp-vite/tsconfig.server.json`、`.weapp-vite/tsconfig.node.json` 与 `.weapp-vite/tsconfig.shared.json` 组成的托管 TypeScript 配置输出。`weapp-vite prepare` 现在会同步生成这些文件，CLI 在加载 `vite.config.ts` 之前也会先做一次轻量 bootstrap，避免根 `tsconfig.json` 仅保留 references 后出现配置加载失败。** [`05784e8`](https://github.com/weapp-vite/weapp-vite/commit/05784e8e3b2c4848efa6de63624b1b90a979a1e5) by @sonofmagic
+  - 同时，`create-weapp-vite` 模板与 `@weapp-core/init` 生成的根 `tsconfig.json` 现已统一收敛为 Nuxt 风格的轻量入口，只保留对 `.weapp-vite/*` 的 references；相关示例项目与模板的 `typecheck` 脚本也改为直接指向 `.weapp-vite/tsconfig.app.json`，从而将主要 TypeScript 配置的维护职责收拢到 `weapp-vite`。对于仍保留项目根目录 `tsconfig.app.json` / `tsconfig.node.json` / `tsconfig.server.json` / `tsconfig.shared.json` 的旧项目，`weapp-vite` 也会在生成 `.weapp-vite` 托管产物时自动合并这些手写配置，便于渐进迁移。模板中预置了 `tdesign-miniprogram` 与 `@vant/weapp` 等常见小程序 UI 库时，也会同步在托管的 app tsconfig 中带上对应 `paths` 别名，方便直接获取库内的 TypeScript/JavaScript 声明与实现入口。
+
+- 🐛 **修复原生 Page 使用原生 `layouts/*` 时仅注入 `usingComponents` 但未同步发射布局产物的问题，确保模板与业务项目在构建后都能正确生成 `dist/layouts/**` 组件文件，避免开发者工具报出布局组件缺失错误。** [`e0cb064`](https://github.com/weapp-vite/weapp-vite/commit/e0cb064584838a1ec7c7ee04fcf0060caf91ffa3) by @sonofmagic
+
+- 🐛 **升级 `htmlparser2` 到 `^12.0.0`，同步刷新 workspace catalog、脚手架生成 catalog 与锁文件，确保 `weapp-vite` 和 `@weapp-vite/web` 后续发布时解析器版本保持一致。考虑到 `create-weapp-vite` 会下发同一份 catalog 版本，本次也一并补充脚手架包的补丁版本变更。** [`84c227a`](https://github.com/weapp-vite/weapp-vite/commit/84c227a0b537a2f12bc512686970a0f63916366a) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` 新增了接近 Nuxt `app/layouts` 的页面布局能力：支持在 `src/layouts` 目录中约定 `default` 或命名布局，并通过 `definePageMeta({ layout })` 为页面声明使用的布局，同时支持 `layout: false` 显式关闭默认布局。布局组件既可以使用 Vue SFC，也可以使用原生小程序组件；编译阶段会自动包裹页面模板、注入布局组件的 `usingComponents` 配置，并让页面内容通过布局内的 `<slot></slot>` 渲染，同时提供对应的宏类型声明。** [`35a6ee0`](https://github.com/weapp-vite/weapp-vite/commit/35a6ee06d7b8fa56435684011cc706ea5bf9f432) by @sonofmagic
+  - 此外，`definePageMeta` 现已支持对象写法的布局配置，例如 `layout: { name: 'panel', props: { sidebar: true, title: 'Dashboard' } }`。当前会将静态字面量 `props` 编译为布局标签属性，并同时覆盖 Vue 布局与原生小程序布局场景。
+  - 同时，`weapp-vite` 现在会将默认生成的 `components.d.ts`、`typed-components.d.ts`、`typed-router.d.ts`、`auto-import-components.json` 等支持文件统一输出到项目根目录下的 `.weapp-vite/` 中，并建议通过 `.gitignore` 忽略该目录，减少源码目录中的生成噪音。CLI 新增了 `weapp-vite prepare` 命令，可在开发、构建或类型检查前预先生成这批文件；相关模板与示例项目的 `tsconfig` 和脚本也已同步调整到新的输出目录。仓库模板与 `apps/*` 现在默认在 `postinstall` 阶段执行 `weapp-vite prepare`，Tailwind 场景会在 `weapp-tw patch` 之后继续生成 `.weapp-vite` 支持文件，行为上更接近 Nuxt 的 `nuxt prepare`；`e2e-apps/*` 仍保持轻量，不默认加入这一步以避免放大测试夹具安装成本。
+
+- 🐛 **修复插件独立构建场景下的 npm 产物输出与依赖重写逻辑。现在 `weapp-vite build` 在存在 `pluginRoot` 时会同时为插件产物构建 `miniprogram_npm`，并将插件 chunk / JSON 中的 npm 引用改写到插件本地输出目录，避免插件构建后只有 npm 目录而运行时代码仍保留裸包名引用的问题。同时补充 `apps/plugin-demo` 的 dayjs 演示，以及对应的单元测试与构建 e2e 覆盖。** [`1539f2c`](https://github.com/weapp-vite/weapp-vite/commit/1539f2cecbe31bc0c8fcd861ccab76e2c4a9f6ab) by @sonofmagic
+
+- 🐛 **同步升级 workspace catalog 中的 `tdesign-miniprogram` 到 `1.13.0`，并刷新 `create-weapp-vite` 生成 catalog 产物，使脚手架模板解析 `catalog:` 与命名 catalog 时能拿到当前仓库内的一致版本。对应的 `createProject` 单测也改为基于生成 catalog 做断言，避免后续 catalog 升级时因为硬编码版本号而重复误报失败。** [`ff929d6`](https://github.com/weapp-vite/weapp-vite/commit/ff929d605b5cd9fd9d09eb4283a4af1cefa7cfcc) by @sonofmagic
+  - 同时将 `@weapp-vite/web` 中的 `domhandler` 依赖提升到 `^6.0.1`，与当前相关解析栈版本保持一致。
+
+- 🐛 **修复原生 layout 目录下 `index.ts` 脚本不会被发射为输出 `js` 资源的问题。现在原生 layout 脚本支持以 TypeScript 编写，构建时会自动去除类型并生成对应的 `.js` 文件，避免出现跳过脚本发射的告警。** [`a6d9516`](https://github.com/weapp-vite/weapp-vite/commit/a6d95163b6f2f1765cb90f6d7004364a9cd28926) by @sonofmagic
+
+- 🐛 **修复 Vue layout 在小程序构建输出中的脚本兜底与页面依赖发射逻辑，避免 `usingComponents` 指向的布局组件缺少 `.js` 产物时导致运行时空白。同时同步更新相关模板 e2e 快照与断言，覆盖默认布局包裹、布局页面入口和子包模板产物变化。** [`4a0966a`](https://github.com/weapp-vite/weapp-vite/commit/4a0966a978e8ef5565477923d8d575d640ef8fa2) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite-wevu-tailwindcss-tdesign-retail-template` 在订单列表与订单详情页的运行时崩溃问题。模板中的订单卡片 relation 回调改为兼容 `children` 提前未初始化的时序，订单按钮栏也补充了 `order`、`goodsList`、`openType` 等空值保护，并去除了与组件属性同名的冗余 data 字段，减少了 DevTools 运行期告警。对应修复会同步影响 `create-weapp-vite` 生成的新零售模板项目。** [`15cb4c4`](https://github.com/weapp-vite/weapp-vite/commit/15cb4c4daf198792d6a98764e875761322238ac3) by @sonofmagic
+
+- 🐛 **增强了 `weapp-vite prepare` 在安装阶段的容错能力：现在会兼容 `pnpm exec` / `postinstall` 场景下可能出现的异常位置参数解析，显式传入 `weapp-vite prepare .` 也不会再被误判为未使用参数。即使 `packages/weapp-vite` 的 `dist/cli.mjs` 尚未构建，或项目配置、自动生成流程内部出现异常，`prepare` 也会统一降级为警告并跳过预生成，不再打断 `pnpm install`、`postinstall` 或其他串联命令。** [`bf447ae`](https://github.com/weapp-vite/weapp-vite/commit/bf447aef95f8def01c0fc10fc18f2f3da75c553b) by @sonofmagic
+
+- 🐛 **修复原生 layout script 在 Vue 打包收尾阶段错误发射 chunk 导致的构建失败问题。现在会在允许的构建钩子中预注册 layout 脚本 chunk，并保留 generateBundle 阶段只处理布局 sidecar 资源，同时补充对应的 transform、fallback 与 bundle 回归测试。** [`cdb419d`](https://github.com/weapp-vite/weapp-vite/commit/cdb419d0e60a8def76330f88c046a8e28ac75c72) by @sonofmagic
+
+- 🐛 **修复原生页面通过 `usingComponents` 引入组件时的入口类型传播错误。现在 `weapp-vite` 会将这类下游入口显式标记为组件，避免在构建阶段误按页面处理并套用默认 layout，从而消除首页嵌套组件重复渲染 layout 外壳的问题，并补充对应的回归测试覆盖。** [`a15b558`](https://github.com/weapp-vite/weapp-vite/commit/a15b5589cf2a55c93922923c718475ad4185d8dc) by @sonofmagic
+
+- 🐛 **放宽 `wevu` 组件与应用的 `data` 类型签名，使其同时支持对象字面量与函数返回对象两种写法。现在 `defineComponent({ data: { ... } })` 与 `createApp({ data: { ... } })` 都会被正确接受并初始化，更贴近微信原生 `Component` / `App` 的使用方式，同时保留原有函数写法的兼容性。** [`77b2437`](https://github.com/weapp-vite/weapp-vite/commit/77b2437fe701f6f902e04505e81d961747e9f1e0) by @sonofmagic
+
+- 🐛 **修复 `<script setup>` 类型声明 props 在小程序运行时的结构化类型告警回归。`@wevu/compiler` 现在会对类型声明生成的 `Array/Object` 类 props 放宽小程序属性校验，避免作用域插槽等场景下出现误报；`weapp-vite-wevu-tailwindcss-tdesign-template` 中的 `KpiBoard` 也因此可以恢复原本的 `defineProps<...>` 与 `#items` 写法，并在 DevTools e2e 中保持 `warn=0`。** [`b387a51`](https://github.com/weapp-vite/weapp-vite/commit/b387a519b85851fe71657a29bd59848dd16ae836) by @sonofmagic
+
+- 🐛 **修复 Tailwind 模板在创建项目时可能错误解析到 Tailwind CSS 4 的问题。现在相关模板会显式固定到 `tailwind3` catalog，避免在 `pnpm up` 或 workspace 默认 catalog 升级后漂移到错误的大版本。** [`cd013bf`](https://github.com/weapp-vite/weapp-vite/commit/cd013bf366c8eeda4230fa46e1802c5979749fc1) by @sonofmagic
+
+- 🐛 **修复原生 layouts 相关文件在开发模式下的热更新链路，建立 `layout` 及其 `json/wxml/wxss/ts` sidecar 到页面入口的反向依赖追踪，确保布局脚本与配置变更能够正确触发关联页面重新发射。同时补充 `layouts` 的 HMR 用例矩阵，覆盖页面、default layout、admin layout 三组资源的 `wxml/wxss/ts/json` 场景。** [`929b814`](https://github.com/weapp-vite/weapp-vite/commit/929b814c5928f268423c2212852ec685e96b3a6a) by @sonofmagic
+
+- 🐛 **为 wevu 基础模板补充 `src/layouts` 页面布局能力。新模板现在内置 `default` 与 `admin` 布局示例，并提供可直接体验 `setPageLayout()` 的演示页面，便于新项目开箱即用地组织页面壳与内容区域。** [`6107d39`](https://github.com/weapp-vite/weapp-vite/commit/6107d39834f5c7fa3aacbacd246ccf8dae200404) by @sonofmagic
+
+- 🐛 **修复了一组由类型产物路径迁移与 `defineOptions` 临时求值模块带来的回归问题。`auto-routes` 与模板相关 e2e 现已统一校准到 `.weapp-vite` 下的 `typed-router.d.ts`、`components.d.ts`、`typed-components.d.ts` 等托管产物路径，子包构建断言也改为基于稳定语义而不是压缩后的局部变量名，避免因为产物重命名导致误报。** [`36de3a6`](https://github.com/weapp-vite/weapp-vite/commit/36de3a69c5eab302bac1ea31b5cf974c4f14fa98) by @sonofmagic
+  - 同时，`@wevu/compiler` 生成的 `defineOptions` 临时模块不再混用 default export 与 named export，消除了构建阶段的 `MIXED_EXPORTS` 警告；仓库根 `tsconfig.json` 里的 Volar 插件声明也改为使用 `weapp-vite/volar` 包名，避免子项目继承根配置后执行 `vue-tsc` 时出现插件相对路径错位告警。这些修复会同步改善 `weapp-vite` 模板与脚手架生成项目的类型检查体验，因此一并补充 `create-weapp-vite` 的版本变更。
+
+- 🐛 **调整 `weapp-vite-lib-template` 的默认发布配置，使组件库模板更适合发布到 npm 并由宿主自行安装 `wevu`。现在模板会将 `wevu` 同时声明到 `peerDependencies` 与 `devDependencies`（模板源使用 `workspace:*`，脚手架生成项目时会落成具体版本），并在 lib 模式构建里将 `wevu` 及其子路径（如 `wevu/router`、`wevu/api`）统一 external，避免运行时包被打进组件库产物。** [`99ab5d5`](https://github.com/weapp-vite/weapp-vite/commit/99ab5d5e5b7cb89e14563d6e5ce294c5b003ca6e) by @sonofmagic
+
+- 🐛 **修复在 macOS 临时目录等真实路径与符号链接路径不一致时，布局解析与输出路径计算可能失效的问题。现在会对 `srcRoot`、`layouts` 目录与布局入口路径做更稳健的 realpath 归一化，避免 `app.vue`、Vue layout 与 native layout 在构建阶段出现布局找不到或产物路径错位。** [`8048eef`](https://github.com/weapp-vite/weapp-vite/commit/8048eef419c05e3220117d204146c50ed28c8a51) by @sonofmagic
+
+- 🐛 **补齐并优化了 `wevu` 的一组 Vue 兼容 API。现在根入口正式导出 `shallowReadonly()` 与 `hasInjectionContext()`，其中 `shallowReadonly()` 复用现有浅只读语义，便于直接迁移依赖 Vue 兼容接口的组合式逻辑；`hasInjectionContext()` 则可用于在 `setup()` 同步阶段安全探测当前是否存在注入上下文。** [`4c39177`](https://github.com/weapp-vite/weapp-vite/commit/4c391770694c03c2c82065b5c419e337a2a14986) by @sonofmagic
+  - 同时，`wevu` 运行时会在组件/页面的 `setup()` 阶段建立实例级 `effectScope`，使 `getCurrentScope()`、`onScopeDispose()`、以及 setup 内创建的 `watch`/`watchEffect` 与 Vue 3 行为更一致，并在实例卸载时自动停止这些作用域副作用，避免残留监听泄漏到卸载后。
+
+- 🐛 **为原生 `Page()` 页面补充 layout 运行时切换能力，并将 `setPageLayout` 从 `weapp-vite` 直接导出。`weapp-vite-lib-template` 现在也内置 `src/layouts` 与原生布局演示页，可在不使用 wevu 页面写法的前提下体验 default/admin/关闭布局三种模式。** [`072998a`](https://github.com/weapp-vite/weapp-vite/commit/072998acfe2a913fb2ecae2702cd3c0c0db4a8b9) by @sonofmagic
+
+- 🐛 **修复 lib 模式下的声明生成回归。`weapp-vite` 现在在调用 `rolldown-plugin-dts` 时会自动识别带有 `references` 的 `tsconfig`，并切换到 build mode，避免 `templates/weapp-vite-lib-template` 执行 `pnpm build:lib` 时因 project references 直接失败；同时 `wevu` 补充导出 `defineComponent` 类型 props 重载相关的公开类型，避免 Vue SFC 声明生成时泄漏到不可命名的内部类型，导致组件库 dts 产物构建报错。** [`8e78ad0`](https://github.com/weapp-vite/weapp-vite/commit/8e78ad02dee3a36ec411fbcf2fa143bf9a3766df) by @sonofmagic
+
+- 🐛 **修复 `prepare` 引导阶段对 `process.exitCode` 的守卫失效问题，避免支持文件预生成流程在可忽略场景下遗留非零退出码；同时补齐根 Vitest 覆盖率临时目录初始化，并同步更新 `import-umd` 测试快照，使 `pnpm test` 恢复稳定通过。** [`564eb93`](https://github.com/weapp-vite/weapp-vite/commit/564eb938d2d78352b18076b18fcd6aab988703f4) by @sonofmagic
+
+- 🐛 **增强 `defineOptions` 的序列化与内联能力，支持在宏配置中安全引用顶层局部常量；同时将 retail 模板中的遗留 CJS 与 `wxs` 辅助逻辑迁移为 ESM/TypeScript 实现，避免模板脚手架继续产出 CommonJS 风格代码。** [`8e91f3d`](https://github.com/weapp-vite/weapp-vite/commit/8e91f3dd3f89a94f4a3bb55a1aaf35bb2618096d) by @sonofmagic
+
 ## 2.0.53
 
 ### Patch Changes
