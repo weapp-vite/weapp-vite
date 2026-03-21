@@ -53,6 +53,18 @@ defineOptions({
 function isUrl(value: string) {
   return value.includes('http')
 }
+
+definePageJson({
+  navigationBarTitleText: '物流信息',
+  usingComponents: {
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
+    't-image': '/components/webp-image/index',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-steps': 'tdesign-miniprogram/steps/steps',
+    't-step': 'tdesign-miniprogram/step-item/step-item',
+  },
+})
 </script>
 
 <template>
@@ -155,17 +167,3 @@ function isUrl(value: string) {
     </t-steps>
   </view>
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "物流信息",
-  "usingComponents": {
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
-    "t-image": "/components/webp-image/index",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-steps": "tdesign-miniprogram/steps/steps",
-    "t-step": "tdesign-miniprogram/step-item/step-item"
-  }
-}
-</json>

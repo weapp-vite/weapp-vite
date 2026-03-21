@@ -267,6 +267,21 @@ defineExpose({
   call,
   gotoUserEditPage,
 })
+
+definePageJson({
+  navigationBarTitleText: '个人中心',
+  navigationStyle: 'custom',
+  usingComponents: {
+    't-popup': 'tdesign-miniprogram/popup/popup',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-user-center-card': './components/user-center-card/index',
+    't-order-group': './components/order-group/index',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+  },
+  enablePullDownRefresh: true,
+})
 </script>
 
 <template>
@@ -326,20 +341,3 @@ defineExpose({
   </t-popup>
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "个人中心",
-  "navigationStyle": "custom",
-  "usingComponents": {
-    "t-popup": "tdesign-miniprogram/popup/popup",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-user-center-card": "./components/user-center-card/index",
-    "t-order-group": "./components/order-group/index",
-    "t-toast": "tdesign-miniprogram/toast/toast"
-  },
-  "enablePullDownRefresh": true
-}
-</json>

@@ -170,6 +170,26 @@ defineExpose({
   navToSearchPage,
   navToActivityDetail,
 })
+
+definePageJson({
+  navigationBarTitleText: '首页',
+  onReachBottomDistance: 10,
+  backgroundTextStyle: 'light',
+  enablePullDownRefresh: true,
+  usingComponents: {
+    't-search': 'tdesign-miniprogram/search/search',
+    't-loading': 'tdesign-miniprogram/loading/loading',
+    't-swiper': 'tdesign-miniprogram/swiper/swiper',
+    't-swiper-nav': 'tdesign-miniprogram/swiper-nav/swiper-nav',
+    't-image': '/components/webp-image/index',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-tabs': 'tdesign-miniprogram/tabs/tabs',
+    't-tab-panel': 'tdesign-miniprogram/tab-panel/tab-panel',
+    'goods-list': '/components/goods-list/index',
+    'load-more': '/components/load-more/index',
+  },
+})
 </script>
 
 <template>
@@ -232,25 +252,3 @@ defineExpose({
     <t-toast id="t-toast" />
   </view>
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "首页",
-  "onReachBottomDistance": 10,
-  "backgroundTextStyle": "light",
-  "enablePullDownRefresh": true,
-  "usingComponents": {
-    "t-search": "tdesign-miniprogram/search/search",
-    "t-loading": "tdesign-miniprogram/loading/loading",
-    "t-swiper": "tdesign-miniprogram/swiper/swiper",
-    "t-swiper-nav": "tdesign-miniprogram/swiper-nav/swiper-nav",
-    "t-image": "/components/webp-image/index",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-tabs": "tdesign-miniprogram/tabs/tabs",
-    "t-tab-panel": "tdesign-miniprogram/tab-panel/tab-panel",
-    "goods-list": "/components/goods-list/index",
-    "load-more": "/components/load-more/index"
-  }
-}
-</json>

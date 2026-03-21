@@ -85,6 +85,13 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-button': 'tdesign-miniprogram/button/button',
+  },
+})
 </script>
 
 <template>
@@ -120,12 +127,3 @@ defineOptions({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-button": "tdesign-miniprogram/button/button"
-  }
-}
-</json>

@@ -32,6 +32,13 @@ defineExpose({
   size,
   backgroundColor,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-loading': 'tdesign-miniprogram/loading/loading',
+  },
+})
 </script>
 
 <template>
@@ -46,12 +53,3 @@ defineExpose({
     </t-loading>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-loading": "tdesign-miniprogram/loading/loading"
-  }
-}
-</json>

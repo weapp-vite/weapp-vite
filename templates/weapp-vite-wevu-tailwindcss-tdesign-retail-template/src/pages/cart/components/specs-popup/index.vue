@@ -76,6 +76,14 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-popup': 'tdesign-miniprogram/popup/popup',
+    'goods-card': '../../components/goods-card/index',
+  },
+})
 </script>
 
 <template>
@@ -100,13 +108,3 @@ defineOptions({
     </view>
   </t-popup>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-popup": "tdesign-miniprogram/popup/popup",
-    "goods-card": "../../components/goods-card/index"
-  }
-}
-</json>

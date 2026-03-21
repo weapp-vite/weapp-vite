@@ -44,6 +44,15 @@ onLoad((query: { orderNo?: string }) => {
 defineExpose({
   invoice,
 })
+
+definePageJson({
+  navigationBarTitleText: '发票详情',
+  usingComponents: {
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-button': 'tdesign-miniprogram/button/button',
+    't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
+  },
+})
 </script>
 
 <template>
@@ -124,14 +133,3 @@ defineExpose({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "发票详情",
-  "usingComponents": {
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-button": "tdesign-miniprogram/button/button",
-    "t-cell-group": "tdesign-miniprogram/cell-group/cell-group"
-  }
-}
-</json>

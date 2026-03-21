@@ -209,6 +209,23 @@ defineOptions({
     })
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '我的订单',
+  usingComponents: {
+    't-tabs': 'tdesign-miniprogram/tabs/tabs',
+    't-tab-panel': 'tdesign-miniprogram/tab-panel/tab-panel',
+    't-empty': 'tdesign-miniprogram/empty/empty',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+    't-pull-down-refresh': 'tdesign-miniprogram/pull-down-refresh/pull-down-refresh',
+    'load-more': '/components/load-more/index',
+    'order-button-bar': '../components/order-button-bar/index',
+    'price': '/components/price/index',
+    'order-card': '../components/order-card/index',
+    'specs-goods-card': '../components/specs-goods-card/index',
+  },
+})
 </script>
 
 <template>
@@ -306,22 +323,3 @@ defineOptions({
   <t-toast id="t-toast" />
   <t-dialog id="t-dialog" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "我的订单",
-  "usingComponents": {
-    "t-tabs": "tdesign-miniprogram/tabs/tabs",
-    "t-tab-panel": "tdesign-miniprogram/tab-panel/tab-panel",
-    "t-empty": "tdesign-miniprogram/empty/empty",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-dialog": "tdesign-miniprogram/dialog/dialog",
-    "t-pull-down-refresh": "tdesign-miniprogram/pull-down-refresh/pull-down-refresh",
-    "load-more": "/components/load-more/index",
-    "order-button-bar": "../components/order-button-bar/index",
-    "price": "/components/price/index",
-    "order-card": "../components/order-card/index",
-    "specs-goods-card": "../components/specs-goods-card/index"
-  }
-}
-</json>

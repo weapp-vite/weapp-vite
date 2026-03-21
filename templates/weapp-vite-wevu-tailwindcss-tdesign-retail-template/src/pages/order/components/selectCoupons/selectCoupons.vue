@@ -161,6 +161,17 @@ defineOptions({
   },
 })
 const emptyCouponImg = `https://tdesign.gtimg.com/miniprogram/template/retail/coupon/ordersure-coupon-newempty.png`
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-popup': 'tdesign-miniprogram/popup/popup',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-image': '/components/webp-image/index',
+    'wr-price': '/components/price/index',
+    'coupon-card': '/components/promotion/ui-coupon-card/index',
+  },
+})
 </script>
 
 <template>
@@ -214,16 +225,3 @@ const emptyCouponImg = `https://tdesign.gtimg.com/miniprogram/template/retail/co
     </view>
   </t-popup>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-popup": "tdesign-miniprogram/popup/popup",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-image": "/components/webp-image/index",
-    "wr-price": "/components/price/index",
-    "coupon-card": "/components/promotion/ui-coupon-card/index"
-  }
-}
-</json>

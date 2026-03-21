@@ -114,6 +114,15 @@ defineExpose({
   handleHistoryTap,
   handleSubmit,
 })
+
+definePageJson({
+  navigationBarTitleText: '搜索',
+  usingComponents: {
+    't-search': 'tdesign-miniprogram/search/search',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+  },
+})
 </script>
 
 <template>
@@ -187,14 +196,3 @@ defineExpose({
     />
   </view>
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "搜索",
-  "usingComponents": {
-    "t-search": "tdesign-miniprogram/search/search",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-dialog": "tdesign-miniprogram/dialog/dialog"
-  }
-}
-</json>

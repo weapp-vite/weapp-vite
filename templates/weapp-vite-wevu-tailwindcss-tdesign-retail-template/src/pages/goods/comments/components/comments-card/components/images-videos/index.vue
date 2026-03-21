@@ -39,6 +39,14 @@ defineOptions({
    */
   methods: {},
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    'my-video': '../my-video/index',
+    't-image': '/components/webp-image/index',
+  },
+})
 </script>
 
 <template>
@@ -60,13 +68,3 @@ defineOptions({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "my-video": "../my-video/index",
-    "t-image": "/components/webp-image/index"
-  }
-}
-</json>

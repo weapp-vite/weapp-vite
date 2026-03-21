@@ -214,6 +214,18 @@ defineOptions({
     })
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '收货地址',
+  usingComponents: {
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-image': '/components/webp-image/index',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-address-item': '/pages/user/components/ui-address-item/index',
+    't-location': '/pages/user/components/t-location/index',
+    't-empty': 'tdesign-miniprogram/empty/empty',
+  },
+})
 </script>
 
 <template>
@@ -259,17 +271,3 @@ defineOptions({
   </view>
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "收货地址",
-  "usingComponents": {
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-image": "/components/webp-image/index",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-address-item": "/pages/user/components/ui-address-item/index",
-    "t-location": "/pages/user/components/t-location/index",
-    "t-empty": "tdesign-miniprogram/empty/empty"
-  }
-}
-</json>

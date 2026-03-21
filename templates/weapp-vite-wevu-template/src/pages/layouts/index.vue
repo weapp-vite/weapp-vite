@@ -45,6 +45,10 @@ function clearLayout() {
 async function backHome() {
   await router.push('/pages/index/index')
 }
+
+definePageJson({
+  navigationBarTitleText: '页面布局',
+})
 </script>
 
 <template>
@@ -163,9 +167,3 @@ async function backHome() {
   background: #dbeafe;
 }
 </style>
-
-<json>
-{
-  "navigationBarTitleText": "页面布局"
-}
-</json>

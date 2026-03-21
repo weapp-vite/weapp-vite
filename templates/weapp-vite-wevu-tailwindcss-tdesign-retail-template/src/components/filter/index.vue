@@ -79,6 +79,13 @@ defineExpose({
   open,
   onOverallAction,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-icon': 'tdesign-miniprogram/icon/icon',
+  },
+})
 </script>
 
 <template>
@@ -121,12 +128,3 @@ defineExpose({
   <!-- 筛选弹框 -->
   <slot name="filterPopup" />
 </template>
-
-<json>
-{
-    "component": true,
-    "usingComponents": {
-        "t-icon": "tdesign-miniprogram/icon/icon"
-    }
-}
-</json>

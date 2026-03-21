@@ -27,6 +27,15 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-tab-bar': 'tdesign-miniprogram/tab-bar/tab-bar',
+    't-tab-bar-item': 'tdesign-miniprogram/tab-bar-item/tab-bar-item',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+  },
+})
 </script>
 
 <template>
@@ -48,14 +57,3 @@ defineOptions({
     </t-tab-bar-item>
   </t-tab-bar>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-tab-bar": "tdesign-miniprogram/tab-bar/tab-bar",
-    "t-tab-bar-item": "tdesign-miniprogram/tab-bar-item/tab-bar-item",
-    "t-icon": "tdesign-miniprogram/icon/icon"
-  }
-}
-</json>

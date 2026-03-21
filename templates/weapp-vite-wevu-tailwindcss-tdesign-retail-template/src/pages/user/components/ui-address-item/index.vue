@@ -47,6 +47,15 @@ defineExpose({
   onSelect,
   onEdit,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-tag': 'tdesign-miniprogram/tag/tag',
+    't-swipe-cell': 'tdesign-miniprogram/swipe-cell/swipe-cell',
+  },
+})
 </script>
 
 <template>
@@ -89,14 +98,3 @@ defineExpose({
     </t-swipe-cell>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-tag": "tdesign-miniprogram/tag/tag",
-    "t-swipe-cell": "tdesign-miniprogram/swipe-cell/swipe-cell"
-  }
-}
-</json>

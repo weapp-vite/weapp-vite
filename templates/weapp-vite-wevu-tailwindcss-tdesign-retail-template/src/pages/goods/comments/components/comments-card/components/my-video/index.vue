@@ -52,6 +52,11 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {},
+})
 </script>
 
 <template>
@@ -82,10 +87,3 @@ defineOptions({
     </view>
   </video>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {}
-}
-</json>

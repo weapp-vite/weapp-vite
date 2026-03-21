@@ -154,6 +154,19 @@ defineExpose({
   onConfirm,
   openUnbindConfirm,
 })
+
+definePageJson({
+  navigationBarTitleText: '个人资料',
+  usingComponents: {
+    't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-button': 'tdesign-miniprogram/button/button',
+    't-image': '/components/webp-image/index',
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-select-picker': '../../usercenter/components/ui-select-picker/index',
+  },
+})
 </script>
 
 <template>
@@ -216,18 +229,3 @@ defineExpose({
   />
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "个人资料",
-  "usingComponents": {
-    "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-button": "tdesign-miniprogram/button/button",
-    "t-image": "/components/webp-image/index",
-    "t-dialog": "tdesign-miniprogram/dialog/dialog",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-select-picker": "../../usercenter/components/ui-select-picker/index"
-  }
-}
-</json>

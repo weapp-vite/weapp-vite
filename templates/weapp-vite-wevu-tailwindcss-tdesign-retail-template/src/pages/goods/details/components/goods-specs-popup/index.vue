@@ -399,6 +399,17 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-popup': 'tdesign-miniprogram/popup/popup',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-image': '/components/webp-image/index',
+    't-stepper': 'tdesign-miniprogram/stepper/stepper',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+  },
+})
 </script>
 
 <template>
@@ -490,16 +501,3 @@ defineOptions({
   </t-popup>
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-popup": "tdesign-miniprogram/popup/popup",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-image": "/components/webp-image/index",
-    "t-stepper": "tdesign-miniprogram/stepper/stepper",
-    "t-toast": "tdesign-miniprogram/toast/toast"
-  }
-}
-</json>

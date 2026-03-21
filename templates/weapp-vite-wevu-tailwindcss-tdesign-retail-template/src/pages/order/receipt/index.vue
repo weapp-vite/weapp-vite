@@ -211,6 +211,18 @@ defineOptions({
     })
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '发票',
+  usingComponents: {
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-input': 'tdesign-miniprogram/input/input',
+    't-button': 'tdesign-miniprogram/button/button',
+  },
+})
 </script>
 
 <template>
@@ -369,17 +381,3 @@ defineOptions({
   <t-toast id="t-toast" />
   <t-dialog id="t-dialog" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "发票",
-  "usingComponents": {
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-dialog": "tdesign-miniprogram/dialog/dialog",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-input": "tdesign-miniprogram/input/input",
-    "t-button": "tdesign-miniprogram/button/button"
-  }
-}
-</json>

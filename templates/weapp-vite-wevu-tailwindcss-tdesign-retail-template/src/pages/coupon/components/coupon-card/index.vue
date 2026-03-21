@@ -59,6 +59,14 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    'ui-coupon-card': '/components/promotion/ui-coupon-card/index',
+    't-button': 'tdesign-miniprogram/button/button',
+  },
+})
 </script>
 
 <template>
@@ -89,13 +97,3 @@ defineOptions({
     </template>
   </ui-coupon-card>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "ui-coupon-card": "/components/promotion/ui-coupon-card/index",
-    "t-button": "tdesign-miniprogram/button/button"
-  }
-}
-</json>

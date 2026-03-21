@@ -79,6 +79,11 @@ defineExpose({
   lineThroughWidth,
   pArr,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {},
+})
 </script>
 
 <template>
@@ -97,10 +102,3 @@ defineExpose({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {}
-}
-</json>

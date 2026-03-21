@@ -68,6 +68,16 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    'c-tabbar': './components/c-tabbar/index',
+    'c-sidebar': './components/c-sidebar/index',
+    'c-sidebar-item': './components/c-sidebar/c-sidebar-item/index',
+    't-image': '/components/webp-image/index',
+  },
+})
 </script>
 
 <template>
@@ -127,15 +137,3 @@ defineOptions({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "c-tabbar": "./components/c-tabbar/index",
-    "c-sidebar": "./components/c-sidebar/index",
-    "c-sidebar-item": "./components/c-sidebar/c-sidebar-item/index",
-    "t-image": "/components/webp-image/index"
-  }
-}
-</json>

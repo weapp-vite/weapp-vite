@@ -47,6 +47,16 @@ defineOptions({
     wx.navigateBack()
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '支付结果',
+  navigationStyle: 'custom',
+  usingComponents: {
+    't-navbar': 'tdesign-miniprogram/navbar/navbar',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    'price': '/components/price/index',
+  },
+})
 </script>
 
 <template>
@@ -76,15 +86,3 @@ defineOptions({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "支付结果",
-  "navigationStyle": "custom",
-  "usingComponents": {
-    "t-navbar": "tdesign-miniprogram/navbar/navbar",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "price": "/components/price/index"
-  }
-}
-</json>

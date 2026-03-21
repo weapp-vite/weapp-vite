@@ -20,6 +20,13 @@ function handleClick() {
 defineExpose({
   handleClick,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-image': '/components/webp-image/index',
+  },
+})
 </script>
 
 <template>
@@ -33,12 +40,3 @@ defineExpose({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-image": "/components/webp-image/index"
-  }
-}
-</json>

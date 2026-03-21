@@ -255,6 +255,16 @@ defineExpose({
   clickTagHandle,
   addCartHandle,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    'price': '/components/price/index',
+    't-tag': 'tdesign-miniprogram/tag/tag',
+    't-image': '/components/webp-image/index',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+  },
+})
 </script>
 
 <template>
@@ -345,15 +355,3 @@ defineExpose({
     <slot name="append-card" />
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "price": "/components/price/index",
-    "t-tag": "tdesign-miniprogram/tag/tag",
-    "t-image": "/components/webp-image/index",
-    "t-icon": "tdesign-miniprogram/icon/icon"
-  }
-}
-</json>

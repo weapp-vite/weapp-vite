@@ -82,6 +82,14 @@ defineExpose({
   status,
   image,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-image': '/components/webp-image/index',
+  },
+})
 </script>
 
 <template>
@@ -154,13 +162,3 @@ defineExpose({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-image": "/components/webp-image/index"
-  }
-}
-</json>

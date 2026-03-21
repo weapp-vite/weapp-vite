@@ -250,6 +250,19 @@ defineExpose({
   reset,
   confirm,
 })
+
+definePageJson({
+  navigationBarTitleText: '商品列表',
+  usingComponents: {
+    't-input': 'tdesign-miniprogram/input/input',
+    't-empty': 'tdesign-miniprogram/empty/empty',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    'goods-list': '/components/goods-list/index',
+    'filter': '/components/filter/index',
+    'filter-popup': '/components/filter-popup/index',
+    'load-more': '/components/load-more/index',
+  },
+})
 </script>
 
 <template>
@@ -316,18 +329,3 @@ defineExpose({
   </view>
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "商品列表",
-  "usingComponents": {
-    "t-input": "tdesign-miniprogram/input/input",
-    "t-empty": "tdesign-miniprogram/empty/empty",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "goods-list": "/components/goods-list/index",
-    "filter": "/components/filter/index",
-    "filter-popup": "/components/filter-popup/index",
-    "load-more": "/components/load-more/index"
-  }
-}
-</json>

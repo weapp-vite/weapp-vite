@@ -145,6 +145,15 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+  },
+})
 </script>
 
 <template>
@@ -169,14 +178,3 @@ defineOptions({
   </view>
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-toast": "tdesign-miniprogram/toast/toast"
-  }
-}
-</json>

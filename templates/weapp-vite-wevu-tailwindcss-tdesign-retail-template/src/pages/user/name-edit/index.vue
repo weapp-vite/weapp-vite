@@ -24,6 +24,15 @@ defineOptions({
     })
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '昵称',
+  usingComponents: {
+    't-input': 'tdesign-miniprogram/input/input',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-button': 'tdesign-miniprogram/button/button',
+  },
+})
 </script>
 
 <template>
@@ -46,14 +55,3 @@ defineOptions({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "昵称",
-  "usingComponents": {
-    "t-input": "tdesign-miniprogram/input/input",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-button": "tdesign-miniprogram/button/button"
-  }
-}
-</json>

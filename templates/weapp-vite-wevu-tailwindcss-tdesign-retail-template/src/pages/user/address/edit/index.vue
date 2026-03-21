@@ -404,6 +404,23 @@ defineOptions({
     })
   },
 })
+
+definePageJson({
+  navigationBarTitleText: '添加新地址',
+  usingComponents: {
+    't-textarea': 'tdesign-miniprogram/textarea/textarea',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-input': 'tdesign-miniprogram/input/input',
+    't-button': 'tdesign-miniprogram/button/button',
+    't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+    't-switch': 'tdesign-miniprogram/switch/switch',
+    't-location': '/pages/user/components/t-location/index',
+    't-cascader': 'tdesign-miniprogram/cascader/cascader',
+  },
+})
 </script>
 
 <template>
@@ -558,22 +575,3 @@ defineOptions({
   </t-dialog>
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "添加新地址",
-  "usingComponents": {
-    "t-textarea": "tdesign-miniprogram/textarea/textarea",
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-input": "tdesign-miniprogram/input/input",
-    "t-button": "tdesign-miniprogram/button/button",
-    "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "t-dialog": "tdesign-miniprogram/dialog/dialog",
-    "t-switch": "tdesign-miniprogram/switch/switch",
-    "t-location": "/pages/user/components/t-location/index",
-    "t-cascader": "tdesign-miniprogram/cascader/cascader"
-  }
-}
-</json>

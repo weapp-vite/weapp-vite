@@ -27,6 +27,17 @@ defineExpose({
   detail,
   navGoodListHandle,
 })
+
+definePageJson({
+  navigationBarTitleText: '优惠券详情',
+  usingComponents: {
+    'coupon-card': '../components/coupon-card/index',
+    't-cell': 'tdesign-miniprogram/cell/cell',
+    't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
+    't-button': 'tdesign-miniprogram/button/button',
+    't-icon': 'tdesign-miniprogram/icon/icon',
+  },
+})
 </script>
 
 <template>
@@ -78,16 +89,3 @@ defineExpose({
     </view>
   </view>
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "优惠券详情",
-  "usingComponents": {
-    "coupon-card": "../components/coupon-card/index",
-    "t-cell": "tdesign-miniprogram/cell/cell",
-    "t-cell-group": "tdesign-miniprogram/cell-group/cell-group",
-    "t-button": "tdesign-miniprogram/button/button",
-    "t-icon": "tdesign-miniprogram/icon/icon"
-  }
-}
-</json>

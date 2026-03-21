@@ -65,6 +65,14 @@ defineExpose({
   listIsEmpty,
   tapHandle,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-loading': 'tdesign-miniprogram/loading/loading',
+    't-divider': 'tdesign-miniprogram/divider/divider',
+  },
+})
 </script>
 
 <template>
@@ -106,13 +114,3 @@ defineExpose({
   <!-- 支持通过slot传入页面/列表的空态，load-more来控制空态的显示状态 -->
   <slot v-if="listIsEmpty && (status === 0 || status === 2)" name="empty" />
 </template>
-
-<json>
-{
-    "component": true,
-    "usingComponents": {
-        "t-loading": "tdesign-miniprogram/loading/loading",
-        "t-divider": "tdesign-miniprogram/divider/divider"
-    }
-}
-</json>

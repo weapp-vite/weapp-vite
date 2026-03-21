@@ -117,6 +117,13 @@ defineOptions({
     },
   },
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    'goods-card': '../goods-card/index',
+  },
+})
 </script>
 
 <template>
@@ -160,12 +167,3 @@ defineOptions({
     <slot name="append-card" />
   </goods-card>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "goods-card": "../goods-card/index"
-  }
-}
-</json>

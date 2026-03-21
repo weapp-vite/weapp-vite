@@ -108,6 +108,13 @@ defineExpose({
   onConfirm,
   onClose,
 })
+
+defineComponentJson({
+  component: true,
+  usingComponents: {
+    't-popup': 'tdesign-miniprogram/popup/popup',
+  },
+})
 </script>
 
 <template>
@@ -149,12 +156,3 @@ defineExpose({
     </template>
   </t-popup>
 </template>
-
-<json>
-{
-  "component": true,
-  "usingComponents": {
-    "t-popup": "tdesign-miniprogram/popup/popup"
-  }
-}
-</json>

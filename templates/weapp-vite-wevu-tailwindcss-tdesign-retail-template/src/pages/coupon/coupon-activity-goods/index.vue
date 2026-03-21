@@ -89,6 +89,17 @@ defineExpose({
   goodClickHandle,
   cartClickHandle,
 })
+
+definePageJson({
+  navigationBarTitleText: '活动商品',
+  usingComponents: {
+    't-icon': 'tdesign-miniprogram/icon/icon',
+    't-popup': 'tdesign-miniprogram/popup/popup',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+    'goods-list': '/components/goods-list/index',
+    'floating-button': '../components/floating-button/index',
+  },
+})
 </script>
 
 <template>
@@ -151,16 +162,3 @@ defineExpose({
   </view>
   <t-toast id="t-toast" />
 </template>
-
-<json>
-{
-  "navigationBarTitleText": "活动商品",
-  "usingComponents": {
-    "t-icon": "tdesign-miniprogram/icon/icon",
-    "t-popup": "tdesign-miniprogram/popup/popup",
-    "t-toast": "tdesign-miniprogram/toast/toast",
-    "goods-list": "/components/goods-list/index",
-    "floating-button": "../components/floating-button/index"
-  }
-}
-</json>
