@@ -385,10 +385,25 @@ export async function createManagedTsconfigFiles(ctx: MutableCompilerContext): P
   ]
 }
 
+async function hasManagedTsconfigChanges(ctx: MutableCompilerContext) {
+  const files = await createManagedTsconfigFiles(ctx)
+
+  for (const file of files) {
+    const existing = await fs.readFile(file.path, 'utf8').catch(() => undefined)
+    if (existing !== file.content) {
+      return true
+    }
+  }
+
+  return false
+}
+
 export async function syncManagedTsconfigFiles(ctx: MutableCompilerContext) {
+  const changed = await hasManagedTsconfigChanges(ctx)
   for (const file of await createManagedTsconfigFiles(ctx)) {
     await fs.outputFile(file.path, file.content, 'utf8')
   }
+  return changed
 }
 
 export async function syncManagedTsconfigBootstrapFiles(cwd: string) {
@@ -403,5 +418,5 @@ export async function syncManagedTsconfigBootstrapFiles(cwd: string) {
     },
   } as MutableCompilerContext
 
-  await syncManagedTsconfigFiles(bootstrapCtx)
+  return await syncManagedTsconfigFiles(bootstrapCtx)
 }
