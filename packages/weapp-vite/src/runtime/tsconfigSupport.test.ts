@@ -1,6 +1,7 @@
 import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
+import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import { createManagedTsconfigFiles, syncManagedTsconfigBootstrapFiles, syncManagedTsconfigFiles } from './tsconfigSupport'
 
@@ -24,7 +25,7 @@ describe('tsconfig support', () => {
     const server = JSON.parse(files.find(file => file.path.endsWith('tsconfig.server.json'))!.content)
     const shared = JSON.parse(files.find(file => file.path.endsWith('tsconfig.shared.json'))!.content)
 
-    expect(shared.compilerOptions.target).toBe('ES2023')
+    expect(shared.compilerOptions.target).toBe(ts.ScriptTarget.ES2023)
     expect(app.extends).toBe('./tsconfig.shared.json')
     expect(app.compilerOptions.baseUrl).toBe('..')
     expect(app.compilerOptions.types).toContain('miniprogram-api-typings')
