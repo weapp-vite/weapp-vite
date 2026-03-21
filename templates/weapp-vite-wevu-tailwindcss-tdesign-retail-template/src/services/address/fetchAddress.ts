@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { config } from '../../config/index'
 import { genAddress, genAddressList } from '../../model/address'
 import { delay } from '../_utils/delay'

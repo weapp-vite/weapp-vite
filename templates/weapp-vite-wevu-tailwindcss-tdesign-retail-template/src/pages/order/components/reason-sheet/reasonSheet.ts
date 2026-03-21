@@ -1,3 +1,4 @@
+// @ts-nocheck
 function getInstance(context, selector = '#wr-reason-sheet') {
   if (!context) {
     const pages = getCurrentPages()

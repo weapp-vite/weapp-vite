@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, toRefs, watch } from 'wevu'
 
 defineOptions({

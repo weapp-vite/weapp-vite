@@ -82,10 +82,10 @@ function clearLayout() {
         <t-button block theme="primary" @tap="applyDefaultLayout">
           使用 default 布局
         </t-button>
-        <t-button block theme="success" variant="outline" @tap="applyAdminLayout">
+        <t-button block theme="primary" variant="outline" @tap="applyAdminLayout">
           切到 admin 布局
         </t-button>
-        <t-button block theme="warning" variant="outline" @tap="clearLayout">
+        <t-button block theme="danger" variant="outline" @tap="clearLayout">
           关闭布局
         </t-button>
       </view>

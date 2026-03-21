@@ -24,7 +24,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from) => {
-  console.log('[wevu-template-router] beforeEach', {
+  wx.getLogManager({ level: 1 }).info('[wevu-template-router] beforeEach', {
     to: to?.fullPath,
     from: from.fullPath,
   })
@@ -32,7 +32,7 @@ router.beforeEach((to, from) => {
 })
 
 router.beforeResolve((to, from) => {
-  console.log('[wevu-template-router] beforeResolve', {
+  wx.getLogManager({ level: 1 }).info('[wevu-template-router] beforeResolve', {
     to: to?.fullPath,
     from: from.fullPath,
   })
@@ -40,7 +40,7 @@ router.beforeResolve((to, from) => {
 })
 
 router.afterEach((to, from, failure) => {
-  console.log('[wevu-template-router] afterEach', {
+  wx.getLogManager({ level: 1 }).info('[wevu-template-router] afterEach', {
     to: to?.fullPath,
     from: from.fullPath,
     failureType: failure?.type,
@@ -48,7 +48,7 @@ router.afterEach((to, from, failure) => {
 })
 
 router.onError((error, context) => {
-  console.log('[wevu-template-router] onError', {
+  wx.getLogManager({ level: 1 }).info('[wevu-template-router] onError', {
     error: error instanceof Error ? error.message : String(error),
     mode: context.mode,
     to: context.to?.fullPath,
@@ -58,15 +58,15 @@ router.onError((error, context) => {
 })
 
 onShow(() => {
-  console.log('[weapp-vite-wevu-template] app show')
+  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app show')
 })
 
 onHide(() => {
-  console.log('[weapp-vite-wevu-template] app hide')
+  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app hide')
 })
 
 onLaunch(() => {
-  console.log('[weapp-vite-wevu-template] app launch')
+  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app launch')
 })
 </script>
 

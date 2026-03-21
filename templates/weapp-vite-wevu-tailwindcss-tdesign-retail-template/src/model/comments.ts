@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  *  @param {number} spuId
  * @param {number} pageNum

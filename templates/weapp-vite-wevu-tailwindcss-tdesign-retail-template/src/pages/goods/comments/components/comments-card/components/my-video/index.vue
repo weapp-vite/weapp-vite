@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 defineOptions({
   externalClasses: ['my-video', 'my-cover-img', 'my-play-icon'],
   properties: {

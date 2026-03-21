@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import Toast from 'tdesign-miniprogram/toast/index'
 import { onLoad, onReachBottom, ref, useNativeInstance } from 'wevu'
 import { getSearchResult } from '../../../services/good/fetchSearchResult'

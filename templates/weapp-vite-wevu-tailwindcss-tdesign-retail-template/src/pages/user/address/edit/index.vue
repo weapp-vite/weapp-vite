@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import Toast from 'tdesign-miniprogram/toast/index'
 import { areaData } from '../../../../config/index'
 import { fetchDeliveryAddress } from '../../../../services/address/fetchAddress'

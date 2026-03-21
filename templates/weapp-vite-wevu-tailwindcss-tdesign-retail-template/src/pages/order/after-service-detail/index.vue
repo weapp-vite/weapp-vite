@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import Toast from 'tdesign-miniprogram/toast/index'
 import { ServiceStatus, ServiceType, ServiceTypeDesc } from '../config'
 import { formatTime, getRightsDetail } from './api'

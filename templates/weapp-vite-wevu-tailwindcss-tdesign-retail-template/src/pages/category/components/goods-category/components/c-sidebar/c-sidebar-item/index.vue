@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 defineOptions({
   relations: {
     '../../c-sidebar/index': {

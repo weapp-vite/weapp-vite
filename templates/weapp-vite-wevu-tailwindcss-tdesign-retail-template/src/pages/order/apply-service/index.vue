@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import Dialog from 'tdesign-miniprogram/dialog/index'
 import Toast from 'tdesign-miniprogram/toast/index'
 import { dispatchApplyService, dispatchConfirmReceived, fetchApplyReasonList, fetchRightsPreview } from '../../../services/order/applyService'

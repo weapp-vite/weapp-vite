@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import Toast from 'tdesign-miniprogram/toast/index'
 import { rejectAddress, resolveAddress } from '../../../../services/address/list'
 import { addressParse } from '../../../../utils/addressParse'

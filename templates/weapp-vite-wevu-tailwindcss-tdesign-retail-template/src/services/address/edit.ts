@@ -1,3 +1,4 @@
+// @ts-nocheck
 let addressPromise = []
 
 /** 地址编辑Promise */

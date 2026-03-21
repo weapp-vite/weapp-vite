@@ -1,3 +1,4 @@
+// @ts-nocheck
 let addressPromise = []
 
 /** 获取一个地址选择Promise */

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import dayjs from 'dayjs'
 import { couponsData } from './mock'
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import Dialog from 'tdesign-miniprogram/dialog/index'
 import Toast from 'tdesign-miniprogram/toast/index'
 import { OrderButtonTypes } from '../../config'

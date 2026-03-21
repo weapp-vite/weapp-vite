@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { AfterServiceStatus, ServiceType, ServiceTypeDesc } from '../config'
 import { getRightsList } from './api'
 

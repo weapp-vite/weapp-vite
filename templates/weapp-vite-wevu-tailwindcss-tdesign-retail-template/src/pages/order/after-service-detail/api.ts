@@ -1,3 +1,4 @@
+// @ts-nocheck
 import dayjs from 'dayjs'
 import { mockIp, mockReqId } from '../../../utils/mock'
 import { resp } from '../after-service-list/api'

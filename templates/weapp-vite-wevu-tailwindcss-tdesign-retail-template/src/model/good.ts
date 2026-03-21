@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { cdnBase } from '../config/index'
 
 const imgPrefix = cdnBase

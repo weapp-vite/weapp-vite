@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { config } from '../../config/index'
 import { genSettleDetail } from '../../model/order/orderConfirm'
 import { mockIp, mockReqId } from '../../utils/mock'

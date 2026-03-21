@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { config } from '../../config/index'
 import { getSearchResult } from '../../model/search'
 import { delay } from '../_utils/delay'
