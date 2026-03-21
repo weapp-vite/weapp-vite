@@ -628,4 +628,74 @@ Page({
     expect(result).toContain('this.setData')
     expect(result).not.toContain('definePageMeta')
   })
+
+  it('strips definePageMeta from native runtime code even when dynamic switching is disabled', () => {
+    const result = injectNativePageLayoutRuntime(
+      `
+definePageMeta({
+  layout: 'default',
+})
+
+Page({
+  data: {
+    ready: true,
+  },
+})
+      `.trim(),
+      '/project/src/pages/native/index.ts',
+      {
+        dynamicSwitch: false,
+        currentLayout: {
+          file: '/project/src/layouts/default.vue',
+          importPath: '/layouts/default',
+          kind: 'vue',
+          layoutName: 'default',
+          tagName: 'weapp-layout-default',
+        },
+        layouts: [],
+        dynamicPropKeys: [],
+      },
+    )
+
+    expect(result).toContain('Page({')
+    expect(result).not.toContain('definePageMeta')
+    expect(result).not.toContain('__wevuSetPageLayout')
+  })
+
+  it('rejects runtime expression props for native page dynamic layout plans', () => {
+    expect(() => applyPageLayoutPlanToNativePage(
+      {
+        script: 'Page({})',
+        template: '<view>native content</view>',
+        config: JSON.stringify({ navigationBarTitleText: '原生动态布局' }),
+      },
+      '/project/src/pages/home/index.ts',
+      {
+        dynamicSwitch: true,
+        currentLayout: {
+          file: '/project/src/layouts/default.vue',
+          importPath: '/layouts/default',
+          kind: 'vue',
+          layoutName: 'default',
+          tagName: 'weapp-layout-default',
+          props: {
+            title: {
+              kind: 'expression',
+              expression: 'titleRef.value',
+            },
+          },
+        },
+        layouts: [
+          {
+            file: '/project/src/layouts/default.vue',
+            importPath: '/layouts/default',
+            kind: 'vue',
+            layoutName: 'default',
+            tagName: 'weapp-layout-default',
+          },
+        ],
+        dynamicPropKeys: ['title'],
+      },
+    )).toThrow('原生 Page 的 layout.props 暂不支持表达式')
+  })
 })

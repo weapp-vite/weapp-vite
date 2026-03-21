@@ -2,13 +2,12 @@ import type { MutableCompilerContext } from '../../context'
 import type { AutoRoutes } from '../../types/routes'
 import type { CandidateEntry } from './candidates'
 import type { AutoRoutesFileEvent } from './watch'
-import fs from 'fs-extra'
-import path from 'pathe'
 import { resolveWeappAutoRoutesConfig } from '../../autoRoutesConfig'
-import { logger } from '../../context/shared'
 import { requireConfigService } from '../utils/requireConfigService'
 import { cloneCandidate, collectCandidates } from './candidates'
-import { cloneRoutes, createTypedRouterDefinition, scanRoutes, updateRoutesReference } from './routes'
+import { cloneRoutes, scanRoutes, updateRoutesReference } from './routes'
+import { removePersistentCache, removeTypedRouterDefinition, restorePersistentCache, writePersistentCache, writeTypedRouterDefinition } from './service/persistence'
+import { resetAutoRoutesState, updateWatchTargets } from './service/shared'
 import { getAutoRoutesSubPackageRoots } from './subPackageRoots'
 import { matchesRouteFile, updateCandidateFromFile } from './watch'
 
@@ -27,35 +26,9 @@ export interface AutoRoutesService {
   isEnabled: () => boolean
 }
 
-interface AutoRoutesPersistentCache {
-  version: 1
-  snapshot: AutoRoutes
-  serialized: string
-  moduleCode: string
-  typedDefinition: string
-  watchFiles: string[]
-  watchDirs: string[]
-  fileMtims: Record<string, number>
-}
-
-const AUTO_ROUTES_CACHE_FILE = '.weapp-vite/auto-routes.cache.json'
-const TYPED_ROUTER_OUTPUT_FILE = '.weapp-vite/typed-router.d.ts'
-
-function updateWatchTargets(target: Set<string>, next: Set<string>) {
-  target.clear()
-  for (const item of next) {
-    target.add(item)
-  }
-}
-
 export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutesService {
   const state = ctx.runtimeState.autoRoutes
   let pendingScan: Promise<void> | undefined
-  const emptySnapshot: AutoRoutes = {
-    pages: [],
-    entries: [],
-    subPackages: [],
-  }
   let lastWrittenTypedDefinition: string | undefined
   let mutationVersion = 0
 
@@ -77,260 +50,9 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
   }
 
   function resetState() {
-    updateRoutesReference(state.routes, emptySnapshot)
-    state.serialized = JSON.stringify(emptySnapshot, null, 2)
-    state.typedDefinition = createTypedRouterDefinition(emptySnapshot)
-    state.moduleCode = [
-      'const routes = ',
-      state.serialized,
-      ';',
-      'const pages = routes.pages;',
-      'const entries = routes.entries;',
-      'const subPackages = routes.subPackages;',
-      'const resolveMiniProgramGlobal = () => (globalThis.wx ?? globalThis.tt ?? globalThis.my);',
-      'const callRouteMethod = (methodName, option) => {',
-      '  const miniProgramGlobal = resolveMiniProgramGlobal();',
-      '  const routeMethod = miniProgramGlobal?.[methodName];',
-      '  if (typeof routeMethod !== "function") {',
-      '    throw new Error("[weapp-vite] 当前运行环境不支持路由方法: " + methodName);',
-      '  }',
-      '  if (option === undefined) {',
-      '    return routeMethod.call(miniProgramGlobal);',
-      '  }',
-      '  return routeMethod.call(miniProgramGlobal, option);',
-      '};',
-      'const wxRouter = {',
-      '  switchTab(option) { return callRouteMethod("switchTab", option); },',
-      '  reLaunch(option) { return callRouteMethod("reLaunch", option); },',
-      '  redirectTo(option) { return callRouteMethod("redirectTo", option); },',
-      '  navigateTo(option) { return callRouteMethod("navigateTo", option); },',
-      '  navigateBack(option) { return callRouteMethod("navigateBack", option); },',
-      '};',
-      'export { routes, pages, entries, subPackages, wxRouter };',
-      'export default routes;',
-    ].join('\n')
-    updateWatchTargets(state.watchFiles, new Set())
-    updateWatchTargets(state.watchDirs, new Set())
-    state.dirty = false
-    state.initialized = true
+    resetAutoRoutesState(state)
     pendingScan = undefined
-    state.candidates.clear()
-    state.needsFullRescan = true
     mutationVersion = 0
-  }
-
-  function resolveTypedRouterOutputPath() {
-    const configService = ctx.configService
-    if (!configService) {
-      return undefined
-    }
-
-    const baseDir = typeof configService.configFilePath === 'string'
-      ? path.dirname(configService.configFilePath)
-      : configService.cwd
-    return path.resolve(baseDir, TYPED_ROUTER_OUTPUT_FILE)
-  }
-
-  function resolvePersistentCacheBaseDir() {
-    const configService = ctx.configService
-    if (!configService) {
-      return undefined
-    }
-
-    const baseDir = typeof configService.configFilePath === 'string'
-      ? path.dirname(configService.configFilePath)
-      : configService.cwd
-
-    if (!baseDir) {
-      return undefined
-    }
-
-    return baseDir
-  }
-
-  function resolvePersistentCachePath() {
-    const autoRoutesConfig = getResolvedConfig()
-    if (!autoRoutesConfig.persistentCache) {
-      return undefined
-    }
-
-    const baseDir = resolvePersistentCacheBaseDir()
-    if (!baseDir) {
-      return undefined
-    }
-
-    return path.resolve(baseDir, autoRoutesConfig.persistentCachePath ?? AUTO_ROUTES_CACHE_FILE)
-  }
-
-  function resolveDefaultPersistentCachePath() {
-    const baseDir = resolvePersistentCacheBaseDir()
-    if (!baseDir) {
-      return undefined
-    }
-
-    return path.resolve(baseDir, AUTO_ROUTES_CACHE_FILE)
-  }
-
-  async function readPersistentCache() {
-    if (!getResolvedConfig().persistentCache) {
-      return undefined
-    }
-    const cachePath = resolvePersistentCachePath()
-    if (!cachePath || !await fs.pathExists(cachePath)) {
-      return undefined
-    }
-
-    try {
-      const cache = await fs.readJson(cachePath) as AutoRoutesPersistentCache
-      if (cache?.version !== 1) {
-        return undefined
-      }
-      return cache
-    }
-    catch {
-      return undefined
-    }
-  }
-
-  async function restorePersistentCache() {
-    const cache = await readPersistentCache()
-    if (!cache) {
-      return false
-    }
-
-    const watchFiles = Array.isArray(cache.watchFiles) ? cache.watchFiles : []
-    if (watchFiles.length === 0) {
-      return false
-    }
-
-    for (const filePath of watchFiles) {
-      const expectedMtime = cache.fileMtims?.[filePath]
-      if (typeof expectedMtime !== 'number' || !Number.isFinite(expectedMtime)) {
-        return false
-      }
-
-      try {
-        const stat = await fs.stat(filePath)
-        if (stat.mtimeMs !== expectedMtime) {
-          return false
-        }
-      }
-      catch {
-        return false
-      }
-    }
-
-    updateRoutesReference(state.routes, cache.snapshot)
-    state.serialized = cache.serialized
-    state.moduleCode = cache.moduleCode
-    state.typedDefinition = cache.typedDefinition
-    updateWatchTargets(state.watchFiles, new Set(watchFiles))
-    updateWatchTargets(state.watchDirs, new Set(Array.isArray(cache.watchDirs) ? cache.watchDirs : []))
-    state.dirty = false
-    state.initialized = true
-    state.needsFullRescan = true
-    return true
-  }
-
-  async function writePersistentCache() {
-    const cachePath = resolvePersistentCachePath()
-    if (!cachePath || !state.initialized || !getResolvedConfig().persistentCache) {
-      return
-    }
-
-    const watchFiles = [...state.watchFiles]
-    const fileMtims: Record<string, number> = {}
-    for (const filePath of watchFiles) {
-      try {
-        const stat = await fs.stat(filePath)
-        fileMtims[filePath] = stat.mtimeMs
-      }
-      catch {
-        return
-      }
-    }
-
-    const payload: AutoRoutesPersistentCache = {
-      version: 1,
-      snapshot: cloneRoutes(state.routes),
-      serialized: state.serialized,
-      moduleCode: state.moduleCode,
-      typedDefinition: state.typedDefinition,
-      watchFiles,
-      watchDirs: [...state.watchDirs],
-      fileMtims,
-    }
-
-    try {
-      await fs.outputJson(cachePath, payload, { spaces: 2 })
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logger.warn(`写入 auto-routes 缓存失败: ${message}`)
-    }
-  }
-
-  async function removePersistentCache() {
-    const cachePath = resolvePersistentCachePath() ?? resolveDefaultPersistentCachePath()
-    if (!cachePath) {
-      return
-    }
-
-    try {
-      if (await fs.pathExists(cachePath)) {
-        await fs.remove(cachePath)
-      }
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logger.warn(`移除 auto-routes 缓存失败: ${message}`)
-    }
-  }
-
-  async function removeTypedRouterDefinition() {
-    const outputPath = resolveTypedRouterOutputPath()
-    if (!outputPath) {
-      lastWrittenTypedDefinition = undefined
-      return
-    }
-
-    try {
-      if (await fs.pathExists(outputPath)) {
-        await fs.remove(outputPath)
-      }
-      lastWrittenTypedDefinition = undefined
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logger.error(`移除 typed-router.d.ts 失败: ${message}`)
-    }
-  }
-
-  async function writeTypedRouterDefinition() {
-    const autoRoutesConfig = getResolvedConfig()
-    if (!autoRoutesConfig.enabled || !autoRoutesConfig.typedRouter) {
-      await removeTypedRouterDefinition()
-      return
-    }
-
-    const outputPath = resolveTypedRouterOutputPath()
-    if (!outputPath) {
-      return
-    }
-
-    const nextContent = state.typedDefinition
-    if (!nextContent || nextContent === lastWrittenTypedDefinition) {
-      return
-    }
-
-    try {
-      await fs.outputFile(outputPath, nextContent, 'utf8')
-      lastWrittenTypedDefinition = nextContent
-    }
-    catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      logger.error(`写入 typed-router.d.ts 失败: ${message}`)
-    }
   }
 
   function markNeedsFullRescan() {
@@ -380,19 +102,22 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       if (state.dirty || !state.initialized || state.routes.pages.length > 0 || state.routes.entries.length > 0 || state.routes.subPackages.length > 0) {
         resetState()
       }
-      await removeTypedRouterDefinition()
-      await removePersistentCache()
+      const removed = await removeTypedRouterDefinition(ctx)
+      if (removed) {
+        lastWrittenTypedDefinition = undefined
+      }
+      await removePersistentCache(ctx)
       return
     }
 
     if (!getResolvedConfig().persistentCache) {
-      await removePersistentCache()
+      await removePersistentCache(ctx)
     }
 
     if (!state.initialized && state.needsFullRescan) {
-      const restored = await restorePersistentCache()
+      const restored = await restorePersistentCache(ctx, state)
       if (restored) {
-        await writeTypedRouterDefinition()
+        lastWrittenTypedDefinition = await writeTypedRouterDefinition(ctx, state.typedDefinition, lastWrittenTypedDefinition)
         return
       }
     }
@@ -404,7 +129,7 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
 
     if (!state.dirty) {
       await (pendingScan ?? Promise.resolve())
-      await writeTypedRouterDefinition()
+      lastWrittenTypedDefinition = await writeTypedRouterDefinition(ctx, state.typedDefinition, lastWrittenTypedDefinition)
       return
     }
 
@@ -430,8 +155,8 @@ export function createAutoRoutesService(ctx: MutableCompilerContext): AutoRoutes
       }
 
       await pendingScan
-      await writeTypedRouterDefinition()
-      await writePersistentCache()
+      lastWrittenTypedDefinition = await writeTypedRouterDefinition(ctx, state.typedDefinition, lastWrittenTypedDefinition)
+      await writePersistentCache(ctx, state)
     }
   }
 

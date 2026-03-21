@@ -166,7 +166,7 @@ describe('createAutoRoutesService branch coverage', () => {
     await service.ensureFresh()
 
     expect(outputFileMock).toHaveBeenCalledTimes(1)
-    expect(loggerErrorMock).toHaveBeenCalledWith(expect.stringContaining('写入 typed-router.d.ts 失败: boom'))
+    expect(loggerErrorMock).toHaveBeenCalledWith(expect.stringContaining('写入 .weapp-vite/typed-router.d.ts 失败: boom'))
   })
 
   it('removes typed definition file when auto routes is disabled', async () => {
@@ -187,7 +187,7 @@ describe('createAutoRoutesService branch coverage', () => {
 
     await service.ensureFresh()
 
-    expect(loggerErrorMock).toHaveBeenCalledWith(expect.stringContaining('移除 typed-router.d.ts 失败: remove-fail'))
+    expect(loggerErrorMock).toHaveBeenCalledWith(expect.stringContaining('移除 .weapp-vite/typed-router.d.ts 失败: remove-fail'))
   })
 
   it('clears candidates when enable flag flips during registry ensuring', async () => {

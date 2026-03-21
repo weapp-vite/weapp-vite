@@ -7,8 +7,11 @@ import type { AppEntriesCache } from './app'
 import type { ResolvedEntryRecord } from './resolve'
 import { performance } from 'node:perf_hooks'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
+import * as t from '@weapp-vite/ast/babelTypes'
 import fs from 'fs-extra'
+import { parse as parseSfc } from 'vue/compiler-sfc'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
+import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../../utils/babel'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { isPathInside, normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
@@ -19,8 +22,6 @@ import { emitEntryOutput, prepareNormalizedEntries } from './emit'
 import { createEntryResolver } from './resolve'
 import { applyScriptSetupUsingComponents, scanTemplateEntry } from './template'
 import { addWatchTarget } from './watch'
-
-const SCRIPT_TAG_RE = /<script\b/i
 
 interface EntryLoaderOptions {
   ctx: CompilerContext
@@ -42,6 +43,27 @@ interface EntryLoaderOptions {
 function createStopwatch() {
   const start = performance.now()
   return () => `${(performance.now() - start).toFixed(2)}ms`
+}
+
+function isDefineComponentJsonOnlyScript(content: string) {
+  const ast = babelParse(content, BABEL_TS_MODULE_PARSER_OPTIONS)
+  let hasDefineComponentJson = false
+
+  for (const statement of ast.program.body) {
+    if (t.isEmptyStatement(statement)) {
+      continue
+    }
+    if (!t.isExpressionStatement(statement) || !t.isCallExpression(statement.expression)) {
+      return false
+    }
+    const call = statement.expression
+    if (!t.isIdentifier(call.callee, { name: 'defineComponentJson' })) {
+      return false
+    }
+    hasDefineComponentJson = true
+  }
+
+  return hasDefineComponentJson
 }
 
 export function createEntryLoader(options: EntryLoaderOptions) {
@@ -80,6 +102,19 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   } = {}
   const emittedScriptlessVueLayoutJs = new Set<string>()
   let resolveCacheVersion = 0
+
+  const shouldEmitScriptlessVueLayoutJs = async (layoutFile: string) => {
+    const layoutSource = await fs.readFile(layoutFile, 'utf-8')
+    const { descriptor } = parseSfc(layoutSource, { filename: layoutFile })
+    const blocks = [descriptor.script?.content, descriptor.scriptSetup?.content]
+      .filter((content): content is string => typeof content === 'string' && content.trim().length > 0)
+
+    if (blocks.length === 0) {
+      return true
+    }
+
+    return blocks.every(isDefineComponentJsonOnlyScript)
+  }
 
   const loadEntry = async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
     existsCache.clear()
@@ -253,8 +288,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
               if (!layout.file.endsWith('.vue')) {
                 continue
               }
-              const layoutSource = await fs.readFile(layout.file, 'utf-8')
-              if (SCRIPT_TAG_RE.test(layoutSource)) {
+              if (!await shouldEmitScriptlessVueLayoutJs(layout.file)) {
                 continue
               }
               const relativeLayoutBase = configService.relativeOutputPath(removeExtensionDeep(layout.file))

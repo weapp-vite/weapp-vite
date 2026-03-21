@@ -199,4 +199,73 @@ describe.sequential('wevu runtime (weapp e2e)', () => {
       await releaseSharedMiniProgram(miniProgram)
     }
   })
+
+  it('switches native page layouts between default/admin/none at runtime', async () => {
+    const miniProgram = await getSharedMiniProgram()
+
+    try {
+      const page = await miniProgram.reLaunch('/pages/layouts/index')
+      if (!page) {
+        throw new Error('Failed to launch /pages/layouts/index')
+      }
+
+      await page.waitFor(200)
+      let root = await page.$('page')
+      if (!root) {
+        throw new Error('Missing page root for /pages/layouts/index')
+      }
+      let wxml = normalizeAutomatorWxml(await root.wxml())
+
+      expect(wxml).toContain('<weapp-layout-default')
+      expect(wxml).not.toContain('<weapp-layout-admin')
+      expect(wxml).toContain('LAYOUTS-PAGE-TEMPLATE-BASE')
+      expect(await page.data('currentLayout')).toBe('default')
+
+      await page.callMethod('applyAdminLayout')
+      await page.waitFor(160)
+      root = await page.$('page')
+      if (!root) {
+        throw new Error('Missing page root after applyAdminLayout')
+      }
+      wxml = normalizeAutomatorWxml(await root.wxml())
+
+      expect(wxml).toContain('<weapp-layout-admin')
+      expect(wxml).not.toContain('<weapp-layout-default')
+      expect(await page.data('currentLayout')).toBe('admin')
+      expect(await page.data('__wv_page_layout_props')).toMatchObject({
+        title: 'LAYOUTS-ADMIN-TITLE-BASE',
+        subtitle: 'LAYOUTS-ADMIN-SUBTITLE-BASE',
+      })
+
+      await page.callMethod('clearLayout')
+      await page.waitFor(160)
+      root = await page.$('page')
+      if (!root) {
+        throw new Error('Missing page root after clearLayout')
+      }
+      wxml = normalizeAutomatorWxml(await root.wxml())
+
+      expect(wxml).toContain('LAYOUTS-PAGE-TEMPLATE-BASE')
+      expect(wxml).not.toContain('<weapp-layout-default')
+      expect(wxml).not.toContain('<weapp-layout-admin')
+      expect(await page.data('currentLayout')).toBe('none')
+      expect(await page.data('__wv_page_layout_props')).toEqual({})
+
+      await page.callMethod('applyDefaultLayout')
+      await page.waitFor(160)
+      root = await page.$('page')
+      if (!root) {
+        throw new Error('Missing page root after applyDefaultLayout')
+      }
+      wxml = normalizeAutomatorWxml(await root.wxml())
+
+      expect(wxml).toContain('<weapp-layout-default')
+      expect(wxml).not.toContain('<weapp-layout-admin')
+      expect(await page.data('currentLayout')).toBe('default')
+      expect(await page.data('__wv_page_layout_props')).toEqual({})
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
 })
