@@ -28,4 +28,4 @@ keywords:
 
 ## 相关链接
 
-- wxss 细节与坑位：`/guide/wxss`
+- [WXSS 注意点](/guide/wxss)

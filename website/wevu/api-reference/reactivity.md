@@ -1,140 +1,28 @@
 ---
-title: Reactivity API
-description: 本页覆盖 Wevu 响应式层的公共 API，聚焦业务可直接使用的能力。
+title: Reactivity API（旧路径兼容）
+description: 当前 Reactivity API 的规范入口是 /wevu/api/reactivity，本页仅用于兼容旧链接。
+sidebar: false
 keywords:
-  - Wevu
-  - Vue SFC
-  - 调试
-  - api
-  - reference
+  - wevu
+  - api-reference
   - reactivity
-  - 本页覆盖
-  - 响应式层的全部公开函数
+  - 兼容路径
 ---
 
-# Reactivity API（响应式与调度）
+# Reactivity API（旧路径兼容）
 
-本页覆盖 `wevu` 响应式层的公共 API，聚焦业务可直接使用的能力。
+当前请改用新的规范入口：
 
-## 1. 状态创建与派生
+- [Reactivity API](/wevu/api/reactivity)
 
-| API               | 类型入口                              | 说明                        |
-| ----------------- | ------------------------------------- | --------------------------- |
-| `ref`             | `Ref`                                 | 创建基础响应式引用。        |
-| `reactive`        | `object`                              | 创建深层响应式对象。        |
-| `shallowRef`      | `ShallowRef`                          | 只追踪 `.value` 变更。      |
-| `shallowReactive` | `object`                              | 仅顶层属性响应式。          |
-| `readonly`        | `Readonly<T>`                         | 只读代理。                  |
-| `computed`        | `ComputedRef` / `WritableComputedRef` | 声明计算属性（只读/可写）。 |
+## 1. 推荐做法
 
-## 2. 监听与副作用
+后续引用 `ref`、`reactive`、`computed`、`watch` 等响应式 API 时，请统一指向新路径。
 
-| API               | 类型入口                           | 说明                       |
-| ----------------- | ---------------------------------- | -------------------------- |
-| `watch`           | `WatchOptions` / `WatchStopHandle` | 侦听 source 变化。         |
-| `watchEffect`     | `WatchStopHandle`                  | 自动收集依赖并执行副作用。 |
-| `effect`          | `WatchStopHandle`                  | 底层副作用 API。           |
-| `effectScope`     | `EffectScope`                      | 作用域级管理 effect。      |
-| `getCurrentScope` | `EffectScope`                      | 获取当前 effect scope。    |
-| `onScopeDispose`  | `() => void`                       | scope 销毁时回调。         |
-| `stop`            | `void`                             | 停止某个 effect/watch。    |
+## 2. 参考资源
 
-## 3. Ref/Proxy 工具
-
-| API          | 类型入口           | 说明                       |
-| ------------ | ------------------ | -------------------------- |
-| `toRef`      | `Ref`              | 把对象属性转换为 ref。     |
-| `toRefs`     | `ToRefs`           | 批量转换对象属性为 ref。   |
-| `unref`      | `T`                | 取 ref.value 或原值。      |
-| `toValue`    | `MaybeRefOrGetter` | 统一展开值/Ref/getter。    |
-| `triggerRef` | `void`             | 手动触发 shallowRef 更新。 |
-| `toRaw`      | `T`                | 获取原始对象。             |
-| `markRaw`    | `T`                | 标记对象跳过代理。         |
-
-## 4. 响应式判定
-
-| API                 | 类型入口       | 说明                       |
-| ------------------- | -------------- | -------------------------- |
-| `isRef`             | type predicate | 判定是否 Ref。             |
-| `isReactive`        | type predicate | 判定是否 reactive 代理。   |
-| `isShallowRef`      | type predicate | 判定是否 shallowRef。      |
-| `isShallowReactive` | type predicate | 判定是否 shallowReactive。 |
-| `isRaw`             | `boolean`      | 判定对象是否被 `markRaw`。 |
-
-## 5. 批处理与调度
-
-| API          | 类型入口        | 说明                     |
-| ------------ | --------------- | ------------------------ |
-| `nextTick`   | `Promise<void>` | 等待当前微任务批次完成。 |
-| `batch`      | `() => void`    | 在单次批处理中执行函数。 |
-| `startBatch` | `void`          | 手动开始批处理。         |
-| `endBatch`   | `void`          | 手动结束批处理。         |
-
-## 6. 内部能力说明
-
-`wevu` 在响应式实现里存在少量内部能力，用于框架运行时与测试场景；这些接口不属于业务稳定 API，不建议在应用代码中直接调用。
-
-## 7. 组合示例（script setup）
-
-::: code-group
-
-```vue [TypeScript]
-<script setup lang="ts">
-import { computed, nextTick, reactive, toRefs, watch, watchEffect } from 'wevu'
-
-// [TS-only] 此示例无专属语法，TS/JS 写法一致。
-const state = reactive({ count: 0, unit: 2 })
-const { count } = toRefs(state)
-const doubled = computed(() => count.value * state.unit)
-
-watch(count, (n) => {
-  console.log('count changed:', n)
-})
-
-watchEffect(() => {
-  console.log('preview:', doubled.value)
-})
-
-async function inc() {
-  count.value += 1
-  await nextTick()
-}
-</script>
-
-<template>
-  <button @tap="inc">
-    count: {{ count }} / doubled: {{ doubled }}
-  </button>
-</template>
-```
-
-```vue [JavaScript]
-<script setup>
-import { computed, nextTick, reactive, toRefs, watch, watchEffect } from 'wevu'
-
-const state = reactive({ count: 0, unit: 2 })
-const { count } = toRefs(state)
-const doubled = computed(() => count.value * state.unit)
-
-watch(count, (n) => {
-  console.log('count changed:', n)
-})
-
-watchEffect(() => {
-  console.log('preview:', doubled.value)
-})
-
-async function inc() {
-  count.value += 1
-  await nextTick()
-}
-</script>
-
-<template>
-  <button @tap="inc">
-    count: {{ count }} / doubled: {{ doubled }}
-  </button>
-</template>
-```
-
-:::
+| 主题           | 推荐入口                               |
+| -------------- | -------------------------------------- |
+| Reactivity API | [Reactivity API](/wevu/api/reactivity) |
+| Lifecycle API  | [Lifecycle API](/wevu/api/lifecycle)   |
+| Store API      | [Store API](/wevu/api/store)           |

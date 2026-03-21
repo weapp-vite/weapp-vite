@@ -1,172 +1,38 @@
 ---
-title: Core API
-description: 本页聚焦 Wevu 的“最先接触”能力：应用入口、组件定义、宏，以及模板辅助函数。
+title: Core API（旧路径兼容）
+description: 当前 Core API 的规范入口是 /wevu/api/core，本页仅用于兼容旧链接。
+sidebar: false
 keywords:
-  - Wevu
-  - Vue SFC
-  - api
-  - reference
+  - wevu
+  - api-reference
   - core
-  - 本页聚焦
-  - 的“最先接触”能力：应用入口
-  - 组件定义
+  - 兼容路径
 ---
 
-# Core API（入口、组件、宏）
+# Core API（旧路径兼容）
 
-本页聚焦 `wevu` 的“最先接触”能力：应用入口、组件定义、`<script setup>` 宏，以及模板辅助函数。
+当前请改用新的规范入口：
 
-## 1. 入口与组件定义
+- [Core API](/wevu/api/core)
 
-| API                             | 类型入口                                         | 说明                                         |
-| ------------------------------- | ------------------------------------------------ | -------------------------------------------- |
-| `createApp`                     | `CreateAppOptions` / `RuntimeApp`                | 创建并注册小程序 App，桥接全局生命周期。     |
-| `defineComponent`               | `DefineComponentOptions` / `ComponentDefinition` | 定义页面或组件（统一注册为 `Component()`）。 |
-| `createWevuComponent`           | `DefineComponentOptions` / `ComponentDefinition` | 供 Weapp-vite 编译产物调用的兼容入口。       |
-| `createWevuScopedSlotComponent` | `DefineComponentOptions` / `ComponentDefinition` | 供编译侧生成 scoped slot 宿主组件使用。      |
+## 1. 这页为什么还保留
 
-## 2. `<script setup>` 宏
+这条旧路径主要用于兼容：
 
-这些 API 主要用于 SFC 编译阶段，运行时多数会被擦除或改写。建议和 `weapp-vite/volar` 一起使用以获得更完整类型提示。
+- 历史站内链接
+- 搜索引擎已收录地址
+- 外部文章、Issue、讨论帖中的旧链接
 
-| API             | 类型入口                                     | 说明                                                    |
-| --------------- | -------------------------------------------- | ------------------------------------------------------- |
-| `defineProps`   | `ComponentPropsOptions` / `ExtractPropTypes` | 声明 props（对象写法或泛型写法）。                      |
-| `withDefaults`  | `ExtractDefaultPropTypes`                    | 给类型化 props 设置默认值。                             |
-| `defineEmits`   | `EmitsOptions` / `TriggerEventOptions`       | 声明 emit，支持数组、对象、函数签名、named tuple 泛型。 |
-| `defineSlots`   | `VNode`                                      | 声明 slots 类型。                                       |
-| `defineExpose`  | `ComponentPublicInstance`                    | 暴露实例字段给父组件引用。                              |
-| `defineModel`   | `ModelBinding`                               | 定义 `v-model` 对应模型（含默认键）。                   |
-| `defineOptions` | `MiniProgramComponentOptions`                | 在 `<script setup>` 中声明组件选项（含 `behaviors`）。  |
-| `mergeModels`   | `ModelBindingPayload`                        | 合并多路 model 绑定结果。                               |
-| `useModel`      | `ModelBinding`                               | 运行时读取/写入某个 model。                             |
+## 2. 推荐做法
 
-### 宏能力示例（script setup）
+以后引用 Core API 时，请统一使用新地址：
 
-::: code-group
+- [Core API](/wevu/api/core)
 
-```vue [TypeScript]
-<script setup lang="ts">
-import { useTemplateRef } from 'wevu'
+## 3. 参考资源
 
-// [TS-only] interface 类型声明仅支持 lang="ts"
-interface Props {
-  title?: string
-  modelValue: number
-}
-
-// [TS-only] defineProps 泛型写法仅支持 lang="ts"
-const props = withDefaults(defineProps<Props>(), {
-  title: '默认标题',
-})
-
-// [TS-only] defineEmits 泛型（含 named tuple）仅支持 lang="ts"
-const emit = defineEmits<{
-  'submit': [value: string]
-  'update:modelValue': [value: number]
-}>()
-
-// [TS-only] defineModel 泛型仅支持 lang="ts"
-const model = defineModel<number>()
-const inputRef = useTemplateRef('input')
-
-// [TS-only] 参数类型注解仅支持 lang="ts"
-function onSubmit(value: string) {
-  emit('submit', value)
-  emit('update:modelValue', model.value ?? 0)
-  console.log(props.title, inputRef.value)
-}
-
-defineExpose({ onSubmit })
-</script>
-```
-
-```vue [JavaScript]
-<script setup>
-import { useTemplateRef } from 'wevu'
-
-const props = defineProps({
-  title: String,
-  modelValue: Number,
-})
-
-const emit = defineEmits(['submit', 'update:modelValue'])
-const model = defineModel()
-const inputRef = useTemplateRef('input')
-
-function onSubmit(value) {
-  emit('submit', value)
-  emit('update:modelValue', model.value ?? 0)
-  console.log(props.title, inputRef.value)
-}
-
-defineExpose({ onSubmit })
-</script>
-```
-
-:::
-
-## 3. 模板和 class/style 工具
-
-| API                   | 类型入口                           | 说明                                                        |
-| --------------------- | ---------------------------------- | ----------------------------------------------------------- |
-| `useAttrs`            | `SetupContext`                     | 获取 attrs（透传属性）。                                    |
-| `useSlots`            | `TemplateRefs`                     | 获取 slots。                                                |
-| `useTemplateRef`      | `TemplateRef` / `TemplateRefValue` | 获取模板 `ref` 对应实例。                                   |
-| `useNativeInstance`   | `SetupContextNativeInstance`       | 访问 setup 绑定的原生实例。                                 |
-| `useNativeRouter`     | `Router`                           | 组件路径语义 Router（`router -> pageRouter -> wx/my/tt`）。 |
-| `useNativePageRouter` | `Router`                           | 页面路径语义 Router（`pageRouter -> router -> wx/my/tt`）。 |
-| `normalizeClass`      | `string`                           | 归一化 class 输入（对象/数组/字符串）。                     |
-| `normalizeStyle`      | `Record<string, string>`           | 归一化 style 输入。                                         |
-
-### 模板工具示例（script setup）
-
-::: code-group
-
-```vue [TypeScript]
-<script setup lang="ts">
-import { computed, normalizeClass, normalizeStyle, useAttrs, useSlots } from 'wevu'
-
-// [TS-only] 此示例无专属语法，TS/JS 写法一致。
-const attrs = useAttrs()
-const slots = useSlots()
-const isActive = true
-
-const className = computed(() => normalizeClass(['card', { active: isActive }]))
-const styleText = computed(() => normalizeStyle([{ color: '#1f2937', fontWeight: 600 }]))
-</script>
-
-<template>
-  <view :class="className" :style="styleText" v-bind="attrs">
-    <slot v-if="slots.default" />
-  </view>
-</template>
-```
-
-```vue [JavaScript]
-<script setup>
-import { computed, normalizeClass, normalizeStyle, useAttrs, useSlots } from 'wevu'
-
-const attrs = useAttrs()
-const slots = useSlots()
-const isActive = true
-
-const className = computed(() => normalizeClass(['card', { active: isActive }]))
-const styleText = computed(() => normalizeStyle([{ color: '#1f2937', fontWeight: 600 }]))
-</script>
-
-<template>
-  <view :class="className" :style="styleText" v-bind="attrs">
-    <slot v-if="slots.default" />
-  </view>
-</template>
-```
-
-:::
-
-## 4. 相关页
-
-- 响应式能力：[/wevu/api-reference/reactivity](/wevu/api-reference/reactivity)
-- setup 上下文与原生实例：[/wevu/api-reference/setup-context](/wevu/api-reference/setup-context)
-- 高阶路由子入口：[/wevu/router](/wevu/router)
-- 完整函数索引：/wevu/api/
+| 主题          | 推荐入口                                     |
+| ------------- | -------------------------------------------- |
+| API 首页      | [Wevu API](/wevu/api/)                       |
+| Reactivity    | [Reactivity API](/wevu/api/reactivity)       |
+| Setup Context | [Setup Context API](/wevu/api/setup-context) |

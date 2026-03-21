@@ -1,76 +1,148 @@
 ---
-title: JSON：Script Setup 宏优先
-description: JSON：Script Setup 宏优先，聚焦 handbook / sfc 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
+title: JSON：页面配置放哪里
+description: 从新项目默认实践出发，解释 defineAppJson、definePageJson、defineComponentJson 和 json 块各自的定位，以及什么时候还需要 usingComponents。
 keywords:
-  - Vue SFC
-  - 配置
   - handbook
   - sfc
   - json
-  - JSON：Script
-  - setup
-  - 宏优先
+  - definePageJson
+  - defineAppJson
 ---
 
-# JSON：Script Setup 宏优先
+# JSON：页面配置放哪里
 
-## 本章你会学到什么
+在小程序 SFC 里，除了模板和脚本，你还必须关心一类非常宿主化的内容：
 
-- 在 SFC 中如何定义 `app/page/component` 的 JSON 配置
-- 为什么推荐宏指令而不是 `<json>` 块
-- `usingComponents` 在新项目中的定位
+- 页面标题
+- 组件声明
+- 页面或组件的 JSON 配置
 
-## 推荐：使用 JSON 宏
+新用户一开始最容易问的是：
 
-优先使用以下宏完成配置：
+> 我应该用 `<json>`，还是用宏？
+
+## 新项目默认推荐：优先用 JSON 宏
+
+优先使用：
 
 - `defineAppJson`
 - `definePageJson`
 - `defineComponentJson`
 
-补充约定：
-
-- 对 App/Page/Component SFC，能用对应 JSON 宏就不要使用 `<json>` 代码块。
-- App 用 `defineAppJson`，Page 用 `definePageJson`，Component 用 `defineComponentJson`。
-- `<json>` 仅作为兼容历史代码的兜底方案保留。
-
-这样做的优势：
-
-- 类型提示更完整
-- 与 `<script setup>` 作用域一致
-- 更适合组合与复用（尤其在 TypeScript 项目中）
-
-## `app.vue` 配置示例
+一个页面的推荐写法：
 
 ```vue
 <script setup lang="ts">
-import { onLaunch } from 'wevu'
+definePageJson(() => ({
+  navigationBarTitleText: '订单详情',
+  enablePullDownRefresh: true,
+}))
+</script>
+```
 
+这样做的好处是：
+
+- 和 `script setup` 放在同一个认知空间里
+- 更利于类型提示
+- 更适合新项目统一风格
+
+## App、Page、Component 分别怎么写
+
+### App
+
+```vue
+<script setup lang="ts">
 defineAppJson({
   pages: [
-    'pages/issue-289/index',
+    'pages/home/index',
+    'pages/profile/index',
   ],
 })
-
-onLaunch(() => {})
 </script>
 ```
 
-## 页面配置示例
+### Page
 
 ```vue
 <script setup lang="ts">
-definePageJson({
-  navigationBarTitleText: '示例页',
-})
+definePageJson(() => ({
+  navigationBarTitleText: '商品详情',
+}))
 </script>
 ```
 
-## 关于 `usingComponents`
+### Component
 
-- 新项目里，**SFC 子组件优先 `import .vue`**，通常不需要手写 `usingComponents`。
-- 只有在引入非 `.vue` 原生小程序组件路径时，再使用 `definePageJson/defineComponentJson` 补充 `usingComponents`。
+```vue
+<script setup lang="ts">
+defineComponentJson(() => ({
+  component: true,
+}))
+</script>
+```
 
-## 兼容说明
+## `<json>` 什么时候还会出现
 
-`<json>` 块仍可兼容历史代码，但不建议作为新项目默认方案。
+`<json>` 块仍然可以兼容老代码，但对于新项目来说，它更像是历史兼容能力，而不是默认入口。
+
+例如旧代码里可能是：
+
+```vue
+<json>
+{
+  "navigationBarTitleText": "示例页"
+}
+</json>
+```
+
+如果你正在重构或新建页面，通常优先迁移到宏写法会更统一。
+
+## `usingComponents` 什么时候需要
+
+如果你是直接导入 `.vue` 子组件，很多场景下不需要手写 `usingComponents`。
+
+例如：
+
+```vue
+<script setup lang="ts">
+import GoodsCard from '../../components/goods-card/index.vue'
+</script>
+```
+
+但这些场景仍然可能需要：
+
+- 引入非 `.vue` 的原生小程序组件
+- 接第三方小程序组件库路径
+- 某些明确要求 JSON 显式声明的组件映射
+
+一个典型例子：
+
+```vue
+<script setup lang="ts">
+definePageJson(() => ({
+  usingComponents: {
+    'custom-native-card': '/components/custom-native-card/index',
+  },
+}))
+</script>
+```
+
+## 一个新用户很实用的判断方法
+
+如果你问“这段内容属于脚本逻辑还是宿主配置”，就看它是否在描述：
+
+- 页面标题
+- 页面是否下拉刷新
+- 组件路径映射
+- 组件是不是 `component: true`
+
+如果是，这类东西通常就应该进 JSON 宏。
+
+## 一句话建议
+
+新项目统一用 JSON 宏；只有兼容历史代码或接原生组件时，再考虑 `<json>` 或显式 `usingComponents`。
+
+接下来建议继续看：
+
+- [组件：拆分、导入与注册](/handbook/sfc/components)
+- [事件与 v-model：怎么绑定最稳](/handbook/sfc/events-and-v-model)

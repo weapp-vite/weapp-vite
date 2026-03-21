@@ -27,10 +27,10 @@ keywords:
 
 ## 常见坑
 
-- 依赖被 hoist 后在小程序构建时找不到：需要明确 npm 构建策略与复制规则（参考 `/guide/npm`）。
+- 依赖被 hoist 后在小程序构建时找不到：需要明确 npm 构建策略与复制规则（参考 [/guide/npm](/guide/npm)）。
 - 同名依赖多版本：尽量统一版本，减少运行时体积与兼容风险。
 
 ## 相关链接
 
 - pnpm workspace：`pnpm-workspace.yaml`
-- Weapp-vite npm 策略：`/guide/npm`
+- Weapp-vite npm 策略：[自动构建 npm](/guide/npm)
