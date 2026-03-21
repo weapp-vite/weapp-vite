@@ -145,6 +145,16 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
   background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23c2410c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v4%22/%3E%3Cpath d=%22M12 16v4%22/%3E%3Cpath d=%22M4 12h4%22/%3E%3Cpath d=%22M16 12h4%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E')};
 }
 
+.VPSidebar .group:has(a[href='/guide/multi-platform.html']) > .text::before,
+.VPSidebar .group:has(a[href='/guide/multi-platform.html']) > button .text::before,
+.VPSidebar .group:has(a[href='/guide/multi-platform.html']) > .item > .text::before,
+.VPSidebar .group:has(a[href='/guide/multi-platform.html']) > .item > button .text::before {
+  --guide-group-bg: rgb(244 63 94 / 12%);
+  --guide-group-border: rgb(244 63 94 / 24%);
+
+  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be123c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v8%22/%3E%3Cpath d=%22M12 16h.01%22/%3E%3Cpath d=%22M10.29 5.86 3.82 17a2 2 0 0 0 1.73 3h12.9a2 2 0 0 0 1.73-3L13.71 5.86a2 2 0 0 0-3.42 0Z%22/%3E%3C/svg%3E')};
+}
+
 .VPSidebar a[href^='/guide/'] .text,
 .VPSidebar a[href='/config.html'] .text,
 .VPSidebar a[href='/config/'] .text,
@@ -260,6 +270,14 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
   --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234d7c0f%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7l8 4 8-4-8-4Z%22/%3E%3Cpath d=%22m4 12 8 4 8-4%22/%3E%3Cpath d=%22m4 8 8 4 8-4%22/%3E%3C/svg%3E')};
 }
 
+.VPSidebar a[href='/guide/multi-platform.html'] .text::before,
+.VPSidebar a[href='/guide/wxs.html'] .text::before,
+.VPSidebar a[href='/guide/web-compat-matrix.html'] .text::before {
+  --guide-icon-bg: rgb(244 63 94 / 11%);
+  --guide-icon-border: rgb(244 63 94 / 22%);
+  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be123c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v8%22/%3E%3Cpath d=%22M12 16h.01%22/%3E%3Cpath d=%22M10.29 5.86 3.82 17a2 2 0 0 0 1.73 3h12.9a2 2 0 0 0 1.73-3L13.71 5.86a2 2 0 0 0-3.42 0Z%22/%3E%3C/svg%3E')};
+}
+
 .VPSidebar a[href='/guide/image-optimize.html'] .text::before,
 .VPSidebar a[href^='/integration/'] .text::before {
   --guide-icon-bg: rgb(6 182 212 / 11%);
@@ -267,7 +285,6 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
   --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 12h6%22/%3E%3Cpath d=%22M14 12h6%22/%3E%3Cpath d=%22M12 4v6%22/%3E%3Cpath d=%22M12 14v6%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%222%22/%3E%3C/svg%3E')};
 }
 
-.VPSidebar a[href='/guide/web-compat-matrix.html'] .text::before,
 .VPSidebar a[href='/guide/seo-governance.html'] .text::before,
 .VPSidebar a[href='/guide/module.html'] .text::before,
 .VPSidebar a[href^='/troubleshoot/'] .text::before,

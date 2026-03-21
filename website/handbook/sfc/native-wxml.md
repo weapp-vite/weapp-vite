@@ -73,7 +73,7 @@ Weapp-vite 会把 Vue 模板编译成 WXML。未被 Vue 指令接管的原生语
 
 示例（保留为 WXML 模板）：
 
-```wxml
+```html
 <template>
   <template name="card"><view>...</view></template>
   <template is="card" data="{{item}}" />
@@ -109,7 +109,7 @@ Weapp-vite 会把 Vue 模板编译成 WXML。未被 Vue 指令接管的原生语
 
 ## 示例
 
-```wxml
+```html
 <template>
   <view wx:if="{{show}}">
     <block wx:for="{{list}}" wx:key="id">

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-21T08:52:00.947Z",
+  "generatedAt": "2026-03-21T09:16:56.326Z",
   "site": "https://vite.icebreaker.top",
   "count": 270,
   "items": [
@@ -1933,8 +1933,8 @@
     },
     {
       "id": "doc-606b7aa1e1",
-      "title": "面向多平台构建",
-      "summary": "Weapp-vite 内置了多端适配能力：在开发/构建命令后追加 --platform （或短写 -p ），即可输出目标平台所需的文件后缀与目录结构。",
+      "title": "面向多平台构建 experimental",
+      "summary": "Weapp-vite 提供实验性的多端适配能力：在开发/构建命令后追加 --platform （或短写 -p ），即可输出目标平台所需的文件后缀与目录结构。",
       "url": "/guide/multi-platform",
       "canonical": "https://vite.icebreaker.top/guide/multi-platform",
       "keywords": [
@@ -1942,19 +1942,20 @@
         "guide",
         "multi",
         "platform",
+        "experimental",
         "面向多平台构建",
         "weapp-vite",
         "内置了多端适配能力：在开发/构建命令后追加"
       ],
       "headings": [
-        "面向多平台构建 {#multi-platform}",
+        "面向多平台构建 experimental {#multi-platform}",
         "支付宝小程序 {#platform-alipay}",
         "字节系（抖音 / 今日头条）小程序 {#platform-tt}",
         "百度智能小程序 {#platform-swan}",
         "京东小程序 {#platform-jd}",
         "小红书小程序 {#platform-xhs}"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-21",
       "source": "guide/multi-platform.md"
     },
     {
@@ -3025,7 +3026,7 @@
         "保留为 WXML",
         "降级为"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-21",
       "source": "handbook/sfc/native-wxml.md"
     },
     {

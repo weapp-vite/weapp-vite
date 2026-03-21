@@ -87,17 +87,23 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
         ],
       },
       { text: 'WXML 增强', link: '/guide/wxml' },
-      { text: 'WXS 增强', link: '/guide/wxs' },
       { text: 'WXSS 注意点', link: '/guide/wxss' },
       { text: 'JSON 智能提示', link: '/guide/json-intelli-sense' },
       { text: 'TS/JS 生成 JSON', link: '/guide/json-enhance' },
       { text: '分包指南', link: '/guide/subpackage' },
       { text: '共享 Chunk', link: '/guide/chunks' },
       { text: '组件库构建', link: '/guide/lib-mode' },
-      { text: '多平台构建', link: '/guide/multi-platform' },
       { text: '静态资源优化', link: '/guide/image-optimize' },
       { text: '插件开发', link: '/guide/plugin' },
       { text: '宿主识别', link: '/guide/vite-plugin-host' },
+    ],
+  },
+  {
+    text: '实验能力',
+    collapsed: false,
+    items: [
+      { text: '多平台构建', link: '/guide/multi-platform' },
+      { text: 'WXS 增强', link: '/guide/wxs' },
       { text: 'Web 兼容矩阵', link: '/guide/web-compat-matrix' },
     ],
   },
@@ -585,6 +591,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
 export default withMermaid(defineConfig({
   title: 'Weapp-vite',
   description: '面向小程序的现代工程化工具链，覆盖开发、构建、Vue SFC、Wevu、自动化、MCP 与多平台能力。',
+  srcExclude: ['dist/**'],
   outDir: 'dist',
   // CI 环境不包含 gitignore 的 typedoc 产物，仅放行该目录的死链检查。
   ignoreDeadLinks: [/^\/wevu\/api(?:\/|$)/],
@@ -699,6 +706,12 @@ export default withMermaid(defineConfig({
     },
   },
   markdown: {
+    languageAlias: {
+      wxml: 'html',
+    },
+    languageLabel: {
+      wxml: 'WXML',
+    },
     config(md) {
       md.use(groupIconMdPlugin)
       md.use(copyOrDownloadAsMarkdownButtons)
@@ -810,6 +823,7 @@ export default withMermaid(defineConfig({
     plugins: [
       llmstxt({
         excludeBlog: false,
+        ignoreFiles: ['dist/**'],
         sidebar: configSidebar => sanitizeSidebarLinks(configSidebar),
       }),
       AutoImport({
