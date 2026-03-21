@@ -1,6 +1,6 @@
 ---
 name: native-to-weapp-vite-wevu-migration
-description: 面向将原生小程序项目迁移到 `weapp-vite + wevu + Vue SFC` 的结构化迁移工作流，覆盖分波次推进、行为等价转换、类型化 props/events 迁移、平台守卫以及面向迁移的 e2e 验证与回滚检查点。适用于“原生迁移到 weapp-vite”“setData 改造”“迁移回滚策略”“迁移 e2e 怎么测”等场景。
+description: 面向将原生小程序项目迁移到 `weapp-vite + wevu + Vue SFC` 的结构化迁移工作流，覆盖分波次推进、行为等价转换、`Page/Component` 到 `.vue`、类型化 props/events、`definePageMeta`/layout、平台守卫、`.weapp-vite` 类型支持文件接入，以及面向迁移的 e2e 验证与回滚检查点。适用于“原生迁移到 weapp-vite”“setData 改造”“迁移 route/layout”“迁移回滚策略”“迁移 e2e 怎么测”等场景。
 ---
 
 # native-to-weapp-vite-wevu-migration

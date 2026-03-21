@@ -23,13 +23,13 @@ keywords:
 :::
 
 :::warning 安装方式
-`wevu` 请安装到 `devDependencies`：
+在 `weapp-vite` 项目里，`wevu` 通常建议安装到 `devDependencies`：
 
 ```sh
 pnpm add -D wevu
 ```
 
-不要把它放到 `dependencies`。
+如果你是在非 `weapp-vite` 场景单独消费 `wevu/router`，则应按自己的发布方式决定依赖落位。
 :::
 
 ## 什么时候使用

@@ -1,6 +1,6 @@
 ---
 name: release-and-changeset-best-practices
-description: 面向采用 weapp-vite monorepo 布局仓库的 release 与 changeset 工作流。适用于补 changeset、判断某次改动是否需要 release note、保持 `create-weapp-vite` 与 `weapp-vite`/`wevu`/`templates/*` 联动、检查 Conventional Commits，或准备包发布。触发语句包括“要不要加 changeset”“帮我补发版记录”“这个改动要不要 bump create-weapp-vite”“准备发布”“校验 changeset”“按仓库规范提交/发布”等。
+description: 面向采用 weapp-vite monorepo 布局仓库的 release 与 changeset 工作流。适用于补 changeset、判断某次改动是否需要 release note、保持 `create-weapp-vite` 与 `weapp-vite`/`wevu`/`templates/*` 联动、检查 Conventional Commits，或准备包发布。也适用于源码 bug fix、模板行为变更、website/skills 用户可见改动后的发布判定。触发语句包括“要不要加 changeset”“帮我补发版记录”“这个改动要不要 bump create-weapp-vite”“准备发布”“校验 changeset”“按仓库规范提交/发布”等。
 ---
 
 # release-and-changeset-best-practices

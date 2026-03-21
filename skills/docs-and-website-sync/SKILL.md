@@ -1,6 +1,6 @@
 ---
 name: docs-and-website-sync
-description: 面向采用 weapp-vite monorepo 布局仓库的文档与网站同步工作流。适用于代码能力已变化但 docs/website/skills/release notes 可能过期的场景，或用户提出“update website”“sync docs with current code”“refresh AI guide/skills page”“补文档”“根据现有代码更新文档”等请求。始终先核对真实源码与脚本，再同步受影响的文档入口、skills 文档以及生成的 LLM/SEO 资产。
+description: 面向采用 weapp-vite monorepo 布局仓库的文档、website 与 skills 同步工作流。适用于代码能力已变化但 website/docs/README/skills/AI 指南/release notes 可能过期的场景，或用户提出“update website”“sync docs with current code”“refresh AI guide/skills page”“根据现有能力重写技能总结”“补配置文档”“同步 routeRules/layout/MCP/prepare/managed tsconfig 文档”等请求。始终先核对真实源码、类型定义、CLI 命令与脚本，再同步受影响的入口页、skill 元数据以及生成的 LLM/SEO 资产。
 ---
 
 # docs-and-website-sync

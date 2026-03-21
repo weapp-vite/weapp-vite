@@ -22,16 +22,10 @@ keywords:
 
 在 Wevu 体系里，这个角色就是 `wpi`，而 `wevu/api` 则是 `@wevu/api` 在 `wevu/*` 命名空间下的入口。
 
-:::warning 安装方式
-`wevu` 请安装在 `devDependencies` 中，而不是 `dependencies`。
+:::warning 入口边界
+`wevu/api` 是 `wevu` 的子路径入口，本质上透传的是 `@wevu/api`。
 
-推荐写法：
-
-```sh
-pnpm add -D wevu
-```
-
-原因是 Weapp-vite 会把这类构建期依赖内联到产物里；如果误放到 `dependencies`，通常会被当成运行时 npm 依赖处理，增加产物体积与依赖落位复杂度。
+这页讨论的是 API 门面与调用语义，不讨论“应该放到 `dependencies` 还是 `devDependencies`”这类工程落位策略；依赖安装位置应以你的实际构建方式和项目模板约定为准。
 :::
 
 ## 它和 `@wevu/api` 的关系

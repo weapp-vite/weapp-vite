@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-vue-sfc-best-practices
-description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册，覆盖 `<script setup lang="ts">`、JSON 宏（`defineAppJson/definePageJson/defineComponentJson`）、`usingComponents`、模板指令兼容性，以及 SFC 编译/运行时排障。适用于“v-model 在小程序里怎么写”“definePageJson 和 <json> 怎么选”“SFC 编译报错”“usingComponents 不生效”等场景。
+description: 面向使用 weapp-vite 的小程序项目的 Vue SFC 实践手册，覆盖 `<script setup lang="ts">`、JSON 宏（`defineAppJson/definePageJson/defineComponentJson`）、`definePageMeta`/layout、`defineModel`、`usingComponents`、模板指令兼容性，以及 SFC 编译/运行时排障。适用于“v-model 在小程序里怎么写”“definePageJson 和 <json> 怎么选”“layout 在页面里怎么配”“SFC 编译报错”“usingComponents 不生效”等场景。
 ---
 
 # weapp-vite-vue-sfc-best-practices
@@ -57,7 +57,8 @@ Do not use this as the primary skill when:
 
 4. Apply macro and template rules
 
-- Use only one macro family per SFC.
+- Use only one JSON macro per SFC role (`defineAppJson` / `definePageJson` / `defineComponentJson`).
+- Treat `definePageMeta` as a separate page-meta macro; it may coexist with `definePageJson` in page SFCs.
 - App -> `defineAppJson`; Page -> `definePageJson`; Component -> `defineComponentJson`.
 - Keep macro calls top-level with a single object argument.
 - For `v-model`, only use assignable left values: `x`, `x.y`, `x[i]`.

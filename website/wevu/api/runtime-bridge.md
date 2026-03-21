@@ -51,6 +51,11 @@ keywords:
 - 类型入口：`MutationRecord`
 - 用途：移除状态 mutation 记录器。
 
+## 子路径边界
+
+- `wevu/compiler` 不是 `wevu` 根入口的一部分，主要给编译工具使用。
+- `wevu/router` 也不是运行时桥接页的一部分；若你需要 `createRouter()` / `useRouter()`，请直接看 [/wevu/router](/wevu/router)。
+
 ## 示例
 
 ::: code-group

@@ -1,6 +1,6 @@
 ---
 name: weapp-ide-cli-best-practices
-description: "面向结合 weapp-ide-cli 与 weapp-vite 使用场景的命令治理与自动化实践手册，覆盖官方 CLI 透传、automator 命令、config/i18n 持久化、命令目录导出，以及与 weapp-vite CLI 分发的集成契约。"
+description: 面向结合 weapp-ide-cli 与 weapp-vite 使用场景的命令治理与自动化实践手册，覆盖官方 CLI 透传、`preview/upload/open/login`、automator 增强命令、`config doctor/export/import`、i18n 持久化、命令目录导出，以及与 weapp-vite CLI 原生命令优先 + catalog 透传的集成契约。
 ---
 
 # weapp-ide-cli-best-practices

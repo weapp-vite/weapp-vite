@@ -1,6 +1,6 @@
 ---
 name: wevu-best-practices
-description: "面向小程序中 wevu 运行时的实践手册：生命周期注册、响应式更新、事件契约、bindModel/useBindModel，以及带有小程序兼容约束的 Pinia/store 使用模式。适用于实现或重构 wevu pages/components/stores、排查 hook 时序或 setData diff 行为，或解释它与 Vue 3 Web runtime 差异的场景。"
+description: 面向小程序中 wevu 运行时的实践手册：覆盖生命周期注册、响应式更新、事件契约、`bindModel/useBindModel`、`setPageLayout/usePageLayout`、根入口的 `useNativeRouter/useNativePageRouter`，以及 `wevu/router` 的 `createRouter/useRouter/useRoute` 和带有小程序兼容约束的 store 使用模式。适用于实现或重构 wevu pages/components/stores、排查 hook 时序、router 使用方式或 setData diff 行为，或解释它与 Vue 3 Web runtime 差异的场景。
 ---
 
 # wevu-best-practices

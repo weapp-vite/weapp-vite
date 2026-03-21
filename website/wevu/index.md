@@ -70,7 +70,7 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 - **Store（状态管理）**：`defineStore` / `storeToRefs` / `createStore`（可选插件入口）。
 
 :::tip 导入约定
-运行时 API 都从 `wevu` 主入口导入。`wevu/compiler` 仅供 Weapp-vite 等编译侧工具使用（非稳定用户 API）。
+运行时基础 API 默认从 `wevu` 主入口导入；高阶导航从 `wevu/router` 导入；`wevu/compiler` 仅供 Weapp-vite 等编译侧工具使用（非稳定业务 API）。
 :::
 
 ## 其他子路径导出
@@ -81,6 +81,17 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 - [wevu/fetch](/wevu/fetch)：基于 `wpi.request` 的 Fetch 风格接口
 - [wevu/router](/wevu/router)：更接近 Vue Router 心智的路由入口
 - [wevu/jsx-runtime](/wevu/jsx-runtime)：给 TSX / JSX 类型系统使用的入口
+
+## 已弃用 API 提示
+
+当前源码里已明确标记为弃用、但仍保留导出的公开 API 主要是：
+
+- `provideGlobal()` / `injectGlobal()`
+
+它们仅为兼容旧代码保留。新代码请优先使用：
+
+- `provide()` / `inject()`：局部依赖注入
+- `defineStore()` / `createStore()`：稳定全局共享状态
 
 ## 编译侧桥接（wevu/compiler）
 

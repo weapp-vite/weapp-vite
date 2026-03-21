@@ -18,10 +18,12 @@ keywords:
 
 ## 1. 入口与组件定义
 
-| API               | 类型入口                                         | 说明                                         |
-| ----------------- | ------------------------------------------------ | -------------------------------------------- |
-| `createApp`       | `CreateAppOptions` / `RuntimeApp`                | 创建并注册小程序 App，桥接全局生命周期。     |
-| `defineComponent` | `DefineComponentOptions` / `ComponentDefinition` | 定义页面或组件（统一注册为 `Component()`）。 |
+| API                             | 类型入口                                         | 说明                                         |
+| ------------------------------- | ------------------------------------------------ | -------------------------------------------- |
+| `createApp`                     | `CreateAppOptions` / `RuntimeApp`                | 创建并注册小程序 App，桥接全局生命周期。     |
+| `defineComponent`               | `DefineComponentOptions` / `ComponentDefinition` | 定义页面或组件（统一注册为 `Component()`）。 |
+| `createWevuComponent`           | `DefineComponentOptions` / `ComponentDefinition` | 供 Weapp-vite 编译产物调用的兼容入口。       |
+| `createWevuScopedSlotComponent` | `DefineComponentOptions` / `ComponentDefinition` | 供编译侧生成 scoped slot 宿主组件使用。      |
 
 ## 2. `<script setup>` 宏
 
@@ -106,16 +108,16 @@ defineExpose({ onSubmit })
 
 ## 3. 模板和 class/style 工具
 
-| API                 | 类型入口                           | 说明                                                        |
-| ------------------- | ---------------------------------- | ----------------------------------------------------------- |
-| `useAttrs`          | `SetupContext`                     | 获取 attrs（透传属性）。                                    |
-| `useSlots`          | `TemplateRefs`                     | 获取 slots。                                                |
-| `useTemplateRef`    | `TemplateRef` / `TemplateRefValue` | 获取模板 `ref` 对应实例。                                   |
-| `useNativeInstance` | `SetupContextNativeInstance`       | 访问 setup 绑定的原生实例。                                 |
-| `useRouter`         | `Router`                           | 组件路径语义 Router（`router -> pageRouter -> wx/my/tt`）。 |
-| `usePageRouter`     | `Router`                           | 页面路径语义 Router（`pageRouter -> router -> wx/my/tt`）。 |
-| `normalizeClass`    | `string`                           | 归一化 class 输入（对象/数组/字符串）。                     |
-| `normalizeStyle`    | `Record<string, string>`           | 归一化 style 输入。                                         |
+| API                   | 类型入口                           | 说明                                                        |
+| --------------------- | ---------------------------------- | ----------------------------------------------------------- |
+| `useAttrs`            | `SetupContext`                     | 获取 attrs（透传属性）。                                    |
+| `useSlots`            | `TemplateRefs`                     | 获取 slots。                                                |
+| `useTemplateRef`      | `TemplateRef` / `TemplateRefValue` | 获取模板 `ref` 对应实例。                                   |
+| `useNativeInstance`   | `SetupContextNativeInstance`       | 访问 setup 绑定的原生实例。                                 |
+| `useNativeRouter`     | `Router`                           | 组件路径语义 Router（`router -> pageRouter -> wx/my/tt`）。 |
+| `useNativePageRouter` | `Router`                           | 页面路径语义 Router（`pageRouter -> router -> wx/my/tt`）。 |
+| `normalizeClass`      | `string`                           | 归一化 class 输入（对象/数组/字符串）。                     |
+| `normalizeStyle`      | `Record<string, string>`           | 归一化 style 输入。                                         |
 
 ### 模板工具示例（script setup）
 
@@ -166,4 +168,5 @@ const styleText = computed(() => normalizeStyle([{ color: '#1f2937', fontWeight:
 
 - 响应式能力：[/wevu/api-reference/reactivity](/wevu/api-reference/reactivity)
 - setup 上下文与原生实例：[/wevu/api-reference/setup-context](/wevu/api-reference/setup-context)
+- 高阶路由子入口：[/wevu/router](/wevu/router)
 - 完整函数索引：/wevu/api/

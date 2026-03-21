@@ -44,9 +44,9 @@ bun add -D wevu
 :::
 
 :::warning 安装位置
-`wevu` 必须安装在 `devDependencies` 中。上面的 `-D` / `--save-dev` 不是可选项。
+在 `weapp-vite` 项目里，`wevu` 通常建议安装在 `devDependencies` 中，因此上面的示例使用了 `-D` / `--save-dev`。
 
-原因是 Weapp-vite 会把 `wevu` 作为构建期依赖参与编译与内联；若误装到 `dependencies`，通常会被当成运行时 npm 依赖处理，影响产物结构与依赖落位。
+这是当前 `weapp-vite + wevu` 模板与常见工程实践的推荐组合；如果你是在非 `weapp-vite` 场景单独消费 `wevu`，应按自己的发布方式决定依赖落位。
 :::
 
 :::tip

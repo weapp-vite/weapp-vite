@@ -13,13 +13,13 @@ keywords:
 `wevu/fetch` 提供了一个接近标准 Fetch 的接口，但底层仍然走小程序请求能力。当前实现基于 `@wevu/api` 的 `wpi.request`，适合想用 `fetch(url, init)` 心智写小程序请求的场景。
 
 :::warning 安装方式
-`wevu` 请安装在 `devDependencies` 中：
+在 `weapp-vite` 项目里，`wevu` 通常建议安装在 `devDependencies` 中：
 
 ```sh
 pnpm add -D wevu
 ```
 
-这是 Weapp-vite + Wevu 的推荐组合方式。
+这是 Weapp-vite + Wevu 的常见推荐组合；若你是在其他构建场景单独消费 `wevu/fetch`，应按自己的发布方式决定依赖落位。
 :::
 
 ## 导出内容

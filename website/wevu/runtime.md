@@ -358,11 +358,15 @@ endBatch()
 ## Provide / Inject
 
 - `provide(key, value)` / `inject(key, defaultValue?)`：优先读写“当前实例”的 provide 域，找不到会回落到全局存储
-- `provideGlobal` / `injectGlobal`：显式的全局读写（组件外调用场景）
+- `provideGlobal` / `injectGlobal`：已弃用的显式全局读写兼容入口
 
 :::warning 重要限制
 当前版本没有组件树父子指针，`inject()` 不会向上查找“祖先组件”；组件内注入只能命中“当前实例提供的值”，否则回落到全局存储。
 :::
+
+> [!WARNING]
+> `provideGlobal()` / `injectGlobal()` 仅为兼容旧代码保留，不建议在新项目中继续扩散。
+> 若需要全局共享，优先评估 store；若只是当前 setup/实例上下文内共享，优先使用 `provide()` / `inject()`。
 
 ## createApp：应用运行时与插件
 

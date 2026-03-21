@@ -15,12 +15,13 @@ keywords:
 它不是一个面向业务的“运行时 API 集合”，更接近“给 JSX/TSX 类型系统用的入口”。
 
 :::warning 安装方式
-`wevu` 请安装在 `devDependencies` 中：
+在 `weapp-vite` 项目里，`wevu` 通常建议安装在 `devDependencies` 中：
 
 ```sh
 pnpm add -D wevu
 ```
 
+若你是在其他 JSX/TSX 工程里单独消费 `wevu/jsx-runtime`，则应按自己的发布方式决定依赖落位。
 :::
 
 ## 当前定位
