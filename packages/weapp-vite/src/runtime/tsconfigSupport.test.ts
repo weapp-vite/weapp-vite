@@ -149,11 +149,20 @@ describe('tsconfig support', () => {
       },
     })
 
-    await syncManagedTsconfigBootstrapFiles(root)
+    await expect(syncManagedTsconfigBootstrapFiles(root)).resolves.toBe(true)
 
     const app = await fs.readJson(path.join(root, '.weapp-vite', 'tsconfig.app.json'))
     const server = await fs.readJson(path.join(root, '.weapp-vite', 'tsconfig.server.json'))
     expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['.weapp-vite/typed-components.d.ts'])
     expect(server.files).toEqual([])
+  })
+
+  it('returns false when bootstrap managed tsconfig files are already fresh', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-bootstrap-tsconfig-fresh-'))
+    await fs.writeJson(path.join(root, 'package.json'), {})
+
+    await syncManagedTsconfigBootstrapFiles(root)
+
+    await expect(syncManagedTsconfigBootstrapFiles(root)).resolves.toBe(false)
   })
 })

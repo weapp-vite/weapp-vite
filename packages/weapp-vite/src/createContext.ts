@@ -13,9 +13,10 @@ interface CreateCompilerContextOptions extends Partial<LoadConfigOptions> {
  * @description 创建并初始化编译上下文（加载配置、扫描入口）
  */
 export async function createCompilerContext(options?: CreateCompilerContextOptions) {
+  let bootstrapManagedTsconfigChanged = false
   if (options?.cwd) {
     try {
-      await syncManagedTsconfigBootstrapFiles(options.cwd)
+      bootstrapManagedTsconfigChanged = await syncManagedTsconfigBootstrapFiles(options.cwd)
     }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -35,7 +36,7 @@ export async function createCompilerContext(options?: CreateCompilerContextOptio
   if (options?.syncSupportFiles !== false) {
     try {
       const supportFiles = await syncProjectSupportFiles(ctx)
-      if (supportFiles.managedTsconfigChanged) {
+      if (bootstrapManagedTsconfigChanged || supportFiles.managedTsconfigChanged) {
         logger.warn('[prepare] 检测到 .weapp-vite 支持文件缺失或已过期，已自动重新生成。建议执行 weapp-vite prepare 并提交更新。')
       }
     }
