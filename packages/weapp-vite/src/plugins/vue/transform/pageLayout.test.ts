@@ -1,6 +1,6 @@
 import fsNative from 'node:fs'
+import fs from 'node:fs/promises'
 import os from 'node:os'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyPageLayout, applyPageLayoutPlan, applyPageLayoutPlanToNativePage, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, injectNativePageLayoutRuntime, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
@@ -10,7 +10,7 @@ const tempDirs: string[] = []
 async function createTempProject() {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-layouts-'))
   tempDirs.push(dir)
-  await fs.ensureDir(path.join(dir, 'src'))
+  await fs.mkdir(path.join(dir, 'src'), { recursive: true })
   return dir
 }
 
@@ -19,7 +19,7 @@ describe('page layouts', () => {
     while (tempDirs.length) {
       const dir = tempDirs.pop()
       if (dir) {
-        await fs.remove(dir)
+        await fs.rm(dir, { recursive: true, force: true })
       }
     }
   })
@@ -96,8 +96,8 @@ setPageLayout('panel', {
     const pageFile = path.join(srcRoot, 'pages', 'index', 'index.vue')
     const layoutFile = path.join(srcRoot, 'layouts', 'default.vue')
 
-    await fs.ensureDir(path.dirname(pageFile))
-    await fs.ensureDir(path.dirname(layoutFile))
+    await fs.mkdir(path.dirname(pageFile), { recursive: true })
+    await fs.mkdir(path.dirname(layoutFile), { recursive: true })
     await fs.writeFile(layoutFile, '<template><slot /></template>', 'utf8')
 
     const resolved = await resolvePageLayout(
@@ -124,8 +124,8 @@ setPageLayout('panel', {
     const pageFile = path.join(srcRoot, 'pages', 'index', 'index.vue')
     const layoutFile = path.join(srcRoot, 'layouts', 'default.vue')
 
-    await fs.ensureDir(path.dirname(pageFile))
-    await fs.ensureDir(path.dirname(layoutFile))
+    await fs.mkdir(path.dirname(pageFile), { recursive: true })
+    await fs.mkdir(path.dirname(layoutFile), { recursive: true })
     await fs.writeFile(layoutFile, '<template><slot /></template>', 'utf8')
 
     const nativeSpy = vi.spyOn(fsNative.realpathSync, 'native').mockImplementation((input: fsNative.PathLike) => {
@@ -162,7 +162,7 @@ setPageLayout('panel', {
     const pageFile = path.join(srcRoot, 'pages', 'dashboard', 'index.vue')
     const layoutFile = path.join(srcRoot, 'layouts', 'admin.vue')
 
-    await fs.ensureDir(path.dirname(layoutFile))
+    await fs.mkdir(path.dirname(layoutFile), { recursive: true })
     await fs.writeFile(layoutFile, '<template><slot /></template>', 'utf8')
 
     const resolved = await resolvePageLayout(
@@ -195,7 +195,7 @@ setPageLayout('panel', {
     const adminLayout = path.join(srcRoot, 'layouts', 'admin.vue')
     const dashboardLayout = path.join(srcRoot, 'layouts', 'dashboard.vue')
 
-    await fs.ensureDir(path.dirname(adminLayout))
+    await fs.mkdir(path.dirname(adminLayout), { recursive: true })
     await fs.writeFile(adminLayout, '<template><slot /></template>', 'utf8')
     await fs.writeFile(dashboardLayout, '<template><slot /></template>', 'utf8')
 
@@ -228,7 +228,7 @@ setPageLayout('dashboard')
     const dashboardLayout = path.join(srcRoot, 'layouts', 'dashboard.vue')
     const adminLayout = path.join(srcRoot, 'layouts', 'admin.vue')
 
-    await fs.ensureDir(path.dirname(dashboardLayout))
+    await fs.mkdir(path.dirname(dashboardLayout), { recursive: true })
     await fs.writeFile(dashboardLayout, '<template><slot /></template>', 'utf8')
     await fs.writeFile(adminLayout, '<template><slot /></template>', 'utf8')
 
@@ -257,7 +257,7 @@ setPageLayout('dashboard')
     const pageFile = path.join(srcRoot, 'pages', 'native', 'index.vue')
     const layoutBase = path.join(srcRoot, 'layouts', 'native-shell', 'index')
 
-    await fs.ensureDir(path.dirname(layoutBase))
+    await fs.mkdir(path.dirname(layoutBase), { recursive: true })
     await fs.writeFile(`${layoutBase}.json`, JSON.stringify({ component: true }, null, 2), 'utf8')
     await fs.writeFile(`${layoutBase}.wxml`, '<view class="shell"><slot /></view>', 'utf8')
 
@@ -292,7 +292,7 @@ definePageMeta({
     const pageFile = path.join(srcRoot, 'pages', 'panel', 'index.vue')
     const layoutFile = path.join(srcRoot, 'layouts', 'panel.vue')
 
-    await fs.ensureDir(path.dirname(layoutFile))
+    await fs.mkdir(path.dirname(layoutFile), { recursive: true })
     await fs.writeFile(layoutFile, '<template><slot /></template>', 'utf8')
 
     const resolved = await resolvePageLayout(
@@ -343,7 +343,7 @@ definePageMeta({
     const pageFile = path.join(srcRoot, 'pages', 'plain', 'index.vue')
     const layoutFile = path.join(srcRoot, 'layouts', 'default.vue')
 
-    await fs.ensureDir(path.dirname(layoutFile))
+    await fs.mkdir(path.dirname(layoutFile), { recursive: true })
     await fs.writeFile(layoutFile, '<template><slot /></template>', 'utf8')
 
     const resolved = await resolvePageLayout(
@@ -383,7 +383,7 @@ definePageMeta({
     )
 
     expect(result.template).toBe('<weapp-layout-default><view>content</view></weapp-layout-default>')
-    expect(result.script).toContain('import "../../layouts/default.vue"')
+    expect(result.script).toBe('export default {}')
     expect(JSON.parse(result.config!)).toEqual({
       navigationBarTitleText: '首页',
       usingComponents: {

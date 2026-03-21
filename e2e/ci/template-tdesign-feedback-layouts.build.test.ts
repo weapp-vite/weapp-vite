@@ -41,10 +41,14 @@ describe.sequential('template build: tdesign feedback layouts', () => {
     const defaultLayoutWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/default.wxml')
     const adminLayoutWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/admin.wxml')
     const pageWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'pages/index/index.wxml')
+    const defaultLayoutJs = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/default.js')
+    const commonJs = await readDistFile(BASE_TEMPLATE_ROOT, 'common.js')
 
     expectFeedbackNodes(defaultLayoutWxml)
     expectFeedbackNodes(adminLayoutWxml)
     expectNoFeedbackNodes(pageWxml)
+    expect(defaultLayoutJs).toContain('createWevuComponent({')
+    expect(commonJs).not.toContain('//#region src/layouts/default.vue')
   })
 
   it('emits shared feedback nodes from the retail default layout only', async () => {

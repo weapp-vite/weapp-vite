@@ -4,7 +4,6 @@ import type { LayoutPropValue, LayoutTransformLikeResult, ResolvedPageLayout, Re
 import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate } from '../../../../utils/babel'
 import { createStaticObjectKey, findNativePageOptionsObject, findWevuOptionsObject, getObjectPropertyByKey, parseExpressionAst, stripDefinePageMetaCalls, stripTypeSyntaxFromAst } from './ast'
-import { ensureRelativeImportPath } from './shared'
 import { buildDynamicLayoutTemplate, collapseNestedLayoutWrapper, hasDynamicExpressionLayoutProps, serializeLayoutProps } from './template'
 
 function mergeLayoutUsingComponent(config: string | undefined, tagName: string, importPath: string) {
@@ -143,28 +142,9 @@ function mergeLayoutUsingComponents(
   return next
 }
 
-function injectVueLayoutImports(
-  script: string | undefined,
-  filename: string,
-  layouts: ResolvedPageLayout[],
-) {
-  let next = script ?? 'export default {}'
-  for (const layout of layouts) {
-    if (layout.kind !== 'vue') {
-      continue
-    }
-    const layoutImport = ensureRelativeImportPath(filename, layout.file)
-    const sideEffectImport = `import ${JSON.stringify(layoutImport)}\n`
-    if (!next.includes(sideEffectImport)) {
-      next = `${sideEffectImport}${next}`
-    }
-  }
-  return next
-}
-
 export function applyPageLayout(
   result: VueTransformResult,
-  filename: string,
+  _filename: string,
   layout: ResolvedPageLayout | undefined,
 ) {
   if (!layout || !result.template) {
@@ -181,14 +161,6 @@ export function applyPageLayout(
   result.template = `<${layout.tagName}${serializedProps}>${result.template}</${layout.tagName}>`
   result.script = injectLayoutBindingComputed(result.script, layout.props)
   result.config = mergeLayoutUsingComponent(result.config, layout.tagName, layout.importPath)
-
-  if (layout.kind === 'vue') {
-    const layoutImport = ensureRelativeImportPath(filename, layout.file)
-    const sideEffectImport = `import ${JSON.stringify(layoutImport)}\n`
-    if (!result.script?.includes(sideEffectImport)) {
-      result.script = `${sideEffectImport}${result.script ?? 'export default {}'}`
-    }
-  }
 
   return result
 }
@@ -208,7 +180,6 @@ export function applyPageLayoutPlan(
 
   result.template = buildDynamicLayoutTemplate(result.template, plan.currentLayout, plan.layouts, plan.dynamicPropKeys)
   result.script = injectLayoutBindingComputed(result.script, plan.currentLayout?.props)
-  result.script = injectVueLayoutImports(result.script, filename, plan.layouts)
   result.config = mergeLayoutUsingComponents(result.config, plan.layouts)
   return result
 }
