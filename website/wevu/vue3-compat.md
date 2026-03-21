@@ -83,6 +83,10 @@ keywords:
 - `inject()`：注入依赖
 - `provideGlobal()` / `injectGlobal()`：全局 provide/inject（已弃用，仅用于兼容/过渡；当前版本仍保留导出）
 
+> [!WARNING]
+> `provideGlobal()` / `injectGlobal()` 不是推荐用法，只是为了兼容旧代码仍然保留。
+> 新代码请优先使用 `provide()` / `inject()`，或使用 store 处理全局共享状态。
+
 ### Store（Pinia 风格）
 
 `wevu` 内置了 Pinia 风格 Store，并且可以做到“无需全局注册，直接使用”：

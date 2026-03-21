@@ -1,9 +1,10 @@
 interface:
   display_name: Docs And Website Sync
-  short_description: 根据仓库真实代码能力同步 website、skills、AI 指南与生成资产
+  short_description: 根据真实代码能力同步 website、skills、AI 指南、配置文档与生成资产
   default_prompt: >-
-    当用户要求同步 docs/website/skills 与当前代码、刷新 AI 协作页面、在能力变化后更新包文档，
-    或修复采用 weapp-vite monorepo 布局仓库中的过期文档时，使用
+    当用户要求同步 docs/website/skills 与当前代码、刷新 AI 协作页面、重写技能总结、
+    补 routeRules/layout/managed tsconfig/prepare/MCP 等新增能力文档，或修复采用
+    weapp-vite monorepo 布局仓库中的过期文档时，使用
     $docs-and-website-sync。始终先检查真实源码与 package scripts，再更新受影响的
     入口页、skill 列表与回归清单，最后再刷新 llms/SEO 生成资产。若问题主轴是
     架构与构建设计，切换到 $weapp-vite-best-practices；若主轴是运行时语义，使用

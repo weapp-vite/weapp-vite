@@ -8,7 +8,8 @@
 
 ## Macro rules
 
-- One macro family per SFC.
+- One JSON macro per SFC role.
+- `definePageMeta` is a separate page-meta macro and may coexist with `definePageJson` in page SFCs.
 - Top-level calls only.
 - Single argument only.
 - Prefer deterministic, side-effect-free macro functions.

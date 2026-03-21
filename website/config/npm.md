@@ -46,6 +46,9 @@ keywords:
     mainPackage?: {
       dependencies?: false | (string | RegExp)[]
     }
+    pluginPackage?: {
+      dependencies?: false | (string | RegExp)[]
+    }
     subPackages?: Record<string, {
       dependencies?: (string | RegExp)[]
     }>
@@ -65,6 +68,9 @@ export default defineConfig({
       cache: true,
       mainPackage: {
         dependencies: false,
+      },
+      pluginPackage: {
+        dependencies: ['dayjs'],
       },
       subPackages: {
         'packages/order': {
@@ -95,6 +101,11 @@ export default defineConfig({
   - `undefined`：默认行为，按根 `package.json.dependencies` 输出到主包；
   - `false`：禁止输出主包 `miniprogram_npm`；
   - `string[] | RegExp[]`：只把命中的依赖输出到主包。
+- `pluginPackage.dependencies`：
+  - 仅在开启 `weapp.pluginRoot` 且执行插件构建链路时生效；
+  - `undefined`：默认按根 `package.json.dependencies` 输出到插件产物；
+  - `false`：禁止输出插件侧 `miniprogram_npm`；
+  - `string[] | RegExp[]`：只把命中的依赖输出到 `dist-plugin/miniprogram_npm`。
 - `subPackages`：为特定分包声明本地 npm 依赖范围。命中的分包会输出自己的 `miniprogram_npm`，并将分包内命中的 npm 引用重写到本地目录。
 - `buildOptions`：为单个包覆写 Vite 库模式构建参数。
 - `alipayNpmMode`：支付宝平台 npm 目录风格。默认 `node_modules`，若要兼容微信风格目录，可切到 `miniprogram_npm`。
@@ -128,6 +139,74 @@ export default defineConfig({
 适用场景：
 - 想把只被独立分包使用的依赖留在分包内，减少主包体积。
 - 想精确控制不同分包的 `miniprogram_npm` 内容。
+
+## 插件 npm 包落位演示
+
+如果项目同时维护小程序主应用和插件，可以通过 `weapp.pluginRoot` + `weapp.npm.pluginPackage.dependencies` 单独控制插件产物里的 npm 包落位。
+
+```ts [vite.config.mts]
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    srcRoot: 'miniprogram',
+    pluginRoot: 'plugin',
+    npm: {
+      enable: true,
+      pluginPackage: {
+        dependencies: ['dayjs'],
+      },
+      mainPackage: {
+        dependencies: false,
+      },
+    },
+  },
+})
+```
+
+假设根 `package.json` 是：
+
+```json
+{
+  "dependencies": {
+    "dayjs": "^1.11.13",
+    "lodash": "^4.17.21"
+  }
+}
+```
+
+而插件代码只在 `plugin/**` 下引用了 `dayjs`：
+
+```ts [plugin/utils/showcase.ts]
+import dayjs from 'dayjs'
+
+export const pluginNpmBuildStamp = dayjs('2026-03-19T12:34:00').format('YYYY/MM/DD HH:mm')
+```
+
+构建后会得到类似结果：
+
+```text
+dist/
+└── # 主应用产物；此例因为 mainPackage.dependencies = false，不生成根 miniprogram_npm
+
+dist-plugin/
+├── plugin.json
+├── common.js
+├── pages/native-playground/index.js
+└── miniprogram_npm
+    └── dayjs
+        └── index.js
+```
+
+这意味着：
+
+- `dayjs` 会落到 `dist-plugin/miniprogram_npm/dayjs`；
+- 插件 chunk / JSON 中的 npm 引用会被改写到插件本地目录；
+- `lodash` 不会进入 `dist-plugin/miniprogram_npm`，因为它没有命中 `pluginPackage.dependencies`；
+- 若 `pluginPackage.dependencies` 省略，则默认会按根 `dependencies` 构建插件侧 npm。
+
+> [!TIP]
+> 仓库里的 [`apps/plugin-demo`](/guide/plugin.md#示例项目) 与 `e2e/ci/plugin-demo.build.test.ts` 已覆盖这个场景：构建后要求 `dist-plugin/miniprogram_npm/dayjs/index.js` 存在，而 `lodash` 不存在。
 
 ## 控制 npm 依赖的压缩与 sourcemap
 

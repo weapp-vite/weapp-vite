@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-21T07:43:33.105Z",
+  "generatedAt": "2026-03-21T08:52:00.947Z",
   "site": "https://vite.icebreaker.top",
-  "count": 268,
+  "count": 270,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -543,6 +543,7 @@
       "headings": [
         "配置概览 {#config-overview}",
         "推荐阅读顺序",
+        "按场景找配置",
         "配置索引"
       ],
       "updatedAt": "2026-03-21",
@@ -649,11 +650,12 @@
         "依赖分类规则（默认）",
         "weapp.npm {#weapp-npm}",
         "主包 / 分包依赖落位",
+        "插件 npm 包落位演示",
         "控制 npm 依赖的压缩与 sourcemap",
         "手动构建命令",
         "常见问题"
       ],
-      "updatedAt": "2026-03-11",
+      "updatedAt": "2026-03-21",
       "source": "config/npm.md"
     },
     {
@@ -680,6 +682,39 @@
       ],
       "updatedAt": "2026-02-27",
       "source": "config/paths.md"
+    },
+    {
+      "id": "doc-f94bbbe341",
+      "title": "Route Rules 与 Layout",
+      "summary": "使用 weapp.routeRules 为页面批量声明默认 layout，并结合 srcRoot/layouts 与 definePageMeta 实现页面外壳复用。",
+      "url": "/config/route-rules",
+      "canonical": "https://vite.icebreaker.top/config/route-rules",
+      "keywords": [
+        "配置",
+        "config",
+        "routerules",
+        "layout",
+        "definepagemeta",
+        "setpagelayout",
+        "运行时",
+        "route"
+      ],
+      "headings": [
+        "Route Rules 与 Layout {#route-rules-layout}",
+        "weapp.routeRules",
+        "优先级",
+        "layout 文件放哪里",
+        "页面里怎么声明",
+        "1. 直接指定 layout 名",
+        "2. 指定 layout + props",
+        "3. 显式关闭 layout",
+        "运行时动态切换",
+        "layout 相关类型文件",
+        "适用场景",
+        "相关文档"
+      ],
+      "updatedAt": "2026-03-21",
+      "source": "config/route-rules.md"
     },
     {
       "id": "doc-8b23c4fd4a",
@@ -739,6 +774,34 @@
       "source": "config/subpackages.md"
     },
     {
+      "id": "doc-d78c0650d7",
+      "title": "TypeScript 支持文件",
+      "summary": "weapp-vite 会生成 .weapp-vite 下的托管 tsconfig 与类型文件，用于让旧项目平滑迁移并稳定接入编辑器提示。",
+      "url": "/config/typescript",
+      "canonical": "https://vite.icebreaker.top/config/typescript",
+      "keywords": [
+        "配置",
+        "config",
+        "typescript",
+        "tsconfig",
+        ".weapp-vite",
+        "typed-router",
+        "typed-components",
+        "迁移指南"
+      ],
+      "headings": [
+        "TypeScript 支持文件 {#typescript-support}",
+        "会生成什么",
+        "什么时候生成",
+        "对旧项目的兼容策略",
+        "weapp.typescript",
+        "推荐迁移方式",
+        "相关文档"
+      ],
+      "updatedAt": "2026-03-21",
+      "source": "config/typescript.md"
+    },
+    {
       "id": "doc-d07898a8ab",
       "title": "Vue SFC 配置",
       "summary": "Weapp-vite 内置 Vue SFC（.vue → WXML/WXSS/JS/JSON）编译链路。这里聚焦编译期可配置项。",
@@ -759,7 +822,7 @@
         "weapp.vue.template {#weapp-vue-template}",
         "weapp.vue.autoImport {#weapp-vue-autoimport}"
       ],
-      "updatedAt": "2026-03-11",
+      "updatedAt": "2026-03-21",
       "source": "config/vue.md"
     },
     {
@@ -1369,10 +1432,11 @@
     {
       "id": "doc-5dee3c7ade",
       "title": "类型声明文件",
-      "summary": "自动路由和自动导入组件生成的类型声明文件，默认输出到 srcRoot 下。",
+      "summary": "weapp-vite 自动生成的类型与支持文件，默认输出到 .weapp-vite 目录。",
       "url": "/guide/directory-structure/generated-files",
       "canonical": "https://vite.icebreaker.top/guide/directory-structure/generated-files",
       "keywords": [
+        "wevu",
         "guide",
         "directory",
         "structure",
@@ -1386,10 +1450,11 @@
         "typed-router.d.ts",
         "typed-components.d.ts",
         "components.d.ts",
+        "wevu-layouts.d.ts",
         "默认位置",
         "相关文档"
       ],
-      "updatedAt": "2026-03-14",
+      "updatedAt": "2026-03-21",
       "source": "guide/directory-structure/generated-files.md"
     },
     {
@@ -3238,7 +3303,7 @@
         "本章你会学到什么",
         "重要限制（先读）"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-21",
       "source": "handbook/wevu/provide-inject.md"
     },
     {
@@ -5689,7 +5754,7 @@
         "3. 回调风格调用",
         "4. *Sync 直连调用"
       ],
-      "updatedAt": "2026-03-13",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-package.md"
     },
     {
@@ -5717,7 +5782,7 @@
         "模板工具示例（script setup）",
         "4. 相关页"
       ],
-      "updatedAt": "2026-03-06",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/core.md"
     },
     {
@@ -5737,7 +5802,7 @@
       "headings": [
         "Wevu API 参考",
         "全局 API",
-        "入口与应用",
+        "入口与组件定义",
         "通用调度",
         "组合式 API",
         "生命周期",
@@ -5746,9 +5811,9 @@
         "进阶 API",
         "运行时桥接",
         "类型与工具",
-        "子路径导出"
+        "弃用与兼容保留 API"
       ],
-      "updatedAt": "2026-03-13",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/index.md"
     },
     {
@@ -5832,10 +5897,10 @@
         "Runtime Bridge API（桥接与调试）",
         "1. 全局默认值与行为开关",
         "2. 调试与观测",
-        "3. 编译侧常量（wevu/compiler）",
+        "3. 相关子路径（不属于 wevu 主入口）",
         "4. 示例：默认值 + mutation 记录（script setup）"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/runtime-bridge.md"
     },
     {
@@ -5861,14 +5926,14 @@
         "3. provide/inject",
         "4. 推荐：通过 ctx.instance 操作原生实例",
         "示例（script setup）",
-        "5. 双向绑定辅助",
+        "5. setup 辅助工具",
         "5.1 路由辅助",
         "5.1.1 Router 语义矩阵",
         "5.1.2 兼容建议",
-        "5.2 可见性监听辅助",
-        "6. 相关页"
+        "5.2 页面 layout",
+        "5.3 页面与实例工具"
       ],
-      "updatedAt": "2026-03-06",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/setup-context.md"
     },
     {
@@ -5923,10 +5988,10 @@
         "3.2 响应式与工具类型",
         "3.3 小程序桥接与运行时内部",
         "3.4 store / model / mutation",
-        "4. 编译侧类型（wevu/compiler）",
+        "4. 相关子路径类型（非 wevu 主入口）",
         "5. 相关页"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/types.md"
     },
     {
@@ -5956,7 +6021,7 @@
         "defineModel() {#definemodel}",
         "defineOptions() {#defineoptions}"
       ],
-      "updatedAt": "2026-03-06",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api/core.md"
     },
     {
@@ -6062,9 +6127,10 @@
         "调试记录",
         "addMutationRecorder() {#addmutationrecorder}",
         "removeMutationRecorder() {#removemutationrecorder}",
+        "子路径边界",
         "示例"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api/runtime-bridge.md"
     },
     {
@@ -6077,7 +6143,8 @@
         "wevu",
         "api",
         "setup",
-        "context"
+        "context",
+        "性能优化"
       ],
       "headings": [
         "Setup Context API（setup 上下文）",
@@ -6087,13 +6154,13 @@
         "依赖注入 API",
         "provide() {#provide}",
         "inject() {#inject}",
+        "provideGlobal() / injectGlobal()（Deprecated） {#provideglobal}",
         "Setup 兼容工具 API",
         "useNativeInstance() {#usenativeinstance}",
-        "useRouter() {#userouter}",
-        "usePageRouter() {#usepagerouter}",
-        "Router 语义与兼容建议"
+        "useNativeRouter() {#usenativerouter}",
+        "useNativePageRouter() {#usenativepagerouter}"
       ],
-      "updatedAt": "2026-03-06",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api/setup-context.md"
     },
     {
@@ -6173,7 +6240,7 @@
       "headings": [
         "兼容性与注意事项"
       ],
-      "updatedAt": "2026-03-06",
+      "updatedAt": "2026-03-21",
       "source": "wevu/compatibility.md"
     },
     {
@@ -6229,7 +6296,7 @@
         "适合什么场景",
         "相关页面"
       ],
-      "updatedAt": "2026-03-13",
+      "updatedAt": "2026-03-21",
       "source": "wevu/fetch.md"
     },
     {
@@ -6245,14 +6312,17 @@
         "响应式",
         "setdata",
         "store",
-        "编译"
+        "编译",
+        "api"
       ],
       "headings": [
         "Wevu 概览",
         "Wevu 在整套体系里的位置",
         "Wevu 不是什么",
+        "诞生的小故事",
         "你会用到的能力",
         "其他子路径导出",
+        "已弃用 API 提示",
         "编译侧桥接（wevu/compiler）",
         "推荐学习顺序（按“最短上手 → 深入理解”）",
         "扩展阅读"
@@ -6284,7 +6354,7 @@
         "注意事项",
         "相关页面"
       ],
-      "updatedAt": "2026-03-13",
+      "updatedAt": "2026-03-21",
       "source": "wevu/jsx-runtime.md"
     },
     {
@@ -6345,7 +6415,7 @@
         "5. 组件 props / emit（运行时约定）",
         "6. 接入 Store（可选但常用）"
       ],
-      "updatedAt": "2026-03-13",
+      "updatedAt": "2026-03-21",
       "source": "wevu/quick-start.md"
     },
     {
@@ -6377,7 +6447,7 @@
         "调试与迁移建议",
         "相关页面"
       ],
-      "updatedAt": "2026-03-13",
+      "updatedAt": "2026-03-21",
       "source": "wevu/router.md"
     },
     {
@@ -6410,7 +6480,7 @@
         "setup：签名与上下文",
         "生命周期钩子"
       ],
-      "updatedAt": "2026-03-06",
+      "updatedAt": "2026-03-21",
       "source": "wevu/runtime.md"
     },
     {
@@ -6707,7 +6777,7 @@
         "setup() 上下文（Setup Context）",
         "emit 的差异（triggerEvent 语义）"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-21",
       "source": "wevu/vue3-compat.md"
     },
     {

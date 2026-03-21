@@ -32,9 +32,14 @@ keywords:
 | `addMutationRecorder`    | `MutationRecord` | 注册 mutation 记录器。 | 调试 state 变化来源。 |
 | `removeMutationRecorder` | `MutationRecord` | 移除 mutation 记录器。 | 测试结束清理。        |
 
-## 3. 编译侧常量（`wevu/compiler`）
+## 3. 相关子路径（不属于 `wevu` 主入口）
 
-`wevu/compiler` 主要给编译工具使用，业务代码不建议直接依赖。
+以下内容经常与运行时文档一起被提到，但它们不属于 `wevu` 根入口：
+
+- `wevu/compiler`：编译工具共享常量与类型入口
+- `wevu/router`：高阶导航子入口
+
+因此这里仅做边界提醒，不把它们混入主入口 API 列表。
 
 | 常量/类型                    | 链接                         | 说明                            |
 | ---------------------------- | ---------------------------- | ------------------------------- |

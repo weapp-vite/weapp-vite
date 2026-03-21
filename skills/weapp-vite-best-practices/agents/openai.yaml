@@ -1,13 +1,17 @@
 interface:
   display_name: Weapp-vite Best Practices
-  short_description: weapp-vite 工程化、分包、CLI 分发与构建调优（vite.config.ts / app.json / CI）
+  short_description: weapp-vite 工程化、routeRules/layout、分包、类型支持与构建调优
   default_prompt: >-
     当任务主轴是采用 weapp-vite 项目布局仓库的工程架构与构建编排时，使用
     $weapp-vite-best-practices。重点关注 `vite.config.ts` 的 weapp 配置、
-    route/subpackage 策略、chunk 共享方式、`weapp-vite` 与 `weapp-ide-cli`
-    之间的 CLI 分发归属，以及 CI/DevTools 工作流。若问题主轴是 SFC 宏或模板语法，
-    切换到 $weapp-vite-vue-sfc-best-practices；若主轴是运行时 lifecycle/store，
-    使用 $wevu-best-practices；若主轴是原生迁移，使用
+    `autoRoutes/autoImportComponents/routeRules/layout`、`.weapp-vite` 托管
+    TypeScript 支持文件、`prepare`、chunk 共享方式、MCP/Web runtime/lib mode、
+    `weapp-vite` 与 `weapp-ide-cli` 之间的 CLI 分发归属，以及 CI/DevTools
+    工作流。若修改 `packages/*/src/**` 后还要通过 `apps/*`、`templates/*` 或
+    `e2e-apps/*` 验证，先重建对应包；对 `weapp-vite` CLI 链路先执行
+    `pnpm --filter weapp-vite build`，再做下游验证。若问题主轴是 SFC 宏或模板语法，切换到
+    $weapp-vite-vue-sfc-best-practices；若主轴是运行时 lifecycle/store，使用
+    $wevu-best-practices；若主轴是原生迁移，使用
     $native-to-weapp-vite-wevu-migration。输出应包含：诊断、最小文件级改动、
     窄范围验证命令和取舍说明。
 

@@ -1,6 +1,6 @@
 ---
 name: weapp-devtools-e2e-best-practices
-description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools runtime e2e 工作流。适用于 `e2e/ide/**`、`miniprogram-automator`、DevTools 服务端口检查、运行时 WXML 断言、共享 automator 启动、`miniProgram.reLaunch(...)` 串联，以及维护 `e2e-apps/*` DevTools 项目配置。触发语句包括“补 IDE e2e”“automator 用例怎么写”“DevTools runtime 验证”“为什么要复用 launchAutomator”“project.private.config.json 条件页怎么同步”“这个用例要不要 reLaunch”等。
+description: 面向采用 weapp-vite monorepo 布局仓库的 WeChat DevTools runtime e2e 工作流。适用于 `e2e/ide/**`、`miniprogram-automator`、DevTools 服务端口检查、运行时 WXML/页面数据断言、共享 automator 启动、`miniProgram.reLaunch(...)` 串联，以及维护 `e2e-apps/*` 的 DevTools 项目配置与条件页。触发语句包括“补 IDE e2e”“automator 用例怎么写”“DevTools runtime 验证”“为什么要复用 launchAutomator”“project.private.config.json 条件页怎么同步”“这个用例要不要 reLaunch”等。
 ---
 
 # weapp-devtools-e2e-best-practices

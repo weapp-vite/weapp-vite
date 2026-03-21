@@ -1,6 +1,6 @@
 ---
 name: weapp-vite-best-practices
-description: 面向采用 weapp-vite 项目布局仓库的工程化实践手册，覆盖 `vite.config.ts` 的 weapp 配置、`app.json` routes/subPackages、chunk 策略以及 CI/DevTools 自动化。适用于创建或重构 weapp-vite 项目、配置自动路由/自动组件、拆分分包、优化 chunk 输出，或排查构建与输出问题（如“配置 weapp-vite”“分包策略”“构建输出异常”“typed-router.d.ts 生成问题”）。
+description: 面向采用 weapp-vite 项目布局仓库的工程化实践手册，覆盖 `vite.config.ts` 的 `weapp` 配置、`app.json` routes/subPackages、`routeRules/layout`、自动路由、自动导入组件、托管 TypeScript 支持文件、`prepare`、chunk 策略、MCP、Web runtime、lib mode 以及 CI/DevTools 自动化。适用于创建或重构 weapp-vite 项目、配置 `autoRoutes/autoImportComponents/routeRules`、拆分分包、优化 chunk 输出，或排查构建与输出问题（如“配置 weapp-vite”“分包策略”“构建输出异常”“typed-router.d.ts 生成问题”“layout 不生效”“.weapp-vite 文件怎么接入”）。
 ---
 
 # weapp-vite-best-practices
@@ -34,6 +34,7 @@ Do not use this as the primary skill when:
 2. Classify goal: new setup, refactor, debug, or performance optimization.
 3. Apply minimum viable config changes in `vite.config.ts` and app/page JSON sources.
 4. Verify with targeted build/type checks before suggesting broader cleanup.
+5. If validation touches apps/templates/e2e after editing `packages/*/src/**`, rebuild the touched package first to avoid stale `dist`.
 
 ## 执行流程
 
@@ -63,6 +64,7 @@ Do not use this as the primary skill when:
 - Output missing/wrong path: verify `srcRoot`, route generation source, and glob coverage.
 - Slow build: inspect plugin timing and high-cost transforms.
 - Route/component generation mismatch: verify generated artifacts and resolver behavior.
+- If downstream app/template/e2e behavior does not match recent source edits, suspect stale `dist` first and rebuild the touched package before deeper diagnosis.
 
 4. Propose actionable edits
 
@@ -71,6 +73,12 @@ Do not use this as the primary skill when:
 
 5. Verify narrowly
 
+- When edits touch `packages/*/src/**` and validation goes through `apps/*`, `templates/*`, or `e2e-apps/*`, rebuild the touched package first.
+- For `weapp-vite` CLI-linked validation, use this order:
+  1. `pnpm --filter weapp-vite build`
+  2. downstream app/template/e2e command
+  3. targeted assertion command
+- Before step 2, state: `dist sync: rebuilt weapp-vite before downstream validation`
 - Prefer targeted checks, for example:
 
 ```bash
@@ -86,6 +94,7 @@ pnpm vitest run <related-test-file>
 - Do not combine many advanced overrides in the first iteration.
 - Do not assume web-only conventions; keep mini-program JSON semantics explicit.
 - Do not mix architecture refactor with unrelated business logic changes.
+- Do not trust downstream app/template/e2e validation against stale package `dist`.
 - Do not implement IDE command passthrough with hardcoded duplicate lists in multiple packages.
 - Do not passthrough unknown commands blindly; require catalog hit before delegation.
 
@@ -105,6 +114,7 @@ When applying this skill, return:
 - Component registration strategy is deterministic (auto import + resolver policy).
 - Subpackage/chunk strategy is selected with stated reason.
 - Dev/CI workflow is reproducible and not dependent on manual IDE clicks.
+- Downstream validation is performed against rebuilt package output, not stale `dist`.
 - CLI dispatch ownership is deterministic: native-first, catalog-based passthrough second.
 - Command catalog changes are made in `weapp-ide-cli` and consumed by `weapp-vite`, not duplicated.
 

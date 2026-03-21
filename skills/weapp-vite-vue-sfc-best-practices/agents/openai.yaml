@@ -1,13 +1,16 @@
 interface:
   display_name: Vue SFC Best Practices
-  short_description: weapp-vite Vue SFC 宏配置与模板兼容（definePageJson / v-model / usingComponents）
+  short_description: weapp-vite Vue SFC 宏、layout 与模板兼容（definePageMeta / v-model / usingComponents）
   default_prompt: >-
     当任务主轴是编写或重构小程序 `.vue` 文件时，使用
-    $weapp-vite-vue-sfc-best-practices：包括 JSON 宏、`usingComponents`、
-    模板指令兼容性，以及 SFC 编译/运行时排障。保持每个 SFC 只使用一种宏家族，
-    并检查指令约束（例如可赋值的 `v-model` 目标）。若问题主轴是项目级
-    build/subpackage/CI 策略，切换到 $weapp-vite-best-practices；若主轴是
-    runtime lifecycle/store/event 设计，切换到 $wevu-best-practices。
+    $weapp-vite-vue-sfc-best-practices：包括 JSON 宏、`definePageMeta`/layout、
+    `defineModel`、`usingComponents`、模板指令兼容性，以及 SFC 编译/运行时排障。
+    保持每个 SFC 只使用一种 JSON 宏（`defineAppJson` / `definePageJson` /
+    `defineComponentJson`），并将 `definePageMeta` 视为可与页面 JSON 宏并存的
+    独立页面元信息宏；同时检查指令约束（例如可赋值的 `v-model` 目标）。若问题主轴是项目级
+    build/subpackage/CI 策略，切换到
+    $weapp-vite-best-practices；若主轴是 runtime lifecycle/store/event 设计，
+    切换到 $wevu-best-practices。
     输出应包含：分阶段诊断、具体 SFC 改动、兼容性说明和最小验证命令。
 
 policy:

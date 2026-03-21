@@ -36,10 +36,12 @@ keywords:
 
 ## 3. provide/inject
 
-| API       | 类型入口               | 说明                   |
-| --------- | ---------------------- | ---------------------- |
-| `provide` | `InjectionKey<T>` 兼容 | 在当前组件树提供依赖。 |
-| `inject`  | `T \| undefined`       | 从当前组件树读取依赖。 |
+| API             | 类型入口               | 说明                                                  |
+| --------------- | ---------------------- | ----------------------------------------------------- |
+| `provide`       | `InjectionKey<T>` 兼容 | 在当前组件树提供依赖。                                |
+| `inject`        | `T \| undefined`       | 从当前组件树读取依赖。                                |
+| `provideGlobal` | `void`                 | 已弃用。全局 provide 兼容入口，仅建议用于旧代码过渡。 |
+| `injectGlobal`  | `T`                    | 已弃用。全局 inject 兼容入口，仅建议用于旧代码过渡。  |
 
 ## 4. 推荐：通过 `ctx.instance` 操作原生实例
 
@@ -157,42 +159,64 @@ function patchRaw() {
 
 :::
 
-## 5. 双向绑定辅助
+> [!WARNING]
+> `provideGlobal()` / `injectGlobal()` 仍然保留导出，但属于兼容性 API。
+> 新代码请优先使用 `provide()` / `inject()`，或在需要稳定全局共享时改用 store。
 
-| API            | 类型入口                               | 说明                                      |
-| -------------- | -------------------------------------- | ----------------------------------------- |
-| `useBindModel` | `ModelBindingOptions` / `ModelBinding` | 生成小程序可直接绑定的数据 + 事件处理器。 |
+## 5. setup 辅助工具
+
+| API                       | 类型入口                               | 说明                                         |
+| ------------------------- | -------------------------------------- | -------------------------------------------- |
+| `useBindModel`            | `ModelBindingOptions` / `ModelBinding` | 生成小程序可直接绑定的数据 + 事件处理器。    |
+| `useDisposables`          | `DisposableBag`                        | 创建自动随卸载释放的清理袋。                 |
+| `useIntersectionObserver` | `IntersectionObserver`                 | setup 内创建观察器，自动在卸载阶段断开连接。 |
 
 ## 5.1 路由辅助
 
-| API             | 类型入口 | 说明                                                                                                                                                                                                     |
-| --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useRouter`     | `Router` | 获取组件路径语义 Router。优先 `this.router`，再回退 `this.pageRouter`，低版本基础库降级到全局 `wx/my/tt`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`，并可用 `tabBarEntries` 收窄 `switchTab`。 |
-| `usePageRouter` | `Router` | 获取页面路径语义 Router。优先 `this.pageRouter`，再回退 `this.router`，低版本基础库降级到全局 `wx/my/tt`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`，并可用 `tabBarEntries` 收窄 `switchTab`。 |
+| API                   | 类型入口 | 说明                                                                                                                                                                                                     |
+| --------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useNativeRouter`     | `Router` | 获取组件路径语义 Router。优先 `this.router`，再回退 `this.pageRouter`，低版本基础库降级到全局 `wx/my/tt`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`，并可用 `tabBarEntries` 收窄 `switchTab`。 |
+| `useNativePageRouter` | `Router` | 获取页面路径语义 Router。优先 `this.pageRouter`，再回退 `this.router`，低版本基础库降级到全局 `wx/my/tt`；可通过 `WevuTypedRouterRouteMap.entries` 收窄 `url`，并可用 `tabBarEntries` 收窄 `switchTab`。 |
 
 ### 5.1.1 Router 语义矩阵
 
 Router 原生对象从微信基础库 `2.16.1+` 可用。`wevu` 会按顺序做能力回退，因此建议你在设计路由 API 时明确“语义优先级”：
 
-| 调用位置           | `useRouter()` 基准         | `usePageRouter()` 基准     |
-| ------------------ | -------------------------- | -------------------------- |
-| 页面 `setup()`     | 页面路径                   | 页面路径                   |
-| 组件 `setup()`     | 组件路径                   | 组件所在页面路径           |
-| 低版本全局回退场景 | 当前激活页（全局路由对象） | 当前激活页（全局路由对象） |
+| 调用位置           | `useNativeRouter()` 基准   | `useNativePageRouter()` 基准 |
+| ------------------ | -------------------------- | ---------------------------- |
+| 页面 `setup()`     | 页面路径                   | 页面路径                     |
+| 组件 `setup()`     | 组件路径                   | 组件所在页面路径             |
+| 低版本全局回退场景 | 当前激活页（全局路由对象） | 当前激活页（全局路由对象）   |
 
 ### 5.1.2 兼容建议
 
-- 需要跨版本基路径稳定时，优先 `usePageRouter()`。
-- 只在“组件目录相对路径”是业务需求时使用 `useRouter()`。
+- 需要跨版本基路径稳定时，优先 `useNativePageRouter()`。
+- 只在“组件目录相对路径”是业务需求时使用 `useNativeRouter()`。
 - 对低版本必须一致的路由，优先绝对路径（`/pages/**`、`/packageA/pages/**`）。
 
-## 5.2 可见性监听辅助
+## 5.2 页面 layout
 
-| API                       | 类型入口               | 说明                                                            |
-| ------------------------- | ---------------------- | --------------------------------------------------------------- |
-| `useIntersectionObserver` | `IntersectionObserver` | setup 内创建观察器，自动在 `onUnload/onDetached` 阶段断开连接。 |
+| API             | 类型入口          | 说明                                         |
+| --------------- | ----------------- | -------------------------------------------- |
+| `usePageLayout` | `PageLayoutState` | 读取当前页面 layout 状态（只读响应式视图）。 |
+| `setPageLayout` | `void`            | 在当前页面上下文中显式切换 layout。          |
+
+说明：
+
+- 这组 API 属于 `wevu` 根入口的页面运行时辅助能力，不属于 `wevu/router`。
+- `setPageLayout()` 需要当前页面实例上下文，适合在页面 `setup()`、事件回调或当前页链路内调用。
+- 若项目开启了 Weapp-vite 的 layout 类型生成，`WevuPageLayoutMap` 会被增强，从而收窄 layout 名称与 props。
+
+## 5.3 页面与实例工具
+
+| API                            | 类型入口                          | 说明                                               |
+| ------------------------------ | --------------------------------- | -------------------------------------------------- |
+| `usePageScrollThrottle`        | `UsePageScrollThrottleOptions`    | 在 `onPageScroll` 基础上提供节流监听，并自动清理。 |
+| `useUpdatePerformanceListener` | `UpdatePerformanceListenerResult` | 注册原生更新性能监听，页面/组件卸载时自动移除。    |
 
 ## 6. 相关页
 
 - 生命周期与页面事件：[/wevu/api-reference/lifecycle](/wevu/api-reference/lifecycle)
 - 运行时桥接与调试：[/wevu/api-reference/runtime-bridge](/wevu/api-reference/runtime-bridge)
+- 页面 layout：[/config/route-rules](/config/route-rules)
+- 高阶导航子入口：[/wevu/router](/wevu/router)

@@ -79,7 +79,7 @@ pnpm skills:score:json
 2. 提问：页面 SFC 用 `definePageJson` 后，`<json>` 里 `usingComponents` 还会生效吗？
    预期 skill：`weapp-vite-vue-sfc-best-practices`
 
-3. 提问：一个组件里能同时写 `defineComponentJson` 和 `definePageJson` 吗？
+3. 提问：页面 SFC 里能同时写 `definePageJson` 和 `definePageMeta` 吗？各自负责什么？
    预期 skill：`weapp-vite-vue-sfc-best-practices`
 
 4. 提问：`v-bind="obj"` 在 weapp-vite 模板里行为不对，该怎么改写更稳？
@@ -175,7 +175,7 @@ pnpm skills:score:json
 
 ### H. github-issue-fix-workflow
 
-1. 提问：这个 GitHub issue 我想按仓库流程修，先帮我建 worktree 并补一个最小复现。
+1. 提问：这个 GitHub issue 我想按仓库流程修，先在仓库里的可写目录建 worktree，并补一个最小复现。
    预期 skill：`github-issue-fix-workflow`
 
 2. 提问：请把这个 bug 先放进 `e2e-apps/github-issues` 复现，再分析根因和修复。
@@ -184,7 +184,7 @@ pnpm skills:score:json
 3. 提问：我需要一个从 issue 复现、补单测、补 e2e 到开 PR 的完整闭环。
    预期 skill：`github-issue-fix-workflow`
 
-4. 提问：这个线上 bug 已经有 issue 了，帮我按 worktree + changeset + PR 的标准流程处理。
+4. 提问：这个线上 bug 已经有 issue 了，帮我按 worktree + changeset + 中文 PR + CI 跟进的标准流程处理。
    预期 skill：`github-issue-fix-workflow`
 
 5. 边界提问：我只是要更新 AI 文档入口，不是修 issue。
