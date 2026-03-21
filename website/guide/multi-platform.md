@@ -2,26 +2,27 @@
 outline:
   - 2
   - 4
-title: 面向多平台构建
-description: Weapp-vite 内置了多端适配能力：在开发/构建命令后追加 --platform （或短写 -p ），即可输出目标平台所需的文件后缀与目录结构。
+title: 面向多平台构建 experimental
+description: Weapp-vite 提供实验性的多端适配能力：在开发/构建命令后追加 --platform （或短写 -p ），即可输出目标平台所需的文件后缀与目录结构。
 keywords:
   - 微信小程序
   - guide
   - multi
   - platform
+  - experimental
   - 面向多平台构建
   - Weapp-vite
   - 内置了多端适配能力：在开发/构建命令后追加
 ---
 
-# 面向多平台构建 {#multi-platform}
+# 面向多平台构建 <span class="wv-badge wv-badge--experimental">experimental</span> {#multi-platform}
 
 `weapp-vite` 内置了多端适配能力：在开发/构建命令后追加 `--platform <id>`（或短写 `-p <id>`），即可输出目标平台所需的文件后缀与目录结构。
 
 下面示例假设你在 `package.json` 脚本里使用的是 `weapp-vite dev` / `weapp-vite build`：
 
 > [!WARNING]
-> 执行命令前请先安装对应平台的 IDE；如果你需要用命令行唤起 IDE，请在 IDE 里开启“服务端口”。
+> 多平台输出当前仍处于实验阶段（experimental）。执行命令前请先安装对应平台的 IDE；如果你需要用命令行唤起 IDE，请在 IDE 里开启“服务端口”，并务必在目标平台开发者工具里验证产物行为。
 
 ## 支付宝小程序 {#platform-alipay}
 
