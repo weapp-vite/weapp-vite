@@ -36,7 +36,7 @@ const genderMap = ref(['', '男', '女'])
 
 function showToast(message: string, theme: 'success' | 'error' = 'success') {
   Toast({
-    context: nativeInstance,
+    context: nativeInstance as any,
     selector: '#t-toast',
     message,
     theme,

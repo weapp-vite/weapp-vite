@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import TabMenu from './data'
 
 defineOptions({

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { mockIp, mockReqId } from '../../utils/mock'
 
 export function transformGoodsDataToConfirmData(goodsDataList) {

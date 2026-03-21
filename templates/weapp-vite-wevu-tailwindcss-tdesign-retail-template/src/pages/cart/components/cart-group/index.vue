@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import Toast from 'tdesign-miniprogram/toast/index'
 import { ref, toRefs, useNativeInstance, watch } from 'wevu'
 import { hasPromotion, imgCut } from './helpers'

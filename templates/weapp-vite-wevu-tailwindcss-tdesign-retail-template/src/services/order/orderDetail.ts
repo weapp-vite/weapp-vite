@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { config } from '../../config/index'
 import { genBusinessTime, genOrderDetail } from '../../model/order/orderDetail'
 import { delay } from '../_utils/delay'

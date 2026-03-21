@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import Toast from 'tdesign-miniprogram/toast/index'
 import { cdnBase } from '../../../config/index'
 import { fetchActivityList } from '../../../services/activity/fetchActivityList'

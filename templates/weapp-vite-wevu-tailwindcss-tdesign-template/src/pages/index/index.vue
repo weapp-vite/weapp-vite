@@ -151,12 +151,12 @@ watch(refreshSeed, () => {
   lastUpdated.value = `更新于 ${new Date().toLocaleTimeString()}`
 })
 
-usePullDownRefresh(refreshDashboard)
-
 function refreshDashboard() {
   refreshSeed.value = Math.max(1, Math.floor(Math.random() * 9))
   showToast('指标已刷新')
 }
+
+usePullDownRefresh(refreshDashboard)
 
 function onQuickAction(action: QuickActionItem) {
   if (!action.path) {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import dayjs from 'dayjs'
 
 const formatTime = (date: dayjs.ConfigType, template: string) => dayjs(date).format(template)

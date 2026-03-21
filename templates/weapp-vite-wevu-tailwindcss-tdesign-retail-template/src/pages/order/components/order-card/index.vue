@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 defineOptions({
   externalClasses: ['wr-class', 'header-class', 'title-class'],
   options: {

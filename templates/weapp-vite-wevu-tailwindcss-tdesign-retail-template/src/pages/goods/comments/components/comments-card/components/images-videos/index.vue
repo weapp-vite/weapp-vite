@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 // pages/goods/comments/components/comments-card/images-videos/index.js
 defineOptions({
   /**

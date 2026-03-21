@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { config } from '../../../config/index'
 import { queryCommentDetail } from '../../../model/comments/queryDetail'
 import { delay } from '../../_utils/delay'

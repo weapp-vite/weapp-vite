@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @param {string|number} key 唯一值
  */

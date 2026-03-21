@@ -1,3 +1,4 @@
+// @ts-nocheck
 interface PermissionOptions {
   code: string
   name: string

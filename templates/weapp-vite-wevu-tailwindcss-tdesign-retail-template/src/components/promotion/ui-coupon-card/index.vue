@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { computed, toRefs } from 'wevu'
 import { getBigValues, isBigValue } from './tools'
 

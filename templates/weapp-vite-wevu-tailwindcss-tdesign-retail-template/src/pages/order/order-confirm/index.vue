@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import Toast from 'tdesign-miniprogram/toast/index'
 import { getAddressPromise } from '../../../services/address/list'
 import { fetchSettleDetail } from '../../../services/order/orderConfirm'

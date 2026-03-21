@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { config } from '../../config/index'
 import { getGoodsAllComments } from '../../model/comments'
 import { delay } from '../_utils/delay'

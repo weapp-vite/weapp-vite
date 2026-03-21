@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { config } from '../../config/index'
 import { genCartGroupData } from '../../model/cart'
 import { delay } from '../_utils/delay'

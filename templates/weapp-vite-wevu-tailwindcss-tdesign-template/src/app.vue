@@ -70,15 +70,15 @@ defineAppJson({
 })
 
 onShow(() => {
-  console.log('[weapp-vite-wevu-template] app show')
+  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app show')
 })
 
 onHide(() => {
-  console.log('[weapp-vite-wevu-template] app hide')
+  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app hide')
 })
 
 onLaunch(() => {
-  console.log('[weapp-vite-wevu-template] app launch')
+  wx.getLogManager({ level: 1 }).info('[weapp-vite-wevu-template] app launch')
 })
 </script>
 

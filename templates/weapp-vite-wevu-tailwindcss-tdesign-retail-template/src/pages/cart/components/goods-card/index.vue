@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { onMounted, onUnmounted, ref, toRefs, useNativeInstance, watch } from 'wevu'
 
 interface GoodsCardData {

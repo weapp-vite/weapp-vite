@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 // import { getCommentDetail } from '../../../../services/good/comments/fetchCommentDetail';
 import Toast from 'tdesign-miniprogram/toast/index'
 

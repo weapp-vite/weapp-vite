@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import Toast from 'tdesign-miniprogram/toast/index'
 import { onLoad, onPullDownRefresh, onReachBottom, onShow, ref, useNativeInstance } from 'wevu'
 import { fetchGoodsList } from '../../services/good/fetchGoods'

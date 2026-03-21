@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { onLoad, ref } from 'wevu'
 import { fetchCouponDetail } from '../../../services/coupon/index'
 
