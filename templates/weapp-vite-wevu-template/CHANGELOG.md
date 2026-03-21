@@ -1,5 +1,11 @@
 # weapp-vite-wevu-template
 
+## 1.0.2
+
+### Patch Changes
+
+- 🐛 **为 wevu 基础模板补充 `src/layouts` 页面布局能力。新模板现在内置 `default` 与 `admin` 布局示例，并提供可直接体验 `setPageLayout()` 的演示页面，便于新项目开箱即用地组织页面壳与内容区域。** [`6107d39`](https://github.com/weapp-vite/weapp-vite/commit/6107d39834f5c7fa3aacbacd246ccf8dae200404) by @sonofmagic
+
 ## 1.0.1
 
 ### Patch Changes
