@@ -9,7 +9,7 @@ export function hasDeprecatedEnhanceUsage(enhance?: EnhanceOptions) {
   if (!enhance || typeof enhance !== 'object') {
     return false
   }
-  return enhanceKeys.some(key => Object.prototype.hasOwnProperty.call(enhance, key))
+  return enhanceKeys.some(key => Object.hasOwn(enhance, key))
 }
 
 export interface MigrateEnhanceOptionsConfig {

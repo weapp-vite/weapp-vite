@@ -90,8 +90,8 @@ export function emitSfcJsonAsset(
 
   if (defaultConfig && nextConfig) {
     if (
-      Object.prototype.hasOwnProperty.call(defaultConfig, 'component')
-      && !Object.prototype.hasOwnProperty.call(nextConfig, 'component')
+      Object.hasOwn(defaultConfig, 'component')
+      && !Object.hasOwn(nextConfig, 'component')
     ) {
       nextConfig.component = true
     }

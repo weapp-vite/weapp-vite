@@ -3,7 +3,9 @@ import type { MutableCompilerContext } from '../context'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import path from 'pathe'
+import ts from 'typescript'
 import { resolveBaseDir, WEAPP_VITE_INTERNAL_DIRNAME } from './autoImport/config/base'
+import { requireConfigService } from './utils/requireConfigService'
 
 interface ManagedTsconfigFile {
   path: string
@@ -103,11 +105,11 @@ function toJson(content: Record<string, any>) {
 }
 
 function resolveManagedDir(ctx: MutableCompilerContext) {
-  return path.resolve(resolveBaseDir(ctx.configService), WEAPP_VITE_INTERNAL_DIRNAME)
+  return path.resolve(resolveBaseDir(requireConfigService(ctx, '生成托管 tsconfig 前必须初始化 configService。')), WEAPP_VITE_INTERNAL_DIRNAME)
 }
 
 function getManagedTypeScriptConfig(ctx: MutableCompilerContext): ManagedTypeScriptConfig | undefined {
-  return ctx.configService.weappViteConfig.typescript as ManagedTypeScriptConfig | undefined
+  return requireConfigService(ctx, '读取托管 tsconfig 配置前必须初始化 configService。').weappViteConfig.typescript as ManagedTypeScriptConfig | undefined
 }
 
 async function readLegacyManagedTsconfigFile(filePath: string): Promise<LegacyManagedTsconfigFile | undefined> {
@@ -129,7 +131,7 @@ async function readLegacyManagedTsconfigFile(filePath: string): Promise<LegacyMa
 }
 
 async function getLegacyManagedTypeScriptConfig(ctx: MutableCompilerContext): Promise<LegacyManagedTypeScriptConfig> {
-  const root = resolveBaseDir(ctx.configService)
+  const root = resolveBaseDir(requireConfigService(ctx, '读取旧 tsconfig 配置前必须初始化 configService。'))
   const [shared, app, node, server] = await Promise.all([
     readLegacyManagedTsconfigFile(path.join(root, 'tsconfig.shared.json')),
     readLegacyManagedTsconfigFile(path.join(root, 'tsconfig.app.json')),
@@ -146,8 +148,9 @@ async function getLegacyManagedTypeScriptConfig(ctx: MutableCompilerContext): Pr
 }
 
 function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
-  const packageJson = ctx.configService.packageJson
-  const config = ctx.configService.weappViteConfig
+  const configService = requireConfigService(ctx, '生成 app tsconfig 前必须初始化 configService。')
+  const packageJson = configService.packageJson
+  const config = configService.weappViteConfig
   const userTypes = getManagedTypeScriptConfig(ctx)?.app?.compilerOptions?.types
   if (Array.isArray(userTypes) && userTypes.length > 0) {
     return [...userTypes]
@@ -164,7 +167,7 @@ function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
       : 'miniprogram-api-typings',
   ]
 
-  if (config.web?.enabled) {
+  if (config.web?.enable !== false) {
     types.push('vite/client')
   }
 
@@ -172,11 +175,12 @@ function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
 }
 
 function getAppPaths(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
+  const configService = requireConfigService(ctx, '生成 app paths 前必须初始化 configService。')
   const userConfig = getManagedTypeScriptConfig(ctx)
   const defaultPaths: Record<string, string[]> = {
     '@/*': ['src/*'],
   }
-  if (hasDependency(ctx.configService.packageJson, 'wevu')) {
+  if (hasDependency(configService.packageJson, 'wevu')) {
     defaultPaths['weapp-vite/typed-components'] = ['.weapp-vite/typed-components.d.ts']
   }
   return mergePaths(
@@ -191,10 +195,10 @@ function getAppPaths(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
 function createSharedTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const userConfig = getManagedTypeScriptConfig(ctx)
   const compilerOptions: CompilerOptions = {
-    target: 'ES2023',
-    module: 'ESNext',
-    moduleResolution: 'bundler',
-    moduleDetection: 'force',
+    target: ts.ScriptTarget.ES2023,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.Bundler,
+    moduleDetection: ts.ModuleDetectionKind.Force,
     resolveJsonModule: true,
     allowImportingTsExtensions: true,
     strict: true,
@@ -241,9 +245,9 @@ function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyMan
   const userAppCompilerOptions = userConfig?.app?.compilerOptions ?? {}
   const compilerOptions: CompilerOptions = {
     tsBuildInfoFile: '../node_modules/.tmp/tsconfig.app.tsbuildinfo',
-    target: 'ES2023',
+    target: ts.ScriptTarget.ES2023,
     lib: ['ES2023', 'DOM', 'DOM.Iterable'],
-    jsx: 'preserve',
+    jsx: ts.JsxEmit.Preserve,
     baseUrl: '..',
     resolveJsonModule: true,
     types: getAppTypes(ctx, legacyConfig),
@@ -253,13 +257,12 @@ function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyMan
     isolatedModules: true,
     ...legacyAppCompilerOptions,
     ...userAppCompilerOptions,
-    types: getAppTypes(ctx, legacyConfig),
     paths: getAppPaths(ctx, legacyConfig),
   }
 
   const vueCompilerOptions = {
     plugins: ['weapp-vite/volar'],
-    ...(hasDependency(ctx.configService.packageJson, 'wevu') ? { lib: 'wevu' } : {}),
+    ...(hasDependency(requireConfigService(ctx, '生成 Vue tsconfig 前必须初始化 configService。').packageJson, 'wevu') ? { lib: 'wevu' } : {}),
     ...(legacyConfig?.app?.vueCompilerOptions ?? {}),
     ...(userConfig?.app?.vueCompilerOptions ?? {}),
   }
@@ -292,7 +295,7 @@ function createNodeTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyMa
   const userConfig = getManagedTypeScriptConfig(ctx)
   const compilerOptions: CompilerOptions = {
     tsBuildInfoFile: '../node_modules/.tmp/tsconfig.node.tsbuildinfo',
-    target: 'ES2023',
+    target: ts.ScriptTarget.ES2023,
     lib: ['ES2023'],
     types: ['node'],
     ...(legacyConfig?.node?.compilerOptions ?? {}),
@@ -326,7 +329,7 @@ function createServerTsconfig(ctx: MutableCompilerContext, legacyConfig?: Legacy
   const userConfig = getManagedTypeScriptConfig(ctx)
   const compilerOptions: CompilerOptions = {
     tsBuildInfoFile: '../node_modules/.tmp/tsconfig.server.tsbuildinfo',
-    target: 'ES2023',
+    target: ts.ScriptTarget.ES2023,
     lib: ['ES2023'],
     types: ['node'],
     ...(legacyConfig?.server?.compilerOptions ?? {}),

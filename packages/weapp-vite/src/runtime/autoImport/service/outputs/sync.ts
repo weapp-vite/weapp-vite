@@ -7,6 +7,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { resolveAstEngine } from '../../../../ast'
 import { logger } from '../../../../context/shared'
+import { requireConfigService } from '../../../../runtime/utils/requireConfigService'
 import { extractComponentProps } from '../../../componentProps'
 import {
   getTypedComponentsSettings,
@@ -103,7 +104,8 @@ async function collectLayoutNames(srcRoot: string) {
 }
 
 async function collectLayoutPropsMap(ctx: MutableCompilerContext) {
-  const srcRoot = ctx.configService.absoluteSrcRoot
+  const configService = requireConfigService(ctx, '收集 layout props 前必须初始化 configService。')
+  const srcRoot = configService.absoluteSrcRoot
   const layoutsRoot = path.join(srcRoot, 'layouts')
   const result = new Map<string, ComponentPropMap>()
 
@@ -155,7 +157,7 @@ async function collectLayoutPropsMap(ctx: MutableCompilerContext) {
           const jsonProps = extractJsonPropMetadata(json).props
           const scriptProps = scriptSource
             ? extractComponentProps(scriptSource, {
-                astEngine: resolveAstEngine(ctx.configService.weappViteConfig),
+                astEngine: resolveAstEngine(configService.weappViteConfig),
               })
             : new Map()
           propMap = mergePropMaps(jsonProps, scriptProps)
@@ -174,12 +176,12 @@ async function collectLayoutPropsMap(ctx: MutableCompilerContext) {
           else {
             const { compileVueFile } = await import('wevu/compiler')
             const compiled = await compileVueFile(source, full, {
-              astEngine: resolveAstEngine(ctx.configService.weappViteConfig),
+              astEngine: resolveAstEngine(configService.weappViteConfig),
               json: { kind: 'component' },
             })
             propMap = compiled.script
               ? extractComponentProps(compiled.script, {
-                  astEngine: resolveAstEngine(ctx.configService.weappViteConfig),
+                  astEngine: resolveAstEngine(configService.weappViteConfig),
                 })
               : new Map()
           }
@@ -248,6 +250,7 @@ export async function syncVueComponentsDefinition(
   },
 ) {
   const { outputsState, ctx, resolverComponentsMapRef, resolveNavigationImport } = options
+  const configService = requireConfigService(ctx, '写入 components.d.ts 前必须初始化 configService。')
   if (!settings.enabled || !settings.outputPath) {
     if (outputsState.lastVueComponentsOutputPath) {
       try {
@@ -273,12 +276,12 @@ export async function syncVueComponentsDefinition(
   const outputPath = settings.outputPath
 
   const componentNames = collectAllComponentNames(options)
-  const layoutNames = await collectLayoutNames(ctx.configService.absoluteSrcRoot)
+  const layoutNames = await collectLayoutNames(configService.absoluteSrcRoot)
   const layoutPropsMap = await collectLayoutPropsMap(ctx)
-  const layoutTypesOutputPath = resolveLayoutTypesDefaultPath(ctx.configService)
+  const layoutTypesOutputPath = resolveLayoutTypesDefaultPath(configService)
   const layoutTypesDefinition = createLayoutTypesDefinition(layoutNames, layoutPropsMap)
   const nextDefinition = createVueComponentsDefinition(componentNames, options.getComponentMetadata, {
-    useTypedComponents: getTypedComponentsSettings(ctx).enabled,
+    useTypedComponents: getTypedComponentsSettings({ configService } as MutableCompilerContext).enabled,
     moduleName: settings.moduleName,
     layoutNames,
     layoutPropsMap,

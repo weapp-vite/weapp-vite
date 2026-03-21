@@ -1,4 +1,3 @@
-import type { Agent } from 'package-manager-detector/commands'
 import type { PluginOption, ViteDevServer } from 'vite'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
 import fs from 'node:fs'
@@ -11,8 +10,9 @@ import logger, { colors } from '../../logger'
 
 const ANALYZE_GLOBAL_KEY = '__WEAPP_VITE_ANALYZE_RESULT__'
 const ANALYZE_DASHBOARD_PACKAGE_NAME = '@weapp-vite/dashboard'
+type PackageManagerAgent = Parameters<typeof resolveCommand>[0]
 
-function createInstallCommand(agent: Agent | undefined) {
+function createInstallCommand(agent: PackageManagerAgent | undefined) {
   const resolved = resolveCommand(agent ?? 'npm', 'install', [ANALYZE_DASHBOARD_PACKAGE_NAME])
   if (!resolved) {
     return `npm install ${ANALYZE_DASHBOARD_PACKAGE_NAME}`
@@ -20,7 +20,7 @@ function createInstallCommand(agent: Agent | undefined) {
   return `${resolved.command} ${resolved.args.join(' ')}`
 }
 
-function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: Agent }) {
+function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: PackageManagerAgent }) {
   const packageInfo = getPackageInfoSync(ANALYZE_DASHBOARD_PACKAGE_NAME, {
     paths: options?.cwd ? [options.cwd] : undefined,
   })
@@ -107,7 +107,7 @@ export interface AnalyzeDashboardHandle {
 
 export async function startAnalyzeDashboard(
   result: AnalyzeSubpackagesResult,
-  options?: { watch?: boolean, cwd?: string, packageManagerAgent?: Agent },
+  options?: { watch?: boolean, cwd?: string, packageManagerAgent?: PackageManagerAgent },
 ): Promise<AnalyzeDashboardHandle | void> {
   const resolved = resolveDashboardRoot(options)
   if (!resolved) {

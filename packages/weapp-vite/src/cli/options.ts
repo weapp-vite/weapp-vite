@@ -3,7 +3,7 @@ import type { GlobalCLIOptions } from './types'
 export function filterDuplicateOptions<T extends object>(options: T) {
   for (const [key, value] of Object.entries(options)) {
     if (Array.isArray(value)) {
-      options[key as keyof T] = value[value.length - 1]
+      options[key as keyof T] = value.at(-1) as T[keyof T]
     }
   }
 }

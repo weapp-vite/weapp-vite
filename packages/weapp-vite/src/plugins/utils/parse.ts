@@ -20,7 +20,7 @@ export function parseRequest(id: string): ParseRequestResponse {
     for (const [key, value] of params.entries()) {
       query[key] = value
     }
-    if (Object.prototype.hasOwnProperty.call(query, 'wxss')) {
+    if (Object.hasOwn(query, 'wxss')) {
       query.wxss = true
     }
   }

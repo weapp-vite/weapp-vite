@@ -737,7 +737,7 @@ function getObjectPropertyByKey(node: t.ObjectExpression, key: string): t.Object
   return null
 }
 
-function findWevuOptionsObject(ast: BabelFile) {
+function findWevuOptionsObject(ast: BabelFile): t.ObjectExpression | null {
   let matched: t.ObjectExpression | null = null
 
   traverse(ast, {
@@ -925,7 +925,8 @@ function injectLayoutBindingComputed(script: string | undefined, props: Record<s
     )
   }
   else if (t.isObjectExpression(computedProp.value)) {
-    computedProp.value.properties.push(...computedEntries)
+    const computedValue = computedProp.value as t.ObjectExpression
+    computedValue.properties.push(...computedEntries)
   }
   else if (t.isIdentifier(computedProp.value) || t.isMemberExpression(computedProp.value)) {
     computedProp.value = t.objectExpression([

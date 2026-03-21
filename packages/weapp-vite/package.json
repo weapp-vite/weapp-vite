@@ -94,7 +94,8 @@
     "test:dev": "vitest",
     "test": "vitest run",
     "test:types": "cd test-d/auto-routes-define-app-json && tsd",
-    "typecheck": "tsc --noEmit",
+    "lint:src": "eslint src --ext .ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync": "cnpm sync weapp-vite"
   },
   "dependencies": {
