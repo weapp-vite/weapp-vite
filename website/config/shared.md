@@ -1,6 +1,6 @@
 ---
 title: 共享配置
-description: 除了 WXML/WXS 这些“底层开关”，Weapp-vite 还有一些通用增强能力，比如自动路由、调试钩子等。本页主要讲：
+description: weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、injectWeapi 与 MCP 等能力。
 keywords:
   - Wevu
   - 配置
@@ -13,13 +13,16 @@ keywords:
 
 # 共享配置 {#shared-config}
 
-除了 WXML/WXS 这些“底层开关”，`weapp-vite` 还有一些通用增强能力，比如自动路由、调试钩子等。本页主要讲：
+除了 WXML/WXS 这些“底层开关”，`weapp-vite` 还有一些通用增强能力，比如自动路由、调试钩子、MCP 与运行时注入。本页主要讲：
 
 - `weapp.autoRoutes`：生成路由清单与类型，供 `app.json.ts` 或业务代码使用
 - `weapp.debug`：遇到“为什么没扫描到 / 为什么没输出”时怎么定位
 - `weapp.logger`：控制 CLI / 构建日志级别与标签输出
 - `weapp.injectWeapi`：在运行时注入 `@wevu/api` 的 `wpi` 实例
-- `weapp.mcp`：AI 协作时的 MCP 服务开关与监听配置
+- `weapp.mcp`：AI 协作时的 MCP 服务开关、自动启动与监听配置
+
+> [!NOTE]
+> 页面 `layout` 默认值不在本页配置，而是通过 [`weapp.routeRules`](/config/route-rules.md) 管理；运行时切换则由 `wevu` 的 `setPageLayout()` / `usePageLayout()` 负责。
 
 组件自动导入已经拆到 [自动导入组件配置](/config/auto-import-components.md) 单独说明。
 共享 chunk 策略已经拆到 [共享 Chunk 配置](/config/chunks.md) 单独说明。
@@ -64,7 +67,7 @@ export default defineConfig({
 开启后 Weapp-vite 会：
 
 - 持续扫描主包和分包下的页面目录，维护 `routes`、`entries`、`pages`、`subPackages` 等清单；
-- 在配置文件同级输出 `typed-router.d.ts`，提供 `AutoRoutes` 等类型；
+- 在 `.weapp-vite/typed-router.d.ts` 输出类型文件，提供 `AutoRoutes` 等类型；
 - 自动暴露虚拟模块 `weapp-vite/auto-routes`，支持在代码中直接导入最新的路由数据。
 
 字段说明：
@@ -80,6 +83,9 @@ export default defineConfig({
 
 > [!TIP]
 > 如果你在 `src/subpackages/foo/pages/**`、`src/packageA/pages/**` 这类目录下放页面，但没有在 `weapp.subPackages` 中声明对应 root，那么这些页面在默认规则下不会被自动收集。要么补 `weapp.subPackages`，要么显式配置 `autoRoutes.include`。
+
+> [!TIP]
+> 如果你希望在 `dev/build` 之前就把自动路由类型文件生成出来，可以手动执行 `weapp-vite prepare`。
 
 ## `weapp.debug` {#weapp-debug}
 - **类型**：

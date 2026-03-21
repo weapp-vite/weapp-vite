@@ -1,7 +1,6 @@
 ---
 title: 自动路由（weapp-vite/auto-routes）
-description: Weapp-vite 提供了一个可选的“自动路由”能力：扫描主包/分包的页面目录，自动生成路由清单，并通过虚拟模块
-  weapp-vite/auto-routes 导出。
+description: weapp-vite 提供可选的自动路由能力，扫描主包和分包页面目录，生成路由清单、类型声明与虚拟模块导出。
 keywords:
   - Weapp-vite
   - guide
@@ -47,9 +46,15 @@ export default defineConfig({
 
 启用后会自动完成以下工作：
 
-- 生成 `typed-router.d.ts`（与配置文件同级），里面包含 `AutoRoutes` 等类型；
+- 生成 `.weapp-vite/typed-router.d.ts`，里面包含 `AutoRoutes` 等类型；
 - 暴露虚拟模块 `weapp-vite/auto-routes`，默认导出完整路由对象，并额外提供 `entries`、`pages`、`subPackages` 等数组；
 - 在开发与构建过程中持续监听页面相关文件，增删改都会立刻刷新清单并触发热更新。
+
+如果你还没跑过 `dev/build`，但希望先把这些支持文件产出来，也可以手动执行：
+
+```bash
+weapp-vite prepare
+```
 
 ## 默认扫描规则
 

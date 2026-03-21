@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-03-20T06:16:14.341Z",
+  "generatedAt": "2026-03-21T07:43:33.440Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
-    "files": 282,
-    "docs": 267,
+    "files": 268,
+    "docs": 253,
     "blog": 10,
     "page": 5,
-    "withFrontmatter": 282,
-    "missingFrontmatter": 0
+    "withFrontmatter": 267,
+    "missingFrontmatter": 1
   },
   "coverage": {
     "all": {
-      "total": 282,
-      "title": 282,
-      "description": 282,
-      "keywords": 198,
-      "date": 9
-    },
-    "docs": {
-      "total": 267,
+      "total": 268,
       "title": 267,
       "description": 267,
       "keywords": 183,
+      "date": 9
+    },
+    "docs": {
+      "total": 253,
+      "title": 252,
+      "description": 252,
+      "keywords": 168,
       "date": 1
     },
     "blog": {
@@ -41,15 +41,15 @@
   },
   "coveragePercent": {
     "all": {
-      "title": 100,
-      "description": 100,
-      "keywords": 70.2,
-      "date": 3.2
+      "title": 99.6,
+      "description": 99.6,
+      "keywords": 68.3,
+      "date": 3.4
     },
     "docs": {
-      "title": 100,
-      "description": 100,
-      "keywords": 68.5,
+      "title": 99.6,
+      "description": 99.6,
+      "keywords": 66.4,
       "date": 0.4
     },
     "blog": {
@@ -107,8 +107,18 @@
     "seoQualityReportPublic": true
   },
   "quality": {
-    "checked": 282,
+    "checked": 268,
     "issues": [
+      {
+        "path": "demos/my-app/README.md",
+        "type": "missing-description",
+        "message": "缺少 description。"
+      },
+      {
+        "path": "demos/my-app/README.md",
+        "type": "missing-keywords",
+        "message": "缺少 keywords。"
+      },
       {
         "path": "guide/directory-structure/app-bar.md",
         "type": "missing-keywords",
@@ -228,6 +238,12 @@
         "path": "guide/directory-structure/workers.md",
         "type": "missing-keywords",
         "message": "缺少 keywords。"
+      },
+      {
+        "path": "handbook/index.md",
+        "type": "non-normalized-keywords",
+        "message": "keywords 未标准化（去噪/去重/格式不一致）。",
+        "detail": "当前: weapp-vite, wevu, Vue SFC, handbook, 学习路线, 教程 | 标准: weapp-vite, wevu, Vue SFC, handbook, 学习路线"
       },
       {
         "path": "packages/weapi/alipay-compat-matrix/ad.md",
@@ -640,7 +656,9 @@
     ]
   },
   "qualityIssueCounts": {
-    "missing-keywords": 84,
-    "short-description": 18
+    "missing-description": 1,
+    "missing-keywords": 85,
+    "short-description": 18,
+    "non-normalized-keywords": 1
   }
 }

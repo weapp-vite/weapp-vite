@@ -1,6 +1,6 @@
 ---
 title: Web 运行时配置 experimental
-description: Weapp-vite 可选集成浏览器端运行时（@weapp-vite/web），用于 Web 预览/调试。
+description: weapp-vite 可选集成浏览器端运行时 @weapp-vite/web，用于 H5 预览、兼容验证与开发期调试。
 keywords:
   - 配置
   - 运行时
@@ -13,7 +13,7 @@ keywords:
 
 # Web 运行时配置 <span class="wv-badge wv-badge--experimental">experimental</span> {#web-config}
 
-`weapp-vite` 可选集成浏览器端运行时（`@weapp-vite/web`），用于 Web 预览/调试。
+`weapp-vite` 可选集成浏览器端运行时（`@weapp-vite/web`），用于 Web 预览、兼容验证与调试。
 
 [[toc]]
 
@@ -23,6 +23,14 @@ keywords:
 > [!WARNING]
 > `weapp.web` 仍处于实验阶段（experimental）。当前建议用于开发期预览与调试，不建议作为生产验收的唯一依据。
 > 若需查看 Web 侧配置解析结果，可执行 `weapp-vite analyze --platform h5 --json`（当前仅静态分析，非包体分析）。
+
+## 什么时候应该开启
+
+- 想在浏览器里快速查看页面结构、样式与交互，不想每次都切回开发者工具
+- 想调试模板转换、运行时表达式或组件映射在 Web 侧的表现
+- 想结合浏览器调试工具先定位问题，再回到小程序真机做最终确认
+
+不建议把它理解成“小程序生产等价运行时”。它更像是当前工具链提供的一层 Web 预览与调试支架。
 
 ## `weapp.web` {#weapp-web}
 - **类型**：

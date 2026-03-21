@@ -15,6 +15,9 @@ keywords:
 
 `weapp-vite` 内置 Vue SFC（`.vue` → WXML/WXSS/JS/JSON）编译链路。这里聚焦编译期可配置项。
 
+> [!TIP]
+> 如果你在找页面级 `layout` 能力，请优先看 [Route Rules 与 Layout](/config/route-rules)。`layout` 本身不属于 `weapp.vue` 字段，而是通过 `definePageMeta()`、`weapp.routeRules` 与 `srcRoot/layouts/` 目录协同工作。
+
 [[toc]]
 
 ## `weapp.vue.enable` {#weapp-vue-enable}

@@ -52,14 +52,14 @@ function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Side
 
 const guideSidebarItems: DefaultTheme.SidebarItem[] = [
   {
-    text: '指引',
+    text: '开始使用',
     collapsed: false,
     items: [
+      { text: '快速开始', link: '/guide/' },
       {
         text: '什么是 Weapp-vite ?',
         link: '/guide/what-is-weapp-vite',
       },
-      { text: '快速开始', link: '/guide/' },
       { text: 'CLI', link: '/guide/cli' },
       { text: 'AI 协作', link: '/guide/ai' },
       { text: '目录结构', link: '/guide/directory-structure/' },
@@ -94,6 +94,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '分包指南', link: '/guide/subpackage' },
       { text: '共享 Chunk', link: '/guide/chunks' },
       { text: '组件库构建', link: '/guide/lib-mode' },
+      { text: '多平台构建', link: '/guide/multi-platform' },
       { text: '静态资源优化', link: '/guide/image-optimize' },
       { text: '插件开发', link: '/guide/plugin' },
       { text: '宿主识别', link: '/guide/vite-plugin-host' },
@@ -288,10 +289,10 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
     ],
   },
   {
-    text: '示例与实验',
-    collapsed: true,
+    text: 'AI 与实验',
+    collapsed: false,
     items: [
-      { text: '@weapp-vite/mcp（MCP 示例）', link: '/packages/mcp' },
+      { text: '@weapp-vite/mcp（MCP 服务）', link: '/packages/mcp' },
     ],
   },
   {
@@ -524,25 +525,57 @@ const _handbookSidebarItems: DefaultTheme.SidebarItem[] = [
 
 const configSidebarItems: DefaultTheme.SidebarItem[] = [
   {
-    text: '配置指南',
+    text: '配置总览',
     collapsed: false,
     items: [
       { text: '配置概览', link: '/config/' },
+    ],
+  },
+  {
+    text: '项目基础',
+    collapsed: false,
+    items: [
       { text: '基础目录与资源收集', link: '/config/paths' },
       { text: '构建输出与兼容', link: '/config/build-and-output' },
+      { text: 'TypeScript 支持文件', link: '/config/typescript' },
+    ],
+  },
+  {
+    text: '应用结构与路由',
+    collapsed: false,
+    items: [
+      { text: 'Route Rules 与 Layout', link: '/config/route-rules' },
+      { text: '分包配置', link: '/config/subpackages' },
+      { text: 'Worker 配置', link: '/config/worker' },
+    ],
+  },
+  {
+    text: 'Vue / Wevu 与模板编译',
+    collapsed: false,
+    items: [
       { text: 'JSON 配置', link: '/config/json' },
       { text: 'JS 配置', link: '/config/js' },
       { text: 'Vue SFC 配置', link: '/config/vue' },
-      { text: '分包配置', link: '/config/subpackages' },
-      { text: 'Worker 配置', link: '/config/worker' },
-      { text: '库模式配置', link: '/config/lib' },
-      { text: '生成脚手架配置', link: '/config/generate' },
-      { text: 'npm 配置', link: '/config/npm' },
       { text: 'WXML 配置', link: '/config/wxml' },
       { text: '🧪 WXS 配置', link: '/config/wxs' },
+      { text: '共享配置', link: '/config/shared' },
+    ],
+  },
+  {
+    text: '组件、依赖与产物',
+    collapsed: false,
+    items: [
       { text: '自动导入组件配置', link: '/config/auto-import-components' },
       { text: '共享 Chunk 配置', link: '/config/chunks' },
-      { text: '共享配置', link: '/config/shared' },
+      { text: 'npm 配置', link: '/config/npm' },
+      { text: '库模式配置', link: '/config/lib' },
+      { text: '生成脚手架配置', link: '/config/generate' },
+    ],
+  },
+  {
+    text: '实验能力',
+    collapsed: false,
+    items: [
       { text: '🧪 Web 运行时配置', link: '/config/web' },
     ],
   },
@@ -551,10 +584,8 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
 // https://github.com/emersonbottero/vitepress-plugin-mermaid/issues/47
 export default withMermaid(defineConfig({
   title: 'Weapp-vite',
-  description: '把现代化的开发模式带入小程序!',
+  description: '面向小程序的现代工程化工具链，覆盖开发、构建、Vue SFC、Wevu、自动化、MCP 与多平台能力。',
   outDir: 'dist',
-  // 暂时不生成 /handbook/* 路由：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
-  srcExclude: ['handbook/**'],
   // CI 环境不包含 gitignore 的 typedoc 产物，仅放行该目录的死链检查。
   ignoreDeadLinks: [/^\/wevu\/api(?:\/|$)/],
   themeConfig: {
@@ -562,17 +593,16 @@ export default withMermaid(defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: '指引', link: '/guide/' },
-      // { text: '教程', link: '/handbook/' }, // 暂时隐藏：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
+      { text: '教程', link: '/handbook/' },
+      { text: '配置', link: '/config/' },
       { text: 'Wevu', link: '/wevu/' },
       { text: 'Wevu API', link: '/wevu/api/' },
       { text: 'Wpi', link: '/packages/weapi/' },
+      { text: '周边包', link: '/packages/' },
       { text: 'AI', link: '/ai' },
       { text: '社区', link: '/community/group' },
-      { text: '周边包', link: '/packages/' },
-      // { text: '参考', link: '/config' },
       { text: '迁移', link: '/migration/' },
       { text: '博客', link: blogSidebarItems?.[0]?.items?.[0]?.link as string },
-      { text: '配置', link: '/config/' },
     ],
     logo: '/logo.svg',
 
@@ -595,7 +625,7 @@ export default withMermaid(defineConfig({
       '/wevu/api/': wevuApiSidebarItems,
       '/wevu/api-reference/': wevuApiSidebarItems,
       '/wevu/': wevuSidebarItems,
-      // '/handbook/': handbookSidebarItems, // 暂时隐藏：内容回填到 /wevu/vue-sfc 与 /wevu/*（/guide/vue-sfc 仅保留目录）
+      '/handbook/': _handbookSidebarItems,
       // '/config/': [
       //   {
       //     text: '参考',

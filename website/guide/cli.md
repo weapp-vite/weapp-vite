@@ -1,6 +1,6 @@
 ---
 title: CLI 命令参考
-description: Weapp-vite CLI 命令参考，包含全局参数、原生命令、别名、常用示例，以及 weapp-ide-cli 透传规则。
+description: weapp-vite CLI 命令参考，覆盖 dev、build、analyze、prepare、mcp、generate 与 weapp-ide-cli 透传规则。
 keywords:
   - guide
   - cli
@@ -11,7 +11,7 @@ keywords:
 
 # CLI 命令参考
 
-本文汇总 `weapp-vite` 在当前版本可用的命令与参数，优先覆盖日常开发最常用场景。
+本文汇总 `weapp-vite` 在当前版本可用的命令与参数，优先覆盖日常开发、构建、支持文件预生成、AI 协作与 IDE 自动化场景。
 
 > 需要调用微信开发者工具能力（`preview/upload/automator/config` 等）时，`weapp-vite` 会在未命中自身命令后自动透传到 `weapp-ide-cli`。
 
@@ -158,7 +158,21 @@ weapp-vite g [filepath]
 weapp-vite init
 ```
 
-### 8) `mcp`
+### 8) `prepare`
+
+预生成 `.weapp-vite` 下的支持文件，包括托管 `tsconfig`、自动路由类型、自动导入组件清单与类型等。
+
+```bash
+weapp-vite prepare [root]
+```
+
+适用场景：
+
+- CI 或编辑器启动前，想先把 `.weapp-vite` 支持文件生成出来；
+- 老项目尚未跑过 `dev/build`，但希望编辑器先拿到类型文件；
+- 团队希望把自动路由、自动导入组件相关产物纳入显式预热流程。
+
+### 9) `mcp`
 
 启动 `weapp-vite` MCP 服务（用于 AI 助手接入）。
 
@@ -203,6 +217,7 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 - `build-npm`
 - `generate`
 - `g`
+- `prepare`
 - `mcp`
 
 你也可以显式使用命名空间透传：
@@ -230,6 +245,9 @@ weapp-vite build -p weapp --minify false --sourcemap
 
 # 输出分析 JSON 到文件
 weapp-vite analyze -p weapp --output ./reports/analyze.json
+
+# 预生成 .weapp-vite 支持文件
+weapp-vite prepare
 
 # 透传微信预览命令
 weapp-vite preview --project ./dist -q terminal
