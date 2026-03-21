@@ -3,7 +3,6 @@ import type { MutableCompilerContext } from '../context'
 import { parse as parseJson } from 'comment-json'
 import fs from 'fs-extra'
 import path from 'pathe'
-import ts from 'typescript'
 import { resolveBaseDir, WEAPP_VITE_INTERNAL_DIRNAME } from './autoImport/config/base'
 import { requireConfigService } from './utils/requireConfigService'
 
@@ -194,11 +193,11 @@ function getAppPaths(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
 
 function createSharedTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const userConfig = getManagedTypeScriptConfig(ctx)
-  const compilerOptions: CompilerOptions = {
-    target: ts.ScriptTarget.ES2023,
-    module: ts.ModuleKind.ESNext,
-    moduleResolution: ts.ModuleResolutionKind.Bundler,
-    moduleDetection: ts.ModuleDetectionKind.Force,
+  const compilerOptions = {
+    target: 'ES2023',
+    module: 'ESNext',
+    moduleResolution: 'bundler',
+    moduleDetection: 'force',
     resolveJsonModule: true,
     allowImportingTsExtensions: true,
     strict: true,
@@ -243,11 +242,11 @@ function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyMan
   const userConfig = getManagedTypeScriptConfig(ctx)
   const legacyAppCompilerOptions = legacyConfig?.app?.compilerOptions ?? {}
   const userAppCompilerOptions = userConfig?.app?.compilerOptions ?? {}
-  const compilerOptions: CompilerOptions = {
+  const compilerOptions = {
     tsBuildInfoFile: '../node_modules/.tmp/tsconfig.app.tsbuildinfo',
-    target: ts.ScriptTarget.ES2023,
+    target: 'ES2023',
     lib: ['ES2023', 'DOM', 'DOM.Iterable'],
-    jsx: ts.JsxEmit.Preserve,
+    jsx: 'preserve',
     baseUrl: '..',
     resolveJsonModule: true,
     types: getAppTypes(ctx, legacyConfig),
@@ -293,9 +292,9 @@ function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyMan
 
 function createNodeTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const userConfig = getManagedTypeScriptConfig(ctx)
-  const compilerOptions: CompilerOptions = {
+  const compilerOptions = {
     tsBuildInfoFile: '../node_modules/.tmp/tsconfig.node.tsbuildinfo',
-    target: ts.ScriptTarget.ES2023,
+    target: 'ES2023',
     lib: ['ES2023'],
     types: ['node'],
     ...(legacyConfig?.node?.compilerOptions ?? {}),
@@ -327,9 +326,9 @@ function createNodeTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyMa
 
 function createServerTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const userConfig = getManagedTypeScriptConfig(ctx)
-  const compilerOptions: CompilerOptions = {
+  const compilerOptions = {
     tsBuildInfoFile: '../node_modules/.tmp/tsconfig.server.tsbuildinfo',
-    target: ts.ScriptTarget.ES2023,
+    target: 'ES2023',
     lib: ['ES2023'],
     types: ['node'],
     ...(legacyConfig?.server?.compilerOptions ?? {}),
