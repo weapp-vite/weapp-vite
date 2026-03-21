@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
+import { showToast } from '@/hooks/useToast'
 import { getAddressPromise } from '../../../../services/address/edit'
 import { fetchDeliveryAddressList } from '../../../../services/address/fetchAddress'
 import { rejectAddress, resolveAddress } from '../../../../services/address/list'
@@ -58,18 +58,16 @@ defineOptions({
     wx.chooseAddress({
       success: (res) => {
         if (!res.errMsg.includes('ok')) {
-          Toast({
+          showToast({
             context: this,
-            selector: '#t-toast',
             message: res.errMsg,
             icon: '',
             duration: 1000,
           })
           return
         }
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: '添加成功',
           icon: '',
           duration: 1000,
@@ -101,18 +99,16 @@ defineOptions({
         deleteID: id,
         showDeleteConfirm: true,
       })
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: '地址删除成功',
         theme: 'success',
         duration: 1000,
       })
     }
     else {
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: '需要组件库发新版才能拿到地址ID',
         icon: '',
         duration: 1000,
@@ -204,9 +200,8 @@ defineOptions({
       })
     }).catch((e) => {
       if (e.message !== 'cancel') {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: '地址编辑发生错误',
           icon: '',
           duration: 1000,
@@ -221,7 +216,6 @@ definePageJson({
   usingComponents: {
     't-icon': 'tdesign-miniprogram/icon/icon',
     't-image': '/components/webp-image/index',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-address-item': '/pages/user/components/ui-address-item/index',
     't-location': '/pages/user/components/t-location/index',
     't-empty': 'tdesign-miniprogram/empty/empty',
@@ -270,5 +264,4 @@ definePageJson({
       </view>
     </view>
   </view>
-  <t-toast id="t-toast" />
 </template>

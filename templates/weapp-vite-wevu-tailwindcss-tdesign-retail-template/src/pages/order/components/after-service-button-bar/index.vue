@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Dialog from 'tdesign-miniprogram/dialog/index'
-import Toast from 'tdesign-miniprogram/toast/index'
+import { confirmDialog } from '@/hooks/useDialog'
+import { showToast } from '@/hooks/useToast'
 import { cancelRights } from '../../after-service-detail/api'
 import { ServiceButtonTypes } from '../../config'
 
@@ -66,7 +66,7 @@ defineOptions({
       })
     },
     onConfirm() {
-      Dialog.confirm({
+      confirmDialog({
         title: '是否撤销退货申请？',
         content: '',
         confirmBtn: '撤销申请',
@@ -76,9 +76,8 @@ defineOptions({
           rightsNo: this.data.service.id,
         }
         return cancelRights(params).then(() => {
-          Toast({
+          showToast({
             context: this,
-            selector: '#t-toast',
             message: '你确认撤销申请',
           })
         })

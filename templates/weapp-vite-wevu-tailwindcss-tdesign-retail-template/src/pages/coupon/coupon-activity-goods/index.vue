@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
 import { onLoad, ref, useNativeInstance } from 'wevu'
+import { showToast } from '@/hooks/useToast'
 import { fetchCouponDetail } from '../../../services/coupon/index'
 import { fetchGoodsList } from '../../../services/good/fetchGoods'
 
@@ -65,9 +65,8 @@ function goodClickHandle(e: any) {
 }
 
 function cartClickHandle() {
-  Toast({
+  showToast({
     context: nativeInstance,
-    selector: '#t-toast',
     message: '点击加入购物车',
   })
 }
@@ -96,7 +95,6 @@ definePageJson({
   usingComponents: {
     't-icon': 'tdesign-miniprogram/icon/icon',
     't-popup': 'tdesign-miniprogram/popup/popup',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     'goods-list': '/components/goods-list/index',
     'floating-button': '../components/floating-button/index',
   },
@@ -161,5 +159,4 @@ definePageJson({
       </view>
     </t-popup>
   </view>
-  <t-toast id="t-toast" />
 </template>

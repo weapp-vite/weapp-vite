@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
+import { showToast } from '@/hooks/useToast'
 import { cdnBase } from '../../../config/index'
 import { fetchActivityList } from '../../../services/activity/fetchActivityList'
 import { fetchGood } from '../../../services/good/fetchGood'
@@ -215,9 +215,8 @@ defineOptions({
     const {
       isAllSelectedSku,
     } = this.data
-    Toast({
+    showToast({
       context: this,
-      selector: '#t-toast',
       message: isAllSelectedSku ? '点击加入购物车' : '请选择规格',
       icon: '',
       duration: 1000,
@@ -229,9 +228,8 @@ defineOptions({
       buyNum,
     } = this.data
     if (!isAllSelectedSku) {
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: '请选择规格',
         icon: '',
         duration: 1000,
@@ -441,7 +439,6 @@ definePageJson({
   usingComponents: {
     't-image': '/components/webp-image/index',
     't-tag': 'tdesign-miniprogram/tag/tag',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-rate': 'tdesign-miniprogram/rate/rate',
     't-swiper': 'tdesign-miniprogram/swiper/swiper',
     't-swiper-nav': 'tdesign-miniprogram/swiper-nav/swiper-nav',
@@ -637,5 +634,4 @@ definePageJson({
       @promotionChange="promotionChange"
     />
   </view>
-  <t-toast id="t-toast" />
 </template>

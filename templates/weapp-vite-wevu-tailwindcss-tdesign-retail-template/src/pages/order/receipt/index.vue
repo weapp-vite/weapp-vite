@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Dialog from 'tdesign-miniprogram/dialog/index'
-import Toast from 'tdesign-miniprogram/toast/index'
+import { alertDialog } from '@/hooks/useDialog'
+import { showToast } from '@/hooks/useToast'
 import { dispatchSupplementInvoice } from '../../../services/order/orderConfirm'
 
 defineOptions({
@@ -101,7 +101,7 @@ defineOptions({
   onSure() {
     const result = this.checkSure()
     if (!result) {
-      Dialog.alert({
+      alertDialog({
         title: '请填写发票信息',
         content: '',
         confirmBtn: '确认',
@@ -139,9 +139,8 @@ defineOptions({
       }
       this.submitting = true
       dispatchSupplementInvoice(params).then(() => {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: '保存成功',
           duration: 2000,
           icon: '',
@@ -218,7 +217,6 @@ definePageJson({
   usingComponents: {
     't-cell': 'tdesign-miniprogram/cell/cell',
     't-dialog': 'tdesign-miniprogram/dialog/dialog',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-icon': 'tdesign-miniprogram/icon/icon',
     't-input': 'tdesign-miniprogram/input/input',
     't-button': 'tdesign-miniprogram/button/button',
@@ -379,6 +377,4 @@ definePageJson({
       </t-button>
     </view>
   </view>
-  <t-toast id="t-toast" />
-  <t-dialog id="t-dialog" />
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
+import { showToast } from '@/hooks/useToast'
 import { getAddressPromise } from '../../../services/address/list'
 import { fetchBusinessTime, fetchOrderDetail } from '../../../services/order/orderDetail'
 import { formatTime } from '../../../utils/util'
@@ -254,14 +254,13 @@ defineOptions({
   },
   /** 跳转拼团详情/分享页 */
   toGrouponDetail() {
-    wx.showToast({
+    showToast({
       title: '点击了拼团',
     })
   },
   clickService() {
-    Toast({
+    showToast({
       context: this,
-      selector: '#t-toast',
       message: '您点击了联系客服',
     })
   },
@@ -281,8 +280,6 @@ definePageJson({
     't-icon': 'tdesign-miniprogram/icon/icon',
     't-image': '/components/webp-image/index',
     't-count-down': 'tdesign-miniprogram/count-down/count-down',
-    't-toast': 'tdesign-miniprogram/toast/toast',
-    't-dialog': 'tdesign-miniprogram/dialog/dialog',
     'price': '/components/price/index',
     'order-card': '../components/order-card/index',
     'order-goods-card': '../components/order-goods-card/index',
@@ -479,6 +476,4 @@ definePageJson({
       <order-button-bar :order="_order" isBtnMax @refresh="onRefresh" />
     </view>
   </t-pull-down-refresh>
-  <t-toast id="t-toast" />
-  <t-dialog id="t-dialog" />
 </template>

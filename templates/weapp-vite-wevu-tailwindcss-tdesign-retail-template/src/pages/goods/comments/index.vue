@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
 import dayjs from 'dayjs'
+import { showToast } from '@/hooks/useToast'
 import { fetchComments } from '../../../services/comments/fetchComments'
 import { fetchCommentsCount } from '../../../services/comments/fetchCommentsCount'
 
@@ -56,7 +57,7 @@ defineOptions({
       //     countObj: data,
       //     });
       // } else {
-      //     wx.showToast({
+      //     showToast({
       //     title: '查询失败，请稍候重试',
       //     });
       // }
@@ -139,7 +140,7 @@ defineOptions({
         })
       }
       else {
-        wx.showToast({
+        showToast({
           title: '查询失败，请稍候重试',
         })
       }

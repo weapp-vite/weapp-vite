@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
 import { onLoad, onPullDownRefresh, onShow, ref, useNativeInstance } from 'wevu'
+import { showToast } from '@/hooks/useToast'
 import { fetchUserCenter } from '../../services/usercenter/fetchUsercenter'
 
 interface MenuItem {
@@ -151,18 +151,16 @@ function onClickCell({ currentTarget }: any) {
       openMakePhone()
       break
     case 'help-center':
-      Toast({
+      showToast({
         context: nativeInstance,
-        selector: '#t-toast',
         message: '你点击了帮助中心',
         icon: '',
         duration: 1000,
       })
       break
     case 'point':
-      Toast({
+      showToast({
         context: nativeInstance,
-        selector: '#t-toast',
         message: '你点击了积分菜单',
         icon: '',
         duration: 1000,
@@ -174,9 +172,8 @@ function onClickCell({ currentTarget }: any) {
       })
       break
     default:
-      Toast({
+      showToast({
         context: nativeInstance,
-        selector: '#t-toast',
         message: '未知跳转',
         icon: '',
         duration: 1000,
@@ -279,7 +276,6 @@ definePageJson({
     't-cell': 'tdesign-miniprogram/cell/cell',
     't-user-center-card': './components/user-center-card/index',
     't-order-group': './components/order-group/index',
-    't-toast': 'tdesign-miniprogram/toast/toast',
   },
   enablePullDownRefresh: true,
 })
@@ -340,5 +336,4 @@ definePageJson({
       </view>
     </view>
   </t-popup>
-  <t-toast id="t-toast" />
 </template>

@@ -15,8 +15,9 @@ export interface ShowToastPayload {
 }
 
 export interface ToastOptions {
-  selector?: string
+  context?: any
   duration?: number
+  selector?: string
   theme?: ToastTheme
 }
 
@@ -25,14 +26,14 @@ export function showToast(payload: string | ShowToastPayload, theme?: ToastTheme
   const normalized = typeof payload === 'string'
     ? { message: payload, theme }
     : payload
-
   const context = normalized.context ?? mpContext
+
   if (!context) {
     return
   }
 
   const { selector = '#t-toast', theme: nextTheme, title, message, ...rest } = normalized
-  Toast({
+  return Toast({
     selector,
     context: context as any,
     message: message ?? title ?? '',
@@ -42,13 +43,13 @@ export function showToast(payload: string | ShowToastPayload, theme?: ToastTheme
 }
 
 export function useToast(options: ToastOptions = {}) {
-  const context = getCurrentInstance()
+  const context = options.context ?? getCurrentInstance()
   const selector = options.selector ?? '#t-toast'
-  const duration = options.duration ?? 1200
-  const defaultTheme = options.theme ?? 'success'
+  const duration = options.duration ?? 2000
+  const defaultTheme = options.theme
 
   return {
-    showToast(message: string, theme: ToastTheme = defaultTheme) {
+    showToast(message: string, theme: ToastTheme = defaultTheme ?? 'default') {
       return showToast({
         context,
         selector,

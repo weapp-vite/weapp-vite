@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Dialog from 'tdesign-miniprogram/dialog/index'
-import Toast from 'tdesign-miniprogram/toast/index'
+import { alertDialog, confirmDialog } from '@/hooks/useDialog'
+import { showToast } from '@/hooks/useToast'
 import { dispatchApplyService, dispatchConfirmReceived, fetchApplyReasonList, fetchRightsPreview } from '../../../services/order/applyService'
 import { priceFormat } from '../../../utils/util'
 import reasonSheet from '../components/reason-sheet/reasonSheet'
@@ -135,7 +135,7 @@ defineOptions({
       skuId,
     } = this.query
     if (!orderNo) {
-      Dialog.alert({
+      alertDialog({
         content: '请先选择订单',
       }).then(() => {
         wx.redirectTo({
@@ -145,7 +145,7 @@ defineOptions({
       return false
     }
     if (!skuId) {
-      Dialog.alert({
+      alertDialog({
         content: '请先选择商品',
       }).then(() => {
         wx.redirectTo(`pages/order/order-detail/index?orderNo=${orderNo}`)
@@ -221,7 +221,7 @@ defineOptions({
     const orderStatus = Number.parseInt(this.query.orderStatus)
     Promise.resolve().then(() => {
       if (orderStatus === OrderStatus.PENDING_RECEIPT) {
-        return Dialog.confirm({
+        return confirmDialog({
           title: '订单商品是否已经收到货',
           content: '',
           confirmBtn: '确认收货，并申请退货',
@@ -423,9 +423,8 @@ defineOptions({
       })
       // 发起申请售后请求
       dispatchApplyService(params).then((res) => {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: '申请成功',
           icon: '',
         })
@@ -446,9 +445,8 @@ defineOptions({
         valid,
       } = this.data.validateRes
       if (!valid) {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: msg,
           icon: '',
         })
@@ -499,7 +497,6 @@ definePageJson({
     'wr-reason-sheet': '../components/reason-sheet/index',
     't-cell': 'tdesign-miniprogram/cell/cell',
     't-icon': 'tdesign-miniprogram/icon/icon',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-dialog': 'tdesign-miniprogram/dialog/dialog',
     't-button': 'tdesign-miniprogram/button/button',
     't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
@@ -741,6 +738,4 @@ definePageJson({
       </view>
     </template>
   </t-dialog>
-  <t-dialog id="t-dialog" />
-  <t-toast id="t-toast" />
 </template>

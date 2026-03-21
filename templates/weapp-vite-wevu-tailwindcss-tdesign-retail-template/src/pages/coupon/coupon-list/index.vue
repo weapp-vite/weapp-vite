@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
 import { onLoad, ref } from 'wevu'
+import { showToast } from '@/hooks/useToast'
 import { fetchCouponList } from '../../../services/coupon/index'
 
 const status = ref(0)
@@ -51,7 +52,7 @@ function tabChange(e: any) {
 }
 
 function goCouponCenterHandle() {
-  wx.showToast({
+  showToast({
     title: '去领券中心',
     icon: 'none',
   })

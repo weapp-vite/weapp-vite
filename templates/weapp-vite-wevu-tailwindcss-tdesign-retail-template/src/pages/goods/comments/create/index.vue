@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { showToast } from '@/hooks/useToast'
 // import { getCommentDetail } from '../../../../services/good/comments/fetchCommentDetail';
-import Toast from 'tdesign-miniprogram/toast/index'
 
 defineOptions({
   data() {
@@ -96,9 +96,8 @@ defineOptions({
       isAllowedSubmit,
     } = this.data
     if (!isAllowedSubmit) { return }
-    Toast({
+    showToast({
       context: this,
-      selector: '#t-toast',
       message: '评价提交成功',
       icon: 'check-circle',
     })
@@ -116,7 +115,6 @@ definePageJson({
     't-button': 'tdesign-miniprogram/button/button',
     't-upload': 'tdesign-miniprogram/upload/upload',
     't-icon': 'tdesign-miniprogram/icon/icon',
-    't-toast': 'tdesign-miniprogram/toast/toast',
   },
 })
 </script>
@@ -225,5 +223,4 @@ definePageJson({
       @tap="onSubmitBtnClick"
     />
   </view>
-  <t-toast id="t-toast" />
 </template>

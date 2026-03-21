@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
+import { showToast } from '@/hooks/useToast'
 import { rejectAddress, resolveAddress } from '../../../../services/address/list'
 import { addressParse } from '../../../../utils/addressParse'
 import { getPermission } from '../../../../utils/getPermission'
@@ -49,9 +49,8 @@ defineOptions({
               telNumber,
             } = options
             if (!phoneRegCheck(telNumber)) {
-              Toast({
+              showToast({
                 context: this,
-                selector: '#t-toast',
                 message: '请填写正确的手机号',
               })
               return
@@ -99,7 +98,7 @@ defineOptions({
               }
             }
             catch (error) {
-              wx.showToast({
+              showToast({
                 title: '地址解析出错，请稍后再试',
                 icon: 'none',
               })
@@ -152,7 +151,6 @@ defineComponentJson({
   usingComponents: {
     't-cell': 'tdesign-miniprogram/cell/cell',
     't-icon': 'tdesign-miniprogram/icon/icon',
-    't-toast': 'tdesign-miniprogram/toast/toast',
   },
 })
 </script>
@@ -177,5 +175,4 @@ defineComponentJson({
       </t-cell>
     </block>
   </view>
-  <t-toast id="t-toast" />
 </template>

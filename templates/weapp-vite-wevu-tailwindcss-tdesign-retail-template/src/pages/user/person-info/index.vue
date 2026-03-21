@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import Toast from 'tdesign-miniprogram/toast/index'
 import { onLoad, ref, useNativeInstance } from 'wevu'
+import { showToast } from '@/hooks/useToast'
 import { fetchPerson } from '../../../services/usercenter/fetchPerson'
 import { phoneEncryption } from '../../../utils/util'
 
@@ -34,10 +34,9 @@ const pickerOptions = ref([
 const typeVisible = ref(false)
 const genderMap = ref(['', '男', '女'])
 
-function showToast(message: string, theme: 'success' | 'error' = 'success') {
-  Toast({
+function showPersonToast(message: string, theme: 'success' | 'error' = 'success') {
+  showToast({
     context: nativeInstance as any,
-    selector: '#t-toast',
     message,
     theme,
   })
@@ -86,13 +85,13 @@ async function toModifyAvatar() {
 
     const tempUrlArr = tempFilePath.split('/')
     const tempFileName = tempUrlArr.at(-1) || tempFilePath
-    showToast(`已选择图片-${tempFileName}`)
+    showPersonToast(`已选择图片-${tempFileName}`)
   }
   catch (error: any) {
     if (error?.message === 'chooseImage:fail cancel') {
       return
     }
-    showToast(error?.message || error?.errMsg || error?.msg || '修改头像出错了', 'error')
+    showPersonToast(error?.message || error?.errMsg || error?.msg || '修改头像出错了', 'error')
   }
 }
 
@@ -129,7 +128,7 @@ function onConfirm(e: any) {
     ...personInfo.value,
     gender: value,
   }
-  showToast('设置成功')
+  showPersonToast('设置成功')
 }
 
 function openUnbindConfirm() {
@@ -162,8 +161,6 @@ definePageJson({
     't-cell': 'tdesign-miniprogram/cell/cell',
     't-button': 'tdesign-miniprogram/button/button',
     't-image': '/components/webp-image/index',
-    't-dialog': 'tdesign-miniprogram/dialog/dialog',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-select-picker': '../../usercenter/components/ui-select-picker/index',
   },
 })
@@ -227,5 +224,4 @@ definePageJson({
     @confirm="onConfirm"
     @close="onClose"
   />
-  <t-toast id="t-toast" />
 </template>

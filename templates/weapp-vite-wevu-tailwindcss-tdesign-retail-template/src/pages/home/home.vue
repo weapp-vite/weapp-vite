@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
 import { onLoad, onPullDownRefresh, onReachBottom, onShow, ref, useNativeInstance } from 'wevu'
+import { showToast } from '@/hooks/useToast'
 import { fetchGoodsList } from '../../services/good/fetchGoods'
 import { fetchHome } from '../../services/home/home'
 
@@ -114,9 +114,8 @@ function goodListClickHandle(e: any) {
 }
 
 function goodListAddCartHandle() {
-  Toast({
+  showToast({
     context: nativeInstance,
-    selector: '#t-toast',
     message: '点击加入购物车',
   })
 }
@@ -184,7 +183,6 @@ definePageJson({
     't-swiper-nav': 'tdesign-miniprogram/swiper-nav/swiper-nav',
     't-image': '/components/webp-image/index',
     't-icon': 'tdesign-miniprogram/icon/icon',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-tabs': 'tdesign-miniprogram/tabs/tabs',
     't-tab-panel': 'tdesign-miniprogram/tab-panel/tab-panel',
     'goods-list': '/components/goods-list/index',
@@ -250,6 +248,5 @@ definePageJson({
       @addcart="goodListAddCartHandle"
     />
     <load-more :list-is-empty="!goodsList.length" :status="goodsListLoadStatus" @retry="onReTry" />
-    <t-toast id="t-toast" />
   </view>
 </template>

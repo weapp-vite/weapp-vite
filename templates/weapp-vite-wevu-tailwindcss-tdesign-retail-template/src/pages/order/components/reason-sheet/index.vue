@@ -147,7 +147,6 @@ defineComponentJson({
     't-icon': 'tdesign-miniprogram/icon/icon',
     't-popup': 'tdesign-miniprogram/popup/popup',
     't-cell': 'tdesign-miniprogram/cell/cell',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-button': 'tdesign-miniprogram/button/button',
   },
 })
@@ -184,5 +183,4 @@ defineComponentJson({
       </view>
     </view>
   </t-popup>
-  <t-toast id="t-toast" />
 </template>

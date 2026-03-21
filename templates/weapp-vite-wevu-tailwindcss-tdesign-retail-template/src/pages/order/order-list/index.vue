@@ -217,8 +217,6 @@ definePageJson({
     't-tabs': 'tdesign-miniprogram/tabs/tabs',
     't-tab-panel': 'tdesign-miniprogram/tab-panel/tab-panel',
     't-empty': 'tdesign-miniprogram/empty/empty',
-    't-toast': 'tdesign-miniprogram/toast/toast',
-    't-dialog': 'tdesign-miniprogram/dialog/dialog',
     't-pull-down-refresh': 'tdesign-miniprogram/pull-down-refresh/pull-down-refresh',
     'load-more': '/components/load-more/index',
     'order-button-bar': '../components/order-button-bar/index',
@@ -321,6 +319,4 @@ definePageJson({
       </load-more>
     </t-pull-down-refresh>
   </view>
-  <t-toast id="t-toast" />
-  <t-dialog id="t-dialog" />
 </template>

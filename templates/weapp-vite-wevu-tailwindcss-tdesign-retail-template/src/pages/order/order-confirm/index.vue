@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
+import { showToast } from '@/hooks/useToast'
 import { getAddressPromise } from '../../../services/address/list'
 import { fetchSettleDetail } from '../../../services/order/orderConfirm'
 import { getNotes, handleInvoice } from './helpers'
@@ -180,9 +180,8 @@ defineOptions({
     return false
   },
   handleError() {
-    Toast({
+    showToast({
       context: this,
-      selector: '#t-toast',
       message: '结算异常, 请稍后重试',
       duration: 2000,
       icon: '',
@@ -413,9 +412,8 @@ defineOptions({
       goodsRequestList,
     } = this
     if (!userAddressReq && !settleDetailData.userAddress) {
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: '请添加收货地址',
         duration: 2000,
         icon: 'help-circle',
@@ -453,9 +451,8 @@ defineOptions({
         this.handlePay(data, settleDetailData)
       }
       else {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: res.msg || '提交订单超时，请稍后重试',
           duration: 2000,
           icon: '',
@@ -468,9 +465,8 @@ defineOptions({
     }, (err) => {
       this.payLock = false
       if (err.code === 'CONTAINS_INSUFFICIENT_GOODS' || err.code === 'TOTAL_AMOUNT_DIFFERENT') {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: err.msg || '支付异常',
           duration: 2000,
           icon: '',
@@ -478,9 +474,8 @@ defineOptions({
         this.init()
       }
       else if (err.code === 'ORDER_PAY_FAIL') {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: '支付失败',
           duration: 2000,
           icon: 'close-circle',
@@ -492,9 +487,8 @@ defineOptions({
         })
       }
       else if (err.code === 'ILLEGAL_CONFIG_PARAM') {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: '支付失败，微信支付商户号设置有误，请商家重新检查支付设置。',
           duration: 2000,
           icon: 'close-circle',
@@ -506,9 +500,8 @@ defineOptions({
         })
       }
       else {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: err.msg || '提交支付超时，请稍后重试',
           duration: 2000,
           icon: '',
@@ -644,7 +637,6 @@ definePageJson({
   navigationBarTitleText: '订单确认',
   usingComponents: {
     't-popup': 'tdesign-miniprogram/popup/popup',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-icon': 'tdesign-miniprogram/icon/icon',
     't-cell': 'tdesign-miniprogram/cell/cell',
     't-dialog': 'tdesign-miniprogram/dialog/dialog',
@@ -816,6 +808,4 @@ definePageJson({
       @sure="onCoupons"
     />
   </view>
-  <t-toast id="t-toast" />
-  <t-dialog id="t-dialog" />
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
+import { showToast } from '@/hooks/useToast'
 import { ServiceStatus, ServiceType, ServiceTypeDesc } from '../config'
 import { formatTime, getRightsDetail } from './api'
 
@@ -148,7 +148,7 @@ defineOptions({
       confirmBtn: '确定',
     })
     this.inputDialog._onConfirm = () => {
-      Toast({
+      showToast({
         message: '确定填写物流单号',
       })
     }
@@ -235,7 +235,6 @@ definePageJson({
     't-pull-down-refresh': 'tdesign-miniprogram/pull-down-refresh/pull-down-refresh',
     't-grid': 'tdesign-miniprogram/grid/grid',
     't-grid-item': 'tdesign-miniprogram/grid-item/grid-item',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-dialog': 'tdesign-miniprogram/dialog/dialog',
     't-input': 'tdesign-miniprogram/input/input',
     't-swiper': 'tdesign-miniprogram/swiper/swiper',
@@ -456,7 +455,6 @@ definePageJson({
       </view>
     </t-pull-down-refresh>
   </view>
-  <t-toast id="t-toast" />
   <!-- 退款说明填写 -->
   <t-dialog id="input-dialog" :visible="inputDialogVisible">
     <template #content>
@@ -471,5 +469,4 @@ definePageJson({
       </view>
     </template>
   </t-dialog>
-  <t-dialog id="t-dialog" />
 </template>
