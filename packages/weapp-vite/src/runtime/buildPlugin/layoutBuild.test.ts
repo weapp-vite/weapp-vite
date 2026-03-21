@@ -1,6 +1,6 @@
+import fs from 'node:fs/promises'
 import os from 'node:os'
 import process from 'node:process'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { createCompilerContext } from '../../createContext'
@@ -14,27 +14,31 @@ async function createTempRoot() {
   return root
 }
 
+async function writeJson(file: string, value: unknown) {
+  await fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+}
+
 async function writeProjectFiles(root: string) {
   const srcRoot = path.join(root, 'src')
-  await fs.ensureDir(path.join(srcRoot, 'pages', 'index'))
-  await fs.ensureDir(path.join(srcRoot, 'layouts'))
-  await fs.ensureDir(path.join(srcRoot, 'shared'))
+  await fs.mkdir(path.join(srcRoot, 'pages', 'index'), { recursive: true })
+  await fs.mkdir(path.join(srcRoot, 'layouts'), { recursive: true })
+  await fs.mkdir(path.join(srcRoot, 'shared'), { recursive: true })
 
-  await fs.writeJson(path.join(root, 'package.json'), {
+  await writeJson(path.join(root, 'package.json'), {
     name: 'layout-build-test',
     private: true,
     version: '0.0.0',
-  }, { spaces: 2 })
+  })
 
-  await fs.ensureSymlink(path.join(process.cwd(), 'node_modules'), path.join(root, 'node_modules'))
+  await fs.symlink(path.join(process.cwd(), 'node_modules'), path.join(root, 'node_modules'), 'dir')
 
-  await fs.writeJson(path.join(root, 'project.config.json'), {
+  await writeJson(path.join(root, 'project.config.json'), {
     appid: 'wx1234567890abcd',
     compileType: 'miniprogram',
     miniprogramRoot: 'dist/',
     srcMiniprogramRoot: 'src/',
     setting: {},
-  }, { spaces: 2 })
+  })
 
   await fs.writeFile(path.join(root, 'vite.config.ts'), [
     `import { defineConfig } from '${DEFINE_CONFIG_IMPORT}'`,
@@ -98,24 +102,24 @@ async function writeProjectFiles(root: string) {
 
 async function writeScriptlessLayoutProjectFiles(root: string) {
   const srcRoot = path.join(root, 'src')
-  await fs.ensureDir(path.join(srcRoot, 'pages', 'index'))
-  await fs.ensureDir(path.join(srcRoot, 'layouts'))
+  await fs.mkdir(path.join(srcRoot, 'pages', 'index'), { recursive: true })
+  await fs.mkdir(path.join(srcRoot, 'layouts'), { recursive: true })
 
-  await fs.writeJson(path.join(root, 'package.json'), {
+  await writeJson(path.join(root, 'package.json'), {
     name: 'layout-build-scriptless-test',
     private: true,
     version: '0.0.0',
-  }, { spaces: 2 })
+  })
 
-  await fs.ensureSymlink(path.join(process.cwd(), 'node_modules'), path.join(root, 'node_modules'))
+  await fs.symlink(path.join(process.cwd(), 'node_modules'), path.join(root, 'node_modules'), 'dir')
 
-  await fs.writeJson(path.join(root, 'project.config.json'), {
+  await writeJson(path.join(root, 'project.config.json'), {
     appid: 'wx1234567890abce',
     compileType: 'miniprogram',
     miniprogramRoot: 'dist/',
     srcMiniprogramRoot: 'src/',
     setting: {},
-  }, { spaces: 2 })
+  })
 
   await fs.writeFile(path.join(root, 'vite.config.ts'), [
     `import { defineConfig } from '${DEFINE_CONFIG_IMPORT}'`,
@@ -166,7 +170,7 @@ async function writeScriptlessLayoutProjectFiles(root: string) {
 
 describe('layout build regression', () => {
   afterAll(async () => {
-    await Promise.all(tempRoots.map(root => fs.remove(root)))
+    await Promise.all(tempRoots.map(root => fs.rm(root, { recursive: true, force: true })))
     tempRoots.length = 0
   })
 
@@ -201,6 +205,10 @@ describe('layout build regression', () => {
     expect(pageJson).toBeTruthy()
 
     expect(commonChunk!.code).toContain('LAYOUT-SHARED-MARKER')
+    expect(commonChunk!.code).not.toContain('//#region src/layouts/default.vue')
+    expect(commonChunk!.code).not.toContain('createWevuComponent({')
+    expect(layoutChunk!.code).not.toContain('Component({})')
+    expect(layoutChunk!.code).toContain('setup(')
     expect(layoutChunk!.imports).toContain('common.js')
     expect(pageChunk!.imports).toContain('common.js')
     expect(String(pageJson!.source)).toContain('"weapp-layout-default": "/layouts/default"')
