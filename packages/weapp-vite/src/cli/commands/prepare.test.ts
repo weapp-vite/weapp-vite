@@ -2,30 +2,19 @@ import { cac } from 'cac'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const createCompilerContextMock = vi.hoisted(() => vi.fn())
-const findAutoImportCandidatesMock = vi.hoisted(() => vi.fn())
 const shouldBootstrapAutoImportWithoutGlobsMock = vi.hoisted(() => vi.fn())
-const getAutoImportConfigMock = vi.hoisted(() => vi.fn())
 const loggerInfoMock = vi.hoisted(() => vi.fn())
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 const filterDuplicateOptionsMock = vi.hoisted(() => vi.fn())
 const resolveConfigFileMock = vi.hoisted(() => vi.fn())
-const syncManagedTsconfigFilesMock = vi.hoisted(() => vi.fn())
+const syncProjectSupportFilesMock = vi.hoisted(() => vi.fn())
 
 vi.mock('../../createContext', () => ({
   createCompilerContext: createCompilerContextMock,
 }))
 
-vi.mock('../../plugins/autoImport', () => ({
-  findAutoImportCandidates: findAutoImportCandidatesMock,
-  shouldBootstrapAutoImportWithoutGlobs: shouldBootstrapAutoImportWithoutGlobsMock,
-}))
-
-vi.mock('../../runtime/autoImport/config', () => ({
-  getAutoImportConfig: getAutoImportConfigMock,
-}))
-
-vi.mock('../../runtime/tsconfigSupport', () => ({
-  syncManagedTsconfigFiles: syncManagedTsconfigFilesMock,
+vi.mock('../../runtime/supportFiles', () => ({
+  syncProjectSupportFiles: syncProjectSupportFilesMock,
 }))
 
 vi.mock('../../logger', () => ({
@@ -45,36 +34,17 @@ describe('prepare cli command', () => {
     vi.clearAllMocks()
     resolveConfigFileMock.mockReturnValue(undefined)
     shouldBootstrapAutoImportWithoutGlobsMock.mockReturnValue(false)
-    syncManagedTsconfigFilesMock.mockResolvedValue(undefined)
+    syncProjectSupportFilesMock.mockResolvedValue({
+      managedTsconfigChanged: false,
+    })
   })
 
   it('pre-generates auto routes and auto import outputs', async () => {
-    const ensureFreshMock = vi.fn().mockResolvedValue(undefined)
-    const resetMock = vi.fn()
-    const registerPotentialComponentMock = vi.fn().mockResolvedValue(undefined)
-    const awaitManifestWritesMock = vi.fn().mockResolvedValue(undefined)
-
     createCompilerContextMock.mockResolvedValue({
       configService: {
         outDir: 'dist',
       },
-      autoRoutesService: {
-        isEnabled: () => true,
-        ensureFresh: ensureFreshMock,
-      },
-      autoImportService: {
-        reset: resetMock,
-        registerPotentialComponent: registerPotentialComponentMock,
-        awaitManifestWrites: awaitManifestWritesMock,
-      },
     })
-    getAutoImportConfigMock.mockReturnValue({
-      globs: ['components/**/*'],
-    })
-    findAutoImportCandidatesMock.mockResolvedValue([
-      '/project/src/components/Foo/index.wxml',
-      '/project/src/components/Bar/index.wxml',
-    ])
 
     const { registerPrepareCommand } = await import('./prepare')
     const cli = cac('weapp-vite')
@@ -88,36 +58,18 @@ describe('prepare cli command', () => {
       isDev: false,
       mode: 'development',
       configFile: undefined,
+      syncSupportFiles: false,
     })
-    expect(syncManagedTsconfigFilesMock).toHaveBeenCalledTimes(1)
-    expect(ensureFreshMock).toHaveBeenCalledTimes(1)
-    expect(resetMock).toHaveBeenCalledTimes(1)
-    expect(findAutoImportCandidatesMock).toHaveBeenCalledTimes(1)
-    expect(registerPotentialComponentMock).toHaveBeenCalledTimes(2)
-    expect(awaitManifestWritesMock).toHaveBeenCalledTimes(1)
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
     expect(loggerInfoMock).toHaveBeenCalledWith('已生成 .weapp-vite 支持文件。')
   })
 
   it('ignores duplicated prepare argv segments and still resolves root correctly', async () => {
-    const ensureFreshMock = vi.fn().mockResolvedValue(undefined)
-    const resetMock = vi.fn()
-    const awaitManifestWritesMock = vi.fn().mockResolvedValue(undefined)
-
     createCompilerContextMock.mockResolvedValue({
       configService: {
         outDir: 'dist',
       },
-      autoRoutesService: {
-        isEnabled: () => true,
-        ensureFresh: ensureFreshMock,
-      },
-      autoImportService: {
-        reset: resetMock,
-        registerPotentialComponent: vi.fn(),
-        awaitManifestWrites: awaitManifestWritesMock,
-      },
     })
-    getAutoImportConfigMock.mockReturnValue(undefined)
 
     const { registerPrepareCommand } = await import('./prepare')
     const cli = cac('weapp-vite')
@@ -131,11 +83,9 @@ describe('prepare cli command', () => {
       isDev: false,
       mode: 'development',
       configFile: undefined,
+      syncSupportFiles: false,
     })
-    expect(syncManagedTsconfigFilesMock).toHaveBeenCalledTimes(1)
-    expect(ensureFreshMock).toHaveBeenCalledTimes(1)
-    expect(resetMock).not.toHaveBeenCalled()
-    expect(awaitManifestWritesMock).not.toHaveBeenCalled()
+    expect(syncProjectSupportFilesMock).toHaveBeenCalledTimes(1)
   })
 
   it('warns and skips when prepare runs before project config is ready', async () => {
@@ -185,7 +135,7 @@ describe('prepare cli command', () => {
         awaitManifestWrites: vi.fn(),
       },
     })
-    syncManagedTsconfigFilesMock.mockRejectedValue(new Error('tsconfig failed'))
+    syncProjectSupportFilesMock.mockRejectedValue(new Error('tsconfig failed'))
 
     const { registerPrepareCommand } = await import('./prepare')
     const cli = cac('weapp-vite')
