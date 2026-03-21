@@ -185,7 +185,7 @@
     "lodash": "catalog:",
     "lodash-es": "^4.17.23",
     "magic-string": "catalog:",
-    "memfs": "^4.56.11",
+    "memfs": "^4.57.0",
     "merge": "catalog:",
     "micromatch": "^4.0.8",
     "minidev": "^2.2.5",
@@ -203,8 +203,8 @@
     "postcss-load-config": "^6.0.1",
     "prettier": "^3.8.1",
     "rimraf": "^6.1.3",
-    "rollup": "^4.59.0",
-    "rollup-plugin-dts": "^6.4.0",
+    "rollup": "^4.59.1",
+    "rollup-plugin-dts": "^6.4.1",
     "rollup-plugin-visualizer": "^7.0.1",
     "sass-embedded": "catalog:",
     "set-value": "^4.1.0",
@@ -227,7 +227,7 @@
     "vue": "catalog:",
     "vue-tsc": "catalog:",
     "why-is-node-running": "^3.2.2",
-    "yaml": "^2.8.2",
+    "yaml": "^2.8.3",
     "zod": "catalog:"
   },
   "publishConfig": {
