@@ -68,7 +68,9 @@ text,
 .i-mdi-moon-waxing-crescent {
   width: 1em;
   height: 1em;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='black' d='M12 2a9.9 9.9 0 0 0-3 .46a10 10 0 0 1 0 19.08A10 10 0 1 0 12 2'/%3E%3C/svg%3E");
   -webkit-mask-image: var(--svg);
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='black' d='M12 2a9.9 9.9 0 0 0-3 .46a10 10 0 0 1 0 19.08A10 10 0 1 0 12 2'/%3E%3C/svg%3E");
   mask-image: var(--svg);
   --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='black' d='M12 2a9.9 9.9 0 0 0-3 .46a10 10 0 0 1 0 19.08A10 10 0 1 0 12 2'/%3E%3C/svg%3E");
   background-color: currentColor;
@@ -81,7 +83,9 @@ text,
 .i-mdi-weather-sunny {
   width: 1em;
   height: 1em;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='black' d='M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0-7l2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10l1.76-3.77a7.13 7.13 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10l-4.14.36c.59-.51 1.12-1.14 1.54-1.86c.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44c.82 0 1.63-.17 2.37-.44z'/%3E%3C/svg%3E");
   -webkit-mask-image: var(--svg);
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='black' d='M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0-7l2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10l1.76-3.77a7.13 7.13 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10l-4.14.36c.59-.51 1.12-1.14 1.54-1.86c.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44c.82 0 1.63-.17 2.37-.44z'/%3E%3C/svg%3E");
   mask-image: var(--svg);
   --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='24' height='24'%3E%3Cpath fill='black' d='M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0-7l2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10l1.76-3.77a7.13 7.13 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10l-4.14.36c.59-.51 1.12-1.14 1.54-1.86c.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44c.82 0 1.63-.17 2.37-.44z'/%3E%3C/svg%3E");
   background-color: currentColor;
@@ -142,7 +146,9 @@ text,
 .space-x-8 > text + view,
 .space-x-8 > text + text {
   --tw-space-x-reverse: 0;
+  margin-right: 0rpx;
   margin-right: calc(64rpx * var(--tw-space-x-reverse));
+  margin-left: 64rpx;
   margin-left: calc(64rpx * (1 - var(--tw-space-x-reverse)));
 }
 .space-y-10 > view + view,
@@ -150,7 +156,9 @@ text,
 .space-y-10 > text + view,
 .space-y-10 > text + text {
   --tw-space-y-reverse: 0;
+  margin-top: 80rpx;
   margin-top: calc(80rpx * (1 - var(--tw-space-y-reverse)));
+  margin-bottom: 0rpx;
   margin-bottom: calc(80rpx * var(--tw-space-y-reverse));
 }
 .rounded-2xl {
@@ -164,18 +172,22 @@ text,
 }
 .bg-gray-100 {
   --tw-bg-opacity: 1;
+  background-color: rgba(243, 244, 246, 1);
   background-color: rgba(243, 244, 246, var(--tw-bg-opacity, 1));
 }
 .bg-gray-900 {
   --tw-bg-opacity: 1;
+  background-color: rgba(17, 24, 39, 1);
   background-color: rgba(17, 24, 39, var(--tw-bg-opacity, 1));
 }
 .bg-slate-100 {
   --tw-bg-opacity: 1;
+  background-color: rgba(241, 245, 249, 1);
   background-color: rgba(241, 245, 249, var(--tw-bg-opacity, 1));
 }
 .bg-white {
   --tw-bg-opacity: 1;
+  background-color: rgba(255, 255, 255, 1);
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity, 1));
 }
 .bg-white_f95 {
@@ -287,34 +299,42 @@ text,
 }
 .text-rose-700 {
   --tw-text-opacity: 1;
+  color: rgba(190, 18, 60, 1);
   color: rgba(190, 18, 60, var(--tw-text-opacity, 1));
 }
 .text-sky-500 {
   --tw-text-opacity: 1;
+  color: rgba(14, 165, 233, 1);
   color: rgba(14, 165, 233, var(--tw-text-opacity, 1));
 }
 .text-slate-200 {
   --tw-text-opacity: 1;
+  color: rgba(226, 232, 240, 1);
   color: rgba(226, 232, 240, var(--tw-text-opacity, 1));
 }
 .text-slate-400 {
   --tw-text-opacity: 1;
+  color: rgba(148, 163, 184, 1);
   color: rgba(148, 163, 184, var(--tw-text-opacity, 1));
 }
 .text-slate-600 {
   --tw-text-opacity: 1;
+  color: rgba(71, 85, 105, 1);
   color: rgba(71, 85, 105, var(--tw-text-opacity, 1));
 }
 .text-slate-700 {
   --tw-text-opacity: 1;
+  color: rgba(51, 65, 85, 1);
   color: rgba(51, 65, 85, var(--tw-text-opacity, 1));
 }
 .text-slate-800 {
   --tw-text-opacity: 1;
+  color: rgba(30, 41, 59, 1);
   color: rgba(30, 41, 59, var(--tw-text-opacity, 1));
 }
 .text-slate-900 {
   --tw-text-opacity: 1;
+  color: rgba(15, 23, 42, 1);
   color: rgba(15, 23, 42, var(--tw-text-opacity, 1));
 }
 .text-transparent {
@@ -322,6 +342,7 @@ text,
 }
 .text-white {
   --tw-text-opacity: 1;
+  color: rgba(255, 255, 255, 1);
   color: rgba(255, 255, 255, var(--tw-text-opacity, 1));
 }
 .underline {
@@ -331,11 +352,20 @@ text,
   --tw-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05098);
   --tw-shadow-colored: 0 1px 2px 0 var(--tw-shadow-color);
   box-shadow:
+    0 0 rgba(0, 0, 0, 0),
+    0 0 rgba(0, 0, 0, 0),
+    0 1px 2px 0 rgba(0, 0, 0, 0.05098);
+  box-shadow:
     var(--tw-ring-offset-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-ring-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-shadow);
 }
 .shadow-xl {
   --tw-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.10196), 0 8px 10px -6px rgba(0, 0, 0, 0.10196);
   --tw-shadow-colored: 0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);
+  box-shadow:
+    0 0 rgba(0, 0, 0, 0),
+    0 0 rgba(0, 0, 0, 0),
+    0 20px 25px -5px rgba(0, 0, 0, 0.10196),
+    0 8px 10px -6px rgba(0, 0, 0, 0.10196);
   box-shadow:
     var(--tw-ring-offset-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-ring-shadow, 0 0 rgba(0, 0, 0, 0)), var(--tw-shadow);
 }
@@ -361,6 +391,8 @@ text,
 .active_cscale-95:active {
   --tw-scale-x: 0.95;
   --tw-scale-y: 0.95;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x))
+    skewY(var(--tw-skew-y)) scaleX(0.95) scaleY(0.95);
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x))
     skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }

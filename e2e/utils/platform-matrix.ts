@@ -15,10 +15,16 @@ function isFullMatrixRequested() {
   return process.env.E2E_FULL_MATRIX === '1'
 }
 
+function isSnapshotUpdateRequested() {
+  return process.argv.includes('-u')
+    || process.argv.includes('--update')
+    || process.argv.includes('--updateSnapshot')
+}
+
 /**
  * 解析 e2e 平台矩阵：
  * 1) 显式设置 E2E_PLATFORM 时，仅跑该平台；
- * 2) CI 或 E2E_FULL_MATRIX=1 时，跑完整平台列表；
+ * 2) CI、E2E_FULL_MATRIX=1 或快照更新模式时，跑完整平台列表；
  * 3) 其余本地场景，默认跑 localDefault（未传则取首个平台）。
  */
 export function resolvePlatformMatrix<T extends string>(
@@ -37,7 +43,7 @@ export function resolvePlatformMatrix<T extends string>(
     return [selected as T]
   }
 
-  if (isCiRuntime() || isFullMatrixRequested()) {
+  if (isCiRuntime() || isFullMatrixRequested() || isSnapshotUpdateRequested()) {
     return [...supportedPlatforms]
   }
 
