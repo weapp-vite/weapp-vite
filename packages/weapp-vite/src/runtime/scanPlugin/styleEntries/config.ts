@@ -70,7 +70,7 @@ export function coerceStyleConfig(entry: SubPackageStyleConfigEntry): ResolvedSt
     return undefined
   }
 
-  const hasExplicitScope = Object.prototype.hasOwnProperty.call(entry, 'scope') && entry.scope != null
+  const hasExplicitScope = Object.hasOwn(entry, 'scope') && entry.scope != null
   const scope = hasExplicitScope ? coerceScope(entry.scope) : 'all'
   return {
     source,

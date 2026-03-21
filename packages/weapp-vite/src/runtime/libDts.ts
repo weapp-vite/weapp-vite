@@ -620,8 +620,11 @@ export async function generateLibDts(configService: ConfigService) {
     const userRolldownOptions: RolldownDtsOptions = dtsOptions?.rolldown ?? {}
     const hasUserTsconfig = Object.hasOwn(userRolldownOptions, 'tsconfig')
     const hasUserBuild = Object.hasOwn(userRolldownOptions, 'build')
+    const userTsconfig = userRolldownOptions.tsconfig
     const resolvedTsconfig = hasUserTsconfig
-      ? userRolldownOptions.tsconfig
+      ? (typeof userTsconfig === 'string' || userTsconfig === false
+          ? userTsconfig
+          : (hasTsconfig ? tsconfigPath : false))
       : hasTsconfig
         ? tsconfigPath
         : false
