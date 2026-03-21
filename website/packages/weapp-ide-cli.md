@@ -1,6 +1,6 @@
 ---
 title: weapp-ide-cli
-description: weapp-ide-cli 是微信开发者工具 CLI 的增强封装，提供命令透传、automator 子命令、配置管理与中英文切换。
+description: weapp-ide-cli 是微信开发者工具 CLI 的增强封装，提供命令透传、automator 子命令、配置管理与多语言输出。
 keywords:
   - packages
   - weapp-ide-cli
@@ -18,6 +18,8 @@ keywords:
 - 提供 automator 子命令
 - 提供可持久化配置（`~/.weapp-ide-cli/config.json`）
 - 默认中文提示，支持切换英文
+
+在 `weapp-vite` 项目里，你通常不必单独记忆两套命令。`weapp-vite` 会在未命中自身命令时自动透传到 `weapp-ide-cli`，所以 `preview`、`upload`、`automator` 等能力也可以直接从 `weapp-vite` 入口调用。
 
 > 使用前请在微信开发者工具开启：`设置 -> 安全设置 -> 服务端口`。
 

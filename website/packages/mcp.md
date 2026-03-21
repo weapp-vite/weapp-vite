@@ -1,6 +1,6 @@
 ---
 title: "@weapp-vite/mcp"
-description: "@weapp-vite/mcp 是 weapp-vite 与 wevu 的 MCP 服务实现，面向 AI 助手提供源码检索、命令执行与文档资源能力。"
+description: "@weapp-vite/mcp 是 weapp-vite 官方 MCP 服务实现，面向 AI 助手提供源码检索、命令执行与文档资源能力。"
 keywords:
   - Weapp-vite
   - packages
@@ -14,7 +14,19 @@ keywords:
 
 `@weapp-vite/mcp` 是 `weapp-vite` 官方维护的 MCP 服务实现，目标是把 `weapp-vite / wevu / wevu-compiler` 的关键研发能力暴露给 AI 助手。
 
-在当前版本中，`weapp-vite` 已集成该能力，你通常不需要单独使用此包，而是直接通过 `weapp-vite mcp` 启动。
+在当前版本中，`weapp-vite` 已集成该能力。大多数场景下，你不需要单独使用此包，而是直接通过 `weapp-vite mcp` 启动。
+
+## 推荐使用方式
+
+```bash
+weapp-vite mcp
+```
+
+如果你的 AI 客户端支持 `streamable-http`，也可以切换到 HTTP 传输：
+
+```bash
+weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoint /mcp
+```
 
 ## 何时使用
 
@@ -29,12 +41,6 @@ pnpm add @weapp-vite/mcp
 ```
 
 ## 启动方式
-
-推荐直接使用 `weapp-vite` CLI：
-
-```bash
-weapp-vite mcp
-```
 
 不在仓库目录执行时，可选追加 `--workspace-root /path/to/weapp-vite`。
 

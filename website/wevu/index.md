@@ -1,16 +1,13 @@
 ---
 title: Wevu 概览
-description: Wevu 是一个面向小程序（以微信小程序为主）的轻量运行时。可以把它看作“把 Vue 3 的响应式心智模型带到小程序里”，但不引入
-  Virtual DOM，而是用快照 diff 来尽量减少 setData 的更新量。
+description: Wevu 是面向小程序的轻量运行时，为 weapp-vite 的 Vue SFC 与组合式开发提供响应式、生命周期、Store 与最小化 setData 更新能力。
 keywords:
   - Wevu
-  - 编译
   - 概览
   - vue
-  - "3"
-  - 的响应式心智模型带到小程序里
-  - 但不引入
-  - virtual
+  - 响应式
+  - setData
+  - store
 ---
 
 # Wevu 概览
@@ -18,13 +15,13 @@ keywords:
 `wevu` 是一个面向小程序（以微信小程序为主）的轻量运行时。可以把它看作“把 Vue 3 的响应式心智模型带到小程序里”，但不引入 Virtual DOM，而是用快照 diff 来尽量减少 `setData` 的更新量。
 
 :::warning 安装方式
-`wevu` 建议始终安装在 `devDependencies` 中：
+`wevu` 在 `weapp-vite` 项目里通常建议安装在 `devDependencies` 中：
 
 ```sh
 pnpm add -D wevu
 ```
 
-不要放到 `dependencies`。在 Weapp-vite 项目里，这样更符合其“构建期依赖内联、运行时依赖单独落位”的产物策略。
+这样更符合当前 `weapp-vite` 的产物策略与模板默认值。若你是在非 `weapp-vite` 场景单独消费 `wevu`，再根据自己的发布方式决定依赖落位。
 :::
 
 它主要提供：
@@ -37,7 +34,7 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 
 ## Wevu 在整套体系里的位置
 
-如果你同时使用 Weapp-vite 的 Vue SFC：
+如果你同时使用 `weapp-vite` 的 Vue SFC：
 
 - **Weapp-vite（编译期）**：把 `.vue` 编译成 WXML/WXSS/JS/JSON，并做模板语法转换。
 - **Wevu（运行期）**：负责响应式、生命周期 hooks、快照 diff 与最小化 `setData`。
@@ -46,14 +43,23 @@ Wevu 不改变小程序“数据驱动 + 模板渲染”的基本模型：你仍
 
 - “模板/指令/usingComponents/v-model 怎么编译？” → 先看 `/wevu/vue-sfc`
 - “状态为什么不更新 / hooks 为什么不触发？” → 先看 `/wevu/runtime` 与 `/wevu/compatibility`
+- “项目应该先看哪一层文档？” → 先看 `/guide/` 和 `/config/`；那里解决的是编译与工程问题，不是运行时问题。
+
+## Wevu 不是什么
+
+- 它不是浏览器 DOM 运行时，也不是把 Vue 3 完整搬进小程序。
+- 它不依赖 Virtual DOM，而是围绕小程序的 `setData` 模型做响应式与快照 diff。
+- 它也不替代 `weapp-vite` 的编译能力。SFC、WXML、JSON、WXSS 的转换仍然由编译侧负责。
 
 ## 诞生的小故事
 
-这段背景不影响使用，你可以先跳过：
+这段背景不影响你上手，但能帮助你理解 Wevu 为什么会长成现在这样：
 
-- 最初想叫 `wevue`（weapp + vue），但 npm 已被占用，于是缩写成了 `wevu`。
-- 在为 `weapp-vite` 补齐 Vue SFC 支持时，调研过社区方案（如 `vue-mini`），但编译器与运行时都需要大改，最后选择自己实现以更贴合小程序。
-- 借鉴 Vue 3 的响应式设计思路，并考虑多小程序平台适配，逐步形成现在的 Wevu。
+- 最初想叫 `wevue`，但 npm 包名已被占用，后来才收敛成现在的 `wevu`。
+- 在给 `weapp-vite` 补齐 Vue SFC 支持时，调研过社区现有方案，但无论编译链还是运行时语义，都很难直接贴合小程序场景。
+- 最后选择围绕小程序本身的运行模型重新组织这套能力：借鉴 Vue 3 的响应式心智，但不照搬浏览器渲染栈，而是把重点放在 `setData`、页面生命周期和小程序平台约束上。
+
+如果你把 Wevu 理解成“面向小程序约束重新取舍过的一套 Vue 风格运行时”，通常会比把它理解成“Vue 3 的缩小版”更准确。
 
 ## 你会用到的能力
 

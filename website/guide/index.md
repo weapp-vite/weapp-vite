@@ -3,18 +3,27 @@ outline:
   - 2
   - 4
 title: 快速开始
-description: 执行以下命令，快速创建一个集成了 Weapp-vite 的原生微信小程序项目：
+description: 从零创建或接入 weapp-vite 项目，快速跑通开发、构建、IDE 打开、CLI 透传与后续能力扩展。
 keywords:
   - Weapp-vite
   - 微信小程序
-  - 配置
   - guide
   - 快速开始
-  - 执行以下命令
-  - 快速创建一个集成了
+  - CLI
+  - weapp-ide-cli
+  - Vue SFC
 ---
 
 # 快速开始 {#getting-started}
+
+`weapp-vite` 当前已经不只是“把原生小程序改成 Vite 构建”这么简单。围绕一个项目，你通常会同时用到这几层能力：
+
+- `weapp-vite`：开发、构建、分包策略、自动导入组件、自动路由、Web 预览、MCP。
+- `weapp-ide-cli`：打开 IDE、预览、上传、automator 自动化，以及 CI 场景下的命令透传。
+- `wevu`：当你使用 Vue SFC 或组合式运行时时，负责响应式、生命周期与最小化 `setData` 更新。
+- `create-weapp-vite`：通过官方模板快速创建项目，并对齐目录、脚本与依赖。
+
+如果你只是第一次接触，按本页流程走完即可。想深入某个功能时，再跳到后续专题页。
 
 > [!IMPORTANT]
 > 使用前请确保安装 **Node.js `^20.19.0 || >=22.12.0`**。建议使用 [Node.js 官网](https://nodejs.org/) 的 LTS，并全局安装 `pnpm`（`npm i -g pnpm`）。
@@ -25,11 +34,11 @@ keywords:
 2. 启动开发者工具，在「设置 > 安全设置」中勾选 **服务端口**。这是 `pnpm dev --open`、`pnpm open` 等命令能唤起 IDE 的前提。
 3. 第一次使用建议先手动打开一次项目，确认开发者工具可用，避免后续命令行提示 _“请先在微信开发者工具中开启服务端口”_。
 
-## 1. 使用内置模板
+## 1. 使用官方模板
 
-### 1. 选择模板
+### 1. 创建项目
 
-执行以下命令，快速创建一个集成了 `weapp-vite` 的原生微信小程序项目：
+执行以下命令，创建一个集成了 `weapp-vite` 的项目：
 
 ::: code-group
 
@@ -87,7 +96,9 @@ bun create weapp-vite
 
 :::
 
-### 2. 切换到目录中，执行安装命令
+脚手架当前会根据你选择的模板，生成原生小程序、Wevu、TailwindCSS、TDesign 等不同组合。新项目建议优先用脚手架，而不是手动拷模板。
+
+### 2. 安装依赖
 
 ::: code-group
 
@@ -134,7 +145,7 @@ bun dev --open # 已开启服务端口时自动打开微信开发者工具
 
 :::
 
-### 4. 开发者工具预览
+### 4. 打开开发者工具
 
 #### 执行 `open` 命令
 
@@ -161,9 +172,9 @@ bun open
 > [!TIP]
 > 如果命令行提示 “请先在微信开发者工具中开启服务端口”，请回到「微信开发者工具 → 设置 → 安全设置」重新勾选该选项，并重启开发者工具后再次运行命令。
 
-## 2. 手动集成
+## 2. 手动接入现有项目
 
-### 1. 创建项目
+### 1. 先准备一个原生项目
 
 如果你不想用脚手架，也可以先用开发者工具创建一个“原生小程序”，再手动接入 Weapp-vite：
 
@@ -179,7 +190,7 @@ bun open
 
 > 如果你创建的是 **TS 模板项目**，请在 `vite.config.ts` 中设置 [`weapp.srcRoot`](../config/paths.md#weapp-srcroot) 为 `'./miniprogram'`。
 
-### 2. 手动接入 Weapp-vite
+### 2. 接入 `weapp-vite`
 
 如果你已经有运行中的小程序，希望在原目录上直接接入 Weapp-vite，请跳转到[《手动集成》](/guide/manual-integration)查看完整步骤（依赖安装、脚本配置、目录迁移等）。这里的快速开始章节仅演示模板创建流程。
 
@@ -205,15 +216,13 @@ bun i
 
 :::
 
-这样微信开发小程序的智能提示(`types`)，也都被安装进来
-
-这样小程序 API 的类型声明（typings）也会一起装好，编辑器里就有补全和校验了。
+完成后，小程序 API 类型声明、`weapp-vite` 生成的支持文件，以及后续可选的自动路由 / 自动导入组件类型文件，都会逐步接入到编辑器提示体系里。
 
 > 想要一步步把现有项目接入 Weapp-vite：参考[《手动集成》](/guide/manual-integration)。想知道 CLI 初始化做了哪些改动：阅读 [`weapp-vite init 做了什么?`](/deep/init)。
 
-## 预置命令
+## 常用命令
 
-完整参数与命令别名可查看 [CLI 命令参考](/guide/cli)。
+完整参数、透传规则与更多示例可查看 [CLI 命令参考](/guide/cli)。
 
 ### 开发命令
 
@@ -223,7 +232,7 @@ pnpm dev --open # 已开启服务端口时自动打开微信开发者工具
 pnpm dev -o # 已开启服务端口时自动打开微信开发者工具
 ```
 
-命令会启动文件监听器，保存代码后会自动重新编译并同步到 `dist` 目录，无需手动刷新。
+命令会启动监听构建。保存后会自动重新编译并同步到开发目录；如果已开启服务端口，也可以配合 `--open` 直接拉起微信开发者工具。
 
 ### 构建命令
 
@@ -233,7 +242,7 @@ pnpm build --open # 打开微信开发者工具，见下方
 pnpm build -o # 打开微信开发者工具，见下方
 ```
 
-此时会启用 `vite` 自带的 `build` 模式，删除整个 `dist` 目录重新生成，并进行代码压缩
+此时会执行生产构建，重新生成输出目录，并应用压缩、静态资源处理和分包产物整理。
 
 ### 打开微信开发者工具命令
 
@@ -258,7 +267,15 @@ weapp-vite ide config show
 ```
 
 > [!WARNING]
-> 请在 `微信开发者工具` → `设置` → `安全设置` → 勾选 `服务端口`。
+> `weapp-vite` 会优先执行自己的原生命令；只有未命中时，才会回退透传到 `weapp-ide-cli`。因此 `build/dev/open/analyze/generate/mcp/prepare` 这些命令不会被官方 IDE CLI 覆盖。
+
+## 下一步建议
+
+- 想了解命令行能力边界：看 [CLI 命令参考](/guide/cli)。
+- 想开始使用 Vue 单文件组件：看 [Vue SFC 开发](/guide/vue-sfc/) 和 [Wevu 概览](/wevu/)。
+- 想减少手写 `app.json.pages` 与 `usingComponents`：看 [自动路由](/guide/auto-routes) 与 [自动导入组件](/guide/auto-import)。
+- 想做 AI 协作或本地 MCP：看 [AI 协作](/guide/ai) 与 [@weapp-vite/mcp](/packages/mcp)。
+  > 请在 `微信开发者工具` → `设置` → `安全设置` → 勾选 `服务端口`。
 
 > [!WARNING]
 > Linux 目前没有官方微信开发者工具，请安装社区版：[msojocs/wechat-web-devtools-linux](https://github.com/msojocs/wechat-web-devtools-linux)，并把 `wechat-devtools-cli` 链接到系统 `PATH`，例如：

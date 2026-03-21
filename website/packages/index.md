@@ -1,20 +1,19 @@
 ---
 title: 周边包总览
-description: Weapp-vite 不只是一个构建器，packages/* 里还提供了脚手架、CLI、编译器、跨端 API、实验运行时和性能分析工具。
+description: weapp-vite 不只是一个构建器，packages 下还提供脚手架、IDE CLI、MCP、跨端 API、Web 运行时、Volar 与编译底座等能力。
 keywords:
   - packages
   - 周边包总览
   - Weapp-vite
-  - 不只是一个构建器
-  - packages/
-  - 里还提供了脚手架
-  - cli
-  - 编译器
+  - weapp-ide-cli
+  - MCP
+  - web
+  - volar
 ---
 
 # 周边包总览
 
-`weapp-vite` 不只是一个构建器，`packages/*` 里还提供了脚手架、CLI、编译器、跨端 API、实验运行时和性能分析工具。
+`weapp-vite` 不只是一个构建器。围绕“创建项目、开发构建、IDE 自动化、运行时、AI 协作、编辑器提示”这条链路，仓库里的多个包会一起工作。
 
 做技术选型时，建议先看本页，再按需进入对应子页面。
 
@@ -22,12 +21,12 @@ keywords:
 
 - 新建项目：优先用 `create-weapp-vite`
 - 在 CI/脚本里调用微信开发者工具：用 `weapp-ide-cli`
+- 想让 AI 助手直接理解并操作仓库：用 `@weapp-vite/mcp`，或直接执行 `weapp-vite mcp`
 - 需要“打包后执行配置文件”：用 `rolldown-require`
 - 想追踪 Vite 插件耗时瓶颈：用 `vite-plugin-performance`
 - 想在非 Vite 场景复用 Wevu 编译能力：用 `@wevu/compiler`
 - 想统一多端小程序 API 调用风格：用 `@wevu/api`
-- 想在浏览器里做小程序语法实验运行：用 `@weapp-vite/web`（实验）
-- 想把 weapp-vite/wevu 能力暴露给 AI 助手：用 `@weapp-vite/mcp`
+- 想在浏览器里做小程序语法预览、调试与兼容验证：用 `@weapp-vite/web`（实验）
 - 想增强 `<json>` 配置块智能提示：用 `@weapp-vite/volar`
 
 ## 包能力矩阵
@@ -48,9 +47,10 @@ keywords:
 
 - `weapp-vite` 主包：见 [指引](/guide/) 与 [配置](/config/)
 - `wevu` 运行时：见 [Wevu 专区](/wevu/)
+- 学习路线与整套心智模型：见 [教程](/handbook/)
 
 ## 说明
 
 - `rolldown-require-bench` 主要用于基准测试，不建议直接作为业务依赖。
-- `@weapp-vite/web` 仍偏实验用途，适合技术验证与学习。
-- `@weapp-vite/mcp` 已被 `weapp-vite` CLI 集成，可直接用于 AI 协作流程。
+- `@weapp-vite/web` 仍偏实验用途，适合技术验证、浏览器预览与 Web 侧调试。
+- `@weapp-vite/mcp` 已被 `weapp-vite` CLI 集成，通常直接使用 `weapp-vite mcp` 即可。

@@ -1,6 +1,6 @@
 ---
 title: 自动引入组件
-description: Weapp-vite 可以在构建阶段自动扫描并注册组件，让你在 WXML 里直接写组件标签，而不需要手动维护 usingComponents。
+description: weapp-vite 可以在构建阶段自动扫描并注册组件，让你在 WXML 或 Vue SFC 模板里直接写组件标签，而不必手动维护 usingComponents。
 keywords:
   - guide
   - auto
@@ -14,7 +14,7 @@ keywords:
 
 # 自动引入组件
 
-`weapp-vite` 可以在构建阶段自动扫描并注册组件，让你在 WXML 里直接写组件标签，而不需要手动维护 `usingComponents`。
+`weapp-vite` 可以在构建阶段自动扫描并注册组件，让你在 WXML 或 Vue SFC 模板里直接写组件标签，而不需要手动维护 `usingComponents`。
 
 你只需要告诉它两件事：
 
@@ -103,7 +103,7 @@ export default <UserConfig>{
 
 ### 组件清单
 
-默认会在配置文件同级目录输出 `auto-import-components.json`，列出所有自动注册的组件：
+默认会在 `.weapp-vite/auto-import-components.json` 输出所有自动注册的组件：
 
 ```json
 {
@@ -144,6 +144,12 @@ export default <UserConfig>{
 ```
 
 构建器会在组件扫描、resolver 匹配的同一流程中自动刷新这些文件，无需手动触发。
+
+如果你需要在编辑器或 CI 预热阶段提前生成这些文件，可以执行：
+
+```bash
+weapp-vite prepare
+```
 
 ## 常见疑问
 

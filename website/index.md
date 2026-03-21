@@ -1,17 +1,16 @@
 ---
 layout: page
 title: Weapp-vite
-titleTemplate: 把现代化的开发模式带入小程序开发吧
-description: Weapp-vite，聚焦 index 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
+titleTemplate: 小程序工程化、Vue SFC 与 Wevu 运行时的一体化工具链
+description: Weapp-vite 是面向小程序的现代工程化工具链，覆盖开发、构建、自动化、Vue SFC、Wevu 运行时、MCP 与多平台能力。
 keywords:
   - Weapp-vite
-  - 聚焦
-  - 相关场景
-  - 覆盖
-  - 与
+  - 小程序工程化
+  - Vue SFC
   - Wevu
-  - 的能力
-  - 配置和实践要点。
+  - MCP
+  - 多平台
+  - 自动化
 ---
 
 <HomePage />
