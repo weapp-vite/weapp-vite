@@ -35,7 +35,8 @@ interface DirectorySection {
 const sections: DirectorySection[] = [
   {
     title: 'Root Directory',
-    description: '先看工程入口。这里决定项目如何被开发者工具、VitePress 和 Weapp-vite 自身识别。',
+    description:
+      '先看工程入口。这里决定项目如何被开发者工具、VitePress 和 Weapp-vite 自身识别。',
     items: [
       {
         icon: 'viteConfig',
@@ -65,7 +66,8 @@ const sections: DirectorySection[] = [
   },
   {
     title: 'App Directory',
-    description: '再看源码根目录。这里既承接应用入口，也定义页面、组件、分包与特殊固定目录的边界。',
+    description:
+      '再看源码根目录。这里既承接应用入口，也定义页面、组件、分包与特殊固定目录的边界。',
     items: [
       {
         icon: 'srcRoot',
@@ -83,7 +85,14 @@ const sections: DirectorySection[] = [
         icon: 'appVue',
         title: 'app.vue',
         href: '/guide/directory-structure/app-vue',
-        description: 'Vue SFC 形式的应用入口，可在同一文件中组织脚本、JSON 宏与样式。',
+        description:
+          'Vue SFC 形式的应用入口，可在同一文件中组织脚本、JSON 宏与样式。',
+      },
+      {
+        icon: 'appVue',
+        title: 'layouts/',
+        href: '/guide/directory-structure/layouts',
+        description: '页面 layout 约定目录，承载 default 与命名布局。',
       },
       {
         icon: 'appJson',
@@ -149,7 +158,8 @@ const sections: DirectorySection[] = [
   },
   {
     title: 'Generated Files',
-    description: '最后看自动生成产物。它们默认也落在 srcRoot 下，方便 tsconfig 直接覆盖。',
+    description:
+      '最后看自动生成产物。它们默认也落在 srcRoot 下，方便 tsconfig 直接覆盖。',
     items: [
       {
         icon: 'typedRouter',

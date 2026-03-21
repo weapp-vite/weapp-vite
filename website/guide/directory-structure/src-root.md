@@ -34,6 +34,7 @@ export default defineConfig({
 
 - `pages/` 的扫描根目录
 - `components/` 的扫描根目录
+- `layouts/` 的扫描根目录
 - `custom-tab-bar/`、`app-bar/` 的固定位置
 - `typed-router.d.ts`、`typed-components.d.ts`、`components.d.ts` 的默认输出位置
 

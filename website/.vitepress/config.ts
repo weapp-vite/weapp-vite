@@ -5,21 +5,35 @@ import AutoImport from 'unplugin-auto-import/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vitepress'
-import { groupIconMdPlugin, groupIconVitePlugin } from 'vitepress-plugin-group-icons'
-import llmstxt, { copyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
+import {
+  groupIconMdPlugin,
+  groupIconVitePlugin,
+} from 'vitepress-plugin-group-icons'
+import llmstxt, {
+  copyOrDownloadAsMarkdownButtons,
+} from 'vitepress-plugin-llms'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { createSeoHead, transformPageDataForSeo } from './seo'
 import { WEAPI_CAPABILITY_GROUPS } from './shared/weapiCapabilities'
 
 const vueSharedEsmPath = fileURLToPath(
-  new URL('../node_modules/@vue/shared/dist/shared.esm-bundler.js', import.meta.url),
+  new URL(
+    '../node_modules/@vue/shared/dist/shared.esm-bundler.js',
+    import.meta.url,
+  ),
 )
-const atomGitSocialSvg = readFileSync(fileURLToPath(new URL('../public/AtomGit.svg', import.meta.url)), 'utf8')
-  .replace(/fill="#[0-9a-fA-F]{3,8}"/g, 'fill="currentColor"')
+const atomGitSocialSvg = readFileSync(
+  fileURLToPath(new URL('../public/AtomGit.svg', import.meta.url)),
+  'utf8',
+).replace(/fill="#[0-9a-fA-F]{3,8}"/g, 'fill="currentColor"')
 const EXTERNAL_LINK_REGEX = /^https?:\/\//
 
-function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Sidebar | undefined {
-  const cleanItems = (items?: DefaultTheme.SidebarItem[]): DefaultTheme.SidebarItem[] =>
+function sanitizeSidebarLinks(
+  sidebar?: DefaultTheme.Sidebar,
+): DefaultTheme.Sidebar | undefined {
+  const cleanItems = (
+    items?: DefaultTheme.SidebarItem[],
+  ): DefaultTheme.SidebarItem[] =>
     (items ?? [])
       .map((item) => {
         const cleanedChildren = item.items ? cleanItems(item.items) : undefined
@@ -43,7 +57,10 @@ function sanitizeSidebarLinks(sidebar?: DefaultTheme.Sidebar): DefaultTheme.Side
 
   if (sidebar && typeof sidebar === 'object') {
     return Object.fromEntries(
-      Object.entries(sidebar).map(([base, items]) => [base, cleanItems(items as DefaultTheme.SidebarItem[])]),
+      Object.entries(sidebar).map(([base, items]) => [
+        base,
+        cleanItems(items as DefaultTheme.SidebarItem[]),
+      ]),
     )
   }
 
@@ -78,6 +95,7 @@ const guideSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '自动构建 npm', link: '/guide/npm' },
       { text: '生成脚手架', link: '/guide/generate' },
       { text: '自动路由', link: '/guide/auto-routes' },
+      { text: '页面 Layout', link: '/guide/layouts' },
       {
         text: '自动导入组件',
         collapsed: false,
@@ -142,9 +160,18 @@ const directoryStructureSidebarItems: DefaultTheme.SidebarItem[] = [
         text: '根目录',
         collapsed: false,
         items: [
-          { text: 'vite.config.ts', link: '/guide/directory-structure/vite-config' },
-          { text: 'project.config.json', link: '/guide/directory-structure/project-config' },
-          { text: 'package.json', link: '/guide/directory-structure/package-json' },
+          {
+            text: 'vite.config.ts',
+            link: '/guide/directory-structure/vite-config',
+          },
+          {
+            text: 'project.config.json',
+            link: '/guide/directory-structure/project-config',
+          },
+          {
+            text: 'package.json',
+            link: '/guide/directory-structure/package-json',
+          },
           { text: 'public/', link: '/guide/directory-structure/public' },
         ],
       },
@@ -152,7 +179,11 @@ const directoryStructureSidebarItems: DefaultTheme.SidebarItem[] = [
         text: '源码根目录',
         collapsed: false,
         items: [
-          { text: '&lt;srcRoot&gt;/', link: '/guide/directory-structure/src-root' },
+          {
+            text: '&lt;srcRoot&gt;/',
+            link: '/guide/directory-structure/src-root',
+          },
+          { text: 'layouts/', link: '/guide/directory-structure/layouts' },
         ],
       },
       {
@@ -161,9 +192,18 @@ const directoryStructureSidebarItems: DefaultTheme.SidebarItem[] = [
         items: [
           { text: 'app.(js|ts)', link: '/guide/directory-structure/app-ts' },
           { text: 'app.vue', link: '/guide/directory-structure/app-vue' },
-          { text: 'app.json(.js|.ts)?', link: '/guide/directory-structure/app-json' },
-          { text: 'app.(css|scss|wxss|...)', link: '/guide/directory-structure/app-style' },
-          { text: 'custom-tab-bar/', link: '/guide/directory-structure/custom-tab-bar' },
+          {
+            text: 'app.json(.js|.ts)?',
+            link: '/guide/directory-structure/app-json',
+          },
+          {
+            text: 'app.(css|scss|wxss|...)',
+            link: '/guide/directory-structure/app-style',
+          },
+          {
+            text: 'custom-tab-bar/',
+            link: '/guide/directory-structure/custom-tab-bar',
+          },
           { text: 'app-bar/', link: '/guide/directory-structure/app-bar' },
         ],
       },
@@ -172,14 +212,20 @@ const directoryStructureSidebarItems: DefaultTheme.SidebarItem[] = [
         collapsed: false,
         items: [
           { text: 'pages/', link: '/guide/directory-structure/pages' },
-          { text: 'components/', link: '/guide/directory-structure/components' },
+          {
+            text: 'components/',
+            link: '/guide/directory-structure/components',
+          },
         ],
       },
       {
         text: '分包与共享',
         collapsed: false,
         items: [
-          { text: '&lt;subPackageRoot&gt;/', link: '/guide/directory-structure/subpackages' },
+          {
+            text: '&lt;subPackageRoot&gt;/',
+            link: '/guide/directory-structure/subpackages',
+          },
           { text: 'shared/', link: '/guide/directory-structure/shared' },
           { text: 'utils/', link: '/guide/directory-structure/utils' },
           { text: 'workers/', link: '/guide/directory-structure/workers' },
@@ -189,7 +235,10 @@ const directoryStructureSidebarItems: DefaultTheme.SidebarItem[] = [
         text: '生成文件',
         collapsed: false,
         items: [
-          { text: '类型声明文件', link: '/guide/directory-structure/generated-files' },
+          {
+            text: '类型声明文件',
+            link: '/guide/directory-structure/generated-files',
+          },
         ],
       },
     ],
@@ -219,7 +268,10 @@ const communitySidebarItems: DefaultTheme.SidebarItem[] = [
       { text: 'Vue-mini 集成', link: '/integration/vue-mini' },
       { text: 'Tdesign 集成', link: '/integration/tdesign' },
       { text: 'Vant Weapp 集成', link: '/integration/vant' },
-      { text: 'miniprogram-computed 集成', link: '/integration/miniprogram-computed' },
+      {
+        text: 'miniprogram-computed 集成',
+        link: '/integration/miniprogram-computed',
+      },
     ],
   },
 ]
@@ -257,18 +309,28 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: '总览',
     collapsed: false,
-    items: [
-      { text: '周边包总览', link: '/packages/' },
-    ],
+    items: [{ text: '周边包总览', link: '/packages/' }],
   },
   {
     text: '工程工具',
     collapsed: false,
     items: [
-      { text: 'create-weapp-vite（脚手架）', link: '/packages/create-weapp-vite' },
-      { text: 'weapp-ide-cli（开发者工具 CLI）', link: '/packages/weapp-ide-cli' },
-      { text: 'rolldown-require（配置加载）', link: '/packages/rolldown-require/index.zh' },
-      { text: 'vite-plugin-performance（性能分析）', link: '/packages/vite-plugin-performance' },
+      {
+        text: 'create-weapp-vite（脚手架）',
+        link: '/packages/create-weapp-vite',
+      },
+      {
+        text: 'weapp-ide-cli（开发者工具 CLI）',
+        link: '/packages/weapp-ide-cli',
+      },
+      {
+        text: 'rolldown-require（配置加载）',
+        link: '/packages/rolldown-require/index.zh',
+      },
+      {
+        text: 'vite-plugin-performance（性能分析）',
+        link: '/packages/vite-plugin-performance',
+      },
     ],
   },
   {
@@ -283,10 +345,19 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
           { text: '总览', link: '/packages/weapi/' },
           { text: '兼容总览', link: '/packages/weapi/compat-overview' },
           { text: 'API 全量清单', link: '/packages/weapi/wx-method-list' },
-          { text: '支付宝兼容矩阵', link: '/packages/weapi/alipay-compat-matrix' },
-          { text: '抖音兼容矩阵', link: '/packages/weapi/douyin-compat-matrix' },
+          {
+            text: '支付宝兼容矩阵',
+            link: '/packages/weapi/alipay-compat-matrix',
+          },
+          {
+            text: '抖音兼容矩阵',
+            link: '/packages/weapi/douyin-compat-matrix',
+          },
           { text: '兼容差异说明', link: '/packages/weapi/gap-notes' },
-          { text: '平台独有 API 清单', link: '/packages/weapi/platform-only-methods' },
+          {
+            text: '平台独有 API 清单',
+            link: '/packages/weapi/platform-only-methods',
+          },
         ],
       },
       { text: '@weapp-vite/web（Web 实验运行时）', link: '/packages/web' },
@@ -296,9 +367,7 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: 'AI 与实验',
     collapsed: false,
-    items: [
-      { text: '@weapp-vite/mcp（MCP 服务）', link: '/packages/mcp' },
-    ],
+    items: [{ text: '@weapp-vite/mcp（MCP 服务）', link: '/packages/mcp' }],
   },
   {
     text: 'rolldown-require (EN)',
@@ -306,14 +375,20 @@ const packagesSidebarItems: DefaultTheme.SidebarItem[] = [
     items: [
       { text: 'Why rolldown-require', link: '/packages/rolldown-require/' },
       { text: 'API & options', link: '/packages/rolldown-require/options' },
-      { text: 'Loading flow & cache', link: '/packages/rolldown-require/cache' },
+      {
+        text: 'Loading flow & cache',
+        link: '/packages/rolldown-require/cache',
+      },
     ],
   },
   {
     text: 'rolldown-require (中文)',
     collapsed: true,
     items: [
-      { text: '为什么需要 rolldown-require', link: '/packages/rolldown-require/index.zh' },
+      {
+        text: '为什么需要 rolldown-require',
+        link: '/packages/rolldown-require/index.zh',
+      },
       { text: 'API 与选项', link: '/packages/rolldown-require/options.zh' },
       { text: '加载流程与缓存', link: '/packages/rolldown-require/cache.zh' },
     ],
@@ -330,7 +405,12 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '运行时与生命周期', link: '/wevu/runtime' },
       { text: 'defineComponent（组件）', link: '/wevu/component' },
       { text: 'Store（状态管理）', link: '/wevu/store' },
-      { text: 'API 参考', link: '/wevu/api/', target: '_blank', rel: 'noreferrer' },
+      {
+        text: 'API 参考',
+        link: '/wevu/api/',
+        target: '_blank',
+        rel: 'noreferrer',
+      },
     ],
   },
   {
@@ -364,7 +444,10 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
         link: '/wevu/compatibility',
       },
       { text: 'Vue 3 兼容性说明（完整）', link: '/wevu/vue3-compat' },
-      { text: '从原生小程序迁移到 Vue SFC', link: '/wevu/migration/from-native-to-vue-sfc' },
+      {
+        text: '从原生小程序迁移到 Vue SFC',
+        link: '/wevu/migration/from-native-to-vue-sfc',
+      },
       { text: 'Wevu vs Vue 3（核心差异）', link: '/wevu/vue3-vs-wevu' },
     ],
   },
@@ -372,8 +455,14 @@ const wevuSidebarItems: DefaultTheme.SidebarItem[] = [
     text: '扩展阅读',
     collapsed: false,
     items: [
-      { text: '为什么没有使用 @vue/runtime-core 的 createRenderer 来实现', link: '/wevu/why-not-runtime-core-create-renderer' },
-      { text: 'Wevu 中的 setData 什么时候触发？', link: '/wevu/when-setdata-triggers' },
+      {
+        text: '为什么没有使用 @vue/runtime-core 的 createRenderer 来实现',
+        link: '/wevu/why-not-runtime-core-create-renderer',
+      },
+      {
+        text: 'Wevu 中的 setData 什么时候触发？',
+        link: '/wevu/when-setdata-triggers',
+      },
     ],
   },
 ]
@@ -382,16 +471,12 @@ const wevuApiSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: 'API 首页',
     collapsed: false,
-    items: [
-      { text: 'API 首页', link: '/wevu/api/' },
-    ],
+    items: [{ text: 'API 首页', link: '/wevu/api/' }],
   },
   {
     text: 'Global API',
     collapsed: false,
-    items: [
-      { text: 'Core API', link: '/wevu/api/core' },
-    ],
+    items: [{ text: 'Core API', link: '/wevu/api/core' }],
   },
   {
     text: 'Composition API',
@@ -413,9 +498,7 @@ const wevuApiSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: 'Type API',
     collapsed: false,
-    items: [
-      { text: 'Type Reference', link: '/wevu/api/types' },
-    ],
+    items: [{ text: 'Type Reference', link: '/wevu/api/types' }],
   },
 ]
 
@@ -431,22 +514,34 @@ const weapiSidebarItems: DefaultTheme.SidebarItem[] = [
         text: 'API 全量清单',
         link: '/packages/weapi/wx-method-list',
         collapsed: false,
-        items: WEAPI_CAPABILITY_GROUPS.map(group => ({ text: group.label, link: `/packages/weapi/wx-method-list/${group.key}` })),
+        items: WEAPI_CAPABILITY_GROUPS.map(group => ({
+          text: group.label,
+          link: `/packages/weapi/wx-method-list/${group.key}`,
+        })),
       },
       {
         text: '支付宝兼容矩阵',
         link: '/packages/weapi/alipay-compat-matrix',
         collapsed: true,
-        items: WEAPI_CAPABILITY_GROUPS.map(group => ({ text: group.label, link: `/packages/weapi/alipay-compat-matrix/${group.key}` })),
+        items: WEAPI_CAPABILITY_GROUPS.map(group => ({
+          text: group.label,
+          link: `/packages/weapi/alipay-compat-matrix/${group.key}`,
+        })),
       },
       {
         text: '抖音兼容矩阵',
         link: '/packages/weapi/douyin-compat-matrix',
         collapsed: true,
-        items: WEAPI_CAPABILITY_GROUPS.map(group => ({ text: group.label, link: `/packages/weapi/douyin-compat-matrix/${group.key}` })),
+        items: WEAPI_CAPABILITY_GROUPS.map(group => ({
+          text: group.label,
+          link: `/packages/weapi/douyin-compat-matrix/${group.key}`,
+        })),
       },
       { text: '兼容差异说明', link: '/packages/weapi/gap-notes' },
-      { text: '平台独有 API 清单', link: '/packages/weapi/platform-only-methods' },
+      {
+        text: '平台独有 API 清单',
+        link: '/packages/weapi/platform-only-methods',
+      },
     ],
   },
 ]
@@ -477,16 +572,25 @@ const _handbookSidebarItems: DefaultTheme.SidebarItem[] = [
     items: [
       { text: '先建立 SFC 心智模型', link: '/handbook/sfc/' },
       { text: 'Template：先学哪些写法', link: '/handbook/sfc/template' },
-      { text: 'Script Setup：推荐日常范式', link: '/handbook/sfc/script-setup' },
+      {
+        text: 'Script Setup：推荐日常范式',
+        link: '/handbook/sfc/script-setup',
+      },
       { text: 'JSON：页面配置放哪里', link: '/handbook/sfc/json' },
       { text: '组件：拆分、导入与注册', link: '/handbook/sfc/components' },
-      { text: '事件与 v-model：怎么绑定最稳', link: '/handbook/sfc/events-and-v-model' },
+      {
+        text: '事件与 v-model：怎么绑定最稳',
+        link: '/handbook/sfc/events-and-v-model',
+      },
       { text: '样式：scoped、预处理器与约束', link: '/handbook/sfc/style' },
       { text: '资源：图片、字体、路径', link: '/handbook/sfc/assets' },
       { text: '生命周期：页面与组件怎么对齐', link: '/handbook/sfc/lifecycle' },
       { text: '表单：输入、校验与受控写法', link: '/handbook/sfc/forms' },
       { text: '原生 WXML：什么时候保留', link: '/handbook/sfc/native-wxml' },
-      { text: 'Options API：兼容项目怎么写', link: '/handbook/sfc/options-api' },
+      {
+        text: 'Options API：兼容项目怎么写',
+        link: '/handbook/sfc/options-api',
+      },
       { text: '高频场景配方', link: '/handbook/sfc/cookbook' },
     ],
   },
@@ -499,7 +603,10 @@ const _handbookSidebarItems: DefaultTheme.SidebarItem[] = [
       { text: '组件：props、emit、slots', link: '/handbook/wevu/component' },
       { text: 'Store：状态怎么放更合理', link: '/handbook/wevu/store' },
       { text: 'bindModel：双向绑定方案', link: '/handbook/wevu/bind-model' },
-      { text: 'provide / inject：依赖注入', link: '/handbook/wevu/provide-inject' },
+      {
+        text: 'provide / inject：依赖注入',
+        link: '/handbook/wevu/provide-inject',
+      },
       { text: '插件与全局能力', link: '/handbook/wevu/plugins' },
       { text: '测试与 Mock', link: '/handbook/wevu/testing' },
       { text: 'FAQ 与排错', link: '/handbook/wevu/faq' },
@@ -533,9 +640,7 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: '配置总览',
     collapsed: false,
-    items: [
-      { text: '配置概览', link: '/config/' },
-    ],
+    items: [{ text: '配置概览', link: '/config/' }],
   },
   {
     text: '项目基础',
@@ -581,268 +686,276 @@ const configSidebarItems: DefaultTheme.SidebarItem[] = [
   {
     text: '实验能力',
     collapsed: false,
-    items: [
-      { text: '🧪 Web 运行时配置', link: '/config/web' },
-    ],
+    items: [{ text: '🧪 Web 运行时配置', link: '/config/web' }],
   },
 ]
 // https://vitepress.dev/reference/site-config
 // https://github.com/emersonbottero/vitepress-plugin-mermaid/issues/47
-export default withMermaid(defineConfig({
-  title: 'Weapp-vite',
-  description: '面向小程序的现代工程化工具链，覆盖开发、构建、Vue SFC、Wevu、自动化、MCP 与多平台能力。',
-  srcExclude: ['dist/**'],
-  outDir: 'dist',
-  // CI 环境不包含 gitignore 的 typedoc 产物，仅放行该目录的死链检查。
-  ignoreDeadLinks: [/^\/wevu\/api(?:\/|$)/],
-  themeConfig: {
-
-    // https://vitepress.dev/reference/default-theme-config
-    nav: [
-      { text: '指引', link: '/guide/' },
-      { text: '教程', link: '/handbook/' },
-      { text: '配置', link: '/config/' },
-      { text: 'Wevu', link: '/wevu/' },
-      { text: 'Wevu API', link: '/wevu/api/' },
-      { text: 'Wpi', link: '/packages/weapi/' },
-      { text: '周边包', link: '/packages/' },
-      { text: 'AI', link: '/ai' },
-      { text: '社区', link: '/community/group' },
-      { text: '迁移', link: '/migration/' },
-      { text: '博客', link: blogSidebarItems?.[0]?.items?.[0]?.link as string },
-    ],
-    logo: '/logo.svg',
-
-    sidebar: {
-      '/guide/directory-structure/': directoryStructureSidebarItems,
-      //  [{
-      //   text: '配置',
-      //   collapsed: false,
-      //   items: typedocSidebar,
-      // }],
-      '/guide/': guideSidebarItems,
-      '/deep/': guideSidebarItems,
-      '/troubleshoot/': guideSidebarItems,
-      '/community/': communitySidebarItems,
-      '/integration/': communitySidebarItems,
-      '/blog/': blogSidebarItems,
-      '/config/': configSidebarItems,
-      '/packages/weapi/': weapiSidebarItems,
-      '/packages/': packagesSidebarItems,
-      '/wevu/api/': wevuApiSidebarItems,
-      '/wevu/api-reference/': wevuApiSidebarItems,
-      '/wevu/': wevuSidebarItems,
-      '/handbook/': _handbookSidebarItems,
-      // '/config/': [
-      //   {
-      //     text: '参考',
-      //     items: [
-      //       // {
-      //       //   text: 'weapp-vite 配置项',
-      //       //   link: '/config/',
-      //       // },
-      //       {
-      //         text: '配置 Vite',
-      //         link: 'https://cn.vitejs.dev/config/',
-      //       },
-      //     ],
-      //   },
-      // ],
-      '/migration/': [
+export default withMermaid(
+  defineConfig({
+    title: 'Weapp-vite',
+    description:
+      '面向小程序的现代工程化工具链，覆盖开发、构建、Vue SFC、Wevu、自动化、MCP 与多平台能力。',
+    srcExclude: ['dist/**'],
+    outDir: 'dist',
+    // CI 环境不包含 gitignore 的 typedoc 产物，仅放行该目录的死链检查。
+    ignoreDeadLinks: [/^\/wevu\/api(?:\/|$)/],
+    themeConfig: {
+      // https://vitepress.dev/reference/default-theme-config
+      nav: [
+        { text: '指引', link: '/guide/' },
+        { text: '教程', link: '/handbook/' },
+        { text: '配置', link: '/config/' },
+        { text: 'Wevu', link: '/wevu/' },
+        { text: 'Wevu API', link: '/wevu/api/' },
+        { text: 'Wpi', link: '/packages/weapi/' },
+        { text: '周边包', link: '/packages/' },
+        { text: 'AI', link: '/ai' },
+        { text: '社区', link: '/community/group' },
+        { text: '迁移', link: '/migration/' },
         {
-          text: '迁移指南',
-          items: [
-            {
-              text: '索引',
-              link: '/migration/index',
-            },
-            {
-              text: '从原生小程序迁移到 Weapp-vite / Wevu',
-              link: '/wevu/migration/from-native-to-vue-sfc',
-            },
-            {
-              text: '从 v5.x 迁移到 v6.x',
-              link: '/migration/v6',
-            },
-            {
-              text: '从 v4.x 迁移到 v5.x',
-              link: '/migration/v5',
-            },
-            {
-              text: '从 v3.x 迁移到 v4.x',
-              link: '/migration/v4',
-            },
-            {
-              text: '从 v2.x 迁移到 v3.x',
-              link: '/migration/v3',
-            },
-          ],
+          text: '博客',
+          link: blogSidebarItems?.[0]?.items?.[0]?.link as string,
         },
       ],
-    },
+      logo: '/logo.svg',
 
-    socialLinks: [
-      {
-        ariaLabel: 'AtomGit',
-        icon: { svg: atomGitSocialSvg },
-        link: 'https://atomgit.com/sonofmagic/weapp-vite',
+      sidebar: {
+        '/guide/directory-structure/': directoryStructureSidebarItems,
+        //  [{
+        //   text: '配置',
+        //   collapsed: false,
+        //   items: typedocSidebar,
+        // }],
+        '/guide/': guideSidebarItems,
+        '/deep/': guideSidebarItems,
+        '/troubleshoot/': guideSidebarItems,
+        '/community/': communitySidebarItems,
+        '/integration/': communitySidebarItems,
+        '/blog/': blogSidebarItems,
+        '/config/': configSidebarItems,
+        '/packages/weapi/': weapiSidebarItems,
+        '/packages/': packagesSidebarItems,
+        '/wevu/api/': wevuApiSidebarItems,
+        '/wevu/api-reference/': wevuApiSidebarItems,
+        '/wevu/': wevuSidebarItems,
+        '/handbook/': _handbookSidebarItems,
+        // '/config/': [
+        //   {
+        //     text: '参考',
+        //     items: [
+        //       // {
+        //       //   text: 'weapp-vite 配置项',
+        //       //   link: '/config/',
+        //       // },
+        //       {
+        //         text: '配置 Vite',
+        //         link: 'https://cn.vitejs.dev/config/',
+        //       },
+        //     ],
+        //   },
+        // ],
+        '/migration/': [
+          {
+            text: '迁移指南',
+            items: [
+              {
+                text: '索引',
+                link: '/migration/index',
+              },
+              {
+                text: '从原生小程序迁移到 Weapp-vite / Wevu',
+                link: '/wevu/migration/from-native-to-vue-sfc',
+              },
+              {
+                text: '从 v5.x 迁移到 v6.x',
+                link: '/migration/v6',
+              },
+              {
+                text: '从 v4.x 迁移到 v5.x',
+                link: '/migration/v5',
+              },
+              {
+                text: '从 v3.x 迁移到 v4.x',
+                link: '/migration/v4',
+              },
+              {
+                text: '从 v2.x 迁移到 v3.x',
+                link: '/migration/v3',
+              },
+            ],
+          },
+        ],
       },
-      { icon: 'github', link: 'https://github.com/weapp-vite/weapp-vite' },
-    ],
-    editLink: {
-      pattern: 'https://github.com/weapp-vite/weapp-vite/edit/main/website-weapp-vite/:path',
-      text: '为此页提供修改建议',
+
+      socialLinks: [
+        {
+          ariaLabel: 'AtomGit',
+          icon: { svg: atomGitSocialSvg },
+          link: 'https://atomgit.com/sonofmagic/weapp-vite',
+        },
+        { icon: 'github', link: 'https://github.com/weapp-vite/weapp-vite' },
+      ],
+      editLink: {
+        pattern:
+          'https://github.com/weapp-vite/weapp-vite/edit/main/website-weapp-vite/:path',
+        text: '为此页提供修改建议',
+      },
+      outline: {
+        label: '本页目录',
+        level: [2, 3],
+      },
+      footer: {
+        message: `Released under the MIT License.`,
+        copyright:
+          'Copyright © 2024-present <a target="_blank" ref="nofollow" href="https://github.com/sonofmagic">sonofmagic</a>',
+      },
+      search: {
+        provider: 'local',
+      },
     },
-    outline: {
-      label: '本页目录',
-      level: [2, 3],
+    markdown: {
+      languageAlias: {
+        env: 'ini',
+        wxml: 'html',
+      },
+      languageLabel: {
+        env: 'ENV',
+        wxml: 'WXML',
+      },
+      config(md) {
+        md.use(groupIconMdPlugin)
+        md.use(copyOrDownloadAsMarkdownButtons)
+      },
     },
-    footer: {
-      message: `Released under the MIT License.`,
-      copyright: 'Copyright © 2024-present <a target="_blank" ref="nofollow" href="https://github.com/sonofmagic">sonofmagic</a>',
+    mermaid: {
+      theme: 'default',
     },
-    search: {
-      provider: 'local',
+    transformHead: ({ pageData }) => createSeoHead(pageData),
+    transformPageData(pageData) {
+      transformPageDataForSeo(pageData)
     },
-  },
-  markdown: {
-    languageAlias: {
-      env: 'ini',
-      wxml: 'html',
-    },
-    languageLabel: {
-      env: 'ENV',
-      wxml: 'WXML',
-    },
-    config(md) {
-      md.use(groupIconMdPlugin)
-      md.use(copyOrDownloadAsMarkdownButtons)
-    },
-  },
-  mermaid: {
-    theme: 'default',
-  },
-  transformHead: ({ pageData }) => createSeoHead(pageData),
-  transformPageData(pageData) {
-    transformPageDataForSeo(pageData)
-  },
-  head: [
-    ['meta', { name: 'theme-color', content: '#95ec69' }],
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
-    ['link', { rel: 'icon', type: 'image/png', href: '/logo.png' }],
-    // google analytics start
-    [
-      'script',
-      { async: 'true', src: 'https://www.googletagmanager.com/gtag/js?id=G-89RF58SCYG' },
-    ],
-    [
-      'script',
-      {},
-      `window.dataLayer = window.dataLayer || [];
+    head: [
+      ['meta', { name: 'theme-color', content: '#95ec69' }],
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+      ['link', { rel: 'icon', type: 'image/png', href: '/logo.png' }],
+      // google analytics start
+      [
+        'script',
+        {
+          async: 'true',
+          src: 'https://www.googletagmanager.com/gtag/js?id=G-89RF58SCYG',
+        },
+      ],
+      [
+        'script',
+        {},
+        `window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-89RF58SCYG');`,
-    ],
-    //  // google analytics end
-    [
-      'script',
-      {},
-      `var _hmt = _hmt || [];
+      ],
+      //  // google analytics end
+      [
+        'script',
+        {},
+        `var _hmt = _hmt || [];
 (function() {
   var hm = document.createElement("script");
   hm.src = "https://hm.baidu.com/hm.js?b19c15773e6c3ca95c3fb6087148a99b";
   var s = document.getElementsByTagName("script")[0]; 
   s.parentNode.insertBefore(hm, s);
 })();`,
+      ],
     ],
-  ],
-  sitemap: {
-    hostname: 'https://vite.icebreaker.top',
-  },
-  lastUpdated: true,
-  vite: {
-    server: {
-      host: true,
+    sitemap: {
+      hostname: 'https://vite.icebreaker.top',
     },
-    resolve: {
-      alias: {
-        // Fix SSR build error: mark.js deep import without extension in ESM
-        'mark.js/src/vanilla.js': 'mark.js/dist/mark.es6.js',
-        // Element Plus references @vue/shared directly in some ESM entries.
-        // Map it explicitly to the browser ESM build to keep docs build stable under pnpm.
-        '@vue/shared': vueSharedEsmPath,
+    lastUpdated: true,
+    vite: {
+      server: {
+        host: true,
       },
-    },
-    build: {
-      // Relax warning threshold and split heavy vendors to multiple chunks
-      chunkSizeWarningLimit: 2048,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (!id.includes('node_modules')) {
-              return undefined
-            }
+      resolve: {
+        alias: {
+          // Fix SSR build error: mark.js deep import without extension in ESM
+          'mark.js/src/vanilla.js': 'mark.js/dist/mark.es6.js',
+          // Element Plus references @vue/shared directly in some ESM entries.
+          // Map it explicitly to the browser ESM build to keep docs build stable under pnpm.
+          '@vue/shared': vueSharedEsmPath,
+        },
+      },
+      build: {
+        // Relax warning threshold and split heavy vendors to multiple chunks
+        chunkSizeWarningLimit: 2048,
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              if (!id.includes('node_modules')) {
+                return undefined
+              }
 
-            if (id.includes('element-plus')) {
-              return 'vendor-element-plus'
-            }
-            if (id.includes('echarts')) {
-              return 'vendor-echarts'
-            }
-            if (id.includes('gridstack')) {
-              return 'vendor-gridstack'
-            }
-            if (id.includes('vue-echarts')) {
-              return 'vendor-vue-echarts'
-            }
-            if (id.includes('@iconify-json/mdi')) {
-              return 'vendor-icons'
-            }
-            // Mermaid runtime is loaded by VitePress docs pipeline. Keep both in one chunk
-            // to avoid circular manual chunk graph.
-            if (id.includes('mermaid')) {
-              return 'vendor-vitepress'
-            }
-            if (id.includes('@shikijs') || id.includes('shiki')) {
-              return 'vendor-shiki'
-            }
-            if (id.includes('vitepress')) {
-              return 'vendor-vitepress'
-            }
-            if (id.includes('vue')) {
-              return 'vendor-vue'
-            }
-            // fallback vendor bucket
-            return 'vendor'
+              if (id.includes('element-plus')) {
+                return 'vendor-element-plus'
+              }
+              if (id.includes('echarts')) {
+                return 'vendor-echarts'
+              }
+              if (id.includes('gridstack')) {
+                return 'vendor-gridstack'
+              }
+              if (id.includes('vue-echarts')) {
+                return 'vendor-vue-echarts'
+              }
+              if (id.includes('@iconify-json/mdi')) {
+                return 'vendor-icons'
+              }
+              // Mermaid runtime is loaded by VitePress docs pipeline. Keep both in one chunk
+              // to avoid circular manual chunk graph.
+              if (id.includes('mermaid')) {
+                return 'vendor-vitepress'
+              }
+              if (id.includes('@shikijs') || id.includes('shiki')) {
+                return 'vendor-shiki'
+              }
+              if (id.includes('vitepress')) {
+                return 'vendor-vitepress'
+              }
+              if (id.includes('vue')) {
+                return 'vendor-vue'
+              }
+              // fallback vendor bucket
+              return 'vendor'
+            },
+          },
+        },
+      },
+      // https://github.com/vuejs/vitepress/issues/3145
+      // ssr: {
+      //   noExternal: ['element-plus', 'gridstack', 'vue-echarts', 'echarts'],
+      // },
+      plugins: [
+        llmstxt({
+          excludeBlog: false,
+          ignoreFiles: ['dist/**'],
+          sidebar: configSidebar => sanitizeSidebarLinks(configSidebar),
+        }),
+        AutoImport({
+          resolvers: [ElementPlusResolver()],
+        }),
+        Components({
+          resolvers: [ElementPlusResolver()],
+        }),
+        groupIconVitePlugin(),
+      ],
+      css: {
+        preprocessorOptions: {
+          scss: {
+            silenceDeprecations: ['legacy-js-api'],
+            api: 'modern-compiler',
           },
         },
       },
     },
-    // https://github.com/vuejs/vitepress/issues/3145
-    // ssr: {
-    //   noExternal: ['element-plus', 'gridstack', 'vue-echarts', 'echarts'],
-    // },
-    plugins: [
-      llmstxt({
-        excludeBlog: false,
-        ignoreFiles: ['dist/**'],
-        sidebar: configSidebar => sanitizeSidebarLinks(configSidebar),
-      }),
-      AutoImport({
-        resolvers: [ElementPlusResolver()],
-      }),
-      Components({
-        resolvers: [ElementPlusResolver()],
-      }),
-      groupIconVitePlugin(),
-    ],
-    css: {
-      preprocessorOptions: {
-        scss: {
-          silenceDeprecations: ['legacy-js-api'],
-          api: 'modern-compiler',
-        },
-      },
-    },
-  },
-}))
+  }),
+)

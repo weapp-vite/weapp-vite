@@ -80,7 +80,7 @@ const userStore = useUserStore()
 
 <template>
   <view>
-    <text>{{ userStore.profile?.nickname || '游客' }}</text>
+    <text>{{ userStore.profile?.nickname || "游客" }}</text>
   </view>
 </template>
 ```
