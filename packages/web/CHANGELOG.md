@@ -1,5 +1,16 @@
 # @weapp-vite/web
 
+## 1.3.6
+
+### Patch Changes
+
+- 🐛 **升级 `htmlparser2` 到 `^11.0.0`，同步刷新工作区锁文件与相关包的依赖解析结果，确保 `weapp-vite` 与 `@weapp-vite/web` 在后续发布时携带一致的解析器版本。由于本次发布包含 `weapp-vite`，按仓库发布约定同时补充 `create-weapp-vite` 的版本变更。** [`526c0db`](https://github.com/weapp-vite/weapp-vite/commit/526c0dbc3e415095a87b661fb26d9624ef6b4b5d) by @sonofmagic
+
+- 🐛 **升级 `htmlparser2` 到 `^12.0.0`，同步刷新 workspace catalog、脚手架生成 catalog 与锁文件，确保 `weapp-vite` 和 `@weapp-vite/web` 后续发布时解析器版本保持一致。考虑到 `create-weapp-vite` 会下发同一份 catalog 版本，本次也一并补充脚手架包的补丁版本变更。** [`84c227a`](https://github.com/weapp-vite/weapp-vite/commit/84c227a0b537a2f12bc512686970a0f63916366a) by @sonofmagic
+
+- 🐛 **同步升级 workspace catalog 中的 `tdesign-miniprogram` 到 `1.13.0`，并刷新 `create-weapp-vite` 生成 catalog 产物，使脚手架模板解析 `catalog:` 与命名 catalog 时能拿到当前仓库内的一致版本。对应的 `createProject` 单测也改为基于生成 catalog 做断言，避免后续 catalog 升级时因为硬编码版本号而重复误报失败。** [`ff929d6`](https://github.com/weapp-vite/weapp-vite/commit/ff929d605b5cd9fd9d09eb4283a4af1cefa7cfcc) by @sonofmagic
+  - 同时将 `@weapp-vite/web` 中的 `domhandler` 依赖提升到 `^6.0.1`，与当前相关解析栈版本保持一致。
+
 ## 1.3.5
 
 ### Patch Changes

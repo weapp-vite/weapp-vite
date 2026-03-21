@@ -1,5 +1,11 @@
 # weapp-vite-tailwindcss-tdesign-template
 
+## 1.0.5
+
+### Patch Changes
+
+- 🐛 **为其余原生基础模板补充全原生 `layouts` 能力。相关模板现在统一使用 `src/layouts/*/index.{json,ts,wxml,scss}` 作为布局实现，并提供原生页面版的布局演示页与首页入口，不再混入 Vue 布局文件。** [`3121e45`](https://github.com/weapp-vite/weapp-vite/commit/3121e4545d981e14b08352863134223c5328a757) by @sonofmagic
+
 ## 1.0.4
 
 ### Patch Changes

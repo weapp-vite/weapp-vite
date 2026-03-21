@@ -1,5 +1,13 @@
 # weapp-vite-wevu-tailwindcss-tdesign-retail-template
 
+## 1.0.24
+
+### Patch Changes
+
+- 🐛 **修复 `weapp-vite-wevu-tailwindcss-tdesign-retail-template` 在订单列表与订单详情页的运行时崩溃问题。模板中的订单卡片 relation 回调改为兼容 `children` 提前未初始化的时序，订单按钮栏也补充了 `order`、`goodsList`、`openType` 等空值保护，并去除了与组件属性同名的冗余 data 字段，减少了 DevTools 运行期告警。对应修复会同步影响 `create-weapp-vite` 生成的新零售模板项目。** [`15cb4c4`](https://github.com/weapp-vite/weapp-vite/commit/15cb4c4daf198792d6a98764e875761322238ac3) by @sonofmagic
+- 📦 **Dependencies** [`35a6ee0`](https://github.com/weapp-vite/weapp-vite/commit/35a6ee06d7b8fa56435684011cc706ea5bf9f432)
+  → `wevu@6.11.0`
+
 ## 1.0.23
 
 ### Patch Changes
