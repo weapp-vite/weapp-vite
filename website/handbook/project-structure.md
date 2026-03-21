@@ -1,49 +1,213 @@
 ---
-title: 目录结构与分层
-description: 目录结构与分层，聚焦 handbook / project-structure 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
+title: 目录结构怎么放最顺手
+description: 从新用户和中小型业务项目的视角，解释 Weapp-vite 项目里的页面、组件、服务、状态和静态资源应该怎么落位。
 keywords:
   - handbook
-  - project
-  - structure
-  - 目录结构与分层
-  - 聚焦
-  - /
-  - project-structure
-  - 相关场景
+  - project structure
+  - 目录结构
+  - Weapp-vite
 ---
 
-# 目录结构与分层
+# 目录结构怎么放最顺手
 
-## 本章你会学到什么
+新项目一开始最容易出现两种极端：
 
-- 页面/组件/服务/Store 的推荐分层
-- 小程序 `pages/components` 与工程化目录如何兼容
+- 什么都塞进 `pages/`，后面越写越乱
+- 一上来就设计十几层目录，结果团队没人记得住
 
-## 推荐结构（可按团队裁剪）
+更稳的做法是：先用一个足够清晰、又不过度设计的结构跑起来。
+
+## 一个推荐的起步结构
+
+如果你现在准备做的是一个正常业务小程序，可以先从下面这个结构开始：
 
 ```txt
 src/
-  app/                # 全局能力：启动、全局注入、拦截器、日志等
-  pages/              # 页面（每个页面一个目录）
-  components/         # 复用组件（业务组件/通用组件）
-  stores/             # wevu store（按 domain 拆）
-  services/           # 请求封装、API SDK、上传下载
-  utils/              # 通用工具
-  assets/             # 静态资源（尽量贴近使用方放置）
+├─ app.vue
+├─ app.json
+├─ pages/
+│  ├─ home/
+│  │  └─ index.vue
+│  └─ order/
+│     ├─ list.vue
+│     └─ detail.vue
+├─ components/
+│  ├─ product-card/
+│  │  └─ index.vue
+│  └─ empty-state/
+│     └─ index.vue
+├─ stores/
+│  ├─ user.ts
+│  └─ cart.ts
+├─ services/
+│  ├─ request.ts
+│  ├─ user.ts
+│  └─ order.ts
+├─ utils/
+│  ├─ formatPrice.ts
+│  └─ time.ts
+└─ assets/
+   ├─ images/
+   └─ icons/
 ```
 
-## 页面与组件的“最小单位”
+它背后的分工很简单：
 
-- 页面：`pages/foo/index.vue`（或 `index.ts + index.wxml + index.wxss`）
-- 组件：`components/bar/index.vue`
+- `pages/`
+  放页面入口，一个页面一个目录或一个主文件
+- `components/`
+  放会复用的业务组件或通用组件
+- `stores/`
+  放状态管理，不要把接口请求、页面渲染和状态都揉在一起
+- `services/`
+  放请求封装和领域 API
+- `utils/`
+  放纯工具函数
+- `assets/`
+  放跨页面复用的静态资源
 
-## 约定（强烈建议）
+## 页面目录里建议放什么
 
-- 组件名：`kebab-case`（便于映射到 `usingComponents`）
-- 页面路径：保持稳定，避免频繁变更导致线上路径兼容问题
-- Store：按业务域拆（`stores/user.ts`、`stores/cart.ts`），避免“巨型 store”
+一个页面最常见的落位方式是：
 
-## 相关链接
+```txt
+pages/order-detail/
+├─ index.vue
+├─ components/
+│  └─ goods-item.vue
+└─ useOrderDetail.ts
+```
 
-- 目录结构：`/guide/directory-structure/`
-- 分包：`/guide/subpackage`
+页面局部的内容可以尽量贴近页面放，这样好处是：
+
+- 打开页面目录就能看到完整上下文
+- 页面下线时，局部组件和组合逻辑也能一起删掉
+- 不会把全局 `components/` 变成“公共垃圾场”
+
+比如：
+
+```vue
+<!-- pages/order-detail/index.vue -->
+<script setup lang="ts">
+import GoodsItem from './components/goods-item.vue'
+import { useOrderDetail } from './useOrderDetail'
+
+const { detail, loading } = useOrderDetail()
+</script>
+```
+
+## 什么时候放到全局 `components/`
+
+满足下面两个条件，再考虑提升到全局：
+
+1. 确实被多个页面复用
+2. 组件本身已经有稳定的输入输出边界
+
+例如这些通常适合放全局：
+
+- `empty-state`
+- `price-text`
+- `loading-view`
+- `user-avatar`
+
+而这种更适合留在页面目录：
+
+- `order-status-card`
+- `coupon-dialog`
+- `refund-reason-panel`
+
+## `services` 和 `stores` 不要混
+
+一个非常常见的问题是：把请求、缓存、页面 loading、错误提示全塞进页面里。
+
+更推荐的分法是：
+
+```ts
+// services/order.ts
+export async function getOrderDetail(id: string) {
+  return request<OrderDetail>({
+    url: `/api/orders/${id}`,
+  })
+}
+```
+
+```ts
+// stores/order.ts
+import { ref } from 'wevu'
+import { getOrderDetail } from '../services/order'
+
+export function useOrderStore() {
+  const detail = ref<OrderDetail | null>(null)
+  const loading = ref(false)
+
+  async function fetchDetail(id: string) {
+    loading.value = true
+    try {
+      detail.value = await getOrderDetail(id)
+    }
+    finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    detail,
+    loading,
+    fetchDetail,
+  }
+}
+```
+
+一句话理解：
+
+- `services` 负责和服务端对话
+- `stores` 负责把状态组织给页面消费
+
+## 文件命名建议
+
+从长期维护角度，建议一开始就统一：
+
+- 页面目录：语义化、稳定，尽量不要频繁改路径
+- 组件目录：`kebab-case`
+- 工具函数文件：`camelCase`
+- store 名称：按业务域命名，不要做成“超级 store”
+
+例如：
+
+```txt
+components/product-card/index.vue
+stores/cart.ts
+services/order.ts
+utils/formatPrice.ts
+```
+
+## 新用户最容易踩的目录坑
+
+### 1. 所有内容都放全局
+
+结果是：
+
+- 小组件越来越多
+- 页面上下文越来越难找
+- 复用和“看起来像复用”混在一起
+
+### 2. 所有内容都放页面目录
+
+结果是：
+
+- 公共组件没有真正抽象出来
+- 同一逻辑在不同页面复制粘贴
+
+### 3. 过早拆成特别复杂的领域层
+
+如果你的项目还没超过几个核心业务页面，就不必一上来设计太复杂的模块边界。
+
+## 一句话建议
+
+先让结构服务于“能快速定位代码”，而不是服务于“看起来很高级”。
+
+你现在可以继续看：
+
+- [环境变量与配置怎么分层](/handbook/env-and-config)
+- [构建产物到底长什么样](/handbook/build-and-output)
+- [先建立 SFC 心智模型](/handbook/sfc/)

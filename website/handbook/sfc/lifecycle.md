@@ -25,7 +25,7 @@ keywords:
 - `onPageScroll` / `onPullDownRefresh` / `onReachBottom`
 - `onShareAppMessage` / `onShareTimeline` / `onAddToFavorites`
 
-详细说明与边界：`/wevu/runtime`
+详细说明与边界见：[Wevu 运行时总览](/wevu/runtime)
 
 ## 常见坑
 

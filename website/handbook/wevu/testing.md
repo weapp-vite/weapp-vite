@@ -1,29 +1,55 @@
 ---
-title: 测试与 Mock
-description: 测试与 Mock，聚焦 handbook / Wevu 相关场景，覆盖 Weapp-vite 与 Wevu 的能力、配置和实践要点。
+title: 测试与 Mock：先测什么最划算
+description: 解释在 Wevu 项目里哪些逻辑最适合优先测试，哪些需要 stub 小程序全局，帮助新用户把测试成本压到合理范围。
 keywords:
-  - Wevu
   - handbook
+  - wevu
   - testing
-  - 测试与
   - mock
-  - 聚焦
-  - /
-  - 相关场景
 ---
 
-# 测试与 Mock
+# 测试与 Mock：先测什么最划算
 
-## 本章你会学到什么
+很多人一提到小程序测试就会下意识觉得很重。
+其实更现实的做法是：先测最值钱的部分。
 
-- 在非小程序环境（Vitest/Node）里如何测试 Wevu 逻辑
-- 需要 stub 哪些全局（`Component`、`triggerEvent` 等）
+## 最值得优先测的 3 类逻辑
 
-## 最小原则
+### 1. 纯函数
 
-- 业务逻辑尽量下沉到纯函数/composable/service：脱离小程序也能测
-- 依赖 `Component()` 的部分，在测试中 stub 全局并验证调用参数
+例如：
 
-## 相关链接
+- 价格计算
+- 参数格式化
+- 权限判断
 
-- Wevu 运行时提示（Node 环境需要 stub）：`/wevu/runtime#defineComponent：注册页面组件`
+### 2. service 层
+
+例如：
+
+- 请求参数是否正确
+- 错误是否正确转换
+
+### 3. composable / store
+
+例如：
+
+- 状态切换逻辑
+- loading 和错误分支
+
+## 哪些地方需要 mock / stub
+
+如果逻辑直接依赖小程序全局，就需要在测试环境里补最小替身，例如：
+
+- `wx`
+- `Component`
+- `Page`
+
+## 一个简单建议
+
+把最难测的宿主耦合逻辑尽量往外抽。
+越多逻辑能变成纯函数、service、store，测试成本就越低。
+
+## 一句话总结
+
+不要追求一开始把所有宿主行为都测全，先把业务核心逻辑和状态流测住最划算。

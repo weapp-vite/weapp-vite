@@ -1,110 +1,28 @@
 ---
-title: Store API
-description: Wevu 的 store 设计接近 Pinia：defineStore 定义，createStore 创建管理器，storeToRefs 安全解构。
+title: Store API（旧路径兼容）
+description: 当前 Store API 的规范入口是 /wevu/api/store，本页仅用于兼容旧链接。
+sidebar: false
 keywords:
-  - Wevu
-  - Vue SFC
-  - 调试
-  - api
-  - reference
+  - wevu
+  - api-reference
   - store
-  - 的
-  - 设计接近
+  - 兼容路径
 ---
 
-# Store API（状态管理）
+# Store API（旧路径兼容）
 
-`wevu` 的 store 设计接近 Pinia：`defineStore` 定义，`createStore` 创建管理器，`storeToRefs` 安全解构。
+当前请改用新的规范入口：
 
-## 1. 核心函数
+- [Store API](/wevu/api/store)
 
-| API           | 类型入口             | 说明                                    |
-| ------------- | -------------------- | --------------------------------------- |
-| `defineStore` | `DefineStoreOptions` | 定义 store（setup/option 两种风格）。   |
-| `createStore` | `StoreManager`       | 创建 store 管理器（插件、作用域隔离）。 |
-| `storeToRefs` | `ToRefs`             | 将 store 状态安全转换为 ref。           |
+## 1. 推荐做法
 
-## 2. 常用类型
+后续引用 `defineStore`、`createStore`、`storeToRefs` 等状态管理 API 时，请统一使用新路径。
 
-| 类型                   | 链接                   | 用途                     |
-| ---------------------- | ---------------------- | ------------------------ |
-| `StoreManager`         | `StoreManager`         | store 根管理器。         |
-| `DefineStoreOptions`   | `DefineStoreOptions`   | 选项式 store 定义类型。  |
-| `ActionSubscriber`     | `ActionSubscriber`     | action 订阅回调签名。    |
-| `SubscriptionCallback` | `SubscriptionCallback` | 状态变更订阅回调。       |
-| `MutationRecord`       | `MutationRecord`       | mutation 记录结构。      |
-| `MutationKind`         | `MutationKind`         | mutation 大类。          |
-| `MutationType`         | `MutationType`         | mutation 类型枚举。      |
-| `MutationOp`           | `MutationOp`           | mutation 操作类型。      |
-| `WevuPlugin`           | `WevuPlugin`           | store/runtime 插件类型。 |
+## 2. 参考资源
 
-## 3. 端到端示例（script setup）
-
-::: code-group
-
-```vue [TypeScript]
-<script setup lang="ts">
-import { computed, createStore, defineStore, ref, storeToRefs } from 'wevu'
-
-// [TS-only] 此示例无专属语法，TS/JS 写法一致。
-const storeManager = createStore()
-
-const useCartStore = defineStore('cart', () => {
-  const count = ref(0)
-  const total = computed(() => count.value * 99)
-  function addOne() {
-    count.value += 1
-  }
-  return { count, total, addOne }
-})
-
-const cart = useCartStore(storeManager)
-const { count, total } = storeToRefs(cart)
-</script>
-
-<template>
-  <view>count: {{ count }} / total: {{ total }}</view>
-  <button @tap="cart.addOne">
-    +1
-  </button>
-</template>
-```
-
-```vue [JavaScript]
-<script setup>
-import { computed, createStore, defineStore, ref, storeToRefs } from 'wevu'
-
-const storeManager = createStore()
-
-const useCartStore = defineStore('cart', () => {
-  const count = ref(0)
-  const total = computed(() => count.value * 99)
-  function addOne() {
-    count.value += 1
-  }
-  return { count, total, addOne }
-})
-
-const cart = useCartStore(storeManager)
-const { count, total } = storeToRefs(cart)
-</script>
-
-<template>
-  <view>count: {{ count }} / total: {{ total }}</view>
-  <button @tap="cart.addOne">
-    +1
-  </button>
-</template>
-```
-
-:::
-
-## 4. 调试建议
-
-- 如果要统计状态变化路径，可结合 `addMutationRecorder` / `removeMutationRecorder`。
-- 如果要确认 `setData` 最终快照，可配合 `SetDataSnapshotOptions` 和运行时调试日志。
-
-## 5. 相关页
-
-- 响应式 API：[/wevu/api-reference/reactivity](/wevu/api-reference/reactivity)
-- 运行时桥接 API：[/wevu/api-reference/runtime-bridge](/wevu/api-reference/runtime-bridge)
+| 主题              | 推荐入口                                     |
+| ----------------- | -------------------------------------------- |
+| Store API         | [Store API](/wevu/api/store)                 |
+| Reactivity API    | [Reactivity API](/wevu/api/reactivity)       |
+| Setup Context API | [Setup Context API](/wevu/api/setup-context) |

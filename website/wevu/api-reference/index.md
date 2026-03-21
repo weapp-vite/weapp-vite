@@ -1,104 +1,48 @@
 ---
-title: API 参考
-description: Wevu API 参考首页。按 Vue API 风格提供分组导航，先定位能力域，再跳转到对应 API 分页。
+title: API 参考（旧路径兼容）
+description: /wevu/api-reference/ 为兼容旧链接保留；当前 Wevu API 的规范入口已经迁移到 /wevu/api/。
 sidebar: false
 keywords:
   - wevu
   - api
-  - reference
-  - vue-style
+  - api-reference
+  - 兼容路径
 ---
 
-# Wevu API 参考
+# Wevu API 参考（旧路径兼容）
 
-本页参考了 Vue 官方 API 导航方式，但只聚焦 `wevu` 主入口的高频公开 API。
+`/wevu/api-reference/` 这条路径当前仅用于兼容旧链接与历史搜索结果。
 
-需要特别区分 3 类入口：
+## 1. 当前规范入口
 
-- `wevu`：主运行时入口，覆盖响应式、生命周期、组件定义、store 与 setup 辅助能力。
-- `wevu/router`：独立路由子入口，提供 `createRouter()` / `useRouter()` / `useRoute()` 等高阶导航能力。
-- `wevu/api`、`wevu/fetch`、`wevu/jsx-runtime`、`wevu/compiler`：按能力拆分的其他子路径，不应与 `wevu` 主入口混写。
+当前请统一使用新的 API 首页：
 
-本目录优先记录“业务开发会直接使用的 API”；`registerApp`、`callHookList`、`mountRuntimeInstance` 一类内部桥接导出虽然存在于包导出面，但不作为常规业务 API 展开说明。
+- [Wevu API](/wevu/api/)
 
-## 全局 API
+## 2. 为什么要切换到新路径
 
-### 入口与组件定义
+| 原因         | 说明                                                         |
+| ------------ | ------------------------------------------------------------ |
+| 信息源更集中 | 新页面是当前维护中的规范入口                                 |
+| 减少双轨漂移 | 避免 `/wevu/api-reference/*` 与 `/wevu/api/*` 内容长期不一致 |
+| 站内导航一致 | 当前 sidebar、索引与后续维护都以 `/wevu/api/*` 为准          |
 
-- [Core API（入口、组件、宏）](/wevu/api/core.html)
-  - `createApp` / `defineComponent` / `createWevuComponent` / `<script setup>` 宏
+## 3. 迁移建议
 
-### 通用调度
+如果你在旧文档、笔记或项目内部链接里还使用了 `/wevu/api-reference/*`，建议逐步替换为：
 
-- [Reactivity API（响应式与调度）](/wevu/api/reactivity.html)
-  - `ref` / `reactive` / `computed` / `watch` / `nextTick`
+- `/wevu/api/core`
+- `/wevu/api/reactivity`
+- `/wevu/api/lifecycle`
+- `/wevu/api/setup-context`
+- `/wevu/api/store`
+- `/wevu/api/runtime-bridge`
+- `/wevu/api/types`
 
-## 组合式 API
+## 4. 参考资源
 
-### 生命周期
-
-- [Lifecycle API（生命周期）](/wevu/api/lifecycle.html)
-  - `onLoad` / `onShow` / `onReady` / `onUnload`
-
-### setup 上下文
-
-- [Setup Context API（setup 上下文）](/wevu/api/setup-context.html)
-  - `ctx.emit` / `useBindModel` / `useDisposables` / `usePageLayout` / `provide` / `inject`
-
-### 状态管理
-
-- [Store API（状态管理）](/wevu/api/store.html)
-  - `defineStore` / `createStore` / `storeToRefs`
-
-## 进阶 API
-
-### 运行时桥接
-
-- [Runtime Bridge API（桥接与调试）](/wevu/api/runtime-bridge.html)
-  - `setWevuDefaults` / `markNoSetData` / mutation recorder / 运行时调试开关
-
-### 类型与工具
-
-- [Type Reference（类型总览）](/wevu/api/types.html)
-  - 核心类型、上下文类型、Store 类型、桥接类型
-
-## 弃用与兼容保留 API
-
-当前基于源码 `@deprecated` 标记，`wevu` 主入口里已明确弃用的公开 API 有：
-
-- `provideGlobal()` / `injectGlobal()`
-  - 仅为兼容旧代码保留
-  - 新代码请优先使用 `provide()` / `inject()`
-  - 若需要稳定全局共享，优先使用 store
-
-详情见：
-
-- [/wevu/api/setup-context#provideglobal](/wevu/api/setup-context#provideglobal)
-- [/wevu/api-reference/setup-context](/wevu/api-reference/setup-context)
-
-## 其他子路径入口
-
-这些页面不属于 `wevu` 主入口的逐函数 API 参考，但它们同样是当前包的正式子路径导出：
-
-- [wevu/api](/wevu/api-package)
-  - 透传 `@wevu/api`，用于统一多端小程序 API 调用
-- [wevu/fetch](/wevu/fetch)
-  - 基于 `wpi.request` 的 Fetch 风格接口
-- [wevu/router](/wevu/router)
-  - 高阶导航、守卫、失败分类、`useRoute()` / `useRouter()`
-- [wevu/jsx-runtime](/wevu/jsx-runtime)
-  - TSX / JSX 类型入口
-
-## 建议阅读路径
-
-1. 先读 `Core`，建立 Wevu 的组件与宏心智。
-2. 再读 `Reactivity` + `Lifecycle`，形成页面更新与生命周期调度模型。
-3. 业务接入 `Setup Context` + `Store`。
-4. 需要排障或优化时再进入 `Runtime Bridge` 与 `Type Reference`。
-
-## 使用约定
-
-- 根入口运行时 API 默认从 `wevu` 导入。
-- 路由能力请从 `wevu/router` 导入，不要把它与根入口原生 Router helper 混淆。
-- `wevu/compiler` 主要用于编译工具链，不建议在业务运行时代码中直接依赖。
-- 本目录是“按场景组织”的人工参考；精确签名、泛型和重载以对应 API 分页为准。
+| 主题       | 推荐入口                    |
+| ---------- | --------------------------- |
+| API 首页   | [Wevu API](/wevu/api/)      |
+| 运行时总览 | [Wevu 概览](/wevu/)         |
+| 高阶路由   | [wevu/router](/wevu/router) |

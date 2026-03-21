@@ -1,38 +1,67 @@
 ---
-title: bindModel：双向绑定方案
-description: bindModel 的完整说明在：/wevu/runtime#bindModel：模型绑定
+title: bindModel：表单多了以后怎么收口
+description: 当表单组件越来越多、事件和值来源越来越不统一时，如何用 bindModel 把取值、设值和转换逻辑集中管理。
 keywords:
-  - Wevu
-  - Vue SFC
   - handbook
-  - bind
-  - model
-  - bindModel：双向绑定方案
-  - bindmodel
+  - wevu
+  - bindModel
+  - 表单
 ---
 
-# bindModel：双向绑定方案
+# bindModel：表单多了以后怎么收口
 
-## 本章你会学到什么
+简单表单里，`v-model` 往往已经够用了。
+但一旦页面开始出现这些情况：
 
-- 为什么小程序的 v-model 容易踩坑（事件与 value 字段不统一）
-- 如何用 `bindModel(path, options?)` 把“取值/设值/格式化”收敛成一个工具
+- 输入框用 `input`
+- 选择器用 `change`
+- 上传组件值在 `detail.files`
+- 滑块要做 number 转换
 
-## 适用场景
+你就会发现每个字段都在写不同的事件处理函数。
 
-- 表单字段多、事件差异多（input/textarea/picker）
-- 需要统一做 number/trim/空值处理
+这时 `bindModel` 的价值就出来了。
 
-## 使用示例（script setup）
+## 它适合解决什么问题
+
+一句话：
+
+> 把“某个字段怎么从事件里取值，再写回状态”这件事统一收口。
+
+## 一个典型场景
 
 ```ts
-import type { UploadFile } from 'tdesign-miniprogram/upload/type'
 import { useBindModel } from 'wevu'
 
 const bindModel = useBindModel()
 
 const onNameChange = bindModel<string>('form.name').model({ event: 'change' }).onChange
 const onBudgetChange = bindModel<number>('form.budget').model({ event: 'change' }).onChange
+```
+
+模板里就会更统一：
+
+```vue
+<t-input :value="form.name" @change="onNameChange" />
+
+<t-slider :value="form.budget" @change="onBudgetChange" />
+```
+
+## 它最适合什么页面
+
+通常是：
+
+- 后台配置页
+- 多字段业务表单
+- 使用大量第三方组件库的页面
+
+因为这些页面里最麻烦的不是“有没有绑定”，而是“绑定规则太多种了”。
+
+## 一个更复杂一点的例子
+
+例如上传组件值不在 `detail.value`，而在 `detail.files`：
+
+```ts
 const onAttachmentsChange = bindModel<UploadFile[]>('form.attachments').model({
   event: 'change',
   valueProp: 'files',
@@ -40,18 +69,20 @@ const onAttachmentsChange = bindModel<UploadFile[]>('form.attachments').model({
 }).onChange
 ```
 
+这时你就不需要在页面里手写一堆特判逻辑。
+
+## 什么时候不用它更好
+
+如果页面只有两三个简单字段：
+
 ```vue
-<t-input :value="form.name" @change="onNameChange" />
+<input v-model="form.name" />
 
-<t-slider :value="form.budget" @change="onBudgetChange" />
-
-<t-upload :files="form.attachments" @change="onAttachmentsChange" />
+<input v-model="form.phone" />
 ```
 
-> 注意：Weapp-vite 模板编译目前不支持 `v-bind="object"` 的对象展开语法（不会生成任何属性），建议使用显式 `:value` + `@change/@input` 绑定。
+那继续用简单 `v-model` 往往更直观。
 
-## 参考入口
+## 一句话建议
 
-`bindModel` 的完整说明在：`/wevu/runtime#bindModel：模型绑定`
-
-建议配合本教程表单章节一起看：`/handbook/sfc/forms`
+`bindModel` 不是替代所有 `v-model`，而是在“事件和值来源开始复杂”之后帮你把表单逻辑统一起来。

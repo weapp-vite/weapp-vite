@@ -32,4 +32,4 @@ keywords:
 
 ## 相关链接
 
-- 静态资源处理与优化：`/guide/image-optimize`
+- [静态资源优化](/guide/image-optimize)

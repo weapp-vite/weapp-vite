@@ -38,4 +38,4 @@ export default defineComponent({
 
 ## 相关链接
 
-- Wevu 组件与选项：`/wevu/component`
+- [Wevu 组件能力说明](/wevu/component)

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-21T09:16:56.698Z",
+  "generatedAt": "2026-03-21T12:08:16.908Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
     "files": 270,
@@ -243,7 +243,7 @@
         "path": "handbook/index.md",
         "type": "non-normalized-keywords",
         "message": "keywords 未标准化（去噪/去重/格式不一致）。",
-        "detail": "当前: weapp-vite, wevu, Vue SFC, handbook, 学习路线, 教程 | 标准: weapp-vite, wevu, Vue SFC, handbook, 学习路线"
+        "detail": "当前: weapp-vite, wevu, Vue SFC, handbook, 教程, 学习路径 | 标准: weapp-vite, wevu, Vue SFC, handbook, 学习路径"
       },
       {
         "path": "packages/weapi/alipay-compat-matrix/ad.md",

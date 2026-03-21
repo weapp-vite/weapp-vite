@@ -1,66 +1,123 @@
 ---
-title: 组件：script setup import 与拆分
-description: 在 Weapp-vite + Vue SFC 项目中，推荐直接在脚本里导入 .vue 组件：
+title: 组件：拆分、导入与注册
+description: 解释新项目里组件应该如何拆分、何时直接 import .vue、何时还需要 usingComponents，以及原生组件如何获得更稳的类型提示。
 keywords:
-  - Vue SFC
   - handbook
   - sfc
   - components
-  - 组件：script
-  - setup
-  - import
-  - 与拆分
+  - usingComponents
+  - Vue SFC
 ---
 
-# 组件：`script setup` import 与拆分
+# 组件：拆分、导入与注册
 
-## 本章你会学到什么
+页面能跑起来之后，下一个很快会遇到的问题就是：什么时候该拆组件，以及拆完之后怎么接回页面。
 
-- 为什么推荐在 `<script setup lang="ts">` 中直接 `import` 子组件
-- 如何在页面里拆分组件，同时获得更好的 IDE 智能提示
-- `usingComponents` 在什么场景下仍然需要
+## 先看一个推荐的拆分例子
 
-## 推荐范式（默认）
+例如订单列表页：
 
-在 Weapp-vite + Vue SFC 项目中，推荐直接在脚本里导入 `.vue` 组件：
+```txt
+pages/order-list/
+├─ index.vue
+└─ components/
+   ├─ order-card.vue
+   └─ order-empty.vue
+```
 
-- 编辑器（Volar/TS）能直接识别组件类型与跳转
-- 重构（改名、移动文件）更稳定
-- 与 Vue 插件生态（lint、类型检查、自动导入）无缝协同
+页面里直接导入：
 
 ```vue
 <script setup lang="ts">
-import ComputedClassExample from '../../components/issue-289/ComputedClassExample/index.vue'
-import MapClassExample from '../../components/issue-289/MapClassExample/index.vue'
-import ObjectLiteralExample from '../../components/issue-289/ObjectLiteralExample/index.vue'
-import RootClassExample from '../../components/issue-289/RootClassExample/index.vue'
+import OrderCard from './components/order-card.vue'
+import OrderEmpty from './components/order-empty.vue'
+</script>
+```
+
+这是新项目最推荐的默认方式。
+
+## 为什么默认推荐直接 `import .vue`
+
+因为它同时解决了几个非常现实的问题：
+
+- IDE 跳转更直接
+- 重构改名更稳
+- 类型提示更自然
+- 页面依赖关系一眼能看懂
+
+例如：
+
+```vue
+<script setup lang="ts">
+import GoodsCard from '../../components/goods-card/index.vue'
 </script>
 
 <template>
-  <view class="issue289-page">
-    <ObjectLiteralExample />
-    <MapClassExample />
-    <RootClassExample />
-    <ComputedClassExample />
-  </view>
+  <GoodsCard title="键盘" :price="199" />
 </template>
 ```
 
-## `usingComponents` 何时使用
+## 什么时候该拆成组件
 
-以下场景仍然建议使用 `definePageJson/defineComponentJson` 配置 `usingComponents`：
+通常出现下面这些信号，就值得拆：
 
-- 需要引入非 `.vue` 的原生小程序组件路径（如外部小程序组件包）
-- 必须用 JSON 层能力声明的组件映射
-- 兼容历史工程中无法快速迁移到 `import` 的模块
+- 页面模板已经很长
+- 同一块 UI 在多个页面复用
+- 某块区域有独立状态和行为
+- 你开始在模板里反复复制同样结构
 
-结论：**业务 SFC 组件优先 `import`，`usingComponents` 作为补充而不是默认。**
+比如：
 
-## 原生组件类型提示（`NativePropType` + `InferNativeProps`）
+- 商品卡片
+- 空状态
+- 地址选择块
+- 订单状态条
 
-当你在 `<script setup lang="ts">` 中直接 `import` 原生组件（`index.ts/js + wxml + wxss/scss`）时，
-推荐把 `properties` 作为唯一数据源，再用 `InferNativeProps` 自动推导 props 类型；
-`type` 字段可通过 `NativePropType<T>`（类似 Vue 的 `PropType<T>`）补充字面量联合类型。
+## 什么时候还需要 `usingComponents`
+
+`usingComponents` 不是不能用，而是它在新项目里更适合作为补充方案。
+
+常见场景：
+
+- 接第三方原生小程序组件
+- 引入不是 `.vue` 的原生组件目录
+- 历史工程尚未完全迁移到 SFC import
+
+例如：
+
+```ts
+definePageJson(() => ({
+  usingComponents: {
+    'native-uploader': '/components/native-uploader/index',
+  },
+}))
+```
+
+## 页面局部组件还是全局组件
+
+一个很好用的判断标准是：
+
+- 只服务当前页面的，放页面目录下
+- 多个页面稳定复用的，放全局 `components/`
+
+例如：
+
+更适合页面局部：
+
+- `order-filter-bar`
+- `refund-progress-panel`
+
+更适合全局：
+
+- `empty-state`
+- `price-text`
+- `loading-view`
+
+## 原生组件怎么获得更稳的类型
+
+如果你引入的不是 `.vue`，而是原生小程序组件目录，也可以通过类型工具补齐 props 提示。
+
+例如：
 
 ```ts
 import type { InferNativeProps, NativeComponent, NativePropType } from 'wevu'
@@ -69,33 +126,35 @@ type Tone = 'neutral' | 'success' | 'danger'
 
 const nativeProperties = {
   label: { type: String, value: '' },
-  value: { type: Number, value: 0 },
   tone: {
     type: String as NativePropType<Tone>,
     value: 'neutral',
   },
 }
 
-Component({
-  properties: nativeProperties,
-})
+type NativeBadgeProps = InferNativeProps<typeof nativeProperties>
 
-type NativeMeterProps = InferNativeProps<typeof nativeProperties>
-
-const NativeMeter = {} as NativeComponent<NativeMeterProps>
-export default NativeMeter
+const NativeBadge = {} as NativeComponent<NativeBadgeProps>
+export default NativeBadge
 ```
 
-页面中使用：
+然后在页面里照常使用：
 
 ```vue
 <script setup lang="ts">
-import NativeMeter from '../../native/native-meter/index'
+import NativeBadge from '../../native/badge/index'
 </script>
 
 <template>
-  <NativeMeter label="构建链能力" :value="80" tone="success" />
+  <NativeBadge label="已完成" tone="success" />
 </template>
 ```
 
-如果遇到特别复杂的原生 `properties` 写法，仍可使用 `NativeTypedProperty<T, ...>` 作为兜底类型提示。
+## 一句话建议
+
+SFC 新项目里，组件优先 `import .vue`；`usingComponents` 只在你确实需要原生路径映射时再出手。
+
+接下来建议继续看：
+
+- [事件与 v-model：怎么绑定最稳](/handbook/sfc/events-and-v-model)
+- [表单：输入、校验与受控写法](/handbook/sfc/forms)
