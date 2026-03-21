@@ -1,3 +1,6 @@
+import { mkdtemp } from 'node:fs/promises'
+import fs from 'fs-extra'
+import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import { createTestCompilerContext, getApp } from './utils'
 
@@ -51,6 +54,25 @@ describe('web integration', () => {
     expect(ctx.configService.weappWebConfig?.enabled).not.toBe(true)
     expect(ctx.configService.mergeWeb()).toBeUndefined()
     expect(ctx.webService.isEnabled()).toBe(false)
+
+    await dispose()
+  })
+
+  it('bootstraps managed tsconfig files before loading fixture config', async () => {
+    const tempRoot = path.resolve(__dirname, '../../../.tmp')
+    await fs.ensureDir(tempRoot)
+    const root = await mkdtemp(path.join(tempRoot, 'weapp-vite-web-config-'))
+    await fs.copy(getApp('weapp-vite-web-demo'), root)
+    await fs.remove(path.join(root, '.weapp-vite'))
+
+    const { ctx, dispose } = await createTestCompilerContext({
+      cwd: root,
+      isDev: true,
+      mode: 'development',
+    })
+
+    expect(await fs.pathExists(path.join(root, '.weapp-vite', 'tsconfig.app.json'))).toBe(true)
+    expect(ctx.configService.weappWebConfig?.enabled).toBe(true)
 
     await dispose()
   })

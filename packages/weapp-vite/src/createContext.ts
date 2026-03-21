@@ -1,10 +1,14 @@
 import type { LoadConfigOptions } from './runtime/config/types'
 import { getCompilerContext, resetCompilerContext, setActiveCompilerContextKey } from './context/getInstance'
+import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
 
 /**
  * @description 创建并初始化编译上下文（加载配置、扫描入口）
  */
 export async function createCompilerContext(options?: Partial<LoadConfigOptions & { key?: string }>) {
+  if (options?.cwd) {
+    await syncManagedTsconfigBootstrapFiles(options.cwd)
+  }
   // 先初始化 ConfigService
   const key = options?.key ?? 'default'
   if (!options?.key) {
