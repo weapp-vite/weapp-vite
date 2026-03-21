@@ -28,6 +28,7 @@ describe('tsconfig support', () => {
     expect(app.extends).toBe('./tsconfig.shared.json')
     expect(app.compilerOptions.baseUrl).toBe('..')
     expect(app.compilerOptions.types).toContain('miniprogram-api-typings')
+    expect(app.compilerOptions.types).toContain('weapp-vite/client')
     expect(app.include).toContain('../src/**/*')
     expect(node.extends).toBe('./tsconfig.shared.json')
     expect(node.compilerOptions.types).toContain('node')
@@ -65,7 +66,7 @@ describe('tsconfig support', () => {
     }))
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
 
-    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'vite/client']))
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'vite/client']))
     expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['.weapp-vite/typed-components.d.ts'])
     expect(app.compilerOptions.paths['@weapp-vite/web']).toEqual(['../../packages/web/src/index.ts'])
     expect(app.vueCompilerOptions.lib).toBe('wevu')
@@ -104,6 +105,7 @@ describe('tsconfig support', () => {
     const shared = JSON.parse(files.find(file => file.path.endsWith('tsconfig.shared.json'))!.content)
 
     expect(shared.compilerOptions.strict).toBe(false)
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client']))
     expect(app.compilerOptions.paths['tdesign-miniprogram/*']).toEqual(['./node_modules/tdesign-miniprogram/miniprogram_dist/*'])
     expect(app.include).toContain('../legacy/**/*.ts')
     expect(app.exclude).toContain('../legacy-exclude/**')
@@ -122,7 +124,35 @@ describe('tsconfig support', () => {
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
 
     expect(app.include).toContain('../src/**/*')
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client']))
     expect(app.compilerOptions.paths['@/*']).toEqual(['src/*'])
+  })
+
+  it('points default @ alias to configured srcRoot', async () => {
+    const files = await createManagedTsconfigFiles(createCtx({
+      srcRoot: 'miniprogram',
+      weappViteConfig: {},
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+
+    expect(app.compilerOptions.paths['@/*']).toEqual(['miniprogram/*'])
+  })
+
+  it('keeps builtin app macro types when user overrides app compilerOptions.types', async () => {
+    const files = await createManagedTsconfigFiles(createCtx({
+      weappViteConfig: {
+        typescript: {
+          app: {
+            compilerOptions: {
+              types: ['custom-env'],
+            },
+          },
+        },
+      },
+    }))
+    const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
+
+    expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'vite/client', 'custom-env']))
   })
 
   it('writes managed tsconfig files into .weapp-vite', async () => {
