@@ -298,6 +298,14 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
     )};
 }
 
+.VPSidebar a[href="/guide/layouts.html"] .text::before {
+  --guide-icon-bg: rgb(168 85 247 / 11%);
+  --guide-icon-border: rgb(168 85 247 / 22%);
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237c3aed%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%224%22 y=%225%22 width=%2216%22 height=%2214%22 rx=%222%22/%3E%3Cpath d=%22M4 10h16%22/%3E%3Cpath d=%22M10 10v9%22/%3E%3C/svg%3E"
+    )};
+}
+
 .VPSidebar a[href="/guide/alias.html"] .text::before,
 .VPSidebar a[href="/guide/vite-plugin-host.html"] .text::before {
   --guide-icon-bg: rgb(168 85 247 / 11%);
