@@ -94,8 +94,8 @@ catalogs:
       specifier: ^0.1.12
       version: 0.1.12
     htmlparser2:
-      specifier: ^11.0.0
-      version: 11.0.0
+      specifier: ^12.0.0
+      version: 12.0.0
     lodash:
       specifier: ^4.17.23
       version: 4.17.23
@@ -375,7 +375,7 @@ importers:
         version: 4.0.1
       htmlparser2:
         specifier: 'catalog:'
-        version: 11.0.0
+        version: 12.0.0
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -1532,7 +1532,7 @@ importers:
         version: 11.3.4
       htmlparser2:
         specifier: 'catalog:'
-        version: 11.0.0
+        version: 12.0.0
       local-pkg:
         specifier: ^1.1.2
         version: 1.1.2
@@ -1632,7 +1632,7 @@ importers:
         version: 11.3.4
       htmlparser2:
         specifier: 'catalog:'
-        version: 11.0.0
+        version: 12.0.0
       lit:
         specifier: ^3.3.1
         version: 3.3.2
@@ -9718,8 +9718,8 @@ packages:
   htmlparser2@10.1.0:
     resolution: {integrity: sha512-VTZkM9GWRAtEpveh7MSF6SjjrpNVNNVJfFup7xTY3UpFtm67foy9HDVXneLtFVt4pMz5kZtgNcvCniNFb1hlEQ==}
 
-  htmlparser2@11.0.0:
-    resolution: {integrity: sha512-dhrUOrq2hZwr75OOIEXskUwOI9+EOkYc7BE+DlPvNuku2nuICjppK4nJc9O5Dv4N1+SEHmrYFCaZ/tAiCWWfFQ==}
+  htmlparser2@12.0.0:
+    resolution: {integrity: sha512-Tz7u1i95/g2x2jz81+x0FBVhBhY5aRTvD3tXXdFaljuNdzDLJ8UGNRrTcj2cgQvAg3iW/h77Fz15nLW0L0CrZw==}
     engines: {node: '>=20.19.0'}
 
   htmlparser2@8.0.2:
@@ -20116,8 +20116,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.56.1(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.56.1(typescript@5.9.3)
-      '@typescript-eslint/types': 8.56.1
+      '@typescript-eslint/tsconfig-utils': 8.57.1(typescript@5.9.3)
+      '@typescript-eslint/types': 8.57.1
       debug: 4.4.3
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -23898,7 +23898,7 @@ snapshots:
       domutils: 3.2.2
       entities: 7.0.1
 
-  htmlparser2@11.0.0:
+  htmlparser2@12.0.0:
     dependencies:
       domelementtype: 3.0.0
       domhandler: 6.0.1
