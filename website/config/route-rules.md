@@ -25,38 +25,44 @@ keywords:
 
 - **类型**：
   ```ts
-  Record<string, {
-    appLayout?: string | false | {
-      name: string
-      props?: Record<string, unknown>
+  Record<
+    string,
+    {
+      appLayout?:
+        | string
+        | false
+        | {
+            name: string;
+            props?: Record<string, unknown>;
+          };
     }
-  }>
+  >;
   ```
 - **默认值**：`undefined`
 
 示例：
 
 ```ts
-import { defineConfig } from 'weapp-vite/config'
+import { defineConfig } from "weapp-vite/config";
 
 export default defineConfig({
   weapp: {
     routeRules: {
-      'pages/dashboard/**': {
-        appLayout: 'dashboard',
+      "pages/dashboard/**": {
+        appLayout: "dashboard",
       },
-      'pages/admin/**': {
+      "pages/admin/**": {
         appLayout: {
-          name: 'admin',
+          name: "admin",
           props: {
             sidebar: true,
-            title: 'Admin',
+            title: "Admin",
           },
         },
       },
     },
   },
-})
+});
 ```
 
 作用：
@@ -78,7 +84,7 @@ export default defineConfig({
 ```ts
 definePageMeta({
   layout: false,
-})
+});
 ```
 
 则会跳过默认 layout 包裹。
@@ -118,8 +124,8 @@ layout 名称会根据相对 `layouts/` 目录的路径推导，例如：
 ```vue
 <script setup lang="ts">
 definePageMeta({
-  layout: 'admin',
-})
+  layout: "admin",
+});
 </script>
 ```
 
@@ -129,13 +135,13 @@ definePageMeta({
 <script setup lang="ts">
 definePageMeta({
   layout: {
-    name: 'dashboard',
+    name: "dashboard",
     props: {
       sidebar: true,
-      title: '控制台',
+      title: "控制台",
     },
   },
-})
+});
 </script>
 ```
 
@@ -145,7 +151,7 @@ definePageMeta({
 <script setup lang="ts">
 definePageMeta({
   layout: false,
-})
+});
 </script>
 ```
 
@@ -158,19 +164,19 @@ definePageMeta({
 如果页面需要在运行过程中切换 layout，可以使用 `wevu` 提供的 API：
 
 ```ts
-import { setPageLayout, usePageLayout } from 'wevu'
+import { setPageLayout, usePageLayout } from "wevu";
 
-const currentLayout = usePageLayout()
+const currentLayout = usePageLayout();
 
 function switchToAdmin() {
-  setPageLayout('admin', {
+  setPageLayout("admin", {
     sidebar: true,
-    title: '管理后台',
-  })
+    title: "管理后台",
+  });
 }
 
 function switchToPlain() {
-  setPageLayout(false)
+  setPageLayout(false);
 }
 ```
 
@@ -194,6 +200,8 @@ layout 能力会联动生成：
 
 ## 相关文档
 
+- [页面 Layout 使用指南](/guide/layouts)
+- [layouts 目录说明](/guide/directory-structure/layouts)
 - [Vue SFC 配置](/config/vue)
 - [TypeScript 支持文件](/config/typescript)
 - [Wevu 概览](/wevu/)

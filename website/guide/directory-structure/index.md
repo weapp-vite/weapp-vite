@@ -31,6 +31,7 @@ keywords:
    ├─ app.vue
    ├─ app.json(.js|.ts)?
    ├─ app.(css|scss|wxss|...)
+   ├─ layouts/
    ├─ custom-tab-bar/
    ├─ app-bar/
    ├─ pages/
@@ -50,7 +51,7 @@ keywords:
 
 1. `weapp-vite` 真正依赖的是 `srcRoot`，不是硬编码的 `src/`
 2. 页面自动扫描默认只看 `srcRoot/pages/**` 和已声明分包 root 下的 `pages/**`
-3. `custom-tab-bar`、`app-bar`、类型声明文件这些都属于带固定语义的保留位置
+3. `layouts`、`custom-tab-bar`、`app-bar`、类型声明文件这些都属于带固定语义的保留位置
 
 > [!TIP]
 > 这一组文档里的 `<srcRoot>`、`<subPackageRoot>` 都是变量占位，不是固定目录名。它们分别代表你在 `vite.config.ts` 中声明的源码根目录和分包 root。
@@ -60,6 +61,7 @@ keywords:
 ## 从哪里开始看
 
 - 想先建立全局认知：看 [📄 vite.config.ts](/guide/directory-structure/vite-config)、[📁 `<srcRoot>/`](/guide/directory-structure/src-root)
+- 想搞清楚页面 layout 放哪里：看 [📁 `<srcRoot>/layouts/`](/guide/directory-structure/layouts)
 - 想搞清楚页面与分包：看 [📁 `<srcRoot>/pages/`](/guide/directory-structure/pages)、[📁 `<srcRoot>/<subPackageRoot>/`](/guide/directory-structure/subpackages)
 - 想搞清楚自动生成产物：看 [类型声明文件](/guide/directory-structure/generated-files)
 
@@ -74,6 +76,7 @@ keywords:
 | `app.vue`                                                         | Vue SFC 形式的应用入口，可组合脚本、JSON 宏与样式  |
 | `app.json(.js                                                     | .ts)?`                                             | 应用配置入口，既支持原生 JSON，也支持脚本化生成 |
 | `app.(css                                                         | scss                                               | wxss                                            | ...)` | 全局样式入口，支持 CSS、WXSS 与常见预处理器 |
+| `layouts/`                                                        | 页面 layout 约定目录，承载默认布局和命名布局       |
 | `pages/`                                                          | 主包页面目录                                       |
 | `components/`                                                     | 主包组件目录，默认参与自动导入扫描                 |
 | `<subPackageRoot>/pages/`                                         | 已声明分包 root 下的页面目录                       |
@@ -84,6 +87,7 @@ keywords:
 ## 相关文档
 
 - [自动路由](/guide/auto-routes)
+- [页面 Layout 使用指南](/guide/layouts)
 - [自动导入组件](/guide/auto-import)
 - [分包指南](/guide/subpackage)
 - [手动集成](/guide/manual-integration)
