@@ -1,5 +1,6 @@
 import type { LoadConfigOptions } from './runtime/config/types'
 import { getCompilerContext, resetCompilerContext, setActiveCompilerContextKey } from './context/getInstance'
+import logger from './logger'
 import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
 
 /**
@@ -7,7 +8,13 @@ import { syncManagedTsconfigBootstrapFiles } from './runtime/tsconfigSupport'
  */
 export async function createCompilerContext(options?: Partial<LoadConfigOptions & { key?: string }>) {
   if (options?.cwd) {
-    await syncManagedTsconfigBootstrapFiles(options.cwd)
+    try {
+      await syncManagedTsconfigBootstrapFiles(options.cwd)
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logger.warn(`[tsconfig] 跳过 .weapp-vite 支持文件预生成：${message}`)
+    }
   }
   // 先初始化 ConfigService
   const key = options?.key ?? 'default'
