@@ -1,6 +1,6 @@
 /* stylelint-disable selector-class-pattern, order/properties-order, rule-empty-line-before, comment-empty-line-before */
-@use 'sass:color';
-@use './vars' as *;
+@use "sass:color";
+@use "./vars" as *;
 
 @function ds-icon($svg) {
   @return url("data:image/svg+xml,#{$svg}");
@@ -89,7 +89,7 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
   --guide-group-bg: rgb(15 23 42 / 6%);
   --guide-group-border: rgb(100 116 139 / 16%);
 
-  content: '';
+  content: "";
   width: 16px;
   height: 16px;
   flex: none;
@@ -102,80 +102,127 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
   background-repeat: no-repeat;
   background-position: center;
   background-size: 10px 10px;
-  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23475569%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223.5%22/%3E%3C/svg%3E')};
+  background-image: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23475569%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223.5%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar .group:has(a[href='/guide/what-is-weapp-vite.html']) > .text::before,
-.VPSidebar .group:has(a[href='/guide/what-is-weapp-vite.html']) > button .text::before,
-.VPSidebar .group:has(a[href='/guide/what-is-weapp-vite.html']) > .item > .text::before,
-.VPSidebar .group:has(a[href='/guide/what-is-weapp-vite.html']) > .item > button .text::before {
+.VPSidebar .group:has(a[href="/guide/what-is-weapp-vite.html"]) > .text::before,
+.VPSidebar
+  .group:has(a[href="/guide/what-is-weapp-vite.html"])
+  > button
+  .text::before,
+.VPSidebar
+  .group:has(a[href="/guide/what-is-weapp-vite.html"])
+  > .item
+  > .text::before,
+.VPSidebar
+  .group:has(a[href="/guide/what-is-weapp-vite.html"])
+  > .item
+  > button
+  .text::before {
   --guide-group-bg: rgb(16 185 129 / 12%);
   --guide-group-border: rgb(16 185 129 / 24%);
 
-  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 4v6%22/%3E%3Cpath d=%22M17 14h3v6h-6v-3%22/%3E%3Cpath d=%22M4 11h10v9H4z%22/%3E%3C/svg%3E')};
+  background-image: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 4v6%22/%3E%3Cpath d=%22M17 14h3v6h-6v-3%22/%3E%3Cpath d=%22M4 11h10v9H4z%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar .group:has(a[href='/guide/vue-sfc/']) > .text::before,
-.VPSidebar .group:has(a[href='/guide/vue-sfc/']) > button .text::before,
-.VPSidebar .group:has(a[href='/guide/vue-sfc/']) > .item > .text::before,
-.VPSidebar .group:has(a[href='/guide/vue-sfc/']) > .item > button .text::before {
+.VPSidebar .group:has(a[href="/guide/vue-sfc/"]) > .text::before,
+.VPSidebar .group:has(a[href="/guide/vue-sfc/"]) > button .text::before,
+.VPSidebar .group:has(a[href="/guide/vue-sfc/"]) > .item > .text::before,
+.VPSidebar
+  .group:has(a[href="/guide/vue-sfc/"])
+  > .item
+  > button
+  .text::before {
   --guide-group-bg: rgb(20 184 166 / 12%);
   --guide-group-border: rgb(20 184 166 / 24%);
 
-  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22m4 5 8 14 8-14%22/%3E%3Cpath d=%22m8 5 4 7 4-7%22/%3E%3C/svg%3E')};
+  background-image: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22m4 5 8 14 8-14%22/%3E%3Cpath d=%22m8 5 4 7 4-7%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar .group:has(a[href='/guide/auto-import.html']) > .text::before,
-.VPSidebar .group:has(a[href='/guide/auto-import.html']) > button .text::before,
-.VPSidebar .group:has(a[href='/guide/auto-import.html']) > .item > .text::before,
-.VPSidebar .group:has(a[href='/guide/auto-import.html']) > .item > button .text::before {
+.VPSidebar .group:has(a[href="/guide/auto-import.html"]) > .text::before,
+.VPSidebar .group:has(a[href="/guide/auto-import.html"]) > button .text::before,
+.VPSidebar
+  .group:has(a[href="/guide/auto-import.html"])
+  > .item
+  > .text::before,
+.VPSidebar
+  .group:has(a[href="/guide/auto-import.html"])
+  > .item
+  > button
+  .text::before {
   --guide-group-bg: rgb(99 102 241 / 12%);
   --guide-group-border: rgb(99 102 241 / 24%);
 
-  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M5 7h14%22/%3E%3Cpath d=%22M5 12h10%22/%3E%3Cpath d=%22M5 17h6%22/%3E%3Cpath d=%22M17 14v6%22/%3E%3Cpath d=%22M14 17h6%22/%3E%3C/svg%3E')};
+  background-image: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M5 7h14%22/%3E%3Cpath d=%22M5 12h10%22/%3E%3Cpath d=%22M5 17h6%22/%3E%3Cpath d=%22M17 14v6%22/%3E%3Cpath d=%22M14 17h6%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar .group:has(a[href='/deep/init.html']) > .text::before,
-.VPSidebar .group:has(a[href='/deep/init.html']) > button .text::before,
-.VPSidebar .group:has(a[href='/deep/init.html']) > .item > .text::before,
-.VPSidebar .group:has(a[href='/deep/init.html']) > .item > button .text::before {
+.VPSidebar .group:has(a[href="/deep/init.html"]) > .text::before,
+.VPSidebar .group:has(a[href="/deep/init.html"]) > button .text::before,
+.VPSidebar .group:has(a[href="/deep/init.html"]) > .item > .text::before,
+.VPSidebar
+  .group:has(a[href="/deep/init.html"])
+  > .item
+  > button
+  .text::before {
   --guide-group-bg: rgb(249 115 22 / 12%);
   --guide-group-border: rgb(249 115 22 / 24%);
 
-  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23c2410c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v4%22/%3E%3Cpath d=%22M12 16v4%22/%3E%3Cpath d=%22M4 12h4%22/%3E%3Cpath d=%22M16 12h4%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E')};
+  background-image: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23c2410c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v4%22/%3E%3Cpath d=%22M12 16v4%22/%3E%3Cpath d=%22M4 12h4%22/%3E%3Cpath d=%22M16 12h4%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar .group:has(a[href='/guide/multi-platform.html']) > .text::before,
-.VPSidebar .group:has(a[href='/guide/multi-platform.html']) > button .text::before,
-.VPSidebar .group:has(a[href='/guide/multi-platform.html']) > .item > .text::before,
-.VPSidebar .group:has(a[href='/guide/multi-platform.html']) > .item > button .text::before {
+.VPSidebar .group:has(a[href="/guide/multi-platform.html"]) > .text::before,
+.VPSidebar
+  .group:has(a[href="/guide/multi-platform.html"])
+  > button
+  .text::before,
+.VPSidebar
+  .group:has(a[href="/guide/multi-platform.html"])
+  > .item
+  > .text::before,
+.VPSidebar
+  .group:has(a[href="/guide/multi-platform.html"])
+  > .item
+  > button
+  .text::before {
   --guide-group-bg: rgb(244 63 94 / 12%);
   --guide-group-border: rgb(244 63 94 / 24%);
 
-  background-image: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be123c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v8%22/%3E%3Cpath d=%22M12 16h.01%22/%3E%3Cpath d=%22M10.29 5.86 3.82 17a2 2 0 0 0 1.73 3h12.9a2 2 0 0 0 1.73-3L13.71 5.86a2 2 0 0 0-3.42 0Z%22/%3E%3C/svg%3E')};
+  background-image: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be123c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v8%22/%3E%3Cpath d=%22M12 16h.01%22/%3E%3Cpath d=%22M10.29 5.86 3.82 17a2 2 0 0 0 1.73 3h12.9a2 2 0 0 0 1.73-3L13.71 5.86a2 2 0 0 0-3.42 0Z%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href^='/guide/'] .text,
-.VPSidebar a[href='/config.html'] .text,
-.VPSidebar a[href='/config/'] .text,
-.VPSidebar a[href^='/troubleshoot/'] .text,
-.VPSidebar a[href^='/deep/'] .text,
-.VPSidebar a[href^='/integration/'] .text {
+.VPSidebar a[href^="/guide/"] .text,
+.VPSidebar a[href="/config.html"] .text,
+.VPSidebar a[href="/config/"] .text,
+.VPSidebar a[href^="/troubleshoot/"] .text,
+.VPSidebar a[href^="/deep/"] .text,
+.VPSidebar a[href^="/integration/"] .text {
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
 
-.VPSidebar a[href^='/guide/'] .text::before,
-.VPSidebar a[href='/config.html'] .text::before,
-.VPSidebar a[href='/config/'] .text::before,
-.VPSidebar a[href^='/troubleshoot/'] .text::before,
-.VPSidebar a[href^='/deep/'] .text::before,
-.VPSidebar a[href^='/integration/'] .text::before {
+.VPSidebar a[href^="/guide/"] .text::before,
+.VPSidebar a[href="/config.html"] .text::before,
+.VPSidebar a[href="/config/"] .text::before,
+.VPSidebar a[href^="/troubleshoot/"] .text::before,
+.VPSidebar a[href^="/deep/"] .text::before,
+.VPSidebar a[href^="/integration/"] .text::before {
   --guide-icon-bg: rgb(100 116 139 / 9%);
   --guide-icon-border: rgb(100 116 139 / 16%);
 
-  content: '';
+  content: "";
   width: 18px;
   height: 18px;
   flex: none;
@@ -191,128 +238,158 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
   background-image: var(--guide-icon);
 }
 
-.VPSidebar a[href='/guide/what-is-weapp-vite.html'] .text::before {
+.VPSidebar a[href="/guide/what-is-weapp-vite.html"] .text::before {
   --guide-icon-bg: rgb(14 165 233 / 11%);
   --guide-icon-border: rgb(14 165 233 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230369a1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7v10l8 4 8-4V7l-8-4Z%22/%3E%3Cpath d=%22M12 11v4%22/%3E%3Cpath d=%22M12 8h.01%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230369a1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7v10l8 4 8-4V7l-8-4Z%22/%3E%3Cpath d=%22M12 11v4%22/%3E%3Cpath d=%22M12 8h.01%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/'] .text::before {
+.VPSidebar a[href="/guide/"] .text::before {
   --guide-icon-bg: rgb(16 185 129 / 11%);
   --guide-icon-border: rgb(16 185 129 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 4v6%22/%3E%3Cpath d=%22M17 14h3v6h-6v-3%22/%3E%3Cpath d=%22M4 11h10v9H4z%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 4v6%22/%3E%3Cpath d=%22M17 14h3v6h-6v-3%22/%3E%3Cpath d=%22M4 11h10v9H4z%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/cli.html'] .text::before,
-.VPSidebar a[href='/guide/debug.html'] .text::before {
+.VPSidebar a[href="/guide/cli.html"] .text::before,
+.VPSidebar a[href="/guide/debug.html"] .text::before {
   --guide-icon-bg: rgb(245 158 11 / 11%);
   --guide-icon-border: rgb(245 158 11 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23b45309%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M9 8 5 12l4 4%22/%3E%3Cpath d=%22m15 8 4 4-4 4%22/%3E%3Cpath d=%22M13 6 11 18%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23b45309%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M9 8 5 12l4 4%22/%3E%3Cpath d=%22m15 8 4 4-4 4%22/%3E%3Cpath d=%22M13 6 11 18%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/ai.html'] .text::before {
+.VPSidebar a[href="/guide/ai.html"] .text::before {
   --guide-icon-bg: rgb(244 63 94 / 11%);
   --guide-icon-border: rgb(244 63 94 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be185d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%227%22 y=%227%22 width=%2210%22 height=%229%22 rx=%222%22/%3E%3Cpath d=%22M9 7V5%22/%3E%3Cpath d=%22M15 7V5%22/%3E%3Cpath d=%22M10 11h.01%22/%3E%3Cpath d=%22M14 11h.01%22/%3E%3Cpath d=%22M12 16v3%22/%3E%3Cpath d=%22M9 19h6%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be185d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%227%22 y=%227%22 width=%2210%22 height=%229%22 rx=%222%22/%3E%3Cpath d=%22M9 7V5%22/%3E%3Cpath d=%22M15 7V5%22/%3E%3Cpath d=%22M10 11h.01%22/%3E%3Cpath d=%22M14 11h.01%22/%3E%3Cpath d=%22M12 16v3%22/%3E%3Cpath d=%22M9 19h6%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href^='/guide/directory-structure'] .text::before {
+.VPSidebar a[href^="/guide/directory-structure"] .text::before {
   --guide-icon-bg: rgb(16 185 129 / 12%);
   --guide-icon-border: rgb(16 185 129 / 24%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 4v6%22/%3E%3Cpath d=%22M17 14h3v6h-6v-3%22/%3E%3Cpath d=%22M4 11h10v9H4z%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 4v6%22/%3E%3Cpath d=%22M17 14h3v6h-6v-3%22/%3E%3Cpath d=%22M4 11h10v9H4z%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/manual-integration.html'] .text::before {
+.VPSidebar a[href="/guide/manual-integration.html"] .text::before {
   --guide-icon-bg: rgb(99 102 241 / 11%);
   --guide-icon-border: rgb(99 102 241 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 4h12v16H6z%22/%3E%3Cpath d=%22M9 8h6%22/%3E%3Cpath d=%22M9 12h6%22/%3E%3Cpath d=%22M9 16h4%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 4h12v16H6z%22/%3E%3Cpath d=%22M9 8h6%22/%3E%3Cpath d=%22M9 12h6%22/%3E%3Cpath d=%22M9 16h4%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/vue-sfc/'] .text::before,
-.VPSidebar a[href='/guide/wxml.html'] .text::before,
-.VPSidebar a[href='/guide/wxs.html'] .text::before,
-.VPSidebar a[href='/guide/wxss.html'] .text::before {
+.VPSidebar a[href="/guide/vue-sfc/"] .text::before,
+.VPSidebar a[href="/guide/wxml.html"] .text::before,
+.VPSidebar a[href="/guide/wxs.html"] .text::before,
+.VPSidebar a[href="/guide/wxss.html"] .text::before {
   --guide-icon-bg: rgb(20 184 166 / 11%);
   --guide-icon-border: rgb(20 184 166 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22m4 5 8 14 8-14%22/%3E%3Cpath d=%22m8 5 4 7 4-7%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22m4 5 8 14 8-14%22/%3E%3Cpath d=%22m8 5 4 7 4-7%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/alias.html'] .text::before,
-.VPSidebar a[href='/guide/vite-plugin-host.html'] .text::before {
+.VPSidebar a[href="/guide/alias.html"] .text::before,
+.VPSidebar a[href="/guide/vite-plugin-host.html"] .text::before {
   --guide-icon-bg: rgb(168 85 247 / 11%);
   --guide-icon-border: rgb(168 85 247 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237c3aed%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M7 7h10v10H7z%22/%3E%3Cpath d=%22M3 12h4%22/%3E%3Cpath d=%22M17 12h4%22/%3E%3Cpath d=%22M12 3v4%22/%3E%3Cpath d=%22M12 17v4%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237c3aed%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M7 7h10v10H7z%22/%3E%3Cpath d=%22M3 12h4%22/%3E%3Cpath d=%22M17 12h4%22/%3E%3Cpath d=%22M12 3v4%22/%3E%3Cpath d=%22M12 17v4%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/npm.html'] .text::before,
-.VPSidebar a[href='/guide/plugin.html'] .text::before,
-.VPSidebar a[href='/guide/lib-mode.html'] .text::before {
+.VPSidebar a[href="/guide/npm.html"] .text::before,
+.VPSidebar a[href="/guide/plugin.html"] .text::before,
+.VPSidebar a[href="/guide/lib-mode.html"] .text::before {
   --guide-icon-bg: rgb(34 197 94 / 11%);
   --guide-icon-border: rgb(34 197 94 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2315803d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 2l8 4.5v11L12 22l-8-4.5v-11L12 2Z%22/%3E%3Cpath d=%22M12 9v4%22/%3E%3Cpath d=%22M10 11h4%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2315803d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 2l8 4.5v11L12 22l-8-4.5v-11L12 2Z%22/%3E%3Cpath d=%22M12 9v4%22/%3E%3Cpath d=%22M10 11h4%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/generate.html'] .text::before,
-.VPSidebar a[href='/guide/auto-routes.html'] .text::before,
-.VPSidebar a[href='/guide/auto-import.html'] .text::before,
-.VPSidebar a[href='/guide/auto-import-resolver.html'] .text::before,
-.VPSidebar a[href='/guide/json-intelli-sense.html'] .text::before,
-.VPSidebar a[href='/guide/json-enhance.html'] .text::before {
+.VPSidebar a[href="/guide/generate.html"] .text::before,
+.VPSidebar a[href="/guide/auto-routes.html"] .text::before,
+.VPSidebar a[href="/guide/auto-import.html"] .text::before,
+.VPSidebar a[href="/guide/auto-import-resolver.html"] .text::before,
+.VPSidebar a[href="/guide/json-intelli-sense.html"] .text::before,
+.VPSidebar a[href="/guide/json-enhance.html"] .text::before {
   --guide-icon-bg: rgb(99 102 241 / 11%);
   --guide-icon-border: rgb(99 102 241 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M5 7h14%22/%3E%3Cpath d=%22M5 12h10%22/%3E%3Cpath d=%22M5 17h6%22/%3E%3Cpath d=%22M17 14v6%22/%3E%3Cpath d=%22M14 17h6%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M5 7h14%22/%3E%3Cpath d=%22M5 12h10%22/%3E%3Cpath d=%22M5 17h6%22/%3E%3Cpath d=%22M17 14v6%22/%3E%3Cpath d=%22M14 17h6%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/subpackage.html'] .text::before,
-.VPSidebar a[href='/guide/chunks.html'] .text::before {
+.VPSidebar a[href="/guide/subpackage.html"] .text::before,
+.VPSidebar a[href="/guide/chunks.html"] .text::before {
   --guide-icon-bg: rgb(132 204 22 / 12%);
   --guide-icon-border: rgb(132 204 22 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234d7c0f%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7l8 4 8-4-8-4Z%22/%3E%3Cpath d=%22m4 12 8 4 8-4%22/%3E%3Cpath d=%22m4 8 8 4 8-4%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234d7c0f%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7l8 4 8-4-8-4Z%22/%3E%3Cpath d=%22m4 12 8 4 8-4%22/%3E%3Cpath d=%22m4 8 8 4 8-4%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/multi-platform.html'] .text::before,
-.VPSidebar a[href='/guide/wxs.html'] .text::before,
-.VPSidebar a[href='/guide/web-compat-matrix.html'] .text::before {
+.VPSidebar a[href="/guide/multi-platform.html"] .text::before,
+.VPSidebar a[href="/guide/wxs.html"] .text::before,
+.VPSidebar a[href="/guide/web-compat-matrix.html"] .text::before {
   --guide-icon-bg: rgb(244 63 94 / 11%);
   --guide-icon-border: rgb(244 63 94 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be123c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v8%22/%3E%3Cpath d=%22M12 16h.01%22/%3E%3Cpath d=%22M10.29 5.86 3.82 17a2 2 0 0 0 1.73 3h12.9a2 2 0 0 0 1.73-3L13.71 5.86a2 2 0 0 0-3.42 0Z%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be123c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v8%22/%3E%3Cpath d=%22M12 16h.01%22/%3E%3Cpath d=%22M10.29 5.86 3.82 17a2 2 0 0 0 1.73 3h12.9a2 2 0 0 0 1.73-3L13.71 5.86a2 2 0 0 0-3.42 0Z%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/image-optimize.html'] .text::before,
-.VPSidebar a[href^='/integration/'] .text::before {
+.VPSidebar a[href="/guide/image-optimize.html"] .text::before,
+.VPSidebar a[href^="/integration/"] .text::before {
   --guide-icon-bg: rgb(6 182 212 / 11%);
   --guide-icon-border: rgb(6 182 212 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 12h6%22/%3E%3Cpath d=%22M14 12h6%22/%3E%3Cpath d=%22M12 4v6%22/%3E%3Cpath d=%22M12 14v6%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%222%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 12h6%22/%3E%3Cpath d=%22M14 12h6%22/%3E%3Cpath d=%22M12 4v6%22/%3E%3Cpath d=%22M12 14v6%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%222%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href='/guide/seo-governance.html'] .text::before,
-.VPSidebar a[href='/guide/module.html'] .text::before,
-.VPSidebar a[href^='/troubleshoot/'] .text::before,
-.VPSidebar a[href='/config.html'] .text::before,
-.VPSidebar a[href='/config/'] .text::before {
+.VPSidebar a[href="/guide/seo-governance.html"] .text::before,
+.VPSidebar a[href="/guide/module.html"] .text::before,
+.VPSidebar a[href^="/troubleshoot/"] .text::before,
+.VPSidebar a[href="/config.html"] .text::before,
+.VPSidebar a[href="/config/"] .text::before {
   --guide-icon-bg: rgb(120 113 108 / 11%);
   --guide-icon-border: rgb(120 113 108 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2357534e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7v10l8 4 8-4V7l-8-4Z%22/%3E%3Cpath d=%22M12 9v3%22/%3E%3Cpath d=%22M12 16h.01%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2357534e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7v10l8 4 8-4V7l-8-4Z%22/%3E%3Cpath d=%22M12 9v3%22/%3E%3Cpath d=%22M12 16h.01%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href^='/deep/'] .text::before {
+.VPSidebar a[href^="/deep/"] .text::before {
   --guide-icon-bg: rgb(249 115 22 / 12%);
   --guide-icon-border: rgb(249 115 22 / 22%);
-  --guide-icon: #{guide-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23c2410c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v4%22/%3E%3Cpath d=%22M12 16v4%22/%3E%3Cpath d=%22M4 12h4%22/%3E%3Cpath d=%22M16 12h4%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E')};
+  --guide-icon: #{guide-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23c2410c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 4v4%22/%3E%3Cpath d=%22M12 16v4%22/%3E%3Cpath d=%22M4 12h4%22/%3E%3Cpath d=%22M16 12h4%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%223%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/'] .text {
+.VPSidebar a[href*="/guide/directory-structure/"] .text {
   display: inline-flex;
   align-items: center;
   gap: 10px;
 }
 
-.VPSidebar a[href*='/guide/directory-structure/'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/"] .text::before {
   --ds-icon-bg: rgb(100 116 139 / 10%);
   --ds-icon-border: rgb(100 116 139 / 18%);
   --ds-icon-color: #64748b;
 
-  content: '';
+  content: "";
   width: 18px;
   height: 18px;
   flex: none;
@@ -326,139 +403,181 @@ html.dark .VPSidebar:hover::-webkit-scrollbar-thumb {
   background-image: var(--ds-icon);
 }
 
-.VPSidebar a[href*='/guide/directory-structure/']:hover .text::before,
-.VPSidebar .is-active > .item > a[href*='/guide/directory-structure/'] .text::before,
-.VPSidebar .has-active > .item > a[href*='/guide/directory-structure/'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/"]:hover .text::before,
+.VPSidebar
+  .is-active
+  > .item
+  > a[href*="/guide/directory-structure/"]
+  .text::before,
+.VPSidebar
+  .has-active
+  > .item
+  > a[href*="/guide/directory-structure/"]
+  .text::before {
   transform: translateY(-1px);
 }
 
-.VPSidebar a[href='/guide/directory-structure/'] .text::before {
+.VPSidebar a[href="/guide/directory-structure/"] .text::before {
   --ds-icon-bg: rgb(16 185 129 / 12%);
   --ds-icon-border: rgb(16 185 129 / 24%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 4v6%22/%3E%3Cpath d=%22M17 14h3v6h-6v-3%22/%3E%3Cpath d=%22M4 11h10v9H4z%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 4v6%22/%3E%3Cpath d=%22M17 14h3v6h-6v-3%22/%3E%3Cpath d=%22M4 11h10v9H4z%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/vite-config'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/vite-config"] .text::before {
   --ds-icon-bg: rgb(245 158 11 / 12%);
   --ds-icon-border: rgb(245 158 11 / 24%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23b45309%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M13 2 5 14h6l-1 8 8-12h-6l1-8Z%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23b45309%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M13 2 5 14h6l-1 8 8-12h-6l1-8Z%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/project-config'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/project-config"] .text::before {
   --ds-icon-bg: rgb(100 116 139 / 12%);
   --ds-icon-border: rgb(100 116 139 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23475569%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 12h10%22/%3E%3Cpath d=%22M10 17h4%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23475569%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h16%22/%3E%3Cpath d=%22M7 12h10%22/%3E%3Cpath d=%22M10 17h4%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/package-json'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/package-json"] .text::before {
   --ds-icon-bg: rgb(34 197 94 / 11%);
   --ds-icon-border: rgb(34 197 94 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2315803d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 2l8 4.5v11L12 22l-8-4.5v-11L12 2Z%22/%3E%3Cpath d=%22M12 9v4%22/%3E%3Cpath d=%22M10 11h4%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2315803d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 2l8 4.5v11L12 22l-8-4.5v-11L12 2Z%22/%3E%3Cpath d=%22M12 9v4%22/%3E%3Cpath d=%22M10 11h4%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/public'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/public"] .text::before {
   --ds-icon-bg: rgb(6 182 212 / 11%);
   --ds-icon-border: rgb(6 182 212 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 8a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z%22/%3E%3Ccircle cx=%2215.5%22 cy=%2213.5%22 r=%222.5%22/%3E%3Cpath d=%22m17.5 15.5 2 2%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 8a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8Z%22/%3E%3Ccircle cx=%2215.5%22 cy=%2213.5%22 r=%222.5%22/%3E%3Cpath d=%22m17.5 15.5 2 2%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/src-root'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/src-root"] .text::before {
   --ds-icon-bg: rgb(16 185 129 / 11%);
   --ds-icon-border: rgb(16 185 129 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h7l2 2h7v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z%22/%3E%3Cpath d=%22M12 12v5%22/%3E%3Cpath d=%22M9.5 14.5 12 12l2.5 2.5%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 7h7l2 2h7v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7Z%22/%3E%3Cpath d=%22M12 12v5%22/%3E%3Cpath d=%22M9.5 14.5 12 12l2.5 2.5%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/app-ts'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/app-ts"] .text::before {
   --ds-icon-bg: rgb(14 165 233 / 12%);
   --ds-icon-border: rgb(14 165 233 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230369a1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M9 8 5 12l4 4%22/%3E%3Cpath d=%22m15 8 4 4-4 4%22/%3E%3Cpath d=%22M13 6 11 18%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230369a1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M9 8 5 12l4 4%22/%3E%3Cpath d=%22m15 8 4 4-4 4%22/%3E%3Cpath d=%22M13 6 11 18%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/app-vue'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/app-vue"] .text::before {
   --ds-icon-bg: rgb(20 184 166 / 12%);
   --ds-icon-border: rgb(20 184 166 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22m4 5 8 14 8-14%22/%3E%3Cpath d=%22m8 5 4 7 4-7%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230f766e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22m4 5 8 14 8-14%22/%3E%3Cpath d=%22m8 5 4 7 4-7%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/app-json'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/layouts"] .text::before {
+  --ds-icon-bg: rgb(168 85 247 / 11%);
+  --ds-icon-border: rgb(168 85 247 / 22%);
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237c3aed%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%224%22 y=%225%22 width=%2216%22 height=%2214%22 rx=%222%22/%3E%3Cpath d=%22M4 10h16%22/%3E%3Cpath d=%22M10 10v9%22/%3E%3C/svg%3E"
+    )};
+}
+
+.VPSidebar a[href*="/guide/directory-structure/app-json"] .text::before {
   --ds-icon-bg: rgb(99 102 241 / 12%);
   --ds-icon-border: rgb(99 102 241 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M8 8 5 12l3 4%22/%3E%3Cpath d=%22m16 8 3 4-3 4%22/%3E%3Cpath d=%22M10 6h4%22/%3E%3Cpath d=%22M10 18h4%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234338ca%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M8 8 5 12l3 4%22/%3E%3Cpath d=%22m16 8 3 4-3 4%22/%3E%3Cpath d=%22M10 6h4%22/%3E%3Cpath d=%22M10 18h4%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/app-style'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/app-style"] .text::before {
   --ds-icon-bg: rgb(244 63 94 / 11%);
   --ds-icon-border: rgb(244 63 94 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be185d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3c4.5 0 8 3.2 8 7.3 0 3.4-2.5 6.2-5.9 6.9-.7.1-1.1.7-1.1 1.4V20a1 1 0 0 1-1.7.7l-1.8-1.8a3.5 3.5 0 1 1 2.5-5.9c.7.7 1.8.7 2.5 0a3.5 3.5 0 1 0-5-5L10.2 10%22/%3E%3Ccircle cx=%228.5%22 cy=%2210.5%22 r=%221%22/%3E%3Ccircle cx=%2214.5%22 cy=%228.5%22 r=%221%22/%3E%3Ccircle cx=%2217%22 cy=%2213%22 r=%221%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be185d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3c4.5 0 8 3.2 8 7.3 0 3.4-2.5 6.2-5.9 6.9-.7.1-1.1.7-1.1 1.4V20a1 1 0 0 1-1.7.7l-1.8-1.8a3.5 3.5 0 1 1 2.5-5.9c.7.7 1.8.7 2.5 0a3.5 3.5 0 1 0-5-5L10.2 10%22/%3E%3Ccircle cx=%228.5%22 cy=%2210.5%22 r=%221%22/%3E%3Ccircle cx=%2214.5%22 cy=%228.5%22 r=%221%22/%3E%3Ccircle cx=%2217%22 cy=%2213%22 r=%221%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/custom-tab-bar'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/custom-tab-bar"] .text::before {
   --ds-icon-bg: rgb(168 85 247 / 11%);
   --ds-icon-border: rgb(168 85 247 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237c3aed%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%224%22 y=%225%22 width=%2216%22 height=%2214%22 rx=%222%22/%3E%3Cpath d=%22M4 11h16%22/%3E%3Cpath d=%22M8 15h.01%22/%3E%3Cpath d=%22M12 15h.01%22/%3E%3Cpath d=%22M16 15h.01%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237c3aed%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%224%22 y=%225%22 width=%2216%22 height=%2214%22 rx=%222%22/%3E%3Cpath d=%22M4 11h16%22/%3E%3Cpath d=%22M8 15h.01%22/%3E%3Cpath d=%22M12 15h.01%22/%3E%3Cpath d=%22M16 15h.01%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/app-bar'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/app-bar"] .text::before {
   --ds-icon-bg: rgb(249 115 22 / 12%);
   --ds-icon-border: rgb(249 115 22 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23c2410c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%225%22 width=%2218%22 height=%2214%22 rx=%223%22/%3E%3Cpath d=%22M3 9h18%22/%3E%3Cpath d=%22M7 7h.01%22/%3E%3Cpath d=%22M10 7h.01%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23c2410c%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%225%22 width=%2218%22 height=%2214%22 rx=%223%22/%3E%3Cpath d=%22M3 9h18%22/%3E%3Cpath d=%22M7 7h.01%22/%3E%3Cpath d=%22M10 7h.01%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/pages'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/pages"] .text::before {
   --ds-icon-bg: rgb(14 165 233 / 11%);
   --ds-icon-border: rgb(14 165 233 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230369a1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 5h6v6H4z%22/%3E%3Cpath d=%22M14 5h6v4h-6z%22/%3E%3Cpath d=%22M14 13h6v6h-6z%22/%3E%3Cpath d=%22M4 15h6v4H4z%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230369a1%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 5h6v6H4z%22/%3E%3Cpath d=%22M14 5h6v4h-6z%22/%3E%3Cpath d=%22M14 13h6v6h-6z%22/%3E%3Cpath d=%22M4 15h6v4H4z%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/components'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/components"] .text::before {
   --ds-icon-bg: rgb(168 85 247 / 11%);
   --ds-icon-border: rgb(168 85 247 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237c3aed%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%225%22 y=%225%22 width=%226%22 height=%226%22 rx=%221.5%22/%3E%3Crect x=%2213%22 y=%225%22 width=%226%22 height=%226%22 rx=%221.5%22/%3E%3Crect x=%229%22 y=%2213%22 width=%226%22 height=%226%22 rx=%221.5%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237c3aed%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%225%22 y=%225%22 width=%226%22 height=%226%22 rx=%221.5%22/%3E%3Crect x=%2213%22 y=%225%22 width=%226%22 height=%226%22 rx=%221.5%22/%3E%3Crect x=%229%22 y=%2213%22 width=%226%22 height=%226%22 rx=%221.5%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/subpackages'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/subpackages"] .text::before {
   --ds-icon-bg: rgb(132 204 22 / 12%);
   --ds-icon-border: rgb(132 204 22 / 24%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234d7c0f%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7l8 4 8-4-8-4Z%22/%3E%3Cpath d=%22m4 12 8 4 8-4%22/%3E%3Cpath d=%22m4 8 8 4 8-4%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234d7c0f%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3 4 7l8 4 8-4-8-4Z%22/%3E%3Cpath d=%22m4 12 8 4 8-4%22/%3E%3Cpath d=%22m4 8 8 4 8-4%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/shared'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/shared"] .text::before {
   --ds-icon-bg: rgb(16 185 129 / 10%);
   --ds-icon-border: rgb(16 185 129 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%227%22 cy=%2212%22 r=%222.5%22/%3E%3Ccircle cx=%2217%22 cy=%227%22 r=%222.5%22/%3E%3Ccircle cx=%2217%22 cy=%2217%22 r=%222.5%22/%3E%3Cpath d=%22m9.3 10.9 5.4-2.8%22/%3E%3Cpath d=%22m9.3 13.1 5.4 2.8%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23047857%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%227%22 cy=%2212%22 r=%222.5%22/%3E%3Ccircle cx=%2217%22 cy=%227%22 r=%222.5%22/%3E%3Ccircle cx=%2217%22 cy=%2217%22 r=%222.5%22/%3E%3Cpath d=%22m9.3 10.9 5.4-2.8%22/%3E%3Cpath d=%22m9.3 13.1 5.4 2.8%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/utils'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/utils"] .text::before {
   --ds-icon-bg: rgb(234 179 8 / 11%);
   --ds-icon-border: rgb(234 179 8 / 24%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a16207%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M14.7 6.3a3 3 0 0 1 4.2 4.2l-7.8 7.8H7v-4.1l7.7-7.9Z%22/%3E%3Cpath d=%22m13.3 7.7-3-3%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a16207%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M14.7 6.3a3 3 0 0 1 4.2 4.2l-7.8 7.8H7v-4.1l7.7-7.9Z%22/%3E%3Cpath d=%22m13.3 7.7-3-3%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/workers'] .text::before {
+.VPSidebar a[href*="/guide/directory-structure/workers"] .text::before {
   --ds-icon-bg: rgb(244 63 94 / 11%);
   --ds-icon-border: rgb(244 63 94 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be185d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%227%22 y=%227%22 width=%2210%22 height=%229%22 rx=%222%22/%3E%3Cpath d=%22M9 7V5%22/%3E%3Cpath d=%22M15 7V5%22/%3E%3Cpath d=%22M10 11h.01%22/%3E%3Cpath d=%22M14 11h.01%22/%3E%3Cpath d=%22M12 16v3%22/%3E%3Cpath d=%22M9 19h6%22/%3E%3C/svg%3E')};
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23be185d%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%227%22 y=%227%22 width=%2210%22 height=%229%22 rx=%222%22/%3E%3Cpath d=%22M9 7V5%22/%3E%3Cpath d=%22M15 7V5%22/%3E%3Cpath d=%22M10 11h.01%22/%3E%3Cpath d=%22M14 11h.01%22/%3E%3Cpath d=%22M12 16v3%22/%3E%3Cpath d=%22M9 19h6%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/typed-router'] .text::before {
-  --ds-icon-bg: rgb(192 38 211 / 10%);
-  --ds-icon-border: rgb(192 38 211 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a21caf%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 6h5v5H6z%22/%3E%3Cpath d=%22M13 13h5v5h-5z%22/%3E%3Cpath d=%22M11 8h2a3 3 0 0 1 3 3v2%22/%3E%3C/svg%3E')};
+.VPSidebar a[href*="/guide/directory-structure/generated-files"] .text::before {
+  --ds-icon-bg: rgb(37 99 235 / 12%);
+  --ds-icon-border: rgb(37 99 235 / 24%);
+  --ds-icon: #{ds-icon(
+      "%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22%3E%3Cpath d=%22M7 4h7l5 5v11H7z%22 stroke=%22%231d4ed8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M14 4v5h5%22 stroke=%22%231d4ed8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M9.2 15h5.6%22 stroke=%22%231d4ed8%22 stroke-width=%222%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M10.4 12.2h3.2%22 stroke=%22%231d4ed8%22 stroke-width=%222%22 stroke-linecap=%22round%22/%3E%3C/svg%3E"
+    )};
 }
 
-.VPSidebar a[href*='/guide/directory-structure/typed-components'] .text::before {
-  --ds-icon-bg: rgb(139 92 246 / 11%);
-  --ds-icon-border: rgb(139 92 246 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%237c3aed%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M7 7h7l3 3-7 7-3-3V7Z%22/%3E%3Ccircle cx=%2211%22 cy=%2211%22 r=%221%22/%3E%3Cpath d=%22M14 7h3v3%22/%3E%3C/svg%3E')};
-}
-
-.VPSidebar a[href*='/guide/directory-structure/components-dts'] .text::before {
-  --ds-icon-bg: rgb(120 113 108 / 11%);
-  --ds-icon-border: rgb(120 113 108 / 22%);
-  --ds-icon: #{ds-icon('%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2357534e%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M7 4h7l5 5v11H7z%22/%3E%3Cpath d=%22M14 4v5h5%22/%3E%3Cpath d=%22M10 13h4%22/%3E%3Cpath d=%22M10 17h4%22/%3E%3C/svg%3E')};
-}
-
-html.dark .VPSidebar a[href*='/guide/directory-structure/'] .text::before {
+html.dark .VPSidebar a[href*="/guide/directory-structure/"] .text::before {
   box-shadow: 0 1px 0 rgb(255 255 255 / 4%) inset;
 }
 .VPSidebarItem.level-1.is-link.is-active.has-active > .item > .link .text {
@@ -471,7 +590,11 @@ html.dark .VPSidebar a[href*='/guide/directory-structure/'] .text::before {
 }
 .VPSidebarItem.has-active > .item > .link,
 .VPSidebarItem.is-active > .item > .link {
-  background: linear-gradient(90deg, color.change($p2, $alpha: 0.18), transparent 60%);
+  background: linear-gradient(
+    90deg,
+    color.change($p2, $alpha: 0.18),
+    transparent 60%
+  );
   border-left-color: #{$p1};
   box-shadow:
     0 6px 14px color.change($p1, $alpha: 0.12),
@@ -484,12 +607,21 @@ html.dark .VPSidebar a[href*='/guide/directory-structure/'] .text::before {
   transform: translateX(3px); /* avoid extra shift when hovering active */
 }
 .VPSidebarItem .link::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: -4px;
   background:
-    radial-gradient(circle at 10% 50%, color.change($p1, $alpha: 0.22), transparent 45%),
-    linear-gradient(120deg, transparent 0%, color.change($p1, $alpha: 0.35) 35%, transparent 70%);
+    radial-gradient(
+      circle at 10% 50%,
+      color.change($p1, $alpha: 0.22),
+      transparent 45%
+    ),
+    linear-gradient(
+      120deg,
+      transparent 0%,
+      color.change($p1, $alpha: 0.35) 35%,
+      transparent 70%
+    );
   opacity: 0;
   transform: translateX(-35%) scaleX(0.6);
   filter: blur(12px);
