@@ -80,11 +80,56 @@ export type ShortEmits<T extends Record<string, any>> = UnionToIntersection<Reco
   [K in keyof T]: (evt: K, ...args: T[K]) => void
 }>>
 
+type ScriptSetupNativePropertyOption = WechatMiniprogram.Component.PropertyOption
+type ScriptSetupNativeMethodOption = WechatMiniprogram.Component.MethodOption
+type ScriptSetupNativeBehaviorOption = WechatMiniprogram.Component.IEmptyArray
+
+type ScriptSetupNativeInstance<
+  D extends object,
+  P extends ScriptSetupNativePropertyOption,
+  M extends ScriptSetupNativeMethodOption,
+> = WechatMiniprogram.Component.Instance<D, P, M, ScriptSetupNativeBehaviorOption>
+
+type ScriptSetupObservedProperty<
+  TProperty extends WechatMiniprogram.Component.AllFullProperty,
+  TInstance,
+> = Omit<TProperty, 'observer'> & {
+  observer?: string | ((
+    this: TInstance,
+    newVal: WechatMiniprogram.Component.PropertyToData<TProperty>,
+    oldVal: WechatMiniprogram.Component.PropertyToData<TProperty>,
+    changedPath: Array<string | number>,
+  ) => void)
+}
+
+type ScriptSetupPropertyObserver<
+  TProperty extends WechatMiniprogram.Component.AllProperty,
+  TInstance,
+>
+  = TProperty extends infer TCurrent extends WechatMiniprogram.Component.AllFullProperty
+    ? ScriptSetupObservedProperty<TCurrent, TInstance>
+    : TProperty
+
+type ScriptSetupNativeProperties<
+  D extends object,
+  P extends ScriptSetupNativePropertyOption,
+  M extends ScriptSetupNativeMethodOption,
+> = {
+  [K in keyof P]: ScriptSetupPropertyObserver<P[K], ScriptSetupNativeInstance<D, P, M>>
+}
+
+type ScriptSetupNativeMethods<
+  D extends object,
+  P extends ScriptSetupNativePropertyOption,
+  M extends ScriptSetupNativeMethodOption,
+> = M & ThisType<ScriptSetupNativeInstance<D, P, M>>
+
 export type ScriptSetupDefineOptions<
   D extends object = Record<string, any>,
   C extends ComputedDefinitions = ComputedDefinitions,
   M extends MethodDefinitions = MethodDefinitions,
-> = Omit<DefineComponentOptions<ComponentPropsOptions, D, C, M>, 'props' | 'options'> & {
+  P extends ScriptSetupNativePropertyOption = ScriptSetupNativePropertyOption,
+> = Omit<DefineComponentOptions<ComponentPropsOptions, D, C, M>, 'props' | 'options' | 'data' | 'methods'> & {
   /**
    * props 必须通过 defineProps() 声明。
    */
@@ -105,6 +150,18 @@ export type ScriptSetupDefineOptions<
    * 小程序 Component 选项（multipleSlots/styleIsolation 等）。
    */
   options?: WechatMiniprogram.Component.ComponentOptions
+  /**
+   * 小程序原生 properties。
+   */
+  properties?: ScriptSetupNativeProperties<D, P, M>
+  /**
+   * 小程序原生 data。
+   */
+  data?: D | (() => D)
+  /**
+   * 小程序原生 methods。
+   */
+  methods?: ScriptSetupNativeMethods<D, P, M>
   /**
    * setup 执行时机（默认 attached）。
    */

@@ -4,14 +4,115 @@ import { confirmDialog } from '@/hooks/useDialog'
 import { showToast } from '@/hooks/useToast'
 import { OrderButtonTypes } from '../../config'
 
-defineOptions({
+interface SharePayload {
+  goodsImg?: string
+  goodsName?: string
+  groupId?: string | number
+  promotionId?: string | number
+  remainMember?: number
+  groupPrice?: number
+  storeId?: string | number
+}
+
+interface OrderButton {
+  type?: number
+  name?: string
+  primary?: boolean
+  openType?: string
+  dataShare?: SharePayload
+}
+
+interface OrderGoods {
+  buttons?: OrderButton[] | null
+  imgUrl?: string
+  logisticsNo?: string
+  name?: string
+  num?: number
+  price?: number
+  skuId?: string
+  specs?: string
+  spuId?: string
+  thumb?: string
+  title?: string
+}
+
+interface OrderData {
+  amount?: number
+  buttonVOs?: OrderButton[] | null
+  buttons?: OrderButton[] | null
+  createTime?: string
+  goodsList?: OrderGoods[] | null
+  groupInfoVo?: {
+    groupId?: string | number
+    groupPrice?: number
+    promotionId?: string | number
+    remainMember?: number
+  } | null
+  logisticsNo?: string
+  orderNo?: string
+  status?: number
+  storeId?: string | number
+  totalAmount?: number
+}
+
+interface ButtonGroups {
+  left: OrderButton[]
+  right: OrderButton[]
+}
+
+interface OrderButtonTapEvent extends WechatMiniprogram.TouchEvent {
+  currentTarget: WechatMiniprogram.TouchEvent['currentTarget'] & {
+    dataset: WechatMiniprogram.IAnyObject & {
+      type?: number | string
+    }
+  }
+}
+
+interface OrderButtonBarData {
+  buttons: ButtonGroups
+}
+
+type OrderButtonBarProperties = Record<string, WechatMiniprogram.Component.AllProperty> & {
+  order: {
+    type: ObjectConstructor
+  }
+  goodsIndex: {
+    type: NumberConstructor
+    value: null
+  }
+  isBtnMax: {
+    type: BooleanConstructor
+    value: false
+  }
+}
+
+type OrderButtonBarMethods = Record<string, (...args: any[]) => any> & {
+  onOrderBtnTap: (this: OrderButtonBarInstance, e: OrderButtonTapEvent) => void
+  onDelete: (this: OrderButtonBarInstance) => void
+  onCancel: (this: OrderButtonBarInstance) => void
+  onConfirm: (this: OrderButtonBarInstance) => void
+  onPay: (this: OrderButtonBarInstance) => void
+  onBuyAgain: (this: OrderButtonBarInstance) => void
+  onApplyRefund: (this: OrderButtonBarInstance, order: OrderData) => void
+  onViewRefund: (this: OrderButtonBarInstance) => void
+  onAddComment: (this: OrderButtonBarInstance, order: OrderData) => void
+}
+
+type OrderButtonBarInstance = WechatMiniprogram.Component.Instance<
+  OrderButtonBarData,
+  OrderButtonBarProperties,
+  OrderButtonBarMethods,
+  []
+>
+
+defineOptions<OrderButtonBarData, never, OrderButtonBarMethods, OrderButtonBarProperties>({
   options: {
     addGlobalClass: true,
   },
   properties: {
     order: {
       type: Object,
-      observer(order) {
+      observer(this: OrderButtonBarInstance, order: OrderData) {
         if (!order) { return }
 
         const goodsList = Array.isArray(order.goodsList) ? order.goodsList : []
@@ -22,7 +123,7 @@ defineOptions({
           this.setData({
             buttons: {
               left: [],
-              right: (goods.buttons || []).filter(b => b.type == OrderButtonTypes.APPLY_REFUND),
+              right: (goods.buttons || []).filter((b: OrderButton) => b.type === OrderButtonTypes.APPLY_REFUND),
             },
           })
           return
@@ -30,7 +131,7 @@ defineOptions({
         // 订单的button bar 不显示申请售后按钮
         const buttonsRight = (order.buttons || []
         // .filter((b) => b.type !== OrderButtonTypes.APPLY_REFUND)
-        ).map((button) => {
+        ).map((button: OrderButton) => {
           // 邀请好友拼团按钮
           if (button.type === OrderButtonTypes.INVITE_GROUPON && order.groupInfoVo) {
             const {
@@ -61,7 +162,7 @@ defineOptions({
         })
         // 删除订单按钮单独挪到左侧
         const deleteBtnIndex = buttonsRight.findIndex(b => b.type === OrderButtonTypes.DELETE)
-        let buttonsLeft = []
+        let buttonsLeft: OrderButton[] = []
         if (deleteBtnIndex > -1) {
           buttonsLeft = buttonsRight.splice(deleteBtnIndex, 1)
         }
@@ -87,33 +188,33 @@ defineOptions({
       buttons: {
         left: [],
         right: [],
-      },
+      } as ButtonGroups,
     }
   },
   methods: {
     // 点击【订单操作】按钮，根据按钮类型分发
-    onOrderBtnTap(e) {
+    onOrderBtnTap(this: OrderButtonBarInstance, e: OrderButtonTapEvent) {
       const {
         type,
       } = e.currentTarget.dataset
-      switch (type) {
+      switch (Number(type)) {
         case OrderButtonTypes.DELETE:
-          this.onDelete(this.data.order)
+          this.onDelete()
           break
         case OrderButtonTypes.CANCEL:
-          this.onCancel(this.data.order)
+          this.onCancel()
           break
         case OrderButtonTypes.CONFIRM:
-          this.onConfirm(this.data.order)
+          this.onConfirm()
           break
         case OrderButtonTypes.PAY:
-          this.onPay(this.data.order)
+          this.onPay()
           break
         case OrderButtonTypes.APPLY_REFUND:
           this.onApplyRefund(this.data.order)
           break
         case OrderButtonTypes.VIEW_REFUND:
-          this.onViewRefund(this.data.order)
+          this.onViewRefund()
           break
         case OrderButtonTypes.COMMENT:
           this.onAddComment(this.data.order)
@@ -122,23 +223,35 @@ defineOptions({
           // 分享邀请好友拼团
           break
         case OrderButtonTypes.REBUY:
-          this.onBuyAgain(this.data.order)
+          this.onBuyAgain()
+          break
       }
     },
-    onCancel() {
+    onDelete(this: OrderButtonBarInstance) {
+      showToast({
+        context: this,
+        message: '你点击了删除订单',
+        icon: 'check-circle',
+      })
+    },
+    onCancel(this: OrderButtonBarInstance) {
       showToast({
         context: this,
         message: '你点击了取消订单',
         icon: 'check-circle',
       })
     },
-    onConfirm() {
-      confirmDialog({
+    onConfirm(this: OrderButtonBarInstance) {
+      const task = confirmDialog({
         title: '确认是否已经收到货？',
         content: '',
         confirmBtn: '确认收货',
         cancelBtn: '取消',
-      }).then(() => {
+      })
+      if (!task) {
+        return
+      }
+      task.then(() => {
         showToast({
           context: this,
           message: '你确认了确认收货',
@@ -152,24 +265,25 @@ defineOptions({
         })
       })
     },
-    onPay() {
+    onPay(this: OrderButtonBarInstance) {
       showToast({
         context: this,
         message: '你点击了去支付',
         icon: 'check-circle',
       })
     },
-    onBuyAgain() {
+    onBuyAgain(this: OrderButtonBarInstance) {
       showToast({
         context: this,
         message: '你点击了再次购买',
         icon: 'check-circle',
       })
     },
-    onApplyRefund(order) {
+    onApplyRefund(this: OrderButtonBarInstance, order: OrderData) {
       const goodsList = Array.isArray(order?.goodsList) ? order.goodsList : []
-      const goods = goodsList[this.properties.goodsIndex]
-      const params = {
+      const goodsIndex = typeof this.properties.goodsIndex === 'number' ? this.properties.goodsIndex : 0
+      const goods = goodsList[goodsIndex]
+      const params: Record<string, string | number | boolean | undefined> = {
         orderNo: order.orderNo,
         skuId: goods?.skuId ?? '19384938948343',
         spuId: goods?.spuId ?? '28373847384343',
@@ -182,12 +296,12 @@ defineOptions({
         payAmt: order.amount,
         canApplyReturn: true,
       }
-      const paramsStr = Object.keys(params).map(k => `${k}=${params[k]}`).join('&')
+      const paramsStr = Object.entries(params).map(([key, value]) => `${key}=${value ?? ''}`).join('&')
       wx.navigateTo({
         url: `/pages/order/apply-service/index?${paramsStr}`,
       })
     },
-    onViewRefund() {
+    onViewRefund(this: OrderButtonBarInstance) {
       showToast({
         context: this,
         message: '你点击了查看退款',
@@ -195,7 +309,7 @@ defineOptions({
       })
     },
     /** 添加订单评论 */
-    onAddComment(order) {
+    onAddComment(this: OrderButtonBarInstance, order: OrderData) {
       const imgUrl = order?.goodsList?.[0]?.thumb || ''
       const title = order?.goodsList?.[0]?.title || ''
       const specs = order?.goodsList?.[0]?.specs || ''

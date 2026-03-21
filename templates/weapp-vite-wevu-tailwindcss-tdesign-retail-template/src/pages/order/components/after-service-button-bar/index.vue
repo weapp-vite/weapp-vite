@@ -5,11 +5,70 @@ import { showToast } from '@/hooks/useToast'
 import { cancelRights } from '../../after-service-detail/api'
 import { ServiceButtonTypes } from '../../config'
 
-defineOptions({
+interface ServiceButton {
+  type?: number
+  name?: string
+  primary?: boolean
+  openType?: string
+  dataShare?: Record<string, unknown>
+}
+
+interface ServiceData {
+  buttonVOs?: ServiceButton[] | null
+  buttons?: ServiceButton[] | null
+  id?: string
+  logistics?: Record<string, unknown>
+  logisticsCompanyCode?: string
+  logisticsCompanyName?: string
+  logisticsNo?: string
+  logisticsVO?: Record<string, unknown>
+  remark?: string
+}
+
+interface ButtonGroups {
+  left: ServiceButton[]
+  right: ServiceButton[]
+}
+
+interface ServiceButtonTapEvent extends WechatMiniprogram.TouchEvent {
+  currentTarget: WechatMiniprogram.TouchEvent['currentTarget'] & {
+    dataset: WechatMiniprogram.IAnyObject & {
+      type?: number | string
+    }
+  }
+}
+
+interface AfterServiceButtonBarData {
+  service: ServiceData
+  buttons: ButtonGroups
+}
+
+type AfterServiceButtonBarProperties = Record<string, WechatMiniprogram.Component.AllProperty> & {
+  service: {
+    type: ObjectConstructor
+  }
+}
+
+type AfterServiceButtonBarMethods = Record<string, (...args: any[]) => any> & {
+  onServiceBtnTap: (this: AfterServiceButtonBarInstance, e: ServiceButtonTapEvent) => void
+  onFillTrackingNo: (this: AfterServiceButtonBarInstance, service: ServiceData) => void
+  viewDelivery: (this: AfterServiceButtonBarInstance, service: ServiceData) => void
+  onChangeTrackingNo: (this: AfterServiceButtonBarInstance, service: ServiceData) => void
+  onConfirm: (this: AfterServiceButtonBarInstance) => void
+}
+
+type AfterServiceButtonBarInstance = WechatMiniprogram.Component.Instance<
+  AfterServiceButtonBarData,
+  AfterServiceButtonBarProperties,
+  AfterServiceButtonBarMethods,
+  []
+>
+
+defineOptions<AfterServiceButtonBarData, never, AfterServiceButtonBarMethods, AfterServiceButtonBarProperties>({
   properties: {
     service: {
       type: Object,
-      observer(service) {
+      observer(this: AfterServiceButtonBarInstance, service: ServiceData) {
         const buttonsRight = service.buttons || service.buttonVOs || []
         this.setData({
           buttons: {
@@ -22,22 +81,22 @@ defineOptions({
   },
   data() {
     return {
-      service: {},
+      service: {} as ServiceData,
       buttons: {
         left: [],
         right: [],
-      },
+      } as ButtonGroups,
     }
   },
   methods: {
     // 点击【订单操作】按钮，根据按钮类型分发
-    onServiceBtnTap(e) {
+    onServiceBtnTap(this: AfterServiceButtonBarInstance, e: ServiceButtonTapEvent) {
       const {
         type,
       } = e.currentTarget.dataset
-      switch (type) {
+      switch (Number(type)) {
         case ServiceButtonTypes.REVOKE:
-          this.onConfirm(this.data.service)
+          this.onConfirm()
           break
         case ServiceButtonTypes.FILL_TRACKING_NO:
           this.onFillTrackingNo(this.data.service)
@@ -50,28 +109,32 @@ defineOptions({
           break
       }
     },
-    onFillTrackingNo(service) {
+    onFillTrackingNo(this: AfterServiceButtonBarInstance, service: ServiceData) {
       wx.navigateTo({
         url: `/pages/order/fill-tracking-no/index?rightsNo=${service.id}`,
       })
     },
-    viewDelivery(service) {
+    viewDelivery(this: AfterServiceButtonBarInstance, service: ServiceData) {
       wx.navigateTo({
         url: `/pages/order/delivery-detail/index?data=${JSON.stringify(service.logistics || service.logisticsVO)}&source=2`,
       })
     },
-    onChangeTrackingNo(service) {
+    onChangeTrackingNo(this: AfterServiceButtonBarInstance, service: ServiceData) {
       wx.navigateTo({
         url: `/pages/order/fill-tracking-no/index?rightsNo=${service.id}&logisticsNo=${service.logisticsNo}&logisticsCompanyName=${service.logisticsCompanyName}&logisticsCompanyCode=${service.logisticsCompanyCode}&remark=${service.remark || ''}`,
       })
     },
-    onConfirm() {
-      confirmDialog({
+    onConfirm(this: AfterServiceButtonBarInstance) {
+      const task = confirmDialog({
         title: '是否撤销退货申请？',
         content: '',
         confirmBtn: '撤销申请',
         cancelBtn: '不撤销',
-      }).then(() => {
+      })
+      if (!task) {
+        return
+      }
+      task.then(() => {
         const params = {
           rightsNo: this.data.service.id,
         }
@@ -99,7 +162,7 @@ defineComponentJson({
     <view class="left">
       <t-button
         v-for="(leftBtn, index) in buttons.left"
-        :key="type"
+        :key="leftBtn.type || index"
         size="extra-small"
         shape="round"
         t-class="order-btn delete-btn"
@@ -112,13 +175,13 @@ defineComponentJson({
     <view class="right">
       <t-button
         v-for="(rightBtn, index) in buttons.right"
-        :key="type"
+        :key="rightBtn.type || index"
         size="extra-small"
         :variant="rightBtn.primary ? 'base' : 'outline'"
         shape="round"
         :t-class="`order-btn ${rightBtn.primary ? 'primary' : 'normal'}`"
         :data-type="rightBtn.type"
-        :open-type="rightBtn.openType"
+        :open-type="rightBtn.openType || ''"
         :data-share="rightBtn.dataShare"
         @tap.stop="onServiceBtnTap"
       >

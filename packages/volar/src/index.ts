@@ -4,37 +4,17 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import process from 'node:process'
 import { name } from '../package.json'
-import { getSchemaForType } from './schema'
-
-const BLOCK_TYPE = 'json'
-const JS_LANG = 'js'
-const JSONC_LANG = 'jsonc'
-const JSON_LANG = 'json'
-const JSON5_LANG = 'json5'
-const PLUGIN_VERSION = 2.2 as const
-const TS_LANG = 'ts'
-
-const BACKSLASH_RE = /\\/g
-const NON_SPACE_RE = /\S/
-const WXS_MODULE_RE = /<wxs[\s\S]*?module\s*=\s*(?:"([^"]+)"|'([^']+)')[\s\S]*?\/?>/gi
-
-const FULL_CAPABILITIES = {
-  verification: true,
-  completion: true,
-  semantic: true,
-  navigation: true,
-  structure: true,
-  format: true,
-} as const
-
-const VOID_CAPABILITIES = {
-  verification: false,
-  completion: false,
-  semantic: false,
-  navigation: false,
-  structure: false,
-  format: false,
-} as const
+import { PLUGIN_VERSION } from './constants'
+import { getEmbeddedCodesFromCustomBlocks, resolveEmbeddedJsonBlock } from './jsonBlock'
+import {
+  appendScriptSetupDeclarations,
+  appendWxsDeclarations,
+  collectWxsModuleNames,
+  createDefineOptionsTemplateDeclarations,
+  createSyntheticScriptSetup,
+  resolveScriptSetupLang,
+  syncScriptBlockSource,
+} from './scriptSetup'
 
 const require = createRequire(
   typeof module !== 'undefined' && module.filename
@@ -59,163 +39,6 @@ function parseVueSfc(content: string, filename = 'component.vue') {
   catch {
     return undefined
   }
-}
-
-function collectWxsModuleNames(templateContent?: string) {
-  if (!templateContent) {
-    return []
-  }
-  const names = new Set<string>()
-  for (const match of templateContent.matchAll(WXS_MODULE_RE)) {
-    const name = match[1] ?? match[2]
-    if (name) {
-      names.add(name)
-    }
-  }
-  return [...names]
-}
-
-function createWxsModuleDeclarations(moduleNames: string[]) {
-  if (!moduleNames.length) {
-    return ''
-  }
-  return moduleNames
-    .map(name => `const ${name} = {} as Record<string, (...args: any[]) => any>`)
-    .join('\n')
-}
-
-function appendWxsDeclarations(code: string, moduleNames: string[]) {
-  const declarations = createWxsModuleDeclarations(moduleNames)
-  if (!declarations) {
-    return code
-  }
-  return code
-    ? `${code}\n\n${declarations}\n`
-    : `${declarations}\n`
-}
-
-function createSyntheticScriptSetup(moduleNames: string[]) {
-  const content = createWxsModuleDeclarations(moduleNames)
-  if (!content) {
-    return undefined
-  }
-  return {
-    type: 'script',
-    content,
-    loc: {
-      source: `<script setup lang="ts">\n${content}\n</script>`,
-      start: { column: 1, line: 1, offset: 0 },
-      end: { column: 1, line: 1, offset: 0 },
-    },
-    attrs: {
-      setup: true,
-      lang: 'ts',
-    },
-    lang: 'ts',
-    setup: true,
-    name: 'scriptSetup',
-  }
-}
-
-function normalizeFilename(filename?: string) {
-  if (!filename) {
-    return ''
-  }
-  return filename.replace(BACKSLASH_RE, '/')
-}
-
-function inferConfigType(filename?: string) {
-  const normalized = normalizeFilename(filename)
-  if (normalized.endsWith('/app.vue')) {
-    return 'App'
-  }
-  if (normalized.includes('/plugin/')) {
-    return 'Plugin'
-  }
-  if (normalized.includes('/components/')) {
-    return 'Component'
-  }
-  if (normalized.includes('/theme/')) {
-    return 'Theme'
-  }
-  if (normalized.includes('/sitemap')) {
-    return 'Sitemap'
-  }
-  return 'Page'
-}
-
-function normalizeLang(lang?: string) {
-  if (!lang) {
-    return JSON_LANG
-  }
-  const lower = lang.toLowerCase()
-  if (lower === 'txt') {
-    return JSON_LANG
-  }
-  return lower
-}
-
-function findExportDefaultExpression(
-  code: string,
-  tsModule: typeof ts,
-  lang: string,
-) {
-  const scriptKind = lang === TS_LANG ? tsModule.ScriptKind.TS : tsModule.ScriptKind.JS
-  const sourceFile = tsModule.createSourceFile(
-    `config.${lang}`,
-    code,
-    tsModule.ScriptTarget.Latest,
-    true,
-    scriptKind,
-  )
-
-  for (const statement of sourceFile.statements) {
-    if (tsModule.isExportAssignment(statement)) {
-      const expressionStart = statement.expression.getStart(sourceFile)
-      const expressionEnd = statement.expression.getEnd()
-      const leading = code.slice(0, statement.getStart(sourceFile))
-      const expression = code.slice(expressionStart, expressionEnd)
-      const trailing = code.slice(statement.getEnd())
-
-      return {
-        expression,
-        expressionStart,
-        expressionEnd,
-        leading,
-        trailing,
-      }
-    }
-  }
-
-  return null
-}
-
-function injectSchemaIntoJsonObject(content: string, schemaId: string) {
-  const trimmed = content.trim()
-  if (!trimmed.startsWith('{')) {
-    return content
-  }
-  const leftBraceIndex = content.indexOf('{')
-  if (leftBraceIndex < 0) {
-    return content
-  }
-  const afterLeft = content.slice(leftBraceIndex + 1)
-  const firstNonSpace = afterLeft.match(NON_SPACE_RE)
-  const nextCharIndex = firstNonSpace ? leftBraceIndex + 1 + firstNonSpace.index! : -1
-  const isEmptyObject = nextCharIndex >= 0 && content[nextCharIndex] === '}'
-
-  const schemaLine = `  "$schema": "${schemaId}"`
-  const injected = isEmptyObject
-    ? `{\n${schemaLine}\n}`
-    : `{\n${schemaLine},${content.slice(leftBraceIndex + 1)}`
-
-  // Keep original leading/trailing spaces around the JSON object as much as possible.
-  if (trimmed === content) {
-    return injected
-  }
-  const leading = content.slice(0, content.indexOf(trimmed))
-  const trailing = content.slice(content.indexOf(trimmed) + trimmed.length)
-  return `${leading}${injected}${trailing}`
 }
 
 /**
@@ -249,12 +72,22 @@ const plugin: VueLanguagePlugin = (ctx) => {
 
       const descriptor = parsed.descriptor
       const wxsModuleNames = collectWxsModuleNames(descriptor.template?.content)
-      if (!wxsModuleNames.length) {
+      const scriptSetup = descriptor.scriptSetup
+      const scriptSetupLang = resolveScriptSetupLang(scriptSetup?.lang)
+      const defineOptionsDeclarations = scriptSetup?.content && tsModule
+        ? createDefineOptionsTemplateDeclarations(scriptSetup.content, tsModule, scriptSetupLang)
+        : ''
+
+      if (!wxsModuleNames.length && !defineOptionsDeclarations) {
         return parsed
       }
 
       if (descriptor.scriptSetup) {
-        descriptor.scriptSetup.content = appendWxsDeclarations(descriptor.scriptSetup.content, wxsModuleNames)
+        descriptor.scriptSetup.content = appendScriptSetupDeclarations(
+          appendWxsDeclarations(descriptor.scriptSetup.content, wxsModuleNames),
+          defineOptionsDeclarations,
+        )
+        syncScriptBlockSource(descriptor.scriptSetup)
       }
       else {
         descriptor.scriptSetup = createSyntheticScriptSetup(wxsModuleNames) as unknown as NonNullable<typeof descriptor.scriptSetup>
@@ -263,138 +96,10 @@ const plugin: VueLanguagePlugin = (ctx) => {
       return parsed
     },
     getEmbeddedCodes(_, sfc) {
-      const names = []
-      for (let i = 0; i < sfc.customBlocks.length; i++) {
-        const block = sfc.customBlocks[i]
-        if (block.type === BLOCK_TYPE) {
-          const normalizedLang = normalizeLang(block.lang)
-          const isJsLike = normalizedLang === JS_LANG || normalizedLang === TS_LANG
-
-          if (isJsLike) {
-            // For js/ts blocks, use TypeScript for richer IntelliSense
-            names.push({ id: `${BLOCK_TYPE}_${i}`, lang: TS_LANG })
-            continue
-          }
-
-          // json/jsonc/json5 blocks all allow comments at runtime, so always map to jsonc for IDE.
-          // json5 has no first-class language id, so it also maps to jsonc.
-          const embeddedLang = normalizedLang === JSON_LANG || normalizedLang === JSONC_LANG || normalizedLang === JSON5_LANG
-            ? JSONC_LANG
-            : JSON_LANG
-
-          names.push({ id: `${BLOCK_TYPE}_${i}`, lang: embeddedLang })
-        }
-      }
-      return names
+      return getEmbeddedCodesFromCustomBlocks(sfc)
     },
     resolveEmbeddedCode(fileName, sfc, embeddedCode) {
-      const match = embeddedCode.id.match(new RegExp(`^${BLOCK_TYPE}_(\\d+)$`))
-      if (!match) {
-        return
-      }
-      const index = Number.parseInt(match[1])
-      const block = sfc.customBlocks[index]
-      if (!block) {
-        return
-      }
-      const normalizedLang = normalizeLang(block.lang)
-      const configType = inferConfigType(fileName)
-
-      // If no schematics types available, use plain code
-      if (!hasSchematicsTypes) {
-        embeddedCode.content.push([
-          block.content,
-          block.name,
-          0,
-          FULL_CAPABILITIES,
-        ])
-        return
-      }
-
-      const userWantsJs = normalizedLang === JS_LANG || normalizedLang === TS_LANG
-      if (userWantsJs) {
-        const parsed = tsModule && findExportDefaultExpression(block.content, tsModule, normalizedLang)
-        if (parsed && hasSchematicsTypes) {
-          const typeImport = `import type { ${configType} as __WeappConfig } from '@weapp-core/schematics'\n`
-          const helper = 'const __weapp_defineConfig = <T extends __WeappConfig>(config: T) => config\n\n'
-
-          embeddedCode.content.push([
-            `${typeImport}${helper}`,
-            undefined,
-            0,
-            VOID_CAPABILITIES,
-          ])
-
-          if (parsed.leading) {
-            embeddedCode.content.push([
-              parsed.leading,
-              block.name,
-              0,
-              FULL_CAPABILITIES,
-            ])
-          }
-
-          embeddedCode.content.push([
-            'export default __weapp_defineConfig(',
-            undefined,
-            parsed.expressionStart,
-            VOID_CAPABILITIES,
-          ])
-
-          embeddedCode.content.push([
-            parsed.expression,
-            block.name,
-            parsed.expressionStart,
-            FULL_CAPABILITIES,
-          ])
-
-          embeddedCode.content.push([
-            ')',
-            undefined,
-            parsed.expressionEnd,
-            VOID_CAPABILITIES,
-          ])
-
-          if (parsed.trailing) {
-            embeddedCode.content.push([
-              parsed.trailing,
-              block.name,
-              parsed.expressionEnd,
-              FULL_CAPABILITIES,
-            ])
-          }
-          return
-        }
-
-        // Fallback: keep user code intact to avoid breaking JS/TS,
-        // still leveraging TypeScript language mode for IntelliSense.
-        embeddedCode.content.push([
-          block.content,
-          block.name,
-          0,
-          FULL_CAPABILITIES,
-        ])
-        return
-      }
-
-      // Default: JSON/JSONC/JSON5 mode
-      const schema = getSchemaForType(configType)
-      if (schema && schema.$id && !block.content.includes('$schema')) {
-        embeddedCode.content.push([
-          injectSchemaIntoJsonObject(block.content, schema.$id),
-          block.name,
-          0,
-          FULL_CAPABILITIES,
-        ])
-        return
-      }
-
-      embeddedCode.content.push([
-        block.content,
-        block.name,
-        0,
-        FULL_CAPABILITIES,
-      ])
+      resolveEmbeddedJsonBlock(fileName, sfc, embeddedCode, tsModule, hasSchematicsTypes)
     },
   }
 }
