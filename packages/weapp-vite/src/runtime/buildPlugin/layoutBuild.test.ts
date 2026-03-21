@@ -96,6 +96,74 @@ async function writeProjectFiles(root: string) {
   ].join('\n'), 'utf8')
 }
 
+async function writeScriptlessLayoutProjectFiles(root: string) {
+  const srcRoot = path.join(root, 'src')
+  await fs.ensureDir(path.join(srcRoot, 'pages', 'index'))
+  await fs.ensureDir(path.join(srcRoot, 'layouts'))
+
+  await fs.writeJson(path.join(root, 'package.json'), {
+    name: 'layout-build-scriptless-test',
+    private: true,
+    version: '0.0.0',
+  }, { spaces: 2 })
+
+  await fs.ensureSymlink(path.join(process.cwd(), 'node_modules'), path.join(root, 'node_modules'))
+
+  await fs.writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx1234567890abce',
+    compileType: 'miniprogram',
+    miniprogramRoot: 'dist/',
+    srcMiniprogramRoot: 'src/',
+    setting: {},
+  }, { spaces: 2 })
+
+  await fs.writeFile(path.join(root, 'vite.config.ts'), [
+    `import { defineConfig } from '${DEFINE_CONFIG_IMPORT}'`,
+    '',
+    'export default defineConfig({',
+    '  weapp: {',
+    '    srcRoot: \'src\',',
+    '  },',
+    '})',
+    '',
+  ].join('\n'), 'utf8')
+
+  await fs.writeFile(path.join(srcRoot, 'app.vue'), [
+    '<script setup lang="ts">',
+    'defineAppJson({',
+    '  pages: [',
+    '    \'pages/index/index\',',
+    '  ],',
+    '})',
+    '</script>',
+    '',
+  ].join('\n'), 'utf8')
+
+  await fs.writeFile(path.join(srcRoot, 'layouts', 'default.vue'), [
+    '<script setup lang="ts">',
+    'defineComponentJson({',
+    '  component: true,',
+    '})',
+    '</script>',
+    '<template>',
+    '  <view class="layout-default">',
+    '    <slot />',
+    '  </view>',
+    '</template>',
+    '',
+  ].join('\n'), 'utf8')
+
+  await fs.writeFile(path.join(srcRoot, 'pages', 'index', 'index.vue'), [
+    '<script setup lang="ts">',
+    'definePageMeta({ layout: \'default\' })',
+    '</script>',
+    '<template>',
+    '  <view>hello</view>',
+    '</template>',
+    '',
+  ].join('\n'), 'utf8')
+}
+
 describe('layout build regression', () => {
   afterAll(async () => {
     await Promise.all(tempRoots.map(root => fs.remove(root)))
@@ -136,5 +204,35 @@ describe('layout build regression', () => {
     expect(layoutChunk!.imports).toContain('common.js')
     expect(pageChunk!.imports).toContain('common.js')
     expect(String(pageJson!.source)).toContain('"weapp-layout-default": "/layouts/default"')
+  })
+
+  it('emits a js stub for macro-only vue layouts', async () => {
+    const root = await createTempRoot()
+    await writeScriptlessLayoutProjectFiles(root)
+
+    const ctx = await createCompilerContext({
+      cwd: root,
+      isDev: false,
+      mode: 'production',
+      inlineConfig: {
+        build: {
+          write: false,
+        },
+      },
+    })
+
+    const buildResult = await ctx.buildService.build()
+    const outputs = Array.isArray(buildResult)
+      ? buildResult.flatMap(item => item.output)
+      : buildResult.output
+
+    const layoutJs = outputs.find(output => output.fileName === 'layouts/default.js')
+    const layoutJson = outputs.find(output => output.fileName === 'layouts/default.json')
+    const layoutWxml = outputs.find(output => output.fileName === 'layouts/default.wxml')
+
+    expect(layoutJs).toBeTruthy()
+    expect(layoutJs!.type === 'asset' ? String(layoutJs.source).length : layoutJs.code.length).toBeGreaterThan(0)
+    expect(layoutJson).toBeTruthy()
+    expect(layoutWxml).toBeTruthy()
   })
 })

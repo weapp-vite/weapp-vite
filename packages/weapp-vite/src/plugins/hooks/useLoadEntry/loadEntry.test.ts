@@ -27,6 +27,7 @@ const {
   mockApplyPageLayoutPlanToNativePage,
   mockInjectNativePageLayoutRuntime,
   mockCollectNativeLayoutAssets,
+  mockCompileVueFile,
 } = vi.hoisted(() => {
   const innerMagicStringPrepend = vi.fn()
   const innerMagicStringToString = vi.fn().mockReturnValue('transformed')
@@ -65,6 +66,9 @@ const {
     style: undefined,
     script: undefined,
   }))
+  const innerCompileVueFile = vi.fn(async () => ({
+    script: undefined,
+  }))
 
   return {
     magicStringPrependMock: innerMagicStringPrepend,
@@ -82,6 +86,7 @@ const {
     mockApplyPageLayoutPlanToNativePage: innerApplyPageLayoutPlanToNativePage,
     mockInjectNativePageLayoutRuntime: innerInjectNativePageLayoutRuntime,
     mockCollectNativeLayoutAssets: innerCollectNativeLayoutAssets,
+    mockCompileVueFile: innerCompileVueFile,
   }
 })
 
@@ -163,6 +168,15 @@ vi.mock('../../vue/transform/pageLayout', () => {
     applyPageLayoutPlanToNativePage: mockApplyPageLayoutPlanToNativePage,
     injectNativePageLayoutRuntime: mockInjectNativePageLayoutRuntime,
     collectNativeLayoutAssets: mockCollectNativeLayoutAssets,
+  }
+})
+
+vi.mock('wevu/compiler', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('wevu/compiler')>()
+  return {
+    __esModule: true,
+    ...actual,
+    compileVueFile: mockCompileVueFile,
   }
 })
 
@@ -278,7 +292,9 @@ function createLoader(options?: CreateLoaderOptions) {
 describe('createEntryLoader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    clearFileCaches()
+    if (typeof clearFileCaches === 'function') {
+      clearFileCaches()
+    }
     magicStringToStringMock.mockReturnValue('transformed')
     existsMock.mockResolvedValue(false)
     readFileMock.mockResolvedValue('console.log("noop")')
@@ -300,6 +316,9 @@ describe('createEntryLoader', () => {
       json: undefined,
       template: undefined,
       style: undefined,
+      script: undefined,
+    })
+    mockCompileVueFile.mockResolvedValue({
       script: undefined,
     })
   })
@@ -398,12 +417,16 @@ describe('createEntryLoader', () => {
     const initialPrependCount = magicStringPrependMock.mock.calls.length
 
     mockFsState.stylesheetExists = false
-    invalidateFileCache(stylesheet)
+    if (typeof invalidateFileCache === 'function') {
+      invalidateFileCache(stylesheet)
+    }
     await loader.call(pluginCtx, script, 'app')
     expect(magicStringPrependMock.mock.calls.length).toBe(initialPrependCount)
 
     mockFsState.stylesheetExists = true
-    invalidateFileCache(stylesheet)
+    if (typeof invalidateFileCache === 'function') {
+      invalidateFileCache(stylesheet)
+    }
     await loader.call(pluginCtx, script, 'app')
     expect(magicStringPrependMock.mock.calls.length).toBe(initialPrependCount + 1)
     expect(magicStringPrependMock).toHaveBeenLastCalledWith(`import '${stylesheet}';\n`)
@@ -1231,6 +1254,9 @@ import { VueCard } from '../../components'
         return '<script setup lang="ts">import { shared } from \"../shared/layout\"\nconst title: string = shared</script><template><slot /></template>'
       }
       return 'console.log("page-entry")'
+    })
+    mockCompileVueFile.mockResolvedValue({
+      script: 'const title = shared',
     })
 
     const { loader, emitEntriesChunks } = createLoader()
