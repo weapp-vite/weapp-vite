@@ -74,6 +74,10 @@ const DEFAULT_NODE_INCLUDE = [
   '../scripts/**/*.mts',
 ]
 
+const WINDOWS_PATH_SEPARATOR_PATTERN = /\\/g
+const LEADING_DOT_SLASH_PATTERN = /^\.\/+/
+const TRAILING_SLASH_PATTERN = /\/+$/
+
 function hasDependency(packageJson: Record<string, any> | undefined, name: string) {
   return Boolean(
     packageJson?.dependencies?.[name]
@@ -151,23 +155,25 @@ function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
   const packageJson = configService.packageJson
   const config = configService.weappViteConfig
   const userTypes = getManagedTypeScriptConfig(ctx)?.app?.compilerOptions?.types
-  if (Array.isArray(userTypes) && userTypes.length > 0) {
-    return [...userTypes]
-  }
-
   const legacyTypes = legacyConfig?.app?.compilerOptions?.types
-  if (Array.isArray(legacyTypes) && legacyTypes.length > 0) {
-    return [...legacyTypes]
-  }
 
   const types = [
     config.platform === 'alipay' && hasDependency(packageJson, '@mini-types/alipay')
       ? '@mini-types/alipay'
       : 'miniprogram-api-typings',
+    'weapp-vite/client',
   ]
 
   if (config.web?.enable !== false) {
     types.push('vite/client')
+  }
+
+  if (Array.isArray(legacyTypes) && legacyTypes.length > 0) {
+    types.push(...legacyTypes)
+  }
+
+  if (Array.isArray(userTypes) && userTypes.length > 0) {
+    types.push(...userTypes)
   }
 
   return unique(types)
@@ -176,8 +182,15 @@ function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
 function getAppPaths(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const configService = requireConfigService(ctx, '生成 app paths 前必须初始化 configService。')
   const userConfig = getManagedTypeScriptConfig(ctx)
+  const normalizedSrcRoot = typeof configService.srcRoot === 'string'
+    ? configService.srcRoot
+      .replace(WINDOWS_PATH_SEPARATOR_PATTERN, '/')
+      .replace(LEADING_DOT_SLASH_PATTERN, '')
+      .replace(TRAILING_SLASH_PATTERN, '')
+      || 'src'
+    : 'src'
   const defaultPaths: Record<string, string[]> = {
-    '@/*': ['src/*'],
+    '@/*': [`${normalizedSrcRoot}/*`],
   }
   if (hasDependency(configService.packageJson, 'wevu')) {
     defaultPaths['weapp-vite/typed-components'] = ['.weapp-vite/typed-components.d.ts']
@@ -249,13 +262,13 @@ function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyMan
     jsx: 'preserve',
     baseUrl: '..',
     resolveJsonModule: true,
-    types: getAppTypes(ctx, legacyConfig),
     allowJs: true,
     allowSyntheticDefaultImports: true,
     esModuleInterop: true,
     isolatedModules: true,
     ...legacyAppCompilerOptions,
     ...userAppCompilerOptions,
+    types: getAppTypes(ctx, legacyConfig),
     paths: getAppPaths(ctx, legacyConfig),
   }
 
