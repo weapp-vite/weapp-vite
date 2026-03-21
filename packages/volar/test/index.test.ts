@@ -167,4 +167,71 @@ const title = 'demo'
 
     expect(parsed?.descriptor.scriptSetup?.content).toContain(`const util = {} as Record<string, (...args: any[]) => any>`)
   })
+
+  it('injects defineOptions data, methods and properties into script setup bindings for template type checking', () => {
+    const source = `<script setup lang="ts">
+defineOptions({
+  properties: {
+    isBtnMax: {
+      type: Boolean,
+      value: false,
+    },
+  },
+  data() {
+    return {
+      buttons: {
+        left: [],
+        right: [],
+      },
+    }
+  },
+  methods: {
+    onOrderBtnTap() {},
+  },
+})
+</script>
+<template>
+  <view>{{ buttons.left.length }}</view>
+  <view>{{ isBtnMax ? 'max' : 'normal' }}</view>
+  <view @tap="onOrderBtnTap" />
+</template>`
+
+    const { generated } = getGeneratedServiceScript(source)
+    expect(generated).toContain('const buttons: any = null as any')
+    expect(generated).toContain('const isBtnMax: any = null as any')
+    expect(generated).toContain('const onOrderBtnTap: (...args: any[]) => any = null as any')
+    expect(generated).toContain('__VLS_ctx.buttons')
+    expect(generated).toContain('__VLS_ctx.isBtnMax')
+    expect(generated).toContain('__VLS_ctx.onOrderBtnTap')
+  })
+
+  it('supports defineOptions factory bindings for template type checking', () => {
+    const source = `<script setup lang="ts">
+defineOptions(() => ({
+  data() {
+    return {
+      total: 1,
+    }
+  },
+  computed: {
+    summary() {
+      return 'ok'
+    },
+  },
+  methods: {
+    onSubmit() {},
+  },
+}))
+</script>
+<template>
+  <view>{{ total }}</view>
+  <view>{{ summary }}</view>
+  <view @tap="onSubmit" />
+</template>`
+
+    const { generated } = getGeneratedServiceScript(source)
+    expect(generated).toContain('__VLS_ctx.total')
+    expect(generated).toContain('__VLS_ctx.summary')
+    expect(generated).toContain('__VLS_ctx.onSubmit')
+  })
 })

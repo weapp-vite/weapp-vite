@@ -1,5 +1,5 @@
-import { expectError, expectType } from 'tsd'
-import { defineEmits, defineModel, defineProps, withDefaults } from '@/index'
+import { expectType } from 'tsd'
+import { defineEmits, defineModel, defineOptions, defineProps, withDefaults } from '@/index'
 
 const propsByArray = defineProps(['foo', 'bar'])
 expectType<any>(propsByArray.foo)
@@ -46,7 +46,8 @@ expectType<'sm' | 'md'>(propsWithDefaults.size)
 const emitByArray = defineEmits(['change', 'update'])
 emitByArray('change')
 emitByArray('update', 1)
-expectError(emitByArray('close'))
+// @ts-expect-error invalid event name should be rejected
+emitByArray('close')
 
 const emitByObject = defineEmits({
   change: (value: number) => value > 0,
@@ -54,7 +55,8 @@ const emitByObject = defineEmits({
 })
 emitByObject('change', 1)
 emitByObject('open')
-expectError(emitByObject('change', '1'))
+// @ts-expect-error invalid payload type should be rejected
+emitByObject('change', '1')
 
 const emitByCallable = defineEmits<{
   (e: 'save'): void
@@ -62,8 +64,10 @@ const emitByCallable = defineEmits<{
 }>()
 emitByCallable('save')
 emitByCallable('update', 1)
-expectError(emitByCallable('update'))
-expectError(emitByCallable('cancel'))
+// @ts-expect-error missing payload should be rejected
+emitByCallable('update')
+// @ts-expect-error invalid event name should be rejected
+emitByCallable('cancel')
 
 const emitByNamedTuple = defineEmits<{
   change: []
@@ -74,9 +78,12 @@ emitByNamedTuple('change')
 emitByNamedTuple('update', 1)
 emitByNamedTuple('rename', 'name')
 emitByNamedTuple('rename', 'name', true)
-expectError(emitByNamedTuple('update'))
-expectError(emitByNamedTuple('update', '1'))
-expectError(emitByNamedTuple('unknown'))
+// @ts-expect-error missing tuple payload should be rejected
+emitByNamedTuple('update')
+// @ts-expect-error invalid payload type should be rejected
+emitByNamedTuple('update', '1')
+// @ts-expect-error invalid event name should be rejected
+emitByNamedTuple('unknown')
 
 const singleModel = defineModel<string>()
 expectType<string | undefined>(singleModel.value)
@@ -85,7 +92,8 @@ const [tupleModel, tupleModifiers] = defineModel<string, 'trim' | 'uppercase'>()
 expectType<string | undefined>(tupleModel.value)
 expectType<true | undefined>(tupleModifiers.trim)
 expectType<true | undefined>(tupleModifiers.uppercase)
-expectError(tupleModifiers.randomFlag)
+// @ts-expect-error unknown modifier should be rejected
+void tupleModifiers.randomFlag
 
 const requiredModel = defineModel<number>({ required: true })
 expectType<number>(requiredModel.value)
@@ -107,3 +115,78 @@ const transformedModel = defineModel<string, 'trim', string, number>({
 })
 expectType<string | undefined>(transformedModel.value)
 transformedModel.value = 12
+
+interface ScriptSetupMacroData {
+  label: string
+}
+
+type ScriptSetupMacroProperties = Record<string, WechatMiniprogram.Component.AllProperty> & {
+  count: {
+    type: NumberConstructor
+  }
+}
+
+type ScriptSetupMacroMethods = Record<string, (...args: any[]) => any> & {
+  onTap: (this: ScriptSetupMacroInstance) => void
+}
+
+type ScriptSetupMacroInstance = WechatMiniprogram.Component.Instance<
+  ScriptSetupMacroData,
+  ScriptSetupMacroProperties,
+  ScriptSetupMacroMethods,
+  []
+>
+
+defineOptions<ScriptSetupMacroData, never, ScriptSetupMacroMethods, ScriptSetupMacroProperties>({
+  setupLifecycle: 'created',
+  options: {
+    multipleSlots: true,
+  },
+  properties: {
+    count: {
+      type: Number,
+      observer(this: ScriptSetupMacroInstance, newVal, oldVal, changedPath) {
+        expectType<number>(newVal)
+        expectType<number>(oldVal)
+        expectType<Array<string | number>>(changedPath)
+        expectType<number>(this.data.count)
+        expectType<number>(this.properties.count)
+        expectType<string>(this.data.label)
+        this.setData({
+          count: newVal + oldVal,
+          label: changedPath.join('.'),
+        })
+      },
+    },
+  },
+  data() {
+    return {
+      label: 'ready',
+    }
+  },
+  methods: {
+    onTap(this: ScriptSetupMacroInstance) {
+      expectType<number>(this.data.count)
+      expectType<number>(this.properties.count)
+      expectType<string>(this.data.label)
+      this.setData({
+        count: this.data.count + 1,
+        label: 'done',
+      })
+      this.onTap()
+    },
+  },
+})
+
+defineOptions(() => ({
+  externalClasses: ['custom-class'],
+  options: {
+    addGlobalClass: true,
+  },
+}))
+
+defineOptions(async () => ({
+  options: {
+    styleIsolation: 'shared',
+  },
+}))
