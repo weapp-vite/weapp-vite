@@ -1,7 +1,7 @@
 // @ts-nocheck
-import Dialog from 'tdesign-miniprogram/dialog/index'
-import Toast from 'tdesign-miniprogram/toast/index'
 
+import { confirmDialog } from '@/hooks/useDialog'
+import { showToast } from '@/hooks/useToast'
 import { dispatchCommitPay } from '../../../services/order/orderConfirm'
 
 interface CommitPayParams {
@@ -52,9 +52,8 @@ export function commitPay(params: CommitPayParams) {
 export function paySuccess(payOrderInfo: PayOrderInfo) {
   const { payAmt, tradeNo, groupId, promotionId } = payOrderInfo
   // 支付成功
-  Toast({
+  showToast({
     context: this,
-    selector: '#t-toast',
     message: '支付成功',
     duration: 2000,
     icon: 'check-circle',
@@ -81,7 +80,7 @@ export function payFail(payOrderInfo, resultMsg) {
   if (resultMsg === 'requestPayment:fail cancel') {
     if (payOrderInfo.dialogOnCancel) {
       // 结算页，取消付款，dialog提示
-      Dialog.confirm({
+      confirmDialog({
         title: '是否放弃付款',
         content: '商品可能很快就会被抢空哦，是否放弃付款？',
         confirmBtn: '放弃',
@@ -92,9 +91,8 @@ export function payFail(payOrderInfo, resultMsg) {
     }
     else {
       // 订单列表页，订单详情页，取消付款，toast提示
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: '支付取消',
         duration: 2000,
         icon: 'close-circle',
@@ -102,9 +100,8 @@ export function payFail(payOrderInfo, resultMsg) {
     }
   }
   else {
-    Toast({
+    showToast({
       context: this,
-      selector: '#t-toast',
       message: `支付失败：${resultMsg}`,
       duration: 2000,
       icon: 'close-circle',

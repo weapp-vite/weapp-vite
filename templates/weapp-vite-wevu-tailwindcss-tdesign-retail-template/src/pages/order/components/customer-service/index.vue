@@ -1,5 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
+import { showToast } from '@/hooks/useToast'
+
 defineOptions({
   externalClasses: ['wr-class'],
   properties: {
@@ -31,7 +33,7 @@ defineOptions({
       })
     },
     onCallOnlineService() {
-      wx.showToast({
+      showToast({
         title: '你点击了在线客服',
       })
     },

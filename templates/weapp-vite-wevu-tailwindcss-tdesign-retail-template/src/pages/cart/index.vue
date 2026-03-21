@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Dialog from 'tdesign-miniprogram/dialog/index'
-import Toast from 'tdesign-miniprogram/toast/index'
 import { onLoad, onShow, reactive, ref, useNativeInstance } from 'wevu'
+import { confirmDialog } from '@/hooks/useDialog'
+import { showToast } from '@/hooks/useToast'
 import { fetchCartGroupData } from '../../services/cart/cart'
 
 type CartGroupData = Record<string, any>
@@ -224,9 +224,8 @@ function onGoodsSelect(e: any) {
   const isSelected = Boolean(e?.detail?.isSelected)
   const currentGoods = findGoods(spuId, skuId).currentGoods
   const title = currentGoods?.title || ''
-  Toast({
+  showToast({
     context: nativeInstance,
-    selector: '#t-toast',
     message: `${isSelected ? '选择' : '取消'}"${title.length > 5 ? `${title.slice(0, 5)}...` : title}"`,
     icon: '',
   })
@@ -249,14 +248,13 @@ function onQuantityChange(e: any) {
   if (quantity > stockQuantity) {
     // 加购数量等于库存数量的情况下继续加购
     if (currentGoods?.quantity === stockQuantity && quantity - stockQuantity === 1) {
-      Toast({
+      showToast({
         context: nativeInstance,
-        selector: '#t-toast',
         message: '当前商品库存不足',
       })
       return
     }
-    Dialog.confirm({
+    confirmDialog({
       title: '商品库存不足',
       content: `当前商品库存不足，最大可购买数量为${stockQuantity}件`,
       confirmBtn: '修改为最大可购买数量',
@@ -301,15 +299,14 @@ function clearInvalidGoods() {
 function onGoodsDelete(e: any) {
   const spuId = e?.detail?.goods?.spuId
   const skuId = e?.detail?.goods?.skuId
-  Dialog.confirm({
+  confirmDialog({
     content: '确认删除该商品吗?',
     confirmBtn: '确定',
     cancelBtn: '取消',
   }).then(() => {
     deleteGoodsService({ spuId, skuId }).then(() => {
-      Toast({
+      showToast({
         context: nativeInstance,
-        selector: '#t-toast',
         message: '商品删除成功',
       })
       refreshData()
@@ -319,9 +316,8 @@ function onGoodsDelete(e: any) {
 
 function onSelectAll(event: any) {
   const isAllSelected = Boolean(event?.detail?.isAllSelected)
-  Toast({
+  showToast({
     context: nativeInstance,
-    selector: '#t-toast',
     message: `${isAllSelected ? '取消' : '点击'}了全选按钮`,
   })
   // 调用接口改变全选
@@ -395,8 +391,6 @@ definePageJson({
     'cart-group': './components/cart-group/index',
     'cart-empty': './components/cart-empty/index',
     'cart-bar': './components/cart-bar/index',
-    't-toast': 'tdesign-miniprogram/toast/toast',
-    't-dialog': 'tdesign-miniprogram/dialog/dialog',
   },
 })
 </script>
@@ -431,6 +425,4 @@ definePageJson({
   </block>
   <!-- 购物车空态 -->
   <cart-empty v-else @handleClick="onGotoHome" />
-  <t-toast id="t-toast" />
-  <t-dialog id="t-dialog" />
 </template>

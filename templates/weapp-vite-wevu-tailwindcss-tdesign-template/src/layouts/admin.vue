@@ -6,6 +6,10 @@ const props = defineProps<{
 
 defineComponentJson({
   component: true,
+  usingComponents: {
+    't-dialog': 'tdesign-miniprogram/dialog/dialog',
+    't-toast': 'tdesign-miniprogram/toast/toast',
+  },
 })
 </script>
 
@@ -25,6 +29,8 @@ defineComponentJson({
     <view class="pb-[32rpx]">
       <slot />
     </view>
+    <t-toast id="t-toast" />
+    <t-dialog id="t-dialog" />
   </view>
 </template>
 

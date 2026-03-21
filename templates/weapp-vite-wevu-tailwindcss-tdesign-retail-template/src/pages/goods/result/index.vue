@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
 import { onLoad, onReachBottom, ref, useNativeInstance } from 'wevu'
+import { showToast } from '@/hooks/useToast'
 import { getSearchResult } from '../../../services/good/fetchSearchResult'
 
 type GoodsItem = Record<string, any>
@@ -117,7 +117,7 @@ async function init(reset = true) {
     }
     else {
       loading.value = false
-      wx.showToast({
+      showToast({
         title: '查询失败，请稍候重试',
       })
     }
@@ -142,9 +142,8 @@ function handleSubmit() {
 }
 
 function handleAddCart() {
-  Toast({
+  showToast({
     context: nativeInstance,
-    selector: '#t-toast',
     message: '点击加购',
   })
 }
@@ -221,9 +220,8 @@ function confirm() {
     message = '请输入正确范围'
   }
   if (message) {
-    Toast({
+    showToast({
       context: nativeInstance,
-      selector: '#t-toast',
       message,
     })
   }
@@ -286,7 +284,6 @@ definePageJson({
     't-search': 'tdesign-miniprogram/search/search',
     't-input': 'tdesign-miniprogram/input/input',
     't-empty': 'tdesign-miniprogram/empty/empty',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     'goods-list': '/components/goods-list/index',
     'filter': '/components/filter/index',
     'filter-popup': '/components/filter-popup/index',
@@ -373,5 +370,4 @@ definePageJson({
     </view>
     <load-more v-if="goodsList.length > 0" :status="loadMoreStatus" no-more-text="没有更多了" />
   </view>
-  <t-toast id="t-toast" />
 </template>

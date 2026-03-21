@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
+import { showToast } from '@/hooks/useToast'
 import { areaData } from '../../../../config/index'
 import { fetchDeliveryAddress } from '../../../../services/address/fetchAddress'
 import { rejectAddress, resolveAddress } from '../../../../services/address/list'
@@ -314,9 +314,8 @@ defineOptions({
             })
           }
           else {
-            Toast({
+            showToast({
               context: this,
-              selector: '#t-toast',
               message: '地点为空，请重新选择',
               icon: '',
               duration: 1000,
@@ -326,9 +325,8 @@ defineOptions({
         fail(res) {
           console.warn(`wx.chooseLocation fail: ${JSON.stringify(res)}`)
           if (res.errMsg !== 'chooseLocation:fail cancel') {
-            Toast({
+            showToast({
               context: this,
-              selector: '#t-toast',
               message: '地点错误，请重新选择',
               icon: '',
               duration: 1000,
@@ -343,9 +341,8 @@ defineOptions({
       submitActive,
     } = this.data
     if (!submitActive) {
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: this.privateData.verifyTips,
         icon: '',
         duration: 1000,
@@ -415,7 +412,6 @@ definePageJson({
     't-button': 'tdesign-miniprogram/button/button',
     't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
     't-cell': 'tdesign-miniprogram/cell/cell',
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-dialog': 'tdesign-miniprogram/dialog/dialog',
     't-switch': 'tdesign-miniprogram/switch/switch',
     't-location': '/pages/user/components/t-location/index',
@@ -574,5 +570,4 @@ definePageJson({
       <t-input v-model:value="labelValue" class="dialog__input [margin-top:32rpx] [border-radius:8rpx] [box-sizing:border-box] [--td-input-vertical-padding:12px] [--td-input-bg-color:#f3f3f3]" placeholder="请输入标签名称" borderless />
     </template>
   </t-dialog>
-  <t-toast id="t-toast" />
 </template>

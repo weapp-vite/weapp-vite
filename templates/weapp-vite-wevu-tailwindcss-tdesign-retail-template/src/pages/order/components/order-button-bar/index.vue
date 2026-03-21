@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Dialog from 'tdesign-miniprogram/dialog/index'
-import Toast from 'tdesign-miniprogram/toast/index'
+import { confirmDialog } from '@/hooks/useDialog'
+import { showToast } from '@/hooks/useToast'
 import { OrderButtonTypes } from '../../config'
 
 defineOptions({
@@ -126,47 +126,42 @@ defineOptions({
       }
     },
     onCancel() {
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: '你点击了取消订单',
         icon: 'check-circle',
       })
     },
     onConfirm() {
-      Dialog.confirm({
+      confirmDialog({
         title: '确认是否已经收到货？',
         content: '',
         confirmBtn: '确认收货',
         cancelBtn: '取消',
       }).then(() => {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: '你确认了确认收货',
           icon: 'check-circle',
         })
       }).catch(() => {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: '你取消了确认收货',
           icon: 'check-circle',
         })
       })
     },
     onPay() {
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: '你点击了去支付',
         icon: 'check-circle',
       })
     },
     onBuyAgain() {
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: '你点击了再次购买',
         icon: 'check-circle',
       })
@@ -193,9 +188,8 @@ defineOptions({
       })
     },
     onViewRefund() {
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: '你点击了查看退款',
         icon: '',
       })
@@ -216,8 +210,6 @@ defineComponentJson({
   component: true,
   usingComponents: {
     't-button': 'tdesign-miniprogram/button/button',
-    't-toast': 'tdesign-miniprogram/toast/toast',
-    't-dialog': 'tdesign-miniprogram/dialog/dialog',
   },
 })
 </script>
@@ -256,6 +248,4 @@ defineComponentJson({
       </t-button>
     </view>
   </view>
-  <t-toast id="t-toast" />
-  <t-dialog id="t-dialog" />
 </template>

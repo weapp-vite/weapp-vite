@@ -142,7 +142,5 @@ reload()
     <view v-if="hasEmpty" class="mt-[20rpx]">
       <EmptyState title="暂无匹配任务" description="调整筛选条件或刷新数据" action-text="重新加载" @action="reload" />
     </view>
-
-    <t-toast id="t-toast" />
   </view>
 </template>

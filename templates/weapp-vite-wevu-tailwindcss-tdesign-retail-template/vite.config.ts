@@ -1,13 +1,20 @@
+import path from 'node:path'
 import { UnifiedViteWeappTailwindcssPlugin } from 'weapp-tailwindcss/vite'
 import { defineConfig } from 'weapp-vite/config'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(import.meta.dirname, 'src'),
+    },
+  },
   weapp: {
     srcRoot: 'src',
     typescript: {
       app: {
         compilerOptions: {
           paths: {
+            '@/*': ['./src/*'],
             'tdesign-miniprogram/*': ['./node_modules/tdesign-miniprogram/miniprogram_dist/*'],
           },
         },

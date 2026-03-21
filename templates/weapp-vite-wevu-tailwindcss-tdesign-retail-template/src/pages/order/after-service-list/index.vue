@@ -217,8 +217,6 @@ definePageJson({
     'wr-order-card': '../components/order-card/index',
     'wr-goods-card': '../components/goods-card/index',
     't-icon': 'tdesign-miniprogram/icon/icon',
-    't-toast': 'tdesign-miniprogram/toast/toast',
-    't-dialog': 'tdesign-miniprogram/dialog/dialog',
     't-empty': 'tdesign-miniprogram/empty/empty',
     't-pull-down-refresh': 'tdesign-miniprogram/pull-down-refresh/pull-down-refresh',
   },
@@ -295,6 +293,4 @@ definePageJson({
       </wr-load-more>
     </t-pull-down-refresh>
   </view>
-  <t-toast id="t-toast" />
-  <t-dialog id="t-dialog" />
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
 import { onLoad, ref, useNativeInstance } from 'wevu'
+import { showToast } from '@/hooks/useToast'
 import { fetchPromotion } from '../../../services/promotion/detail'
 
 const nativeInstance = useNativeInstance()
@@ -61,17 +61,15 @@ function goodClickHandle(e: any) {
 }
 
 function cardClickHandle() {
-  Toast({
+  showToast({
     context: nativeInstance,
-    selector: '#t-toast',
     message: '点击加购',
   })
 }
 
 function bannerClickHandle() {
-  Toast({
+  showToast({
     context: nativeInstance,
-    selector: '#t-toast',
     message: '点击规则详情',
   })
 }
@@ -99,7 +97,6 @@ defineExpose({
 definePageJson({
   navigationBarTitleText: '营销详情',
   usingComponents: {
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-image': '/components/webp-image/index',
     't-icon': 'tdesign-miniprogram/icon/icon',
     'count-down': 'tdesign-miniprogram/count-down/count-down',
@@ -199,6 +196,5 @@ definePageJson({
         @addcart="cardClickHandle"
       />
     </view>
-    <t-toast id="t-toast" />
   </view>
 </template>

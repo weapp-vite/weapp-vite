@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
+import { showToast } from '@/hooks/useToast'
 
 defineOptions({
   options: {
@@ -282,9 +282,8 @@ defineOptions({
       const specId = e.currentTarget.dataset.specid
       const hasStock = e.currentTarget.dataset.hasstock
       if (!hasStock) {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: '该规格已售罄',
           icon: '',
           duration: 1000,
@@ -408,7 +407,6 @@ defineComponentJson({
     't-icon': 'tdesign-miniprogram/icon/icon',
     't-image': '/components/webp-image/index',
     't-stepper': 'tdesign-miniprogram/stepper/stepper',
-    't-toast': 'tdesign-miniprogram/toast/toast',
   },
 })
 </script>
@@ -500,5 +498,4 @@ defineComponentJson({
       <slot name="bottomSlot" />
     </view>
   </t-popup>
-  <t-toast id="t-toast" />
 </template>

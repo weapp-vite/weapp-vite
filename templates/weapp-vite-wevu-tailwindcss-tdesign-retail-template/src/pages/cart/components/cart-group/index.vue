@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Toast from 'tdesign-miniprogram/toast/index'
 import { ref, toRefs, useNativeInstance, watch } from 'wevu'
+import { showToast } from '@/hooks/useToast'
 import { hasPromotion, imgCut } from './helpers'
 
 defineOptions({
@@ -130,9 +130,8 @@ function input(e: any) {
 
 function overlimit(e: any) {
   const text = e?.detail?.type === 'minus' ? '该商品数量不能减少了哦' : '同一商品最多购买999件'
-  Toast({
+  showToast({
     context: nativeInstance,
-    selector: '#t-toast',
     message: text,
   })
 }
@@ -151,9 +150,8 @@ function selectStore(e: any) {
   const store = _storeGoods.value[storeIndex]
   const isSelected = !store?.isSelected
   if (store?.storeStockShortage && isSelected) {
-    Toast({
+    showToast({
       context: nativeInstance,
-      selector: '#t-toast',
       message: '部分商品库存不足',
     })
     return
@@ -221,7 +219,6 @@ defineExpose({
 defineComponentJson({
   component: true,
   usingComponents: {
-    't-toast': 'tdesign-miniprogram/toast/toast',
     't-icon': 'tdesign-miniprogram/icon/icon',
     't-stepper': 'tdesign-miniprogram/stepper/stepper',
     'swipeout': '/components/swipeout/index',
@@ -402,6 +399,4 @@ defineComponentJson({
     :zIndex="11001"
     @close="hideSpecsPopup"
   />
-
-  <t-toast id="t-toast" />
 </template>

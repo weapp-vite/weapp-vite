@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-nocheck
-import Dialog from 'tdesign-miniprogram/dialog/index'
-import Toast from 'tdesign-miniprogram/toast/index'
+import { confirmDialog } from '@/hooks/useDialog'
+import { showToast } from '@/hooks/useToast'
 import reasonSheet from '../components/reason-sheet/reasonSheet'
 import { create, getDeliverCompanyList, update } from './api'
 
@@ -25,7 +25,7 @@ defineOptions({
       remark = '',
     } = query
     if (!rightsNo) {
-      Dialog.confirm({
+      confirmDialog({
         title: '请选择售后单？',
         content: '',
         confirmBtn: '确认',
@@ -138,9 +138,8 @@ defineOptions({
   onSubmit() {
     const checkRes = this.checkParams()
     if (checkRes.errMsg) {
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: checkRes.errMsg,
         icon: '',
       })
@@ -169,9 +168,8 @@ defineOptions({
       this.setData({
         submitting: false,
       })
-      Toast({
+      showToast({
         context: this,
-        selector: '#t-toast',
         message: '保存成功',
         icon: '',
       })
@@ -188,9 +186,8 @@ defineOptions({
     wx.scanCode({
       scanType: ['barCode'],
       success: (res) => {
-        Toast({
+        showToast({
           context: this,
-          selector: '#t-toast',
           message: '扫码成功',
           icon: '',
         })
@@ -211,8 +208,6 @@ definePageJson({
     't-cell-group': 'tdesign-miniprogram/cell-group/cell-group',
     't-textarea': 'tdesign-miniprogram/textarea/textarea',
     't-input': 'tdesign-miniprogram/input/input',
-    't-toast': 'tdesign-miniprogram/toast/toast',
-    't-dialog': 'tdesign-miniprogram/dialog/dialog',
     't-button': 'tdesign-miniprogram/button/button',
     'ui-reason-sheet': '../components/reason-sheet/index',
   },
@@ -280,6 +275,4 @@ definePageJson({
     </view>
   </view>
   <ui-reason-sheet id="wr-reason-sheet" />
-  <t-toast id="t-toast" />
-  <t-dialog id="t-dialog" />
 </template>

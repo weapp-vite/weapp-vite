@@ -11,7 +11,7 @@ export interface AlertOptions {
   content: string
   context?: any
   selector?: string
-  title: string
+  title?: string
 }
 
 export interface ConfirmOptions {
@@ -20,7 +20,7 @@ export interface ConfirmOptions {
   content: string
   context?: any
   selector?: string
-  title: string
+  title?: string
 }
 
 function resolveDialogContext(context?: any) {
