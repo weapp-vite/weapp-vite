@@ -219,6 +219,32 @@ describe('runtime: template refs', () => {
     expect(componentInstance.count).toBe(1)
   })
 
+  it('writes custom fields on component template refs back to the original instance', () => {
+    const componentInstance: any = {
+      count: 0,
+    }
+
+    const instance: any = {
+      __wevuReadyCalled: true,
+      __wevu: { state: {}, proxy: {} },
+      selectComponent: vi.fn(() => componentInstance),
+      __wevuTemplateRefs: [
+        { selector: '.dialog', inFor: false, name: 'dialog', kind: 'component' },
+      ],
+    }
+
+    updateTemplateRefs(instance)
+
+    const refs = instance.__wevu.state.$refs
+    const onConfirm = vi.fn()
+    refs.dialog._onConfirm = onConfirm
+
+    expect(componentInstance._onConfirm).toBe(onConfirm)
+    expect(typeof refs.dialog._onConfirm).toBe('function')
+    refs.dialog._onConfirm('ok')
+    expect(onConfirm).toHaveBeenCalledWith('ok')
+  })
+
   it('scheduleTemplateRefUpdate batches updates', async () => {
     const resolver: QueryResolver = (selector) => {
       if (selector === '.batched') {

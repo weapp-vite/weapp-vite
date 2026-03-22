@@ -60,6 +60,51 @@ function resolveDialogContextWhenReady(
   })
 }
 
+function closeDialogHost(host: any) {
+  if (typeof host.close === 'function') {
+    host.close()
+    return
+  }
+  if (typeof host.setData === 'function') {
+    host.setData({ visible: false })
+  }
+}
+
+function attachHostDialogHandlers(
+  host: any,
+  handlers: {
+    onCancel?: (reason?: unknown) => void
+    onConfirm?: (value?: unknown) => void
+  },
+) {
+  const originalConfirm = typeof host._onConfirm === 'function' ? host._onConfirm : undefined
+  const originalCancel = typeof host._onCancel === 'function' ? host._onCancel : undefined
+
+  host._onConfirm = (value?: unknown) => {
+    host._onConfirm = originalConfirm
+    host._onCancel = originalCancel
+    if (originalConfirm) {
+      originalConfirm.call(host, value)
+    }
+    else {
+      closeDialogHost(host)
+    }
+    handlers.onConfirm?.(value)
+  }
+
+  host._onCancel = (reason?: unknown) => {
+    host._onConfirm = originalConfirm
+    host._onCancel = originalCancel
+    if (originalCancel) {
+      originalCancel.call(host, reason)
+    }
+    else {
+      closeDialogHost(host)
+    }
+    handlers.onCancel?.(reason)
+  }
+}
+
 function openAlertWithHost(host: any, payload: AlertOptions) {
   return new Promise((resolve) => {
     host.setData({
@@ -68,7 +113,9 @@ function openAlertWithHost(host: any, payload: AlertOptions) {
       cancelBtn: '',
       visible: true,
     })
-    host._onConfirm = resolve
+    attachHostDialogHandlers(host, {
+      onConfirm: resolve,
+    })
   })
 }
 
@@ -79,8 +126,10 @@ function openConfirmWithHost(host: any, payload: ConfirmOptions) {
       ...payload,
       visible: true,
     })
-    host._onConfirm = resolve
-    host._onCancel = reject
+    attachHostDialogHandlers(host, {
+      onConfirm: resolve,
+      onCancel: reject,
+    })
   })
 }
 

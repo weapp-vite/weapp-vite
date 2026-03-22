@@ -84,6 +84,61 @@ function triggerPageConfirm() {
     pushLog(`${label} 点击取消`)
   })
 }
+
+function inspectDialogHostE2E() {
+  const dialogBridge = resolveLayoutBridge(LAYOUT_DIALOG_BRIDGE_KEY, pageInstance)
+  const dialogHost = dialogBridge?.selectComponent?.(LAYOUT_DIALOG_BRIDGE_KEY) ?? null
+  return {
+    hasHost: Boolean(dialogHost),
+    visible: dialogHost?.data?.visible ?? dialogHost?.properties?.visible ?? null,
+    hasOnConfirm: typeof dialogHost?._onConfirm === 'function',
+    hasOnCancel: typeof dialogHost?._onCancel === 'function',
+    hasNativeConfirm: typeof dialogHost?.onConfirm === 'function',
+    hasNativeCancel: typeof dialogHost?.onCancel === 'function',
+    title: dialogHost?.data?.title ?? dialogHost?.properties?.title ?? '',
+    confirmBtn: dialogHost?.data?._confirm?.content ?? dialogHost?.properties?.confirmBtn ?? '',
+    cancelBtn: dialogHost?.data?._cancel?.content ?? dialogHost?.properties?.cancelBtn ?? '',
+  }
+}
+
+async function runPageAlertCloseE2E() {
+  triggerPageAlert()
+  await new Promise(resolve => setTimeout(resolve, 120))
+  return inspectDialogHostE2E()
+}
+
+async function runPageConfirmOpenE2E() {
+  triggerPageConfirm()
+  await new Promise(resolve => setTimeout(resolve, 120))
+  return inspectDialogHostE2E()
+}
+
+function getLayoutFeedbackLogsE2E() {
+  return actionLogs.value.slice()
+}
+
+async function runDialogHostConfirmE2E() {
+  const dialogBridge = resolveLayoutBridge(LAYOUT_DIALOG_BRIDGE_KEY, pageInstance)
+  const dialogHost = dialogBridge?.selectComponent?.(LAYOUT_DIALOG_BRIDGE_KEY) ?? null
+  dialogHost?.onConfirm?.()
+  await new Promise(resolve => setTimeout(resolve, 60))
+  return inspectDialogHostE2E()
+}
+
+async function runDialogHostCancelE2E() {
+  const dialogBridge = resolveLayoutBridge(LAYOUT_DIALOG_BRIDGE_KEY, pageInstance)
+  const dialogHost = dialogBridge?.selectComponent?.(LAYOUT_DIALOG_BRIDGE_KEY) ?? null
+  dialogHost?.onCancel?.()
+  await new Promise(resolve => setTimeout(resolve, 60))
+  return inspectDialogHostE2E()
+}
+
+void inspectDialogHostE2E
+void runPageAlertCloseE2E
+void runPageConfirmOpenE2E
+void getLayoutFeedbackLogsE2E
+void runDialogHostConfirmE2E
+void runDialogHostCancelE2E
 </script>
 
 <template>
