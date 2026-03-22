@@ -137,6 +137,32 @@ describe('createAutoRoutesService', () => {
     ]))
   })
 
+  it('does not treat subpackage entry files as pages when the subpackage already has a pages directory', async () => {
+    await fs.ensureDir(path.join(srcRoot, 'packageB', 'pages'))
+    await fs.writeFile(path.join(srcRoot, 'packageB', 'pages', 'apple.ts'), '// subpackage page', 'utf8')
+    await fs.writeFile(path.join(srcRoot, 'packageB', 'index.ts'), '// subpackage entry', 'utf8')
+
+    const ctx = createContext(true, {
+      subPackages: {
+        packageB: {},
+      },
+    })
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    expect(service.getSnapshot()).toEqual({
+      pages: ['pages/index/index'],
+      entries: ['pages/index/index', 'packageB/pages/apple'],
+      subPackages: [
+        {
+          root: 'packageB',
+          pages: ['pages/apple'],
+        },
+      ],
+    })
+  })
+
   it('restores routes from persistent cache without rescanning directories', async () => {
     const firstCtx = createContext({ enabled: true, persistentCache: true })
     const firstService = createAutoRoutesService(firstCtx)
