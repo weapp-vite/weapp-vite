@@ -53,6 +53,10 @@ For more details, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Thanks to [all contributors](https://github.com/weapp-vite/weapp-vite/graphs/contributors)!
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=weapp-vite/weapp-vite&type=Date)](https://star-history.com/#weapp-vite/weapp-vite&Date)
+
 ## Authors
 
 ice breaker <1324318532@qq.com>
