@@ -6,6 +6,8 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-template')
 const RETAIL_TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
+const TOAST_NODE_RE = /<t-toast[^>]+id="t-toast"[^>]*\/>/
+const DIALOG_NODE_RE = /<t-dialog[^>]+id="t-dialog"[^>]*\/>/
 
 async function buildTemplate(projectRoot: string, label: string) {
   await runWeappViteBuildWithLogCapture({
@@ -26,6 +28,11 @@ function expectNoFeedbackNodes(wxml: string) {
   expect(wxml).not.toContain('<t-dialog')
 }
 
+function expectSharedFeedbackNodes(wxml: string) {
+  expect(wxml).toMatch(TOAST_NODE_RE)
+  expect(wxml).toMatch(DIALOG_NODE_RE)
+}
+
 describe.sequential('template build: tdesign feedback layouts', () => {
   beforeAll(async () => {
     await buildTemplate(BASE_TEMPLATE_ROOT, 'ci:tdesign-feedback-layouts:base')
@@ -41,13 +48,11 @@ describe.sequential('template build: tdesign feedback layouts', () => {
     const defaultLayoutJs = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/default.js')
     const adminLayoutJs = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/admin.js')
 
-    expect(defaultLayoutWxml).toContain('<t-toast id="t-toast" />')
-    expect(defaultLayoutWxml).toContain('<t-dialog id="t-dialog" />')
-    expect(adminLayoutWxml).toContain('<t-toast id="t-toast" />')
-    expect(adminLayoutWxml).toContain('<t-dialog id="t-dialog" />')
+    expectSharedFeedbackNodes(defaultLayoutWxml)
+    expectSharedFeedbackNodes(adminLayoutWxml)
     expectNoFeedbackNodes(pageWxml)
     expectNoFeedbackNodes(abilityPageWxml)
-    expect(layoutPageWxml).toContain('<t-toast id="t-toast" />')
+    expect(layoutPageWxml).toMatch(TOAST_NODE_RE)
     expect(defaultLayoutJs).toContain('setup(')
     expect(adminLayoutJs).toContain('setup(')
   })
@@ -57,8 +62,7 @@ describe.sequential('template build: tdesign feedback layouts', () => {
     const cartPageWxml = await readDistFile(RETAIL_TEMPLATE_ROOT, 'pages/cart/index.wxml')
     const orderButtonBarWxml = await readDistFile(RETAIL_TEMPLATE_ROOT, 'pages/order/components/order-button-bar/index.wxml')
 
-    expect(defaultLayoutWxml).toContain('<t-toast id="t-toast" />')
-    expect(defaultLayoutWxml).toContain('<t-dialog id="t-dialog" />')
+    expectSharedFeedbackNodes(defaultLayoutWxml)
     expectNoFeedbackNodes(cartPageWxml)
     expectNoFeedbackNodes(orderButtonBarWxml)
   })
