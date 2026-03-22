@@ -64,7 +64,7 @@ type AfterServiceButtonBarInstance = WechatMiniprogram.Component.Instance<
   []
 >
 
-defineOptions<AfterServiceButtonBarData, never, AfterServiceButtonBarMethods, AfterServiceButtonBarProperties>({
+defineOptions({
   properties: {
     service: {
       type: Object,

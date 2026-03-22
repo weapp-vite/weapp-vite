@@ -105,7 +105,7 @@ type OrderButtonBarInstance = WechatMiniprogram.Component.Instance<
   []
 >
 
-defineOptions<OrderButtonBarData, never, OrderButtonBarMethods, OrderButtonBarProperties>({
+defineOptions({
   options: {
     addGlobalClass: true,
   },

@@ -19,6 +19,11 @@ const DEVTOOLS_INFRA_ERROR_PATTERNS = [
   /ECONNREFUSED/i,
   /connect ECONNREFUSED/i,
 ]
+const DEVTOOLS_CONNECTION_CLOSED_PATTERNS = [
+  /Connection closed, check if wechat web devTools is still running/i,
+  /WebSocket is not open/i,
+  /socket hang up/i,
+]
 const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
   /code\s*[:=]\s*10/i,
   /需要重新登录/,
@@ -34,6 +39,7 @@ const DEFAULT_RELUNCH_RETRY_DELAY = 280
 const DEFAULT_RELUNCH_SETTLE_DELAY = 260
 const DEFAULT_LAUNCH_RETRIES = 3
 const DEFAULT_LAUNCH_RETRY_DELAY = 1_200
+const DEFAULT_LAUNCH_ATTEMPT_TIMEOUT = 24_000
 const DEFAULT_APP_CONFIG_READY_TIMEOUT = 12_000
 const DEVTOOLS_SIMULATOR_BOOT_ERROR_PATTERNS = [
   /模拟器启动失败/,
@@ -65,6 +71,10 @@ const LAUNCH_RETRY_DELAY = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY,
   DEFAULT_LAUNCH_RETRY_DELAY,
 )
+const LAUNCH_ATTEMPT_TIMEOUT = resolvePositiveIntEnv(
+  process.env.WEAPP_VITE_E2E_LAUNCH_ATTEMPT_TIMEOUT,
+  DEFAULT_LAUNCH_ATTEMPT_TIMEOUT,
+)
 const APP_CONFIG_READY_TIMEOUT = resolvePositiveIntEnv(
   process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT,
   DEFAULT_APP_CONFIG_READY_TIMEOUT,
@@ -77,6 +87,7 @@ const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
   .map(item => normalizePathForMatch(item))
 
 let versionPatched = false
+let miniProgramOnPatched = false
 let loginPreflightPassed = false
 
 interface RuntimeLogStats {
@@ -273,6 +284,53 @@ function sleep(ms: number) {
   return new Promise<void>(resolve => setTimeout(resolve, ms))
 }
 
+async function runWithTimeout<T>(
+  factory: () => Promise<T>,
+  timeoutMs: number,
+  label: string,
+  onLateResolve?: (value: T) => Promise<void> | void,
+) {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let settled = false
+  let timedOut = false
+  const task = Promise.resolve()
+    .then(factory)
+    .then((value) => {
+      settled = true
+      return value
+    })
+    .catch((error) => {
+      settled = true
+      throw error
+    })
+
+  try {
+    return await Promise.race([
+      task,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          timedOut = true
+          reject(new Error(`Timeout in ${label} after ${timeoutMs}ms`))
+        }, timeoutMs)
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+    if (!settled) {
+      void task
+        .then(async (value) => {
+          if (timedOut && onLateResolve) {
+            await onLateResolve(value)
+          }
+        })
+        .catch(() => {})
+    }
+  }
+}
+
 function isLikelyRelaunchRetryableError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return /Wait timed out after/i.test(message)
@@ -381,6 +439,7 @@ function isLikelyLaunchRetryableError(error: unknown) {
 
   const message = error instanceof Error ? error.message : String(error)
   return isLikelyDevtoolsInfraErrorMessage(message)
+    || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
     || isLikelySimulatorBootErrorMessage(message)
     || isLikelyRelaunchRetryableError(error)
 }
@@ -702,32 +761,63 @@ function patchAutomatorVersionCheck() {
   }
 }
 
+function patchMiniProgramOn() {
+  if (miniProgramOnPatched) {
+    return
+  }
+  miniProgramOnPatched = true
+  const rawOn = MiniProgram.prototype.on
+  MiniProgram.prototype.on = function onPatched(this: InstanceType<typeof MiniProgram>, eventName: string, listener: (...args: any[]) => void) {
+    if (eventName === 'console') {
+      void this.send('App.enableLog').catch(() => {})
+      this.addListener(eventName, listener)
+      return this
+    }
+    return rawOn.call(this, eventName, listener)
+  } as typeof MiniProgram.prototype.on
+}
+
 export function launchAutomator(options: Parameters<typeof automator.launch>[0]) {
   patchAutomatorVersionCheck()
+  patchMiniProgramOn()
   const { projectConfig, timeout, trustProject, ...rest } = options
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
+  const launchTimeout = timeout ?? 90_000
   return (async () => {
     for (let attempt = 1; attempt <= LAUNCH_RETRIES; attempt += 1) {
       let miniProgram: any = null
       try {
-        const projectMeta = await resolveLaunchProjectMeta(rest.projectPath)
-        miniProgram = await automator.launch({
-          ...rest,
-          timeout: timeout ?? 90_000,
-          trustProject: resolvedTrustProject,
-          projectConfig: {
-            libVersion: DEFAULT_LIB_VERSION,
-            ...projectConfig,
-          },
-        })
+        return await runWithTimeout(
+          async () => {
+            const projectMeta = await resolveLaunchProjectMeta(rest.projectPath)
+            miniProgram = await automator.launch({
+              ...rest,
+              timeout: launchTimeout,
+              trustProject: resolvedTrustProject,
+              projectConfig: {
+                libVersion: DEFAULT_LIB_VERSION,
+                ...projectConfig,
+              },
+            })
 
-        const withRuntimeLogs = enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
-        const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs)
-        if (projectMeta?.warmupRoute) {
-          await withRelaunch.reLaunch(projectMeta.warmupRoute)
-        }
-        return withRelaunch
+            const withRuntimeLogs = await enhanceMiniProgramWithRuntimeLogs(miniProgram, project)
+            const withRelaunch = enhanceMiniProgramRelaunch(withRuntimeLogs)
+            if (projectMeta?.warmupRoute) {
+              await withRelaunch.reLaunch(projectMeta.warmupRoute)
+            }
+            return withRelaunch
+          },
+          LAUNCH_ATTEMPT_TIMEOUT,
+          `launch automator#${attempt}`,
+          async (lateMiniProgram) => {
+            try {
+              await lateMiniProgram?.close?.()
+            }
+            catch {
+            }
+          },
+        )
       }
       catch (error) {
         if (miniProgram) {
@@ -792,4 +882,6 @@ export async function assertDevtoolsLoggedIn(projectPath: string) {
 export function isDevtoolsHttpPortError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return isLikelyDevtoolsInfraErrorMessage(message)
+    || DEVTOOLS_CONNECTION_CLOSED_PATTERNS.some(pattern => pattern.test(message))
+    || /Timeout in launch automator#/i.test(message)
 }

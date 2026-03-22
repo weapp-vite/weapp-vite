@@ -42,12 +42,14 @@ describe.sequential('template build: tdesign feedback layouts', () => {
     const adminLayoutWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/admin.wxml')
     const pageWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'pages/index/index.wxml')
     const defaultLayoutJs = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/default.js')
+    const adminLayoutJs = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/admin.js')
     const commonJs = await readDistFile(BASE_TEMPLATE_ROOT, 'common.js')
 
     expectFeedbackNodes(defaultLayoutWxml)
     expectFeedbackNodes(adminLayoutWxml)
     expectNoFeedbackNodes(pageWxml)
-    expect(defaultLayoutJs).toContain('createWevuComponent({')
+    expect(defaultLayoutJs.trim()).toBe('Component({})')
+    expect(adminLayoutJs).toContain('setup(')
     expect(commonJs).not.toContain('//#region src/layouts/default.vue')
   })
 

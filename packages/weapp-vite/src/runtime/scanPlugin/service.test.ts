@@ -42,7 +42,12 @@ function createCtx(overrides: Record<string, any> = {}) {
   }
 
   return {
-    runtimeState: { scan },
+    runtimeState: {
+      scan,
+      autoRoutes: {
+        loadingAppConfig: false,
+      },
+    },
     configService: {
       absoluteSrcRoot: '/project/src',
       absolutePluginRoot: '/project/plugin-root',
@@ -66,6 +71,15 @@ function createCtx(overrides: Record<string, any> = {}) {
     },
     jsonService: {
       read: vi.fn(async () => ({})),
+    },
+    autoRoutesService: {
+      isEnabled: vi.fn(() => false),
+      ensureFresh: vi.fn(async () => {}),
+      getReference: vi.fn(() => ({
+        pages: [],
+        entries: [],
+        subPackages: [],
+      })),
     },
     ...overrides,
   } as any
@@ -174,6 +188,92 @@ describe('scanPlugin service', () => {
 
     expect(entry.path).toBe('/project/src/app.vue')
     expect(entry.jsonPath).toBe('/project/src/app.vue')
+  })
+
+  it('hydrates app.vue config with auto-routes pages when static extraction is incomplete', async () => {
+    findJsonEntryMock.mockResolvedValue({ path: undefined })
+    findJsEntryMock.mockResolvedValue({ path: undefined })
+    findVueEntryMock.mockResolvedValue('/project/src/app.vue')
+    extractConfigFromVueMock.mockResolvedValue({})
+
+    const autoRoutesService = {
+      isEnabled: vi.fn(() => true),
+      ensureFresh: vi.fn(async () => {}),
+      getReference: vi.fn(() => ({
+        pages: ['pages/home/index'],
+        entries: ['pages/home/index'],
+        subPackages: [{ root: 'pkgA', pages: ['pages/a'] }],
+      })),
+    }
+
+    const ctx = createCtx({
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        absolutePluginRoot: undefined,
+        weappViteConfig: {
+          autoRoutes: true,
+          subPackages: {},
+        },
+      },
+      autoRoutesService,
+    })
+
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+    const entry = await service.loadAppEntry()
+
+    expect(autoRoutesService.ensureFresh).toHaveBeenCalledTimes(1)
+    expect(entry.json.pages).toEqual(['pages/home/index'])
+    expect(entry.json.subPackages).toEqual([{ root: 'pkgA', pages: ['pages/a'] }])
+  })
+
+  it('merges auto-routes pages and subPackages into partially extracted app.vue config', async () => {
+    findJsonEntryMock.mockResolvedValue({ path: undefined })
+    findJsEntryMock.mockResolvedValue({ path: undefined })
+    findVueEntryMock.mockResolvedValue('/project/src/app.vue')
+    extractConfigFromVueMock.mockResolvedValue({
+      pages: ['components/router-origin-probe/target/index'],
+      subPackages: [{ root: 'pkgB', pages: ['pages/custom'] }],
+    })
+
+    const autoRoutesService = {
+      isEnabled: vi.fn(() => true),
+      ensureFresh: vi.fn(async () => {}),
+      getReference: vi.fn(() => ({
+        pages: ['pages/home/index', 'pages/use-attrs/index'],
+        entries: ['pages/home/index', 'pages/use-attrs/index'],
+        subPackages: [
+          { root: 'pkgA', pages: ['pages/a'] },
+          { root: 'pkgB', pages: ['pages/b'] },
+        ],
+      })),
+    }
+
+    const ctx = createCtx({
+      configService: {
+        absoluteSrcRoot: '/project/src',
+        absolutePluginRoot: undefined,
+        weappViteConfig: {
+          autoRoutes: true,
+          subPackages: {},
+        },
+      },
+      autoRoutesService,
+    })
+
+    const { createScanService } = await import('./service')
+    const service = createScanService(ctx)
+    const entry = await service.loadAppEntry()
+
+    expect(entry.json.pages).toEqual([
+      'pages/home/index',
+      'pages/use-attrs/index',
+      'components/router-origin-probe/target/index',
+    ])
+    expect(entry.json.subPackages).toEqual([
+      { root: 'pkgB', pages: ['pages/b', 'pages/custom'] },
+      { root: 'pkgA', pages: ['pages/a'] },
+    ])
   })
 
   it('throws when app config resolves but is not an object', async () => {
