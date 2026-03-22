@@ -2509,7 +2509,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 send-message-title="当前标题"
                 session-from=""
                 style=""
-                class="t-button button--t-button t-button--outline button--t-button--outline t-button--success button--t-button--success t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
+                class="t-button button--t-button t-button--outline button--t-button--outline t-button--primary button--t-button--primary t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
                 role="button"
                 aria-disabled="false">
                 <view class="t-button__content button--t-button__content">切到 admin 布局</view>
@@ -2531,7 +2531,7 @@ exports[`template e2e: weapp-vite-wevu-tailwindcss-tdesign-template > renders al
                 send-message-title="当前标题"
                 session-from=""
                 style=""
-                class="t-button button--t-button t-button--outline button--t-button--outline t-button--warning button--t-button--warning t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
+                class="t-button button--t-button t-button--outline button--t-button--outline t-button--danger button--t-button--danger t-button--rectangle button--t-button--rectangle t-button--size-medium button--t-button--size-medium t-button--block button--t-button--block"
                 role="button"
                 aria-disabled="false">
                 <view class="t-button__content button--t-button__content">关闭布局</view>
