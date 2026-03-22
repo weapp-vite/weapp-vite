@@ -1,5 +1,11 @@
 # weapp-vite-wevu-tailwindcss-tdesign-retail-template
 
+## 1.0.28
+
+### Patch Changes
+
+- 🐛 **修复两个 wevu + TDesign 模板中 `Toast/Dialog` 反馈宿主的挂载位置。模板现在将反馈节点放回实际触发它们的页面或组件，避免首页、布局页和零售模板相关页面在微信开发者工具中触发提示时出现“未找到组件,请检查selector是否正确”的运行时警告。** [`792e343`](https://github.com/weapp-vite/weapp-vite/commit/792e3432568246bee4513ef006d4de7a15ed1925) by @sonofmagic
+
 ## 1.0.27
 
 ### Patch Changes
