@@ -123,15 +123,17 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
 
       const marker = collector.mark()
       const warningMarker = warningCollector.mark()
-      const bridgeState = await page.callMethod('runLayoutToastE2E')
-      expect(bridgeState).toMatchObject({
-        bridgeResolved: true,
-        bridgeIsPage: false,
-        bridgeHasSelectComponent: true,
-        toastFoundByBridge: true,
-        refreshSeed: expect.any(Number),
-      })
+      const initialRefreshSeed = await page.data('refreshSeed')
+      const refreshButton = await page.$('#refresh-dashboard-trigger')
+      if (!refreshButton) {
+        throw new Error('Failed to find refresh trigger: #refresh-dashboard-trigger')
+      }
+      await refreshButton.tap()
       await page.waitFor(300)
+      const nextRefreshSeed = await page.data('refreshSeed')
+
+      expect(nextRefreshSeed).toEqual(expect.any(Number))
+      expect(nextRefreshSeed).not.toBe(initialRefreshSeed)
 
       expect(collector.getSince(marker)).toEqual([])
       expect(warningCollector.getSince(warningMarker)).toEqual([])

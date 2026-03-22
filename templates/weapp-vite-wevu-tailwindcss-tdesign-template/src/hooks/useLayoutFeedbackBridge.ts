@@ -10,6 +10,8 @@ export interface DialogHostInstance {
   _onCancel?: (reason?: unknown) => void
   _onConfirm?: (value?: unknown) => void
   close?: () => void
+  onCancel?: (reason?: unknown) => void
+  onConfirm?: (value?: unknown) => void
   properties?: Record<string, unknown>
   setData: (payload: Record<string, unknown>) => void
 }

@@ -11,6 +11,7 @@ import { ensureClassStyleRuntimeImports, injectClassStyleComputed } from './clas
 import { applyWevuDefaultsToComponentOptions, injectWevuDefaultsForApp } from './defaults'
 import { rewriteComponentExport } from './export'
 import { injectInlineExpressions } from './inlineExpressions'
+import { injectLayoutHosts } from './layoutHosts'
 import { injectSetupInitialData } from './setupInitialData'
 import { injectTemplateRefs } from './templateRefs'
 
@@ -262,6 +263,16 @@ export function rewriteDefaultExport(
     }
     else {
       warn('无法自动注入 template ref 元数据：组件选项不是对象字面量。')
+    }
+  }
+
+  const layoutHosts = options?.layoutHosts ?? []
+  if (layoutHosts.length) {
+    if (componentOptionsObject) {
+      transformed = injectLayoutHosts(componentOptionsObject, layoutHosts, warn) || transformed
+    }
+    else {
+      warn('无法自动注入 layout host 元数据：组件选项不是对象字面量。')
     }
   }
 

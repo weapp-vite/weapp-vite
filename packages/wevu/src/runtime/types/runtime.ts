@@ -44,6 +44,7 @@ export interface InternalRuntimeStateFields {
   __wevu?: RuntimeInstance<any, any, any>
   __wevuSetPageLayout?: (layout: string | false, props?: Record<string, any>) => void
   __wevuWatchStops?: WatchStopHandle[]
+  __wevuLayoutHostBridge?: Record<string, any>
   $wevu?: RuntimeInstance<any, any, any>
   __wevuHooks?: Record<string, any>
   __wevuExposed?: Record<string, any>

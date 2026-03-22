@@ -66,6 +66,12 @@ function isDefineComponentJsonOnlyScript(content: string) {
   return hasDefineComponentJson
 }
 
+const WEVU_TEMPLATE_RUNTIME_BINDING_ATTR_RE = /(?:^|[\s<])(?:ref|:ref|v-bind:ref|layout-host|:layout-host|v-bind:layout-host)\s*=/
+
+function hasWevuTemplateRuntimeBindings(template: string | undefined) {
+  return typeof template === 'string' && WEVU_TEMPLATE_RUNTIME_BINDING_ATTR_RE.test(template)
+}
+
 export function createEntryLoader(options: EntryLoaderOptions) {
   const {
     ctx,
@@ -106,6 +112,9 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   const shouldEmitScriptlessVueLayoutJs = async (layoutFile: string) => {
     const layoutSource = await fs.readFile(layoutFile, 'utf-8')
     const { descriptor } = parseSfc(layoutSource, { filename: layoutFile })
+    if (hasWevuTemplateRuntimeBindings(descriptor.template?.content)) {
+      return false
+    }
     const blocks = [descriptor.script?.content, descriptor.scriptSetup?.content]
       .filter((content): content is string => typeof content === 'string' && content.trim().length > 0)
 

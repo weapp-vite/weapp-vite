@@ -148,6 +148,7 @@ export async function compileScriptPhase(
       classStyleRuntime: templateCompiled?.classStyleRuntime,
       classStyleBindings: templateCompiled?.classStyleBindings,
       templateRefs: templateCompiled?.templateRefs,
+      layoutHosts: templateCompiled?.layoutHosts,
       inlineExpressions: templateCompiled?.inlineExpressions,
       relaxStructuredTypeOnlyProps,
     })

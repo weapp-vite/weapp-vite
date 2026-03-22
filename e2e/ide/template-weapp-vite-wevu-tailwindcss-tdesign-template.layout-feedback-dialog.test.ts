@@ -21,12 +21,26 @@ async function runBuild() {
   })
 }
 
-async function tapElement(page: any, selector: string) {
-  const element = await page.$(selector)
-  if (!element) {
-    throw new Error(`Failed to find tap element: ${selector}`)
+async function tapElement(page: any, selector: string | string[]) {
+  const selectors = Array.isArray(selector) ? selector : [selector]
+  for (const currentSelector of selectors) {
+    const element = await page.$(currentSelector)
+    if (!element) {
+      continue
+    }
+    await element.tap()
+    return
   }
-  await element.tap()
+  throw new Error(`Failed to find tap element: ${selectors.join(' | ')}`)
+}
+
+async function expectDialogVisible(page: any, selector = '.t-dialog__button--confirm') {
+  const element = await page.$(selector)
+  expect(element).toBeTruthy()
+}
+
+async function inspectDialogHost(page: any) {
+  return await page.callMethod('inspectDialogHostE2E')
 }
 
 let sharedMiniProgram: any = null
@@ -72,24 +86,25 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
       await page.waitFor(400)
       const marker = collector.mark()
 
-      const opened = await page.callMethod('runPageAlertCloseE2E')
-      expect(opened).toMatchObject({
+      await tapElement(page, '#layout-feedback-page-alert-trigger')
+      await page.waitFor(240)
+      await expectDialogVisible(page)
+      expect(await inspectDialogHost(page)).toMatchObject({
         hasHost: true,
         visible: true,
         hasOnConfirm: true,
-        hasNativeConfirm: true,
-        title: expect.stringContaining('页面 Alert'),
       })
 
       await tapElement(page, '.t-dialog__button--confirm')
       await page.waitFor(240)
 
-      const closed = await page.callMethod('inspectDialogHostE2E')
-      expect(closed).toMatchObject({
+      expect(await inspectDialogHost(page)).toMatchObject({
         hasHost: true,
         visible: false,
       })
-      expect(await page.callMethod('getLayoutFeedbackLogsE2E')).toContainEqual(expect.stringContaining('页面 Alert'))
+      const actionLogs = await page.data('actionLogs')
+      expect(actionLogs).toContainEqual(expect.stringContaining('页面 Alert'))
+      expect(actionLogs).toContainEqual(expect.stringContaining('已确认'))
       expect(collector.getSince(marker)).toEqual([])
     }
     finally {
@@ -110,25 +125,26 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
       await page.waitFor(400)
       let marker = collector.mark()
 
-      let opened = await page.callMethod('runPageConfirmOpenE2E')
-      expect(opened).toMatchObject({
+      await tapElement(page, '#layout-feedback-page-confirm-trigger')
+      await page.waitFor(240)
+      await expectDialogVisible(page, '.t-dialog__button--cancel')
+      expect(await inspectDialogHost(page)).toMatchObject({
         hasHost: true,
         visible: true,
         hasOnConfirm: true,
         hasOnCancel: true,
-        hasNativeConfirm: true,
-        hasNativeCancel: true,
-        title: expect.stringContaining('页面 Confirm'),
       })
 
       await tapElement(page, '.t-dialog__button--cancel')
       await page.waitFor(240)
 
-      let closed = await page.callMethod('inspectDialogHostE2E')
-      expect(closed).toMatchObject({
+      expect(await inspectDialogHost(page)).toMatchObject({
         hasHost: true,
         visible: false,
       })
+      let actionLogs = await page.data('actionLogs')
+      expect(actionLogs).toContainEqual(expect.stringContaining('页面 Confirm'))
+      expect(actionLogs).toContainEqual(expect.stringContaining('点击取消'))
       expect(collector.getSince(marker)).toEqual([])
 
       page = await miniProgram.reLaunch(ROUTE)
@@ -138,17 +154,24 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
       await page.waitFor(400)
       marker = collector.mark()
 
-      opened = await page.callMethod('runPageConfirmOpenE2E')
-      expect(opened.visible).toBe(true)
+      await tapElement(page, '#layout-feedback-page-confirm-trigger')
+      await page.waitFor(240)
+      await expectDialogVisible(page)
+      expect(await inspectDialogHost(page)).toMatchObject({
+        hasHost: true,
+        visible: true,
+      })
 
       await tapElement(page, '.t-dialog__button--confirm')
       await page.waitFor(240)
 
-      closed = await page.callMethod('inspectDialogHostE2E')
-      expect(closed).toMatchObject({
+      expect(await inspectDialogHost(page)).toMatchObject({
         hasHost: true,
         visible: false,
       })
+      actionLogs = await page.data('actionLogs')
+      expect(actionLogs).toContainEqual(expect.stringContaining('页面 Confirm'))
+      expect(actionLogs).toContainEqual(expect.stringContaining('点击确认'))
 
       expect(collector.getSince(marker)).toEqual([])
     }
@@ -167,16 +190,32 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
 
     await page.waitFor(400)
 
-    let opened = await page.callMethod('runPageAlertCloseE2E')
-    expect(opened.visible).toBe(true)
+    await tapElement(page, '#layout-feedback-page-alert-trigger')
+    await page.waitFor(240)
+    await expectDialogVisible(page)
+    expect(await inspectDialogHost(page)).toMatchObject({
+      hasHost: true,
+      visible: true,
+    })
+    await tapElement(page, '.t-dialog__button--confirm')
+    await page.waitFor(240)
+    expect(await inspectDialogHost(page)).toMatchObject({
+      hasHost: true,
+      visible: false,
+    })
 
-    let closed = await page.callMethod('runDialogHostConfirmE2E')
-    expect(closed.visible).toBe(false)
-
-    opened = await page.callMethod('runPageConfirmOpenE2E')
-    expect(opened.visible).toBe(true)
-
-    closed = await page.callMethod('runDialogHostCancelE2E')
-    expect(closed.visible).toBe(false)
+    await tapElement(page, '#layout-feedback-page-confirm-trigger')
+    await page.waitFor(240)
+    await expectDialogVisible(page, '.t-dialog__button--cancel')
+    expect(await inspectDialogHost(page)).toMatchObject({
+      hasHost: true,
+      visible: true,
+    })
+    await tapElement(page, '.t-dialog__button--cancel')
+    await page.waitFor(240)
+    expect(await inspectDialogHost(page)).toMatchObject({
+      hasHost: true,
+      visible: false,
+    })
   })
 })

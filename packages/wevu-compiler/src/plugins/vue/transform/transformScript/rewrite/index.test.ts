@@ -89,7 +89,7 @@ export default (Object.assign({}, merged, { data: {} }) as any)
     expect(markerCount).toBe(1)
   })
 
-  it('warns when class/style/templateRef/inline metadata cannot be injected', () => {
+  it('warns when class/style/templateRef/layoutHost/inline metadata cannot be injected', () => {
     const warn = vi.fn()
     const { transformed, code } = runRewrite(
       'export default defineComponent(resolveOptions())',
@@ -108,6 +108,14 @@ export default (Object.assign({}, merged, { data: {} }) as any)
             inFor: false,
           },
         ],
+        layoutHosts: [
+          {
+            key: 'dialog',
+            refName: '__wevu_layout_host_0',
+            selector: '#__wv-layout-host-0',
+            kind: 'component',
+          },
+        ],
         inlineExpressions: [
           {
             id: 'e0',
@@ -121,10 +129,11 @@ export default (Object.assign({}, merged, { data: {} }) as any)
 
     expect(transformed).toBe(true)
     expect(code).toContain('createWevuComponent')
-    expect(warn).toHaveBeenCalledTimes(3)
+    expect(warn).toHaveBeenCalledTimes(4)
     expect(warn.mock.calls.map(call => call[0])).toEqual([
       '无法自动注入 class/style 计算属性：组件选项不是对象字面量。',
       '无法自动注入 template ref 元数据：组件选项不是对象字面量。',
+      '无法自动注入 layout host 元数据：组件选项不是对象字面量。',
       '无法自动注入内联表达式元数据：组件选项不是对象字面量。',
     ])
   })
@@ -150,7 +159,7 @@ export default (Object.assign({}, merged, { data: {} }) as any)
     expect(warn).toHaveBeenCalledWith('无法自动注入内联表达式元数据：methods 不是对象字面量。')
   })
 
-  it('injects class/style/templateRefs/inline metadata into object options', () => {
+  it('injects class/style/templateRefs/layoutHosts/inline metadata into object options', () => {
     const { code } = runRewrite(
       'export default { computed: baseComputed, methods: {} }',
       {
@@ -168,6 +177,14 @@ export default (Object.assign({}, merged, { data: {} }) as any)
             inFor: true,
           },
         ],
+        layoutHosts: [
+          {
+            key: 'toast',
+            refName: '__wevu_layout_host_1',
+            selector: '#__wv-layout-host-1',
+            kind: 'component',
+          },
+        ],
         inlineExpressions: [
           {
             id: 'e2',
@@ -181,6 +198,7 @@ export default (Object.assign({}, merged, { data: {} }) as any)
     expect(code).toContain('__wevuNormalizeClass')
     expect(code).toContain('...baseComputed')
     expect(code).toContain('__wevuTemplateRefs')
+    expect(code).toContain('__wevuLayoutHosts')
     expect(code).toContain('__weapp_vite_inline_map')
   })
 

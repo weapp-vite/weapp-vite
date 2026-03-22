@@ -171,15 +171,21 @@ void runDialogHostCancelE2E
     <view class="mt-[18rpx] rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
       <SectionTitle title="页面直接调用" subtitle="页面本身直接触发 layout 内的 toast / dialog 方法" />
       <view class="mt-[16rpx] flex flex-col gap-[12rpx]">
-        <t-button block theme="primary" @tap="triggerPageToast">
-          页面触发 Toast
-        </t-button>
-        <t-button block theme="primary" variant="outline" @tap="triggerPageAlert">
-          页面触发 Alert
-        </t-button>
-        <t-button block theme="danger" variant="outline" @tap="triggerPageConfirm">
-          页面触发 Confirm
-        </t-button>
+        <view id="layout-feedback-page-toast-trigger" @tap="triggerPageToast">
+          <t-button block theme="primary">
+            页面触发 Toast
+          </t-button>
+        </view>
+        <view id="layout-feedback-page-alert-trigger" @tap="triggerPageAlert">
+          <t-button block theme="primary" variant="outline">
+            页面触发 Alert
+          </t-button>
+        </view>
+        <view id="layout-feedback-page-confirm-trigger" @tap="triggerPageConfirm">
+          <t-button block theme="danger" variant="outline">
+            页面触发 Confirm
+          </t-button>
+        </view>
       </view>
     </view>
 

@@ -28,16 +28,32 @@ export function collectElementAttributes(
   const isComponentElement = options?.isComponent ?? !isBuiltinTag(node.tag)
   const attrs: string[] = options?.extraAttrs ? [...options.extraAttrs] : []
   let staticClass: string | undefined
+  let staticId: string | undefined
   let dynamicClassExp: string | undefined
   let staticStyle: string | undefined
   let dynamicStyleExp: string | undefined
   let vShowExp: string | undefined
   let vTextExp: string | undefined
   let templateRef: { name?: string, expAst?: Expression } | undefined
+  let layoutHostKey: string | undefined
+  let hasDynamicIdBinding = false
   const inFor = Boolean(options?.forInfo || context.forStack.length)
 
   for (const prop of props) {
     if (prop.type === NodeTypes.ATTRIBUTE) {
+      if (prop.name === 'layout-host') {
+        const rawKey = prop.value?.type === NodeTypes.TEXT ? prop.value.content.trim() : ''
+        if (!isComponentElement) {
+          context.warnings.push('layout-host 仅支持声明在组件节点上，当前节点已忽略。')
+        }
+        else if (!rawKey) {
+          context.warnings.push('layout-host 需要提供非空字符串 key。')
+        }
+        else {
+          layoutHostKey = rawKey
+        }
+        continue
+      }
       if (prop.name === 'ref') {
         if (prop.value?.type === NodeTypes.TEXT) {
           const name = prop.value.content.trim()
@@ -49,6 +65,10 @@ export function collectElementAttributes(
       }
       if (prop.name === 'class' && prop.value?.type === NodeTypes.TEXT) {
         staticClass = prop.value.content
+        continue
+      }
+      if (prop.name === 'id' && prop.value?.type === NodeTypes.TEXT) {
+        staticId = prop.value.content.trim()
         continue
       }
       if (prop.name === 'style' && prop.value?.type === NodeTypes.TEXT) {
@@ -77,6 +97,21 @@ export function collectElementAttributes(
             templateRef = { expAst }
           }
         }
+        continue
+      }
+      if (
+        prop.name === 'bind'
+        && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+        && prop.arg.content === 'id'
+      ) {
+        hasDynamicIdBinding = true
+      }
+      if (
+        prop.name === 'bind'
+        && prop.arg?.type === NodeTypes.SIMPLE_EXPRESSION
+        && prop.arg.content === 'layout-host'
+      ) {
+        context.warnings.push('暂不支持动态 layout-host，已忽略该绑定。')
         continue
       }
       if (
@@ -126,6 +161,34 @@ export function collectElementAttributes(
       expAst: templateRef.expAst,
       kind: isComponentElement ? 'component' : 'element',
     })
+  }
+
+  if (layoutHostKey) {
+    if (!staticId && hasDynamicIdBinding) {
+      context.warnings.push('layout-host 暂不支持与动态 id 同时使用，当前节点已忽略。')
+    }
+    else {
+      const hostIndex = context.layoutHostIndexSeed++
+      const hostId = staticId || `__wv-layout-host-${hostIndex}`
+      const hostRefName = `__wevu_layout_host_${hostIndex}`
+      staticId = hostId
+      context.templateRefs.push({
+        selector: `#${hostId}`,
+        inFor: false,
+        name: hostRefName,
+        kind: 'component',
+      })
+      context.layoutHosts.push({
+        key: layoutHostKey,
+        refName: hostRefName,
+        selector: `#${hostId}`,
+        kind: 'component',
+      })
+    }
+  }
+
+  if (staticId) {
+    attrs.unshift(`id="${staticId}"`)
   }
 
   const classAttr = renderClassAttribute(staticClass, dynamicClassExp, context)

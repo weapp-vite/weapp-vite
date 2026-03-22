@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref } from '@/reactivity'
 import { setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 import { callHookList } from '@/runtime/hooks/base'
-import { resolveLayoutBridge, resolveLayoutHost, useLayoutBridge, useLayoutHosts, waitForLayoutHost } from '@/runtime/layoutBridge'
+import { registerRuntimeLayoutHosts, resolveLayoutBridge, resolveLayoutHost, unregisterRuntimeLayoutHosts, useLayoutBridge, useLayoutHosts, waitForLayoutHost } from '@/runtime/layoutBridge'
 
 describe('layout bridge runtime api', () => {
   it('registers and unregisters feedback hosts with component lifetimes', () => {
@@ -202,6 +202,80 @@ describe('layout bridge runtime api', () => {
 
     setCurrentSetupContext(undefined)
     setCurrentInstance(undefined)
+    delete (globalThis as any).getCurrentPages
+  })
+
+  it('registers declared layout hosts from runtime component selectors', () => {
+    const page = {
+      route: 'pages/index/index',
+      __wevuSetPageLayout: () => {},
+    }
+    const toastHost = { show: vi.fn() }
+    const dialogHost = { close: vi.fn() }
+    const selectComponentThis: any[] = []
+    const layoutInstance = {
+      is: 'layouts/default',
+      selectComponent: vi.fn(function (this: any, selector: string) {
+        selectComponentThis.push(this)
+        if (selector === '#__wv-layout-host-0') {
+          return toastHost
+        }
+        if (selector === '#__wv-layout-host-1') {
+          return dialogHost
+        }
+        return null
+      }),
+    } as any
+
+    ;(globalThis as any).getCurrentPages = () => [page]
+
+    const bridge = registerRuntimeLayoutHosts([
+      { key: 'layout-toast', refName: '__wevu_layout_host_0', selector: '#__wv-layout-host-0', kind: 'component' },
+      { key: 'layout-dialog', refName: '__wevu_layout_host_1', selector: '#__wv-layout-host-1', kind: 'component' },
+    ], layoutInstance)
+
+    expect(bridge).toBeTruthy()
+    expect(resolveLayoutBridge('layout-toast', page)?.selectComponent('layout-toast')).toBe(toastHost)
+    expect(resolveLayoutBridge('layout-dialog', page)?.selectComponent('layout-dialog')).toBe(dialogHost)
+    expect(selectComponentThis).toEqual([layoutInstance, layoutInstance])
+
+    unregisterRuntimeLayoutHosts([
+      { key: 'layout-toast', refName: '__wevu_layout_host_0', selector: '#__wv-layout-host-0', kind: 'component' },
+      { key: 'layout-dialog', refName: '__wevu_layout_host_1', selector: '#__wv-layout-host-1', kind: 'component' },
+    ], bridge as any)
+
+    delete (globalThis as any).getCurrentPages
+  })
+
+  it('prefers cached template ref instances before selector lookup', () => {
+    const page = {
+      route: 'pages/index/index',
+      __wevuSetPageLayout: () => {},
+    }
+    const toastHost = { show: vi.fn() }
+    const layoutInstance = {
+      is: 'layouts/default',
+      selectComponent: vi.fn(() => {
+        throw new Error('should not reach selector lookup')
+      }),
+      __wevu: {
+        state: {
+          $refs: {
+            __wevu_layout_host_0: toastHost,
+          },
+        },
+      },
+    } as any
+
+    ;(globalThis as any).getCurrentPages = () => [page]
+
+    registerRuntimeLayoutHosts([
+      { key: 'layout-toast', refName: '__wevu_layout_host_0', selector: '#__wv-layout-host-0', kind: 'component' },
+    ], layoutInstance)
+
+    expect(resolveLayoutHost('layout-toast', { context: page })).toBe(toastHost)
+    expect(layoutInstance.selectComponent).not.toHaveBeenCalled()
+
     delete (globalThis as any).getCurrentPages
   })
 })
