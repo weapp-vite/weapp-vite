@@ -175,5 +175,4 @@ defineComponentJson({
       </t-cell>
     </block>
   </view>
-  <t-toast id="t-toast" />
 </template>

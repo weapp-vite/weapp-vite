@@ -275,6 +275,4 @@ definePageJson({
     </view>
   </view>
   <ui-reason-sheet id="wr-reason-sheet" />
-  <t-toast id="t-toast" />
-  <t-dialog id="t-dialog" />
 </template>

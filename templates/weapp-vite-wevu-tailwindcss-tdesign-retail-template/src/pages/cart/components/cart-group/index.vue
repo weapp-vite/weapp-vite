@@ -399,5 +399,4 @@ defineComponentJson({
     :zIndex="11001"
     @close="hideSpecsPopup"
   />
-  <t-toast id="t-toast" />
 </template>

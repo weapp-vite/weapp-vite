@@ -313,6 +313,5 @@ function onQuickAction(action: QuickActionItem) {
         </t-cell-group>
       </view>
     </view>
-    <t-toast id="t-toast" />
   </view>
 </template>

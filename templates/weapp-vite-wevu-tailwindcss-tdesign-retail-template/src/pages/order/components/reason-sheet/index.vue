@@ -183,5 +183,4 @@ defineComponentJson({
       </view>
     </view>
   </t-popup>
-  <t-toast id="t-toast" />
 </template>

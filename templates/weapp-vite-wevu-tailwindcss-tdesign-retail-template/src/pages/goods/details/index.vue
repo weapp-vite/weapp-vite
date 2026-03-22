@@ -633,6 +633,5 @@ definePageJson({
       @closePromotionPopup="closePromotionPopup"
       @promotionChange="promotionChange"
     />
-    <t-toast id="t-toast" />
   </view>
 </template>
