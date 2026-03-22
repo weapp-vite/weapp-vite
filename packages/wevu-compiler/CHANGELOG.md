@@ -1,5 +1,12 @@
 # @wevu/compiler
 
+## 6.11.2
+
+### Patch Changes
+
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.11.2`
+
 ## 6.11.1
 
 ### Patch Changes

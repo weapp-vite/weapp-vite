@@ -1,5 +1,25 @@
 # create-weapp-vite
 
+## 2.0.56
+
+### Patch Changes
+
+- 🐛 **为两个 TDesign wevu 模板统一收敛通用反馈节点：默认 layout 现在承载 `t-toast` 与 `t-dialog`，页面与组件通过封装方法触发提示与确认弹窗，同时补充对应的构建级集成测试，避免页面重新各自挂载通用反馈实例。** [`4e55323`](https://github.com/weapp-vite/weapp-vite/commit/4e553235c1a03d9616a965931a30e304004b6ed2) by @sonofmagic
+
+- 🐛 **修复 `.weapp-vite` 托管 tsconfig 的 bootstrap 覆盖问题：当项目已经生成过带有实际 `vite.config.ts` 配置的支持文件时，启动 `weapp-vite dev` 不会再被轻量 bootstrap 回退成通用版本，也不会因此在每次启动时都误报“支持文件缺失或已过期”。** [`2d9338c`](https://github.com/weapp-vite/weapp-vite/commit/2d9338cd98d7203feac247b7828339e213bff9e4) by @sonofmagic
+
+- 🐛 **修复 Vue layout 页面注入导致的运行时注册时机错误：页面布局转换不再为 Vue layout 额外注入副作用 import，避免 layout 组件被提前打进 `common.js` 并在应用初始化之后才调用构造函数；同时补充源码单测、模板构建集成测试与微信开发者工具运行时 e2e，覆盖 layout 资源产物与无错误启动场景。** [`35e49b3`](https://github.com/weapp-vite/weapp-vite/commit/35e49b33897e47af0847efe06164a2718168d9cd) by @sonofmagic
+
+- 🐛 **修复 `.weapp-vite` 支持文件未及时更新时的体验问题：在运行时检测到受管 tsconfig 等支持文件缺失或过期后，会先输出 warning，再自动执行一次与 `weapp-vite prepare` 等价的同步流程，减少模板项目因忘记 prepare 导致的类型异常。** [`76ddfce`](https://github.com/weapp-vite/weapp-vite/commit/76ddfced53ebca3f841eebf5d7631c1c6568ed0c) by @sonofmagic
+
+- 🐛 **修复 `.weapp-vite/tsconfig.app.json` 的默认类型与别名生成：现在会自动注入 `weapp-vite/client`，并让 `@/*` 跟随 `weapp.srcRoot`。同时清理 templates 中仍残留在根目录和 `src/` 下的旧支持文件，统一改由 `.weapp-vite` 托管生成。** [`94320d3`](https://github.com/weapp-vite/weapp-vite/commit/94320d3ec92e3803054e4d8f7dd8e60d7c1f7e12) by @sonofmagic
+
+- 🐛 **增强 `defineOptions` 的类型能力与 Volar 模板绑定识别：`wevu` 现在支持更完整的工厂签名与原生 `properties/data/methods` 类型推导，Volar 插件会把 `defineOptions` 中声明的模板绑定注入到模板类型检查上下文里。同时补齐 retail 模板中相关订单按钮组件的本地类型与交互缺陷，降低脚本侧类型噪音并修复遗漏的方法调用问题。** [`aef4a30`](https://github.com/weapp-vite/weapp-vite/commit/aef4a30c974c566dc181cc7152e04c96d0f6e41e) by @sonofmagic
+
+- 🐛 **修复默认 autoRoutes 对分包根目录的误扫描：当分包内已经存在 `pages/` 目录时，不再把分包入口脚本误识别为页面并写回 `subPackage.pages`；同时去重独立分包 `entry` 与 plugin export 重叠时生成的重复 entries，并补充对应回归测试。** [`cdfd282`](https://github.com/weapp-vite/weapp-vite/commit/cdfd282af1f52b8788a4bef8f113d61ac5633b00) by @sonofmagic
+
+- 🐛 **将模板中的 Vue SFC 配置从 `<json>` 自定义块统一迁移为 `definePageJson` 与 `defineComponentJson` 等宏指令写法，避免继续生成旧式配置示例。** [`5ba950b`](https://github.com/weapp-vite/weapp-vite/commit/5ba950bfa7918cbe51cec1b6cab8bf5d9f6153a8) by @sonofmagic
+
 ## 2.0.55
 
 ### Patch Changes
