@@ -4,6 +4,7 @@ import type { QuickActionItem } from '@/types/action'
 import { computed, getCurrentInstance, ref, resolveLayoutBridge, watch } from 'wevu'
 import KpiBoard from '@/components/KpiBoard/index.vue'
 import QuickActionGrid from '@/components/QuickActionGrid/index.vue'
+import { LAYOUT_TOAST_BRIDGE_KEY } from '@/hooks/useLayoutFeedbackBridge'
 import { usePullDownRefresh } from '@/hooks/usePullDownRefresh'
 import { useToast } from '@/hooks/useToast'
 
@@ -158,12 +159,11 @@ function refreshDashboard() {
 }
 
 function inspectLayoutToastBridge() {
-  const bridge = resolveLayoutBridge('#t-toast', pageInstance)
+  const bridge = resolveLayoutBridge(LAYOUT_TOAST_BRIDGE_KEY, pageInstance)
   const layoutByPage = pageInstance?.selectComponent?.('weapp-layout-default')
     ?? pageInstance?.selectComponent?.('.weapp-layout-default')
     ?? null
-  const toastFromBridge = bridge?.selectComponent?.('#t-toast') ?? null
-  const toastFromLayout = layoutByPage?.selectComponent?.('#t-toast') ?? null
+  const toastFromBridge = bridge?.selectComponent?.(LAYOUT_TOAST_BRIDGE_KEY) ?? null
 
   return {
     bridgeResolved: Boolean(bridge),
@@ -171,7 +171,6 @@ function inspectLayoutToastBridge() {
     bridgeHasSelectComponent: typeof bridge?.selectComponent === 'function',
     layoutFoundByPage: Boolean(layoutByPage),
     toastFoundByBridge: Boolean(toastFromBridge),
-    toastFoundByLayout: Boolean(toastFromLayout),
     bridgeKeys: bridge ? Object.keys(bridge).slice(0, 20) : [],
     layoutKeys: layoutByPage ? Object.keys(layoutByPage).slice(0, 20) : [],
   }

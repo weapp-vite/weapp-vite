@@ -1,24 +1,14 @@
 <script setup lang="ts">
-import { getCurrentInstance, useLayoutBridge, useTemplateRef } from 'wevu'
+import type { DialogHostInstance, ToastHostInstance } from '@/hooks/useLayoutFeedbackBridge'
+import { useTemplateRef } from 'wevu'
+import { useLayoutFeedbackBridge } from '@/hooks/useLayoutFeedbackBridge'
 
-const toastHost = useTemplateRef<any>('toastHost')
-const dialogHost = useTemplateRef<any>('dialogHost')
-const layoutInstance = getCurrentInstance<any>()
+const toastHost = useTemplateRef<ToastHostInstance>('toastHost')
+const dialogHost = useTemplateRef<DialogHostInstance>('dialogHost')
 
-function resolveBridgeHost(host: any, fallbackSelector: string) {
-  return layoutInstance?.selectComponent?.(fallbackSelector) ?? host ?? null
-}
-
-useLayoutBridge(['#t-toast', '#t-dialog'], {
-  resolveComponent(selector) {
-    if (selector === '#t-toast') {
-      return resolveBridgeHost(toastHost.value, '#t-toast')
-    }
-    if (selector === '#t-dialog') {
-      return resolveBridgeHost(dialogHost.value, '#t-dialog')
-    }
-    return null
-  },
+useLayoutFeedbackBridge({
+  toast: toastHost,
+  dialog: dialogHost,
 })
 
 defineComponentJson({
@@ -33,8 +23,8 @@ defineComponentJson({
 <template>
   <view class="layout-default">
     <slot />
-    <t-toast id="t-toast" ref="toastHost" />
-    <t-dialog id="t-dialog" ref="dialogHost" />
+    <t-toast ref="toastHost" />
+    <t-dialog ref="dialogHost" />
   </view>
 </template>
 

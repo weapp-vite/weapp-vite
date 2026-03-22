@@ -75,7 +75,11 @@ function mergeComponentRefValue(
       if (Reflect.has(target, key)) {
         return Reflect.get(target, key, receiver)
       }
-      return source[key as keyof typeof source]
+      const value = source[key as keyof typeof source]
+      if (typeof value === 'function') {
+        return value.bind(source)
+      }
+      return value
     },
     set(target, key, value, receiver) {
       if (key in source) {
