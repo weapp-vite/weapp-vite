@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { QuickActionItem } from '@/types/action'
 
-import { computed, getCurrentInstance, ref, resolveLayoutBridge, watch } from 'wevu'
+import { computed, getCurrentInstance, ref, resolveLayoutBridge, resolveLayoutHost, watch } from 'wevu'
 import KpiBoard from '@/components/KpiBoard/index.vue'
 import QuickActionGrid from '@/components/QuickActionGrid/index.vue'
 import { LAYOUT_TOAST_BRIDGE_KEY } from '@/hooks/useLayoutFeedbackBridge'
@@ -173,7 +173,7 @@ function inspectLayoutToastBridge() {
   const layoutByPage = pageInstance?.selectComponent?.('weapp-layout-default')
     ?? pageInstance?.selectComponent?.('.weapp-layout-default')
     ?? null
-  const toastFromBridge = bridge?.selectComponent?.(LAYOUT_TOAST_BRIDGE_KEY) ?? null
+  const toastFromBridge = resolveLayoutHost(LAYOUT_TOAST_BRIDGE_KEY, { context: pageInstance })
 
   return {
     bridgeResolved: Boolean(bridge),

@@ -1,5 +1,5 @@
 import Dialog from 'tdesign-miniprogram/dialog/index'
-import { getCurrentInstance, resolveLayoutBridge } from 'wevu'
+import { getCurrentInstance, resolveLayoutBridge, waitForLayoutHost } from 'wevu'
 import { LAYOUT_DIALOG_BRIDGE_KEY } from '@/hooks/useLayoutFeedbackBridge'
 
 export interface DialogOptions {
@@ -27,37 +27,10 @@ export interface ConfirmOptions {
   title?: string
 }
 
-const HOST_RETRY_INTERVAL = 16
-const HOST_RETRY_TIMES = 20
-
-function resolveDialogContext(options: { bridgeKey?: string, context?: any, selector?: string }) {
-  const { bridgeKey, context, selector } = options
-  const resolvedContext = bridgeKey
-    ? resolveLayoutBridge(bridgeKey, context ?? getCurrentInstance())
-    : context ?? getCurrentInstance()
-  return {
-    context: resolvedContext,
-    host: bridgeKey
-      ? resolvedContext?.selectComponent?.(bridgeKey) ?? resolvedContext?.selectComponent?.(selector) ?? null
-      : selector
-        ? resolvedContext?.selectComponent?.(selector) ?? null
-        : null,
-  }
-}
-
-function resolveDialogContextWhenReady(
-  options: { bridgeKey?: string, context?: any, selector?: string },
-  remaining = HOST_RETRY_TIMES,
-): Promise<ReturnType<typeof resolveDialogContext>> {
-  const resolved = resolveDialogContext(options)
-  if (resolved.host || !options.bridgeKey || options.selector || remaining <= 0) {
-    return Promise.resolve(resolved)
-  }
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(resolveDialogContextWhenReady(options, remaining - 1))
-    }, HOST_RETRY_INTERVAL)
-  })
+function resolveDialogContext(options: { bridgeKey?: string, context?: any }) {
+  return options.bridgeKey
+    ? resolveLayoutBridge(options.bridgeKey, options.context ?? getCurrentInstance())
+    : options.context ?? getCurrentInstance()
 }
 
 function closeDialogHost(host: any) {
@@ -136,11 +109,14 @@ function openConfirmWithHost(host: any, payload: ConfirmOptions) {
 export function alertDialog(payload: AlertOptions) {
   const bridgeKey = payload.bridgeKey ?? LAYOUT_DIALOG_BRIDGE_KEY
   const selector = payload.selector
-  return resolveDialogContextWhenReady({
+  const context = resolveDialogContext({
     bridgeKey,
-    selector,
     context: payload.context,
-  }).then(({ context, host }) => {
+  })
+  return waitForLayoutHost(bridgeKey, {
+    context,
+    retries: selector ? 0 : undefined,
+  }).then((host) => {
     if (!context) {
       return
     }
@@ -162,11 +138,14 @@ export function alertDialog(payload: AlertOptions) {
 export function confirmDialog(payload: ConfirmOptions) {
   const bridgeKey = payload.bridgeKey ?? LAYOUT_DIALOG_BRIDGE_KEY
   const selector = payload.selector
-  return resolveDialogContextWhenReady({
+  const context = resolveDialogContext({
     bridgeKey,
-    selector,
     context: payload.context,
-  }).then(({ context, host }) => {
+  })
+  return waitForLayoutHost(bridgeKey, {
+    context,
+    retries: selector ? 0 : undefined,
+  }).then((host) => {
     if (!context) {
       return
     }

@@ -1,5 +1,5 @@
 import Toast from 'tdesign-miniprogram/toast/index'
-import { getCurrentInstance, resolveLayoutBridge } from 'wevu'
+import { getCurrentInstance, resolveLayoutBridge, waitForLayoutHost } from 'wevu'
 import { LAYOUT_TOAST_BRIDGE_KEY } from '@/hooks/useLayoutFeedbackBridge'
 
 export type ToastTheme = 'success' | 'warning' | 'error' | 'default' | 'loading'
@@ -24,38 +24,10 @@ export interface ToastOptions {
   theme?: ToastTheme
 }
 
-const HOST_RETRY_INTERVAL = 16
-const HOST_RETRY_TIMES = 20
-
-function resolveToastHost(options: { bridgeKey?: string, context?: any, selector?: string }) {
-  const { bridgeKey, context, selector } = options
-  const resolvedContext = bridgeKey
-    ? resolveLayoutBridge(bridgeKey, context ?? getCurrentInstance())
-    : context ?? getCurrentInstance()
-  const host = bridgeKey
-    ? resolvedContext?.selectComponent?.(bridgeKey) ?? resolvedContext?.selectComponent?.(selector) ?? null
-    : selector
-      ? resolvedContext?.selectComponent?.(selector) ?? null
-      : null
-  return {
-    context: resolvedContext,
-    host,
-  }
-}
-
-function resolveToastHostWhenReady(
-  options: { bridgeKey?: string, context?: any, selector?: string },
-  remaining = HOST_RETRY_TIMES,
-): Promise<ReturnType<typeof resolveToastHost>> {
-  const resolved = resolveToastHost(options)
-  if (resolved.host || !options.bridgeKey || options.selector || remaining <= 0) {
-    return Promise.resolve(resolved)
-  }
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(resolveToastHostWhenReady(options, remaining - 1))
-    }, HOST_RETRY_INTERVAL)
-  })
+function resolveToastContext(options: { bridgeKey?: string, context?: any }) {
+  return options.bridgeKey
+    ? resolveLayoutBridge(options.bridgeKey, options.context ?? getCurrentInstance())
+    : options.context ?? getCurrentInstance()
 }
 
 export function showToast(payload: string | ShowToastPayload, theme?: ToastTheme) {
@@ -65,11 +37,6 @@ export function showToast(payload: string | ShowToastPayload, theme?: ToastTheme
     : payload
   const bridgeKey = normalized.bridgeKey ?? LAYOUT_TOAST_BRIDGE_KEY
   const selector = normalized.selector
-  const hostOptions = {
-    bridgeKey,
-    selector,
-    context: normalized.context ?? mpContext,
-  }
   const {
     bridgeKey: _bridgeKey,
     context: _context,
@@ -84,7 +51,14 @@ export function showToast(payload: string | ShowToastPayload, theme?: ToastTheme
     ...rest,
     ...(nextTheme && nextTheme !== 'default' ? { theme: nextTheme } : {}),
   }
-  void resolveToastHostWhenReady(hostOptions).then(({ context, host }) => {
+  const context = resolveToastContext({
+    bridgeKey,
+    context: normalized.context ?? mpContext,
+  })
+  void waitForLayoutHost(bridgeKey, {
+    context,
+    retries: selector ? 0 : undefined,
+  }).then((host) => {
     if (!context) {
       return
     }

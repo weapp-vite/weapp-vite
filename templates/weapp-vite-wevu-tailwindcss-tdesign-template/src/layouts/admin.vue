@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DialogHostInstance, ToastHostInstance } from '@/hooks/useLayoutFeedbackBridge'
-import { useTemplateRef } from 'wevu'
-import { useLayoutFeedbackBridge } from '@/hooks/useLayoutFeedbackBridge'
+import { useLayoutHosts, useTemplateRef } from 'wevu'
+import { LAYOUT_DIALOG_BRIDGE_KEY, LAYOUT_TOAST_BRIDGE_KEY } from '@/hooks/useLayoutFeedbackBridge'
 
 const props = defineProps<{
   subtitle?: string
@@ -11,9 +11,9 @@ const props = defineProps<{
 const toastHost = useTemplateRef<ToastHostInstance>('toastHost')
 const dialogHost = useTemplateRef<DialogHostInstance>('dialogHost')
 
-useLayoutFeedbackBridge({
-  toast: toastHost,
-  dialog: dialogHost,
+useLayoutHosts({
+  [LAYOUT_TOAST_BRIDGE_KEY]: toastHost,
+  [LAYOUT_DIALOG_BRIDGE_KEY]: dialogHost,
 })
 
 defineComponentJson({
