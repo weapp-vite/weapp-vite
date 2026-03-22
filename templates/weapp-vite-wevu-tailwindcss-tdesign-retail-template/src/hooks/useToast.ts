@@ -1,5 +1,5 @@
 import Toast from 'tdesign-miniprogram/toast/index'
-import { getCurrentInstance, resolvePageFeedbackHost } from 'wevu'
+import { getCurrentInstance, resolveLayoutBridge } from 'wevu'
 
 export type ToastTheme = 'success' | 'warning' | 'error' | 'default' | 'loading'
 
@@ -21,25 +21,43 @@ export interface ToastOptions {
   theme?: ToastTheme
 }
 
+function resolveToastHost(selector: string, context?: any) {
+  const resolvedContext = resolveLayoutBridge(selector, context ?? getCurrentInstance())
+  const host = resolvedContext?.selectComponent?.(selector) ?? null
+  return {
+    context: resolvedContext,
+    host,
+  }
+}
+
 export function showToast(payload: string | ShowToastPayload, theme?: ToastTheme) {
   const mpContext = getCurrentInstance()
   const normalized = typeof payload === 'string'
     ? { message: payload, theme }
     : payload
   const selector = normalized.selector ?? '#t-toast'
-  const context = resolvePageFeedbackHost(selector, normalized.context ?? mpContext)
+  const { context, host } = resolveToastHost(selector, normalized.context ?? mpContext)
 
   if (!context) {
     return
   }
 
   const { theme: nextTheme, title, message, ...rest } = normalized
-  return Toast({
-    selector,
-    context: context as any,
+  const options = {
     message: message ?? title ?? '',
     ...rest,
     ...(nextTheme && nextTheme !== 'default' ? { theme: nextTheme } : {}),
+  }
+
+  if (host && typeof host.show === 'function') {
+    host.show(options)
+    return
+  }
+
+  return Toast({
+    selector,
+    context: context as any,
+    ...options,
   } as any)
 }
 

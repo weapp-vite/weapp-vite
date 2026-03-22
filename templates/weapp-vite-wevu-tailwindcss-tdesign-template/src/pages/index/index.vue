@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { QuickActionItem } from '@/types/action'
 
-import { computed, ref, watch } from 'wevu'
+import { computed, getCurrentInstance, ref, resolveLayoutBridge, watch } from 'wevu'
 import KpiBoard from '@/components/KpiBoard/index.vue'
 import QuickActionGrid from '@/components/QuickActionGrid/index.vue'
 import { usePullDownRefresh } from '@/hooks/usePullDownRefresh'
@@ -14,6 +14,7 @@ definePageJson({
 })
 
 const { showToast } = useToast()
+const pageInstance = getCurrentInstance<any>()
 
 const noticeText = ref('欢迎体验 wevu + weapp-vite + TDesign 模板，已启用分包与多页面导航。')
 const lastUpdated = ref('刚刚')
@@ -156,6 +157,42 @@ function refreshDashboard() {
   showToast('指标已刷新')
 }
 
+function inspectLayoutToastBridge() {
+  const bridge = resolveLayoutBridge('#t-toast', pageInstance)
+  const layoutByPage = pageInstance?.selectComponent?.('weapp-layout-default')
+    ?? pageInstance?.selectComponent?.('.weapp-layout-default')
+    ?? null
+  const toastFromBridge = bridge?.selectComponent?.('#t-toast') ?? null
+  const toastFromLayout = layoutByPage?.selectComponent?.('#t-toast') ?? null
+
+  return {
+    bridgeResolved: Boolean(bridge),
+    bridgeIsPage: bridge === pageInstance,
+    bridgeHasSelectComponent: typeof bridge?.selectComponent === 'function',
+    layoutFoundByPage: Boolean(layoutByPage),
+    toastFoundByBridge: Boolean(toastFromBridge),
+    toastFoundByLayout: Boolean(toastFromLayout),
+    bridgeKeys: bridge ? Object.keys(bridge).slice(0, 20) : [],
+    layoutKeys: layoutByPage ? Object.keys(layoutByPage).slice(0, 20) : [],
+  }
+}
+
+void inspectLayoutToastBridge
+
+function runLayoutToastE2E() {
+  refreshSeed.value = Math.max(1, Math.floor(Math.random() * 9))
+  const bridgeState = inspectLayoutToastBridge()
+  setTimeout(() => {
+    showToast('指标已刷新')
+  }, 0)
+  return {
+    ...bridgeState,
+    refreshSeed: refreshSeed.value,
+  }
+}
+
+void runLayoutToastE2E
+
 usePullDownRefresh(refreshDashboard)
 
 function onQuickAction(action: QuickActionItem) {
@@ -193,7 +230,7 @@ function onQuickAction(action: QuickActionItem) {
         <text class="text-[20rpx] text-white/70">
           {{ lastUpdated }}
         </text>
-        <t-button size="small" theme="default" variant="outline" @tap="refreshDashboard">
+        <t-button id="refresh-dashboard-button" size="small" theme="default" variant="outline" @tap="refreshDashboard">
           刷新指标
         </t-button>
       </view>

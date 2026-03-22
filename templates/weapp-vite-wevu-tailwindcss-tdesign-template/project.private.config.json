@@ -14,6 +14,12 @@
           "scene": null
         },
         {
+          "name": "布局页",
+          "pathName": "pages/layouts/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "数据页",
           "pathName": "pages/data/index",
           "query": "",
