@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.11.3
+
+### Patch Changes
+
+- 🐛 **修复 native layout 构建回归测试对预构建产物的隐式依赖：测试临时项目现在会将 `weapp-vite/runtime` 显式映射到源码入口，避免在干净 CI 环境中因缺少 `dist/runtime.mjs` 而解析失败，从而稳定 release 流程中的 `layoutBuild.native.test.ts`。** [`adec1fc`](https://github.com/weapp-vite/weapp-vite/commit/adec1fc243e43c9603563148b70303c2a612a2ae) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.11.3`, `wevu@6.11.3`
+
 ## 6.11.2
 
 ### Patch Changes
