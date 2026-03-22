@@ -32,6 +32,122 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
   const scanState = ctx.runtimeState.scan
   const { subPackageMap, independentSubPackageMap, independentDirtyRoots } = scanState
 
+  function mergeAutoRoutePages(
+    pages: AppJson['pages'] | undefined,
+    routePages: string[],
+  ) {
+    if (routePages.length === 0) {
+      return pages
+    }
+
+    const existingPages = Array.isArray(pages) ? pages.filter(page => typeof page === 'string' && page.length > 0) : []
+    const existingSet = new Set(existingPages)
+    const hasAllRoutePages = routePages.every(page => existingSet.has(page))
+    if (hasAllRoutePages) {
+      return existingPages
+    }
+
+    return [
+      ...routePages,
+      ...existingPages.filter(page => !routePages.includes(page)),
+    ]
+  }
+
+  function mergeAutoRouteSubPackages(
+    subPackages: SubPackage[] | undefined,
+    routeSubPackages: { root: string, pages: string[] }[],
+  ) {
+    if (routeSubPackages.length === 0) {
+      return subPackages
+    }
+
+    const merged = new Map<string, SubPackage>()
+    const anonymousEntries: SubPackage[] = []
+    const existingEntries = Array.isArray(subPackages) ? subPackages : []
+
+    for (const entry of existingEntries) {
+      if (!entry?.root) {
+        anonymousEntries.push(entry)
+        continue
+      }
+      merged.set(entry.root, {
+        ...entry,
+        pages: Array.isArray(entry.pages) ? [...entry.pages] : [],
+      })
+    }
+
+    let changed = false
+    for (const routeSubPackage of routeSubPackages) {
+      const existingEntry = merged.get(routeSubPackage.root)
+      if (!existingEntry) {
+        merged.set(routeSubPackage.root, {
+          root: routeSubPackage.root,
+          pages: [...routeSubPackage.pages],
+        })
+        changed = true
+        continue
+      }
+
+      const existingPages = Array.isArray(existingEntry.pages) ? existingEntry.pages : []
+      const existingPageSet = new Set(existingPages)
+      const hasAllPages = routeSubPackage.pages.every(page => existingPageSet.has(page))
+      if (hasAllPages) {
+        continue
+      }
+
+      existingEntry.pages = [
+        ...routeSubPackage.pages,
+        ...existingPages.filter(page => !routeSubPackage.pages.includes(page)),
+      ]
+      changed = true
+    }
+
+    if (!changed && anonymousEntries.length === 0) {
+      return existingEntries
+    }
+
+    return [
+      ...merged.values(),
+      ...anonymousEntries,
+    ]
+  }
+
+  async function applyAutoRoutesToAppConfigIfNeeded(
+    config: AppJson & { subpackages?: SubPackage[], subPackages?: SubPackage[] },
+  ) {
+    const autoRoutesService = ctx.autoRoutesService
+    if (!autoRoutesService?.isEnabled()) {
+      return config
+    }
+
+    if (ctx.runtimeState.autoRoutes.loadingAppConfig) {
+      return config
+    }
+
+    ctx.runtimeState.autoRoutes.loadingAppConfig = true
+    try {
+      await autoRoutesService.ensureFresh()
+    }
+    finally {
+      ctx.runtimeState.autoRoutes.loadingAppConfig = false
+    }
+    const routes = autoRoutesService.getReference()
+    config.pages = mergeAutoRoutePages(config.pages, routes.pages)
+
+    const mergedSubPackages = mergeAutoRouteSubPackages(
+      config.subPackages ?? config.subpackages,
+      routes.subPackages.map(subPackage => ({
+        root: subPackage.root,
+        pages: [...subPackage.pages],
+      })),
+    )
+    if (mergedSubPackages) {
+      config.subPackages = mergedSubPackages
+    }
+
+    return config
+  }
+
   async function loadAppEntry() {
     if (!ctx.configService || !ctx.jsonService) {
       throw new Error('扫描入口前必须初始化 configService/jsonService。')
@@ -89,6 +205,7 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
           subPackages: SubPackage[]
         }
       }
+      await applyAutoRoutesToAppConfigIfNeeded(config)
 
       if (isObject(config)) {
         // 使用 appEntryPath，如果不存在则使用 vueAppPath

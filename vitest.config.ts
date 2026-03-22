@@ -56,10 +56,13 @@ function loadProjectRootsFromWorkspace(): string[] {
 }
 
 const PROJECT_ROOTS = loadProjectRootsFromWorkspace()
+const COVERAGE_TEMP_DIR = path.resolve(ROOT_DIR, 'coverage/.tmp')
 
 if (!PROJECT_ROOTS.length) {
   console.warn('[vitest] No project roots detected. Check pnpm-workspace.yaml to define workspace packages.')
 }
+
+fs.mkdirSync(COVERAGE_TEMP_DIR, { recursive: true })
 
 function findConfig(basePath: string): string | null {
   for (const filename of CONFIG_FILENAMES) {
@@ -111,6 +114,7 @@ export default defineConfig(() => {
       projects,
       coverage: {
         enabled: true,
+        clean: false,
         skipFull: true,
         exclude: [
           '**/dist/**',

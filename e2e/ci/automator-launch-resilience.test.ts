@@ -172,4 +172,52 @@ describe.sequential('automator launch resilience', () => {
     expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
     expect(secondMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
   })
+
+  it('retries when runtime log listener binding hits a transient connection closed error', async () => {
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const firstMiniProgram = createMockMiniProgram()
+    firstMiniProgram.on.mockImplementation(() => {
+      throw new Error('Connection closed, check if wechat web devTools is still running')
+    })
+    const secondMiniProgram = createMockMiniProgram()
+
+    launchMock
+      .mockResolvedValueOnce(firstMiniProgram)
+      .mockResolvedValueOnce(secondMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot })
+
+    expect(launchMock).toHaveBeenCalledTimes(2)
+    expect(firstMiniProgram.__rawClose).toHaveBeenCalledTimes(1)
+    expect(secondMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
+
+  it('ignores async runtime log enable rejection caused by connection closed', async () => {
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRIES = '2'
+    process.env.WEAPP_VITE_E2E_LAUNCH_RETRY_DELAY = '1'
+    process.env.WEAPP_VITE_E2E_APP_CONFIG_READY_TIMEOUT = '400'
+
+    createProjectFixture(sandboxRoot, {
+      pages: ['pages/index/index'],
+    })
+
+    const firstMiniProgram = createMockMiniProgram()
+    firstMiniProgram.on.mockRejectedValueOnce(new Error('Connection closed, check if wechat web devTools is still running'))
+    launchMock.mockResolvedValueOnce(firstMiniProgram)
+
+    const { launchAutomator } = await import('../utils/automator')
+    await launchAutomator({ projectPath: sandboxRoot })
+
+    expect(launchMock).toHaveBeenCalledTimes(1)
+    expect(firstMiniProgram.__rawClose).not.toHaveBeenCalled()
+    expect(firstMiniProgram.__rawReLaunch).toHaveBeenCalledWith('/pages/index/index')
+  })
 })

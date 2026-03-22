@@ -1,7 +1,7 @@
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
-import { launchAutomator } from '../utils/automator'
+import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -23,16 +23,112 @@ async function runBuild() {
 
 let sharedMiniProgram: any = null
 let sharedBuildPrepared = false
+let sharedLaunchInfraUnavailableMessage: string | null = null
 
-async function getSharedMiniProgram() {
+async function runWithTimeout<T>(factory: () => Promise<T>, timeoutMs: number, label: string) {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let settled = false
+  const task = Promise.resolve()
+    .then(factory)
+    .then((value) => {
+      settled = true
+      return value
+    })
+    .catch((error) => {
+      settled = true
+      throw error
+    })
+  try {
+    return await Promise.race([
+      task,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`Timeout in ${label} after ${timeoutMs}ms`))
+        }, timeoutMs)
+      }),
+    ])
+  }
+  finally {
+    if (timer) {
+      clearTimeout(timer)
+    }
+    if (!settled) {
+      void task.catch(() => {})
+    }
+  }
+}
+
+function shouldRetryAutomatorError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('Wait timed out after')
+    || message.includes('Timeout in ')
+    || message.includes('Execution context was destroyed')
+    || message.includes('Target closed')
+    || message.includes('Connection closed, check if wechat web devTools is still running')
+    || message.includes('WebSocket is not open')
+    || message.includes('socket hang up')
+}
+
+async function runAutomatorOp<T>(
+  label: string,
+  factory: () => Promise<T>,
+  options: { timeoutMs?: number, retries?: number, retryDelayMs?: number } = {},
+) {
+  const {
+    timeoutMs = 8_000,
+    retries = 2,
+    retryDelayMs = 220,
+  } = options
+
+  let lastError: unknown
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      return await runWithTimeout(factory, timeoutMs, `${label}#${attempt}`)
+    }
+    catch (error) {
+      lastError = error
+      if (attempt < retries && shouldRetryAutomatorError(error)) {
+        await delay(retryDelayMs)
+        continue
+      }
+      throw error
+    }
+  }
+
+  throw lastError
+}
+
+async function closeMiniProgramSafely(miniProgram: any) {
+  await runAutomatorOp('close mini program', () => miniProgram.close(), {
+    timeoutMs: 12_000,
+    retries: 2,
+    retryDelayMs: 200,
+  }).catch(() => {})
+}
+
+async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
+  if (sharedLaunchInfraUnavailableMessage) {
+    ctx?.skip(sharedLaunchInfraUnavailableMessage)
+    throw new Error(sharedLaunchInfraUnavailableMessage)
+  }
+
   if (!sharedBuildPrepared) {
     await runBuild()
     sharedBuildPrepared = true
   }
   if (!sharedMiniProgram) {
-    sharedMiniProgram = await launchAutomator({
-      projectPath: APP_ROOT,
-    })
+    try {
+      sharedMiniProgram = await launchAutomator({
+        projectPath: APP_ROOT,
+      })
+    }
+    catch (error) {
+      if (ctx && isDevtoolsHttpPortError(error)) {
+        sharedLaunchInfraUnavailableMessage = 'WeChat DevTools 基础设施不可用，跳过 github-issues IDE 自动化用例。'
+        ctx.skip(sharedLaunchInfraUnavailableMessage)
+      }
+      throw error
+    }
   }
   return sharedMiniProgram
 }
@@ -41,7 +137,7 @@ async function releaseSharedMiniProgram(_miniProgram: any) {
   if (!sharedMiniProgram || sharedMiniProgram === _miniProgram) {
     return
   }
-  await _miniProgram.close()
+  await closeMiniProgramSafely(_miniProgram)
 }
 
 async function closeSharedMiniProgram() {
@@ -50,7 +146,7 @@ async function closeSharedMiniProgram() {
   }
   const miniProgram = sharedMiniProgram
   sharedMiniProgram = null
-  await miniProgram.close()
+  await closeMiniProgramSafely(miniProgram)
 }
 
 function stripAutomatorOverlay(wxml: string) {
@@ -63,6 +159,39 @@ async function readPageWxml(page: any) {
     throw new Error('Failed to find page element')
   }
   return stripAutomatorOverlay(await element.wxml())
+}
+
+async function waitForPageWxml(page: any, readyText?: string, timeoutMs = 15_000) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    try {
+      const wxml = await readPageWxml(page)
+      const normalized = wxml.trim()
+      if (readyText) {
+        if (normalized.includes(readyText)) {
+          return true
+        }
+      }
+      else if (normalized && normalized !== '<text></text>') {
+        return true
+      }
+    }
+    catch {
+      // 页面切换瞬态下 DOM 可能短暂不可读，继续轮询。
+    }
+
+    if (typeof page?.waitFor === 'function') {
+      try {
+        await page.waitFor(220)
+        continue
+      }
+      catch {
+        // page 对象短暂失效时退回普通 sleep。
+      }
+    }
+    await delay(220)
+  }
+  return false
 }
 
 async function readClassName(page: any, selector: string) {
@@ -100,6 +229,32 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
     }
     catch {
       // 页面切换时 currentPage 可能短暂失败，继续轮询。
+    }
+    await delay(220)
+  }
+  return null
+}
+
+async function relaunchPage(miniProgram: any, route: string, readyText?: string, timeoutMs = 15_000) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let page: any = null
+    try {
+      page = await miniProgram.reLaunch(route)
+    }
+    catch {
+      await delay(280)
+      continue
+    }
+    if (!page) {
+      await delay(220)
+      continue
+    }
+
+    const currentPage = await waitForCurrentPagePath(miniProgram, route, timeoutMs)
+    const targetPage = currentPage ?? page
+    const ready = await waitForPageWxml(targetPage, readyText, timeoutMs)
+    if (ready) {
+      return targetPage
     }
     await delay(220)
   }
@@ -229,15 +384,14 @@ describe.sequential('e2e app: github-issues', () => {
     await closeSharedMiniProgram()
   })
 
-  it('issue #289: updates runtime classes on split pages', async () => {
-    const miniProgram = await getSharedMiniProgram()
+  it('issue #289: updates runtime classes on split pages', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const objectPage = await miniProgram.reLaunch('/pages/issue-289/object-literal/index')
+      const objectPage = await relaunchPage(miniProgram, '/pages/issue-289/object-literal/index', 'object-list-loose')
       if (!objectPage) {
         throw new Error('Failed to launch object-literal page')
       }
-      await objectPage.waitFor(500)
 
       const objectInitialWxml = await readPageWxml(objectPage)
       expect(objectInitialWxml).toContain('object-list-loose')
@@ -260,11 +414,10 @@ describe.sequential('e2e app: github-issues', () => {
       expect(objectUpdatedWxml).not.toContain('object list hidden')
       expect(objectUpdatedWxml).toContain('激活项：item-1')
 
-      const mapPage = await miniProgram.reLaunch('/pages/issue-289/map-class/index')
+      const mapPage = await relaunchPage(miniProgram, '/pages/issue-289/map-class/index', 'issue289-map-toggle-expanded')
       if (!mapPage) {
         throw new Error('Failed to launch map-class page')
       }
-      await mapPage.waitFor(500)
 
       const mapInitialWxml = await readPageWxml(mapPage)
       expect(mapInitialWxml).toContain('issue289-map-toggle-expanded issue289-ctrl-on')
@@ -330,11 +483,10 @@ describe.sequential('e2e app: github-issues', () => {
       const mapExpandedOnWxml = await readPageWxml(mapPage)
       expect(mapExpandedOnWxml).toContain('map-meta-list-open')
 
-      const rootPage = await miniProgram.reLaunch('/pages/issue-289/root-class/index')
+      const rootPage = await relaunchPage(miniProgram, '/pages/issue-289/root-class/index', 'root class: aaaa')
       if (!rootPage) {
         throw new Error('Failed to launch root-class page')
       }
-      await rootPage.waitFor(500)
 
       const rootInitialWxml = await readPageWxml(rootPage)
       expect(rootInitialWxml).toContain('root class: aaaa')
@@ -352,11 +504,10 @@ describe.sequential('e2e app: github-issues', () => {
       expect(rootUpdatedWxml).toContain('options hidden')
       expect(rootUpdatedWxml).toContain('选中类：root-b')
 
-      const computedPage = await miniProgram.reLaunch('/pages/issue-289/computed-class/index')
+      const computedPage = await relaunchPage(miniProgram, '/pages/issue-289/computed-class/index', 'issue289-computed-toggle-source')
       if (!computedPage) {
         throw new Error('Failed to launch computed-class page')
       }
-      await computedPage.waitFor(500)
 
       const computedInitialWxml = await readPageWxml(computedPage)
       expect(computedInitialWxml).toContain('issue289-computed-toggle-source issue289-ctrl-on')
@@ -430,7 +581,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #297: compiles and renders complex call expressions', async () => {
+  it('issue #297: compiles and renders complex call expressions', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-297/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-297/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -459,14 +610,13 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageJs).toContain('this.sayHello')
     expect(issuePageJs).toContain('_runE2E')
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-297/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-297/index', 'Hello-1-root-dasd')
       if (!issuePage) {
         throw new Error('Failed to launch issue-297 page')
       }
-      await issuePage.waitFor(500)
       const initialRenderedWxml = await readPageWxml(issuePage)
       expect(initialRenderedWxml).toContain('Hello-1-root-dasd')
       expect(initialRenderedWxml).toContain('Hello-1-Alpha-dasd')
@@ -485,7 +635,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #297: setup method call variants remain stable across expression contexts', async () => {
+  it('issue #297: setup method call variants remain stable across expression contexts', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-297-setup-method-calls/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-297-setup-method-calls/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -518,14 +668,13 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageJs).toContain('this.getOptionalInvoker')
     expect(issuePageJs).toContain('_runE2E')
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-297-setup-method-calls/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-297-setup-method-calls/index', 'bind-Alpha-dasd')
       if (!issuePage) {
         throw new Error('Failed to launch issue-297-setup-method-calls page')
       }
-      await issuePage.waitFor(500)
 
       const initialRenderedWxml = await readPageWxml(issuePage)
       expect(initialRenderedWxml).toContain('123')
@@ -561,7 +710,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #302: updates v-for class bindings with active state changes', async () => {
+  it('issue #302: updates v-for class bindings with active state changes', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-302/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-302/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -574,14 +723,13 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageJs).toContain('setActive')
     expect(issuePageJs).toContain('_runE2E')
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-302/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-302/index', 'active: a')
       if (!issuePage) {
         throw new Error('Failed to launch issue-302 page')
       }
-      await issuePage.waitFor(500)
 
       const initialRuntime = await issuePage.callMethod('_runE2E')
       expect(initialRuntime?.ok).toBe(true)
@@ -635,15 +783,14 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #309: triggers onLoad without requiring onPullDownRefresh hook', async () => {
-    const miniProgram = await getSharedMiniProgram()
+  it('issue #309: triggers onLoad without requiring onPullDownRefresh hook', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-309/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-309/index')
       if (!issuePage) {
         throw new Error('Failed to launch issue-309 page')
       }
-      await issuePage.waitFor(500)
 
       const runtimeResult = await issuePage.callMethod('_runE2E')
       expect(runtimeResult?.ok).toBe(true)
@@ -655,15 +802,14 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #309: triggers onLoad with created setupLifecycle and no pull-down hook', async () => {
-    const miniProgram = await getSharedMiniProgram()
+  it('issue #309: triggers onLoad with created setupLifecycle and no pull-down hook', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-309-created/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-309-created/index')
       if (!issuePage) {
         throw new Error('Failed to launch issue-309-created page')
       }
-      await issuePage.waitFor(500)
 
       const runtimeResult = await issuePage.callMethod('_runE2E')
       expect(runtimeResult?.ok).toBe(true)
@@ -675,7 +821,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #312: updates computed object bindings after switching back to initial reference', async () => {
+  it('issue #312: updates computed object bindings after switching back to initial reference', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-312/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-312/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -686,14 +832,13 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageWxml).toContain('issue312-btn-dec')
     expect(issuePageJs).toContain('_runE2E')
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-312/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-312/index', 'data-current-label="选项1"')
       if (!issuePage) {
         throw new Error('Failed to launch issue-312 page')
       }
-      await issuePage.waitFor(500)
 
       const initialRuntime = await issuePage.callMethod('_runE2E')
       expect(initialRuntime?.ok).toBe(true)
@@ -731,7 +876,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #316: triggers kebab-case component event bindings at runtime', async () => {
+  it('issue #316: triggers kebab-case component event bindings at runtime', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-316/index.wxml')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
 
@@ -741,14 +886,13 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageWxml).toContain('data-wv-inline-id-overlay-click="__wv_inline_0"')
     expect(issuePageWxml).not.toContain('bindoverlay-click=')
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-316/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-316/index', 'overlay clicks: 0')
       if (!issuePage) {
         throw new Error('Failed to launch issue-316 page')
       }
-      await issuePage.waitFor(500)
 
       const initialRuntime = await issuePage.callMethod('_runE2E')
       expect(initialRuntime?.ok).toBe(true)
@@ -776,7 +920,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #318: keeps template call-expression rendering stable with auto setData.pick', async () => {
+  it('issue #318: keeps template call-expression rendering stable with auto setData.pick', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-318/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-318/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -793,14 +937,13 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageJs).toMatch(/pick:\[[^\]]*['"`]list['"`]/)
     expect(issuePageJs).toMatch(/pick:\[[^\]]*['"`]__wv_bind_\d+['"`]/)
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-318/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-318/index', 'count: 1')
       if (!issuePage) {
         throw new Error('Failed to launch issue-318 page')
       }
-      await issuePage.waitFor(500)
 
       const initialRuntime = await issuePage.callMethod('_runE2E')
       expect(initialRuntime?.ok).toBe(true)
@@ -848,7 +991,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #320: supports addRoute name override with alias and redirect replacement', async () => {
+  it('issue #320: supports addRoute name override with alias and redirect replacement', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-320/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-320/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -862,14 +1005,13 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageJs).toContain('/pages/issue-320/new-alias')
     expect(issuePageJs).toContain('/pages/issue-309/index?from=issue320-override')
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-320/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-320/index', 'ready for runtime e2e')
       if (!issuePage) {
         throw new Error('Failed to launch issue-320 page')
       }
-      await issuePage.waitFor(500)
 
       const runtimeResult = await issuePage.callMethod('_runE2E')
       expect(runtimeResult?.ok).toBe(true)
@@ -914,7 +1056,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #317: loads duplicated shared chunks with localized runtime inside subpackages', async () => {
+  it('issue #317: loads duplicated shared chunks with localized runtime inside subpackages', async (ctx) => {
     const itemSharedPath = path.join(DIST_ROOT, 'subpackages/item/weapp-shared/common.js')
     const userSharedPath = path.join(DIST_ROOT, 'subpackages/user/weapp-shared/common.js')
     const itemRuntimePath = path.join(DIST_ROOT, 'subpackages/item/rolldown-runtime.js')
@@ -934,23 +1076,21 @@ describe.sequential('e2e app: github-issues', () => {
     expect(await fs.pathExists(itemLodashPath)).toBe(true)
     expect(await fs.pathExists(userMergePath)).toBe(true)
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const itemPage = await miniProgram.reLaunch('/subpackages/item/index')
+      const itemPage = await relaunchPage(miniProgram, '/subpackages/item/index')
       if (!itemPage) {
         throw new Error('Failed to launch issue-317 item subpackage page')
       }
-      await itemPage.waitFor(500)
       const itemResult = await itemPage.callMethod('_runE2E')
       expect(itemResult?.ok).toBe(true)
       expect(itemResult?.npmMarker).toBe('issue317ItemNpmReady')
 
-      const userPage = await miniProgram.reLaunch('/subpackages/user/index')
+      const userPage = await relaunchPage(miniProgram, '/subpackages/user/index')
       if (!userPage) {
         throw new Error('Failed to launch issue-317 user subpackage page')
       }
-      await userPage.waitFor(500)
       const userResult = await userPage.callMethod('_runE2E')
       expect(userResult?.ok).toBe(true)
       expect(userResult?.npmMarker).toBe('Issue317 user npm ready')
@@ -960,7 +1100,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #340: loads cross-subpackage source imports in item/login-required and user/register/form', async () => {
+  it('issue #340: loads cross-subpackage source imports in item/login-required and user/register/form', async (ctx) => {
     const itemPageJsPath = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
     const userPageJsPath = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
     const itemRuntimePath = path.join(DIST_ROOT, 'subpackages/item/rolldown-runtime.js')
@@ -974,23 +1114,21 @@ describe.sequential('e2e app: github-issues', () => {
     expect(await fs.pathExists(itemRuntimePath)).toBe(true)
     expect(await fs.pathExists(userRuntimePath)).toBe(true)
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const itemPage = await miniProgram.reLaunch('/subpackages/item/login-required/index')
+      const itemPage = await relaunchPage(miniProgram, '/subpackages/item/login-required/index')
       if (!itemPage) {
         throw new Error('Failed to launch issue-340 item page')
       }
-      await itemPage.waitFor(500)
       const itemResult = await itemPage.callMethod('_runE2E')
       expect(itemResult?.ok).toBe(true)
       expect(itemResult?.message).toBe('item-login-required:issue-340:shared')
 
-      const userPage = await miniProgram.reLaunch('/subpackages/user/register/form')
+      const userPage = await relaunchPage(miniProgram, '/subpackages/user/register/form')
       if (!userPage) {
         throw new Error('Failed to launch issue-340 user page')
       }
-      await userPage.waitFor(500)
       const userResult = await userPage.callMethod('_runE2E')
       expect(userResult?.ok).toBe(true)
       expect(userResult?.message).toBe('user-register-form:issue-340:shared')
@@ -1000,7 +1138,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #322: keeps static class and hidden v-show state on first render before errors object exists', async () => {
+  it('issue #322: keeps static class and hidden v-show state on first render before errors object exists', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-322/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-322/index.js')
     const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
@@ -1012,14 +1150,13 @@ describe.sequential('e2e app: github-issues', () => {
     expect(issuePageJs).toMatch(/return["'`]issue322-input issue322-input-base["'`]/)
     expect(issuePageJs).toMatch(/return["'`]display: none["'`]/)
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-322/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-322/index', 'state: none')
       if (!issuePage) {
         throw new Error('Failed to launch issue-322 page')
       }
-      await issuePage.waitFor(500)
       const resetResult = await issuePage.callMethod('_resetE2E')
       expect(resetResult?.ok).toBe(true)
       expect(resetResult?.hasEmailError).toBe(false)
@@ -1057,7 +1194,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #300: renders destructured boolean props in runtime call-expression bindings', async () => {
+  it('issue #300: renders destructured boolean props in runtime call-expression bindings', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-300/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-300/index.js')
     const probeWxmlPath = path.join(DIST_ROOT, 'components/issue-300/PropsDestructureProbe/index.wxml')
@@ -1091,14 +1228,13 @@ describe.sequential('e2e app: github-issues', () => {
     expect(strictProbeJs).toContain('Object.prototype.hasOwnProperty.call(this.$state,`bool`)')
     expect(strictProbeJs).not.toContain('__wevuProps.props')
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-300/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-300/index', 'toggle bool: true')
       if (!issuePage) {
         throw new Error('Failed to launch issue-300 page')
       }
-      await issuePage.waitFor(500)
       const resetResult = await issuePage.callMethod('_resetE2E')
       expect(resetResult?.ok).toBe(true)
       await issuePage.waitFor(300)
@@ -1153,7 +1289,7 @@ describe.sequential('e2e app: github-issues', () => {
     }
   })
 
-  it('issue #328: keeps setup ref string props out of null/default fallback on first paint', async () => {
+  it('issue #328: keeps setup ref string props out of null/default fallback on first paint', async (ctx) => {
     const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-328/index.wxml')
     const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-328/index.js')
     const probeWxmlPath = path.join(DIST_ROOT, 'components/issue-328/ValueProbe/index.wxml')
@@ -1175,14 +1311,13 @@ describe.sequential('e2e app: github-issues', () => {
     expect(probeJs).toContain('valueHistory')
     expect(probeJs).toContain('historyText')
 
-    const miniProgram = await getSharedMiniProgram()
+    const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await miniProgram.reLaunch('/pages/issue-328/index')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-328/index', 'toggle value: 111')
       if (!issuePage) {
         throw new Error('Failed to launch issue-328 page')
       }
-      await issuePage.waitFor(400)
 
       const runtimeResult = await issuePage.callMethod('_runE2E')
       expect(runtimeResult?.ok).toBe(true)

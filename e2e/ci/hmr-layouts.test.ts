@@ -3,7 +3,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, PLATFORM_EXT, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, PLATFORM_EXT, replaceFileByRename, resolvePlatforms, waitForFileContains } from '../utils/hmr-helpers'
 import { waitForFile } from '../wevu-runtime.utils'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
@@ -143,7 +143,7 @@ describe.sequential('HMR layouts matrix (dev watch)', () => {
           `${platform} initial ${testCase.name} output`,
         )
 
-        await fs.writeFile(testCase.sourcePath, updatedSource, 'utf8')
+        await replaceFileByRename(testCase.sourcePath, updatedSource)
 
         const updatedContent = await dev.waitFor(
           waitForFileContains(distPath, marker),
@@ -151,7 +151,7 @@ describe.sequential('HMR layouts matrix (dev watch)', () => {
         )
         expect(updatedContent).toContain(marker)
 
-        await fs.writeFile(testCase.sourcePath, originalSource, 'utf8')
+        await replaceFileByRename(testCase.sourcePath, originalSource)
 
         const restoredContent = await dev.waitFor(
           waitForFileContains(distPath, testCase.initialMarker),
