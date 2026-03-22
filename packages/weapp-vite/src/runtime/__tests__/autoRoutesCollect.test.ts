@@ -48,4 +48,36 @@ describe('collectCandidates', () => {
     expect(keys).toContain('features/cart/screens/detail/index')
     expect(keys).not.toContain('pages/index/index')
   })
+
+  it('does not collect subpackage entry files as route candidates when a pages directory exists', async () => {
+    await fs.ensureFile(path.join(tempDir, 'sub', 'index.ts'))
+    await fs.ensureDir(path.join(tempDir, 'sub', 'pages', 'bar'))
+    await fs.ensureFile(path.join(tempDir, 'sub', 'pages', 'bar', 'index.ts'))
+
+    const candidates = await _collectAutoRouteCandidates(tempDir, undefined, ['sub'])
+    const keys = Array.from(candidates.keys(), key => path.relative(tempDir, key))
+
+    expect(keys).toContain('sub/pages/bar/index')
+    expect(keys).not.toContain('sub/index')
+  })
+
+  it('falls back to scanning the subpackage root when no pages directory exists', async () => {
+    await fs.ensureDir(path.join(tempDir, 'pkg-no-pages'))
+    await fs.ensureFile(path.join(tempDir, 'pkg-no-pages', 'index.ts'))
+
+    const candidates = await _collectAutoRouteCandidates(tempDir, undefined, ['pkg-no-pages'])
+    const keys = Array.from(candidates.keys(), key => path.relative(tempDir, key))
+
+    expect(keys).toContain('pkg-no-pages/index')
+  })
+
+  it('does not fall back to the subpackage root when the pages directory exists but is empty', async () => {
+    await fs.ensureDir(path.join(tempDir, 'pkg-empty-pages', 'pages'))
+    await fs.ensureFile(path.join(tempDir, 'pkg-empty-pages', 'index.ts'))
+
+    const candidates = await _collectAutoRouteCandidates(tempDir, undefined, ['pkg-empty-pages'])
+    const keys = Array.from(candidates.keys(), key => path.relative(tempDir, key))
+
+    expect(keys).not.toContain('pkg-empty-pages/index')
+  })
 })
