@@ -111,6 +111,16 @@ const quickActions = ref<QuickActionItem[]>([
     type: 'sub',
   },
   {
+    key: 'layout-feedback',
+    title: 'Layout 通信',
+    description: '页面/组件调用 layout',
+    icon: 'chat-bubble',
+    tag: 'Bridge',
+    tone: 'brand',
+    path: '/pages/layout-feedback/index',
+    type: 'sub',
+  },
+  {
     key: 'lab',
     title: '组件实验室',
     description: 'TDesign 组件',
