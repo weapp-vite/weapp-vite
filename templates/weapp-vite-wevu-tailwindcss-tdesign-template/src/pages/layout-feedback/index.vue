@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, getCurrentInstance, ref, resolveLayoutBridge } from 'wevu'
+import { computed, getCurrentInstance, ref, resolveLayoutHost } from 'wevu'
 import SectionTitle from '@/components/SectionTitle/index.vue'
 import { useDialog } from '@/hooks/useDialog'
 import { LAYOUT_DIALOG_BRIDGE_KEY, LAYOUT_TOAST_BRIDGE_KEY } from '@/hooks/useLayoutFeedbackBridge'
@@ -20,10 +20,8 @@ const actionLogs = ref<string[]>([
 ])
 
 const bridgeStatus = computed(() => {
-  const toastBridge = resolveLayoutBridge(LAYOUT_TOAST_BRIDGE_KEY, pageInstance)
-  const dialogBridge = resolveLayoutBridge(LAYOUT_DIALOG_BRIDGE_KEY, pageInstance)
-  const toastHost = toastBridge?.selectComponent?.(LAYOUT_TOAST_BRIDGE_KEY) ?? null
-  const dialogHost = dialogBridge?.selectComponent?.(LAYOUT_DIALOG_BRIDGE_KEY) ?? null
+  const toastHost = resolveLayoutHost(LAYOUT_TOAST_BRIDGE_KEY, { context: pageInstance })
+  const dialogHost = resolveLayoutHost(LAYOUT_DIALOG_BRIDGE_KEY, { context: pageInstance })
 
   return [
     {
@@ -86,8 +84,7 @@ function triggerPageConfirm() {
 }
 
 function inspectDialogHostE2E() {
-  const dialogBridge = resolveLayoutBridge(LAYOUT_DIALOG_BRIDGE_KEY, pageInstance)
-  const dialogHost = dialogBridge?.selectComponent?.(LAYOUT_DIALOG_BRIDGE_KEY) ?? null
+  const dialogHost = resolveLayoutHost<any>(LAYOUT_DIALOG_BRIDGE_KEY, { context: pageInstance })
   return {
     hasHost: Boolean(dialogHost),
     visible: dialogHost?.data?.visible ?? dialogHost?.properties?.visible ?? null,
@@ -118,16 +115,14 @@ function getLayoutFeedbackLogsE2E() {
 }
 
 async function runDialogHostConfirmE2E() {
-  const dialogBridge = resolveLayoutBridge(LAYOUT_DIALOG_BRIDGE_KEY, pageInstance)
-  const dialogHost = dialogBridge?.selectComponent?.(LAYOUT_DIALOG_BRIDGE_KEY) ?? null
+  const dialogHost = resolveLayoutHost<any>(LAYOUT_DIALOG_BRIDGE_KEY, { context: pageInstance })
   dialogHost?.onConfirm?.()
   await new Promise(resolve => setTimeout(resolve, 60))
   return inspectDialogHostE2E()
 }
 
 async function runDialogHostCancelE2E() {
-  const dialogBridge = resolveLayoutBridge(LAYOUT_DIALOG_BRIDGE_KEY, pageInstance)
-  const dialogHost = dialogBridge?.selectComponent?.(LAYOUT_DIALOG_BRIDGE_KEY) ?? null
+  const dialogHost = resolveLayoutHost<any>(LAYOUT_DIALOG_BRIDGE_KEY, { context: pageInstance })
   dialogHost?.onCancel?.()
   await new Promise(resolve => setTimeout(resolve, 60))
   return inspectDialogHostE2E()

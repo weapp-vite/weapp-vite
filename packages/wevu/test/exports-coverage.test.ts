@@ -91,6 +91,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'removeMutationRecorder',
   'resetWevuDefaults',
   'resolveLayoutBridge',
+  'resolveLayoutHost',
   'resolveRuntimePageLayoutName',
   'runSetupFunction',
   'setCurrentInstance',
@@ -122,6 +123,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'useDisposables',
   'useIntersectionObserver',
   'useLayoutBridge',
+  'useLayoutHosts',
   'useModel',
   'useNativeInstance',
   'useNativePageRouter',
@@ -131,6 +133,7 @@ const ROOT_RUNTIME_EXPORTS = [
   'useSlots',
   'useTemplateRef',
   'useUpdatePerformanceListener',
+  'waitForLayoutHost',
   'watch',
   'watchEffect',
 ] as const

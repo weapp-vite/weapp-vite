@@ -1,7 +1,16 @@
+import type { Ref } from '../reactivity'
+import { isRef } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext, onAttached, onDetached } from './hooks'
 
 type LayoutBridgeContext = Record<string, any>
 type LayoutBridgeComponentResolver = (selector: string) => any
+type LayoutHostMap = Record<string, unknown>
+interface LayoutHostResolveOptions<T = any> {
+  context?: T
+  fallbackContext?: T
+  interval?: number
+  retries?: number
+}
 
 const pageLayoutBridges = new Map<string, Map<string, LayoutBridgeContext>>()
 const layoutBridgePageKeys = '__wevuLayoutBridgePageKeys'
@@ -72,6 +81,16 @@ function resolveNativeLayoutContext(context?: LayoutBridgeContext) {
   }
 
   return context
+}
+
+function resolveHostEntry(entry: unknown) {
+  if (typeof entry === 'function') {
+    return (entry as () => unknown)()
+  }
+  if (isRef(entry as Ref<unknown>)) {
+    return (entry as Ref<unknown>).value
+  }
+  return entry
 }
 
 /**
@@ -151,6 +170,42 @@ export function resolveLayoutBridge<T = any>(
 }
 
 /**
+ * 解析当前页面 layout 内通过指定 key 暴露的宿主实例。
+ */
+export function resolveLayoutHost<T = any, C = any>(
+  key: string,
+  options: LayoutHostResolveOptions<C> = {},
+) {
+  const context = options.context ?? options.fallbackContext
+  const bridge = resolveLayoutBridge(key, context)
+  const host = bridge?.selectComponent?.(key)
+  return (host ?? null) as T | null
+}
+
+/**
+ * 等待当前页面 layout 宿主实例可用，适合页面初次进入时的异步宿主解析。
+ */
+export function waitForLayoutHost<T = any, C = any>(
+  key: string,
+  options: LayoutHostResolveOptions<C> = {},
+) {
+  const retries = options.retries ?? 20
+  const interval = options.interval ?? 16
+  const host = resolveLayoutHost<T, C>(key, options)
+  if (host || retries <= 0) {
+    return Promise.resolve(host)
+  }
+  return new Promise<T | null>((resolve) => {
+    setTimeout(() => {
+      resolve(waitForLayoutHost<T, C>(key, {
+        ...options,
+        retries: retries - 1,
+      }))
+    }, interval)
+  })
+}
+
+/**
  * 在 layout 生命周期内暴露 bridge，使页面或子组件可访问 layout 内部实例。
  */
 export function useLayoutBridge(
@@ -200,5 +255,17 @@ export function useLayoutBridge(
 
   onDetached(() => {
     unregisterPageLayoutBridge(normalizedSelectors, bridge)
+  })
+}
+
+/**
+ * 使用 key -> 宿主实例的映射批量暴露 layout 内部宿主，适合 toast/dialog 等共享反馈节点。
+ */
+export function useLayoutHosts(hosts: LayoutHostMap) {
+  const selectors = Object.keys(hosts)
+  useLayoutBridge(selectors, {
+    resolveComponent(key) {
+      return resolveHostEntry(hosts[key])
+    },
   })
 }

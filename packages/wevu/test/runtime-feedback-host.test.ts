@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from '@/reactivity'
 import { setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 import { callHookList } from '@/runtime/hooks/base'
-import { resolveLayoutBridge, useLayoutBridge } from '@/runtime/layoutBridge'
+import { resolveLayoutBridge, resolveLayoutHost, useLayoutBridge, useLayoutHosts, waitForLayoutHost } from '@/runtime/layoutBridge'
 
 describe('layout bridge runtime api', () => {
   it('registers and unregisters feedback hosts with component lifetimes', () => {
@@ -164,6 +165,40 @@ describe('layout bridge runtime api', () => {
 
     expect(resolveLayoutBridge('layout-dialog', page)?.selectComponent('layout-dialog')).toBeNull()
     expect(nativeSelectComponent).not.toHaveBeenCalled()
+
+    setCurrentSetupContext(undefined)
+    setCurrentInstance(undefined)
+    delete (globalThis as any).getCurrentPages
+  })
+
+  it('registers layout hosts from template refs and resolves them by key', async () => {
+    const page = {
+      route: 'pages/index/index',
+      __wevuSetPageLayout: () => {},
+    }
+    const toastHost = { show: vi.fn() }
+    const dialogHost = { close: vi.fn() }
+    const layoutInstance = {
+      is: 'layouts/default',
+      selectComponent: vi.fn(() => null),
+    } as any
+
+    ;(globalThis as any).getCurrentPages = () => [page]
+
+    setCurrentInstance(layoutInstance)
+    setCurrentSetupContext({ instance: layoutInstance })
+
+    useLayoutHosts({
+      'layout-toast': ref(toastHost),
+      'layout-dialog': () => dialogHost,
+    })
+
+    expect(resolveLayoutHost<{ show: typeof toastHost.show }>('layout-toast', { context: page }))
+      .toMatchObject({ show: expect.any(Function) })
+    expect(resolveLayoutHost<{ close: typeof dialogHost.close }>('layout-dialog', { context: page }))
+      .toMatchObject({ close: expect.any(Function) })
+    const resolvedDialogHost = await waitForLayoutHost<{ close: typeof dialogHost.close }>('layout-dialog', { context: page, retries: 0 })
+    expect(resolvedDialogHost).toMatchObject({ close: expect.any(Function) })
 
     setCurrentSetupContext(undefined)
     setCurrentInstance(undefined)
