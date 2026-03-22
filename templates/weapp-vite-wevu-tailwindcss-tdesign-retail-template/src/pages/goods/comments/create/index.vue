@@ -223,5 +223,4 @@ definePageJson({
       @tap="onSubmitBtnClick"
     />
   </view>
-  <t-toast id="t-toast" />
 </template>

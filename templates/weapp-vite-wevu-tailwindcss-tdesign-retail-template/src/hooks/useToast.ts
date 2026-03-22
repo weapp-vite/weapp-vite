@@ -1,5 +1,5 @@
 import Toast from 'tdesign-miniprogram/toast/index'
-import { getCurrentInstance } from 'wevu'
+import { getCurrentInstance, resolvePageFeedbackHost } from 'wevu'
 
 export type ToastTheme = 'success' | 'warning' | 'error' | 'default' | 'loading'
 
@@ -26,13 +26,14 @@ export function showToast(payload: string | ShowToastPayload, theme?: ToastTheme
   const normalized = typeof payload === 'string'
     ? { message: payload, theme }
     : payload
-  const context = normalized.context ?? mpContext
+  const selector = normalized.selector ?? '#t-toast'
+  const context = resolvePageFeedbackHost(selector, normalized.context ?? mpContext)
 
   if (!context) {
     return
   }
 
-  const { selector = '#t-toast', theme: nextTheme, title, message, ...rest } = normalized
+  const { theme: nextTheme, title, message, ...rest } = normalized
   return Toast({
     selector,
     context: context as any,

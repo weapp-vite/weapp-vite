@@ -376,7 +376,5 @@ definePageJson({
         确定
       </t-button>
     </view>
-    <t-toast id="t-toast" />
-    <t-dialog id="t-dialog" />
   </view>
 </template>

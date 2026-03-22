@@ -196,6 +196,5 @@ definePageJson({
         @addcart="cardClickHandle"
       />
     </view>
-    <t-toast id="t-toast" />
   </view>
 </template>

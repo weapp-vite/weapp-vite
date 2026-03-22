@@ -292,7 +292,5 @@ definePageJson({
         </template>
       </wr-load-more>
     </t-pull-down-refresh>
-    <t-toast id="t-toast" />
-    <t-dialog id="t-dialog" />
   </view>
 </template>

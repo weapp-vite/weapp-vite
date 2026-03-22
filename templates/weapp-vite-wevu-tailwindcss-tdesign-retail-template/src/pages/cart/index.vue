@@ -425,6 +425,4 @@ definePageJson({
   </block>
   <!-- 购物车空态 -->
   <cart-empty v-else @handleClick="onGotoHome" />
-  <t-toast id="t-toast" />
-  <t-dialog id="t-dialog" />
 </template>

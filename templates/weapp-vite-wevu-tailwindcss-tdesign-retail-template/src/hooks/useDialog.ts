@@ -1,5 +1,5 @@
 import Dialog from 'tdesign-miniprogram/dialog/index'
-import { getCurrentInstance } from 'wevu'
+import { getCurrentInstance, resolvePageFeedbackHost } from 'wevu'
 
 export interface DialogOptions {
   context?: any
@@ -23,16 +23,17 @@ export interface ConfirmOptions {
   title?: string
 }
 
-function resolveDialogContext(context?: any) {
-  return context ?? getCurrentInstance()
+function resolveDialogContext(selector: string, context?: any) {
+  return resolvePageFeedbackHost(selector, context ?? getCurrentInstance())
 }
 
 export function alertDialog(payload: AlertOptions) {
-  const context = resolveDialogContext(payload.context)
+  const selector = payload.selector ?? '#t-dialog'
+  const context = resolveDialogContext(selector, payload.context)
   if (!context) {
     return
   }
-  const { selector = '#t-dialog', ...rest } = payload
+  const { ...rest } = payload
   return Dialog.alert({
     selector,
     context: context as any,
@@ -41,11 +42,12 @@ export function alertDialog(payload: AlertOptions) {
 }
 
 export function confirmDialog(payload: ConfirmOptions) {
-  const context = resolveDialogContext(payload.context)
+  const selector = payload.selector ?? '#t-dialog'
+  const context = resolveDialogContext(selector, payload.context)
   if (!context) {
     return
   }
-  const { selector = '#t-dialog', ...rest } = payload
+  const { ...rest } = payload
   return Dialog.confirm({
     selector,
     context: context as any,
