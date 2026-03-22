@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 import { callHookList } from '@/runtime/hooks/base'
 import { resolveLayoutBridge, useLayoutBridge } from '@/runtime/layoutBridge'
@@ -134,6 +134,36 @@ describe('layout bridge runtime api', () => {
     })
 
     expect(resolveLayoutBridge('#t-toast', page)?.selectComponent('#t-toast')).toBe(toastInstance)
+
+    setCurrentSetupContext(undefined)
+    setCurrentInstance(undefined)
+    delete (globalThis as any).getCurrentPages
+  })
+
+  it('does not fall back to native selectComponent when resolver returns null', () => {
+    const page = {
+      route: 'pages/index/index',
+      __wevuSetPageLayout: () => {},
+    }
+    const nativeSelectComponent = vi.fn(() => ({ selector: 'layout-dialog' }))
+    const layoutInstance = {
+      is: 'layouts/default',
+      selectComponent: nativeSelectComponent,
+    } as any
+
+    ;(globalThis as any).getCurrentPages = () => [page]
+
+    setCurrentInstance(layoutInstance)
+    setCurrentSetupContext({ instance: layoutInstance })
+
+    useLayoutBridge('layout-dialog', {
+      resolveComponent() {
+        return null
+      },
+    })
+
+    expect(resolveLayoutBridge('layout-dialog', page)?.selectComponent('layout-dialog')).toBeNull()
+    expect(nativeSelectComponent).not.toHaveBeenCalled()
 
     setCurrentSetupContext(undefined)
     setCurrentInstance(undefined)

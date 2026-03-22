@@ -177,7 +177,7 @@ export function useLayoutBridge(
       }
 
       const resolvedComponent = resolveComponent?.(selector)
-      if (resolvedComponent) {
+      if (resolvedComponent !== undefined) {
         return resolvedComponent
       }
 

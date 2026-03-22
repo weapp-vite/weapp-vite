@@ -189,7 +189,34 @@ describe('runtime: template refs', () => {
 
     const refs = instance.__wevu.state.$refs
     expect(refs.header.headerKey).toBe('hello')
-    expect(refs.header.setHeaderKey).toBe(setHeaderKey)
+    expect(typeof refs.header.setHeaderKey).toBe('function')
+    refs.header.setHeaderKey('world')
+    expect(setHeaderKey).toHaveBeenCalledWith('world')
+  })
+
+  it('binds component template ref methods to the original instance', () => {
+    const componentInstance = {
+      count: 0,
+      inc() {
+        this.count += 1
+        return this.count
+      },
+    }
+
+    const instance: any = {
+      __wevuReadyCalled: true,
+      __wevu: { state: {}, proxy: {} },
+      selectComponent: vi.fn(() => componentInstance),
+      __wevuTemplateRefs: [
+        { selector: '.counter', inFor: false, name: 'counter', kind: 'component' },
+      ],
+    }
+
+    updateTemplateRefs(instance)
+
+    const refs = instance.__wevu.state.$refs
+    expect(refs.counter.inc()).toBe(1)
+    expect(componentInstance.count).toBe(1)
   })
 
   it('scheduleTemplateRefUpdate batches updates', async () => {
