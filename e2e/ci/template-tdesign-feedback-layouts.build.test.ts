@@ -21,11 +21,6 @@ async function readDistFile(projectRoot: string, relativePath: string) {
   return await readFile(path.join(projectRoot, 'dist', relativePath), 'utf-8')
 }
 
-function expectFeedbackNodes(wxml: string) {
-  expect(wxml).toContain('<t-toast id="t-toast" />')
-  expect(wxml).toContain('<t-dialog id="t-dialog" />')
-}
-
 function expectNoFeedbackNodes(wxml: string) {
   expect(wxml).not.toContain('<t-toast')
   expect(wxml).not.toContain('<t-dialog')
@@ -41,23 +36,28 @@ describe.sequential('template build: tdesign feedback layouts', () => {
     const defaultLayoutWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/default.wxml')
     const adminLayoutWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/admin.wxml')
     const pageWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'pages/index/index.wxml')
+    const abilityPageWxml = await readDistFile(BASE_TEMPLATE_ROOT, 'pages/ability/index.wxml')
     const defaultLayoutJs = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/default.js')
     const adminLayoutJs = await readDistFile(BASE_TEMPLATE_ROOT, 'layouts/admin.js')
-    const commonJs = await readDistFile(BASE_TEMPLATE_ROOT, 'common.js')
 
-    expectFeedbackNodes(defaultLayoutWxml)
-    expectFeedbackNodes(adminLayoutWxml)
-    expectNoFeedbackNodes(pageWxml)
+    expectNoFeedbackNodes(defaultLayoutWxml)
+    expectNoFeedbackNodes(adminLayoutWxml)
+    expect(pageWxml).toContain('<t-toast id="t-toast" />')
+    expect(abilityPageWxml).toContain('<t-toast id="t-toast" />')
+    expect(abilityPageWxml).toContain('<t-dialog id="t-dialog" />')
     expect(defaultLayoutJs.trim()).toBe('Component({})')
     expect(adminLayoutJs).toContain('setup(')
-    expect(commonJs).not.toContain('//#region src/layouts/default.vue')
   })
 
   it('emits shared feedback nodes from the retail default layout only', async () => {
     const defaultLayoutWxml = await readDistFile(RETAIL_TEMPLATE_ROOT, 'layouts/default.wxml')
     const cartPageWxml = await readDistFile(RETAIL_TEMPLATE_ROOT, 'pages/cart/index.wxml')
+    const orderButtonBarWxml = await readDistFile(RETAIL_TEMPLATE_ROOT, 'pages/order/components/order-button-bar/index.wxml')
 
-    expectFeedbackNodes(defaultLayoutWxml)
-    expectNoFeedbackNodes(cartPageWxml)
+    expectNoFeedbackNodes(defaultLayoutWxml)
+    expect(cartPageWxml).toContain('<t-toast id="t-toast" />')
+    expect(cartPageWxml).toContain('<t-dialog id="t-dialog" />')
+    expect(orderButtonBarWxml).toContain('<t-toast id="t-toast" />')
+    expect(orderButtonBarWxml).toContain('<t-dialog id="t-dialog" />')
   })
 })

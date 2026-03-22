@@ -807,5 +807,7 @@ definePageJson({
       :couponsShow="couponsShow"
       @sure="onCoupons"
     />
+    <t-toast id="t-toast" />
+    <t-dialog id="t-dialog" />
   </view>
 </template>

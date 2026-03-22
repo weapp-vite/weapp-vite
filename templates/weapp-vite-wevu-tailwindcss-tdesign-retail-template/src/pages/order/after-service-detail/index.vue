@@ -469,4 +469,6 @@ definePageJson({
       </view>
     </template>
   </t-dialog>
+  <t-toast id="t-toast" />
+  <t-dialog id="t-dialog" />
 </template>

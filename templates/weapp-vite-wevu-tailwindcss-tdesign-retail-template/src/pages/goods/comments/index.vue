@@ -303,5 +303,6 @@ definePageJson({
       color="#BBBBBB"
       failedColor="#FA550F"
     />
+    <t-toast id="t-toast" />
   </view>
 </template>

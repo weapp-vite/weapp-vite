@@ -1,5 +1,5 @@
 import type { RuntimeErrorCollector } from './runtimeErrors'
-import fs from 'fs-extra'
+import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
 import { extractConfigFromVue } from '../../packages/weapp-vite/src/utils/file'
@@ -54,6 +54,7 @@ const DEBUG_ROOT = path.resolve(import.meta.dirname, '../.tmp/retail-parity')
 const ROUTE_RENDER_WAIT_MS = Number.parseInt(process.env.RETAIL_PARITY_ROUTE_WAIT_MS || '1200', 10)
 const ROUTE_READY_TIMEOUT_MS = Number.parseInt(process.env.RETAIL_PARITY_ROUTE_READY_TIMEOUT_MS || '10000', 10)
 const DEBUG_ROUTE = process.env.RETAIL_PARITY_DEBUG_ROUTE?.trim()
+const FEEDBACK_SELECTOR_WARNING = '未找到组件,请检查selector是否正确'
 const DEBUG_DATA_KEYS = (process.env.RETAIL_PARITY_DEBUG_DATA_KEYS || 'pageLoading,imgSrcs,tabList,goodsList,goodsListLoadStatus')
   .split(',')
   .map(item => item.trim())
@@ -221,7 +222,7 @@ async function waitForPageRoot(page: any, timeoutMs = 10_000) {
 
 async function runBuild(projectRoot: string) {
   const distRoot = path.resolve(projectRoot, 'dist')
-  await fs.remove(distRoot)
+  await rm(distRoot, { force: true, recursive: true })
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
     projectRoot,
@@ -233,8 +234,11 @@ async function runBuild(projectRoot: string) {
 
 async function loadTemplateAppConfig() {
   const appJsonPath = path.resolve(TEMPLATE_ROOT, 'src/app.json')
-  if (await fs.pathExists(appJsonPath)) {
-    return await fs.readJson(appJsonPath)
+  try {
+    await access(appJsonPath)
+    return JSON.parse(await readFile(appJsonPath, 'utf8'))
+  }
+  catch {
   }
   const appVuePath = path.resolve(TEMPLATE_ROOT, 'src/app.vue')
   const config = await extractConfigFromVue(appVuePath)
@@ -300,6 +304,54 @@ function ensureNoRuntimeErrors(options: {
   const routeErrors = errorCollector.getSince(marker)
   if (routeErrors.length > 0) {
     throw new Error(`[retail-parity] runtime errors detected route=${route} stage=${stage}\n${routeErrors.join('\n')}`)
+  }
+}
+
+interface RuntimeWarningCollector {
+  mark: () => number
+  getSince: (marker: number) => string[]
+  dispose: () => void
+}
+
+function attachConsoleWarningCollector(miniProgram: any): RuntimeWarningCollector {
+  const warnings: string[] = []
+  const onConsole = (entry: any) => {
+    const text = typeof entry?.text === 'string'
+      ? entry.text
+      : Array.isArray(entry?.args)
+        ? entry.args.map((item: any) => item?.value ?? item).join(' ')
+        : ''
+    const level = String(entry?.level ?? '').toLowerCase()
+    if (level === 'warn' && text.includes(FEEDBACK_SELECTOR_WARNING)) {
+      warnings.push(text)
+    }
+  }
+
+  miniProgram.on('console', onConsole)
+
+  return {
+    mark() {
+      return warnings.length
+    },
+    getSince(marker: number) {
+      return warnings.slice(marker)
+    },
+    dispose() {
+      miniProgram.removeListener('console', onConsole)
+    },
+  }
+}
+
+function ensureNoSelectorWarnings(options: {
+  warningCollector: RuntimeWarningCollector
+  marker: number
+  route: string
+  stage: string
+}) {
+  const { warningCollector, marker, route, stage } = options
+  const routeWarnings = warningCollector.getSince(marker)
+  if (routeWarnings.length > 0) {
+    throw new Error(`[retail-parity] runtime warnings detected route=${route} stage=${stage}\n${routeWarnings.join('\n')}`)
   }
 }
 
@@ -501,6 +553,7 @@ async function launchAutomatorWithRetry(projectPath: string) {
 interface SharedProjectSession {
   miniProgram: any
   errorCollector: RuntimeErrorCollector
+  warningCollector: RuntimeWarningCollector
 }
 
 const sharedProjectSessions = new Map<string, SharedProjectSession>()
@@ -513,9 +566,11 @@ async function getSharedProjectSession(projectRoot: string) {
 
   const miniProgram = await launchAutomatorWithRetry(projectRoot)
   const errorCollector = attachRuntimeErrorCollector(miniProgram)
+  const warningCollector = attachConsoleWarningCollector(miniProgram)
   const session: SharedProjectSession = {
     miniProgram,
     errorCollector,
+    warningCollector,
   }
   sharedProjectSessions.set(projectRoot, session)
   return session
@@ -526,6 +581,7 @@ async function closeSharedProjectSessions() {
   sharedProjectSessions.clear()
   for (const session of sessions) {
     session.errorCollector.dispose()
+    session.warningCollector.dispose()
   }
   await Promise.allSettled(sessions.map(session => session.miniProgram.close()))
 }
@@ -536,13 +592,15 @@ async function captureRouteWxml(options: {
   route: string
   pagePath: string
   errorCollector: RuntimeErrorCollector
+  warningCollector: RuntimeWarningCollector
 }) {
-  const { miniProgram, projectName, route, pagePath, errorCollector } = options
+  const { miniProgram, projectName, route, pagePath, errorCollector, warningCollector } = options
   let lastError: unknown = null
 
   for (let attempt = 1; attempt <= ROUTE_CAPTURE_RETRY_COUNT; attempt += 1) {
     try {
       const marker = errorCollector.mark()
+      const warningMarker = warningCollector.mark()
       await prepareRouteContext(miniProgram, pagePath)
       const page = await miniProgram.reLaunch(route)
       if (!page) {
@@ -554,10 +612,22 @@ async function captureRouteWxml(options: {
         route,
         stage: 'after-reLaunch',
       })
+      ensureNoSelectorWarnings({
+        warningCollector,
+        marker: warningMarker,
+        route,
+        stage: 'after-reLaunch',
+      })
       await page.waitFor(Number.isFinite(ROUTE_RENDER_WAIT_MS) ? ROUTE_RENDER_WAIT_MS : 1200)
       ensureNoRuntimeErrors({
         errorCollector,
         marker,
+        route,
+        stage: 'after-route-wait',
+      })
+      ensureNoSelectorWarnings({
+        warningCollector,
+        marker: warningMarker,
         route,
         stage: 'after-route-wait',
       })
@@ -572,6 +642,12 @@ async function captureRouteWxml(options: {
       ensureNoRuntimeErrors({
         errorCollector,
         marker,
+        route,
+        stage: 'after-ready',
+      })
+      ensureNoSelectorWarnings({
+        warningCollector,
+        marker: warningMarker,
         route,
         stage: 'after-ready',
       })
@@ -591,6 +667,12 @@ async function captureRouteWxml(options: {
       ensureNoRuntimeErrors({
         errorCollector,
         marker,
+        route,
+        stage: 'before-wxml-read',
+      })
+      ensureNoSelectorWarnings({
+        warningCollector,
+        marker: warningMarker,
         route,
         stage: 'before-wxml-read',
       })
@@ -620,7 +702,7 @@ async function captureProjectPagesWxml(options: {
   launchQueryMap: Map<string, string>
 }) {
   const { projectRoot, projectName, pages, launchQueryMap } = options
-  const { miniProgram, errorCollector } = await getSharedProjectSession(projectRoot)
+  const { miniProgram, errorCollector, warningCollector } = await getSharedProjectSession(projectRoot)
   const pageWxmlMap = new Map<string, string>()
   for (const pagePath of pages) {
     const route = buildRoute(pagePath, launchQueryMap.get(pagePath))
@@ -630,6 +712,7 @@ async function captureProjectPagesWxml(options: {
       route,
       pagePath,
       errorCollector,
+      warningCollector,
     })
     pageWxmlMap.set(pagePath, wxml)
   }
@@ -645,10 +728,10 @@ async function dumpCapturedWxml(
     return
   }
   const safePagePath = pagePath.replace(/\//g, '__')
-  await fs.ensureDir(DEBUG_ROOT)
+  await mkdir(DEBUG_ROOT, { recursive: true })
   await Promise.all([
-    fs.writeFile(path.resolve(DEBUG_ROOT, `${safePagePath}.app.wxml`), appWxml, 'utf8'),
-    fs.writeFile(path.resolve(DEBUG_ROOT, `${safePagePath}.template.wxml`), templateWxml, 'utf8'),
+    writeFile(path.resolve(DEBUG_ROOT, `${safePagePath}.app.wxml`), appWxml, 'utf8'),
+    writeFile(path.resolve(DEBUG_ROOT, `${safePagePath}.template.wxml`), templateWxml, 'utf8'),
   ])
 }
 
@@ -659,9 +742,9 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
 
   it('keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail', async () => {
     const [appConfig, templateAppConfig, projectConfig] = await Promise.all([
-      fs.readJson(APP_JSON_PATH),
+      readFile(APP_JSON_PATH, 'utf8').then(JSON.parse),
       loadTemplateAppConfig(),
-      fs.readJson(PROJECT_CONFIG_PATH),
+      readFile(PROJECT_CONFIG_PATH, 'utf8').then(JSON.parse),
     ])
     const appPages = resolvePages(appConfig)
     const templatePages = resolvePages(templateAppConfig)

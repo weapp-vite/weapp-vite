@@ -263,5 +263,6 @@ definePageJson({
         最多支持添加20个收货地址
       </view>
     </view>
+    <t-toast id="t-toast" />
   </view>
 </template>

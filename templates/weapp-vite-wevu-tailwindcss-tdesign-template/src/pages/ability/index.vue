@@ -156,5 +156,7 @@ function navigateTo(url: string) {
         </t-cell-group>
       </view>
     </view>
+    <t-toast id="t-toast" />
+    <t-dialog id="t-dialog" />
   </view>
 </template>

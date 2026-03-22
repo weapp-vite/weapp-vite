@@ -362,4 +362,6 @@ defineComponentJson({
       </t-button>
     </view>
   </view>
+  <t-toast id="t-toast" />
+  <t-dialog id="t-dialog" />
 </template>

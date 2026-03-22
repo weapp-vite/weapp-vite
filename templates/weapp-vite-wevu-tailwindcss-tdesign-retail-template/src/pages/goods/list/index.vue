@@ -324,5 +324,6 @@ definePageJson({
       />
     </view>
     <load-more v-if="goodsList.length > 0" :status="loadMoreStatus" no-more-text="没有更多了" />
+    <t-toast id="t-toast" />
   </view>
 </template>

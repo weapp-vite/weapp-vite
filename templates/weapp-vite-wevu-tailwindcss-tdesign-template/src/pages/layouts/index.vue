@@ -90,5 +90,6 @@ function clearLayout() {
         </t-button>
       </view>
     </view>
+    <t-toast id="t-toast" />
   </view>
 </template>
