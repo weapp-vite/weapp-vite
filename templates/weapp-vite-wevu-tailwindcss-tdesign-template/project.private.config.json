@@ -20,6 +20,12 @@
           "scene": null
         },
         {
+          "name": "Layout 通信演示",
+          "pathName": "pages/layout-feedback/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "数据页",
           "pathName": "pages/data/index",
           "query": "",

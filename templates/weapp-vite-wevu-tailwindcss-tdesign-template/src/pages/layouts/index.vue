@@ -50,6 +50,12 @@ function clearLayout() {
   setPageLayout(false)
   showToast('已关闭布局')
 }
+
+function openLayoutFeedbackDemo() {
+  wx.navigateTo({
+    url: '/pages/layout-feedback/index',
+  })
+}
 </script>
 
 <template>
@@ -89,6 +95,16 @@ function clearLayout() {
           关闭布局
         </t-button>
       </view>
+    </view>
+
+    <view class="mt-[18rpx] rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
+      <SectionTitle title="通信演示" subtitle="查看页面/组件如何直接使用 layout 里的反馈宿主" />
+      <text class="mt-[12rpx] block text-[22rpx] leading-[1.7] text-[#6f6b8a]">
+        演示页会同时展示页面调用和子组件调用，它们都只依赖 useToast() / useDialog()，不会直接操作 layout 实例。
+      </text>
+      <t-button class="mt-[16rpx]" block theme="primary" variant="outline" @tap="openLayoutFeedbackDemo">
+        打开 Layout 通信演示
+      </t-button>
     </view>
   </view>
 </template>
