@@ -1,5 +1,5 @@
 import Dialog from 'tdesign-miniprogram/dialog/index'
-import { getCurrentInstance, resolveLayoutBridge, waitForLayoutHost } from 'wevu'
+import { getCurrentInstance, resolveLayoutBridge, resolveLayoutHost } from 'wevu'
 import { LAYOUT_DIALOG_BRIDGE_KEY } from '@/hooks/useLayoutFeedbackBridge'
 
 export interface DialogOptions {
@@ -113,25 +113,31 @@ export function alertDialog(payload: AlertOptions) {
     bridgeKey,
     context: payload.context,
   })
-  return waitForLayoutHost(bridgeKey, {
-    context,
-    retries: selector ? 0 : undefined,
-  }).then((host) => {
-    if (!context) {
-      return
-    }
-    const { bridgeKey: _bridgeKey, context: _context, selector: _selector, ...rest } = payload
-    if (host && typeof host.setData === 'function') {
-      return openAlertWithHost(host, rest)
-    }
-    if (!selector) {
-      return
-    }
-    return Dialog.alert({
-      selector,
-      context: context as any,
-      ...rest,
-    })
+  if (!context) {
+    return Promise.resolve()
+  }
+  const host = bridgeKey
+    ? resolveLayoutHost<{
+        _onCancel?: (reason?: unknown) => void
+        _onConfirm?: (value?: unknown) => void
+        close?: () => void
+        properties?: Record<string, unknown>
+        setData?: (payload: Record<string, unknown>) => void
+      }>(bridgeKey, { context })
+    : selector
+      ? context?.selectComponent?.(selector) ?? null
+      : null
+  const { bridgeKey: _bridgeKey, context: _context, selector: _selector, ...rest } = payload
+  if (host && typeof host.setData === 'function') {
+    return openAlertWithHost(host, rest)
+  }
+  if (!selector) {
+    return Promise.resolve()
+  }
+  return Dialog.alert({
+    selector,
+    context: context as any,
+    ...rest,
   })
 }
 
@@ -142,25 +148,31 @@ export function confirmDialog(payload: ConfirmOptions) {
     bridgeKey,
     context: payload.context,
   })
-  return waitForLayoutHost(bridgeKey, {
-    context,
-    retries: selector ? 0 : undefined,
-  }).then((host) => {
-    if (!context) {
-      return
-    }
-    const { bridgeKey: _bridgeKey, context: _context, selector: _selector, ...rest } = payload
-    if (host && typeof host.setData === 'function') {
-      return openConfirmWithHost(host, rest)
-    }
-    if (!selector) {
-      return
-    }
-    return Dialog.confirm({
-      selector,
-      context: context as any,
-      ...rest,
-    })
+  if (!context) {
+    return Promise.resolve()
+  }
+  const host = bridgeKey
+    ? resolveLayoutHost<{
+        _onCancel?: (reason?: unknown) => void
+        _onConfirm?: (value?: unknown) => void
+        close?: () => void
+        properties?: Record<string, unknown>
+        setData?: (payload: Record<string, unknown>) => void
+      }>(bridgeKey, { context })
+    : selector
+      ? context?.selectComponent?.(selector) ?? null
+      : null
+  const { bridgeKey: _bridgeKey, context: _context, selector: _selector, ...rest } = payload
+  if (host && typeof host.setData === 'function') {
+    return openConfirmWithHost(host, rest)
+  }
+  if (!selector) {
+    return Promise.resolve()
+  }
+  return Dialog.confirm({
+    selector,
+    context: context as any,
+    ...rest,
   })
 }
 

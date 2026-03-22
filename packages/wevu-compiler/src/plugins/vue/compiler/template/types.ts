@@ -53,6 +53,7 @@ export interface TemplateCompileResult {
   classStyleBindings?: ClassStyleBinding[]
   classStyleWxs?: boolean
   templateRefs?: TemplateRefBinding[]
+  layoutHosts?: LayoutHostBinding[]
   inlineExpressions?: InlineExpressionAsset[]
 }
 
@@ -83,6 +84,8 @@ export interface TransformContext {
   forIndexSeed: number
   templateRefs: TemplateRefBinding[]
   templateRefIndexSeed: number
+  layoutHosts: LayoutHostBinding[]
+  layoutHostIndexSeed: number
   inlineExpressions: InlineExpressionAsset[]
   inlineExpressionSeed: number
 }
@@ -160,4 +163,14 @@ export interface TemplateRefBinding {
   name?: string
   expAst?: Expression
   kind?: 'component' | 'element'
+}
+
+/**
+ * layout 宿主绑定信息。
+ */
+export interface LayoutHostBinding {
+  key: string
+  refName?: string
+  selector: string
+  kind?: 'component'
 }

@@ -1279,4 +1279,66 @@ import { VueCard } from '../../components'
       ]),
     )
   })
+
+  it('does not emit scriptless layout stub when vue layout declares runtime host bindings', async () => {
+    mockFindVueEntry.mockResolvedValue('/project/src/pages/index/index.vue')
+    mockFindTemplateEntry.mockResolvedValue({
+      path: '/project/src/pages/index/index.wxml',
+      predictions: ['/project/src/pages/index/index.wxml'],
+    })
+    mockResolvePageLayoutPlan.mockResolvedValue({
+      currentLayout: {
+        kind: 'vue',
+        file: '/project/src/layouts/default.vue',
+        importPath: '/layouts/default',
+        layoutName: 'default',
+        tagName: 'weapp-layout-default',
+      },
+      layouts: [
+        {
+          kind: 'vue',
+          file: '/project/src/layouts/default.vue',
+          importPath: '/layouts/default',
+          layoutName: 'default',
+          tagName: 'weapp-layout-default',
+        },
+      ],
+      dynamicSwitch: false,
+      dynamicPropKeys: [],
+    })
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/pages/index/index.vue') {
+        return '<template><view>home</view></template>'
+      }
+      if (target === '/project/src/layouts/default.vue') {
+        return [
+          '<script setup lang="ts">',
+          'defineComponentJson({ component: true })',
+          '</script>',
+          '<template><view><t-toast layout-host="layout-toast" /></view></template>',
+        ].join('\n')
+      }
+      return 'console.log("page-entry")'
+    })
+
+    const { loader, emitEntriesChunks } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
+
+    expect(pluginCtx.emitFile).not.toHaveBeenCalledWith(expect.objectContaining({
+      type: 'asset',
+      fileName: 'layouts/default.js',
+      source: 'Component({})',
+    }))
+
+    const emittedResolvedIds = emitEntriesChunks.mock.calls[0]?.[0] ?? []
+    expect(emittedResolvedIds).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: '/layouts/default',
+        }),
+      ]),
+    )
+  })
 })

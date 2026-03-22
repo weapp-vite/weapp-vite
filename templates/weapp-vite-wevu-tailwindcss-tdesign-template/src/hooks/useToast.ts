@@ -1,5 +1,5 @@
 import Toast from 'tdesign-miniprogram/toast/index'
-import { getCurrentInstance, resolveLayoutBridge, waitForLayoutHost } from 'wevu'
+import { getCurrentInstance, resolveLayoutBridge, resolveLayoutHost } from 'wevu'
 import { LAYOUT_TOAST_BRIDGE_KEY } from '@/hooks/useLayoutFeedbackBridge'
 
 export type ToastTheme = 'success' | 'warning' | 'error' | 'default' | 'loading'
@@ -54,29 +54,28 @@ export function showToast(payload: string | ShowToastPayload, theme?: ToastTheme
     bridgeKey,
     context: normalized.context ?? mpContext,
   })
-  void waitForLayoutHost(bridgeKey, {
-    context,
-    retries: selector ? 0 : undefined,
-  }).then((host) => {
-    if (!context) {
-      return
-    }
-
-    if (host && typeof host.show === 'function') {
-      host.show(options)
-      return
-    }
-
-    if (!selector) {
-      return
-    }
-
-    Toast({
-      selector,
-      context: context as any,
-      ...options,
-    } as any)
-  })
+  const host = bridgeKey
+    ? resolveLayoutHost<{
+        show?: (payload: typeof options) => void
+      }>(bridgeKey, { context })
+    : selector
+      ? context?.selectComponent?.(selector) ?? null
+      : null
+  if (!context) {
+    return
+  }
+  if (host && typeof host.show === 'function') {
+    host.show(options)
+    return
+  }
+  if (!selector) {
+    return
+  }
+  Toast({
+    selector,
+    context: context as any,
+    ...options,
+  } as any)
 }
 
 export function useToast(options: ToastOptions = {}) {

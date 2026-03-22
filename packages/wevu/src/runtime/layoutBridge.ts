@@ -1,10 +1,17 @@
 import type { Ref } from '../reactivity'
 import { isRef } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext, onAttached, onDetached } from './hooks'
+import { getTemplateRefMap } from './templateRefs/helpers'
 
 type LayoutBridgeContext = Record<string, any>
 type LayoutBridgeComponentResolver = (selector: string) => any
 type LayoutHostMap = Record<string, unknown>
+export interface LayoutHostBinding {
+  key: string
+  refName?: string
+  selector: string
+  kind?: 'component'
+}
 interface LayoutHostResolveOptions<T = any> {
   context?: T
   fallbackContext?: T
@@ -91,6 +98,67 @@ function resolveHostEntry(entry: unknown) {
     return (entry as Ref<unknown>).value
   }
   return entry
+}
+
+function findLayoutHostBinding(bindings: LayoutHostBinding[], key: string) {
+  return bindings.find(binding => binding.key === key)
+}
+
+function safeSelectComponent(target: LayoutBridgeContext | undefined, selector: string) {
+  const selectComponent = target?.selectComponent
+  if (typeof selectComponent !== 'function') {
+    return null
+  }
+  try {
+    return selectComponent.call(target, selector) ?? null
+  }
+  catch {
+    return null
+  }
+}
+
+function resolveDeclaredLayoutHostFromRefs(
+  binding: LayoutHostBinding,
+  context: LayoutBridgeContext,
+) {
+  if (!binding.refName) {
+    return null
+  }
+  const refMap = getTemplateRefMap(context as any)
+  const stateRefs = context.__wevu?.state?.$refs
+    ?? context.$state?.$refs
+    ?? context.$refs
+  const refValue = refMap?.get(binding.refName)?.value
+    ?? stateRefs?.[binding.refName]
+  if (Array.isArray(refValue)) {
+    return refValue[0] ?? null
+  }
+  return refValue ?? null
+}
+
+function createDeclaredLayoutHostBridge(bindings: LayoutHostBinding[], context: LayoutBridgeContext) {
+  const nativeContext = resolveNativeLayoutContext(context)
+  const bridgeBase = nativeContext && typeof nativeContext === 'object'
+    ? Object.create(nativeContext)
+    : {}
+  return Object.assign(bridgeBase, {
+    selectComponent(key: string) {
+      const binding = findLayoutHostBinding(bindings, key)
+      if (!binding) {
+        return null
+      }
+      if (binding.kind === 'component' || !binding.kind) {
+        const cachedHost = resolveDeclaredLayoutHostFromRefs(binding, context)
+        if (cachedHost) {
+          return cachedHost
+        }
+        return safeSelectComponent(nativeContext, binding.selector)
+          ?? safeSelectComponent(resolveCurrentPageInstance(), binding.selector)
+          ?? null
+      }
+      return null
+    },
+  })
 }
 
 /**
@@ -256,6 +324,45 @@ export function useLayoutBridge(
   onDetached(() => {
     unregisterPageLayoutBridge(normalizedSelectors, bridge)
   })
+}
+
+/**
+ * 使用编译期注入的宿主绑定信息，直接从当前 layout 运行时实例解析子组件宿主并注册 bridge。
+ */
+export function registerRuntimeLayoutHosts(
+  bindings: LayoutHostBinding[],
+  context?: LayoutBridgeContext,
+) {
+  if (!bindings.length) {
+    return null
+  }
+  const bridgeContext = context ?? getCurrentInstance<LayoutBridgeContext>()
+  if (!bridgeContext) {
+    return null
+  }
+  const bridge = createDeclaredLayoutHostBridge(bindings, bridgeContext)
+  registerPageLayoutBridge(bindings.map(binding => binding.key), bridge)
+  return bridge
+}
+
+/**
+ * 移除运行时自动注册的 layout 宿主 bridge。
+ */
+export function unregisterRuntimeLayoutHosts(
+  bindings: LayoutHostBinding[],
+  context?: LayoutBridgeContext,
+) {
+  if (!bindings.length) {
+    return false
+  }
+  const bridgeContext = context ?? getCurrentInstance<LayoutBridgeContext>()
+  if (!bridgeContext) {
+    return false
+  }
+  return unregisterPageLayoutBridge(
+    bindings.map(binding => binding.key),
+    bridgeContext,
+  )
 }
 
 /**

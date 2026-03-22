@@ -1,3 +1,4 @@
+import type { LayoutHostBinding } from '../../layoutBridge'
 import type { TemplateRefBinding } from '../../templateRefs'
 import type {
   ComponentPropsOptions,
@@ -9,6 +10,7 @@ import type {
 } from '../../types'
 import type { WatchMap } from '../watch'
 import { callHookList } from '../../hooks'
+import { registerRuntimeLayoutHosts, unregisterRuntimeLayoutHosts } from '../../layoutBridge'
 import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../../pageLayout'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../../templateRefs'
 import { enableDeferredSetData, mountRuntimeInstance, setRuntimeSetDataVisibility, teardownRuntimeInstance } from '../runtimeInstance'
@@ -26,6 +28,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
   finalOptions: Record<string, any>
   applyExtraInstanceFields: (instance: InternalRuntimeState) => void
   templateRefs: TemplateRefBinding[] | undefined
+  layoutHosts: LayoutHostBinding[] | undefined
   attachWevuPropKeys: (instance: InternalRuntimeState) => void
   setupLifecycle: 'created' | 'attached'
   syncWevuPropsFromInstance: (instance: InternalRuntimeState) => void
@@ -46,6 +49,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
     finalOptions,
     applyExtraInstanceFields,
     templateRefs,
+    layoutHosts,
     attachWevuPropKeys,
     setupLifecycle,
     syncWevuPropsFromInstance,
@@ -55,6 +59,18 @@ export function registerComponentDefinition<D extends object, C extends Computed
   } = options
 
   const pageShareMethodBridges: Record<string, (...args: any[]) => any> = {}
+  const attachRuntimeLayoutHosts = (instance: InternalRuntimeState) => {
+    if (!Array.isArray(layoutHosts) || !layoutHosts.length) {
+      return
+    }
+    if ((instance as any).__wevuLayoutHostBridge) {
+      return
+    }
+    const bridge = registerRuntimeLayoutHosts(layoutHosts, instance)
+    if (bridge) {
+      instance.__wevuLayoutHostBridge = bridge
+    }
+  }
   const attachPageLayoutSetter = (instance: InternalRuntimeState) => {
     if (!isPage) {
       return
@@ -150,6 +166,7 @@ export function registerComponentDefinition<D extends object, C extends Computed
         }
         syncWevuPropsFromInstance(this)
         attachPageLayoutSetter(this)
+        attachRuntimeLayoutHosts(this)
         if (setupLifecycle === 'created') {
           enableDeferredSetData(this)
         }
@@ -191,6 +208,10 @@ export function registerComponentDefinition<D extends object, C extends Computed
           return
         }
         clearTemplateRefs(this)
+        if (Array.isArray(layoutHosts) && layoutHosts.length && (this as any).__wevuLayoutHostBridge) {
+          unregisterRuntimeLayoutHosts(layoutHosts, (this as any).__wevuLayoutHostBridge)
+          delete (this as any).__wevuLayoutHostBridge
+        }
         teardownRuntimeInstance(this)
         if (typeof (userLifetimes as any).detached === 'function') {
           ;(userLifetimes as any).detached.apply(this, args)

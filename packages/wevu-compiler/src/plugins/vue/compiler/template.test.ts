@@ -134,6 +134,49 @@ describe('compileVueTemplateToWxml', () => {
     expect(classStyleBindings?.filter(binding => binding.exp === 'sayHello()')).toHaveLength(2)
   })
 
+  it('collects static layout-host metadata for component nodes', () => {
+    const template = `
+<t-toast layout-host="layout-toast" />
+<t-dialog class="fixed-host" layout-host="layout-dialog" />
+    `.trim()
+
+    const { code, layoutHosts, templateRefs } = compileVueTemplateToWxml(
+      template,
+      '/project/src/layouts/default.vue',
+    )
+
+    expect(code).toContain('id="__wv-layout-host-0"')
+    expect(code).toContain('id="__wv-layout-host-1"')
+    expect(layoutHosts).toEqual([
+      {
+        key: 'layout-toast',
+        refName: '__wevu_layout_host_0',
+        selector: '#__wv-layout-host-0',
+        kind: 'component',
+      },
+      {
+        key: 'layout-dialog',
+        refName: '__wevu_layout_host_1',
+        selector: '#__wv-layout-host-1',
+        kind: 'component',
+      },
+    ])
+    expect(templateRefs).toEqual([
+      {
+        selector: '#__wv-layout-host-0',
+        inFor: false,
+        name: '__wevu_layout_host_0',
+        kind: 'component',
+      },
+      {
+        selector: '#__wv-layout-host-1',
+        inFor: false,
+        name: '__wevu_layout_host_1',
+        kind: 'component',
+      },
+    ])
+  })
+
   it('falls back structural call expressions to runtime bindings', () => {
     const template = `
 <view v-if="isVisible()">A</view>

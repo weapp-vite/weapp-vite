@@ -1,6 +1,6 @@
 import type { NodePath } from '@weapp-vite/ast/babelTraverse'
 import type { WevuDefaults } from '../../../../types/wevu'
-import type { ClassStyleBinding, ClassStyleRuntime, InlineExpressionAsset, TemplateRefBinding } from '../../compiler/template/types'
+import type { ClassStyleBinding, ClassStyleRuntime, InlineExpressionAsset, LayoutHostBinding, TemplateRefBinding } from '../../compiler/template/types'
 import * as t from '@weapp-vite/ast/babelTypes'
 
 /**
@@ -52,6 +52,10 @@ export interface TransformScriptOptions {
    * template ref 元数据（用于运行时绑定）
    */
   templateRefs?: TemplateRefBinding[]
+  /**
+   * layout host 元数据（用于运行时绑定）
+   */
+  layoutHosts?: LayoutHostBinding[]
   /**
    * 内联表达式元数据（用于事件处理）
    */

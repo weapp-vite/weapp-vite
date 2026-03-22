@@ -1,5 +1,6 @@
 import type { TemplateRefBinding } from '../../templateRefs'
 import type { InternalRuntimeState, MiniProgramComponentRawOptions, PageFeatures } from '../../types'
+import type { LayoutHostBinding } from '../layoutBridge'
 
 interface PreparedComponentOptions {
   userMethods: Record<string, (...args: any[]) => any>
@@ -9,6 +10,7 @@ interface PreparedComponentOptions {
   restOptions: Record<string, any>
   topLevelMethods: Record<string, (...args: any[]) => any>
   templateRefs: TemplateRefBinding[] | undefined
+  layoutHosts: LayoutHostBinding[] | undefined
   userObservers: Record<string, any> | undefined
   setupLifecycle: 'created' | 'attached'
   legacyCreated: unknown
@@ -127,6 +129,7 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
     'definitionFilter',
     'export',
     '__wevuTemplateRefs',
+    '__wevuLayoutHosts',
     'setupLifecycle',
     'features',
     '__wevu_isPage',
@@ -190,6 +193,8 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
   }
   const templateRefs = (restOptions as any).__wevuTemplateRefs as TemplateRefBinding[] | undefined
   delete (restOptions as any).__wevuTemplateRefs
+  const layoutHosts = (restOptions as any).__wevuLayoutHosts as LayoutHostBinding[] | undefined
+  delete (restOptions as any).__wevuLayoutHosts
   const userObservers = (restOptions as any).observers as Record<string, any> | undefined
   const setupLifecycle = (restOptions as any).setupLifecycle === 'created' ? 'created' : 'attached'
   delete (restOptions as any).setupLifecycle
@@ -210,6 +215,7 @@ export function prepareComponentOptions(mpOptions: MiniProgramComponentRawOption
     restOptions,
     topLevelMethods,
     templateRefs,
+    layoutHosts,
     userObservers,
     setupLifecycle,
     legacyCreated,

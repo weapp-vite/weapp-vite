@@ -163,8 +163,12 @@ watch(refreshSeed, () => {
   lastUpdated.value = `更新于 ${new Date().toLocaleTimeString()}`
 })
 
+function nextRefreshSeedValue() {
+  return refreshSeed.value >= 9 ? 1 : refreshSeed.value + 1
+}
+
 function refreshDashboard() {
-  refreshSeed.value = Math.max(1, Math.floor(Math.random() * 9))
+  refreshSeed.value = nextRefreshSeedValue()
   showToast('指标已刷新')
 }
 
@@ -189,7 +193,7 @@ function inspectLayoutToastBridge() {
 void inspectLayoutToastBridge
 
 function runLayoutToastE2E() {
-  refreshSeed.value = Math.max(1, Math.floor(Math.random() * 9))
+  refreshSeed.value = nextRefreshSeedValue()
   const bridgeState = inspectLayoutToastBridge()
   setTimeout(() => {
     showToast('指标已刷新')
@@ -239,9 +243,11 @@ function onQuickAction(action: QuickActionItem) {
         <text class="text-[20rpx] text-white/70">
           {{ lastUpdated }}
         </text>
-        <t-button id="refresh-dashboard-button" size="small" theme="default" variant="outline" @tap="refreshDashboard">
-          刷新指标
-        </t-button>
+        <view id="refresh-dashboard-trigger" @tap="refreshDashboard">
+          <t-button size="small" theme="default" variant="outline">
+            刷新指标
+          </t-button>
+        </view>
       </view>
     </view>
 

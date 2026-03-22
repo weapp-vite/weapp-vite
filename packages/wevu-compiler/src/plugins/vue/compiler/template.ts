@@ -83,6 +83,8 @@ export function compileVueTemplateToWxml(
       forIndexSeed: 0,
       templateRefs: [],
       templateRefIndexSeed: 0,
+      layoutHosts: [],
+      layoutHostIndexSeed: 0,
       inlineExpressions: [],
       inlineExpressionSeed: 0,
     }
@@ -118,6 +120,9 @@ export function compileVueTemplateToWxml(
     }
     if (context.templateRefs.length) {
       result.templateRefs = context.templateRefs
+    }
+    if (context.layoutHosts.length) {
+      result.layoutHosts = context.layoutHosts
     }
     if (context.inlineExpressions.length) {
       result.inlineExpressions = context.inlineExpressions
