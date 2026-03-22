@@ -63,6 +63,41 @@ async function discoverPagesRoots(root: string) {
   return pagesRoots
 }
 
+async function resolveDefaultSearchRoots(
+  absoluteSrcRoot: string,
+  subPackageRoots?: Iterable<string>,
+) {
+  const roots: string[] = []
+  const discoveredPagesRoots = await discoverPagesRoots(absoluteSrcRoot)
+
+  if (discoveredPagesRoots.size > 0) {
+    roots.push(...discoveredPagesRoots)
+  }
+  else {
+    roots.push(absoluteSrcRoot)
+  }
+
+  for (const root of subPackageRoots ?? []) {
+    if (!root) {
+      continue
+    }
+
+    const absoluteRoot = path.resolve(absoluteSrcRoot, root)
+    const normalizedRoot = toPosixPath(absoluteRoot)
+    const hasNestedPagesRoot = [...discoveredPagesRoots].some((pagesRoot) => {
+      const normalizedPagesRoot = toPosixPath(pagesRoot)
+      return normalizedPagesRoot === `${normalizedRoot}/pages`
+        || normalizedPagesRoot.startsWith(`${normalizedRoot}/pages/`)
+    })
+
+    if (!hasNestedPagesRoot) {
+      roots.push(absoluteRoot)
+    }
+  }
+
+  return roots
+}
+
 export function isConfigFile(filePath: string) {
   return CONFIG_SUFFIXES.some(ext => filePath.endsWith(ext))
 }
@@ -123,20 +158,7 @@ export async function collectCandidates(
 
   if (!searchRoots) {
     if (matcher.isDefault) {
-      const discoveredPagesRoots = await discoverPagesRoots(absoluteSrcRoot)
-      if (discoveredPagesRoots.size > 0) {
-        roots.push(...discoveredPagesRoots)
-      }
-      else {
-        roots.push(absoluteSrcRoot)
-      }
-
-      for (const root of subPackageRoots ?? []) {
-        if (!root) {
-          continue
-        }
-        roots.push(path.resolve(absoluteSrcRoot, root))
-      }
+      roots.push(...await resolveDefaultSearchRoots(absoluteSrcRoot, subPackageRoots))
     }
     else {
       roots.push(...matcher.getSearchRoots(absoluteSrcRoot))
