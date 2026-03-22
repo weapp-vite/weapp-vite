@@ -1,5 +1,21 @@
 # weapp-vite
 
+## 6.11.2
+
+### Patch Changes
+
+- 🐛 **修复 `.weapp-vite` 托管 tsconfig 的 bootstrap 覆盖问题：当项目已经生成过带有实际 `vite.config.ts` 配置的支持文件时，启动 `weapp-vite dev` 不会再被轻量 bootstrap 回退成通用版本，也不会因此在每次启动时都误报“支持文件缺失或已过期”。** [`2d9338c`](https://github.com/weapp-vite/weapp-vite/commit/2d9338cd98d7203feac247b7828339e213bff9e4) by @sonofmagic
+
+- 🐛 **修复 Vue layout 页面注入导致的运行时注册时机错误：页面布局转换不再为 Vue layout 额外注入副作用 import，避免 layout 组件被提前打进 `common.js` 并在应用初始化之后才调用构造函数；同时补充源码单测、模板构建集成测试与微信开发者工具运行时 e2e，覆盖 layout 资源产物与无错误启动场景。** [`35e49b3`](https://github.com/weapp-vite/weapp-vite/commit/35e49b33897e47af0847efe06164a2718168d9cd) by @sonofmagic
+
+- 🐛 **修复 `.weapp-vite` 支持文件未及时更新时的体验问题：在运行时检测到受管 tsconfig 等支持文件缺失或过期后，会先输出 warning，再自动执行一次与 `weapp-vite prepare` 等价的同步流程，减少模板项目因忘记 prepare 导致的类型异常。** [`76ddfce`](https://github.com/weapp-vite/weapp-vite/commit/76ddfced53ebca3f841eebf5d7631c1c6568ed0c) by @sonofmagic
+
+- 🐛 **修复 `.weapp-vite/tsconfig.app.json` 的默认类型与别名生成：现在会自动注入 `weapp-vite/client`，并让 `@/*` 跟随 `weapp.srcRoot`。同时清理 templates 中仍残留在根目录和 `src/` 下的旧支持文件，统一改由 `.weapp-vite` 托管生成。** [`94320d3`](https://github.com/weapp-vite/weapp-vite/commit/94320d3ec92e3803054e4d8f7dd8e60d7c1f7e12) by @sonofmagic
+
+- 🐛 **修复默认 autoRoutes 对分包根目录的误扫描：当分包内已经存在 `pages/` 目录时，不再把分包入口脚本误识别为页面并写回 `subPackage.pages`；同时去重独立分包 `entry` 与 plugin export 重叠时生成的重复 entries，并补充对应回归测试。** [`cdfd282`](https://github.com/weapp-vite/weapp-vite/commit/cdfd282af1f52b8788a4bef8f113d61ac5633b00) by @sonofmagic
+- 📦 **Dependencies** [`aef4a30`](https://github.com/weapp-vite/weapp-vite/commit/aef4a30c974c566dc181cc7152e04c96d0f6e41e)
+  → `wevu@6.11.2`, `@weapp-vite/volar@2.0.8`, `@weapp-vite/ast@6.11.2`
+
 ## 6.11.1
 
 ### Patch Changes
