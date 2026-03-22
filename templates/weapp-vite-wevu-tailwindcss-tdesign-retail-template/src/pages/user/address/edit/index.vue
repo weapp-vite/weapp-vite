@@ -570,4 +570,5 @@ definePageJson({
       <t-input v-model:value="labelValue" class="dialog__input [margin-top:32rpx] [border-radius:8rpx] [box-sizing:border-box] [--td-input-vertical-padding:12px] [--td-input-bg-color:#f3f3f3]" placeholder="请输入标签名称" borderless />
     </template>
   </t-dialog>
+  <t-toast id="t-toast" />
 </template>

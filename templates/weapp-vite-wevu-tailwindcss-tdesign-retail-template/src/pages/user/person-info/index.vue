@@ -224,4 +224,5 @@ definePageJson({
     @confirm="onConfirm"
     @close="onClose"
   />
+  <t-toast id="t-toast" />
 </template>

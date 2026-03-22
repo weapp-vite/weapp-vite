@@ -241,5 +241,6 @@ function submit() {
         {{ currentStep === steps.length - 1 ? (submitted ? '已提交' : '提交') : '下一步' }}
       </t-button>
     </view>
+    <t-toast id="t-toast" />
   </view>
 </template>

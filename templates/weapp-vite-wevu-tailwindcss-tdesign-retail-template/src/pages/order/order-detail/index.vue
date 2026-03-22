@@ -476,4 +476,6 @@ definePageJson({
       <order-button-bar :order="_order" isBtnMax @refresh="onRefresh" />
     </view>
   </t-pull-down-refresh>
+  <t-toast id="t-toast" />
+  <t-dialog id="t-dialog" />
 </template>

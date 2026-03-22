@@ -248,5 +248,6 @@ definePageJson({
       @addcart="goodListAddCartHandle"
     />
     <load-more :list-is-empty="!goodsList.length" :status="goodsListLoadStatus" @retry="onReTry" />
+    <t-toast id="t-toast" />
   </view>
 </template>
