@@ -7,6 +7,7 @@ import { createCompilerContext } from '../../createContext'
 
 const tempRoots: string[] = []
 const DEFINE_CONFIG_IMPORT = path.resolve(import.meta.dirname, '../../config.ts').replace(/\\/g, '/')
+const RUNTIME_ENTRY_IMPORT = path.resolve(import.meta.dirname, '../../plugins/vue/runtime.ts').replace(/\\/g, '/')
 
 async function createTempRoot() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-layout-native-build-'))
@@ -40,6 +41,11 @@ async function writeNativeDynamicLayoutProjectFiles(root: string) {
     `import { defineConfig } from '${DEFINE_CONFIG_IMPORT}'`,
     '',
     'export default defineConfig({',
+    '  resolve: {',
+    '    alias: {',
+    `      'weapp-vite/runtime': '${RUNTIME_ENTRY_IMPORT}',`,
+    '    },',
+    '  },',
     '  weapp: {',
     '    srcRoot: \'src\',',
     '  },',
