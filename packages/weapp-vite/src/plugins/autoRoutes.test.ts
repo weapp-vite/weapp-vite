@@ -301,6 +301,21 @@ describe('auto-routes plugin alias fallback', () => {
     expect(handleFileChange).not.toHaveBeenCalledWith('/virtual/project/src/components/card/index.ts', 'rename')
   })
 
+  it('routes pages rename-like delete and create events to full rescan handling', async () => {
+    const {
+      plugin,
+      isRouteFile,
+      handleFileChange,
+    } = createPlugin()
+
+    isRouteFile.mockReturnValue(false)
+    await plugin.watchChange?.('/virtual/project/src/pages/old/index.ts', { event: 'delete' } as any)
+    await plugin.watchChange?.('/virtual/project/src/pages/new/index.ts', { event: 'create' } as any)
+
+    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/old/index.ts', 'rename')
+    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/new/index.ts', 'rename')
+  })
+
   it('routes Windows-style watchChange paths under src/pages', async () => {
     const {
       plugin,
