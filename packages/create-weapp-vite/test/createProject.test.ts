@@ -34,6 +34,15 @@ async function scanFiles(root: string) {
   return out.sort((a, b) => a.localeCompare(b))
 }
 
+async function getTemplatePackagePath(templateName: TemplateName) {
+  const { preferredTemplateDir, workspaceTemplateDir } = await createProjectInternal.resolveTemplateDirs(templateName)
+  const templateDir = await fs.pathExists(preferredTemplateDir)
+    ? preferredTemplateDir
+    : workspaceTemplateDir
+
+  return path.join(templateDir, 'package.json')
+}
+
 describe('createProject', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -84,7 +93,7 @@ describe('createProject', () => {
 
   it('initializes devDependencies when template package misses the field', async () => {
     const root = await createTmpRoot('no-devdeps')
-    const templatePath = path.resolve(import.meta.dirname, '../templates', TemplateName.default)
+    const { preferredTemplateDir: templatePath } = await createProjectInternal.resolveTemplateDirs(TemplateName.default)
     const templatePackagePath = path.join(templatePath, 'package.json')
     const originalPathExists = fs.pathExists.bind(fs)
     const originalReadJSON = fs.readJSON.bind(fs)
@@ -111,7 +120,7 @@ describe('createProject', () => {
 
   it('falls back to an empty package.json when template package is missing', async () => {
     const root = await createTmpRoot('no-package')
-    const templatePath = path.resolve(import.meta.dirname, '../templates', TemplateName.default)
+    const { preferredTemplateDir: templatePath } = await createProjectInternal.resolveTemplateDirs(TemplateName.default)
     const originalPathExists = fs.pathExists.bind(fs)
 
     vi.spyOn(fs, 'pathExists').mockImplementation(async (value) => {
@@ -178,8 +187,7 @@ describe('createProject', () => {
 
   it('updates wevu version when present in dependencies, devDependencies or peerDependencies', async () => {
     const root = await createTmpRoot('wevu-version')
-    const templatePath = path.resolve(import.meta.dirname, '../templates', TemplateName.default)
-    const templatePackagePath = path.join(templatePath, 'package.json')
+    const templatePackagePath = await getTemplatePackagePath(TemplateName.default)
     const originalReadJSON = fs.readJSON.bind(fs)
 
     const { version: weappViteVersion } = await fs.readJSON(
@@ -220,8 +228,7 @@ describe('createProject', () => {
 
   it('resolves catalog dependency placeholders from template package', async () => {
     const root = await createTmpRoot('catalog-specs')
-    const templatePath = path.resolve(import.meta.dirname, '../templates', TemplateName.default)
-    const templatePackagePath = path.join(templatePath, 'package.json')
+    const templatePackagePath = await getTemplatePackagePath(TemplateName.default)
     const originalReadJSON = fs.readJSON.bind(fs)
 
     vi.spyOn(fs, 'readJSON').mockImplementation(async (value) => {
@@ -264,8 +271,7 @@ describe('createProject', () => {
 
   it('keeps tailwind templates pinned to the named tailwind3 catalog when creating projects', async () => {
     const root = await createTmpRoot('tailwind3-template')
-    const templatePath = path.resolve(import.meta.dirname, '../templates', TemplateName.tailwindcss)
-    const templatePackagePath = path.join(templatePath, 'package.json')
+    const templatePackagePath = await getTemplatePackagePath(TemplateName.tailwindcss)
     const originalReadJSON = fs.readJSON.bind(fs)
 
     vi.spyOn(fs, 'readJSON').mockImplementation(async (value) => {
