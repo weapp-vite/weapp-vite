@@ -15,6 +15,8 @@ const TRAILING_INDEX_RE = /\/index$/
 const LEADING_SLASHES_RE = /^\/+/
 const ROUTE_RULE_GLOB_TOKEN_RE = /[*?[\]{}()!+@]/g
 const resolvedLayoutsCache = new Map<string, Promise<ResolvedPageLayout[]>>()
+const PAGE_META_HINT = 'definePageMeta'
+const SET_PAGE_LAYOUT_HINT = 'setPageLayout'
 
 function normalizePageRouteCandidates(
   filename: string,
@@ -257,8 +259,13 @@ export async function resolvePageLayoutPlan(
   filename: string,
   configService: PageLayoutConfigService,
 ): Promise<ResolvedPageLayoutPlan | undefined> {
-  const layoutMeta = extractPageLayoutMeta(source, filename) ?? resolveRouteRuleLayoutMeta(filename, configService)
-  const dynamicSwitch = hasSetPageLayoutUsage(source, filename)
+  const hasPageMetaHint = source.includes(PAGE_META_HINT)
+  const hasDynamicLayoutHint = source.includes(SET_PAGE_LAYOUT_HINT)
+  const layoutMeta = (hasPageMetaHint ? extractPageLayoutMeta(source, filename) : undefined)
+    ?? resolveRouteRuleLayoutMeta(filename, configService)
+  const dynamicSwitch = hasDynamicLayoutHint
+    ? hasSetPageLayoutUsage(source, filename)
+    : false
   if (layoutMeta?.disabled && !dynamicSwitch) {
     return undefined
   }
