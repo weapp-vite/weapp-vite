@@ -12,8 +12,8 @@ const FIXTURE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/wevu-runt
 const TEMP_ROOT = path.resolve(import.meta.dirname, '../../.tmp')
 const PLATFORM_LIST = resolvePlatformMatrix<RuntimePlatform>([
   'weapp',
-  // 'tt',
-  // 'alipay',
+  'tt',
+  'alipay',
 ], {
   localDefault: 'weapp',
 })
