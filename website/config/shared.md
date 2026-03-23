@@ -1,6 +1,6 @@
 ---
 title: 共享配置
-description: weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、injectWeapi 与 MCP 等能力。
+description: weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、forwardConsole、injectWeapi 与 MCP 等能力。
 keywords:
   - Wevu
   - 配置
@@ -18,6 +18,7 @@ keywords:
 - `weapp.autoRoutes`：生成路由清单与类型，供 `app.json.ts` 或业务代码使用
 - `weapp.debug`：遇到“为什么没扫描到 / 为什么没输出”时怎么定位
 - `weapp.logger`：控制 CLI / 构建日志级别与标签输出
+- `weapp.forwardConsole`：把微信开发者工具里的小程序日志桥接到终端
 - `weapp.injectWeapi`：在运行时注入 `@wevu/api` 的 `wpi` 实例
 - `weapp.mcp`：AI 协作时的 MCP 服务开关、自动启动与监听配置
 
@@ -162,6 +163,75 @@ export default defineConfig({
 
 > [!TIP]
 > 字段细节以 `@weapp-core/logger` 的类型提示为准；`weapp-vite` 这里只做透传，不额外扩展私有字段。
+
+## `weapp.forwardConsole` {#weapp-forwardconsole}
+- **类型**：`boolean | { enabled?: boolean | 'auto'; logLevels?: Array<'debug' | 'log' | 'info' | 'warn' | 'error'>; unhandledErrors?: boolean }`
+- **默认值**：`{ enabled: 'auto', logLevels: ['log', 'info', 'warn', 'error'], unhandledErrors: true }`
+- **适用场景**：
+  - 希望把微信开发者工具里的小程序 `console.log / warn / error` 直接输出到当前终端。
+  - 希望在 AI 终端里做联调、截图验收或自动化排障时，减少来回切换 DevTools 控制台。
+
+### 配置示例
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    forwardConsole: {
+      enabled: 'auto',
+      logLevels: ['log', 'info', 'warn', 'error'],
+      unhandledErrors: true,
+    },
+  },
+})
+```
+
+始终开启：
+
+```ts
+export default defineConfig({
+  weapp: {
+    forwardConsole: true,
+  },
+})
+```
+
+完全关闭：
+
+```ts
+export default defineConfig({
+  weapp: {
+    forwardConsole: false,
+  },
+})
+```
+
+### 字段说明
+
+1. `enabled`：
+   - `true`：始终开启
+   - `false`：始终关闭
+   - `'auto'`：仅在检测到 AI 终端时开启
+2. `logLevels`：允许转发的日志级别集合。
+3. `unhandledErrors`：是否同时转发未捕获异常。
+
+### 触发方式
+
+1. 自动模式：执行 `weapp-vite dev --open`，当目标平台是 `weapp` 且 `forwardConsole` 生效时，会在打开 DevTools 后自动尝试附加日志桥。
+2. 手动模式：执行 `weapp-vite ide logs`，进入持续监听状态；可配合 `--open` 先打开 DevTools。
+
+```bash
+weapp-vite dev --open
+weapp-vite ide logs
+weapp-vite ide logs --open
+```
+
+### 注意事项
+
+- 当前只支持微信小程序平台。
+- 自动附加失败时，会回退到普通 `open` 流程，不影响原有开发命令。
+- `weapp-vite ide logs` 是常驻命令，需要通过 `Ctrl+C` 主动退出。
 
 ## `weapp.injectWeapi` {#weapp-injectweapi}
 - **类型**：`boolean | { enabled?: boolean; replaceWx?: boolean; globalName?: string }`
