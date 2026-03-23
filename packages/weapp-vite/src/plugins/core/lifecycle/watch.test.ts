@@ -105,7 +105,7 @@ describe('core lifecycle watch hook', () => {
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
   })
 
-  it('marks native layout dependency updates as direct entry dirties', async () => {
+  it('marks native layout dependency updates as dependency dirties', async () => {
     const entryId = '/project/src/pages/layouts/index.ts'
     const layoutId = '/project/src/layouts/default/index.ts'
     const state = createState({
@@ -117,7 +117,7 @@ describe('core lifecycle watch hook', () => {
 
     await hook(layoutId, { event: 'update' })
 
-    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+    expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'dependency')
   })
 
   it('marks importer-driven invalidations as dependency dirties', async () => {
