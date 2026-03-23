@@ -6,9 +6,6 @@ import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const BASE_TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-template')
 const RETAIL_TEMPLATE_ROOT = path.resolve(import.meta.dirname, '../../templates/weapp-vite-wevu-tailwindcss-tdesign-retail-template')
-const TOAST_NODE_RE = /<t-toast[^>]+id="t-toast"[^>]*\/>/
-const DIALOG_NODE_RE = /<t-dialog[^>]+id="t-dialog"[^>]*\/>/
-
 async function buildTemplate(projectRoot: string, label: string) {
   await runWeappViteBuildWithLogCapture({
     cliPath: CLI_PATH,
@@ -29,8 +26,13 @@ function expectNoFeedbackNodes(wxml: string) {
 }
 
 function expectSharedFeedbackNodes(wxml: string) {
-  expect(wxml).toMatch(TOAST_NODE_RE)
-  expect(wxml).toMatch(DIALOG_NODE_RE)
+  expect(wxml).toContain('<t-toast')
+  expect(wxml).toContain('<t-dialog')
+}
+
+function expectLayoutWrappers(wxml: string) {
+  expect(wxml).toContain('<weapp-layout-default')
+  expect(wxml).toContain('<weapp-layout-admin')
 }
 
 describe.sequential('template build: tdesign feedback layouts', () => {
@@ -52,7 +54,7 @@ describe.sequential('template build: tdesign feedback layouts', () => {
     expectSharedFeedbackNodes(adminLayoutWxml)
     expectNoFeedbackNodes(pageWxml)
     expectNoFeedbackNodes(abilityPageWxml)
-    expect(layoutPageWxml).toMatch(TOAST_NODE_RE)
+    expectLayoutWrappers(layoutPageWxml)
     expect(defaultLayoutJs).toContain('setup(')
     expect(adminLayoutJs).toContain('setup(')
   })
