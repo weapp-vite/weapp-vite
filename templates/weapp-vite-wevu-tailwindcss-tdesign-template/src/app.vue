@@ -5,6 +5,7 @@ defineAppJson({
   pages: [
     'pages/index/index',
     'pages/layouts/index',
+    'pages/layout-store/index',
     'pages/layout-feedback/index',
     'pages/data/index',
     'pages/form/index',

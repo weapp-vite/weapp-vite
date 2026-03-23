@@ -56,6 +56,12 @@ function openLayoutFeedbackDemo() {
     url: '/pages/layout-feedback/index',
   })
 }
+
+function openLayoutStoreDemo() {
+  wx.navigateTo({
+    url: '/pages/layout-store/index',
+  })
+}
 </script>
 
 <template>
@@ -104,6 +110,9 @@ function openLayoutFeedbackDemo() {
       </text>
       <t-button class="mt-[16rpx]" block theme="primary" variant="outline" @tap="openLayoutFeedbackDemo">
         打开 Layout 通信演示
+      </t-button>
+      <t-button class="mt-[12rpx]" block theme="primary" variant="outline" @tap="openLayoutStoreDemo">
+        打开 Store 驱动 Layout 演示
       </t-button>
     </view>
   </view>

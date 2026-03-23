@@ -121,6 +121,16 @@ const quickActions = ref<QuickActionItem[]>([
     type: 'sub',
   },
   {
+    key: 'layout-store',
+    title: 'Store 调用 Layout',
+    description: 'store 驱动 layout 宿主',
+    icon: 'layers',
+    tag: 'Store',
+    tone: 'brand',
+    path: '/pages/layout-store/index',
+    type: 'sub',
+  },
+  {
     key: 'lab',
     title: '组件实验室',
     description: 'TDesign 组件',
