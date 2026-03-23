@@ -1,6 +1,7 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
+import { performance } from 'node:perf_hooks'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
@@ -54,6 +55,18 @@ export async function transformVueLikeFile(options: {
     classStyleRuntimeWarned,
     resolveSfcSrc,
   } = options
+  const vueTransformTiming = ctx.configService?.weappViteConfig?.debug?.vueTransformTiming
+  const stageTimings: Record<string, number> = {}
+  const totalStart = vueTransformTiming ? performance.now() : 0
+  const measureStage = async <T>(label: string, task: () => Promise<T>) => {
+    if (!vueTransformTiming) {
+      return await task()
+    }
+    const start = performance.now()
+    const result = await task()
+    stageTimings[label] = Number((performance.now() - start).toFixed(2))
+    return result
+  }
 
   const configService = ctx.configService
   if (!configService) {
@@ -71,27 +84,31 @@ export async function transformVueLikeFile(options: {
   }
 
   try {
-    const source = typeof code === 'string'
-      ? code
-      : configService.isDev
-        ? await readFileCached(filename, { checkMtime: true, encoding: 'utf8' })
-        : await fs.readFile(filename, 'utf-8')
+    const source = await measureStage('readSource', async () => (
+      typeof code === 'string'
+        ? code
+        : configService.isDev
+          ? await readFileCached(filename, { checkMtime: true, encoding: 'utf8' })
+          : await fs.readFile(filename, 'utf-8')
+    ))
 
     if (filename.endsWith('.vue')) {
-      try {
-        const parsedSfc = await readAndParseSfc(filename, {
-          source,
-          checkMtime: false,
-          resolveSrc: {
-            resolveId: (src, importer) => resolveSfcSrc(pluginCtx, src, importer),
-            checkMtime: getSfcCheckMtime(ctx.configService),
-          },
-        })
-        styleBlocksCache.set(filename, parsedSfc.descriptor.styles)
-      }
-      catch {
-        // 忽略解析失败，后续由 compileVueFile 抛出错误
-      }
+      await measureStage('preParseSfc', async () => {
+        try {
+          const parsedSfc = await readAndParseSfc(filename, {
+            source,
+            checkMtime: false,
+            resolveSrc: {
+              resolveId: (src, importer) => resolveSfcSrc(pluginCtx, src, importer),
+              checkMtime: getSfcCheckMtime(ctx.configService),
+            },
+          })
+          styleBlocksCache.set(filename, parsedSfc.descriptor.styles)
+        }
+        catch {
+          // 忽略解析失败，后续由 compileVueFile 抛出错误
+        }
+      })
     }
 
     const libModeEnabled = configService.weappLibConfig?.enabled
@@ -126,7 +143,7 @@ export async function transformVueLikeFile(options: {
       if (ctx.runtimeState.scan.isDirty) {
         currentPageMatcher.markDirty()
       }
-      isPage = await currentPageMatcher.isPageFile(filename)
+      isPage = await measureStage('matchPageEntry', async () => await currentPageMatcher.isPageFile(filename))
       isApp = isAppEntry(filename)
     }
 
@@ -137,7 +154,9 @@ export async function transformVueLikeFile(options: {
     ) {
       AUTO_ROUTES_DEFAULT_IMPORT_RE.lastIndex = 0
       AUTO_ROUTES_DYNAMIC_IMPORT_RE.lastIndex = 0
-      await ctx.autoRoutesService?.ensureFresh?.()
+      await measureStage('ensureAutoRoutes', async () => {
+        await ctx.autoRoutesService?.ensureFresh?.()
+      })
       const routesRef = ctx.autoRoutesService?.getReference?.()
       const inlineRoutes = {
         pages: routesRef?.pages ?? [],
@@ -153,16 +172,20 @@ export async function transformVueLikeFile(options: {
       classStyleRuntimeWarned,
     })
 
-    const result = filename.endsWith('.vue')
-      ? await compileVueFile(transformedSource, filename, compileOptions)
-      : await compileJsxFile(transformedSource, filename, compileOptions)
+    const result = await measureStage('compile', async () => (
+      filename.endsWith('.vue')
+        ? await compileVueFile(transformedSource, filename, compileOptions)
+        : await compileJsxFile(transformedSource, filename, compileOptions)
+    ))
 
     if (isPage && result.template) {
-      const resolvedLayoutPlan = await resolvePageLayoutPlan(transformedSource, filename, configService)
-      if (resolvedLayoutPlan) {
-        applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
-      }
-      await registerNativeLayoutChunksForEntry(pluginCtx, ctx, filename, transformedSource)
+      await measureStage('pagePostProcess', async () => {
+        const resolvedLayoutPlan = await resolvePageLayoutPlan(transformedSource, filename, configService)
+        if (resolvedLayoutPlan) {
+          applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
+        }
+        await registerNativeLayoutChunksForEntry(pluginCtx, ctx, filename, transformedSource)
+      })
     }
     registerVueTemplateToken(ctx, filename, result.template)
 
@@ -178,21 +201,25 @@ export async function transformVueLikeFile(options: {
       })) {
         logger.warn(warning)
       }
-      const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
-        checkMtime: configService.isDev,
+      await measureStage('injectPageFeatures', async () => {
+        const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script!, filename, {
+          checkMtime: configService.isDev,
+        })
+        if (injected.transformed) {
+          result.script = injected.code
+        }
       })
-      if (injected.transformed) {
-        result.script = injected.code
-      }
     }
     if (!isApp && result.script && result.template && isAutoSetDataPickEnabled(configService.weappViteConfig)) {
-      const keys = collectSetDataPickKeysFromTemplate(result.template, {
-        astEngine: resolveAstEngine(configService.weappViteConfig),
+      await measureStage('injectSetDataPick', async () => {
+        const keys = collectSetDataPickKeysFromTemplate(result.template!, {
+          astEngine: resolveAstEngine(configService.weappViteConfig),
+        })
+        const injectedPick = injectSetDataPickInJs(result.script!, keys)
+        if (injectedPick.transformed) {
+          result.script = injectedPick.code
+        }
       })
-      const injectedPick = injectSetDataPickInJs(result.script, keys)
-      if (injectedPick.transformed) {
-        result.script = injectedPick.code
-      }
     }
     compilationCache.set(filename, { result, source, isPage })
 
@@ -202,19 +229,23 @@ export async function transformVueLikeFile(options: {
         : filename,
     )
     if (relativeBase) {
-      emitScopedSlotChunks(pluginCtx, relativeBase, result, scopedSlotModules, emittedScopedSlotChunks, configService.outputExtensions)
+      await measureStage('emitScopedSlots', async () => {
+        emitScopedSlotChunks(pluginCtx, relativeBase, result, scopedSlotModules, emittedScopedSlotChunks, configService.outputExtensions)
+      })
     }
 
     let returnedCode = result.script ?? ''
     const styleBlocks = styleBlocksCache.get(filename)
     if (styleBlocks?.length) {
-      const styleImports = styleBlocks
-        .map((styleBlock, index) => {
-          const request = buildWeappVueStyleRequest(filename, styleBlock, index)
-          return `import ${JSON.stringify(request)};\n`
-        })
-        .join('')
-      returnedCode = styleImports + returnedCode
+      returnedCode = await measureStage('injectStyleImports', async () => {
+        const styleImports = styleBlocks
+          .map((styleBlock, index) => {
+            const request = buildWeappVueStyleRequest(filename, styleBlock, index)
+            return `import ${JSON.stringify(request)};\n`
+          })
+          .join('')
+        return styleImports + returnedCode
+      })
     }
 
     if (!isApp && !result.script?.trim()) {
@@ -228,6 +259,15 @@ export async function transformVueLikeFile(options: {
     const defineOptionsHash = result.meta?.defineOptionsHash
     if (defineOptionsHash && configService.isDev) {
       returnedCode += `\n;Object.defineProperty({}, '__weappViteDefineOptionsHash', { value: ${JSON.stringify(defineOptionsHash)} })\n`
+    }
+
+    if (vueTransformTiming) {
+      vueTransformTiming({
+        id: filename,
+        isPage,
+        totalMs: Number((performance.now() - totalStart).toFixed(2)),
+        stages: stageTimings,
+      })
     }
 
     return {
