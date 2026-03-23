@@ -1,9 +1,8 @@
 import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
-import { startForwardConsole as startWechatForwardConsole } from 'weapp-ide-cli'
 import logger from '../../logger'
-import { resolveForwardConsoleOptions } from '../forwardConsole'
+import { resolveForwardConsoleOptions, startForwardConsoleBridge } from '../forwardConsole'
 import { openIde, resolveIdeCommandContext } from '../openIde'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 import { resolveRuntimeTargets } from '../runtime'
@@ -61,29 +60,12 @@ export async function runIdeCommand(action: string | undefined, root: string | u
         },
   })
 
-  const session = await startWechatForwardConsole({
+  const session = await startForwardConsoleBridge({
     projectPath: resolved.projectPath,
+    agentName: undefined,
     logLevels: forwardConsoleOptions.logLevels,
     unhandledErrors: forwardConsoleOptions.unhandledErrors,
-    onReady: () => {
-      logger.info('[forwardConsole] 已进入持续监听模式，按 Ctrl+C 退出。')
-    },
-    onLog: (event) => {
-      const line = `[mini:${event.level}] ${event.message}`
-      if (event.level === 'error') {
-        logger.error(line)
-        return
-      }
-      if (event.level === 'warn') {
-        logger.warn(line)
-        return
-      }
-      if (event.level === 'info') {
-        logger.info(line)
-        return
-      }
-      logger.log(line)
-    },
+    onReadyMessage: '[forwardConsole] 已进入持续监听模式，按 Ctrl+C 退出。',
   })
 
   await waitForTermination(async () => {

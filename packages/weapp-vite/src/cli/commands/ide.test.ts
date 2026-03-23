@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const openIdeMock = vi.hoisted(() => vi.fn())
 const resolveIdeCommandContextMock = vi.hoisted(() => vi.fn())
 const resolveForwardConsoleOptionsMock = vi.hoisted(() => vi.fn())
-const startForwardConsoleMock = vi.hoisted(() => vi.fn())
+const startForwardConsoleBridgeMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -18,10 +18,7 @@ vi.mock('../openIde', () => ({
 
 vi.mock('../forwardConsole', () => ({
   resolveForwardConsoleOptions: resolveForwardConsoleOptionsMock,
-}))
-
-vi.mock('weapp-ide-cli', () => ({
-  startForwardConsole: startForwardConsoleMock,
+  startForwardConsoleBridge: startForwardConsoleBridgeMock,
 }))
 
 vi.mock('../../logger', () => ({
@@ -39,7 +36,7 @@ describe('ide logs command', () => {
     openIdeMock.mockReset()
     resolveIdeCommandContextMock.mockReset()
     resolveForwardConsoleOptionsMock.mockReset()
-    startForwardConsoleMock.mockReset()
+    startForwardConsoleBridgeMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
@@ -68,7 +65,7 @@ describe('ide logs command', () => {
       logLevels: ['log', 'info', 'warn', 'error'],
       unhandledErrors: true,
     })
-    startForwardConsoleMock.mockResolvedValue({
+    startForwardConsoleBridgeMock.mockResolvedValue({
       close: vi.fn().mockResolvedValue(undefined),
     })
   })
@@ -83,7 +80,7 @@ describe('ide logs command', () => {
 
     await runIdeCommand('logs', undefined, {})
 
-    expect(startForwardConsoleMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(startForwardConsoleBridgeMock).toHaveBeenCalledWith(expect.objectContaining({
       projectPath: 'dist/dev',
       logLevels: ['log', 'info', 'warn', 'error'],
       unhandledErrors: true,

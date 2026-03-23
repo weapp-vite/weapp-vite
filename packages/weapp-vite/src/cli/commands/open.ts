@@ -1,6 +1,7 @@
 import type { CAC } from 'cac'
 import type { GlobalCLIOptions } from '../types'
-import { openIde, resolveIdeCommandContext } from '../openIde'
+import process from 'node:process'
+import { openIde, resolveIdeCommandContext, resolveIdeProjectRoot } from '../openIde'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 import { resolveRuntimeTargets } from '../runtime'
 
@@ -12,7 +13,7 @@ export function registerOpenCommand(cli: CAC) {
       filterDuplicateOptions(options)
       const configFile = resolveConfigFile(options)
       const targets = resolveRuntimeTargets(options)
-      const { platform, projectPath } = await resolveIdeCommandContext({
+      const { platform, projectPath, mpDistRoot } = await resolveIdeCommandContext({
         configFile,
         mode: options.mode ?? 'development',
         platform: targets.mpPlatform,
@@ -20,6 +21,6 @@ export function registerOpenCommand(cli: CAC) {
         cliPlatform: targets.rawPlatform,
       })
 
-      await openIde(platform, projectPath)
+      await openIde(platform, projectPath ?? resolveIdeProjectRoot(mpDistRoot, process.cwd()))
     })
 }

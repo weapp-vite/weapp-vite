@@ -121,10 +121,11 @@ describe('openIde', () => {
   })
 
   it('resolves ide project path from mpDistRoot', async () => {
-    const { resolveIdeProjectPath } = await import('./openIde')
+    const { resolveIdeProjectPath, resolveIdeProjectRoot } = await import('./openIde')
 
     expect(resolveIdeProjectPath('dist/alipay/dist')).toBe('dist/alipay')
     expect(resolveIdeProjectPath('dist')).toBeUndefined()
     expect(resolveIdeProjectPath('')).toBeUndefined()
+    expect(resolveIdeProjectRoot('dist', '/workspace/project')).toBe('/workspace/project')
   })
 })

@@ -59,7 +59,7 @@ export async function resolveIdeCommandContext(options: ResolveIdeCommandOptions
       })
       platform ??= ctx.configService.platform
       if (!projectPath) {
-        projectPath = resolveIdeProjectPath(ctx.configService.mpDistRoot)
+        projectPath = resolveIdeProjectRoot(ctx.configService.mpDistRoot, ctx.configService.cwd)
       }
       return {
         platform,
@@ -74,7 +74,7 @@ export async function resolveIdeCommandContext(options: ResolveIdeCommandOptions
   }
 
   if (!projectPath && platform === 'alipay') {
-    projectPath = resolveIdeProjectPath('dist/alipay/dist')
+    projectPath = resolveIdeProjectRoot('dist/alipay/dist', cwd)
   }
 
   return {
@@ -125,8 +125,15 @@ export function resolveIdeProjectPath(mpDistRoot?: string) {
     return undefined
   }
   const parent = path.dirname(mpDistRoot)
-  if (!parent || parent === '.') {
+  if (!parent || parent === '.' || parent === '/') {
     return undefined
   }
   return parent
+}
+
+/**
+ * @description 结合 mpDistRoot 与配置根目录解析最终 IDE 项目目录。
+ */
+export function resolveIdeProjectRoot(mpDistRoot?: string, cwd?: string) {
+  return resolveIdeProjectPath(mpDistRoot) ?? cwd
 }

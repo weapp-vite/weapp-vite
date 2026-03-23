@@ -45,16 +45,16 @@ cli
   .option('-f, --filter <filter>', `[string] filter debug logs`)
   .option('-m, --mode <mode>', `[string] set env mode`)
 
-registerServeCommand(cli)
+registerIdeCommand(cli)
 registerBuildCommand(cli)
 registerAnalyzeCommand(cli)
 registerInitCommand(cli)
-registerIdeCommand(cli)
 registerOpenCommand(cli)
 registerPrepareCommand(cli)
 registerNpmCommand(cli)
 registerGenerateCommand(cli)
 registerMcpCommand(cli)
+registerServeCommand(cli)
 
 cli.help()
 cli.version(VERSION)
@@ -62,6 +62,7 @@ cli.version(VERSION)
 const skipManagedTsconfigBootstrapCommands = new Set([
   'g',
   'generate',
+  'ide',
   'init',
   'mcp',
   'npm',
@@ -76,6 +77,12 @@ function resolveManagedTsconfigBootstrapRoot(args: string[]) {
     return process.cwd()
   }
   if (skipManagedTsconfigBootstrapCommands.has(firstArg)) {
+    if (firstArg === 'ide') {
+      const thirdArg = args[2]
+      if (secondArg === 'logs' && thirdArg && !thirdArg.startsWith('-')) {
+        return path.resolve(thirdArg)
+      }
+    }
     return undefined
   }
   if (['analyze', 'build', 'dev', 'open', 'prepare', 'serve'].includes(firstArg)) {
