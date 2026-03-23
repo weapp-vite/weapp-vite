@@ -92,7 +92,7 @@ export async function transformVueLikeFile(options: {
           : await fs.readFile(filename, 'utf-8')
     ))
 
-    if (filename.endsWith('.vue')) {
+    if (filename.endsWith('.vue') && source.includes('<style')) {
       await measureStage('preParseSfc', async () => {
         try {
           const parsedSfc = await readAndParseSfc(filename, {
