@@ -148,6 +148,7 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 ## 关联阅读
 
 1. [CLI 命令参考](/guide/cli)
-2. [共享配置：weapp.mcp](/config/shared#weapp-mcp)
-3. [@weapp-vite/mcp 包说明](/packages/mcp)
-4. [AI 学习入口](/ai)
+2. [共享配置：weapp.forwardConsole](/config/shared#weapp-forwardconsole)
+3. [共享配置：weapp.mcp](/config/shared#weapp-mcp)
+4. [@weapp-vite/mcp 包说明](/packages/mcp)
+5. [AI 学习入口](/ai)

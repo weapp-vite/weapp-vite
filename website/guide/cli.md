@@ -1,6 +1,6 @@
 ---
 title: CLI 命令参考
-description: weapp-vite CLI 命令参考，覆盖 dev、build、analyze、prepare、mcp、generate 与 weapp-ide-cli 透传规则。
+description: weapp-vite CLI 命令参考，覆盖 dev、build、analyze、prepare、mcp、ide logs、generate 与 weapp-ide-cli 透传规则。
 keywords:
   - guide
   - cli
@@ -68,6 +68,11 @@ weapp-vite [root]
 | `--host [host]`             | Web dev server host（`h5` 场景）           |
 | `--analyze`                 | 启动分包分析仪表盘（实验特性，小程序场景） |
 
+补充说明：
+
+- 当目标平台为 `weapp` 且启用了 `weapp.forwardConsole` 时，`weapp-vite dev --open` 会在打开微信开发者工具后，自动尝试把小程序 `console` 日志桥接到当前终端。
+- 默认配置是 `enabled: 'auto'`，也就是仅在检测到 AI 终端时自动启用。
+
 ### 2) `build`
 
 用于生产构建（支持 watch）。
@@ -123,7 +128,37 @@ weapp-vite open [root]
 | --------------------------- | --------------------------------------- |
 | `-p, --platform <platform>` | 目标平台（`weapp` \| `h5` \| `alipay`） |
 
-### 5) `npm`（含别名）
+### 5) `ide logs`
+
+持续监听微信开发者工具里的小程序日志，并转发到当前终端。
+
+```bash
+weapp-vite ide logs [root]
+```
+
+参数：
+
+| 参数                        | 说明                               |
+| --------------------------- | ---------------------------------- |
+| `-o, --open`                | 先打开微信开发者工具，再附加日志桥 |
+| `-p, --platform <platform>` | 目标平台（当前仅支持 `weapp`）     |
+| `--project-config <path>`   | 小程序 `project.config.json` 路径  |
+
+说明：
+
+- 该命令是常驻进程，按 `Ctrl+C` 退出。
+- 当前仅支持微信小程序平台，不支持 `alipay` / `h5`。
+- 若你只想在开发时自动附加，而不是手动执行此命令，可直接使用 `weapp-vite dev --open` 并配合 `weapp.forwardConsole`。
+
+示例：
+
+```bash
+weapp-vite ide logs
+weapp-vite ide logs --open
+weapp-vite ide logs ./dist/dev -p weapp
+```
+
+### 6) `npm`（含别名）
 
 调用 IDE 的 npm 构建能力。
 
@@ -133,7 +168,7 @@ weapp-vite build:npm
 weapp-vite build-npm
 ```
 
-### 6) `generate` / `g`
+### 7) `generate` / `g`
 
 生成 app / page / component 文件骨架。
 
@@ -150,7 +185,7 @@ weapp-vite g [filepath]
 | `-p, --page`        | 按 page 模板生成 |
 | `-n, --name <name>` | 指定文件名       |
 
-### 7) `init`
+### 8) `init`
 
 初始化项目配置。
 
@@ -158,7 +193,7 @@ weapp-vite g [filepath]
 weapp-vite init
 ```
 
-### 8) `prepare`
+### 9) `prepare`
 
 预生成 `.weapp-vite` 下的支持文件，包括托管 `tsconfig`、自动路由类型、自动导入组件清单与类型等。
 
@@ -172,7 +207,7 @@ weapp-vite prepare [root]
 - 老项目尚未跑过 `dev/build`，但希望编辑器先拿到类型文件；
 - 团队希望把自动路由、自动导入组件相关产物纳入显式预热流程。
 
-### 9) `mcp`
+### 10) `mcp`
 
 启动 `weapp-vite` MCP 服务（用于 AI 助手接入）。
 
@@ -217,6 +252,7 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 - `build-npm`
 - `generate`
 - `g`
+- `ide`
 - `prepare`
 - `mcp`
 
@@ -226,6 +262,8 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 weapp-vite ide preview --project ./dist -q terminal
 weapp-vite ide upload --project ./dist -v 1.0.0 -d "ci upload"
 ```
+
+但 `weapp-vite` 自己保留了 `weapp-vite ide logs` 这个原生命令，不会透传到 `weapp-ide-cli`。
 
 完整 IDE 命令列表请参考：
 
@@ -248,6 +286,9 @@ weapp-vite analyze -p weapp --output ./reports/analyze.json
 
 # 预生成 .weapp-vite 支持文件
 weapp-vite prepare
+
+# 持续监听 DevTools console
+weapp-vite ide logs --open
 
 # 透传微信预览命令
 weapp-vite preview --project ./dist -q terminal

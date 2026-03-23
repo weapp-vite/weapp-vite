@@ -85,6 +85,39 @@ function handleClick() {
 - Vite 插件识别 weapp-vite 宿主：https://vite.icebreaker.top/guide/vite-plugin-host
 - MCP 集成使用指南：[docs/mcp.md](./docs/mcp.md)
 
+## DevTools 日志桥接
+
+`weapp-vite` 现在支持把微信开发者工具里的小程序 `console` 输出桥接到当前终端。
+
+默认行为：
+
+- `weapp.forwardConsole` 默认是 `enabled: 'auto'`
+- 当检测到当前运行环境是 AI 终端时，`weapp-vite dev --open` 会自动尝试附加日志桥
+- 也可以手动进入持续监听模式
+
+配置示例：
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    forwardConsole: {
+      enabled: 'auto',
+      logLevels: ['log', 'info', 'warn', 'error'],
+      unhandledErrors: true,
+    },
+  },
+})
+```
+
+手动启动持续监听：
+
+```sh
+weapp-vite ide logs
+weapp-vite ide logs --open
+```
+
 ## CLI 中调用 weapp-ide-cli
 
 `weapp-vite` 内置了对 `weapp-ide-cli` 的透传能力，除了 `dev/build/open/init/generate/analyze/npm` 等原生命令外，其它 IDE 相关命令都可以直接调用：
@@ -101,6 +134,7 @@ weapp-vite navigate pages/index/index --project ./dist/build/mp-weixin
 ```sh
 weapp-vite ide preview --project ./dist/build/mp-weixin
 weapp-vite ide config show
+weapp-vite ide logs --open
 ```
 
 ## CLI 启动 MCP
