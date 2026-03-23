@@ -619,7 +619,9 @@ describe('vue transform plugin', () => {
     createPageEntryMatcherMock.mockReturnValue(pageMatcher)
 
     compileVueFileMock.mockResolvedValue({
-      script: 'export default {}',
+      script: `import { onPageScroll } from 'wevu'
+onPageScroll(() => {})
+export default {}`,
       meta: { jsonMacroHash: 'abc123', defineOptionsHash: 'def456' },
     })
     injectPageFeaturesMock.mockResolvedValue({ transformed: true, code: '/* injected */\nexport default {}' })
