@@ -60,6 +60,29 @@ export interface WeappDebugConfig {
   inspect?: WrapPluginOptions
 }
 
+export type WeappForwardConsoleLogLevel = 'debug' | 'log' | 'info' | 'warn' | 'error'
+
+/**
+ * @description 微信开发者工具日志转发配置。
+ */
+export interface WeappForwardConsoleConfig {
+  /**
+   * 是否启用日志转发。
+   * - `true`: 始终开启
+   * - `false`: 始终关闭
+   * - `'auto'`: 仅在检测到 AI 终端时开启
+   */
+  enabled?: boolean | 'auto'
+  /**
+   * 允许转发的日志级别。
+   */
+  logLevels?: WeappForwardConsoleLogLevel[]
+  /**
+   * 是否同时转发未捕获异常。
+   */
+  unhandledErrors?: boolean
+}
+
 /**
  * @description weapp-vite 主配置
  */
@@ -127,6 +150,7 @@ export interface WeappViteConfig {
   routeRules?: WeappRouteRules
   injectWeapi?: boolean | WeappInjectWeapiConfig
   mcp?: boolean | WeappMcpConfig
+  forwardConsole?: boolean | WeappForwardConsoleConfig
   chunks?: ChunksConfig
   json?: JsonConfig
 }
