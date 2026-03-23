@@ -11,6 +11,7 @@ import type {
 import type { AdapterWithSetData } from './runtimeInstance/utils'
 import type { WatchMap } from './watch'
 import { callHookList } from '../hooks'
+import { resolveRuntimePageLayoutName, syncRuntimePageLayoutState } from '../pageLayout'
 import { allocateOwnerId, attachOwnerSnapshot, removeOwner, updateOwnerSnapshot } from '../scopedSlots'
 import { clearTemplateRefs, scheduleTemplateRefUpdate } from '../templateRefs'
 import { bridgeRuntimeMethodsToTarget } from './runtimeInstance/methodBridge'
@@ -45,6 +46,24 @@ type RuntimeInstanceWithSyncFlush<
   M extends MethodDefinitions,
 > = RuntimeInstance<D, C, M> & {
   __wevu_flushSetupSnapshotSync?: () => void
+}
+
+function attachPageLayoutSetter(target: InternalRuntimeState) {
+  if (typeof (target as any).route !== 'string' || !(target as any).route) {
+    return
+  }
+
+  target.__wevuSetPageLayout = (layout: string | false, props?: Record<string, any>) => {
+    const runtimeState = target.__wevu?.state as Record<string, any> | undefined
+    if (!runtimeState || typeof runtimeState !== 'object') {
+      return
+    }
+
+    runtimeState.__wv_page_layout_name = resolveRuntimePageLayoutName(layout)
+    const nextProps = layout === false ? {} : (props ?? {})
+    runtimeState.__wv_page_layout_props = nextProps
+    syncRuntimePageLayoutState(target as Record<string, any>, layout, nextProps)
+  }
 }
 
 /**
@@ -212,6 +231,7 @@ export function mountRuntimeInstance<D extends object, C extends ComputedDefinit
     writable: false,
   })
   target.__wevu = runtimeWithDefaults
+  attachPageLayoutSetter(target)
 
   attachOwnerSnapshot(target, runtimeWithDefaults as any, ownerId)
 
