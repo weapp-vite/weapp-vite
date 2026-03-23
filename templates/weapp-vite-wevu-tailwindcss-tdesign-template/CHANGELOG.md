@@ -1,5 +1,25 @@
 # weapp-vite-wevu-template
 
+## 1.0.5
+
+### Patch Changes
+
+- 🐛 **重构 `weapp-vite-wevu-tailwindcss-tdesign-template` 的 `useDialog()` 实现，统一 alert / confirm 在 layout 宿主与直接组件调用两种模式下的打开流程，并移除对宿主旧 `properties` 的回灌。这样可以从根本上避免旧按钮配置残留到后续弹窗，减少实现分叉并让 alert / confirm 行为更稳定。** [`1f086dc`](https://github.com/weapp-vite/weapp-vite/commit/1f086dc7602c642d6371064af792877dc1f5c29e) by @sonofmagic
+
+- 🐛 **修复动态页面布局模板在重复应用 layout transform 时可能被再次包裹的问题。此前同一个页面在经过多轮 transform / 构建后，`wx:if` 动态 layout 分支会整体再嵌套一层，导致切换到 `admin` 布局时出现重复的 `layouts/admin.vue` 页面壳。现在动态 layout 包裹逻辑已保持幂等，并补充对应测试，确保同一页面模板不会被重复注入 layout 分支。** [`1a5da11`](https://github.com/weapp-vite/weapp-vite/commit/1a5da1142ddae8362f9f46cc691a4f186cfa7811) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite-wevu-tailwindcss-tdesign-template` 中 Layout 通信演示页的页面级按钮点击无响应问题。此前事件绑定在包裹 `t-button` 的外层 `view` 上，导致点击时没有稳定触发页面方法；现在改为直接绑定到 `t-button`，使页面触发 Toast、Alert、Confirm 与子组件示例保持一致。** [`ed97136`](https://github.com/weapp-vite/weapp-vite/commit/ed971363e68f2b245fda1e71d34f2ced65803407) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` 增加开发态输出目录清理开关 `weapp.cleanOutputsInDev`，并将开发态默认行为调整为“不在 `dev` / `dev -o` 启动前全量清空小程序输出目录”。这样模板和项目在默认配置下即可减少开发模式的磁盘清理开销；如果需要恢复旧行为，可显式设置 `cleanOutputsInDev: true`。** [`0dbdb30`](https://github.com/weapp-vite/weapp-vite/commit/0dbdb304cd3db1df579d0e828ae17beb29194bb2) by @sonofmagic
+
+- 🐛 **修复 `wevu` 中 `setPageLayout()` 在页面 `watch` / `watchEffect` 回调里调用时可能丢失页面上下文的问题。现在页面实例会更早挂载 layout setter，响应式监听回调也会恢复创建时的当前实例；同时 `setPageLayout()` 会优先回退到运行时维护的当前页面实例，使 `setup()` 内部的 `immediate` watcher 以及后续响应式切换都能稳定驱动 layout 更新。同步更新 TDesign wevu 模板中的 store-layout 演示页，重新使用 watcher 驱动 `setPageLayout()` 以覆盖这一场景。** [`3ba325a`](https://github.com/weapp-vite/weapp-vite/commit/3ba325ac4538637f8828c5a4cc3c3815ebce10a7) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite-wevu-tailwindcss-tdesign-template` 中 Layout 通信演示页的 alert 弹窗底部左侧残留空白按钮位的问题。宿主模式下打开 alert 时，改为显式清空 `cancelBtn`，避免 TDesign `t-dialog` 将空字符串当作取消按钮配置渲染出空白占位。** [`b24ce4b`](https://github.com/weapp-vite/weapp-vite/commit/b24ce4b7d4df1c29ccec40dcc9ef6b5c09972612) by @sonofmagic
+
+- 🐛 **为 `weapp-vite-wevu-tailwindcss-tdesign-template` 增加一个 `wevu/store` 驱动 layout 交互的演示页。新示例展示了 store 如何保存布局状态与交互意图，再由页面上下文消费这些命令并调用 `setPageLayout()`、`useToast()`、`useDialog()`，从而命中 `default` 与 `admin` layout 中承载的反馈宿主。** [`d7a9073`](https://github.com/weapp-vite/weapp-vite/commit/d7a9073c79fc68161c049d36b78d5ba3cc21567c) by @sonofmagic
+
+- 🐛 **调整 `weapp-vite-wevu-tailwindcss-tdesign-template` 中 Store 调用 Layout 演示页的交互职责。现在页面本身不再直接调用 `useToast()` / `useDialog()`，而是由 `wevu/store` 内的 action 直接触发 toast、alert 与 confirm，并通过当前页面的 layout 宿主完成展示，使示例更符合“store 统一调度交互反馈”的目标。** [`b807fdc`](https://github.com/weapp-vite/weapp-vite/commit/b807fdc8a1ced4f31d43d4c8b5ec095e4e76d5ec) by @sonofmagic
+
 ## 1.0.4
 
 ### Patch Changes

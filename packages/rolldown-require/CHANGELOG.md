@@ -1,5 +1,11 @@
 # rolldown-require
 
+## 2.0.9
+
+### Patch Changes
+
+- 🐛 **升级 `rolldown-require` 对 `get-tsconfig` 的依赖版本，并完成构建与测试验证。该升级用于保持 tsconfig 解析链路与上游兼容性，包含 `tsconfig paths` 在内的现有解析行为未出现回归。** [`aae675c`](https://github.com/weapp-vite/weapp-vite/commit/aae675c4084864f16d74cce1d0f19592d6abf0c6) by @sonofmagic
+
 ## 2.0.8
 
 ### Patch Changes
