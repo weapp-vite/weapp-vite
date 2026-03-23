@@ -6,6 +6,10 @@ let wxPatched = false
 let currentPageInstance: InternalRuntimeState | undefined
 const PAGE_SCROLL_HOOK_DEPTH_KEY = '__wevuPageScrollHookDepth'
 
+export function getCurrentPageInstance() {
+  return currentPageInstance
+}
+
 export function bindCurrentPageInstance(target: InternalRuntimeState) {
   currentPageInstance = target
 }

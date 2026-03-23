@@ -1,6 +1,6 @@
 import type { RuntimeApp } from '@/runtime/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getCurrentScope, nextTick, onScopeDispose, ref, watchEffect } from '@/index'
+import { getCurrentScope, nextTick, onScopeDispose, ref, setPageLayout, watch, watchEffect } from '@/index'
 import { createApp } from '@/runtime/app'
 import { callHookReturn, setCurrentInstance } from '@/runtime/hooks'
 import {
@@ -242,6 +242,39 @@ describe('mountRuntimeInstance and teardown', () => {
     source.value = 2
     await nextTick()
     expect(calls).toEqual([0, 1])
+  })
+
+  it('supports calling setPageLayout in immediate watch callbacks during setup', async () => {
+    const app = createApp({})
+    const target: any = {
+      route: 'pages/layout-watch/index',
+      setData: vi.fn(),
+    }
+
+    expect(() => {
+      mountRuntimeInstance(target, app as any, undefined, () => {
+        const layoutName = ref<'default' | 'admin'>('default')
+
+        watch(layoutName, (value) => {
+          setPageLayout(value, value === 'admin' ? { title: 'Watch Admin' } : {})
+        }, { immediate: true })
+
+        return {
+          layoutName,
+        }
+      })
+    }).not.toThrow()
+
+    expect(target.__wevu?.state.__wv_page_layout_name).toBe('default')
+
+    target.$wevu.state.layoutName.value = 'admin'
+    await nextTick()
+    expect(target.__wevu?.state.__wv_page_layout_name).toBe('admin')
+    expect(target.__wevu?.state.__wv_page_layout_props).toEqual({
+      title: 'Watch Admin',
+    })
+
+    teardownRuntimeInstance(target)
   })
 })
 

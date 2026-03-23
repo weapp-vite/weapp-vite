@@ -12,6 +12,7 @@ import type {
   WatchSources,
   WatchStopHandle,
 } from './watch/types'
+import { getCurrentInstance, setCurrentInstance } from '../runtime/hooks'
 import { effect, onScopeDispose, stop } from './core'
 import { applyDeepWatchGetter, createWatchGetter, dispatchScheduledJob } from './watch/helpers'
 
@@ -59,6 +60,7 @@ export function watch(
   cb: WatchCallback,
   options: WatchOptions = {},
 ): WatchStopHandle {
+  const ownerInstance = getCurrentInstance()
   const watchGetterContext = createWatchGetter(source)
   const getter = applyDeepWatchGetter(
     watchGetterContext.getter,
@@ -93,7 +95,14 @@ export function watch(
     }
     const newValue = runner()
     cleanup?.()
-    cbWithOnce(newValue, oldValue, onCleanup)
+    const previousInstance = getCurrentInstance()
+    setCurrentInstance(ownerInstance)
+    try {
+      cbWithOnce(newValue, oldValue, onCleanup)
+    }
+    finally {
+      setCurrentInstance(previousInstance)
+    }
     oldValue = newValue
   }
   const scheduledJob = () => runJob(scheduledToken)
@@ -152,6 +161,7 @@ export function watchEffect(
   effectFn: WatchEffect,
   options: WatchEffectOptions = {},
 ): WatchStopHandle {
+  const ownerInstance = getCurrentInstance()
   let cleanup: (() => void) | undefined
   const onCleanup: OnCleanup = (fn) => {
     cleanup = fn
@@ -179,7 +189,14 @@ export function watchEffect(
     () => {
       cleanup?.()
       cleanup = undefined
-      effectFn(onCleanup)
+      const previousInstance = getCurrentInstance()
+      setCurrentInstance(ownerInstance)
+      try {
+        effectFn(onCleanup)
+      }
+      finally {
+        setCurrentInstance(previousInstance)
+      }
     },
     {
       lazy: true,

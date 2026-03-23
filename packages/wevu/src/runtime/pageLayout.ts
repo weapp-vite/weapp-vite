@@ -1,5 +1,6 @@
 import { reactive, readonly } from '../reactivity'
 import { getCurrentInstance, getCurrentSetupContext } from './hooks'
+import { getCurrentPageInstance } from './register/component/lifecycle/platform'
 
 const PAGE_LAYOUT_SETTER_KEY = '__wevuSetPageLayout'
 const NO_LAYOUT_RUNTIME_KEY = '__wv_no_layout'
@@ -40,6 +41,11 @@ interface MutablePageLayoutState {
 }
 
 function resolveCurrentPageInstance() {
+  const runtimeCurrentPage = getCurrentPageInstance()
+  if (runtimeCurrentPage) {
+    return runtimeCurrentPage
+  }
+
   const getCurrentPagesFn = (globalThis as Record<string, unknown>).getCurrentPages
   if (typeof getCurrentPagesFn !== 'function') {
     return undefined

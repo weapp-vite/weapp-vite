@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { reactive } from '@/reactivity'
 import { setCurrentInstance, setCurrentSetupContext } from '@/runtime/hooks'
 import { setPageLayout, syncRuntimePageLayoutStateFromRuntime, usePageLayout } from '@/runtime/pageLayout'
+import { bindCurrentPageInstance, releaseCurrentPageInstance } from '@/runtime/register/component/lifecycle/platform'
 
 describe('page layout runtime api', () => {
   it('usePageLayout reads current runtime state and tracks setPageLayout updates', () => {
@@ -50,5 +51,38 @@ describe('page layout runtime api', () => {
 
     setCurrentSetupContext(undefined)
     setCurrentInstance(undefined)
+  })
+
+  it('falls back to the runtime tracked current page instance outside setup', () => {
+    const runtimeState = reactive({
+      __wv_page_layout_name: 'default',
+      __wv_page_layout_props: {},
+    })
+
+    const instance = {
+      route: 'pages/layout/current-page',
+      __wevu: {
+        state: runtimeState,
+      },
+      __wevuSetPageLayout(layout: string | false, props?: Record<string, any>) {
+        runtimeState.__wv_page_layout_name = layout === false ? '__wv_no_layout' : layout
+        runtimeState.__wv_page_layout_props = layout === false ? {} : (props ?? {})
+      },
+    } as any
+
+    bindCurrentPageInstance(instance)
+    setCurrentInstance(undefined)
+    setCurrentSetupContext(undefined)
+
+    setPageLayout('admin', {
+      title: 'Tracked Current Page',
+    })
+
+    expect(runtimeState.__wv_page_layout_name).toBe('admin')
+    expect(runtimeState.__wv_page_layout_props).toEqual({
+      title: 'Tracked Current Page',
+    })
+
+    releaseCurrentPageInstance(instance)
   })
 })
