@@ -192,7 +192,7 @@ describe('runtime buildPlugin service', () => {
     await service.build()
 
     expect(process.env.NODE_ENV).toBe('development')
-    expect(cleanOutputsMock).toHaveBeenCalledTimes(2)
+    expect(cleanOutputsMock).not.toHaveBeenCalled()
     expect(syncProjectConfigToOutputMock).toHaveBeenCalledWith({
       outDir: '/project/dist',
       projectConfigPath: '/project/project.config.json',
@@ -246,6 +246,24 @@ describe('runtime buildPlugin service', () => {
 
     expect(cleanOutputsMock).not.toHaveBeenCalled()
     expect(syncProjectConfigToOutputMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('cleans output in dev when cleanOutputsInDev is true', async () => {
+    buildMock.mockResolvedValueOnce(createWatcher(['START', 'END']))
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        weappViteConfig: {
+          cleanOutputsInDev: true,
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    await service.build()
+
+    expect(cleanOutputsMock).toHaveBeenCalledTimes(1)
   })
 
   it('reuses npm cache in dev mode when dependencies are not outdated', async () => {
