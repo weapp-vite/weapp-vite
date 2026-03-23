@@ -784,6 +784,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
   const resolvedTrustProject = trustProject ?? isProjectPathTrustedByEnv(rest.projectPath)
   const project = resolveReportProjectPath(rest.projectPath)
   const launchTimeout = timeout ?? 90_000
+  const launchAttemptTimeout = Math.max(LAUNCH_ATTEMPT_TIMEOUT, launchTimeout)
   return (async () => {
     for (let attempt = 1; attempt <= LAUNCH_RETRIES; attempt += 1) {
       let miniProgram: any = null
@@ -808,7 +809,7 @@ export function launchAutomator(options: Parameters<typeof automator.launch>[0])
             }
             return withRelaunch
           },
-          LAUNCH_ATTEMPT_TIMEOUT,
+          launchAttemptTimeout,
           `launch automator#${attempt}`,
           async (lateMiniProgram) => {
             try {
