@@ -277,7 +277,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   async function buildEntry(options?: BuildOptions) {
-    const shouldCleanOutputs = !configService.isDev || configService.weappViteConfig.cleanOutputsInDev === true
+    const shouldCleanOutputs = !configService.isDev || configService.weappViteConfig.cleanOutputsInDev !== false
     if (shouldCleanOutputs) {
       await cleanOutputs(configService)
     }
