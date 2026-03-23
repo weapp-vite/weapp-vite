@@ -65,7 +65,10 @@ export async function evaluateScriptSetupJsonMacro(params: {
   const ms = new MagicString(originalContent)
 
   const dir = path.dirname(filename)
-  const tempDir = resolveWevuConfigTempDir(dir)
+  const tempRoot = resolveWevuConfigTempDir(dir)
+  const basename = path.basename(filename, path.extname(filename))
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  const tempDir = path.join(tempRoot, `${basename}.json-macro.${unique}`)
 
   for (const statementPath of keptStatementPaths) {
     if (!statementPath.isImportDeclaration()) {
@@ -118,10 +121,8 @@ const __weapp_defineThemeJson = (config) => (__weapp_json_macro_values.push(conf
   const evalSource = header + ms.toString() + footer
 
   const extension = resolveScriptSetupExtension(lang)
-  return await withTempDirLock(tempDir, async () => {
+  return await withTempDirLock(tempRoot, async () => {
     await fs.ensureDir(tempDir)
-    const basename = path.basename(filename, path.extname(filename))
-    const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
     const tempFile = path.join(tempDir, `${basename}.json-macro.${unique}.${extension}`)
     await fs.writeFile(tempFile, evalSource, 'utf8')
 
@@ -170,16 +171,7 @@ const __weapp_defineThemeJson = (config) => (__weapp_json_macro_values.push(conf
     }
     finally {
       try {
-        await fs.remove(tempFile)
-      }
-      catch {
-        // 忽略
-      }
-      try {
-        const remains = await fs.readdir(tempDir)
-        if (remains.length === 0) {
-          await fs.remove(tempDir)
-        }
+        await fs.remove(tempDir)
       }
       catch {
         // 忽略

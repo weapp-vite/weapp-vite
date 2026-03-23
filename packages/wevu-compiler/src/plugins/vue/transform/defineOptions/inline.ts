@@ -137,7 +137,10 @@ async function evaluateDefineOptionsValues(params: {
   const { content, filename, lang, statements } = params
   const ms = new MagicString(content)
   const dir = path.dirname(filename)
-  const tempDir = resolveWevuConfigTempDir(dir)
+  const tempRoot = resolveWevuConfigTempDir(dir)
+  const basename = path.basename(filename, path.extname(filename))
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  const tempDir = path.join(tempRoot, `${basename}.define-options.${unique}`)
   const programPath = statements[0]?.statementPath.parentPath
   if (!programPath) {
     return {
@@ -205,10 +208,8 @@ const __weapp_defineOptions = (value) => (__weapp_define_options_values.push(val
   }export const __weapp_define_scope = __weapp_define_scope_values\n${
     footer}`
 
-  return await withTempDirLock(tempDir, async () => {
+  return await withTempDirLock(tempRoot, async () => {
     await fs.ensureDir(tempDir)
-    const basename = path.basename(filename, path.extname(filename))
-    const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
     const tempFile = path.join(tempDir, `${basename}.define-options.${unique}.${extension}`)
     await fs.writeFile(tempFile, evalSource, 'utf8')
     try {
@@ -226,16 +227,7 @@ const __weapp_defineOptions = (value) => (__weapp_define_options_values.push(val
     }
     finally {
       try {
-        await fs.remove(tempFile)
-      }
-      catch {
-        // ignore
-      }
-      try {
-        const remains = await fs.readdir(tempDir)
-        if (remains.length === 0) {
-          await fs.remove(tempDir)
-        }
+        await fs.remove(tempDir)
       }
       catch {
         // ignore

@@ -16,6 +16,10 @@ import { collectAffectedEntries } from '../helpers'
 const configSuffixes = configExtensions.map(ext => `.${ext}`)
 const styleSuffixes = supportedCssLangs.map(ext => `.${ext}`)
 
+function isLayoutSourcePath(relativeSrc: string) {
+  return relativeSrc === 'layouts' || relativeSrc.startsWith('layouts/')
+}
+
 export function createBuildStartHook(state: CorePluginState) {
   const { ctx, subPackageMeta, emitDirtyEntries, buildTarget } = state
   const { configService } = ctx
@@ -44,7 +48,7 @@ export function createBuildStartHook(state: CorePluginState) {
 }
 
 export function createWatchChangeHook(state: CorePluginState) {
-  const { ctx, subPackageMeta, loadEntry, loadedEntrySet, markEntryDirty } = state
+  const { ctx, subPackageMeta, loadEntry, loadedEntrySet, markEntryDirty, resolvedEntryMap } = state
   const { scanService, configService, buildService } = ctx
 
   return async function watchChange(id: string, change: { event: ChangeEvent }) {
@@ -52,6 +56,7 @@ export function createWatchChangeHook(state: CorePluginState) {
     if (isSkippableResolvedId(normalizedId)) {
       return
     }
+    const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
     invalidateFileCache(normalizedId)
     if (change.event === 'update') {
       const isTemplateFile = isTemplate(normalizedId)
@@ -74,11 +79,24 @@ export function createWatchChangeHook(state: CorePluginState) {
             })()
         const primaryScript = await findJsEntry(basePath)
         if (primaryScript.path) {
-          markEntryDirty(normalizeFsResolvedId(primaryScript.path), 'direct')
+          const primaryScriptId = normalizeFsResolvedId(primaryScript.path)
+          const reason = isLayoutSourcePath(configService.relativeAbsoluteSrcRoot(primaryScriptId))
+            ? 'dependency'
+            : 'direct'
+          markEntryDirty(primaryScriptId, reason)
         }
       }
     }
-    if (loadedEntrySet.has(normalizedId)) {
+    const shouldInvalidateAllResolvedEntries = change.event === 'update'
+      && isLayoutSourcePath(relativeSrc)
+      && resolvedEntryMap.size > 0
+
+    if (shouldInvalidateAllResolvedEntries) {
+      for (const entryId of resolvedEntryMap.keys()) {
+        markEntryDirty(entryId, 'dependency')
+      }
+    }
+    else if (loadedEntrySet.has(normalizedId)) {
       markEntryDirty(normalizedId, 'direct')
     }
     else if (state.layoutEntryDependents.size && state.layoutEntryDependents.get(normalizedId)?.size) {
@@ -95,7 +113,6 @@ export function createWatchChangeHook(state: CorePluginState) {
         }
       }
     }
-    const relativeSrc = configService.relativeAbsoluteSrcRoot(normalizedId)
     const relativeCwd = configService.relativeCwd(normalizedId)
     let handledByIndependentWatcher = false
     let independentMeta: SubPackageMetaValue | undefined
