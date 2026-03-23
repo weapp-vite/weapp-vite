@@ -24,6 +24,27 @@ import { isAppEntry, registerNativeLayoutChunksForEntry, registerVueTemplateToke
 
 const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
 const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
+const TEMPLATE_DYNAMIC_HINT_RE = /\{\{|wx:|bind[A-Za-z:_-]+=|catch[A-Za-z:_-]+=/
+const PAGE_FEATURE_HOOK_HINTS = [
+  'onPageScroll',
+  'onPullDownRefresh',
+  'onReachBottom',
+  'onRouteDone',
+  'onTabItemTap',
+  'onResize',
+  'onShareAppMessage',
+  'onShareTimeline',
+  'onAddToFavorites',
+  'onSaveExitState',
+]
+
+function mayNeedSetDataPick(template: string) {
+  return TEMPLATE_DYNAMIC_HINT_RE.test(template)
+}
+
+function mayNeedPageFeatureInjection(script: string) {
+  return PAGE_FEATURE_HOOK_HINTS.some(hint => script.includes(hint))
+}
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -201,16 +222,24 @@ export async function transformVueLikeFile(options: {
       })) {
         logger.warn(warning)
       }
-      await measureStage('injectPageFeatures', async () => {
-        const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script!, filename, {
-          checkMtime: configService.isDev,
+      if (mayNeedPageFeatureInjection(result.script)) {
+        await measureStage('injectPageFeatures', async () => {
+          const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script!, filename, {
+            checkMtime: configService.isDev,
+          })
+          if (injected.transformed) {
+            result.script = injected.code
+          }
         })
-        if (injected.transformed) {
-          result.script = injected.code
-        }
-      })
+      }
     }
-    if (!isApp && result.script && result.template && isAutoSetDataPickEnabled(configService.weappViteConfig)) {
+    if (
+      !isApp
+      && result.script
+      && result.template
+      && isAutoSetDataPickEnabled(configService.weappViteConfig)
+      && mayNeedSetDataPick(result.template)
+    ) {
       await measureStage('injectSetDataPick', async () => {
         const keys = collectSetDataPickKeysFromTemplate(result.template!, {
           astEngine: resolveAstEngine(configService.weappViteConfig),

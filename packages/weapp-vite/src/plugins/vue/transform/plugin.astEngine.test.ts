@@ -7,6 +7,10 @@ const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn())
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn())
 const createCompileVueFileOptionsMock = vi.hoisted(() => vi.fn(() => ({ mock: true })))
 const readAndParseSfcMock = vi.hoisted(() => vi.fn())
+const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(async (_ctx: any, code: string) => ({
+  transformed: false,
+  code,
+})))
 
 vi.mock('wevu/compiler', () => ({
   compileVueFile: compileVueFileMock,
@@ -60,10 +64,7 @@ vi.mock('./bundle', () => ({
 }))
 
 vi.mock('./injectPageFeatures', () => ({
-  injectWevuPageFeaturesInJsWithViteResolver: vi.fn(async (_ctx: any, code: string) => ({
-    transformed: false,
-    code,
-  })),
+  injectWevuPageFeaturesInJsWithViteResolver: injectWevuPageFeaturesInJsWithViteResolverMock,
 }))
 
 vi.mock('./scopedSlot', () => ({
@@ -107,6 +108,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       transformed: false,
       code: 'export default {}',
     })
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockClear()
   })
 
   it('passes resolved astEngine into setData pick collection', async () => {
@@ -183,6 +185,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       map: null,
     })
     expect(readAndParseSfcMock).not.toHaveBeenCalled()
+    expect(collectSetDataPickKeysFromTemplateMock).not.toHaveBeenCalled()
   })
 
   it('reports vue transform timing when debug callback is configured', async () => {
@@ -253,5 +256,85 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     } as any, '<template><view /></template><style>.a{}</style>', '/project/src/components/with-style.vue')
 
     expect(readAndParseSfcMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips setData pick collection for static templates', async () => {
+    compileVueFileMock.mockResolvedValueOnce({
+      script: 'export default {}',
+      template: '<view>static</view>',
+      meta: {},
+    })
+    isAutoSetDataPickEnabledMock.mockReturnValue(true)
+
+    const { createVueTransformPlugin } = await import('./plugin')
+    const plugin = createVueTransformPlugin({
+      configService: {
+        isDev: false,
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        outputExtensions: {},
+        relativeOutputPath: vi.fn(() => undefined),
+        weappLibConfig: {
+          enabled: true,
+        },
+        weappViteConfig: {},
+      },
+      runtimeState: {
+        scan: {
+          isDirty: false,
+        },
+      },
+    } as any)
+
+    await plugin.transform!.call({
+      addWatchFile: vi.fn(),
+    } as any, '<template><view>static</view></template>', '/project/src/components/static-only.vue')
+
+    expect(collectSetDataPickKeysFromTemplateMock).not.toHaveBeenCalled()
+    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
+  })
+
+  it('skips page feature injection when page script has no page hook hints', async () => {
+    compileVueFileMock.mockResolvedValueOnce({
+      script: 'export default { setup() { const count = 1; return { count } } }',
+      template: '<view>{{ count }}</view>',
+      meta: {},
+    })
+    isAutoSetDataPickEnabledMock.mockReturnValue(false)
+
+    const { createVueTransformPlugin } = await import('./plugin')
+    const plugin = createVueTransformPlugin({
+      configService: {
+        isDev: false,
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        outputExtensions: {},
+        relativeOutputPath: vi.fn(() => undefined),
+        weappLibConfig: {
+          enabled: false,
+        },
+        weappViteConfig: {},
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => ({
+          json: {
+            pages: ['pages/home/index'],
+          },
+        })),
+        loadSubPackages: vi.fn(() => []),
+        pluginJson: undefined,
+      },
+      runtimeState: {
+        scan: {
+          isDirty: false,
+        },
+      },
+    } as any)
+
+    await plugin.transform!.call({
+      addWatchFile: vi.fn(),
+    } as any, '<template><view>{{ count }}</view></template>', '/project/src/pages/home/index.vue')
+
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
   })
 })
