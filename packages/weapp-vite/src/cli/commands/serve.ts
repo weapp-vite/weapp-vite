@@ -9,7 +9,7 @@ import logger from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { maybeStartForwardConsole } from '../forwardConsole'
 import { logBuildAppFinish } from '../logBuildAppFinish'
-import { openIde, resolveIdeProjectPath } from '../openIde'
+import { openIde, resolveIdeProjectRoot } from '../openIde'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
 
@@ -112,10 +112,11 @@ export function registerServeCommand(cli: CAC) {
         const openedByForwardConsole = await maybeStartForwardConsole({
           platform: configService.platform,
           mpDistRoot: configService.mpDistRoot,
+          cwd: configService.cwd,
           weappViteConfig: configService.weappViteConfig,
         })
         if (!openedByForwardConsole) {
-          await openIde(configService.platform, resolveIdeProjectPath(configService.mpDistRoot))
+          await openIde(configService.platform, resolveIdeProjectRoot(configService.mpDistRoot, configService.cwd))
         }
       }
 

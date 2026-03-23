@@ -122,4 +122,26 @@ describe('forwardConsole', () => {
     expect(started).toBe(false)
     expect(loggerMock.warn).toHaveBeenCalledWith('[forwardConsole] 启动失败，回退到普通 IDE 打开流程：DEVTOOLS_HTTP_PORT_ERROR')
   })
+
+  it('falls back to cwd when mpDistRoot parent is current directory', async () => {
+    determineAgentMock.mockResolvedValue({
+      isAgent: true,
+      agent: {
+        name: 'codex',
+      },
+    })
+    const { maybeStartForwardConsole } = await import('./forwardConsole')
+
+    const started = await maybeStartForwardConsole({
+      platform: 'weapp',
+      mpDistRoot: 'dist',
+      cwd: '/workspace/template',
+      weappViteConfig: {},
+    })
+
+    expect(started).toBe(true)
+    expect(startForwardConsoleMock).toHaveBeenCalledWith(expect.objectContaining({
+      projectPath: '/workspace/template',
+    }))
+  })
 })

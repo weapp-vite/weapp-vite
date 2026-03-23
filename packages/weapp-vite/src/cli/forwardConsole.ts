@@ -14,11 +14,22 @@ export interface ResolvedForwardConsoleOptions {
 export interface MaybeStartForwardConsoleOptions {
   platform?: string
   mpDistRoot?: string
+  cwd?: string
   weappViteConfig?: WeappViteConfig
+}
+
+export interface StartForwardConsoleBridgeOptions {
+  agentName?: string
+  logLevels: WeappForwardConsoleLogLevel[]
+  onReadyMessage: string
+  projectPath: string
+  unhandledErrors: boolean
 }
 
 const DEFAULT_FORWARD_CONSOLE_LEVELS: WeappForwardConsoleLogLevel[] = ['log', 'info', 'warn', 'error']
 let activeForwardConsoleSession: Awaited<ReturnType<typeof startWechatForwardConsole>> | undefined
+const FORWARD_CONSOLE_RETRY_DELAY_MS = 1000
+const FORWARD_CONSOLE_RETRY_TIMES = 5
 
 /**
  * @description 解析 forwardConsole 配置，并在 auto 模式下检测 AI 终端。
@@ -86,7 +97,7 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
     return false
   }
 
-  const projectPath = resolveIdeProjectPath(options.mpDistRoot)
+  const projectPath = resolveIdeProjectPath(options.mpDistRoot) ?? options.cwd
   if (!projectPath) {
     return false
   }
@@ -101,13 +112,35 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
   }
 
   try {
-    activeForwardConsoleSession = await startWechatForwardConsole({
+    activeForwardConsoleSession = await startForwardConsoleBridge({
+      agentName: resolved.agentName,
       projectPath,
       logLevels: resolved.logLevels,
       unhandledErrors: resolved.unhandledErrors,
+      onReadyMessage: '[forwardConsole] 已连接微信开发者工具日志',
+    })
+    return true
+  }
+  catch (error) {
+    activeForwardConsoleSession = undefined
+    const message = error instanceof Error ? error.message : String(error)
+    logger.warn(`[forwardConsole] 启动失败，回退到普通 IDE 打开流程：${message}`)
+    return false
+  }
+}
+
+/**
+ * @description 统一启动 DevTools 日志桥，并在 IDE 刚启动时做短暂重试。
+ */
+export async function startForwardConsoleBridge(options: StartForwardConsoleBridgeOptions) {
+  return await withForwardConsoleRetry(async () => {
+    return await startWechatForwardConsole({
+      projectPath: options.projectPath,
+      logLevels: options.logLevels,
+      unhandledErrors: options.unhandledErrors,
       onReady: () => {
-        const suffix = resolved.agentName ? `（AI 终端：${resolved.agentName}）` : ''
-        logger.info(`[forwardConsole] 已连接微信开发者工具日志${suffix}`)
+        const suffix = options.agentName ? `（AI 终端：${options.agentName}）` : ''
+        logger.info(`${options.onReadyMessage}${suffix}`)
       },
       onLog: (event) => {
         const line = `[mini:${event.level}] ${event.message}`
@@ -126,14 +159,7 @@ export async function maybeStartForwardConsole(options: MaybeStartForwardConsole
         logger.log(line)
       },
     })
-    return true
-  }
-  catch (error) {
-    activeForwardConsoleSession = undefined
-    const message = error instanceof Error ? error.message : String(error)
-    logger.warn(`[forwardConsole] 启动失败，回退到普通 IDE 打开流程：${message}`)
-    return false
-  }
+  })
 }
 
 async function detectAgent() {
@@ -150,4 +176,31 @@ async function detectAgent() {
       agentName: undefined,
     }
   }
+}
+
+async function withForwardConsoleRetry<T>(runner: () => Promise<T>): Promise<T> {
+  let lastError: unknown
+
+  for (let attempt = 0; attempt <= FORWARD_CONSOLE_RETRY_TIMES; attempt++) {
+    try {
+      return await runner()
+    }
+    catch (error) {
+      lastError = error
+      if (!isDevtoolsPortNotReadyError(error) || attempt === FORWARD_CONSOLE_RETRY_TIMES) {
+        break
+      }
+      await sleep(FORWARD_CONSOLE_RETRY_DELAY_MS)
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError))
+}
+
+function isDevtoolsPortNotReadyError(error: unknown) {
+  return error instanceof Error && error.message === 'DEVTOOLS_HTTP_PORT_ERROR'
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
