@@ -182,6 +182,7 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       code: 'Component({})',
       map: null,
     })
+    expect(readAndParseSfcMock).not.toHaveBeenCalled()
   })
 
   it('reports vue transform timing when debug callback is configured', async () => {
@@ -221,9 +222,36 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       totalMs: expect.any(Number),
       stages: expect.objectContaining({
         readSource: expect.any(Number),
-        preParseSfc: expect.any(Number),
         compile: expect.any(Number),
       }),
     }))
+  })
+
+  it('pre-parses sfc styles only when style blocks exist', async () => {
+    const { createVueTransformPlugin } = await import('./plugin')
+    const plugin = createVueTransformPlugin({
+      configService: {
+        isDev: false,
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        outputExtensions: {},
+        relativeOutputPath: vi.fn(() => undefined),
+        weappLibConfig: {
+          enabled: true,
+        },
+        weappViteConfig: {},
+      },
+      runtimeState: {
+        scan: {
+          isDirty: false,
+        },
+      },
+    } as any)
+
+    await plugin.transform!.call({
+      addWatchFile: vi.fn(),
+    } as any, '<template><view /></template><style>.a{}</style>', '/project/src/components/with-style.vue')
+
+    expect(readAndParseSfcMock).toHaveBeenCalledTimes(1)
   })
 })
