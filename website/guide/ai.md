@@ -129,6 +129,78 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 1. AI 输出 `screenshot-ok`。
 2. 工作区产出 `.tmp/mcp-screenshot.png`。
 
+## AI 终端里的 DevTools 日志桥接
+
+除了 MCP，`weapp-vite` 现在也支持把微信开发者工具里的小程序 `console` 日志直接桥接回 AI 终端。
+
+这对下面几类场景特别有用：
+
+1. 你让 AI 帮你改了一个页面或组件，想立刻看运行时日志。
+2. 你在做 DevTools automator / 截图验收，希望终端里同时看到页面报错。
+3. 你不想在「代码编辑器 / AI 终端 / DevTools 控制台」之间反复切换。
+
+### 最小工作流
+
+前置条件：
+
+1. 微信开发者工具已登录。
+2. 已开启「设置 -> 安全设置 -> 服务端口」。
+3. 项目使用 `weapp-vite` 默认配置，或显式开启了 `weapp.forwardConsole`。
+
+如果你当前就在 AI 终端里工作，推荐直接执行：
+
+```bash
+pnpm dev --open
+```
+
+默认配置下，`weapp.forwardConsole.enabled = 'auto'`。这意味着：
+
+- 在普通人类终端里，默认不会自动附加日志桥。
+- 在 Codex、Claude Code、Cursor CLI 等 AI 终端里，会自动尝试把小程序日志桥接回当前终端。
+
+如果你希望手动进入持续监听模式，而不依赖自动检测，可执行：
+
+```bash
+weapp-vite ide logs --open
+```
+
+这个命令会：
+
+1. 打开微信开发者工具。
+2. 连接小程序 automator 会话。
+3. 持续输出 `console.log / info / warn / error` 与未捕获异常。
+4. 一直保持运行，直到你按 `Ctrl+C` 主动退出。
+
+### 推荐给 AI 的提示词
+
+下面这段提示词适合直接发给接入终端能力的 AI：
+
+```text
+请在当前 weapp-vite 项目里帮我做一次 DevTools 终端联调：
+1. 用 weapp 平台启动开发命令，并打开微信开发者工具。
+2. 如果当前终端没有自动看到小程序 console，请改用 `weapp-vite ide logs --open` 进入持续监听。
+3. 复现页面操作后，汇总终端里看到的 console 输出、warn、error 和未捕获异常。
+4. 最后给出结论：问题是否已经复现、最关键的日志是哪一条、下一步建议改哪里。
+```
+
+### 相关配置
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    forwardConsole: {
+      enabled: 'auto',
+      logLevels: ['log', 'info', 'warn', 'error'],
+      unhandledErrors: true,
+    },
+  },
+})
+```
+
+更多字段说明见：[共享配置：weapp.forwardConsole](/config/shared#weapp-forwardconsole)
+
 ## llms.txt
 
 `llms.txt` 负责给模型稳定喂上下文，减少遗漏与误判。
@@ -150,5 +222,6 @@ weapp-vite mcp --transport streamable-http --host 127.0.0.1 --port 3088 --endpoi
 1. [CLI 命令参考](/guide/cli)
 2. [共享配置：weapp.forwardConsole](/config/shared#weapp-forwardconsole)
 3. [共享配置：weapp.mcp](/config/shared#weapp-mcp)
-4. [@weapp-vite/mcp 包说明](/packages/mcp)
-5. [AI 学习入口](/ai)
+4. [调试与贡献](/guide/debug)
+5. [@weapp-vite/mcp 包说明](/packages/mcp)
+6. [AI 学习入口](/ai)
