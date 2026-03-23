@@ -83,7 +83,7 @@ function openAlertWithHost(host: any, payload: AlertOptions) {
     host.setData({
       ...host.properties,
       ...payload,
-      cancelBtn: '',
+      cancelBtn: null,
       visible: true,
     })
     attachHostDialogHandlers(host, {
