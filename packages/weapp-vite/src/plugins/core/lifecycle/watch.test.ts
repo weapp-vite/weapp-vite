@@ -67,6 +67,7 @@ function createState(overrides: Record<string, any> = {}) {
     markEntryDirty: vi.fn(),
     moduleImporters: new Map(),
     entryModuleIds: new Set(),
+    resolvedEntryMap: new Map(),
     ...overrides,
   } as any
 }
@@ -103,6 +104,40 @@ describe('core lifecycle watch hook', () => {
     await hook(entryId, { event: 'update' })
 
     expect(state.markEntryDirty).toHaveBeenCalledWith(entryId, 'direct')
+  })
+
+  it('marks layout source updates as full dependency dirties across resolved entries', async () => {
+    const entryId = '/project/src/layouts/default.vue'
+    const pageEntry = '/project/src/pages/layout-store/index.vue'
+    const dataEntry = '/project/src/pages/data/index.vue'
+    const state = createState({
+      loadedEntrySet: new Set([entryId]),
+      resolvedEntryMap: new Map([
+        [entryId, { id: entryId }],
+        [pageEntry, { id: pageEntry }],
+        [dataEntry, { id: dataEntry }],
+      ]),
+    })
+    const hook = createWatchChangeHook(state)
+
+    await hook(entryId, { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(1, entryId, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(2, pageEntry, 'dependency')
+    expect(state.markEntryDirty).toHaveBeenNthCalledWith(3, dataEntry, 'dependency')
+  })
+
+  it('marks layout template sidecar updates as dependency dirties', async () => {
+    isTemplateMock.mockReturnValue(true)
+    findJsEntryMock.mockResolvedValue({
+      path: '/project/src/layouts/default/index.ts',
+    })
+    const state = createState()
+    const hook = createWatchChangeHook(state)
+
+    await hook('/project/src/layouts/default/index.wxml', { event: 'update' })
+
+    expect(state.markEntryDirty).toHaveBeenCalledWith('/project/src/layouts/default/index.ts', 'dependency')
   })
 
   it('marks native layout dependency updates as dependency dirties', async () => {

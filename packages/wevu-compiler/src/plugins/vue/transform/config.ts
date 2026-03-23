@@ -50,12 +50,13 @@ export function resolveJsLikeLang(lang: string): JsLikeLang {
 export async function evaluateJsLikeConfig(source: string, filename: string, lang: string) {
   const dir = path.dirname(filename)
   const extension = resolveJsLikeLang(lang) === 'ts' ? 'ts' : 'js'
-  const tempDir = resolveWevuConfigTempDir(dir)
+  const tempRoot = resolveWevuConfigTempDir(dir)
+  const basename = path.basename(filename, path.extname(filename))
+  const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  const tempDir = path.join(tempRoot, `${basename}.config.${unique}`)
 
-  return await withTempDirLock(tempDir, async () => {
+  return await withTempDirLock(tempRoot, async () => {
     await fs.ensureDir(tempDir)
-    const basename = path.basename(filename, path.extname(filename))
-    const unique = `${Date.now()}-${Math.random().toString(16).slice(2)}`
     const tempFile = path.join(tempDir, `${basename}.${unique}.${extension}`)
     const rewritten = rewriteJsLikeImportsForTempDir(source, dir, tempDir)
     await fs.writeFile(tempFile, rewritten, 'utf8')
@@ -80,16 +81,7 @@ export async function evaluateJsLikeConfig(source: string, filename: string, lan
     }
     finally {
       try {
-        await fs.remove(tempFile)
-      }
-      catch {
-        // 忽略清理失败
-      }
-      try {
-        const remains = await fs.readdir(tempDir)
-        if (remains.length === 0) {
-          await fs.remove(tempDir)
-        }
+        await fs.remove(tempDir)
       }
       catch {
         // 忽略清理失败
