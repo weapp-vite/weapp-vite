@@ -4,6 +4,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
+import { replaceFileByRename } from '../utils/hmr-helpers'
 import { resolvePlatformMatrix } from '../utils/platform-matrix'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/src/cli.ts')
@@ -27,13 +28,23 @@ const PLATFORM_TEMPLATE_EXT: Record<RuntimePlatform, string> = {
 
 type RuntimePlatform = typeof SUPPORTED_PLATFORMS[number]
 
+const SELECTED_PLATFORM = process.env.E2E_PLATFORM
+const SHOULD_SKIP_UNSUPPORTED_PLATFORM = Boolean(
+  SELECTED_PLATFORM
+  && !SUPPORTED_PLATFORMS.includes(SELECTED_PLATFORM as RuntimePlatform),
+)
+
 function resolvePlatforms() {
+  if (SHOULD_SKIP_UNSUPPORTED_PLATFORM) {
+    return []
+  }
   return resolvePlatformMatrix(SUPPORTED_PLATFORMS, {
     localDefault: 'weapp',
   })
 }
 
 const PLATFORM_LIST = resolvePlatforms()
+const describeAutoImportSuite = SHOULD_SKIP_UNSUPPORTED_PLATFORM ? describe.skip : describe.sequential
 
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
@@ -100,6 +111,32 @@ async function waitForMissingUsingComponent(pageJsonPath: string, name: string, 
   throw new Error(`Timed out waiting for usingComponents.${name} to be removed in ${pageJsonPath}`)
 }
 
+async function waitForTaskWithSourceHeartbeat<T>(
+  task: () => Promise<T>,
+  touchFilePath: string,
+  touchContent: string,
+  timeoutMs = 60_000,
+  heartbeatMs = 2_000,
+) {
+  const deadline = Date.now() + timeoutMs
+  let nextTouchAt = Date.now() + heartbeatMs
+
+  while (Date.now() < deadline) {
+    try {
+      return await task()
+    }
+    catch {
+      if (Date.now() >= nextTouchAt) {
+        await replaceFileByRename(touchFilePath, touchContent)
+        nextTouchAt = Date.now() + heartbeatMs
+      }
+      await new Promise(resolve => setTimeout(resolve, 250))
+    }
+  }
+
+  return await task()
+}
+
 async function rewritePageSourceForWatch(pageSourcePath: string, targetSource: string) {
   const eol = detectEol(targetSource)
   const marker = `<!-- auto-import-e2e-retry-${Date.now()} -->`
@@ -136,7 +173,7 @@ function insertStandaloneTagAfter(source: string, anchorTagName: string, tagName
   return source.replace(anchorPattern, (_line, indent: string) => `${indent}<${anchorTagName} />${eol}${indent}<${tagName} />`)
 }
 
-describe.sequential('auto import local components (e2e)', () => {
+describeAutoImportSuite('auto import local components (e2e)', () => {
   it.each(PLATFORM_LIST)('covers local/resolver auto-import for %s build output', async (platform) => {
     await fs.remove(DIST_ROOT)
     await fs.remove(TYPED_COMPONENTS_DTS)
@@ -414,23 +451,36 @@ describe.sequential('auto import local components (e2e)', () => {
       await devProcess.waitFor(waitForFileContains(pageJsonPath, ['"usingComponents"']), `${platform} initial usingComponents`)
       await devProcess.waitFor(waitForMissingUsingComponent(pageJsonPath, hotCardKey), `${platform} hotCard absence`)
 
+      const hotCardSource = createHotCardSfc()
       await fs.ensureDir(HOT_COMPONENT_DIR)
-      await fs.writeFile(HOT_COMPONENT_SOURCE_PATH, createHotCardSfc(), 'utf8')
-      await fs.writeFile(PAGE_SOURCE_PATH, pageSourceWithHotCard, 'utf8')
+      await replaceFileByRename(HOT_COMPONENT_SOURCE_PATH, hotCardSource)
+      await replaceFileByRename(PAGE_SOURCE_PATH, pageSourceWithHotCard)
 
       await devProcess.waitFor(
-        waitForUsingComponent(pageJsonPath, hotCardKey, '/components/HotCard/index'),
+        waitForTaskWithSourceHeartbeat(
+          () => waitForUsingComponent(pageJsonPath, hotCardKey, '/components/HotCard/index', 1_000),
+          PAGE_SOURCE_PATH,
+          pageSourceWithHotCard,
+        ),
         `${platform} hotCard registration`,
       )
 
       const hotCardJsonPath = path.join(DIST_ROOT, 'components/HotCard/index.json')
       const hotCardTemplatePath = path.join(DIST_ROOT, `components/HotCard/index.${PLATFORM_TEMPLATE_EXT[platform]}`)
 
-      expect(await fs.pathExists(hotCardJsonPath)).toBe(true)
-      const hotCardTemplate = await devProcess.waitFor(
-        waitForFileContains(hotCardTemplatePath, ['hot-card-e2e']),
+      await devProcess.waitFor(
+        waitForTaskWithSourceHeartbeat(
+          () => waitForFileContains(hotCardTemplatePath, ['hot-card-e2e'], 1_000),
+          HOT_COMPONENT_SOURCE_PATH,
+          hotCardSource,
+        ),
         `${platform} hotCard template output`,
       )
+      const hotCardTemplate = await devProcess.waitFor(
+        waitForFileContains(hotCardTemplatePath, ['hot-card-e2e']),
+        `${platform} hotCard template output verification`,
+      )
+      expect(await fs.pathExists(hotCardJsonPath)).toBe(true)
       expect(hotCardTemplate).toContain('hot-card-e2e')
     }
     finally {
