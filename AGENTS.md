@@ -108,8 +108,9 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 - Use Conventional Commits, e.g.:
   - `feat(weapp-vite): add css preprocess support`
 - Run needed local checks before review (`build`, `test`, `lint` scope depends on touched area).
-- Add a changeset for user-visible or behavior-impacting changes.
-- For source code bug fixes (including GitHub issue fixes with unit/e2e updates), adding a changeset is mandatory; do not skip it.
+- Add a changeset only for user-visible or behavior-impacting changes, such as `feat`, functional `fix`, or other changes that alter runtime/build behavior, public APIs, generated outputs, or template/app observable results.
+- Do not add a changeset for changes that are purely tests, docs, comments, refactors, internal tooling, or other non-user-visible maintenance work, unless they also include a user-visible or behavior-impacting change.
+- For source code bug fixes that change real behavior (including GitHub issue fixes with unit/e2e updates), adding a changeset is mandatory; do not skip it.
 - If release includes `weapp-vite`, `wevu`, or anything under `templates/`, also include a `create-weapp-vite` bump changeset.
 - `.changeset/*.md` summary paragraph must be in Chinese.
 - Default delivery action is commit-only: after checks pass, commit the changes directly, and do not push unless the user explicitly requests push.
