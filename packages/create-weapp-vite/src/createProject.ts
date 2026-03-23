@@ -12,11 +12,96 @@ import { updateGitIgnore } from './updateGitignore'
 import { writeJsonFile } from './utils/fs'
 
 const DIGIT_RE = /\d/
+const CRLF_RE = /\r\n/g
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
+const TEMPLATE_DIR_MAP: Record<TemplateName, string> = {
+  [TemplateName.default]: 'weapp-vite-template',
+  [TemplateName.lib]: 'weapp-vite-lib-template',
+  [TemplateName.wevu]: 'weapp-vite-wevu-template',
+  [TemplateName.wevuTdesign]: 'weapp-vite-wevu-tailwindcss-tdesign-template',
+  [TemplateName.tailwindcss]: 'weapp-vite-tailwindcss-template',
+  [TemplateName.tdesign]: 'weapp-vite-tailwindcss-tdesign-template',
+  [TemplateName.vant]: 'weapp-vite-tailwindcss-vant-template',
+}
 const templateCatalogMap: Record<string, string> = { ...TEMPLATE_CATALOG }
 const templateNamedCatalogMap: Record<string, Record<string, string>> = Object.fromEntries(
   Object.entries(TEMPLATE_NAMED_CATALOG).map(([name, deps]) => [name, { ...deps }]),
 )
+
+function resolveWorkspaceTemplateDir(templateName: TemplateName) {
+  const templateDirName = TEMPLATE_DIR_MAP[templateName]
+  return templateDirName
+    ? path.resolve(moduleDir, '../../../templates', templateDirName)
+    : path.resolve(moduleDir, '../../../templates', templateName)
+}
+
+async function resolveTemplateDirs(templateName: TemplateName) {
+  const packagedTemplateDir = path.resolve(moduleDir, '../templates', templateName)
+  const workspaceTemplateDir = resolveWorkspaceTemplateDir(templateName)
+  const preferredTemplateDir = await fs.pathExists(packagedTemplateDir)
+    ? packagedTemplateDir
+    : workspaceTemplateDir
+
+  return {
+    packagedTemplateDir,
+    workspaceTemplateDir,
+    preferredTemplateDir,
+  }
+}
+
+function shouldSkipTemplateFile(filePath: string) {
+  return (
+    filePath.includes('node_modules')
+    || filePath.includes(`${path.sep}.weapp-vite${path.sep}`)
+    || filePath.includes('vite.config.ts.timestamp')
+    || filePath.includes(`${path.sep}dist${path.sep}`)
+    || filePath.endsWith(`${path.sep}CHANGELOG.md`)
+    || filePath.includes(`${path.sep}.turbo${path.sep}`)
+    || filePath.endsWith(`${path.sep}.DS_Store`)
+  )
+}
+
+function normalizeLines(value: string) {
+  return value.replace(CRLF_RE, '\n').split('\n')
+}
+
+function mergeGitignoreSource(existing: string, template: string) {
+  const merged = normalizeLines(existing)
+  const seen = new Set(merged)
+
+  for (const line of normalizeLines(template)) {
+    if (seen.has(line)) {
+      continue
+    }
+    merged.push(line)
+    seen.add(line)
+  }
+
+  while (merged.length > 0 && merged.at(-1) === '') {
+    merged.pop()
+  }
+
+  return `${merged.join('\n')}\n`
+}
+
+async function copyTemplateDir(sourceDir: string, fallbackDir: string, targetDir: string) {
+  const copyOptions = {
+    filter(src: string) {
+      return !shouldSkipTemplateFile(src)
+    },
+  }
+
+  try {
+    await fs.copy(sourceDir, targetDir, copyOptions)
+  }
+  catch (error) {
+    const errorCode = (error as NodeJS.ErrnoException | undefined)?.code
+    if (sourceDir === fallbackDir || errorCode !== 'ENOENT') {
+      throw error
+    }
+    await fs.copy(fallbackDir, targetDir, copyOptions)
+  }
+}
 
 async function ensureDotGitignore(root: string) {
   const gitignorePath = path.resolve(root, 'gitignore')
@@ -137,18 +222,29 @@ function normalizeTemplateDependencySpecs(pkgJson: PackageJson) {
  * @description 根据模板创建项目
  */
 export async function createProject(targetDir: string = '', templateName: TemplateName = TemplateName.default) {
-  const targetTemplateDir = path.resolve(moduleDir, '../templates', templateName)
+  const {
+    preferredTemplateDir,
+    workspaceTemplateDir,
+  } = await resolveTemplateDirs(templateName)
+  const dotGitignorePath = path.resolve(targetDir, '.gitignore')
+  const existingGitignore = await fs.pathExists(dotGitignorePath)
+    ? await fs.readFile(dotGitignorePath, 'utf8')
+    : null
 
-  if (!await fs.pathExists(targetTemplateDir)) {
+  if (!await fs.pathExists(preferredTemplateDir) && !await fs.pathExists(workspaceTemplateDir)) {
     logger.warn(`没有找到 ${templateName} 模板!`)
     return
   }
 
-  await fs.copy(targetTemplateDir, targetDir)
+  await copyTemplateDir(preferredTemplateDir, workspaceTemplateDir, targetDir)
 
-  const templatePackagePath = path.resolve(targetTemplateDir, 'package.json')
+  const templatePackagePath = path.resolve(preferredTemplateDir, 'package.json')
   const packageJsonPath = path.resolve(targetDir, 'package.json')
   await ensureDotGitignore(targetDir)
+  if (existingGitignore !== null && await fs.pathExists(dotGitignorePath)) {
+    const currentGitignore = await fs.readFile(dotGitignorePath, 'utf8')
+    await fs.writeFile(dotGitignorePath, mergeGitignoreSource(existingGitignore, currentGitignore))
+  }
   const pkgJson = await fs.pathExists(templatePackagePath)
     ? await fs.readJSON(templatePackagePath) as PackageJson
     : createEmptyPackageJson()
@@ -171,5 +267,6 @@ export async function createProject(targetDir: string = '', templateName: Templa
 
 export const __internal = {
   ensureDotGitignore,
+  resolveTemplateDirs,
   upsertTailwindcssVersion,
 }
