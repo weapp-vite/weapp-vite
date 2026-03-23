@@ -1,4 +1,5 @@
 import type { MpPlatform } from '../types'
+import process from 'node:process'
 import path from 'pathe'
 import {
   formatRetryHotkeyPrompt,
@@ -7,7 +8,25 @@ import {
   parse,
   waitForRetryKeypress,
 } from 'weapp-ide-cli'
+import { createCompilerContext } from '../createContext'
 import logger, { colors } from '../logger'
+import { createInlineConfig } from './runtime'
+
+export interface ResolveIdeCommandOptions {
+  configFile?: string
+  cwd?: string
+  mode?: string
+  platform?: MpPlatform
+  projectPath?: string
+  cliPlatform?: string
+}
+
+export interface ResolvedIdeCommandContext {
+  platform?: MpPlatform
+  projectPath?: string
+  weappViteConfig?: Awaited<ReturnType<typeof createCompilerContext>>['configService']['weappViteConfig']
+  mpDistRoot?: string
+}
 
 export async function openIde(platform?: MpPlatform, projectPath?: string) {
   const argv = ['open', '-p']
@@ -19,6 +38,49 @@ export async function openIde(platform?: MpPlatform, projectPath?: string) {
   }
 
   await runWechatIdeOpenWithRetry(argv)
+}
+
+/**
+ * @description 解析 IDE 相关命令所需的平台、项目目录与配置上下文。
+ */
+export async function resolveIdeCommandContext(options: ResolveIdeCommandOptions): Promise<ResolvedIdeCommandContext> {
+  const cwd = options.cwd ?? process.cwd()
+  let platform = options.platform
+  let projectPath = options.projectPath
+
+  if (!platform || !projectPath) {
+    try {
+      const ctx = await createCompilerContext({
+        cwd,
+        mode: options.mode ?? 'development',
+        configFile: options.configFile,
+        inlineConfig: createInlineConfig(platform),
+        cliPlatform: options.cliPlatform,
+      })
+      platform ??= ctx.configService.platform
+      if (!projectPath) {
+        projectPath = resolveIdeProjectPath(ctx.configService.mpDistRoot)
+      }
+      return {
+        platform,
+        projectPath,
+        weappViteConfig: ctx.configService.weappViteConfig,
+        mpDistRoot: ctx.configService.mpDistRoot,
+      }
+    }
+    catch {
+      // 忽略配置加载失败，回退到静态推导
+    }
+  }
+
+  if (!projectPath && platform === 'alipay') {
+    projectPath = resolveIdeProjectPath('dist/alipay/dist')
+  }
+
+  return {
+    platform,
+    projectPath,
+  }
 }
 
 /**

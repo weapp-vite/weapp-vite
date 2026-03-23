@@ -5,6 +5,7 @@ import path from 'pathe'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
 import { registerBuildCommand } from './cli/commands/build'
 import { registerGenerateCommand } from './cli/commands/generate'
+import { registerIdeCommand } from './cli/commands/ide'
 import { registerInitCommand } from './cli/commands/init'
 import { registerMcpCommand } from './cli/commands/mcp'
 import { registerNpmCommand } from './cli/commands/npm'
@@ -48,6 +49,7 @@ registerServeCommand(cli)
 registerBuildCommand(cli)
 registerAnalyzeCommand(cli)
 registerInitCommand(cli)
+registerIdeCommand(cli)
 registerOpenCommand(cli)
 registerPrepareCommand(cli)
 registerNpmCommand(cli)
