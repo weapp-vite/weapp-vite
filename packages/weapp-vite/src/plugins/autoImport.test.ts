@@ -375,6 +375,150 @@ describe('autoImport plugin', () => {
     }
   })
 
+  it('handles file rename through unlink and add watcher events', async () => {
+    const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
+    await fs.ensureDir(tempRoot)
+    const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-rename-file-'))
+    const srcRoot = path.join(tempDir, 'src')
+    const originalFile = path.join(srcRoot, 'components/OldCard/index.vue')
+    const renamedFile = path.join(srcRoot, 'components/NewCard/index.vue')
+    await fs.ensureDir(path.dirname(originalFile))
+    await fs.writeFile(originalFile, '<template><view>old</view></template>', 'utf8')
+
+    const sidecarWatcher = createMockSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    const removePotentialComponent = vi.fn()
+
+    const ctx = {
+      runtimeState: {
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
+      configService: {
+        cwd: tempDir,
+        absoluteSrcRoot: srcRoot,
+        relativeCwd: (p: string) => p.replace(`${tempDir}/`, ''),
+        relativeAbsoluteSrcRoot: (p: string) => p.replace(`${srcRoot}/`, ''),
+        isDev: true,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoImportService: {
+        reset: vi.fn(),
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        filter: (target: string) => target.includes('components/'),
+        registerPotentialComponent,
+        removePotentialComponent,
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    try {
+      const plugin = autoImport(ctx)[0]
+      plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+      await plugin.buildStart?.()
+
+      registerPotentialComponent.mockClear()
+      removePotentialComponent.mockClear()
+
+      await fs.ensureDir(path.dirname(renamedFile))
+      await fs.writeFile(renamedFile, '<template><view>new</view></template>', 'utf8')
+
+      sidecarWatcher.emit('unlink', originalFile)
+      sidecarWatcher.emit('add', renamedFile)
+
+      expect(removePotentialComponent).toHaveBeenCalledWith(originalFile)
+      expect(registerPotentialComponent).toHaveBeenCalledWith(renamedFile)
+    }
+    finally {
+      await fs.remove(tempDir)
+      if (await fs.pathExists(tempRoot)) {
+        const remaining = await fs.readdir(tempRoot)
+        if (remaining.length === 0) {
+          await fs.remove(tempRoot)
+        }
+      }
+    }
+  })
+
+  it('handles directory rename through unlink and add watcher events', async () => {
+    const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
+    await fs.ensureDir(tempRoot)
+    const tempDir = await fs.mkdtemp(path.join(tempRoot, 'auto-import-rename-dir-'))
+    const srcRoot = path.join(tempDir, 'src')
+    const originalFile = path.join(srcRoot, 'components/OldGroup/Card/index.vue')
+    const renamedFile = path.join(srcRoot, 'components/NewGroup/Card/index.vue')
+    await fs.ensureDir(path.dirname(originalFile))
+    await fs.writeFile(originalFile, '<template><view>old-group</view></template>', 'utf8')
+
+    const sidecarWatcher = createMockSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    const removePotentialComponent = vi.fn()
+
+    const ctx = {
+      runtimeState: {
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
+      configService: {
+        cwd: tempDir,
+        absoluteSrcRoot: srcRoot,
+        relativeCwd: (p: string) => p.replace(`${tempDir}/`, ''),
+        relativeAbsoluteSrcRoot: (p: string) => p.replace(`${srcRoot}/`, ''),
+        isDev: true,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue'],
+          },
+        },
+      },
+      autoImportService: {
+        reset: vi.fn(),
+        awaitManifestWrites: vi.fn().mockResolvedValue(undefined),
+        filter: (target: string) => target.includes('components/'),
+        registerPotentialComponent,
+        removePotentialComponent,
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    try {
+      const plugin = autoImport(ctx)[0]
+      plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+      await plugin.buildStart?.()
+
+      registerPotentialComponent.mockClear()
+      removePotentialComponent.mockClear()
+
+      await fs.ensureDir(path.dirname(renamedFile))
+      await fs.writeFile(renamedFile, '<template><view>new-group</view></template>', 'utf8')
+
+      sidecarWatcher.emit('unlink', originalFile)
+      sidecarWatcher.emit('add', renamedFile)
+
+      expect(removePotentialComponent).toHaveBeenCalledWith(originalFile)
+      expect(registerPotentialComponent).toHaveBeenCalledWith(renamedFile)
+    }
+    finally {
+      await fs.remove(tempDir)
+      if (await fs.pathExists(tempRoot)) {
+        const remaining = await fs.readdir(tempRoot)
+        if (remaining.length === 0) {
+          await fs.remove(tempRoot)
+        }
+      }
+    }
+  })
+
   it('ignores unmatched or invalid watch changes', async () => {
     const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
     const removePotentialComponent = vi.fn()
