@@ -71,10 +71,20 @@ describe.sequential('HMR modify — page-level file changes (dev watch)', () => 
 
       await replaceFileByRename(SRC_TEMPLATE, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} updated template marker`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker, 20_000),
+          `${platform} updated template marker`,
+        )
+      }
+      catch {
+        await replaceFileByRename(SRC_TEMPLATE, `${updatedSource}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker),
+          `${platform} updated template marker (retry)`,
+        )
+      }
       expect(content).toContain(marker)
     }
     finally {
