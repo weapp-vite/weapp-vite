@@ -59,6 +59,12 @@ export interface WeappDebugConfig {
  */
 export interface WeappViteConfig {
   /**
+   * 开发态是否在启动构建前清空输出目录。
+   * 默认 `true`，设置为 `false` 可减少 dev 首次启动的磁盘清理开销，但删除页面/资源后可能短暂保留旧产物。
+   * 生产构建始终会清空输出目录。
+   */
+  cleanOutputsInDev?: boolean
+  /**
    * 应用入口目录（`app.json` 所在目录）。
    */
   srcRoot?: string

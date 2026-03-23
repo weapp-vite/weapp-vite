@@ -229,6 +229,25 @@ describe('runtime buildPlugin service', () => {
     expect(touchMock).not.toHaveBeenCalled()
   })
 
+  it('skips output cleanup in dev when cleanOutputsInDev is false', async () => {
+    buildMock.mockResolvedValueOnce(createWatcher(['START', 'END']))
+    const baseCtx = createMockContext()
+    const ctx = createMockContext({
+      configService: {
+        ...baseCtx.configService,
+        weappViteConfig: {
+          cleanOutputsInDev: false,
+        },
+      },
+    })
+    const service = createBuildService(ctx)
+
+    await service.build()
+
+    expect(cleanOutputsMock).not.toHaveBeenCalled()
+    expect(syncProjectConfigToOutputMock).toHaveBeenCalledTimes(1)
+  })
+
   it('reuses npm cache in dev mode when dependencies are not outdated', async () => {
     buildMock.mockResolvedValueOnce(createWatcher(['START', 'END']))
     const ctx = createMockContext()

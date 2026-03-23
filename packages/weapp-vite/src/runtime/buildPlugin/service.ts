@@ -277,7 +277,10 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
   }
 
   async function buildEntry(options?: BuildOptions) {
-    await cleanOutputs(configService)
+    const shouldCleanOutputs = !configService.isDev || configService.weappViteConfig.cleanOutputsInDev !== false
+    if (shouldCleanOutputs) {
+      await cleanOutputs(configService)
+    }
     const pluginOnly = configService.pluginOnly
     const multiPlatformConfig = configService.weappViteConfig.multiPlatform
     const isMultiPlatformEnabled = Boolean(
