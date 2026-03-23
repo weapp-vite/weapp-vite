@@ -25,6 +25,9 @@ export async function tryRunIdeCommand(argv: string[]) {
   }
 
   if (command === 'ide') {
+    if (argv[1] === 'logs') {
+      return false
+    }
     await parseWeappIdeCli(argv.slice(1))
     return true
   }

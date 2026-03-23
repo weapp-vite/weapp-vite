@@ -68,6 +68,15 @@ describe('tryRunIdeCommand', () => {
     expect(parseWeappIdeCliMock).toHaveBeenCalledWith(['config', 'lang', 'en'])
   })
 
+  it('keeps native ide logs command untouched', async () => {
+    const { tryRunIdeCommand } = await import('./ide')
+
+    const forwarded = await tryRunIdeCommand(['ide', 'logs'])
+
+    expect(forwarded).toBe(false)
+    expect(parseWeappIdeCliMock).not.toHaveBeenCalled()
+  })
+
   it('keeps native weapp-vite open command untouched', async () => {
     const { tryRunIdeCommand } = await import('./ide')
 
