@@ -142,6 +142,24 @@ function mergeLayoutUsingComponents(
   return next
 }
 
+function hasDynamicLayoutTemplateWrapper(
+  template: string,
+  plan: ResolvedPageLayoutPlan,
+) {
+  if (!plan.layouts.length || !template.startsWith('<block wx:if=')) {
+    return false
+  }
+
+  return plan.layouts.every((layout, index) => {
+    const condition = plan.currentLayout?.layoutName === layout.layoutName
+      ? `{{!__wv_page_layout_name || __wv_page_layout_name === '${layout.layoutName}'}}`
+      : `{{__wv_page_layout_name === '${layout.layoutName}'}}`
+    const directive = index === 0 ? 'wx:if' : 'wx:elif'
+
+    return template.includes(`<block ${directive}="${condition}"><${layout.tagName}`)
+  }) && template.includes('<block wx:else>')
+}
+
 export function applyPageLayout(
   result: VueTransformResult,
   _filename: string,
@@ -176,6 +194,12 @@ export function applyPageLayoutPlan(
 
   if (!plan.dynamicSwitch) {
     return applyPageLayout(result, filename, plan.currentLayout)
+  }
+
+  if (hasDynamicLayoutTemplateWrapper(result.template, plan)) {
+    result.script = injectLayoutBindingComputed(result.script, plan.currentLayout?.props)
+    result.config = mergeLayoutUsingComponents(result.config, plan.layouts)
+    return result
   }
 
   result.template = buildDynamicLayoutTemplate(result.template, plan.currentLayout, plan.layouts, plan.dynamicPropKeys)

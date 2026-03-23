@@ -601,6 +601,60 @@ definePageMeta({
     })
   })
 
+  it('keeps dynamic layout wrapping idempotent when applied repeatedly', () => {
+    const plan = {
+      dynamicSwitch: true,
+      currentLayout: {
+        file: '/project/src/layouts/default.vue',
+        importPath: '/layouts/default',
+        kind: 'vue',
+        layoutName: 'default',
+        tagName: 'weapp-layout-default',
+      },
+      layouts: [
+        {
+          file: '/project/src/layouts/default.vue',
+          importPath: '/layouts/default',
+          kind: 'vue',
+          layoutName: 'default',
+          tagName: 'weapp-layout-default',
+        },
+        {
+          file: '/project/src/layouts/admin.vue',
+          importPath: '/layouts/admin',
+          kind: 'vue',
+          layoutName: 'admin',
+          tagName: 'weapp-layout-admin',
+        },
+      ],
+      dynamicPropKeys: ['title'],
+    } as const
+
+    const once = applyPageLayoutPlan(
+      {
+        script: 'export default {}',
+        template: '<view>content</view>',
+        config: JSON.stringify({ navigationBarTitleText: '动态布局' }),
+      },
+      '/project/src/pages/home/index.vue',
+      plan,
+    )
+
+    const twice = applyPageLayoutPlan(
+      {
+        script: once.script,
+        template: once.template,
+        config: once.config,
+      },
+      '/project/src/pages/home/index.vue',
+      plan,
+    )
+
+    expect(twice.template).toBe(once.template)
+    expect(twice.template.match(/<weapp-layout-admin/g)?.length ?? 0).toBe(1)
+    expect(twice.template.match(/<weapp-layout-default/g)?.length ?? 0).toBe(1)
+  })
+
   it('injects native page layout setter and strips definePageMeta from runtime code', () => {
     const result = injectNativePageLayoutRuntime(
       `
