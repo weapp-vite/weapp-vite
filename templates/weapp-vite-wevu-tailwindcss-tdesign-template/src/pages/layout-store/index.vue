@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { onUnload, setPageLayout, storeToRefs, watch } from 'wevu'
 import SectionTitle from '@/components/SectionTitle/index.vue'
-import { useDialog } from '@/hooks/useDialog'
-import { useToast } from '@/hooks/useToast'
 import { useLayoutInteractionDemoStore } from '@/stores/layoutInteractionDemo'
 
 definePageJson({
@@ -11,9 +9,7 @@ definePageJson({
 })
 
 const store = useLayoutInteractionDemoStore()
-const { activeLayout, adminLayoutProps, commandStatus, lastResult, logs, pendingCommand } = storeToRefs(store)
-const { showToast } = useToast({ duration: 1400 })
-const { alert, confirm } = useDialog()
+const { activeLayout, adminLayoutProps, commandStatus, lastResult, logs } = storeToRefs(store)
 
 watch([activeLayout, adminLayoutProps], ([layout, props]) => {
   if (layout === 'admin') {
@@ -21,41 +17,6 @@ watch([activeLayout, adminLayoutProps], ([layout, props]) => {
     return
   }
   setPageLayout('default')
-}, { immediate: true })
-
-watch(pendingCommand, async (command) => {
-  if (!command) {
-    return
-  }
-
-  if (command.type === 'toast') {
-    showToast(command.content)
-    store.finishCommand(`${command.title} 已由 ${activeLayout.value} layout 宿主展示`)
-    return
-  }
-
-  if (command.type === 'alert') {
-    await alert({
-      title: command.title,
-      content: command.content,
-      confirmBtn: '知道了',
-    })
-    store.finishCommand(`${command.title} 已确认`)
-    return
-  }
-
-  try {
-    await confirm({
-      title: command.title,
-      content: command.content,
-      confirmBtn: '确认',
-      cancelBtn: '取消',
-    })
-    store.finishCommand(`${command.title} 点击确认`)
-  }
-  catch {
-    store.finishCommand(`${command.title} 点击取消`)
-  }
 }, { immediate: true })
 
 function useDefaultLayout() {
@@ -131,7 +92,7 @@ onUnload(() => {
     </view>
 
     <view class="mt-[18rpx] rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
-      <SectionTitle title="触发 Layout 宿主" subtitle="store 发出命令，由页面调用 useToast() / useDialog() 命中当前 layout" />
+      <SectionTitle title="触发 Layout 宿主" subtitle="store 直接调用 toast / dialog，命中当前 layout 内的反馈宿主" />
       <view class="mt-[16rpx] flex flex-col gap-[12rpx]">
         <t-button block theme="primary" @tap="openToastByStore">
           Store 触发 Toast

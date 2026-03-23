@@ -1,4 +1,6 @@
 import { computed, defineStore, ref } from 'wevu'
+import { alertDialog, confirmDialog } from '@/hooks/useDialog'
+import { showToast } from '@/hooks/useToast'
 
 export type LayoutKind = 'default' | 'admin'
 export type LayoutCommandType = 'toast' | 'alert' | 'confirm'
@@ -19,10 +21,9 @@ export const useLayoutInteractionDemoStore = defineStore('layout-interaction-dem
   const activeLayout = ref<LayoutKind>('default')
   const commandSeed = ref(0)
   const commandStatus = ref<LayoutCommandStatus>('idle')
-  const pendingCommand = ref<LayoutCommand | null>(null)
   const lastResult = ref('尚未触发交互')
   const logs = ref<string[]>([
-    createLog('Store 已就绪，等待通过页面上下文调用 layout 宿主。'),
+    createLog('Store 已就绪，当前由 store 直接调用 layout 宿主。'),
   ])
 
   const adminLayoutProps = computed(() => ({
@@ -39,34 +40,71 @@ export const useLayoutInteractionDemoStore = defineStore('layout-interaction-dem
     appendLog(`切换到 ${layout} 布局`)
   }
 
-  function queueCommand(type: LayoutCommandType, title: string, content: string) {
+  function createCommand(type: LayoutCommandType, title: string, content: string): LayoutCommand {
     commandSeed.value += 1
-    pendingCommand.value = {
+    return {
       id: commandSeed.value,
       type,
       title,
       content,
     }
+  }
+
+  async function runCommand(command: LayoutCommand) {
     commandStatus.value = 'running'
-    appendLog(`Store 请求 ${title}`)
+    appendLog(`Store 请求 ${command.title}`)
+
+    if (command.type === 'toast') {
+      showToast(command.content)
+      finishCommand(`${command.title} 已由 ${activeLayout.value} layout 宿主展示`)
+      return
+    }
+
+    if (command.type === 'alert') {
+      await alertDialog({
+        title: command.title,
+        content: command.content,
+        confirmBtn: '知道了',
+      })
+      finishCommand(`${command.title} 已确认`)
+      return
+    }
+
+    try {
+      await confirmDialog({
+        title: command.title,
+        content: command.content,
+        confirmBtn: '确认',
+        cancelBtn: '取消',
+      })
+      finishCommand(`${command.title} 点击确认`)
+    }
+    catch {
+      finishCommand(`${command.title} 点击取消`)
+    }
   }
 
   function triggerToast() {
-    queueCommand('toast', `Store Toast #${commandSeed.value + 1}`, `当前由 ${activeLayout.value} layout 宿主展示 toast。`)
+    return runCommand(
+      createCommand('toast', `Store Toast #${commandSeed.value + 1}`, `当前由 ${activeLayout.value} layout 宿主展示 toast。`),
+    )
   }
 
   function triggerAlert() {
-    queueCommand('alert', `Store Alert #${commandSeed.value + 1}`, `当前由 ${activeLayout.value} layout 宿主展示 alert。`)
+    return runCommand(
+      createCommand('alert', `Store Alert #${commandSeed.value + 1}`, `当前由 ${activeLayout.value} layout 宿主展示 alert。`),
+    )
   }
 
   function triggerConfirm() {
-    queueCommand('confirm', `Store Confirm #${commandSeed.value + 1}`, `请确认由 ${activeLayout.value} layout 宿主承载的确认弹窗。`)
+    return runCommand(
+      createCommand('confirm', `Store Confirm #${commandSeed.value + 1}`, `请确认由 ${activeLayout.value} layout 宿主承载的确认弹窗。`),
+    )
   }
 
   function finishCommand(message: string) {
     lastResult.value = message
     commandStatus.value = 'idle'
-    pendingCommand.value = null
     appendLog(message)
   }
 
@@ -81,7 +119,6 @@ export const useLayoutInteractionDemoStore = defineStore('layout-interaction-dem
     commandStatus,
     lastResult,
     logs,
-    pendingCommand,
     finishCommand,
     resetLogs,
     setLayout,
