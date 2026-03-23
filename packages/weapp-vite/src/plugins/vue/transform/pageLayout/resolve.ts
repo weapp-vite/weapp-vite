@@ -14,6 +14,7 @@ const PATH_SEGMENT_RE = /[\\/]/
 const TRAILING_INDEX_RE = /\/index$/
 const LEADING_SLASHES_RE = /^\/+/
 const ROUTE_RULE_GLOB_TOKEN_RE = /[*?[\]{}()!+@]/g
+const resolvedLayoutsCache = new Map<string, Promise<ResolvedPageLayout[]>>()
 
 function normalizePageRouteCandidates(
   filename: string,
@@ -197,22 +198,49 @@ async function collectLayoutFiles(root: string): Promise<Map<string, DiscoveredL
 async function resolveAllLayouts(
   configService: Pick<ConfigService, 'absoluteSrcRoot' | 'relativeOutputPath'>,
 ) {
-  const layoutsRoot = path.join(configService.absoluteSrcRoot, 'layouts')
-  const layoutFiles = await collectLayoutFiles(layoutsRoot)
-  const resolvedLayouts: ResolvedPageLayout[] = []
-
-  for (const layoutFile of layoutFiles.values()) {
-    const importPath = usingComponentFromResolvedFile(layoutFile.file, configService)
-    if (!importPath) {
-      continue
-    }
-    resolvedLayouts.push({
-      ...layoutFile,
-      importPath,
-    })
+  const cacheKey = normalizeComparablePath(configService.absoluteSrcRoot)
+  const cached = resolvedLayoutsCache.get(cacheKey)
+  if (cached) {
+    return await cached
   }
 
-  return resolvedLayouts
+  const task = (async () => {
+    const layoutsRoot = path.join(configService.absoluteSrcRoot, 'layouts')
+    const layoutFiles = await collectLayoutFiles(layoutsRoot)
+    const resolvedLayouts: ResolvedPageLayout[] = []
+
+    for (const layoutFile of layoutFiles.values()) {
+      const importPath = usingComponentFromResolvedFile(layoutFile.file, configService)
+      if (!importPath) {
+        continue
+      }
+      resolvedLayouts.push({
+        ...layoutFile,
+        importPath,
+      })
+    }
+
+    return resolvedLayouts
+  })()
+
+  resolvedLayoutsCache.set(cacheKey, task)
+
+  try {
+    return await task
+  }
+  catch (error) {
+    resolvedLayoutsCache.delete(cacheKey)
+    throw error
+  }
+}
+
+export function invalidateResolvedPageLayoutsCache(absoluteSrcRoot?: string) {
+  if (!absoluteSrcRoot) {
+    resolvedLayoutsCache.clear()
+    return
+  }
+
+  resolvedLayoutsCache.delete(normalizeComparablePath(absoluteSrcRoot))
 }
 
 export async function resolvePageLayout(

@@ -14,6 +14,7 @@ export {
 
 export {
   collectNativeLayoutAssets,
+  invalidateResolvedPageLayoutsCache,
   isLayoutFile,
   resolvePageLayout,
   resolvePageLayoutPlan,

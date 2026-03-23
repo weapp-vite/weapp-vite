@@ -9,7 +9,7 @@ import { getSfcCheckMtime, readAndParseSfc } from '../../../utils/vueSfc'
 import { VUE_PLUGIN_NAME } from '../../index'
 import { emitVueBundleAssets } from '../bundle'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
-import { isLayoutFile } from '../pageLayout'
+import { invalidateResolvedPageLayoutsCache, isLayoutFile } from '../pageLayout'
 import { loadScopedSlotModule, resolveScopedSlotVirtualId } from '../scopedSlot'
 import { parseWeappVueStyleRequest } from '../styleRequest'
 import { registerNativeLayoutChunksForEntry } from './shared'
@@ -145,6 +145,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     watchChange(id) {
       const normalizedId = normalizeFsResolvedId(id)
       if (ctx.configService && isLayoutFile(normalizedId, ctx.configService)) {
+        invalidateResolvedPageLayoutsCache(ctx.configService.absoluteSrcRoot)
         for (const [cachedId, cached] of compilationCache.entries()) {
           if (cached.isPage) {
             cached.source = undefined
@@ -169,6 +170,7 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
     async handleHotUpdate({ file }) {
       if (ctx.configService && isLayoutFile(file, ctx.configService)) {
+        invalidateResolvedPageLayoutsCache(ctx.configService.absoluteSrcRoot)
         for (const [cachedId, cached] of compilationCache.entries()) {
           if (cached.isPage) {
             cached.source = undefined
