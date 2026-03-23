@@ -60,7 +60,7 @@ export interface WeappDebugConfig {
 export interface WeappViteConfig {
   /**
    * 开发态是否在启动构建前清空输出目录。
-   * 开发态默认 `false`，设置为 `true` 可恢复每次 dev 启动前全量清空输出目录的旧行为。
+   * 开发态默认 `true`，设置为 `false` 可跳过每次 dev 启动前的全量输出目录清理。
    * 生产构建始终会清空输出目录。
    */
   cleanOutputsInDev?: boolean

@@ -192,7 +192,7 @@ describe('runtime buildPlugin service', () => {
     await service.build()
 
     expect(process.env.NODE_ENV).toBe('development')
-    expect(cleanOutputsMock).not.toHaveBeenCalled()
+    expect(cleanOutputsMock).toHaveBeenCalledTimes(2)
     expect(syncProjectConfigToOutputMock).toHaveBeenCalledWith({
       outDir: '/project/dist',
       projectConfigPath: '/project/project.config.json',
