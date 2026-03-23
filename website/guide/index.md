@@ -145,6 +145,15 @@ bun dev --open # 已开启服务端口时自动打开微信开发者工具
 
 :::
 
+> [!TIP]
+> 如果你当前是在 Codex、Claude Code、Cursor CLI 这类 AI 终端里工作，且配置保持默认 `weapp.forwardConsole.enabled = 'auto'`，那么 `pnpm dev --open` 在打开微信开发者工具后还会自动尝试把小程序 `console` 日志桥接回当前终端。
+>
+> 想手动进入持续监听模式时，可直接执行：
+>
+> ```sh
+> weapp-vite ide logs --open
+> ```
+
 ### 4. 打开开发者工具
 
 #### 执行 `open` 命令
@@ -230,6 +239,7 @@ bun i
 pnpm dev
 pnpm dev --open # 已开启服务端口时自动打开微信开发者工具
 pnpm dev -o # 已开启服务端口时自动打开微信开发者工具
+weapp-vite ide logs --open # 持续监听 DevTools console，并桥接回终端
 ```
 
 命令会启动监听构建。保存后会自动重新编译并同步到开发目录；如果已开启服务端口，也可以配合 `--open` 直接拉起微信开发者工具。
