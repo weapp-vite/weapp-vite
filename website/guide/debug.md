@@ -55,6 +55,35 @@ cd weapp-vite
 > [!NOTE]
 > 如果你更喜欢终端调试，也可以运行 `pnpm --filter apps/vite-native dev` 再配合浏览器/IDE 附加调试，会同样命中源码断点。
 
+### 补充：直接把 DevTools 日志桥接回终端
+
+如果你当前排查的是运行时问题，而不是编译期断点，通常不需要先打开 DevTools 控制台。
+
+可以直接在仓库里执行：
+
+```sh
+pnpm dev --open
+```
+
+如果当前终端是 AI 终端，并且项目保持默认 `weapp.forwardConsole.enabled = 'auto'`，那么打开微信开发者工具后会自动尝试把小程序 `console` 日志桥接回当前终端。
+
+想手动进入持续监听模式时，可执行：
+
+```sh
+weapp-vite ide logs --open
+```
+
+这个方式适合：
+
+1. 定位页面初始化报错。
+2. 观察某次交互触发的 `warn` / `error`。
+3. 让 AI 直接基于终端里的运行时日志继续分析问题。
+
+相关说明见：
+
+- [CLI 命令参考：ide logs](/guide/cli)
+- [共享配置：weapp.forwardConsole](/config/shared#weapp-forwardconsole)
+
 ## 3. 提交贡献
 
 1. 在本地创建分支并完成改动，写好测试或文档：
