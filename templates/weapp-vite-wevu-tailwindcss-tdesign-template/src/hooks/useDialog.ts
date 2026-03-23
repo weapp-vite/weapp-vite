@@ -8,7 +8,7 @@ export interface DialogOptions {
   selector?: string
 }
 
-export interface AlertOptions {
+interface BaseDialogPayload {
   bridgeKey?: string
   confirmBtn?: string
   content: string
@@ -17,23 +17,49 @@ export interface AlertOptions {
   title: string
 }
 
-export interface ConfirmOptions {
-  bridgeKey?: string
+export interface AlertOptions extends BaseDialogPayload {}
+
+export interface ConfirmOptions extends BaseDialogPayload {
   cancelBtn?: string
-  confirmBtn?: string
-  content: string
-  context?: any
-  selector?: string
-  title: string
 }
 
-function resolveDialogContext(options: { bridgeKey?: string, context?: any }) {
+interface HostDialogInstance {
+  _onCancel?: (reason?: unknown) => void
+  _onConfirm?: (value?: unknown) => void
+  close?: () => void
+  setData?: (payload: Record<string, unknown>) => void
+}
+
+type DialogMode = 'alert' | 'confirm'
+
+type ResolvedDialogPayload<T extends BaseDialogPayload> = Omit<T, 'bridgeKey' | 'context' | 'selector'>
+
+function resolveDialogContext(options: DialogOptions) {
   return options.bridgeKey
     ? resolveLayoutBridge(options.bridgeKey, options.context ?? getCurrentInstance())
     : options.context ?? getCurrentInstance()
 }
 
-function closeDialogHost(host: any) {
+function resolveDialogHost(options: DialogOptions) {
+  const bridgeKey = options.bridgeKey ?? LAYOUT_DIALOG_BRIDGE_KEY
+  const context = resolveDialogContext({
+    bridgeKey,
+    context: options.context,
+  })
+  const host = bridgeKey
+    ? resolveLayoutHost<HostDialogInstance>(bridgeKey, { context })
+    : options.selector
+      ? context?.selectComponent?.(options.selector) ?? null
+      : null
+
+  return {
+    context,
+    host,
+    selector: options.selector,
+  }
+}
+
+function closeDialogHost(host: HostDialogInstance) {
   if (typeof host.close === 'function') {
     host.close()
     return
@@ -44,7 +70,7 @@ function closeDialogHost(host: any) {
 }
 
 function attachHostDialogHandlers(
-  host: any,
+  host: HostDialogInstance,
   handlers: {
     onCancel?: (reason?: unknown) => void
     onConfirm?: (value?: unknown) => void
@@ -56,145 +82,124 @@ function attachHostDialogHandlers(
   host._onConfirm = (value?: unknown) => {
     host._onConfirm = originalConfirm
     host._onCancel = originalCancel
+
     if (originalConfirm) {
       originalConfirm.call(host, value)
     }
     else {
       closeDialogHost(host)
     }
+
     handlers.onConfirm?.(value)
   }
 
   host._onCancel = (reason?: unknown) => {
     host._onConfirm = originalConfirm
     host._onCancel = originalCancel
+
     if (originalCancel) {
       originalCancel.call(host, reason)
     }
     else {
       closeDialogHost(host)
     }
+
     handlers.onCancel?.(reason)
   }
 }
 
-function openAlertWithHost(host: any, payload: AlertOptions) {
-  return new Promise((resolve) => {
-    host.setData({
-      ...host.properties,
-      ...payload,
+function normalizeDialogPayload<T extends BaseDialogPayload>(
+  mode: DialogMode,
+  payload: T,
+): ResolvedDialogPayload<T> {
+  const { bridgeKey: _bridgeKey, context: _context, selector: _selector, ...rest } = payload
+
+  if (mode === 'alert') {
+    return {
+      ...rest,
       cancelBtn: null,
+    } as ResolvedDialogPayload<T>
+  }
+
+  return rest as ResolvedDialogPayload<T>
+}
+
+function openDialogWithHost<T extends BaseDialogPayload>(
+  mode: DialogMode,
+  host: HostDialogInstance,
+  payload: ResolvedDialogPayload<T>,
+) {
+  return new Promise((resolve, reject) => {
+    host.setData?.({
+      ...payload,
       visible: true,
     })
+
     attachHostDialogHandlers(host, {
       onConfirm: resolve,
+      ...(mode === 'confirm' ? { onCancel: reject } : {}),
     })
   })
 }
 
-function openConfirmWithHost(host: any, payload: ConfirmOptions) {
-  return new Promise((resolve, reject) => {
-    host.setData({
-      ...host.properties,
-      ...payload,
-      visible: true,
-    })
-    attachHostDialogHandlers(host, {
-      onConfirm: resolve,
-      onCancel: reject,
-    })
+function openDialog<T extends BaseDialogPayload>(mode: DialogMode, payload: T) {
+  const bridgeKey = payload.bridgeKey ?? LAYOUT_DIALOG_BRIDGE_KEY
+  const { context, host, selector } = resolveDialogHost({
+    bridgeKey,
+    context: payload.context,
+    selector: payload.selector,
+  })
+
+  if (!context) {
+    return Promise.resolve()
+  }
+
+  const normalizedPayload = normalizeDialogPayload(mode, payload)
+
+  if (host && typeof host.setData === 'function') {
+    return openDialogWithHost(mode, host, normalizedPayload)
+  }
+
+  if (!selector) {
+    return Promise.resolve()
+  }
+
+  const open = mode === 'alert' ? Dialog.alert : Dialog.confirm
+
+  return open({
+    selector,
+    context: context as any,
+    ...normalizedPayload,
   })
 }
 
 export function alertDialog(payload: AlertOptions) {
-  const bridgeKey = payload.bridgeKey ?? LAYOUT_DIALOG_BRIDGE_KEY
-  const selector = payload.selector
-  const context = resolveDialogContext({
-    bridgeKey,
-    context: payload.context,
-  })
-  if (!context) {
-    return Promise.resolve()
-  }
-  const host = bridgeKey
-    ? resolveLayoutHost<{
-        _onCancel?: (reason?: unknown) => void
-        _onConfirm?: (value?: unknown) => void
-        close?: () => void
-        properties?: Record<string, unknown>
-        setData?: (payload: Record<string, unknown>) => void
-      }>(bridgeKey, { context })
-    : selector
-      ? context?.selectComponent?.(selector) ?? null
-      : null
-  const { bridgeKey: _bridgeKey, context: _context, selector: _selector, ...rest } = payload
-  if (host && typeof host.setData === 'function') {
-    return openAlertWithHost(host, rest)
-  }
-  if (!selector) {
-    return Promise.resolve()
-  }
-  return Dialog.alert({
-    selector,
-    context: context as any,
-    ...rest,
-  })
+  return openDialog('alert', payload)
 }
 
 export function confirmDialog(payload: ConfirmOptions) {
-  const bridgeKey = payload.bridgeKey ?? LAYOUT_DIALOG_BRIDGE_KEY
-  const selector = payload.selector
-  const context = resolveDialogContext({
-    bridgeKey,
-    context: payload.context,
-  })
-  if (!context) {
-    return Promise.resolve()
-  }
-  const host = bridgeKey
-    ? resolveLayoutHost<{
-        _onCancel?: (reason?: unknown) => void
-        _onConfirm?: (value?: unknown) => void
-        close?: () => void
-        properties?: Record<string, unknown>
-        setData?: (payload: Record<string, unknown>) => void
-      }>(bridgeKey, { context })
-    : selector
-      ? context?.selectComponent?.(selector) ?? null
-      : null
-  const { bridgeKey: _bridgeKey, context: _context, selector: _selector, ...rest } = payload
-  if (host && typeof host.setData === 'function') {
-    return openConfirmWithHost(host, rest)
-  }
-  if (!selector) {
-    return Promise.resolve()
-  }
-  return Dialog.confirm({
-    selector,
-    context: context as any,
-    ...rest,
-  })
+  return openDialog('confirm', payload)
 }
 
 export function useDialog(options: DialogOptions = {}) {
   const bridgeKey = options.bridgeKey ?? LAYOUT_DIALOG_BRIDGE_KEY
   const context = options.context ?? getCurrentInstance()
+
+  function withDefaults<T extends BaseDialogPayload>(payload: T): T {
+    return {
+      ...payload,
+      bridgeKey,
+      context: payload.context ?? context,
+      selector: payload.selector ?? options.selector,
+    }
+  }
+
   return {
     alert(payload: AlertOptions) {
-      return alertDialog({
-        bridgeKey,
-        ...payload,
-        context: payload.context ?? context,
-        selector: payload.selector ?? options.selector,
-      })
+      return alertDialog(withDefaults(payload))
     },
     confirm(payload: ConfirmOptions) {
-      return confirmDialog({
-        bridgeKey,
-        ...payload,
-        context: payload.context ?? context,
-        selector: payload.selector ?? options.selector,
-      })
+      return confirmDialog(withDefaults(payload))
     },
   }
 }
