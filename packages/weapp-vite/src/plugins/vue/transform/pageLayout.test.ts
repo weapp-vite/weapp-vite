@@ -1,9 +1,10 @@
 import fsNative from 'node:fs'
 import fs from 'node:fs/promises'
 import os from 'node:os'
+import fsExtra from 'fs-extra'
 import path from 'pathe'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { applyPageLayout, applyPageLayoutPlan, applyPageLayoutPlanToNativePage, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, injectNativePageLayoutRuntime, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
+import { applyPageLayout, applyPageLayoutPlan, applyPageLayoutPlanToNativePage, collectSetPageLayoutPropKeys, extractPageLayoutMeta, extractPageLayoutName, hasSetPageLayoutUsage, injectNativePageLayoutRuntime, invalidateResolvedPageLayoutsCache, resolvePageLayout, resolvePageLayoutPlan } from './pageLayout'
 
 const tempDirs: string[] = []
 
@@ -16,6 +17,7 @@ async function createTempProject() {
 
 describe('page layouts', () => {
   afterEach(async () => {
+    invalidateResolvedPageLayoutsCache()
     while (tempDirs.length) {
       const dir = tempDirs.pop()
       if (dir) {
@@ -116,6 +118,51 @@ setPageLayout('panel', {
       layoutName: 'default',
       tagName: 'weapp-layout-default',
     })
+  })
+
+  it('caches resolved layouts until cache is invalidated', async () => {
+    const projectDir = await createTempProject()
+    const srcRoot = path.join(projectDir, 'src')
+    const pageFile = path.join(srcRoot, 'pages', 'index', 'index.vue')
+    const layoutFile = path.join(srcRoot, 'layouts', 'default.vue')
+
+    await fs.mkdir(path.dirname(pageFile), { recursive: true })
+    await fs.mkdir(path.dirname(layoutFile), { recursive: true })
+    await fs.writeFile(layoutFile, '<template><slot /></template>', 'utf8')
+
+    const readdirSpy = vi.spyOn(fsExtra, 'readdir')
+
+    await resolvePageLayoutPlan(
+      '<template><view>home</view></template>',
+      pageFile,
+      {
+        absoluteSrcRoot: srcRoot,
+        relativeOutputPath: (input: string) => path.relative(srcRoot, input),
+      } as any,
+    )
+    const firstCalls = readdirSpy.mock.calls.length
+
+    await resolvePageLayoutPlan(
+      '<template><view>home</view></template>',
+      pageFile,
+      {
+        absoluteSrcRoot: srcRoot,
+        relativeOutputPath: (input: string) => path.relative(srcRoot, input),
+      } as any,
+    )
+    expect(readdirSpy.mock.calls.length).toBe(firstCalls)
+
+    invalidateResolvedPageLayoutsCache(srcRoot)
+
+    await resolvePageLayoutPlan(
+      '<template><view>home</view></template>',
+      pageFile,
+      {
+        absoluteSrcRoot: srcRoot,
+        relativeOutputPath: (input: string) => path.relative(srcRoot, input),
+      } as any,
+    )
+    expect(readdirSpy.mock.calls.length).toBeGreaterThan(firstCalls)
   })
 
   it('resolves default layout when page file and src root use different real paths', async () => {
