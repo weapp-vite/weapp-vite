@@ -7,6 +7,7 @@ import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
 import { startAnalyzeDashboard } from '../analyze/dashboard'
+import { maybeStartForwardConsole } from '../forwardConsole'
 import { logBuildAppFinish } from '../logBuildAppFinish'
 import { openIde, resolveIdeProjectPath } from '../openIde'
 import { filterDuplicateOptions, resolveConfigFile } from '../options'
@@ -108,7 +109,14 @@ export function registerServeCommand(cli: CAC) {
         logBuildAppFinish(configService, webServer, { skipMini: true })
       }
       if (options.open && targets.runMini) {
-        await openIde(configService.platform, resolveIdeProjectPath(configService.mpDistRoot))
+        const openedByForwardConsole = await maybeStartForwardConsole({
+          platform: configService.platform,
+          mpDistRoot: configService.mpDistRoot,
+          weappViteConfig: configService.weappViteConfig,
+        })
+        if (!openedByForwardConsole) {
+          await openIde(configService.platform, resolveIdeProjectPath(configService.mpDistRoot))
+        }
       }
 
       if (analyzeHandle) {

@@ -75,6 +75,11 @@ export function getWeappViteConfig(): WeappViteConfig {
       port: 3088,
       endpoint: '/mcp',
     },
+    forwardConsole: {
+      enabled: 'auto',
+      logLevels: ['log', 'info', 'warn', 'error'],
+      unhandledErrors: true,
+    },
     chunks: {
       sharedStrategy: 'duplicate',
       sharedMode: 'common',
