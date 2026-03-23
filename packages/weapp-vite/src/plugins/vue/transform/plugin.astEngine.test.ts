@@ -183,4 +183,47 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       map: null,
     })
   })
+
+  it('reports vue transform timing when debug callback is configured', async () => {
+    const vueTransformTiming = vi.fn()
+    const { createVueTransformPlugin } = await import('./plugin')
+    const plugin = createVueTransformPlugin({
+      configService: {
+        isDev: false,
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        outputExtensions: {},
+        relativeOutputPath: vi.fn(() => undefined),
+        weappLibConfig: {
+          enabled: true,
+        },
+        weappViteConfig: {
+          debug: {
+            vueTransformTiming,
+          },
+        },
+      },
+      runtimeState: {
+        scan: {
+          isDirty: false,
+        },
+      },
+    } as any)
+
+    await plugin.transform!.call({
+      addWatchFile: vi.fn(),
+    } as any, '<template><view /></template>', '/project/src/components/timing.vue')
+
+    expect(vueTransformTiming).toHaveBeenCalledTimes(1)
+    expect(vueTransformTiming).toHaveBeenCalledWith(expect.objectContaining({
+      id: '/project/src/components/timing.vue',
+      isPage: false,
+      totalMs: expect.any(Number),
+      stages: expect.objectContaining({
+        readSource: expect.any(Number),
+        preParseSfc: expect.any(Number),
+        compile: expect.any(Number),
+      }),
+    }))
+  })
 })
