@@ -247,8 +247,8 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
         return
       }
 
-      // 目录级新增/删除、或未命中的 pages 路径变化，统一触发一次全量重扫，保证路由增删改一致性。
-      if (event === 'create' || event === 'delete' || event === 'update') {
+      // 仅在结构性变化（如新增/删除文件）时，对未命中的 pages 路径触发全量重扫。
+      if (event === 'create' || event === 'delete') {
         await service.handleFileChange(id, 'rename')
       }
     },
@@ -257,9 +257,6 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       if (resolvedConfig?.command === 'serve') {
         if (service.isRouteFile(context.file)) {
           await service.handleFileChange(context.file, 'update')
-        }
-        else if (isPagesRelatedPath(context.file)) {
-          await service.handleFileChange(context.file, 'rename')
         }
         else {
           return
