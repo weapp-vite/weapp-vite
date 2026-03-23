@@ -336,6 +336,54 @@ describe('createAutoRoutesService', () => {
     expect(typedRouterContent).not.toContain('"pages/index/index"')
   })
 
+  it('rebuilds routes after file rename via delete and create events', async () => {
+    const ctx = createContext()
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    const oldPage = path.join(srcRoot, 'pages', 'index', 'index.ts')
+    const newPageDir = path.join(srcRoot, 'pages', 'moved-file')
+    const newPage = path.join(newPageDir, 'index.ts')
+    await fs.ensureDir(newPageDir)
+    await fs.copy(oldPage, newPage)
+    await fs.remove(oldPage)
+
+    await service.handleFileChange(oldPage, 'delete')
+    await service.handleFileChange(newPage, 'create')
+
+    const snapshot = service.getSnapshot()
+    expect(snapshot.pages).toContain('pages/moved-file/index')
+    expect(snapshot.pages).not.toContain('pages/index/index')
+
+    const typedRouterPath = path.join(tempDir, '.weapp-vite', 'typed-router.d.ts')
+    const typedRouterContent = await fs.readFile(typedRouterPath, 'utf8')
+    expect(typedRouterContent).toContain('"pages/moved-file/index"')
+    expect(typedRouterContent).not.toContain('"pages/index/index"')
+  })
+
+  it('rebuilds routes after directory rename via delete and create events', async () => {
+    const ctx = createContext()
+    const service = createAutoRoutesService(ctx)
+
+    await service.ensureFresh()
+
+    const oldDir = path.join(srcRoot, 'pages', 'index')
+    const oldPage = path.join(oldDir, 'index.ts')
+    const newDir = path.join(srcRoot, 'pages', 'renamed-dir')
+    const newPage = path.join(newDir, 'index.ts')
+    await fs.ensureDir(newDir)
+    await fs.copy(oldPage, newPage)
+    await fs.remove(oldDir)
+
+    await service.handleFileChange(oldPage, 'delete')
+    await service.handleFileChange(newPage, 'create')
+
+    const snapshot = service.getSnapshot()
+    expect(snapshot.pages).toContain('pages/renamed-dir/index')
+    expect(snapshot.pages).not.toContain('pages/index/index')
+  })
+
   it('ignores non-route file changes', async () => {
     const ctx = createContext()
     const service = createAutoRoutesService(ctx)
