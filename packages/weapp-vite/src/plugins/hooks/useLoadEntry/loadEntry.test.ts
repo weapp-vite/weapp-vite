@@ -1202,7 +1202,9 @@ import { VueCard } from '../../components'
 
     await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
 
-    expect(pluginCtx.addWatchFile).toHaveBeenCalledWith('/project/src/layouts/default.vue')
+    const addWatchFile = pluginCtx.addWatchFile as Mock
+    const watched = addWatchFile.mock.calls.map(call => normalizeWatchCall(call[0]))
+    expect(watched).toContain('/project/src/layouts/default.vue')
     expect(normalizeEntry).toHaveBeenCalledWith('/layouts/default', '/project/src/pages/index/index.json')
     expect(pluginCtx.emitFile).toHaveBeenCalledWith({
       type: 'asset',
