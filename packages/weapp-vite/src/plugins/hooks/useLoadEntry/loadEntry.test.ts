@@ -1341,4 +1341,61 @@ import { VueCard } from '../../components'
       ]),
     )
   })
+
+  it('reuses scriptless vue layout decision across page entries', async () => {
+    mockFindVueEntry.mockImplementation(async (target: string) => {
+      if (target === '/project/src/pages/index/index') {
+        return '/project/src/pages/index/index.vue'
+      }
+      if (target === '/project/src/pages/detail/index') {
+        return '/project/src/pages/detail/index.vue'
+      }
+      return undefined
+    })
+    mockFindTemplateEntry.mockImplementation(async (target: string) => ({
+      path: `${target}.wxml`,
+      predictions: [`${target}.wxml`],
+    }))
+    mockResolvePageLayoutPlan.mockResolvedValue({
+      currentLayout: {
+        kind: 'vue',
+        file: '/project/src/layouts/default.vue',
+        importPath: '/layouts/default',
+        layoutName: 'default',
+        tagName: 'weapp-layout-default',
+      },
+      layouts: [
+        {
+          kind: 'vue',
+          file: '/project/src/layouts/default.vue',
+          importPath: '/layouts/default',
+          layoutName: 'default',
+          tagName: 'weapp-layout-default',
+        },
+      ],
+      dynamicSwitch: false,
+      dynamicPropKeys: [],
+    })
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/pages/index/index.vue') {
+        return '<template><view>index</view></template>'
+      }
+      if (target === '/project/src/pages/detail/index.vue') {
+        return '<template><view>detail</view></template>'
+      }
+      if (target === '/project/src/layouts/default.vue') {
+        return '<template><slot /></template>'
+      }
+      return 'console.log("page-entry")'
+    })
+
+    const { loader } = createLoader()
+    const pluginCtx = createPluginContext()
+
+    await loader.call(pluginCtx, '/project/src/pages/index/index.ts', 'page')
+    await loader.call(pluginCtx, '/project/src/pages/detail/index.ts', 'page')
+
+    const layoutReads = readFileMock.mock.calls.filter(call => call[0] === '/project/src/layouts/default.vue')
+    expect(layoutReads).toHaveLength(1)
+  })
 })

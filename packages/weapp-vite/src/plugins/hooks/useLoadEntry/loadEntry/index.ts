@@ -107,22 +107,39 @@ export function createEntryLoader(options: EntryLoaderOptions) {
     }
   } = {}
   const emittedScriptlessVueLayoutJs = new Set<string>()
+  const scriptlessVueLayoutDecisionCache = new Map<string, Promise<boolean>>()
   let resolveCacheVersion = 0
 
   const shouldEmitScriptlessVueLayoutJs = async (layoutFile: string) => {
-    const layoutSource = await fs.readFile(layoutFile, 'utf-8')
-    const { descriptor } = parseSfc(layoutSource, { filename: layoutFile })
-    if (hasWevuTemplateRuntimeBindings(descriptor.template?.content)) {
-      return false
-    }
-    const blocks = [descriptor.script?.content, descriptor.scriptSetup?.content]
-      .filter((content): content is string => typeof content === 'string' && content.trim().length > 0)
-
-    if (blocks.length === 0) {
-      return true
+    const cached = scriptlessVueLayoutDecisionCache.get(layoutFile)
+    if (cached) {
+      return await cached
     }
 
-    return blocks.every(isDefineComponentJsonOnlyScript)
+    const task = (async () => {
+      const layoutSource = await fs.readFile(layoutFile, 'utf-8')
+      const { descriptor } = parseSfc(layoutSource, { filename: layoutFile })
+      if (hasWevuTemplateRuntimeBindings(descriptor.template?.content)) {
+        return false
+      }
+      const blocks = [descriptor.script?.content, descriptor.scriptSetup?.content]
+        .filter((content): content is string => typeof content === 'string' && content.trim().length > 0)
+
+      if (blocks.length === 0) {
+        return true
+      }
+
+      return blocks.every(isDefineComponentJsonOnlyScript)
+    })()
+
+    scriptlessVueLayoutDecisionCache.set(layoutFile, task)
+    try {
+      return await task
+    }
+    catch (error) {
+      scriptlessVueLayoutDecisionCache.delete(layoutFile)
+      throw error
+    }
   }
 
   const loadEntry = async function loadEntry(this: PluginContext, id: string, type: 'app' | 'page' | 'component') {
@@ -402,6 +419,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
   return Object.assign(loadEntry, {
     invalidateResolveCache() {
       entryResolver.invalidate()
+      scriptlessVueLayoutDecisionCache.clear()
       resolveCacheVersion += 1
       appEntryOutputCache.current = undefined
     },
