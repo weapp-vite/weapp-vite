@@ -1,5 +1,61 @@
 # create-weapp-vite
 
+## 2.0.59
+
+### Patch Changes
+
+- 🐛 **优化 `weapp-vite` 的页面级 Vue transform 后处理：当页面脚本中不包含任何页面生命周期 hook 提示时，不再进入 `injectWevuPageFeaturesInJsWithViteResolver()` 的 AST 与模块依赖分析流程。这样可以减少普通页面在热更新与构建阶段的无效页面特性注入开销，同时保持真正使用页面 hook 的场景行为不变。** [`9ae1594`](https://github.com/weapp-vite/weapp-vite/commit/9ae1594d10f748d32ba3e11533f992e9c5f5b010) by @sonofmagic
+
+- 🐛 **将 `weapp-vite` 构建输出清理逻辑中的 `rimraf` 替换为 Node 原生 `fs/promises` 实现。现在输出目录和外部插件产物目录的清理统一使用 `readdir` + `rm`，保留原有的 `miniprogram_npm` 目录保护与外部插件产物整理语义，同时移除 `rimraf` 的直接依赖并更新相关测试。** [`5362bd0`](https://github.com/weapp-vite/weapp-vite/commit/5362bd0f4795ca2917dece5efe4a2d56a592f9cc) by @sonofmagic
+
+- 🐛 **修复 `wevu` 组件模板 ref 代理在写入自定义字段时没有回写到真实组件实例的问题，避免 layout 内承载的 `t-dialog` 在通过 `useDialog()` 打开后出现确认、取消按钮无法关闭弹窗的情况。同步补强 TDesign wevu 模板中的 dialog 宿主关闭兜底逻辑，并增加对应的运行时单测与 DevTools e2e 回归用例。** [`3ca1671`](https://github.com/weapp-vite/weapp-vite/commit/3ca1671ba853cf859e8cbbb81e93c5ad186ee8aa) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite` 的页面滚动性能诊断路径：当页面脚本中不包含 `onPageScroll` 提示时，不再进入 `collectOnPageScrollPerformanceWarnings()` 的 AST 分析流程。这样可以减少普通页面在热更新与构建阶段的无效性能诊断开销，同时保留真正使用 `onPageScroll` 场景下的诊断行为。** [`304adf6`](https://github.com/weapp-vite/weapp-vite/commit/304adf65f6472919d3537684b520ee358cd40959) by @sonofmagic
+
+- 🐛 **修复 `wevu` 组件模板 ref 在代理实例方法时丢失 `this` 的问题，使 layout 内通过 `useTemplateRef()` 获取到的 `t-toast`、`t-dialog` 宿主可以直接调用公开方法。同步简化 TDesign wevu 模板中的 layout 反馈宿主写法，默认改为使用语义化 bridge key 解析共享 toast/dialog，不再依赖 `#t-toast`、`#t-dialog` 这类基于 id 的选择器桥接。** [`43a157d`](https://github.com/weapp-vite/weapp-vite/commit/43a157d88cc651678333b3f7c90a31a343c5b952) by @sonofmagic
+
+- 🐛 **为 `wevu` 增加页面级反馈宿主运行时能力，允许 layout 在自身组件内注册 `t-toast` / `t-dialog` 等共享反馈节点，并让页面与子组件在调用封装的提示/确认方法时优先解析当前页面 layout 宿主。同步恢复两个 TDesign wevu 模板以 layout 承载共享反馈节点，并补充对应的运行时与构建校验，避免再次出现 `未找到组件,请检查selector是否正确` 的告警。** [`862b86c`](https://github.com/weapp-vite/weapp-vite/commit/862b86cd03806f8e7cc284dd706f111a60fb808d) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite` 在开发模式下的 `autoImportComponents` 热更新路径。此前 `autoImport` 插件在 dev 的后续 `buildStart` 中会重复全量扫描组件 globs；现在改为在首次扫描后通过 sidecar watcher 增量处理新增/删除组件文件，避免每次热更新都重新遍历整个组件目录，从而减少 `autoImportComponents` 对热更新耗时的影响。** [`7a8cc24`](https://github.com/weapp-vite/weapp-vite/commit/7a8cc244b04a489b8b64ae41f5c52bfb5a6f0f8d) by @sonofmagic
+
+- 🐛 **为 `wevu` 增加 `useLayoutHosts()`、`resolveLayoutHost()` 与 `waitForLayoutHost()`，将 layout 共享宿主的注册、解析与就绪等待能力下沉到运行时，减少模板侧重复编写 bridge key、重试与 `selectComponent` 适配逻辑。同步简化两个 TDesign wevu 模板中的 toast/dialog hooks 与 layout 注册写法，使页面和组件调用 layout 内反馈能力时更直接、更容易维护。** [`ea8dcb0`](https://github.com/weapp-vite/weapp-vite/commit/ea8dcb038796d73f6f6161a6782f82dc355ca72c) by @sonofmagic
+
+- 🐛 **重构 `weapp-vite-wevu-tailwindcss-tdesign-template` 的 `useDialog()` 实现，统一 alert / confirm 在 layout 宿主与直接组件调用两种模式下的打开流程，并移除对宿主旧 `properties` 的回灌。这样可以从根本上避免旧按钮配置残留到后续弹窗，减少实现分叉并让 alert / confirm 行为更稳定。** [`1f086dc`](https://github.com/weapp-vite/weapp-vite/commit/1f086dc7602c642d6371064af792877dc1f5c29e) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite` 在开发模式下 `autoImportComponents` 的 sidecar watcher 监听范围。现在当 globs 已能推导出明确基础目录时，sidecar watcher 不再额外监听整个 `src` 根目录，而是仅监听实际需要的组件目录，从而减少监听器覆盖面与潜在的文件监听压力。** [`32bef2d`](https://github.com/weapp-vite/weapp-vite/commit/32bef2d0f81810a60c5f6d701c1c6242c68b9b7a) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite` 的页面布局规划解析：当页面源码中既不包含 `definePageMeta()` 也不包含 `setPageLayout()` 提示时，`resolvePageLayoutPlan()` 不再额外做源码 AST 解析，而是直接进入默认 layout / routeRules 分支。这可以减少大量普通页面在热更新与构建阶段的布局元信息解析开销，同时保持默认布局行为不变。** [`afb08ec`](https://github.com/weapp-vite/weapp-vite/commit/afb08ec47c938b1f9a518711718c0ce3804a4614) by @sonofmagic
+
+- 🐛 **收窄 `weapp-vite` 中 `autoRoutes` 在开发模式下的热更新重扫触发条件。此前位于 `src/pages/**` 下的普通文件更新也可能触发一次路由全量重扫；现在仅在结构性变化（如新增、删除）时才对未命中的 pages 路径触发重扫，而真正的路由入口文件更新仍保持增量处理，从而减少无关文件变更对热更新速度的影响。** [`43c552d`](https://github.com/weapp-vite/weapp-vite/commit/43c552d10ec7f50a246b974778d6df40d0b03b3a) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` 新增 `weapp.debug.vueTransformTiming` 调试回调，用于输出 Vue 文件在 transform 阶段的分段耗时。启用后可观察单次编译中 `readSource`、`preParseSfc`、`compile`、页面后处理等步骤的耗时分布，便于继续分析和优化热更新与构建性能。** [`4439fa7`](https://github.com/weapp-vite/weapp-vite/commit/4439fa7e9f963998935f025b29d09d6d2f5a19ac) by @sonofmagic
+
+- 🐛 **修复动态页面布局模板在重复应用 layout transform 时可能被再次包裹的问题。此前同一个页面在经过多轮 transform / 构建后，`wx:if` 动态 layout 分支会整体再嵌套一层，导致切换到 `admin` 布局时出现重复的 `layouts/admin.vue` 页面壳。现在动态 layout 包裹逻辑已保持幂等，并补充对应测试，确保同一页面模板不会被重复注入 layout 分支。** [`1a5da11`](https://github.com/weapp-vite/weapp-vite/commit/1a5da1142ddae8362f9f46cc691a4f186cfa7811) by @sonofmagic
+
+- 🐛 **为 `layout-host` 增加通用的编译期声明与运行时实例解析机制：layout 内组件可直接用 `layout-host="..."` 暴露宿主，`wevu` 会优先从运行时已解析的宿主实例读取能力，减少页面/组件侧对 `selector`、`id`、`useTemplateRef()` 和手动注册 bridge 的依赖。同步修复 `weapp-vite` 在 layout 构建时错误输出 scriptless stub 的问题，并更新 TDesign wevu 模板与 DevTools e2e，用例覆盖首页 toast、layout-feedback 页面 alert/confirm 以及无 `未找到组件` 警告的场景。** [`e52f7b1`](https://github.com/weapp-vite/weapp-vite/commit/e52f7b1f00b9007bd4a25b2414bc52f5a30890aa) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite-wevu-tailwindcss-tdesign-template` 中 Layout 通信演示页的页面级按钮点击无响应问题。此前事件绑定在包裹 `t-button` 的外层 `view` 上，导致点击时没有稳定触发页面方法；现在改为直接绑定到 `t-button`，使页面触发 Toast、Alert、Confirm 与子组件示例保持一致。** [`ed97136`](https://github.com/weapp-vite/weapp-vite/commit/ed971363e68f2b245fda1e71d34f2ced65803407) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` 增加开发态输出目录清理开关 `weapp.cleanOutputsInDev`，并将开发态默认行为调整为“不在 `dev` / `dev -o` 启动前全量清空小程序输出目录”。这样模板和项目在默认配置下即可减少开发模式的磁盘清理开销；如果需要恢复旧行为，可显式设置 `cleanOutputsInDev: true`。** [`0dbdb30`](https://github.com/weapp-vite/weapp-vite/commit/0dbdb304cd3db1df579d0e828ae17beb29194bb2) by @sonofmagic
+
+- 🐛 **修复 layout 文件热更新导致共享 `common.js` 被错误裁剪的问题。现在当 `src/layouts/**` 发生更新时，`weapp-vite`会对当前已解析入口执行更完整的失效传播，避免只重编译 layout 入口而产出残缺`common.js`。同时调整 wevu 的临时配置执行目录策略，避免在热更新期间因临时目录竞争导致编译失败，最终修复微信开发者工具里 `require_common.defineStore is not a function` 这一类报错。** [`8f66a85`](https://github.com/weapp-vite/weapp-vite/commit/8f66a85fd7dc4021409ff3fff26f8723d0bf967d) by @sonofmagic
+
+- 🐛 **修复 `wevu` 中 `setPageLayout()` 在页面 `watch` / `watchEffect` 回调里调用时可能丢失页面上下文的问题。现在页面实例会更早挂载 layout setter，响应式监听回调也会恢复创建时的当前实例；同时 `setPageLayout()` 会优先回退到运行时维护的当前页面实例，使 `setup()` 内部的 `immediate` watcher 以及后续响应式切换都能稳定驱动 layout 更新。同步更新 TDesign wevu 模板中的 store-layout 演示页，重新使用 watcher 驱动 `setPageLayout()` 以覆盖这一场景。** [`3ba325a`](https://github.com/weapp-vite/weapp-vite/commit/3ba325ac4538637f8828c5a4cc3c3815ebce10a7) by @sonofmagic
+
+- 🐛 **修复 `weapp-vite-wevu-tailwindcss-tdesign-template` 中 Layout 通信演示页的 alert 弹窗底部左侧残留空白按钮位的问题。宿主模式下打开 alert 时，改为显式清空 `cancelBtn`，避免 TDesign `t-dialog` 将空字符串当作取消按钮配置渲染出空白占位。** [`b24ce4b`](https://github.com/weapp-vite/weapp-vite/commit/b24ce4b7d4df1c29ccec40dcc9ef6b5c09972612) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite` 在入口装载阶段对 Vue layout 的 scriptless 判定。现在同一个 layout 文件在多页面共享时，会复用首次读取与 `parseSfc` 的判定结果，而不再为每个页面重复读取和解析该 layout，从而减少 `weapp-vite:pre` 阶段的重复工作。** [`3ef0a19`](https://github.com/weapp-vite/weapp-vite/commit/3ef0a19e2e27554459629f824ea6dc369c893eb5) by @sonofmagic
+
+- 🐛 **恢复 `weapp-vite` 在开发模式下默认会先清空输出目录的行为，同时保留 `weapp.cleanOutputsInDev` 作为显式开关。现在只有当项目明确设置 `cleanOutputsInDev: false` 时，`dev` / `dev -o` 才会跳过启动前的输出目录清理，以兼顾既有语义与可选优化能力。** [`753a347`](https://github.com/weapp-vite/weapp-vite/commit/753a347023f24e31f67e9bef3351f421a21650d2) by @sonofmagic
+
+- 🐛 **为 `weapp-vite-wevu-tailwindcss-tdesign-template` 增加一个 `wevu/store` 驱动 layout 交互的演示页。新示例展示了 store 如何保存布局状态与交互意图，再由页面上下文消费这些命令并调用 `setPageLayout()`、`useToast()`、`useDialog()`，从而命中 `default` 与 `admin` layout 中承载的反馈宿主。** [`d7a9073`](https://github.com/weapp-vite/weapp-vite/commit/d7a9073c79fc68161c049d36b78d5ba3cc21567c) by @sonofmagic
+
+- 🐛 **调整 `weapp-vite-wevu-tailwindcss-tdesign-template` 中 Store 调用 Layout 演示页的交互职责。现在页面本身不再直接调用 `useToast()` / `useDialog()`，而是由 `wevu/store` 内的 action 直接触发 toast、alert 与 confirm，并通过当前页面的 layout 宿主完成展示，使示例更符合“store 统一调度交互反馈”的目标。** [`b807fdc`](https://github.com/weapp-vite/weapp-vite/commit/b807fdc8a1ced4f31d43d4c8b5ec095e4e76d5ec) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite` 的页面布局解析路径：对 `src/layouts` 的扫描结果增加缓存，并在 layout 文件变更时自动失效。这样多页面项目在热更新与构建阶段不再为每个页面重复遍历布局目录，同时保持 layout 变更后的刷新行为正确。** [`70d8bd1`](https://github.com/weapp-vite/weapp-vite/commit/70d8bd180f96fffc1a289b0467f48a9822b4172b) by @sonofmagic
+
+- 🐛 **优化 `weapp-vite` 的 Vue transform 路径：对于不包含 `<style>` 的 `.vue` 文件，不再额外做一次 SFC 预解析来收集样式块。这样可以减少无样式组件和页面在开发热更新与构建阶段的重复解析开销，同时保留带样式 SFC 的既有行为。** [`9cc1a87`](https://github.com/weapp-vite/weapp-vite/commit/9cc1a87e60089f034ee2c092c54d5808f0c04fef) by @sonofmagic
+
 ## 2.0.58
 
 ### Patch Changes
