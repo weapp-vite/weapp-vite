@@ -21,6 +21,7 @@ keywords:
 
 - 新建项目：优先用 `create-weapp-vite`
 - 在 CI/脚本里调用微信开发者工具：用 `weapp-ide-cli`
+- 想把 DevTools 里的小程序日志桥接回 AI 终端：优先用 `weapp-vite ide logs`，底层能力由 `weapp-ide-cli` 提供
 - 想让 AI 助手直接理解并操作仓库：用 `@weapp-vite/mcp`，或直接执行 `weapp-vite mcp`
 - 需要“打包后执行配置文件”：用 `rolldown-require`
 - 想追踪 Vite 插件耗时瓶颈：用 `vite-plugin-performance`
