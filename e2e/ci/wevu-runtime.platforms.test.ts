@@ -48,7 +48,7 @@ function parseSnapshotExports(source: string) {
 }
 
 function deserializeSnapshotValue(snapshotValue: string) {
-  let normalized = snapshotValue
+  let normalized = snapshotValue.replace(/\r\n/g, '\n')
   if (normalized.startsWith('\n') && normalized.endsWith('\n')) {
     normalized = normalized.slice(1, -1)
   }
