@@ -1,7 +1,9 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '@/context'
+import chokidar from 'chokidar'
 import { fdir as Fdir } from 'fdir'
 import path from 'pathe'
+import { logger } from '../context/shared'
 import { defaultExcluded } from '../defaults'
 import { getAutoImportConfig } from '../runtime/autoImport/config'
 import { toPosixPath } from '../utils'
@@ -21,6 +23,7 @@ const LEADING_DOT_SLASH_RE = /^\.\//
 const LEADING_SLASHES_RE = /^\/+/
 const GLOB_WILDCARD_RE = /[*?[{]/
 const TRAILING_SLASHES_RE = /\/+$/
+const AUTO_IMPORT_WATCHER_KEY = '__auto-import-vue-watcher__'
 
 function isEnabledOutputOption(option: unknown) {
   if (option === true) {
@@ -145,14 +148,13 @@ function registerAutoImportWatchTargets(
   globs: string[] | undefined,
   registrar: WatchFileRegistrar | undefined,
 ) {
-  if (!globs?.length || typeof registrar?.addWatchFile !== 'function') {
-    return
-  }
-
   const { configService } = state.ctx
+  if (!configService) {
+    return new Set()
+  }
   const watchTargets = new Set<string>([configService.absoluteSrcRoot])
 
-  for (const pattern of globs) {
+  for (const pattern of globs ?? []) {
     const normalizedPattern = toPosixPath(pattern).replace(LEADING_DOT_SLASH_RE, '').replace(LEADING_SLASHES_RE, '')
     const wildcardIndex = normalizedPattern.search(GLOB_WILDCARD_RE)
     const base = wildcardIndex >= 0 ? normalizedPattern.slice(0, wildcardIndex) : normalizedPattern
@@ -165,14 +167,67 @@ function registerAutoImportWatchTargets(
     watchTargets.add(path.resolve(configService.absoluteSrcRoot, cleanedBase))
   }
 
+  if (typeof registrar?.addWatchFile !== 'function') {
+    return watchTargets
+  }
+
   for (const target of watchTargets) {
     registrar.addWatchFile(target)
   }
+
+  return watchTargets
 }
 
 function createAutoImportPlugin(state: AutoImportState): Plugin {
   const { ctx } = state
   const { configService, autoImportService } = ctx
+  let fileWatcherStarted = false
+
+  function startAutoImportFileWatcher(globs: string[] | undefined) {
+    if (fileWatcherStarted || !configService?.isDev || !globs?.length) {
+      return
+    }
+
+    const watchTargets = registerAutoImportWatchTargets(state, globs, undefined)
+    if (!watchTargets?.size) {
+      return
+    }
+
+    const watcher = chokidar.watch([...watchTargets], {
+      ignoreInitial: true,
+      persistent: true,
+      awaitWriteFinish: {
+        stabilityThreshold: 80,
+        pollInterval: 20,
+      },
+    })
+
+    watcher.on('add', (filePath) => {
+      if (!matchesAutoImportGlobs(ctx, filePath)) {
+        return
+      }
+      logger.info(`[auto-import:watch] 新增组件文件 ${configService.relativeCwd(filePath)}`)
+      void autoImportService.registerPotentialComponent(filePath)
+    })
+
+    watcher.on('unlink', (filePath) => {
+      if (!matchesAutoImportGlobs(ctx, filePath)) {
+        return
+      }
+      logger.info(`[auto-import:watch] 删除组件文件 ${configService.relativeCwd(filePath)}`)
+      autoImportService.removePotentialComponent(filePath)
+    })
+
+    const sidecarWatcherMap = ctx.runtimeState?.watcher?.sidecarWatcherMap
+    if (!sidecarWatcherMap) {
+      return
+    }
+
+    sidecarWatcherMap.set(AUTO_IMPORT_WATCHER_KEY, {
+      close: () => void watcher.close(),
+    })
+    fileWatcherStarted = true
+  }
 
   return {
     name: 'weapp-vite:auto-import',
@@ -190,6 +245,7 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       const autoImportConfig = getAutoImportConfig(configService)
       const globs = autoImportConfig?.globs
       registerAutoImportWatchTargets(state, globs, this as unknown as WatchFileRegistrar)
+      startAutoImportFileWatcher(globs)
       const globsKey = globs?.join('\0') ?? ''
       if (globsKey !== state.lastGlobsKey) {
         state.initialScanDone = false
@@ -205,10 +261,6 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       }
 
       if (state.initialScanDone) {
-        if (configService?.isDev) {
-          const files = await findAutoImportCandidates(state, globs)
-          await Promise.all(files.map(file => autoImportService.registerPotentialComponent(file)))
-        }
         return
       }
 

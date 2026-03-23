@@ -1,9 +1,38 @@
 import fs from 'fs-extra'
 import path from 'pathe'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { autoImport } from './autoImport'
 
+const chokidarWatchMock = vi.hoisted(() => vi.fn())
+
+vi.mock('chokidar', () => ({
+  default: {
+    watch: chokidarWatchMock,
+  },
+}))
+
 describe('autoImport plugin', () => {
+  beforeEach(() => {
+    chokidarWatchMock.mockReset()
+    chokidarWatchMock.mockReturnValue(createMockSidecarWatcher())
+  })
+
+  function createMockSidecarWatcher() {
+    const listeners = new Map<string, (filePath: string) => void>()
+    const watcher = {
+      on: vi.fn((event: string, handler: (filePath: string) => void) => {
+        listeners.set(event, handler)
+        return watcher
+      }),
+      close: vi.fn(),
+      emit(event: 'add' | 'unlink', filePath: string) {
+        listeners.get(event)?.(filePath)
+      },
+    }
+
+    return watcher
+  }
+
   it('bootstraps outputs without globs', async () => {
     const reset = vi.fn()
     const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
@@ -188,8 +217,15 @@ describe('autoImport plugin', () => {
     const reset = vi.fn()
     const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
     const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
+    const sidecarWatcher = createMockSidecarWatcher()
+    chokidarWatchMock.mockReturnValue(sidecarWatcher)
 
     const ctx = {
+      runtimeState: {
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
       configService: {
         cwd: tempDir,
         absoluteSrcRoot: srcRoot,
@@ -223,7 +259,11 @@ describe('autoImport plugin', () => {
       await fs.ensureDir(path.dirname(secondComponent))
       await fs.writeFile(secondComponent, '<template><view>second</view></template>', 'utf8')
 
+      registerPotentialComponent.mockClear()
       await plugin.buildStart?.()
+      expect(registerPotentialComponent).not.toHaveBeenCalled()
+
+      sidecarWatcher.emit('add', secondComponent)
       expect(registerPotentialComponent).toHaveBeenCalledWith(secondComponent)
     }
     finally {
@@ -281,8 +321,14 @@ describe('autoImport plugin', () => {
     const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
     const removePotentialComponent = vi.fn()
     const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
+    chokidarWatchMock.mockReturnValue(createMockSidecarWatcher())
 
     const ctx = {
+      runtimeState: {
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
       configService: {
         cwd: tempDir,
         absoluteSrcRoot: srcRoot,
