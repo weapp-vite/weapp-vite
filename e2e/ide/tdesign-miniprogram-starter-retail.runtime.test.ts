@@ -211,6 +211,7 @@ let sharedMiniProgram: any = null
 let sharedBuildPrepared = false
 const AUTOMATOR_LAUNCH_RETRIES = 3
 const AUTOMATOR_LAUNCH_RETRY_DELAY = 1_200
+const AUTOMATOR_LAUNCH_TIMEOUT = 45_000
 
 function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -227,6 +228,7 @@ async function getSharedMiniProgram() {
       try {
         sharedMiniProgram = await launchAutomator({
           projectPath: APP_ROOT,
+          timeout: AUTOMATOR_LAUNCH_TIMEOUT,
         })
         break
       }
