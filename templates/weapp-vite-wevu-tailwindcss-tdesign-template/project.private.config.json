@@ -26,6 +26,12 @@
           "scene": null
         },
         {
+          "name": "Store 调用 Layout",
+          "pathName": "pages/layout-store/index",
+          "query": "",
+          "scene": null
+        },
+        {
           "name": "数据页",
           "pathName": "pages/data/index",
           "query": "",
