@@ -147,12 +147,19 @@ function registerAutoImportWatchTargets(
   state: AutoImportState,
   globs: string[] | undefined,
   registrar: WatchFileRegistrar | undefined,
+  options: {
+    includeSrcRoot?: boolean
+  } = {},
 ) {
   const { configService } = state.ctx
   if (!configService) {
     return new Set()
   }
-  const watchTargets = new Set<string>([configService.absoluteSrcRoot])
+  const watchTargets = new Set<string>()
+
+  if (options.includeSrcRoot !== false) {
+    watchTargets.add(configService.absoluteSrcRoot)
+  }
 
   for (const pattern of globs ?? []) {
     const normalizedPattern = toPosixPath(pattern).replace(LEADING_DOT_SLASH_RE, '').replace(LEADING_SLASHES_RE, '')
@@ -188,7 +195,9 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       return
     }
 
-    const watchTargets = registerAutoImportWatchTargets(state, globs, undefined)
+    const watchTargets = registerAutoImportWatchTargets(state, globs, undefined, {
+      includeSrcRoot: false,
+    })
     if (!watchTargets?.size) {
       return
     }

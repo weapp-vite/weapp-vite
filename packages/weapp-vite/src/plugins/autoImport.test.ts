@@ -203,6 +203,55 @@ describe('autoImport plugin', () => {
     expect(addWatchFile).toHaveBeenCalledWith('/project/src/packages/order/components')
   })
 
+  it('starts sidecar watcher with narrowed glob base directories instead of src root fallback', async () => {
+    const reset = vi.fn()
+    const registerPotentialComponent = vi.fn().mockResolvedValue(undefined)
+    const awaitManifestWrites = vi.fn().mockResolvedValue(undefined)
+
+    const ctx = {
+      runtimeState: {
+        watcher: {
+          sidecarWatcherMap: new Map(),
+        },
+      },
+      configService: {
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        relativeCwd: (p: string) => p,
+        relativeAbsoluteSrcRoot: (p: string) => p,
+        isDev: true,
+        weappViteConfig: {
+          autoImportComponents: {
+            globs: ['components/**/*.vue', 'packages/order/components/**/*.wxml'],
+          },
+        },
+      },
+      autoImportService: {
+        reset,
+        awaitManifestWrites,
+        filter: () => true,
+        registerPotentialComponent,
+        removePotentialComponent: vi.fn(),
+        resolve: vi.fn(),
+        getRegisteredLocalComponents: vi.fn(),
+      },
+    } as any
+
+    const plugin = autoImport(ctx)[0]
+    plugin.configResolved?.({ build: { outDir: 'dist' } } as any)
+    await plugin.buildStart?.call({ addWatchFile: vi.fn() } as any)
+
+    expect(chokidarWatchMock).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        '/project/src/components',
+        '/project/src/packages/order/components',
+      ]),
+      expect.any(Object),
+    )
+    const watchArgs = chokidarWatchMock.mock.calls[0]?.[0] ?? []
+    expect(watchArgs).not.toContain('/project/src')
+  })
+
   it('rescans globs on repeated dev buildStart to include newly created components', async () => {
     const tempRoot = path.resolve(import.meta.dirname, '../test/__temp__')
     await fs.ensureDir(tempRoot)
