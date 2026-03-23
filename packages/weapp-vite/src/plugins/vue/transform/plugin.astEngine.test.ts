@@ -11,6 +11,9 @@ const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(as
   transformed: false,
   code,
 })))
+const collectOnPageScrollPerformanceWarningsMock = vi.hoisted(() => vi.fn(() => []))
+const pageMatcherIsPageFileMock = vi.hoisted(() => vi.fn(async () => false))
+const pageMatcherMarkDirtyMock = vi.hoisted(() => vi.fn())
 
 vi.mock('wevu/compiler', () => ({
   compileVueFile: compileVueFileMock,
@@ -34,8 +37,8 @@ vi.mock('../../utils/vueSfc', () => ({
 
 vi.mock('../../wevu', () => ({
   createPageEntryMatcher: vi.fn(() => ({
-    isPageFile: vi.fn(async () => false),
-    markDirty: vi.fn(),
+    isPageFile: pageMatcherIsPageFileMock,
+    markDirty: pageMatcherMarkDirtyMock,
   })),
 }))
 
@@ -49,6 +52,7 @@ vi.mock('../../../utils/toAbsoluteId', () => ({
 
 vi.mock('../../../utils/path', () => ({
   normalizeWatchPath: vi.fn((id: string) => id),
+  toPosixPath: vi.fn((id: string) => id),
 }))
 
 vi.mock('../../../utils/resolvedId', () => ({
@@ -79,7 +83,7 @@ vi.mock('./styleRequest', () => ({
 }))
 
 vi.mock('../../performance/onPageScrollDiagnostics', () => ({
-  collectOnPageScrollPerformanceWarnings: vi.fn(() => []),
+  collectOnPageScrollPerformanceWarnings: collectOnPageScrollPerformanceWarningsMock,
 }))
 
 vi.mock('../../../logger', () => ({
@@ -109,6 +113,10 @@ describe('createVueTransformPlugin ast engine smoke', () => {
       code: 'export default {}',
     })
     injectWevuPageFeaturesInJsWithViteResolverMock.mockClear()
+    collectOnPageScrollPerformanceWarningsMock.mockClear()
+    pageMatcherIsPageFileMock.mockReset()
+    pageMatcherIsPageFileMock.mockResolvedValue(false)
+    pageMatcherMarkDirtyMock.mockReset()
   })
 
   it('passes resolved astEngine into setData pick collection', async () => {
@@ -336,5 +344,51 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     } as any, '<template><view>{{ count }}</view></template>', '/project/src/pages/home/index.vue')
 
     expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
+    expect(collectOnPageScrollPerformanceWarningsMock).not.toHaveBeenCalled()
+  })
+
+  it('runs page scroll diagnostics only when onPageScroll hint exists', async () => {
+    compileVueFileMock.mockResolvedValueOnce({
+      script: 'export default { methods: { onPageScroll() {} } }',
+      template: '<view />',
+      meta: {},
+    })
+    isAutoSetDataPickEnabledMock.mockReturnValue(false)
+    pageMatcherIsPageFileMock.mockResolvedValue(true)
+
+    const { createVueTransformPlugin } = await import('./plugin')
+    const plugin = createVueTransformPlugin({
+      configService: {
+        isDev: false,
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        outputExtensions: {},
+        relativeOutputPath: vi.fn(() => undefined),
+        weappLibConfig: {
+          enabled: false,
+        },
+        weappViteConfig: {},
+      },
+      scanService: {
+        loadAppEntry: vi.fn(async () => ({
+          json: {
+            pages: ['pages/home/index'],
+          },
+        })),
+        loadSubPackages: vi.fn(() => []),
+        pluginJson: undefined,
+      },
+      runtimeState: {
+        scan: {
+          isDirty: false,
+        },
+      },
+    } as any)
+
+    await plugin.transform!.call({
+      addWatchFile: vi.fn(),
+    } as any, '<template><view /></template>', '/project/src/pages/home/index.vue')
+
+    expect(collectOnPageScrollPerformanceWarningsMock).toHaveBeenCalledTimes(1)
   })
 })
