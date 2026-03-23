@@ -37,6 +37,7 @@ const PAGE_FEATURE_HOOK_HINTS = [
   'onAddToFavorites',
   'onSaveExitState',
 ]
+const PAGE_SCROLL_HOOK_HINT = 'onPageScroll'
 
 function mayNeedSetDataPick(template: string) {
   return TEMPLATE_DYNAMIC_HINT_RE.test(template)
@@ -44,6 +45,10 @@ function mayNeedSetDataPick(template: string) {
 
 function mayNeedPageFeatureInjection(script: string) {
   return PAGE_FEATURE_HOOK_HINTS.some(hint => script.includes(hint))
+}
+
+function mayNeedPageScrollDiagnostics(script: string) {
+  return script.includes(PAGE_SCROLL_HOOK_HINT)
 }
 
 export async function transformVueLikeFile(options: {
@@ -217,10 +222,12 @@ export async function transformVueLikeFile(options: {
     }
 
     if (isPage && result.script) {
-      for (const warning of collectOnPageScrollPerformanceWarnings(result.script, filename, {
-        engine: resolveAstEngine(configService.weappViteConfig),
-      })) {
-        logger.warn(warning)
+      if (mayNeedPageScrollDiagnostics(result.script)) {
+        for (const warning of collectOnPageScrollPerformanceWarnings(result.script, filename, {
+          engine: resolveAstEngine(configService.weappViteConfig),
+        })) {
+          logger.warn(warning)
+        }
       }
       if (mayNeedPageFeatureInjection(result.script)) {
         await measureStage('injectPageFeatures', async () => {
