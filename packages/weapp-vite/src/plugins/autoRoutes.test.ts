@@ -293,9 +293,11 @@ describe('auto-routes plugin alias fallback', () => {
 
     isRouteFile.mockReturnValue(false)
     await plugin.watchChange?.('/virtual/project/src/pages/home/index.ts', { event: 'create' } as any)
+    await plugin.watchChange?.('/virtual/project/src/pages/home/style.scss', { event: 'update' } as any)
     await plugin.watchChange?.('/virtual/project/src/components/card/index.ts', { event: 'update' } as any)
 
     expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/home/index.ts', 'rename')
+    expect(handleFileChange).not.toHaveBeenCalledWith('/virtual/project/src/pages/home/style.scss', 'rename')
     expect(handleFileChange).not.toHaveBeenCalledWith('/virtual/project/src/components/card/index.ts', 'rename')
   })
 
@@ -322,7 +324,7 @@ describe('auto-routes plugin alias fallback', () => {
     expect(handleFileChange).not.toHaveBeenCalledWith('C:\\virtual\\project\\src\\components\\card\\index.ts', 'rename')
   })
 
-  it('handleHotUpdate returns virtual module in serve mode and filters fallback in build mode', async () => {
+  it('handleHotUpdate returns virtual module for route file updates in serve mode and filters fallback in build mode', async () => {
     const virtualModule = { id: '\0weapp-vite:auto-routes' }
     const {
       plugin,
@@ -333,7 +335,7 @@ describe('auto-routes plugin alias fallback', () => {
     plugin.configResolved?.({
       command: 'serve',
     } as any)
-    isRouteFile.mockReturnValue(false)
+    isRouteFile.mockImplementation((id: string) => id.endsWith('/pages/home/index.ts'))
 
     const served = await plugin.handleHotUpdate?.({
       file: '/virtual/project/src/pages/home/index.ts',
@@ -344,8 +346,21 @@ describe('auto-routes plugin alias fallback', () => {
       },
       modules: [],
     } as any)
-    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/home/index.ts', 'rename')
+    expect(handleFileChange).toHaveBeenCalledWith('/virtual/project/src/pages/home/index.ts', 'update')
     expect(served).toEqual([virtualModule])
+
+    handleFileChange.mockClear()
+    const ignoredServeUpdate = await plugin.handleHotUpdate?.({
+      file: '/virtual/project/src/pages/home/style.scss',
+      server: {
+        moduleGraph: {
+          getModuleById: vi.fn(() => virtualModule),
+        },
+      },
+      modules: [],
+    } as any)
+    expect(ignoredServeUpdate).toBeUndefined()
+    expect(handleFileChange).not.toHaveBeenCalled()
 
     plugin.configResolved?.({
       command: 'build',
