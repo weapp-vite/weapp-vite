@@ -7,6 +7,7 @@ export default defineConfig({
     globals: true,
     testTimeout: 60_000,
     coverage: {
+      clean: false,
       exclude: [
         '**/dist/**',
       ],

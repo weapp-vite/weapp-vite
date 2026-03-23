@@ -13,6 +13,7 @@ export default defineProject({
     globals: true,
     testTimeout: 60_000,
     coverage: {
+      clean: false,
       reporter: ['text', 'lcov'],
       exclude: [
         'src/index.ts', // pure export barrel, exclude from coverage
