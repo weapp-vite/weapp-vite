@@ -10,6 +10,7 @@ export default defineConfig({
     },
   },
   weapp: {
+    cleanOutputsInDev: false,
     srcRoot: 'src',
     typescript: {
       app: {
