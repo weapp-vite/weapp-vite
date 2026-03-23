@@ -101,4 +101,30 @@ describe('defineConfig editor intellisense', () => {
     expect(display).toContain('WeappViteConfig.srcRoot')
     expect(docs).toContain('应用入口目录')
   })
+
+  it('should contextually type destructured config env params', () => {
+    const destructuredFileName = path.join(root, 'test/__virtual__/vite.destructured.config.ts')
+    const destructuredSource = [
+      'import { defineConfig } from \'weapp-vite/config\'',
+      'export default defineConfig(({ mode }) => ({',
+      '  weapp: {',
+      '    srcRoot: mode,',
+      '  },',
+      '}))',
+    ].join('\n')
+    const languageService = createLanguageService({
+      fileName: destructuredFileName,
+      source: destructuredSource,
+      root,
+    })
+
+    const diagnostics = languageService.getSemanticDiagnostics(destructuredFileName)
+    expect(diagnostics).toEqual([])
+
+    const modePosition = destructuredSource.indexOf('mode })') + 1
+    const quickInfo = languageService.getQuickInfoAtPosition(destructuredFileName, modePosition)
+    const display = ts.displayPartsToString(quickInfo?.displayParts ?? [])
+
+    expect(display).toContain('mode: string')
+  })
 })

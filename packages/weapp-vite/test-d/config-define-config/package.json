@@ -1,0 +1,24 @@
+{
+  "name": "config-define-config-tsd",
+  "private": true,
+  "types": "index.d.ts",
+  "tsd": {
+    "compilerOptions": {
+      "baseUrl": "../..",
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+      "paths": {
+        "@/*": [
+          "src/*"
+        ]
+      },
+      "rootDir": "../..",
+      "target": "ES2023",
+      "strict": true,
+      "types": [
+        "node",
+        "miniprogram-api-typings"
+      ]
+    }
+  }
+}

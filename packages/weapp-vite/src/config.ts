@@ -23,8 +23,6 @@ export type UserConfigFnPromise<T extends UserConfig = UserConfig> = (env: Confi
 
 export type UserConfigFn<T extends UserConfig = UserConfig> = (env: ConfigEnv) => T | Promise<T>
 
-type UserConfigLoose = UserConfig & Record<string, any>
-
 export type UserConfigExport<T extends UserConfig = UserConfig>
   = | T
     | Promise<T>
@@ -48,12 +46,9 @@ declare module 'vite' {
  */
 export function defineConfig(config: UserConfig): UserConfig
 export function defineConfig(config: Promise<UserConfig>): Promise<UserConfig>
-export function defineConfig(config: UserConfigFnNoEnvPlain): UserConfigFnNoEnvPlain
-export function defineConfig(config: UserConfigFnNoEnv): UserConfigFnNoEnv
 export function defineConfig(config: UserConfigFnObjectPlain): UserConfigFnObjectPlain
-export function defineConfig(config: UserConfigFnPromise): UserConfigFnPromise
 export function defineConfig(config: UserConfigFn): UserConfigFn
-export function defineConfig(config: UserConfigLoose): UserConfigLoose
+export function defineConfig(config: UserConfigFnPromise): UserConfigFnPromise
 export function defineConfig(config: UserConfigExport): UserConfigExport {
   return config
 }

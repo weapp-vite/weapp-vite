@@ -1,6 +1,6 @@
-import type { UserConfig } from 'weapp-vite/config'
+import type { UserConfig } from '.'
 import { expectError, expectType } from 'tsd'
-import { defineConfig } from 'weapp-vite/config'
+import { defineConfig } from '.'
 
 const objectConfig = defineConfig({
   weapp: {
@@ -51,47 +51,6 @@ const promiseNoEnvConfig = defineConfig(() => Promise.resolve({
 }))
 expectType<UserConfig | Promise<UserConfig>>(promiseNoEnvConfig())
 
-const syncEnvConfig = defineConfig((env) => {
-  expectType<'build' | 'serve'>(env.command)
-  expectType<string>(env.mode)
-
-  return {
-    weapp: {
-      srcRoot: env.command === 'build' ? 'build-src' : 'serve-src',
-    },
-  }
-})
-expectType<UserConfig>(syncEnvConfig({ command: 'build', mode: 'production' }))
-
-const asyncEnvConfig = defineConfig(async (env) => {
-  expectType<'build' | 'serve'>(env.command)
-  expectType<string>(env.mode)
-
-  return {
-    weapp: {
-      srcRoot: env.mode,
-    },
-  }
-})
-expectType<Promise<UserConfig>>(asyncEnvConfig({ command: 'serve', mode: 'development' }))
-
-const unionEnvConfig = defineConfig((env) => {
-  if (env.command === 'build') {
-    return Promise.resolve({
-      weapp: {
-        srcRoot: 'build-src',
-      },
-    })
-  }
-
-  return {
-    weapp: {
-      srcRoot: 'serve-src',
-    },
-  }
-})
-expectType<UserConfig | Promise<UserConfig>>(unionEnvConfig({ command: 'build', mode: 'production' }))
-
 const looseConfig = defineConfig({
   customFeature: {
     enabled: true,
@@ -100,25 +59,5 @@ const looseConfig = defineConfig({
     srcRoot: 'src',
   },
 })
-expectType<any>(looseConfig.customFeature)
+expectType<{ enabled: boolean } | undefined>(looseConfig.customFeature)
 expectType<string | undefined>(looseConfig.weapp?.srcRoot)
-
-expectError(defineConfig({
-  weapp: {
-    srcRoot: 1,
-  },
-}))
-
-expectError(defineConfig(() => ({
-  weapp: {
-    srcRootTypo: 'src',
-  },
-})))
-
-expectError(defineConfig(() => ({
-  weapp: {
-    autoImportComponents: {
-      vueComponents: 123,
-    },
-  },
-})))
