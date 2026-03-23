@@ -15,13 +15,15 @@ const { activeLayout, adminLayoutProps, commandStatus, lastResult, logs, pending
 const { showToast } = useToast({ duration: 1400 })
 const { alert, confirm } = useDialog()
 
-watch([activeLayout, adminLayoutProps], ([layout, props]) => {
-  if (layout === 'admin') {
-    setPageLayout('admin', props)
+function applyCurrentLayout() {
+  if (activeLayout.value === 'admin') {
+    setPageLayout('admin', adminLayoutProps.value)
     return
   }
   setPageLayout('default')
-}, { immediate: true })
+}
+
+applyCurrentLayout()
 
 watch(pendingCommand, async (command) => {
   if (!command) {
@@ -60,10 +62,12 @@ watch(pendingCommand, async (command) => {
 
 function useDefaultLayout() {
   store.setLayout('default')
+  applyCurrentLayout()
 }
 
 function useAdminLayout() {
   store.setLayout('admin')
+  applyCurrentLayout()
 }
 
 function openToastByStore() {
@@ -119,7 +123,7 @@ onUnload(() => {
     </view>
 
     <view class="mt-[18rpx] rounded-[24rpx] bg-white p-[20rpx] shadow-[0_18rpx_40rpx_rgba(17,24,39,0.08)]">
-      <SectionTitle title="切换 Layout" subtitle="store 修改布局状态，页面 watch 后调用 setPageLayout()" />
+      <SectionTitle title="切换 Layout" subtitle="store 修改布局状态，再由页面事件回调调用 setPageLayout()" />
       <view class="mt-[16rpx] flex flex-col gap-[12rpx]">
         <t-button block theme="primary" @tap="useDefaultLayout">
           Store 切到 default 布局
