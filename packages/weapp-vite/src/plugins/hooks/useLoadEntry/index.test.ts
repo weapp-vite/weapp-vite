@@ -13,8 +13,11 @@ function createContext() {
         return id
       },
       relativeAbsoluteSrcRoot(id: string) {
-        return id
+        return id.replace('/project/src/', '')
       },
+    },
+    scanService: {
+      subPackageMap: new Map(),
     },
     wxmlService: {
       scan: vi.fn(async () => null),
@@ -207,5 +210,31 @@ describe('useLoadEntry emitDirtyEntries', () => {
     await hook.emitDirtyEntries.call(pluginCtx)
 
     expect(pluginCtx.emitFile).toHaveBeenCalledTimes(1)
+  })
+
+  it('expands direct updates when a shared chunk spans main package and subpackage entries', async () => {
+    const ctx = createContext()
+    ctx.scanService.subPackageMap.set('subpackages/account', {})
+
+    const sharedChunkImporters = new Map<string, Set<string>>()
+    const hook = useLoadEntry(ctx, {
+      hmr: {
+        sharedChunks: 'auto',
+        sharedChunkImporters,
+      },
+    })
+
+    const ids = [
+      '/project/src/app.ts',
+      '/project/src/subpackages/account/address/index.ts',
+    ]
+    seedResolvedEntries(hook.resolvedEntryMap, ids)
+    sharedChunkImporters.set('src/shared/common.js', new Set(ids))
+    hook.markEntryDirty(ids[0], 'direct')
+
+    const pluginCtx = createPluginContext()
+    await hook.emitDirtyEntries.call(pluginCtx)
+
+    expect(pluginCtx.emitFile).toHaveBeenCalledTimes(2)
   })
 })
