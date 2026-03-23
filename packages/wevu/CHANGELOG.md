@@ -1,5 +1,23 @@
 # wevu
 
+## 6.11.4
+
+### Patch Changes
+
+- 🐛 **修复 `wevu` 组件模板 ref 代理在写入自定义字段时没有回写到真实组件实例的问题，避免 layout 内承载的 `t-dialog` 在通过 `useDialog()` 打开后出现确认、取消按钮无法关闭弹窗的情况。同步补强 TDesign wevu 模板中的 dialog 宿主关闭兜底逻辑，并增加对应的运行时单测与 DevTools e2e 回归用例。** [`3ca1671`](https://github.com/weapp-vite/weapp-vite/commit/3ca1671ba853cf859e8cbbb81e93c5ad186ee8aa) by @sonofmagic
+
+- 🐛 **修复 `wevu` 组件模板 ref 在代理实例方法时丢失 `this` 的问题，使 layout 内通过 `useTemplateRef()` 获取到的 `t-toast`、`t-dialog` 宿主可以直接调用公开方法。同步简化 TDesign wevu 模板中的 layout 反馈宿主写法，默认改为使用语义化 bridge key 解析共享 toast/dialog，不再依赖 `#t-toast`、`#t-dialog` 这类基于 id 的选择器桥接。** [`43a157d`](https://github.com/weapp-vite/weapp-vite/commit/43a157d88cc651678333b3f7c90a31a343c5b952) by @sonofmagic
+
+- 🐛 **为 `wevu` 增加页面级反馈宿主运行时能力，允许 layout 在自身组件内注册 `t-toast` / `t-dialog` 等共享反馈节点，并让页面与子组件在调用封装的提示/确认方法时优先解析当前页面 layout 宿主。同步恢复两个 TDesign wevu 模板以 layout 承载共享反馈节点，并补充对应的运行时与构建校验，避免再次出现 `未找到组件,请检查selector是否正确` 的告警。** [`862b86c`](https://github.com/weapp-vite/weapp-vite/commit/862b86cd03806f8e7cc284dd706f111a60fb808d) by @sonofmagic
+
+- 🐛 **为 `wevu` 增加 `useLayoutHosts()`、`resolveLayoutHost()` 与 `waitForLayoutHost()`，将 layout 共享宿主的注册、解析与就绪等待能力下沉到运行时，减少模板侧重复编写 bridge key、重试与 `selectComponent` 适配逻辑。同步简化两个 TDesign wevu 模板中的 toast/dialog hooks 与 layout 注册写法，使页面和组件调用 layout 内反馈能力时更直接、更容易维护。** [`ea8dcb0`](https://github.com/weapp-vite/weapp-vite/commit/ea8dcb038796d73f6f6161a6782f82dc355ca72c) by @sonofmagic
+
+- 🐛 **为 `layout-host` 增加通用的编译期声明与运行时实例解析机制：layout 内组件可直接用 `layout-host="..."` 暴露宿主，`wevu` 会优先从运行时已解析的宿主实例读取能力，减少页面/组件侧对 `selector`、`id`、`useTemplateRef()` 和手动注册 bridge 的依赖。同步修复 `weapp-vite` 在 layout 构建时错误输出 scriptless stub 的问题，并更新 TDesign wevu 模板与 DevTools e2e，用例覆盖首页 toast、layout-feedback 页面 alert/confirm 以及无 `未找到组件` 警告的场景。** [`e52f7b1`](https://github.com/weapp-vite/weapp-vite/commit/e52f7b1f00b9007bd4a25b2414bc52f5a30890aa) by @sonofmagic
+
+- 🐛 **修复 `wevu` 中 `setPageLayout()` 在页面 `watch` / `watchEffect` 回调里调用时可能丢失页面上下文的问题。现在页面实例会更早挂载 layout setter，响应式监听回调也会恢复创建时的当前实例；同时 `setPageLayout()` 会优先回退到运行时维护的当前页面实例，使 `setup()` 内部的 `immediate` watcher 以及后续响应式切换都能稳定驱动 layout 更新。同步更新 TDesign wevu 模板中的 store-layout 演示页，重新使用 watcher 驱动 `setPageLayout()` 以覆盖这一场景。** [`3ba325a`](https://github.com/weapp-vite/weapp-vite/commit/3ba325ac4538637f8828c5a4cc3c3815ebce10a7) by @sonofmagic
+- 📦 **Dependencies** [`e52f7b1`](https://github.com/weapp-vite/weapp-vite/commit/e52f7b1f00b9007bd4a25b2414bc52f5a30890aa)
+  → `@wevu/compiler@6.11.4`
+
 ## 6.11.3
 
 ### Patch Changes
