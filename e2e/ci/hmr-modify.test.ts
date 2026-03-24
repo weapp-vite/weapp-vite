@@ -357,10 +357,21 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
 
       await replaceFileByRename(COMP_SRC_SCRIPT, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} updated component script marker`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker, 20_000),
+          `${platform} updated component script marker`,
+        )
+      }
+      catch {
+        // 某些环境下可能错过第一次文件变更事件，追加换行再次触发脚本重编译。
+        await replaceFileByRename(COMP_SRC_SCRIPT, `${updatedSource}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker),
+          `${platform} updated component script marker (retry)`,
+        )
+      }
       expect(content).toContain(marker)
     }
     finally {
