@@ -1,5 +1,21 @@
 # weapp-vite
 
+## 6.11.5
+
+### Patch Changes
+
+- 🐛 **修复开发态增量构建里跨主包与分包共享 chunk 的入口补发策略。当 direct update 命中这种跨包共享模块时，HMR 现在会把同组入口一起重编，避免 shared chunk 落点漂移后出现 `node_modules/wevu/dist/index.js` 未定义、分包 runtime 失配等运行时报错。** [#353](https://github.com/weapp-vite/weapp-vite/pull/353) by @sonofmagic
+
+- 🐛 **迁移 TypeScript 6 相关的 tsconfig 默认配置与受管生成逻辑。初始化模板和 `.weapp-vite/tsconfig.app.json` 不再生成已弃用的 `baseUrl` 与冗余的 `DOM.Iterable`，同时把别名路径统一改成对当前文件位置生效的显式相对路径，避免 `vue-tsc` / `tsc` 在 TypeScript 6 下因旧配置报错。** [`575f087`](https://github.com/weapp-vite/weapp-vite/commit/575f087e8f4e852736e7e0aafed1123e5371834e) by @sonofmagic
+
+- 🐛 **新增 `weapp.forwardConsole` 开发态日志转发能力：在微信开发者工具连接成功后，可将小程序 `console` 日志与未捕获异常桥接到终端输出。默认在检测到 AI 终端时自动开启，并支持通过配置控制启用状态、日志级别与异常转发行为。** [`22897df`](https://github.com/weapp-vite/weapp-vite/commit/22897df1dbe8a460955bb41fa9147fbc33e0f81e) by @sonofmagic
+- 📦 Updated 4 dependencies [`575f087`](https://github.com/weapp-vite/weapp-vite/commit/575f087e8f4e852736e7e0aafed1123e5371834e)
+  <details><summary>Details</summary>
+
+  `@weapp-core/init@6.0.5`, `weapp-ide-cli@5.1.2`, `@weapp-vite/ast@6.11.5`, `wevu@6.11.5`
+
+  </details>
+
 ## 6.11.4
 
 ### Patch Changes
