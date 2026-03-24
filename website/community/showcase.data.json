@@ -1,0 +1,87 @@
+[
+  {
+    "id": 2451697149,
+    "slug": "xiaoplayer",
+    "title": "xiaomusic",
+    "description": "xiaomusic 小程序客户端，开源小程序音乐播放器，可控制小爱音箱播放本地/NAS音乐",
+    "sourceCommentUrl": "https://github.com/weapp-vite/weapp-vite/issues/43#issuecomment-2451697149",
+    "createdAt": "2024-11-01T11:02:22Z",
+    "author": "F-loat",
+    "link": "https://github.com/F-loat/xiaoplayer",
+    "github": "https://github.com/F-loat/xiaoplayer",
+    "assets": [
+      {
+        "kind": "cover",
+        "originalUrl": "https://assets-1251785959.cos.ap-beijing.myqcloud.com/xiaoplayer/screenshot/5.png",
+        "relativePath": "cases/xiaoplayer/cover.png"
+      },
+      {
+        "kind": "qrcode",
+        "originalUrl": "https://assets-1251785959.cos.ap-beijing.myqcloud.com/xiaoplayer/weappcode.jpg",
+        "relativePath": "cases/xiaoplayer/qrcode-1.jpeg"
+      },
+      {
+        "kind": "screenshot",
+        "originalUrl": "https://assets-1251785959.cos.ap-beijing.myqcloud.com/xiaoplayer/screenshot/6.png",
+        "relativePath": "cases/xiaoplayer/screenshot-1.png"
+      },
+      {
+        "kind": "screenshot",
+        "originalUrl": "https://assets-1251785959.cos.ap-beijing.myqcloud.com/xiaoplayer/screenshot/7.png",
+        "relativePath": "cases/xiaoplayer/screenshot-2.png"
+      },
+      {
+        "kind": "screenshot",
+        "originalUrl": "https://assets-1251785959.cos.ap-beijing.myqcloud.com/xiaoplayer/screenshot/8.png",
+        "relativePath": "cases/xiaoplayer/screenshot-3.png"
+      }
+    ]
+  },
+  {
+    "id": 2994320854,
+    "slug": "mbti",
+    "title": "MBTI性格测试工具",
+    "description": "免费的MBTI性格测试工具。",
+    "sourceCommentUrl": "https://github.com/weapp-vite/weapp-vite/issues/43#issuecomment-2994320854",
+    "createdAt": "2025-06-22T16:55:51Z",
+    "author": "Hongbusi",
+    "assets": [
+      {
+        "kind": "cover",
+        "originalUrl": "https://github.com/user-attachments/assets/8deb41f2-715b-4de7-8046-0c9f8ec8f9e9",
+        "relativePath": "cases/mbti/cover.jpeg"
+      }
+    ]
+  },
+  {
+    "id": 4109843504,
+    "slug": "visualizeit",
+    "title": "草莓拼豆",
+    "description": "一款将照片快速转换为拼豆图案的微信小程序创作工具，面向拼豆和像素手作爱好者。支持导入图片后自动生成像素化方案，可按不同尺寸、调色板和预览样式进行调整，并导出包含颜色清单与制作指引的成品长图，方便从灵感到实际制作快速落地。",
+    "sourceCommentUrl": "https://github.com/weapp-vite/weapp-vite/issues/43#issuecomment-4109843504",
+    "createdAt": "2026-03-23T11:15:24Z",
+    "author": "Visualizeit",
+    "assets": [
+      {
+        "kind": "cover",
+        "originalUrl": "https://github.com/user-attachments/assets/095ea26a-8519-4d87-9267-5019eeb2c031",
+        "relativePath": "cases/visualizeit/cover.jpeg"
+      },
+      {
+        "kind": "screenshot",
+        "originalUrl": "https://github.com/user-attachments/assets/ac890b1e-c4ba-4291-ad37-c3a71bde83fb",
+        "relativePath": "cases/visualizeit/screenshot-1.jpeg"
+      },
+      {
+        "kind": "screenshot",
+        "originalUrl": "https://github.com/user-attachments/assets/b037d256-fd19-474e-8111-4528408a7ca7",
+        "relativePath": "cases/visualizeit/screenshot-2.jpeg"
+      },
+      {
+        "kind": "qrcode",
+        "originalUrl": "https://github.com/user-attachments/assets/dbb57d5c-41d7-4d37-ac4a-55e4e4113110",
+        "relativePath": "cases/visualizeit/qrcode-1.jpeg"
+      }
+    ]
+  }
+]
