@@ -1,5 +1,11 @@
 # weapp-ide-cli
 
+## 5.1.2
+
+### Patch Changes
+
+- 🐛 **新增 `weapp.forwardConsole` 开发态日志转发能力：在微信开发者工具连接成功后，可将小程序 `console` 日志与未捕获异常桥接到终端输出。默认在检测到 AI 终端时自动开启，并支持通过配置控制启用状态、日志级别与异常转发行为。** [`22897df`](https://github.com/weapp-vite/weapp-vite/commit/22897df1dbe8a460955bb41fa9147fbc33e0f81e) by @sonofmagic
+
 ## 5.1.1
 
 ### Patch Changes
