@@ -68,6 +68,8 @@
     "e2e:chunks:ide": "vitest run -c ./e2e/vitest.e2e.devtools.config.ts e2e/ide/chunk-modes.runtime.test.ts",
     "e2e:chunks:ide:trust-project": "cross-env WEAPP_VITE_E2E_TRUST_PROJECT=1 vitest run -c ./e2e/vitest.e2e.devtools.config.ts e2e/ide/chunk-modes.runtime.test.ts",
     "e2e:chunks:ide:retry-debug": "cross-env WEAPP_VITE_E2E_RELUNCH_READY_TIMEOUT=30000 WEAPP_VITE_E2E_RELUNCH_RETRIES=6 WEAPP_VITE_E2E_RELUNCH_RETRY_DELAY=500 WEAPP_VITE_E2E_RELUNCH_SETTLE_DELAY=500 vitest run -c ./e2e/vitest.e2e.devtools.config.ts e2e/ide/chunk-modes.runtime.test.ts",
+    "e2e:chunks:tour:manual": "node scripts/chunk-modes-devtools-carousel.mjs --mode manual",
+    "e2e:chunks:tour:auto": "node scripts/chunk-modes-devtools-carousel.mjs --mode auto",
     "e2e:chunks:subpackage-complex:build:matrix": "pnpm run e2e:chunks:subpackage-complex:build:matrix:a && pnpm run e2e:chunks:subpackage-complex:build:matrix:b",
     "e2e:chunks:subpackage-complex:build:matrix:a": "pnpm --dir e2e-apps/subpackage-shared-strategy-complex-a run build:matrix",
     "e2e:chunks:subpackage-complex:build:matrix:b": "pnpm --dir e2e-apps/subpackage-shared-strategy-complex-b run build:matrix",
