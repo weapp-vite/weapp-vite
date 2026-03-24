@@ -13,6 +13,7 @@ export const HMR_GUARD_STABLE_TESTS = [
   'hmr-add.test.ts',
   'hmr-delete.test.ts',
   'hmr-app-config.test.ts',
+  'issue-340-comment.hmr.test.ts',
   'auto-import-vue-sfc.test.ts',
   'wevu-runtime.hmr.test.ts',
 ].map(resolveCiTest)

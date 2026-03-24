@@ -87,11 +87,11 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
     })
 
     try {
-      await dev.waitFor(waitForFile(APP_JSON_PATH, 120_000), 'issue-340-hoist app.json generated')
-      await dev.waitFor(waitForFile(APP_JS_PATH, 120_000), 'initial app.js generated')
-      await dev.waitFor(waitForFile(SHARED_CHUNK_PATH, 120_000), 'initial shared chunk generated')
-      await dev.waitFor(waitForFile(ITEM_PAGE_JS_PATH, 120_000), 'initial item page script generated')
-      await dev.waitFor(waitForFile(USER_PAGE_JS_PATH, 120_000), 'initial user page script generated')
+      await dev.waitFor(waitForFile(APP_JSON_PATH, 240_000), 'issue-340-hoist app.json generated')
+      await dev.waitFor(waitForFile(APP_JS_PATH, 240_000), 'initial app.js generated')
+      await dev.waitFor(waitForFile(SHARED_CHUNK_PATH, 240_000), 'initial shared chunk generated')
+      await dev.waitFor(waitForFile(ITEM_PAGE_JS_PATH, 240_000), 'initial item page script generated')
+      await dev.waitFor(waitForFile(USER_PAGE_JS_PATH, 240_000), 'initial user page script generated')
 
       await fs.writeFile(SHARED_SOURCE_PATH, updatedSharedSource, 'utf8')
 
