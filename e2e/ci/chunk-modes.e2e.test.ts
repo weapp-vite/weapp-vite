@@ -22,6 +22,7 @@ const markers = {
 type SharedStrategy = 'duplicate' | 'hoist'
 type SharedMode = 'common' | 'path' | 'inline'
 type DynamicImports = 'preserve' | 'inline'
+type SharedPathRootPreset = 'src' | 'shared' | 'invalid'
 
 type OverrideName = 'none' | 'path' | 'inline' | 'mixed'
 
@@ -235,6 +236,33 @@ async function runBuild(outDir: string, env: Record<string, string>) {
   })
 }
 
+async function runBuildCapture(outDir: string, env: Record<string, string>) {
+  const result = await execa('node', [
+    CLI_PATH,
+    'build',
+    APP_ROOT,
+    '--platform',
+    'weapp',
+    '--skipNpm',
+    '--config',
+    path.join(APP_ROOT, 'weapp-vite.config.ts'),
+  ], {
+    env: {
+      ...process.env,
+      ...env,
+      WEAPP_CHUNK_OUTDIR: outDir,
+    },
+    reject: false,
+    all: true,
+  })
+
+  if ((result.exitCode ?? 1) !== 0) {
+    throw new Error(`chunk-modes build failed for ${outDir}\n${result.all ?? ''}`)
+  }
+
+  return result.all ?? ''
+}
+
 function caseId(strategy: SharedStrategy, mode: SharedMode, overrides: OverrideName, dynamic: DynamicImports) {
   return `${strategy}-${mode}-${overrides}-${dynamic}`
 }
@@ -309,4 +337,61 @@ describe.sequential('e2e chunk modes matrix', () => {
 
     await fs.remove(DIST_ROOT)
   }, 10 * 60_000)
+
+  it('covers sharedPathRoot presets and optimization logging flags', async () => {
+    const sharedRootOutDir = path.join('dist-matrix', 'path-root-shared')
+    const sharedRootOutDirAbs = path.join(APP_ROOT, sharedRootOutDir)
+    await fs.remove(sharedRootOutDirAbs)
+    await runBuild(sharedRootOutDir, {
+      WEAPP_CHUNK_MODE: 'path',
+      WEAPP_CHUNK_SHARED_PATH_ROOT: 'shared' satisfies SharedPathRootPreset,
+    })
+
+    const sharedRootFiles = await scanFiles(sharedRootOutDirAbs)
+    expect(sharedRootFiles).toContain('common.js')
+    expect(sharedRootFiles).toContain('sub-only.js')
+    expect(sharedRootFiles).toContain('path-only.js')
+    expect(sharedRootFiles).toContain('inline-only.js')
+    expect(sharedRootFiles).toContain('vendor.js')
+    expect(sharedRootFiles).not.toContain('shared/common.js')
+    expect(sharedRootFiles).not.toContain('shared/sub-only.js')
+
+    const invalidRootOutDir = path.join('dist-matrix', 'path-root-invalid')
+    const invalidRootOutDirAbs = path.join(APP_ROOT, invalidRootOutDir)
+    await fs.remove(invalidRootOutDirAbs)
+    const invalidRootOutput = await runBuildCapture(invalidRootOutDir, {
+      WEAPP_CHUNK_MODE: 'path',
+      WEAPP_CHUNK_SHARED_PATH_ROOT: 'invalid' satisfies SharedPathRootPreset,
+    })
+
+    const invalidRootFiles = await scanFiles(invalidRootOutDirAbs)
+    expect(invalidRootOutput).toContain('sharedPathRoot')
+    expect(invalidRootOutput).toContain('已回退到 srcRoot')
+    expect(invalidRootFiles).toContain('shared/common.js')
+    expect(invalidRootFiles).toContain('shared/sub-only.js')
+    expect(invalidRootFiles).toContain('shared/path-only.js')
+    expect(invalidRootFiles).toContain('shared/vendor.js')
+
+    const warnEnabledOutput = await runBuildCapture(path.join('dist-matrix', 'duplicate-warn-enabled'), {
+      WEAPP_CHUNK_STRATEGY: 'duplicate',
+      WEAPP_CHUNK_LOG_OPTIMIZATION: 'true',
+      WEAPP_CHUNK_DUPLICATE_WARNING_BYTES: '1',
+    })
+    expect(warnEnabledOutput).toContain('超过阈值')
+
+    const warnDisabledOutput = await runBuildCapture(path.join('dist-matrix', 'duplicate-warn-disabled'), {
+      WEAPP_CHUNK_STRATEGY: 'duplicate',
+      WEAPP_CHUNK_LOG_OPTIMIZATION: 'false',
+      WEAPP_CHUNK_DUPLICATE_WARNING_BYTES: '1',
+    })
+    expect(warnDisabledOutput).toContain('超过阈值')
+    expect(warnDisabledOutput).not.toContain('共享模块已复制到各自 weapp-shared/common.js')
+
+    const zeroThresholdOutput = await runBuildCapture(path.join('dist-matrix', 'duplicate-warn-zero-threshold'), {
+      WEAPP_CHUNK_STRATEGY: 'duplicate',
+      WEAPP_CHUNK_LOG_OPTIMIZATION: 'true',
+      WEAPP_CHUNK_DUPLICATE_WARNING_BYTES: '0',
+    })
+    expect(zeroThresholdOutput).not.toContain('超过阈值')
+  }, 5 * 60_000)
 })
