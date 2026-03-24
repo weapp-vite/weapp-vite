@@ -90,6 +90,25 @@ function unique(values: string[]) {
   return [...new Set(values)]
 }
 
+function rebaseManagedPathValue(root: string, managedDir: string, value: string) {
+  if (!value.startsWith('./') && !value.startsWith('../')) {
+    return value
+  }
+  return path.relative(managedDir, path.resolve(root, value)).replace(WINDOWS_PATH_SEPARATOR_PATTERN, '/')
+}
+
+function rebaseManagedPaths(root: string, managedDir: string, paths?: Record<string, string[]>) {
+  if (!paths) {
+    return undefined
+  }
+  return Object.fromEntries(
+    Object.entries(paths).map(([key, values]) => [
+      key,
+      Array.isArray(values) ? values.map(value => rebaseManagedPathValue(root, managedDir, value)) : [],
+    ]),
+  )
+}
+
 function mergePaths(...entries: Array<Record<string, string[]> | undefined>) {
   const merged: Record<string, string[]> = {}
   for (const entry of entries) {
@@ -181,6 +200,8 @@ function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
 
 function getAppPaths(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTypeScriptConfig) {
   const configService = requireConfigService(ctx, '生成 app paths 前必须初始化 configService。')
+  const root = resolveBaseDir(configService)
+  const managedDir = resolveManagedDir(ctx)
   const userConfig = getManagedTypeScriptConfig(ctx)
   const normalizedSrcRoot = typeof configService.srcRoot === 'string'
     ? configService.srcRoot
@@ -190,17 +211,17 @@ function getAppPaths(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
       || 'src'
     : 'src'
   const defaultPaths: Record<string, string[]> = {
-    '@/*': [`${normalizedSrcRoot}/*`],
+    '@/*': [`../${normalizedSrcRoot}/*`],
   }
   if (hasDependency(configService.packageJson, 'wevu')) {
-    defaultPaths['weapp-vite/typed-components'] = ['.weapp-vite/typed-components.d.ts']
+    defaultPaths['weapp-vite/typed-components'] = ['./typed-components.d.ts']
   }
   return mergePaths(
     defaultPaths,
-    legacyConfig?.shared?.compilerOptions?.paths as Record<string, string[]> | undefined,
-    legacyConfig?.app?.compilerOptions?.paths as Record<string, string[]> | undefined,
-    userConfig?.shared?.compilerOptions?.paths as Record<string, string[]> | undefined,
-    userConfig?.app?.compilerOptions?.paths as Record<string, string[]> | undefined,
+    rebaseManagedPaths(root, managedDir, legacyConfig?.shared?.compilerOptions?.paths as Record<string, string[]> | undefined),
+    rebaseManagedPaths(root, managedDir, legacyConfig?.app?.compilerOptions?.paths as Record<string, string[]> | undefined),
+    rebaseManagedPaths(root, managedDir, userConfig?.shared?.compilerOptions?.paths as Record<string, string[]> | undefined),
+    rebaseManagedPaths(root, managedDir, userConfig?.app?.compilerOptions?.paths as Record<string, string[]> | undefined),
   )
 }
 
@@ -258,9 +279,8 @@ function createAppTsconfig(ctx: MutableCompilerContext, legacyConfig?: LegacyMan
   const compilerOptions = {
     tsBuildInfoFile: '../node_modules/.tmp/tsconfig.app.tsbuildinfo',
     target: 'ES2023',
-    lib: ['ES2023', 'DOM', 'DOM.Iterable'],
+    lib: ['ES2023', 'DOM'],
     jsx: 'preserve',
-    baseUrl: '..',
     resolveJsonModule: true,
     allowJs: true,
     allowSyntheticDefaultImports: true,

@@ -1,8 +1,7 @@
-import type { RuntimeInstance } from 'wevu'
 import { defineComponent, onAddToFavorites, onSaveExitState, onShareAppMessage, onShareTimeline, ref } from 'wevu'
 
 defineComponent({
-  setup(_props: Record<string, never>, { runtime }: { runtime: RuntimeInstance<any, any, any> }) {
+  setup(_props, { runtime }) {
     const shareTitle = ref('wevu runtime 分享示例')
     const sharePath = ref('/pages/share/index')
     const savedAt = ref<string>('')

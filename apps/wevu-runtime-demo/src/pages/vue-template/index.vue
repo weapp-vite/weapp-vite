@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from 'wevu'
 
+interface DemoListItem {
+  id: number
+  name: string
+  enabled: boolean
+}
+
 const visible = ref(true)
 const phase = ref<'a' | 'b' | 'c'>('a')
 const keyword = ref('')
 
-const list = ref([
+const list = ref<DemoListItem[]>([
   { id: 1, name: 'Alpha', enabled: true },
   { id: 2, name: 'Beta', enabled: false },
   { id: 3, name: 'Gamma', enabled: true },
@@ -20,12 +26,12 @@ const record = ref<Record<string, number>>({
 const now = ref(Date.now())
 const rawHtml = ref('<div style="color:#e11d48;font-weight:700;">v-html (仅语法覆盖)</div>')
 
-const filtered = computed(() => {
+const filtered = computed<DemoListItem[]>(() => {
   const key = keyword.value.trim().toLowerCase()
   if (!key) {
     return list.value
   }
-  return list.value.filter(item => item.name.toLowerCase().includes(key))
+  return list.value.filter((item: DemoListItem) => item.name.toLowerCase().includes(key))
 })
 
 function toggleVisible() {

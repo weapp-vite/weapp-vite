@@ -5,6 +5,8 @@ Component({
     handleAction() {
       ActionSheet.show({
         theme: ActionSheetTheme.List,
+        align: 'center',
+        description: '',
         selector: '#t-action-sheet',
         context: this,
         items: [
@@ -26,6 +28,7 @@ Component({
     showDescAction() {
       ActionSheet.show({
         theme: ActionSheetTheme.List,
+        align: 'center',
         selector: '#t-action-sheet',
         context: this,
         description: '动作面板描述文字',
@@ -45,6 +48,8 @@ Component({
     showIconAction() {
       ActionSheet.show({
         theme: ActionSheetTheme.List,
+        align: 'center',
+        description: '',
         selector: '#t-action-sheet',
         context: this,
         items: [
@@ -67,7 +72,7 @@ Component({
         ],
       })
     },
-    handleSelected(e) {
+    handleSelected(e: WechatMiniprogram.CustomEvent) {
       console.log(e.detail)
     },
   },

@@ -46,13 +46,11 @@ export function getDefaultTsconfigAppJson() {
       lib: [
         'ES2023',
         'DOM',
-        'DOM.Iterable',
       ],
       jsx: 'preserve',
       module: 'ESNext',
       moduleResolution: 'bundler',
       moduleDetection: 'force',
-      baseUrl: '.',
       paths: {
         '@/*': [
           './src/*',
