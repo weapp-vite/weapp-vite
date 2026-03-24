@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import net from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
 import cmpVersion from 'licia/cmpVersion'
@@ -89,6 +90,7 @@ const TRUST_PROJECT_PREFIXES = (process.env.WEAPP_VITE_E2E_TRUST_PROJECTS || '')
 let versionPatched = false
 let miniProgramOnPatched = false
 let loginPreflightPassed = false
+let localhostListenPatched = false
 
 interface RuntimeLogStats {
   warn: number
@@ -124,6 +126,33 @@ interface LaunchProjectMeta {
 function normalizePathForMatch(value: string) {
   const normalized = path.normalize(path.resolve(value))
   return normalized.replace(/[\\/]+$/, '')
+}
+
+function patchNetListenToLoopback() {
+  if (localhostListenPatched) {
+    return
+  }
+  localhostListenPatched = true
+
+  const rawListen = net.Server.prototype.listen
+  net.Server.prototype.listen = function patchedListen(this: net.Server, ...args: any[]) {
+    const firstArg = args[0]
+    if (firstArg && typeof firstArg === 'object' && !Array.isArray(firstArg)) {
+      if (!('host' in firstArg) || !firstArg.host) {
+        args[0] = {
+          ...firstArg,
+          host: '127.0.0.1',
+        }
+      }
+      return rawListen.apply(this, args as any)
+    }
+
+    if ((typeof firstArg === 'number' || typeof firstArg === 'string') && typeof args[1] !== 'string') {
+      args.splice(1, 0, '127.0.0.1')
+    }
+
+    return rawListen.apply(this, args as any)
+  } as typeof net.Server.prototype.listen
 }
 
 function resolvePositiveIntEnv(raw: string | undefined, fallback: number) {
@@ -778,6 +807,7 @@ function patchMiniProgramOn() {
 }
 
 export function launchAutomator(options: Parameters<typeof automator.launch>[0]) {
+  patchNetListenToLoopback()
   patchAutomatorVersionCheck()
   patchMiniProgramOn()
   const { projectConfig, timeout, trustProject, ...rest } = options
