@@ -98,7 +98,7 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
 }
 
 async function relaunchPage(miniProgram: any, route: string, readyText?: string, timeoutMs = 15_000) {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
     let page: any = null
     try {
       page = await miniProgram.reLaunch(route)
@@ -158,6 +158,7 @@ async function getSharedMiniProgram(projectPath: string, ctx?: { skip: (message?
         timeout: 60_000,
         trustProject: true,
       })
+      await delay(1200)
     }
     catch (error) {
       if (ctx && isDevtoolsHttpPortError(error)) {
