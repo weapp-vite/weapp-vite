@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generatedAt": "2026-03-21T12:08:16.583Z",
+  "generatedAt": "2026-03-24T12:27:23.455Z",
   "site": "https://vite.icebreaker.top",
-  "count": 270,
+  "count": 272,
   "items": [
     {
       "id": "doc-72ab937a75",
@@ -408,10 +408,9 @@
         "覆盖"
       ],
       "headings": [
-        "优秀案例展示",
-        "xiaomusic 小程序客户端"
+        "优秀案例展示"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-24",
       "source": "community/showcase.md"
     },
     {
@@ -719,7 +718,7 @@
     {
       "id": "doc-8b23c4fd4a",
       "title": "共享配置",
-      "summary": "weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、injectWeapi 与 MCP 等能力。",
+      "summary": "weapp-vite 的共享增强配置，包含自动路由、调试钩子、日志、forwardConsole、injectWeapi 与 MCP 等能力。",
       "url": "/config/shared",
       "canonical": "https://vite.icebreaker.top/config/shared",
       "keywords": [
@@ -740,13 +739,13 @@
         "调试示例",
         "常见调试技巧",
         "weapp.logger {#weapp-logger}",
-        "weapp.injectWeapi {#weapp-injectweapi}",
+        "weapp.forwardConsole {#weapp-forwardconsole}",
         "配置示例",
         "字段说明",
-        "使用建议",
-        "weapp.mcp {#weapp-mcp}"
+        "触发方式",
+        "注意事项"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-03-23",
       "source": "config/shared.md"
     },
     {
@@ -1058,6 +1057,7 @@
         "mcp",
         "llms",
         "weapp-vite",
+        "配置",
         "协作指南"
       ],
       "headings": [
@@ -1065,10 +1065,14 @@
         "Skills",
         "MCP",
         "示例：驱动 weapp-vite screenshot 做验收",
+        "AI 终端里的 DevTools 日志桥接",
+        "最小工作流",
+        "推荐给 AI 的提示词",
+        "相关配置",
         "llms.txt",
         "关联阅读"
       ],
-      "updatedAt": "2026-03-17",
+      "updatedAt": "2026-03-23",
       "source": "guide/ai.md"
     },
     {
@@ -1218,7 +1222,7 @@
     {
       "id": "doc-13e32e3ea2",
       "title": "CLI 命令参考",
-      "summary": "weapp-vite CLI 命令参考，覆盖 dev、build、analyze、prepare、mcp、generate 与 weapp-ide-cli 透传规则。",
+      "summary": "weapp-vite CLI 命令参考，覆盖 dev、build、analyze、prepare、mcp、ide logs、generate 与 weapp-ide-cli 透传规则。",
       "url": "/guide/cli",
       "canonical": "https://vite.icebreaker.top/guide/cli",
       "keywords": [
@@ -1238,12 +1242,12 @@
         "2) build",
         "3) analyze",
         "4) open",
-        "5) npm（含别名）",
-        "6) generate / g",
-        "7) init",
-        "8) prepare"
+        "5) ide logs",
+        "6) npm（含别名）",
+        "7) generate / g",
+        "8) init"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-03-23",
       "source": "guide/cli.md"
     },
     {
@@ -1266,9 +1270,10 @@
         "调试与贡献",
         "1. Fork 与克隆仓库",
         "2. 安装依赖并准备调试",
+        "补充：直接把 DevTools 日志桥接回终端",
         "3. 提交贡献"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-23",
       "source": "guide/debug.md"
     },
     {
@@ -1481,8 +1486,41 @@
         "默认能力速查",
         "相关文档"
       ],
-      "updatedAt": "2026-03-14",
+      "updatedAt": "2026-03-21",
       "source": "guide/directory-structure/index.md"
+    },
+    {
+      "id": "doc-f79f5a2ea3",
+      "title": "<srcRoot>/layouts",
+      "summary": "说明 srcRoot/layouts 目录的职责、命名规则，以及它如何与 definePageMeta、routeRules、setPageLayout 协同工作。",
+      "url": "/guide/directory-structure/layouts",
+      "canonical": "https://vite.icebreaker.top/guide/directory-structure/layouts",
+      "keywords": [
+        "layouts",
+        "directory structure",
+        "definepagemeta",
+        "routerules",
+        "setpagelayout",
+        "guide",
+        "directory",
+        "structure"
+      ],
+      "headings": [
+        "/layouts/",
+        "1. 这个目录解决什么问题",
+        "2. 一个典型目录长什么样",
+        "3. 名称是怎么推导的",
+        "4. 支持哪些实现形式",
+        "4.1 Vue layout",
+        "4.2 原生 layout",
+        "5. 它会和哪些能力协同工作",
+        "6. 使用时最容易踩的坑",
+        "6.1 把普通组件放进 layouts/",
+        "6.2 以为 layout 可以写成动态表达式",
+        "7. 总结"
+      ],
+      "updatedAt": "2026-03-21",
+      "source": "guide/directory-structure/layouts.md"
     },
     {
       "id": "doc-ea8a6d139a",
@@ -1611,7 +1649,7 @@
         "它会影响什么",
         "一个简单判断"
       ],
-      "updatedAt": "2026-03-14",
+      "updatedAt": "2026-03-21",
       "source": "guide/directory-structure/src-root.md"
     },
     {
@@ -1785,7 +1823,7 @@
         "1. 先准备一个原生项目",
         "2. 接入 weapp-vite"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-03-23",
       "source": "guide/index.md"
     },
     {
@@ -1840,6 +1878,39 @@
       ],
       "updatedAt": "2026-02-27",
       "source": "guide/json-intelli-sense.md"
+    },
+    {
+      "id": "doc-3b4a735b67",
+      "title": "页面 Layout 使用指南",
+      "summary": "详细说明 weapp-vite 的页面 layout 能力，包括 srcRoot/layouts 目录约定、definePageMeta、routeRules 与运行时 setPageLayout 切换。",
+      "url": "/guide/layouts",
+      "canonical": "https://vite.icebreaker.top/guide/layouts",
+      "keywords": [
+        "weapp-vite",
+        "layout",
+        "definepagemeta",
+        "routerules",
+        "setpagelayout",
+        "usepagelayout",
+        "wevu",
+        "运行时"
+      ],
+      "headings": [
+        "页面 Layout 使用指南",
+        "1. 先理解这套能力解决什么问题",
+        "2. layout 放在哪里",
+        "3. 页面里怎么声明 layout",
+        "3.1 默认命中 default",
+        "3.2 显式指定命名 layout",
+        "3.3 指定 layout + props",
+        "3.4 显式关闭 layout",
+        "4. definePageMeta({ layout }) 的约束",
+        "5. routeRules 怎么和 layout 配合",
+        "5.1 优先级",
+        "6. 运行时怎么切换 layout"
+      ],
+      "updatedAt": "2026-03-21",
+      "source": "guide/layouts.md"
     },
     {
       "id": "doc-e10de99829",
@@ -2490,17 +2561,17 @@
       ],
       "headings": [
         "30 分钟快速开始",
-        "第 0 步：准备环境",
-        "第 1 步：创建项目",
-        "第 2 步：先写一个最小页面",
-        "第 3 步：确认页面已经被路由系统看到",
-        "第 4 步：启动开发",
-        "第 5 步：学会看“最终产物”",
-        "第 6 步：最常见的 6 个问题",
-        "1. 页面白屏",
-        "2. 点击按钮没有反应",
-        "3. 数据改了但页面没更新",
-        "4. 页面标题没生效"
+        "1. 第 0 步：准备环境",
+        "2. 第 1 步：创建项目",
+        "3. 第 2 步：先写一个最小页面",
+        "4. 第 3 步：确认页面已经被路由系统看到",
+        "5. 第 4 步：启动开发",
+        "6. 第 5 步：学会看“最终产物”",
+        "7. 第 6 步：最常见的 6 个问题",
+        "7.1 页面白屏",
+        "7.2 点击按钮没有反应",
+        "7.3 数据改了但页面没更新",
+        "7.4 页面标题没生效"
       ],
       "updatedAt": "2026-03-21",
       "source": "handbook/getting-started.md"
@@ -2522,11 +2593,16 @@
       ],
       "headings": [
         "从零开始学 Weapp-vite",
-        "先建立一个最小认知模型",
-        "这套教程怎么读最顺",
-        "/guide、/config、/wevu、/handbook 分别看什么",
-        "你能在 handbook 里获得什么",
-        "现在就从哪里开始"
+        "1. 这套教程解决什么问题",
+        "2. 先建立一个最小认知模型",
+        "3. 这套教程怎么读最顺",
+        "3.1 想最快上手",
+        "3.2 已经有项目，想系统补齐认知",
+        "4. /guide、/config、/wevu、/handbook 分别看什么",
+        "5. 你能在 handbook 里获得什么",
+        "6. 现在就从哪里开始",
+        "7. 总结",
+        "8. 参考资源"
       ],
       "updatedAt": "2026-03-21",
       "source": "handbook/index.md"
@@ -2818,17 +2894,17 @@
       ],
       "headings": [
         "怎么阅读这套教程",
-        "先记住 4 个关键词",
-        "1. Weapp-vite",
-        "2. Vue SFC 编译链",
-        "3. Wevu",
-        "4. handbook",
-        "推荐阅读路径",
-        "路线 A：你想最快跑通一个 demo",
-        "路线 B：你已经能跑项目，但想把项目做规范",
-        "路线 C：你在排查复杂问题",
-        "每一章该怎么看",
-        "新用户最常见的 5 个误区"
+        "1. 先记住 4 个关键词",
+        "1.1 Weapp-vite",
+        "1.2 Vue SFC 编译链",
+        "1.3 Wevu",
+        "1.4 handbook",
+        "2. 推荐阅读路径",
+        "2.1 路线 A：你想最快跑通一个 demo",
+        "2.2 路线 B：你已经能跑项目，但想把项目做规范",
+        "2.3 路线 C：你在排查复杂问题",
+        "3. 每一章该怎么看",
+        "4. 新用户最常见的 5 个误区"
       ],
       "updatedAt": "2026-03-21",
       "source": "handbook/reading-guide.md"
@@ -2851,17 +2927,17 @@
       ],
       "headings": [
         "参考入口与速查索引",
-        "先按问题类型找入口",
-        "我想知道某个功能怎么开启",
-        "我想知道某个字段怎么配",
-        "我想知道运行时能力边界",
-        "我想知道项目应该怎么组织",
-        "这一页也给你一个“源码地图”",
-        "想看 Vue SFC 编译相关",
-        "想看 Wevu 运行时相关",
-        "想看文档和网站导航组织",
-        "一个常见问题到入口的映射表",
-        "你也可以按“当前阶段”找"
+        "1. 先按问题类型找入口",
+        "1.1 我想知道某个功能怎么开启",
+        "1.2 我想知道某个字段怎么配",
+        "1.3 我想知道运行时能力边界",
+        "1.4 我想知道项目应该怎么组织",
+        "2. 这一页也给你一个“源码地图”",
+        "2.1 想看 Vue SFC 编译相关",
+        "2.2 想看 Wevu 运行时相关",
+        "2.3 想看文档和网站导航组织",
+        "3. 一个常见问题到入口的映射表",
+        "4. 你也可以按“当前阶段”找"
       ],
       "updatedAt": "2026-03-21",
       "source": "handbook/reference.md"
@@ -3364,17 +3440,17 @@
       ],
       "headings": [
         "为什么要用 Wevu",
-        "先给一句非常实用的定义",
-        "为什么新项目通常值得用 Wevu",
-        "原生写法在中小项目很快会变得难维护",
-        "Wevu 能把这些逻辑变得更可组合",
-        "它和 Vue Web 最大的区别是什么",
-        "1. 没有浏览器 DOM",
-        "2. 没有完整的 Virtual DOM 路线",
-        "3. 事件、组件树、原生能力仍然受小程序约束",
-        "什么时候推荐用 Wevu",
-        "什么时候可以先不用",
-        "一个典型页面会怎么写"
+        "1. 先给一句非常实用的定义",
+        "2. 为什么新项目通常值得用 Wevu",
+        "2.1 原生写法在中小项目很快会变得难维护",
+        "2.2 Wevu 能把这些逻辑变得更可组合",
+        "3. 它和 Vue Web 最大的区别是什么",
+        "3.1 没有浏览器 DOM",
+        "3.2 没有完整的 Virtual DOM 路线",
+        "3.3 事件、组件树、原生能力仍然受小程序约束",
+        "4. 什么时候推荐用 Wevu",
+        "5. 什么时候可以先不用",
+        "6. 一个典型页面会怎么写"
       ],
       "updatedAt": "2026-03-21",
       "source": "handbook/wevu/index.md"
@@ -3847,7 +3923,7 @@
         "已有独立文档模块",
         "说明"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-03-23",
       "source": "packages/index.md"
     },
     {
@@ -5766,7 +5842,7 @@
         "参数前置校验（增强）",
         "参考"
       ],
-      "updatedAt": "2026-03-21",
+      "updatedAt": "2026-03-23",
       "source": "packages/weapp-ide-cli.md"
     },
     {
@@ -5890,237 +5966,191 @@
     },
     {
       "id": "doc-588f3be686",
-      "title": "Core API",
-      "summary": "本页聚焦 Wevu 的“最先接触”能力：应用入口、组件定义、宏，以及模板辅助函数。",
+      "title": "Core API（旧路径兼容）",
+      "summary": "当前 Core API 的规范入口是 /wevu/api/core，本页仅用于兼容旧链接。",
       "url": "/wevu/api-reference/core",
       "canonical": "https://vite.icebreaker.top/wevu/api-reference/core",
       "keywords": [
         "wevu",
-        "Vue SFC",
+        "api-reference",
+        "core",
+        "兼容路径",
         "api",
         "reference",
-        "core",
-        "本页聚焦",
-        "的“最先接触”能力：应用入口",
-        "组件定义"
+        "API（旧路径兼容）"
       ],
       "headings": [
-        "Core API（入口、组件、宏）",
-        "1. 入口与组件定义",
-        "2. 宏",
-        "宏能力示例（script setup）",
-        "3. 模板和 class/style 工具",
-        "模板工具示例（script setup）",
-        "4. 相关页"
+        "Core API（旧路径兼容）",
+        "1. 这页为什么还保留",
+        "2. 推荐做法",
+        "3. 参考资源"
       ],
       "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/core.md"
     },
     {
       "id": "doc-fbdec7ef97",
-      "title": "API 参考",
-      "summary": "Wevu API 参考首页。按 Vue API 风格提供分组导航，先定位能力域，再跳转到对应 API 分页。",
+      "title": "API 参考（旧路径兼容）",
+      "summary": "/wevu/api-reference/ 为兼容旧链接保留；当前 Wevu API 的规范入口已经迁移到 /wevu/api/。",
       "url": "/wevu/api-reference/",
       "canonical": "https://vite.icebreaker.top/wevu/api-reference/",
       "keywords": [
         "wevu",
         "api",
+        "api-reference",
+        "兼容路径",
+        "迁移指南",
         "reference",
-        "vue-style",
-        "运行时",
-        "参考"
+        "参考（旧路径兼容）"
       ],
       "headings": [
-        "Wevu API 参考",
-        "全局 API",
-        "入口与组件定义",
-        "通用调度",
-        "组合式 API",
-        "生命周期",
-        "setup 上下文",
-        "状态管理",
-        "进阶 API",
-        "运行时桥接",
-        "类型与工具",
-        "弃用与兼容保留 API"
+        "Wevu API 参考（旧路径兼容）",
+        "1. 当前规范入口",
+        "2. 为什么要切换到新路径",
+        "3. 迁移建议",
+        "4. 参考资源"
       ],
       "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/index.md"
     },
     {
       "id": "doc-158567b310",
-      "title": "Lifecycle API",
-      "summary": "Wevu 生命周期 API 都需要在 setup() 的同步阶段调用。",
+      "title": "Lifecycle API（旧路径兼容）",
+      "summary": "当前 Lifecycle API 的规范入口是 /wevu/api/lifecycle，本页仅用于兼容旧链接。",
       "url": "/wevu/api-reference/lifecycle",
       "canonical": "https://vite.icebreaker.top/wevu/api-reference/lifecycle",
       "keywords": [
         "wevu",
-        "Vue SFC",
-        "微信小程序",
+        "api-reference",
+        "lifecycle",
+        "兼容路径",
         "api",
         "reference",
-        "lifecycle",
-        "生命周期",
-        "都需要在"
+        "API（旧路径兼容）"
       ],
       "headings": [
-        "Lifecycle API（生命周期）",
-        "1. App 生命周期",
-        "2. 页面与组件通用生命周期",
-        "3. 组件渲染阶段（Vue 风格）",
-        "4. 小程序特有页面事件",
-        "5. 带返回值的页面钩子",
-        "6. 小程序组件生命周期（lifetimes / pageLifetimes）",
-        "6.1 官方生命周期清单（组件侧）",
-        "6.2 Wevu 对应能力（组合式 + 桥接）",
-        "7. 小程序组件扩展 Hook（组合式）",
-        "8. 示例：滚动 + 分享（script setup）"
+        "Lifecycle API（旧路径兼容）",
+        "1. 推荐做法",
+        "2. 参考资源"
       ],
-      "updatedAt": "2026-03-06",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/lifecycle.md"
     },
     {
       "id": "doc-4ea42f2382",
-      "title": "Reactivity API",
-      "summary": "本页覆盖 Wevu 响应式层的公共 API，聚焦业务可直接使用的能力。",
+      "title": "Reactivity API（旧路径兼容）",
+      "summary": "当前 Reactivity API 的规范入口是 /wevu/api/reactivity，本页仅用于兼容旧链接。",
       "url": "/wevu/api-reference/reactivity",
       "canonical": "https://vite.icebreaker.top/wevu/api-reference/reactivity",
       "keywords": [
         "wevu",
-        "Vue SFC",
-        "调试",
+        "api-reference",
+        "reactivity",
+        "兼容路径",
         "api",
         "reference",
-        "reactivity",
-        "本页覆盖",
-        "响应式层的全部公开函数"
+        "API（旧路径兼容）"
       ],
       "headings": [
-        "Reactivity API（响应式与调度）",
-        "1. 状态创建与派生",
-        "2. 监听与副作用",
-        "3. Ref/Proxy 工具",
-        "4. 响应式判定",
-        "5. 批处理与调度",
-        "6. 内部能力说明",
-        "7. 组合示例（script setup）"
+        "Reactivity API（旧路径兼容）",
+        "1. 推荐做法",
+        "2. 参考资源"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/reactivity.md"
     },
     {
       "id": "doc-ca10cb76a9",
-      "title": "Runtime Bridge API",
-      "summary": "本页覆盖 Wevu 与小程序原生运行时之间的桥接能力，以及用于排错/调优的公共 API。",
+      "title": "Runtime Bridge API（旧路径兼容）",
+      "summary": "当前 Runtime Bridge API 的规范入口是 /wevu/api/runtime-bridge，本页仅用于兼容旧链接。",
       "url": "/wevu/api-reference/runtime-bridge",
       "canonical": "https://vite.icebreaker.top/wevu/api-reference/runtime-bridge",
       "keywords": [
         "wevu",
-        "Vue SFC",
-        "调试",
+        "api-reference",
+        "runtime-bridge",
+        "兼容路径",
         "运行时",
-        "编译",
         "api",
         "reference",
         "runtime"
       ],
       "headings": [
-        "Runtime Bridge API（桥接与调试）",
-        "1. 全局默认值与行为开关",
-        "2. 调试与观测",
-        "3. 相关子路径（不属于 wevu 主入口）",
-        "4. 示例：默认值 + mutation 记录（script setup）"
+        "Runtime Bridge API（旧路径兼容）",
+        "1. 推荐做法",
+        "2. 参考资源"
       ],
       "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/runtime-bridge.md"
     },
     {
       "id": "doc-5303ed9e55",
-      "title": "Setup Context API",
-      "summary": "Wevu 的 setup(props, ctx) 除了 Vue 语义，还补齐了小程序运行时场景，特别是 ctx.instance（原生实例）和 ctx.emit（事件派发）。",
+      "title": "Setup Context API（旧路径兼容）",
+      "summary": "当前 Setup Context API 的规范入口是 /wevu/api/setup-context，本页仅用于兼容旧链接。",
       "url": "/wevu/api-reference/setup-context",
       "canonical": "https://vite.icebreaker.top/wevu/api-reference/setup-context",
       "keywords": [
         "wevu",
-        "Vue SFC",
+        "api-reference",
+        "setup-context",
+        "兼容路径",
+        "迁移指南",
         "api",
         "reference",
-        "setup",
-        "context",
-        "的",
-        "setup props"
+        "setup"
       ],
       "headings": [
-        "Setup Context API（setup 上下文）",
-        "1. setup 签名与核心类型",
-        "2. setup 上下文相关 API",
-        "3. provide/inject",
-        "4. 推荐：通过 ctx.instance 操作原生实例",
-        "示例（script setup）",
-        "5. setup 辅助工具",
-        "5.1 路由辅助",
-        "5.1.1 Router 语义矩阵",
-        "5.1.2 兼容建议",
-        "5.2 页面 layout",
-        "5.3 页面与实例工具"
+        "Setup Context API（旧路径兼容）",
+        "1. 为什么优先使用新路径",
+        "2. 迁移建议",
+        "3. 参考资源"
       ],
       "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/setup-context.md"
     },
     {
       "id": "doc-0f10c598bf",
-      "title": "Store API",
-      "summary": "Wevu 的 store 设计接近 Pinia：defineStore 定义，createStore 创建管理器，storeToRefs 安全解构。",
+      "title": "Store API（旧路径兼容）",
+      "summary": "当前 Store API 的规范入口是 /wevu/api/store，本页仅用于兼容旧链接。",
       "url": "/wevu/api-reference/store",
       "canonical": "https://vite.icebreaker.top/wevu/api-reference/store",
       "keywords": [
         "wevu",
-        "Vue SFC",
-        "调试",
+        "api-reference",
+        "store",
+        "兼容路径",
         "api",
         "reference",
-        "store",
-        "的",
-        "设计接近"
+        "API（旧路径兼容）"
       ],
       "headings": [
-        "Store API（状态管理）",
-        "1. 核心函数",
-        "2. 常用类型",
-        "3. 端到端示例（script setup）",
-        "4. 调试建议",
-        "5. 相关页"
+        "Store API（旧路径兼容）",
+        "1. 推荐做法",
+        "2. 参考资源"
       ],
-      "updatedAt": "2026-02-27",
+      "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/store.md"
     },
     {
       "id": "doc-add3162a09",
-      "title": "Type Reference",
-      "summary": "本页先给出“高频类型速查”，然后提供 Wevu 当前导出的接口/类型别名全量索引。",
+      "title": "Type Reference（旧路径兼容）",
+      "summary": "当前 Type Reference 的规范入口是 /wevu/api/types，本页仅用于兼容旧链接。",
       "url": "/wevu/api-reference/types",
       "canonical": "https://vite.icebreaker.top/wevu/api-reference/types",
       "keywords": [
         "wevu",
-        "微信小程序",
-        "运行时",
-        "编译",
+        "api-reference",
+        "types",
+        "兼容路径",
         "api",
         "reference",
-        "types",
-        "type"
+        "type",
+        "Reference（旧路径兼容）"
       ],
       "headings": [
-        "Type Reference（类型总览）",
-        "1. 高频类型速查",
-        "2. 接口（Interfaces）全量索引",
-        "3. 类型别名（Type Aliases）全量索引",
-        "3.1 组件、Props、宏相关",
-        "3.2 响应式与工具类型",
-        "3.3 小程序桥接与运行时内部",
-        "3.4 store / model / mutation",
-        "4. 相关子路径类型（非 wevu 主入口）",
-        "5. 相关页"
+        "Type Reference（旧路径兼容）",
+        "1. 推荐做法",
+        "2. 参考资源"
       ],
       "updatedAt": "2026-03-21",
       "source": "wevu/api-reference/types.md"
@@ -6448,15 +6478,17 @@
       ],
       "headings": [
         "Wevu 概览",
-        "Wevu 在整套体系里的位置",
-        "Wevu 不是什么",
-        "诞生的小故事",
-        "你会用到的能力",
-        "其他子路径导出",
-        "已弃用 API 提示",
-        "编译侧桥接（wevu/compiler）",
-        "推荐学习顺序（按“最短上手 → 深入理解”）",
-        "扩展阅读"
+        "1. Wevu 主要提供什么",
+        "2. Wevu 在整套体系里的位置",
+        "3. Wevu 不是什么",
+        "4. 诞生的小故事",
+        "5. 你会用到的能力",
+        "6. 其他子路径导出",
+        "7. 已弃用 API 提示",
+        "8. 编译侧桥接（wevu/compiler）",
+        "9. 推荐学习顺序（按“最短上手 → 深入理解”）",
+        "10. 速查表",
+        "11. 扩展阅读"
       ],
       "updatedAt": "2026-03-21",
       "source": "wevu/index.md"
@@ -6478,12 +6510,12 @@
       ],
       "headings": [
         "wevu/jsx-runtime",
-        "当前定位",
-        "什么时候需要它",
-        "TypeScript 配置示例",
-        "它解决什么问题",
-        "注意事项",
-        "相关页面"
+        "1. 当前定位",
+        "2. 什么时候需要它",
+        "3. TypeScript 配置示例",
+        "4. 它解决什么问题",
+        "5. 注意事项",
+        "6. 相关页面"
       ],
       "updatedAt": "2026-03-21",
       "source": "wevu/jsx-runtime.md"
@@ -6566,17 +6598,17 @@
       ],
       "headings": [
         "wevu/router",
-        "什么时候使用",
-        "最小示例",
-        "在 App 中注册",
-        "app.vue + 写法",
-        "核心能力",
-        "常见心智",
-        "路径优先",
-        "守卫用于统一前置判断",
-        "小程序不支持真正 forward 栈",
-        "调试与迁移建议",
-        "相关页面"
+        "1. 什么时候使用",
+        "2. 最小示例",
+        "3. 在 App 中注册",
+        "3.1 app.vue + 写法",
+        "4. 核心能力",
+        "5. 常见心智",
+        "5.1 路径优先",
+        "5.2 守卫用于统一前置判断",
+        "5.3 小程序不支持真正 forward 栈",
+        "6. 调试与迁移建议",
+        "7. 速查表"
       ],
       "updatedAt": "2026-03-21",
       "source": "wevu/router.md"
