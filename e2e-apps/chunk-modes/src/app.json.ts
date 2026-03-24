@@ -12,7 +12,5 @@ export default {
       pages: ['pages/bar'],
     },
   ],
-  workers: {
-    path: 'workers',
-  },
+  workers: 'workers',
 }
