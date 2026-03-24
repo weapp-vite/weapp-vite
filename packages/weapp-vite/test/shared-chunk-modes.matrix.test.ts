@@ -274,6 +274,29 @@ describe('shared chunk modes matrix', () => {
               assertLocations(entry.marker, mp.locations[entry.marker], expected, `${label} mp ${entry.rel}`)
             }
 
+            if (mode === 'path') {
+              const vendorFiles = mp.locations[markers.vendor]
+              expect(vendorFiles, `${label} vendor marker should stay in emitted shared chunks`).toEqual([
+                'shared/vendor.js',
+              ])
+
+              const vendorChunk = await fs.readFile(path.join(outDir, 'shared/vendor.js'), 'utf8')
+              expect(vendorChunk, `${label} vendor chunk should inline vendor code instead of requiring node_modules source`)
+                .not
+                .toMatch(/require\((['"`]).*node_modules\/fake-pkg\/index\.js\1\)/)
+
+              const importerSources = await Promise.all([
+                fs.readFile(path.join(outDir, importerFiles.main), 'utf8'),
+                fs.readFile(path.join(outDir, importerFiles.packageA), 'utf8'),
+                fs.readFile(path.join(outDir, importerFiles.packageB), 'utf8'),
+              ])
+              for (const importerSource of importerSources) {
+                expect(importerSource, `${label} importer should reference shared vendor chunk instead of node_modules path`)
+                  .not
+                  .toMatch(/require\((['"`]).*node_modules\/fake-pkg\/index\.js\1\)/)
+              }
+            }
+
             const hasCommon = shouldHaveCommon(mode, overrideSet.overrides, strategy)
             if (hasCommon) {
               expect(mp.files).toContain('common.js')

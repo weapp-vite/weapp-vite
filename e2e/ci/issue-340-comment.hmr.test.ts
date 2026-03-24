@@ -15,6 +15,7 @@ const SHARED_SOURCE_PATH = path.join(APP_ROOT, 'src/shared/issue-340-shared.ts')
 const APP_JS_PATH = path.join(DIST_ROOT, 'app.js')
 const APP_JSON_PATH = path.join(DIST_ROOT, 'app.json')
 const SHARED_CHUNK_PATH = path.join(DIST_ROOT, 'issue-340-shared.js')
+const RUNTIME_CHUNK_PATH = path.join(DIST_ROOT, 'rolldown-runtime.js')
 const ITEM_PAGE_JS_PATH = path.join(DIST_ROOT, 'subpackages/item/login-required/index.js')
 const USER_PAGE_JS_PATH = path.join(DIST_ROOT, 'subpackages/user/register/form.js')
 
@@ -52,7 +53,24 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
     }
 
     const updatedConfig = originalConfig.replace(ORIGINAL_CHUNK_CONFIG, COMMENT_CHUNK_CONFIG)
-    const updatedSharedSource = originalSharedSource.replace(`ref('issue-340-hoist')`, `ref('${marker}')`)
+    const updatedSharedSourceWithCjsImport = originalSharedSource
+      .replace(
+        `import { computed, ref } from 'wevu'`,
+        [
+          `import { computed, ref } from 'wevu'`,
+          `import merge from 'merge'`,
+        ].join('\n'),
+      )
+      .replace(
+        ['const scoped = computed(() => `', '$', '{scope}', ':', '$', '{issue340Seed.value}', ':shared`)'].join(''),
+        [
+          'const scoped = computed(() => {',
+          '  const payload = merge(true, { scope }, { seed: issue340Seed.value })',
+          ['  return `', '$', '{payload.scope}', ':', '$', '{payload.seed}', ':shared`'].join(''),
+          '})',
+        ].join('\n'),
+      )
+    const updatedSharedSource = updatedSharedSourceWithCjsImport.replace(`ref('issue-340-hoist')`, `ref('${marker}')`)
 
     if (updatedSharedSource === originalSharedSource) {
       throw new Error('Failed to inject HMR marker into issue-340 shared source.')
@@ -96,6 +114,13 @@ describe.sequential('issue #340 comment regression (dev watch)', () => {
       expect(userPageJs).toContain('require("../../../issue-340-shared.js")')
       expect(itemPageJs).not.toContain('node_modules/wevu/dist/index.js')
       expect(userPageJs).not.toContain('node_modules/wevu/dist/index.js')
+      expect(sharedChunkContent).toContain('require("./rolldown-runtime.js")')
+      expect(sharedChunkContent).toContain('__commonJSMin')
+
+      const runtimeChunkExists = await fs.pathExists(RUNTIME_CHUNK_PATH)
+      expect(runtimeChunkExists).toBe(true)
+      const runtimeChunk = await fs.readFile(RUNTIME_CHUNK_PATH, 'utf8')
+      expect(runtimeChunk).toContain('__commonJSMin')
     }
     finally {
       await dev.stop(5_000)
