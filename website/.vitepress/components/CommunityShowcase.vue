@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { computed, ref } from 'vue'
 import showcaseEntries from '../../community/showcase.data.json'
 
@@ -77,6 +78,10 @@ function resolveAssetUrl(relativePath: string) {
   return `/${relativePath.replace(LEADING_SLASH_RE, '')}`
 }
 
+function resolveAuthorUrl(author: string) {
+  return `https://github.com/${author}`
+}
+
 function openPreview(src: string, title: string, caption: string) {
   activePreview.value = { src, title, caption }
 }
@@ -98,8 +103,15 @@ function onPreviewBackdropClick(event: MouseEvent) {
       <div class="showcase-card__panel">
         <div class="showcase-card__copy">
           <div class="showcase-card__meta">
-            <span v-if="currentEntry.hasQrcode" class="showcase-card__badge">可直接识别</span>
-            <span class="showcase-card__author">@{{ currentEntry.author }}</span>
+            <a
+              class="showcase-card__author"
+              :href="resolveAuthorUrl(currentEntry.author)"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Icon icon="mdi:github" aria-hidden="true" />
+              @{{ currentEntry.author }}
+            </a>
           </div>
 
           <p class="showcase-card__desc">
@@ -107,9 +119,18 @@ function onPreviewBackdropClick(event: MouseEvent) {
           </p>
 
           <div class="showcase-card__links">
-            <a v-if="currentEntry.link" :href="currentEntry.link" target="_blank" rel="noreferrer">项目地址</a>
-            <a v-if="currentEntry.github" :href="currentEntry.github" target="_blank" rel="noreferrer">GitHub</a>
-            <a :href="currentEntry.sourceCommentUrl" target="_blank" rel="noreferrer">来源评论</a>
+            <a v-if="currentEntry.link" :href="currentEntry.link" target="_blank" rel="noreferrer">
+              <Icon icon="mdi:link-variant" aria-hidden="true" />
+              项目地址
+            </a>
+            <a v-if="currentEntry.github" :href="currentEntry.github" target="_blank" rel="noreferrer">
+              <Icon icon="mdi:github" aria-hidden="true" />
+              GitHub
+            </a>
+            <a :href="currentEntry.sourceCommentUrl" target="_blank" rel="noreferrer">
+              <Icon icon="mdi:comment-text-outline" aria-hidden="true" />
+              来源评论
+            </a>
           </div>
 
           <div v-if="currentEntry.galleryScreenshots.length > 0" class="showcase-card__actions">
@@ -119,6 +140,10 @@ function onPreviewBackdropClick(event: MouseEvent) {
               :aria-expanded="isExpanded(currentEntry.slug)"
               @click="toggleScreenshots(currentEntry.slug)"
             >
+              <Icon
+                :icon="isExpanded(currentEntry.slug) ? 'mdi:chevron-up' : 'mdi:image-multiple-outline'"
+                aria-hidden="true"
+              />
               {{ isExpanded(currentEntry.slug) ? '收起应用截图' : `展开应用截图（${currentEntry.galleryScreenshots.length}）` }}
             </button>
           </div>
@@ -137,6 +162,7 @@ function onPreviewBackdropClick(event: MouseEvent) {
             >
           </button>
           <span class="showcase-card__preview-tip">
+            <Icon icon="mdi:magnify-plus-outline" aria-hidden="true" />
             点击图片放大
           </span>
         </div>
@@ -152,7 +178,10 @@ function onPreviewBackdropClick(event: MouseEvent) {
             @click="openPreview(resolveAssetUrl(asset.relativePath), currentEntry.title, `应用截图 ${index + 1}`)"
           >
             <img :src="resolveAssetUrl(asset.relativePath)" :alt="`${currentEntry.title} 应用截图 ${index + 1}`">
-            <span>截图 {{ index + 1 }}</span>
+            <span>
+              <Icon icon="mdi:image-outline" aria-hidden="true" />
+              截图 {{ index + 1 }}
+            </span>
           </button>
         </div>
       </transition>
@@ -173,6 +202,7 @@ function onPreviewBackdropClick(event: MouseEvent) {
       >
         <div class="showcase-lightbox__dialog">
           <button type="button" class="showcase-lightbox__close" aria-label="关闭预览" @click="closePreview">
+            <Icon icon="mdi:close" aria-hidden="true" />
             关闭
           </button>
           <img :src="activePreview.src" :alt="activePreview.title">
@@ -270,7 +300,6 @@ function onPreviewBackdropClick(event: MouseEvent) {
   margin-bottom: 0.45rem;
 }
 
-.showcase-card__badge,
 .showcase-card__author {
   display: inline-flex;
   align-items: center;
@@ -281,14 +310,21 @@ function onPreviewBackdropClick(event: MouseEvent) {
   border-radius: 999px;
 }
 
-.showcase-card__badge {
-  color: white;
-  background: var(--showcase-accent);
+.showcase-card__author {
+  display: inline-flex;
+  gap: 0.28rem;
+  color: var(--showcase-accent);
+  text-decoration: none;
+  background: var(--showcase-accent-soft);
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
 }
 
-.showcase-card__author {
-  color: var(--showcase-accent);
-  background: var(--showcase-accent-soft);
+.showcase-card__author:hover {
+  background: color-mix(in srgb, var(--showcase-accent-soft) 72%, white);
+  transform: translateY(-1px);
 }
 
 .showcase-card__desc {
@@ -312,6 +348,7 @@ function onPreviewBackdropClick(event: MouseEvent) {
 .showcase-card__links a,
 .showcase-card__toggle {
   display: inline-flex;
+  gap: 0.35rem;
   align-items: center;
   justify-content: center;
   min-height: 1.85rem;
@@ -407,6 +444,9 @@ function onPreviewBackdropClick(event: MouseEvent) {
 }
 
 .showcase-card__preview-tip {
+  display: inline-flex;
+  gap: 0.22rem;
+  align-items: center;
   padding: 0.14rem 0.45rem;
   margin-top: 0.35rem;
   font-size: 0.64rem;
@@ -462,6 +502,9 @@ function onPreviewBackdropClick(event: MouseEvent) {
 }
 
 .showcase-shot span {
+  display: inline-flex;
+  gap: 0.28rem;
+  align-items: center;
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--showcase-muted);
@@ -521,6 +564,9 @@ function onPreviewBackdropClick(event: MouseEvent) {
 }
 
 .showcase-lightbox__close {
+  display: inline-flex;
+  gap: 0.32rem;
+  align-items: center;
   justify-self: end;
   min-height: 2.2rem;
   padding: 0.35rem 0.8rem;
