@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 
+import { useRelayToken } from '../../action/relay'
 import { common } from '../../shared/common'
 import { inlineOnly } from '../../shared/inline-only'
 import { pathOnly } from '../../shared/path-only'
@@ -9,6 +10,7 @@ import { useVendor } from '../../shared/vendor'
 const tokens = [
   common(),
   subOnly(),
+  useRelayToken(),
   pathOnly(),
   inlineOnly(),
   useVendor(),

@@ -10,7 +10,7 @@ const chunkModesRoot = path.join(repoRoot, 'e2e-apps', 'chunk-modes')
 const cliPath = path.join(repoRoot, 'packages', 'weapp-vite', 'bin', 'weapp-vite.js')
 const distMatrixRoot = path.join(chunkModesRoot, 'dist-matrix')
 
-const scenarios = {
+const baseScenarios = {
   'duplicate-common': {
     WEAPP_CHUNK_STRATEGY: 'duplicate',
     WEAPP_CHUNK_MODE: 'common',
@@ -61,6 +61,298 @@ const scenarios = {
     WEAPP_CHUNK_STRATEGY: 'duplicate',
     WEAPP_CHUNK_LOG_OPTIMIZATION: 'true',
     WEAPP_CHUNK_DUPLICATE_WARNING_BYTES: '0',
+  },
+}
+
+const scenarios = {
+  ...baseScenarios,
+  'duplicate-common-none-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-common-path-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-common-inline-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-common-mixed-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-common-none-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'duplicate-common-path-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'duplicate-common-inline-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'duplicate-common-mixed-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'duplicate-path-none-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-path-path-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-path-inline-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-path-mixed-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-path-none-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'duplicate-path-path-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'duplicate-path-inline-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'duplicate-path-mixed-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'duplicate-inline-none-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-inline-path-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-inline-inline-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-inline-mixed-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'duplicate-inline-none-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'duplicate-inline-path-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'duplicate-inline-inline-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'duplicate-inline-mixed-inline': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-common-none-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-common-path-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-common-inline-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-common-mixed-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-common-none-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-common-path-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-common-inline-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-common-mixed-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'common',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-path-none-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-path-path-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-path-inline-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-path-mixed-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-path-none-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-path-path-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-path-inline-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-path-mixed-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-inline-none-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-inline-path-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-inline-inline-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-inline-mixed-preserve': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'preserve',
+  },
+  'hoist-inline-none-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'none',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-inline-path-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'path',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-inline-inline-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'inline',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
+  },
+  'hoist-inline-mixed-inline': {
+    WEAPP_CHUNK_STRATEGY: 'hoist',
+    WEAPP_CHUNK_MODE: 'inline',
+    WEAPP_CHUNK_OVERRIDE: 'mixed',
+    WEAPP_CHUNK_DYNAMIC: 'inline',
   },
 }
 

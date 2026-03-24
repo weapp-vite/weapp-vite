@@ -2,160 +2,23 @@ import { execa } from 'execa'
 import { fdir } from 'fdir'
 import fs from 'fs-extra'
 import path from 'pathe'
-import picomatch from 'picomatch'
 import { describe, expect, it } from 'vitest'
+import {
+  chunkExtraCases,
+  chunkMatrixCases,
+  expectedFilesForModule,
+  importerFiles,
+  markers,
+  moduleMeta,
+  overrideSets,
+  resolveSharedMode,
+  shouldHaveCommon,
+  shouldHaveSubpackageShared,
+} from '../chunk-modes.matrix'
 
 const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/chunk-modes')
 const DIST_ROOT = path.resolve(APP_ROOT, 'dist-matrix')
-
-const markers = {
-  common: '__COMMON_MARKER__',
-  subOnly: '__SUB_ONLY_MARKER__',
-  pathOnly: '__PATH_ONLY_MARKER__',
-  inlineOnly: '__INLINE_ONLY_MARKER__',
-  vendor: '__VENDOR_MARKER__',
-  async: '__ASYNC_MARKER__',
-  workerAsync: '__WORKER_ASYNC_MARKER__',
-} as const
-
-type SharedStrategy = 'duplicate' | 'hoist'
-type SharedMode = 'common' | 'path' | 'inline'
-type DynamicImports = 'preserve' | 'inline'
-type SharedPathRootPreset = 'src' | 'shared' | 'invalid'
-
-type OverrideName = 'none' | 'path' | 'inline' | 'mixed'
-
-interface Override {
-  test: string | RegExp
-  mode: SharedMode
-}
-
-const overrideSets: Array<{ name: OverrideName, overrides: Override[] }> = [
-  { name: 'none', overrides: [] },
-  { name: 'path', overrides: [{ test: 'shared/path-only.ts', mode: 'path' }] },
-  { name: 'inline', overrides: [{ test: /shared\/inline-only\.ts$/, mode: 'inline' }] },
-  {
-    name: 'mixed',
-    overrides: [
-      { test: 'shared/path-only.ts', mode: 'path' },
-      { test: /shared\/inline-only\.ts$/, mode: 'inline' },
-    ],
-  },
-]
-
-const sharedModes: SharedMode[] = ['common', 'path', 'inline']
-const sharedStrategies: SharedStrategy[] = ['duplicate', 'hoist']
-const dynamicImports: DynamicImports[] = ['preserve', 'inline']
-
-const importerFiles = {
-  main: 'pages/index/index.js',
-  packageA: 'packageA/pages/foo.js',
-  packageB: 'packageB/pages/bar.js',
-}
-
-const moduleMeta = {
-  common: {
-    rel: 'shared/common',
-    marker: markers.common,
-    hasMain: true,
-  },
-  subOnly: {
-    rel: 'shared/sub-only',
-    marker: markers.subOnly,
-    hasMain: false,
-  },
-  pathOnly: {
-    rel: 'shared/path-only',
-    marker: markers.pathOnly,
-    hasMain: true,
-  },
-  inlineOnly: {
-    rel: 'shared/inline-only',
-    marker: markers.inlineOnly,
-    hasMain: true,
-  },
-  vendor: {
-    rel: 'node_modules/fake-pkg/index',
-    pathRel: 'shared/vendor',
-    marker: markers.vendor,
-    hasMain: true,
-    isVendor: true,
-  },
-} as const
-
-function resolveSharedMode(defaultMode: SharedMode, overrides: Override[], relativeId: string): SharedMode {
-  if (!overrides.length) {
-    return defaultMode
-  }
-  for (const override of overrides) {
-    if (typeof override.test === 'string') {
-      const matcher = picomatch(override.test, { dot: true })
-      if (matcher(relativeId)) {
-        return override.mode
-      }
-    }
-    else {
-      override.test.lastIndex = 0
-      if (override.test.test(relativeId)) {
-        return override.mode
-      }
-    }
-  }
-  return defaultMode
-}
-
-function expectedFilesForModule(
-  module: typeof moduleMeta[keyof typeof moduleMeta],
-  mode: SharedMode,
-  strategy: SharedStrategy,
-): string[] {
-  if (mode === 'inline') {
-    return []
-  }
-  if (mode === 'path') {
-    return [`${('pathRel' in module ? module.pathRel : module.rel)}.js`]
-  }
-
-  if (module.isVendor) {
-    return ['common.js']
-  }
-  if (module.hasMain) {
-    return ['common.js']
-  }
-  return strategy === 'duplicate'
-    ? ['packageA/weapp-shared/common.js', 'packageB/weapp-shared/common.js']
-    : ['common.js']
-}
-
-function shouldHaveSubpackageShared(
-  mode: SharedMode,
-  overrides: Override[],
-  strategy: SharedStrategy,
-) {
-  if (strategy !== 'duplicate') {
-    return false
-  }
-  const resolved = resolveSharedMode(mode, overrides, 'shared/sub-only.ts')
-  return resolved === 'common'
-}
-
-function shouldHaveCommon(mode: SharedMode, overrides: Override[], strategy: SharedStrategy) {
-  const modules = [moduleMeta.common, moduleMeta.subOnly, moduleMeta.pathOnly, moduleMeta.inlineOnly]
-  for (const module of modules) {
-    const resolved = resolveSharedMode(mode, overrides, `${module.rel}.ts`)
-    if (resolved !== 'common') {
-      continue
-    }
-    if (module.hasMain || strategy === 'hoist') {
-      return true
-    }
-    if (!module.hasMain && strategy === 'duplicate') {
-      return false
-    }
-  }
-  return false
-}
 
 function assertLocations(_marker: string, actual: string[], expected: string[], label: string) {
   if (expected.length === 0) {
@@ -236,6 +99,11 @@ async function runBuild(outDir: string, env: Record<string, string>) {
   })
 }
 
+function collectRelativeRequires(source: string) {
+  const matches = source.matchAll(/require\((['"`])(\.[^'"`]+?\.js)\1\)/g)
+  return Array.from(matches, match => match[2])
+}
+
 async function runBuildCapture(outDir: string, env: Record<string, string>) {
   const result = await execa('node', [
     CLI_PATH,
@@ -263,73 +131,71 @@ async function runBuildCapture(outDir: string, env: Record<string, string>) {
   return result.all ?? ''
 }
 
-function caseId(strategy: SharedStrategy, mode: SharedMode, overrides: OverrideName, dynamic: DynamicImports) {
-  return `${strategy}-${mode}-${overrides}-${dynamic}`
-}
-
 describe.sequential('e2e chunk modes matrix', () => {
   it('builds all combinations and validates chunk outputs', async () => {
     await fs.remove(DIST_ROOT)
 
-    for (const strategy of sharedStrategies) {
-      for (const mode of sharedModes) {
-        for (const dynamic of dynamicImports) {
-          for (const overrideSet of overrideSets) {
-            const id = caseId(strategy, mode, overrideSet.name, dynamic)
-            const outDir = path.join('dist-matrix', id)
-            const outDirAbs = path.join(APP_ROOT, outDir)
+    for (const matrixCase of chunkMatrixCases) {
+      for (const overrideSet of overrideSets.filter(item => item.name === matrixCase.overrideName)) {
+        const id = matrixCase.id
+        const outDir = path.join('dist-matrix', id)
+        const outDirAbs = path.join(APP_ROOT, outDir)
 
-            await fs.remove(outDirAbs)
+        await fs.remove(outDirAbs)
 
-            await runBuild(outDir, {
-              WEAPP_CHUNK_STRATEGY: strategy,
-              WEAPP_CHUNK_MODE: mode,
-              WEAPP_CHUNK_DYNAMIC: dynamic,
-              WEAPP_CHUNK_OVERRIDE: overrideSet.name,
-            })
+        await runBuild(outDir, matrixCase.env)
 
-            const mp = await collectMarkerLocations(outDirAbs)
-            const worker = await collectMarkerLocations(outDirAbs, file => file.startsWith('workers/'))
+        const mp = await collectMarkerLocations(outDirAbs)
+        const worker = await collectMarkerLocations(outDirAbs, file => file.startsWith('workers/'))
 
-            const label = `[${id}]`
+        const label = `[${id}]`
 
-            for (const entry of Object.values(moduleMeta)) {
-              const resolvedMode = resolveSharedMode(mode, overrideSet.overrides, `${entry.rel}.ts`)
-              const expected = expectedFilesForModule(entry, resolvedMode, strategy)
-              assertLocations(entry.marker, mp.locations[entry.marker], expected, `${label} mp ${entry.rel}`)
-            }
+        for (const entry of Object.values(moduleMeta)) {
+          const resolvedMode = resolveSharedMode(matrixCase.mode, overrideSet.overrides, `${entry.rel}.ts`)
+          const expected = expectedFilesForModule(entry, resolvedMode, matrixCase.strategy)
+          assertLocations(entry.marker, mp.locations[entry.marker], expected, `${label} mp ${entry.rel}`)
+        }
 
-            const hasCommon = shouldHaveCommon(mode, overrideSet.overrides, strategy)
-            if (hasCommon) {
-              expect(mp.files).toContain('common.js')
-            }
-            else {
-              expect(mp.files).not.toContain('common.js')
-            }
+        const hasCommon = shouldHaveCommon(matrixCase.mode, overrideSet.overrides, matrixCase.strategy)
+        if (hasCommon) {
+          expect(mp.files).toContain('common.js')
+        }
+        else {
+          expect(mp.files).not.toContain('common.js')
+        }
 
-            const hasSubpackageShared = shouldHaveSubpackageShared(mode, overrideSet.overrides, strategy)
-            if (hasSubpackageShared) {
-              expect(mp.files).toContain('packageA/weapp-shared/common.js')
-              expect(mp.files).toContain('packageB/weapp-shared/common.js')
-            }
-            else {
-              expect(mp.files).not.toContain('packageA/weapp-shared/common.js')
-              expect(mp.files).not.toContain('packageB/weapp-shared/common.js')
-            }
+        const hasSubpackageShared = shouldHaveSubpackageShared(matrixCase.mode, overrideSet.overrides, matrixCase.strategy)
+        if (hasSubpackageShared) {
+          expect(mp.files).toContain('packageA/weapp-shared/common.js')
+          expect(mp.files).toContain('packageB/weapp-shared/common.js')
+        }
+        else {
+          expect(mp.files).not.toContain('packageA/weapp-shared/common.js')
+          expect(mp.files).not.toContain('packageB/weapp-shared/common.js')
+        }
 
-            expect(mp.files.some(file => file.startsWith('weapp_shared_virtual/'))).toBe(false)
+        expect(mp.files.some(file => file.startsWith('weapp_shared_virtual/'))).toBe(false)
 
-            const asyncLocations = mp.locations[markers.async]
-            assertDynamicMarker(markers.async, asyncLocations, importerFiles.main, dynamic, `${label} mp async`)
+        const asyncLocations = mp.locations[markers.async]
+        assertDynamicMarker(markers.async, asyncLocations, importerFiles.main, matrixCase.dynamic, `${label} mp async`)
 
-            const workerAsyncLocations = worker.locations[markers.workerAsync]
-            assertDynamicMarker(
-              markers.workerAsync,
-              workerAsyncLocations,
-              'workers/index.js',
-              dynamic,
-              `${label} worker async`,
-            )
+        const workerAsyncLocations = worker.locations[markers.workerAsync]
+        assertDynamicMarker(
+          markers.workerAsync,
+          workerAsyncLocations,
+          'workers/index.js',
+          matrixCase.dynamic,
+          `${label} worker async`,
+        )
+
+        const jsFiles = mp.files.filter(file => file.endsWith('.js'))
+        const outputFileSet = new Set(mp.files)
+        for (const jsFile of jsFiles) {
+          const source = await fs.readFile(path.join(outDirAbs, jsFile), 'utf8')
+          const relativeRequires = collectRelativeRequires(source)
+          for (const specifier of relativeRequires) {
+            const resolvedPath = path.normalize(path.join(path.dirname(jsFile), specifier)).replaceAll('\\', '/')
+            expect(outputFileSet.has(resolvedPath), `${label} ${jsFile} should resolve ${specifier} to an emitted file`).toBe(true)
           }
         }
       }
@@ -339,13 +205,10 @@ describe.sequential('e2e chunk modes matrix', () => {
   }, 10 * 60_000)
 
   it('covers sharedPathRoot presets and optimization logging flags', async () => {
-    const sharedRootOutDir = path.join('dist-matrix', 'path-root-shared')
+    const sharedRootOutDir = path.join('dist-matrix', chunkExtraCases[0].id)
     const sharedRootOutDirAbs = path.join(APP_ROOT, sharedRootOutDir)
     await fs.remove(sharedRootOutDirAbs)
-    await runBuild(sharedRootOutDir, {
-      WEAPP_CHUNK_MODE: 'path',
-      WEAPP_CHUNK_SHARED_PATH_ROOT: 'shared' satisfies SharedPathRootPreset,
-    })
+    await runBuild(sharedRootOutDir, chunkExtraCases[0].env)
 
     const sharedRootFiles = await scanFiles(sharedRootOutDirAbs)
     expect(sharedRootFiles).toContain('common.js')
@@ -356,13 +219,10 @@ describe.sequential('e2e chunk modes matrix', () => {
     expect(sharedRootFiles).not.toContain('shared/common.js')
     expect(sharedRootFiles).not.toContain('shared/sub-only.js')
 
-    const invalidRootOutDir = path.join('dist-matrix', 'path-root-invalid')
+    const invalidRootOutDir = path.join('dist-matrix', chunkExtraCases[1].id)
     const invalidRootOutDirAbs = path.join(APP_ROOT, invalidRootOutDir)
     await fs.remove(invalidRootOutDirAbs)
-    const invalidRootOutput = await runBuildCapture(invalidRootOutDir, {
-      WEAPP_CHUNK_MODE: 'path',
-      WEAPP_CHUNK_SHARED_PATH_ROOT: 'invalid' satisfies SharedPathRootPreset,
-    })
+    const invalidRootOutput = await runBuildCapture(invalidRootOutDir, chunkExtraCases[1].env)
 
     const invalidRootFiles = await scanFiles(invalidRootOutDirAbs)
     expect(invalidRootOutput).toContain('sharedPathRoot')
@@ -372,26 +232,14 @@ describe.sequential('e2e chunk modes matrix', () => {
     expect(invalidRootFiles).toContain('shared/path-only.js')
     expect(invalidRootFiles).toContain('shared/vendor.js')
 
-    const warnEnabledOutput = await runBuildCapture(path.join('dist-matrix', 'duplicate-warn-enabled'), {
-      WEAPP_CHUNK_STRATEGY: 'duplicate',
-      WEAPP_CHUNK_LOG_OPTIMIZATION: 'true',
-      WEAPP_CHUNK_DUPLICATE_WARNING_BYTES: '1',
-    })
+    const warnEnabledOutput = await runBuildCapture(path.join('dist-matrix', chunkExtraCases[2].id), chunkExtraCases[2].env)
     expect(warnEnabledOutput).toContain('超过阈值')
 
-    const warnDisabledOutput = await runBuildCapture(path.join('dist-matrix', 'duplicate-warn-disabled'), {
-      WEAPP_CHUNK_STRATEGY: 'duplicate',
-      WEAPP_CHUNK_LOG_OPTIMIZATION: 'false',
-      WEAPP_CHUNK_DUPLICATE_WARNING_BYTES: '1',
-    })
+    const warnDisabledOutput = await runBuildCapture(path.join('dist-matrix', chunkExtraCases[3].id), chunkExtraCases[3].env)
     expect(warnDisabledOutput).toContain('超过阈值')
     expect(warnDisabledOutput).not.toContain('共享模块已复制到各自 weapp-shared/common.js')
 
-    const zeroThresholdOutput = await runBuildCapture(path.join('dist-matrix', 'duplicate-warn-zero-threshold'), {
-      WEAPP_CHUNK_STRATEGY: 'duplicate',
-      WEAPP_CHUNK_LOG_OPTIMIZATION: 'true',
-      WEAPP_CHUNK_DUPLICATE_WARNING_BYTES: '0',
-    })
+    const zeroThresholdOutput = await runBuildCapture(path.join('dist-matrix', chunkExtraCases[4].id), chunkExtraCases[4].env)
     expect(zeroThresholdOutput).not.toContain('超过阈值')
   }, 5 * 60_000)
 })
