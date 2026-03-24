@@ -5,6 +5,7 @@ const isWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const formatWechatIdeLoginRequiredErrorMock = vi.hoisted(() => vi.fn())
 const formatRetryHotkeyPromptMock = vi.hoisted(() => vi.fn())
 const waitForRetryKeypressMock = vi.hoisted(() => vi.fn())
+const getConfigMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -18,6 +19,7 @@ const execFileMock = vi.hoisted(() => vi.fn())
 
 vi.mock('weapp-ide-cli', () => ({
   parse: parseMock,
+  getConfig: getConfigMock,
   isWechatIdeLoginRequiredError: isWechatIdeLoginRequiredErrorMock,
   formatWechatIdeLoginRequiredError: formatWechatIdeLoginRequiredErrorMock,
   formatRetryHotkeyPrompt: formatRetryHotkeyPromptMock,
@@ -40,6 +42,7 @@ describe('openIde', () => {
     formatWechatIdeLoginRequiredErrorMock.mockReset()
     formatRetryHotkeyPromptMock.mockReset()
     waitForRetryKeypressMock.mockReset()
+    getConfigMock.mockReset()
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
@@ -49,6 +52,9 @@ describe('openIde', () => {
 
     parseMock.mockResolvedValue(undefined)
     isWechatIdeLoginRequiredErrorMock.mockReturnValue(false)
+    getConfigMock.mockResolvedValue({
+      cliPath: '/Applications/wechatwebdevtools.app/Contents/MacOS/cli',
+    })
     formatWechatIdeLoginRequiredErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
     formatRetryHotkeyPromptMock.mockReturnValue('按 r 重试，按 q / Esc / Ctrl+C 退出。')
     waitForRetryKeypressMock.mockResolvedValue(false)
@@ -106,6 +112,37 @@ describe('openIde', () => {
         ['-e', 'tell application "wechatwebdevtools" to quit'],
         expect.any(Function),
       )
+    }
+    finally {
+      if (platformDescriptor) {
+        Object.defineProperty(process, 'platform', platformDescriptor)
+      }
+    }
+  })
+
+  it('falls back to process kill when AppleScript close also fails', async () => {
+    const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
+    Object.defineProperty(process, 'platform', { value: 'darwin' })
+    parseMock.mockRejectedValueOnce(new Error('close failed'))
+    let callCount = 0
+    execFileMock.mockImplementation((_file: string, args: string[], callback: (error: any, stdout?: string, stderr?: string) => void) => {
+      callCount += 1
+      if (callCount === 1) {
+        callback(new Error('osascript failed'))
+        return {} as any
+      }
+      callback(null, '', '')
+      expect(args).toEqual(['-f', '/Applications/wechatwebdevtools.app'])
+      return {} as any
+    })
+
+    try {
+      const { closeIde } = await import('./openIde')
+      const result = await closeIde()
+
+      expect(result).toBe(true)
+      expect(execFileMock).toHaveBeenCalledTimes(2)
+      expect(execFileMock.mock.calls[1][0]).toBe('pkill')
     }
     finally {
       if (platformDescriptor) {
