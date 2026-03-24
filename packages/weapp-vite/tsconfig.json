@@ -2,13 +2,12 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "target": "ESNext",
-    "baseUrl": ".",
     "rootDir": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ]
     },
     "resolveJsonModule": true,

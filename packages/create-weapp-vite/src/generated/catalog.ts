@@ -51,8 +51,8 @@ export const TEMPLATE_CATALOG = {
   sass: '^1.98.0',
   tailwindcss: '^4.2.2',
   tslib: '^2.8.1',
-  typescript: '^5.9.3',
-  vite: '8.0.0',
+  typescript: '^6.0.2',
+  vite: '8.0.2',
   vue: '^3.5.30',
   zod: '^4.3.6'
 } as const
@@ -66,7 +66,7 @@ export const TEMPLATE_NAMED_CATALOG = {
   },
   latest: {
     'miniprogram-api-typings': '^5.1.2',
-    typescript: 'latest'
+    typescript: '^6.0.2'
   },
   tailwind3: {
     tailwindcss: '3.4.19'
