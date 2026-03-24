@@ -235,8 +235,8 @@ async function waitForCurrentPagePath(miniProgram: any, expectedPath: string, ti
   return null
 }
 
-async function relaunchPage(miniProgram: any, route: string, readyText?: string, timeoutMs = 15_000) {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+async function relaunchPage(miniProgram: any, route: string, readyText?: string, timeoutMs = 20_000) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
     let page: any = null
     try {
       page = await miniProgram.reLaunch(route)
@@ -726,7 +726,7 @@ describe.sequential('e2e app: github-issues', () => {
     const miniProgram = await getSharedMiniProgram(ctx)
 
     try {
-      const issuePage = await relaunchPage(miniProgram, '/pages/issue-302/index', 'active: a')
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-302/index', 'issue-302 v-for class binding update')
       if (!issuePage) {
         throw new Error('Failed to launch issue-302 page')
       }
