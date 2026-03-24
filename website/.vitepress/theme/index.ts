@@ -6,6 +6,7 @@ import DefaultTheme from 'vitepress/theme'
 import { h } from 'vue'
 import DirectoryStructureCatalog from '../../components/DirectoryStructureCatalog.vue'
 import AiLearningPage from '../components/AiLearningPage.vue'
+import CommunityShowcase from '../components/CommunityShowcase.vue'
 import HomePage from '../components/HomePage.vue'
 import TechBackground from '../components/TechBackground.vue'
 import WeapiCatalog from '../components/WeapiCatalog.vue'
@@ -32,6 +33,7 @@ export default {
     app.component('CopyOrDownloadAsMarkdownButtons', CopyOrDownloadAsMarkdownButtons)
     // Ensure custom homepage components are globally available in Markdown
     app.component('AiLearningPage', AiLearningPage)
+    app.component('CommunityShowcase', CommunityShowcase)
     app.component('DirectoryStructureCatalog', DirectoryStructureCatalog)
     app.component('HomePage', HomePage)
     app.component('TechBackground', TechBackground)

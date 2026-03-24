@@ -116,6 +116,7 @@
     "seo-generate-llms-index": "node --import tsx scripts/seo/seo-generate-llms-index.ts",
     "seo:quality:strict": "node --import tsx scripts/seo/seo-quality-check.ts --strict",
     "seo:prepare": "pnpm seo-generate-llms-index && pnpm seo-quality-report",
+    "community:showcase:sync": "node --import tsx scripts/sync-community-showcase.ts",
     "builtin": "tsx scripts/builtin.ts",
     "auto-import:components": "tsx scripts/update-auto-import-components.ts",
     "vite:patch": "tsx scripts/vite-patch.ts",
