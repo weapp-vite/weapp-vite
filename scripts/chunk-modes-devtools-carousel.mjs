@@ -10,7 +10,6 @@ const DEFAULT_INTERVAL_MS = 5000
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(scriptDir, '..')
 const projectScriptPath = path.join(repoRoot, 'scripts', 'chunk-modes-project.mjs')
-const cliPath = path.join(repoRoot, 'packages', 'weapp-vite', 'bin', 'weapp-vite.js')
 
 const scenarios = [
   { id: 'duplicate-common', buildScript: 'build:duplicate:common' },
@@ -99,16 +98,53 @@ function wait(ms) {
 }
 
 async function closeWechatDevtoolsIfNeeded() {
-  const result = await runCommand('node', [cliPath, 'close'], {
-    cwd: repoRoot,
-    env: process.env,
-  })
+  if (process.platform !== 'darwin') {
+    return
+  }
 
-  if ((result.code ?? 0) !== 0) {
-    console.warn('[chunk-modes] warn: failed to close WeChat DevTools before switching scenarios')
+  const appNames = (process.env.WEAPP_DEVTOOLS_APP_NAMES || 'wechatwebdevtools,微信开发者工具')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+  const processPatterns = (process.env.WEAPP_DEVTOOLS_PROCESS_PATTERNS
+    || '/Applications/wechatwebdevtools.app,wechatwebdevtools Daemon,wechatdevtools')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean)
+
+  let closed = false
+
+  for (const appName of appNames) {
+    const result = await runCommand('osascript', [
+      '-e',
+      `tell application "${appName}" to quit`,
+    ], {
+      cwd: repoRoot,
+      env: process.env,
+    })
+    if ((result.code ?? 0) === 0) {
+      closed = true
+      break
+    }
   }
 
   await wait(800)
+
+  for (const pattern of processPatterns) {
+    const result = await runCommand('pkill', ['-f', pattern], {
+      cwd: repoRoot,
+      env: process.env,
+    }).catch(() => ({ code: 1, signal: null }))
+    if ((result.code ?? 1) === 0) {
+      closed = true
+    }
+  }
+
+  await wait(800)
+
+  if (!closed) {
+    console.warn('[chunk-modes] warn: failed to close WeChat DevTools before switching scenarios')
+  }
 }
 
 function waitForEnter(message) {
