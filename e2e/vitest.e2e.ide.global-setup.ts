@@ -10,6 +10,8 @@ import {
 
 const DEFAULT_LOGIN_CHECK_PROJECT = path.resolve(import.meta.dirname, '../e2e-apps/base')
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
+const DEVTOOLS_SKIP_REASON_ENV = 'WEAPP_VITE_E2E_SKIP_DEVTOOLS_REASON'
+const WHITESPACE_RE = /\s+/g
 
 function readJsonObject(filePath: string): Record<string, any> | undefined {
   try {
@@ -66,6 +68,7 @@ function shouldRunDevtoolsLoginPreflight() {
 
 export default async function setupIdeE2E() {
   const reportPaths = ensureIdeWarningReportEnv()
+  delete process.env[DEVTOOLS_SKIP_REASON_ENV]
 
   if (process.env.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK === '1') {
     return async () => {
@@ -78,10 +81,28 @@ export default async function setupIdeE2E() {
     }
   }
 
-  const { assertDevtoolsLoggedIn } = await import('./utils/automator')
+  const {
+    assertDevtoolsLoggedIn,
+    isDevtoolsHttpPortError,
+  } = await import('./utils/automator')
   const projectPath = process.env.WEAPP_VITE_E2E_LOGIN_CHECK_PROJECT_PATH || DEFAULT_LOGIN_CHECK_PROJECT
   await ensureLoginCheckProjectReady(projectPath)
-  await assertDevtoolsLoggedIn(projectPath)
+  try {
+    await assertDevtoolsLoggedIn(projectPath)
+  }
+  catch (error) {
+    if (isDevtoolsHttpPortError(error)) {
+      const rawMessage = error instanceof Error ? error.message : String(error)
+      const compactMessage = rawMessage.replace(WHITESPACE_RE, ' ').trim()
+      const skipMessage = `WeChat DevTools 基础设施不可用，跳过 IDE 自动化用例。${compactMessage ? ` 原因: ${compactMessage.slice(0, 240)}` : ''}`
+      process.env[DEVTOOLS_SKIP_REASON_ENV] = skipMessage
+      process.stdout.write(`[warn] [runtime:launch-skip] ${skipMessage}\n`)
+      return async () => {
+        writeIdeWarningReport(reportPaths)
+      }
+    }
+    throw error
+  }
   clearRuntimeWarningLog(reportPaths.eventLogPath)
 
   return async () => {

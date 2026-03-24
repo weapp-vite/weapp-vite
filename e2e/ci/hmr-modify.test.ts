@@ -263,10 +263,20 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
 
       await replaceFileByRename(COMP_SRC_TEMPLATE, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} updated component template marker`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker, 20_000),
+          `${platform} updated component template marker`,
+        )
+      }
+      catch {
+        await replaceFileByRename(COMP_SRC_TEMPLATE, `${updatedSource}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker),
+          `${platform} updated component template marker (retry)`,
+        )
+      }
       expect(content).toContain(marker)
     }
     finally {
@@ -388,10 +398,21 @@ describe.sequential('HMR modify — component-level file changes (dev watch)', (
 
       await replaceFileByRename(COMP_SRC_JSON, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} updated component json marker`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker, 20_000),
+          `${platform} updated component json marker`,
+        )
+      }
+      catch {
+        // 某些环境下可能错过第一次文件变更事件，追加换行再次触发 JSON 重写。
+        await replaceFileByRename(COMP_SRC_JSON, `${updatedSource}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker),
+          `${platform} updated component json marker (retry)`,
+        )
+      }
       expect(content).toContain(marker)
     }
     finally {

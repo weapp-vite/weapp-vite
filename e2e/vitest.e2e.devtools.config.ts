@@ -4,6 +4,7 @@ import { ensureIdeWarningReportEnv } from './utils/ideWarningReport'
 import { resolveE2EMaxWorkers } from './utils/max-workers'
 
 const DEVTOOLS_GLOBAL_SETUP = path.resolve(import.meta.dirname, './vitest.e2e.ide.global-setup.ts')
+const DEVTOOLS_SETUP_FILE = path.resolve(import.meta.dirname, './vitest.e2e.ide.setup.ts')
 
 ensureIdeWarningReportEnv()
 
@@ -16,5 +17,6 @@ export default defineConfig({
     maxWorkers: resolveE2EMaxWorkers(),
     fileParallelism: false,
     globalSetup: [DEVTOOLS_GLOBAL_SETUP],
+    setupFiles: [DEVTOOLS_SETUP_FILE],
   },
 })
