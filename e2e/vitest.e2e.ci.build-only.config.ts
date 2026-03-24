@@ -8,6 +8,7 @@ const DEV_WATCH_EXCLUDE = [
   './ci/hmr-*.test.ts',
   './ci/auto-routes-hmr.test.ts',
   './ci/auto-import-vue-sfc.test.ts',
+  './ci/issue-340-comment.hmr.test.ts',
   './ci/style-import-vue.test.ts',
   './ci/wevu-runtime.hmr.test.ts',
 ].map(testPath => path.resolve(import.meta.dirname, testPath).replaceAll('\\', '/'))
