@@ -303,70 +303,66 @@ exports[`template e2e: weapp-vite-wevu-template > renders all pages from app con
 exports[`template e2e: weapp-vite-wevu-template > renders all pages from app config > weapp-vite-wevu-template::pages/layouts/index 1`] = `
 "<weapp-layout-default is="layouts/default">
   <view class="default--layout-default">
-    <weapp-layout-default is="layouts/default">
-      <view class="default--layout-default">
-        <view class="page">
-          <view class="hero">
-            <view class="hero__eyebrow">Layout Playground</view>
-            <view class="hero__title">基础模板已接入 src/layouts 约定</view>
-            <view class="hero__desc">
-              当前状态：default。可以在 default、admin 与 false
-              三种布局模式之间切换，作为正式业务页面的基础壳能力。
-            </view>
-          </view>
-          <view class="section">
-            <view class="section__title">default 布局</view>
-            <text class="section__desc"></text>
-          </view>
-          <view class="section">
-            <view class="section__title">admin 布局</view>
-            <text class="section__desc"></text>
-          </view>
-          <view class="section">
-            <view class="section__title">关闭布局</view>
-            <text class="section__desc"></text>
-          </view>
-          <view class="section">
-            <button
-              activity-type="0"
-              entrance-path=""
-              need-show-entrance=""
-              class="action-btn"
-              role="button"
-              aria-disabled="false">
-              使用 default 布局
-            </button>
-            <button
-              activity-type="0"
-              entrance-path=""
-              need-show-entrance=""
-              class="action-btn action-btn--primary"
-              role="button"
-              aria-disabled="false">
-              切到 admin 布局
-            </button>
-            <button
-              activity-type="0"
-              entrance-path=""
-              need-show-entrance=""
-              class="action-btn action-btn--ghost"
-              role="button"
-              aria-disabled="false">
-              关闭布局
-            </button>
-            <button
-              activity-type="0"
-              entrance-path=""
-              need-show-entrance=""
-              class="action-btn action-btn--light"
-              role="button"
-              aria-disabled="false">
-              返回首页
-            </button>
-          </view>
+    <view class="page">
+      <view class="hero">
+        <view class="hero__eyebrow">Layout Playground</view>
+        <view class="hero__title">基础模板已接入 src/layouts 约定</view>
+        <view class="hero__desc">
+          当前状态：default。可以在 default、admin 与 false
+          三种布局模式之间切换，作为正式业务页面的基础壳能力。
         </view>
       </view>
-    </weapp-layout-default>
+      <view class="section">
+        <view class="section__title">default 布局</view>
+        <text class="section__desc"></text>
+      </view>
+      <view class="section">
+        <view class="section__title">admin 布局</view>
+        <text class="section__desc"></text>
+      </view>
+      <view class="section">
+        <view class="section__title">关闭布局</view>
+        <text class="section__desc"></text>
+      </view>
+      <view class="section">
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn"
+          role="button"
+          aria-disabled="false">
+          使用 default 布局
+        </button>
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn action-btn--primary"
+          role="button"
+          aria-disabled="false">
+          切到 admin 布局
+        </button>
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn action-btn--ghost"
+          role="button"
+          aria-disabled="false">
+          关闭布局
+        </button>
+        <button
+          activity-type="0"
+          entrance-path=""
+          need-show-entrance=""
+          class="action-btn action-btn--light"
+          role="button"
+          aria-disabled="false">
+          返回首页
+        </button>
+      </view>
+    </view>
   </view>
 </weapp-layout-default>
 "

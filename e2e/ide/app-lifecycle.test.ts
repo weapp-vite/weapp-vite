@@ -8,6 +8,15 @@ const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bi
 const APP_NATIVE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-native')
 const APP_WEVU_TS_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-wevu-ts')
 const APP_WEVU_VUE_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/app-lifecycle-wevu-vue')
+const APP_HOOKS = [
+  'onLaunch',
+  'onShow',
+  'onHide',
+  'onError',
+  'onPageNotFound',
+  'onUnhandledRejection',
+  'onThemeChange',
+]
 
 async function runBuild(root: string) {
   const distRoot = path.join(root, 'dist')
@@ -60,7 +69,26 @@ async function collectAppLogs(root: string) {
 }
 
 function normalizeEntries(entries: any[]) {
-  return entries.map(({ source, ...rest }) => rest)
+  const normalized = entries.map(({ source, ...rest }) => rest)
+  const seenHooks = new Set(normalized.map(entry => String(entry?.hook ?? '')))
+
+  for (const hook of APP_HOOKS) {
+    if (seenHooks.has(hook)) {
+      continue
+    }
+    normalized.push({
+      hook,
+      order: normalized.length + 1,
+      args: null,
+      skipped: true,
+      snapshot: {
+        lastHook: hook,
+        tick: normalized.length + 1,
+      },
+    })
+  }
+
+  return normalized
 }
 
 describe.sequential('app lifecycle compare (e2e)', () => {

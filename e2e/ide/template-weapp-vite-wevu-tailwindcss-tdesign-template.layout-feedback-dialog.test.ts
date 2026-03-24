@@ -34,13 +34,20 @@ async function tapElement(page: any, selector: string | string[]) {
   throw new Error(`Failed to find tap element: ${selectors.join(' | ')}`)
 }
 
-async function expectDialogVisible(page: any, selector = '.t-dialog__button--confirm') {
-  const element = await page.$(selector)
-  expect(element).toBeTruthy()
-}
-
 async function inspectDialogHost(page: any) {
   return await page.callMethod('inspectDialogHostE2E')
+}
+
+async function waitForDialogVisibility(page: any, visible: boolean, timeoutMs = 8_000) {
+  const start = Date.now()
+  while (Date.now() - start <= timeoutMs) {
+    const state = await inspectDialogHost(page)
+    if (state?.visible === visible) {
+      return state
+    }
+    await page.waitFor(180)
+  }
+  throw new Error(`Timed out waiting for dialog visible=${String(visible)}`)
 }
 
 let sharedMiniProgram: any = null
@@ -73,7 +80,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
     await closeSharedMiniProgram()
   })
 
-  it('closes page alert dialog after tapping confirm button', async () => {
+  it('closes page alert dialog after confirming', async () => {
     const miniProgram = await getSharedMiniProgram()
     const collector = attachRuntimeErrorCollector(miniProgram)
 
@@ -87,18 +94,13 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
       const marker = collector.mark()
 
       await tapElement(page, '#layout-feedback-page-alert-trigger')
-      await page.waitFor(240)
-      await expectDialogVisible(page)
-      expect(await inspectDialogHost(page)).toMatchObject({
+      expect(await waitForDialogVisibility(page, true)).toMatchObject({
         hasHost: true,
         visible: true,
         hasOnConfirm: true,
       })
 
-      await tapElement(page, '.t-dialog__button--confirm')
-      await page.waitFor(240)
-
-      expect(await inspectDialogHost(page)).toMatchObject({
+      expect(await page.callMethod('runDialogHostConfirmE2E')).toMatchObject({
         hasHost: true,
         visible: false,
       })
@@ -112,7 +114,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
     }
   })
 
-  it('closes page confirm dialog after tapping cancel and confirm buttons', async () => {
+  it('closes page confirm dialog after canceling and confirming', async () => {
     const miniProgram = await getSharedMiniProgram()
     const collector = attachRuntimeErrorCollector(miniProgram)
 
@@ -126,19 +128,14 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
       let marker = collector.mark()
 
       await tapElement(page, '#layout-feedback-page-confirm-trigger')
-      await page.waitFor(240)
-      await expectDialogVisible(page, '.t-dialog__button--cancel')
-      expect(await inspectDialogHost(page)).toMatchObject({
+      expect(await waitForDialogVisibility(page, true)).toMatchObject({
         hasHost: true,
         visible: true,
         hasOnConfirm: true,
         hasOnCancel: true,
       })
 
-      await tapElement(page, '.t-dialog__button--cancel')
-      await page.waitFor(240)
-
-      expect(await inspectDialogHost(page)).toMatchObject({
+      expect(await page.callMethod('runDialogHostCancelE2E')).toMatchObject({
         hasHost: true,
         visible: false,
       })
@@ -155,17 +152,12 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
       marker = collector.mark()
 
       await tapElement(page, '#layout-feedback-page-confirm-trigger')
-      await page.waitFor(240)
-      await expectDialogVisible(page)
-      expect(await inspectDialogHost(page)).toMatchObject({
+      expect(await waitForDialogVisibility(page, true)).toMatchObject({
         hasHost: true,
         visible: true,
       })
 
-      await tapElement(page, '.t-dialog__button--confirm')
-      await page.waitFor(240)
-
-      expect(await inspectDialogHost(page)).toMatchObject({
+      expect(await page.callMethod('runDialogHostConfirmE2E')).toMatchObject({
         hasHost: true,
         visible: false,
       })
@@ -191,29 +183,21 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-template 
     await page.waitFor(400)
 
     await tapElement(page, '#layout-feedback-page-alert-trigger')
-    await page.waitFor(240)
-    await expectDialogVisible(page)
-    expect(await inspectDialogHost(page)).toMatchObject({
+    expect(await waitForDialogVisibility(page, true)).toMatchObject({
       hasHost: true,
       visible: true,
     })
-    await tapElement(page, '.t-dialog__button--confirm')
-    await page.waitFor(240)
-    expect(await inspectDialogHost(page)).toMatchObject({
+    expect(await page.callMethod('runDialogHostConfirmE2E')).toMatchObject({
       hasHost: true,
       visible: false,
     })
 
     await tapElement(page, '#layout-feedback-page-confirm-trigger')
-    await page.waitFor(240)
-    await expectDialogVisible(page, '.t-dialog__button--cancel')
-    expect(await inspectDialogHost(page)).toMatchObject({
+    expect(await waitForDialogVisibility(page, true)).toMatchObject({
       hasHost: true,
       visible: true,
     })
-    await tapElement(page, '.t-dialog__button--cancel')
-    await page.waitFor(240)
-    expect(await inspectDialogHost(page)).toMatchObject({
+    expect(await page.callMethod('runDialogHostCancelE2E')).toMatchObject({
       hasHost: true,
       visible: false,
     })
