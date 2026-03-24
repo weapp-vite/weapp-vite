@@ -14,6 +14,7 @@ const colorsMock = vi.hoisted(() => ({
   green: vi.fn((value: string) => value),
   bold: vi.fn((value: string) => value),
 }))
+const execFileMock = vi.hoisted(() => vi.fn())
 
 vi.mock('weapp-ide-cli', () => ({
   parse: parseMock,
@@ -21,6 +22,10 @@ vi.mock('weapp-ide-cli', () => ({
   formatWechatIdeLoginRequiredError: formatWechatIdeLoginRequiredErrorMock,
   formatRetryHotkeyPrompt: formatRetryHotkeyPromptMock,
   waitForRetryKeypress: waitForRetryKeypressMock,
+}))
+
+vi.mock('node:child_process', () => ({
+  execFile: execFileMock,
 }))
 
 vi.mock('../logger', () => ({
@@ -38,6 +43,7 @@ describe('openIde', () => {
     loggerMock.info.mockReset()
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
+    execFileMock.mockReset()
     colorsMock.green.mockClear()
     colorsMock.bold.mockClear()
 
@@ -46,6 +52,10 @@ describe('openIde', () => {
     formatWechatIdeLoginRequiredErrorMock.mockReturnValue('微信开发者工具返回登录错误：\n- code: 10\n- message: 需要重新登录')
     formatRetryHotkeyPromptMock.mockReturnValue('按 r 重试，按 q / Esc / Ctrl+C 退出。')
     waitForRetryKeypressMock.mockResolvedValue(false)
+    execFileMock.mockImplementation((_file: string, _args: string[], callback: (error: any, stdout?: string, stderr?: string) => void) => {
+      callback(null, '', '')
+      return {} as any
+    })
   })
 
   it('passes project path and alipay platform to weapp-ide-cli parse', async () => {
@@ -79,6 +89,29 @@ describe('openIde', () => {
     expect(parseMock).toHaveBeenCalledWith([
       'close',
     ])
+  })
+
+  it('falls back to AppleScript when close command fails on macOS', async () => {
+    const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
+    Object.defineProperty(process, 'platform', { value: 'darwin' })
+    parseMock.mockRejectedValueOnce(new Error('close failed'))
+
+    try {
+      const { closeIde } = await import('./openIde')
+      const result = await closeIde()
+
+      expect(result).toBe(true)
+      expect(execFileMock).toHaveBeenCalledWith(
+        'osascript',
+        ['-e', 'tell application "wechatwebdevtools" to quit'],
+        expect.any(Function),
+      )
+    }
+    finally {
+      if (platformDescriptor) {
+        Object.defineProperty(process, 'platform', platformDescriptor)
+      }
+    }
   })
 
   it('retries open flow when login is required and user presses r', async () => {
