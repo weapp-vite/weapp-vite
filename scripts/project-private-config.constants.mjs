@@ -1,0 +1,1 @@
+export const DEFAULT_WEAPP_PRIVATE_LIB_VERSION = '3.15.0'
