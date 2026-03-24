@@ -1,3 +1,4 @@
+import net from 'node:net'
 import automator from 'miniprogram-automator'
 
 export interface AutomatorOptions {
@@ -20,6 +21,35 @@ const DEVTOOLS_LOGIN_REQUIRED_PATTERNS = [
   /need\s+re-?login/i,
   /re-?login/i,
 ]
+
+let localhostListenPatched = false
+
+function patchNetListenToLoopback() {
+  if (localhostListenPatched) {
+    return
+  }
+  localhostListenPatched = true
+
+  const rawListen = net.Server.prototype.listen
+  net.Server.prototype.listen = function patchedListen(this: net.Server, ...args: any[]) {
+    const firstArg = args[0]
+    if (firstArg && typeof firstArg === 'object' && !Array.isArray(firstArg)) {
+      if (!('host' in firstArg) || !firstArg.host) {
+        args[0] = {
+          ...firstArg,
+          host: '127.0.0.1',
+        }
+      }
+      return rawListen.apply(this, args as any)
+    }
+
+    if ((typeof firstArg === 'number' || typeof firstArg === 'string') && typeof args[1] !== 'string') {
+      args.splice(1, 0, '127.0.0.1')
+    }
+
+    return rawListen.apply(this, args as any)
+  } as typeof net.Server.prototype.listen
+}
 
 /**
  * @description Extract error text from various error types
@@ -120,6 +150,7 @@ export function formatAutomatorLoginError(error: unknown): string {
  * @description Launch automator with default options
  */
 export async function launchAutomator(options: AutomatorOptions) {
+  patchNetListenToLoopback()
   const { projectPath, timeout = 30_000 } = options
 
   return automator.launch({
