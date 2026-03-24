@@ -1,5 +1,11 @@
 # @weapp-core/init
 
+## 6.0.5
+
+### Patch Changes
+
+- 🐛 **迁移 TypeScript 6 相关的 tsconfig 默认配置与受管生成逻辑。初始化模板和 `.weapp-vite/tsconfig.app.json` 不再生成已弃用的 `baseUrl` 与冗余的 `DOM.Iterable`，同时把别名路径统一改成对当前文件位置生效的显式相对路径，避免 `vue-tsc` / `tsc` 在 TypeScript 6 下因旧配置报错。** [`575f087`](https://github.com/weapp-vite/weapp-vite/commit/575f087e8f4e852736e7e0aafed1123e5371834e) by @sonofmagic
+
 ## 6.0.4
 
 ### Patch Changes
