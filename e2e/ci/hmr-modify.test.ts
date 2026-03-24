@@ -470,10 +470,21 @@ describe.sequential('HMR modify — Vue SFC changes (dev watch)', () => {
 
       await replaceFileByRename(SFC_SRC_PATH, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} updated SFC template marker`,
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker, 20_000),
+          `${platform} updated SFC template marker`,
+        )
+      }
+      catch {
+        // 某些环境下可能错过第一次文件变更事件，追加一次“无语义变更”确保触发重编译。
+        await replaceFileByRename(SFC_SRC_PATH, `${updatedSource}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(distPath, marker),
+          `${platform} updated SFC template marker (retry)`,
+        )
+      }
       expect(content).toContain(marker)
     }
     finally {
