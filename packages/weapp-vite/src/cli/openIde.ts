@@ -1,5 +1,7 @@
 import type { MpPlatform } from '../types'
+import { execFile } from 'node:child_process'
 import process from 'node:process'
+import { promisify } from 'node:util'
 import path from 'pathe'
 import {
   formatRetryHotkeyPrompt,
@@ -11,6 +13,8 @@ import {
 import { createCompilerContext } from '../createContext'
 import logger, { colors } from '../logger'
 import { createInlineConfig } from './runtime'
+
+const execFileAsync = promisify(execFile)
 
 export interface ResolveIdeCommandOptions {
   configFile?: string
@@ -41,7 +45,32 @@ export async function openIde(platform?: MpPlatform, projectPath?: string) {
 }
 
 export async function closeIde() {
-  await runWechatIdeOpenWithRetry(['close'])
+  try {
+    await parse(['close'])
+    return true
+  }
+  catch (error) {
+    if (isWechatIdeLoginRequiredError(error)) {
+      try {
+        await runWechatIdeOpenWithRetry(['close'])
+        return true
+      }
+      catch (retryError) {
+        logger.error(retryError)
+      }
+    }
+    else {
+      logger.warn('微信开发者工具 CLI close 执行失败，尝试回退为系统级关闭。')
+      logger.error(error)
+    }
+
+    if (await closeIdeByAppleScript()) {
+      logger.info('已回退为系统级关闭微信开发者工具。')
+      return true
+    }
+
+    return false
+  }
 }
 
 /**
@@ -118,6 +147,21 @@ async function runWechatIdeOpenWithRetry(argv: string[]) {
 
       logger.info(colors.bold(colors.green('正在重试连接微信开发者工具...')))
     }
+  }
+}
+
+async function closeIdeByAppleScript() {
+  if (process.platform !== 'darwin') {
+    return false
+  }
+
+  const appName = process.env.WEAPP_DEVTOOLS_APP_NAME || 'wechatwebdevtools'
+  try {
+    await execFileAsync('osascript', ['-e', `tell application "${appName}" to quit`])
+    return true
+  }
+  catch {
+    return false
   }
 }
 
