@@ -101,4 +101,12 @@ describe('cli command routing', () => {
     processOnSpy.mockRestore()
     processOffSpy.mockRestore()
   })
+
+  it('treats close as a native command instead of forwarding to weapp-ide-cli fallback', async () => {
+    const { tryRunIdeCommand } = await import('./ide')
+
+    const forwarded = await tryRunIdeCommand(['close'])
+
+    expect(forwarded).toBe(false)
+  })
 })

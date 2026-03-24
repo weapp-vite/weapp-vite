@@ -40,6 +40,10 @@ export async function openIde(platform?: MpPlatform, projectPath?: string) {
   await runWechatIdeOpenWithRetry(argv)
 }
 
+export async function closeIde() {
+  await runWechatIdeOpenWithRetry(['close'])
+}
+
 /**
  * @description 解析 IDE 相关命令所需的平台、项目目录与配置上下文。
  */

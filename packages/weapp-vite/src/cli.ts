@@ -4,6 +4,7 @@ import { cac } from 'cac'
 import path from 'pathe'
 import { registerAnalyzeCommand } from './cli/commands/analyze'
 import { registerBuildCommand } from './cli/commands/build'
+import { registerCloseCommand } from './cli/commands/close'
 import { registerGenerateCommand } from './cli/commands/generate'
 import { registerIdeCommand } from './cli/commands/ide'
 import { registerInitCommand } from './cli/commands/init'
@@ -47,6 +48,7 @@ cli
 
 registerIdeCommand(cli)
 registerBuildCommand(cli)
+registerCloseCommand(cli)
 registerAnalyzeCommand(cli)
 registerInitCommand(cli)
 registerOpenCommand(cli)
@@ -85,7 +87,7 @@ function resolveManagedTsconfigBootstrapRoot(args: string[]) {
     }
     return undefined
   }
-  if (['analyze', 'build', 'dev', 'open', 'prepare', 'serve'].includes(firstArg)) {
+  if (['analyze', 'build', 'close', 'dev', 'open', 'prepare', 'serve'].includes(firstArg)) {
     if (secondArg && !secondArg.startsWith('-')) {
       return path.resolve(secondArg)
     }

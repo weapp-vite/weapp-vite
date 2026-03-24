@@ -72,6 +72,15 @@ describe('openIde', () => {
     ])
   })
 
+  it('passes close command to weapp-ide-cli parse', async () => {
+    const { closeIde } = await import('./openIde')
+    await closeIde()
+
+    expect(parseMock).toHaveBeenCalledWith([
+      'close',
+    ])
+  })
+
   it('retries open flow when login is required and user presses r', async () => {
     const { openIde } = await import('./openIde')
     const loginRequiredError = new Error('需要重新登录 (code 10)')
