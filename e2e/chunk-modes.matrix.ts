@@ -61,6 +61,7 @@ export const moduleMeta = {
   },
   relayOnly: {
     rel: 'shared/relay-only',
+    pathRel: 'action/relay',
     marker: markers.relayOnly,
     hasMain: false,
   },
