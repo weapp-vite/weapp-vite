@@ -2,17 +2,26 @@ import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
-import { chunkExtraCases, chunkMatrixCases, runtimeBaseRoutes } from '../chunk-modes.matrix'
+import { runtimeBaseRoutes } from '../chunk-modes.matrix'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
 
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/chunk-modes')
 const PREPARE_SCRIPT_PATH = path.resolve(import.meta.dirname, '../../scripts/chunk-modes-project.mjs')
 const DIST_MATRIX_ROOT = path.join(APP_ROOT, 'dist-matrix')
+const LEADING_SLASHES_RE = /^\/+/
+const AUTOMATOR_OVERLAY_RE = /\s*\.luna-dom-highlighter[\s\S]*$/
 
-const runtimeCases = [
-  ...chunkMatrixCases.map(item => ({ id: item.id, env: item.env, routes: runtimeBaseRoutes })),
-  ...chunkExtraCases.slice(0, 2).map(item => ({ id: item.id, env: item.env, routes: runtimeBaseRoutes })),
-]
+interface RuntimeRouteCase {
+  route: string
+  readyText: string
+  expectedTokens: string[]
+}
+
+export interface RuntimeMatrixCase {
+  id: string
+  env: Record<string, string>
+  routes: RuntimeRouteCase[]
+}
 
 let sharedMiniProgram: any = null
 let sharedLaunchInfraUnavailableMessage: string | null = null
@@ -22,11 +31,11 @@ async function delay(ms: number) {
 }
 
 function normalizeRoutePath(routePath: string) {
-  return routePath.replace(/^\/+/, '')
+  return routePath.replace(LEADING_SLASHES_RE, '')
 }
 
 function stripAutomatorOverlay(wxml: string) {
-  return wxml.replace(/\s*\.luna-dom-highlighter[\s\S]*$/, '')
+  return wxml.replace(AUTOMATOR_OVERLAY_RE, '')
 }
 
 async function readPageWxml(page: any) {
@@ -171,28 +180,37 @@ async function closeSharedMiniProgram() {
   await miniProgram.close()
 }
 
-describe.sequential('e2e app: chunk-modes runtime matrix', () => {
-  afterAll(async () => {
-    await closeSharedMiniProgram()
-  })
-
-  for (const runtimeCase of runtimeCases) {
-    it(`runs without runtime errors in devtools for ${runtimeCase.id}`, async (ctx) => {
+export function createChunkModesRuntimeSuite(suiteName: string, runtimeCases: RuntimeMatrixCase[]) {
+  describe.sequential(suiteName, () => {
+    afterAll(async () => {
       await closeSharedMiniProgram()
-      const projectPath = await prepareScenarioProject(runtimeCase)
+    })
 
-      const miniProgram = await getSharedMiniProgram(projectPath, ctx)
+    for (const runtimeCase of runtimeCases) {
+      it(`runs without runtime errors in devtools for ${runtimeCase.id}`, async (ctx) => {
+        await closeSharedMiniProgram()
+        const projectPath = await prepareScenarioProject(runtimeCase)
 
-      for (const routeCase of runtimeCase.routes) {
-        const page = await relaunchPage(miniProgram, routeCase.route, routeCase.readyText)
-        if (!page) {
-          throw new Error(`[${runtimeCase.id}] failed to launch route: ${routeCase.route}`)
+        const miniProgram = await getSharedMiniProgram(projectPath, ctx)
+
+        for (const routeCase of runtimeCase.routes) {
+          const page = await relaunchPage(miniProgram, routeCase.route, routeCase.readyText)
+          if (!page) {
+            throw new Error(`[${runtimeCase.id}] failed to launch route: ${routeCase.route}`)
+          }
+
+          const result = await page.callMethod('_runE2E')
+          expect(result?.ok).toBe(true)
+          expect(result?.tokens).toEqual(expect.arrayContaining(routeCase.expectedTokens))
         }
+      }, 2 * 60_000)
+    }
+  })
+}
 
-        const result = await page.callMethod('_runE2E')
-        expect(result?.ok).toBe(true)
-        expect(result?.tokens).toEqual(expect.arrayContaining(routeCase.expectedTokens))
-      }
-    }, 2 * 60_000)
-  }
-})
+export function withBaseRoutes(cases: Array<{ id: string, env: Record<string, string> }>): RuntimeMatrixCase[] {
+  return cases.map(item => ({
+    ...item,
+    routes: runtimeBaseRoutes,
+  }))
+}

@@ -42,7 +42,17 @@ const baseScenarios = {
     WEAPP_CHUNK_MODE: 'path',
     WEAPP_CHUNK_SHARED_PATH_ROOT: 'shared',
   },
+  'path-root-shared': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_SHARED_PATH_ROOT: 'shared',
+  },
   'path-invalid-root': {
+    WEAPP_CHUNK_STRATEGY: 'duplicate',
+    WEAPP_CHUNK_MODE: 'path',
+    WEAPP_CHUNK_SHARED_PATH_ROOT: 'invalid',
+  },
+  'path-root-invalid': {
     WEAPP_CHUNK_STRATEGY: 'duplicate',
     WEAPP_CHUNK_MODE: 'path',
     WEAPP_CHUNK_SHARED_PATH_ROOT: 'invalid',
