@@ -73,7 +73,7 @@ describe('support files integration', () => {
 
       expect(repairedContent).toBe(freshContent)
       expect(repairedConfig.compilerOptions.paths).toMatchObject({
-        '@/*': ['src/*'],
+        '@/*': ['../src/*'],
       })
       expect(warnSpy).toHaveBeenCalledWith(
         '[prepare] 检测到 .weapp-vite 支持文件缺失或已过期，已自动重新生成。建议执行 weapp-vite prepare 并提交更新。',
@@ -103,7 +103,7 @@ describe('support files integration', () => {
       expect(manifest.HelloWorld).toBe('/components/HelloWorld/index')
       expect(manifest['van-button']).toBe('@vant/weapp/button')
       expect(tsconfig.compilerOptions.paths).toMatchObject({
-        '@/*': ['src/*'],
+        '@/*': ['../src/*'],
       })
       expect(
         warnSpy.mock.calls.some(([message]) => String(message).includes('[prepare]')),
