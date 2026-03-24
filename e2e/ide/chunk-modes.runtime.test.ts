@@ -1,53 +1,17 @@
+import { execa } from 'execa'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterAll, describe, expect, it } from 'vitest'
+import { chunkExtraCases, chunkMatrixCases, runtimeBaseRoutes } from '../chunk-modes.matrix'
 import { isDevtoolsHttpPortError, launchAutomator } from '../utils/automator'
-import { runWeappViteBuildWithLogCapture } from '../utils/buildLog'
 
-const CLI_PATH = path.resolve(import.meta.dirname, '../../packages/weapp-vite/bin/weapp-vite.js')
 const APP_ROOT = path.resolve(import.meta.dirname, '../../e2e-apps/chunk-modes')
-const DIST_ROOT = path.join(APP_ROOT, 'dist')
+const PREPARE_SCRIPT_PATH = path.resolve(import.meta.dirname, '../../scripts/chunk-modes-project.mjs')
+const DIST_MATRIX_ROOT = path.join(APP_ROOT, 'dist-matrix')
 
-interface RuntimeRouteCase {
-  route: string
-  readyText: string
-  expectedTokens: string[]
-}
-
-interface RuntimeMatrixCase {
-  id: string
-  env: Record<string, string>
-  routes: RuntimeRouteCase[]
-}
-
-const baseRoutes: RuntimeRouteCase[] = [
-  {
-    route: '/pages/index/index',
-    readyText: 'shared chunk modes',
-    expectedTokens: ['__COMMON_MARKER__', '__PATH_ONLY_MARKER__', '__INLINE_ONLY_MARKER__', '__VENDOR_MARKER__'],
-  },
-  {
-    route: '/packageA/pages/foo',
-    readyText: 'chunk modes packageA',
-    expectedTokens: ['__COMMON_MARKER__', '__SUB_ONLY_MARKER__', '__PATH_ONLY_MARKER__', '__INLINE_ONLY_MARKER__', '__VENDOR_MARKER__'],
-  },
-  {
-    route: '/packageB/pages/bar',
-    readyText: 'chunk modes packageB',
-    expectedTokens: ['__COMMON_MARKER__', '__SUB_ONLY_MARKER__', '__INLINE_ONLY_MARKER__', '__VENDOR_MARKER__'],
-  },
-]
-
-const runtimeCases: RuntimeMatrixCase[] = [
-  { id: 'duplicate-common-preserve', env: { WEAPP_CHUNK_STRATEGY: 'duplicate', WEAPP_CHUNK_MODE: 'common', WEAPP_CHUNK_DYNAMIC: 'preserve', WEAPP_CHUNK_OVERRIDE: 'none' }, routes: baseRoutes },
-  { id: 'hoist-common-preserve', env: { WEAPP_CHUNK_STRATEGY: 'hoist', WEAPP_CHUNK_MODE: 'common', WEAPP_CHUNK_DYNAMIC: 'preserve', WEAPP_CHUNK_OVERRIDE: 'none' }, routes: baseRoutes },
-  { id: 'duplicate-path-preserve', env: { WEAPP_CHUNK_STRATEGY: 'duplicate', WEAPP_CHUNK_MODE: 'path', WEAPP_CHUNK_DYNAMIC: 'preserve', WEAPP_CHUNK_OVERRIDE: 'none' }, routes: baseRoutes },
-  { id: 'hoist-path-preserve', env: { WEAPP_CHUNK_STRATEGY: 'hoist', WEAPP_CHUNK_MODE: 'path', WEAPP_CHUNK_DYNAMIC: 'preserve', WEAPP_CHUNK_OVERRIDE: 'none' }, routes: baseRoutes },
-  { id: 'duplicate-inline-preserve', env: { WEAPP_CHUNK_STRATEGY: 'duplicate', WEAPP_CHUNK_MODE: 'inline', WEAPP_CHUNK_DYNAMIC: 'preserve', WEAPP_CHUNK_OVERRIDE: 'none' }, routes: baseRoutes },
-  { id: 'hoist-inline-preserve', env: { WEAPP_CHUNK_STRATEGY: 'hoist', WEAPP_CHUNK_MODE: 'inline', WEAPP_CHUNK_DYNAMIC: 'preserve', WEAPP_CHUNK_OVERRIDE: 'none' }, routes: baseRoutes },
-  { id: 'duplicate-common-mixed-inline', env: { WEAPP_CHUNK_STRATEGY: 'duplicate', WEAPP_CHUNK_MODE: 'common', WEAPP_CHUNK_DYNAMIC: 'inline', WEAPP_CHUNK_OVERRIDE: 'mixed' }, routes: baseRoutes },
-  { id: 'duplicate-path-shared-root', env: { WEAPP_CHUNK_STRATEGY: 'duplicate', WEAPP_CHUNK_MODE: 'path', WEAPP_CHUNK_DYNAMIC: 'preserve', WEAPP_CHUNK_OVERRIDE: 'none', WEAPP_CHUNK_SHARED_PATH_ROOT: 'shared' }, routes: baseRoutes },
-  { id: 'duplicate-path-invalid-root', env: { WEAPP_CHUNK_STRATEGY: 'duplicate', WEAPP_CHUNK_MODE: 'path', WEAPP_CHUNK_DYNAMIC: 'preserve', WEAPP_CHUNK_OVERRIDE: 'none', WEAPP_CHUNK_SHARED_PATH_ROOT: 'invalid' }, routes: baseRoutes },
+const runtimeCases = [
+  ...chunkMatrixCases.map(item => ({ id: item.id, env: item.env, routes: runtimeBaseRoutes })),
+  ...chunkExtraCases.slice(0, 2).map(item => ({ id: item.id, env: item.env, routes: runtimeBaseRoutes })),
 ]
 
 let sharedMiniProgram: any = null
@@ -151,45 +115,28 @@ async function relaunchPage(miniProgram: any, route: string, readyText?: string,
   return null
 }
 
-async function runBuild(runtimeCase: RuntimeMatrixCase) {
-  await fs.remove(DIST_ROOT)
+async function prepareScenarioProject(runtimeCase: RuntimeMatrixCase) {
+  const scenarioRoot = path.join(DIST_MATRIX_ROOT, runtimeCase.id)
+  await fs.remove(scenarioRoot)
 
-  const previousEnv: Record<string, string | undefined> = {
-    WEAPP_CHUNK_STRATEGY: process.env.WEAPP_CHUNK_STRATEGY,
-    WEAPP_CHUNK_MODE: process.env.WEAPP_CHUNK_MODE,
-    WEAPP_CHUNK_DYNAMIC: process.env.WEAPP_CHUNK_DYNAMIC,
-    WEAPP_CHUNK_OVERRIDE: process.env.WEAPP_CHUNK_OVERRIDE,
-    WEAPP_CHUNK_SHARED_PATH_ROOT: process.env.WEAPP_CHUNK_SHARED_PATH_ROOT,
-    WEAPP_CHUNK_OUTDIR: process.env.WEAPP_CHUNK_OUTDIR,
-  }
-
-  Object.assign(process.env, runtimeCase.env, {
-    WEAPP_CHUNK_OUTDIR: 'dist',
+  const result = await execa('node', [
+    PREPARE_SCRIPT_PATH,
+    '--scenario',
+    runtimeCase.id,
+  ], {
+    cwd: APP_ROOT,
+    reject: false,
+    all: true,
   })
 
-  try {
-    await runWeappViteBuildWithLogCapture({
-      cliPath: CLI_PATH,
-      projectRoot: APP_ROOT,
-      platform: 'weapp',
-      cwd: APP_ROOT,
-      label: `ide:chunk-modes:${runtimeCase.id}`,
-      skipNpm: true,
-    })
+  if ((result.exitCode ?? 1) !== 0) {
+    throw new Error(`[${runtimeCase.id}] prepare scenario failed\n${result.all ?? ''}`)
   }
-  finally {
-    for (const [key, value] of Object.entries(previousEnv)) {
-      if (typeof value === 'undefined') {
-        delete process.env[key]
-      }
-      else {
-        process.env[key] = value
-      }
-    }
-  }
+
+  return scenarioRoot
 }
 
-async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) {
+async function getSharedMiniProgram(projectPath: string, ctx?: { skip: (message?: string) => void }) {
   if (sharedLaunchInfraUnavailableMessage) {
     ctx?.skip(sharedLaunchInfraUnavailableMessage)
     throw new Error(sharedLaunchInfraUnavailableMessage)
@@ -198,7 +145,9 @@ async function getSharedMiniProgram(ctx?: { skip: (message?: string) => void }) 
   if (!sharedMiniProgram) {
     try {
       sharedMiniProgram = await launchAutomator({
-        projectPath: APP_ROOT,
+        projectPath,
+        timeout: 60_000,
+        trustProject: true,
       })
     }
     catch (error) {
@@ -230,9 +179,9 @@ describe.sequential('e2e app: chunk-modes runtime matrix', () => {
   for (const runtimeCase of runtimeCases) {
     it(`runs without runtime errors in devtools for ${runtimeCase.id}`, async (ctx) => {
       await closeSharedMiniProgram()
-      await runBuild(runtimeCase)
+      const projectPath = await prepareScenarioProject(runtimeCase)
 
-      const miniProgram = await getSharedMiniProgram(ctx)
+      const miniProgram = await getSharedMiniProgram(projectPath, ctx)
 
       for (const routeCase of runtimeCase.routes) {
         const page = await relaunchPage(miniProgram, routeCase.route, routeCase.readyText)

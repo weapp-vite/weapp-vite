@@ -8,7 +8,15 @@ function createConfigService(chunks: Record<string, unknown> = {}): ConfigServic
   return {
     cwd: '/project',
     absoluteSrcRoot: '/project/src',
-    relativeAbsoluteSrcRoot: (id: string) => id.replace('/project/src/', ''),
+    relativeAbsoluteSrcRoot: (id: string) => {
+      if (id.startsWith('/project/src/')) {
+        return id.slice('/project/src/'.length)
+      }
+      if (id.startsWith('/project/')) {
+        return id.slice('/project/'.length)
+      }
+      return id
+    },
     weappViteConfig: {
       chunks,
     },
@@ -26,6 +34,20 @@ afterEach(() => {
 })
 
 describe('sharedBuildConfig', () => {
+  it('returns undefined for path mode when there is only one importer', () => {
+    const resolveName = createChunkNameResolver({
+      sharedMode: 'path',
+    })
+
+    const result = resolveName('/project/src/shared/feature.ts', {
+      getModuleInfo: () => ({
+        importers: ['/project/src/pages/index/index.ts'],
+      }),
+    })
+
+    expect(result).toBeUndefined()
+  })
+
   it('uses sharedPathRoot to shorten path-mode chunk names', () => {
     const resolveName = createChunkNameResolver({
       sharedMode: 'path',
@@ -114,5 +136,53 @@ describe('sharedBuildConfig', () => {
     })
 
     expect(result).toBe('weapp_shared_virtual/packageA+packageB/common')
+  })
+
+  it('prefers sharedOverrides over the default sharedMode', () => {
+    const resolveName = createChunkNameResolver({
+      sharedMode: 'common',
+      sharedOverrides: [
+        { test: 'shared/path-only.ts', mode: 'path' },
+        { test: /shared\/inline-only\.ts$/, mode: 'inline' },
+      ],
+    })
+
+    const pathResult = resolveName('/project/src/shared/path-only.ts', {
+      getModuleInfo: () => ({
+        importers: [
+          '/project/src/pages/index/index.ts',
+          '/project/src/packageA/pages/foo.ts',
+        ],
+      }),
+    })
+    const inlineResult = resolveName('/project/src/shared/inline-only.ts', {
+      getModuleInfo: () => ({
+        importers: [
+          '/project/src/pages/index/index.ts',
+          '/project/src/packageB/pages/bar.ts',
+        ],
+      }),
+    })
+
+    expect(pathResult).toBe('shared/path-only')
+    expect(inlineResult).toBeUndefined()
+  })
+
+  it('falls back to normalized relative ids for non-src path chunks', () => {
+    const resolveName = createChunkNameResolver({
+      sharedMode: 'path',
+      sharedPathRoot: 'src/shared',
+    })
+
+    const result = resolveName('/project/node_modules/fake-pkg/index.js', {
+      getModuleInfo: () => ({
+        importers: [
+          '/project/src/pages/index/index.ts',
+          '/project/src/packageA/pages/foo.ts',
+        ],
+      }),
+    })
+
+    expect(result).toBe('node_modules/fake-pkg/index')
   })
 })
