@@ -510,4 +510,59 @@ describe('chunkStrategy apply helpers more branches', () => {
       },
     ])
   })
+
+  it('keeps root path-shared chunks on the root runtime when sub-package pages import them', () => {
+    const runtimeFileName = 'rolldown-runtime.js'
+    const runtimeChunk = createChunk(runtimeFileName, 'exports.__commonJSMin = () => "runtime";')
+    runtimeChunk.isEntry = false
+
+    const rootSharedChunk = createChunk(
+      'issue-340-shared.js',
+      [
+        'const runtime = require("./rolldown-runtime.js");',
+        'const factory = runtime.__commonJSMin ? runtime.__commonJSMin : runtime.t;',
+        'exports.shared = factory;',
+      ].join(''),
+      [runtimeFileName],
+    )
+    rootSharedChunk.isEntry = false
+
+    const subpackageEntry = createChunk(
+      'subpackages/user/register/form.js',
+      'const shared = require("../../../issue-340-shared.js");exports.page = shared;',
+      ['issue-340-shared.js'],
+    )
+
+    const bundle: OutputBundle = {
+      [runtimeFileName]: runtimeChunk,
+      [rootSharedChunk.fileName]: rootSharedChunk,
+      [subpackageEntry.fileName]: subpackageEntry,
+    }
+
+    const emitted: Array<{ fileName: string, source: string }> = []
+    const duplicateEvents: Array<{ runtimeFileName: string, duplicates: Array<{ fileName: string }> }> = []
+
+    applyRuntimeChunkLocalization.call(createPluginContext(emitted), bundle, {
+      subPackageRoots: ['subpackages/user'],
+      runtimeFileName,
+      onDuplicate: payload => duplicateEvents.push(payload),
+    })
+
+    expect(emitted).toEqual([])
+    expect(duplicateEvents).toEqual([])
+
+    const retainedSharedChunk = bundle[rootSharedChunk.fileName]
+    expect(retainedSharedChunk?.type).toBe('chunk')
+    if (retainedSharedChunk?.type === 'chunk') {
+      expect(retainedSharedChunk.code).toContain('require("./rolldown-runtime.js")')
+      expect(retainedSharedChunk.imports).toContain(runtimeFileName)
+    }
+
+    const retainedSubpackageEntry = bundle[subpackageEntry.fileName]
+    expect(retainedSubpackageEntry?.type).toBe('chunk')
+    if (retainedSubpackageEntry?.type === 'chunk') {
+      expect(retainedSubpackageEntry.code).toContain('require("../../../issue-340-shared.js")')
+      expect(retainedSubpackageEntry.code).not.toContain('rolldown-runtime.js')
+    }
+  })
 })
