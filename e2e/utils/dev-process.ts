@@ -17,6 +17,14 @@ interface DevProcessController {
 
 const TRACKED_DEV_PIDS = new Set<number>()
 
+interface ProcessEntry {
+  pid: number
+  ppid: number
+  command: string
+}
+
+const PROCESS_ENTRY_SEPARATOR_RE = /\s+/
+
 function normalizeErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message
@@ -52,20 +60,77 @@ function isPidAlive(pid: number) {
   }
 }
 
+async function listUnixProcesses() {
+  const { stdout } = await execa('ps', ['-Ao', 'pid=,ppid=,command='], {
+    stdin: 'ignore',
+  })
+
+  return stdout
+    .split('\n')
+    .map((line) => {
+      const trimmed = line.trim()
+      if (!trimmed) {
+        return null
+      }
+
+      const [pidSegment, ppidSegment, ...commandSegments] = trimmed.split(PROCESS_ENTRY_SEPARATOR_RE)
+      if (!pidSegment || !ppidSegment || commandSegments.length === 0) {
+        return null
+      }
+
+      return {
+        pid: Number(pidSegment),
+        ppid: Number(ppidSegment),
+        command: commandSegments.join(' '),
+      } satisfies ProcessEntry
+    })
+    .filter((entry): entry is ProcessEntry => entry != null)
+}
+
+function collectProcessTreePids(rootPid: number, processList: ProcessEntry[]) {
+  const childrenMap = new Map<number, number[]>()
+  for (const processEntry of processList) {
+    if (!childrenMap.has(processEntry.ppid)) {
+      childrenMap.set(processEntry.ppid, [])
+    }
+    childrenMap.get(processEntry.ppid)!.push(processEntry.pid)
+  }
+
+  const orderedPids: number[] = []
+  const visit = (pid: number) => {
+    const childPidList = childrenMap.get(pid) ?? []
+    for (const childPid of childPidList) {
+      visit(childPid)
+    }
+    orderedPids.push(pid)
+  }
+  visit(rootPid)
+  return orderedPids
+}
+
 async function terminatePid(pid: number, forceKillDelayMs: number) {
   if (!isPidAlive(pid)) {
     TRACKED_DEV_PIDS.delete(pid)
     return
   }
 
+  let targetPidList = [pid]
   try {
-    process.kill(pid, 'SIGTERM')
+    const processList = await listUnixProcesses()
+    targetPidList = collectProcessTreePids(pid, processList)
+  }
+  catch {}
+
+  try {
+    for (const targetPid of targetPidList) {
+      process.kill(targetPid, 'SIGTERM')
+    }
   }
   catch {}
 
   const deadline = Date.now() + forceKillDelayMs
   while (Date.now() < deadline) {
-    if (!isPidAlive(pid)) {
+    if (targetPidList.every(targetPid => !isPidAlive(targetPid))) {
       TRACKED_DEV_PIDS.delete(pid)
       return
     }
@@ -73,7 +138,11 @@ async function terminatePid(pid: number, forceKillDelayMs: number) {
   }
 
   try {
-    process.kill(pid, 'SIGKILL')
+    for (const targetPid of targetPidList) {
+      if (isPidAlive(targetPid)) {
+        process.kill(targetPid, 'SIGKILL')
+      }
+    }
   }
   catch {}
 
@@ -83,6 +152,24 @@ async function terminatePid(pid: number, forceKillDelayMs: number) {
 export async function cleanupTrackedDevProcesses(forceKillDelayMs = 3_000) {
   const pidList = [...TRACKED_DEV_PIDS]
   for (const pid of pidList) {
+    await terminatePid(pid, forceKillDelayMs)
+  }
+}
+
+export async function cleanupProcessesByCommandPatterns(
+  commandPatterns: readonly string[],
+  forceKillDelayMs = 3_000,
+) {
+  const processList = await listUnixProcesses()
+  const matchedPidSet = new Set<number>()
+
+  for (const processEntry of processList) {
+    if (commandPatterns.some(pattern => processEntry.command.includes(pattern))) {
+      matchedPidSet.add(processEntry.pid)
+    }
+  }
+
+  for (const pid of matchedPidSet) {
     await terminatePid(pid, forceKillDelayMs)
   }
 }

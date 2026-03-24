@@ -1,6 +1,6 @@
 import process from 'node:process'
 import { execa } from 'execa'
-import { cleanupTrackedDevProcesses } from './dev-process'
+import { cleanupProcessesByCommandPatterns, cleanupTrackedDevProcesses } from './dev-process'
 
 const E2E_APP_PATTERN = 'e2e-apps/'
 const DEV_COMMAND_PATTERNS = [
@@ -24,6 +24,8 @@ export async function cleanupResidualDevProcesses() {
 
   await cleanupTrackedDevProcesses(2_500)
 
+  const processMatchPatterns = DEV_COMMAND_PATTERNS.map(buildProcessMatchPattern)
+
   for (const commandPattern of DEV_COMMAND_PATTERNS) {
     const processMatchPattern = buildProcessMatchPattern(commandPattern)
 
@@ -42,5 +44,9 @@ export async function cleanupResidualDevProcesses() {
     })
   }
 
+  try {
+    await cleanupProcessesByCommandPatterns(processMatchPatterns, 2_500)
+  }
+  catch {}
   await sleep(1_000)
 }
