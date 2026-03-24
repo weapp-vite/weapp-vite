@@ -117,7 +117,7 @@
     "@babel/parser": "catalog:",
     "@babel/traverse": "catalog:",
     "@babel/types": "catalog:",
-    "@oxc-project/types": "^0.121.0",
+    "@oxc-project/types": "^0.122.0",
     "oxc-parser": "^0.121.0",
     "oxc-walker": "^0.7.0"
   },
