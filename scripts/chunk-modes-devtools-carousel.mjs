@@ -10,6 +10,7 @@ const DEFAULT_INTERVAL_MS = 5000
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(scriptDir, '..')
 const projectScriptPath = path.join(repoRoot, 'scripts', 'chunk-modes-project.mjs')
+const cliPath = path.join(repoRoot, 'packages', 'weapp-vite', 'bin', 'weapp-vite.js')
 
 const scenarios = [
   { id: 'duplicate-common', buildScript: 'build:duplicate:common' },
@@ -98,24 +99,16 @@ function wait(ms) {
 }
 
 async function closeWechatDevtoolsIfNeeded() {
-  if (process.platform !== 'darwin') {
-    return
-  }
-
-  const appName = process.env.WEAPP_DEVTOOLS_APP_NAME || 'wechatwebdevtools'
-  const result = await runCommand('osascript', [
-    '-e',
-    `tell application "${appName}" to quit`,
-  ], {
+  const result = await runCommand('node', [cliPath, 'close'], {
     cwd: repoRoot,
     env: process.env,
   })
 
   if ((result.code ?? 0) !== 0) {
-    console.warn(`[chunk-modes] warn: failed to close WeChat DevTools app "${appName}" before switching scenarios`)
+    console.warn('[chunk-modes] warn: failed to close WeChat DevTools before switching scenarios')
   }
 
-  await wait(1200)
+  await wait(800)
 }
 
 function waitForEnter(message) {
