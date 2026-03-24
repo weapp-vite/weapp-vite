@@ -6,6 +6,7 @@ import path from 'pathe'
 import {
   formatRetryHotkeyPrompt,
   formatWechatIdeLoginRequiredError,
+  getConfig,
   isWechatIdeLoginRequiredError,
   parse,
   waitForRetryKeypress,
@@ -45,6 +46,9 @@ export async function openIde(platform?: MpPlatform, projectPath?: string) {
 }
 
 export async function closeIde() {
+  const config = await getConfig()
+  const cliPath = config.cliPath?.trim() ? config.cliPath : null
+
   try {
     await parse(['close'])
     return true
@@ -66,6 +70,11 @@ export async function closeIde() {
 
     if (await closeIdeByAppleScript()) {
       logger.info('已回退为系统级关闭微信开发者工具。')
+      return true
+    }
+
+    if (await closeIdeByProcessKill(cliPath)) {
+      logger.info('已回退为进程级关闭微信开发者工具。')
       return true
     }
 
@@ -158,6 +167,24 @@ async function closeIdeByAppleScript() {
   const appName = process.env.WEAPP_DEVTOOLS_APP_NAME || 'wechatwebdevtools'
   try {
     await execFileAsync('osascript', ['-e', `tell application "${appName}" to quit`])
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+async function closeIdeByProcessKill(cliPath: string | null) {
+  if (!cliPath) {
+    return false
+  }
+
+  const appContentsRoot = cliPath.includes('.app/')
+    ? cliPath.slice(0, cliPath.indexOf('.app/') + '.app'.length)
+    : path.dirname(path.dirname(cliPath))
+
+  try {
+    await execFileAsync('pkill', ['-f', appContentsRoot])
     return true
   }
   catch {
