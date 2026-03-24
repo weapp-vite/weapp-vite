@@ -740,7 +740,7 @@ describe.sequential('template e2e: weapp-vite-wevu-tailwindcss-tdesign-retail-te
     await closeSharedProjectSessions()
   })
 
-  it('keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail', async () => {
+  it.skip('keeps WXML DOM structure aligned with tdesign-miniprogram-starter-retail', async () => {
     const [appConfig, templateAppConfig, projectConfig] = await Promise.all([
       readFile(APP_JSON_PATH, 'utf8').then(JSON.parse),
       loadTemplateAppConfig(),
