@@ -102,6 +102,7 @@
     "script:sync": "monorepo sync",
     "script:clean": "monorepo clean",
     "script:mirror": "monorepo mirror",
+    "sync:project-private-lib-version": "node scripts/sync-project-private-lib-version.mjs",
     "skills:link": "node scripts/link-agent-skills.mjs",
     "skills:link:dry": "node scripts/link-agent-skills.mjs --dry-run",
     "skills:check:yaml": "node skills/scripts/validate-skills-yaml.mjs",

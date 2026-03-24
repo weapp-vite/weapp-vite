@@ -3,5 +3,6 @@
   "projectname": "vite-native-ts-skyline",
   "setting": {
     "compileHotReLoad": true
-  }
+  },
+  "libVersion": "3.15.0"
 }

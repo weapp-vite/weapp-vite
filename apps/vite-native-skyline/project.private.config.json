@@ -4,5 +4,6 @@
   "setting": {
     "compileHotReLoad": true,
     "skylineRenderEnable": true
-  }
+  },
+  "libVersion": "3.15.0"
 }

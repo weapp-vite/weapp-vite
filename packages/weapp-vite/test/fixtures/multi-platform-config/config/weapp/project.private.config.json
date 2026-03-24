@@ -1,3 +1,4 @@
 {
-  "appid": "wx-private"
+  "appid": "wx-private",
+  "libVersion": "3.15.0"
 }
