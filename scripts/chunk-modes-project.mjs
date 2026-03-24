@@ -131,6 +131,14 @@ async function prepareScenarioProject(scenarioId) {
   const privateConfig = await fs.readFile(path.join(chunkModesRoot, 'project.private.config.json'), 'utf8')
   await fs.writeFile(path.join(targetRoot, 'project.private.config.json'), privateConfig)
 
+  const sourcePackageJson = JSON.parse(await fs.readFile(path.join(chunkModesRoot, 'package.json'), 'utf8'))
+  const scenarioPackageJson = {
+    name: `${sourcePackageJson.name}-${scenarioId}`,
+    private: true,
+    type: sourcePackageJson.type ?? 'module',
+  }
+  await fs.writeFile(path.join(targetRoot, 'package.json'), `${JSON.stringify(scenarioPackageJson, null, 2)}\n`)
+
   return {
     targetRoot,
     targetDist,

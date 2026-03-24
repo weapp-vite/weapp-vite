@@ -4,6 +4,7 @@ const WEAPP_VITE_NATIVE_COMMANDS = new Set([
   'dev',
   'serve',
   'build',
+  'close',
   'analyze',
   'init',
   'open',

@@ -97,6 +97,27 @@ function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+async function closeWechatDevtoolsIfNeeded() {
+  if (process.platform !== 'darwin') {
+    return
+  }
+
+  const appName = process.env.WEAPP_DEVTOOLS_APP_NAME || 'wechatwebdevtools'
+  const result = await runCommand('osascript', [
+    '-e',
+    `tell application "${appName}" to quit`,
+  ], {
+    cwd: repoRoot,
+    env: process.env,
+  })
+
+  if ((result.code ?? 0) !== 0) {
+    console.warn(`[chunk-modes] warn: failed to close WeChat DevTools app "${appName}" before switching scenarios`)
+  }
+
+  await wait(1200)
+}
+
 function waitForEnter(message) {
   return new Promise((resolve) => {
     const rl = readline.createInterface({
@@ -194,6 +215,8 @@ async function runScenario(scenario, index, total, options) {
     console.log(`[chunk-modes] ${scenario.id} 已打开独立项目，${options.intervalMs}ms 后自动切换到下一个场景。`)
     await wait(options.intervalMs)
   }
+
+  await closeWechatDevtoolsIfNeeded()
 }
 
 async function main() {
