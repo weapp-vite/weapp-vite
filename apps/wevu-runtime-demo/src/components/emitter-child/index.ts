@@ -42,7 +42,8 @@ defineComponent({
   setup(props, { emit }) {
     function emitPlus() {
       const step = props.step ?? 1
-      const label = props.transformer(step)
+      const transform = props.transformer as unknown as Transformer
+      const label = transform(step)
 
       emit('plus', {
         step,

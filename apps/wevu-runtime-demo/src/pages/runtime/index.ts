@@ -76,7 +76,7 @@ defineComponent({
       if (index < 0 || index >= todos.value.length) {
         return false
       }
-      todos.value = todos.value.filter((_, i) => i !== index)
+      todos.value = todos.value.filter((_: string, i: number) => i !== index)
       appendLog(`删除待办：索引 ${index}`)
       return true
     }

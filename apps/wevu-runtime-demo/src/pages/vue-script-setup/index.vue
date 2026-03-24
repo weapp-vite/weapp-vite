@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useAttrs, useSlots } from 'vue'
-import { computed, ref } from 'wevu'
+import { computed, ref, useAttrs, useSlots } from 'wevu'
 
 type Level = 'info' | 'warning' | 'danger'
 

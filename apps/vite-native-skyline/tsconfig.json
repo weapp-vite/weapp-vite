@@ -4,8 +4,7 @@
     "jsx": "preserve",
     "lib": [
       "ES2020",
-      "DOM",
-      "DOM.Iterable"
+      "DOM"
     ],
     "useDefineForClassFields": false,
     "module": "ESNext",

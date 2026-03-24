@@ -1,9 +1,12 @@
 <script setup lang="ts">
-const tips = [
+const tipRows = [
   '这个组件用于演示 <component :is> 动态组件切换',
   '在小程序里依赖 usingComponents + data-is 机制',
   '语法覆盖为主，不保证语义与 Web 端一致',
-]
+].map((text, index) => ({
+  id: index + 1,
+  text,
+}))
 </script>
 
 <template>
@@ -12,8 +15,8 @@ const tips = [
       Dynamic A
     </text>
     <view class="list">
-      <view v-for="(item, index) in tips" :key="index" class="item">
-        <text>{{ index + 1 }}. {{ item }}</text>
+      <view v-for="item in tipRows" :key="item.id" class="item">
+        <text>{{ item.id }}. {{ item.text }}</text>
       </view>
     </view>
   </view>

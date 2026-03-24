@@ -1,4 +1,4 @@
-import type { RuntimeInstance } from 'wevu'
+import type { RuntimeInstance, WatchOptions } from 'wevu'
 import { createApp, onError, onErrorCaptured, onHide, onShow } from 'wevu'
 
 import { pushLifecycleLog } from './stores/lifecycle'
@@ -55,7 +55,7 @@ export const appRuntime = createApp({
     theme: 'dark',
   } satisfies AppGlobalData,
   setup(_props, { runtime, watch, instance }) {
-    const app = instance as AppInstance
+    const app = instance as unknown as AppInstance
     runtime.methods.appendLog('应用已启动')
     runtime.methods.markInitialized()
     pushLifecycleLog('setup', 'app', '应用 setup 已执行')
@@ -72,15 +72,15 @@ export const appRuntime = createApp({
       pushLifecycleLog('onErrorCaptured', 'alias', `${err instanceof Error ? err.message : String(err ?? '')}`)
     })
 
+    app.globalData.runtimeLogs = runtime.proxy.logs.slice()
+    app.globalData.theme = runtime.proxy.theme as AppGlobalData['theme']
+
     watch(
       () => runtime.proxy.logs.slice(),
       (logs) => {
         app.globalData.runtimeLogs = logs.slice()
       },
-      {
-        immediate: true,
-        deep: true,
-      },
+      { deep: true } as WatchOptions,
     )
 
     watch(
@@ -88,7 +88,7 @@ export const appRuntime = createApp({
       (theme) => {
         app.globalData.theme = theme as AppGlobalData['theme']
       },
-      { immediate: true },
+      undefined,
     )
   },
   onLaunch(this: AppInstance) {

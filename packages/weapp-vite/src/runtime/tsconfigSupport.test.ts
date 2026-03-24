@@ -26,10 +26,11 @@ describe('tsconfig support', () => {
 
     expect(shared.compilerOptions.target).toBe('ES2023')
     expect(app.extends).toBe('./tsconfig.shared.json')
-    expect(app.compilerOptions.baseUrl).toBe('..')
+    expect(app.compilerOptions.lib).toEqual(['ES2023', 'DOM'])
     expect(app.compilerOptions.types).toContain('miniprogram-api-typings')
     expect(app.compilerOptions.types).toContain('weapp-vite/client')
     expect(app.include).toContain('../src/**/*')
+    expect(app.compilerOptions.paths['@/*']).toEqual(['../src/*'])
     expect(node.extends).toBe('./tsconfig.shared.json')
     expect(node.compilerOptions.types).toContain('node')
     expect(node.include).toContain('../vite.config.ts')
@@ -40,6 +41,8 @@ describe('tsconfig support', () => {
 
   it('adds wevu and web-aware settings and merges user overrides', async () => {
     const files = await createManagedTsconfigFiles(createCtx({
+      cwd: '/repo/apps/demo',
+      configFilePath: '/repo/apps/demo/vite.config.ts',
       packageJson: {
         dependencies: {
           wevu: '^1.0.0',
@@ -67,8 +70,8 @@ describe('tsconfig support', () => {
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
 
     expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client', 'vite/client']))
-    expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['.weapp-vite/typed-components.d.ts'])
-    expect(app.compilerOptions.paths['@weapp-vite/web']).toEqual(['../../packages/web/src/index.ts'])
+    expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['./typed-components.d.ts'])
+    expect(app.compilerOptions.paths['@weapp-vite/web']).toEqual(['../../../packages/web/src/index.ts'])
     expect(app.vueCompilerOptions.lib).toBe('wevu')
     expect(app.vueCompilerOptions.target).toBe(3.5)
     expect(app.include).toContain('../playground/**/*.ts')
@@ -106,7 +109,7 @@ describe('tsconfig support', () => {
 
     expect(shared.compilerOptions.strict).toBe(false)
     expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client']))
-    expect(app.compilerOptions.paths['tdesign-miniprogram/*']).toEqual(['./node_modules/tdesign-miniprogram/miniprogram_dist/*'])
+    expect(app.compilerOptions.paths['tdesign-miniprogram/*']).toEqual(['../node_modules/tdesign-miniprogram/miniprogram_dist/*'])
     expect(app.include).toContain('../legacy/**/*.ts')
     expect(app.exclude).toContain('../legacy-exclude/**')
     expect(server.files).toContain('../server/entry.ts')
@@ -125,7 +128,7 @@ describe('tsconfig support', () => {
 
     expect(app.include).toContain('../src/**/*')
     expect(app.compilerOptions.types).toEqual(expect.arrayContaining(['miniprogram-api-typings', 'weapp-vite/client']))
-    expect(app.compilerOptions.paths['@/*']).toEqual(['src/*'])
+    expect(app.compilerOptions.paths['@/*']).toEqual(['../src/*'])
   })
 
   it('points default @ alias to configured srcRoot', async () => {
@@ -135,7 +138,7 @@ describe('tsconfig support', () => {
     }))
     const app = JSON.parse(files.find(file => file.path.endsWith('tsconfig.app.json'))!.content)
 
-    expect(app.compilerOptions.paths['@/*']).toEqual(['miniprogram/*'])
+    expect(app.compilerOptions.paths['@/*']).toEqual(['../miniprogram/*'])
   })
 
   it('keeps builtin app macro types when user overrides app compilerOptions.types', async () => {
@@ -183,7 +186,7 @@ describe('tsconfig support', () => {
 
     const app = await fs.readJson(path.join(root, '.weapp-vite', 'tsconfig.app.json'))
     const server = await fs.readJson(path.join(root, '.weapp-vite', 'tsconfig.server.json'))
-    expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['.weapp-vite/typed-components.d.ts'])
+    expect(app.compilerOptions.paths['weapp-vite/typed-components']).toEqual(['./typed-components.d.ts'])
     expect(server.files).toEqual([])
   })
 
@@ -234,6 +237,6 @@ describe('tsconfig support', () => {
     const app = JSON.parse(after)
 
     expect(after).toBe(before)
-    expect(app.compilerOptions.paths['tdesign-miniprogram/*']).toEqual(['./node_modules/tdesign-miniprogram/miniprogram_dist/*'])
+    expect(app.compilerOptions.paths['tdesign-miniprogram/*']).toEqual(['../node_modules/tdesign-miniprogram/miniprogram_dist/*'])
   })
 })
