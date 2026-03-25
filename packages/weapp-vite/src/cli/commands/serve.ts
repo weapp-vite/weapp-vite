@@ -10,7 +10,7 @@ import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { maybeStartForwardConsole } from '../forwardConsole'
 import { logBuildAppFinish } from '../logBuildAppFinish'
 import { openIde, resolveIdeProjectRoot } from '../openIde'
-import { filterDuplicateOptions, resolveConfigFile } from '../options'
+import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
 
 export function registerServeCommand(cli: CAC) {
@@ -23,6 +23,7 @@ export function registerServeCommand(cli: CAC) {
     .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .option('--host [host]', `[string] web dev server host`)
+    .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
     .option('--analyze', `[boolean] 启动分包分析仪表盘 (实验特性)`, { default: false })
     .action(async (root: string, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
@@ -52,7 +53,7 @@ export function registerServeCommand(cli: CAC) {
       })
       const { buildService, configService, webService } = ctx
       logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
-      const enableAnalyze = Boolean(options.analyze && targets.runMini)
+      const enableAnalyze = Boolean(isUiEnabled(options) && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
 
       const triggerAnalyzeUpdate = async () => {

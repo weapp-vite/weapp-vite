@@ -36,7 +36,9 @@
     "wxs": "tsup",
     "inspect": "vite preview --outDir .vite-inspect",
     "extract": "tsx scripts/extract.ts",
-    "hmr": "tsx ./touch.ts"
+    "hmr": "tsx ./touch.ts",
+    "dev:ui": "cross-env weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "//": {
     "cos-wx-sdk-v5": "^1.7.2"
@@ -71,6 +73,7 @@
     "vite-plugin-image-optimizer": "^2.0.3",
     "vite-plugin-inspect": "catalog:",
     "weapp-tailwindcss": "catalog:",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

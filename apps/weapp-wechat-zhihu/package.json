@@ -22,7 +22,9 @@
     "open": "weapp-vite open",
     "lint:fix": "eslint . --fix",
     "open:dev": "weapp open -p",
-    "postinstall": "weapp-tw patch && weapp-vite prepare"
+    "postinstall": "weapp-tw patch && weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "dependencies": {
     "tdesign-miniprogram": "catalog:"
@@ -34,6 +36,7 @@
     "tailwindcss": "catalog:",
     "weapp-ide-cli": "workspace:*",
     "weapp-tailwindcss": "catalog:",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

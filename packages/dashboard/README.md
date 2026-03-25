@@ -1,8 +1,8 @@
 # @weapp-vite/dashboard
 
-`@weapp-vite/dashboard` 是 `weapp-vite analyze` 的可选仪表盘包。
+`@weapp-vite/dashboard` 是 `weapp-vite` 调试 UI 的可选前端包。
 
-它负责承载分包分析的前端可视化界面，本身不直接参与小程序构建；只有当用户显式安装这个包后，`weapp-vite analyze`、`weapp-vite build --analyze`、`weapp-vite dev --analyze` 才会自动发现并启动仪表盘。
+它负责承载 `weapp-vite --ui` 的前端可视化界面，本身不直接参与小程序构建；只有当用户显式安装这个包后，`weapp-vite analyze`、`weapp-vite build --ui`、`weapp-vite dev --ui` 才会自动发现并启动页面。
 
 未安装时，`weapp-vite` 会：
 
@@ -41,6 +41,10 @@ weapp-vite analyze
 或在构建/开发时启用分析：
 
 ```bash
+weapp-vite build --ui
+weapp-vite dev --ui
+
+# 兼容旧参数
 weapp-vite build --analyze
 weapp-vite dev --analyze
 ```

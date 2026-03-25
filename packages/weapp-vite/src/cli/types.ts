@@ -24,6 +24,7 @@ export interface GlobalCLIOptions {
   'platform'?: string
   'projectConfig'?: string
   'analyze'?: boolean
+  'ui'?: boolean
 }
 
 export interface AnalyzeCLIOptions extends GlobalCLIOptions {

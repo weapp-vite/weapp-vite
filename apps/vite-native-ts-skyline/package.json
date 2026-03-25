@@ -21,7 +21,9 @@
     "build": "weapp-vite build",
     "open": "weapp-vite open",
     "build-npm": "weapp-vite build-npm",
-    "postinstall": "weapp-tw patch && weapp-vite prepare"
+    "postinstall": "weapp-tw patch && weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui -o",
+    "build:ui": "weapp-vite build --ui"
   },
   "dependencies": {
     "tdesign-miniprogram": "catalog:"
@@ -32,6 +34,7 @@
     "postcss": "catalog:",
     "tailwindcss": "catalog:",
     "weapp-tailwindcss": "catalog:",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

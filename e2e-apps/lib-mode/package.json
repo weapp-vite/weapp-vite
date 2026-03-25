@@ -8,9 +8,12 @@
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
     "pretest:types": "node ./scripts/prepare-type-fixtures.mjs",
-    "test:types": "tsd"
+    "test:types": "tsd",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

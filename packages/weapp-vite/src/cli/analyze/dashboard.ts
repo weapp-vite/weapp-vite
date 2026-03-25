@@ -1,8 +1,8 @@
 import type { PluginOption, ViteDevServer } from 'vite'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
 import process from 'node:process'
-import { getPackageInfoSync } from 'local-pkg'
 import { resolveCommand } from 'package-manager-detector/commands'
 import path from 'pathe'
 import { createServer } from 'vite'
@@ -11,6 +11,7 @@ import logger, { colors } from '../../logger'
 const ANALYZE_GLOBAL_KEY = '__WEAPP_VITE_ANALYZE_RESULT__'
 const ANALYZE_DASHBOARD_PACKAGE_NAME = '@weapp-vite/dashboard'
 type PackageManagerAgent = Parameters<typeof resolveCommand>[0]
+const require = createRequire(import.meta.url)
 
 function createInstallCommand(agent: PackageManagerAgent | undefined) {
   const resolved = resolveCommand(agent ?? 'npm', 'install', [ANALYZE_DASHBOARD_PACKAGE_NAME])
@@ -21,12 +22,22 @@ function createInstallCommand(agent: PackageManagerAgent | undefined) {
 }
 
 function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: PackageManagerAgent }) {
-  const packageInfo = getPackageInfoSync(ANALYZE_DASHBOARD_PACKAGE_NAME, {
-    paths: options?.cwd ? [options.cwd] : undefined,
-  })
-  const dashboardRoot = packageInfo
-    ? path.resolve(packageInfo.rootPath, 'dist')
-    : undefined
+  const resolvePaths = options?.cwd && options.cwd !== process.cwd()
+    ? [options.cwd, process.cwd()]
+    : options?.cwd
+      ? [options.cwd]
+      : undefined
+
+  let dashboardRoot: string | undefined
+  try {
+    const dashboardPackageJsonPath = require.resolve(`${ANALYZE_DASHBOARD_PACKAGE_NAME}/package.json`, {
+      paths: resolvePaths,
+    })
+    dashboardRoot = path.resolve(path.dirname(dashboardPackageJsonPath), 'dist')
+  }
+  catch {
+    dashboardRoot = undefined
+  }
 
   if (dashboardRoot && fs.existsSync(dashboardRoot)) {
     return {
@@ -34,7 +45,20 @@ function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: Pa
     }
   }
 
-  logger.warn(`[weapp-vite analyze] 未安装可选仪表盘包 ${colors.bold(colors.green(ANALYZE_DASHBOARD_PACKAGE_NAME))}，已自动降级关闭 dashboard 能力。`)
+  const workspaceFallbackRoots = [
+    path.resolve(import.meta.dirname, '../../../../dashboard/dist'),
+    path.resolve(import.meta.dirname, '../../dashboard/dist'),
+  ]
+
+  for (const candidate of workspaceFallbackRoots) {
+    if (fs.existsSync(candidate)) {
+      return {
+        root: candidate,
+      }
+    }
+  }
+
+  logger.warn(`[weapp-vite ui] 未安装可选仪表盘包 ${colors.bold(colors.green(ANALYZE_DASHBOARD_PACKAGE_NAME))}，已自动降级关闭 dashboard 能力。`)
   logger.info(`如需启用，请执行 ${colors.bold(colors.green(createInstallCommand(options?.packageManagerAgent)))}`)
   return undefined
 }
@@ -180,17 +204,17 @@ export async function startAnalyzeDashboard(
   }
 
   if (options?.watch) {
-    logger.info('分析仪表盘已启动（实时模式），按 Ctrl+C 退出。')
+    logger.info('weapp-vite UI 已启动（分析视图，实时模式），按 Ctrl+C 退出。')
     for (const url of handle.urls) {
-      logger.info(`分包分析仪表盘：${url}`)
+      logger.info(`weapp-vite UI：${url}`)
     }
     void waitPromise // 允许异步清理
     return handle
   }
 
-  logger.info('分析仪表盘已启动（静态模式），按 Ctrl+C 退出。')
+  logger.info('weapp-vite UI 已启动（分析视图，静态模式），按 Ctrl+C 退出。')
   for (const url of handle.urls) {
-    logger.info(`分包分析仪表盘：${url}`)
+    logger.info(`weapp-vite UI：${url}`)
   }
   await waitPromise
 }

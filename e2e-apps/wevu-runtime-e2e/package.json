@@ -5,9 +5,12 @@
   "scripts": {
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
-    "build": "weapp-vite build"
+    "build": "weapp-vite build",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"
   }

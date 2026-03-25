@@ -12,9 +12,12 @@
     "build": "weapp-vite build --platform weapp --skipNpm",
     "build:duplicate": "WEAPP_CHUNK_STRATEGY=duplicate WEAPP_CHUNK_OUTDIR=dist-duplicate weapp-vite build --platform weapp --skipNpm",
     "build:hoist": "WEAPP_CHUNK_STRATEGY=hoist WEAPP_CHUNK_OUTDIR=dist-hoist weapp-vite build --platform weapp --skipNpm",
-    "build:matrix": "pnpm run build:duplicate && pnpm run build:hoist"
+    "build:matrix": "pnpm run build:duplicate && pnpm run build:hoist",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui --platform weapp --skipNpm"
   },
   "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
     "picocolors": "^1.1.1",
     "weapp-vite": "workspace:*",
     "wevu": "workspace:*"

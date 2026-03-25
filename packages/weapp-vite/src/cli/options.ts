@@ -49,3 +49,7 @@ export function coerceBooleanOption(value: unknown) {
   }
   return Boolean(value)
 }
+
+export function isUiEnabled(options: Pick<GlobalCLIOptions, 'ui' | 'analyze'>) {
+  return Boolean(options.ui || options.analyze)
+}

@@ -12,7 +12,9 @@
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
     "g": "weapp-vite generate",
-    "postinstall": "weapp-vite prepare"
+    "postinstall": "weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "dependencies": {
     "dayjs": "catalog:",
@@ -22,6 +24,7 @@
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",
     "typescript": "catalog:",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

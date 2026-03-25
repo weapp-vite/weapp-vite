@@ -5,9 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startAnalyzeDashboard } from './dashboard'
 
 const existsSyncMock = vi.hoisted(() => vi.fn(() => true))
-const getPackageInfoSyncMock = vi.hoisted(() => vi.fn(() => ({
-  rootPath: '/mock/dashboard',
-})))
+const resolveDashboardPackageMock = vi.hoisted(() => vi.fn(() => '/mock/dashboard/package.json'))
 const resolveCommandMock = vi.hoisted(() => vi.fn(() => ({
   command: 'pnpm',
   args: ['add', '@weapp-vite/dashboard'],
@@ -30,8 +28,10 @@ vi.mock('vite', () => ({
   createServer: createServerMock,
 }))
 
-vi.mock('local-pkg', () => ({
-  getPackageInfoSync: getPackageInfoSyncMock,
+vi.mock('node:module', () => ({
+  createRequire: vi.fn(() => ({
+    resolve: resolveDashboardPackageMock,
+  })),
 }))
 
 vi.mock('package-manager-detector/commands', () => ({
@@ -88,10 +88,8 @@ function createAnalyzeResult(label: string) {
 describe('analyze dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    existsSyncMock.mockReturnValue(true)
-    getPackageInfoSyncMock.mockReturnValue({
-      rootPath: '/mock/dashboard',
-    })
+    existsSyncMock.mockImplementation((value: string) => value === '/mock/dashboard/dist')
+    resolveDashboardPackageMock.mockReturnValue('/mock/dashboard/package.json')
   })
 
   afterEach(() => {
@@ -99,14 +97,17 @@ describe('analyze dashboard', () => {
   })
 
   it('downgrades when optional dashboard package is unavailable', async () => {
-    getPackageInfoSyncMock.mockReturnValue(undefined)
+    resolveDashboardPackageMock.mockImplementation(() => {
+      throw new Error('missing')
+    })
+    existsSyncMock.mockReturnValue(false)
 
     await expect(startAnalyzeDashboard(createAnalyzeResult('missing'), {
       cwd: '/project',
       packageManagerAgent: 'pnpm',
     })).resolves.toBeUndefined()
     expect(createServerMock).not.toHaveBeenCalled()
-    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('已自动降级关闭 dashboard 能力'))
+    expect(loggerMock.warn).toHaveBeenCalledWith(expect.stringContaining('[weapp-vite ui]'))
     expect(loggerMock.info).toHaveBeenCalledWith(expect.stringContaining('pnpm add @weapp-vite/dashboard'))
   })
 
@@ -157,8 +158,8 @@ describe('analyze dashboard', () => {
     server.httpServer?.emit('close')
     await handle?.waitForExit()
     expect(server.close).toHaveBeenCalledTimes(2)
-    expect(loggerMock.info).toHaveBeenCalledWith('分析仪表盘已启动（实时模式），按 Ctrl+C 退出。')
-    expect(loggerMock.info).toHaveBeenCalledWith('分包分析仪表盘：http://127.0.0.1:4173/')
+    expect(loggerMock.info).toHaveBeenCalledWith('weapp-vite UI 已启动（分析视图，实时模式），按 Ctrl+C 退出。')
+    expect(loggerMock.info).toHaveBeenCalledWith('weapp-vite UI：http://127.0.0.1:4173/')
   })
 
   it('starts in static mode and resolves with empty urls when vite does not expose resolvedUrls', async () => {
@@ -181,7 +182,7 @@ describe('analyze dashboard', () => {
     await expect(runPromise).resolves.toBeUndefined()
 
     expect(server.ws?.send).toBeUndefined()
-    expect(loggerMock.info).toHaveBeenCalledWith('分析仪表盘已启动（静态模式），按 Ctrl+C 退出。')
+    expect(loggerMock.info).toHaveBeenCalledWith('weapp-vite UI 已启动（分析视图，静态模式），按 Ctrl+C 退出。')
   })
 
   it('logs close errors when cleanup fails on process signal', async () => {
