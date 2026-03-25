@@ -16,11 +16,11 @@
   },
   "devDependencies": {
     "@weapp-core/schematics": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*",
     "@weapp-vite/volar": "workspace:*",
     "miniprogram-api-typings": "catalog:latest",
     "typescript": "catalog:latest",
     "weapp-vite": "workspace:*",
-    "wevu": "workspace:*",
-    "@weapp-vite/dashboard": "workspace:*"
+    "wevu": "workspace:*"
   }
 }

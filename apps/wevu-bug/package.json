@@ -29,11 +29,11 @@
     "build:all": "weapp-vite build --platform all"
   },
   "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
     "miniprogram-api-typings": "catalog:",
     "typescript": "catalog:",
     "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*",
-    "wevu": "workspace:*",
-    "@weapp-vite/dashboard": "workspace:*"
+    "wevu": "workspace:*"
   }
 }
