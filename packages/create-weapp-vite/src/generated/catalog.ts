@@ -15,7 +15,7 @@ export const TEMPLATE_CATALOG = {
   '@types/node': '^25.5.0',
   '@types/semver': '^7.7.1',
   '@vant/weapp': '^1.11.7',
-  '@vue/compiler-core': '^3.5.30',
+  '@vue/compiler-core': '^3.5.31',
   '@vue/language-core': '^3.2.6',
   'antd-mini': '^3.4.3',
   'bundle-require': '^5.1.0',
@@ -54,7 +54,7 @@ export const TEMPLATE_CATALOG = {
   tslib: '^2.8.1',
   typescript: '^6.0.2',
   vite: '8.0.2',
-  vue: '^3.5.30',
+  vue: '^3.5.31',
   zod: '^4.3.6'
 } as const
 
