@@ -22,7 +22,7 @@ import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { resolveWeappWebConfig } from '../web'
 import { configureBuildAndPlugins } from './loadConfig/build'
 import { formatProjectConfigPath, loadPackageJson, normalizeRelativeDistRoot, resolveProjectConfigPaths } from './loadConfig/shared'
-import { shouldEnableTsconfigPathsPlugin } from './tsconfigPaths'
+import { inspectTsconfigPathsUsage } from './tsconfigPaths'
 
 export interface LoadConfigFactoryOptions {
   injectBuiltinAliases: (config: InlineConfig) => void
@@ -206,7 +206,8 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
 
     const srcRoot = config.weapp?.srcRoot ?? ''
-    if (!await shouldEnableTsconfigPathsPlugin(cwd)) {
+    const tsconfigPathsUsage = await inspectTsconfigPathsUsage(cwd)
+    if (!tsconfigPathsUsage.enabled || (tsconfigPathsUsage.references && !tsconfigPathsUsage.root)) {
       injectDefaultSrcAlias(config, cwd, srcRoot)
     }
     const resolvedLibConfig = libEntryConfigured
