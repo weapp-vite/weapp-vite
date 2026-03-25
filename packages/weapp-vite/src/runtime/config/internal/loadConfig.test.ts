@@ -28,6 +28,7 @@ const inspectTsconfigPathsUsageMock = vi.hoisted(() => vi.fn(async () => ({
   enabled: false,
   root: false,
   references: false,
+  referenceAliases: [],
 })))
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 
@@ -109,6 +110,7 @@ beforeEach(() => {
     enabled: false,
     root: false,
     references: false,
+    referenceAliases: [],
   })
   loadConfigFromFileMock.mockResolvedValue({
     config: {},
@@ -328,6 +330,7 @@ describe('runtime config internal loadConfig', () => {
       enabled: true,
       root: true,
       references: false,
+      referenceAliases: [],
     })
     loadConfigFromFileMock.mockResolvedValueOnce({
       config: {
@@ -385,6 +388,12 @@ describe('runtime config internal loadConfig', () => {
       enabled: true,
       root: false,
       references: true,
+      referenceAliases: [
+        {
+          find: '@',
+          replacement: '/project/src',
+        },
+      ],
     })
     loadConfigFromFileMock.mockResolvedValueOnce({
       config: {
