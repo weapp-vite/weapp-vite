@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import type { AnalyzeSubpackagesResult } from '../types'
+import type { AnalyzeSubpackagesResult } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import ModulesPanel from '../components/ModulesPanel.vue'
-import PackagesPanel from '../components/PackagesPanel.vue'
-import { formatBytes, formatPackageType } from '../format'
-import { useAnalyzeDashboardData } from '../useAnalyzeDashboardData'
-import { useTreemapData } from '../useTreemapData'
+import DashboardHeader from '../features/dashboard/components/DashboardHeader.vue'
+import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
+import DashboardTabs from '../features/dashboard/components/DashboardTabs.vue'
+import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
+import OverviewPanel from '../features/dashboard/components/OverviewPanel.vue'
+import PackagesPanel from '../features/dashboard/components/PackagesPanel.vue'
+import SectionNote from '../features/dashboard/components/SectionNote.vue'
+import { useAnalyzeDashboardData } from '../features/dashboard/composables/useAnalyzeDashboardData'
+import { useDashboardPage } from '../features/dashboard/composables/useDashboardPage'
+import { useThemeMode } from '../features/dashboard/composables/useThemeMode'
+import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
+import { dashboardTabs, themeOptions } from '../features/dashboard/constants/view'
 import 'echarts/theme/dark'
 
 echarts.use([
@@ -27,15 +33,13 @@ const updateCount = ref(0)
 const lastUpdatedAt = ref('—')
 let chart: echarts.ECharts | undefined
 let updateListener: (() => void) | undefined
-type DashboardTab = 'overview' | 'packages' | 'modules'
-const route = useRoute()
-const router = useRouter()
+const { themePreference, resolvedTheme, setThemePreference } = useThemeMode()
 
 if (!resultRef.value) {
   throw new Error('[weapp-vite analyze] 未检测到分析数据，请通过 CLI 注入后再访问。')
 }
 
-const { treemapOption } = useTreemapData(resultRef)
+const { treemapOption } = useTreemapData(resultRef, resolvedTheme)
 const {
   summary,
   packageTypeSummary,
@@ -49,53 +53,14 @@ const {
 const visibleDuplicateModules = computed(() => duplicateModules.value.slice(0, 12))
 const visibleLargestFiles = computed(() => largestFiles.value.slice(0, 10))
 const statusText = computed(() => `${updateCount.value} 次数据同步`)
-const totalChunkCount = computed(() => packageInsights.value.reduce((sum, pkg) => sum + pkg.chunkCount, 0))
-const totalAssetCount = computed(() => packageInsights.value.reduce((sum, pkg) => sum + pkg.assetCount, 0))
-const duplicateBytes = computed(() => duplicateModules.value.reduce((sum, mod) => sum + mod.bytes, 0))
-const activeTab = computed<DashboardTab>({
-  get() {
-    const value = route.query.tab
-    if (value === 'packages' || value === 'modules') {
-      return value
-    }
-    return 'overview'
-  },
-  set(value) {
-    void router.replace({
-      query: value === 'overview'
-        ? {}
-        : { tab: value },
-    })
-  },
-})
-const topCards = computed(() => {
-  if (activeTab.value === 'packages') {
-    return [
-      { label: '包体数量', value: String(summary.value.packageCount) },
-      { label: '分包配置', value: String(summary.value.subpackageCount) },
-      { label: 'Chunk 数量', value: String(totalChunkCount.value) },
-      { label: 'Asset 数量', value: String(totalAssetCount.value) },
-      { label: '总产物体积', value: formatBytes(summary.value.totalBytes), wide: true },
-    ]
-  }
-
-  if (activeTab.value === 'modules') {
-    return [
-      { label: '源码模块', value: String(summary.value.moduleCount) },
-      { label: '跨包复用', value: String(summary.value.duplicateCount) },
-      { label: '来源类型', value: String(moduleSourceSummary.value.length) },
-      { label: '复用体积', value: duplicateBytes.value > 0 ? formatBytes(duplicateBytes.value) : '0 B' },
-      { label: '最近刷新', value: lastUpdatedAt.value, wide: true },
-    ]
-  }
-
-  return [
-    { label: '包体数量', value: String(summary.value.packageCount) },
-    { label: '源码模块', value: String(summary.value.moduleCount) },
-    { label: '跨包复用', value: String(summary.value.duplicateCount) },
-    { label: 'Entry 数量', value: String(summary.value.entryCount) },
-    { label: '总产物体积', value: formatBytes(summary.value.totalBytes), wide: true },
-  ]
+const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'icon-[mdi--circle-slice-8]' : 'icon-[mdi--checkbox-blank-circle]')
+const { activeTab, topCards, packageTypeSummary: metricPackageTypeSummary } = useDashboardPage({
+  summary,
+  packageInsights,
+  packageTypeSummary,
+  duplicateModules,
+  moduleSourceSummary,
+  lastUpdatedAt,
 })
 
 function handleResize() {
@@ -105,6 +70,12 @@ function handleResize() {
 function destroyChart() {
   chart?.dispose()
   chart = undefined
+}
+
+function bindChartRef(element: Element | null) {
+  chartRef.value = element instanceof HTMLDivElement
+    ? element
+    : undefined
 }
 
 function syncFromWindow() {
@@ -128,7 +99,7 @@ async function ensureChart() {
   }
 
   if (!chart) {
-    chart = echarts.init(chartRef.value, 'dark', { renderer: 'canvas' })
+    chart = echarts.init(chartRef.value, resolvedTheme.value === 'dark' ? 'dark' : undefined, { renderer: 'canvas' })
   }
 
   chart.setOption(treemapOption.value, true)
@@ -149,6 +120,13 @@ watch(activeTab, () => {
   void ensureChart()
 })
 
+watch(resolvedTheme, async () => {
+  if (chart && chartRef.value) {
+    destroyChart()
+  }
+  await ensureChart()
+})
+
 onMounted(() => {
   window.addEventListener('resize', handleResize)
   window.addEventListener('weapp-analyze:update', syncFromWindow)
@@ -167,191 +145,40 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,116,144,0.28),_transparent_34%),linear-gradient(180deg,_#020617_0%,_#0f172a_40%,_#020617_100%)] px-3 py-3 text-slate-100 md:px-5 md:py-4 lg:px-6">
-    <div class="mx-auto flex w-full max-w-[1560px] flex-col gap-3">
-      <header class="overflow-hidden rounded-[24px] border border-cyan-400/20 bg-slate-950/72 px-4 py-4 shadow-[0_18px_64px_rgba(2,6,23,0.42)] backdrop-blur md:px-5">
-        <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div class="max-w-3xl space-y-2">
-            <p class="text-xs uppercase tracking-[0.32em] text-cyan-300/80">
-              weapp-vite UI
-            </p>
-            <h1 class="text-2xl font-semibold tracking-tight text-white md:text-4xl">
-              Analyze Workspace
-            </h1>
-            <p class="max-w-2xl text-sm leading-6 text-slate-300">
-              统一查看主包、分包、chunk、asset 与跨包模块映射。当前页面是 `--ui` 的分析视图，后续可继续挂接更多调试面板。
-            </p>
-          </div>
-          <div class="grid gap-2 text-sm text-slate-300 sm:grid-cols-3 xl:min-w-[29rem]">
-            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">
-                同步状态
-              </p>
-              <p class="mt-2 text-base font-semibold text-white md:text-lg">
-                {{ statusText }}
-              </p>
-            </div>
-            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">
-                最近刷新
-              </p>
-              <p class="mt-2 text-base font-semibold text-white md:text-lg">
-                {{ lastUpdatedAt }}
-              </p>
-            </div>
-            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">
-                分包配置
-              </p>
-              <p class="mt-2 text-base font-semibold text-white md:text-lg">
-                {{ summary.subpackageCount }}
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
+  <div class="min-h-screen px-3 py-3 text-[color:var(--dashboard-text)] md:px-4 md:py-4 lg:px-5">
+    <div class="mx-auto flex w-full max-w-[1500px] flex-col gap-3">
+      <DashboardHeader
+        :status-text="statusText"
+        :last-updated-at="lastUpdatedAt"
+        :subpackage-count="summary.subpackageCount"
+        :theme-options="themeOptions"
+        :theme-preference="themePreference"
+        :resolved-theme="resolvedTheme"
+        :status-tone="statusTone"
+        @set-theme="setThemePreference"
+      />
 
-      <nav class="flex flex-wrap gap-2">
-        <button
-          class="rounded-full border px-3.5 py-1.5 text-sm transition"
-          :class="activeTab === 'overview' ? 'border-cyan-300 bg-cyan-300/15 text-white' : 'border-white/10 bg-slate-900/60 text-slate-300 hover:border-cyan-400/40 hover:text-white'"
-          @click="activeTab = 'overview'"
-        >
-          总览
-        </button>
-        <button
-          class="rounded-full border px-4 py-2 text-sm transition"
-          :class="activeTab === 'packages' ? 'border-cyan-300 bg-cyan-300/15 text-white' : 'border-white/10 bg-slate-900/60 text-slate-300 hover:border-cyan-400/40 hover:text-white'"
-          @click="activeTab = 'packages'"
-        >
-          包与产物
-        </button>
-        <button
-          class="rounded-full border px-4 py-2 text-sm transition"
-          :class="activeTab === 'modules' ? 'border-cyan-300 bg-cyan-300/15 text-white' : 'border-white/10 bg-slate-900/60 text-slate-300 hover:border-cyan-400/40 hover:text-white'"
-          @click="activeTab = 'modules'"
-        >
-          模块与复用
-        </button>
-      </nav>
+      <DashboardTabs :tabs="dashboardTabs" :active-tab="activeTab" @select="activeTab = $event" />
 
-      <section class="grid gap-2.5 md:grid-cols-2 xl:grid-cols-6">
-        <article
-          v-for="card in topCards"
-          :key="card.label"
-          class="rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3.5"
-          :class="card.wide ? 'xl:col-span-2' : 'xl:col-span-1'"
-        >
-          <p class="text-xs uppercase tracking-[0.22em] text-slate-400">
-            {{ card.label }}
-          </p>
-          <p class="mt-2 text-2xl font-semibold text-white md:text-[1.7rem]">
-            {{ card.value }}
-          </p>
-          <div v-if="card.label === '总产物体积'" class="mt-3 flex flex-wrap gap-1.5">
-            <span
-              v-for="item in packageTypeSummary"
-              :key="item.label"
-              class="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100"
-            >
-              {{ formatPackageType(item.label) }} {{ item.value }}
-            </span>
-          </div>
-        </article>
-      </section>
+      <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" />
 
       <section
         v-if="activeTab === 'overview'"
-        class="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_minmax(21rem,0.75fr)] xl:items-stretch"
       >
-        <div class="rounded-[24px] border border-white/10 bg-slate-900/70 p-3">
-          <div class="mb-2 flex items-center justify-between gap-4 px-2">
-            <div>
-              <h2 class="text-lg font-semibold text-white">
-                Treemap
-              </h2>
-              <p class="text-xs text-slate-400 md:text-sm">
-                从包体到文件再到模块，直接定位体积热点。
-              </p>
-            </div>
-          </div>
-          <div
-            ref="chartRef"
-            class="h-[min(62vh,42rem)] min-h-[24rem] rounded-[20px] bg-slate-950/70 p-2"
-          />
-        </div>
-
-        <div class="grid gap-3 xl:h-[min(62vh,42rem)] xl:grid-rows-[minmax(0,1fr)_minmax(0,0.9fr)]">
-          <section class="rounded-[24px] border border-white/10 bg-slate-900/70 p-4">
-            <div class="flex items-center justify-between gap-3">
-              <h2 class="text-lg font-semibold text-white">
-                Top Files
-              </h2>
-              <span class="text-xs uppercase tracking-[0.2em] text-slate-500">Top 10</span>
-            </div>
-            <ol class="mt-3 grid max-h-[28rem] gap-2 overflow-auto pr-1 text-sm xl:grid-cols-1">
-              <li
-                v-for="file in visibleLargestFiles"
-                :key="`${file.packageId}:${file.file}`"
-                class="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="truncate font-medium text-white">
-                      {{ file.file }}
-                    </p>
-                    <p class="mt-1 text-xs text-slate-400">
-                      {{ file.packageLabel }} · {{ formatPackageType(file.packageType) }} · {{ file.type }}
-                    </p>
-                  </div>
-                  <span class="whitespace-nowrap text-cyan-200">{{ formatBytes(file.size) }}</span>
-                </div>
-              </li>
-            </ol>
-          </section>
-
-          <section class="rounded-[24px] border border-white/10 bg-slate-900/70 p-4">
-            <div class="flex items-center justify-between gap-3">
-              <h2 class="text-lg font-semibold text-white">
-                Subpackages
-              </h2>
-              <span class="text-xs uppercase tracking-[0.2em] text-slate-500">Roots</span>
-            </div>
-            <ul class="mt-3 grid max-h-[18rem] gap-2 overflow-auto pr-1 text-sm text-slate-300">
-              <li
-                v-if="subPackages.length === 0"
-                class="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-3 py-4 text-sm text-slate-400"
-              >
-                当前构建没有配置分包。
-              </li>
-              <li
-                v-for="pkg in subPackages"
-                :key="pkg.root"
-                class="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
-              >
-                <p class="font-medium text-white">
-                  {{ pkg.root }}
-                </p>
-                <p class="mt-1 text-xs text-slate-400">
-                  {{ pkg.name ? `别名 ${pkg.name}` : '未设置别名' }} · {{ pkg.independent ? '独立分包' : '普通分包' }}
-                </p>
-              </li>
-            </ul>
-          </section>
-        </div>
+        <OverviewPanel
+          :bind-chart-ref="bindChartRef"
+          :visible-largest-files="visibleLargestFiles"
+          :sub-packages="subPackages"
+        />
       </section>
 
       <section v-else-if="activeTab === 'packages'" class="grid gap-3">
-        <div class="rounded-[24px] border border-white/10 bg-slate-950/50 px-4 py-3 text-xs uppercase tracking-[0.24em] text-slate-400">
-          包与产物视图优先展示每个包的结构和最大文件，支持在一个屏幕内快速对比。
-        </div>
+        <SectionNote text="包与产物视图优先展示每个包的结构和最大文件，支持在一个屏幕内快速对比。" />
         <PackagesPanel :package-insights="packageInsights" />
       </section>
 
       <section v-else class="grid gap-3">
-        <div class="rounded-[24px] border border-white/10 bg-slate-950/50 px-4 py-3 text-xs uppercase tracking-[0.24em] text-slate-400">
-          模块与复用视图聚焦跨包重复、来源分布与文件样本。
-        </div>
+        <SectionNote text="模块与复用视图聚焦跨包重复、来源分布与文件样本。" />
         <ModulesPanel
           :visible-duplicate-modules="visibleDuplicateModules"
           :module-source-summary="moduleSourceSummary"

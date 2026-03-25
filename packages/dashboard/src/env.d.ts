@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import type { AnalyzeSubpackagesResult } from './types'
+import type { AnalyzeSubpackagesResult } from './features/dashboard/types'
 
 declare global {
   interface Window {

@@ -1,10 +1,11 @@
 import type { Ref } from 'vue'
-import type { TreemapNode } from './treemap'
-import type { AnalyzeSubpackagesResult } from './types'
+import type { AnalyzeSubpackagesResult } from '../types'
+import type { TreemapNode } from '../utils/treemap'
+import type { ResolvedTheme } from './useThemeMode'
 import { computed } from 'vue'
-import { formatTreemapTooltip, PACKAGE_STYLES, TREEMAP_LEVELS } from './treemap'
+import { formatTreemapTooltip, PACKAGE_STYLES, TREEMAP_LEVELS } from '../utils/treemap'
 
-export function useTreemapData(resultRef: Ref<AnalyzeSubpackagesResult | null>) {
+export function useTreemapData(resultRef: Ref<AnalyzeSubpackagesResult | null>, resolvedTheme: Ref<ResolvedTheme>) {
   const packageLabelMap = computed(() =>
     new Map((resultRef.value?.packages ?? []).map(pkg => [pkg.id, pkg.label])),
   )
@@ -91,10 +92,10 @@ export function useTreemapData(resultRef: Ref<AnalyzeSubpackagesResult | null>) 
     backgroundColor: 'transparent',
     tooltip: {
       formatter: (params: { data?: { meta?: any } }) => formatTreemapTooltip(params.data?.meta),
-      borderColor: 'rgba(148, 163, 184, 0.16)',
-      backgroundColor: 'rgba(15, 23, 42, 0.92)',
+      borderColor: resolvedTheme.value === 'dark' ? 'rgba(148, 163, 184, 0.16)' : 'rgba(71, 85, 105, 0.14)',
+      backgroundColor: resolvedTheme.value === 'dark' ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.96)',
       textStyle: {
-        color: '#e2e8f0',
+        color: resolvedTheme.value === 'dark' ? '#e2e8f0' : '#0f172a',
       },
     },
     series: [
@@ -108,20 +109,20 @@ export function useTreemapData(resultRef: Ref<AnalyzeSubpackagesResult | null>) 
         visibleMin: 1,
         label: {
           show: true,
-          color: '#f8fafc',
+          color: resolvedTheme.value === 'dark' ? '#f8fafc' : '#0f172a',
           formatter: '{b}',
         },
         upperLabel: {
           show: true,
         },
         itemStyle: {
-          borderColor: 'rgba(15, 23, 42, 0.88)',
+          borderColor: resolvedTheme.value === 'dark' ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.92)',
           borderWidth: 2,
           gapWidth: 2,
         },
         emphasis: {
           itemStyle: {
-            borderColor: '#f8fafc',
+            borderColor: resolvedTheme.value === 'dark' ? '#f8fafc' : '#0f172a',
           },
         },
         colorAlpha: [0.94, 0.72],
