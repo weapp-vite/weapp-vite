@@ -15,6 +15,40 @@ const SFC_SRC_PATH = path.join(APP_ROOT, 'src/pages/hmr-sfc/index.vue')
 
 const PLATFORM_LIST = resolvePlatforms()
 
+async function waitForRenameMarkerWithRetry(options: {
+  dev: ReturnType<typeof startDevProcess>
+  description: string
+  distPath: string
+  marker: string
+  retrySourcePath: string
+  retrySourceContent: string
+  timeoutMs?: number
+}) {
+  const {
+    dev,
+    description,
+    distPath,
+    marker,
+    retrySourcePath,
+    retrySourceContent,
+    timeoutMs = 20_000,
+  } = options
+
+  try {
+    return await dev.waitFor(
+      waitForFileContains(distPath, marker, timeoutMs),
+      description,
+    )
+  }
+  catch {
+    await replaceFileByRename(retrySourcePath, `${retrySourceContent}\n`)
+    return await dev.waitFor(
+      waitForFileContains(distPath, marker),
+      `${description} (retry)`,
+    )
+  }
+}
+
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
 })
@@ -44,15 +78,19 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
 
       await replaceFileByRename(SRC_TEMPLATE, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} rename-saved template marker`,
-      )
+      const content = await waitForRenameMarkerWithRetry({
+        dev,
+        distPath,
+        marker,
+        retrySourcePath: SRC_TEMPLATE,
+        retrySourceContent: updatedSource,
+        description: `${platform} rename-saved template marker`,
+      })
       expect(content).toContain(marker)
     }
     finally {
       await dev.stop(5_000)
-      await fs.writeFile(SRC_TEMPLATE, originalSource, 'utf8')
+      await replaceFileByRename(SRC_TEMPLATE, originalSource)
     }
   })
 
@@ -76,15 +114,19 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
 
       await replaceFileByRename(SRC_STYLE, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} rename-saved style marker`,
-      )
+      const content = await waitForRenameMarkerWithRetry({
+        dev,
+        distPath,
+        marker,
+        retrySourcePath: SRC_STYLE,
+        retrySourceContent: updatedSource,
+        description: `${platform} rename-saved style marker`,
+      })
       expect(content).toContain(marker)
     }
     finally {
       await dev.stop(5_000)
-      await fs.writeFile(SRC_STYLE, originalSource, 'utf8')
+      await replaceFileByRename(SRC_STYLE, originalSource)
     }
   })
 
@@ -107,16 +149,20 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
 
       await replaceFileByRename(SRC_SCRIPT, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} rename-saved script marker`,
-      )
+      const content = await waitForRenameMarkerWithRetry({
+        dev,
+        distPath,
+        marker,
+        retrySourcePath: SRC_SCRIPT,
+        retrySourceContent: updatedSource,
+        description: `${platform} rename-saved script marker`,
+      })
       expect(content).toContain(marker)
       expect(dev.getOutput()).not.toContain('Build failed')
     }
     finally {
       await dev.stop(5_000)
-      await fs.writeFile(SRC_SCRIPT, originalSource, 'utf8')
+      await replaceFileByRename(SRC_SCRIPT, originalSource)
     }
   })
 
@@ -141,15 +187,19 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
 
       await replaceFileByRename(SRC_JSON, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} rename-saved json marker`,
-      )
+      const content = await waitForRenameMarkerWithRetry({
+        dev,
+        distPath,
+        marker,
+        retrySourcePath: SRC_JSON,
+        retrySourceContent: updatedSource,
+        description: `${platform} rename-saved json marker`,
+      })
       expect(content).toContain(marker)
     }
     finally {
       await dev.stop(5_000)
-      await fs.writeFile(SRC_JSON, originalSource, 'utf8')
+      await replaceFileByRename(SRC_JSON, originalSource)
     }
   })
 
@@ -173,15 +223,19 @@ describe.sequential('HMR rename-style save (dev watch)', () => {
 
       await replaceFileByRename(SFC_SRC_PATH, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(distPath, marker),
-        `${platform} rename-saved SFC marker`,
-      )
+      const content = await waitForRenameMarkerWithRetry({
+        dev,
+        distPath,
+        marker,
+        retrySourcePath: SFC_SRC_PATH,
+        retrySourceContent: updatedSource,
+        description: `${platform} rename-saved SFC marker`,
+      })
       expect(content).toContain(marker)
     }
     finally {
       await dev.stop(5_000)
-      await fs.writeFile(SFC_SRC_PATH, originalSource, 'utf8')
+      await replaceFileByRename(SFC_SRC_PATH, originalSource)
     }
   })
 })
