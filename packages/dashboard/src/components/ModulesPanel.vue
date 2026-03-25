@@ -18,7 +18,7 @@ defineProps<{
       <p class="mt-1 text-sm text-slate-400">
         优先看被多个包重复包含的源码与依赖。
       </p>
-      <div class="mt-4 space-y-3">
+      <div v-if="visibleDuplicateModules.length" class="mt-4 space-y-3">
         <article
           v-for="module in visibleDuplicateModules"
           :key="module.id"
@@ -42,6 +42,12 @@ defineProps<{
             </li>
           </ul>
         </article>
+      </div>
+      <div
+        v-else
+        class="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/[0.03] p-6 text-sm text-slate-400"
+      >
+        当前构建未检测到跨包重复模块。
       </div>
     </div>
 
