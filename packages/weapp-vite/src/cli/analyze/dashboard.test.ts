@@ -51,6 +51,9 @@ interface MockServer {
   listen: ReturnType<typeof vi.fn>
   printUrls: ReturnType<typeof vi.fn>
   close: ReturnType<typeof vi.fn>
+  middlewares: {
+    use: ReturnType<typeof vi.fn>
+  }
   ws?: {
     send: ReturnType<typeof vi.fn>
   }
@@ -66,6 +69,9 @@ function createMockServer(overrides: Partial<MockServer> = {}): MockServer {
     listen: vi.fn(async () => {}),
     printUrls: vi.fn(),
     close: vi.fn(async () => {}),
+    middlewares: {
+      use: vi.fn(),
+    },
     ws: {
       send: vi.fn(),
     },
@@ -151,7 +157,15 @@ describe('analyze dashboard', () => {
     const plugin = createServerArg.plugins[0]
     const transformed = plugin.transformIndexHtml('<!doctype html>')
     const script = transformed.tags[0]?.children as string
+    const bridgeScript = transformed.tags.find((tag: any) => tag?.attrs?.type === 'module' && typeof tag?.children === 'string')
     expect(script).toContain('"label":"next"')
+    expect(bridgeScript).toMatchObject({
+      tag: 'script',
+      attrs: {
+        type: 'module',
+      },
+    })
+    expect(bridgeScript?.children).toContain(`import.meta.hot.on('weapp-analyze:update'`)
 
     await handle?.close()
     expect(server.close).toHaveBeenCalledTimes(1)

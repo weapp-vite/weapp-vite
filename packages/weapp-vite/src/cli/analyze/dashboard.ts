@@ -1,3 +1,4 @@
+import type { ServerResponse } from 'node:http'
 import type { PluginOption, ViteDevServer } from 'vite'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
 import fs from 'node:fs'
@@ -10,6 +11,7 @@ import logger, { colors } from '../../logger'
 
 const ANALYZE_GLOBAL_KEY = '__WEAPP_VITE_ANALYZE_RESULT__'
 const ANALYZE_DASHBOARD_PACKAGE_NAME = '@weapp-vite/dashboard'
+const ANALYZE_SSE_PATH = '/__weapp_vite_analyze'
 type PackageManagerAgent = Parameters<typeof resolveCommand>[0]
 const require = createRequire(import.meta.url)
 
@@ -66,7 +68,37 @@ function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: Pa
 function createAnalyzeHtmlPlugin(
   state: { current: AnalyzeSubpackagesResult },
   onServerInstance: (server: ViteDevServer) => void,
+  onBroadcastReady: (broadcast: (payload: AnalyzeSubpackagesResult) => void) => void,
 ): PluginOption {
+  const sseClients = new Set<ServerResponse>()
+  const hotBridgeScript = `
+    const applyAnalyzePayload = (payload) => {
+      window.${ANALYZE_GLOBAL_KEY} = payload
+      window.dispatchEvent(new CustomEvent('weapp-analyze:update', { detail: payload }))
+    }
+    const source = new EventSource('${ANALYZE_SSE_PATH}')
+    source.onmessage = (event) => {
+      try {
+        applyAnalyzePayload(JSON.parse(event.data))
+      }
+      catch {}
+    }
+    if (import.meta.hot) {
+      import.meta.hot.on('weapp-analyze:update', (payload) => {
+        applyAnalyzePayload(payload)
+      })
+    }
+  `.trim()
+
+  const broadcast = (payload: AnalyzeSubpackagesResult) => {
+    const serialized = `data: ${JSON.stringify(payload)}\n\n`
+    for (const client of sseClients) {
+      client.write(serialized)
+    }
+  }
+
+  onBroadcastReady(broadcast)
+
   return {
     name: 'weapp-vite-analyze-html',
     transformIndexHtml(html: string) {
@@ -78,11 +110,44 @@ function createAnalyzeHtmlPlugin(
             children: `window.${ANALYZE_GLOBAL_KEY} = ${JSON.stringify(state.current)}`,
             injectTo: 'head-prepend',
           },
+          {
+            tag: 'script',
+            attrs: {
+              type: 'module',
+              src: '/@vite/client',
+            },
+            injectTo: 'head',
+          },
+          {
+            tag: 'script',
+            attrs: {
+              type: 'module',
+            },
+            children: hotBridgeScript,
+            injectTo: 'body',
+          },
         ],
       }
     },
     configureServer(server) {
       onServerInstance(server)
+      server.middlewares.use((req, res, next) => {
+        if (req.url !== ANALYZE_SSE_PATH) {
+          next()
+          return
+        }
+
+        res.statusCode = 200
+        res.setHeader('Content-Type', 'text/event-stream')
+        res.setHeader('Cache-Control', 'no-cache, no-transform')
+        res.setHeader('Connection', 'keep-alive')
+        res.write(`data: ${JSON.stringify(state.current)}\n\n`)
+        sseClients.add(res)
+
+        req.on('close', () => {
+          sseClients.delete(res)
+        })
+      })
     },
   }
 }
@@ -141,11 +206,18 @@ export async function startAnalyzeDashboard(
 
   const state = { current: result }
   let serverRef: ViteDevServer | undefined
+  let broadcastAnalyzeResult: ((payload: AnalyzeSubpackagesResult) => void) | undefined
 
   const plugins: PluginOption[] = [
-    createAnalyzeHtmlPlugin(state, (server) => {
-      serverRef = server
-    }),
+    createAnalyzeHtmlPlugin(
+      state,
+      (server) => {
+        serverRef = server
+      },
+      (broadcast) => {
+        broadcastAnalyzeResult = broadcast
+      },
+    ),
   ]
 
   const server = await createServer({
@@ -184,6 +256,7 @@ export async function startAnalyzeDashboard(
       data: state.current,
     })
   }
+  broadcastAnalyzeResult?.(state.current)
 
   const handle: AnalyzeDashboardHandle = {
     async update(nextResult) {
@@ -195,6 +268,7 @@ export async function startAnalyzeDashboard(
           data: nextResult,
         })
       }
+      broadcastAnalyzeResult?.(nextResult)
     },
     waitForExit: () => waitPromise,
     close: async () => {

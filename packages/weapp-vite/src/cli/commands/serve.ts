@@ -3,6 +3,7 @@ import type { RolldownWatcher } from 'rolldown'
 import type { ViteDevServer } from 'vite'
 import type { AnalyzeDashboardHandle } from '../analyze/dashboard'
 import type { GlobalCLIOptions } from '../types'
+import process from 'node:process'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
@@ -12,6 +13,19 @@ import { logBuildAppFinish } from '../logBuildAppFinish'
 import { openIde, resolveIdeProjectRoot } from '../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
+
+function resolveWebHost(host: GlobalCLIOptions['host']) {
+  if (host === undefined) {
+    return undefined
+  }
+  if (typeof host === 'boolean') {
+    return host
+  }
+  if (typeof host === 'string') {
+    return host
+  }
+  return String(host)
+}
 
 export function registerServeCommand(cli: CAC) {
   cli
@@ -55,12 +69,28 @@ export function registerServeCommand(cli: CAC) {
       logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
       const enableAnalyze = Boolean(isUiEnabled(options) && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
+      let analyzeRunId = 0
+
+      const runAnalyze = async () => {
+        const analyzeCtx = await createCompilerContext({
+          key: `serve-ui-analyze:${process.pid}:${++analyzeRunId}`,
+          cwd: configService.cwd,
+          mode: configService.mode,
+          isDev: false,
+          configFile,
+          inlineConfig: createInlineConfig(targets.mpPlatform),
+          cliPlatform: targets.rawPlatform,
+          projectConfigPath: options.projectConfig,
+          syncSupportFiles: false,
+        })
+        return analyzeSubpackages(analyzeCtx)
+      }
 
       const triggerAnalyzeUpdate = async () => {
         if (!analyzeHandle) {
           return
         }
-        const next = await analyzeSubpackages(ctx)
+        const next = await runAnalyze()
         await analyzeHandle.update(next)
       }
 
@@ -68,16 +98,16 @@ export function registerServeCommand(cli: CAC) {
         const buildResult = await buildService.build(options)
 
         if (enableAnalyze) {
-          const initialResult = await analyzeSubpackages(ctx)
+          const initialResult = await runAnalyze()
           analyzeHandle = await startAnalyzeDashboard(initialResult, {
             watch: true,
             cwd: configService.cwd,
             packageManagerAgent: configService.packageManager.agent,
           }) ?? undefined
 
+          let updating = false
           if (analyzeHandle && buildResult && typeof (buildResult as RolldownWatcher).on === 'function') {
             const watcher = buildResult as RolldownWatcher
-            let updating = false
             watcher.on('event', (event) => {
               if (event.code !== 'END' || updating) {
                 return
@@ -88,8 +118,10 @@ export function registerServeCommand(cli: CAC) {
               })
             })
           }
-          else if (analyzeHandle) {
+          if (analyzeHandle) {
+            updating = true
             await triggerAnalyzeUpdate()
+            updating = false
           }
         }
       }
@@ -125,17 +157,4 @@ export function registerServeCommand(cli: CAC) {
         await analyzeHandle.waitForExit()
       }
     })
-}
-
-function resolveWebHost(host: GlobalCLIOptions['host']) {
-  if (host === undefined) {
-    return undefined
-  }
-  if (typeof host === 'boolean') {
-    return host
-  }
-  if (typeof host === 'string') {
-    return host
-  }
-  return String(host)
 }
