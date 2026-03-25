@@ -1,8 +1,12 @@
 import type { CAC } from 'cac'
 import type { RolldownWatcher } from 'rolldown'
 import type { ViteDevServer } from 'vite'
+import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
 import type { AnalyzeDashboardHandle } from '../analyze/dashboard'
 import type { GlobalCLIOptions } from '../types'
+import fs from 'node:fs/promises'
+import process from 'node:process'
+import path from 'pathe'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
@@ -24,6 +28,113 @@ function resolveWebHost(host: GlobalCLIOptions['host']) {
     return host
   }
   return String(host)
+}
+
+const REG_DIST_PAGE_ENTRY = /pages\/.+\/index\.js$/
+const REG_DIST_POSIX_SEP = /\\/g
+
+function hasAnalyzeData(result: AnalyzeSubpackagesResult) {
+  return result.packages.length > 0 || result.modules.length > 0
+}
+
+async function collectOutputFiles(root: string) {
+  const entries = await fs.readdir(root, { withFileTypes: true })
+  const files: string[] = []
+
+  for (const entry of entries) {
+    const absolutePath = path.join(root, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...await collectOutputFiles(absolutePath))
+      continue
+    }
+    if (entry.isFile()) {
+      files.push(absolutePath)
+    }
+  }
+
+  return files
+}
+
+async function analyzeUiFallback(ctx: Awaited<ReturnType<typeof createCompilerContext>>): Promise<AnalyzeSubpackagesResult> {
+  const { configService, scanService } = ctx
+  await scanService.loadAppEntry()
+  const subPackageMetas = scanService.loadSubPackages()
+  const distRoot = configService.outDir
+  const absoluteFiles = await collectOutputFiles(distRoot)
+  const packages = new Map<string, AnalyzeSubpackagesResult['packages'][number]>()
+
+  const ensurePackage = (packageId: string, packageType: 'main' | 'subPackage' | 'independent') => {
+    const existing = packages.get(packageId)
+    if (existing) {
+      return existing
+    }
+    const label = packageId === '__main__'
+      ? '主包'
+      : packageType === 'independent'
+        ? `独立分包 ${packageId}`
+        : `分包 ${packageId}`
+    const created: AnalyzeSubpackagesResult['packages'][number] = {
+      id: packageId,
+      label,
+      type: packageType,
+      files: [],
+    }
+    packages.set(packageId, created)
+    return created
+  }
+
+  const classifyPackage = (relativeFile: string) => {
+    const normalized = relativeFile.replace(REG_DIST_POSIX_SEP, '/')
+    for (const meta of subPackageMetas) {
+      const root = meta.subPackage.root
+      if (root && normalized.startsWith(`${root}/`)) {
+        return {
+          id: root,
+          type: meta.subPackage.independent ? 'independent' as const : 'subPackage' as const,
+        }
+      }
+    }
+    return {
+      id: '__main__',
+      type: 'main' as const,
+    }
+  }
+
+  for (const absoluteFile of absoluteFiles) {
+    const relativeFile = path.relative(distRoot, absoluteFile).replace(REG_DIST_POSIX_SEP, '/')
+    const packageInfo = classifyPackage(relativeFile)
+    const stat = await fs.stat(absoluteFile)
+    const fileEntry = ensurePackage(packageInfo.id, packageInfo.type)
+    fileEntry.files.push({
+      file: relativeFile,
+      type: relativeFile.endsWith('.js') ? 'chunk' : 'asset',
+      from: packageInfo.type === 'independent' ? 'independent' : 'main',
+      size: stat.size,
+      isEntry: relativeFile === 'app.js' || REG_DIST_PAGE_ENTRY.test(relativeFile),
+      source: relativeFile.endsWith('.js') ? undefined : relativeFile,
+    })
+  }
+
+  return {
+    packages: Array.from(packages.values()).sort((a, b) => {
+      if (a.id === '__main__') {
+        return -1
+      }
+      if (b.id === '__main__') {
+        return 1
+      }
+      return a.id.localeCompare(b.id)
+    }),
+    modules: [],
+    subPackages: subPackageMetas
+      .map(meta => ({
+        root: meta.subPackage.root ?? '',
+        independent: Boolean(meta.subPackage.independent),
+        name: meta.subPackage.name,
+      }))
+      .filter(item => item.root)
+      .sort((a, b) => a.root.localeCompare(b.root)),
+  }
 }
 
 export function registerServeCommand(cli: CAC) {
@@ -100,8 +211,33 @@ export function registerServeCommand(cli: CAC) {
       logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
       const enableAnalyze = Boolean(isUiEnabled(options) && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
+      let analyzeRunId = 0
 
-      const runAnalyze = async () => analyzeSubpackages(ctx)
+      const runAnalyze = async () => {
+        try {
+          const analyzeCtx = await createCompilerContext({
+            key: `serve-ui-analyze:${process.pid}:${++analyzeRunId}`,
+            cwd: configService.cwd,
+            mode: configService.mode,
+            isDev: false,
+            configFile,
+            inlineConfig: createInlineConfig(targets.mpPlatform),
+            cliPlatform: targets.rawPlatform,
+            projectConfigPath: options.projectConfig,
+            syncSupportFiles: false,
+          })
+          const result = await analyzeSubpackages(analyzeCtx)
+          if (hasAnalyzeData(result)) {
+            return result
+          }
+        }
+        catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          logger.warn(`[ui] 完整分析失败，已回退到 dist 文件扫描：${message}`)
+        }
+
+        return analyzeUiFallback(ctx)
+      }
 
       const triggerAnalyzeUpdate = async () => {
         if (!analyzeHandle) {
