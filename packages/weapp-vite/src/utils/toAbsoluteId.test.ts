@@ -32,12 +32,6 @@ describe('toAbsoluteId', () => {
     expect(toAbsoluteId('pages/a', configService as any)).toBe('/project/src/pages/a')
   })
 
-  it('maps default @ alias to srcRoot before importer-relative resolution', () => {
-    expect(toAbsoluteId('@/components/foo/index.vue', configService as any, '/project/src/pages/index/index.vue')).toBe(
-      '/project/src/components/foo/index.vue',
-    )
-  })
-
   it('falls back to cwd when configured', () => {
     expect(toAbsoluteId('pages/a', configService as any, undefined, { base: 'cwd' })).toBe('/project/pages/a')
   })

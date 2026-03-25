@@ -49,6 +49,19 @@ describe('vue plugin misc coverage', () => {
     expect(getSourceFromVirtualId('\0vue:xyz')).toBe('xyz')
   })
 
+  it('defers aliased vue requests to downstream alias resolvers', async () => {
+    const ctx: any = {
+      configService: {
+        cwd: '/root',
+        absoluteSrcRoot: '/root/src',
+      },
+    }
+    const plugin = createVueResolverPlugin(ctx)
+
+    expect(await plugin.resolveId!('@/components/HelloWorld/index.vue', '/root/src/pages/index/index.vue')).toBeNull()
+    expect(await plugin.resolveId!('~components/HelloWorld/index', '/root/src/pages/index/index.vue')).toBeNull()
+  })
+
   it('watch plugin triggers full reload on vue changes', async () => {
     const send = vi.fn()
     let changeCb: ((id: string) => void) | undefined
