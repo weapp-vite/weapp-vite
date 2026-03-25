@@ -22,6 +22,7 @@ import { hasDeprecatedEnhanceUsage, migrateEnhanceOptions } from '../enhance'
 import { resolveWeappWebConfig } from '../web'
 import { configureBuildAndPlugins } from './loadConfig/build'
 import { formatProjectConfigPath, loadPackageJson, normalizeRelativeDistRoot, resolveProjectConfigPaths } from './loadConfig/shared'
+import { shouldEnableTsconfigPathsPlugin } from './tsconfigPaths'
 
 export interface LoadConfigFactoryOptions {
   injectBuiltinAliases: (config: InlineConfig) => void
@@ -205,7 +206,9 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
 
     const srcRoot = config.weapp?.srcRoot ?? ''
-    injectDefaultSrcAlias(config, cwd, srcRoot)
+    if (!await shouldEnableTsconfigPathsPlugin(cwd)) {
+      injectDefaultSrcAlias(config, cwd, srcRoot)
+    }
     const resolvedLibConfig = libEntryConfigured
       ? resolveWeappLibConfig({ cwd, srcRoot, config: rawLibConfig })
       : undefined

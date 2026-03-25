@@ -220,7 +220,7 @@ export async function startAnalyzeDashboard(
     ),
   ]
 
-  const server = await createServer({
+  const serverOptions = {
     root,
     clearScreen: false,
     appType: 'spa',
@@ -234,10 +234,12 @@ export async function startAnalyzeDashboard(
       },
     },
     logLevel: 'error',
-  })
+  } satisfies Parameters<typeof createServer>[0]
 
-  const requestedPort = typeof server.config.server.port === 'number'
-    ? server.config.server.port
+  const server = await createServer(serverOptions)
+
+  const requestedPort = typeof serverOptions.server?.port === 'number'
+    ? serverOptions.server.port
     : undefined
   await server.listen(requestedPort)
   serverRef ??= server
