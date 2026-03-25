@@ -23,40 +23,79 @@ function createInstallCommand(agent: PackageManagerAgent | undefined) {
   return `${resolved.command} ${resolved.args.join(' ')}`
 }
 
-function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: PackageManagerAgent }) {
+interface ResolvedDashboardRoot {
+  root: string
+  configFile?: string
+}
+
+function resolveDashboardSourceRoot(candidate: string): ResolvedDashboardRoot | undefined {
+  const viteConfigPath = path.join(candidate, 'vite.config.ts')
+  const srcRoot = path.join(candidate, 'src')
+  if (!fs.existsSync(viteConfigPath) || !fs.existsSync(srcRoot)) {
+    return undefined
+  }
+  return {
+    root: candidate,
+    configFile: viteConfigPath,
+  }
+}
+
+function resolveDashboardDistRoot(candidate: string): ResolvedDashboardRoot | undefined {
+  const distRoot = path.join(candidate, 'dist')
+  if (!fs.existsSync(distRoot)) {
+    return undefined
+  }
+  return {
+    root: distRoot,
+  }
+}
+
+function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: PackageManagerAgent, watch?: boolean }) {
   const resolvePaths = options?.cwd && options.cwd !== process.cwd()
     ? [options.cwd, process.cwd()]
     : options?.cwd
       ? [options.cwd]
       : undefined
 
-  let dashboardRoot: string | undefined
+  let dashboardPackageRoot: string | undefined
   try {
     const dashboardPackageJsonPath = require.resolve(`${ANALYZE_DASHBOARD_PACKAGE_NAME}/package.json`, {
       paths: resolvePaths,
     })
-    dashboardRoot = path.resolve(path.dirname(dashboardPackageJsonPath), 'dist')
+    dashboardPackageRoot = path.dirname(dashboardPackageJsonPath)
   }
   catch {
-    dashboardRoot = undefined
+    dashboardPackageRoot = undefined
   }
 
-  if (dashboardRoot && fs.existsSync(dashboardRoot)) {
-    return {
-      root: dashboardRoot,
+  if (dashboardPackageRoot) {
+    if (options?.watch) {
+      const sourceResolved = resolveDashboardSourceRoot(dashboardPackageRoot)
+      if (sourceResolved) {
+        return sourceResolved
+      }
+    }
+    const distResolved = resolveDashboardDistRoot(dashboardPackageRoot)
+    if (distResolved) {
+      return distResolved
     }
   }
 
   const workspaceFallbackRoots = [
-    path.resolve(import.meta.dirname, '../../../../dashboard/dist'),
-    path.resolve(import.meta.dirname, '../../dashboard/dist'),
+    path.resolve(import.meta.dirname, '../../../../dashboard'),
+    path.resolve(import.meta.dirname, '../../dashboard'),
   ]
 
   for (const candidate of workspaceFallbackRoots) {
-    if (fs.existsSync(candidate)) {
-      return {
-        root: candidate,
+    if (options?.watch) {
+      const sourceResolved = resolveDashboardSourceRoot(candidate)
+      if (sourceResolved) {
+        return sourceResolved
       }
+    }
+    const distResolved = resolveDashboardDistRoot(candidate)
+    if (distResolved) {
+      return distResolved
     }
   }
 
@@ -202,7 +241,7 @@ export async function startAnalyzeDashboard(
   if (!resolved) {
     return
   }
-  const { root } = resolved
+  const { root, configFile } = resolved
 
   const state = { current: result }
   let serverRef: ViteDevServer | undefined
@@ -222,6 +261,7 @@ export async function startAnalyzeDashboard(
 
   const serverOptions = {
     root,
+    configFile: configFile ?? false,
     clearScreen: false,
     appType: 'spa',
     publicDir: false,

@@ -95,7 +95,11 @@ function createAnalyzeResult(label: string) {
 describe('analyze dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    existsSyncMock.mockImplementation((value: string) => value === '/mock/dashboard/dist')
+    existsSyncMock.mockImplementation((value: string) => {
+      return value === '/mock/dashboard/dist'
+        || value === '/mock/dashboard/src'
+        || value === '/mock/dashboard/vite.config.ts'
+    })
     resolveDashboardPackageMock.mockReturnValue('/mock/dashboard/package.json')
   })
 
@@ -153,7 +157,8 @@ describe('analyze dashboard', () => {
     })
 
     const createServerArg = createServerMock.mock.calls[0]?.[0] as any
-    expect(createServerArg.root).toBe('/mock/dashboard/dist')
+    expect(createServerArg.root).toBe('/mock/dashboard')
+    expect(createServerArg.configFile).toBe('/mock/dashboard/vite.config.ts')
     const plugin = createServerArg.plugins[0]
     const transformed = plugin.transformIndexHtml('<!doctype html>')
     const script = transformed.tags[0]?.children as string
@@ -197,6 +202,9 @@ describe('analyze dashboard', () => {
     await expect(runPromise).resolves.toBeUndefined()
 
     expect(server.ws?.send).toBeUndefined()
+    const createServerArg = createServerMock.mock.calls[0]?.[0] as any
+    expect(createServerArg.root).toBe('/mock/dashboard/dist')
+    expect(createServerArg.configFile).toBe(false)
     expect(loggerMock.info).toHaveBeenCalledWith('weapp-vite UI 已启动（分析视图，静态模式），按 Ctrl+C 退出。')
   })
 
