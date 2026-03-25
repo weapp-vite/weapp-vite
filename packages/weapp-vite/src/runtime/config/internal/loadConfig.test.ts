@@ -246,6 +246,7 @@ describe('runtime config internal loadConfig', () => {
       config: {
         weapp: {
           platform: 'weapp',
+          srcRoot: 'src',
         },
       },
       path: '/project/vite.config.ts',
@@ -263,8 +264,49 @@ describe('runtime config internal loadConfig', () => {
     } as any)
 
     expect(result.config.resolve?.tsconfigPaths).toBe(true)
+    expect(result.config.resolve?.alias).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        find: '@',
+        replacement: '/project/src',
+      }),
+    ]))
     expect(result.config.plugins?.some((plugin: any) => plugin?.name === 'tsconfig-paths')).toBe(false)
     expect(tsconfigPathsMock).not.toHaveBeenCalled()
+  })
+
+  it('does not override user-defined @ alias', async () => {
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        resolve: {
+          alias: {
+            '@': '/project/custom-src',
+          },
+        },
+        weapp: {
+          platform: 'weapp',
+          srcRoot: 'src',
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.config.resolve?.alias).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        find: '@',
+        replacement: '/project/custom-src',
+      }),
+    ]))
   })
 
   it('enables native resolve.tsconfigPaths when weapp.tsconfigPaths is true', async () => {

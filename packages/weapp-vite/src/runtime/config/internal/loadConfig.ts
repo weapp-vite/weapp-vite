@@ -29,6 +29,36 @@ export interface LoadConfigFactoryOptions {
   oxcVitePlugin: PluginOption | undefined
 }
 
+function injectDefaultSrcAlias(config: InlineConfig, cwd: string, srcRoot: string) {
+  if (!srcRoot) {
+    return
+  }
+
+  const resolve = config.resolve ?? (config.resolve = {})
+  const currentAlias = resolve.alias
+  const aliasArray = Array.isArray(currentAlias)
+    ? currentAlias.filter((entry): entry is { find: string | RegExp, replacement: string } => {
+        return Boolean(entry && typeof entry === 'object' && 'find' in entry && 'replacement' in entry)
+      })
+    : currentAlias
+      ? Object.entries(currentAlias as Record<string, string>).map(([find, replacement]) => ({ find, replacement }))
+      : []
+
+  const hasAtAlias = aliasArray.some((entry) => {
+    return typeof entry.find === 'string' && entry.find === '@'
+  })
+  if (hasAtAlias) {
+    resolve.alias = aliasArray
+    return
+  }
+
+  aliasArray.unshift({
+    find: '@',
+    replacement: path.resolve(cwd, srcRoot),
+  })
+  resolve.alias = aliasArray
+}
+
 export function createLoadConfig(options: LoadConfigFactoryOptions) {
   const { injectBuiltinAliases, oxcRolldownPlugin, oxcVitePlugin } = options
 
@@ -175,6 +205,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
     }
 
     const srcRoot = config.weapp?.srcRoot ?? ''
+    injectDefaultSrcAlias(config, cwd, srcRoot)
     const resolvedLibConfig = libEntryConfigured
       ? resolveWeappLibConfig({ cwd, srcRoot, config: rawLibConfig })
       : undefined

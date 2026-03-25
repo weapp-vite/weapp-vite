@@ -13,11 +13,20 @@ import { parseWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from './tra
 const VUE_VIRTUAL_MODULE_PREFIX = '\0vue:'
 const LEGACY_WEAPP_VUE_STYLE_VIRTUAL_PREFIX = 'weapp-vite:vue-style:'
 const VUE_LIKE_EXTENSIONS = ['.vue', '.tsx', '.jsx'] as const
+const WINDOWS_ABSOLUTE_PATH_RE = /^[A-Z]:[\\/]/i
 let warnedMissingWevu = false
 let wevuInstallState: 'unknown' | 'present' | 'missing' = 'unknown'
 
 function isVueLikeFile(id: string) {
   return VUE_LIKE_EXTENSIONS.some(ext => id.endsWith(ext))
+}
+
+function isExplicitFileRequest(id: string) {
+  return id.startsWith('.')
+    || id.startsWith('/')
+    || WINDOWS_ABSOLUTE_PATH_RE.test(id)
+  // 说明：像 `@/foo.vue`、`~/foo.vue`、`#imports`、`pkg/subpath` 这类非显式文件请求
+  // 应交给 Vite 的 alias/tsconfigPaths/其他 resolver 继续处理，避免被误当作 srcRoot 相对路径。
 }
 
 function hasWevuDependency(ctx: CompilerContext) {
@@ -85,6 +94,9 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
       // 处理显式的 .vue/.tsx/.jsx 文件引用
       if (isVueLikeFile(id)) {
         ensureWevuInstalled(ctx)
+        if (!isExplicitFileRequest(id)) {
+          return null
+        }
         // 统一将 vue-like id 解析为绝对路径，避免相对路径在虚拟模块里丢失 importer 上下文
         const absoluteId = toAbsoluteId(id, configService, importer, { base: 'srcRoot' })
         if (!absoluteId) {
@@ -100,6 +112,9 @@ export function createVueResolverPlugin(ctx: CompilerContext): Plugin {
       }
 
       // 处理不带扩展名的路径，检查是否对应 .vue 文件
+      if (!isExplicitFileRequest(id)) {
+        return null
+      }
       // 将相对路径转换为绝对路径
       const absoluteId = toAbsoluteId(id, configService, importer, { base: 'srcRoot' })
       if (!absoluteId) {
