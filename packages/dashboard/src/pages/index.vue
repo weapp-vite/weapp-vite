@@ -5,7 +5,6 @@ import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/co
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import DashboardHeader from '../features/dashboard/components/DashboardHeader.vue'
 import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
 import DashboardTabs from '../features/dashboard/components/DashboardTabs.vue'
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
@@ -17,6 +16,7 @@ import { useDashboardPage } from '../features/dashboard/composables/useDashboard
 import { useThemeMode } from '../features/dashboard/composables/useThemeMode'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs, themeOptions } from '../features/dashboard/constants/view'
+import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
 
 echarts.use([
@@ -146,19 +146,28 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="min-h-screen px-3 py-3 text-[color:var(--dashboard-text)] md:px-4 md:py-4 lg:px-5">
-    <div class="mx-auto flex w-full max-w-[1500px] flex-col gap-3">
-      <DashboardHeader
-        :status-text="statusText"
-        :last-updated-at="lastUpdatedAt"
-        :subpackage-count="summary.subpackageCount"
-        :theme-options="themeOptions"
-        :theme-preference="themePreference"
-        :resolved-theme="resolvedTheme"
-        :status-tone="statusTone"
-        @set-theme="setThemePreference"
-      />
-
-      <DashboardTabs :tabs="dashboardTabs" :active-tab="activeTab" @select="activeTab = $event" />
+    <div class="flex w-full flex-col gap-3">
+      <section class="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+        <DashboardTabs :tabs="dashboardTabs" :active-tab="activeTab" @select="activeTab = $event" />
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            v-for="option in themeOptions"
+            :key="option.value"
+            :class="pillButtonStyles({ kind: 'theme', active: themePreference === option.value })"
+            @click="setThemePreference(option.value)"
+          >
+            <span class="h-4 w-4" :class="option.iconClass" />
+            {{ option.label }}
+          </button>
+          <span class="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+            <span class="h-4 w-4 text-[color:var(--dashboard-accent)]" :class="statusTone" />
+            {{ statusText }}
+          </span>
+          <span class="inline-flex items-center rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+            {{ lastUpdatedAt }}
+          </span>
+        </div>
+      </section>
 
       <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" />
 

@@ -1,5 +1,12 @@
 @import 'tailwindcss';
 
+@plugin "@iconify/tailwind4" {
+  prefix: icon;
+  icon-sets: from-json(mdi, "./node_modules/@iconify-json/mdi/icons.json");
+}
+
+@source inline("icon-[mdi--theme-light-dark] icon-[mdi--white-balance-sunny] icon-[mdi--moon-waning-crescent] icon-[mdi--view-dashboard-outline] icon-[mdi--package-variant-closed] icon-[mdi--vector-link] icon-[mdi--circle-slice-8] icon-[mdi--checkbox-blank-circle] icon-[mdi--package-variant] icon-[mdi--layers-triple-outline] icon-[mdi--chart-tree] icon-[mdi--file-document-multiple-outline] icon-[mdi--database-outline] icon-[mdi--cube-outline] icon-[mdi--source-branch] icon-[mdi--content-copy] icon-[mdi--clock-outline] icon-[mdi--cube-scan] icon-[mdi--vector-difference] icon-[mdi--export-variant] icon-[mdi--database] icon-[mdi--chart-treemap] icon-[mdi--file-star-outline]");
+
 @layer base {
   :root {
     color-scheme: light dark;
