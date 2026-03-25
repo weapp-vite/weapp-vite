@@ -5,6 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startAnalyzeDashboard } from './dashboard'
 
 const existsSyncMock = vi.hoisted(() => vi.fn(() => true))
+const readFileSyncMock = vi.hoisted(() => vi.fn(() => JSON.stringify({
+  weappViteDashboard: {
+    devRoot: '.',
+    devConfigFile: 'vite.config.ts',
+    distDir: 'dist',
+  },
+})))
 const resolveDashboardPackageMock = vi.hoisted(() => vi.fn(() => '/mock/dashboard/package.json'))
 const resolveCommandMock = vi.hoisted(() => vi.fn(() => ({
   command: 'pnpm',
@@ -20,8 +27,10 @@ const loggerMock = vi.hoisted(() => ({
 vi.mock('node:fs', () => ({
   default: {
     existsSync: existsSyncMock,
+    readFileSync: readFileSyncMock,
   },
   existsSync: existsSyncMock,
+  readFileSync: readFileSyncMock,
 }))
 
 vi.mock('vite', () => ({
@@ -95,10 +104,18 @@ function createAnalyzeResult(label: string) {
 describe('analyze dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    readFileSyncMock.mockReturnValue(JSON.stringify({
+      weappViteDashboard: {
+        devRoot: '.',
+        devConfigFile: 'vite.config.ts',
+        distDir: 'dist',
+      },
+    }))
     existsSyncMock.mockImplementation((value: string) => {
       return value === '/mock/dashboard/dist'
         || value === '/mock/dashboard/src'
         || value === '/mock/dashboard/vite.config.ts'
+        || value === '/mock/dashboard/package.json'
     })
     resolveDashboardPackageMock.mockReturnValue('/mock/dashboard/package.json')
   })

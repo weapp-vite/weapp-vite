@@ -18,6 +18,11 @@
     "analyze",
     "dashboard"
   ],
+  "weappViteDashboard": {
+    "devRoot": ".",
+    "devConfigFile": "vite.config.ts",
+    "distDir": "dist"
+  },
   "files": [
     "dist"
   ],
