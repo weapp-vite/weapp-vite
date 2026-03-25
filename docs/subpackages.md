@@ -106,7 +106,7 @@ export default defineConfig({
           // 自动注入公共主题文件
           'styles/theme.scss',
           {
-            source: '../shared/styles/components.scss',
+            source: '../../shared/styles/components.scss',
             scope: 'components',
             include: ['components/**'],
           },
@@ -128,6 +128,38 @@ export default defineConfig({
 ```
 
 > 提示：`styles` 支持 `wxss/css/scss/less/stylus` 等格式，`weapp-vite` 会统一转换为目标平台后缀并按作用域注入。
+
+> 路径解析说明：`styles.source` 以“分包根目录”为基准。以上示例里，`packages/order` 访问 `src/shared/styles/components.scss` 需要写成 `../../shared/styles/components.scss`，而不是 `../shared/styles/components.scss`。
+
+成功示例：
+
+```ts
+styles: [
+  {
+    source: '../../shared/styles/components.scss',
+    scope: 'components',
+    include: ['components/**'],
+  },
+]
+```
+
+失败示例：
+
+```ts
+styles: [
+  {
+    source: '../shared/styles/components.scss',
+    scope: 'components',
+    include: ['components/**'],
+  },
+]
+```
+
+失败写法会先解析到 `src/packages/shared/styles/components.scss`。如果该文件不存在，就会输出：
+
+```txt
+WARN  [分包] 分包 packages/order 样式入口 ../shared/styles/components.scss 对应文件不存在，已忽略。
+```
 
 > 自动导入组件：主包与每个分包的 `components/**/*.wxml` 会默认被自动扫描。若分包需独立 Resolver/Typed 输出，可通过 `subPackages.<root>.autoImportComponents` 进一步覆盖；若某个分包不希望自动导入，也可以设置 `subPackages.<root>.autoImportComponents = false`。构建器会在主包与独立构建时分别应用对应配置，保证 `OrderMetrics` 等本地组件无需重复维护 `usingComponents`。
 
