@@ -18,7 +18,7 @@ defineProps<{
     <TreemapCard :bind-chart-ref="bindChartRef" />
 
     <div class="grid gap-3 xl:h-[min(58vh,36rem)] xl:grid-rows-[minmax(0,1fr)_minmax(0,0.82fr)]">
-      <section :class="surfaceStyles({ padding: 'md' })">
+      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2">
             <span :class="iconFrameStyles()">
@@ -37,7 +37,7 @@ defineProps<{
           </div>
           <span class="text-[11px] uppercase tracking-[0.2em] text-[color:var(--dashboard-text-soft)]">Top 10</span>
         </div>
-        <ol class="mt-3 grid max-h-[24rem] gap-2 overflow-auto pr-1 text-sm xl:grid-cols-1">
+        <ol class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm xl:grid-cols-1">
           <li
             v-for="file in visibleLargestFiles"
             :key="`${file.packageId}:${file.file}`"
@@ -58,7 +58,7 @@ defineProps<{
         </ol>
       </section>
 
-      <section :class="surfaceStyles({ padding: 'md' })">
+      <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2">
             <span :class="iconFrameStyles()">
@@ -77,7 +77,7 @@ defineProps<{
           </div>
           <span class="text-[11px] uppercase tracking-[0.2em] text-[color:var(--dashboard-text-soft)]">Roots</span>
         </div>
-        <ul class="mt-3 grid max-h-[16rem] gap-2 overflow-auto pr-1 text-sm text-[color:var(--dashboard-text-muted)]">
+        <ul class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm text-[color:var(--dashboard-text-muted)]">
           <li
             v-if="subPackages.length === 0"
             class="rounded-xl border border-dashed border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-3 py-4 text-sm text-[color:var(--dashboard-text-soft)]"

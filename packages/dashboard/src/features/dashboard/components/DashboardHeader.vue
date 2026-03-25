@@ -2,7 +2,7 @@
 import type { ThemePreference } from '../composables/useThemeMode'
 import type { ThemeOption } from '../types'
 import { cn } from '../../../lib/cn'
-import { metricCardStyles, pillButtonStyles, surfaceStyles } from '../utils/styles'
+import { metricCardStyles, surfaceStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
@@ -44,18 +44,29 @@ const emit = defineEmits<{
       </div>
 
       <div class="flex flex-col gap-3 xl:min-w-[31rem]">
-        <div class="flex flex-wrap items-center justify-start gap-2 xl:justify-end">
-          <button
-            v-for="option in themeOptions"
-            :key="option.value"
-            :class="pillButtonStyles({ kind: 'theme', active: themePreference === option.value })"
-            @click="emit('setTheme', option.value)"
+        <div class="flex items-center justify-start gap-2 xl:justify-end">
+          <label
+            class="inline-flex items-center gap-2 rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-3 py-1.5 text-xs font-medium text-[color:var(--dashboard-text-soft)]"
+            for="dashboard-theme-select"
           >
-            <span class="h-4 w-4">
-              <DashboardIcon :name="option.iconName" />
+            <span class="h-4 w-4 text-[color:var(--dashboard-accent)]">
+              <DashboardIcon :name="themeOptions.find(option => option.value === themePreference)?.iconName ?? 'theme-system'" />
             </span>
-            {{ option.label }}
-          </button>
+            <select
+              id="dashboard-theme-select"
+              class="min-w-[7rem] bg-transparent text-[color:var(--dashboard-text)] outline-none"
+              :value="themePreference"
+              @change="emit('setTheme', ($event.target as HTMLSelectElement).value as ThemePreference)"
+            >
+              <option
+                v-for="option in themeOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
         </div>
 
         <div class="grid gap-2 text-sm sm:grid-cols-3">
