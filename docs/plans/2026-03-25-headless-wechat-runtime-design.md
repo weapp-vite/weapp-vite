@@ -165,8 +165,14 @@ Suggested internal layout:
 
 ```text
 mpcore/
+  package.json
   packages/
+    core/
+      package.json
+      src/
+        index.ts
     simulator/
+      package.json
       src/
         project/
         host/
@@ -289,42 +295,42 @@ interface LaunchOptions {
 }
 
 interface MiniProgramSession {
-  reLaunch(route: string): Promise<PageHandle>
-  navigateTo(route: string): Promise<PageHandle>
-  redirectTo(route: string): Promise<PageHandle>
-  switchTab(route: string): Promise<PageHandle>
-  navigateBack(delta?: number): Promise<PageHandle | null>
+  reLaunch: (route: string) => Promise<PageHandle>
+  navigateTo: (route: string) => Promise<PageHandle>
+  redirectTo: (route: string) => Promise<PageHandle>
+  switchTab: (route: string) => Promise<PageHandle>
+  navigateBack: (delta?: number) => Promise<PageHandle | null>
 
-  currentPage(): Promise<PageHandle | null>
-  getCurrentPages(): Promise<PageHandle[]>
+  currentPage: () => Promise<PageHandle | null>
+  getCurrentPages: () => Promise<PageHandle[]>
 
-  getRuntimeLogs(): RuntimeLogEntry[]
-  clearRuntimeLogs(): void
-  close(): Promise<void>
+  getRuntimeLogs: () => RuntimeLogEntry[]
+  clearRuntimeLogs: () => void
+  close: () => Promise<void>
 }
 
 interface PageHandle {
-  route(): string
-  data<T = Record<string, any>>(): Promise<T>
+  route: () => string
+  data: <T = Record<string, any>>() => Promise<T>
 
-  $(selector: string): Promise<NodeHandle | null>
-  $$(selector: string): Promise<NodeHandle[]>
+  $: (selector: string) => Promise<NodeHandle | null>
+  $$: (selector: string) => Promise<NodeHandle[]>
 
-  waitFor(timeoutMs?: number): Promise<void>
-  snapshot(): Promise<LogicalPageSnapshot>
+  waitFor: (timeoutMs?: number) => Promise<void>
+  snapshot: () => Promise<LogicalPageSnapshot>
 }
 
 interface NodeHandle {
-  text(): Promise<string>
-  attr(name: string): Promise<string | undefined>
-  dataset(): Promise<Record<string, any>>
-  property(name: string): Promise<any>
+  text: () => Promise<string>
+  attr: (name: string) => Promise<string | undefined>
+  dataset: () => Promise<Record<string, any>>
+  property: (name: string) => Promise<any>
 
-  tap(detail?: Record<string, any>): Promise<void>
-  trigger(eventName: string, detail?: Record<string, any>): Promise<void>
+  tap: (detail?: Record<string, any>) => Promise<void>
+  trigger: (eventName: string, detail?: Record<string, any>) => Promise<void>
 
-  $(selector: string): Promise<NodeHandle | null>
-  $$(selector: string): Promise<NodeHandle[]>
+  $: (selector: string) => Promise<NodeHandle | null>
+  $$: (selector: string) => Promise<NodeHandle[]>
 }
 ```
 

@@ -40,6 +40,13 @@ Expected new package structure:
 mpcore/
   package.json
   packages/
+    core/
+      package.json
+      tsconfig.json
+      src/
+        index.ts
+      test/
+        index.test.ts
     simulator/
       package.json
       tsconfig.json
@@ -177,7 +184,7 @@ Tasks:
 
 Verification:
 
-- `pnpm --filter simulator build`
+- `pnpm --filter @mpcore/simulator build`
 - `pnpm vitest run` scoped to the new package tests
 
 Exit criteria:
@@ -510,7 +517,7 @@ Use the smallest validation step that proves each phase.
 
 Package-level:
 
-- `pnpm --filter simulator build`
+- `pnpm --filter @mpcore/simulator build`
 - `pnpm vitest run <targeted package test files>`
 
 Provider integration:
