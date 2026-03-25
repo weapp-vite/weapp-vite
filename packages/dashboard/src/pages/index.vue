@@ -53,7 +53,7 @@ const {
 const visibleDuplicateModules = computed(() => duplicateModules.value.slice(0, 12))
 const visibleLargestFiles = computed(() => largestFiles.value.slice(0, 10))
 const statusText = computed(() => `${updateCount.value} 次数据同步`)
-const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'icon-[mdi--circle-slice-8]' : 'icon-[mdi--checkbox-blank-circle]')
+const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'status-dark' : 'status-light')
 const { activeTab, topCards, packageTypeSummary: metricPackageTypeSummary } = useDashboardPage({
   summary,
   packageInsights,

@@ -2,6 +2,7 @@
 import type { PackageInsight } from '../composables/useAnalyzeDashboardData'
 import { formatBuildOrigin, formatBytes, formatPackageType } from '../utils/format'
 import { iconFrameStyles, surfaceStyles } from '../utils/styles'
+import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
   packageInsights: PackageInsight[]
@@ -20,7 +21,9 @@ defineProps<{
           <div class="min-w-0">
             <div class="flex items-center gap-2">
               <span :class="iconFrameStyles()">
-                <span class="icon-[mdi--package-variant-closed] h-5 w-5" />
+                <span class="h-5 w-5">
+                  <DashboardIcon name="tab-packages" />
+                </span>
               </span>
               <div>
                 <h2 class="truncate text-lg font-semibold text-[color:var(--dashboard-text)]">

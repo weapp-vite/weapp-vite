@@ -1,6 +1,33 @@
 export type PackageType = 'main' | 'subPackage' | 'independent' | 'virtual'
 export type ModuleSourceType = 'src' | 'plugin' | 'node_modules' | 'workspace'
 export type BuildOrigin = 'main' | 'independent'
+export type DashboardIconName
+  = | 'theme-system'
+    | 'theme-light'
+    | 'theme-dark'
+    | 'tab-overview'
+    | 'tab-packages'
+    | 'tab-modules'
+    | 'status-dark'
+    | 'status-light'
+    | 'metric-packages'
+    | 'metric-subpackages'
+    | 'metric-chunks'
+    | 'metric-assets'
+    | 'metric-size-outline'
+    | 'metric-modules'
+    | 'metric-duplicates'
+    | 'metric-sources'
+    | 'metric-copy'
+    | 'metric-time'
+    | 'metric-entries'
+    | 'metric-size'
+    | 'treemap'
+    | 'top-files'
+    | 'subpackages'
+    | 'duplicate-modules'
+    | 'module-sources'
+    | 'file-samples'
 
 export interface ModuleInFile {
   id: string
@@ -51,18 +78,18 @@ export type DashboardTab = 'overview' | 'packages' | 'modules'
 export interface ThemeOption {
   value: 'system' | 'light' | 'dark'
   label: string
-  iconClass: string
+  iconName: DashboardIconName
 }
 
 export interface DashboardTabOption {
   key: DashboardTab
   label: string
-  iconClass: string
+  iconName: DashboardIconName
 }
 
 export interface DashboardMetricCard {
   label: string
   value: string
-  iconClass: string
+  iconName: DashboardIconName
   wide?: boolean
 }

@@ -3,6 +3,7 @@ import type { ThemePreference } from '../composables/useThemeMode'
 import type { ThemeOption } from '../types'
 import { cn } from '../../../lib/cn'
 import { metricCardStyles, pillButtonStyles, surfaceStyles } from '../utils/styles'
+import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
   statusText: string
@@ -31,7 +32,9 @@ const emit = defineEmits<{
             Analyze Workspace
           </h1>
           <span :class="cn(pillButtonStyles({ kind: 'badge' }))">
-            <span class="h-4 w-4 text-[color:var(--dashboard-accent)]" :class="statusTone" />
+            <span class="h-4 w-4 text-[color:var(--dashboard-accent)]">
+              <DashboardIcon :name="statusTone" />
+            </span>
             {{ resolvedTheme === 'dark' ? 'dark console' : 'light console' }}
           </span>
         </div>
@@ -48,7 +51,9 @@ const emit = defineEmits<{
             :class="pillButtonStyles({ kind: 'theme', active: themePreference === option.value })"
             @click="emit('setTheme', option.value)"
           >
-            <span class="h-4 w-4" :class="option.iconClass" />
+            <span class="h-4 w-4">
+              <DashboardIcon :name="option.iconName" />
+            </span>
             {{ option.label }}
           </button>
         </div>

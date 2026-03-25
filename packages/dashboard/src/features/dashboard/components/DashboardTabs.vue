@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DashboardTab, DashboardTabOption } from '../types'
 import { pillButtonStyles } from '../utils/styles'
+import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
   tabs: DashboardTabOption[]
@@ -20,7 +21,9 @@ const emit = defineEmits<{
       :class="pillButtonStyles({ kind: 'nav', active: activeTab === tab.key })"
       @click="emit('select', tab.key)"
     >
-      <span class="h-4.5 w-4.5" :class="tab.iconClass" />
+      <span class="h-4.5 w-4.5">
+        <DashboardIcon :name="tab.iconName" />
+      </span>
       {{ tab.label }}
     </button>
   </nav>
