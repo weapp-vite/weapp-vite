@@ -29,12 +29,12 @@
     "tdesign-miniprogram": "catalog:"
   },
   "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",
     "tailwindcss": "catalog:",
     "weapp-tailwindcss": "catalog:",
-    "weapp-vite": "workspace:*",
-    "@weapp-vite/dashboard": "workspace:*"
+    "weapp-vite": "workspace:*"
   }
 }

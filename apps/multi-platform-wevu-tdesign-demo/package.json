@@ -48,6 +48,7 @@
   "devDependencies": {
     "@egoist/tailwindcss-icons": "catalog:",
     "@iconify-json/mdi": "catalog:",
+    "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",
@@ -57,7 +58,6 @@
     "vue-tsc": "catalog:",
     "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*",
-    "wevu": "workspace:*",
-    "@weapp-vite/dashboard": "workspace:*"
+    "wevu": "workspace:*"
   }
 }

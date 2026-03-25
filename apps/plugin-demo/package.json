@@ -24,12 +24,12 @@
     "lodash": "catalog:"
   },
   "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
     "@weapp-vite/volar": "workspace:*",
     "miniprogram-api-typings": "catalog:latest",
     "sass": "catalog:",
     "typescript": "catalog:latest",
     "weapp-vite": "workspace:*",
-    "wevu": "workspace:*",
-    "@weapp-vite/dashboard": "workspace:*"
+    "wevu": "workspace:*"
   }
 }

@@ -19,13 +19,13 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
+    "@weapp-vite/dashboard": "workspace:*",
     "miniprogram-api-typings": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
     "vue-tsc": "catalog:",
     "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*",
-    "wevu": "workspace:*",
-    "@weapp-vite/dashboard": "workspace:*"
+    "wevu": "workspace:*"
   }
 }

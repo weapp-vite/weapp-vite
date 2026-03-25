@@ -29,11 +29,11 @@
   },
   "devDependencies": {
     "@vant/weapp": "catalog:",
+    "@weapp-vite/dashboard": "workspace:*",
     "autoprefixer": "catalog:",
     "postcss": "catalog:",
     "tailwindcss": "catalog:",
     "weapp-tailwindcss": "catalog:",
-    "weapp-vite": "workspace:*",
-    "@weapp-vite/dashboard": "workspace:*"
+    "weapp-vite": "workspace:*"
   }
 }

@@ -41,10 +41,10 @@
     "build:ui": "weapp-vite build --ui -p weapp"
   },
   "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",
     "typescript": "catalog:",
-    "weapp-vite": "workspace:*",
-    "@weapp-vite/dashboard": "workspace:*"
+    "weapp-vite": "workspace:*"
   }
 }

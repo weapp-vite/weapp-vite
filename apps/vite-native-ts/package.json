@@ -30,8 +30,8 @@
     "gm-crypto": "catalog:"
   },
   "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
     "miniprogram-api-typings": "catalog:",
-    "weapp-vite": "workspace:*",
-    "@weapp-vite/dashboard": "workspace:*"
+    "weapp-vite": "workspace:*"
   }
 }

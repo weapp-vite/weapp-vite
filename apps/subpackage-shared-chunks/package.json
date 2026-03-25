@@ -27,12 +27,12 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@weapp-vite/dashboard": "workspace:*",
     "crypto-es": "^3.1.3",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",
     "typescript": "catalog:",
     "weapp-tailwindcss": "catalog:",
-    "weapp-vite": "workspace:*",
-    "@weapp-vite/dashboard": "workspace:*"
+    "weapp-vite": "workspace:*"
   }
 }
