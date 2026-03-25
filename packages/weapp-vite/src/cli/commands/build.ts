@@ -18,7 +18,7 @@ export function registerBuildCommand(cli: CAC) {
     .command('build [root]', 'build for production')
     .option('--target <target>', `[string] transpile target (default: 'modules')`)
     .option('--outDir <dir>', `[string] output directory (default: dist)`)
-    .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
+    .option('-p, --platform <platform>', `[string] target platform (weapp | h5 | all)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .option(
       '--sourcemap [output]',
