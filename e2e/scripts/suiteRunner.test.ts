@@ -5,7 +5,7 @@ import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { getSuiteTasks, listE2ESuites } from './e2e-suite-manifest'
 import { createSuiteReport } from './suiteReport'
-import { formatSuiteSummary, runTaskSuite } from './suiteRunner'
+import { formatSuiteSummary, getTaskSpawnOptions, runTaskSuite } from './suiteRunner'
 
 describe('suiteRunner', () => {
   it('formats failure summary with failed tasks', () => {
@@ -117,5 +117,21 @@ describe('suiteRunner', () => {
     expect(markdown).toContain('child-b/index.md')
     expect(json).toContain('"failedCount": 1')
     expect(json).toContain('"artifactCount": 2')
+  })
+
+  it('enables shell mode for Windows task commands so pnpm resolves correctly', () => {
+    const options = getTaskSpawnOptions({
+      label: 'ci/task',
+      command: 'pnpm',
+      args: ['vitest', 'run'],
+      env: {
+        E2E_PLATFORM: 'weapp',
+      },
+    }, 'win32')
+
+    expect(options.shell).toBe(true)
+    expect(options.env).toMatchObject({
+      E2E_PLATFORM: 'weapp',
+    })
   })
 })
