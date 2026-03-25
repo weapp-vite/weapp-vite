@@ -4,7 +4,7 @@ import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ModulesPanel from '../components/ModulesPanel.vue'
 import PackagesPanel from '../components/PackagesPanel.vue'
@@ -102,6 +102,39 @@ function handleResize() {
   chart?.resize()
 }
 
+function destroyChart() {
+  chart?.dispose()
+  chart = undefined
+}
+
+function syncFromWindow() {
+  if (window.__WEAPP_VITE_ANALYZE_RESULT__) {
+    resultRef.value = window.__WEAPP_VITE_ANALYZE_RESULT__
+    updateCount.value += 1
+    lastUpdatedAt.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
+  }
+}
+
+async function ensureChart() {
+  if (activeTab.value !== 'overview') {
+    destroyChart()
+    return
+  }
+
+  await nextTick()
+
+  if (!chartRef.value) {
+    return
+  }
+
+  if (!chart) {
+    chart = echarts.init(chartRef.value, 'dark', { renderer: 'canvas' })
+  }
+
+  chart.setOption(treemapOption.value, true)
+  chart.resize()
+}
+
 watch(
   treemapOption,
   (newOption) => {
@@ -112,25 +145,16 @@ watch(
   { deep: true },
 )
 
+watch(activeTab, () => {
+  void ensureChart()
+})
+
 onMounted(() => {
-  if (!chartRef.value) {
-    return
-  }
-
-  chart = echarts.init(chartRef.value, 'dark', { renderer: 'canvas' })
-  chart.setOption(treemapOption.value)
   window.addEventListener('resize', handleResize)
-
-  const syncFromWindow = () => {
-    if (window.__WEAPP_VITE_ANALYZE_RESULT__) {
-      resultRef.value = window.__WEAPP_VITE_ANALYZE_RESULT__
-      updateCount.value += 1
-      lastUpdatedAt.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
-    }
-  }
   window.addEventListener('weapp-analyze:update', syncFromWindow)
   updateListener = syncFromWindow
   syncFromWindow()
+  void ensureChart()
 })
 
 onBeforeUnmount(() => {
@@ -138,49 +162,48 @@ onBeforeUnmount(() => {
   if (updateListener) {
     window.removeEventListener('weapp-analyze:update', updateListener)
   }
-  chart?.dispose()
-  chart = undefined
+  destroyChart()
 })
 </script>
 
 <template>
-  <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,116,144,0.28),_transparent_36%),linear-gradient(180deg,_#020617_0%,_#0f172a_48%,_#020617_100%)] px-4 py-6 text-slate-100 md:px-8 lg:px-10">
-    <div class="mx-auto flex w-full max-w-[1500px] flex-col gap-6">
-      <header class="overflow-hidden rounded-[28px] border border-cyan-400/20 bg-slate-950/70 p-6 shadow-[0_24px_80px_rgba(2,6,23,0.45)] backdrop-blur">
-        <div class="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-          <div class="max-w-3xl space-y-3">
+  <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,116,144,0.28),_transparent_34%),linear-gradient(180deg,_#020617_0%,_#0f172a_40%,_#020617_100%)] px-3 py-3 text-slate-100 md:px-5 md:py-4 lg:px-6">
+    <div class="mx-auto flex w-full max-w-[1560px] flex-col gap-3">
+      <header class="overflow-hidden rounded-[24px] border border-cyan-400/20 bg-slate-950/72 px-4 py-4 shadow-[0_18px_64px_rgba(2,6,23,0.42)] backdrop-blur md:px-5">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div class="max-w-3xl space-y-2">
             <p class="text-xs uppercase tracking-[0.32em] text-cyan-300/80">
               weapp-vite UI
             </p>
-            <h1 class="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+            <h1 class="text-2xl font-semibold tracking-tight text-white md:text-4xl">
               Analyze Workspace
             </h1>
-            <p class="text-sm leading-7 text-slate-300 md:text-base">
+            <p class="max-w-2xl text-sm leading-6 text-slate-300">
               统一查看主包、分包、chunk、asset 与跨包模块映射。当前页面是 `--ui` 的分析视图，后续可继续挂接更多调试面板。
             </p>
           </div>
-          <div class="grid gap-3 text-sm text-slate-300 sm:grid-cols-3 xl:min-w-[32rem]">
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div class="grid gap-2 text-sm text-slate-300 sm:grid-cols-3 xl:min-w-[29rem]">
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               <p class="text-xs uppercase tracking-[0.2em] text-slate-400">
                 同步状态
               </p>
-              <p class="mt-3 text-lg font-semibold text-white">
+              <p class="mt-2 text-base font-semibold text-white md:text-lg">
                 {{ statusText }}
               </p>
             </div>
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               <p class="text-xs uppercase tracking-[0.2em] text-slate-400">
                 最近刷新
               </p>
-              <p class="mt-3 text-lg font-semibold text-white">
+              <p class="mt-2 text-base font-semibold text-white md:text-lg">
                 {{ lastUpdatedAt }}
               </p>
             </div>
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
               <p class="text-xs uppercase tracking-[0.2em] text-slate-400">
                 分包配置
               </p>
-              <p class="mt-3 text-lg font-semibold text-white">
+              <p class="mt-2 text-base font-semibold text-white md:text-lg">
                 {{ summary.subpackageCount }}
               </p>
             </div>
@@ -188,9 +211,9 @@ onBeforeUnmount(() => {
         </div>
       </header>
 
-      <nav class="flex flex-wrap gap-3">
+      <nav class="flex flex-wrap gap-2">
         <button
-          class="rounded-full border px-4 py-2 text-sm transition"
+          class="rounded-full border px-3.5 py-1.5 text-sm transition"
           :class="activeTab === 'overview' ? 'border-cyan-300 bg-cyan-300/15 text-white' : 'border-white/10 bg-slate-900/60 text-slate-300 hover:border-cyan-400/40 hover:text-white'"
           @click="activeTab = 'overview'"
         >
@@ -212,20 +235,20 @@ onBeforeUnmount(() => {
         </button>
       </nav>
 
-      <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+      <section class="grid gap-2.5 md:grid-cols-2 xl:grid-cols-6">
         <article
           v-for="card in topCards"
           :key="card.label"
-          class="rounded-2xl border border-white/10 bg-slate-900/70 p-5"
+          class="rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3.5"
           :class="card.wide ? 'xl:col-span-2' : 'xl:col-span-1'"
         >
           <p class="text-xs uppercase tracking-[0.22em] text-slate-400">
             {{ card.label }}
           </p>
-          <p class="mt-3 text-3xl font-semibold text-white">
+          <p class="mt-2 text-2xl font-semibold text-white md:text-[1.7rem]">
             {{ card.value }}
           </p>
-          <div v-if="card.label === '总产物体积'" class="mt-4 flex flex-wrap gap-2">
+          <div v-if="card.label === '总产物体积'" class="mt-3 flex flex-wrap gap-1.5">
             <span
               v-for="item in packageTypeSummary"
               :key="item.label"
@@ -237,31 +260,40 @@ onBeforeUnmount(() => {
         </article>
       </section>
 
-      <section v-if="activeTab === 'overview'" class="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(22rem,0.85fr)]">
-        <div class="rounded-[24px] border border-white/10 bg-slate-900/70 p-4">
-          <div class="mb-4 flex items-center justify-between gap-4 px-2">
+      <section
+        v-if="activeTab === 'overview'"
+        class="grid gap-3 xl:grid-cols-[minmax(0,1.55fr)_minmax(21rem,0.75fr)] xl:items-stretch"
+      >
+        <div class="rounded-[24px] border border-white/10 bg-slate-900/70 p-3">
+          <div class="mb-2 flex items-center justify-between gap-4 px-2">
             <div>
-              <h2 class="text-xl font-semibold text-white">
+              <h2 class="text-lg font-semibold text-white">
                 Treemap
               </h2>
-              <p class="text-sm text-slate-400">
+              <p class="text-xs text-slate-400 md:text-sm">
                 从包体到文件再到模块，直接定位体积热点。
               </p>
             </div>
           </div>
-          <div ref="chartRef" class="min-h-[34rem] rounded-[20px] bg-slate-950/70 p-2" />
+          <div
+            ref="chartRef"
+            class="h-[min(62vh,42rem)] min-h-[24rem] rounded-[20px] bg-slate-950/70 p-2"
+          />
         </div>
 
-        <div class="flex flex-col gap-6">
-          <section class="rounded-[24px] border border-white/10 bg-slate-900/70 p-5">
-            <h2 class="text-xl font-semibold text-white">
-              Top Files
-            </h2>
-            <ol class="mt-4 space-y-3 text-sm">
+        <div class="grid gap-3 xl:h-[min(62vh,42rem)] xl:grid-rows-[minmax(0,1fr)_minmax(0,0.9fr)]">
+          <section class="rounded-[24px] border border-white/10 bg-slate-900/70 p-4">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-lg font-semibold text-white">
+                Top Files
+              </h2>
+              <span class="text-xs uppercase tracking-[0.2em] text-slate-500">Top 10</span>
+            </div>
+            <ol class="mt-3 grid max-h-[28rem] gap-2 overflow-auto pr-1 text-sm xl:grid-cols-1">
               <li
                 v-for="file in visibleLargestFiles"
                 :key="`${file.packageId}:${file.file}`"
-                class="rounded-2xl border border-white/8 bg-white/[0.03] p-3"
+                class="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0">
@@ -278,15 +310,24 @@ onBeforeUnmount(() => {
             </ol>
           </section>
 
-          <section class="rounded-[24px] border border-white/10 bg-slate-900/70 p-5">
-            <h2 class="text-xl font-semibold text-white">
-              Subpackages
-            </h2>
-            <ul class="mt-4 space-y-3 text-sm text-slate-300">
+          <section class="rounded-[24px] border border-white/10 bg-slate-900/70 p-4">
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-lg font-semibold text-white">
+                Subpackages
+              </h2>
+              <span class="text-xs uppercase tracking-[0.2em] text-slate-500">Roots</span>
+            </div>
+            <ul class="mt-3 grid max-h-[18rem] gap-2 overflow-auto pr-1 text-sm text-slate-300">
+              <li
+                v-if="subPackages.length === 0"
+                class="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-3 py-4 text-sm text-slate-400"
+              >
+                当前构建没有配置分包。
+              </li>
               <li
                 v-for="pkg in subPackages"
                 :key="pkg.root"
-                class="rounded-2xl border border-white/8 bg-white/[0.03] p-3"
+                class="rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
               >
                 <p class="font-medium text-white">
                   {{ pkg.root }}
@@ -300,13 +341,23 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <PackagesPanel v-else-if="activeTab === 'packages'" :package-insights="packageInsights" />
-      <ModulesPanel
-        v-else
-        :visible-duplicate-modules="visibleDuplicateModules"
-        :module-source-summary="moduleSourceSummary"
-        :visible-largest-files="visibleLargestFiles"
-      />
+      <section v-else-if="activeTab === 'packages'" class="grid gap-3">
+        <div class="rounded-[24px] border border-white/10 bg-slate-950/50 px-4 py-3 text-xs uppercase tracking-[0.24em] text-slate-400">
+          包与产物视图优先展示每个包的结构和最大文件，支持在一个屏幕内快速对比。
+        </div>
+        <PackagesPanel :package-insights="packageInsights" />
+      </section>
+
+      <section v-else class="grid gap-3">
+        <div class="rounded-[24px] border border-white/10 bg-slate-950/50 px-4 py-3 text-xs uppercase tracking-[0.24em] text-slate-400">
+          模块与复用视图聚焦跨包重复、来源分布与文件样本。
+        </div>
+        <ModulesPanel
+          :visible-duplicate-modules="visibleDuplicateModules"
+          :module-source-summary="moduleSourceSummary"
+          :visible-largest-files="visibleLargestFiles"
+        />
+      </section>
     </div>
   </div>
 </template>
