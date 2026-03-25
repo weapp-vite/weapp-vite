@@ -2,6 +2,7 @@
 import type { DashboardMetricCard, SummaryMetric } from '../types'
 import { formatPackageType } from '../utils/format'
 import { iconFrameStyles, surfaceStyles } from '../utils/styles'
+import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
   cards: DashboardMetricCard[]
@@ -26,7 +27,9 @@ defineProps<{
           </p>
         </div>
         <span :class="iconFrameStyles({ size: 'lg' })">
-          <span class="h-5 w-5" :class="card.iconClass" />
+          <span class="h-5 w-5">
+            <DashboardIcon :name="card.iconName" />
+          </span>
         </span>
       </div>
       <div v-if="card.label === '总产物体积'" class="mt-3 flex flex-wrap gap-1.5">

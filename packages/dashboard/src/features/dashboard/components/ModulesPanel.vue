@@ -6,6 +6,7 @@ import type {
 } from '../composables/useAnalyzeDashboardData'
 import { formatBuildOrigin, formatBytes, formatSourceType } from '../utils/format'
 import { iconFrameStyles, surfaceStyles } from '../utils/styles'
+import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
   visibleDuplicateModules: DuplicateModuleEntry[]
@@ -19,7 +20,9 @@ defineProps<{
     <div :class="surfaceStyles({ padding: 'md' })">
       <div class="flex items-center gap-2">
         <span :class="iconFrameStyles()">
-          <span class="icon-[mdi--vector-link] h-5 w-5" />
+          <span class="h-5 w-5">
+            <DashboardIcon name="duplicate-modules" />
+          </span>
         </span>
         <div>
           <h2 class="text-lg font-semibold text-[color:var(--dashboard-text)]">
@@ -70,7 +73,9 @@ defineProps<{
       <section :class="surfaceStyles({ padding: 'md' })">
         <div class="flex items-center gap-2">
           <span :class="iconFrameStyles()">
-            <span class="icon-[mdi--source-branch] h-5 w-5" />
+            <span class="h-5 w-5">
+              <DashboardIcon name="module-sources" />
+            </span>
           </span>
           <h2 class="text-lg font-semibold text-[color:var(--dashboard-text)]">
             模块来源
@@ -102,7 +107,9 @@ defineProps<{
       <section :class="surfaceStyles({ padding: 'md' })">
         <div class="flex items-center gap-2">
           <span :class="iconFrameStyles()">
-            <span class="icon-[mdi--file-document-multiple-outline] h-5 w-5" />
+            <span class="h-5 w-5">
+              <DashboardIcon name="file-samples" />
+            </span>
           </span>
           <h2 class="text-lg font-semibold text-[color:var(--dashboard-text)]">
             文件样本

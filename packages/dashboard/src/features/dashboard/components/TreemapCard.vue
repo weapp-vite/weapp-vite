@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { iconFrameStyles, pillButtonStyles, surfaceStyles } from '../utils/styles'
+import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
   bindChartRef: (element: Element | null) => void
@@ -11,7 +12,9 @@ defineProps<{
     <div class="mb-2 flex items-center justify-between gap-4 px-2">
       <div class="flex items-center gap-2">
         <span :class="iconFrameStyles()">
-          <span class="icon-[mdi--chart-treemap] h-5 w-5" />
+          <span class="h-5 w-5">
+            <DashboardIcon name="treemap" />
+          </span>
         </span>
         <div>
           <h2 class="text-lg font-semibold">

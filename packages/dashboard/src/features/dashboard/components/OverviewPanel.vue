@@ -3,6 +3,7 @@ import type { LargestFileEntry } from '../composables/useAnalyzeDashboardData'
 import type { SubPackageDescriptor } from '../types'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { iconFrameStyles, surfaceStyles } from '../utils/styles'
+import DashboardIcon from './DashboardIcon.vue'
 import TreemapCard from './TreemapCard.vue'
 
 defineProps<{
@@ -21,7 +22,9 @@ defineProps<{
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2">
             <span :class="iconFrameStyles()">
-              <span class="icon-[mdi--file-star-outline] h-5 w-5" />
+              <span class="h-5 w-5">
+                <DashboardIcon name="top-files" />
+              </span>
             </span>
             <div>
               <h2 class="text-lg font-semibold">
@@ -59,7 +62,9 @@ defineProps<{
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2">
             <span :class="iconFrameStyles()">
-              <span class="icon-[mdi--layers-triple-outline] h-5 w-5" />
+              <span class="h-5 w-5">
+                <DashboardIcon name="subpackages" />
+              </span>
             </span>
             <div>
               <h2 class="text-lg font-semibold">
