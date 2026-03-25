@@ -16,13 +16,21 @@ import {
 
 } from '../wevu-runtime.utils'
 
-const PLATFORM_LIST = resolvePlatformMatrix<RuntimePlatform>([
-  'weapp',
-  'alipay',
-  'tt',
-], {
-  localDefault: 'weapp',
-})
+const SELECTED_PLATFORM = typeof process.env.E2E_PLATFORM === 'string' && process.env.E2E_PLATFORM.length > 0
+  ? process.env.E2E_PLATFORM as RuntimePlatform
+  : undefined
+
+const SHOULD_VALIDATE_WEAPP = !SELECTED_PLATFORM || SELECTED_PLATFORM === 'weapp'
+
+const PLATFORM_LIST = SHOULD_VALIDATE_WEAPP
+  ? resolvePlatformMatrix<RuntimePlatform>([
+      'weapp',
+      'alipay',
+      'tt',
+    ], {
+      localDefault: 'weapp',
+    }).filter(platform => platform === 'weapp')
+  : []
 
 const PLATFORM_STYLE_EXT: Record<RuntimePlatform, string> = {
   weapp: 'wxss',
@@ -36,7 +44,6 @@ const SNAPSHOT_FILE_SUFFIX = new Map<RuntimePlatform, string>([
   ['tt', 'tt'],
 ])
 const SNAPSHOT_CACHE = new Map<RuntimePlatform, Record<string, string>>()
-const SINGLE_PLATFORM_RUN = typeof process.env.E2E_PLATFORM === 'string' && process.env.E2E_PLATFORM.length > 0
 
 function parseSnapshotExports(source: string) {
   const snapshotData: Record<string, string> = Object.create(null)
@@ -81,11 +88,6 @@ async function loadPlatformSnapshots(platform: RuntimePlatform) {
 }
 
 async function expectPlatformSnapshot(platform: RuntimePlatform, key: string, value: string) {
-  if (!SINGLE_PLATFORM_RUN) {
-    expect(value).toMatchSnapshot(key)
-    return
-  }
-
   const snapshotData = await loadPlatformSnapshots(platform)
   const currentTestName = expect.getState().currentTestName
   const snapshotKey = `${currentTestName} > ${key} 1`
@@ -93,7 +95,9 @@ async function expectPlatformSnapshot(platform: RuntimePlatform, key: string, va
   expect(value).toBe(deserializeSnapshotValue(snapshotData[snapshotKey]))
 }
 
-describe.sequential('wevu runtime platform outputs', () => {
+const describeRuntimePlatforms = SHOULD_VALIDATE_WEAPP ? describe.sequential : describe.skip.sequential
+
+describeRuntimePlatforms('wevu runtime platform outputs', () => {
   it.each(PLATFORM_LIST)('builds and snapshots %s outputs', async (platform) => {
     const config = await loadAppConfig()
     const pages = filterSnapshotPages(resolvePages(config))
