@@ -23,7 +23,10 @@
     "open": "weapp-vite open",
     "postinstall": "weapp-vite prepare",
     "dev:ui": "weapp-vite dev --ui",
-    "build:ui": "weapp-vite build --ui"
+    "build:ui": "weapp-vite build --ui",
+    "dev:all": "weapp-vite dev --platform all",
+    "dev:ui:all": "weapp-vite dev --ui --platform all",
+    "build:all": "weapp-vite build --platform all"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",

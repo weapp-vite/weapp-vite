@@ -34,7 +34,7 @@ export function registerServeCommand(cli: CAC) {
     .alias('dev') // 与脚本名对齐的别名
     .option('--skipNpm', `[boolean] if skip npm build`)
     .option('-o, --open', `[boolean] open ide`)
-    .option('-p, --platform <platform>', `[string] target platform (weapp | h5)`)
+    .option('-p, --platform <platform>', `[string] target platform (weapp | h5 | all)`)
     .option('--project-config <path>', `[string] project config path (miniprogram only)`)
     .option('--host [host]', `[string] web dev server host`)
     .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })

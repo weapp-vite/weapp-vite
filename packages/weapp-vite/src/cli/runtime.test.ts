@@ -45,6 +45,15 @@ describe('cli runtime target resolution', () => {
     expect(targets.label).toBe('h5')
   })
 
+  it('resolves combined mini and web runtime target from cli option', () => {
+    const targets = resolveRuntimeTargets({ platform: 'all' })
+
+    expect(targets.runMini).toBe(true)
+    expect(targets.runWeb).toBe(true)
+    expect(targets.mpPlatform).toBeUndefined()
+    expect(targets.label).toBe('weapp + web')
+  })
+
   it('does not inject mini platform into inline config when platform is omitted', () => {
     expect(createInlineConfig(undefined)).toBeUndefined()
   })

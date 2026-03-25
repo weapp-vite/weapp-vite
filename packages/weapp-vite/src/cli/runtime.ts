@@ -46,6 +46,16 @@ export function resolveRuntimeTargets(options: { platform?: string, p?: string }
     }
   }
   const normalized = normalizeMiniPlatform(rawPlatform)
+  const lowerRawPlatform = rawPlatform.toLowerCase()
+  if (lowerRawPlatform === 'all' || lowerRawPlatform === 'both') {
+    return {
+      runMini: true,
+      runWeb: true,
+      mpPlatform: undefined,
+      label: 'weapp + web',
+      rawPlatform,
+    }
+  }
   if (!normalized) {
     return {
       runMini: true,
