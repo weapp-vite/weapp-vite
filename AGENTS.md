@@ -62,6 +62,45 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
   - rerun downstream validation once
   - only then continue root-cause analysis
 
+### 2.3 Cross-Platform CI/CD Guard (Required for Windows/macOS/Linux-sensitive changes)
+
+- Trigger condition:
+  - any changes under `e2e/scripts/**`, workflow files, CLI/process-launch code, filesystem utilities, or path-normalization logic
+  - any failure pattern where Linux/macOS pass but Windows fails, or only one OS fails within the same matrix
+- Treat a matrix split by OS as a platform compatibility bug first, not a product-feature regression first.
+- Before editing, identify whether the failure happens:
+  - before tests start
+  - during process launch / command resolution
+  - during filesystem/path assertions
+  - only after runtime behavior diverges
+- For process execution code:
+  - prefer `execa` or an equivalent cross-platform wrapper unless there is a clear reason to use raw `spawn`
+  - if using `spawn` directly, explicitly evaluate Windows command resolution (`.cmd`, shell built-ins, quoting) and set `shell` only when needed
+  - never assume `pnpm`, `npm`, `git`, or other CLI commands resolve the same way on Windows as on Unix runners
+- For paths and files:
+  - normalize path separators in any persisted snapshot, report, matcher, or emitted label that can be consumed across OSes
+  - do not assume case-sensitive filesystems; double-check import path casing and fixture filenames
+  - avoid assertions that depend on native path separators, drive-letter shape, or platform-specific temp directories
+  - prefer repo-relative or normalized POSIX-style paths in logs, reports, and snapshot-like output
+- For shell behavior:
+  - avoid relying on `&&`, `;`, inline env assignment, `ulimit`, or other shell-specific syntax in shared scripts unless the workflow step is explicitly OS-scoped
+  - prefer Node/TypeScript orchestration over shell glue when the same logic must run on all runners
+- For files generated in tests or CI:
+  - account for CRLF vs LF when parsing multiline output
+  - avoid depending on executable bit semantics or POSIX-only permissions
+  - ensure temp-file cleanup and lockfile handling do not assume Unix deletion semantics
+- Required diagnosis sequence for cross-platform CI failures:
+  1. compare the failing OS against one passing OS in the same workflow and find the earliest divergent step
+  2. inspect the exact launcher layer first (`workflow -> package.json script -> Node wrapper -> child process`)
+  3. reduce the issue to the smallest platform-sensitive primitive before changing business logic
+  4. add a focused regression test that locks the platform assumption when practical
+- Preferred verification for platform-sensitive fixes:
+  - run the narrowest local unit/integration test that covers the platform branch
+  - if the fix touches downstream CLI/runtime artifacts, rebuild the touched package before validation
+  - when the original failure came from GitHub Actions, rerun the smallest affected workflow or job after the fix instead of waiting for unrelated matrix jobs
+- Required assistant note in analysis when diagnosing an OS-only failure:
+  - `cross-platform suspect: checking command launch, path normalization, line endings, and filesystem assumptions before product logic`
+
 ## 3. Coding Rules
 
 - TypeScript + ESM + 2-space indentation.
