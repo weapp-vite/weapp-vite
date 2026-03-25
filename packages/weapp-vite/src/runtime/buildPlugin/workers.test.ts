@@ -40,6 +40,7 @@ function createMockConfigService() {
   return {
     mergeWorkers: vi.fn(() => ({ mock: 'workers-config' })),
     weappViteConfig: {},
+    inlineConfig: {},
     absoluteSrcRoot: '/project/src',
     relativeCwd: (value: string) => value.replace('/project/', ''),
   } as any
@@ -175,5 +176,32 @@ describe('runtime buildPlugin workers', () => {
     expect(handle).toBeDefined()
     await handle?.close()
     expect(workerWatcher.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('forwards polling watcher options from inline config', () => {
+    const workerWatcher = createChokidarWatcher()
+    chokidarWatchMock.mockReturnValue(workerWatcher)
+
+    const configService = createMockConfigService()
+    configService.inlineConfig = {
+      build: {
+        watch: {
+          chokidar: {
+            usePolling: true,
+            interval: 120,
+          },
+        },
+      },
+    }
+    const watcherService = createMockWatcherService()
+
+    watchWorkers(configService, watcherService, 'workers')
+
+    expect(chokidarWatchMock).toHaveBeenCalledWith('/project/src/workers', {
+      persistent: true,
+      ignoreInitial: true,
+      usePolling: true,
+      interval: 120,
+    })
   })
 })

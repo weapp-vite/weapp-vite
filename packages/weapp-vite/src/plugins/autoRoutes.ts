@@ -8,6 +8,7 @@ import { vueExtensions } from '../constants'
 import { logger } from '../context/shared'
 import { createAutoRoutesMatcher } from '../runtime/autoRoutesPlugin/matcher'
 import { getAutoRoutesSubPackageRoots } from '../runtime/autoRoutesPlugin/subPackageRoots'
+import { createSidecarWatchOptions } from '../runtime/watch/options'
 import { normalizePath, normalizeWatchPath, toPosixPath } from '../utils/path'
 import { normalizeFsResolvedId } from '../utils/resolvedId'
 
@@ -158,14 +159,14 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       return allowedExtensions.has(ext) && isPagesRelatedPath(filePath)
     }
 
-    const watcher = chokidar.watch([...watchDirs], {
+    const watcher = chokidar.watch([...watchDirs], createSidecarWatchOptions(configService, {
       ignoreInitial: true,
       persistent: true,
       awaitWriteFinish: {
         stabilityThreshold: 80,
         pollInterval: 20,
       },
-    })
+    }))
 
     watcher.on('add', (filePath) => {
       if (!isRouteVueFile(filePath)) {

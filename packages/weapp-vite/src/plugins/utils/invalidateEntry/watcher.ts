@@ -6,6 +6,7 @@ import chokidar from 'chokidar'
 import path from 'pathe'
 import { configExtensions, supportedCssLangs, templateExtensions } from '../../../constants'
 import logger from '../../../logger'
+import { createSidecarWatchOptions } from '../../../runtime/watch/options'
 import { cleanupCssImporterGraph, extractCssImportDependencies } from './cssGraph'
 import { defaultIgnoredDirNames, isSidecarFile, isWatchLimitError, watchedCssExts } from './shared'
 import { invalidateEntryForSidecar } from './sidecar'
@@ -74,7 +75,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
 
   const ignoredMatcher = createSidecarIgnoredMatcher(ctx, absRoot)
 
-  const watcher = chokidar.watch(patterns, {
+  const watcher = chokidar.watch(patterns, createSidecarWatchOptions(ctx.configService, {
     ignoreInitial: false,
     persistent: true,
     awaitWriteFinish: {
@@ -82,7 +83,7 @@ export function ensureSidecarWatcher(ctx: CompilerContext, rootDir: string) {
       pollInterval: 20,
     },
     ignored: ignoredMatcher,
-  })
+  }))
 
   const forwardChange = (event: ChangeEvent, input: string, options?: { silent?: boolean }) => {
     if (!input) {

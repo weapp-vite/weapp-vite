@@ -55,6 +55,36 @@ export function registerServeCommand(cli: CAC) {
             },
           }
         }
+        if (targets.runMini) {
+          const buildWatch = typeof inlineConfig?.build?.watch === 'object' && inlineConfig.build.watch
+            ? inlineConfig.build.watch
+            : {}
+          const buildChokidar = 'chokidar' in buildWatch
+            ? (buildWatch as { chokidar?: Record<string, unknown> }).chokidar
+            : undefined
+          inlineConfig = {
+            ...inlineConfig,
+            build: {
+              ...(inlineConfig?.build ?? {}),
+              watch: {
+                ...buildWatch,
+                chokidar: {
+                  ...(buildChokidar ?? {}),
+                  usePolling: true,
+                  interval: 100,
+                },
+              },
+            },
+            server: {
+              ...(inlineConfig?.server ?? {}),
+              watch: {
+                ...(inlineConfig?.server?.watch ?? {}),
+                usePolling: true,
+                interval: 100,
+              },
+            },
+          }
+        }
       }
       const ctx = await createCompilerContext({
         cwd: root,

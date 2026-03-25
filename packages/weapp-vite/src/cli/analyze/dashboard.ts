@@ -229,6 +229,9 @@ export async function startAnalyzeDashboard(
     server: {
       host: '127.0.0.1',
       port: 0,
+      watch: {
+        ignored: ['**/*'],
+      },
     },
     logLevel: 'error',
   })
