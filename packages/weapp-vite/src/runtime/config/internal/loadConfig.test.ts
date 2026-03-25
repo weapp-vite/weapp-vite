@@ -24,6 +24,7 @@ const sanitizeBuildTargetMock = vi.hoisted(() => vi.fn(() => ({ hasTarget: false
 const getDefaultBuildTargetMock = vi.hoisted(() => vi.fn(() => undefined))
 const isNonConcreteBuildTargetMock = vi.hoisted(() => vi.fn(() => false))
 const resolveWeappWebConfigMock = vi.hoisted(() => vi.fn(() => ({ enabled: false })))
+const shouldEnableTsconfigPathsPluginMock = vi.hoisted(() => vi.fn(async () => false))
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => ({
@@ -86,6 +87,10 @@ vi.mock('../web', () => ({
   resolveWeappWebConfig: resolveWeappWebConfigMock,
 }))
 
+vi.mock('./tsconfigPaths', () => ({
+  shouldEnableTsconfigPathsPlugin: shouldEnableTsconfigPathsPluginMock,
+}))
+
 function createFactory() {
   return createLoadConfig({
     injectBuiltinAliases: vi.fn(),
@@ -96,6 +101,7 @@ function createFactory() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  shouldEnableTsconfigPathsPluginMock.mockResolvedValue(false)
   loadConfigFromFileMock.mockResolvedValue({
     config: {},
     path: '/project/vite.config.ts',
@@ -307,6 +313,32 @@ describe('runtime config internal loadConfig', () => {
         replacement: '/project/custom-src',
       }),
     ]))
+  })
+
+  it('does not inject default @ alias when tsconfig paths are enabled', async () => {
+    shouldEnableTsconfigPathsPluginMock.mockResolvedValueOnce(true)
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+          srcRoot: 'src',
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.config.resolve?.alias).toBeUndefined()
   })
 
   it('enables native resolve.tsconfigPaths when weapp.tsconfigPaths is true', async () => {
