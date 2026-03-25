@@ -3,6 +3,7 @@ import path from 'node:path'
 import fs from 'fs-extra'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import logger from '../../../logger'
+import { toPosixPath } from '../../../utils'
 import { normalizeSubPackageStyleEntries } from './index'
 
 function createConfigService(absoluteSrcRoot: string) {
@@ -54,7 +55,7 @@ describe('normalizeSubPackageStyleEntries', () => {
     expect(entries).toEqual([
       {
         source: '../../shared/styles/components.scss',
-        absolutePath: path.join(tempRoot, 'shared/styles/components.scss'),
+        absolutePath: toPosixPath(path.join(tempRoot, 'shared/styles/components.scss')),
         outputRelativePath: 'shared/styles/components.wxss',
         inputExtension: '.scss',
         scope: 'components',
