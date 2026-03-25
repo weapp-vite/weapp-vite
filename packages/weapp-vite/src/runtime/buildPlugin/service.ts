@@ -110,6 +110,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     debug?.('dev watcher listen start')
 
     let startTime: DOMHighResTimeStamp
+    let firstBuildCompleted = false
 
     let resolveWatcher: (value: unknown) => void
     let rejectWatcher: (reason?: any) => void
@@ -126,7 +127,13 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
         startTime = performance.now()
       }
       else if (e.code === 'END') {
-        logger.success(`构建完成，耗时 ${(performance.now() - startTime).toFixed(2)} ms`)
+        const duration = (performance.now() - startTime).toFixed(2)
+        if (firstBuildCompleted) {
+          logger.success(`小程序已重新构建（${duration} ms）`)
+        }
+        else {
+          firstBuildCompleted = true
+        }
         if (appWxssPath && shouldTouchAppWxss()) {
           void touch(appWxssPath).catch(() => {})
         }
