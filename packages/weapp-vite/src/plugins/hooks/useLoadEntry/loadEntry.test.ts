@@ -968,6 +968,53 @@ import FooBar from '../../components/foo-bar/index.vue'
     })
   })
 
+  it('augments json usingComponents from <script setup> imports that use the default @ alias', async () => {
+    mockFindVueEntry.mockResolvedValue('/project/src/pages/auto-alias/index.vue')
+    mockExtractConfigFromVue.mockResolvedValue({
+      navigationBarTitleText: 'AutoAlias',
+    })
+
+    readFileMock.mockImplementation(async (target: string) => {
+      if (target === '/project/src/pages/auto-alias/index.vue') {
+        return `
+<template>
+  <HelloWorld />
+</template>
+<script setup lang="ts">
+import HelloWorld from '@/components/HelloWorld/index.vue'
+</script>
+        `.trim()
+      }
+      return 'console.log("noop")'
+    })
+
+    const { loader, registerJsonAsset } = createLoader()
+    const pluginCtx = createPluginContext()
+    pluginCtx.resolve = vi.fn(async (source: string, importer?: string) => {
+      if (source === '@/components/HelloWorld/index.vue') {
+        return { id: '/project/src/components/HelloWorld/index.vue' } as any
+      }
+      if (!importer) {
+        return { id: source } as any
+      }
+      if (source.startsWith('.')) {
+        return { id: path.resolve(path.dirname(importer), source) } as any
+      }
+      return { id: source } as any
+    })
+
+    await loader.call(pluginCtx, '/project/src/pages/auto-alias/index.js', 'page')
+
+    expect(registerJsonAsset).toHaveBeenCalled()
+    const payload = registerJsonAsset.mock.calls[0][0]
+    expect(payload.json).toEqual({
+      navigationBarTitleText: 'AutoAlias',
+      usingComponents: {
+        HelloWorld: '/components/HelloWorld/index',
+      },
+    })
+  })
+
   it('augments json usingComponents when importing from a barrel file', async () => {
     mockFindVueEntry.mockImplementation(async (filepath: string) => {
       if (filepath === '/project/src/pages/auto-barrel/index') {

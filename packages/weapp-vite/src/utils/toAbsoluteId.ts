@@ -35,6 +35,9 @@ export function toAbsoluteId(
   if (path.isAbsolute(cleanId)) {
     return cleanId
   }
+  if (cleanId.startsWith('@/')) {
+    return path.join(configService.absoluteSrcRoot, cleanId.slice(2))
+  }
 
   const cleanImporter = importer ? normalizeFsResolvedId(importer) : undefined
   if (cleanImporter && !isSkippableResolvedId(cleanImporter) && path.isAbsolute(cleanImporter)) {
