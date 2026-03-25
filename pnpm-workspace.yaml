@@ -3,6 +3,7 @@ packages:
   - e2e-apps/*
   - templates/*
   - packages/*
+  - mpcore/packages/*
   - '@weapp-core/*'
   - extensions/*
   - website

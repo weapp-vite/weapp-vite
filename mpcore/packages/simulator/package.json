@@ -1,0 +1,50 @@
+{
+  "name": "simulator",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Headless mini-program runtime and testing kernel for the weapp-vite ecosystem",
+  "author": "ice breaker <1324318532@qq.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weapp-vite/weapp-vite.git",
+    "directory": "mpcore/packages/simulator"
+  },
+  "bugs": {
+    "url": "https://github.com/weapp-vite/weapp-vite/issues"
+  },
+  "keywords": [
+    "weapp",
+    "mini-program",
+    "runtime",
+    "headless",
+    "testing"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsdown -w",
+    "build": "tsdown",
+    "test": "vitest run",
+    "test:dev": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "htmlparser2": "catalog:",
+    "pathe": "catalog:"
+  }
+}

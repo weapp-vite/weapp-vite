@@ -6,6 +6,7 @@ import { HMR_GUARD_SPECIAL_CASES, HMR_GUARD_STABLE_TESTS } from './hmr-guard-man
 const ROOT = path.resolve(import.meta.dirname, '..')
 const CI_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.ci.config.ts')
 const DEVTOOLS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.devtools.config.ts')
+const HEADLESS_CONFIG_PATH = path.resolve(ROOT, 'vitest.e2e.headless.config.ts')
 const IDE_GITHUB_ISSUES_PATTERNS = [
   'ide/github-issues.runtime.issue289.test.ts',
   'ide/github-issues.runtime.issue297-302.test.ts',
@@ -80,6 +81,17 @@ function createVitestTask(configPath: string, filePath: string, label = toRelati
   }
 }
 
+function createHeadlessVitestTask(configPath: string, filePath: string, label = toRelativeLabel(filePath)): SuiteTask {
+  return {
+    label,
+    command: 'pnpm',
+    args: ['vitest', 'run', '-c', configPath, filePath],
+    env: {
+      WEAPP_VITE_E2E_RUNTIME_PROVIDER: 'headless',
+    },
+  }
+}
+
 function createCommandTask(label: string, args: string[]): SuiteTask {
   return {
     label,
@@ -125,6 +137,12 @@ export function getIdeGateTasks() {
 
 export function getIdeSmokeTasks() {
   return IDE_SMOKE_TESTS.map(filePath => createVitestTask(DEVTOOLS_CONFIG_PATH, filePath))
+}
+
+export function getIdeHeadlessSmokeTasks() {
+  return [
+    createHeadlessVitestTask(HEADLESS_CONFIG_PATH, path.resolve(ROOT, 'ide/index.test.ts')),
+  ]
 }
 
 export function getIdeGithubIssuesTasks() {
@@ -189,6 +207,11 @@ export const E2E_SUITES: Record<string, E2ESuiteDefinition> = {
     name: 'ide-gate',
     description: 'Broader IDE gate suite with core runtime coverage',
     tasks: getIdeGateTasks,
+  },
+  'ide-headless-smoke': {
+    name: 'ide-headless-smoke',
+    description: 'Smallest headless runtime smoke suite for provider-based IDE assertions',
+    tasks: getIdeHeadlessSmokeTasks,
   },
   'ide-full': {
     name: 'ide-full',

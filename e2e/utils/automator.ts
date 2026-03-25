@@ -5,10 +5,15 @@ import process from 'node:process'
 import cmpVersion from 'licia/cmpVersion'
 import automator from 'miniprogram-automator'
 import MiniProgram from 'miniprogram-automator/out/MiniProgram.js'
+import { launchHeadlessAutomator } from './automator.headless'
 import {
   appendIdeReportEvent,
   resolveReportProjectPath,
 } from './ideWarningReport'
+import {
+  assertRuntimeProviderImplemented,
+  resolveRuntimeProviderName,
+} from './runtimeProvider'
 
 const MIN_SDK_VERSION = '2.7.3'
 const DEFAULT_LIB_VERSION = '3.13.2'
@@ -807,6 +812,13 @@ function patchMiniProgramOn() {
 }
 
 export function launchAutomator(options: Parameters<typeof automator.launch>[0]) {
+  const provider = resolveRuntimeProviderName()
+  if (provider === 'headless') {
+    return launchHeadlessAutomator({
+      projectPath: options.projectPath!,
+    })
+  }
+  assertRuntimeProviderImplemented(provider)
   patchNetListenToLoopback()
   patchAutomatorVersionCheck()
   patchMiniProgramOn()

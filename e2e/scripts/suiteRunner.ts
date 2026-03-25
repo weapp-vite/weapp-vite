@@ -6,6 +6,7 @@ import { createSuiteReport } from './suiteReport'
 
 export interface SuiteTask {
   artifacts?: SuiteTaskArtifact[]
+  env?: Record<string, string>
   label: string
   command: string
   args: string[]
@@ -93,7 +94,10 @@ async function defaultRunTask(task: SuiteTask) {
   return await new Promise<number>((resolve, reject) => {
     const child = spawn(task.command, task.args, {
       cwd: process.cwd(),
-      env: process.env,
+      env: {
+        ...process.env,
+        ...task.env,
+      },
       stdio: ['inherit', 'pipe', 'pipe'],
     })
 

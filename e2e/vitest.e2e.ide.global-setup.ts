@@ -7,6 +7,7 @@ import {
   ensureIdeWarningReportEnv,
   writeIdeWarningReport,
 } from './utils/ideWarningReport'
+import { resolveRuntimeProviderName } from './utils/runtimeProvider'
 
 const DEFAULT_LOGIN_CHECK_PROJECT = path.resolve(import.meta.dirname, '../e2e-apps/base')
 const CLI_PATH = path.resolve(import.meta.dirname, '../packages/weapp-vite/bin/weapp-vite.js')
@@ -69,6 +70,12 @@ function shouldRunDevtoolsLoginPreflight() {
 export default async function setupIdeE2E() {
   const reportPaths = ensureIdeWarningReportEnv()
   delete process.env[DEVTOOLS_SKIP_REASON_ENV]
+
+  if (resolveRuntimeProviderName() === 'headless') {
+    return async () => {
+      writeIdeWarningReport(reportPaths)
+    }
+  }
 
   if (process.env.WEAPP_VITE_E2E_SKIP_DEVTOOLS_LOGIN_CHECK === '1') {
     return async () => {
