@@ -5,6 +5,7 @@ import chokidar from 'chokidar'
 import path from 'pathe'
 import { build } from 'vite'
 import { logger } from '../../context/shared'
+import { createSidecarWatchOptions } from '../watch/options'
 
 interface WorkerOptionsResult {
   hasWorkersDir: boolean
@@ -65,10 +66,10 @@ export function watchWorkers(
   const absWorkerRoot = path.resolve(configService.absoluteSrcRoot, workersDir)
   const workerWatcher = chokidar.watch(
     absWorkerRoot,
-    {
+    createSidecarWatchOptions(configService, {
       persistent: true,
       ignoreInitial: true,
-    },
+    }),
   )
 
   const logWorkerEvent = (type: string, targetPath: string, level: 'info' | 'success' = 'info') => {

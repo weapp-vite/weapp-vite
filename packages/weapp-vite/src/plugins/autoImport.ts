@@ -6,6 +6,7 @@ import path from 'pathe'
 import { logger } from '../context/shared'
 import { defaultExcluded } from '../defaults'
 import { getAutoImportConfig } from '../runtime/autoImport/config'
+import { createSidecarWatchOptions } from '../runtime/watch/options'
 import { toPosixPath } from '../utils'
 
 interface AutoImportState {
@@ -202,14 +203,14 @@ function createAutoImportPlugin(state: AutoImportState): Plugin {
       return
     }
 
-    const watcher = chokidar.watch([...watchTargets], {
+    const watcher = chokidar.watch([...watchTargets], createSidecarWatchOptions(configService, {
       ignoreInitial: true,
       persistent: true,
       awaitWriteFinish: {
         stabilityThreshold: 80,
         pollInterval: 20,
       },
-    })
+    }))
 
     watcher.on('add', (filePath) => {
       if (!matchesAutoImportGlobs(ctx, filePath)) {
