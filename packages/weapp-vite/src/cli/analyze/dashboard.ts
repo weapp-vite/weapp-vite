@@ -28,20 +28,41 @@ interface ResolvedDashboardRoot {
   configFile?: string
 }
 
-function resolveDashboardSourceRoot(candidate: string): ResolvedDashboardRoot | undefined {
-  const viteConfigPath = path.join(candidate, 'vite.config.ts')
-  const srcRoot = path.join(candidate, 'src')
+interface DashboardPackageManifest {
+  weappViteDashboard?: {
+    devRoot?: string
+    devConfigFile?: string
+    distDir?: string
+  }
+}
+
+function readDashboardManifest(packageJsonPath: string): DashboardPackageManifest | undefined {
+  try {
+    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as DashboardPackageManifest
+  }
+  catch {
+    return undefined
+  }
+}
+
+function resolveDashboardSourceRoot(packageRoot: string, manifest: DashboardPackageManifest | undefined): ResolvedDashboardRoot | undefined {
+  const devRoot = manifest?.weappViteDashboard?.devRoot ?? '.'
+  const devConfigFile = manifest?.weappViteDashboard?.devConfigFile ?? 'vite.config.ts'
+  const resolvedRoot = path.resolve(packageRoot, devRoot)
+  const viteConfigPath = path.resolve(packageRoot, devConfigFile)
+  const srcRoot = path.join(resolvedRoot, 'src')
   if (!fs.existsSync(viteConfigPath) || !fs.existsSync(srcRoot)) {
     return undefined
   }
   return {
-    root: candidate,
+    root: resolvedRoot,
     configFile: viteConfigPath,
   }
 }
 
-function resolveDashboardDistRoot(candidate: string): ResolvedDashboardRoot | undefined {
-  const distRoot = path.join(candidate, 'dist')
+function resolveDashboardDistRoot(packageRoot: string, manifest: DashboardPackageManifest | undefined): ResolvedDashboardRoot | undefined {
+  const distDir = manifest?.weappViteDashboard?.distDir ?? 'dist'
+  const distRoot = path.resolve(packageRoot, distDir)
   if (!fs.existsSync(distRoot)) {
     return undefined
   }
@@ -58,42 +79,27 @@ function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: Pa
       : undefined
 
   let dashboardPackageRoot: string | undefined
+  let dashboardManifest: DashboardPackageManifest | undefined
   try {
     const dashboardPackageJsonPath = require.resolve(`${ANALYZE_DASHBOARD_PACKAGE_NAME}/package.json`, {
       paths: resolvePaths,
     })
     dashboardPackageRoot = path.dirname(dashboardPackageJsonPath)
+    dashboardManifest = readDashboardManifest(dashboardPackageJsonPath)
   }
   catch {
     dashboardPackageRoot = undefined
+    dashboardManifest = undefined
   }
 
   if (dashboardPackageRoot) {
     if (options?.watch) {
-      const sourceResolved = resolveDashboardSourceRoot(dashboardPackageRoot)
+      const sourceResolved = resolveDashboardSourceRoot(dashboardPackageRoot, dashboardManifest)
       if (sourceResolved) {
         return sourceResolved
       }
     }
-    const distResolved = resolveDashboardDistRoot(dashboardPackageRoot)
-    if (distResolved) {
-      return distResolved
-    }
-  }
-
-  const workspaceFallbackRoots = [
-    path.resolve(import.meta.dirname, '../../../../dashboard'),
-    path.resolve(import.meta.dirname, '../../dashboard'),
-  ]
-
-  for (const candidate of workspaceFallbackRoots) {
-    if (options?.watch) {
-      const sourceResolved = resolveDashboardSourceRoot(candidate)
-      if (sourceResolved) {
-        return sourceResolved
-      }
-    }
-    const distResolved = resolveDashboardDistRoot(candidate)
+    const distResolved = resolveDashboardDistRoot(dashboardPackageRoot, dashboardManifest)
     if (distResolved) {
       return distResolved
     }
