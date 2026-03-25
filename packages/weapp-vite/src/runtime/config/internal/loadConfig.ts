@@ -60,6 +60,34 @@ function injectDefaultSrcAlias(config: InlineConfig, cwd: string, srcRoot: strin
   resolve.alias = aliasArray
 }
 
+function injectResolvedAliases(
+  config: InlineConfig,
+  aliases: Array<{ find: string, replacement: string }>,
+) {
+  if (aliases.length === 0) {
+    return
+  }
+
+  const resolve = config.resolve ?? (config.resolve = {})
+  const currentAlias = resolve.alias
+  const aliasArray = Array.isArray(currentAlias)
+    ? currentAlias.filter((entry): entry is { find: string | RegExp, replacement: string } => {
+        return Boolean(entry && typeof entry === 'object' && 'find' in entry && 'replacement' in entry)
+      })
+    : currentAlias
+      ? Object.entries(currentAlias as Record<string, string>).map(([find, replacement]) => ({ find, replacement }))
+      : []
+
+  for (const entry of aliases) {
+    if (aliasArray.some(existing => typeof existing.find === 'string' && existing.find === entry.find)) {
+      continue
+    }
+    aliasArray.unshift(entry)
+  }
+
+  resolve.alias = aliasArray
+}
+
 export function createLoadConfig(options: LoadConfigFactoryOptions) {
   const { injectBuiltinAliases, oxcRolldownPlugin, oxcVitePlugin } = options
 
@@ -207,7 +235,11 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
 
     const srcRoot = config.weapp?.srcRoot ?? ''
     const tsconfigPathsUsage = await inspectTsconfigPathsUsage(cwd)
-    if (!tsconfigPathsUsage.enabled || (tsconfigPathsUsage.references && !tsconfigPathsUsage.root)) {
+    if (!tsconfigPathsUsage.enabled) {
+      injectDefaultSrcAlias(config, cwd, srcRoot)
+    }
+    else if (tsconfigPathsUsage.references && !tsconfigPathsUsage.root) {
+      injectResolvedAliases(config, tsconfigPathsUsage.referenceAliases)
       injectDefaultSrcAlias(config, cwd, srcRoot)
     }
     const resolvedLibConfig = libEntryConfigured
