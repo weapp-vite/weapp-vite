@@ -1,6 +1,5 @@
 import path from 'node:path'
 import process from 'node:process'
-import { execa } from 'execa'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import {
   HMR_GUARD_ALL_TESTS,
@@ -8,6 +7,7 @@ import {
   HMR_GUARD_SPECIAL_CASES,
   HMR_GUARD_STABLE_TESTS,
 } from './hmr-guard-manifest'
+import { runTaskSuite } from './suiteRunner'
 
 const VITEST_CONFIG_PATH = path.resolve(import.meta.dirname, '../vitest.e2e.ci.config.ts')
 
@@ -38,14 +38,18 @@ function formatLabel(testPath: string) {
 
 async function runSuite(name: SuiteName) {
   const suite = SUITES[name]
-  for (const testPath of suite.tests) {
-    await cleanupResidualDevProcesses()
-    console.log(`[hmr-guard] run ${formatLabel(testPath)}`)
-    await execa('pnpm', ['vitest', 'run', testPath, '--config', VITEST_CONFIG_PATH], {
-      stdio: 'inherit',
-    })
-  }
-  await cleanupResidualDevProcesses()
+  await runTaskSuite(`hmr-guard:${name}`, suite.tests.map(testPath => ({
+    label: formatLabel(testPath),
+    command: 'pnpm',
+    args: ['vitest', 'run', testPath, '--config', VITEST_CONFIG_PATH],
+  })), {
+    beforeEachTask: async () => {
+      await cleanupResidualDevProcesses()
+    },
+    afterAll: async () => {
+      await cleanupResidualDevProcesses()
+    },
+  })
 }
 
 function printList() {

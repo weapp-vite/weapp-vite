@@ -3,7 +3,10 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    include: [path.resolve(import.meta.dirname, './utils/**/*.test.ts')],
+    include: [
+      path.resolve(import.meta.dirname, './utils/**/*.test.ts'),
+      path.resolve(import.meta.dirname, './scripts/**/*.test.ts'),
+    ],
     globals: true,
     pool: 'threads',
     fileParallelism: false,
