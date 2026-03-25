@@ -5,6 +5,7 @@ import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/co
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import ModulesPanel from '../components/ModulesPanel.vue'
 import PackagesPanel from '../components/PackagesPanel.vue'
 import { formatBytes, formatPackageType } from '../format'
@@ -22,11 +23,13 @@ echarts.use([
 
 const resultRef = ref<AnalyzeSubpackagesResult | null>(window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null)
 const chartRef = ref<HTMLDivElement>()
-const activeTab = ref<'overview' | 'packages' | 'modules'>('overview')
 const updateCount = ref(0)
 const lastUpdatedAt = ref('—')
 let chart: echarts.ECharts | undefined
 let updateListener: (() => void) | undefined
+type DashboardTab = 'overview' | 'packages' | 'modules'
+const route = useRoute()
+const router = useRouter()
 
 if (!resultRef.value) {
   throw new Error('[weapp-vite analyze] 未检测到分析数据，请通过 CLI 注入后再访问。')
@@ -46,6 +49,54 @@ const {
 const visibleDuplicateModules = computed(() => duplicateModules.value.slice(0, 12))
 const visibleLargestFiles = computed(() => largestFiles.value.slice(0, 10))
 const statusText = computed(() => `${updateCount.value} 次数据同步`)
+const totalChunkCount = computed(() => packageInsights.value.reduce((sum, pkg) => sum + pkg.chunkCount, 0))
+const totalAssetCount = computed(() => packageInsights.value.reduce((sum, pkg) => sum + pkg.assetCount, 0))
+const duplicateBytes = computed(() => duplicateModules.value.reduce((sum, mod) => sum + mod.bytes, 0))
+const activeTab = computed<DashboardTab>({
+  get() {
+    const value = route.query.tab
+    if (value === 'packages' || value === 'modules') {
+      return value
+    }
+    return 'overview'
+  },
+  set(value) {
+    void router.replace({
+      query: value === 'overview'
+        ? {}
+        : { tab: value },
+    })
+  },
+})
+const topCards = computed(() => {
+  if (activeTab.value === 'packages') {
+    return [
+      { label: '包体数量', value: String(summary.value.packageCount) },
+      { label: '分包配置', value: String(summary.value.subpackageCount) },
+      { label: 'Chunk 数量', value: String(totalChunkCount.value) },
+      { label: 'Asset 数量', value: String(totalAssetCount.value) },
+      { label: '总产物体积', value: formatBytes(summary.value.totalBytes), wide: true },
+    ]
+  }
+
+  if (activeTab.value === 'modules') {
+    return [
+      { label: '源码模块', value: String(summary.value.moduleCount) },
+      { label: '跨包复用', value: String(summary.value.duplicateCount) },
+      { label: '来源类型', value: String(moduleSourceSummary.value.length) },
+      { label: '复用体积', value: duplicateBytes.value > 0 ? formatBytes(duplicateBytes.value) : '0 B' },
+      { label: '最近刷新', value: lastUpdatedAt.value, wide: true },
+    ]
+  }
+
+  return [
+    { label: '包体数量', value: String(summary.value.packageCount) },
+    { label: '源码模块', value: String(summary.value.moduleCount) },
+    { label: '跨包复用', value: String(summary.value.duplicateCount) },
+    { label: 'Entry 数量', value: String(summary.value.entryCount) },
+    { label: '总产物体积', value: formatBytes(summary.value.totalBytes), wide: true },
+  ]
+})
 
 function handleResize() {
   chart?.resize()
@@ -162,46 +213,19 @@ onBeforeUnmount(() => {
       </nav>
 
       <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-        <article class="rounded-2xl border border-white/10 bg-slate-900/70 p-5 xl:col-span-1">
+        <article
+          v-for="card in topCards"
+          :key="card.label"
+          class="rounded-2xl border border-white/10 bg-slate-900/70 p-5"
+          :class="card.wide ? 'xl:col-span-2' : 'xl:col-span-1'"
+        >
           <p class="text-xs uppercase tracking-[0.22em] text-slate-400">
-            包体数量
+            {{ card.label }}
           </p>
           <p class="mt-3 text-3xl font-semibold text-white">
-            {{ summary.packageCount }}
+            {{ card.value }}
           </p>
-        </article>
-        <article class="rounded-2xl border border-white/10 bg-slate-900/70 p-5 xl:col-span-1">
-          <p class="text-xs uppercase tracking-[0.22em] text-slate-400">
-            源码模块
-          </p>
-          <p class="mt-3 text-3xl font-semibold text-white">
-            {{ summary.moduleCount }}
-          </p>
-        </article>
-        <article class="rounded-2xl border border-white/10 bg-slate-900/70 p-5 xl:col-span-1">
-          <p class="text-xs uppercase tracking-[0.22em] text-slate-400">
-            跨包复用
-          </p>
-          <p class="mt-3 text-3xl font-semibold text-white">
-            {{ summary.duplicateCount }}
-          </p>
-        </article>
-        <article class="rounded-2xl border border-white/10 bg-slate-900/70 p-5 xl:col-span-1">
-          <p class="text-xs uppercase tracking-[0.22em] text-slate-400">
-            Entry 数量
-          </p>
-          <p class="mt-3 text-3xl font-semibold text-white">
-            {{ summary.entryCount }}
-          </p>
-        </article>
-        <article class="rounded-2xl border border-white/10 bg-slate-900/70 p-5 xl:col-span-2">
-          <p class="text-xs uppercase tracking-[0.22em] text-slate-400">
-            总产物体积
-          </p>
-          <p class="mt-3 text-3xl font-semibold text-white">
-            {{ formatBytes(summary.totalBytes) }}
-          </p>
-          <div class="mt-4 flex flex-wrap gap-2">
+          <div v-if="card.label === '总产物体积'" class="mt-4 flex flex-wrap gap-2">
             <span
               v-for="item in packageTypeSummary"
               :key="item.label"
