@@ -1,13 +1,18 @@
+import type { SuiteTaskArtifact } from './suiteReport'
+import { spawn } from 'node:child_process'
+import path from 'node:path'
 import process from 'node:process'
-import { execa } from 'execa'
+import { createSuiteReport } from './suiteReport'
 
 export interface SuiteTask {
+  artifacts?: SuiteTaskArtifact[]
   label: string
   command: string
   args: string[]
 }
 
 export interface SuiteTaskResult {
+  artifacts: SuiteTaskArtifact[]
   durationMs: number
   exitCode: number
   label: string
@@ -17,10 +22,50 @@ interface RunSuiteOptions {
   afterAll?: () => Promise<void> | void
   beforeEachTask?: (task: SuiteTask) => Promise<void> | void
   runTask?: (task: SuiteTask) => Promise<number>
+  writeReport?: boolean
 }
 
 function formatDuration(durationMs: number) {
   return `${(durationMs / 1000).toFixed(1)}s`
+}
+
+const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
+const REPORT_LINE_PATTERN = /^\[(ide-warning-report|e2e-suite-report)\]\s+index=(\S+)/
+const CRLF_PATTERN = /\r\n/g
+const NEWLINE_SPLIT_PATTERN = /\r?\n/
+
+function createTaskArtifactCollector() {
+  const artifacts: SuiteTaskArtifact[] = []
+  const seen = new Set<string>()
+
+  function collectFromText(text: string) {
+    const lines = text.split(NEWLINE_SPLIT_PATTERN)
+    for (const line of lines) {
+      const matched = line.match(REPORT_LINE_PATTERN)
+      if (!matched) {
+        continue
+      }
+
+      const kind = matched[1] as SuiteTaskArtifact['kind']
+      const indexPath = path.isAbsolute(matched[2])
+        ? matched[2]
+        : path.resolve(ROOT_DIR, matched[2])
+      const artifactKey = `${kind}:${indexPath}`
+      if (seen.has(artifactKey)) {
+        continue
+      }
+      seen.add(artifactKey)
+      artifacts.push({
+        kind,
+        indexPath,
+      })
+    }
+  }
+
+  return {
+    artifacts,
+    collectFromText,
+  }
 }
 
 export function formatSuiteSummary(suiteName: string, results: SuiteTaskResult[]) {
@@ -43,11 +88,54 @@ export function formatSuiteSummary(suiteName: string, results: SuiteTaskResult[]
 }
 
 async function defaultRunTask(task: SuiteTask) {
-  const result = await execa(task.command, task.args, {
-    stdio: 'inherit',
-    reject: false,
+  const collector = createTaskArtifactCollector()
+
+  return await new Promise<number>((resolve, reject) => {
+    const child = spawn(task.command, task.args, {
+      cwd: process.cwd(),
+      env: process.env,
+      stdio: ['inherit', 'pipe', 'pipe'],
+    })
+
+    let stdoutBuffer = ''
+    let stderrBuffer = ''
+
+    function consumeBufferedLines(buffer: string) {
+      const normalized = buffer.replace(CRLF_PATTERN, '\n')
+      const lines = normalized.split('\n')
+      const remainder = lines.pop() ?? ''
+
+      for (const line of lines) {
+        collector.collectFromText(line)
+      }
+
+      return remainder
+    }
+
+    child.stdout.on('data', (chunk) => {
+      const text = chunk.toString()
+      process.stdout.write(text)
+      stdoutBuffer = consumeBufferedLines(stdoutBuffer + text)
+    })
+
+    child.stderr.on('data', (chunk) => {
+      const text = chunk.toString()
+      process.stderr.write(text)
+      stderrBuffer = consumeBufferedLines(stderrBuffer + text)
+    })
+
+    child.on('error', reject)
+    child.on('close', (code) => {
+      if (stdoutBuffer) {
+        collector.collectFromText(stdoutBuffer)
+      }
+      if (stderrBuffer) {
+        collector.collectFromText(stderrBuffer)
+      }
+      task.artifacts = collector.artifacts
+      resolve(code ?? 1)
+    })
   })
-  return result.exitCode ?? 1
 }
 
 export async function runTaskSuite(
@@ -56,6 +144,7 @@ export async function runTaskSuite(
   options: RunSuiteOptions = {},
 ) {
   const runTask = options.runTask ?? defaultRunTask
+  const writeReport = options.writeReport ?? true
   const results: SuiteTaskResult[] = []
 
   for (const task of tasks) {
@@ -75,6 +164,7 @@ export async function runTaskSuite(
 
     const durationMs = Date.now() - startedAt
     results.push({
+      artifacts: task.artifacts ?? [],
       label: task.label,
       exitCode,
       durationMs,
@@ -85,6 +175,12 @@ export async function runTaskSuite(
   }
 
   await options.afterAll?.()
+  if (writeReport) {
+    const report = createSuiteReport(results, suiteName)
+    console.log(
+      `[e2e-suite-report] index=${path.relative(ROOT_DIR, path.join(report.reportDir, report.markdownFile)).replaceAll('\\', '/')} tasks=${report.summary.taskCount} failed=${report.summary.failedCount} childReports=${report.summary.artifactCount}`,
+    )
+  }
   console.log(formatSuiteSummary(suiteName, results))
 
   if (results.some(result => result.exitCode !== 0)) {
