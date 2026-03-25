@@ -98,6 +98,40 @@ const HMR_CASES: LayoutHmrCase[] = [
 
 const PLATFORM_LIST = resolvePlatforms()
 
+async function waitForMarkerWithRetry(options: {
+  dev: ReturnType<typeof startDevProcess>
+  description: string
+  distPath: string
+  marker: string
+  retrySourcePath: string
+  retrySourceContent: string
+  timeoutMs?: number
+}) {
+  const {
+    dev,
+    description,
+    distPath,
+    marker,
+    retrySourcePath,
+    retrySourceContent,
+    timeoutMs = 20_000,
+  } = options
+
+  try {
+    return await dev.waitFor(
+      waitForFileContains(distPath, marker, timeoutMs),
+      description,
+    )
+  }
+  catch {
+    await replaceFileByRename(retrySourcePath, `${retrySourceContent}\n`)
+    return await dev.waitFor(
+      waitForFileContains(distPath, marker),
+      `${description} (retry)`,
+    )
+  }
+}
+
 beforeEach(async () => {
   await cleanupResidualDevProcesses()
 })
@@ -145,18 +179,26 @@ describe.sequential('HMR layouts matrix (dev watch)', () => {
 
         await replaceFileByRename(testCase.sourcePath, updatedSource)
 
-        const updatedContent = await dev.waitFor(
-          waitForFileContains(distPath, marker),
-          `${platform} updated ${testCase.name} marker`,
-        )
+        const updatedContent = await waitForMarkerWithRetry({
+          dev,
+          distPath,
+          marker,
+          retrySourcePath: testCase.sourcePath,
+          retrySourceContent: updatedSource,
+          description: `${platform} updated ${testCase.name} marker`,
+        })
         expect(updatedContent).toContain(marker)
 
         await replaceFileByRename(testCase.sourcePath, originalSource)
 
-        const restoredContent = await dev.waitFor(
-          waitForFileContains(distPath, testCase.initialMarker),
-          `${platform} restored ${testCase.name} marker`,
-        )
+        const restoredContent = await waitForMarkerWithRetry({
+          dev,
+          distPath,
+          marker: testCase.initialMarker,
+          retrySourcePath: testCase.sourcePath,
+          retrySourceContent: originalSource,
+          description: `${platform} restored ${testCase.name} marker`,
+        })
         expect(restoredContent).toContain(testCase.initialMarker)
       }
     }

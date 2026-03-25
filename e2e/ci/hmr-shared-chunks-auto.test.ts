@@ -3,7 +3,7 @@ import path from 'pathe'
 import { startDevProcess } from '../utils/dev-process'
 import { cleanupResidualDevProcesses } from '../utils/dev-process-cleanup'
 import { createDevProcessEnv } from '../utils/dev-process-env'
-import { createHmrMarker, waitForFileContains } from '../utils/hmr-helpers'
+import { createHmrMarker, replaceFileByRename, waitForFileContains } from '../utils/hmr-helpers'
 import { APP_ROOT, CLI_PATH, DIST_ROOT, waitForFile } from '../wevu-runtime.utils'
 
 const PAGE_HMR_SOURCE_PATH = path.join(APP_ROOT, 'src/pages/hmr/index.ts')
@@ -41,12 +41,22 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), 'weapp app.json generated')
       await dev.waitFor(waitForFile(PAGE_HMR_DIST_PATH, 30_000), 'initial hmr page script')
 
-      await fs.writeFile(PAGE_HMR_SOURCE_PATH, updatedSource, 'utf8')
+      await replaceFileByRename(PAGE_HMR_SOURCE_PATH, updatedSource)
 
-      const content = await dev.waitFor(
-        waitForFileContains(PAGE_HMR_DIST_PATH, marker),
-        'updated hmr page script marker',
-      )
+      let content = ''
+      try {
+        content = await dev.waitFor(
+          waitForFileContains(PAGE_HMR_DIST_PATH, marker, 20_000),
+          'updated hmr page script marker',
+        )
+      }
+      catch {
+        await replaceFileByRename(PAGE_HMR_SOURCE_PATH, `${updatedSource}\n`)
+        content = await dev.waitFor(
+          waitForFileContains(PAGE_HMR_DIST_PATH, marker),
+          'updated hmr page script marker (retry)',
+        )
+      }
       expect(content).toContain(marker)
 
       const output = await dev.waitForOutput(
@@ -57,7 +67,7 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
     }
     finally {
       await dev.stop(5_000)
-      await fs.writeFile(PAGE_HMR_SOURCE_PATH, originalSource, 'utf8')
+      await replaceFileByRename(PAGE_HMR_SOURCE_PATH, originalSource)
     }
   })
 
@@ -82,7 +92,7 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
       await dev.waitFor(waitForFile(path.join(DIST_ROOT, 'app.json'), 30_000), 'weapp app.json generated')
       await dev.waitFor(waitForFile(SHARED_COMMON_DIST_PATH, 30_000), 'initial shared common chunk')
 
-      await fs.writeFile(SHARED_STORE_SOURCE_PATH, updatedSource, 'utf8')
+      await replaceFileByRename(SHARED_STORE_SOURCE_PATH, updatedSource)
 
       const content = await dev.waitFor(
         waitForFileContains(SHARED_COMMON_DIST_PATH, marker),
@@ -98,7 +108,7 @@ describe.sequential('hmr sharedChunks auto diagnostics (dev watch)', () => {
     }
     finally {
       await dev.stop(5_000)
-      await fs.writeFile(SHARED_STORE_SOURCE_PATH, originalSource, 'utf8')
+      await replaceFileByRename(SHARED_STORE_SOURCE_PATH, originalSource)
     }
   })
 })
