@@ -48,6 +48,7 @@ export const TEMPLATE_CATALOG = {
   merge: '^2.1.1',
   pathe: '^2.0.3',
   postcss: '^8.5.8',
+  rolldown: '1.0.0-rc.11',
   sass: '^1.98.0',
   tailwindcss: '^4.2.2',
   tslib: '^2.8.1',

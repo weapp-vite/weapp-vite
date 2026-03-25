@@ -243,10 +243,5 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
-  },
-  "pnpm": {
-    "overrides": {
-      "rolldown": "1.0.0-rc.11"
-    }
   }
 }
