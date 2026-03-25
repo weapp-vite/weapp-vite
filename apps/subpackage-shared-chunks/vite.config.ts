@@ -41,6 +41,11 @@ export default defineConfig({
         styles: [
           'styles/theme.scss',
           {
+            source: '../../shared/styles/components.scss',
+            scope: 'components',
+            include: ['components/**'],
+          },
+          {
             source: '../shared/styles/components.scss',
             scope: 'components',
             include: ['components/**'],
