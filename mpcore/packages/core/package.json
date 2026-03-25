@@ -1,5 +1,5 @@
 {
-  "name": "mpcore",
+  "name": "@mpcore/core",
   "type": "module",
   "version": "0.0.0",
   "description": "Core entry package for the mpcore mini-program tooling ecosystem",
