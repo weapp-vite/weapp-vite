@@ -62,6 +62,7 @@ export function registerServeCommand(cli: CAC) {
           const buildChokidar = 'chokidar' in buildWatch
             ? (buildWatch as { chokidar?: Record<string, unknown> }).chokidar
             : undefined
+          const existingServer = inlineConfig?.server ?? {}
           inlineConfig = {
             ...inlineConfig,
             build: {
@@ -76,9 +77,10 @@ export function registerServeCommand(cli: CAC) {
               },
             },
             server: {
-              ...(inlineConfig?.server ?? {}),
+              ...existingServer,
+              ...(existingServer.port === undefined ? { port: 0 } : {}),
               watch: {
-                ...(inlineConfig?.server?.watch ?? {}),
+                ...(existingServer.watch ?? {}),
                 usePolling: true,
                 interval: 100,
               },

@@ -34,7 +34,10 @@ function createWebService(ctx: MutableCompilerContext): WebService {
       return undefined
     }
     const server = await createServer(inlineConfig)
-    await server.listen()
+    const requestedPort = typeof inlineConfig.server?.port === 'number'
+      ? inlineConfig.server.port
+      : undefined
+    await server.listen(requestedPort)
     devServer = server
     return devServer
   }
