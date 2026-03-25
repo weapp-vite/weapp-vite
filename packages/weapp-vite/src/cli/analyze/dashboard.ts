@@ -206,7 +206,7 @@ export async function startAnalyzeDashboard(
   if (options?.watch) {
     logger.info('weapp-vite UI 已启动（分析视图，实时模式），按 Ctrl+C 退出。')
     for (const url of handle.urls) {
-      logger.info(`weapp-vite UI：${url}`)
+      logger.info(`  ➜  ${colors.bold(colors.cyan(url))}`)
     }
     void waitPromise // 允许异步清理
     return handle
@@ -214,7 +214,7 @@ export async function startAnalyzeDashboard(
 
   logger.info('weapp-vite UI 已启动（分析视图，静态模式），按 Ctrl+C 退出。')
   for (const url of handle.urls) {
-    logger.info(`weapp-vite UI：${url}`)
+    logger.info(`  ➜  ${colors.bold(colors.cyan(url))}`)
   }
   await waitPromise
 }
