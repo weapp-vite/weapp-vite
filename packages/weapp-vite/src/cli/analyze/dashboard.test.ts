@@ -42,6 +42,7 @@ vi.mock('../../logger', () => ({
   default: loggerMock,
   colors: {
     bold: (value: string) => value,
+    cyan: (value: string) => value,
     green: (value: string) => value,
   },
 }))
@@ -159,7 +160,7 @@ describe('analyze dashboard', () => {
     await handle?.waitForExit()
     expect(server.close).toHaveBeenCalledTimes(2)
     expect(loggerMock.info).toHaveBeenCalledWith('weapp-vite UI 已启动（分析视图，实时模式），按 Ctrl+C 退出。')
-    expect(loggerMock.info).toHaveBeenCalledWith('weapp-vite UI：http://127.0.0.1:4173/')
+    expect(loggerMock.info).toHaveBeenCalledWith('  ➜  http://127.0.0.1:4173/')
   })
 
   it('starts in static mode and resolves with empty urls when vite does not expose resolvedUrls', async () => {
