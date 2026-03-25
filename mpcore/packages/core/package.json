@@ -1,24 +1,24 @@
 {
-  "name": "@mpcore/simulator",
+  "name": "mpcore",
   "type": "module",
   "version": "0.0.0",
-  "description": "Headless mini-program runtime and testing kernel for the weapp-vite ecosystem",
+  "description": "Core entry package for the mpcore mini-program tooling ecosystem",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/weapp-vite/weapp-vite.git",
-    "directory": "mpcore/packages/simulator"
+    "directory": "mpcore/packages/core"
   },
   "bugs": {
     "url": "https://github.com/weapp-vite/weapp-vite/issues"
   },
   "keywords": [
+    "mpcore",
     "weapp",
     "mini-program",
     "runtime",
-    "headless",
-    "testing"
+    "tooling"
   ],
   "sideEffects": false,
   "exports": {
@@ -40,13 +40,9 @@
   "scripts": {
     "dev": "tsdown -w",
     "build": "tsdown",
-    "test": "vitest run",
-    "test:dev": "vitest",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "htmlparser2": "catalog:",
-    "pathe": "catalog:"
+    "test": "vitest run --config ./vitest.config.ts",
+    "test:dev": "vitest --config ./vitest.config.ts",
+    "typecheck": "tsc --noEmit -p ./tsconfig.json"
   },
   "publishConfig": {
     "access": "public",
