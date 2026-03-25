@@ -21,7 +21,9 @@
     "build": "weapp-vite build",
     "open": "weapp-vite open",
     "g": "weapp-vite generate",
-    "postinstall": "weapp-vite prepare"
+    "postinstall": "weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "devDependencies": {
     "@types/node": "catalog:",
@@ -30,6 +32,7 @@
     "sass": "catalog:",
     "typescript": "catalog:",
     "weapp-tailwindcss": "catalog:",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

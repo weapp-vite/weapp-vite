@@ -22,13 +22,16 @@
     "open": "weapp-vite open",
     "g": "weapp-vite g",
     "build-npm": "weapp-vite build-npm",
-    "postinstall": "weapp-vite prepare"
+    "postinstall": "weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "dependencies": {
     "gm-crypto": "catalog:"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

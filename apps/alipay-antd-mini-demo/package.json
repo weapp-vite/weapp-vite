@@ -24,7 +24,9 @@
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
     "open": "weapp-vite open",
-    "postinstall": "weapp-vite prepare"
+    "postinstall": "weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "dependencies": {
     "antd-mini": "catalog:"
@@ -33,6 +35,7 @@
     "@mini-types/alipay": "catalog:",
     "typescript": "catalog:",
     "weapp-vite": "workspace:*",
-    "wevu": "workspace:*"
+    "wevu": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

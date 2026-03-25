@@ -15,7 +15,9 @@
     "typecheck": "vue-tsc --noEmit",
     "open": "weapp-vite open",
     "g": "weapp-vite generate",
-    "postinstall": "weapp-vite prepare"
+    "postinstall": "weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "dependencies": {
     "dayjs": "catalog:",
@@ -27,6 +29,7 @@
     "sass": "catalog:",
     "typescript": "catalog:latest",
     "weapp-vite": "workspace:*",
-    "wevu": "workspace:*"
+    "wevu": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

@@ -10,7 +10,7 @@ import { startAnalyzeDashboard } from '../analyze/dashboard'
 import { logBuildAppFinish } from '../logBuildAppFinish'
 import { logBuildPackageSizeReport } from '../logBuildPackageSizeReport'
 import { openIde, resolveIdeProjectPath } from '../openIde'
-import { filterDuplicateOptions, resolveConfigFile } from '../options'
+import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
 
 export function registerBuildCommand(cli: CAC) {
@@ -36,6 +36,7 @@ export function registerBuildCommand(cli: CAC) {
     .option('-w, --watch', `[boolean] rebuilds when modules have changed on disk`)
     .option('--skipNpm', `[boolean] if skip npm build`)
     .option('-o, --open', `[boolean] open ide`)
+    .option('--ui', `[boolean] 启动调试 UI（当前提供分析视图）`, { default: false })
     .option('--analyze', `[boolean] 输出分包分析仪表盘`, { default: false })
     .action(async (root: string, options: GlobalCLIOptions) => {
       filterDuplicateOptions(options)
@@ -52,7 +53,7 @@ export function registerBuildCommand(cli: CAC) {
       })
       const { buildService, configService, webService } = ctx
       logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
-      const enableAnalyze = Boolean(options.analyze && targets.runMini)
+      const enableAnalyze = Boolean(isUiEnabled(options) && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
       if (targets.runMini) {
         const output = await buildService.build(options)

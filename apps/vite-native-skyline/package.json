@@ -23,7 +23,9 @@
     "open": "weapp-vite open",
     "build-npm": "weapp-vite build-npm",
     "postinstall": "weapp-tw patch && weapp-vite prepare",
-    "g": "weapp-vite g"
+    "g": "weapp-vite g",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "devDependencies": {
     "@vant/weapp": "catalog:",
@@ -31,6 +33,7 @@
     "postcss": "catalog:",
     "tailwindcss": "catalog:",
     "weapp-tailwindcss": "catalog:",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

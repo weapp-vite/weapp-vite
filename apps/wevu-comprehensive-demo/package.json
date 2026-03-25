@@ -11,7 +11,9 @@
     "build": "weapp-vite build",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
     "open": "weapp-vite open",
-    "postinstall": "weapp-vite prepare"
+    "postinstall": "weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "dependencies": {
     "@vant/weapp": "catalog:",
@@ -23,6 +25,7 @@
     "@weapp-vite/volar": "workspace:*",
     "miniprogram-api-typings": "catalog:latest",
     "typescript": "catalog:latest",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

@@ -10,7 +10,9 @@
     "gen:api-list": "node scripts/gen-miniprogram-api.js",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
     "open": "weapp-vite open",
-    "postinstall": "weapp-vite prepare"
+    "postinstall": "weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "devDependencies": {
     "@weapp-core/schematics": "workspace:*",
@@ -18,6 +20,7 @@
     "miniprogram-api-typings": "catalog:latest",
     "typescript": "catalog:latest",
     "weapp-vite": "workspace:*",
-    "wevu": "workspace:*"
+    "wevu": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

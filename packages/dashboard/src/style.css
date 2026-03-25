@@ -8,6 +8,7 @@
   body {
     min-height: 100vh;
     margin: 0;
+    font-family: "IBM Plex Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     color: rgb(241 245 249);
     background-color: rgb(2 6 23);
     -webkit-font-smoothing: antialiased;

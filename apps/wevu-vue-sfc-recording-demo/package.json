@@ -13,7 +13,9 @@
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
     "open": "weapp-vite open",
     "video:prepare": "bash ../../docs/recording/wevu-vue-sfc-recording-demo/export-ppt-video.sh",
-    "postinstall": "weapp-tw patch && weapp-vite prepare"
+    "postinstall": "weapp-tw patch && weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
@@ -23,6 +25,7 @@
     "vue-tsc": "catalog:",
     "weapp-tailwindcss": "catalog:",
     "weapp-vite": "workspace:*",
-    "wevu": "workspace:*"
+    "wevu": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

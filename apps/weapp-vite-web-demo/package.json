@@ -8,12 +8,15 @@
     "dev:h5": "weapp-vite dev -p h5  --host",
     "build": "weapp-vite build",
     "preview": "weapp-vite preview",
-    "postinstall": "weapp-vite prepare"
+    "postinstall": "weapp-vite prepare",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui"
   },
   "devDependencies": {
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",
     "typescript": "catalog:",
-    "weapp-vite": "workspace:*"
+    "weapp-vite": "workspace:*",
+    "@weapp-vite/dashboard": "workspace:*"
   }
 }

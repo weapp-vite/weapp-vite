@@ -3,6 +3,7 @@ import {
   coerceBooleanOption,
   convertBase,
   filterDuplicateOptions,
+  isUiEnabled,
   resolveConfigFile,
 } from './options'
 
@@ -50,5 +51,11 @@ describe('cli options helpers', () => {
     expect(coerceBooleanOption(0)).toBe(false)
     expect(coerceBooleanOption(1)).toBe(true)
     expect(coerceBooleanOption({})).toBe(true)
+  })
+
+  it('enables ui mode from ui or analyze flags', () => {
+    expect(isUiEnabled({ ui: true })).toBe(true)
+    expect(isUiEnabled({ analyze: true })).toBe(true)
+    expect(isUiEnabled({ ui: false, analyze: false })).toBe(false)
   })
 })

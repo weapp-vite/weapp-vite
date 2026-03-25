@@ -54,9 +54,12 @@
     "build:matrix:extras": "pnpm run build:path:shared-root && pnpm run build:path:invalid-root && pnpm run build:warn:on && pnpm run build:warn:off && pnpm run build:warn:zero-threshold",
     "build:matrix": "pnpm run build:matrix:core && pnpm run build:matrix:extras",
     "tour:manual": "node ../../scripts/chunk-modes-devtools-carousel.mjs --mode manual",
-    "tour:auto": "node ../../scripts/chunk-modes-devtools-carousel.mjs --mode auto"
+    "tour:auto": "node ../../scripts/chunk-modes-devtools-carousel.mjs --mode auto",
+    "dev:ui": "weapp-vite dev --ui",
+    "build:ui": "weapp-vite build --ui --platform weapp --skipNpm"
   },
   "devDependencies": {
+    "@weapp-vite/dashboard": "workspace:*",
     "weapp-vite": "workspace:*"
   }
 }
