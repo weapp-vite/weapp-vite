@@ -8,6 +8,7 @@ import { resolveCommand } from 'package-manager-detector/commands'
 import path from 'pathe'
 import { createServer } from 'vite'
 import logger, { colors } from '../../logger'
+import { parseCommentJson } from '../../utils'
 
 const ANALYZE_GLOBAL_KEY = '__WEAPP_VITE_ANALYZE_RESULT__'
 const ANALYZE_DASHBOARD_PACKAGE_NAME = '@weapp-vite/dashboard'
@@ -38,7 +39,7 @@ interface DashboardPackageManifest {
 
 function readDashboardManifest(packageJsonPath: string): DashboardPackageManifest | undefined {
   try {
-    return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as DashboardPackageManifest
+    return parseCommentJson(fs.readFileSync(packageJsonPath, 'utf8')) as DashboardPackageManifest
   }
   catch {
     return undefined
