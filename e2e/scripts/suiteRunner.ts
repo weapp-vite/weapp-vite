@@ -1,3 +1,4 @@
+import type { SpawnOptions } from 'node:child_process'
 import type { SuiteTaskArtifact } from './suiteReport'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
@@ -69,6 +70,18 @@ function createTaskArtifactCollector() {
   }
 }
 
+export function getTaskSpawnOptions(task: SuiteTask, platform = process.platform): SpawnOptions {
+  return {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      ...task.env,
+    },
+    stdio: ['inherit', 'pipe', 'pipe'],
+    shell: platform === 'win32',
+  }
+}
+
 export function formatSuiteSummary(suiteName: string, results: SuiteTaskResult[]) {
   const failures = results.filter(result => result.exitCode !== 0)
   const lines = [
@@ -92,14 +105,7 @@ async function defaultRunTask(task: SuiteTask) {
   const collector = createTaskArtifactCollector()
 
   return await new Promise<number>((resolve, reject) => {
-    const child = spawn(task.command, task.args, {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        ...task.env,
-      },
-      stdio: ['inherit', 'pipe', 'pipe'],
-    })
+    const child = spawn(task.command, task.args, getTaskSpawnOptions(task))
 
     let stdoutBuffer = ''
     let stderrBuffer = ''
