@@ -30,11 +30,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@iconify-json/mdi": "catalog:",
     "echarts": "catalog:",
+    "tailwind-merge": "^3.5.0",
+    "tailwind-variants": "^3.2.2",
     "vue": "catalog:",
     "vue-router": "5.0.4"
   },
   "devDependencies": {
+    "@iconify/tailwind4": "^1.0.4",
     "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "^6.0.5",
     "tailwindcss": "catalog:tailwind4",

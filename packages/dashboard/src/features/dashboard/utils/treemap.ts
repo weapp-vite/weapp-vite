@@ -1,4 +1,4 @@
-import type { PackageType } from './types'
+import type { PackageType } from '../types'
 import { formatBytes, formatSourceType } from './format'
 
 export interface NodeMetaBase {

@@ -2,20 +2,55 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light dark;
+
+    --dashboard-bg: #f4f7fb;
+    --dashboard-bg-accent: radial-gradient(circle at top left, rgb(59 130 246 / 16%), transparent 28%), radial-gradient(circle at top right, rgb(14 165 233 / 12%), transparent 24%);
+    --dashboard-panel: rgb(255 255 255 / 88%);
+    --dashboard-panel-strong: rgb(255 255 255 / 96%);
+    --dashboard-panel-muted: rgb(248 250 252 / 86%);
+    --dashboard-border: rgb(148 163 184 / 22%);
+    --dashboard-border-strong: rgb(59 130 246 / 24%);
+    --dashboard-text: #0f172a;
+    --dashboard-text-muted: #475569;
+    --dashboard-text-soft: #64748b;
+    --dashboard-accent: #0f766e;
+    --dashboard-accent-soft: rgb(15 118 110 / 12%);
+    --dashboard-shadow: 0 16px 48px rgb(15 23 42 / 10%);
+  }
+
+  :root[data-theme='dark'] {
+    --dashboard-bg: #020617;
+    --dashboard-bg-accent: radial-gradient(circle at top left, rgb(6 182 212 / 22%), transparent 28%), radial-gradient(circle at top right, rgb(14 165 233 / 14%), transparent 24%);
+    --dashboard-panel: rgb(15 23 42 / 82%);
+    --dashboard-panel-strong: rgb(15 23 42 / 94%);
+    --dashboard-panel-muted: rgb(15 23 42 / 72%);
+    --dashboard-border: rgb(148 163 184 / 14%);
+    --dashboard-border-strong: rgb(34 211 238 / 20%);
+    --dashboard-text: #e2e8f0;
+    --dashboard-text-muted: #cbd5e1;
+    --dashboard-text-soft: #94a3b8;
+    --dashboard-accent: #67e8f9;
+    --dashboard-accent-soft: rgb(34 211 238 / 12%);
+    --dashboard-shadow: 0 22px 60px rgb(2 6 23 / 42%);
   }
 
   body {
     min-height: 100vh;
     margin: 0;
     font-family: "IBM Plex Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-    color: rgb(241 245 249);
-    background-color: rgb(2 6 23);
+    color: var(--dashboard-text);
+    background-color: var(--dashboard-bg);
+    background-image: var(--dashboard-bg-accent);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   #app {
     min-height: 100vh;
+  }
+
+  ::selection {
+    background: rgb(20 184 166 / 28%);
   }
 }

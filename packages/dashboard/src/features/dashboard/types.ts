@@ -45,3 +45,24 @@ export interface AnalyzeSubpackagesResult {
   modules: ModuleUsage[]
   subPackages: SubPackageDescriptor[]
 }
+
+export type DashboardTab = 'overview' | 'packages' | 'modules'
+
+export interface ThemeOption {
+  value: 'system' | 'light' | 'dark'
+  label: string
+  iconClass: string
+}
+
+export interface DashboardTabOption {
+  key: DashboardTab
+  label: string
+  iconClass: string
+}
+
+export interface DashboardMetricCard {
+  label: string
+  value: string
+  iconClass: string
+  wide?: boolean
+}

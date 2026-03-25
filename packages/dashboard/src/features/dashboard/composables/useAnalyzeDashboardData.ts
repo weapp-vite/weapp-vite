@@ -1,5 +1,11 @@
 import type { Ref } from 'vue'
-import type { AnalyzeSubpackagesResult, BuildOrigin, ModuleSourceType, PackageFileEntry, PackageType } from './types'
+import type {
+  AnalyzeSubpackagesResult,
+  BuildOrigin,
+  ModuleSourceType,
+  PackageFileEntry,
+  PackageType,
+} from '../types'
 import { computed } from 'vue'
 
 export interface SummaryMetric {
