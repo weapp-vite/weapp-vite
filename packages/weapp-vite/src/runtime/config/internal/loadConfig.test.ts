@@ -24,7 +24,11 @@ const sanitizeBuildTargetMock = vi.hoisted(() => vi.fn(() => ({ hasTarget: false
 const getDefaultBuildTargetMock = vi.hoisted(() => vi.fn(() => undefined))
 const isNonConcreteBuildTargetMock = vi.hoisted(() => vi.fn(() => false))
 const resolveWeappWebConfigMock = vi.hoisted(() => vi.fn(() => ({ enabled: false })))
-const shouldEnableTsconfigPathsPluginMock = vi.hoisted(() => vi.fn(async () => false))
+const inspectTsconfigPathsUsageMock = vi.hoisted(() => vi.fn(async () => ({
+  enabled: false,
+  root: false,
+  references: false,
+})))
 const loggerWarnMock = vi.hoisted(() => vi.fn())
 
 vi.mock('vite', () => ({
@@ -88,7 +92,7 @@ vi.mock('../web', () => ({
 }))
 
 vi.mock('./tsconfigPaths', () => ({
-  shouldEnableTsconfigPathsPlugin: shouldEnableTsconfigPathsPluginMock,
+  inspectTsconfigPathsUsage: inspectTsconfigPathsUsageMock,
 }))
 
 function createFactory() {
@@ -101,7 +105,11 @@ function createFactory() {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  shouldEnableTsconfigPathsPluginMock.mockResolvedValue(false)
+  inspectTsconfigPathsUsageMock.mockResolvedValue({
+    enabled: false,
+    root: false,
+    references: false,
+  })
   loadConfigFromFileMock.mockResolvedValue({
     config: {},
     path: '/project/vite.config.ts',
@@ -316,7 +324,11 @@ describe('runtime config internal loadConfig', () => {
   })
 
   it('does not inject default @ alias when tsconfig paths are enabled', async () => {
-    shouldEnableTsconfigPathsPluginMock.mockResolvedValueOnce(true)
+    inspectTsconfigPathsUsageMock.mockResolvedValueOnce({
+      enabled: true,
+      root: true,
+      references: false,
+    })
     loadConfigFromFileMock.mockResolvedValueOnce({
       config: {
         weapp: {
@@ -366,6 +378,42 @@ describe('runtime config internal loadConfig', () => {
     expect(result.config.resolve?.tsconfigPaths).toBe(true)
     expect(result.config.plugins?.some((plugin: any) => plugin?.name === 'tsconfig-paths')).toBe(false)
     expect(tsconfigPathsMock).not.toHaveBeenCalled()
+  })
+
+  it('injects default @ alias when tsconfig paths only exist in referenced configs', async () => {
+    inspectTsconfigPathsUsageMock.mockResolvedValueOnce({
+      enabled: true,
+      root: false,
+      references: true,
+    })
+    loadConfigFromFileMock.mockResolvedValueOnce({
+      config: {
+        weapp: {
+          platform: 'weapp',
+          srcRoot: 'src',
+        },
+      },
+      path: '/project/vite.config.ts',
+    })
+    hasLibEntryMock.mockReturnValueOnce(false)
+
+    const loadConfig = createFactory()
+    const result = await loadConfig({
+      cwd: '/project',
+      isDev: true,
+      mode: 'development',
+      inlineConfig: {},
+      cliPlatform: 'weapp',
+      configFile: '/project/vite.config.ts',
+    } as any)
+
+    expect(result.config.resolve?.tsconfigPaths).toBe(true)
+    expect(result.config.resolve?.alias).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        find: '@',
+        replacement: '/project/src',
+      }),
+    ]))
   })
 
   it('throws when es5 is enabled but jsFormat is not cjs', async () => {
