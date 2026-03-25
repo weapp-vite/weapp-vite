@@ -6,33 +6,31 @@ import { getProjectConfigFileName } from '../utils'
 
 let logBuildAppFinishOnlyShowOnce = false
 
+function collectServerUrls(webServer?: ViteDevServer) {
+  const urls = webServer?.resolvedUrls
+  if (!urls) {
+    return []
+  }
+  return [...(urls.local ?? []), ...(urls.network ?? [])]
+}
+
 export function logBuildAppFinish(
   configService: ConfigService,
   webServer?: ViteDevServer | undefined,
-  options: { skipMini?: boolean, skipWeb?: boolean } = {},
+  options: { skipMini?: boolean, skipWeb?: boolean, uiUrls?: string[] } = {},
 ) {
   if (logBuildAppFinishOnlyShowOnce) {
     return
   }
-  const { skipMini = false, skipWeb = false } = options
+  const { skipMini = false, skipWeb = false, uiUrls = [] } = options
+  const webUrls = skipWeb ? [] : collectServerUrls(webServer)
   if (skipMini) {
-    if (webServer) {
-      const urls = webServer.resolvedUrls
-      const candidates = urls
-        ? [...(urls.local ?? []), ...(urls.network ?? [])]
-        : []
-      if (candidates.length > 0) {
-        logger.success('Web 运行时已启动，浏览器访问：')
-        for (const url of candidates) {
-          logger.info(`  ➜  ${colors.cyan(url)}`)
-        }
-      }
-      else {
-        logger.success('Web 运行时已启动')
-      }
+    logger.success('开发服务已就绪：')
+    if (webUrls.length > 0) {
+      logger.info(`Web：${colors.cyan(webUrls[0])}`)
     }
     else {
-      logger.success('Web 运行时已启动')
+      logger.info('Web：已启动')
     }
     logBuildAppFinishOnlyShowOnce = true
     return
@@ -47,24 +45,20 @@ export function logBuildAppFinish(
     args: ['run', 'open'],
   }
   const devCommand = `${command} ${args.join(' ')}`
-  logger.success('应用构建完成！预览方式（2 种选其一即可）：')
-  logger.info(`执行 ${colors.bold(colors.green(devCommand))} 可以直接在微信开发者工具里打开当前应用`)
+  logger.success('开发服务已就绪：')
+  logger.info(`小程序：执行 ${colors.bold(colors.green(devCommand))}，或手动导入 ${colors.green(getProjectConfigFileName(configService.platform))}`)
+  if (uiUrls.length > 0) {
+    logger.info(`UI：${colors.cyan(uiUrls[0])}`)
+  }
+  else if (!skipMini) {
+    logger.info('UI：未启用')
+  }
+  if (webUrls.length > 0) {
+    logger.info(`Web：${colors.cyan(webUrls[0])}`)
+  }
   const projectConfigFileName = getProjectConfigFileName(configService.platform)
-  logger.info(`或手动打开对应平台开发者工具，导入根目录（${colors.green(projectConfigFileName)} 文件所在目录），即可预览效果`)
-  if (!skipWeb && webServer) {
-    const urls = webServer.resolvedUrls
-    const candidates = urls
-      ? [...(urls.local ?? []), ...(urls.network ?? [])]
-      : []
-    if (candidates.length > 0) {
-      logger.success('Web 运行时已启动，浏览器访问：')
-      for (const url of candidates) {
-        logger.info(`  ➜  ${colors.cyan(url)}`)
-      }
-    }
-    else {
-      logger.success('Web 运行时已启动')
-    }
+  if (!uiUrls.length && !webUrls.length) {
+    logger.info(`提示：手动打开对应平台开发者工具，导入根目录（${colors.green(projectConfigFileName)} 文件所在目录）`)
   }
   logBuildAppFinishOnlyShowOnce = true
 }

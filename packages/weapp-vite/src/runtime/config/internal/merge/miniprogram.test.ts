@@ -154,7 +154,7 @@ describe('runtime config merge miniprogram', () => {
       name: 'weapp-vite',
       runtime: 'miniprogram',
     })
-    expect(result.logLevel).toBe('info')
+    expect(result.logLevel).toBe('warn')
     expect(result.define).toMatchObject({
       __PROD__: true,
       __VITE_IS_MODERN__: 'false',

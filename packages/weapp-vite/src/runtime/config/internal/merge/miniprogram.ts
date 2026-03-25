@@ -146,7 +146,7 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
   applyWeappViteHostMeta(inlineConfig, 'miniprogram')
   stripRollupOptions(inlineConfig)
   arrangePlugins(inlineConfig, ctx, subPackageMeta)
-  inlineConfig.logLevel = 'info'
+  inlineConfig.logLevel = 'warn'
   injectBuiltinAliases(inlineConfig)
 
   const currentRoot = subPackageMeta?.subPackage.root

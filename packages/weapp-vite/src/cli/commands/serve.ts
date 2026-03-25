@@ -103,6 +103,7 @@ export function registerServeCommand(cli: CAC) {
             watch: true,
             cwd: configService.cwd,
             packageManagerAgent: configService.packageManager.agent,
+            silentStartupLog: true,
           }) ?? undefined
 
           let updating = false
@@ -136,7 +137,10 @@ export function registerServeCommand(cli: CAC) {
         }
       }
       if (targets.runMini) {
-        logBuildAppFinish(configService, webServer, { skipWeb: !targets.runWeb })
+        logBuildAppFinish(configService, webServer, {
+          skipWeb: !targets.runWeb,
+          uiUrls: analyzeHandle?.urls,
+        })
       }
       else if (targets.runWeb) {
         logBuildAppFinish(configService, webServer, { skipMini: true })
