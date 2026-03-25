@@ -1,0 +1,177 @@
+import fs from 'fs-extra'
+import path from 'pathe'
+import { afterAll, describe, expect, it } from 'vitest'
+import {
+  closeSharedMiniProgram,
+  DIST_ROOT,
+  getSharedMiniProgram,
+  readPageWxml,
+  relaunchPage,
+  releaseSharedMiniProgram,
+  waitForCurrentPagePath,
+} from './github-issues.runtime.shared'
+
+describe.sequential('e2e app: github-issues / lifecycle', () => {
+  afterAll(async () => {
+    await closeSharedMiniProgram()
+  })
+
+  it('issue #309: triggers onLoad without requiring onPullDownRefresh hook', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-309/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-309 page')
+      }
+      const runtimeResult = await issuePage.callMethod('_runE2E')
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.loadCount).toBeGreaterThanOrEqual(1)
+      expect(await issuePage.data('loadCount')).toBeGreaterThanOrEqual(1)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #309: triggers onLoad with created setupLifecycle and no pull-down hook', async (ctx) => {
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-309-created/index')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-309-created page')
+      }
+      const runtimeResult = await issuePage.callMethod('_runE2E')
+      expect(runtimeResult?.ok).toBe(true)
+      expect(runtimeResult?.loadCount).toBeGreaterThanOrEqual(1)
+      expect(await issuePage.data('loadCount')).toBeGreaterThanOrEqual(1)
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #312: updates computed object bindings after switching back to initial reference', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-312/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-312/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+
+    expect(issuePageWxml).toContain('issue-312 computed object round trip')
+    expect(issuePageWxml).toContain('issue312-btn-inc')
+    expect(issuePageWxml).toContain('issue312-btn-dec')
+    expect(issuePageJs).toContain('_runE2E')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-312/index', 'data-current-label="选项1"')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-312 page')
+      }
+      const initialRuntime = await issuePage.callMethod('_runE2E')
+      expect(initialRuntime?.ok).toBe(true)
+      expect(initialRuntime?.index).toBe(0)
+      expect(initialRuntime?.label).toBe('选项1')
+      expect(await issuePage.data('index')).toBe(0)
+      const initialWxml = await readPageWxml(issuePage)
+      expect(initialWxml).toContain('data-current-label="选项1"')
+      expect(initialWxml).toContain('data-current-index="0"')
+
+      await issuePage.callMethod('inc')
+      await issuePage.waitFor(240)
+      const afterIncRuntime = await issuePage.callMethod('_runE2E')
+      expect(afterIncRuntime?.ok).toBe(true)
+      expect(afterIncRuntime?.index).toBe(1)
+      expect(afterIncRuntime?.label).toBe('选项2')
+
+      await issuePage.callMethod('dec')
+      await issuePage.waitFor(240)
+      const afterDecRuntime = await issuePage.callMethod('_runE2E')
+      expect(afterDecRuntime?.ok).toBe(true)
+      expect(afterDecRuntime?.index).toBe(0)
+      expect(afterDecRuntime?.label).toBe('选项1')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #316: triggers kebab-case component event bindings at runtime', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-316/index.wxml')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    expect(issuePageWxml).toContain('issue-316 hyphen event binding')
+    expect(issuePageWxml).toContain('bind:overlay-click="__weapp_vite_inline"')
+    expect(issuePageWxml).not.toContain('bindoverlay-click=')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-316/index', 'overlay clicks: 0')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-316 page')
+      }
+      const emitterHost = await issuePage.$('.issue316-emitter-host')
+      if (!emitterHost) {
+        throw new Error('Failed to find issue-316 emitter host')
+      }
+      await emitterHost.dispatchEvent({ eventName: 'overlay-click' })
+      await issuePage.waitFor(240)
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toContain('overlay clicks: 1')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #318: keeps template call-expression rendering stable with auto setData.pick', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-318/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-318/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+    expect(issuePageWxml).toContain('issue-318 auto setData pick from template')
+    expect(issuePageJs).toContain('_runE2E')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-318/index', 'count: 1')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-318 page')
+      }
+      await issuePage.callMethod('incCount')
+      await issuePage.waitFor(220)
+      await issuePage.callMethod('appendRow')
+      await issuePage.waitFor(220)
+      await issuePage.callMethod('cycleActive')
+      await issuePage.waitFor(220)
+      const renderedWxml = await readPageWxml(issuePage)
+      expect(renderedWxml).toContain('count: 2')
+      expect(renderedWxml).toContain('size: 3')
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+
+  it('issue #320: supports addRoute name override with alias and redirect replacement', async (ctx) => {
+    const issuePageWxmlPath = path.join(DIST_ROOT, 'pages/issue-320/index.wxml')
+    const issuePageJsPath = path.join(DIST_ROOT, 'pages/issue-320/index.js')
+    const issuePageWxml = await fs.readFile(issuePageWxmlPath, 'utf-8')
+    const issuePageJs = await fs.readFile(issuePageJsPath, 'utf-8')
+    expect(issuePageWxml).toContain('issue-320 router override + alias + redirect')
+    expect(issuePageJs).toContain('runRedirectNavigationE2E')
+
+    const miniProgram = await getSharedMiniProgram(ctx)
+    try {
+      const issuePage = await relaunchPage(miniProgram, '/pages/issue-320/index', 'ready for runtime e2e')
+      if (!issuePage) {
+        throw new Error('Failed to launch issue-320 page')
+      }
+      const navigationResult = await issuePage.callMethod('runRedirectNavigationE2E')
+      expect(navigationResult?.ok).toBe(true)
+      const redirectedPage = await waitForCurrentPagePath(miniProgram, '/pages/issue-309/index')
+      expect(redirectedPage).toBeTruthy()
+    }
+    finally {
+      await releaseSharedMiniProgram(miniProgram)
+    }
+  })
+})
