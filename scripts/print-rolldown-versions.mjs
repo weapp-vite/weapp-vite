@@ -174,6 +174,14 @@ function readLockfile(projectRoot) {
   return parse(readFileSync(lockfilePath, 'utf8'))
 }
 
+function readWorkspaceManifest(projectRoot) {
+  const workspacePath = path.join(projectRoot, 'pnpm-workspace.yaml')
+  if (!existsSync(workspacePath)) {
+    throw new Error(`pnpm workspace manifest not found: ${workspacePath}`)
+  }
+  return parse(readFileSync(workspacePath, 'utf8'))
+}
+
 function collectViteRolldownVersions(lockfile) {
   const snapshots = lockfile.snapshots ?? {}
   const versions = new Map()
@@ -195,28 +203,18 @@ function collectViteRolldownVersions(lockfile) {
   return new Map([...versions.entries()].sort((a, b) => a[0].localeCompare(b[0])))
 }
 
-function resolveExpectedRolldownRequirePeer(lockfile) {
-  const viteRolldownVersions = collectViteRolldownVersions(lockfile)
-  if (viteRolldownVersions.size === 0) {
+function resolveCatalogDependencyVersion(workspaceManifest, dependencyName) {
+  const version = workspaceManifest?.catalog?.[dependencyName]
+  if (typeof version !== 'string' || version.length === 0) {
     throw new Error(
       [
-        'failed to resolve rolldown version from vite snapshots in pnpm-lock.yaml',
-        'expected at least one vite snapshot with dependencies.rolldown',
+        `failed to resolve ${dependencyName} version from pnpm-workspace.yaml catalog`,
+        `expected catalog.${dependencyName} to be a non-empty string`,
       ].join('\n'),
     )
   }
 
-  if (viteRolldownVersions.size > 1) {
-    throw new Error(
-      [
-        'multiple vite rolldown versions detected in pnpm-lock.yaml',
-        `versions: ${[...viteRolldownVersions.keys()].join(', ')}`,
-        'rolldown-require peer must match a single vite rolldown version',
-      ].join('\n'),
-    )
-  }
-
-  return [...viteRolldownVersions.keys()][0]
+  return version
 }
 
 function readPackageJson(filePath) {
@@ -245,11 +243,47 @@ function findWorkspaceRoot(from) {
   throw new Error(`workspace root not found from: ${from}`)
 }
 
-function verifyRolldownRequirePeer(projectRoot, lockfile = readLockfile(projectRoot)) {
+function resolveDependencySpecVersion(spec, dependencyName, workspaceManifest) {
+  if (spec === 'catalog:') {
+    return resolveCatalogDependencyVersion(workspaceManifest, dependencyName)
+  }
+  return spec
+}
+
+function verifyRolldownCatalogReferences(projectRoot, readPackageJsonImpl = readPackageJson) {
+  const checks = [
+    {
+      expected: 'catalog:',
+      filePath: path.join(projectRoot, 'packages/weapp-vite/package.json'),
+      section: 'dependencies',
+    },
+    {
+      expected: 'catalog:',
+      filePath: path.join(projectRoot, 'packages/rolldown-require/package.json'),
+      section: 'peerDependencies',
+    },
+  ]
+
+  for (const check of checks) {
+    const packageJson = readPackageJsonImpl(check.filePath)
+    const actual = packageJson[check.section]?.rolldown
+    if (actual !== check.expected) {
+      throw new Error(
+        [
+          `${check.filePath} ${check.section}.rolldown must reference workspace catalog`,
+          `expected: ${check.expected}`,
+          `actual: ${String(actual)}`,
+        ].join('\n'),
+      )
+    }
+  }
+}
+
+function verifyRolldownRequirePeer(projectRoot, workspaceManifest = readWorkspaceManifest(projectRoot)) {
   const packageJsonPath = path.join(projectRoot, 'packages/rolldown-require/package.json')
   const packageJson = readPackageJson(packageJsonPath)
-  const expected = resolveExpectedRolldownRequirePeer(lockfile)
-  const actual = packageJson.peerDependencies?.rolldown
+  const expected = resolveCatalogDependencyVersion(workspaceManifest, 'rolldown')
+  const actual = resolveDependencySpecVersion(packageJson.peerDependencies?.rolldown, 'rolldown', workspaceManifest)
   if (actual !== expected) {
     throw new Error(
       [
@@ -295,12 +329,14 @@ function main(options = {}) {
     const scriptDir = path.dirname(fileURLToPath(import.meta.url))
     const projectRoot = findWorkspaceRoot(process.env.INIT_CWD || process.cwd() || scriptDir)
     const lockfile = readLockfile(projectRoot)
+    const workspaceManifest = readWorkspaceManifest(projectRoot)
     const versions = collectRolldownVersions(lockfile)
     console.log(formatRolldownVersionReport(projectRoot, versions))
     if (mode === 'report') {
       return
     }
-    verifyRolldownRequirePeer(projectRoot)
+    verifyRolldownCatalogReferences(projectRoot)
+    verifyRolldownRequirePeer(projectRoot, workspaceManifest)
     verifySingleRolldownVersion(versions)
   }
   catch (error) {
@@ -318,10 +354,13 @@ export {
   collectViteRolldownVersions,
   formatRolldownVersionReport,
   main,
+  readWorkspaceManifest,
   resolveAnsiEnabled,
-  resolveExpectedRolldownRequirePeer,
+  resolveCatalogDependencyVersion,
+  resolveDependencySpecVersion,
   resolveMode,
   stripPeerSuffix,
+  verifyRolldownCatalogReferences,
   verifyRolldownRequirePeer,
   verifySingleRolldownVersion,
 }

@@ -5,8 +5,10 @@ import {
   collectViteRolldownVersions,
   formatRolldownVersionReport,
   resolveAnsiEnabled,
-  resolveExpectedRolldownRequirePeer,
+  resolveCatalogDependencyVersion,
+  resolveDependencySpecVersion,
   resolveMode,
+  verifyRolldownCatalogReferences,
   verifySingleRolldownVersion,
 } from './print-rolldown-versions.mjs'
 
@@ -68,42 +70,72 @@ it('collectViteRolldownVersions only keeps vite snapshots that depend on rolldow
   )
 })
 
-it('resolveExpectedRolldownRequirePeer follows vite dependency from lockfile', () => {
-  const expected = resolveExpectedRolldownRequirePeer({
-    snapshots: {
-      'vite@7.3.1': {
-        dependencies: {
-          rollup: '4.59.0',
-        },
-      },
-      'vite@8.0.0': {
-        dependencies: {
-          rolldown: '1.0.0-rc.9',
-        },
-      },
+it('resolveCatalogDependencyVersion reads rolldown from workspace catalog', () => {
+  const expected = resolveCatalogDependencyVersion({
+    catalog: {
+      rolldown: '1.0.0-rc.9',
     },
-  })
+  }, 'rolldown')
 
   assert.equal(expected, '1.0.0-rc.9')
 })
 
-it('resolveExpectedRolldownRequirePeer throws when vite rolldown versions diverge', () => {
+it('resolveCatalogDependencyVersion throws when workspace catalog misses rolldown', () => {
   assert.throws(() => {
-    resolveExpectedRolldownRequirePeer({
-      snapshots: {
-        'vite@8.0.0': {
-          dependencies: {
-            rolldown: '1.0.0-rc.9',
-          },
-        },
-        'vite@8.0.1': {
-          dependencies: {
-            rolldown: '1.0.0-rc.10',
-          },
-        },
+    resolveCatalogDependencyVersion({
+      catalog: {},
+    }, 'rolldown')
+  }, /failed to resolve rolldown version from pnpm-workspace.yaml catalog/)
+})
+
+it('resolveDependencySpecVersion resolves catalog protocol through workspace catalog', () => {
+  const actual = resolveDependencySpecVersion('catalog:', 'rolldown', {
+    catalog: {
+      rolldown: '1.0.0-rc.9',
+    },
+  })
+
+  assert.equal(actual, '1.0.0-rc.9')
+})
+
+it('verifyRolldownCatalogReferences accepts package manifests wired to catalog', () => {
+  const projectRoot = '/workspace'
+  const manifests = new Map([
+    [`${projectRoot}/packages/weapp-vite/package.json`, {
+      dependencies: {
+        rolldown: 'catalog:',
       },
-    })
-  }, /multiple vite rolldown versions detected/)
+    }],
+    [`${projectRoot}/packages/rolldown-require/package.json`, {
+      peerDependencies: {
+        rolldown: 'catalog:',
+      },
+    }],
+  ])
+
+  assert.doesNotThrow(() => {
+    verifyRolldownCatalogReferences(projectRoot, filePath => manifests.get(filePath))
+  })
+})
+
+it('verifyRolldownCatalogReferences rejects literal rolldown versions in managed manifests', () => {
+  const projectRoot = '/workspace'
+  const manifests = new Map([
+    [`${projectRoot}/packages/weapp-vite/package.json`, {
+      dependencies: {
+        rolldown: '1.0.0-rc.9',
+      },
+    }],
+    [`${projectRoot}/packages/rolldown-require/package.json`, {
+      peerDependencies: {
+        rolldown: 'catalog:',
+      },
+    }],
+  ])
+
+  assert.throws(() => {
+    verifyRolldownCatalogReferences(projectRoot, filePath => manifests.get(filePath))
+  }, /must reference workspace catalog/)
 })
 
 it('resolveMode reads explicit report mode from cli args', () => {
