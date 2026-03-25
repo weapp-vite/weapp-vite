@@ -63,10 +63,32 @@ describe('runtime webPlugin', () => {
     expect(second).toBe(server)
     expect(createServerMock).toHaveBeenCalledTimes(1)
     expect(server.listen).toHaveBeenCalledTimes(1)
+    expect(server.listen).toHaveBeenCalledWith(undefined)
 
     await ctx.webService?.close()
     expect(server.close).toHaveBeenCalledTimes(1)
     expect(ctx.webService?.devServer).toBeUndefined()
+  })
+
+  it('passes configured dev server port through to listen', async () => {
+    const server = {
+      listen: vi.fn(async () => {}),
+      close: vi.fn(async () => {}),
+    }
+    createServerMock.mockResolvedValue(server)
+    const ctx = createCtx({
+      mergeWeb: vi.fn(() => ({
+        root: '/web-root',
+        server: {
+          port: 0,
+        },
+      })),
+    })
+    createWebServicePlugin(ctx)
+
+    await ctx.webService?.startDevServer()
+
+    expect(server.listen).toHaveBeenCalledWith(0)
   })
 
   it('skips starting dev server when disabled, non-dev, or mergeWeb returns undefined', async () => {

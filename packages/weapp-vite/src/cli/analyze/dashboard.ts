@@ -236,7 +236,10 @@ export async function startAnalyzeDashboard(
     logLevel: 'error',
   })
 
-  await server.listen()
+  const requestedPort = typeof server.config.server.port === 'number'
+    ? server.config.server.port
+    : undefined
+  await server.listen(requestedPort)
   serverRef ??= server
   server.printUrls()
   const urls = (() => {
