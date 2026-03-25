@@ -3,7 +3,6 @@ import type { RolldownWatcher } from 'rolldown'
 import type { ViteDevServer } from 'vite'
 import type { AnalyzeDashboardHandle } from '../analyze/dashboard'
 import type { GlobalCLIOptions } from '../types'
-import process from 'node:process'
 import { analyzeSubpackages } from '../../analyze/subpackages'
 import { createCompilerContext } from '../../createContext'
 import logger from '../../logger'
@@ -101,22 +100,8 @@ export function registerServeCommand(cli: CAC) {
       logRuntimeTarget(targets, { resolvedConfigPlatform: configService.platform })
       const enableAnalyze = Boolean(isUiEnabled(options) && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
-      let analyzeRunId = 0
 
-      const runAnalyze = async () => {
-        const analyzeCtx = await createCompilerContext({
-          key: `serve-ui-analyze:${process.pid}:${++analyzeRunId}`,
-          cwd: configService.cwd,
-          mode: configService.mode,
-          isDev: false,
-          configFile,
-          inlineConfig: createInlineConfig(targets.mpPlatform),
-          cliPlatform: targets.rawPlatform,
-          projectConfigPath: options.projectConfig,
-          syncSupportFiles: false,
-        })
-        return analyzeSubpackages(analyzeCtx)
-      }
+      const runAnalyze = async () => analyzeSubpackages(ctx)
 
       const triggerAnalyzeUpdate = async () => {
         if (!analyzeHandle) {
