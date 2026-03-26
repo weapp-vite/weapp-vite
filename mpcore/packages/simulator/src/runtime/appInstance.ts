@@ -13,7 +13,7 @@ function bindFunction(target: Record<string, any>, key: string, value: unknown) 
 }
 
 function resolveInitialData(definition: HeadlessAppDefinition) {
-  const rawData = definition.data
+  const rawData = definition.globalData ?? definition.data
   if (typeof rawData === 'function') {
     const next = rawData.call(definition)
     return next && typeof next === 'object' && !Array.isArray(next)
