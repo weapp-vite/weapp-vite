@@ -1718,4 +1718,156 @@ Component({
     expect(rendered.wxml).toContain('Gamma')
     expect(rendered.wxml).not.toContain('>Beta<')
   })
+
+  it('bubbles triggerEvent through component hosts when bubbles and composed are enabled', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          shell: '../../components/shell/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    log: []
+  },
+  onPagePulse(event) {
+    this.setData({
+      log: [...this.data.log, 'page:' + (event?.detail?.phase ?? 'none')]
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<shell bind:pulse="onPagePulse" /><view>{{log.0}}|{{log.1}}</view>'],
+      ['components/shell/index.json', JSON.stringify({
+        usingComponents: {
+          leaf: '../leaf/index',
+        },
+      })],
+      ['components/shell/index.js', `
+Component({
+  data: {
+    log: []
+  },
+  methods: {
+    onShellPulse(event) {
+      this.setData({
+        log: [...this.data.log, 'shell:' + (event?.detail?.phase ?? 'none')]
+      })
+    }
+  }
+})
+`],
+      ['components/shell/index.wxml', '<leaf bind:pulse="onShellPulse" /><view>{{log.0}}</view>'],
+      ['components/leaf/index.json', '{}'],
+      ['components/leaf/index.js', `
+Component({
+  methods: {
+    fire() {
+      this.triggerEvent('pulse', {
+        phase: 'leaf'
+      }, {
+        bubbles: true,
+        composed: true
+      })
+    }
+  }
+})
+`],
+      ['components/leaf/index.wxml', '<view bindtap="fire">fire</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/lab/index')
+    const rendered = session.renderCurrentPage()
+    const scopeIds = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
+    const leafScopeId = scopeIds.find(scopeId => scopeId.includes('leaf'))
+    expect(leafScopeId).toBeTruthy()
+
+    session.callTapBindingWithEvent(leafScopeId!, 'fire', {
+      id: 'leaf-node',
+    })
+
+    const page = session.getCurrentPages()[0]
+    expect(page?.data.log).toEqual(['page:leaf'])
+    const rerendered = session.renderCurrentPage()
+    expect(rerendered.wxml).toContain('shell:leaf')
+  })
+
+  it('stops triggerEvent bubbling at catch bindings on component hosts', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          shell: '../../components/shell/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    log: []
+  },
+  onPagePulse(event) {
+    this.setData({
+      log: [...this.data.log, 'page:' + (event?.detail?.phase ?? 'none')]
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<shell bind:pulse="onPagePulse" /><view>{{log.0}}</view>'],
+      ['components/shell/index.json', JSON.stringify({
+        usingComponents: {
+          leaf: '../leaf/index',
+        },
+      })],
+      ['components/shell/index.js', `
+Component({
+  data: {
+    log: []
+  },
+  methods: {
+    onShellPulse(event) {
+      this.setData({
+        log: [...this.data.log, 'shell:' + (event?.detail?.phase ?? 'none')]
+      })
+    }
+  }
+})
+`],
+      ['components/shell/index.wxml', '<leaf catch:pulse="onShellPulse" /><view>{{log.0}}</view>'],
+      ['components/leaf/index.json', '{}'],
+      ['components/leaf/index.js', `
+Component({
+  methods: {
+    fire() {
+      this.triggerEvent('pulse', {
+        phase: 'leaf'
+      }, {
+        bubbles: true,
+        composed: true
+      })
+    }
+  }
+})
+`],
+      ['components/leaf/index.wxml', '<view bindtap="fire">fire</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/lab/index')
+    const rendered = session.renderCurrentPage()
+    const scopeIds = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
+    const leafScopeId = scopeIds.find(scopeId => scopeId.includes('leaf'))
+    expect(leafScopeId).toBeTruthy()
+
+    session.callTapBinding(leafScopeId!, 'fire')
+
+    const page = session.getCurrentPages()[0]
+    expect(page?.data.log).toEqual([])
+    const rerendered = session.renderCurrentPage()
+    expect(rerendered.wxml).toContain('shell:leaf')
+  })
 })

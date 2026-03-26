@@ -3,15 +3,17 @@ import type { HeadlessProjectDescriptor } from '../project/createProjectDescript
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
 import type { HeadlessAppInstance } from '../runtime/appInstance'
 import type { HeadlessPageInstance } from '../runtime/pageInstance'
+import type { HeadlessWxRequestMockDefinition } from '../runtime/wxState'
+import type { BrowserVirtualFiles } from './virtualFiles'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
 import { createAppInstance } from '../runtime/appInstance'
 import { runComponentPageLifetime } from '../runtime/componentInstance'
 import { createPageInstance } from '../runtime/pageInstance'
+import { createHeadlessWxState } from '../runtime/wxState'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
 import { renderBrowserPageTree } from './render'
-import { type BrowserVirtualFiles } from './virtualFiles'
 
 export interface BrowserHeadlessSessionOptions {
   files: BrowserVirtualFiles
@@ -43,6 +45,7 @@ interface HeadlessTabBarItem {
 const LEADING_SLASH_RE = /^\/+/
 const PAGE_STACK_LIMIT = 10
 const DATA_ATTR_SELECTOR_RE = /^\[data-([^=\]]+)="([^"]*)"\]$/
+const DATASET_KEY_RE = /-([a-z])/g
 
 function stripLeadingSlash(route: string) {
   return route.replace(LEADING_SLASH_RE, '')
@@ -115,6 +118,7 @@ export class BrowserHeadlessSession {
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
+  private readonly wxState = createHeadlessWxState()
 
   constructor(options: BrowserHeadlessSessionOptions) {
     this.files = options.files
@@ -148,8 +152,15 @@ export class BrowserHeadlessSession {
         navigateBack: option => this.navigateBack(option?.delta),
         navigateTo: option => this.navigateTo(option.url),
         pageScrollTo: option => this.pageScrollTo(option),
+        clearStorageSync: () => this.wxState.clearStorageSync(),
+        getStorageSync: key => this.wxState.getStorageSync(key),
+        hideToast: () => this.wxState.hideToast(),
         reLaunch: option => this.reLaunch(option.url),
         redirectTo: option => this.redirectTo(option.url),
+        removeStorageSync: key => this.wxState.removeStorageSync(key),
+        request: option => this.wxState.request(option),
+        setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
+        showToast: option => this.wxState.showToast(option),
         stopPullDownRefresh: () => this.stopPullDownRefresh(),
         switchTab: option => this.switchTab(option.url),
       },
@@ -162,6 +173,22 @@ export class BrowserHeadlessSession {
 
   getCurrentPages() {
     return this.pages.slice()
+  }
+
+  getRequestLogs() {
+    return this.wxState.getRequestLogs()
+  }
+
+  getStorageSnapshot() {
+    return this.wxState.getStorageSnapshot()
+  }
+
+  getToast() {
+    return this.wxState.getToast()
+  }
+
+  mockRequest(definition: HeadlessWxRequestMockDefinition) {
+    this.wxState.mockRequest(definition)
   }
 
   getScopeSnapshot(scopeId: string) {
@@ -254,7 +281,7 @@ export class BrowserHeadlessSession {
         const dataAttrMatch = normalizedSelector.match(DATA_ATTR_SELECTOR_RE)
         if (dataAttrMatch) {
           const [, key, value] = dataAttrMatch
-          const datasetKey = key.replace(/-([a-z])/g, (_match, char: string) => char.toUpperCase())
+          const datasetKey = key.replace(DATASET_KEY_RE, (_match, char: string) => char.toUpperCase())
           return scope.dataset?.[datasetKey] === value
         }
         return scope.alias === normalizedSelector
@@ -289,7 +316,7 @@ export class BrowserHeadlessSession {
     }
     const method = scope.getMethod(methodName)
     if (typeof method !== 'function') {
-      throw new Error(`Method "${methodName}" does not exist on scope "${scopeId}" in browser simulator runtime.`)
+      throw new TypeError(`Method "${methodName}" does not exist on scope "${scopeId}" in browser simulator runtime.`)
     }
     return method()
   }
@@ -316,7 +343,7 @@ export class BrowserHeadlessSession {
     }
     const method = scope.getMethod(methodName)
     if (typeof method !== 'function') {
-      throw new Error(`Method "${methodName}" does not exist on scope "${scopeId}" in browser simulator runtime.`)
+      throw new TypeError(`Method "${methodName}" does not exist on scope "${scopeId}" in browser simulator runtime.`)
     }
     const instance = this.componentCache.get(scopeId)
     if (instance) {
@@ -519,7 +546,7 @@ export class BrowserHeadlessSession {
   }
 
   stopPullDownRefresh() {
-    return
+
   }
 
   private createFreshPage(target: ResolvedNavigationTarget) {

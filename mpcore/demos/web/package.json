@@ -1,8 +1,8 @@
 {
   "name": "@mpcore/simulator-web-demo",
-  "private": true,
   "type": "module",
   "version": "0.0.0",
+  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -14,7 +14,11 @@
     "vue": "catalog:"
   },
   "devDependencies": {
+    "@shikijs/engine-javascript": "^4.0.2",
+    "@shikijs/langs": "^4.0.2",
+    "@shikijs/themes": "^4.0.2",
     "@vitejs/plugin-vue": "^6.0.5",
+    "shiki": "^4.0.2",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:"
