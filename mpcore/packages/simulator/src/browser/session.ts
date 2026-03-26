@@ -42,6 +42,7 @@ interface HeadlessTabBarItem {
 
 const LEADING_SLASH_RE = /^\/+/
 const PAGE_STACK_LIMIT = 10
+const DATA_ATTR_SELECTOR_RE = /^\[data-([^=\]]+)="([^"]*)"\]$/
 
 function stripLeadingSlash(route: string) {
   return route.replace(LEADING_SLASH_RE, '')
@@ -249,6 +250,12 @@ export class BrowserHeadlessSession {
         }
         if (normalizedSelector.startsWith('.')) {
           return scope.classList?.includes(normalizedSelector.slice(1)) ?? false
+        }
+        const dataAttrMatch = normalizedSelector.match(DATA_ATTR_SELECTOR_RE)
+        if (dataAttrMatch) {
+          const [, key, value] = dataAttrMatch
+          const datasetKey = key.replace(/-([a-z])/g, (_match, char: string) => char.toUpperCase())
+          return scope.dataset?.[datasetKey] === value
         }
         return scope.alias === normalizedSelector
       })

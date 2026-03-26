@@ -27,6 +27,7 @@ interface BrowserRenderScope {
   alias?: string
   classList?: string[]
   data: Record<string, any>
+  dataset?: Record<string, string>
   getMethod: (methodName: string) => ((...args: any[]) => any) | undefined
   getScopeId: () => string
   id?: string
@@ -411,6 +412,7 @@ function renderNodeTree(
         .map(item => item.trim())
         .filter(Boolean),
       data: createMergedScopeData(scope.data, componentInstance.properties, componentInstance.data),
+      dataset: collectDataset(clonedNode),
       getMethod: (methodName: string) => {
         const method = componentInstance?.[methodName]
         return typeof method === 'function' ? method : undefined
