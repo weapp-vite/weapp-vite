@@ -1,20 +1,18 @@
 :root {
-  --sim-bg: #0c1117;
-  --sim-panel: rgb(16 24 34 / 88%);
-  --sim-panel-strong: #162231;
-  --sim-line: rgb(132 174 255 / 18%);
-  --sim-text: #edf3ff;
-  --sim-muted: #8ea4c2;
-  --sim-accent: #83f7d4;
-  --sim-accent-strong: #f2b94b;
-  --sim-danger: #ff8f88;
-  --sim-shadow: 0 24px 80px rgb(0 0 0 / 32%);
+  --sim-bg: #0a0f14;
+  --sim-panel: #111923;
+  --sim-panel-soft: #16202c;
+  --sim-border: rgb(148 184 255 / 14%);
+  --sim-text: #edf4ff;
+  --sim-muted: #89a0bf;
+  --sim-accent: #87f3d8;
+  --sim-accent-soft: rgb(135 243 216 / 15%);
+  --sim-shadow: 0 14px 44px rgb(0 0 0 / 26%);
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   color: var(--sim-text);
-  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
   background:
-    radial-gradient(circle at top left, rgb(89 152 255 / 18%), transparent 32%),
-    radial-gradient(circle at top right, rgb(242 185 75 / 12%), transparent 24%),
-    linear-gradient(160deg, #081018 0%, #0f1722 52%, #090d13 100%);
+    radial-gradient(circle at top left, rgb(84 137 255 / 15%), transparent 28%),
+    linear-gradient(180deg, #071018 0%, #0a0f14 42%, #0a1016 100%);
 }
 
 * {
@@ -40,390 +38,320 @@ button {
   min-height: 100vh;
 }
 
-.sim-shell {
-  width: min(1480px, calc(100vw - 40px));
+.sim-app {
+  width: min(1520px, calc(100vw - 24px));
   margin: 0 auto;
-  padding: 28px 0 48px;
+  padding: 16px 0 24px;
 }
 
-.sim-hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.9fr);
-  gap: 24px;
-  align-items: stretch;
+.sim-topbar {
+  margin-bottom: 12px;
 }
 
-.sim-hero__copy,
-.sim-loader,
-.sim-panel,
-.sim-error,
-.sim-metric {
-  backdrop-filter: blur(18px);
-  background: var(--sim-panel);
-  border: 1px solid var(--sim-line);
-  border-radius: 28px;
+.sim-topbar__copy {
+  padding: 16px 18px;
+  border: 1px solid var(--sim-border);
+  border-radius: 20px;
+  background: rgb(17 25 35 / 88%);
   box-shadow: var(--sim-shadow);
 }
 
-.sim-hero__copy {
-  padding: 30px 32px;
+.sim-topbar__eyebrow {
+  margin: 0 0 6px;
+  color: var(--sim-accent);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
-.sim-eyebrow {
-  margin: 0 0 12px;
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-  letter-spacing: 0.24em;
+.sim-topbar__title {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.04;
+}
+
+.sim-topbar__lead {
+  max-width: 78ch;
+  margin: 8px 0 0;
+  color: var(--sim-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.sim-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sim-stat,
+.sim-card,
+.sim-alert {
+  border: 1px solid var(--sim-border);
+  border-radius: 18px;
+  background: rgb(17 25 35 / 88%);
+  box-shadow: var(--sim-shadow);
+}
+
+.sim-stat {
+  padding: 12px 14px;
+}
+
+.sim-stat span,
+.sim-card__subtitle,
+.sim-block-label,
+.sim-import-btn__hint {
+  display: block;
+  color: var(--sim-muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--sim-accent);
+}
+
+.sim-stat strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 15px;
+}
+
+.sim-alert {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-color: rgb(255 144 133 / 28%);
+  background: rgb(65 24 28 / 88%);
+}
+
+.sim-alert strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #ffaaa2;
+}
+
+.sim-alert pre,
+.sim-code {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow: auto;
+}
+
+.sim-workbench {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.sim-workbench__left {
+  position: sticky;
+  top: 12px;
+}
+
+.sim-workbench__right {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sim-card {
+  padding: 14px;
+}
+
+.sim-card__header {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.sim-card__title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.sim-card__body {
+  display: grid;
+  gap: 12px;
+}
+
+.sim-device {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgb(255 255 255 / 8%);
+  background: #f3f7fb;
+}
+
+.sim-device__bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: linear-gradient(90deg, #0c131a, #182430);
+  color: #dbe8ff;
   font-size: 12px;
 }
 
-.sim-hero h1 {
-  margin: 0;
-  font-size: clamp(46px, 8vw, 90px);
-  line-height: 0.95;
-  letter-spacing: -0.05em;
+.sim-device__screen {
+  min-height: 700px;
+  padding: 12px;
 }
 
-.sim-lead {
-  max-width: 64ch;
-  margin: 20px 0 0;
-  color: var(--sim-muted);
-  font-size: 16px;
-  line-height: 1.7;
+.sim-device__screen page,
+.sim-device__screen view,
+.sim-device__screen text,
+.sim-device__screen button {
+  display: block;
 }
 
-.sim-loader {
-  position: relative;
-  overflow: hidden;
+.sim-device__screen page {
+  width: min(100%, 360px);
+  margin: 0 auto;
+  padding: 14px;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 10px 28px rgb(15 27 40 / 10%);
+  color: #18344f;
+}
+
+.sim-device__screen view {
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgb(14 98 207 / 5%);
+  border: 1px solid rgb(14 98 207 / 8%);
+}
+
+.sim-scene-grid,
+.sim-chip-wrap,
+.sim-btn-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sim-scene-btn {
   display: grid;
-  gap: 12px;
-  padding: 28px;
-  align-content: end;
-  min-height: 240px;
-  background:
-    linear-gradient(180deg, rgb(131 247 212 / 10%), transparent 56%),
-    linear-gradient(135deg, rgb(242 185 75 / 10%), transparent 60%),
-    var(--sim-panel-strong);
+  gap: 6px;
+  width: calc(50% - 4px);
+  min-width: 220px;
+  padding: 12px;
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid var(--sim-border);
+  background: rgb(255 255 255 / 3%);
+  color: var(--sim-text);
 }
 
-.sim-loader::before {
-  position: absolute;
-  inset: 16px;
-  border: 1px dashed rgb(255 255 255 / 16%);
-  border-radius: 20px;
-  content: "";
+.sim-scene-btn strong {
+  font-size: 15px;
 }
 
-.sim-loader__title {
-  position: relative;
-  font-size: 28px;
-}
-
-.sim-loader__hint {
-  position: relative;
+.sim-scene-btn span {
   color: var(--sim-muted);
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.55;
 }
 
-.sim-loader input {
+.sim-scene-btn.is-active {
+  background: var(--sim-accent-soft);
+  border-color: rgb(135 243 216 / 36%);
+}
+
+.sim-import-btn {
+  position: relative;
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px dashed rgb(255 255 255 / 18%);
+  background: rgb(255 255 255 / 2%);
+}
+
+.sim-import-btn__title {
+  font-size: 14px;
+}
+
+.sim-import-btn input {
   position: absolute;
   inset: 0;
   opacity: 0;
 }
 
-.sim-loader.is-loading {
-  outline: 1px solid rgb(131 247 212 / 54%);
-}
-
-.sim-metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 18px;
-}
-
-.sim-scenarios {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 18px;
-}
-
-.sim-scenario-card {
-  display: grid;
-  gap: 10px;
-  padding: 18px 20px;
-  text-align: left;
-  border-radius: 24px;
-  border: 1px solid var(--sim-line);
-  background:
-    linear-gradient(135deg, rgb(131 247 212 / 8%), transparent 58%),
-    linear-gradient(180deg, rgb(255 255 255 / 4%), transparent),
-    var(--sim-panel);
-  color: var(--sim-text);
-  box-shadow: var(--sim-shadow);
-}
-
-.sim-scenario-card__title {
-  font-size: 22px;
-  line-height: 1.1;
-}
-
-.sim-scenario-card__body {
-  color: var(--sim-muted);
-  line-height: 1.6;
-}
-
-.sim-scenario-card.is-active {
-  border-color: rgb(131 247 212 / 42%);
-  box-shadow:
-    var(--sim-shadow),
-    0 0 0 1px rgb(131 247 212 / 16%) inset;
-}
-
-.sim-metric {
-  padding: 18px 20px;
-}
-
-.sim-metric span,
-.sim-panel__header p,
-.sim-muted,
-.sim-code-label {
-  display: block;
-  color: var(--sim-muted);
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.sim-metric strong {
-  display: block;
-  margin-top: 10px;
-  font-size: 18px;
-  line-height: 1.4;
-}
-
-.sim-error {
-  margin-top: 18px;
-  padding: 20px 22px;
-  border-color: rgb(255 143 136 / 40%);
-  background: rgb(83 25 30 / 70%);
-}
-
-.sim-error strong {
-  display: block;
-  color: var(--sim-danger);
-  margin-bottom: 8px;
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-}
-
-.sim-error pre,
-.sim-code-block pre {
-  margin: 0;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.sim-grid {
-  display: grid;
-  grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.4fr);
-  gap: 18px;
-  margin-top: 18px;
-}
-
-.sim-panel {
-  padding: 20px;
-}
-
-.sim-panel--preview {
-  grid-row: span 2;
-}
-
-.sim-panel__header {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: baseline;
-  margin-bottom: 16px;
-}
-
-.sim-panel__header h2 {
-  margin: 0;
-  font-size: 28px;
-}
-
-.sim-panel__header p {
-  max-width: 34ch;
-  text-align: right;
-}
-
-.sim-chip-list,
-.sim-action-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
 .sim-chip,
-.sim-action-group button,
-.sim-preview-toolbar button {
-  padding: 10px 14px;
+.sim-mini-btn {
+  padding: 8px 10px;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 999px;
   background: rgb(255 255 255 / 4%);
   color: var(--sim-text);
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    background 160ms ease;
-}
-
-.sim-chip:hover,
-.sim-action-group button:hover,
-.sim-preview-toolbar button:hover {
-  transform: translateY(-1px);
-  border-color: rgb(131 247 212 / 40%);
+  font-size: 12px;
+  transition: border-color 120ms ease, background 120ms ease;
 }
 
 .sim-chip.is-active {
-  background: rgb(131 247 212 / 16%);
-  border-color: rgb(131 247 212 / 44%);
+  background: var(--sim-accent-soft);
+  border-color: rgb(135 243 216 / 36%);
   color: var(--sim-accent);
 }
 
-.sim-action-group--secondary {
-  margin-top: 14px;
-}
-
-.sim-preview-frame {
-  padding: 10px;
-  border-radius: 26px;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 6%), transparent),
-    rgb(7 12 19 / 92%);
-}
-
-.sim-preview-device {
-  border-radius: 22px;
-  overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 8%);
-  background: #f8fbff;
-  color: #163047;
-}
-
-.sim-preview-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: linear-gradient(90deg, rgb(8 17 24 / 92%), rgb(15 27 39 / 84%));
-  color: #dcecff;
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 12px;
-}
-
-.sim-preview-toolbar button {
-  color: inherit;
-}
-
-.sim-preview-surface {
-  min-height: 640px;
-  padding: 24px 18px 28px;
-  background:
-    linear-gradient(180deg, rgb(227 236 247 / 100%), rgb(249 252 255 / 100%));
-}
-
-.sim-preview-surface page,
-.sim-preview-surface view,
-.sim-preview-surface text,
-.sim-preview-surface button {
-  display: block;
-}
-
-.sim-preview-surface page {
-  width: min(100%, 420px);
-  margin: 0 auto;
-  padding: 18px;
-  border-radius: 24px;
-  background: white;
-  box-shadow: 0 24px 48px rgb(16 30 44 / 10%);
-}
-
-.sim-preview-surface view {
-  margin-bottom: 10px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: rgb(15 92 203 / 5%);
-  border: 1px solid rgb(15 92 203 / 8%);
-}
-
-.sim-preview-surface .panel-row {
-  background: rgb(131 247 212 / 12%);
-}
-
-.sim-stack {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.sim-stack li {
-  padding: 8px 0;
-  color: var(--sim-muted);
-}
-
-.sim-stack li.is-current {
-  color: var(--sim-accent);
-}
-
-.sim-code-block {
+.sim-action-block {
   display: grid;
-  gap: 10px;
-  margin-bottom: 14px;
-  padding: 14px;
-  border-radius: 20px;
-  background: rgb(5 10 16 / 40%);
-  border: 1px solid rgb(255 255 255 / 7%);
+  gap: 8px;
 }
 
-.sim-code-block pre {
-  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+.sim-empty {
+  color: var(--sim-muted);
   font-size: 12px;
+}
+
+.sim-stack-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.sim-stack-list li {
+  padding: 5px 0;
+  color: var(--sim-muted);
+  font-size: 13px;
+}
+
+.sim-stack-list li.is-current {
+  color: var(--sim-accent);
+}
+
+.sim-code {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgb(7 12 17 / 50%);
+  color: #dbe8ff;
+  font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
   line-height: 1.65;
-  color: #d9e7ff;
 }
 
 .sim-preview-error {
-  color: #7a1622;
-  border-color: rgb(122 22 34 / 18%);
-  background: rgb(255 232 234 / 100%);
+  color: #8f2230;
+  background: rgb(255 236 239 / 100%);
 }
 
-@media (max-width: 1100px) {
-  .sim-shell {
-    width: min(100vw - 24px, 1480px);
-  }
-
-  .sim-hero,
-  .sim-grid,
-  .sim-metrics,
-  .sim-scenarios {
+@media (max-width: 1180px) {
+  .sim-workbench {
     grid-template-columns: 1fr;
   }
 
-  .sim-panel--preview {
-    grid-row: auto;
+  .sim-workbench__left {
+    position: static;
   }
 
-  .sim-panel__header {
-    flex-direction: column;
-    align-items: flex-start;
+  .sim-workbench__right,
+  .sim-stats {
+    grid-template-columns: 1fr;
   }
 
-  .sim-panel__header p {
-    text-align: left;
+  .sim-scene-btn {
+    width: 100%;
   }
 }
