@@ -2,7 +2,9 @@ import process from 'node:process'
 import { getSuiteTasks, listE2ESuites } from './e2e-suite-manifest'
 import { runTaskSuite } from './suiteRunner'
 
-const mode = process.argv[2] ?? 'full'
+const args = process.argv.slice(2)
+const allowFailures = args.includes('--allow-failures')
+const mode = args.find(arg => !arg.startsWith('--')) ?? 'full'
 
 if (mode === 'list') {
   const suites = listE2ESuites()
@@ -21,5 +23,7 @@ if (tasks.length === 0) {
   process.exitCode = 1
 }
 else {
-  await runTaskSuite(`e2e:${mode}`, tasks)
+  await runTaskSuite(`e2e:${mode}`, tasks, {
+    failOnTaskFailure: !allowFailures,
+  })
 }

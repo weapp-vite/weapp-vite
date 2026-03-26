@@ -5,15 +5,24 @@ import process from 'node:process'
 const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
 const REPORTS_ROOT_DIR = path.join(ROOT_DIR, 'docs/reports')
 const REPORT_META_FILE = path.resolve('/tmp', 'weapp-vite-e2e-ide-warning-report-paths.json')
+const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
 const EVENT_LOG_FILE_ENV = 'WEAPP_VITE_E2E_REPORT_EVENT_LOG_FILE'
 const REPORT_MARKDOWN_FILE_ENV = 'WEAPP_VITE_E2E_IDE_WARNING_REPORT_MD_FILE'
 const REPORT_JSON_FILE_ENV = 'WEAPP_VITE_E2E_IDE_WARNING_REPORT_JSON_FILE'
 const REPORT_SLUG_ENV = 'WEAPP_VITE_E2E_IDE_WARNING_REPORT_SLUG'
 const REPORT_DIR_ENV = 'WEAPP_VITE_E2E_IDE_WARNING_REPORT_DIR'
 const TYPE_UNCOMPATIBLE_PATTERN = /received type-uncompatible value:\s*expected <([^>]+)>\s*but (g(?:et|ot) .+)$/i
+// eslint-disable-next-line no-control-regex, regexp/no-obscure-range
 const ANSI_ESCAPE_PATTERN = /\u001B\[[0-?]*[ -/]*[@-~]/g
+// eslint-disable-next-line no-control-regex
 const CONTROL_CHAR_PATTERN = /[\u0000-\u0008\u000B-\u001F\u007F]/g
-const ABSOLUTE_PATH_PATTERN = /(?:[A-Za-z]:[\\/][^\s"'`<>()[\]{}]+|\/(?:Users|tmp|var|private|opt|home)\/[^\s"'`<>()[\]{}]+)/g
+const ABSOLUTE_PATH_PATTERN = /([A-Za-z]:[\\/][^\s"'`<>()[\]{}]+|\/(Users|tmp|var|private|opt|home)\/[^\s"'`<>()[\]{}]+)/g
+const CARRIAGE_RETURN_PATTERN = /\r/g
+const MULTI_NEWLINE_PATTERN = /\n+/g
+const MULTI_SPACE_PATTERN = /\s{2,}/g
+const PATH_SEPARATOR_PATTERN = /[\\/]+/g
+const INVALID_FILE_STEM_PATTERN = /[^\w.-]/g
+const NEWLINE_PATTERN = /\r?\n/
 
 export type IdeReportSource = 'build' | 'runtime'
 export type IdeReportKind = 'message' | 'stats'
@@ -200,6 +209,10 @@ function renderRelativeMarkdownLink(label: string, targetPath: string) {
   return `[${label}](./${normalizeSlash(path.basename(targetPath))})`
 }
 
+function shouldEmitReportMarkers(env = process.env) {
+  return env[REPORT_MARKER_ENV] === '1'
+}
+
 function sanitizeCommandArg(arg: string) {
   if (!arg) {
     return arg
@@ -226,11 +239,11 @@ function sanitizeCommandArg(arg: string) {
 function sanitizeReportText(value: string) {
   return normalizeSlash(value)
     .replace(ANSI_ESCAPE_PATTERN, '')
-    .replace(/\r/g, ' ')
-    .replace(/\n+/g, ' | ')
+    .replace(CARRIAGE_RETURN_PATTERN, ' ')
+    .replace(MULTI_NEWLINE_PATTERN, ' | ')
     .replace(CONTROL_CHAR_PATTERN, ' ')
     .replace(ABSOLUTE_PATH_PATTERN, candidate => sanitizeCommandArg(candidate))
-    .replace(/\s{2,}/g, ' ')
+    .replace(MULTI_SPACE_PATTERN, ' ')
     .trim()
 }
 
@@ -240,8 +253,8 @@ function sanitizeCommand(argv = process.argv) {
 
 function createProjectFileStem(project: string) {
   return project
-    .replace(/[\\/]+/g, '__')
-    .replace(/[^a-zA-Z0-9_.-]/g, '-')
+    .replace(PATH_SEPARATOR_PATTERN, '__')
+    .replace(INVALID_FILE_STEM_PATTERN, '-')
 }
 
 function sortIssues(left: IssueGroup, right: IssueGroup) {
@@ -257,7 +270,7 @@ function readReportEvents(paths: IdeWarningReportPaths) {
   }
 
   const lines = fs.readFileSync(paths.eventLogPath, 'utf8')
-    .split(/\r?\n/)
+    .split(NEWLINE_PATTERN)
     .map(line => line.trim())
     .filter(Boolean)
 
@@ -695,9 +708,11 @@ export function writeIdeWarningReport(paths: IdeWarningReportPaths, now = new Da
 
   fs.writeFileSync(paths.reportJsonPath, `${JSON.stringify(indexPayload, null, 2)}\n`, 'utf8')
   fs.writeFileSync(paths.reportMarkdownPath, renderIndexMarkdown(indexPayload), 'utf8')
-  process.stdout.write(
-    `[ide-warning-report] index=${toRepoRelativePath(paths.reportMarkdownPath)} projects=${indexPayload.summary.projectCount} issues=${indexPayload.summary.totalIssues}\n`,
-  )
+  if (shouldEmitReportMarkers()) {
+    process.stdout.write(
+      `[ide-warning-report] index=${toRepoRelativePath(paths.reportMarkdownPath)} projects=${indexPayload.summary.projectCount} issues=${indexPayload.summary.totalIssues}\n`,
+    )
+  }
 
   return indexPayload
 }

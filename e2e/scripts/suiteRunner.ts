@@ -5,6 +5,8 @@ import path from 'node:path'
 import process from 'node:process'
 import { createSuiteReport } from './suiteReport'
 
+const REPORT_MARKER_ENV = 'WEAPP_VITE_E2E_REPORT_MARKERS'
+
 export interface SuiteTask {
   artifacts?: SuiteTaskArtifact[]
   env?: Record<string, string>
@@ -23,6 +25,7 @@ export interface SuiteTaskResult {
 interface RunSuiteOptions {
   afterAll?: () => Promise<void> | void
   beforeEachTask?: (task: SuiteTask) => Promise<void> | void
+  failOnTaskFailure?: boolean
   runTask?: (task: SuiteTask) => Promise<number>
   writeReport?: boolean
 }
@@ -35,6 +38,10 @@ const ROOT_DIR = path.resolve(import.meta.dirname, '../..')
 const REPORT_LINE_PATTERN = /^\[(ide-warning-report|e2e-suite-report)\]\s+index=(\S+)/
 const CRLF_PATTERN = /\r\n/g
 const NEWLINE_SPLIT_PATTERN = /\r?\n/
+
+function shouldEmitReportMarkers(env = process.env) {
+  return env[REPORT_MARKER_ENV] === '1'
+}
 
 function createTaskArtifactCollector() {
   const artifacts: SuiteTaskArtifact[] = []
@@ -70,11 +77,49 @@ function createTaskArtifactCollector() {
   }
 }
 
+function createOutputForwarder(
+  write: (text: string) => void,
+  collector: ReturnType<typeof createTaskArtifactCollector>,
+) {
+  let buffer = ''
+
+  function handleText(text: string) {
+    const normalized = (buffer + text).replace(CRLF_PATTERN, '\n')
+    const lines = normalized.split('\n')
+    buffer = lines.pop() ?? ''
+
+    for (const line of lines) {
+      collector.collectFromText(line)
+      if (!REPORT_LINE_PATTERN.test(line)) {
+        write(`${line}\n`)
+      }
+    }
+  }
+
+  function flush() {
+    if (!buffer) {
+      return
+    }
+
+    collector.collectFromText(buffer)
+    if (!REPORT_LINE_PATTERN.test(buffer)) {
+      write(buffer)
+    }
+    buffer = ''
+  }
+
+  return {
+    flush,
+    handleText,
+  }
+}
+
 export function getTaskSpawnOptions(task: SuiteTask, platform = process.platform): SpawnOptions {
   return {
     cwd: process.cwd(),
     env: {
       ...process.env,
+      [REPORT_MARKER_ENV]: '1',
       ...task.env,
     },
     stdio: ['inherit', 'pipe', 'pipe'],
@@ -101,47 +146,46 @@ export function formatSuiteSummary(suiteName: string, results: SuiteTaskResult[]
   return lines.join('\n')
 }
 
+export function formatSuiteArtifactsSummary(suiteName: string, artifacts: SuiteTaskArtifact[]) {
+  const seen = new Set<string>()
+  const lines = [`[${suiteName}] reports:`]
+
+  for (const artifact of artifacts) {
+    const artifactKey = `${artifact.kind}:${artifact.indexPath}`
+    if (seen.has(artifactKey)) {
+      continue
+    }
+    seen.add(artifactKey)
+    lines.push(`[${suiteName}] - ${artifact.kind}: ${path.relative(ROOT_DIR, artifact.indexPath).replaceAll('\\', '/')}`)
+  }
+
+  if (lines.length === 1) {
+    return ''
+  }
+
+  return lines.join('\n')
+}
+
 async function defaultRunTask(task: SuiteTask) {
   const collector = createTaskArtifactCollector()
 
   return await new Promise<number>((resolve, reject) => {
     const child = spawn(task.command, task.args, getTaskSpawnOptions(task))
-
-    let stdoutBuffer = ''
-    let stderrBuffer = ''
-
-    function consumeBufferedLines(buffer: string) {
-      const normalized = buffer.replace(CRLF_PATTERN, '\n')
-      const lines = normalized.split('\n')
-      const remainder = lines.pop() ?? ''
-
-      for (const line of lines) {
-        collector.collectFromText(line)
-      }
-
-      return remainder
-    }
+    const stdoutForwarder = createOutputForwarder(text => process.stdout.write(text), collector)
+    const stderrForwarder = createOutputForwarder(text => process.stderr.write(text), collector)
 
     child.stdout.on('data', (chunk) => {
-      const text = chunk.toString()
-      process.stdout.write(text)
-      stdoutBuffer = consumeBufferedLines(stdoutBuffer + text)
+      stdoutForwarder.handleText(chunk.toString())
     })
 
     child.stderr.on('data', (chunk) => {
-      const text = chunk.toString()
-      process.stderr.write(text)
-      stderrBuffer = consumeBufferedLines(stderrBuffer + text)
+      stderrForwarder.handleText(chunk.toString())
     })
 
     child.on('error', reject)
     child.on('close', (code) => {
-      if (stdoutBuffer) {
-        collector.collectFromText(stdoutBuffer)
-      }
-      if (stderrBuffer) {
-        collector.collectFromText(stderrBuffer)
-      }
+      stdoutForwarder.flush()
+      stderrForwarder.flush()
       task.artifacts = collector.artifacts
       resolve(code ?? 1)
     })
@@ -153,9 +197,11 @@ export async function runTaskSuite(
   tasks: SuiteTask[],
   options: RunSuiteOptions = {},
 ) {
+  const failOnTaskFailure = options.failOnTaskFailure ?? true
   const runTask = options.runTask ?? defaultRunTask
   const writeReport = options.writeReport ?? true
   const results: SuiteTaskResult[] = []
+  let suiteReportArtifact: SuiteTaskArtifact | undefined
 
   for (const task of tasks) {
     console.log(`[${suiteName}] run ${task.label}`)
@@ -187,16 +233,31 @@ export async function runTaskSuite(
   await options.afterAll?.()
   if (writeReport) {
     const report = createSuiteReport(results, suiteName)
-    console.log(
-      `[e2e-suite-report] index=${path.relative(ROOT_DIR, path.join(report.reportDir, report.markdownFile)).replaceAll('\\', '/')} tasks=${report.summary.taskCount} failed=${report.summary.failedCount} childReports=${report.summary.artifactCount}`,
-    )
+    suiteReportArtifact = {
+      kind: 'suite-report',
+      indexPath: path.join(report.reportDir, report.markdownFile),
+    }
+    if (shouldEmitReportMarkers()) {
+      process.stdout.write(
+        `[e2e-suite-report] index=${path.relative(ROOT_DIR, suiteReportArtifact.indexPath).replaceAll('\\', '/')} tasks=${report.summary.taskCount} failed=${report.summary.failedCount} childReports=${report.summary.artifactCount}\n`,
+      )
+    }
   }
   console.log(formatSuiteSummary(suiteName, results))
+  if (!shouldEmitReportMarkers()) {
+    const artifactSummary = formatSuiteArtifactsSummary(
+      suiteName,
+      suiteReportArtifact ? [...results.flatMap(result => result.artifacts), suiteReportArtifact] : results.flatMap(result => result.artifacts),
+    )
+    if (artifactSummary) {
+      console.log(artifactSummary)
+    }
+  }
 
-  if (results.some(result => result.exitCode !== 0)) {
+  if (failOnTaskFailure && results.some(result => result.exitCode !== 0)) {
     process.exitCode = 1
     return 1
   }
 
-  return 0
+  return results.some(result => result.exitCode !== 0) ? 1 : 0
 }
