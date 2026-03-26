@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { createJavaScriptRegexEngine } from '@shikijs/engine-javascript'
+import css from '@shikijs/langs/css'
+import html from '@shikijs/langs/html'
+import javascript from '@shikijs/langs/javascript'
 import json from '@shikijs/langs/json'
+import xml from '@shikijs/langs/xml'
 import githubDarkDefault from '@shikijs/themes/github-dark-default'
 import githubLightDefault from '@shikijs/themes/github-light-default'
 import { createHighlighterCore } from 'shiki/core'
@@ -24,7 +28,7 @@ let activeRenderToken = 0
 
 const highlighterPromise = createHighlighterCore({
   engine: createJavaScriptRegexEngine(),
-  langs: [json],
+  langs: [javascript, json, html, css, xml],
   themes: [githubDarkDefault, githubLightDefault],
 })
 
@@ -56,11 +60,11 @@ watch(
 <template>
   <div
     v-if="highlightedHtml"
-    class="sim-code-html overflow-auto rounded-2xl border border-[color:var(--sim-border)] bg-[color:var(--sim-code-bg)]"
+    class="sim-code-html min-h-0 overflow-auto rounded-2xl border border-[color:var(--sim-border)] bg-[color:var(--sim-code-bg)]"
     v-html="highlightedHtml"
   />
   <pre
     v-else
-    :class="`${codeFrameClass} px-3.5 py-3 text-[11px] leading-7 text-[color:var(--sim-text)] whitespace-pre-wrap`"
+    :class="`${codeFrameClass} min-h-0 px-3.5 py-3 text-[11px] leading-7 text-[color:var(--sim-text)] whitespace-pre-wrap`"
   >{{ fallbackCode }}</pre>
 </template>
