@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { BrowserDirectoryFileLike, BrowserHeadlessSession } from '../../../packages/simulator/src/browser'
 import type { WorkbenchFileNode } from './types/workbench'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import {
   createBrowserHeadlessSession,
   createBrowserVirtualFilesFromDirectory,
@@ -85,7 +85,7 @@ function collectCallableMethods(session: SessionLike | null) {
 }
 
 const revision = ref(0)
-const session = ref<BrowserHeadlessSession | null>(null)
+const session = shallowRef<BrowserHeadlessSession | null>(null)
 const errorMessage = ref('')
 const loading = ref(false)
 const projectLabel = ref('未加载')
@@ -406,9 +406,6 @@ async function handleDirectoryChange(event: Event) {
 }
 
 const firstScenario = builtInScenarios[0]
-if (!session.value && firstScenario) {
-  loadSession(firstScenario.name, firstScenario.files, firstScenario.id)
-}
 
 onMounted(() => {
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
@@ -428,6 +425,10 @@ onMounted(() => {
   handleColorSchemeChange = event => updateSystemTheme(event)
   mediaQuery.addEventListener('change', handleColorSchemeChange)
   colorSchemeQuery = mediaQuery
+
+  if (!session.value && firstScenario) {
+    loadSession(firstScenario.name, firstScenario.files, firstScenario.id)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -486,11 +487,17 @@ function handleDispatchTapChain(payload: {
 }
 
 function handleSelectScope(scopeId: string) {
+  if (selectedScopeId.value === scopeId) {
+    return
+  }
   selectedScopeId.value = scopeId
   touch()
 }
 
 function handleUpdateViewport(payload: { height: number, width: number }) {
+  if (viewportSize.value.width === payload.width && viewportSize.value.height === payload.height) {
+    return
+  }
   viewportSize.value = payload
   run(() => session.value?.triggerResize({
     size: {
