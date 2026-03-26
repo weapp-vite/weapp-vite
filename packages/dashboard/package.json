@@ -35,7 +35,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@iconify-json/mdi": "catalog:",
     "echarts": "catalog:",
     "tailwind-merge": "^3.5.0",
     "tailwind-variants": "^3.2.2",
@@ -43,6 +42,7 @@
     "vue-router": "5.0.4"
   },
   "devDependencies": {
+    "@iconify-json/mdi": "catalog:",
     "@iconify/tailwind4": "^1.0.4",
     "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "^6.0.5",
