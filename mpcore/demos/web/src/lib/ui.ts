@@ -12,7 +12,7 @@ export const sectionCard = tv({
     header: 'grid gap-1',
     title: 'm-0 text-[17px] font-semibold tracking-tight text-[color:var(--sim-text)]',
     subtitle: labelClass,
-    body: 'grid min-h-0 gap-3',
+    body: 'grid min-h-0 content-start gap-3',
   },
   variants: {
     tone: {
@@ -35,9 +35,9 @@ export const toolbarSurface = tv({
 
 export const panelSurface = tv({
   slots: {
-    base: 'grid min-h-0 overflow-hidden rounded-[24px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] shadow-[var(--sim-shadow)]',
+    base: 'grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[24px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] shadow-[var(--sim-shadow)]',
     bar: 'flex overflow-x-auto border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-strong)] px-2',
-    body: 'min-h-0 overflow-auto p-4',
+    body: 'grid min-h-0 content-start overflow-auto p-4',
   },
 })
 
