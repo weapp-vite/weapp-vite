@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { it } from 'vitest'
 
 import {
@@ -136,6 +138,14 @@ it('verifyRolldownCatalogReferences rejects literal rolldown versions in managed
   assert.throws(() => {
     verifyRolldownCatalogReferences(projectRoot, filePath => manifests.get(filePath))
   }, /must reference workspace catalog/)
+})
+
+it('verifyRolldownCatalogReferences accepts the real workspace manifests', () => {
+  const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+  assert.doesNotThrow(() => {
+    verifyRolldownCatalogReferences(projectRoot)
+  })
 })
 
 it('resolveMode reads explicit report mode from cli args', () => {
