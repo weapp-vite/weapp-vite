@@ -11,6 +11,7 @@ import DevicePreview from './components/DevicePreview.vue'
 import JsonPanel from './components/JsonPanel.vue'
 import RoutePanel from './components/RoutePanel.vue'
 import ScenarioSelector from './components/ScenarioSelector.vue'
+import ScopePanel from './components/ScopePanel.vue'
 import StackPanel from './components/StackPanel.vue'
 import StatsBar from './components/StatsBar.vue'
 import { builtInScenarios } from './scenarios'
@@ -62,6 +63,7 @@ const errorMessage = ref('')
 const loading = ref(false)
 const projectLabel = ref('未加载')
 const currentScenarioId = ref('')
+const selectedScopeId = ref('')
 
 const currentPage = computed(() => {
   revision.value
@@ -121,6 +123,14 @@ const stats = computed(() => [
   { label: '🕛 当前页', value: currentRoute.value },
 ])
 
+const selectedScope = computed(() => {
+  revision.value
+  if (!session.value || !selectedScopeId.value) {
+    return null
+  }
+  return session.value.getScopeSnapshot(selectedScopeId.value)
+})
+
 function touch() {
   revision.value += 1
 }
@@ -133,6 +143,7 @@ function loadSession(label: string, files: BrowserHeadlessSession['files'], scen
   const firstRoute = nextSession.project.routes[0]?.route
   if (firstRoute) {
     nextSession.reLaunch(`/${firstRoute}`)
+    selectedScopeId.value = `page:${firstRoute}`
   }
   touch()
 }
@@ -201,7 +212,13 @@ function handleCallMethod(method: string) {
 function handleCallScopeMethod(payload: { method: string, scopeId: string }) {
   run(() => {
     session.value?.callTapBinding(payload.scopeId, payload.method)
+    selectedScopeId.value = payload.scopeId
   })
+}
+
+function handleSelectScope(scopeId: string) {
+  selectedScopeId.value = scopeId
+  touch()
 }
 </script>
 
@@ -232,6 +249,7 @@ function handleCallScopeMethod(payload: { method: string, scopeId: string }) {
           @back="run(() => session?.navigateBack())"
           @call-method="handleCallMethod"
           @call-scope-method="handleCallScopeMethod"
+          @select-scope="handleSelectScope"
         />
       </aside>
 
@@ -261,6 +279,14 @@ function handleCallScopeMethod(payload: { method: string, scopeId: string }) {
         />
 
         <StackPanel :routes="pageStack" />
+
+        <ScopePanel
+          :scope-id="selectedScope?.scopeId ?? ''"
+          :scope-type="selectedScope?.type ?? '未选中'"
+          :methods="selectedScope?.methods ?? []"
+          :properties-code="stringify(selectedScope?.properties ?? {})"
+          :data-code="stringify(selectedScope?.data ?? {})"
+        />
 
         <JsonPanel title="🕛 页面参数" subtitle="当前页面 options 快照。" :code="currentOptions" />
         <JsonPanel title="🕛 页面数据" subtitle="当前页面 data 快照。" :code="pageData" />
