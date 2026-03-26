@@ -1,0 +1,27 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/profile/index"
+  ],
+  "subPackages": [
+    {
+      "root": "package-shop",
+      "pages": [
+        "catalog/index",
+        "item/index"
+      ]
+    }
+  ],
+  "tabBar": {
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "Home"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "Profile"
+      }
+    ]
+  }
+}
