@@ -1,5 +1,6 @@
 import type {
   HeadlessAppDefinition,
+  HeadlessBehaviorDefinition,
   HeadlessComponentDefinition,
   HeadlessHostLoadContext,
   HeadlessHostRegistries,
@@ -63,6 +64,12 @@ function createExecutionContext(
   return {
     App(definition: HeadlessAppDefinition) {
       return registerAppDefinition(registries, definition)
+    },
+    Behavior(definition: HeadlessBehaviorDefinition) {
+      return {
+        ...definition,
+        __isHeadlessBehavior__: true,
+      }
     },
     Component(definition: HeadlessComponentDefinition) {
       return registerComponentDefinition(registries, definition)
