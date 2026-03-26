@@ -1,3 +1,10 @@
+@import 'tailwindcss';
+
+@plugin "@iconify/tailwind4" {
+  prefix: icon;
+  icon-sets: from-json(mdi, './node_modules/@iconify-json/mdi/icons.json');
+}
+
 :root {
   --sim-bg: #0a0f14;
   --sim-panel: rgb(17 25 35 / 88%);
@@ -112,6 +119,9 @@ button {
 }
 
 .sim-theme-switch__btn {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
   padding: 7px 12px;
   font-size: 12px;
   color: var(--sim-muted);
@@ -324,48 +334,7 @@ button {
 
 .sim-device__screen {
   min-height: 700px;
-  padding: 12px;
-}
-
-.sim-device__screen page,
-.sim-device__screen view,
-.sim-device__screen text,
-.sim-device__screen button {
-  display: block;
-}
-
-.sim-device__screen page {
-  width: min(100%, 360px);
-  padding: 14px;
-  margin: 0 auto;
-  color: var(--sim-surface-page-text);
-  background: var(--sim-surface-page);
-  border-radius: 18px;
-  box-shadow: 0 10px 28px rgb(15 27 40 / 10%);
-}
-
-.sim-device__screen view {
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  background: rgb(14 98 207 / 5%);
-  border: 1px solid rgb(14 98 207 / 8%);
-  border-radius: 12px;
-}
-
-.sim-device__screen [bindtap],
-.sim-device__screen [bind\:tap],
-.sim-device__screen [catchtap],
-.sim-device__screen [catch\:tap] {
-  cursor: pointer;
-  box-shadow: inset 0 0 0 1px rgb(135 243 216 / 18%);
-}
-
-.sim-device__screen [bindtap]:active,
-.sim-device__screen [bind\:tap]:active,
-.sim-device__screen [catchtap]:active,
-.sim-device__screen [catch\:tap]:active {
-  background: rgb(135 243 216 / 18%);
-  transform: scale(0.99);
+  padding: 0;
 }
 
 .sim-scene-grid,
