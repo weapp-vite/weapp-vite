@@ -202,6 +202,22 @@ function handleOpenRoute(route: string) {
   run(() => session.value?.reLaunch(`/${route}`))
 }
 
+function handlePreviewMethod(payload: { event: { dataset: Record<string, string>, id: string }, method: string }) {
+  run(() => {
+    const page = session.value?.getCurrentPages().at(-1)
+    page?.[payload.method]?.({
+      bubbles: false,
+      capturePhase: false,
+      composed: false,
+      currentTarget: payload.event,
+      detail: undefined,
+      mark: undefined,
+      target: payload.event,
+      type: 'tap',
+    })
+  })
+}
+
 function handleCallMethod(method: string) {
   run(() => {
     const page = session.value?.getCurrentPages().at(-1)
@@ -209,9 +225,16 @@ function handleCallMethod(method: string) {
   })
 }
 
-function handleCallScopeMethod(payload: { method: string, scopeId: string }) {
+function handleCallScopeMethod(payload: {
+  event: {
+    currentTarget: { dataset: Record<string, string>, id: string }
+    target: { dataset: Record<string, string>, id: string }
+  }
+  method: string
+  scopeId: string
+}) {
   run(() => {
-    session.value?.callTapBinding(payload.scopeId, payload.method)
+    session.value?.callTapBindingWithEvent(payload.scopeId, payload.method, payload.event)
     selectedScopeId.value = payload.scopeId
   })
 }
@@ -247,7 +270,7 @@ function handleSelectScope(scopeId: string) {
           :route="currentRoute"
           :markup="previewMarkup"
           @back="run(() => session?.navigateBack())"
-          @call-method="handleCallMethod"
+          @call-method="handlePreviewMethod"
           @call-scope-method="handleCallScopeMethod"
           @select-scope="handleSelectScope"
         />

@@ -15,6 +15,7 @@ Component({
   },
   data: {
     internalClicks: 0,
+    nestedBadge: '',
     observerLog: 'cold'
   },
   observers: {
@@ -44,7 +45,28 @@ Component({
         this.triggerEvent('pulse', {
           phase: `pulse-${this.data.internalClicks}`,
           count: this.properties.count
+        }, {
+          bubbles: true,
+          composed: true
         })
+      })
+    },
+    inspectNested() {
+      const badge = this.selectComponent?.('#mini-badge')
+      const badges = this.selectAllComponents?.('mini-badge') ?? []
+      this.setData({
+        nestedBadge: JSON.stringify({
+          badgeReady: !!badge,
+          label: badge?.properties?.label ?? '',
+          size: badges.length
+        })
+      })
+      this.triggerEvent('pulse', {
+        phase: `inspect-${badges.length}`,
+        count: this.properties.count
+      }, {
+        bubbles: true,
+        composed: true
       })
     }
   }
