@@ -4,6 +4,10 @@ export interface HeadlessPageDefinition extends Record<string, any> {}
 
 export interface HeadlessComponentDefinition extends Record<string, any> {}
 
+export interface HeadlessBehaviorDefinition extends Record<string, any> {
+  __isHeadlessBehavior__?: boolean
+}
+
 export interface HeadlessHostLoadContext {
   kind: 'app' | 'page' | 'component'
   route?: string

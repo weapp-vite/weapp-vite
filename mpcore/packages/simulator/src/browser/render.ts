@@ -394,13 +394,13 @@ function renderNodeTree(
       componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector)
       componentInstance.selectOwnerComponent = () => ownerScopeId ? context.session.selectOwnerComponent(componentScopeId) : null
       runComponentLifecycle(componentInstance, 'created')
-      runComponentObservers(componentEntry.definition, componentInstance, Object.keys(nextProperties), {})
+      runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(nextProperties), {})
       runComponentLifecycle(componentInstance, 'attached')
       runComponentPageLifetime(componentInstance, 'show')
       context.componentCache.set(componentScopeId, componentInstance)
     }
     else {
-      syncComponentProperties(componentInstance, componentEntry.definition, nextProperties)
+      syncComponentProperties(componentInstance, componentInstance.__definition__ ?? componentEntry.definition, nextProperties)
     }
 
     seenComponentScopes.add(componentScopeId)
