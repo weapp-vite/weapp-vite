@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { chipWrapClass, pill } from '../lib/ui'
 import SectionCard from './SectionCard.vue'
 
 defineProps<{
@@ -13,12 +14,11 @@ const emit = defineEmits<{
 
 <template>
   <SectionCard title="🕛 路由" subtitle="点击任意路由直接 reLaunch 进入。">
-    <div class="sim-chip-wrap">
+    <div :class="chipWrapClass">
       <button
         v-for="route in routes"
         :key="route"
-        class="sim-chip"
-        :class="{ 'is-active': currentRoute === route }"
+        :class="pill({ tone: currentRoute === route ? 'accent' : 'neutral' })"
         @click="emit('open', route)"
       >
         {{ route }}
