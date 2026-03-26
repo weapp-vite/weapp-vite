@@ -14,11 +14,15 @@
     "vue": "catalog:"
   },
   "devDependencies": {
+    "@iconify-json/mdi": "^1.2.3",
+    "@iconify/tailwind4": "^1.2.3",
     "@shikijs/engine-javascript": "^4.0.2",
     "@shikijs/langs": "^4.0.2",
     "@shikijs/themes": "^4.0.2",
+    "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "^6.0.5",
     "shiki": "^4.0.2",
+    "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:"

@@ -334,6 +334,7 @@ function handleSelectScope(scopeId: string) {
           :class="{ 'is-active': themeMode === 'auto' }"
           @click="setThemeMode('auto')"
         >
+          <span class="icon-[mdi--theme-light-dark] text-sm" aria-hidden="true" />
           Auto
         </button>
         <button
@@ -341,6 +342,7 @@ function handleSelectScope(scopeId: string) {
           :class="{ 'is-active': themeMode === 'light' }"
           @click="setThemeMode('light')"
         >
+          <span class="icon-[mdi--white-balance-sunny] text-sm" aria-hidden="true" />
           Light
         </button>
         <button
@@ -348,6 +350,7 @@ function handleSelectScope(scopeId: string) {
           :class="{ 'is-active': themeMode === 'dark' }"
           @click="setThemeMode('dark')"
         >
+          <span class="icon-[mdi--moon-waning-crescent] text-sm" aria-hidden="true" />
           Dark
         </button>
       </div>
