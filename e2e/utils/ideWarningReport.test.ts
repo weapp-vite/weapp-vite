@@ -1,13 +1,12 @@
+import type { IdeReportEvent, IdeWarningReportPaths } from './ideWarningReport'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   clearRuntimeWarningLog,
   resolveReportProjectPath,
   writeIdeWarningReport,
-  type IdeReportEvent,
-  type IdeWarningReportPaths,
 } from './ideWarningReport'
 
 function createTempReportPaths() {
@@ -26,6 +25,11 @@ function createTempReportPaths() {
 }
 
 describe('ideWarningReport', () => {
+  afterEach(() => {
+    delete process.env.WEAPP_VITE_E2E_REPORT_MARKERS
+    vi.restoreAllMocks()
+  })
+
   it('resolves project paths relative to repository root', () => {
     const projectPath = path.resolve(process.cwd(), 'e2e-apps/github-issues')
 
@@ -149,5 +153,22 @@ describe('ideWarningReport', () => {
     clearRuntimeWarningLog(paths.eventLogPath)
 
     expect(fs.readFileSync(paths.eventLogPath, 'utf8')).toBe('')
+  })
+
+  it('only emits marker output when suite runners request it', () => {
+    const { paths } = createTempReportPaths()
+    fs.mkdirSync(paths.reportDir, { recursive: true })
+    fs.writeFileSync(paths.eventLogPath, '', 'utf8')
+
+    const stdoutWrite = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+
+    writeIdeWarningReport(paths, new Date('2026-03-11T00:00:00.000Z'))
+    expect(stdoutWrite).not.toHaveBeenCalled()
+
+    process.env.WEAPP_VITE_E2E_REPORT_MARKERS = '1'
+    writeIdeWarningReport(paths, new Date('2026-03-11T00:00:00.000Z'))
+    expect(stdoutWrite).toHaveBeenCalledWith(
+      expect.stringContaining('[ide-warning-report] index='),
+    )
   })
 })

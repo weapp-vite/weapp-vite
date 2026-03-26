@@ -5,7 +5,12 @@ import path from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { getSuiteTasks, listE2ESuites } from './e2e-suite-manifest'
 import { createSuiteReport } from './suiteReport'
-import { formatSuiteSummary, getTaskSpawnOptions, runTaskSuite } from './suiteRunner'
+import {
+  formatSuiteArtifactsSummary,
+  formatSuiteSummary,
+  getTaskSpawnOptions,
+  runTaskSuite,
+} from './suiteRunner'
 
 describe('suiteRunner', () => {
   it('formats failure summary with failed tasks', () => {
@@ -16,6 +21,21 @@ describe('suiteRunner', () => {
 
     expect(summary).toContain('[e2e:ci] summary 1/2 passed')
     expect(summary).toContain('[e2e:ci] - task-b (exit 2, 3.4s)')
+  })
+
+  it('formats artifact summary without duplicate report paths', () => {
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'suite-artifacts-'))
+    const reportPath = path.join(tempRoot, 'docs/reports/e2e-ide/index.md')
+    const summary = formatSuiteArtifactsSummary('e2e:ide', [
+      { kind: 'ide-warning-report', indexPath: reportPath },
+      { kind: 'ide-warning-report', indexPath: reportPath },
+      { kind: 'suite-report', indexPath: path.join(tempRoot, 'docs/reports/e2e-suite/index.md') },
+    ])
+
+    expect(summary).toContain('[e2e:ide] reports:')
+    expect(summary).toContain('ide-warning-report')
+    expect(summary.match(/ide-warning-report/g)).toHaveLength(1)
+    expect(summary).toContain('suite-report')
   })
 
   it('continues running tasks after a failure and returns a failing exit code', async () => {
@@ -41,6 +61,28 @@ describe('suiteRunner', () => {
     expect(exitCode).toBe(1)
     expect(beforeEachTask).toHaveBeenCalledTimes(3)
     expect(runTask).toHaveBeenCalledTimes(3)
+
+    process.exitCode = previousExitCode
+  })
+
+  it('can continue with failing tasks without setting process exit code', async () => {
+    const previousExitCode = process.exitCode
+    process.exitCode = undefined
+
+    const exitCode = await runTaskSuite('e2e:test', [
+      { label: 'first', command: 'pnpm', args: ['vitest'] },
+      { label: 'second', command: 'pnpm', args: ['vitest'] },
+    ], {
+      failOnTaskFailure: false,
+      runTask: vi
+        .fn<(task: SuiteTask) => Promise<number>>()
+        .mockResolvedValueOnce(0)
+        .mockResolvedValueOnce(1),
+      writeReport: false,
+    })
+
+    expect(exitCode).toBe(1)
+    expect(process.exitCode).toBeUndefined()
 
     process.exitCode = previousExitCode
   })
@@ -132,6 +174,7 @@ describe('suiteRunner', () => {
     expect(options.shell).toBe(true)
     expect(options.env).toMatchObject({
       E2E_PLATFORM: 'weapp',
+      WEAPP_VITE_E2E_REPORT_MARKERS: '1',
     })
   })
 })
