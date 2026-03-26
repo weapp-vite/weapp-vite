@@ -745,6 +745,74 @@ Component({
     expect(card?.ping?.()).toBe('pong')
   })
 
+  it('supports nested behaviors and preserves merge order', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', 'Page({ data: { count: 2 } })'],
+      ['pages/lab/index.wxml', '<status-card count="{{count}}" />'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+const base = Behavior({
+  data: {
+    level: 'base'
+  },
+  methods: {
+    fromBase() {
+      return 'base'
+    }
+  }
+})
+
+const nested = Behavior({
+  behaviors: [base],
+  data: {
+    level: 'nested'
+  },
+  methods: {
+    fromNested() {
+      return 'nested'
+    }
+  }
+})
+
+Component({
+  behaviors: [nested],
+  data: {
+    level: 'component',
+    summary: ''
+  },
+  observers: {
+    count(count) {
+      this.setData({
+        summary: JSON.stringify({
+          count,
+          level: this.data.level
+        })
+      })
+    }
+  }
+})
+`],
+      ['components/status-card/index.wxml', '<view>{{summary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/lab/index')
+    const rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('"count":2')
+    expect(rendered.wxml).toContain('"level":"component"')
+
+    const card = session.selectComponent('status-card')
+    expect(card?.fromBase?.()).toBe('base')
+    expect(card?.fromNested?.()).toBe('nested')
+  })
+
   it('preserves array and object property structures from page data', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
