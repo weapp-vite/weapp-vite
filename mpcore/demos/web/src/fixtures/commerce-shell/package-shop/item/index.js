@@ -30,4 +30,14 @@ Page({
       delta: 1,
     })
   },
+  jumpHomeTab() {
+    wx.switchTab({
+      url: '/pages/home/index',
+    })
+  },
+  relaunchCatalog() {
+    wx.reLaunch({
+      url: '/package-shop/catalog/index?source=item-relaunch',
+    })
+  },
 })

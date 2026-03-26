@@ -46,4 +46,17 @@ Page({
       url: '/pages/review/index?from=editor',
     })
   },
+  jumpAssetDirectly() {
+    wx.navigateTo({
+      url: '/package-media/asset/index?id=asset-1',
+    })
+  },
+  draftDeepPatch() {
+    this.setData({
+      'draft.tags[1]': 'priority',
+      'draft.summary': 'Updated from a nested setData patch.',
+    }, () => {
+      this.push('editor:draft:patched')
+    })
+  },
 })

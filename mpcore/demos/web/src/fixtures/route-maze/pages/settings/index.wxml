@@ -1,0 +1,4 @@
+<view class="screen">
+  <view class="headline">{{title}}</view>
+  <view class="panel-row">Log: {{logs.0}}</view>
+</view>

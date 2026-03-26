@@ -35,4 +35,14 @@ Page({
       url: '../asset/index?id=asset-2',
     })
   },
+  relaunchReview() {
+    wx.reLaunch({
+      url: '/pages/review/index?from=library',
+    })
+  },
+  backToEditor() {
+    wx.navigateBack({
+      delta: 1,
+    })
+  },
 })
