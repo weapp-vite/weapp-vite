@@ -31,11 +31,11 @@ export const TEMPLATE_CATALOG = {
   'object-hash': '^3.0.0',
   'pkg-types': '^2.3.0',
   'sass-embedded': '^1.98.0',
-  'tdesign-miniprogram': '^1.13.0',
+  'tdesign-miniprogram': '^1.13.1',
   'ts-morph': '^27.0.2',
   'vite-plugin-inspect': '^11.3.3',
   'vue-tsc': '^3.2.6',
-  'weapp-tailwindcss': '^4.10.3',
+  'weapp-tailwindcss': '^4.11.0',
   autoprefixer: '^10.4.27',
   clsx: '^2.1.1',
   dayjs: '^1.11.20',
@@ -48,22 +48,22 @@ export const TEMPLATE_CATALOG = {
   merge: '^2.1.1',
   pathe: '^2.0.3',
   postcss: '^8.5.8',
-  rolldown: '1.0.0-rc.11',
+  rolldown: '1.0.0-rc.12',
   sass: '^1.98.0',
   tailwindcss: '^4.2.2',
   tslib: '^2.8.1',
   typescript: '^6.0.2',
-  vite: '8.0.2',
+  vite: '8.0.3',
   vue: '^3.5.31',
   zod: '^4.3.6'
 } as const
 
 export const TEMPLATE_NAMED_CATALOG = {
   'tdesign-miniprogram-fixed': {
-    'tdesign-miniprogram': '1.13.0'
+    'tdesign-miniprogram': '1.13.1'
   },
   'weapp-tailwindcss-fixed': {
-    'weapp-tailwindcss': '4.10.3'
+    'weapp-tailwindcss': '4.11.0'
   },
   latest: {
     'miniprogram-api-typings': '^5.1.2',

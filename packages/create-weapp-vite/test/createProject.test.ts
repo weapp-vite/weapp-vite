@@ -84,10 +84,14 @@ describe('createProject', () => {
     await createProject(root, TemplateName.tailwindcss)
 
     const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
-    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^4.10.3')
+    expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe(TEMPLATE_CATALOG['weapp-tailwindcss'])
     const gitignore = await fs.readFile(path.join(root, '.gitignore'), 'utf8')
     expect(gitignore).toContain('# existing entry')
+    expect(gitignore).toContain('dist-web')
+    expect(gitignore).toContain('dist-plugin')
     expect(gitignore).toContain('.weapp-vite/')
+    expect(gitignore.split('\n').filter(line => line === '.weapp-vite/')).toHaveLength(1)
+    expect(gitignore.split('\n').filter(line => line === 'node_modules')).toHaveLength(1)
     expect(await fs.pathExists(path.join(root, 'gitignore'))).toBe(false)
   })
 
