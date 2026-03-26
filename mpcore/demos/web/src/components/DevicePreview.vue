@@ -8,17 +8,21 @@ defineProps<{
 
 const emit = defineEmits<{
   back: []
-  callMethod: [payload: { event: { dataset: Record<string, string>, id: string }, method: string }]
-  callScopeMethod: [payload: {
-    event: {
-      currentTarget: { dataset: Record<string, string>, id: string }
-      target: { dataset: Record<string, string>, id: string }
-    }
-    method: string
-    scopeId: string
-  }]
+  dispatchTapChain: [payload: { activeScopeId: string, chain: PreviewTapInvocation[] }]
   selectScope: [scopeId: string]
 }>()
+
+interface PreviewTapEvent {
+  currentTarget: { dataset: Record<string, string>, id: string }
+  target: { dataset: Record<string, string>, id: string }
+}
+
+interface PreviewTapInvocation {
+  event: PreviewTapEvent
+  method: string
+  scopeId: string
+  stopAfter: boolean
+}
 
 function collectDataset(node: HTMLElement) {
   const dataset: Record<string, string> = {}
@@ -28,27 +32,27 @@ function collectDataset(node: HTMLElement) {
   return dataset
 }
 
-function resolveTapBinding(target: EventTarget | null) {
+function resolveTapChain(target: EventTarget | null) {
   const originNode = target instanceof Node ? target : null
   const origin = originNode instanceof HTMLElement
     ? originNode
     : originNode?.parentElement ?? null
   let current = origin
   let nearestScopeId = ''
+  const chain: PreviewTapInvocation[] = []
 
   while (current) {
     const scopeId = current.getAttribute('data-sim-scope') ?? ''
-    const bindTap = current.getAttribute('bindtap')
-      || current.getAttribute('bind:tap')
-      || current.getAttribute('catchtap')
-      || current.getAttribute('catch:tap')
+    const catchTap = current.getAttribute('catchtap') || current.getAttribute('catch:tap')
+    const bindTap = current.getAttribute('bindtap') || current.getAttribute('bind:tap')
 
     if (!nearestScopeId && scopeId) {
       nearestScopeId = scopeId
     }
 
-    if (bindTap && scopeId) {
-      return {
+    const method = catchTap || bindTap
+    if (method && scopeId) {
+      chain.push({
         event: {
           currentTarget: {
             dataset: collectDataset(current),
@@ -59,8 +63,12 @@ function resolveTapBinding(target: EventTarget | null) {
             id: origin?.id ?? '',
           },
         },
-        method: bindTap,
+        method,
         scopeId,
+        stopAfter: Boolean(catchTap),
+      })
+      if (catchTap) {
+        break
       }
     }
     current = current.parentElement
@@ -71,38 +79,21 @@ function resolveTapBinding(target: EventTarget | null) {
   }
 
   return {
-    event: {
-      currentTarget: {
-        dataset: origin ? collectDataset(origin) : {},
-        id: origin?.id ?? '',
-      },
-      target: {
-        dataset: origin ? collectDataset(origin) : {},
-        id: origin?.id ?? '',
-      },
-    },
-    method: '',
-    scopeId: nearestScopeId,
+    activeScopeId: nearestScopeId,
+    chain,
   }
 }
 
 function handleScreenClick(event: MouseEvent) {
-  const binding = resolveTapBinding(event.target)
-  if (!binding?.scopeId) {
+  const payload = resolveTapChain(event.target)
+  if (!payload?.activeScopeId) {
     return
   }
-  emit('selectScope', binding.scopeId)
-  if (!binding.method) {
+  emit('selectScope', payload.activeScopeId)
+  if (payload.chain.length === 0) {
     return
   }
-  if (binding.scopeId) {
-    emit('callScopeMethod', binding)
-    return
-  }
-  emit('callMethod', {
-    event: binding.event.target,
-    method: binding.method,
-  })
+  emit('dispatchTapChain', payload)
 }
 </script>
 

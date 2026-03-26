@@ -204,22 +204,6 @@ function handleOpenRoute(route: string) {
   run(() => session.value?.reLaunch(`/${route}`))
 }
 
-function handlePreviewMethod(payload: { event: { dataset: Record<string, string>, id: string }, method: string }) {
-  run(() => {
-    const page = session.value?.getCurrentPages().at(-1)
-    page?.[payload.method]?.({
-      bubbles: false,
-      capturePhase: false,
-      composed: false,
-      currentTarget: payload.event,
-      detail: undefined,
-      mark: undefined,
-      target: payload.event,
-      type: 'tap',
-    })
-  })
-}
-
 function handleCallMethod(method: string) {
   run(() => {
     const page = session.value?.getCurrentPages().at(-1)
@@ -227,17 +211,26 @@ function handleCallMethod(method: string) {
   })
 }
 
-function handleCallScopeMethod(payload: {
-  event: {
-    currentTarget: { dataset: Record<string, string>, id: string }
-    target: { dataset: Record<string, string>, id: string }
-  }
-  method: string
-  scopeId: string
+function handleDispatchTapChain(payload: {
+  activeScopeId: string
+  chain: Array<{
+    event: {
+      currentTarget: { dataset: Record<string, string>, id: string }
+      target: { dataset: Record<string, string>, id: string }
+    }
+    method: string
+    scopeId: string
+    stopAfter: boolean
+  }>
 }) {
   run(() => {
-    session.value?.callTapBindingWithEvent(payload.scopeId, payload.method, payload.event)
-    selectedScopeId.value = payload.scopeId
+    selectedScopeId.value = payload.activeScopeId
+    for (const invocation of payload.chain) {
+      session.value?.callTapBindingWithEvent(invocation.scopeId, invocation.method, invocation.event)
+      if (invocation.stopAfter) {
+        break
+      }
+    }
   })
 }
 
@@ -276,8 +269,7 @@ function handleSelectScope(scopeId: string) {
           :route="currentRoute"
           :markup="previewMarkup"
           @back="run(() => session?.navigateBack())"
-          @call-method="handlePreviewMethod"
-          @call-scope-method="handleCallScopeMethod"
+          @dispatch-tap-chain="handleDispatchTapChain"
           @select-scope="handleSelectScope"
         />
       </aside>
