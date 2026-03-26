@@ -691,6 +691,60 @@ Component({
     expect(componentScope).toBeNull()
   })
 
+  it('merges basic Behavior fields into component instances', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', 'Page({ data: { count: 2 } })'],
+      ['pages/lab/index.wxml', '<status-card count="{{count}}" />'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+const shared = Behavior({
+  properties: {
+    count: Number
+  },
+  data: {
+    fromBehavior: 'yes'
+  },
+  methods: {
+    ping() {
+      return 'pong'
+    }
+  },
+  observers: {
+    count(count) {
+      this.setData({
+        observerLog: 'count:' + count
+      })
+    }
+  }
+})
+
+Component({
+  behaviors: [shared],
+  data: {
+    observerLog: ''
+  }
+})
+`],
+      ['components/status-card/index.wxml', '<view>{{fromBehavior}}</view><view>{{observerLog}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/lab/index')
+    const rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('yes')
+    expect(rendered.wxml).toContain('count:2')
+
+    const card = session.selectComponent('status-card')
+    expect(card?.ping?.()).toBe('pong')
+  })
+
   it('preserves array and object property structures from page data', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

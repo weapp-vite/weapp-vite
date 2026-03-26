@@ -1,4 +1,4 @@
-import type { HeadlessComponentDefinition } from '../host'
+import type { HeadlessBehaviorDefinition, HeadlessComponentDefinition } from '../host'
 
 export interface HeadlessComponentInstance extends Record<string, any> {
   __definition__?: HeadlessComponentDefinition
@@ -85,6 +85,66 @@ function resolveInitialData(definition: HeadlessComponentDefinition) {
   return rawData && typeof rawData === 'object' && !Array.isArray(rawData)
     ? cloneObject(rawData)
     : {}
+}
+
+function isBehaviorDefinition(value: unknown): value is HeadlessBehaviorDefinition {
+  return !!value && typeof value === 'object' && !Array.isArray(value) && (value as HeadlessBehaviorDefinition).__isHeadlessBehavior__ === true
+}
+
+function flattenBehaviors(definition: HeadlessComponentDefinition) {
+  const flattened: HeadlessBehaviorDefinition[] = []
+  const queue = Array.isArray(definition.behaviors) ? definition.behaviors : []
+  for (const item of queue) {
+    if (!isBehaviorDefinition(item)) {
+      continue
+    }
+    flattened.push(...flattenBehaviors(item as HeadlessComponentDefinition))
+    flattened.push(item)
+  }
+  return flattened
+}
+
+function mergeRecord(...records: Array<Record<string, any> | undefined>) {
+  return Object.assign({}, ...records.filter(Boolean))
+}
+
+function normalizeComponentDefinition(definition: HeadlessComponentDefinition): HeadlessComponentDefinition {
+  const behaviors = flattenBehaviors(definition)
+  if (behaviors.length === 0) {
+    return definition
+  }
+
+  const mergedDataEntries = behaviors
+    .map(item => item.data)
+    .filter(Boolean)
+
+  const mergedDefinition: HeadlessComponentDefinition = {
+    ...mergeRecord(...behaviors, definition),
+    methods: mergeRecord(...behaviors.map(item => item.methods), definition.methods),
+    observers: mergeRecord(...behaviors.map(item => item.observers), definition.observers),
+    pageLifetimes: mergeRecord(...behaviors.map(item => item.pageLifetimes), definition.pageLifetimes),
+    properties: mergeRecord(...behaviors.map(item => item.properties), definition.properties),
+    lifetimes: mergeRecord(...behaviors.map(item => item.lifetimes), definition.lifetimes),
+  }
+
+  if (mergedDataEntries.length > 0 || definition.data) {
+    mergedDefinition.data = function mergedComponentData(this: unknown) {
+      const merged = mergeRecord(
+        ...mergedDataEntries.map((entry) => {
+          if (typeof entry === 'function') {
+            return entry.call(this)
+          }
+          return entry
+        }),
+      )
+      const ownData = typeof definition.data === 'function'
+        ? definition.data.call(this)
+        : definition.data
+      return mergeRecord(merged, ownData)
+    }
+  }
+
+  return mergedDefinition
 }
 
 function normalizePropertyType(option: unknown) {
@@ -365,7 +425,7 @@ export function normalizeComponentPropertyValue(
 }
 
 export function createComponentInstance(options: CreateComponentInstanceOptions): HeadlessComponentInstance {
-  const definition = options.definition
+  const definition = normalizeComponentDefinition(options.definition)
   const instance: HeadlessComponentInstance = {
     __definition__: definition,
     data: resolveInitialData(definition),
