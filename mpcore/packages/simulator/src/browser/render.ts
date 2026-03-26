@@ -30,8 +30,11 @@ interface BrowserRenderScope {
   classList?: string[]
   data: Record<string, any>
   dataset?: Record<string, string>
+  eventBindings?: Map<string, { method: string, stopAfter: boolean }>
   getMethod: (methodName: string) => ((...args: any[]) => any) | undefined
   getScopeId: () => string
+  hostId?: string
+  listenerScopeId?: string
   id?: string
   ownerScopeId?: string
 }
@@ -307,11 +310,8 @@ function resolveComponentRegistryEntry(
   } satisfies BrowserComponentRegistryEntry
 }
 
-function buildComponentTrigger(
-  hostNode: DomNodeLike,
-  hostScope: BrowserRenderScope,
-) {
-  const eventBindings = new Map<string, string>()
+function collectComponentEventBindings(hostNode: DomNodeLike) {
+  const eventBindings = new Map<string, { method: string, stopAfter: boolean }>()
   for (const [key, value] of Object.entries(hostNode.attribs ?? {})) {
     const matchedPrefix = COMPONENT_EVENT_PREFIXES.find(prefix => key.startsWith(prefix))
     if (!matchedPrefix) {
@@ -321,8 +321,22 @@ function buildComponentTrigger(
     if (!eventName) {
       continue
     }
-    eventBindings.set(eventName, value)
+    eventBindings.set(eventName, {
+      method: value,
+      stopAfter: matchedPrefix.startsWith('catch'),
+    })
   }
+
+  return eventBindings
+}
+
+function buildComponentTrigger(
+  componentScopeId: string,
+  context: BrowserRendererContext,
+  hostNode: DomNodeLike,
+) {
+  const hostDataset = collectDataset(hostNode)
+  const hostId = hostNode.attribs?.id ?? ''
 
   return (
     instance: HeadlessComponentInstance,
@@ -330,29 +344,48 @@ function buildComponentTrigger(
     detail?: unknown,
     triggerOptions?: Record<string, any>,
   ) => {
-    const handlerName = eventBindings.get(eventName)
-    if (!handlerName) {
-      return
-    }
     const interactionTarget = instance.__lastInteractionEvent__?.target
     const interactionCurrentTarget = instance.__lastInteractionEvent__?.currentTarget
-    const handler = hostScope.getMethod(handlerName)
-    handler?.({
-      bubbles: triggerOptions?.bubbles ?? false,
-      capturePhase: false,
-      composed: triggerOptions?.composed ?? false,
-      detail,
-      mark: undefined,
-      target: {
-        dataset: interactionTarget?.dataset ?? collectDataset(hostNode),
-        id: interactionTarget?.id ?? hostNode.attribs?.id ?? '',
-      },
-      type: eventName,
-      currentTarget: {
-        dataset: interactionCurrentTarget?.dataset ?? collectDataset(hostNode),
-        id: interactionCurrentTarget?.id ?? hostNode.attribs?.id ?? '',
-      },
-    })
+    const target = {
+      dataset: interactionTarget?.dataset ?? hostDataset,
+      id: interactionTarget?.id ?? hostId,
+    }
+    let currentScopeId: string | undefined = componentScopeId
+
+    while (currentScopeId) {
+      const currentScope = context.componentScopes.get(currentScopeId)
+      const binding = currentScope?.eventBindings?.get(eventName)
+      const listenerScope = currentScope?.listenerScopeId
+        ? context.componentScopes.get(currentScope.listenerScopeId)
+        : null
+      const handler = binding && listenerScope
+        ? listenerScope.getMethod(binding.method)
+        : undefined
+
+      if (handler) {
+        handler({
+          bubbles: triggerOptions?.bubbles ?? false,
+          capturePhase: false,
+          composed: triggerOptions?.composed ?? false,
+          detail,
+          mark: undefined,
+          target,
+          type: eventName,
+          currentTarget: {
+            dataset: currentScope?.dataset ?? interactionCurrentTarget?.dataset ?? hostDataset,
+            id: currentScope?.hostId ?? interactionCurrentTarget?.id ?? hostId,
+          },
+        })
+      }
+
+      if (binding?.stopAfter) {
+        break
+      }
+      if (!triggerOptions?.bubbles || !triggerOptions?.composed) {
+        break
+      }
+      currentScopeId = currentScope?.ownerScopeId
+    }
   }
 }
 
@@ -621,7 +654,7 @@ function renderNodeTree(
       componentInstance = createComponentInstance({
         definition: componentEntry.definition,
         properties: nextProperties,
-        triggerEvent: buildComponentTrigger(clonedNode, scope),
+        triggerEvent: buildComponentTrigger(componentScopeId, context, clonedNode),
       })
       componentInstance.selectComponent = (selector: string) => context.session.selectComponentWithin(componentScopeId, selector)
       componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector)
@@ -655,12 +688,15 @@ function renderNodeTree(
         .filter(Boolean),
       data: createMergedScopeData(scope.data, componentInstance.properties, componentInstance.data),
       dataset: collectDataset(clonedNode),
+      eventBindings: collectComponentEventBindings(clonedNode),
       getMethod: (methodName: string) => {
         const method = componentInstance?.[methodName]
         return typeof method === 'function' ? method : undefined
       },
       getScopeId: () => componentScopeId,
+      hostId: typeof clonedNode.attribs?.id === 'string' ? clonedNode.attribs.id : undefined,
       id: typeof clonedNode.attribs?.id === 'string' ? clonedNode.attribs.id : undefined,
+      listenerScopeId: scope.getScopeId(),
       ownerScopeId,
     }
     context.componentScopes.set(componentScopeId, componentScope)

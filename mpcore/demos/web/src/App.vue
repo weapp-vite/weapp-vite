@@ -65,7 +65,7 @@ const projectLabel = ref('未加载')
 const currentScenarioId = ref('')
 const selectedScopeId = ref('')
 const primaryTab = ref<'scenario' | 'routes' | 'actions' | 'stack'>('scenario')
-const inspectorTab = ref<'scope' | 'options' | 'page' | 'app'>('scope')
+const inspectorTab = ref<'scope' | 'options' | 'page' | 'app' | 'toast' | 'storage' | 'requests'>('scope')
 
 const currentPage = computed(() => {
   void revision.value
@@ -113,6 +113,21 @@ const appData = computed(() => {
   return stringify(session.value?.getApp()?.globalData ?? {})
 })
 
+const toastData = computed(() => {
+  void revision.value
+  return stringify(session.value?.getToast() ?? null)
+})
+
+const storageData = computed(() => {
+  void revision.value
+  return stringify(session.value?.getStorageSnapshot() ?? {})
+})
+
+const requestLogData = computed(() => {
+  void revision.value
+  return stringify(session.value?.getRequestLogs() ?? [])
+})
+
 const currentOptions = computed(() => {
   void revision.value
   return stringify(currentPage.value?.options ?? {})
@@ -137,8 +152,21 @@ function touch() {
   revision.value += 1
 }
 
+function primeSession(nextSession: BrowserHeadlessSession) {
+  nextSession.mockRequest({
+    method: 'GET',
+    response: {
+      count: 7,
+      queue: 'alpha',
+      status: 'stable',
+    },
+    url: 'https://mock.mpcore.dev/api/queue-health',
+  })
+}
+
 function loadSession(label: string, files: BrowserHeadlessSession['files'], scenarioId?: string) {
   const nextSession = createBrowserHeadlessSession({ files })
+  primeSession(nextSession)
   session.value = nextSession
   currentScenarioId.value = scenarioId ?? ''
   projectLabel.value = label
@@ -242,20 +270,6 @@ function handleSelectScope(scopeId: string) {
 
 <template>
   <main class="sim-app">
-    <header class="sim-topbar">
-      <div class="sim-topbar__copy">
-        <p class="sim-topbar__eyebrow">
-          🕛 浏览器模拟器
-        </p>
-        <h1 class="sim-topbar__title">
-          小程序目录即场景
-        </h1>
-        <p class="sim-topbar__lead">
-          左边固定是模拟器预览，右边拆成更细的小卡片。内置样例和你自己的构建目录都能直接切换。
-        </p>
-      </div>
-    </header>
-
     <StatsBar :items="stats" />
 
     <section v-if="errorMessage" class="sim-alert">
@@ -368,6 +382,27 @@ function handleSelectScope(scopeId: string) {
             >
               App Data
             </button>
+            <button
+              class="sim-tabbar__tab"
+              :class="{ 'is-active': inspectorTab === 'toast' }"
+              @click="inspectorTab = 'toast'"
+            >
+              Toast
+            </button>
+            <button
+              class="sim-tabbar__tab"
+              :class="{ 'is-active': inspectorTab === 'storage' }"
+              @click="inspectorTab = 'storage'"
+            >
+              Storage
+            </button>
+            <button
+              class="sim-tabbar__tab"
+              :class="{ 'is-active': inspectorTab === 'requests' }"
+              @click="inspectorTab = 'requests'"
+            >
+              Requests
+            </button>
           </div>
           <div class="sim-tab-panel__body">
             <ScopePanel
@@ -392,10 +427,28 @@ function handleSelectScope(scopeId: string) {
               :code="pageData"
             />
             <JsonPanel
-              v-else
+              v-else-if="inspectorTab === 'app'"
               title="🕛 应用数据"
               subtitle="App.globalData，用来观察启动和找不到页面等轨迹。"
               :code="appData"
+            />
+            <JsonPanel
+              v-else-if="inspectorTab === 'toast'"
+              title="🕛 Toast"
+              subtitle="showToast / hideToast 的宿主快照。"
+              :code="toastData"
+            />
+            <JsonPanel
+              v-else-if="inspectorTab === 'storage'"
+              title="🕛 Storage"
+              subtitle="setStorageSync / getStorageSync 当前内存快照。"
+              :code="storageData"
+            />
+            <JsonPanel
+              v-else
+              title="🕛 Requests"
+              subtitle="request mock 命中日志。"
+              :code="requestLogData"
             />
           </div>
         </section>

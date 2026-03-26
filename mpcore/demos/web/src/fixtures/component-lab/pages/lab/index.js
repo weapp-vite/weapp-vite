@@ -7,6 +7,9 @@ Page({
     events: [],
     eventShape: '',
     componentSnapshot: '',
+    requestSnapshot: '',
+    storageSnapshot: '',
+    toastState: '',
     tapTrail: [],
     traces: [],
     flags: {
@@ -68,6 +71,44 @@ Page({
       tapTrail: [...this.data.tapTrail, phase],
     }, () => {
       this.push('lab:recordTap:' + phase)
+    })
+  },
+  loadMockQueue() {
+    wx.request({
+      url: 'https://mock.mpcore.dev/api/queue-health',
+      success: (result) => {
+        this.setData({
+          requestSnapshot: JSON.stringify(result?.data ?? null),
+        })
+      },
+      complete: () => {
+        this.push('lab:loadMockQueue')
+      }
+    })
+  },
+  storeSnapshot() {
+    const payload = {
+      count: this.data.count,
+      status: this.data.status,
+    }
+    wx.setStorageSync('component-lab', payload)
+    this.setData({
+      storageSnapshot: JSON.stringify(wx.getStorageSync('component-lab')),
+    }, () => {
+      this.push('lab:storeSnapshot')
+    })
+  },
+  toastSnapshot() {
+    wx.showToast({
+      title: `status:${this.data.status}`,
+      success: (result) => {
+        this.setData({
+          toastState: result?.errMsg ?? 'showToast:unknown',
+        })
+      },
+      complete: () => {
+        this.push('lab:toastSnapshot')
+      }
     })
   },
   inspectCard() {

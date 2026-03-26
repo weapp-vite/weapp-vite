@@ -2,12 +2,14 @@ import type { HeadlessAppDefinition, HeadlessHostRegistries } from '../host'
 import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessAppInstance } from './appInstance'
 import type { HeadlessPageInstance } from './pageInstance'
+import type { HeadlessWxRequestMockDefinition } from './wxState'
 import path from 'node:path'
 import { createHostRegistries } from '../host'
 import { loadProject } from '../project'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
+import { createHeadlessWxState } from './wxState'
 
 export interface HeadlessSessionOptions {
   projectPath: string
@@ -106,6 +108,7 @@ export class HeadlessSession {
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
+  private readonly wxState = createHeadlessWxState()
 
   constructor(options: HeadlessSessionOptions) {
     this.project = loadProject(options.projectPath)
@@ -137,8 +140,15 @@ export class HeadlessSession {
         navigateBack: option => this.navigateBack(option?.delta),
         navigateTo: option => this.navigateTo(option.url),
         pageScrollTo: option => this.pageScrollTo(option),
+        clearStorageSync: () => this.wxState.clearStorageSync(),
+        getStorageSync: key => this.wxState.getStorageSync(key),
+        hideToast: () => this.wxState.hideToast(),
         reLaunch: option => this.reLaunch(option.url),
         redirectTo: option => this.redirectTo(option.url),
+        removeStorageSync: key => this.wxState.removeStorageSync(key),
+        request: option => this.wxState.request(option),
+        setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
+        showToast: option => this.wxState.showToast(option),
         stopPullDownRefresh: () => this.stopPullDownRefresh(),
         switchTab: option => this.switchTab(option.url),
       },
@@ -151,6 +161,22 @@ export class HeadlessSession {
 
   getCurrentPages() {
     return this.pages.slice()
+  }
+
+  getRequestLogs() {
+    return this.wxState.getRequestLogs()
+  }
+
+  getStorageSnapshot() {
+    return this.wxState.getStorageSnapshot()
+  }
+
+  getToast() {
+    return this.wxState.getToast()
+  }
+
+  mockRequest(definition: HeadlessWxRequestMockDefinition) {
+    this.wxState.mockRequest(definition)
   }
 
   bootstrap(launchOptions = createAppLaunchOptions('', {})) {
@@ -319,7 +345,7 @@ export class HeadlessSession {
   }
 
   stopPullDownRefresh() {
-    return
+
   }
 
   private createFreshPage(target: ResolvedNavigationTarget) {
