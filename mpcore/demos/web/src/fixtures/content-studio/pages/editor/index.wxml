@@ -1,5 +1,11 @@
 <view class="screen">
   <view class="headline">{{title}}</view>
+  <view class="panel-row" bindtap="renameHeadline">改标题</view>
+  <view class="panel-row" bindtap="promoteTag">提升标签优先级</view>
+  <view class="panel-row" bindtap="draftDeepPatch">执行深层 patch</view>
+  <view class="panel-row" bindtap="openLibrary">进入媒体分包</view>
+  <view class="panel-row" bindtap="jumpAssetDirectly">直接打开素材详情</view>
+  <view class="panel-row" bindtap="openReview">跳去审核页</view>
   <view class="panel-row">Headline: {{draft.headline}}</view>
   <view class="panel-row">Summary: {{draft.summary}}</view>
   <view class="panel-row">First tag: {{draft.tags.0}}</view>

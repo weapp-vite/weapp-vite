@@ -1,5 +1,7 @@
 <view class="screen">
   <view class="headline">{{title}}</view>
+  <view class="panel-row" bindtap="jumpBackTwo">返回两层</view>
+  <view class="panel-row" bindtap="replaceInsights">redirect 到洞察页</view>
   <view class="panel-row">ID: {{id}}</view>
   <view class="panel-row">From: {{from}}</view>
   <view class="panel-row">Log: {{logs.0}}</view>

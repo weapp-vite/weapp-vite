@@ -224,6 +224,18 @@ button {
   border: 1px solid rgb(14 98 207 / 8%);
 }
 
+.sim-device__screen [bindtap],
+.sim-device__screen [bind\:tap] {
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgb(135 243 216 / 18%);
+}
+
+.sim-device__screen [bindtap]:active,
+.sim-device__screen [bind\:tap]:active {
+  transform: scale(0.99);
+  background: rgb(135 243 216 / 18%);
+}
+
 .sim-scene-grid,
 .sim-chip-wrap,
 .sim-btn-wrap {

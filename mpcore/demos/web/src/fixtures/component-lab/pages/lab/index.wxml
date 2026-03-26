@@ -1,0 +1,12 @@
+<view class="screen">
+  <view class="headline">{{title}}</view>
+  <view class="panel-row" bindtap="promote">页面自己加一档</view>
+  <status-card
+    title="{{cardTitle}}"
+    count="{{count}}"
+    status="{{status}}"
+    bind:pulse="handlePulse"
+  />
+  <view class="panel-row">最近事件：{{events.0}}</view>
+  <view class="panel-row">最近轨迹：{{traces.0}}</view>
+</view>

@@ -1,6 +1,11 @@
 <view class="screen">
   <view class="headline">{{title}}</view>
   <view class="subline">{{hero}}</view>
+  <view class="panel-row" bindtap="openCatalog">打开分包商品列表</view>
+  <view class="panel-row" bindtap="openProfile">切到个人页 Tab</view>
+  <view class="panel-row" bindtap="focusLaunchTone">切换首页氛围与价格</view>
+  <view class="panel-row" bindtap="pingScroll">触发页面滚动</view>
+  <view class="panel-row" bindtap="relaunchProfile">reLaunch 到个人页</view>
   <view class="panel-row">Tone: {{activeTone}}</view>
   <view class="panel-row">Routes: home tab + profile tab + shop subpackage</view>
   <view class="panel-row">First SKU: {{feed.0.name}}</view>
