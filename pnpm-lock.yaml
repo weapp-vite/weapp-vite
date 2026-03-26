@@ -1461,6 +1461,28 @@ importers:
 
   extensions/vscode: {}
 
+  mpcore/demos/web:
+    dependencies:
+      '@mpcore/simulator':
+        specifier: workspace:*
+        version: link:../../packages/simulator
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.31(typescript@6.0.2)
+    devDependencies:
+      '@vitejs/plugin-vue':
+        specifier: ^6.0.5
+        version: 6.0.5(vite@8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3))(vue@3.5.31(typescript@6.0.2))
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.2
+      vite:
+        specifier: 'catalog:'
+        version: 8.0.2(@types/node@25.5.0)(esbuild@0.27.4)(jiti@2.6.1)(less@4.6.4)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.34.1)(tsx@4.21.0)(yaml@2.8.3)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.2.6(typescript@6.0.2)
+
   mpcore/packages/core: {}
 
   mpcore/packages/simulator:
