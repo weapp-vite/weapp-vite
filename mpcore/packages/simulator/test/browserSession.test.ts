@@ -630,6 +630,62 @@ Component({
     expect(page.data.summary).toContain('"owner":"factory"')
   })
 
+  it('supports primitive values returned from property default factories', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    summary: ''
+  },
+  inspect() {
+    const card = this.selectComponent('status-card')
+    this.setData({
+      summary: JSON.stringify({
+        flag: card?.properties?.flag,
+        label: card?.properties?.label
+      })
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<status-card /><view bindtap="inspect">inspect</view><view>{{summary}}</view>'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+Component({
+  properties: {
+    flag: {
+      type: Boolean,
+      value() {
+        return true
+      }
+    },
+    label: {
+      type: String,
+      value() {
+        return 'factory'
+      }
+    }
+  }
+})
+`],
+      ['components/status-card/index.wxml', '<view>{{label}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+    page.inspect()
+    expect(page.data.summary).toContain('"flag":true')
+    expect(page.data.summary).toContain('"label":"factory"')
+  })
+
   it('supports top-level component lifecycle hooks without lifetimes wrapper', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/a/index', 'pages/b/index'] })],
