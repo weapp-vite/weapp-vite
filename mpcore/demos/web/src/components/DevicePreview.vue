@@ -31,10 +31,12 @@ let previewShadowRoot: ShadowRoot | null = null
 const PREVIEW_SHADOW_CSS = `
   :host {
     display: block;
+    height: 100%;
   }
 
   .sim-shadow-screen {
-    min-height: 700px;
+    height: 100%;
+    min-height: 0;
     padding: 12px;
   }
 
