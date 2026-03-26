@@ -2,6 +2,7 @@ Page({
   data: {
     title: 'Mercury Market',
     hero: 'Fresh arrivals in a tab-driven mini-program shell.',
+    activeTone: 'fresh',
     feed: [
       { id: 'sku-1', name: 'Orbit Lamp', price: 129 },
       { id: 'sku-2', name: 'Atlas Chair', price: 349 },
@@ -45,5 +46,18 @@ Page({
   },
   onPageScroll(options) {
     this.push('home:onPageScroll:' + JSON.stringify(options))
+  },
+  focusLaunchTone() {
+    this.setData({
+      activeTone: 'launch',
+      'feed[1].price': 319,
+    }, () => {
+      this.push('home:tone:launch')
+    })
+  },
+  relaunchProfile() {
+    wx.reLaunch({
+      url: '/pages/profile/index?mode=relaunch',
+    })
   },
 })

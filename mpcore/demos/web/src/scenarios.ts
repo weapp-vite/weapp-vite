@@ -25,6 +25,10 @@ const scenarioCatalog: Record<string, ScenarioMeta> = {
     name: 'Content Studio',
     description: '编辑器 + 审核页 + 媒体分包，覆盖数组 patch、页面事件与 redirect/navigateTo 组合。',
   },
+  'route-maze': {
+    name: 'Route Maze',
+    description: '多层页面栈、tab 切换、跨分包往返、redirect/reLaunch 混用，专门压复杂跳转。',
+  },
 }
 
 const rawScenarioModules = import.meta.glob('./fixtures/**/*', {

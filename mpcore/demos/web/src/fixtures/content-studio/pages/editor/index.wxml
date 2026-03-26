@@ -3,5 +3,6 @@
   <view class="panel-row">Headline: {{draft.headline}}</view>
   <view class="panel-row">Summary: {{draft.summary}}</view>
   <view class="panel-row">First tag: {{draft.tags.0}}</view>
+  <view class="panel-row">Second tag: {{draft.tags.1}}</view>
   <view class="panel-row">Log: {{logs.0}}</view>
 </view>
