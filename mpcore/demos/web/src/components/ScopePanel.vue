@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import HighlightedCode from './HighlightedCode.vue'
 import SectionCard from './SectionCard.vue'
 
 defineProps<{
@@ -26,7 +27,7 @@ defineProps<{
         <span v-for="method in methods" :key="method" class="sim-chip">{{ method }}</span>
       </div>
     </div>
-    <pre class="sim-code">{{ propertiesCode }}</pre>
-    <pre class="sim-code">{{ dataCode }}</pre>
+    <HighlightedCode :code="propertiesCode" lang="json" />
+    <HighlightedCode :code="dataCode" lang="json" />
   </SectionCard>
 </template>

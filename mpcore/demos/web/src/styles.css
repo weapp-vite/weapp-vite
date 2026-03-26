@@ -41,42 +41,8 @@ button {
 
 .sim-app {
   width: min(1520px, calc(100vw - 24px));
-  padding: 16px 0 24px;
+  padding: 12px 0 24px;
   margin: 0 auto;
-}
-
-.sim-topbar {
-  margin-bottom: 12px;
-}
-
-.sim-topbar__copy {
-  padding: 16px 18px;
-  background: rgb(17 25 35 / 88%);
-  border: 1px solid var(--sim-border);
-  border-radius: 20px;
-  box-shadow: var(--sim-shadow);
-}
-
-.sim-topbar__eyebrow {
-  margin: 0 0 6px;
-  font-size: 12px;
-  color: var(--sim-accent);
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-}
-
-.sim-topbar__title {
-  margin: 0;
-  font-size: clamp(28px, 4vw, 42px);
-  line-height: 1.04;
-}
-
-.sim-topbar__lead {
-  max-width: 78ch;
-  margin: 8px 0 0;
-  font-size: 13px;
-  line-height: 1.65;
-  color: var(--sim-muted);
 }
 
 .sim-stats {
@@ -421,6 +387,26 @@ button {
   line-height: 1.65;
   color: #dbe8ff;
   background: rgb(7 12 17 / 50%);
+  border-radius: 12px;
+}
+
+.sim-code-html {
+  overflow: auto;
+  background: rgb(7 12 17 / 50%);
+  border-radius: 12px;
+}
+
+.sim-code-html :is(pre, code, .shiki) {
+  min-width: 100%;
+  margin: 0;
+  font-family: "IBM Plex Mono", SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.sim-code-html .shiki {
+  padding: 10px 12px;
+  background: transparent !important;
   border-radius: 12px;
 }
 

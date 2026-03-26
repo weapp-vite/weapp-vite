@@ -1,6 +1,14 @@
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
 import { cleanupTempDirs, createBaseFixture, createNavigationFixture } from './helpers'
+
+function writeFixtureFile(target: string, content: string) {
+  fs.mkdirSync(path.dirname(target), { recursive: true })
+  fs.writeFileSync(target, content)
+}
 
 describe('HeadlessSession', () => {
   const tempDirs: string[] = []
@@ -374,5 +382,89 @@ describe('HeadlessSession', () => {
       'home:switchTab:fail:wx.switchTab() url cannot contain query in headless runtime: /pages/profile/index?from=home',
       'home:switchTab:complete',
     ])
+  })
+
+  it('tracks request mocks, storage sync and toast snapshots through wx api state', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-api-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    requestSummary: '',
+    storageSummary: '',
+    toastSummary: ''
+  },
+  runWxApis() {
+    wx.request({
+      url: 'https://mock.mpcore.dev/api/queue-health',
+      success: (result) => {
+        this.setData({
+          requestSummary: JSON.stringify(result.data)
+        })
+      }
+    })
+    wx.setStorageSync('lab', {
+      count: 3,
+      status: 'stable'
+    })
+    this.setData({
+      storageSummary: JSON.stringify(wx.getStorageSync('lab'))
+    })
+    wx.showToast({
+      title: 'queued',
+      success: (result) => {
+        this.setData({
+          toastSummary: result.errMsg
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>lab</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    session.mockRequest({
+      method: 'GET',
+      response: {
+        count: 7,
+        queue: 'alpha',
+      },
+      url: 'https://mock.mpcore.dev/api/queue-health',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.runWxApis()
+
+    expect(page.data.requestSummary).toContain('"queue":"alpha"')
+    expect(page.data.storageSummary).toContain('"count":3')
+    expect(page.data.toastSummary).toBe('showToast:ok')
+    expect(session.getStorageSnapshot()).toEqual({
+      lab: {
+        count: 3,
+        status: 'stable',
+      },
+    })
+    expect(session.getToast()).toEqual({
+      duration: 1500,
+      icon: 'success',
+      mask: false,
+      title: 'queued',
+    })
+    expect(session.getRequestLogs()).toHaveLength(1)
+    expect(session.getRequestLogs()[0]).toMatchObject({
+      matched: true,
+      method: 'GET',
+      url: 'https://mock.mpcore.dev/api/queue-health',
+    })
   })
 })

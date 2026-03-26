@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import HighlightedCode from './HighlightedCode.vue'
 import SectionCard from './SectionCard.vue'
 
 defineProps<{
   code: string
+  lang?: string
   subtitle?: string
   title: string
 }>()
@@ -10,6 +12,6 @@ defineProps<{
 
 <template>
   <SectionCard :title="title" :subtitle="subtitle">
-    <pre class="sim-code">{{ code }}</pre>
+    <HighlightedCode :code="code" :lang="lang" />
   </SectionCard>
 </template>

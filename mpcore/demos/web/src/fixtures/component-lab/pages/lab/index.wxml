@@ -13,6 +13,9 @@
   </view>
   <view class="panel-row" bindtap="toggleMeta">切换 meta 区块</view>
   <view class="panel-row" bindtap="inspectCard">检查组件实例</view>
+  <view class="panel-row" bindtap="loadMockQueue">调用 request mock</view>
+  <view class="panel-row" bindtap="storeSnapshot">写入 storage</view>
+  <view class="panel-row" bindtap="toastSnapshot">触发 toast</view>
   <view class="panel-row" data-phase="outer-bind" bindtap="recordTap">
     外层 bind 区域
     <view class="panel-row" id="tap-bind-chain" data-phase="inner-bind" bindtap="recordTap">点击这里应触发 inner-bind -> outer-bind</view>
@@ -30,6 +33,9 @@
   <view wx:else class="panel-row">meta 已隐藏且还没有事件</view>
   <view class="panel-row">事件形态：{{eventShape}}</view>
   <view class="panel-row">组件快照：{{componentSnapshot}}</view>
+  <view class="panel-row">请求快照：{{requestSnapshot}}</view>
+  <view class="panel-row">存储快照：{{storageSnapshot}}</view>
+  <view class="panel-row">Toast 状态：{{toastState}}</view>
   <view class="panel-row">点击链：{{tapTrail.0}} -> {{tapTrail.1}}</view>
   <view class="panel-row">最近轨迹：{{traces.0}}</view>
 </view>
