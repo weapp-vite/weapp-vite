@@ -265,7 +265,8 @@ export class BrowserHeadlessSession {
 
   renderCurrentPage() {
     const current = this.requireCurrentPage('renderCurrentPage()')
-    return renderBrowserPageTree({
+    const rendered = renderBrowserPageTree({
+      changedPageKeys: current.__lastChangedKeys__ ?? [],
       componentCache: this.componentCache,
       componentScopes: this.componentScopes,
       files: this.files,
@@ -277,6 +278,8 @@ export class BrowserHeadlessSession {
         selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
       },
     }, current)
+    current.__lastChangedKeys__ = []
+    return rendered
   }
 
   callTapBinding(scopeId: string, methodName: string) {

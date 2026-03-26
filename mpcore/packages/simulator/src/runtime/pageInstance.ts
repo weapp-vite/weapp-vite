@@ -1,6 +1,7 @@
 import type { HeadlessPageDefinition } from '../host'
 
 export interface HeadlessPageInstance extends Record<string, any> {
+  __lastChangedKeys__?: string[]
   __route__: string
   data: Record<string, any>
   options: Record<string, string>
@@ -90,6 +91,7 @@ export function createPageInstance(
     options: { ...options },
     route: normalizedRoute,
     setData(patch, callback) {
+      instance.__lastChangedKeys__ = Object.keys(patch)
       for (const [key, value] of Object.entries(patch)) {
         assignByPath(instance.data, key, value)
       }

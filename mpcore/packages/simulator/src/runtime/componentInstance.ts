@@ -3,6 +3,7 @@ import type { HeadlessBehaviorDefinition, HeadlessComponentDefinition } from '..
 export interface HeadlessComponentInstance extends Record<string, any> {
   __definition__?: HeadlessComponentDefinition
   __lastInteractionEvent__?: Record<string, any>
+  __propertySnapshots__?: Record<string, any>
   __ready__?: boolean
   data: Record<string, any>
   properties: Record<string, any>
@@ -34,6 +35,8 @@ function cloneValue<T>(value: T) {
   }
   return value
 }
+
+export { cloneValue }
 
 function parseDataPath(path: string) {
   return path
@@ -429,6 +432,7 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
   const instance: HeadlessComponentInstance = {
     __definition__: definition,
     data: resolveInitialData(definition),
+    __propertySnapshots__: {},
     properties: resolveInitialProperties(definition, options.properties ?? {}),
     setData(patch, callback) {
       const changedKeys = Object.keys(patch)
