@@ -1,0 +1,7 @@
+<view class="screen">
+  <view class="headline">{{title}}</view>
+  <view class="panel-row">Headline: {{draft.headline}}</view>
+  <view class="panel-row">Summary: {{draft.summary}}</view>
+  <view class="panel-row">First tag: {{draft.tags.0}}</view>
+  <view class="panel-row">Log: {{logs.0}}</view>
+</view>

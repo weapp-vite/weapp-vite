@@ -1,0 +1,6 @@
+<view class="screen">
+  <view class="headline">{{title}}</view>
+  <view class="panel-row">Entry: {{entry}}</view>
+  <view class="panel-row">Featured asset: {{assets.1.label}}</view>
+  <view class="panel-row">Trace: {{logs.0}}</view>
+</view>

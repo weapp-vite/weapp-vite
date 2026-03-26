@@ -1,0 +1,6 @@
+<view class="screen">
+  <view class="headline">{{title}}</view>
+  <view class="panel-row">SKU: {{sku}}</view>
+  <view class="panel-row">Status: {{status}}</view>
+  <view class="panel-row">Trace: {{logs.0}}</view>
+</view>

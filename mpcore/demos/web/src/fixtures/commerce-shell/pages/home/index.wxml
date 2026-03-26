@@ -1,0 +1,7 @@
+<view class="screen">
+  <view class="headline">{{title}}</view>
+  <view class="subline">{{hero}}</view>
+  <view class="panel-row">Routes: home tab + profile tab + shop subpackage</view>
+  <view class="panel-row">First SKU: {{feed.0.name}}</view>
+  <view class="panel-row">Last log: {{logs.0}}</view>
+</view>

@@ -1,0 +1,5 @@
+<view class="screen">
+  <view class="headline">{{title}}</view>
+  <view class="subline">{{summary}}</view>
+  <view class="panel-row">Latest tab event: {{logs.0}}</view>
+</view>
