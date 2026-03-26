@@ -1,5 +1,11 @@
 # @weapp-vite/dashboard
 
+## 6.11.6
+
+### Patch Changes
+
+- 🐛 **为 `weapp-vite` 新增 `--ui` 调试入口并保留 `--analyze` 兼容别名，同时将 dashboard 升级为单页多面板分析 UI，集中展示包体、分包、产物文件与跨包模块复用细节。** [`f278c9f`](https://github.com/weapp-vite/weapp-vite/commit/f278c9f04bb4b17138cbb3bb21f2f969585d08d3) by @sonofmagic
+
 ## 6.11.5
 
 ## 6.11.4
