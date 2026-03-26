@@ -1,12 +1,22 @@
 :root {
   --sim-bg: #0a0f14;
-  --sim-panel: #111923;
-  --sim-panel-soft: #16202c;
+  --sim-panel: rgb(17 25 35 / 88%);
+  --sim-panel-soft: rgb(13 20 29 / 92%);
+  --sim-panel-strong: rgb(24 33 45 / 96%);
   --sim-border: rgb(148 184 255 / 14%);
   --sim-text: #edf4ff;
   --sim-muted: #89a0bf;
   --sim-accent: #87f3d8;
   --sim-accent-soft: rgb(135 243 216 / 15%);
+  --sim-accent-border: rgb(135 243 216 / 36%);
+  --sim-danger-bg: rgb(65 24 28 / 88%);
+  --sim-danger-border: rgb(255 144 133 / 28%);
+  --sim-danger-text: #ffaaa2;
+  --sim-code-bg: rgb(7 12 17 / 50%);
+  --sim-toolbar-bg: rgb(13 20 29 / 75%);
+  --sim-surface-plain: #f3f7fb;
+  --sim-surface-page: #fff;
+  --sim-surface-page-text: #18344f;
   --sim-shadow: 0 14px 44px rgb(0 0 0 / 26%);
 
   font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -16,6 +26,32 @@
     linear-gradient(180deg, #071018 0%, #0a0f14 42%, #0a1016 100%);
 }
 
+:root[data-sim-theme='light'] {
+  --sim-bg: #eaf1f8;
+  --sim-panel: rgb(255 255 255 / 92%);
+  --sim-panel-soft: rgb(248 251 255 / 96%);
+  --sim-panel-strong: rgb(240 246 253 / 98%);
+  --sim-border: rgb(58 87 120 / 12%);
+  --sim-text: #18344f;
+  --sim-muted: #5f7692;
+  --sim-accent: #0d9b87;
+  --sim-accent-soft: rgb(13 155 135 / 12%);
+  --sim-accent-border: rgb(13 155 135 / 28%);
+  --sim-danger-bg: rgb(255 241 242 / 96%);
+  --sim-danger-border: rgb(220 120 120 / 22%);
+  --sim-danger-text: #9d2e3d;
+  --sim-code-bg: rgb(233 240 248 / 92%);
+  --sim-toolbar-bg: rgb(255 255 255 / 76%);
+  --sim-surface-plain: #eff4fa;
+  --sim-surface-page: #fff;
+  --sim-surface-page-text: #18344f;
+  --sim-shadow: 0 14px 36px rgb(82 109 137 / 12%);
+
+  background:
+    radial-gradient(circle at top left, rgb(83 137 255 / 12%), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, #eef4fa 48%, #e9f0f8 100%);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -23,6 +59,7 @@
 body {
   min-height: 100vh;
   margin: 0;
+  color: var(--sim-text);
   background: transparent;
 }
 
@@ -45,6 +82,55 @@ button {
   margin: 0 auto;
 }
 
+.sim-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: var(--sim-toolbar-bg);
+  border: 1px solid var(--sim-border);
+  border-radius: 16px;
+  box-shadow: var(--sim-shadow);
+  backdrop-filter: blur(14px);
+}
+
+.sim-theme-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.sim-theme-switch__label,
+.sim-theme-switch__state {
+  font-size: 12px;
+  color: var(--sim-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sim-theme-switch__btn {
+  padding: 7px 12px;
+  font-size: 12px;
+  color: var(--sim-muted);
+  background: rgb(255 255 255 / 4%);
+  border: 1px solid var(--sim-border);
+  border-radius: 999px;
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease;
+}
+
+.sim-theme-switch__btn:hover {
+  color: var(--sim-text);
+}
+
+.sim-theme-switch__btn.is-active {
+  color: var(--sim-accent);
+  background: var(--sim-accent-soft);
+  border-color: var(--sim-accent-border);
+}
+
 .sim-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -55,7 +141,7 @@ button {
 .sim-stat,
 .sim-card,
 .sim-alert {
-  background: rgb(17 25 35 / 88%);
+  background: var(--sim-panel);
   border: 1px solid var(--sim-border);
   border-radius: 18px;
   box-shadow: var(--sim-shadow);
@@ -85,14 +171,14 @@ button {
 .sim-alert {
   padding: 12px 14px;
   margin-bottom: 12px;
-  background: rgb(65 24 28 / 88%);
-  border-color: rgb(255 144 133 / 28%);
+  background: var(--sim-danger-bg);
+  border-color: var(--sim-danger-border);
 }
 
 .sim-alert strong {
   display: block;
   margin-bottom: 6px;
-  color: #ffaaa2;
+  color: var(--sim-danger-text);
 }
 
 .sim-alert pre,
@@ -123,7 +209,7 @@ button {
 
 .sim-tab-panel {
   overflow: hidden;
-  background: rgb(13 20 29 / 92%);
+  background: var(--sim-panel-soft);
   border: 1px solid var(--sim-border);
   border-radius: 18px;
   box-shadow: var(--sim-shadow);
@@ -135,7 +221,7 @@ button {
   padding: 0 10px;
   overflow-x: auto;
   background:
-    linear-gradient(180deg, rgb(24 33 45 / 96%), rgb(16 23 31 / 96%)),
+    linear-gradient(180deg, var(--sim-panel-strong), var(--sim-panel-soft)),
     linear-gradient(90deg, rgb(106 163 255 / 10%), transparent 32%);
   border-bottom: 1px solid rgb(255 255 255 / 7%);
 }
@@ -220,7 +306,7 @@ button {
   display: grid;
   gap: 0;
   overflow: hidden;
-  background: #f3f7fb;
+  background: var(--sim-surface-plain);
   border: 1px solid rgb(255 255 255 / 8%);
   border-radius: 18px;
 }
@@ -252,8 +338,8 @@ button {
   width: min(100%, 360px);
   padding: 14px;
   margin: 0 auto;
-  color: #18344f;
-  background: white;
+  color: var(--sim-surface-page-text);
+  background: var(--sim-surface-page);
   border-radius: 18px;
   box-shadow: 0 10px 28px rgb(15 27 40 / 10%);
 }
@@ -385,14 +471,14 @@ button {
   font-family: "IBM Plex Mono", SFMono-Regular, Consolas, monospace;
   font-size: 11px;
   line-height: 1.65;
-  color: #dbe8ff;
-  background: rgb(7 12 17 / 50%);
+  color: var(--sim-text);
+  background: var(--sim-code-bg);
   border-radius: 12px;
 }
 
 .sim-code-html {
   overflow: auto;
-  background: rgb(7 12 17 / 50%);
+  background: var(--sim-code-bg);
   border-radius: 12px;
 }
 
@@ -416,6 +502,11 @@ button {
 }
 
 @media (max-width: 1180px) {
+  .sim-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .sim-workbench {
     grid-template-columns: 1fr;
   }

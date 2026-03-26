@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { BrowserDirectoryFileLike, BrowserHeadlessSession } from '../../../packages/simulator/src/browser'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
-
   createBrowserHeadlessSession,
   createBrowserVirtualFilesFromDirectory,
 } from '../../../packages/simulator/src/browser'
@@ -40,6 +39,10 @@ interface SessionLike {
   getCurrentPages: () => Array<Record<string, any>>
 }
 
+type ThemeMode = 'auto' | 'light' | 'dark'
+
+const THEME_STORAGE_KEY = 'mpcore-web-demo-theme'
+
 function stringify(value: unknown) {
   return JSON.stringify(value, null, 2)
 }
@@ -66,6 +69,10 @@ const currentScenarioId = ref('')
 const selectedScopeId = ref('')
 const primaryTab = ref<'scenario' | 'routes' | 'actions' | 'stack'>('scenario')
 const inspectorTab = ref<'scope' | 'options' | 'page' | 'app' | 'toast' | 'storage' | 'requests'>('scope')
+const themeMode = ref<ThemeMode>('auto')
+const systemPrefersDark = ref(false)
+let colorSchemeQuery: MediaQueryList | null = null
+let handleColorSchemeChange: ((event: MediaQueryListEvent) => void) | null = null
 
 const currentPage = computed(() => {
   void revision.value
@@ -148,8 +155,28 @@ const selectedScope = computed(() => {
   return session.value.getScopeSnapshot(selectedScopeId.value)
 })
 
+const effectiveTheme = computed<'light' | 'dark'>(() => {
+  if (themeMode.value === 'auto') {
+    return systemPrefersDark.value ? 'dark' : 'light'
+  }
+  return themeMode.value
+})
+
 function touch() {
   revision.value += 1
+}
+
+function applyTheme(theme: 'light' | 'dark') {
+  document.documentElement.dataset.simTheme = theme
+}
+
+function setThemeMode(mode: ThemeMode) {
+  themeMode.value = mode
+  if (mode === 'auto') {
+    localStorage.removeItem(THEME_STORAGE_KEY)
+    return
+  }
+  localStorage.setItem(THEME_STORAGE_KEY, mode)
 }
 
 function primeSession(nextSession: BrowserHeadlessSession) {
@@ -219,6 +246,35 @@ if (!session.value && firstScenario) {
   loadSession(firstScenario.name, firstScenario.files, firstScenario.id)
 }
 
+onMounted(() => {
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+  const updateSystemTheme = (event?: MediaQueryList | MediaQueryListEvent) => {
+    systemPrefersDark.value = event?.matches ?? mediaQuery.matches
+  }
+
+  const storedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+  if (storedTheme === 'light' || storedTheme === 'dark') {
+    themeMode.value = storedTheme
+  }
+
+  updateSystemTheme(mediaQuery)
+  handleColorSchemeChange = event => updateSystemTheme(event)
+  mediaQuery.addEventListener('change', handleColorSchemeChange)
+  colorSchemeQuery = mediaQuery
+})
+
+onBeforeUnmount(() => {
+  if (colorSchemeQuery && handleColorSchemeChange) {
+    colorSchemeQuery.removeEventListener('change', handleColorSchemeChange)
+  }
+})
+
+watch(effectiveTheme, (theme) => {
+  applyTheme(theme)
+}, {
+  immediate: true,
+})
+
 function handlePickScenario(scenarioId: string) {
   run(() => {
     const scenario = builtInScenarios.find(item => item.id === scenarioId)
@@ -270,6 +326,33 @@ function handleSelectScope(scopeId: string) {
 
 <template>
   <main class="sim-app">
+    <section class="sim-toolbar">
+      <div class="sim-theme-switch" role="group" aria-label="主题切换">
+        <span class="sim-theme-switch__label">Theme</span>
+        <button
+          class="sim-theme-switch__btn"
+          :class="{ 'is-active': themeMode === 'auto' }"
+          @click="setThemeMode('auto')"
+        >
+          Auto
+        </button>
+        <button
+          class="sim-theme-switch__btn"
+          :class="{ 'is-active': themeMode === 'light' }"
+          @click="setThemeMode('light')"
+        >
+          Light
+        </button>
+        <button
+          class="sim-theme-switch__btn"
+          :class="{ 'is-active': themeMode === 'dark' }"
+          @click="setThemeMode('dark')"
+        >
+          Dark
+        </button>
+      </div>
+      <span class="sim-theme-switch__state">当前：{{ effectiveTheme }}</span>
+    </section>
     <StatsBar :items="stats" />
 
     <section v-if="errorMessage" class="sim-alert">
