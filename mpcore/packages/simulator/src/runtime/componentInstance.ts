@@ -88,6 +88,9 @@ function resolveInitialData(definition: HeadlessComponentDefinition) {
 }
 
 function normalizePropertyType(option: unknown) {
+  if (option === null) {
+    return null
+  }
   if (option === String || option === Number || option === Boolean || option === Array || option === Object) {
     return option
   }
@@ -115,6 +118,9 @@ function resolvePropertyTypeCandidates(option: unknown) {
 }
 
 function matchesRuntimeType(rawValue: unknown, type: unknown) {
+  if (type === null) {
+    return true
+  }
   if (type === Number) {
     return typeof rawValue === 'number'
   }
@@ -168,6 +174,9 @@ export function coerceComponentPropertyValue(rawValue: unknown, option: unknown)
       return rawValue
     }
     if (type === Object && rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)) {
+      return rawValue
+    }
+    if (type === null) {
       return rawValue
     }
   }

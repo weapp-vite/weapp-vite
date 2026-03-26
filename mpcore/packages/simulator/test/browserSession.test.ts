@@ -463,6 +463,59 @@ Component({
     expect(rendered.wxml).toContain('"value":7')
   })
 
+  it('allows passthrough component properties when type is null', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    payload: {
+      level: 3
+    }
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<status-card mixed="{{payload}}" />'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+Component({
+  properties: {
+    mixed: {
+      type: null,
+      value: null
+    }
+  },
+  data: {
+    summary: ''
+  },
+  observers: {
+    mixed(value) {
+      this.setData({
+        summary: JSON.stringify({
+          isObject: !!value && typeof value === 'object' && !Array.isArray(value),
+          level: value?.level ?? 0
+        })
+      })
+    }
+  }
+})
+`],
+      ['components/status-card/index.wxml', '<view>{{summary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/lab/index')
+    const rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('"isObject":true')
+    expect(rendered.wxml).toContain('"level":3')
+  })
+
   it('falls back to property default values when page props become nullish', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
