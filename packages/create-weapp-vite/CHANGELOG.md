@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.62
+
+### Patch Changes
+
+- 🐛 **修复 rolldown 依赖清单被错误写死为具体版本，恢复为 workspace catalog 引用，并补充回归测试避免发布前校验再次因 manifest 漂移失败。** [`b63c4b4`](https://github.com/weapp-vite/weapp-vite/commit/b63c4b484585df9b964962a10b187846f58f8b8b) by @sonofmagic
+
 ## 2.0.61
 
 ### Patch Changes
