@@ -757,6 +757,60 @@ Component({
     expect(page.data.summary).toContain('"label":"factory"')
   })
 
+  it('prefers methods over top-level component method definitions with the same name', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    result: ''
+  },
+  capture(event) {
+    this.setData({
+      result: event?.detail?.source ?? ''
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<status-card bind:pulse="capture" />'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+Component({
+  pulse() {
+    this.triggerEvent('pulse', {
+      source: 'top-level'
+    })
+  },
+  methods: {
+    pulse() {
+      this.triggerEvent('pulse', {
+        source: 'methods'
+      })
+    }
+  }
+})
+`],
+      ['components/status-card/index.wxml', '<view bindtap="pulse">pulse</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/lab/index')
+    const rendered = session.renderCurrentPage()
+    const scopeIds = [...rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g)].map(match => match[1]!)
+    const cardScopeId = scopeIds.find(scopeId => scopeId.includes('status-card'))
+    expect(cardScopeId).toBeTruthy()
+
+    session.callTapBinding(cardScopeId!, 'pulse')
+    const page = session.getCurrentPages()[0]
+    expect(page?.data.result).toBe('methods')
+  })
+
   it('supports top-level component lifecycle hooks without lifetimes wrapper', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/a/index', 'pages/b/index'] })],
