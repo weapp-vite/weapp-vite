@@ -866,6 +866,53 @@ Component({
     expect(page.data.summary).toContain('"size":1')
   })
 
+  it('supports selecting component instances by data attribute selector', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    title: 'main',
+    summary: ''
+  },
+  inspect() {
+    const card = this.selectComponent('[data-role="primary"]')
+    const cards = this.selectAllComponents('[data-role="primary"]')
+    this.setData({
+      summary: JSON.stringify({
+        title: card?.properties?.title ?? '',
+        size: cards.length
+      })
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<status-card data-role="primary" title="{{title}}" /><view bindtap="inspect">inspect</view><view>{{summary}}</view>'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+Component({
+  properties: {
+    title: String
+  }
+})
+`],
+      ['components/status-card/index.wxml', '<view>{{title}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+    page.inspect()
+    expect(page.data.summary).toContain('"title":"main"')
+    expect(page.data.summary).toContain('"size":1')
+  })
+
   it('supports nested component selection and component created ready lifetimes', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
