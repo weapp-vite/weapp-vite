@@ -188,3 +188,16 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
 
   return instance
 }
+
+export function runComponentPageLifetime(
+  instance: HeadlessComponentInstance,
+  lifetimeName: 'hide' | 'resize' | 'show',
+  payload?: unknown,
+) {
+  const pageLifetimes = instance.__definition__?.pageLifetimes
+  const handler = pageLifetimes?.[lifetimeName]
+  if (typeof handler !== 'function') {
+    return
+  }
+  handler.call(instance, payload)
+}
