@@ -1,7 +1,7 @@
 {
   "name": "@weapp-vite/dashboard",
   "type": "module",
-  "version": "6.11.5",
+  "version": "6.11.6",
   "description": "Optional analyze dashboard for weapp-vite",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",

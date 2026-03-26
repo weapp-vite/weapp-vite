@@ -1,7 +1,7 @@
 {
   "name": "@mpcore/simulator",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Headless mini-program runtime and testing kernel for the weapp-vite ecosystem",
   "author": "ice breaker <1324318532@qq.com>",
   "license": "MIT",
