@@ -534,20 +534,23 @@ watch(currentRoute, () => {
 </script>
 
 <template>
-  <main class="mx-auto grid h-screen w-[min(1680px,calc(100vw-16px))] grid-rows-[auto_minmax(0,1fr)] gap-2 py-2 max-[1180px]:h-auto max-[1180px]:grid-rows-none max-[1180px]:pb-3">
-    <section v-if="errorMessage" :class="cn(alertCard(), 'grid gap-1')">
-      <strong class="text-sm font-semibold">🕛 运行时错误</strong>
-      <pre class="m-0 overflow-auto whitespace-pre-wrap text-xs leading-6">{{ errorMessage }}</pre>
-    </section>
+  <main class="h-screen overflow-hidden bg-[color:var(--sim-bg)] text-[color:var(--sim-text)]">
+    <section class="grid h-full grid-rows-[38px_40px_minmax(0,1fr)] max-[1180px]:grid-rows-[38px_auto_minmax(0,1fr)]">
+      <header class="flex items-center gap-3 border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-toolbar-bg)] px-3 text-[12px]">
+        <div class="flex items-center gap-1.5">
+          <span class="h-3 w-3 rounded-full bg-[#ff5f57]" />
+          <span class="h-3 w-3 rounded-full bg-[#febc2e]" />
+          <span class="h-3 w-3 rounded-full bg-[#28c840]" />
+        </div>
+        <div class="mx-auto truncate text-[11px] font-medium text-[color:var(--sim-muted)]">
+          {{ projectLabel }} - 微信开发者工具 · MPCore
+        </div>
+      </header>
 
-    <section :class="toolbarSurface()">
-      <div class="grid min-w-0 flex-1 gap-2">
-        <div class="flex items-center gap-3">
-          <span class="icon-[mdi--wechat] text-lg text-[color:var(--sim-accent-strong)]" aria-hidden="true" />
-          <div class="grid gap-0.5">
-            <strong class="text-[15px] font-semibold tracking-tight text-[color:var(--sim-text)]">MPCore DevTools</strong>
-            <span :class="mutedTextClass">模拟微信开发者工具式的小程序工作台</span>
-          </div>
+      <section :class="cn(toolbarSurface(), 'border-b-0 px-3 py-1.5')">
+        <div class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+          <strong class="truncate text-[13px] font-semibold tracking-tight text-[color:var(--sim-text)]">MPCore DevTools</strong>
+          <span :class="mutedTextClass">小程序模拟工作台</span>
         </div>
         <div :class="chipWrapClass" aria-label="当前会话状态">
           <span :class="cn(pill({ tone: 'subtle', interactive: false }), 'max-w-full')">
@@ -565,224 +568,231 @@ watch(currentRoute, () => {
             <strong class="truncate font-medium text-[color:var(--sim-text)]">{{ item.value }}</strong>
           </span>
         </div>
-      </div>
 
-      <div class="flex flex-wrap items-center justify-start gap-2 xl:justify-end" role="group" aria-label="主题切换">
-        <span :class="labelClass">Theme</span>
-        <button
-          v-for="option in themeOptions"
-          :key="option.value"
-          :class="pill({ tone: themeMode === option.value ? 'accent' : 'neutral' })"
-          @click="setThemeMode(option.value)"
-        >
-          <span :class="cn(option.icon, 'text-sm')" aria-hidden="true" />
-          {{ option.label }}
-        </button>
-        <span :class="mutedTextClass">当前：{{ effectiveTheme.toUpperCase() }}</span>
-      </div>
-    </section>
-
-    <section class="grid h-full min-h-0 gap-2 [grid-template-columns:396px_280px_minmax(0,1fr)] max-[1180px]:h-auto max-[1180px]:grid-cols-1">
-      <aside class="sticky top-0 min-h-0 max-[1180px]:static">
-        <DevicePreview
-          :route="currentRoute"
-          :markup="previewMarkup"
-          :viewport-height="viewportSize.height"
-          :viewport-width="viewportSize.width"
-          @back="run(() => session?.navigateBack())"
-          @dispatch-tap-chain="handleDispatchTapChain"
-          @select-scope="handleSelectScope"
-          @update-viewport="handleUpdateViewport"
-        />
-      </aside>
-
-      <section :class="tabPanelStyles.base()">
-        <div :class="tabPanelStyles.bar()" role="tablist" aria-label="资源区">
+        <div class="flex flex-wrap items-center justify-start gap-2 xl:justify-end" role="group" aria-label="主题切换">
+          <span :class="cn(labelClass, 'hidden xl:inline-flex')">Theme</span>
           <button
-            v-for="tab in explorerTabs"
-            :key="tab.value"
-            :aria-selected="explorerTab === tab.value"
-            :class="tabButton({ active: explorerTab === tab.value })"
-            @click="explorerTab = tab.value"
+            v-for="option in themeOptions"
+            :key="option.value"
+            :class="pill({ tone: themeMode === option.value ? 'accent' : 'neutral' })"
+            @click="setThemeMode(option.value)"
           >
-            <span :class="cn(tab.icon, 'text-sm')" aria-hidden="true" />
-            {{ tab.label }}
+            <span :class="cn(option.icon, 'text-sm')" aria-hidden="true" />
+            {{ option.label }}
           </button>
-        </div>
-        <div :class="tabPanelStyles.body()">
-          <section
-            v-if="explorerTab === 'resources'"
-            class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3"
-          >
-            <div class="grid gap-2 rounded-[18px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-3">
-              <span :class="labelClass">资源管理器</span>
-              <div class="flex items-center justify-between gap-2">
-                <strong class="truncate text-sm text-[color:var(--sim-text)]">{{ projectLabel }}</strong>
-                <button :class="pill({ tone: 'neutral' })" @click="explorerTab = 'scenarios'">
-                  <span class="icon-[mdi--swap-horizontal] text-sm" aria-hidden="true" />
-                  切换场景
-                </button>
-              </div>
-            </div>
-
-            <div class="min-h-0 overflow-auto rounded-[18px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-2">
-              <FileTree
-                :expanded-paths="expandedTreePaths"
-                :nodes="fileTree"
-                :selected-path="selectedFilePath"
-                @select="openFile"
-                @toggle="toggleTreePath"
-              />
-            </div>
-          </section>
-
-          <ScenarioSelector
-            v-else-if="explorerTab === 'scenarios'"
-            :active-id="currentScenarioId"
-            :loading="loading"
-            :scenarios="builtInScenarios"
-            @pick="handlePickScenario"
-            @pick-directory="handleDirectoryChange"
-          />
-
-          <div v-else class="grid gap-3">
-            <RoutePanel
-              :current-route="currentPage?.route ?? ''"
-              :routes="pageRoutes"
-              @open="handleOpenRoute"
-            />
-            <ActionPanel
-              :methods="callableMethods"
-              @call-method="handleCallMethod"
-              @page-scroll="run(() => session?.pageScrollTo({ scrollTop: 128 }))"
-              @pull-refresh="run(() => session?.triggerPullDownRefresh())"
-              @reach-bottom="run(() => session?.triggerReachBottom())"
-              @route-done="run(() => session?.triggerRouteDone({ from: 'web-demo' }))"
-              @resize="run(() => session?.triggerResize({ size: { windowWidth: viewportSize.width, windowHeight: viewportSize.height } }))"
-            />
-            <StackPanel :routes="pageStack" />
-          </div>
+          <span :class="cn(mutedTextClass, 'hidden xl:inline-flex')">当前：{{ effectiveTheme.toUpperCase() }}</span>
         </div>
       </section>
 
-      <section class="grid min-h-0 gap-2 [grid-template-rows:minmax(0,1fr)_320px] max-[1180px]:[grid-template-rows:minmax(420px,1fr)_minmax(320px,auto)]">
-        <SourceEditor
-          :code="selectedFileContent"
-          :file-path="selectedFilePath"
-          :lang="selectedFileLanguage"
-          :open-files="openFileTabs"
-          :project-label="projectLabel"
-          :theme="effectiveTheme"
-          @pick="openFile"
-        />
+      <section v-if="errorMessage" :class="cn(alertCard(), 'absolute right-3 top-21 z-10 max-w-[520px] grid gap-1 rounded-md py-2')">
+        <strong class="text-sm font-semibold">🕛 运行时错误</strong>
+        <pre class="m-0 overflow-auto whitespace-pre-wrap text-xs leading-6">{{ errorMessage }}</pre>
+      </section>
 
-        <section :class="tabPanelStyles.base()">
-          <div :class="tabPanelStyles.bar()" role="tablist" aria-label="调试区">
-            <button
-              v-for="tab in debugTabs"
-              :key="tab.value"
-              :aria-selected="debugTab === tab.value"
-              :class="tabButton({ active: debugTab === tab.value })"
-              @click="debugTab = tab.value"
-            >
-              <span :class="cn(tab.icon, 'text-sm')" aria-hidden="true" />
-              {{ tab.label }}
-            </button>
-          </div>
-          <div :class="tabPanelStyles.body()">
-            <JsonPanel
-              v-if="debugTab === 'wxml'"
-              title="🕛 Wxml"
-              subtitle="当前页面渲染输出后的结构快照。"
-              :code="wxmlPreviewCode"
-              lang="html"
-              :theme="effectiveTheme"
-            />
+      <section class="grid min-h-0 [grid-template-columns:370px_250px_minmax(0,1fr)] max-[1180px]:grid-cols-1">
+        <aside class="min-h-0 border-r border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-soft)]">
+          <DevicePreview
+            :route="currentRoute"
+            :markup="previewMarkup"
+            :viewport-height="viewportSize.height"
+            :viewport-width="viewportSize.width"
+            @back="run(() => session?.navigateBack())"
+            @dispatch-tap-chain="handleDispatchTapChain"
+            @select-scope="handleSelectScope"
+            @update-viewport="handleUpdateViewport"
+          />
+        </aside>
 
-            <ScopePanel
-              v-else-if="debugTab === 'console'"
-              :scope-id="selectedScope?.scopeId ?? ''"
-              :scope-type="selectedScope?.type ?? '未选中'"
-              :methods="selectedScope?.methods ?? []"
-              :properties-code="stringify(selectedScope?.properties ?? {})"
-              :data-code="stringify(selectedScope?.data ?? {})"
-              :theme="effectiveTheme"
-            />
-
-            <div v-else-if="debugTab === 'appData'" class="grid gap-3">
-              <JsonPanel
-                title="🕛 页面数据"
-                subtitle="当前页面 data 快照。"
-                :code="pageData"
-                :theme="effectiveTheme"
-              />
-              <JsonPanel
-                title="🕛 页面参数"
-                subtitle="当前页面 options 快照。"
-                :code="currentOptions"
-                :theme="effectiveTheme"
-              />
-              <JsonPanel
-                title="🕛 应用数据"
-                subtitle="App.globalData。"
-                :code="appData"
-                :theme="effectiveTheme"
-              />
+        <section class="min-h-0 border-r border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-soft)]">
+          <section :class="cn(tabPanelStyles.base(), 'h-full rounded-none border-0 shadow-none')">
+            <div :class="tabPanelStyles.bar()" role="tablist" aria-label="资源区">
+              <button
+                v-for="tab in explorerTabs"
+                :key="tab.value"
+                :aria-selected="explorerTab === tab.value"
+                :class="tabButton({ active: explorerTab === tab.value })"
+                @click="explorerTab = tab.value"
+              >
+                <span :class="cn(tab.icon, 'text-sm')" aria-hidden="true" />
+                {{ tab.label }}
+              </button>
             </div>
-
-            <div v-else-if="debugTab === 'sources'" class="grid gap-3">
-              <RoutePanel
-                :current-route="currentPage?.route ?? ''"
-                :routes="pageRoutes"
-                @open="handleOpenRoute"
-              />
-              <StackPanel :routes="pageStack" />
-            </div>
-
-            <div v-else-if="debugTab === 'network'" class="grid gap-3">
-              <JsonPanel
-                title="🕛 Requests"
-                subtitle="request mock 命中日志。"
-                :code="requestLogData"
-                :theme="effectiveTheme"
-              />
-              <JsonPanel
-                title="🕛 Toast"
-                subtitle="showToast / hideToast 的宿主快照。"
-                :code="toastData"
-                :theme="effectiveTheme"
-              />
-              <JsonPanel
-                title="🕛 Storage"
-                subtitle="setStorageSync / getStorageSync 当前内存快照。"
-                :code="storageData"
-                :theme="effectiveTheme"
-              />
-            </div>
-
-            <section v-else class="grid gap-3">
-              <div class="grid gap-3 rounded-[20px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-4">
-                <div class="grid gap-1">
-                  <h2 class="m-0 text-[17px] font-semibold tracking-tight text-[color:var(--sim-text)]">
-                    🕛 性能与运行概览
-                  </h2>
-                  <p :class="labelClass">
-                    以当前模拟会话和预览视口为基准。
-                  </p>
+            <div :class="tabPanelStyles.body()">
+              <section
+                v-if="explorerTab === 'resources'"
+                class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3"
+              >
+                <div class="grid gap-2 rounded-[18px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-3">
+                  <span :class="labelClass">资源管理器</span>
+                  <div class="flex items-center justify-between gap-2">
+                    <strong class="truncate text-sm text-[color:var(--sim-text)]">{{ projectLabel }}</strong>
+                    <button :class="pill({ tone: 'neutral' })" @click="explorerTab = 'scenarios'">
+                      <span class="icon-[mdi--swap-horizontal] text-sm" aria-hidden="true" />
+                      切换场景
+                    </button>
+                  </div>
                 </div>
-                <div class="grid gap-2 md:grid-cols-2">
-                  <article
-                    v-for="[label, value] in runtimeMetrics"
-                    :key="label"
-                    class="rounded-[18px] border border-[color:var(--sim-border)] bg-[color:var(--sim-pill-bg)] px-4 py-3"
-                  >
-                    <span :class="labelClass">{{ label }}</span>
-                    <strong class="mt-2 block text-lg font-semibold text-[color:var(--sim-text)]">{{ value }}</strong>
-                  </article>
+
+                <div class="min-h-0 overflow-auto rounded-[18px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-2">
+                  <FileTree
+                    :expanded-paths="expandedTreePaths"
+                    :nodes="fileTree"
+                    :selected-path="selectedFilePath"
+                    @select="openFile"
+                    @toggle="toggleTreePath"
+                  />
                 </div>
+              </section>
+
+              <ScenarioSelector
+                v-else-if="explorerTab === 'scenarios'"
+                :active-id="currentScenarioId"
+                :loading="loading"
+                :scenarios="builtInScenarios"
+                @pick="handlePickScenario"
+                @pick-directory="handleDirectoryChange"
+              />
+
+              <div v-else class="grid gap-3">
+                <RoutePanel
+                  :current-route="currentPage?.route ?? ''"
+                  :routes="pageRoutes"
+                  @open="handleOpenRoute"
+                />
+                <ActionPanel
+                  :methods="callableMethods"
+                  @call-method="handleCallMethod"
+                  @page-scroll="run(() => session?.pageScrollTo({ scrollTop: 128 }))"
+                  @pull-refresh="run(() => session?.triggerPullDownRefresh())"
+                  @reach-bottom="run(() => session?.triggerReachBottom())"
+                  @route-done="run(() => session?.triggerRouteDone({ from: 'web-demo' }))"
+                  @resize="run(() => session?.triggerResize({ size: { windowWidth: viewportSize.width, windowHeight: viewportSize.height } }))"
+                />
+                <StackPanel :routes="pageStack" />
               </div>
-            </section>
-          </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="grid min-h-0 [grid-template-rows:minmax(0,1fr)_270px] max-[1180px]:[grid-template-rows:minmax(420px,1fr)_minmax(280px,auto)]">
+          <SourceEditor
+            :code="selectedFileContent"
+            :file-path="selectedFilePath"
+            :lang="selectedFileLanguage"
+            :open-files="openFileTabs"
+            :project-label="projectLabel"
+            :theme="effectiveTheme"
+            @pick="openFile"
+          />
+
+          <section :class="cn(tabPanelStyles.base(), 'rounded-none border-x-0 border-b-0 shadow-none')">
+            <div :class="tabPanelStyles.bar()" role="tablist" aria-label="调试区">
+              <button
+                v-for="tab in debugTabs"
+                :key="tab.value"
+                :aria-selected="debugTab === tab.value"
+                :class="tabButton({ active: debugTab === tab.value })"
+                @click="debugTab = tab.value"
+              >
+                <span :class="cn(tab.icon, 'text-sm')" aria-hidden="true" />
+                {{ tab.label }}
+              </button>
+            </div>
+            <div :class="tabPanelStyles.body()">
+              <JsonPanel
+                v-if="debugTab === 'wxml'"
+                title="🕛 Wxml"
+                subtitle="当前页面渲染输出后的结构快照。"
+                :code="wxmlPreviewCode"
+                lang="html"
+                :theme="effectiveTheme"
+              />
+
+              <ScopePanel
+                v-else-if="debugTab === 'console'"
+                :scope-id="selectedScope?.scopeId ?? ''"
+                :scope-type="selectedScope?.type ?? '未选中'"
+                :methods="selectedScope?.methods ?? []"
+                :properties-code="stringify(selectedScope?.properties ?? {})"
+                :data-code="stringify(selectedScope?.data ?? {})"
+                :theme="effectiveTheme"
+              />
+
+              <div v-else-if="debugTab === 'appData'" class="grid gap-3">
+                <JsonPanel
+                  title="🕛 页面数据"
+                  subtitle="当前页面 data 快照。"
+                  :code="pageData"
+                  :theme="effectiveTheme"
+                />
+                <JsonPanel
+                  title="🕛 页面参数"
+                  subtitle="当前页面 options 快照。"
+                  :code="currentOptions"
+                  :theme="effectiveTheme"
+                />
+                <JsonPanel
+                  title="🕛 应用数据"
+                  subtitle="App.globalData。"
+                  :code="appData"
+                  :theme="effectiveTheme"
+                />
+              </div>
+
+              <div v-else-if="debugTab === 'sources'" class="grid gap-3">
+                <RoutePanel
+                  :current-route="currentPage?.route ?? ''"
+                  :routes="pageRoutes"
+                  @open="handleOpenRoute"
+                />
+                <StackPanel :routes="pageStack" />
+              </div>
+
+              <div v-else-if="debugTab === 'network'" class="grid gap-3">
+                <JsonPanel
+                  title="🕛 Requests"
+                  subtitle="request mock 命中日志。"
+                  :code="requestLogData"
+                  :theme="effectiveTheme"
+                />
+                <JsonPanel
+                  title="🕛 Toast"
+                  subtitle="showToast / hideToast 的宿主快照。"
+                  :code="toastData"
+                  :theme="effectiveTheme"
+                />
+                <JsonPanel
+                  title="🕛 Storage"
+                  subtitle="setStorageSync / getStorageSync 当前内存快照。"
+                  :code="storageData"
+                  :theme="effectiveTheme"
+                />
+              </div>
+
+              <section v-else class="grid gap-3">
+                <div class="grid gap-3 rounded-[20px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-4">
+                  <div class="grid gap-1">
+                    <h2 class="m-0 text-[17px] font-semibold tracking-tight text-[color:var(--sim-text)]">
+                      🕛 性能与运行概览
+                    </h2>
+                    <p :class="labelClass">
+                      以当前模拟会话和预览视口为基准。
+                    </p>
+                  </div>
+                  <div class="grid gap-2 md:grid-cols-2">
+                    <article
+                      v-for="[label, value] in runtimeMetrics"
+                      :key="label"
+                      class="rounded-[18px] border border-[color:var(--sim-border)] bg-[color:var(--sim-pill-bg)] px-4 py-3"
+                    >
+                      <span :class="labelClass">{{ label }}</span>
+                      <strong class="mt-2 block text-lg font-semibold text-[color:var(--sim-text)]">{{ value }}</strong>
+                    </article>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
         </section>
       </section>
     </section>
