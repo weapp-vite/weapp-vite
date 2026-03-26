@@ -5,6 +5,7 @@ import type { HeadlessPageInstance } from '../runtime/pageInstance'
 import { parseDocument } from 'htmlparser2'
 import { dirname, join, normalize } from 'pathe'
 import {
+  cloneValue,
   createComponentInstance,
   normalizeComponentPropertyValue,
   runComponentLifecycle,
@@ -46,6 +47,7 @@ export interface BrowserRenderedPageTree {
 }
 
 export interface BrowserRendererContext {
+  changedPageKeys: string[]
   componentCache: Map<string, HeadlessComponentInstance>
   componentScopes: Map<string, BrowserRenderScope>
   files: BrowserVirtualFiles
@@ -325,16 +327,28 @@ function syncComponentProperties(
   instance: HeadlessComponentInstance,
   definition: HeadlessComponentDefinition,
   nextProperties: Record<string, any>,
+  bindingExpressions: Record<string, string | undefined>,
+  changedPageKeys: string[],
 ) {
   const changedRootKeys: string[] = []
   const previousProperties: Record<string, any> = {}
   for (const [key, value] of Object.entries(nextProperties)) {
     const nextValue = normalizeComponentPropertyValue(definition, key, value)
-    if (instance.properties[key] !== nextValue) {
+    const bindingExpression = bindingExpressions[key]
+    const bindingAffected = !!bindingExpression && changedPageKeys.some((changedKey) => {
+      return changedKey === bindingExpression
+        || changedKey.startsWith(`${bindingExpression}.`)
+        || changedKey.startsWith(`${bindingExpression}[`)
+    })
+    const previousSnapshot = instance.__propertySnapshots?.[key]
+    const deepChanged = bindingAffected && JSON.stringify(previousSnapshot) !== JSON.stringify(nextValue)
+    if (instance.properties[key] !== nextValue || deepChanged) {
       previousProperties[key] = instance.properties[key]
       instance.properties[key] = nextValue
       changedRootKeys.push(key)
     }
+    instance.__propertySnapshots ??= {}
+    instance.__propertySnapshots[key] = cloneValue(nextValue)
   }
 
   if (changedRootKeys.length === 0) {
@@ -376,9 +390,13 @@ function renderNodeTree(
     const componentScopeId = `${instancePath}/${clonedNode.name}`
     const ownerScopeId = scope.getScopeId().includes('/') ? scope.getScopeId() : undefined
     const nextProperties: Record<string, any> = {}
+    const bindingExpressions: Record<string, string | undefined> = {}
     for (const [key, value] of Object.entries(clonedNode.attribs ?? {})) {
       if (key.startsWith('bind')) {
         continue
+      }
+      if (isMustacheOnly(String(value))) {
+        bindingExpressions[key] = String(value).trim().slice(2, -2).trim()
       }
       nextProperties[key] = resolveComponentAttributeValue(String(value), scope)
     }
@@ -395,12 +413,21 @@ function renderNodeTree(
       componentInstance.selectOwnerComponent = () => ownerScopeId ? context.session.selectOwnerComponent(componentScopeId) : null
       runComponentLifecycle(componentInstance, 'created')
       runComponentObservers(componentInstance.__definition__ ?? componentEntry.definition, componentInstance, Object.keys(nextProperties), {})
+      componentInstance.__propertySnapshots = Object.fromEntries(
+        Object.entries(componentInstance.properties).map(([key, propertyValue]) => [key, cloneValue(propertyValue)]),
+      )
       runComponentLifecycle(componentInstance, 'attached')
       runComponentPageLifetime(componentInstance, 'show')
       context.componentCache.set(componentScopeId, componentInstance)
     }
     else {
-      syncComponentProperties(componentInstance, componentInstance.__definition__ ?? componentEntry.definition, nextProperties)
+      syncComponentProperties(
+        componentInstance,
+        componentInstance.__definition__ ?? componentEntry.definition,
+        nextProperties,
+        bindingExpressions,
+        context.changedPageKeys,
+      )
     }
 
     seenComponentScopes.add(componentScopeId)
