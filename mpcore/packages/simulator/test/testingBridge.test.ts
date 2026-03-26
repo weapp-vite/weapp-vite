@@ -1,11 +1,19 @@
-import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { launch } from '../src/testing'
+import { cleanupTempDirs, createBaseFixture } from './helpers'
 
 describe('headless testing bridge', () => {
+  const tempDirs: string[] = []
+
+  afterEach(() => {
+    cleanupTempDirs(tempDirs)
+  })
+
   it('launches a session and exposes current page handles', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
     const miniProgram = await launch({
-      projectPath: path.resolve(import.meta.dirname, '../../../../e2e-apps/base'),
+      projectPath,
     })
 
     const page = await miniProgram.reLaunch('/pages/index/index')
@@ -17,8 +25,10 @@ describe('headless testing bridge', () => {
   })
 
   it('calls page methods through the testing bridge', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
     const miniProgram = await launch({
-      projectPath: path.resolve(import.meta.dirname, '../../../../e2e-apps/base'),
+      projectPath,
     })
 
     const page = await miniProgram.reLaunch('/pages/index/index')
@@ -31,8 +41,10 @@ describe('headless testing bridge', () => {
   })
 
   it('renders interpolated wxml and supports basic selectors', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
     const miniProgram = await launch({
-      projectPath: path.resolve(import.meta.dirname, '../../../../e2e-apps/base'),
+      projectPath,
     })
 
     const page = await miniProgram.reLaunch('/pages/index/index')

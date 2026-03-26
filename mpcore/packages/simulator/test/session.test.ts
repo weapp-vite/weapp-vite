@@ -1,29 +1,37 @@
-import path from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
+import { cleanupTempDirs, createBaseFixture, createNavigationFixture } from './helpers'
 
 describe('HeadlessSession', () => {
+  const tempDirs: string[] = []
+
+  afterEach(() => {
+    cleanupTempDirs(tempDirs)
+  })
+
   it('bootstraps a built app and reLaunches a page', () => {
-    const session = createHeadlessSession({
-      projectPath: path.resolve(import.meta.dirname, '../../../../e2e-apps/base'),
-    })
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
 
     const app = session.bootstrap()
     expect(app).toBeTruthy()
 
     const page = session.reLaunch('/pages/index/index')
-    expect(page.route).toBe('/pages/index/index')
+    expect(page.route).toBe('pages/index/index')
     expect(page.data.__e2eResult).toEqual({
       status: 'ready',
       detail: 'rendered',
     })
+    expect(page.options).toEqual({})
+    expect(page.__route__).toBe('pages/index/index')
     expect(session.getCurrentPages()).toHaveLength(1)
   })
 
   it('binds page methods to the page instance and applies setData', () => {
-    const session = createHeadlessSession({
-      projectPath: path.resolve(import.meta.dirname, '../../../../e2e-apps/base'),
-    })
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
 
     const page = session.reLaunch('/pages/index/index')
     expect(page.data.__e2eResult.status).toBe('ready')
@@ -37,9 +45,9 @@ describe('HeadlessSession', () => {
   })
 
   it('runs unload and recreates the page on reLaunch', () => {
-    const session = createHeadlessSession({
-      projectPath: path.resolve(import.meta.dirname, '../../../../e2e-apps/base'),
-    })
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
 
     const firstPage = session.reLaunch('/pages/index/index')
     firstPage.setData({
@@ -50,5 +58,321 @@ describe('HeadlessSession', () => {
     expect(secondPage).not.toBe(firstPage)
     expect(secondPage.data.transient).toBeUndefined()
     expect(session.getCurrentPages()).toHaveLength(1)
+  })
+
+  it('drives navigateTo and navigateBack with devtools-like lifecycle order', () => {
+    const projectPath = createNavigationFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const homePage = session.reLaunch('/pages/home/index?entry=direct')
+    expect(homePage.data.logs).toEqual([
+      'home:onLoad:{"entry":"direct"}',
+      'home:onShow',
+      'home:onReady',
+    ])
+    expect(homePage.options).toEqual({ entry: 'direct' })
+    expect(homePage.__route__).toBe('pages/home/index')
+
+    homePage.goDetail()
+
+    const detailPage = session.getCurrentPages().at(-1)
+    expect(detailPage?.route).toBe('pages/detail/index')
+    expect(detailPage?.data.logs).toEqual([
+      'home:onLoad:{"entry":"direct"}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'detail:onLoad:{"from":"home"}',
+      'detail:onShow',
+      'detail:onReady',
+    ])
+
+    detailPage?.backHome()
+
+    expect(session.getCurrentPages()).toHaveLength(1)
+    expect(homePage.data.logs).toEqual([
+      'home:onLoad:{"entry":"direct"}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'detail:onLoad:{"from":"home"}',
+      'detail:onShow',
+      'detail:onReady',
+      'detail:onUnload',
+      'home:onShow',
+    ])
+  })
+
+  it('runs navigation success/fail/complete callbacks through wx api calls', () => {
+    const projectPath = createNavigationFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const homePage = session.reLaunch('/pages/home/index')
+
+    homePage.goDetailWithCallbacks()
+    const detailPage = session.getCurrentPages().at(-1)
+    expect(detailPage?.options).toEqual({ from: 'home-callback' })
+    expect(detailPage?.data.logs).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'detail:onLoad:{"from":"home-callback"}',
+      'detail:onShow',
+      'detail:onReady',
+    ])
+    expect(homePage.data.logs).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'detail:onLoad:{"from":"home-callback"}',
+      'detail:onShow',
+      'detail:onReady',
+      'home:navigateTo:success',
+      'home:navigateTo:complete',
+    ])
+
+    session.navigateBack()
+    homePage.goMissingWithCallbacks()
+
+    expect(session.getCurrentPages()).toHaveLength(1)
+    expect(homePage.data.logs).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'detail:onLoad:{"from":"home-callback"}',
+      'detail:onShow',
+      'detail:onReady',
+      'home:navigateTo:success',
+      'home:navigateTo:complete',
+      'detail:onUnload',
+      'home:onShow',
+      'home:navigateTo:fail:Unknown route for headless runtime navigation: ../missing/index',
+      'home:navigateTo:complete',
+    ])
+  })
+
+  it('normalizes navigateBack delta and unloads intermediate pages from top to bottom', () => {
+    const projectPath = createNavigationFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const homePage = session.reLaunch('/pages/home/index')
+    homePage.goDetail()
+    const detailPage = session.getCurrentPages().at(-1)
+    detailPage?.goSettings()
+
+    const settingsPage = session.getCurrentPages().at(-1)
+    expect(settingsPage?.options).toEqual({ from: 'detail-stack' })
+    expect(session.getCurrentPages().map(page => page.route)).toEqual([
+      'pages/home/index',
+      'pages/detail/index',
+      'pages/settings/index',
+    ])
+
+    settingsPage?.back(0)
+
+    expect(session.getCurrentPages().map(page => page.route)).toEqual([
+      'pages/home/index',
+      'pages/detail/index',
+    ])
+    expect(detailPage?.data.logs).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'detail:onLoad:{"from":"home"}',
+      'detail:onShow',
+      'detail:onReady',
+      'detail:onHide',
+      'settings:onLoad:{"from":"detail-stack"}',
+      'settings:onShow',
+      'settings:onReady',
+      'settings:onUnload',
+      'detail:onShow',
+    ])
+
+    detailPage?.goSettings()
+    const secondSettingsPage = session.getCurrentPages().at(-1)
+    secondSettingsPage?.back(-2)
+
+    expect(session.getCurrentPages().map(page => page.route)).toEqual([
+      'pages/home/index',
+      'pages/detail/index',
+    ])
+
+    detailPage?.goSettings()
+    const thirdSettingsPage = session.getCurrentPages().at(-1)
+    thirdSettingsPage?.back(99)
+
+    expect(session.getCurrentPages().map(page => page.route)).toEqual([
+      'pages/home/index',
+    ])
+    expect(homePage.data.logs).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'detail:onLoad:{"from":"home"}',
+      'detail:onShow',
+      'detail:onReady',
+      'detail:onHide',
+      'settings:onLoad:{"from":"detail-stack"}',
+      'settings:onShow',
+      'settings:onReady',
+      'settings:onUnload',
+      'detail:onShow',
+      'detail:onHide',
+      'settings:onLoad:{"from":"detail-stack"}',
+      'settings:onShow',
+      'settings:onReady',
+      'settings:onUnload',
+      'detail:onShow',
+      'detail:onHide',
+      'settings:onLoad:{"from":"detail-stack"}',
+      'settings:onShow',
+      'settings:onReady',
+      'settings:onUnload',
+      'detail:onUnload',
+      'home:onShow',
+    ])
+  })
+
+  it('supports redirectTo, switchTab and reLaunch stack transitions', () => {
+    const projectPath = createNavigationFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const homePage = session.reLaunch('/pages/home/index')
+    homePage.goDetail()
+
+    const detailPage = session.getCurrentPages().at(-1)
+    detailPage?.replaceProfile()
+
+    const settingsPage = session.getCurrentPages().at(-1)
+    expect(session.getCurrentPages()).toHaveLength(2)
+    expect(settingsPage?.route).toBe('pages/settings/index')
+    expect(settingsPage?.data.logs).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'detail:onLoad:{"from":"home"}',
+      'detail:onShow',
+      'detail:onReady',
+      'detail:onUnload',
+      'settings:onLoad:{"from":"detail"}',
+      'settings:onShow',
+      'settings:onReady',
+    ])
+
+    session.switchTab('/pages/home/index')
+
+    expect(session.getCurrentPages()).toHaveLength(1)
+    expect(homePage.data.logs).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'detail:onLoad:{"from":"home"}',
+      'detail:onShow',
+      'detail:onReady',
+      'detail:onUnload',
+      'settings:onLoad:{"from":"detail"}',
+      'settings:onShow',
+      'settings:onReady',
+      'settings:onHide',
+      'settings:onUnload',
+      'home:onShow',
+      'home:onTabItemTap:{"index":0,"pagePath":"pages/home/index","text":"Home"}',
+    ])
+
+    session.reLaunch('/pages/profile/index?mode=relaunch')
+
+    expect(session.getCurrentPages()).toHaveLength(1)
+    const relaunchedProfile = session.getCurrentPages()[0]
+    expect(relaunchedProfile?.data.logs).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'detail:onLoad:{"from":"home"}',
+      'detail:onShow',
+      'detail:onReady',
+      'detail:onUnload',
+      'settings:onLoad:{"from":"detail"}',
+      'settings:onShow',
+      'settings:onReady',
+      'settings:onHide',
+      'settings:onUnload',
+      'home:onShow',
+      'home:onTabItemTap:{"index":0,"pagePath":"pages/home/index","text":"Home"}',
+      'home:onUnload',
+      'profile:onLoad:{"mode":"relaunch"}',
+      'profile:onShow',
+      'profile:onReady',
+    ])
+  })
+
+  it('fires onTabItemTap when switching or retapping a tab page', () => {
+    const projectPath = createNavigationFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const homePage = session.reLaunch('/pages/home/index')
+    session.switchTab('/pages/profile/index')
+
+    const profilePage = session.getCurrentPages()[0]
+    expect(profilePage?.route).toBe('pages/profile/index')
+    expect(profilePage?.data.logs).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'profile:onLoad:{}',
+      'profile:onShow',
+      'profile:onReady',
+      'profile:onTabItemTap:{"index":1,"pagePath":"pages/profile/index","text":"Profile"}',
+    ])
+
+    session.switchTab('/pages/profile/index')
+
+    expect(profilePage?.data.logs).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'profile:onLoad:{}',
+      'profile:onShow',
+      'profile:onReady',
+      'profile:onTabItemTap:{"index":1,"pagePath":"pages/profile/index","text":"Profile"}',
+      'profile:onTabItemTap:{"index":1,"pagePath":"pages/profile/index","text":"Profile"}',
+    ])
+    expect(homePage.options).toEqual({})
+    expect(profilePage?.options).toEqual({})
+  })
+
+  it('rejects switchTab urls that contain query parameters', () => {
+    const projectPath = createNavigationFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const homePage = session.reLaunch('/pages/home/index')
+    homePage.goProfileWithQueryCallbacks()
+
+    expect(session.getCurrentPages().map(page => page.route)).toEqual([
+      'pages/home/index',
+    ])
+    expect(homePage.data.logs).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:switchTab:fail:wx.switchTab() url cannot contain query in headless runtime: /pages/profile/index?from=home',
+      'home:switchTab:complete',
+    ])
   })
 })
