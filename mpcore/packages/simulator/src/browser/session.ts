@@ -247,6 +247,9 @@ export class BrowserHeadlessSession {
         if (normalizedSelector.startsWith('#')) {
           return scope.id === normalizedSelector.slice(1)
         }
+        if (normalizedSelector.startsWith('.')) {
+          return scope.classList?.includes(normalizedSelector.slice(1)) ?? false
+        }
         return scope.alias === normalizedSelector
       })
       .map(([candidateScopeId]) => this.componentCache.get(candidateScopeId))

@@ -25,6 +25,7 @@ interface DomNodeLike {
 
 interface BrowserRenderScope {
   alias?: string
+  classList?: string[]
   data: Record<string, any>
   getMethod: (methodName: string) => ((...args: any[]) => any) | undefined
   getScopeId: () => string
@@ -405,6 +406,10 @@ function renderNodeTree(
 
   const componentScope: BrowserRenderScope = {
       alias: clonedNode.name,
+      classList: String(clonedNode.attribs?.class ?? '')
+        .split(/\s+/)
+        .map(item => item.trim())
+        .filter(Boolean),
       data: createMergedScopeData(scope.data, componentInstance.properties, componentInstance.data),
       getMethod: (methodName: string) => {
         const method = componentInstance?.[methodName]
