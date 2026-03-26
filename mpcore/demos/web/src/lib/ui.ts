@@ -20,7 +20,7 @@ export const sectionCard = tv({
         header: 'border-b border-[color:var(--sim-divider)] pb-3',
       },
       standalone: {
-        base: 'rounded-[24px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-4 shadow-[var(--sim-shadow)] backdrop-blur-xl',
+        base: 'rounded-[18px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-3 shadow-[var(--sim-shadow)]',
       },
     },
   },
@@ -30,14 +30,14 @@ export const sectionCard = tv({
 })
 
 export const toolbarSurface = tv({
-  base: 'flex flex-col gap-3 rounded-[20px] border border-[color:var(--sim-border)] bg-[color:var(--sim-toolbar-bg)] px-4 py-3 shadow-[var(--sim-shadow)] backdrop-blur-xl xl:flex-row xl:items-start xl:justify-between',
+  base: 'flex flex-col gap-2 border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-toolbar-bg)] px-4 py-2.5 xl:flex-row xl:items-center xl:justify-between',
 })
 
 export const panelSurface = tv({
   slots: {
-    base: 'grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-[24px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] shadow-[var(--sim-shadow)]',
+    base: 'grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)]',
     bar: 'flex overflow-x-auto border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-strong)] px-2',
-    body: 'grid min-h-0 content-start overflow-auto p-4',
+    body: 'grid min-h-0 content-start overflow-auto p-3',
   },
 })
 
@@ -87,7 +87,7 @@ export const sceneButton = tv({
 })
 
 export const dropzoneCard = tv({
-  base: 'relative grid gap-1 rounded-[18px] border border-dashed border-[color:var(--sim-border-strong)] bg-[color:var(--sim-pill-bg)] px-4 py-3 transition-colors duration-150 hover:bg-[color:var(--sim-pill-hover)]',
+  base: 'relative grid gap-1 rounded-[12px] border border-dashed border-[color:var(--sim-border-strong)] bg-[color:var(--sim-pill-bg)] px-4 py-3 transition-colors duration-150 hover:bg-[color:var(--sim-pill-hover)]',
 })
 
 export const alertCard = tv({

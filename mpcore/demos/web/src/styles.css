@@ -6,11 +6,11 @@
 }
 
 :root {
-  --sim-bg: #0a0f14;
-  --sim-panel: rgb(17 25 35 / 88%);
-  --sim-panel-soft: rgb(13 20 29 / 92%);
-  --sim-panel-strong: rgb(24 33 45 / 96%);
-  --sim-toolbar-bg: rgb(13 20 29 / 76%);
+  --sim-bg: #252526;
+  --sim-panel: #1f2430;
+  --sim-panel-soft: #1b2029;
+  --sim-panel-strong: #242a35;
+  --sim-toolbar-bg: #2c313c;
   --sim-border: rgb(148 184 255 / 16%);
   --sim-border-strong: rgb(148 184 255 / 28%);
   --sim-divider: rgb(148 184 255 / 10%);
@@ -31,7 +31,7 @@
   --sim-surface-plain: #f3f7fb;
   --sim-surface-page: #fff;
   --sim-surface-page-text: #18344f;
-  --sim-shadow: 0 14px 44px rgb(0 0 0 / 26%);
+  --sim-shadow: none;
   --sim-device-bar-text: #dbe8ff;
   --sim-device-bar-bg: linear-gradient(90deg, #0c131a, #182430);
   --sim-preview-page-bg: #fff;
@@ -44,30 +44,28 @@
 
   font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   color: var(--sim-text);
-  background:
-    radial-gradient(circle at top left, rgb(84 137 255 / 15%), transparent 28%),
-    linear-gradient(180deg, #071018 0%, #0a0f14 42%, #0a1016 100%);
+  background: var(--sim-bg);
 }
 
 :root[data-sim-theme='light'] {
-  --sim-bg: #edf4fb;
-  --sim-panel: rgb(255 255 255 / 94%);
-  --sim-panel-soft: rgb(250 252 255 / 98%);
-  --sim-panel-strong: rgb(242 247 252 / 100%);
-  --sim-toolbar-bg: rgb(255 255 255 / 82%);
-  --sim-border: rgb(71 103 139 / 16%);
+  --sim-bg: #f0f0f0;
+  --sim-panel: #fff;
+  --sim-panel-soft: #fff;
+  --sim-panel-strong: #f5f5f5;
+  --sim-toolbar-bg: #f3f3f3;
+  --sim-border: rgb(71 103 139 / 14%);
   --sim-border-strong: rgb(71 103 139 / 24%);
-  --sim-divider: rgb(71 103 139 / 12%);
-  --sim-text: #17324d;
-  --sim-muted: #5c7390;
+  --sim-divider: rgb(71 103 139 / 10%);
+  --sim-text: #1f2328;
+  --sim-muted: #6b7786;
   --sim-accent: #0d9b87;
   --sim-accent-strong: #0b7f71;
   --sim-accent-soft: rgb(13 155 135 / 12%);
   --sim-accent-border: rgb(13 155 135 / 26%);
-  --sim-pill-bg: rgb(255 255 255 / 88%);
-  --sim-pill-hover: rgb(242 247 252 / 100%);
-  --sim-tab-hover: rgb(244 248 253 / 100%);
-  --sim-tab-active: rgb(255 255 255 / 100%);
+  --sim-pill-bg: #f7f8fa;
+  --sim-pill-hover: #eef1f4;
+  --sim-tab-hover: #f3f5f8;
+  --sim-tab-active: #fff;
   --sim-danger-bg: rgb(255 243 244 / 98%);
   --sim-danger-border: rgb(221 132 132 / 24%);
   --sim-danger-text: #9d3141;
@@ -75,7 +73,7 @@
   --sim-surface-plain: #f6f9fd;
   --sim-surface-page: #fff;
   --sim-surface-page-text: #16324c;
-  --sim-shadow: 0 14px 36px rgb(82 109 137 / 14%);
+  --sim-shadow: none;
   --sim-device-bar-text: #edf5ff;
   --sim-device-bar-bg: linear-gradient(90deg, #12314b, #244b6a);
   --sim-preview-page-bg: #fff;
@@ -86,9 +84,7 @@
   --sim-preview-tap-ring: rgb(13 155 135 / 20%);
   --sim-preview-active-bg: rgb(13 155 135 / 14%);
 
-  background:
-    radial-gradient(circle at top left, rgb(83 137 255 / 12%), transparent 28%),
-    linear-gradient(180deg, #f8fbff 0%, #eef4fa 48%, #e9f0f8 100%);
+  background: var(--sim-bg);
 }
 
 * {
@@ -105,7 +101,7 @@ body {
   margin: 0;
   overflow: hidden;
   color: var(--sim-text);
-  background: transparent;
+  background: var(--sim-bg);
 }
 
 button,
