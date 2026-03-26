@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import SectionCard from './SectionCard.vue'
 
 const props = defineProps<{
   markup: string
@@ -91,11 +90,11 @@ const PREVIEW_SHADOW_CSS = `
     box-sizing: border-box;
     width: 100%;
     min-height: 100%;
-    padding: 14px;
+    padding: 16px 14px 18px;
     margin: 0;
     color: var(--sim-preview-page-text, #18344f);
-    background: var(--sim-preview-page-bg, #fff);
-    border-radius: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #f5f7fb 100%);
+    border-radius: 28px;
     box-shadow: 0 10px 28px var(--sim-preview-page-shadow, rgb(15 27 40 / 10%));
   }
 
@@ -121,6 +120,109 @@ const PREVIEW_SHADOW_CSS = `
   .sim-shadow-screen [catch\\:tap]:active {
     background: var(--sim-preview-active-bg, rgb(135 243 216 / 18%));
     transform: scale(0.99);
+  }
+
+  .sim-shadow-screen .screen {
+    background: linear-gradient(180deg, #f6f8fc 0%, #ffffff 100%);
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+  }
+
+  .sim-shadow-screen .status {
+    margin: 16px 14px 10px;
+    padding: 20px 16px 12px;
+    color: #f7fbff;
+    background: linear-gradient(180deg, #1a2d52 0%, #111f39 100%);
+    border: none;
+    border-radius: 16px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .sim-shadow-screen .hero {
+    margin: 0 14px 14px;
+    padding: 14px 14px 16px;
+    color: #f2f6ff;
+    background: linear-gradient(180deg, #1f3258 0%, #263d66 100%);
+    border: 1px solid rgb(45 67 107 / 70%);
+    border-radius: 18px;
+  }
+
+  .sim-shadow-screen .hero-title,
+  .sim-shadow-screen .hero-subtitle {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  .sim-shadow-screen .hero-title {
+    margin-bottom: 6px;
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .sim-shadow-screen .hero-subtitle {
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    opacity: 0.92;
+  }
+
+  .sim-shadow-screen .hero-copy {
+    padding: 0;
+    margin-bottom: 12px;
+    color: rgb(228 236 252 / 90%);
+    background: transparent;
+    border: none;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .sim-shadow-screen .hero-actions {
+    display: flex;
+    gap: 10px;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+  }
+
+  .sim-shadow-screen .hero-actions view {
+    flex: 1;
+    margin: 0;
+    padding: 8px 10px;
+    color: #1d3260;
+    background: #ffffff;
+    border: none;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .sim-shadow-screen .section-title {
+    margin: 0 12px 8px;
+    padding: 0 4px;
+    color: #313949;
+    background: transparent;
+    border: none;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .sim-shadow-screen .metric-card,
+  .sim-shadow-screen .entry-card {
+    margin: 0 12px 10px;
+    padding: 14px 14px;
+    color: #1d2b43;
+    background: #ffffff;
+    border: 1px solid rgb(216 226 239 / 95%);
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgb(19 42 72 / 5%);
+    font-weight: 700;
   }
 `
 
@@ -238,8 +340,9 @@ const stageStyle = computed(() => ({
 }))
 
 const zoomLabel = computed(() => `${Math.round(previewScale.value * 100)}%`)
+const activePresetLabel = computed(() => DEVICE_PRESETS.find(item => item.value === selectedPreset.value)?.label ?? 'Custom Device')
 const viewportShellClass = computed(() => showDeviceFrame.value
-  ? 'relative h-full w-full overflow-hidden rounded-[26px] border border-[color:var(--sim-border-strong)] bg-[color:var(--sim-surface-page)] shadow-[0_24px_64px_rgb(15_27_40_/_0.18)]'
+  ? 'relative h-full w-full overflow-hidden rounded-[32px] border border-[#5c616d] bg-[#0f1422] shadow-[0_18px_36px_rgb(0_0_0_/_0.45)]'
   : 'relative h-full w-full overflow-hidden rounded-[14px] border border-[color:rgb(15_27_40_/_0.08)] bg-[color:var(--sim-surface-page)] shadow-[0_10px_28px_rgb(15_27_40_/_0.08)]')
 
 function persistToolbarState() {
@@ -464,180 +567,108 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <SectionCard
-    title="模拟器"
-    subtitle=""
-    tone="standalone"
-  >
-    <div class="grid gap-2">
-      <div class="grid min-h-0 overflow-hidden border border-[color:var(--sim-border)] bg-[color:var(--sim-surface-plain)]">
-        <div
-          class="flex flex-wrap items-center justify-between gap-2 border-b border-[color:rgb(255_255_255_/_0.08)] px-2 py-1.5 text-[12px] font-medium text-[color:var(--sim-device-bar-text)]"
-          :style="{ backgroundImage: 'var(--sim-device-bar-bg)' }"
-        >
-          <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-            <span
-              class="inline-flex max-w-[116px] shrink items-center rounded-full border border-[color:rgb(255_255_255_/_0.08)] bg-[color:rgb(255_255_255_/_0.04)] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:rgb(255_255_255_/_0.58)] max-[520px]:hidden"
-              :title="props.route"
-            >
-              <span class="truncate">{{ props.route }}</span>
-            </span>
-            <select
-              :value="selectedPreset"
-              class="min-w-0 rounded-full border border-[color:rgb(255_255_255_/_0.08)] bg-[color:rgb(10_15_20_/_0.22)] px-3 py-1 text-[11px] font-medium text-[color:var(--sim-device-bar-text)]"
-              @change="applyPreset(($event.target as HTMLSelectElement).value as DevicePresetValue)"
-            >
-              <option
-                v-for="preset in DEVICE_PRESETS"
-                :key="preset.value"
-                :value="preset.value"
-              >
-                {{ preset.label }}
-              </option>
-              <option value="custom">
-                自定义
-              </option>
-            </select>
-            <div class="flex items-center rounded-full border border-[color:rgb(255_255_255_/_0.08)] bg-[color:rgb(10_15_20_/_0.18)] px-2 py-1">
-              <input
-                v-model="viewportWidthInput"
-                type="number"
-                min="1"
-                class="w-14 border-none bg-transparent p-0 text-right text-[12px] font-medium text-[color:var(--sim-device-bar-text)] outline-none"
-                @change="commitViewportWidth"
-              >
-              <span class="px-1 text-[color:rgb(255_255_255_/_0.48)]">×</span>
-              <input
-                v-model="viewportHeightInput"
-                type="number"
-                min="1"
-                class="w-14 border-none bg-transparent p-0 text-[12px] font-medium text-[color:var(--sim-device-bar-text)] outline-none"
-                @change="commitViewportHeight"
-              >
-            </div>
-            <button
-              class="inline-flex h-8 w-8 items-center justify-center rounded-full border text-[color:var(--sim-device-bar-text)] transition-colors hover:bg-[color:rgb(255_255_255_/_0.08)]"
-              :class="zoomMode === 'fit'
-                ? 'border-[color:var(--sim-accent-border)] bg-[color:var(--sim-accent-soft)]'
-                : 'border-[color:rgb(255_255_255_/_0.08)] bg-[color:rgb(10_15_20_/_0.18)]'"
-              title="适配可见区域"
-              aria-label="适配可见区域"
-              @click="setZoomMode('fit')"
-            >
-              <span class="icon-[mdi--fit-to-page-outline] text-[15px]" aria-hidden="true" />
-            </button>
-            <button
-              class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:rgb(255_255_255_/_0.08)] bg-[color:rgb(10_15_20_/_0.18)] text-[color:var(--sim-device-bar-text)] transition-colors hover:bg-[color:rgb(255_255_255_/_0.08)]"
-              title="旋转视口"
-              aria-label="旋转视口"
-              @click="rotateViewport"
-            >
-              <span class="icon-[mdi--phone-rotate-landscape] text-[15px]" aria-hidden="true" />
-            </button>
-            <button
-              class="inline-flex h-8 w-8 items-center justify-center rounded-full border text-[color:var(--sim-device-bar-text)] transition-colors hover:bg-[color:rgb(255_255_255_/_0.08)]"
-              :class="showDeviceFrame
-                ? 'border-[color:var(--sim-accent-border)] bg-[color:var(--sim-accent-soft)]'
-                : 'border-[color:rgb(255_255_255_/_0.08)] bg-[color:rgb(10_15_20_/_0.18)]'"
-              :aria-pressed="showDeviceFrame"
-              :title="showDeviceFrame ? '隐藏设备外框' : '显示设备外框'"
-              :aria-label="showDeviceFrame ? '隐藏设备外框' : '显示设备外框'"
-              @click="showDeviceFrame = !showDeviceFrame"
-            >
-              <span
-                :class="showDeviceFrame ? 'icon-[mdi--tablet-cellphone]' : 'icon-[mdi--crop-free]'"
-                class="text-[15px]"
-                aria-hidden="true"
-              />
-            </button>
-          </div>
-          <div class="relative flex items-center gap-2">
-            <span class="hidden text-[11px] text-[color:rgb(255_255_255_/_0.62)] sm:inline">{{ zoomLabel }}</span>
-            <button
-              class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:rgb(255_255_255_/_0.08)] bg-[color:rgb(10_15_20_/_0.18)] text-[color:var(--sim-device-bar-text)] transition-colors hover:bg-[color:rgb(255_255_255_/_0.08)]"
-              :aria-expanded="showAdvancedControls"
-              title="更多设置"
-              aria-label="更多设置"
-              @click="toggleAdvancedControls"
-            >
-              <span class="icon-[mdi--dots-vertical] text-[16px]" aria-hidden="true" />
-            </button>
-            <button
-              class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:rgb(255_255_255_/_0.08)] bg-[color:rgb(10_15_20_/_0.18)] text-[color:var(--sim-device-bar-text)] transition-colors hover:bg-[color:rgb(255_255_255_/_0.08)]"
-              title="返回上一页"
-              aria-label="返回上一页"
-              @click="emit('back')"
-            >
-              <span class="icon-[mdi--arrow-left] text-[15px]" aria-hidden="true" />
-            </button>
-            <div
-              v-if="showAdvancedControls"
-              class="absolute right-0 top-[calc(100%+8px)] z-10 grid min-w-[220px] gap-2 rounded-[18px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-3 text-[12px] text-[color:var(--sim-text)] shadow-[0_18px_44px_rgb(0_0_0_/_0.24)] backdrop-blur-xl"
-            >
-              <div class="flex items-center justify-between gap-2">
-                <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--sim-muted)]">高级控制</span>
-                <button
-                  class="rounded-full px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]"
-                  @click="closeAdvancedControls"
-                >
-                  Close
-                </button>
-              </div>
-              <label class="flex items-center gap-1 rounded-full border border-[color:var(--sim-border)] bg-[color:var(--sim-pill-bg)] px-2 py-1">
-                <span class="text-[10px] uppercase tracking-[0.14em] text-[color:var(--sim-muted)]">Zoom</span>
-                <input
-                  v-model="zoomPercentInput"
-                  type="number"
-                  min="25"
-                  max="300"
-                  class="w-12 border-none bg-transparent p-0 text-[12px] font-medium text-[color:var(--sim-text)] outline-none disabled:opacity-50"
-                  :disabled="zoomMode !== 'custom'"
-                  @change="commitZoomPercent"
-                >
-                <button
-                  type="button"
-                  class="rounded-full px-1.5 py-0.5 text-[10px] uppercase tracking-[0.14em] text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]"
-                  @click="setZoomMode('custom')"
-                >
-                  %
-                </button>
-              </label>
-              <label class="flex items-center gap-1 rounded-full border border-[color:var(--sim-border)] bg-[color:var(--sim-pill-bg)] px-2 py-1">
-                <span class="text-[10px] uppercase tracking-[0.14em] text-[color:var(--sim-muted)]">Stage</span>
-                <input
-                  v-model="stageHeightInput"
-                  type="number"
-                  min="320"
-                  max="1200"
-                  class="w-14 border-none bg-transparent p-0 text-[12px] font-medium text-[color:var(--sim-text)] outline-none"
-                  @change="commitStageHeight"
-                >
-              </label>
-              <span class="text-[11px] leading-5 text-[color:var(--sim-muted)]">支持拖拽右下角手柄直接调整视口尺寸</span>
+  <section class="grid h-full min-h-0 grid-rows-[36px_minmax(0,1fr)_34px] overflow-hidden bg-[#2c2c2c]">
+    <div class="flex items-center justify-between border-b border-[#3a3a3a] px-3 text-[11px] text-[#a7a7a7]">
+      <div class="flex items-center gap-2">
+        <span class="font-medium text-[#c6c6c6]">普通编译</span>
+        <span class="icon-[mdi--chevron-down] text-[12px]" aria-hidden="true" />
+        <span class="icon-[mdi--reload] text-[13px]" aria-hidden="true" />
+        <span class="icon-[mdi--cellphone] text-[13px]" aria-hidden="true" />
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="inline-flex h-6 w-6 items-center justify-center rounded-sm hover:bg-[#383838]" @click="emit('back')">
+          <span class="icon-[mdi--arrow-left] text-[13px]" aria-hidden="true" />
+        </button>
+        <button class="inline-flex h-6 w-6 items-center justify-center rounded-sm hover:bg-[#383838]" @click="toggleAdvancedControls">
+          <span class="icon-[mdi--dots-horizontal] text-[14px]" aria-hidden="true" />
+        </button>
+      </div>
+    </div>
+
+    <div
+      ref="previewStage"
+      class="grid min-h-0 content-start justify-items-center overflow-auto bg-[#2c2c2c] px-6 py-5"
+      :style="stageStyle"
+    >
+      <div class="relative shrink-0" :style="scaledViewportStyle">
+        <div class="absolute left-0 top-0" :style="previewViewportStyle">
+          <div v-if="showDeviceFrame" class="absolute left-1/2 top-[7px] z-20 h-[28px] w-[122px] -translate-x-1/2 rounded-b-[18px] border border-[#4a505d] bg-[#111827]" />
+          <div class="absolute left-0 top-0 z-20 flex w-full items-center justify-between px-4 pt-3 text-[11px] font-semibold text-white">
+            <span>22:08</span>
+            <div class="flex items-center gap-1">
+              <span class="icon-[mdi--signal] text-[12px]" aria-hidden="true" />
+              <span class="icon-[mdi--wifi] text-[12px]" aria-hidden="true" />
+              <span class="icon-[mdi--battery-high] text-[12px]" aria-hidden="true" />
             </div>
           </div>
+          <div
+            ref="previewHost"
+            :class="viewportShellClass"
+          />
+          <button
+            type="button"
+            class="absolute bottom-1 right-1 z-30 h-5 w-5 cursor-se-resize rounded-full border border-[color:rgb(13_155_135_/_0.28)] bg-[color:rgb(255_255_255_/_0.94)] shadow-[0_6px_18px_rgb(15_27_40_/_0.16)] after:absolute after:bottom-[5px] after:right-[5px] after:h-2 after:w-2 after:rounded-sm after:border-b-2 after:border-r-2 after:border-[color:var(--sim-accent)]"
+            title="拖拽调整视口尺寸"
+            @pointerdown="startResizeDrag"
+          />
         </div>
-        <div
-          ref="previewStage"
-          class="grid min-h-0 place-items-center overflow-auto bg-[#2b2b2b] p-2.5"
-          :style="stageStyle"
+      </div>
+
+      <div
+        v-if="showAdvancedControls"
+        class="mt-4 grid w-full max-w-[312px] gap-2 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-3 text-[12px] text-[color:var(--sim-text)] shadow-[0_18px_44px_rgb(0_0_0_/_0.24)]"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--sim-muted)]">设备控制</span>
+          <button class="rounded-sm px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]" @click="closeAdvancedControls">
+            Close
+          </button>
+        </div>
+        <select
+          :value="selectedPreset"
+          class="h-8 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] px-2 text-[12px] text-[color:var(--sim-text)]"
+          @change="applyPreset(($event.target as HTMLSelectElement).value as DevicePresetValue)"
         >
-          <div class="relative shrink-0" :style="scaledViewportStyle">
-            <div class="absolute left-0 top-0" :style="previewViewportStyle">
-              <div
-                ref="previewHost"
-                :class="viewportShellClass"
-              />
-              <button
-                type="button"
-                class="absolute bottom-1 right-1 h-5 w-5 cursor-se-resize rounded-full border border-[color:rgb(13_155_135_/_0.28)] bg-[color:rgb(255_255_255_/_0.94)] shadow-[0_6px_18px_rgb(15_27_40_/_0.16)] after:absolute after:bottom-[5px] after:right-[5px] after:h-2 after:w-2 after:rounded-sm after:border-b-2 after:border-r-2 after:border-[color:var(--sim-accent)]"
-                title="拖拽调整视口尺寸"
-                @pointerdown="startResizeDrag"
-              />
-            </div>
-          </div>
+          <option
+            v-for="preset in DEVICE_PRESETS"
+            :key="preset.value"
+            :value="preset.value"
+          >
+            {{ preset.label }}
+          </option>
+          <option value="custom">
+            自定义
+          </option>
+        </select>
+        <div class="grid grid-cols-[1fr_1fr_auto] gap-2">
+          <input v-model="viewportWidthInput" type="number" min="1" class="h-8 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] px-2 text-[12px] text-[color:var(--sim-text)] outline-none" @change="commitViewportWidth">
+          <input v-model="viewportHeightInput" type="number" min="1" class="h-8 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] px-2 text-[12px] text-[color:var(--sim-text)] outline-none" @change="commitViewportHeight">
+          <button class="inline-flex h-8 w-8 items-center justify-center border border-[color:var(--sim-border)] text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]" @click="rotateViewport">
+            <span class="icon-[mdi--phone-rotate-landscape]" aria-hidden="true" />
+          </button>
+        </div>
+        <div class="grid grid-cols-[1fr_1fr_auto] gap-2">
+          <input v-model="zoomPercentInput" type="number" min="25" max="300" class="h-8 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] px-2 text-[12px] text-[color:var(--sim-text)] outline-none" :disabled="zoomMode !== 'custom'" @change="commitZoomPercent">
+          <input v-model="stageHeightInput" type="number" min="320" max="1200" class="h-8 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] px-2 text-[12px] text-[color:var(--sim-text)] outline-none" @change="commitStageHeight">
+          <button class="inline-flex h-8 w-8 items-center justify-center border text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]" :class="zoomMode === 'fit' ? 'border-[color:var(--sim-accent-border)] bg-[color:var(--sim-accent-soft)]' : 'border-[color:var(--sim-border)]'" @click="setZoomMode(zoomMode === 'fit' ? 'custom' : 'fit')">
+            <span class="icon-[mdi--fit-to-page-outline]" aria-hidden="true" />
+          </button>
         </div>
       </div>
     </div>
-  </SectionCard>
+
+    <div class="flex items-center justify-center gap-3 border-t border-[#3a3a3a] bg-[#313131] px-3 text-[11px] text-[#8e8e8e]">
+      <span class="truncate">{{ activePresetLabel }}</span>
+      <span>|</span>
+      <span>{{ viewportWidth }} × {{ viewportHeight }}</span>
+      <span>|</span>
+      <span>{{ zoomLabel }}</span>
+      <span class="icon-[mdi--circle-outline] text-[12px]" aria-hidden="true" />
+      <span class="icon-[mdi--camera-outline] text-[12px]" aria-hidden="true" />
+      <span class="icon-[mdi--crop-free] text-[12px]" aria-hidden="true" />
+      <button class="inline-flex h-5 w-5 items-center justify-center rounded-sm hover:bg-[#3b3b3b]" :aria-pressed="showDeviceFrame" @click="showDeviceFrame = !showDeviceFrame">
+        <span :class="showDeviceFrame ? 'icon-[mdi--tablet-cellphone]' : 'icon-[mdi--cellphone-off]'" class="text-[12px]" aria-hidden="true" />
+      </button>
+    </div>
+  </section>
 </template>
