@@ -1,5 +1,5 @@
 import type { HeadlessAppDefinition, HeadlessHostRegistries } from '../host'
-import type { HeadlessProjectDescriptor } from '../project'
+import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessAppInstance } from './appInstance'
 import type { HeadlessPageInstance } from './pageInstance'
 import path from 'node:path'
@@ -13,7 +13,86 @@ export interface HeadlessSessionOptions {
   projectPath: string
 }
 
+interface ResolvedNavigationTarget {
+  normalizedRoute: string
+  query: Record<string, string>
+  routeRecord: HeadlessRouteRecord
+}
+
+interface HeadlessAppLaunchOptions {
+  path: string
+  query: Record<string, string>
+  referrerInfo: {
+    appId: string
+    extraData: Record<string, never>
+  }
+  scene: number
+}
+
+interface HeadlessTabBarItem {
+  index: number
+  pagePath: string
+  text?: string
+}
+
 const LEADING_SLASH_RE = /^\/+/
+const PAGE_STACK_LIMIT = 10
+
+function stripLeadingSlash(route: string) {
+  return route.replace(LEADING_SLASH_RE, '')
+}
+
+function normalizeQuery(queryString: string) {
+  const query = new URLSearchParams(queryString)
+  const result: Record<string, string> = {}
+  for (const [key, value] of query.entries()) {
+    result[key] = value
+  }
+  return result
+}
+
+function parseNavigationUrl(url: string) {
+  const trimmedUrl = url.trim()
+  if (!trimmedUrl) {
+    throw new Error('Navigation url must be a non-empty string in headless runtime.')
+  }
+
+  const [pathWithHash, queryString = ''] = trimmedUrl.split('?')
+  const [pathname] = pathWithHash.split('#')
+  return {
+    pathname: pathname || '',
+    query: normalizeQuery(queryString),
+  }
+}
+
+function createAppLaunchOptions(pathname: string, query: Record<string, string>): HeadlessAppLaunchOptions {
+  return {
+    path: stripLeadingSlash(pathname),
+    query: { ...query },
+    referrerInfo: {
+      appId: '',
+      extraData: {},
+    },
+    scene: 1001,
+  }
+}
+
+function resolveNavigationPath(targetPath: string, baseRoute?: string) {
+  if (!targetPath) {
+    throw new Error('Navigation url must include a pathname in headless runtime.')
+  }
+
+  if (targetPath.startsWith('/')) {
+    return path.posix.normalize(targetPath).replace(LEADING_SLASH_RE, '')
+  }
+
+  if (!baseRoute) {
+    throw new Error(`Cannot resolve relative navigation url "${targetPath}" without an active page.`)
+  }
+
+  const resolved = path.posix.resolve(`/${path.posix.dirname(baseRoute)}`, targetPath)
+  return resolved.replace(LEADING_SLASH_RE, '')
+}
 
 export class HeadlessSession {
   readonly project: HeadlessProjectDescriptor
@@ -24,14 +103,45 @@ export class HeadlessSession {
   private readonly registries: HeadlessHostRegistries
   private currentPageInstance: HeadlessPageInstance | null = null
   private readonly pages: HeadlessPageInstance[] = []
+  private readonly tabBarRoutes: Set<string>
+  private readonly tabPages = new Map<string, HeadlessPageInstance>()
+  private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
 
   constructor(options: HeadlessSessionOptions) {
     this.project = loadProject(options.projectPath)
     this.registries = createHostRegistries()
+    const rawTabBarList = Array.isArray(this.project.appConfig.tabBar?.list)
+      ? this.project.appConfig.tabBar.list
+      : []
+    this.tabBarRoutes = new Set()
+    rawTabBarList.forEach((item: any, index: number) => {
+      if (typeof item?.pagePath !== 'string') {
+        return
+      }
+      const pagePath = stripLeadingSlash(item.pagePath)
+      if (!pagePath) {
+        return
+      }
+      this.tabBarRoutes.add(pagePath)
+      this.tabBarItems.set(pagePath, {
+        index,
+        pagePath,
+        text: typeof item.text === 'string' ? item.text : undefined,
+      })
+    })
     this.moduleLoader = createModuleLoader(
       this.registries,
       () => this.pages.slice(),
       () => this.getApp(),
+      {
+        navigateBack: option => this.navigateBack(option?.delta),
+        navigateTo: option => this.navigateTo(option.url),
+        pageScrollTo: option => this.pageScrollTo(option),
+        reLaunch: option => this.reLaunch(option.url),
+        redirectTo: option => this.redirectTo(option.url),
+        stopPullDownRefresh: () => this.stopPullDownRefresh(),
+        switchTab: option => this.switchTab(option.url),
+      },
     )
   }
 
@@ -43,7 +153,7 @@ export class HeadlessSession {
     return this.pages.slice()
   }
 
-  bootstrap() {
+  bootstrap(launchOptions = createAppLaunchOptions('', {})) {
     if (this.appInstance) {
       return this.appInstance
     }
@@ -51,36 +161,246 @@ export class HeadlessSession {
     const appModulePath = path.resolve(this.project.miniprogramRootPath, 'app.js')
     this.appDefinition = this.moduleLoader.executeAppModule(appModulePath)
     this.appInstance = createAppInstance(this.appDefinition)
-    this.appInstance.onLaunch?.()
-    this.appInstance.onShow?.()
+    this.appInstance.onLaunch?.(launchOptions)
+    this.appInstance.onShow?.(launchOptions)
     return this.appInstance
   }
 
-  reLaunch(route: string) {
-    this.bootstrap()
-
-    const normalizedRoute = route.replace(LEADING_SLASH_RE, '')
-    const routeRecord = this.project.routes.find(item => item.route === normalizedRoute)
-    if (!routeRecord) {
-      throw new Error(`Unknown route for headless runtime reLaunch(): ${route}`)
-    }
-
-    if (this.currentPageInstance) {
-      this.currentPageInstance.onHide?.()
-      this.currentPageInstance.onUnload?.()
-      this.pages.length = 0
-      this.currentPageInstance = null
-    }
-
-    const pageModulePath = path.resolve(this.project.miniprogramRootPath, `${routeRecord.route}.js`)
-    const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, routeRecord.route)
-    const pageInstance = createPageInstance(`/${routeRecord.route}`, pageDefinition)
+  reLaunch(url: string) {
+    const target = this.resolveNavigationTarget(url)
+    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    this.unloadAllPages()
+    const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
-    pageInstance.onLoad?.()
+    return pageInstance
+  }
+
+  navigateTo(url: string) {
+    const target = this.resolveNavigationTarget(url)
+    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (this.pages.length >= PAGE_STACK_LIMIT) {
+      throw new Error(`Cannot navigateTo() beyond a ${PAGE_STACK_LIMIT}-page stack in headless runtime.`)
+    }
+
+    if (this.isTabBarRoute(target.routeRecord.route)) {
+      throw new Error(`wx.navigateTo() cannot open a tabBar page in headless runtime: ${url}`)
+    }
+
+    this.currentPageInstance?.onHide?.()
+    const pageInstance = this.createFreshPage(target)
+    this.pages.push(pageInstance)
+    this.currentPageInstance = pageInstance
+    return pageInstance
+  }
+
+  redirectTo(url: string) {
+    const target = this.resolveNavigationTarget(url)
+    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (this.isTabBarRoute(target.routeRecord.route)) {
+      throw new Error(`wx.redirectTo() cannot open a tabBar page in headless runtime: ${url}`)
+    }
+
+    const current = this.currentPageInstance
+    if (current) {
+      this.pages.pop()
+      this.unloadPage(current)
+    }
+
+    const pageInstance = this.createFreshPage(target)
+    this.pages.push(pageInstance)
+    this.currentPageInstance = pageInstance
+    return pageInstance
+  }
+
+  navigateBack(delta = 1) {
+    this.bootstrap()
+    if (this.pages.length <= 1) {
+      return this.currentPageInstance
+    }
+
+    const normalizedDelta = Number.isFinite(delta) ? Math.max(1, Math.trunc(delta)) : 1
+    const removableCount = Math.min(normalizedDelta, this.pages.length - 1)
+    const removedPages = this.pages.splice(this.pages.length - removableCount, removableCount)
+    for (const page of removedPages.reverse()) {
+      this.unloadPage(page)
+    }
+
+    const nextPage = this.pages.at(-1) ?? null
+    this.currentPageInstance = nextPage
+    nextPage?.onShow?.()
+    return nextPage
+  }
+
+  switchTab(url: string) {
+    const target = this.resolveNavigationTarget(url)
+    this.bootstrap(createAppLaunchOptions(target.normalizedRoute, target.query))
+    if (Object.keys(target.query).length > 0) {
+      throw new Error(`wx.switchTab() url cannot contain query in headless runtime: ${url}`)
+    }
+    if (!this.isTabBarRoute(target.routeRecord.route)) {
+      throw new Error(`wx.switchTab() can only open a tabBar page in headless runtime: ${url}`)
+    }
+
+    const current = this.currentPageInstance
+    const cachedTarget = this.tabPages.get(target.routeRecord.route) ?? null
+    const tabItem = this.resolveTabBarItem(target.routeRecord.route)
+
+    if (current === cachedTarget && current) {
+      current.onTabItemTap?.(tabItem)
+      return current
+    }
+
+    if (current && current !== cachedTarget) {
+      current.onHide?.()
+    }
+
+    for (const page of [...this.pages].reverse()) {
+      if (this.isTabBarRoute(stripLeadingSlash(page.route))) {
+        continue
+      }
+      this.removePageInstance(page)
+      this.unloadPage(page)
+    }
+
+    let nextPage = cachedTarget
+    if (!nextPage) {
+      nextPage = this.createFreshPage(target)
+      this.tabPages.set(target.routeRecord.route, nextPage)
+    }
+    else if (current !== nextPage) {
+      nextPage.onShow?.()
+    }
+
+    nextPage.onTabItemTap?.(tabItem)
+
+    this.pages.length = 0
+    this.pages.push(nextPage)
+    this.currentPageInstance = nextPage
+    return nextPage
+  }
+
+  pageScrollTo(option: {
+    scrollTop?: number
+    duration?: number
+    selector?: string
+    success?: () => void
+    fail?: (error: Error) => void
+    complete?: () => void
+  }) {
+    const current = this.requireCurrentPage('wx.pageScrollTo()')
+    current.onPageScroll?.({
+      scrollTop: Number(option.scrollTop ?? 0),
+    })
+  }
+
+  triggerPullDownRefresh() {
+    const current = this.requireCurrentPage('triggerPullDownRefresh()')
+    current.onPullDownRefresh?.()
+    return current
+  }
+
+  triggerReachBottom() {
+    const current = this.requireCurrentPage('triggerReachBottom()')
+    current.onReachBottom?.()
+    return current
+  }
+
+  triggerResize(options: Record<string, any>) {
+    const current = this.requireCurrentPage('triggerResize()')
+    current.onResize?.(options)
+    return current
+  }
+
+  triggerRouteDone(options: Record<string, any> = {}) {
+    const current = this.requireCurrentPage('triggerRouteDone()')
+    current.onRouteDone?.(options)
+    return current
+  }
+
+  stopPullDownRefresh() {
+    return
+  }
+
+  private createFreshPage(target: ResolvedNavigationTarget) {
+    const pageModulePath = path.resolve(this.project.miniprogramRootPath, `${target.routeRecord.route}.js`)
+    const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
+    const pageInstance = createPageInstance(`/${target.routeRecord.route}`, pageDefinition, target.query)
+    pageInstance.onLoad?.(target.query)
     pageInstance.onShow?.()
     pageInstance.onReady?.()
+    if (this.isTabBarRoute(target.routeRecord.route)) {
+      this.tabPages.set(target.routeRecord.route, pageInstance)
+    }
     return pageInstance
+  }
+
+  private isTabBarRoute(route: string) {
+    return this.tabBarRoutes.has(stripLeadingSlash(route))
+  }
+
+  private resolveTabBarItem(route: string) {
+    const pagePath = stripLeadingSlash(route)
+    const item = this.tabBarItems.get(pagePath)
+    if (!item) {
+      throw new Error(`Missing tabBar metadata for route "${route}" in headless runtime.`)
+    }
+    return {
+      ...item,
+    }
+  }
+
+  private removePageInstance(page: HeadlessPageInstance) {
+    const index = this.pages.indexOf(page)
+    if (index >= 0) {
+      this.pages.splice(index, 1)
+    }
+  }
+
+  private resolveNavigationTarget(url: string) {
+    const { pathname, query } = parseNavigationUrl(url)
+    const baseRoute = this.currentPageInstance
+      ? stripLeadingSlash(this.currentPageInstance.route)
+      : undefined
+    const normalizedRoute = resolveNavigationPath(pathname, baseRoute)
+    const routeRecord = this.project.routes.find(item => item.route === normalizedRoute)
+    if (!routeRecord) {
+      this.bootstrap(createAppLaunchOptions(normalizedRoute, query))
+      this.appInstance?.onPageNotFound?.(createAppLaunchOptions(normalizedRoute, query))
+      throw new Error(`Unknown route for headless runtime navigation: ${url}`)
+    }
+    return {
+      normalizedRoute,
+      query,
+      routeRecord,
+    }
+  }
+
+  private unloadAllPages() {
+    const pagesToUnload = new Set<HeadlessPageInstance>([
+      ...this.pages,
+      ...this.tabPages.values(),
+    ])
+    for (const page of [...pagesToUnload].reverse()) {
+      this.unloadPage(page)
+    }
+    this.pages.length = 0
+    this.tabPages.clear()
+    this.currentPageInstance = null
+  }
+
+  private unloadPage(page: HeadlessPageInstance) {
+    page.onUnload?.()
+    this.tabPages.delete(stripLeadingSlash(page.route))
+  }
+
+  private requireCurrentPage(action: string) {
+    this.bootstrap()
+    const current = this.currentPageInstance
+    if (!current) {
+      throw new Error(`Cannot call ${action} without an active page in headless runtime.`)
+    }
+    return current
   }
 }
 

@@ -3,6 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { loadProject } from '../src/project'
+import { cleanupTempDirs, createBaseFixture } from './helpers'
 
 function writeJson(target: string, value: Record<string, any>) {
   fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -13,9 +14,7 @@ describe('loadProject', () => {
   const tempDirs: string[] = []
 
   afterEach(() => {
-    for (const tempDir of tempDirs.splice(0)) {
-      fs.rmSync(tempDir, { recursive: true, force: true })
-    }
+    cleanupTempDirs(tempDirs)
   })
 
   it('loads routes from built app config under miniprogramRoot', () => {
@@ -77,10 +76,12 @@ describe('loadProject', () => {
     expect(project.appConfigPath).toBe(path.join(root, 'dist/app.json'))
   })
 
-  it('reads a real built e2e app from the repository', () => {
-    const project = loadProject(path.resolve(import.meta.dirname, '../../../../e2e-apps/base'))
+  it('reads a built fixture app from disk', () => {
+    const root = createBaseFixture()
+    tempDirs.push(root)
+    const project = loadProject(root)
 
-    expect(project.miniprogramRootPath.endsWith(path.normalize('e2e-apps/base/dist'))).toBe(true)
+    expect(project.miniprogramRootPath).toBe(path.join(root, 'dist'))
     expect(project.routes.some(route => route.route === 'pages/index/index')).toBe(true)
   })
 

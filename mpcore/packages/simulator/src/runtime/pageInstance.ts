@@ -1,9 +1,11 @@
 import type { HeadlessPageDefinition } from '../host'
 
 export interface HeadlessPageInstance extends Record<string, any> {
+  __route__: string
   data: Record<string, any>
+  options: Record<string, string>
   route: string
-  setData: (patch: Record<string, any>) => void
+  setData: (patch: Record<string, any>, callback?: () => void) => void
 }
 
 function bindFunction(target: Record<string, any>, key: string, value: unknown) {
@@ -31,31 +33,65 @@ function resolveInitialData(definition: HeadlessPageDefinition) {
     : {}
 }
 
+function parseDataPath(path: string) {
+  return path
+    .replace(/\[(\d+)\]/g, '.$1')
+    .split('.')
+    .map(segment => segment.trim())
+    .filter(Boolean)
+}
+
+function isArrayIndexSegment(segment: string) {
+  return /^\d+$/.test(segment)
+}
+
+function createContainerByNextSegment(nextSegment?: string) {
+  return isArrayIndexSegment(nextSegment ?? '') ? [] : {}
+}
+
 function assignByPath(target: Record<string, any>, path: string, value: unknown) {
-  const segments = path.split('.').filter(Boolean)
+  const segments = parseDataPath(path)
   if (segments.length === 0) {
     return
   }
-  let current: Record<string, any> = target
+
+  let current: any = target
   for (let index = 0; index < segments.length - 1; index += 1) {
     const segment = segments[index]!
-    const next = current[segment]
-    if (!next || typeof next !== 'object' || Array.isArray(next)) {
-      current[segment] = {}
+    const nextSegment = segments[index + 1]
+    const normalizedSegment = isArrayIndexSegment(segment) ? Number(segment) : segment
+    const next = current?.[normalizedSegment]
+    if (!next || typeof next !== 'object') {
+      current[normalizedSegment] = createContainerByNextSegment(nextSegment)
     }
-    current = current[segment]
+    current = current[normalizedSegment]
   }
-  current[segments[segments.length - 1]!] = value
+
+  const leafSegment = segments[segments.length - 1]!
+  const normalizedLeafSegment = isArrayIndexSegment(leafSegment) ? Number(leafSegment) : leafSegment
+  current[normalizedLeafSegment] = value
 }
 
-export function createPageInstance(route: string, definition: HeadlessPageDefinition): HeadlessPageInstance {
+function normalizeRoute(route: string) {
+  return route.replace(/^\/+/, '')
+}
+
+export function createPageInstance(
+  route: string,
+  definition: HeadlessPageDefinition,
+  options: Record<string, string> = {},
+): HeadlessPageInstance {
+  const normalizedRoute = normalizeRoute(route)
   const instance: HeadlessPageInstance = {
+    __route__: normalizedRoute,
     data: resolveInitialData(definition),
-    route,
-    setData(patch) {
+    options: { ...options },
+    route: normalizedRoute,
+    setData(patch, callback) {
       for (const [key, value] of Object.entries(patch)) {
         assignByPath(instance.data, key, value)
       }
+      callback?.()
     },
   }
 
