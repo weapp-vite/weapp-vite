@@ -2,24 +2,10 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { normalize } from 'pathe'
 import {
-  resolveRoutesFromAppConfig,
-  type HeadlessRouteRecord,
-} from './resolveRoutes'
-
-export interface HeadlessProjectConfigFile {
-  filePath: string
-  value: Record<string, any>
-}
-
-export interface HeadlessProjectDescriptor {
-  appConfig: Record<string, any>
-  appConfigPath: string
-  miniprogramRoot: string
-  miniprogramRootPath: string
-  projectPath: string
-  projectConfigFiles: HeadlessProjectConfigFile[]
-  routes: HeadlessRouteRecord[]
-}
+  createProjectDescriptor,
+  type HeadlessProjectConfigFile,
+  type HeadlessProjectDescriptor,
+} from './createProjectDescriptor'
 
 function readJsonObject(filePath: string) {
   try {
@@ -99,15 +85,12 @@ export function loadProject(projectPath: string): HeadlessProjectDescriptor {
   ensureFileExists(appConfigPath, 'built app.json')
 
   const appConfig = loadAppConfig(appConfigPath)
-  const routes = resolveRoutesFromAppConfig(appConfig)
-
-  return {
+  return createProjectDescriptor({
     appConfig,
     appConfigPath,
     miniprogramRoot,
     miniprogramRootPath,
     projectPath: normalizedProjectPath,
     projectConfigFiles,
-    routes,
-  }
+  })
 }

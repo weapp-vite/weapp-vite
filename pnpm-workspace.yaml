@@ -4,6 +4,7 @@ packages:
   - templates/*
   - packages/*
   - mpcore/packages/*
+  - mpcore/demos/*
   - '@weapp-core/*'
   - extensions/*
   - website
