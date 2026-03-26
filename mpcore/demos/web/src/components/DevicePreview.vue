@@ -29,13 +29,25 @@ function collectDataset(node: HTMLElement) {
 }
 
 function resolveTapBinding(target: EventTarget | null) {
-  const origin = target instanceof HTMLElement ? target : null
+  const originNode = target instanceof Node ? target : null
+  const origin = originNode instanceof HTMLElement
+    ? originNode
+    : originNode?.parentElement ?? null
   let current = origin
+  let nearestScopeId = ''
 
   while (current) {
     const scopeId = current.getAttribute('data-sim-scope') ?? ''
-    const bindTap = current.getAttribute('bindtap') || current.getAttribute('bind:tap')
-    if (bindTap) {
+    const bindTap = current.getAttribute('bindtap')
+      || current.getAttribute('bind:tap')
+      || current.getAttribute('catchtap')
+      || current.getAttribute('catch:tap')
+
+    if (!nearestScopeId && scopeId) {
+      nearestScopeId = scopeId
+    }
+
+    if (bindTap && scopeId) {
       return {
         event: {
           currentTarget: {
@@ -51,26 +63,27 @@ function resolveTapBinding(target: EventTarget | null) {
         scopeId,
       }
     }
-    if (scopeId) {
-      return {
-        event: {
-          currentTarget: {
-            dataset: collectDataset(current),
-            id: current.id ?? '',
-          },
-          target: {
-            dataset: origin ? collectDataset(origin) : {},
-            id: origin?.id ?? '',
-          },
-        },
-        method: '',
-        scopeId,
-      }
-    }
     current = current.parentElement
   }
 
-  return null
+  if (!nearestScopeId) {
+    return null
+  }
+
+  return {
+    event: {
+      currentTarget: {
+        dataset: origin ? collectDataset(origin) : {},
+        id: origin?.id ?? '',
+      },
+      target: {
+        dataset: origin ? collectDataset(origin) : {},
+        id: origin?.id ?? '',
+      },
+    },
+    method: '',
+    scopeId: nearestScopeId,
+  }
 }
 
 function handleScreenClick(event: MouseEvent) {
@@ -102,7 +115,7 @@ function handleScreenClick(event: MouseEvent) {
           返回
         </button>
       </div>
-      <div class="sim-device__screen" v-html="markup" @click="handleScreenClick" />
+      <div class="sim-device__screen" @click="handleScreenClick" v-html="markup" />
     </div>
   </SectionCard>
 </template>
