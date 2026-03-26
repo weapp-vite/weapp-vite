@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/editor/index",
+    "pages/review/index"
+  ],
+  "subPackages": [
+    {
+      "root": "package-media",
+      "pages": [
+        "library/index",
+        "asset/index"
+      ]
+    }
+  ]
+}

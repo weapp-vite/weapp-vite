@@ -11,6 +11,7 @@ import {
   defineComponent,
   ref,
 } from 'vue'
+import { builtInScenarios } from './scenarios'
 import './styles.css'
 
 const HOOK_NAMES = new Set([
@@ -60,6 +61,7 @@ const App = defineComponent(() => {
   const errorMessage = ref('')
   const projectLabel = ref('No project loaded')
   const loading = ref(false)
+  const currentScenarioId = ref<string | null>(null)
 
   const currentPage = computed(() => {
     revision.value
@@ -127,6 +129,21 @@ const App = defineComponent(() => {
     }
   }
 
+  function loadScenario(label: string, files: BrowserHeadlessSession['files'], scenarioId?: string) {
+    errorMessage.value = ''
+    const nextSession = createBrowserHeadlessSession({
+      files,
+    })
+    session.value = nextSession
+    currentScenarioId.value = scenarioId ?? null
+    projectLabel.value = label
+    const firstRoute = nextSession.project.routes[0]?.route
+    if (firstRoute) {
+      nextSession.reLaunch(`/${firstRoute}`)
+    }
+    touch()
+  }
+
   async function handleDirectoryChange(event: Event) {
     const input = event.target as HTMLInputElement
     const files = Array.from(input.files ?? []) as BrowserDirectoryFileLike[]
@@ -138,15 +155,7 @@ const App = defineComponent(() => {
     errorMessage.value = ''
     try {
       const virtualFiles = await createBrowserVirtualFilesFromDirectory(files)
-      const nextSession = createBrowserHeadlessSession({
-        files: virtualFiles,
-      })
-      session.value = nextSession
-      projectLabel.value = files[0]?.webkitRelativePath?.split('/')[0] ?? 'Selected dist'
-      const firstRoute = nextSession.project.routes[0]?.route
-      if (firstRoute) {
-        nextSession.reLaunch(`/${firstRoute}`)
-      }
+      loadScenario(files[0]?.webkitRelativePath?.split('/')[0] ?? 'Selected dist', virtualFiles)
     }
     catch (error) {
       session.value = null
@@ -161,6 +170,10 @@ const App = defineComponent(() => {
   const directoryInputProps = {
     webkitdirectory: '',
   } as any
+
+  if (!session.value) {
+    loadScenario(builtInScenarios[0]!.name, builtInScenarios[0]!.files, builtInScenarios[0]!.id)
+  }
 
   return () => (
     <main class="sim-shell">
@@ -183,6 +196,20 @@ const App = defineComponent(() => {
             onChange={handleDirectoryChange}
           />
         </label>
+      </section>
+
+      <section class="sim-scenarios">
+        {builtInScenarios.map(scenario => (
+          <button
+            class={['sim-scenario-card', currentScenarioId.value === scenario.id && 'is-active']}
+            onClick={() => run(() => {
+              loadScenario(scenario.name, scenario.files, scenario.id)
+            })}
+          >
+            <span class="sim-scenario-card__title">{scenario.name}</span>
+            <span class="sim-scenario-card__body">{scenario.description}</span>
+          </button>
+        ))}
       </section>
 
       <section class="sim-metrics">

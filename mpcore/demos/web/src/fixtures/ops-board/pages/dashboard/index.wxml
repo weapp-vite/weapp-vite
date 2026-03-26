@@ -1,0 +1,9 @@
+<view class="screen">
+  <view class="headline">{{title}}</view>
+  <view class="panel-row">Queue: {{widgets.0.value}}</view>
+  <view class="panel-row">Alerts: {{widgets.1.value}}</view>
+  <view class="panel-row">Latency: {{widgets.2.value}}</view>
+  <view class="panel-row">Owner: {{filters.owner}}</view>
+  <view class="panel-row">Keyword: {{filters.keyword}}</view>
+  <view class="panel-row">Log: {{logs.0}}</view>
+</view>
