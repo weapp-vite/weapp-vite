@@ -10,17 +10,25 @@ const emit = defineEmits<{
   back: []
   callMethod: [method: string]
   callScopeMethod: [payload: { method: string, scopeId: string }]
+  selectScope: [scopeId: string]
 }>()
 
 function resolveTapBinding(target: EventTarget | null) {
   let current = target instanceof HTMLElement ? target : null
 
   while (current) {
+    const scopeId = current.getAttribute('data-sim-scope') ?? ''
     const bindTap = current.getAttribute('bindtap') || current.getAttribute('bind:tap')
     if (bindTap) {
       return {
         method: bindTap,
-        scopeId: current.getAttribute('data-sim-scope') ?? '',
+        scopeId,
+      }
+    }
+    if (scopeId) {
+      return {
+        method: '',
+        scopeId,
       }
     }
     current = current.parentElement
@@ -31,7 +39,11 @@ function resolveTapBinding(target: EventTarget | null) {
 
 function handleScreenClick(event: MouseEvent) {
   const binding = resolveTapBinding(event.target)
-  if (!binding?.method) {
+  if (!binding?.scopeId) {
+    return
+  }
+  emit('selectScope', binding.scopeId)
+  if (!binding.method) {
     return
   }
   if (binding.scopeId) {
