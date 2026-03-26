@@ -1,0 +1,21 @@
+<view class="screen">
+  <view class="status">业务门户</view>
+  <view class="hero">
+    <view class="hero-title">企业业务看板</view>
+    <view class="hero-subtitle">适合作为正式项目起点的首页框架</view>
+    <view class="hero-copy">内置主包与分包页面结构，统一导航入口与静态信息模块，默认呈现正式、克制且便于继续扩展的业务首页质感。</view>
+    <view class="hero-actions">
+      <view bindtap="openOverview">主包首页</view>
+      <view bindtap="openWorkspace">进入二次开发</view>
+    </view>
+  </view>
+  <view class="section-title">核心指标</view>
+  <view class="metric-card">本周跟进事项 {{metrics.0.value}}</view>
+  <view class="metric-card">交付进度 {{metrics.1.value}}</view>
+  <view class="metric-card">服务可用率 {{metrics.2.value}}</view>
+  <view class="section-title">常用入口</view>
+  <view class="entry-card" bindtap="openOverview">运营概览</view>
+  <view class="entry-card" bindtap="openWorkspace">进入工作台</view>
+  <view class="entry-card" bindtap="openSettings">项目设置</view>
+  <view class="entry-card" bindtap="openLayouts">布局演示</view>
+</view>

@@ -6,28 +6,34 @@
 }
 
 :root {
-  --sim-bg: #252526;
-  --sim-panel: #1f2430;
-  --sim-panel-soft: #1b2029;
-  --sim-panel-strong: #242a35;
-  --sim-toolbar-bg: #2c313c;
-  --sim-border: rgb(148 184 255 / 16%);
-  --sim-border-strong: rgb(148 184 255 / 28%);
-  --sim-divider: rgb(148 184 255 / 10%);
-  --sim-text: #edf4ff;
-  --sim-muted: #8ea3bf;
-  --sim-accent: #87f3d8;
-  --sim-accent-strong: #87f3d8;
-  --sim-accent-soft: rgb(135 243 216 / 15%);
-  --sim-accent-border: rgb(135 243 216 / 36%);
+  --sim-bg: #2d2d2d;
+  --sim-panel: #252526;
+  --sim-panel-soft: #1e1e1e;
+  --sim-panel-strong: #2b2b2b;
+  --sim-toolbar-bg: #333;
+  --sim-border: rgb(255 255 255 / 9%);
+  --sim-border-strong: rgb(255 255 255 / 16%);
+  --sim-divider: rgb(255 255 255 / 8%);
+  --sim-text: #d4d4d4;
+  --sim-muted: #9c9c9c;
+  --sim-accent: #7cb6ff;
+  --sim-accent-strong: #9cdcfe;
+  --sim-accent-soft: rgb(124 182 255 / 16%);
+  --sim-accent-border: rgb(124 182 255 / 36%);
   --sim-pill-bg: rgb(255 255 255 / 4%);
-  --sim-pill-hover: rgb(255 255 255 / 9%);
+  --sim-pill-hover: rgb(255 255 255 / 8%);
   --sim-tab-hover: rgb(255 255 255 / 6%);
-  --sim-tab-active: rgb(17 25 35 / 98%);
+  --sim-tab-active: #1e1e1e;
   --sim-danger-bg: rgb(65 24 28 / 88%);
   --sim-danger-border: rgb(255 144 133 / 28%);
   --sim-danger-text: #ffb2a9;
-  --sim-code-bg: rgb(7 12 17 / 50%);
+  --sim-code-bg: #1e1e1e;
+  --sim-editor-bg: #1e1e1e;
+  --sim-editor-gutter-bg: #252526;
+  --sim-selection-bg: #414141;
+  --sim-hover-strong: #383838;
+  --sim-warn-bg: #5c4607;
+  --sim-warn-text: #f4d56b;
   --sim-surface-plain: #f3f7fb;
   --sim-surface-page: #fff;
   --sim-surface-page-text: #18344f;
@@ -48,28 +54,34 @@
 }
 
 :root[data-sim-theme='light'] {
-  --sim-bg: #f0f0f0;
+  --sim-bg: #ececec;
   --sim-panel: #fff;
-  --sim-panel-soft: #fff;
-  --sim-panel-strong: #f5f5f5;
-  --sim-toolbar-bg: #f3f3f3;
-  --sim-border: rgb(71 103 139 / 14%);
-  --sim-border-strong: rgb(71 103 139 / 24%);
-  --sim-divider: rgb(71 103 139 / 10%);
-  --sim-text: #1f2328;
-  --sim-muted: #6b7786;
-  --sim-accent: #0d9b87;
-  --sim-accent-strong: #0b7f71;
-  --sim-accent-soft: rgb(13 155 135 / 12%);
-  --sim-accent-border: rgb(13 155 135 / 26%);
-  --sim-pill-bg: #f7f8fa;
-  --sim-pill-hover: #eef1f4;
-  --sim-tab-hover: #f3f5f8;
+  --sim-panel-soft: #f8f8f8;
+  --sim-panel-strong: #f3f3f3;
+  --sim-toolbar-bg: #e7e7e7;
+  --sim-border: rgb(31 35 40 / 10%);
+  --sim-border-strong: rgb(31 35 40 / 16%);
+  --sim-divider: rgb(31 35 40 / 8%);
+  --sim-text: #24292f;
+  --sim-muted: #68707a;
+  --sim-accent: #1f6feb;
+  --sim-accent-strong: #0550ae;
+  --sim-accent-soft: rgb(31 111 235 / 10%);
+  --sim-accent-border: rgb(31 111 235 / 20%);
+  --sim-pill-bg: #f4f4f4;
+  --sim-pill-hover: #ededed;
+  --sim-tab-hover: #f4f4f4;
   --sim-tab-active: #fff;
   --sim-danger-bg: rgb(255 243 244 / 98%);
   --sim-danger-border: rgb(221 132 132 / 24%);
   --sim-danger-text: #9d3141;
-  --sim-code-bg: rgb(237 244 251 / 100%);
+  --sim-code-bg: #fff;
+  --sim-editor-bg: #fff;
+  --sim-editor-gutter-bg: #f3f3f3;
+  --sim-selection-bg: #e8e8e8;
+  --sim-hover-strong: #efefef;
+  --sim-warn-bg: #fff7d6;
+  --sim-warn-text: #6b4e00;
   --sim-surface-plain: #f6f9fd;
   --sim-surface-page: #fff;
   --sim-surface-page-text: #16324c;
@@ -118,13 +130,14 @@ button {
   margin: 0;
   font-family: 'IBM Plex Mono', SFMono-Regular, Consolas, monospace;
   font-size: 11px;
-  line-height: 1.7;
+  line-height: 1.65;
 }
 
 .sim-code-html .shiki {
-  padding: 12px 14px;
+  height: 100%;
+  padding: 12px 14px 18px;
   background: transparent !important;
-  border-radius: 1rem;
+  border-radius: 0;
 }
 
 .sim-preview-error {

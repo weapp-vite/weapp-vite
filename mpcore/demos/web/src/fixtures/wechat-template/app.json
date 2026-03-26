@@ -1,0 +1,25 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/overview/index",
+    "pages/layouts/index"
+  ],
+  "subPackages": [
+    {
+      "root": "packageA",
+      "pages": [
+        "pages/workspace/index"
+      ]
+    },
+    {
+      "root": "packageB",
+      "pages": [
+        "pages/settings/index"
+      ]
+    }
+  ],
+  "window": {
+    "navigationBarTitleText": "业务门户",
+    "navigationStyle": "custom"
+  }
+}

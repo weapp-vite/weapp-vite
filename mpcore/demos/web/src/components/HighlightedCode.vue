@@ -60,11 +60,11 @@ watch(
 <template>
   <div
     v-if="highlightedHtml"
-    class="sim-code-html min-h-0 overflow-auto rounded-2xl border border-[color:var(--sim-border)] bg-[color:var(--sim-code-bg)]"
+    class="sim-code-html min-h-0 h-full overflow-auto border border-[color:var(--sim-border)] bg-[color:var(--sim-code-bg)]"
     v-html="highlightedHtml"
   />
   <pre
     v-else
-    :class="`${codeFrameClass} min-h-0 px-3.5 py-3 text-[11px] leading-7 text-[color:var(--sim-text)] whitespace-pre-wrap`"
+    :class="`${codeFrameClass} min-h-0 h-full rounded-none px-3.5 py-3 text-[11px] leading-7 text-[color:var(--sim-text)] whitespace-pre-wrap`"
   >{{ fallbackCode }}</pre>
 </template>

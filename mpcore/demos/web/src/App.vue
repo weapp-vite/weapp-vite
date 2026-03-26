@@ -9,14 +9,13 @@ import {
 import ActionPanel from './components/ActionPanel.vue'
 import DevicePreview from './components/DevicePreview.vue'
 import FileTree from './components/FileTree.vue'
-import JsonPanel from './components/JsonPanel.vue'
+import HighlightedCode from './components/HighlightedCode.vue'
 import RoutePanel from './components/RoutePanel.vue'
 import ScenarioSelector from './components/ScenarioSelector.vue'
-import ScopePanel from './components/ScopePanel.vue'
 import SourceEditor from './components/SourceEditor.vue'
 import StackPanel from './components/StackPanel.vue'
 import { cn } from './lib/cn'
-import { alertCard, chipWrapClass, labelClass, mutedTextClass, panelSurface, pill, tabButton, toolbarSurface } from './lib/ui'
+import { alertCard, labelClass, panelSurface, pill, tabButton, toolbarSurface } from './lib/ui'
 import { builtInScenarios } from './scenarios'
 
 const HOOK_NAMES = new Set([
@@ -166,11 +165,6 @@ const requestLogData = computed(() => {
   return stringify(session.value?.getRequestLogs() ?? [])
 })
 
-const currentOptions = computed(() => {
-  void revision.value
-  return stringify(currentPage.value?.options ?? {})
-})
-
 const fileEntries = computed(() => {
   void revision.value
   return Array.from(session.value?.files.entries() ?? [])
@@ -179,12 +173,6 @@ const fileEntries = computed(() => {
 })
 
 const fileMap = computed(() => new Map(fileEntries.value.map(entry => [entry.path, entry.content])))
-
-const statusChips = computed(() => [
-  { label: '路由', value: pageRoutes.value.length },
-  { label: '栈', value: pageStack.value.length },
-  { label: '当前页', value: currentRoute.value },
-])
 
 const routeSourceCandidates = computed(() => {
   const route = currentRoute.value === '未加载页面' ? '' : currentRoute.value
@@ -230,6 +218,27 @@ const runtimeMetrics = computed(() => [
 ])
 
 const wxmlPreviewCode = computed(() => previewMarkup.value || '<page />')
+const projectDisplayLabel = computed(() => projectLabel.value || 'weapp-vite-wevu-template')
+const consoleSummary = computed(() => [
+  { level: 'messages', value: '9 messages' },
+  { level: 'warnings', value: '3 warnings' },
+  { level: 'errors', value: 'No errors' },
+])
+const explorerToolbarIcons = [
+  'icon-[mdi--file-outline]',
+  'icon-[mdi--folder-outline]',
+  'icon-[mdi--magnify]',
+  'icon-[mdi--source-branch]',
+  'icon-[mdi--content-save-outline]',
+  'icon-[mdi--apple-keyboard-command]',
+]
+const workbenchToolbarIcons = [
+  'icon-[mdi--play-outline]',
+  'icon-[mdi--cellphone]',
+  'icon-[mdi--refresh]',
+  'icon-[mdi--qrcode-scan]',
+  'icon-[mdi--dots-horizontal]',
+]
 
 function buildTreeNodes(paths: string[], depth = 0, prefix = ''): WorkbenchFileNode[] {
   const directories = new Map<string, string[]>()
@@ -285,6 +294,21 @@ const selectedScope = computed(() => {
     return null
   }
   return session.value.getScopeSnapshot(selectedScopeId.value)
+})
+
+const consoleLines = computed(() => {
+  const requestLogs = JSON.parse(requestLogData.value) as Array<Record<string, unknown>>
+  const storage = JSON.parse(storageData.value) as Record<string, unknown>
+  const route = currentRoute.value
+
+  return [
+    { level: 'system', text: `[system] Launch Time: ${Math.round(460 + previewMarkup.value.length / 8)}ms` },
+    { level: 'warn', text: '[Deprecation] SharedArrayBuffer 将要求 cross-origin isolation。' },
+    { level: 'info', text: `[system] Current route: /${route}` },
+    { level: 'info', text: `[system] Storage keys: ${Object.keys(storage).length}` },
+    { level: 'info', text: `[system] Mock requests: ${requestLogs.length}` },
+    { level: 'debug', text: `[render] Scope selected: ${selectedScope.value?.scopeId ?? 'page-root'}` },
+  ]
 })
 
 const effectiveTheme = computed<'light' | 'dark'>(() => {
@@ -397,7 +421,7 @@ onMounted(() => {
     themeMode.value = storedTheme
   }
   else {
-    themeMode.value = 'dark'
+    themeMode.value = 'auto'
   }
 
   updateSystemTheme(mediaQuery)
@@ -480,18 +504,30 @@ function openFile(path: string) {
   if (!fileMap.value.has(path)) {
     return
   }
-  selectedFilePath.value = path
-  openFileTabs.value = [
-    ...new Set([...openFileTabs.value, path]),
-  ].slice(-6)
-
   const segments = path.split('/')
-  expandedTreePaths.value = [
+  const nextExpandedTreePaths = [
     ...new Set([
       ...expandedTreePaths.value,
       ...segments.slice(0, -1).map((_, index) => segments.slice(0, index + 1).join('/')),
     ]),
   ]
+  const nextOpenTabs = [
+    ...new Set([...openFileTabs.value, path]),
+  ].slice(-6)
+
+  if (
+    selectedFilePath.value === path
+    && nextOpenTabs.length === openFileTabs.value.length
+    && nextOpenTabs.every((item, index) => item === openFileTabs.value[index])
+    && nextExpandedTreePaths.length === expandedTreePaths.value.length
+    && nextExpandedTreePaths.every((item, index) => item === expandedTreePaths.value[index])
+  ) {
+    return
+  }
+
+  selectedFilePath.value = path
+  openFileTabs.value = nextOpenTabs
+  expandedTreePaths.value = nextExpandedTreePaths
 }
 
 function toggleTreePath(path: string) {
@@ -538,61 +574,75 @@ watch(currentRoute, () => {
 
 <template>
   <main class="h-screen overflow-hidden bg-[color:var(--sim-bg)] text-[color:var(--sim-text)]">
-    <section class="grid h-full grid-rows-[36px_36px_minmax(0,1fr)] max-[1180px]:grid-rows-[36px_auto_minmax(0,1fr)]">
-      <header class="flex items-center gap-3 border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-toolbar-bg)] px-3 text-[11px]">
+    <section class="grid h-full grid-rows-[28px_34px_minmax(0,1fr)] overflow-hidden max-[1180px]:grid-rows-[28px_auto_minmax(0,1fr)]">
+      <header class="grid grid-cols-[140px_minmax(0,1fr)_320px] items-center gap-3 border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-toolbar-bg)] px-3 text-[11px] max-[1180px]:grid-cols-[140px_minmax(0,1fr)]">
         <div class="flex items-center gap-1.5">
           <span class="h-3 w-3 rounded-full bg-[#ff5f57]" />
           <span class="h-3 w-3 rounded-full bg-[#febc2e]" />
           <span class="h-3 w-3 rounded-full bg-[#28c840]" />
         </div>
-        <div class="mx-auto truncate text-[11px] font-medium text-[color:var(--sim-muted)]">
-          {{ projectLabel }} - 微信开发者工具 · MPCore
+        <div class="truncate text-center text-[11px] font-medium text-[color:var(--sim-muted)]">
+          {{ projectDisplayLabel }} - 微信开发者工具 Stable 0.1.2510280
+        </div>
+        <div class="flex items-center justify-end gap-3 text-[10px] text-[color:var(--sim-muted)] max-[1180px]:hidden">
+          <span class="truncate">小程序模式</span>
+          <span class="inline-flex items-center gap-1">
+            <span class="icon-[mdi--eye-outline] text-[12px]" aria-hidden="true" />
+            预览
+          </span>
+          <span>真机调试</span>
+          <span class="icon-[mdi--upload-outline] text-[12px]" aria-hidden="true" />
+          <span class="icon-[mdi--content-save-outline] text-[12px]" aria-hidden="true" />
+          <span class="inline-flex h-5 w-5 items-center justify-center rounded-sm border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)]">
+            <span class="icon-[mdi--account] text-[12px]" aria-hidden="true" />
+          </span>
         </div>
       </header>
 
-      <section :class="cn(toolbarSurface(), 'border-b-0 px-3 py-1')">
-        <div class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-          <strong class="truncate text-[12px] font-semibold tracking-tight text-[color:var(--sim-text)]">MPCore DevTools</strong>
-          <span class="text-[11px] text-[color:var(--sim-muted)]">小程序模拟工作台</span>
-        </div>
-        <div :class="chipWrapClass" aria-label="当前会话状态">
-          <span :class="cn(pill({ tone: 'subtle', interactive: false }), 'max-w-full')">
-            <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--sim-muted)]">项目</span>
-            <strong class="truncate font-medium text-[color:var(--sim-text)]">{{ projectLabel }}</strong>
-          </span>
-          <span
-            v-for="item in statusChips"
-            :key="item.label"
-            :class="cn(pill({ tone: 'subtle', interactive: false }), 'max-w-full')"
-          >
-            <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--sim-muted)]">
-              {{ item.label }}
-            </span>
-            <strong class="truncate font-medium text-[color:var(--sim-text)]">{{ item.value }}</strong>
-          </span>
+      <section :class="cn(toolbarSurface(), 'border-b border-[color:var(--sim-divider)] px-3 py-0')">
+        <div class="flex min-w-0 items-center gap-3 overflow-hidden">
+          <button class="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]">
+            <span class="icon-[mdi--chevron-left]" aria-hidden="true" />
+          </button>
+          <button class="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]">
+            <span class="icon-[mdi--reload]" aria-hidden="true" />
+          </button>
+          <div class="flex min-w-0 items-center gap-2 rounded-sm border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] px-2.5 py-1">
+            <span class="icon-[mdi--folder-open-outline] text-[13px] text-[#8bc34a]" aria-hidden="true" />
+            <span class="truncate text-[11px] text-[color:var(--sim-text)]">{{ currentRoute }}</span>
+          </div>
         </div>
 
-        <div class="flex flex-wrap items-center justify-start gap-2 xl:justify-end" role="group" aria-label="主题切换">
-          <span :class="cn(labelClass, 'hidden xl:inline-flex')">Theme</span>
+        <div class="flex items-center gap-1 text-[color:var(--sim-muted)]">
+          <button
+            v-for="icon in workbenchToolbarIcons"
+            :key="icon"
+            class="inline-flex h-7 w-7 items-center justify-center rounded-sm hover:bg-[color:var(--sim-pill-hover)]"
+          >
+            <span :class="cn(icon, 'text-[14px]')" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div class="flex items-center justify-end gap-2" role="group" aria-label="主题切换">
+          <span :class="cn(labelClass, 'hidden 2xl:inline-flex')">Theme</span>
           <button
             v-for="option in themeOptions"
             :key="option.value"
-            :class="pill({ tone: themeMode === option.value ? 'accent' : 'neutral' })"
+            :class="cn(pill({ tone: themeMode === option.value ? 'accent' : 'neutral' }), 'h-7 rounded-sm px-2.5 py-0 text-[11px]')"
             @click="setThemeMode(option.value)"
           >
-            <span :class="cn(option.icon, 'text-sm')" aria-hidden="true" />
+            <span :class="cn(option.icon, 'text-[13px]')" aria-hidden="true" />
             {{ option.label }}
           </button>
-          <span :class="cn(mutedTextClass, 'hidden xl:inline-flex')">当前：{{ effectiveTheme.toUpperCase() }}</span>
         </div>
       </section>
 
-      <section v-if="errorMessage" :class="cn(alertCard(), 'absolute right-3 top-21 z-10 max-w-[520px] grid gap-1 rounded-md py-2')">
+      <section v-if="errorMessage" :class="cn(alertCard(), 'absolute right-3 top-18 z-10 max-w-[520px] grid gap-1 rounded-md py-2')">
         <strong class="text-sm font-semibold">🕛 运行时错误</strong>
         <pre class="m-0 overflow-auto whitespace-pre-wrap text-xs leading-6">{{ errorMessage }}</pre>
       </section>
 
-      <section class="grid min-h-0 [grid-template-columns:360px_240px_minmax(0,1fr)] max-[1180px]:grid-cols-1">
+      <section class="grid min-h-0 [grid-template-columns:428px_378px_minmax(0,1fr)] overflow-hidden max-[1180px]:grid-cols-1">
         <aside class="min-h-0 border-r border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-soft)]">
           <DevicePreview
             :route="currentRoute"
@@ -607,36 +657,42 @@ watch(currentRoute, () => {
         </aside>
 
         <section class="min-h-0 border-r border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-soft)]">
-          <section :class="cn(tabPanelStyles.base(), 'h-full rounded-none border-0 shadow-none')">
-            <div :class="tabPanelStyles.bar()" role="tablist" aria-label="资源区">
+          <section :class="cn(tabPanelStyles.base(), 'h-full rounded-none border-0 shadow-none [grid-template-rows:32px_32px_minmax(0,1fr)]')">
+            <div class="flex items-center justify-between border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-strong)] px-2">
+              <div class="flex items-center gap-0.5 text-[color:var(--sim-muted)]">
+                <button
+                  v-for="icon in explorerToolbarIcons"
+                  :key="icon"
+                  class="inline-flex h-7 w-7 items-center justify-center rounded-sm hover:bg-[color:var(--sim-pill-hover)]"
+                >
+                  <span :class="cn(icon, 'text-[14px]')" aria-hidden="true" />
+                </button>
+              </div>
+              <button class="inline-flex h-7 w-7 items-center justify-center rounded-sm text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]">
+                <span class="icon-[mdi--dots-horizontal]" aria-hidden="true" />
+              </button>
+            </div>
+            <div :class="cn(tabPanelStyles.bar(), 'px-0')" role="tablist" aria-label="资源区">
               <button
                 v-for="tab in explorerTabs"
                 :key="tab.value"
                 :aria-selected="explorerTab === tab.value"
-                :class="tabButton({ active: explorerTab === tab.value })"
+                :class="cn(tabButton({ active: explorerTab === tab.value }), 'px-3 py-1.5 text-[11px]')"
                 @click="explorerTab = tab.value"
               >
-                <span :class="cn(tab.icon, 'text-sm')" aria-hidden="true" />
+                <span :class="cn(tab.icon, 'text-[13px]')" aria-hidden="true" />
                 {{ tab.label }}
               </button>
             </div>
-            <div :class="tabPanelStyles.body()">
+            <div :class="cn(tabPanelStyles.body(), 'min-h-0 gap-0 p-0')">
               <section
                 v-if="explorerTab === 'resources'"
-                class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2"
+                class="grid h-full min-h-0 grid-rows-[30px_minmax(0,1fr)]"
               >
-                <div class="grid gap-2 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-2.5">
-                  <span :class="labelClass">资源管理器</span>
-                  <div class="flex items-center justify-between gap-2">
-                    <strong class="truncate text-sm text-[color:var(--sim-text)]">{{ projectLabel }}</strong>
-                    <button :class="cn(pill({ tone: 'neutral' }), 'px-2.5 py-1 text-[11px]')" @click="explorerTab = 'scenarios'">
-                      <span class="icon-[mdi--swap-horizontal] text-sm" aria-hidden="true" />
-                      切换场景
-                    </button>
-                  </div>
+                <div class="flex items-center border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-panel)] px-3 text-[11px]">
+                  <span class="truncate font-semibold uppercase tracking-[0.08em] text-[color:var(--sim-muted)]">{{ projectDisplayLabel }}</span>
                 </div>
-
-                <div class="min-h-0 overflow-auto border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-2">
+                <div class="min-h-0 overflow-auto bg-[color:var(--sim-panel)] p-2">
                   <FileTree
                     :expanded-paths="expandedTreePaths"
                     :nodes="fileTree"
@@ -656,7 +712,7 @@ watch(currentRoute, () => {
                 @pick-directory="handleDirectoryChange"
               />
 
-              <div v-else class="grid gap-3">
+              <div v-else class="grid gap-2 p-2">
                 <RoutePanel
                   :current-route="currentPage?.route ?? ''"
                   :routes="pageRoutes"
@@ -677,7 +733,7 @@ watch(currentRoute, () => {
           </section>
         </section>
 
-        <section class="grid min-h-0 [grid-template-rows:minmax(0,1fr)_250px] max-[1180px]:[grid-template-rows:minmax(420px,1fr)_minmax(280px,auto)]">
+        <section class="grid min-h-0 [grid-template-rows:minmax(0,1fr)_392px] max-[1180px]:[grid-template-rows:minmax(420px,1fr)_minmax(280px,auto)]">
           <SourceEditor
             :code="selectedFileContent"
             :file-path="selectedFilePath"
@@ -688,109 +744,171 @@ watch(currentRoute, () => {
             @pick="openFile"
           />
 
-          <section :class="cn(tabPanelStyles.base(), 'rounded-none border-x-0 border-b-0 shadow-none')">
-            <div :class="tabPanelStyles.bar()" role="tablist" aria-label="调试区">
+          <section :class="cn(tabPanelStyles.base(), 'rounded-none border-x-0 border-b-0 shadow-none [grid-template-rows:32px_minmax(0,1fr)]')">
+            <div :class="cn(tabPanelStyles.bar(), 'px-0')" role="tablist" aria-label="调试区">
               <button
                 v-for="tab in debugTabs"
                 :key="tab.value"
                 :aria-selected="debugTab === tab.value"
-                :class="tabButton({ active: debugTab === tab.value })"
+                :class="cn(tabButton({ active: debugTab === tab.value }), 'px-3 py-1.5 text-[11px]')"
                 @click="debugTab = tab.value"
               >
-                <span :class="cn(tab.icon, 'text-sm')" aria-hidden="true" />
+                <span :class="cn(tab.icon, 'text-[13px]')" aria-hidden="true" />
                 {{ tab.label }}
               </button>
+              <div class="ml-auto flex items-center gap-2 px-3 text-[color:var(--sim-muted)]">
+                <span class="text-[11px]">⚠ 3</span>
+                <button class="inline-flex h-6 w-6 items-center justify-center rounded-sm hover:bg-[color:var(--sim-pill-hover)]">
+                  <span class="icon-[mdi--cog-outline] text-[13px]" aria-hidden="true" />
+                </button>
+              </div>
             </div>
-            <div :class="tabPanelStyles.body()">
-              <JsonPanel
-                v-if="debugTab === 'wxml'"
-                title="🕛 Wxml"
-                subtitle="当前页面渲染输出后的结构快照。"
-                :code="wxmlPreviewCode"
-                lang="html"
-                :theme="effectiveTheme"
-              />
-
-              <ScopePanel
-                v-else-if="debugTab === 'console'"
-                :scope-id="selectedScope?.scopeId ?? ''"
-                :scope-type="selectedScope?.type ?? '未选中'"
-                :methods="selectedScope?.methods ?? []"
-                :properties-code="stringify(selectedScope?.properties ?? {})"
-                :data-code="stringify(selectedScope?.data ?? {})"
-                :theme="effectiveTheme"
-              />
-
-              <div v-else-if="debugTab === 'appData'" class="grid gap-3">
-                <JsonPanel
-                  title="🕛 页面数据"
-                  subtitle="当前页面 data 快照。"
-                  :code="pageData"
-                  :theme="effectiveTheme"
-                />
-                <JsonPanel
-                  title="🕛 页面参数"
-                  subtitle="当前页面 options 快照。"
-                  :code="currentOptions"
-                  :theme="effectiveTheme"
-                />
-                <JsonPanel
-                  title="🕛 应用数据"
-                  subtitle="App.globalData。"
-                  :code="appData"
-                  :theme="effectiveTheme"
-                />
-              </div>
-
-              <div v-else-if="debugTab === 'sources'" class="grid gap-3">
-                <RoutePanel
-                  :current-route="currentPage?.route ?? ''"
-                  :routes="pageRoutes"
-                  @open="handleOpenRoute"
-                />
-                <StackPanel :routes="pageStack" />
-              </div>
-
-              <div v-else-if="debugTab === 'network'" class="grid gap-3">
-                <JsonPanel
-                  title="🕛 Requests"
-                  subtitle="request mock 命中日志。"
-                  :code="requestLogData"
-                  :theme="effectiveTheme"
-                />
-                <JsonPanel
-                  title="🕛 Toast"
-                  subtitle="showToast / hideToast 的宿主快照。"
-                  :code="toastData"
-                  :theme="effectiveTheme"
-                />
-                <JsonPanel
-                  title="🕛 Storage"
-                  subtitle="setStorageSync / getStorageSync 当前内存快照。"
-                  :code="storageData"
-                  :theme="effectiveTheme"
-                />
-              </div>
-
-              <section v-else class="grid gap-3">
-                <div class="grid gap-3 rounded-[20px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-4">
-                  <div class="grid gap-1">
-                    <h2 class="m-0 text-[17px] font-semibold tracking-tight text-[color:var(--sim-text)]">
-                      🕛 性能与运行概览
-                    </h2>
-                    <p :class="labelClass">
-                      以当前模拟会话和预览视口为基准。
-                    </p>
+            <div :class="cn(tabPanelStyles.body(), 'grid grid-rows-[minmax(0,1fr)_154px] gap-0 p-0')">
+              <section class="grid min-h-0 grid-cols-[minmax(0,1fr)_318px] border-b border-[color:var(--sim-divider)]">
+                <div class="grid min-h-0 grid-rows-[28px_minmax(0,1fr)]">
+                  <div class="flex items-center gap-2 border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-panel)] px-3 text-[11px] text-[color:var(--sim-muted)]">
+                    <span>{{ currentRoute }}</span>
+                    <span class="text-[color:var(--sim-text)]">#shadow-root</span>
+                    <span class="text-[#5aa0ff]">&lt;/{{ currentRoute.split('/').at(-1) || 'page' }}&gt;</span>
                   </div>
-                  <div class="grid gap-2 md:grid-cols-2">
-                    <article
-                      v-for="[label, value] in runtimeMetrics"
-                      :key="label"
-                      class="rounded-[18px] border border-[color:var(--sim-border)] bg-[color:var(--sim-pill-bg)] px-4 py-3"
+                  <div class="min-h-0 overflow-hidden p-2">
+                    <HighlightedCode
+                      v-if="debugTab === 'wxml'"
+                      :code="wxmlPreviewCode"
+                      lang="html"
+                      :theme="effectiveTheme"
+                    />
+                    <HighlightedCode
+                      v-else-if="debugTab === 'appData'"
+                      :code="appData"
+                      lang="json"
+                      :theme="effectiveTheme"
+                    />
+                    <HighlightedCode
+                      v-else-if="debugTab === 'sources'"
+                      :code="selectedFileContent"
+                      :lang="selectedFileLanguage"
+                      :theme="effectiveTheme"
+                    />
+                    <HighlightedCode
+                      v-else-if="debugTab === 'network'"
+                      :code="requestLogData"
+                      lang="json"
+                      :theme="effectiveTheme"
+                    />
+                    <div v-else-if="debugTab === 'performance'" class="grid h-full content-start gap-2 p-2">
+                      <article
+                        v-for="[label, value] in runtimeMetrics"
+                        :key="label"
+                        class="grid gap-1 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] px-3 py-2"
+                      >
+                        <span class="text-[10px] uppercase tracking-[0.14em] text-[color:var(--sim-muted)]">{{ label }}</span>
+                        <strong class="text-[18px] leading-none text-[color:var(--sim-text)]">{{ value }}</strong>
+                      </article>
+                    </div>
+                    <HighlightedCode
+                      v-else
+                      :code="selectedScope?.data ? stringify(selectedScope.data) : pageData"
+                      lang="json"
+                      :theme="effectiveTheme"
+                    />
+                  </div>
+                </div>
+
+                <aside class="grid min-h-0 grid-rows-[28px_28px_minmax(0,1fr)] border-l border-[color:var(--sim-divider)] bg-[color:var(--sim-panel)]">
+                  <div class="flex items-center gap-0.5 border-b border-[color:var(--sim-divider)] px-1 text-[11px]">
+                    <button class="inline-flex h-7 items-center border-r border-[color:var(--sim-divider)] px-3 text-[color:var(--sim-text)]">
+                      Styles
+                    </button>
+                    <button class="inline-flex h-7 items-center border-r border-[color:var(--sim-divider)] px-3 text-[color:var(--sim-muted)]">
+                      Computed
+                    </button>
+                    <button class="inline-flex h-7 items-center border-r border-[color:var(--sim-divider)] px-3 text-[color:var(--sim-muted)]">
+                      Dataset
+                    </button>
+                    <button class="inline-flex h-7 items-center px-3 text-[color:var(--sim-muted)]">
+                      Component Data
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between border-b border-[color:var(--sim-divider)] px-3 text-[11px] text-[color:var(--sim-muted)]">
+                    <span>Filter</span>
+                    <span>.cls</span>
+                  </div>
+                  <div class="min-h-0 overflow-auto px-3 py-2 text-[11px] leading-5 text-[color:var(--sim-muted)]">
+                    <div class="border-b border-[color:var(--sim-divider)] pb-2">
+                      <div class="font-semibold text-[color:var(--sim-text)]">
+                        {{ selectedScope?.scopeType ?? selectedScope?.type ?? 'page' }}
+                      </div>
+                      <div>{{ selectedScope?.scopeId ?? 'page-root' }}</div>
+                    </div>
+                    <div class="grid gap-1 py-2">
+                      <div class="flex items-start justify-between gap-3">
+                        <span>route</span>
+                        <span class="text-[color:var(--sim-text)]">{{ currentRoute }}</span>
+                      </div>
+                      <div class="flex items-start justify-between gap-3">
+                        <span>methods</span>
+                        <span class="text-[color:var(--sim-text)]">{{ selectedScope?.methods?.length ?? callableMethods.length }}</span>
+                      </div>
+                      <div class="flex items-start justify-between gap-3">
+                        <span>toast</span>
+                        <span class="truncate text-[color:var(--sim-text)]">{{ JSON.parse(toastData) ? 'visible' : 'idle' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+              </section>
+
+              <section class="grid min-h-0 grid-cols-[168px_minmax(0,1fr)] bg-[color:var(--sim-panel-soft)]">
+                <aside class="border-r border-[color:var(--sim-divider)] bg-[color:var(--sim-panel)] px-3 py-2">
+                  <div class="grid gap-1 text-[11px]">
+                    <button class="flex items-center justify-between rounded-sm px-2 py-1 text-left text-[color:var(--sim-text)] hover:bg-[color:var(--sim-pill-hover)]">
+                      <span>Console</span>
+                      <span class="text-[color:var(--sim-muted)]">1</span>
+                    </button>
+                    <button class="flex items-center justify-between rounded-sm px-2 py-1 text-left text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)]">
+                      <span>Task</span>
+                      <span>0</span>
+                    </button>
+                  </div>
+                  <div class="mt-3 grid gap-1 text-[11px] text-[color:var(--sim-muted)]">
+                    <div
+                      v-for="item in consoleSummary"
+                      :key="item.level"
+                      class="flex items-center justify-between rounded-sm px-2 py-1"
                     >
-                      <span :class="labelClass">{{ label }}</span>
-                      <strong class="mt-2 block text-lg font-semibold text-[color:var(--sim-text)]">{{ value }}</strong>
-                    </article>
+                      <span>{{ item.level }}</span>
+                      <span>{{ item.value }}</span>
+                    </div>
+                  </div>
+                </aside>
+
+                <div class="grid min-h-0 grid-rows-[26px_minmax(0,1fr)]">
+                  <div class="flex items-center gap-2 border-b border-[color:var(--sim-divider)] px-3 text-[11px] text-[color:var(--sim-muted)]">
+                    <span class="icon-[mdi--funnel-outline] text-[12px]" aria-hidden="true" />
+                    <span>Filter</span>
+                    <span class="ml-auto">Default levels</span>
+                  </div>
+                  <div class="min-h-0 overflow-auto text-[11px] leading-5">
+                    <div
+                      v-for="(line, index) in consoleLines"
+                      :key="`${line.level}-${index}`"
+                      :class="cn(
+                        'flex items-center gap-2 border-b border-[color:var(--sim-divider)] px-3 py-1.5',
+                        line.level === 'warn' && 'bg-[color:var(--sim-warn-bg)] text-[color:var(--sim-warn-text)]',
+                        line.level === 'system' && 'text-[color:var(--sim-text)]',
+                      )"
+                    >
+                      <span
+                        :class="cn(
+                          'inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-semibold uppercase',
+                          line.level === 'warn' ? 'bg-[#d7a51d] text-[#1f1600]' : 'bg-[color:var(--sim-pill-bg)] text-[color:var(--sim-muted)]',
+                        )"
+                      >
+                        {{ line.level[0] }}
+                      </span>
+                      <span class="truncate">{{ line.text }}</span>
+                    </div>
                   </div>
                 </div>
               </section>
