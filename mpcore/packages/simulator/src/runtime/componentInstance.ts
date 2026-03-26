@@ -180,6 +180,28 @@ function resolvePropertyTypeCandidates(option: unknown) {
   return candidates
 }
 
+function resolveDefaultValueByType(type: unknown) {
+  if (type === Number) {
+    return 0
+  }
+  if (type === Boolean) {
+    return false
+  }
+  if (type === String) {
+    return ''
+  }
+  if (type === Array) {
+    return []
+  }
+  if (type === Object) {
+    return {}
+  }
+  if (type === null) {
+    return null
+  }
+  return undefined
+}
+
 function matchesRuntimeType(rawValue: unknown, type: unknown) {
   if (type === null) {
     return true
@@ -286,7 +308,7 @@ function resolveInitialProperties(
         resolved[key] = cloneValue(rawDefaultValue)
       }
       else {
-        resolved[key] = undefined
+        resolved[key] = cloneValue(resolveDefaultValueByType(normalizePropertyType(option)))
       }
     }
   }

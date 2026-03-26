@@ -411,6 +411,77 @@ Component({
     expect(rendered.wxml).toContain('"titleType":"string"')
   })
 
+  it('initializes shorthand property declarations with stable default values when omitted', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    summary: ''
+  },
+  inspect() {
+    const card = this.selectComponent('status-card')
+    this.setData({
+      summary: JSON.stringify({
+        count: card?.properties?.count,
+        enabled: card?.properties?.enabled,
+        title: card?.properties?.title,
+        tagsLength: card?.properties?.tags?.length ?? -1,
+        metaKeys: Object.keys(card?.properties?.meta ?? {}).length
+      })
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<status-card /><view bindtap="inspect">inspect</view><view>{{summary}}</view>'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+Component({
+  properties: {
+    count: Number,
+    enabled: Boolean,
+    title: String,
+    tags: Array,
+    meta: Object
+  },
+  data: {
+    summary: ''
+  },
+  observers: {
+    'count, enabled, title, tags, meta'(count, enabled, title, tags, meta) {
+      this.setData({
+        summary: JSON.stringify({
+          count,
+          enabled,
+          title,
+          tagsLength: tags.length,
+          metaKeys: Object.keys(meta).length
+        })
+      })
+    }
+  }
+})
+`],
+      ['components/status-card/index.wxml', '<view>{{summary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+    page.inspect()
+    expect(page.data.summary).toContain('"count":0')
+    expect(page.data.summary).toContain('"enabled":false')
+    expect(page.data.summary).toContain('"title":""')
+    expect(page.data.summary).toContain('"tagsLength":0')
+    expect(page.data.summary).toContain('"metaKeys":0')
+  })
+
   it('supports optionalTypes for component properties', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
