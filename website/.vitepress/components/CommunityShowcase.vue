@@ -218,14 +218,41 @@ function onPreviewBackdropClick(event: MouseEvent) {
 
 <style scoped>
 .community-showcase {
-  --showcase-surface: linear-gradient(180deg, rgb(253 254 251 / 96%), rgb(247 250 246 / 98%));
-  --showcase-card: linear-gradient(135deg, rgb(255 255 255 / 96%), rgb(246 250 247 / 96%));
-  --showcase-border: rgb(22 101 52 / 14%);
-  --showcase-shadow: 0 14px 34px rgb(22 101 52 / 8%);
-  --showcase-text: #17301c;
-  --showcase-muted: #4d6856;
-  --showcase-accent: #1f7a45;
-  --showcase-accent-soft: rgb(31 122 69 / 10%);
+  --showcase-surface: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--vp-c-bg-soft) 88%, var(--vp-c-bg)),
+    color-mix(in srgb, var(--vp-c-bg-alt) 86%, var(--vp-c-bg))
+  );
+  --showcase-card: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--vp-c-bg) 92%, var(--vp-c-text-1) 8%),
+    color-mix(in srgb, var(--vp-c-bg-soft) 95%, var(--vp-c-text-1) 5%)
+  );
+  --showcase-border: color-mix(in srgb, var(--vp-c-brand-1) 16%, transparent);
+  --showcase-shadow: 0 14px 34px color-mix(in srgb, var(--vp-c-bg) 72%, transparent);
+  --showcase-text: var(--vp-c-text-1);
+  --showcase-muted: var(--vp-c-text-2);
+  --showcase-accent: var(--vp-c-brand-1);
+  --showcase-accent-soft: color-mix(in srgb, var(--vp-c-brand-1) 12%, transparent);
+  --showcase-panel-gloss:
+    radial-gradient(circle at right top, color-mix(in srgb, var(--showcase-accent) 12%, transparent), transparent 30%),
+    linear-gradient(180deg, color-mix(in srgb, var(--vp-c-text-1) 10%, transparent), transparent 42%);
+  --showcase-hover-shadow: 0 24px 56px color-mix(in srgb, var(--vp-c-bg) 52%, transparent);
+  --showcase-control-bg: color-mix(in srgb, var(--vp-c-bg) 76%, var(--vp-c-text-1) 24%);
+  --showcase-preview-bg: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--vp-c-bg) 84%, var(--vp-c-text-1) 16%),
+    color-mix(in srgb, var(--vp-c-bg-soft) 90%, var(--vp-c-brand-1) 10%)
+  );
+  --showcase-preview-tip-bg: color-mix(in srgb, var(--vp-c-bg) 70%, var(--vp-c-text-1) 30%);
+  --showcase-shot-bg: color-mix(in srgb, var(--vp-c-bg) 78%, var(--vp-c-text-1) 22%);
+  --showcase-lightbox-backdrop: color-mix(in srgb, var(--vp-c-bg) 72%, transparent);
+  --showcase-lightbox-card: color-mix(in srgb, var(--vp-c-bg) 92%, var(--vp-c-text-1) 8%);
+  --showcase-lightbox-border: color-mix(in srgb, var(--vp-c-brand-1) 14%, transparent);
+  --showcase-lightbox-meta: var(--vp-c-text-1);
+  --showcase-lightbox-muted: var(--vp-c-text-2);
+  --showcase-lightbox-close-bg: color-mix(in srgb, var(--vp-c-bg) 72%, var(--vp-c-text-1) 28%);
+  --showcase-lightbox-close-border: color-mix(in srgb, var(--vp-c-brand-1) 14%, transparent);
 
   display: grid;
   gap: 1rem;
@@ -239,17 +266,6 @@ function onPreviewBackdropClick(event: MouseEvent) {
 
 :global(.vp-doc h2 a.header-anchor) {
   opacity: 0.45;
-}
-
-:global(.dark) .community-showcase {
-  --showcase-surface: linear-gradient(180deg, rgb(12 24 18 / 96%), rgb(10 18 15 / 98%));
-  --showcase-card: linear-gradient(180deg, rgb(18 33 25 / 96%), rgb(12 23 18 / 98%));
-  --showcase-border: rgb(134 239 172 / 16%);
-  --showcase-shadow: 0 26px 80px rgb(0 0 0 / 38%);
-  --showcase-text: #eaf7ee;
-  --showcase-muted: #a4c3af;
-  --showcase-accent: #7fe59d;
-  --showcase-accent-soft: rgb(127 229 157 / 12%);
 }
 
 .showcase-card {
@@ -267,7 +283,7 @@ function onPreviewBackdropClick(event: MouseEvent) {
 
 .showcase-card:hover {
   border-color: color-mix(in srgb, var(--showcase-accent) 26%, var(--showcase-border));
-  box-shadow: 0 20px 44px rgb(22 101 52 / 12%);
+  box-shadow: var(--showcase-hover-shadow);
   transform: translateY(-2px);
 }
 
@@ -276,9 +292,7 @@ function onPreviewBackdropClick(event: MouseEvent) {
   inset: 0;
   pointer-events: none;
   content: '';
-  background:
-    radial-gradient(circle at right top, rgb(31 122 69 / 12%), transparent 30%),
-    linear-gradient(180deg, rgb(255 255 255 / 22%), transparent 42%);
+  background: var(--showcase-panel-gloss);
 }
 
 .showcase-card__panel {
@@ -357,7 +371,7 @@ function onPreviewBackdropClick(event: MouseEvent) {
   font-weight: 600;
   color: var(--showcase-text);
   text-decoration: none;
-  background: rgb(255 255 255 / 64%);
+  background: var(--showcase-control-bg);
   border: 1px solid var(--showcase-border);
   border-radius: 999px;
   transition:
@@ -365,11 +379,6 @@ function onPreviewBackdropClick(event: MouseEvent) {
     border-color 180ms ease,
     background-color 180ms ease,
     box-shadow 180ms ease;
-}
-
-:global(.dark) .showcase-card__links a,
-:global(.dark) .showcase-card__toggle {
-  background: rgb(255 255 255 / 4%);
 }
 
 .showcase-card__links a:hover,
@@ -416,17 +425,13 @@ function onPreviewBackdropClick(event: MouseEvent) {
   padding: 0.45rem;
   overflow: hidden;
   cursor: zoom-in;
-  background: linear-gradient(145deg, rgb(255 255 255 / 70%), rgb(224 239 229 / 62%));
+  background: var(--showcase-preview-bg);
   border: 1px solid var(--showcase-border);
   border-radius: 18px;
   transition:
     transform 180ms ease,
     border-color 180ms ease,
     box-shadow 180ms ease;
-}
-
-:global(.dark) .showcase-card__preview {
-  background: linear-gradient(145deg, rgb(30 48 39 / 72%), rgb(17 29 23 / 90%));
 }
 
 .showcase-card__preview:hover {
@@ -453,7 +458,7 @@ function onPreviewBackdropClick(event: MouseEvent) {
   font-weight: 700;
   line-height: 1.2;
   color: var(--showcase-accent);
-  background: rgb(255 255 255 / 72%);
+  background: var(--showcase-preview-tip-bg);
   border: 1px solid var(--showcase-border);
   border-radius: 999px;
   opacity: 0;
@@ -461,10 +466,6 @@ function onPreviewBackdropClick(event: MouseEvent) {
   transition:
     opacity 180ms ease,
     transform 180ms ease;
-}
-
-:global(.dark) .showcase-card__preview-tip {
-  background: rgb(255 255 255 / 6%);
 }
 
 .showcase-card__visual:hover .showcase-card__preview-tip,
@@ -485,13 +486,9 @@ function onPreviewBackdropClick(event: MouseEvent) {
   gap: 0.4rem;
   padding: 0.6rem;
   cursor: zoom-in;
-  background: rgb(255 255 255 / 56%);
+  background: var(--showcase-shot-bg);
   border: 1px solid var(--showcase-border);
   border-radius: 16px;
-}
-
-:global(.dark) .showcase-shot {
-  background: rgb(255 255 255 / 3%);
 }
 
 .showcase-shot img {
@@ -530,7 +527,7 @@ function onPreviewBackdropClick(event: MouseEvent) {
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgb(3 8 6 / 78%);
+  background: var(--showcase-lightbox-backdrop);
   backdrop-filter: blur(10px);
 }
 
@@ -541,8 +538,8 @@ function onPreviewBackdropClick(event: MouseEvent) {
   width: min(92vw, 38rem);
   max-height: 92vh;
   padding: 1rem;
-  background: rgb(10 18 15 / 95%);
-  border: 1px solid rgb(255 255 255 / 10%);
+  background: var(--showcase-lightbox-card);
+  border: 1px solid var(--showcase-lightbox-border);
   border-radius: 24px;
   box-shadow: 0 40px 120px rgb(0 0 0 / 45%);
 }
@@ -555,12 +552,12 @@ function onPreviewBackdropClick(event: MouseEvent) {
 }
 
 .showcase-lightbox__meta {
-  color: rgb(229 243 233);
+  color: var(--showcase-lightbox-meta);
 }
 
 .showcase-lightbox__meta p {
   margin: 0.35rem 0 0;
-  color: rgb(170 198 178);
+  color: var(--showcase-lightbox-muted);
 }
 
 .showcase-lightbox__close {
@@ -570,10 +567,10 @@ function onPreviewBackdropClick(event: MouseEvent) {
   justify-self: end;
   min-height: 2.2rem;
   padding: 0.35rem 0.8rem;
-  color: white;
+  color: var(--showcase-lightbox-meta);
   cursor: pointer;
-  background: rgb(255 255 255 / 6%);
-  border: 1px solid rgb(255 255 255 / 14%);
+  background: var(--showcase-lightbox-close-bg);
+  border: 1px solid var(--showcase-lightbox-close-border);
   border-radius: 999px;
 }
 
