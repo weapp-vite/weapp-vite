@@ -162,6 +162,46 @@ export class BrowserHeadlessSession {
     return this.pages.slice()
   }
 
+  getScopeSnapshot(scopeId: string) {
+    const scope = this.componentScopes.get(scopeId)
+    if (!scope) {
+      return null
+    }
+    const instance = this.componentCache.get(scopeId)
+    if (instance) {
+      return {
+        data: instance.data ?? {},
+        methods: Object.keys(instance)
+          .filter(key => typeof instance[key] === 'function')
+          .sort((a, b) => a.localeCompare(b)),
+        properties: instance.properties ?? {},
+        scopeId,
+        type: 'component' as const,
+      }
+    }
+
+    const currentPage = this.currentPageInstance
+    if (currentPage && scopeId === `page:${currentPage.route}`) {
+      return {
+        data: currentPage.data ?? {},
+        methods: Object.keys(currentPage)
+          .filter(key => typeof currentPage[key] === 'function')
+          .sort((a, b) => a.localeCompare(b)),
+        properties: currentPage.options ?? {},
+        scopeId,
+        type: 'page' as const,
+      }
+    }
+
+    return {
+      data: scope.data ?? {},
+      methods: [] as string[],
+      properties: {},
+      scopeId,
+      type: 'scope' as const,
+    }
+  }
+
   renderCurrentPage() {
     const current = this.requireCurrentPage('renderCurrentPage()')
     return renderBrowserPageTree({
