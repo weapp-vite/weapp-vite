@@ -6,12 +6,13 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "jsx": "preserve",
-    "jsxImportSource": "vue",
     "types": [
-      "vite/client",
-      "vue/jsx"
+      "vite/client"
     ]
+  },
+  "vueCompilerOptions": {
+    "plugins": [],
+    "lib": "vue"
   },
   "include": [
     "src",
