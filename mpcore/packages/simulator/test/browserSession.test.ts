@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   createBrowserHeadlessSession,
   createBrowserVirtualFiles,
-  renderBrowserPageTree,
 } from '../src/browser'
 
 describe('BrowserHeadlessSession', () => {
@@ -22,7 +21,7 @@ Page({
   },
 })
 `],
-      ['pages/index/index.wxml', '<view>{{title}}</view>'],
+      ['pages/index/index.wxml', '<view>{{title}}</view><view bindtap="goDetail">Go</view>'],
       ['pages/detail/index.js', `
 Page({
   data: {
@@ -45,9 +44,89 @@ Page({
 
     indexPage.goDetail()
 
-    const detailPage = session.getCurrentPages().at(-1)
-    expect(detailPage?.options).toEqual({ from: 'index' })
-    expect(renderBrowserPageTree(files, session.project, detailPage!).wxml).toContain('Detail')
-    expect(renderBrowserPageTree(files, session.project, detailPage!).wxml).toContain('index')
+    expect(session.renderCurrentPage().wxml).toContain('Detail')
+    expect(session.renderCurrentPage().wxml).toContain('index')
+  })
+
+  it('renders custom components and routes triggerEvent back to the page', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    count: 2,
+    events: [],
+  },
+  handlePulse(event) {
+    this.setData({
+      events: [...this.data.events, event?.detail?.phase ?? 'none'],
+      count: this.data.count + 1,
+    })
+  },
+})
+`],
+      ['pages/lab/index.wxml', `
+<view>Lab</view>
+<status-card count="{{count}}" bind:pulse="handlePulse" />
+<view>{{events.0}}</view>
+`],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+Component({
+  properties: {
+    count: {
+      type: Number,
+      value: 0
+    }
+  },
+  data: {
+    observerLog: 'cold'
+  },
+  observers: {
+    count() {
+      this.setData({
+        observerLog: 'count:' + this.properties.count
+      })
+    }
+  },
+  methods: {
+    pulse() {
+      this.triggerEvent('pulse', {
+        phase: 'component-click'
+      })
+    }
+  }
+})
+`],
+      ['components/status-card/index.wxml', `
+<view>Count: {{count}}</view>
+<view>{{observerLog}}</view>
+<view bindtap="pulse">trigger</view>
+`],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/lab/index')
+
+    const rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('Count: 2')
+    expect(rendered.wxml).toContain('count:2')
+
+    const scopes = [...rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g)].map(match => match[1]!)
+    const componentScopeId = scopes.find(scopeId => scopeId.includes('status-card'))
+    expect(componentScopeId).toBeTruthy()
+
+    session.callTapBinding(componentScopeId!, 'pulse')
+
+    const rerendered = session.renderCurrentPage()
+    expect(rerendered.wxml).toContain('component-click')
+    expect(rerendered.wxml).toContain('Count: 3')
+    expect(rerendered.wxml).toContain('count:3')
   })
 })

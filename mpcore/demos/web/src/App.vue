@@ -2,7 +2,6 @@
 import {
   createBrowserHeadlessSession,
   createBrowserVirtualFilesFromDirectory,
-  renderBrowserPageTree,
   type BrowserDirectoryFileLike,
   type BrowserHeadlessSession,
 } from '../../../packages/simulator/src/browser'
@@ -93,7 +92,7 @@ const previewMarkup = computed(() => {
   }
 
   try {
-    return renderBrowserPageTree(session.value.files, session.value.project, currentPage.value).wxml
+    return session.value.renderCurrentPage().wxml
   }
   catch (error) {
     return `<page><view class="sim-preview-error">${String((error as Error).message ?? error)}</view></page>`
@@ -198,6 +197,12 @@ function handleCallMethod(method: string) {
     page?.[method]?.()
   })
 }
+
+function handleCallScopeMethod(payload: { method: string, scopeId: string }) {
+  run(() => {
+    session.value?.callTapBinding(payload.scopeId, payload.method)
+  })
+}
 </script>
 
 <template>
@@ -225,6 +230,8 @@ function handleCallMethod(method: string) {
           :route="currentRoute"
           :markup="previewMarkup"
           @back="run(() => session?.navigateBack())"
+          @call-method="handleCallMethod"
+          @call-scope-method="handleCallScopeMethod"
         />
       </aside>
 

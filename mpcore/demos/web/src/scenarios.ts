@@ -29,6 +29,10 @@ const scenarioCatalog: Record<string, ScenarioMeta> = {
     name: 'Route Maze',
     description: '多层页面栈、tab 切换、跨分包往返、redirect/reLaunch 混用，专门压复杂跳转。',
   },
+  'component-lab': {
+    name: 'Component Lab',
+    description: '页面 usingComponents + properties + observers + lifetimes + triggerEvent，验证真正的组件链。',
+  },
 }
 
 const rawScenarioModules = import.meta.glob('./fixtures/**/*', {

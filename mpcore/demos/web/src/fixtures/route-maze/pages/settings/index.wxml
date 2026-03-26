@@ -1,4 +1,5 @@
 <view class="screen">
   <view class="headline">{{title}}</view>
+  <view class="panel-row" bindtap="backHub">切回 Hub Tab</view>
   <view class="panel-row">Log: {{logs.0}}</view>
 </view>

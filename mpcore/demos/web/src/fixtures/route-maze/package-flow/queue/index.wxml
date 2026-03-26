@@ -1,5 +1,8 @@
 <view class="screen">
   <view class="headline">{{title}}</view>
+  <view class="panel-row" bindtap="openDetail">进入详情页</view>
+  <view class="panel-row" bindtap="bounceSettings">切到设置 Tab</view>
+  <view class="panel-row" bindtap="openMissing">触发缺失路由</view>
   <view class="panel-row">From: {{from}}</view>
   <view class="panel-row">Card 2: {{cards.1.title}}</view>
   <view class="panel-row">Log: {{logs.0}}</view>
