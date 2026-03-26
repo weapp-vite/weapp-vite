@@ -203,6 +203,56 @@ export class BrowserHeadlessSession {
     }
   }
 
+  selectComponent(selector: string) {
+    return this.selectComponentsWithin(null, selector)[0] ?? null
+  }
+
+  selectAllComponents(selector: string) {
+    return this.selectComponentsWithin(null, selector)
+  }
+
+  selectComponentWithin(scopeId: string, selector: string) {
+    return this.selectComponentsWithin(scopeId, selector)[0] ?? null
+  }
+
+  selectAllComponentsWithin(scopeId: string, selector: string) {
+    return this.selectComponentsWithin(scopeId, selector)
+  }
+
+  selectOwnerComponent(scopeId: string) {
+    const scope = this.componentScopes.get(scopeId)
+    if (!scope?.ownerScopeId) {
+      return null
+    }
+    return this.componentCache.get(scope.ownerScopeId) ?? null
+  }
+
+  private selectComponentsWithin(rootScopeId: string | null, selector: string) {
+    const normalizedSelector = selector.trim()
+    if (!normalizedSelector) {
+      return []
+    }
+
+    return [...this.componentScopes.entries()]
+      .filter(([candidateScopeId, scope]) => {
+        if (!candidateScopeId.includes('/')) {
+          return false
+        }
+        if (rootScopeId && candidateScopeId === rootScopeId) {
+          return false
+        }
+        if (rootScopeId && !candidateScopeId.startsWith(`${rootScopeId}/`)) {
+          return false
+        }
+        if (normalizedSelector.startsWith('#')) {
+          return scope.id === normalizedSelector.slice(1)
+        }
+        return scope.alias === normalizedSelector
+      })
+      .map(([candidateScopeId]) => this.componentCache.get(candidateScopeId))
+      .filter(Boolean)
+  }
+
   renderCurrentPage() {
     const current = this.requireCurrentPage('renderCurrentPage()')
     return renderBrowserPageTree({
@@ -211,6 +261,11 @@ export class BrowserHeadlessSession {
       files: this.files,
       moduleLoader: this.moduleLoader,
       project: this.project,
+      session: {
+        selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
+        selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
+        selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
+      },
     }, current)
   }
 
@@ -224,6 +279,61 @@ export class BrowserHeadlessSession {
       throw new Error(`Method "${methodName}" does not exist on scope "${scopeId}" in browser simulator runtime.`)
     }
     return method()
+  }
+
+  callTapBindingWithEvent(
+    scopeId: string,
+    methodName: string,
+    event: {
+      currentTarget?: {
+        dataset?: Record<string, string>
+        id?: string
+      }
+      dataset?: Record<string, string>
+      id?: string
+      target?: {
+        dataset?: Record<string, string>
+        id?: string
+      }
+    } = {},
+  ) {
+    const scope = this.componentScopes.get(scopeId)
+    if (!scope) {
+      throw new Error(`Unknown scope "${scopeId}" in browser simulator runtime.`)
+    }
+    const method = scope.getMethod(methodName)
+    if (typeof method !== 'function') {
+      throw new Error(`Method "${methodName}" does not exist on scope "${scopeId}" in browser simulator runtime.`)
+    }
+    const instance = this.componentCache.get(scopeId)
+    if (instance) {
+      instance.__lastInteractionEvent__ = {
+        currentTarget: {
+          dataset: event.currentTarget?.dataset ?? event.dataset ?? {},
+          id: event.currentTarget?.id ?? event.id ?? '',
+        },
+        target: {
+          dataset: event.target?.dataset ?? event.dataset ?? {},
+          id: event.target?.id ?? event.id ?? '',
+        },
+      }
+    }
+    return method({
+      bubbles: false,
+      capturePhase: false,
+      composed: false,
+      currentTarget: {
+        dataset: event.currentTarget?.dataset ?? event.dataset ?? {},
+        id: event.currentTarget?.id ?? event.id ?? '',
+      },
+      detail: undefined,
+      mark: undefined,
+      target: {
+        dataset: event.target?.dataset ?? event.dataset ?? {},
+        id: event.target?.id ?? event.id ?? '',
+      },
+      type: 'tap',
+    })
   }
 
   bootstrap(launchOptions = createAppLaunchOptions('', {})) {
@@ -403,6 +513,8 @@ export class BrowserHeadlessSession {
     const pageModulePath = join(this.project.miniprogramRootPath, `${target.routeRecord.route}.js`)
     const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
     const pageInstance = createPageInstance(target.routeRecord.route, pageDefinition, target.query)
+    pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
+    pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
     pageInstance.onLoad?.(target.query)
     pageInstance.onShow?.()
     pageInstance.onReady?.()

@@ -1,12 +1,16 @@
 <view class="screen">
   <view class="headline">{{title}}</view>
   <view class="panel-row" bindtap="promote">页面自己加一档</view>
+  <view class="panel-row" bindtap="inspectCard">检查组件实例</view>
   <status-card
+    id="status-card"
     title="{{cardTitle}}"
     count="{{count}}"
     status="{{status}}"
     bind:pulse="handlePulse"
   />
   <view class="panel-row">最近事件：{{events.0}}</view>
+  <view class="panel-row">事件形态：{{eventShape}}</view>
+  <view class="panel-row">组件快照：{{componentSnapshot}}</view>
   <view class="panel-row">最近轨迹：{{traces.0}}</view>
 </view>
