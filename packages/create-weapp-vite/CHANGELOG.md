@@ -1,5 +1,19 @@
 # create-weapp-vite
 
+## 2.0.61
+
+### Patch Changes
+
+- 🐛 **同步升级脚手架模板与构建链路使用的 catalog 依赖版本，包括 `weapp-tailwindcss`、`tdesign-miniprogram`、`rolldown` 与 `vite`，减少模板生成结果和仓库实际依赖之间的版本漂移。同时增强 `createProject` 的 `.gitignore` 相关测试，避免模板依赖版本正常升级后因为硬编码断言而产生误报。** [#355](https://github.com/weapp-vite/weapp-vite/pull/355) by @sonofmagic
+
+- 🐛 **为 CLI 新增 `--platform all` 双目标运行模式，允许同时启动小程序构建链路与 Web 运行时；并同步完善模板应用的调试脚本，便于一边查看 UI 分析面板一边启动 Web 侧预览。** [`45fb197`](https://github.com/weapp-vite/weapp-vite/commit/45fb197281199dc9672437b109321e1f868c315d) by @sonofmagic
+
+- 🐛 **修复 `wevu` Vue SFC 页面在 `<script setup>` 中通过默认 `@/` 别名导入组件时，自动生成的 `usingComponents` 路径被错误拼成页面相对路径的问题，避免构建时出现找不到组件入口文件的告警。** [`2545727`](https://github.com/weapp-vite/weapp-vite/commit/2545727d502a3d83fb7085e6dfd7c9372f493ea1) by @sonofmagic
+
+- 🐛 **为 `weapp-vite` 新增 `--ui` 调试入口并保留 `--analyze` 兼容别名，同时将 dashboard 升级为单页多面板分析 UI，集中展示包体、分包、产物文件与跨包模块复用细节。** [`f278c9f`](https://github.com/weapp-vite/weapp-vite/commit/f278c9f04bb4b17138cbb3bb21f2f969585d08d3) by @sonofmagic
+
+- 🐛 **同步升级 `weapp-vite` 与 `rolldown-require` 对 `rolldown@1.0.0-rc.11` 的依赖约束，并更新部分 Vue 3.5.31、`tsdown` 等构建链路依赖版本，减少脚手架与实际构建环境之间的版本漂移。** [`3094be8`](https://github.com/weapp-vite/weapp-vite/commit/3094be81a5c569237425602388b7a7a579cdbce0) by @sonofmagic
+
 ## 2.0.60
 
 ### Patch Changes

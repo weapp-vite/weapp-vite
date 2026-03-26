@@ -1,5 +1,11 @@
 # rolldown-require
 
+## 2.0.10
+
+### Patch Changes
+
+- 🐛 **同步升级 `weapp-vite` 与 `rolldown-require` 对 `rolldown@1.0.0-rc.11` 的依赖约束，并更新部分 Vue 3.5.31、`tsdown` 等构建链路依赖版本，减少脚手架与实际构建环境之间的版本漂移。** [`3094be8`](https://github.com/weapp-vite/weapp-vite/commit/3094be81a5c569237425602388b7a7a579cdbce0) by @sonofmagic
+
 ## 2.0.9
 
 ### Patch Changes
