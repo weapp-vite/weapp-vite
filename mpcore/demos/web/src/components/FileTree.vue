@@ -16,19 +16,32 @@ const emit = defineEmits<{
 function isExpanded(path: string) {
   return props.expandedPaths.includes(path)
 }
+
+function getFileIcon(path: string) {
+  if (path.endsWith('.json')) {
+    return 'icon-[mdi--code-json]'
+  }
+  if (path.endsWith('.wxml')) {
+    return 'icon-[mdi--language-html5]'
+  }
+  if (path.endsWith('.wxss')) {
+    return 'icon-[mdi--language-css3]'
+  }
+  return 'icon-[mdi--language-javascript]'
+}
 </script>
 
 <template>
-  <div class="grid gap-1">
+  <div class="grid gap-0.5">
     <template v-for="node in nodes" :key="node.path">
       <button
         :class="cn(
-          'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] transition-colors',
+          'flex h-6 w-full items-center gap-1.5 px-1.5 text-left text-[11px] transition-colors',
           node.type === 'file' && selectedPath === node.path
-            ? 'bg-[color:var(--sim-accent-soft)] text-[color:var(--sim-text)]'
-            : 'text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)] hover:text-[color:var(--sim-text)]',
+            ? 'bg-[color:var(--sim-selection-bg)] text-[color:var(--sim-text)]'
+            : 'text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-hover-strong)] hover:text-[color:var(--sim-text)]',
         )"
-        :style="{ paddingLeft: `${8 + node.depth * 12}px` }"
+        :style="{ paddingLeft: `${6 + node.depth * 14}px` }"
         @click="node.type === 'directory' ? emit('toggle', node.path) : emit('select', node.path)"
       >
         <span
@@ -38,18 +51,27 @@ function isExpanded(path: string) {
                 ? 'icon-[mdi--chevron-down]'
                 : 'icon-[mdi--chevron-right]'
               : 'icon-[mdi--file-document-outline]',
-            'text-sm',
+            'text-[13px]',
           )"
           aria-hidden="true"
         />
         <span
           :class="cn(
-            node.type === 'directory' ? 'icon-[mdi--folder-outline]' : 'icon-[mdi--language-javascript]',
-            'text-sm',
+            node.type === 'directory' ? 'icon-[mdi--folder-outline] text-[#b8a16d]' : getFileIcon(node.path),
+            'text-[13px]',
           )"
           aria-hidden="true"
         />
-        <span class="truncate">{{ node.name }}</span>
+        <span
+          :class="cn(
+            'truncate',
+            node.type === 'file' && node.name.endsWith('.js') && 'text-[#e2c06d]',
+            node.type === 'file' && node.name.endsWith('.wxml') && 'text-[#7ec6ff]',
+            node.type === 'file' && node.name.endsWith('.json') && 'text-[#9ad17b]',
+          )"
+        >
+          {{ node.name }}
+        </span>
       </button>
 
       <FileTree

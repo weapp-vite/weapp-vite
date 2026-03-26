@@ -13,6 +13,10 @@ interface ScenarioMeta {
 }
 
 const scenarioCatalog: Record<string, ScenarioMeta> = {
+  'wechat-template': {
+    name: 'weapp-vite-wevu-template',
+    description: '还原微信开发者工具截图布局的中文业务门户模板场景。',
+  },
   'commerce-shell': {
     name: 'Commerce Shell',
     description: 'TabBar + subpackage + relative jump + pageScrollTo，接近正常电商小程序结构。',
