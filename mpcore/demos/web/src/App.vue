@@ -12,7 +12,6 @@ import RoutePanel from './components/RoutePanel.vue'
 import ScenarioSelector from './components/ScenarioSelector.vue'
 import ScopePanel from './components/ScopePanel.vue'
 import StackPanel from './components/StackPanel.vue'
-import StatsBar from './components/StatsBar.vue'
 import { builtInScenarios } from './scenarios'
 
 const HOOK_NAMES = new Set([
@@ -140,11 +139,10 @@ const currentOptions = computed(() => {
   return stringify(currentPage.value?.options ?? {})
 })
 
-const stats = computed(() => [
-  { label: '🕛 项目', value: projectLabel.value },
-  { label: '🕛 路由数', value: pageRoutes.value.length },
-  { label: '🕛 栈深度', value: pageStack.value.length },
-  { label: '🕛 当前页', value: currentRoute.value },
+const statusChips = computed(() => [
+  { label: '路由', value: pageRoutes.value.length },
+  { label: '栈', value: pageStack.value.length },
+  { label: '当前页', value: currentRoute.value },
 ])
 
 const selectedScope = computed(() => {
@@ -326,39 +324,7 @@ function handleSelectScope(scopeId: string) {
 
 <template>
   <main class="sim-app">
-    <section class="sim-toolbar">
-      <div class="sim-theme-switch" role="group" aria-label="主题切换">
-        <span class="sim-theme-switch__label">Theme</span>
-        <button
-          class="sim-theme-switch__btn"
-          :class="{ 'is-active': themeMode === 'auto' }"
-          @click="setThemeMode('auto')"
-        >
-          <span class="icon-[mdi--theme-light-dark] text-sm" aria-hidden="true" />
-          Auto
-        </button>
-        <button
-          class="sim-theme-switch__btn"
-          :class="{ 'is-active': themeMode === 'light' }"
-          @click="setThemeMode('light')"
-        >
-          <span class="icon-[mdi--white-balance-sunny] text-sm" aria-hidden="true" />
-          Light
-        </button>
-        <button
-          class="sim-theme-switch__btn"
-          :class="{ 'is-active': themeMode === 'dark' }"
-          @click="setThemeMode('dark')"
-        >
-          <span class="icon-[mdi--moon-waning-crescent] text-sm" aria-hidden="true" />
-          Dark
-        </button>
-      </div>
-      <span class="sim-theme-switch__state">当前：{{ effectiveTheme }}</span>
-    </section>
-    <StatsBar :items="stats" />
-
-    <section v-if="errorMessage" class="sim-alert">
+    <section v-if="errorMessage" class="sim-alert sim-alert--floating">
       <strong>🕛 运行时错误</strong>
       <pre>{{ errorMessage }}</pre>
     </section>
@@ -375,6 +341,54 @@ function handleSelectScope(scopeId: string) {
       </aside>
 
       <section class="sim-workbench__right">
+        <section class="sim-toolbar sim-toolbar--inline">
+          <div class="sim-toolbar__meta">
+            <div class="sim-toolbar__project">
+              <span class="sim-theme-switch__label">项目</span>
+              <strong>{{ projectLabel }}</strong>
+            </div>
+            <div class="sim-status-list" aria-label="当前会话状态">
+              <span
+                v-for="item in statusChips"
+                :key="item.label"
+                class="sim-status-chip"
+              >
+                <span class="sim-status-chip__label">{{ item.label }}</span>
+                <strong>{{ item.value }}</strong>
+              </span>
+            </div>
+          </div>
+
+          <div class="sim-theme-switch" role="group" aria-label="主题切换">
+            <span class="sim-theme-switch__label">Theme</span>
+            <button
+              class="sim-theme-switch__btn"
+              :class="{ 'is-active': themeMode === 'auto' }"
+              @click="setThemeMode('auto')"
+            >
+              <span class="icon-[mdi--theme-light-dark] text-sm" aria-hidden="true" />
+              Auto
+            </button>
+            <button
+              class="sim-theme-switch__btn"
+              :class="{ 'is-active': themeMode === 'light' }"
+              @click="setThemeMode('light')"
+            >
+              <span class="icon-[mdi--white-balance-sunny] text-sm" aria-hidden="true" />
+              Light
+            </button>
+            <button
+              class="sim-theme-switch__btn"
+              :class="{ 'is-active': themeMode === 'dark' }"
+              @click="setThemeMode('dark')"
+            >
+              <span class="icon-[mdi--moon-waning-crescent] text-sm" aria-hidden="true" />
+              Dark
+            </button>
+            <span class="sim-theme-switch__state">当前：{{ effectiveTheme }}</span>
+          </div>
+        </section>
+
         <section class="sim-tab-panel">
           <div class="sim-tabbar" role="tablist" aria-label="运行区">
             <button
