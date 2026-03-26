@@ -118,7 +118,7 @@ Component({
     expect(rendered.wxml).toContain('Count: 2')
     expect(rendered.wxml).toContain('count:2')
 
-    const scopes = [...rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g)].map(match => match[1]!)
+    const scopes = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
     const componentScopeId = scopes.find(scopeId => scopeId.includes('status-card'))
     expect(componentScopeId).toBeTruthy()
 
@@ -802,7 +802,7 @@ Component({
     const session = createBrowserHeadlessSession({ files })
     session.reLaunch('/pages/lab/index')
     const rendered = session.renderCurrentPage()
-    const scopeIds = [...rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g)].map(match => match[1]!)
+    const scopeIds = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
     const cardScopeId = scopeIds.find(scopeId => scopeId.includes('status-card'))
     expect(cardScopeId).toBeTruthy()
 
@@ -863,7 +863,7 @@ Component({
     rendered = session.renderCurrentPage()
     expect(rendered.wxml).toContain('ready')
 
-    const scopes = [...rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g)].map(match => match[1]!)
+    const scopes = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
     const componentScopeId = scopes.find(scopeId => scopeId.includes('status-card'))
     expect(componentScopeId).toBeTruthy()
 
@@ -1160,7 +1160,7 @@ Component({
     const pageA = session.reLaunch('/pages/a/index')
     let rendered = session.renderCurrentPage()
     expect(rendered.wxml).toContain('show')
-    const scopes = [...rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g)].map(match => match[1]!)
+    const scopes = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
     const componentScopeId = scopes.find(scopeId => scopeId.includes('status-card'))
     expect(componentScopeId).toBeTruthy()
 
@@ -1404,7 +1404,7 @@ Component({
     rendered = session.renderCurrentPage()
     expect(rendered.wxml).toContain('ready')
 
-    const scopeIds = [...rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g)].map(match => match[1]!)
+    const scopeIds = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
     const statusCardScopeId = scopeIds.find(scopeId => scopeId.includes('status-card') && !scopeId.includes('mini-badge'))
     expect(statusCardScopeId).toBeTruthy()
 
@@ -1461,7 +1461,7 @@ Component({
     const session = createBrowserHeadlessSession({ files })
     session.reLaunch('/pages/lab/index')
     const rendered = session.renderCurrentPage()
-    const scopeIds = [...rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g)].map(match => match[1]!)
+    const scopeIds = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
     const statusCardScopeId = scopeIds.find(scopeId => scopeId.includes('status-card'))
     expect(statusCardScopeId).toBeTruthy()
 
@@ -1536,7 +1536,7 @@ Component({
     const session = createBrowserHeadlessSession({ files })
     session.reLaunch('/pages/lab/index')
     let rendered = session.renderCurrentPage()
-    const scopeIds = [...rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g)].map(match => match[1]!)
+    const scopeIds = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
     const badgeScopeId = scopeIds.find(scopeId => scopeId.includes('mini-badge'))
     expect(badgeScopeId).toBeTruthy()
 
@@ -1586,7 +1586,7 @@ Component({
     const session = createBrowserHeadlessSession({ files })
     session.reLaunch('/pages/lab/index')
     const rendered = session.renderCurrentPage()
-    const scopeIds = [...rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g)].map(match => match[1]!)
+    const scopeIds = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
     const statusCardScopeId = scopeIds.find(scopeId => scopeId.includes('status-card'))
     expect(statusCardScopeId).toBeTruthy()
 
@@ -1600,5 +1600,122 @@ Component({
     const page = session.getCurrentPages()[0]
     expect(page?.data.snapshot).toContain('"phase":"pulse"')
     expect(page?.data.snapshot).toContain('"cardType":"primary"')
+  })
+
+  it('renders wx:if / wx:elif / wx:else branches and wx:for lists', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    visible: true,
+    status: '',
+    actions: [
+      { label: 'Alpha', value: 'alpha' },
+      { label: 'Beta', value: 'beta' }
+    ]
+  },
+  flip() {
+    this.setData({
+      visible: false,
+      status: 'ready'
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', `
+<view wx:if="{{visible}}">visible</view>
+<view wx:elif="{{status}}">status:{{status}}</view>
+<view wx:else>empty</view>
+<view
+  wx:for="{{actions}}"
+  wx:key="value"
+  wx:for-item="action"
+  wx:for-index="actionIndex"
+>
+  {{actionIndex}}-{{action.label}}-{{action.value}}
+</view>
+`],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    let rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('visible')
+    expect(rendered.wxml).not.toContain('status:ready')
+    expect(rendered.wxml).toContain('0-Alpha-alpha')
+    expect(rendered.wxml).toContain('1-Beta-beta')
+
+    page.flip()
+    rendered = session.renderCurrentPage()
+    expect(rendered.wxml).not.toContain('>visible<')
+    expect(rendered.wxml).toContain('status:ready')
+    expect(rendered.wxml).not.toContain('>empty<')
+  })
+
+  it('updates loop-driven component properties after page setData patches', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          pill: '../../components/pill/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    actions: [
+      { label: 'Alpha' },
+      { label: 'Beta' }
+    ]
+  },
+  rename() {
+    this.setData({
+      'actions[1].label': 'Gamma'
+    })
+  }
+})
+`],
+      ['pages/lab/index.wxml', `
+<pill
+  wx:for="{{actions}}"
+  wx:key="label"
+  wx:for-item="action"
+  label="{{action.label}}"
+/>
+`],
+      ['components/pill/index.json', '{}'],
+      ['components/pill/index.js', `
+Component({
+  properties: {
+    label: String
+  },
+  data: {
+    summary: ''
+  },
+  observers: {
+    label(value) {
+      this.setData({
+        summary: String(value)
+      })
+    }
+  }
+})
+`],
+      ['components/pill/index.wxml', '<view>{{summary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    let rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('Alpha')
+    expect(rendered.wxml).toContain('Beta')
+
+    page.rename()
+    rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('Gamma')
+    expect(rendered.wxml).not.toContain('>Beta<')
   })
 })

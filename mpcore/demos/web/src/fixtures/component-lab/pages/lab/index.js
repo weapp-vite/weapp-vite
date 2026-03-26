@@ -8,6 +8,14 @@ Page({
     eventShape: '',
     componentSnapshot: '',
     traces: [],
+    flags: {
+      showMeta: true,
+    },
+    quickActions: [
+      { label: '切到 stable', status: 'stable' },
+      { label: '切到 boosted', status: 'boosted' },
+      { label: '切到 muted', status: 'muted' },
+    ],
   },
   push(message) {
     this.setData({
@@ -37,6 +45,21 @@ Page({
       events: [...this.data.events, detail.phase || 'unknown'],
     })
     this.push('lab:handlePulse:' + JSON.stringify(detail))
+  },
+  applyStatus(event) {
+    const status = event?.currentTarget?.dataset?.status || 'stable'
+    this.setData({
+      status,
+    }, () => {
+      this.push('lab:applyStatus:' + status)
+    })
+  },
+  toggleMeta() {
+    this.setData({
+      'flags.showMeta': !this.data.flags.showMeta,
+    }, () => {
+      this.push('lab:toggleMeta:' + this.data.flags.showMeta)
+    })
   },
   inspectCard() {
     const card = this.selectComponent?.('#status-card')

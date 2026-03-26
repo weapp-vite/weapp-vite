@@ -16,12 +16,20 @@ Component({
   data: {
     internalClicks: 0,
     nestedBadge: '',
-    observerLog: 'cold'
+    observerLog: 'cold',
+    actionLog: [],
+    actionPills: ['warm', 'hot'],
+    isBoosted: false
   },
   observers: {
     count() {
       this.setData({
         observerLog: `count:${this.properties.count}`
+      })
+    },
+    status(value) {
+      this.setData({
+        isBoosted: value === 'boosted'
       })
     }
   },
@@ -40,7 +48,8 @@ Component({
   methods: {
     pulse() {
       this.setData({
-        internalClicks: this.data.internalClicks + 1
+        internalClicks: this.data.internalClicks + 1,
+        actionLog: [...this.data.actionLog, 'pulse']
       }, () => {
         this.triggerEvent('pulse', {
           phase: `pulse-${this.data.internalClicks}`,
@@ -55,6 +64,7 @@ Component({
       const badge = this.selectComponent?.('#mini-badge')
       const badges = this.selectAllComponents?.('mini-badge') ?? []
       this.setData({
+        actionLog: [...this.data.actionLog, 'inspect'],
         nestedBadge: JSON.stringify({
           badgeReady: !!badge,
           label: badge?.properties?.label ?? '',
@@ -67,6 +77,12 @@ Component({
       }, {
         bubbles: true,
         composed: true
+      })
+    },
+    applyInternalAction(event) {
+      const phase = event?.currentTarget?.dataset?.phase || 'unknown'
+      this.setData({
+        actionLog: [...this.data.actionLog, phase]
       })
     }
   }
