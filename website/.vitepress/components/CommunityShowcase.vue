@@ -218,11 +218,36 @@ function onPreviewBackdropClick(event: MouseEvent) {
 
 <style scoped>
 .community-showcase {
-  --showcase-surface: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--vp-c-bg-soft) 88%, var(--vp-c-bg)),
-    color-mix(in srgb, var(--vp-c-bg-alt) 86%, var(--vp-c-bg))
-  );
+  --showcase-surface: linear-gradient(180deg, rgb(252 255 253 / 98%), rgb(245 251 247 / 98%));
+  --showcase-card: linear-gradient(135deg, rgb(255 255 255 / 97%), rgb(247 252 248 / 97%));
+  --showcase-border: rgb(31 122 69 / 12%);
+  --showcase-shadow: 0 16px 36px rgb(31 122 69 / 8%);
+  --showcase-text: #17301c;
+  --showcase-muted: #5b7060;
+  --showcase-accent: #1f7a45;
+  --showcase-accent-soft: rgb(31 122 69 / 8%);
+  --showcase-panel-gloss:
+    radial-gradient(circle at right top, rgb(31 122 69 / 10%), transparent 30%),
+    linear-gradient(180deg, rgb(255 255 255 / 30%), transparent 45%);
+  --showcase-hover-shadow: 0 18px 40px rgb(31 122 69 / 10%);
+  --showcase-control-bg: rgb(255 255 255 / 92%);
+  --showcase-preview-bg: linear-gradient(145deg, rgb(255 255 255 / 92%), rgb(238 248 241 / 95%));
+  --showcase-preview-tip-bg: rgb(255 255 255 / 94%);
+  --showcase-shot-bg: rgb(252 255 253 / 92%);
+  --showcase-lightbox-backdrop: rgb(239 247 242 / 72%);
+  --showcase-lightbox-card: rgb(252 255 252 / 98%);
+  --showcase-lightbox-border: rgb(31 122 69 / 10%);
+  --showcase-lightbox-meta: #17301c;
+  --showcase-lightbox-muted: #5b7060;
+  --showcase-lightbox-close-bg: rgb(255 255 255 / 92%);
+  --showcase-lightbox-close-border: rgb(31 122 69 / 10%);
+
+  display: grid;
+  gap: 1rem;
+  color: var(--showcase-text);
+}
+
+:global(html[class~='dark'] .community-showcase) {
   --showcase-card: linear-gradient(
     135deg,
     color-mix(in srgb, var(--vp-c-bg) 92%, var(--vp-c-text-1) 8%),
@@ -253,10 +278,6 @@ function onPreviewBackdropClick(event: MouseEvent) {
   --showcase-lightbox-muted: var(--vp-c-text-2);
   --showcase-lightbox-close-bg: color-mix(in srgb, var(--vp-c-bg) 72%, var(--vp-c-text-1) 28%);
   --showcase-lightbox-close-border: color-mix(in srgb, var(--vp-c-brand-1) 14%, transparent);
-
-  display: grid;
-  gap: 1rem;
-  color: var(--showcase-text);
 }
 
 :global(.vp-doc h2) {
