@@ -129,4 +129,72 @@ Component({
     expect(rerendered.wxml).toContain('Count: 3')
     expect(rerendered.wxml).toContain('count:3')
   })
+
+  it('runs component pageLifetimes on page show hide and resize', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/a/index', 'pages/b/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/a/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/a/index.js', 'Page({ openB() { wx.navigateTo({ url: "/pages/b/index" }) } })'],
+      ['pages/a/index.wxml', '<status-card mode="{{\'A\'}}" /><view bindtap="openB">next</view>'],
+      ['pages/b/index.js', 'Page({})'],
+      ['pages/b/index.wxml', '<view>B</view>'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', `
+Component({
+  properties: {
+    mode: {
+      type: String,
+      value: ''
+    }
+  },
+  data: {
+    lifecycleLog: []
+  },
+  pageLifetimes: {
+    show() {
+      this.setData({
+        lifecycleLog: [...this.data.lifecycleLog, 'show']
+      })
+    },
+    hide() {
+      this.setData({
+        lifecycleLog: [...this.data.lifecycleLog, 'hide']
+      })
+    },
+    resize(options) {
+      this.setData({
+        lifecycleLog: [...this.data.lifecycleLog, 'resize:' + options?.size?.windowWidth]
+      })
+    }
+  }
+})
+`],
+      ['components/status-card/index.wxml', '<view>{{mode}}</view><view>{{lifecycleLog.0}}</view><view>{{lifecycleLog.1}}</view><view>{{lifecycleLog.2}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const pageA = session.reLaunch('/pages/a/index')
+    let rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('show')
+    const scopes = [...rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g)].map(match => match[1]!)
+    const componentScopeId = scopes.find(scopeId => scopeId.includes('status-card'))
+    expect(componentScopeId).toBeTruthy()
+
+    session.triggerResize({
+      size: {
+        windowWidth: 375,
+      },
+    })
+    rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('resize:375')
+
+    pageA.openB()
+    const componentScope = session.getScopeSnapshot(componentScopeId!)
+    expect(componentScope?.data.lifecycleLog).toEqual(['show', 'resize:375', 'hide'])
+  })
 })

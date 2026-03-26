@@ -6,6 +6,7 @@ import type { HeadlessPageInstance } from '../runtime/pageInstance'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
 import { createAppInstance } from '../runtime/appInstance'
+import { runComponentPageLifetime } from '../runtime/componentInstance'
 import { createPageInstance } from '../runtime/pageInstance'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
@@ -260,6 +261,9 @@ export class BrowserHeadlessSession {
     }
 
     this.currentPageInstance?.onHide?.()
+    if (this.currentPageInstance) {
+      this.runPageComponentLifetime(this.currentPageInstance.route, 'hide')
+    }
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
@@ -301,6 +305,9 @@ export class BrowserHeadlessSession {
     const nextPage = this.pages.at(-1) ?? null
     this.currentPageInstance = nextPage
     nextPage?.onShow?.()
+    if (nextPage) {
+      this.runPageComponentLifetime(nextPage.route, 'show')
+    }
     return nextPage
   }
 
@@ -325,6 +332,7 @@ export class BrowserHeadlessSession {
 
     if (current && current !== cachedTarget) {
       current.onHide?.()
+      this.runPageComponentLifetime(current.route, 'hide')
     }
 
     for (const page of [...this.pages].reverse()) {
@@ -342,6 +350,7 @@ export class BrowserHeadlessSession {
     }
     else if (current !== nextPage) {
       nextPage.onShow?.()
+      this.runPageComponentLifetime(nextPage.route, 'show')
     }
 
     nextPage.onTabItemTap?.(tabItem)
@@ -376,6 +385,7 @@ export class BrowserHeadlessSession {
   triggerResize(options: Record<string, any>) {
     const current = this.requireCurrentPage('triggerResize()')
     current.onResize?.(options)
+    this.runPageComponentLifetime(current.route, 'resize', options)
     return current
   }
 
@@ -460,6 +470,7 @@ export class BrowserHeadlessSession {
 
   private unloadPage(page: HeadlessPageInstance) {
     page.onUnload?.()
+    this.detachPageComponents(page.route)
     this.tabPages.delete(stripLeadingSlash(page.route))
   }
 
@@ -470,6 +481,32 @@ export class BrowserHeadlessSession {
       throw new Error(`Cannot call ${action} without an active page in browser simulator runtime.`)
     }
     return current
+  }
+
+  private detachPageComponents(route: string) {
+    const prefix = `page:${stripLeadingSlash(route)}`
+    for (const [scopeId, instance] of [...this.componentCache.entries()]) {
+      if (!scopeId.startsWith(prefix)) {
+        continue
+      }
+      instance.__definition__?.lifetimes?.detached?.call(instance)
+      this.componentCache.delete(scopeId)
+      this.componentScopes.delete(scopeId)
+    }
+  }
+
+  private runPageComponentLifetime(
+    route: string,
+    lifetimeName: 'hide' | 'resize' | 'show',
+    payload?: unknown,
+  ) {
+    const prefix = `page:${stripLeadingSlash(route)}`
+    for (const [scopeId, instance] of this.componentCache.entries()) {
+      if (!scopeId.startsWith(prefix)) {
+        continue
+      }
+      runComponentPageLifetime(instance, lifetimeName, payload)
+    }
   }
 }
 
