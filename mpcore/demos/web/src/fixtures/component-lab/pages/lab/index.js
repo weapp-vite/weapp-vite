@@ -7,6 +7,7 @@ Page({
     events: [],
     eventShape: '',
     componentSnapshot: '',
+    tapTrail: [],
     traces: [],
     flags: {
       showMeta: true,
@@ -59,6 +60,14 @@ Page({
       'flags.showMeta': !this.data.flags.showMeta,
     }, () => {
       this.push('lab:toggleMeta:' + this.data.flags.showMeta)
+    })
+  },
+  recordTap(event) {
+    const phase = event?.currentTarget?.dataset?.phase || 'unknown'
+    this.setData({
+      tapTrail: [...this.data.tapTrail, phase],
+    }, () => {
+      this.push('lab:recordTap:' + phase)
     })
   },
   inspectCard() {
