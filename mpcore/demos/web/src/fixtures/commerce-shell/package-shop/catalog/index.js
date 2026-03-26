@@ -36,4 +36,16 @@ Page({
       url: '../item/index?sku=sku-2',
     })
   },
+  openProfileTab() {
+    wx.switchTab({
+      url: '/pages/profile/index',
+    })
+  },
+  openGhostRoute() {
+    wx.navigateTo({
+      url: '../ghost/index',
+      fail: (error) => this.push('catalog:ghost:' + error.message),
+      complete: () => this.push('catalog:ghost:complete'),
+    })
+  },
 })

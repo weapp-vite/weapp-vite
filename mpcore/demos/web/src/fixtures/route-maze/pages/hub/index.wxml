@@ -1,0 +1,6 @@
+<view class="screen">
+  <view class="headline">{{title}}</view>
+  <view class="panel-row">Status: {{status}}</view>
+  <view class="panel-row">Step 2: {{steps.1}}</view>
+  <view class="panel-row">Log: {{logs.0}}</view>
+</view>

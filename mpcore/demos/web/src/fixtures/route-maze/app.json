@@ -1,0 +1,28 @@
+{
+  "pages": [
+    "pages/hub/index",
+    "pages/insights/index",
+    "pages/settings/index"
+  ],
+  "subPackages": [
+    {
+      "root": "package-flow",
+      "pages": [
+        "queue/index",
+        "detail/index"
+      ]
+    }
+  ],
+  "tabBar": {
+    "list": [
+      {
+        "pagePath": "pages/hub/index",
+        "text": "Hub"
+      },
+      {
+        "pagePath": "pages/settings/index",
+        "text": "Settings"
+      }
+    ]
+  }
+}
