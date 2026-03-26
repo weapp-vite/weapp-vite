@@ -1,0 +1,6 @@
+{
+  "pages": [
+    "pages/dashboard/index",
+    "pages/settings/index"
+  ]
+}

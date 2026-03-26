@@ -1,0 +1,6 @@
+<view class="screen">
+  <view class="headline">{{title}}</view>
+  <view class="panel-row">Entered from: {{source}}</view>
+  <view class="panel-row">Featured: {{cards.1.label}}</view>
+  <view class="panel-row">Recent: {{logs.0}}</view>
+</view>

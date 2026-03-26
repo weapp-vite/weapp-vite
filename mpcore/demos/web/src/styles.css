@@ -143,6 +143,45 @@ button {
   margin-top: 18px;
 }
 
+.sim-scenarios {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.sim-scenario-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px;
+  text-align: left;
+  border-radius: 24px;
+  border: 1px solid var(--sim-line);
+  background:
+    linear-gradient(135deg, rgb(131 247 212 / 8%), transparent 58%),
+    linear-gradient(180deg, rgb(255 255 255 / 4%), transparent),
+    var(--sim-panel);
+  color: var(--sim-text);
+  box-shadow: var(--sim-shadow);
+}
+
+.sim-scenario-card__title {
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.sim-scenario-card__body {
+  color: var(--sim-muted);
+  line-height: 1.6;
+}
+
+.sim-scenario-card.is-active {
+  border-color: rgb(131 247 212 / 42%);
+  box-shadow:
+    var(--sim-shadow),
+    0 0 0 1px rgb(131 247 212 / 16%) inset;
+}
+
 .sim-metric {
   padding: 18px 20px;
 }
@@ -370,7 +409,8 @@ button {
 
   .sim-hero,
   .sim-grid,
-  .sim-metrics {
+  .sim-metrics,
+  .sim-scenarios {
     grid-template-columns: 1fr;
   }
 
