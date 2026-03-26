@@ -4,5 +4,8 @@
   <view class="panel-row">Status: {{status}}</view>
   <view class="panel-row">Observer: {{observerLog}}</view>
   <view class="panel-row">Clicks: {{internalClicks}}</view>
-  <view class="panel-row" bindtap="pulse">组件内部触发 pulse</view>
+  <mini-badge id="mini-badge" label="{{status}}" />
+  <view class="panel-row" id="status-card-pulse" data-phase="pulse" data-card="status" bindtap="pulse">组件内部触发 pulse</view>
+  <view class="panel-row" bindtap="inspectNested">组件内部查询子组件</view>
+  <view class="panel-row">Nested: {{nestedBadge}}</view>
 </view>

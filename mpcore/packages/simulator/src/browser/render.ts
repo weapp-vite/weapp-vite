@@ -6,6 +6,8 @@ import { parseDocument } from 'htmlparser2'
 import { dirname, join, normalize } from 'pathe'
 import {
   createComponentInstance,
+  normalizeComponentPropertyValue,
+  runComponentLifecycle,
   runComponentPageLifetime,
   runComponentObservers,
 } from '../runtime/componentInstance'
@@ -22,9 +24,12 @@ interface DomNodeLike {
 }
 
 interface BrowserRenderScope {
+  alias?: string
   data: Record<string, any>
   getMethod: (methodName: string) => ((...args: any[]) => any) | undefined
   getScopeId: () => string
+  id?: string
+  ownerScopeId?: string
 }
 
 interface BrowserComponentRegistryEntry {
@@ -44,12 +49,34 @@ export interface BrowserRendererContext {
   files: BrowserVirtualFiles
   moduleLoader: BrowserModuleLoader
   project: HeadlessProjectDescriptor
+  session: {
+    selectAllComponentsWithin: (scopeId: string, selector: string) => any[]
+    selectComponentWithin: (scopeId: string, selector: string) => any
+    selectOwnerComponent: (scopeId: string) => any
+  }
 }
 
 const LEADING_SLASH_RE = /^\/+/
 const TEMPLATE_INTERPOLATION_RE = /\{\{([^{}]+)\}\}/g
 const EVENT_BINDING_ATTRS = ['bindtap', 'bind:tap']
 const COMPONENT_EVENT_PREFIXES = ['bind:', 'bind']
+
+function toDatasetKey(attributeName: string) {
+  return attributeName
+    .slice('data-'.length)
+    .replace(/-([a-z])/g, (_match, char: string) => char.toUpperCase())
+}
+
+function collectDataset(node: DomNodeLike) {
+  const dataset: Record<string, string> = {}
+  for (const [key, value] of Object.entries(node.attribs ?? {})) {
+    if (!key.startsWith('data-') || key === 'data-sim-scope' || key === 'data-sim-tap' || key === 'data-sim-component') {
+      continue
+    }
+    dataset[toDatasetKey(key)] = String(value)
+  }
+  return dataset
+}
 
 function escapeText(text: string) {
   return text
@@ -81,6 +108,19 @@ function resolveValueByPath(source: Record<string, any>, expression: string) {
     current = current?.[segment]
   }
   return current ?? ''
+}
+
+function resolveRawValueByPath(source: Record<string, any>, expression: string) {
+  const normalized = expression.trim()
+  if (!normalized) {
+    return undefined
+  }
+  const segments = normalized.split('.').filter(Boolean)
+  let current: any = source
+  for (const segment of segments) {
+    current = current?.[segment]
+  }
+  return current
 }
 
 function interpolateTemplate(input: string, data: Record<string, any>) {
@@ -140,6 +180,14 @@ function resolveAttributeValue(value: string, scope: BrowserRenderScope) {
   if (isMustacheOnly(value)) {
     const expression = value.trim().slice(2, -2)
     return resolveValueByPath(scope.data, expression)
+  }
+  return interpolateTemplate(value, scope.data)
+}
+
+function resolveComponentAttributeValue(value: string, scope: BrowserRenderScope) {
+  if (isMustacheOnly(value)) {
+    const expression = value.trim().slice(2, -2)
+    return resolveRawValueByPath(scope.data, expression)
   }
   return interpolateTemplate(value, scope.data)
 }
@@ -217,15 +265,34 @@ function buildComponentTrigger(
     eventBindings.set(eventName, value)
   }
 
-  return (eventName: string, detail?: unknown) => {
+  return (
+    instance: HeadlessComponentInstance,
+    eventName: string,
+    detail?: unknown,
+    triggerOptions?: Record<string, any>,
+  ) => {
     const handlerName = eventBindings.get(eventName)
     if (!handlerName) {
       return
     }
+    const interactionTarget = instance.__lastInteractionEvent__?.target
+    const interactionCurrentTarget = instance.__lastInteractionEvent__?.currentTarget
     const handler = hostScope.getMethod(handlerName)
     handler?.({
+      bubbles: triggerOptions?.bubbles ?? false,
+      capturePhase: false,
+      composed: triggerOptions?.composed ?? false,
       detail,
+      mark: undefined,
+      target: {
+        dataset: interactionTarget?.dataset ?? collectDataset(hostNode),
+        id: interactionTarget?.id ?? hostNode.attribs?.id ?? '',
+      },
       type: eventName,
+      currentTarget: {
+        dataset: interactionCurrentTarget?.dataset ?? collectDataset(hostNode),
+        id: interactionCurrentTarget?.id ?? hostNode.attribs?.id ?? '',
+      },
     })
   }
 }
@@ -258,9 +325,12 @@ function syncComponentProperties(
   nextProperties: Record<string, any>,
 ) {
   const changedRootKeys: string[] = []
+  const previousProperties: Record<string, any> = {}
   for (const [key, value] of Object.entries(nextProperties)) {
-    if (instance.properties[key] !== value) {
-      instance.properties[key] = value
+    const nextValue = normalizeComponentPropertyValue(definition, key, value)
+    if (instance.properties[key] !== nextValue) {
+      previousProperties[key] = instance.properties[key]
+      instance.properties[key] = nextValue
       changedRootKeys.push(key)
     }
   }
@@ -269,7 +339,7 @@ function syncComponentProperties(
     return
   }
 
-  runComponentObservers(definition, instance, changedRootKeys)
+  runComponentObservers(definition, instance, changedRootKeys, previousProperties)
 }
 
 function createMergedScopeData(
@@ -302,12 +372,13 @@ function renderNodeTree(
   const componentEntry = resolveComponentRegistryEntry(context, ownerJsonPath, ownerFilePath, clonedNode.name)
   if (componentEntry) {
     const componentScopeId = `${instancePath}/${clonedNode.name}`
+    const ownerScopeId = scope.getScopeId().includes('/') ? scope.getScopeId() : undefined
     const nextProperties: Record<string, any> = {}
     for (const [key, value] of Object.entries(clonedNode.attribs ?? {})) {
       if (key.startsWith('bind')) {
         continue
       }
-      nextProperties[key] = resolveAttributeValue(String(value), scope)
+      nextProperties[key] = resolveComponentAttributeValue(String(value), scope)
     }
 
     let componentInstance = context.componentCache.get(componentScopeId)
@@ -317,8 +388,12 @@ function renderNodeTree(
         properties: nextProperties,
         triggerEvent: buildComponentTrigger(clonedNode, scope),
       })
-      runComponentObservers(componentEntry.definition, componentInstance, Object.keys(nextProperties))
-      componentEntry.definition.lifetimes?.attached?.call(componentInstance)
+      componentInstance.selectComponent = (selector: string) => context.session.selectComponentWithin(componentScopeId, selector)
+      componentInstance.selectAllComponents = (selector: string) => context.session.selectAllComponentsWithin(componentScopeId, selector)
+      componentInstance.selectOwnerComponent = () => ownerScopeId ? context.session.selectOwnerComponent(componentScopeId) : null
+      runComponentLifecycle(componentInstance, 'created')
+      runComponentObservers(componentEntry.definition, componentInstance, Object.keys(nextProperties), {})
+      runComponentLifecycle(componentInstance, 'attached')
       runComponentPageLifetime(componentInstance, 'show')
       context.componentCache.set(componentScopeId, componentInstance)
     }
@@ -328,13 +403,16 @@ function renderNodeTree(
 
     seenComponentScopes.add(componentScopeId)
 
-    const componentScope: BrowserRenderScope = {
+  const componentScope: BrowserRenderScope = {
+      alias: clonedNode.name,
       data: createMergedScopeData(scope.data, componentInstance.properties, componentInstance.data),
       getMethod: (methodName: string) => {
         const method = componentInstance?.[methodName]
         return typeof method === 'function' ? method : undefined
       },
       getScopeId: () => componentScopeId,
+      id: typeof clonedNode.attribs?.id === 'string' ? clonedNode.attribs.id : undefined,
+      ownerScopeId,
     }
     context.componentScopes.set(componentScopeId, componentScope)
 
@@ -352,6 +430,10 @@ function renderNodeTree(
     )
     if (renderedComponentRoot.attribs) {
       renderedComponentRoot.attribs['data-sim-component'] = clonedNode.name
+    }
+    if (!componentInstance.__ready__) {
+      runComponentLifecycle(componentInstance, 'ready')
+      componentInstance.__ready__ = true
     }
     return renderedComponentRoot
   }
@@ -385,6 +467,7 @@ export function renderBrowserPageTree(
       return typeof method === 'function' ? method : undefined
     },
     getScopeId: () => pageScopeId,
+    id: 'page-root',
   }
   context.componentScopes.clear()
   context.componentScopes.set(pageScopeId, pageScope)
@@ -402,7 +485,7 @@ export function renderBrowserPageTree(
 
   for (const [scopeId, instance] of [...context.componentCache.entries()]) {
     if (!seenComponentScopes.has(scopeId)) {
-      instance.__definition__?.lifetimes?.detached?.call(instance)
+      runComponentLifecycle(instance, 'detached')
       context.componentCache.delete(scopeId)
       context.componentScopes.delete(scopeId)
     }
