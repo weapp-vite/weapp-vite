@@ -56,8 +56,9 @@ function createExecutionContext(
   registries: HeadlessHostRegistries,
   getCurrentPages: () => any[],
   getApp: () => any,
+  wxDriver: Parameters<typeof createHeadlessWx>[0],
 ) {
-  const wx = createHeadlessWx()
+  const wx = createHeadlessWx(wxDriver)
 
   return {
     App(definition: HeadlessAppDefinition) {
@@ -86,9 +87,10 @@ export function createModuleLoader(
   registries: HeadlessHostRegistries,
   getCurrentPages: () => any[],
   getApp: () => any,
+  wxDriver: Parameters<typeof createHeadlessWx>[0],
 ): HeadlessModuleLoader {
   const moduleCache = new Map<string, ModuleCacheEntry>()
-  const executionContext = createExecutionContext(registries, getCurrentPages, getApp)
+  const executionContext = createExecutionContext(registries, getCurrentPages, getApp, wxDriver)
   executionContext.globalThis = executionContext
 
   function executeModule(filePath: string, loadContext: HeadlessHostLoadContext | null) {

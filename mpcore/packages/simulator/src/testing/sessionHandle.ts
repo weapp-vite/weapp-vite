@@ -26,4 +26,24 @@ export class HeadlessTestingSessionHandle {
     const page = this.session.reLaunch(route)
     return new HeadlessTestingPageHandle(this.project, page)
   }
+
+  async pageScrollTo(scrollTop: number) {
+    this.session.pageScrollTo({ scrollTop })
+  }
+
+  async triggerPullDownRefresh() {
+    this.session.triggerPullDownRefresh()
+  }
+
+  async triggerReachBottom() {
+    this.session.triggerReachBottom()
+  }
+
+  async triggerResize(options: Record<string, any>) {
+    this.session.triggerResize(options)
+  }
+
+  async triggerRouteDone(options?: Record<string, any>) {
+    this.session.triggerRouteDone(options)
+  }
 }
