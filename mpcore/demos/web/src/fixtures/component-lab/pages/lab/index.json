@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "status-card": "../../components/status-card/index"
+  }
+}

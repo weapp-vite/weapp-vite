@@ -1,5 +1,6 @@
 <view class="screen">
   <view class="headline">{{title}}</view>
+  <view class="panel-row" bindtap="replaceToQueue">redirect 到分包队列</view>
   <view class="panel-row">From: {{from}}</view>
   <view class="panel-row">Log: {{logs.0}}</view>
 </view>

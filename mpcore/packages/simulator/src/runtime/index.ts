@@ -1,3 +1,4 @@
 export * from './appInstance'
+export * from './componentInstance'
 export * from './pageInstance'
 export * from './session'

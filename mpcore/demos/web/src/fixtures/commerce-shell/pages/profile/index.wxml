@@ -1,5 +1,6 @@
 <view class="screen">
   <view class="headline">{{title}}</view>
   <view class="subline">{{summary}}</view>
+  <view class="panel-row" bindtap="openCatalog">从个人页进入分包商品列表</view>
   <view class="panel-row">Latest tab event: {{logs.0}}</view>
 </view>
