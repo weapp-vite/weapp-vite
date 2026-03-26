@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import type { BrowserDirectoryFileLike, BrowserHeadlessSession } from '../../../packages/simulator/src/browser'
+import { computed, ref } from 'vue'
 import {
+
   createBrowserHeadlessSession,
   createBrowserVirtualFilesFromDirectory,
-  type BrowserDirectoryFileLike,
-  type BrowserHeadlessSession,
 } from '../../../packages/simulator/src/browser'
-import { computed, ref } from 'vue'
 import ActionPanel from './components/ActionPanel.vue'
 import DevicePreview from './components/DevicePreview.vue'
 import JsonPanel from './components/JsonPanel.vue'
@@ -64,31 +64,33 @@ const loading = ref(false)
 const projectLabel = ref('未加载')
 const currentScenarioId = ref('')
 const selectedScopeId = ref('')
+const primaryTab = ref<'scenario' | 'routes' | 'actions' | 'stack'>('scenario')
+const inspectorTab = ref<'scope' | 'options' | 'page' | 'app'>('scope')
 
 const currentPage = computed(() => {
-  revision.value
+  void revision.value
   return session.value?.getCurrentPages().at(-1) ?? null
 })
 
 const currentRoute = computed(() => currentPage.value?.route ?? '未加载页面')
 
 const pageRoutes = computed(() => {
-  revision.value
+  void revision.value
   return session.value?.project.routes.map(route => route.route) ?? []
 })
 
 const pageStack = computed(() => {
-  revision.value
+  void revision.value
   return session.value?.getCurrentPages().map(page => page.route) ?? []
 })
 
 const callableMethods = computed(() => {
-  revision.value
+  void revision.value
   return collectCallableMethods(session.value)
 })
 
 const previewMarkup = computed(() => {
-  revision.value
+  void revision.value
   if (!session.value || !currentPage.value) {
     return ''
   }
@@ -102,17 +104,17 @@ const previewMarkup = computed(() => {
 })
 
 const pageData = computed(() => {
-  revision.value
+  void revision.value
   return stringify(currentPage.value?.data ?? {})
 })
 
 const appData = computed(() => {
-  revision.value
+  void revision.value
   return stringify(session.value?.getApp()?.globalData ?? {})
 })
 
 const currentOptions = computed(() => {
-  revision.value
+  void revision.value
   return stringify(currentPage.value?.options ?? {})
 })
 
@@ -124,7 +126,7 @@ const stats = computed(() => [
 ])
 
 const selectedScope = computed(() => {
-  revision.value
+  void revision.value
   if (!session.value || !selectedScopeId.value) {
     return null
   }
@@ -249,8 +251,12 @@ function handleSelectScope(scopeId: string) {
   <main class="sim-app">
     <header class="sim-topbar">
       <div class="sim-topbar__copy">
-        <p class="sim-topbar__eyebrow">🕛 浏览器模拟器</p>
-        <h1 class="sim-topbar__title">小程序目录即场景</h1>
+        <p class="sim-topbar__eyebrow">
+          🕛 浏览器模拟器
+        </p>
+        <h1 class="sim-topbar__title">
+          小程序目录即场景
+        </h1>
         <p class="sim-topbar__lead">
           左边固定是模拟器预览，右边拆成更细的小卡片。内置样例和你自己的构建目录都能直接切换。
         </p>
@@ -277,43 +283,130 @@ function handleSelectScope(scopeId: string) {
       </aside>
 
       <section class="sim-workbench__right">
-        <ScenarioSelector
-          :active-id="currentScenarioId"
-          :loading="loading"
-          :scenarios="builtInScenarios"
-          @pick="handlePickScenario"
-          @pick-directory="handleDirectoryChange"
-        />
+        <section class="sim-tab-panel">
+          <div class="sim-tabbar" role="tablist" aria-label="运行区">
+            <button
+              class="sim-tabbar__tab"
+              :class="{ 'is-active': primaryTab === 'scenario' }"
+              @click="primaryTab = 'scenario'"
+            >
+              场景
+            </button>
+            <button
+              class="sim-tabbar__tab"
+              :class="{ 'is-active': primaryTab === 'routes' }"
+              @click="primaryTab = 'routes'"
+            >
+              路由
+            </button>
+            <button
+              class="sim-tabbar__tab"
+              :class="{ 'is-active': primaryTab === 'actions' }"
+              @click="primaryTab = 'actions'"
+            >
+              操作
+            </button>
+            <button
+              class="sim-tabbar__tab"
+              :class="{ 'is-active': primaryTab === 'stack' }"
+              @click="primaryTab = 'stack'"
+            >
+              页面栈
+            </button>
+          </div>
+          <div class="sim-tab-panel__body">
+            <ScenarioSelector
+              v-if="primaryTab === 'scenario'"
+              :active-id="currentScenarioId"
+              :loading="loading"
+              :scenarios="builtInScenarios"
+              @pick="handlePickScenario"
+              @pick-directory="handleDirectoryChange"
+            />
 
-        <RoutePanel
-          :current-route="currentPage?.route ?? ''"
-          :routes="pageRoutes"
-          @open="handleOpenRoute"
-        />
+            <RoutePanel
+              v-else-if="primaryTab === 'routes'"
+              :current-route="currentPage?.route ?? ''"
+              :routes="pageRoutes"
+              @open="handleOpenRoute"
+            />
 
-        <ActionPanel
-          :methods="callableMethods"
-          @call-method="handleCallMethod"
-          @page-scroll="run(() => session?.pageScrollTo({ scrollTop: 128 }))"
-          @pull-refresh="run(() => session?.triggerPullDownRefresh())"
-          @reach-bottom="run(() => session?.triggerReachBottom())"
-          @route-done="run(() => session?.triggerRouteDone({ from: 'web-demo' }))"
-          @resize="run(() => session?.triggerResize({ size: { windowWidth: 412, windowHeight: 915 } }))"
-        />
+            <ActionPanel
+              v-else-if="primaryTab === 'actions'"
+              :methods="callableMethods"
+              @call-method="handleCallMethod"
+              @page-scroll="run(() => session?.pageScrollTo({ scrollTop: 128 }))"
+              @pull-refresh="run(() => session?.triggerPullDownRefresh())"
+              @reach-bottom="run(() => session?.triggerReachBottom())"
+              @route-done="run(() => session?.triggerRouteDone({ from: 'web-demo' }))"
+              @resize="run(() => session?.triggerResize({ size: { windowWidth: 412, windowHeight: 915 } }))"
+            />
 
-        <StackPanel :routes="pageStack" />
+            <StackPanel v-else :routes="pageStack" />
+          </div>
+        </section>
 
-        <ScopePanel
-          :scope-id="selectedScope?.scopeId ?? ''"
-          :scope-type="selectedScope?.type ?? '未选中'"
-          :methods="selectedScope?.methods ?? []"
-          :properties-code="stringify(selectedScope?.properties ?? {})"
-          :data-code="stringify(selectedScope?.data ?? {})"
-        />
+        <section class="sim-tab-panel">
+          <div class="sim-tabbar" role="tablist" aria-label="检查区">
+            <button
+              class="sim-tabbar__tab"
+              :class="{ 'is-active': inspectorTab === 'scope' }"
+              @click="inspectorTab = 'scope'"
+            >
+              Scope
+            </button>
+            <button
+              class="sim-tabbar__tab"
+              :class="{ 'is-active': inspectorTab === 'options' }"
+              @click="inspectorTab = 'options'"
+            >
+              Options
+            </button>
+            <button
+              class="sim-tabbar__tab"
+              :class="{ 'is-active': inspectorTab === 'page' }"
+              @click="inspectorTab = 'page'"
+            >
+              Page Data
+            </button>
+            <button
+              class="sim-tabbar__tab"
+              :class="{ 'is-active': inspectorTab === 'app' }"
+              @click="inspectorTab = 'app'"
+            >
+              App Data
+            </button>
+          </div>
+          <div class="sim-tab-panel__body">
+            <ScopePanel
+              v-if="inspectorTab === 'scope'"
+              :scope-id="selectedScope?.scopeId ?? ''"
+              :scope-type="selectedScope?.type ?? '未选中'"
+              :methods="selectedScope?.methods ?? []"
+              :properties-code="stringify(selectedScope?.properties ?? {})"
+              :data-code="stringify(selectedScope?.data ?? {})"
+            />
 
-        <JsonPanel title="🕛 页面参数" subtitle="当前页面 options 快照。" :code="currentOptions" />
-        <JsonPanel title="🕛 页面数据" subtitle="当前页面 data 快照。" :code="pageData" />
-        <JsonPanel title="🕛 应用数据" subtitle="App.globalData，用来观察启动和找不到页面等轨迹。" :code="appData" />
+            <JsonPanel
+              v-else-if="inspectorTab === 'options'"
+              title="🕛 页面参数"
+              subtitle="当前页面 options 快照。"
+              :code="currentOptions"
+            />
+            <JsonPanel
+              v-else-if="inspectorTab === 'page'"
+              title="🕛 页面数据"
+              subtitle="当前页面 data 快照。"
+              :code="pageData"
+            />
+            <JsonPanel
+              v-else
+              title="🕛 应用数据"
+              subtitle="App.globalData，用来观察启动和找不到页面等轨迹。"
+              :code="appData"
+            />
+          </div>
+        </section>
       </section>
     </section>
   </main>
