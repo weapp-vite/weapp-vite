@@ -2,10 +2,15 @@ import type { HeadlessComponentDefinition } from '../host'
 
 export interface HeadlessComponentInstance extends Record<string, any> {
   __definition__?: HeadlessComponentDefinition
+  __lastInteractionEvent__?: Record<string, any>
+  __ready__?: boolean
   data: Record<string, any>
   properties: Record<string, any>
+  selectAllComponents?: (selector: string) => any[]
+  selectComponent?: (selector: string) => any
+  selectOwnerComponent?: () => any
   setData: (patch: Record<string, any>, callback?: () => void) => void
-  triggerEvent: (eventName: string, detail?: unknown) => void
+  triggerEvent: (eventName: string, detail?: unknown, options?: Record<string, any>) => void
 }
 
 function bindFunction(target: Record<string, any>, key: string, value: unknown) {
@@ -18,6 +23,16 @@ function bindFunction(target: Record<string, any>, key: string, value: unknown) 
 
 function cloneObject<T extends Record<string, any>>(value: T) {
   return JSON.parse(JSON.stringify(value))
+}
+
+function cloneValue<T>(value: T) {
+  if (Array.isArray(value)) {
+    return JSON.parse(JSON.stringify(value)) as T
+  }
+  if (value && typeof value === 'object') {
+    return cloneObject(value as Record<string, any>) as T
+  }
+  return value
 }
 
 function parseDataPath(path: string) {
@@ -72,6 +87,113 @@ function resolveInitialData(definition: HeadlessComponentDefinition) {
     : {}
 }
 
+function normalizePropertyType(option: unknown) {
+  if (option === String || option === Number || option === Boolean || option === Array || option === Object) {
+    return option
+  }
+  if (!option || typeof option !== 'object' || Array.isArray(option)) {
+    return undefined
+  }
+  return (option as { type?: unknown }).type
+}
+
+function resolvePropertyTypeCandidates(option: unknown) {
+  const candidates: unknown[] = []
+  const primaryType = normalizePropertyType(option)
+  if (primaryType) {
+    candidates.push(primaryType)
+  }
+
+  if (option && typeof option === 'object' && !Array.isArray(option)) {
+    const optionalTypes = (option as { optionalTypes?: unknown[] }).optionalTypes
+    if (Array.isArray(optionalTypes)) {
+      candidates.push(...optionalTypes)
+    }
+  }
+
+  return candidates
+}
+
+function matchesRuntimeType(rawValue: unknown, type: unknown) {
+  if (type === Number) {
+    return typeof rawValue === 'number'
+  }
+  if (type === Boolean) {
+    return typeof rawValue === 'boolean'
+  }
+  if (type === String) {
+    return typeof rawValue === 'string'
+  }
+  if (type === Array) {
+    return Array.isArray(rawValue)
+  }
+  if (type === Object) {
+    return !!rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)
+  }
+  return false
+}
+
+export function coerceComponentPropertyValue(rawValue: unknown, option: unknown) {
+  const candidates = resolvePropertyTypeCandidates(option)
+  const primaryType = candidates[0]
+  if (primaryType && matchesRuntimeType(rawValue, primaryType)) {
+    return rawValue
+  }
+
+  const fallbackCandidates = primaryType ? candidates.slice(1) : candidates
+  for (const type of fallbackCandidates) {
+    if (type === Number) {
+      const nextValue = typeof rawValue === 'number' ? rawValue : Number(rawValue)
+      if (!Number.isNaN(nextValue)) {
+        return nextValue
+      }
+      continue
+    }
+    if (type === Boolean) {
+      if (typeof rawValue === 'boolean') {
+        return rawValue
+      }
+      if (rawValue === '' || rawValue === 'true') {
+        return true
+      }
+      if (rawValue === 'false') {
+        return false
+      }
+      continue
+    }
+    if (type === String) {
+      return rawValue == null ? '' : String(rawValue)
+    }
+    if (type === Array && Array.isArray(rawValue)) {
+      return rawValue
+    }
+    if (type === Object && rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)) {
+      return rawValue
+    }
+  }
+
+  if (primaryType === Number) {
+    const nextValue = typeof rawValue === 'number' ? rawValue : Number(rawValue)
+    return Number.isNaN(nextValue) ? rawValue : nextValue
+  }
+  if (primaryType === Boolean) {
+    if (typeof rawValue === 'boolean') {
+      return rawValue
+    }
+    if (rawValue === '' || rawValue === 'true') {
+      return true
+    }
+    if (rawValue === 'false') {
+      return false
+    }
+    return Boolean(rawValue)
+  }
+  if (primaryType === String) {
+    return rawValue == null ? '' : String(rawValue)
+  }
+  return rawValue
+}
+
 function resolveInitialProperties(
   definition: HeadlessComponentDefinition,
   properties: Record<string, any>,
@@ -81,14 +203,12 @@ function resolveInitialProperties(
   if (propOptions && typeof propOptions === 'object' && !Array.isArray(propOptions)) {
     for (const [key, option] of Object.entries(propOptions)) {
       if (Object.prototype.hasOwnProperty.call(properties, key)) {
-        resolved[key] = properties[key]
+        resolved[key] = coerceComponentPropertyValue(properties[key], option)
         continue
       }
 
       if (option && typeof option === 'object' && !Array.isArray(option) && 'value' in option) {
-        resolved[key] = typeof option.value === 'object' && option.value !== null
-          ? cloneObject(option.value as Record<string, any>)
-          : option.value
+        resolved[key] = cloneValue(option.value)
       }
       else {
         resolved[key] = undefined
@@ -105,8 +225,65 @@ function resolveInitialProperties(
   return resolved
 }
 
+function resolvePropertyDefaultValue(option: unknown) {
+  if (!option || typeof option !== 'object' || Array.isArray(option) || !('value' in option)) {
+    return undefined
+  }
+  return cloneValue((option as { value?: unknown }).value)
+}
+
+function runPropertyObservers(
+  definition: HeadlessComponentDefinition,
+  instance: HeadlessComponentInstance,
+  changedKeys: string[],
+  previousProperties: Record<string, any>,
+) {
+  const propOptions = definition.properties
+  if (!propOptions || typeof propOptions !== 'object' || Array.isArray(propOptions)) {
+    return
+  }
+
+  for (const changedKey of changedKeys) {
+    const option = propOptions[changedKey]
+    if (!option || typeof option !== 'object' || Array.isArray(option)) {
+      continue
+    }
+    const observer = option.observer
+    if (typeof observer !== 'function') {
+      continue
+    }
+    observer.call(instance, instance.properties[changedKey], previousProperties[changedKey])
+  }
+}
+
 function normalizeObserverPattern(pattern: string) {
   return pattern.split(',').map(item => item.trim()).filter(Boolean)
+}
+
+function resolveObservedValue(instance: HeadlessComponentInstance, pattern: string) {
+  if (pattern === '**') {
+    return {
+      ...instance.properties,
+      ...instance.data,
+    }
+  }
+
+  const segments = parseDataPath(pattern)
+  if (segments.length === 0) {
+    return undefined
+  }
+
+  const [rootSegment, ...restSegments] = segments
+  const rootSource = Object.prototype.hasOwnProperty.call(instance.properties, rootSegment)
+    ? instance.properties
+    : instance.data
+
+  let current: any = rootSource?.[rootSegment]
+  for (const segment of restSegments) {
+    const normalizedSegment = isArrayIndexSegment(segment) ? Number(segment) : segment
+    current = current?.[normalizedSegment]
+  }
+  return current
 }
 
 function matchObserverPattern(pattern: string, changedKeys: string[]) {
@@ -131,17 +308,25 @@ function matchObserverPattern(pattern: string, changedKeys: string[]) {
 export interface CreateComponentInstanceOptions {
   definition: HeadlessComponentDefinition
   properties?: Record<string, any>
-  triggerEvent?: (eventName: string, detail?: unknown) => void
+  triggerEvent?: (
+    instance: HeadlessComponentInstance,
+    eventName: string,
+    detail?: unknown,
+    options?: Record<string, any>,
+  ) => void
 }
 
 export function runComponentObservers(
   definition: HeadlessComponentDefinition,
   instance: HeadlessComponentInstance,
   changedKeys: string[],
+  previousProperties: Record<string, any> = {},
 ) {
   if (changedKeys.length === 0) {
     return
   }
+
+  runPropertyObservers(definition, instance, changedKeys, previousProperties)
 
   const observers = definition.observers
   if (observers && typeof observers === 'object' && !Array.isArray(observers)) {
@@ -149,9 +334,22 @@ export function runComponentObservers(
       if (typeof handler !== 'function' || !matchObserverPattern(pattern, changedKeys)) {
         continue
       }
-      handler.call(instance)
+      const args = normalizeObserverPattern(pattern).map(item => resolveObservedValue(instance, item))
+      handler.call(instance, ...args)
     }
   }
+}
+
+export function normalizeComponentPropertyValue(
+  definition: HeadlessComponentDefinition,
+  key: string,
+  rawValue: unknown,
+) {
+  const option = definition.properties?.[key]
+  if (rawValue == null) {
+    return resolvePropertyDefaultValue(option)
+  }
+  return coerceComponentPropertyValue(rawValue, option)
 }
 
 export function createComponentInstance(options: CreateComponentInstanceOptions): HeadlessComponentInstance {
@@ -170,8 +368,8 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
 
       callback?.()
     },
-    triggerEvent(eventName, detail) {
-      options.triggerEvent?.(eventName, detail)
+    triggerEvent(eventName, detail, triggerOptions) {
+      options.triggerEvent?.(instance, eventName, detail, triggerOptions)
     },
   }
 
@@ -187,6 +385,22 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
   }
 
   return instance
+}
+
+export function runComponentLifecycle(
+  instance: HeadlessComponentInstance,
+  lifecycleName: 'attached' | 'created' | 'detached' | 'ready',
+) {
+  const definition = instance.__definition__
+  const fromLifetimes = definition?.lifetimes?.[lifecycleName]
+  if (typeof fromLifetimes === 'function') {
+    fromLifetimes.call(instance)
+    return
+  }
+  const topLevel = definition?.[lifecycleName]
+  if (typeof topLevel === 'function') {
+    topLevel.call(instance)
+  }
 }
 
 export function runComponentPageLifetime(
