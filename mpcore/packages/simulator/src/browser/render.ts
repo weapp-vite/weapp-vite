@@ -6,6 +6,7 @@ import { parseDocument } from 'htmlparser2'
 import { dirname, join, normalize } from 'pathe'
 import {
   createComponentInstance,
+  runComponentPageLifetime,
   runComponentObservers,
 } from '../runtime/componentInstance'
 import type { BrowserModuleLoader } from './moduleLoader'
@@ -318,6 +319,7 @@ function renderNodeTree(
       })
       runComponentObservers(componentEntry.definition, componentInstance, Object.keys(nextProperties))
       componentEntry.definition.lifetimes?.attached?.call(componentInstance)
+      runComponentPageLifetime(componentInstance, 'show')
       context.componentCache.set(componentScopeId, componentInstance)
     }
     else {
