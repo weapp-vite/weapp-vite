@@ -1,0 +1,8 @@
+<view class="screen">
+  <view class="panel-row">{{title}}</view>
+  <view class="panel-row">Count: {{count}}</view>
+  <view class="panel-row">Status: {{status}}</view>
+  <view class="panel-row">Observer: {{observerLog}}</view>
+  <view class="panel-row">Clicks: {{internalClicks}}</view>
+  <view class="panel-row" bindtap="pulse">组件内部触发 pulse</view>
+</view>

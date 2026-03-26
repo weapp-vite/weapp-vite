@@ -9,6 +9,7 @@ import { createAppInstance } from '../runtime/appInstance'
 import { createPageInstance } from '../runtime/pageInstance'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
+import { renderBrowserPageTree } from './render'
 import { type BrowserVirtualFiles } from './virtualFiles'
 
 export interface BrowserHeadlessSessionOptions {
@@ -107,6 +108,8 @@ export class BrowserHeadlessSession {
   private readonly registries: HeadlessHostRegistries
   private currentPageInstance: HeadlessPageInstance | null = null
   private readonly pages: HeadlessPageInstance[] = []
+  private readonly componentCache = new Map<string, any>()
+  private readonly componentScopes = new Map<string, any>()
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
@@ -157,6 +160,29 @@ export class BrowserHeadlessSession {
 
   getCurrentPages() {
     return this.pages.slice()
+  }
+
+  renderCurrentPage() {
+    const current = this.requireCurrentPage('renderCurrentPage()')
+    return renderBrowserPageTree({
+      componentCache: this.componentCache,
+      componentScopes: this.componentScopes,
+      files: this.files,
+      moduleLoader: this.moduleLoader,
+      project: this.project,
+    }, current)
+  }
+
+  callTapBinding(scopeId: string, methodName: string) {
+    const scope = this.componentScopes.get(scopeId)
+    if (!scope) {
+      throw new Error(`Unknown scope "${scopeId}" in browser simulator runtime.`)
+    }
+    const method = scope.getMethod(methodName)
+    if (typeof method !== 'function') {
+      throw new Error(`Method "${methodName}" does not exist on scope "${scopeId}" in browser simulator runtime.`)
+    }
+    return method()
   }
 
   bootstrap(launchOptions = createAppLaunchOptions('', {})) {
@@ -387,6 +413,8 @@ export class BrowserHeadlessSession {
     }
     this.pages.length = 0
     this.tabPages.clear()
+    this.componentCache.clear()
+    this.componentScopes.clear()
     this.currentPageInstance = null
   }
 

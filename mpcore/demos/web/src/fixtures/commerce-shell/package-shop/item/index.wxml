@@ -1,5 +1,8 @@
 <view class="screen">
   <view class="headline">{{title}}</view>
+  <view class="panel-row" bindtap="backToCatalog">返回列表</view>
+  <view class="panel-row" bindtap="jumpHomeTab">直接回首页 Tab</view>
+  <view class="panel-row" bindtap="relaunchCatalog">reLaunch 到列表页</view>
   <view class="panel-row">SKU: {{sku}}</view>
   <view class="panel-row">Status: {{status}}</view>
   <view class="panel-row">Trace: {{logs.0}}</view>

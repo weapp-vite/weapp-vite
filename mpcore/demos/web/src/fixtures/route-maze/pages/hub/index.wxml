@@ -1,5 +1,9 @@
 <view class="screen">
   <view class="headline">{{title}}</view>
+  <view class="panel-row" bindtap="openQueue">进入分包队列</view>
+  <view class="panel-row" bindtap="openInsights">进入洞察页</view>
+  <view class="panel-row" bindtap="switchSettings">切到设置 Tab</view>
+  <view class="panel-row" bindtap="relaunchQueue">reLaunch 到队列页</view>
   <view class="panel-row">Status: {{status}}</view>
   <view class="panel-row">Step 2: {{steps.1}}</view>
   <view class="panel-row">Log: {{logs.0}}</view>
