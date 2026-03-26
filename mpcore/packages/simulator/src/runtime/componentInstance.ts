@@ -217,7 +217,10 @@ function resolveInitialProperties(
       }
 
       if (option && typeof option === 'object' && !Array.isArray(option) && 'value' in option) {
-        resolved[key] = cloneValue(option.value)
+        const rawDefaultValue = typeof option.value === 'function'
+          ? option.value.call(definition)
+          : option.value
+        resolved[key] = cloneValue(rawDefaultValue)
       }
       else {
         resolved[key] = undefined
