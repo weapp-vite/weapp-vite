@@ -14,7 +14,7 @@
     "vue": "catalog:"
   },
   "devDependencies": {
-    "@iconify-json/mdi": "^1.2.3",
+    "@iconify-json/mdi": "catalog:",
     "@iconify/tailwind4": "^1.2.3",
     "@shikijs/engine-javascript": "^4.0.2",
     "@shikijs/langs": "^4.0.2",
