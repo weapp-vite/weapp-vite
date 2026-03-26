@@ -23,12 +23,12 @@ function isExpanded(path: string) {
     <template v-for="node in nodes" :key="node.path">
       <button
         :class="cn(
-          'flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-[12px] transition-colors',
+          'flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[12px] transition-colors',
           node.type === 'file' && selectedPath === node.path
             ? 'bg-[color:var(--sim-accent-soft)] text-[color:var(--sim-text)]'
             : 'text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-pill-hover)] hover:text-[color:var(--sim-text)]',
         )"
-        :style="{ paddingLeft: `${10 + node.depth * 14}px` }"
+        :style="{ paddingLeft: `${8 + node.depth * 12}px` }"
         @click="node.type === 'directory' ? emit('toggle', node.path) : emit('select', node.path)"
       >
         <span

@@ -465,14 +465,14 @@ onBeforeUnmount(() => {
 
 <template>
   <SectionCard
-    title="🕛 模拟器"
-    subtitle="固定模拟器区域，支持设备预设、宽高、缩放和预览区高度。"
+    title="模拟器"
+    subtitle=""
     tone="standalone"
   >
-    <div class="grid gap-3">
-      <div class="grid min-h-0 overflow-hidden rounded-[22px] border border-[color:var(--sim-border)] bg-[color:var(--sim-surface-plain)]">
+    <div class="grid gap-2">
+      <div class="grid min-h-0 overflow-hidden border border-[color:var(--sim-border)] bg-[color:var(--sim-surface-plain)]">
         <div
-          class="flex flex-wrap items-center justify-between gap-2 border-b border-[color:rgb(255_255_255_/_0.08)] px-2 py-2 text-[12px] font-medium text-[color:var(--sim-device-bar-text)]"
+          class="flex flex-wrap items-center justify-between gap-2 border-b border-[color:rgb(255_255_255_/_0.08)] px-2 py-1.5 text-[12px] font-medium text-[color:var(--sim-device-bar-text)]"
           :style="{ backgroundImage: 'var(--sim-device-bar-bg)' }"
         >
           <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
@@ -484,7 +484,7 @@ onBeforeUnmount(() => {
             </span>
             <select
               :value="selectedPreset"
-              class="min-w-0 rounded-full border border-[color:rgb(255_255_255_/_0.08)] bg-[color:rgb(10_15_20_/_0.22)] px-3 py-1 text-[12px] font-medium text-[color:var(--sim-device-bar-text)]"
+              class="min-w-0 rounded-full border border-[color:rgb(255_255_255_/_0.08)] bg-[color:rgb(10_15_20_/_0.22)] px-3 py-1 text-[11px] font-medium text-[color:var(--sim-device-bar-text)]"
               @change="applyPreset(($event.target as HTMLSelectElement).value as DevicePresetValue)"
             >
               <option
@@ -619,7 +619,7 @@ onBeforeUnmount(() => {
         </div>
         <div
           ref="previewStage"
-          class="grid min-h-0 place-items-center overflow-auto bg-[radial-gradient(circle_at_top,_rgb(255_255_255_/_0.82),_rgb(235_242_250_/_0.98))] p-3"
+          class="grid min-h-0 place-items-center overflow-auto bg-[#2b2b2b] p-2.5"
           :style="stageStyle"
         >
           <div class="relative shrink-0" :style="scaledViewportStyle">

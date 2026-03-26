@@ -396,6 +396,9 @@ onMounted(() => {
   if (storedTheme === 'light' || storedTheme === 'dark') {
     themeMode.value = storedTheme
   }
+  else {
+    themeMode.value = 'dark'
+  }
 
   updateSystemTheme(mediaQuery)
   handleColorSchemeChange = event => updateSystemTheme(event)
@@ -535,8 +538,8 @@ watch(currentRoute, () => {
 
 <template>
   <main class="h-screen overflow-hidden bg-[color:var(--sim-bg)] text-[color:var(--sim-text)]">
-    <section class="grid h-full grid-rows-[38px_40px_minmax(0,1fr)] max-[1180px]:grid-rows-[38px_auto_minmax(0,1fr)]">
-      <header class="flex items-center gap-3 border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-toolbar-bg)] px-3 text-[12px]">
+    <section class="grid h-full grid-rows-[36px_36px_minmax(0,1fr)] max-[1180px]:grid-rows-[36px_auto_minmax(0,1fr)]">
+      <header class="flex items-center gap-3 border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-toolbar-bg)] px-3 text-[11px]">
         <div class="flex items-center gap-1.5">
           <span class="h-3 w-3 rounded-full bg-[#ff5f57]" />
           <span class="h-3 w-3 rounded-full bg-[#febc2e]" />
@@ -547,10 +550,10 @@ watch(currentRoute, () => {
         </div>
       </header>
 
-      <section :class="cn(toolbarSurface(), 'border-b-0 px-3 py-1.5')">
+      <section :class="cn(toolbarSurface(), 'border-b-0 px-3 py-1')">
         <div class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-          <strong class="truncate text-[13px] font-semibold tracking-tight text-[color:var(--sim-text)]">MPCore DevTools</strong>
-          <span :class="mutedTextClass">小程序模拟工作台</span>
+          <strong class="truncate text-[12px] font-semibold tracking-tight text-[color:var(--sim-text)]">MPCore DevTools</strong>
+          <span class="text-[11px] text-[color:var(--sim-muted)]">小程序模拟工作台</span>
         </div>
         <div :class="chipWrapClass" aria-label="当前会话状态">
           <span :class="cn(pill({ tone: 'subtle', interactive: false }), 'max-w-full')">
@@ -589,7 +592,7 @@ watch(currentRoute, () => {
         <pre class="m-0 overflow-auto whitespace-pre-wrap text-xs leading-6">{{ errorMessage }}</pre>
       </section>
 
-      <section class="grid min-h-0 [grid-template-columns:370px_250px_minmax(0,1fr)] max-[1180px]:grid-cols-1">
+      <section class="grid min-h-0 [grid-template-columns:360px_240px_minmax(0,1fr)] max-[1180px]:grid-cols-1">
         <aside class="min-h-0 border-r border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-soft)]">
           <DevicePreview
             :route="currentRoute"
@@ -620,20 +623,20 @@ watch(currentRoute, () => {
             <div :class="tabPanelStyles.body()">
               <section
                 v-if="explorerTab === 'resources'"
-                class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3"
+                class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-2"
               >
-                <div class="grid gap-2 rounded-[18px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-3">
+                <div class="grid gap-2 border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-2.5">
                   <span :class="labelClass">资源管理器</span>
                   <div class="flex items-center justify-between gap-2">
                     <strong class="truncate text-sm text-[color:var(--sim-text)]">{{ projectLabel }}</strong>
-                    <button :class="pill({ tone: 'neutral' })" @click="explorerTab = 'scenarios'">
+                    <button :class="cn(pill({ tone: 'neutral' }), 'px-2.5 py-1 text-[11px]')" @click="explorerTab = 'scenarios'">
                       <span class="icon-[mdi--swap-horizontal] text-sm" aria-hidden="true" />
                       切换场景
                     </button>
                   </div>
                 </div>
 
-                <div class="min-h-0 overflow-auto rounded-[18px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-2">
+                <div class="min-h-0 overflow-auto border border-[color:var(--sim-border)] bg-[color:var(--sim-panel)] p-2">
                   <FileTree
                     :expanded-paths="expandedTreePaths"
                     :nodes="fileTree"
@@ -674,7 +677,7 @@ watch(currentRoute, () => {
           </section>
         </section>
 
-        <section class="grid min-h-0 [grid-template-rows:minmax(0,1fr)_270px] max-[1180px]:[grid-template-rows:minmax(420px,1fr)_minmax(280px,auto)]">
+        <section class="grid min-h-0 [grid-template-rows:minmax(0,1fr)_250px] max-[1180px]:[grid-template-rows:minmax(420px,1fr)_minmax(280px,auto)]">
           <SourceEditor
             :code="selectedFileContent"
             :file-path="selectedFilePath"
