@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@mpcore/simulator": "workspace:*",
+    "tailwind-merge": "^3.5.0",
+    "tailwind-variants": "^3.2.2",
     "vue": "catalog:"
   },
   "devDependencies": {

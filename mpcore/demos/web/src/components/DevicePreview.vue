@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { pill } from '../lib/ui'
 import SectionCard from './SectionCard.vue'
 
 const props = defineProps<{
@@ -54,14 +55,14 @@ const PREVIEW_SHADOW_CSS = `
     color: var(--sim-preview-page-text, #18344f);
     background: var(--sim-preview-page-bg, #fff);
     border-radius: 18px;
-    box-shadow: 0 10px 28px rgb(15 27 40 / 10%);
+    box-shadow: 0 10px 28px var(--sim-preview-page-shadow, rgb(15 27 40 / 10%));
   }
 
   .sim-shadow-screen view {
     padding: 10px 12px;
     margin-bottom: 8px;
-    background: rgb(14 98 207 / 5%);
-    border: 1px solid rgb(14 98 207 / 8%);
+    background: var(--sim-preview-block-bg, rgb(14 98 207 / 5%));
+    border: 1px solid var(--sim-preview-block-border, rgb(14 98 207 / 8%));
     border-radius: 12px;
   }
 
@@ -70,14 +71,14 @@ const PREVIEW_SHADOW_CSS = `
   .sim-shadow-screen [catchtap],
   .sim-shadow-screen [catch\\:tap] {
     cursor: pointer;
-    box-shadow: inset 0 0 0 1px rgb(135 243 216 / 18%);
+    box-shadow: inset 0 0 0 1px var(--sim-preview-tap-ring, rgb(135 243 216 / 18%));
   }
 
   .sim-shadow-screen [bindtap]:active,
   .sim-shadow-screen [bind\\:tap]:active,
   .sim-shadow-screen [catchtap]:active,
   .sim-shadow-screen [catch\\:tap]:active {
-    background: rgb(135 243 216 / 18%);
+    background: var(--sim-preview-active-bg, rgb(135 243 216 / 18%));
     transform: scale(0.99);
   }
 `
@@ -142,7 +143,7 @@ function resolveTapChain(target: EventTarget | null) {
   }
 }
 
-function handleScreenClick(event: MouseEvent) {
+function handleScreenClick(event: Event) {
   const payload = resolveTapChain(event.target)
   if (!payload?.activeScopeId) {
     return
@@ -187,15 +188,22 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <SectionCard title="🕛 模拟器" subtitle="左侧固定预览区，始终显示当前页面。">
-    <div class="sim-device">
-      <div class="sim-device__bar">
-        <span>{{ props.route }}</span>
-        <button class="sim-mini-btn" @click="emit('back')">
+  <SectionCard
+    title="🕛 模拟器"
+    subtitle="左侧固定预览区，始终显示当前页面。"
+    tone="standalone"
+  >
+    <div class="grid min-h-0 overflow-hidden rounded-[22px] border border-[color:var(--sim-border)] bg-[color:var(--sim-surface-plain)]">
+      <div
+        class="flex items-center justify-between gap-3 px-3 py-2 text-[12px] font-medium text-[color:var(--sim-device-bar-text)]"
+        :style="{ backgroundImage: 'var(--sim-device-bar-bg)' }"
+      >
+        <span class="truncate">{{ props.route }}</span>
+        <button :class="pill({ tone: 'neutral' })" @click="emit('back')">
           返回
         </button>
       </div>
-      <div ref="previewHost" class="sim-device__screen" />
+      <div ref="previewHost" class="h-full min-h-0" />
     </div>
   </SectionCard>
 </template>

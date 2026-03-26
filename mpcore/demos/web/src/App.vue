@@ -12,6 +12,8 @@ import RoutePanel from './components/RoutePanel.vue'
 import ScenarioSelector from './components/ScenarioSelector.vue'
 import ScopePanel from './components/ScopePanel.vue'
 import StackPanel from './components/StackPanel.vue'
+import { cn } from './lib/cn'
+import { alertCard, chipWrapClass, labelClass, mutedTextClass, panelSurface, pill, tabButton, toolbarSurface } from './lib/ui'
 import { builtInScenarios } from './scenarios'
 
 const HOOK_NAMES = new Set([
@@ -33,6 +35,29 @@ const HOOK_NAMES = new Set([
   'onUnload',
   'setData',
 ])
+
+const themeOptions = [
+  { icon: 'icon-[mdi--theme-light-dark]', label: 'Auto', value: 'auto' },
+  { icon: 'icon-[mdi--white-balance-sunny]', label: 'Light', value: 'light' },
+  { icon: 'icon-[mdi--moon-waning-crescent]', label: 'Dark', value: 'dark' },
+] as const
+
+const primaryTabs = [
+  { icon: 'icon-[mdi--view-grid-outline]', label: '场景', value: 'scenario' },
+  { icon: 'icon-[mdi--routes]', label: '路由', value: 'routes' },
+  { icon: 'icon-[mdi--gesture-tap-button]', label: '操作', value: 'actions' },
+  { icon: 'icon-[mdi--layers-triple-outline]', label: '页面栈', value: 'stack' },
+] as const
+
+const inspectorTabs = [
+  { icon: 'icon-[mdi--layers-outline]', label: 'Scope', value: 'scope' },
+  { icon: 'icon-[mdi--tune-variant]', label: 'Options', value: 'options' },
+  { icon: 'icon-[mdi--database-outline]', label: 'Page Data', value: 'page' },
+  { icon: 'icon-[mdi--database-cog-outline]', label: 'App Data', value: 'app' },
+  { icon: 'icon-[mdi--message-badge-outline]', label: 'Toast', value: 'toast' },
+  { icon: 'icon-[mdi--content-save-outline]', label: 'Storage', value: 'storage' },
+  { icon: 'icon-[mdi--transit-connection-variant]', label: 'Requests', value: 'requests' },
+] as const
 
 interface SessionLike {
   getCurrentPages: () => Array<Record<string, any>>
@@ -72,6 +97,8 @@ const themeMode = ref<ThemeMode>('auto')
 const systemPrefersDark = ref(false)
 let colorSchemeQuery: MediaQueryList | null = null
 let handleColorSchemeChange: ((event: MediaQueryListEvent) => void) | null = null
+
+const tabPanelStyles = panelSurface()
 
 const currentPage = computed(() => {
   void revision.value
@@ -323,14 +350,14 @@ function handleSelectScope(scopeId: string) {
 </script>
 
 <template>
-  <main class="sim-app">
-    <section v-if="errorMessage" class="sim-alert sim-alert--floating">
-      <strong>🕛 运行时错误</strong>
-      <pre>{{ errorMessage }}</pre>
+  <main class="mx-auto grid h-screen w-[min(1520px,calc(100vw-16px))] grid-rows-[auto_minmax(0,1fr)] gap-2 py-2 max-[1180px]:h-auto max-[1180px]:grid-rows-none max-[1180px]:pb-3">
+    <section v-if="errorMessage" :class="cn(alertCard(), 'grid gap-1')">
+      <strong class="text-sm font-semibold">🕛 运行时错误</strong>
+      <pre class="m-0 overflow-auto whitespace-pre-wrap text-xs leading-6">{{ errorMessage }}</pre>
     </section>
 
-    <section class="sim-workbench">
-      <aside class="sim-workbench__left">
+    <section class="grid h-full min-h-0 gap-2 [grid-template-columns:396px_minmax(0,1fr)] max-[1180px]:h-auto max-[1180px]:grid-cols-1">
+      <aside class="sticky top-0 min-h-0 max-[1180px]:static">
         <DevicePreview
           :route="currentRoute"
           :markup="previewMarkup"
@@ -340,87 +367,58 @@ function handleSelectScope(scopeId: string) {
         />
       </aside>
 
-      <section class="sim-workbench__right">
-        <section class="sim-toolbar sim-toolbar--inline">
-          <div class="sim-toolbar__meta">
-            <div class="sim-toolbar__project">
-              <span class="sim-theme-switch__label">项目</span>
-              <strong>{{ projectLabel }}</strong>
+      <section class="grid min-h-0 gap-2 [grid-template-rows:auto_minmax(0,1fr)_minmax(0,1fr)] max-[1180px]:[grid-template-rows:auto_auto_auto]">
+        <section :class="toolbarSurface()">
+          <div class="grid min-w-0 flex-1 gap-2">
+            <div class="flex min-w-0 items-baseline gap-2">
+              <span :class="labelClass">项目</span>
+              <strong class="truncate text-[15px] font-semibold tracking-tight text-[color:var(--sim-text)]">
+                {{ projectLabel }}
+              </strong>
             </div>
-            <div class="sim-status-list" aria-label="当前会话状态">
+            <div :class="chipWrapClass" aria-label="当前会话状态">
               <span
                 v-for="item in statusChips"
                 :key="item.label"
-                class="sim-status-chip"
+                :class="cn(pill({ tone: 'subtle', interactive: false }), 'max-w-full')"
               >
-                <span class="sim-status-chip__label">{{ item.label }}</span>
-                <strong>{{ item.value }}</strong>
+                <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--sim-muted)]">
+                  {{ item.label }}
+                </span>
+                <strong class="truncate font-medium text-[color:var(--sim-text)]">{{ item.value }}</strong>
               </span>
             </div>
           </div>
 
-          <div class="sim-theme-switch" role="group" aria-label="主题切换">
-            <span class="sim-theme-switch__label">Theme</span>
+          <div class="flex flex-wrap items-center justify-start gap-2 xl:justify-end" role="group" aria-label="主题切换">
+            <span :class="labelClass">Theme</span>
             <button
-              class="sim-theme-switch__btn"
-              :class="{ 'is-active': themeMode === 'auto' }"
-              @click="setThemeMode('auto')"
+              v-for="option in themeOptions"
+              :key="option.value"
+              :class="pill({ tone: themeMode === option.value ? 'accent' : 'neutral' })"
+              @click="setThemeMode(option.value)"
             >
-              <span class="icon-[mdi--theme-light-dark] text-sm" aria-hidden="true" />
-              Auto
+              <span :class="cn(option.icon, 'text-sm')" aria-hidden="true" />
+              {{ option.label }}
             </button>
-            <button
-              class="sim-theme-switch__btn"
-              :class="{ 'is-active': themeMode === 'light' }"
-              @click="setThemeMode('light')"
-            >
-              <span class="icon-[mdi--white-balance-sunny] text-sm" aria-hidden="true" />
-              Light
-            </button>
-            <button
-              class="sim-theme-switch__btn"
-              :class="{ 'is-active': themeMode === 'dark' }"
-              @click="setThemeMode('dark')"
-            >
-              <span class="icon-[mdi--moon-waning-crescent] text-sm" aria-hidden="true" />
-              Dark
-            </button>
-            <span class="sim-theme-switch__state">当前：{{ effectiveTheme }}</span>
+            <span :class="mutedTextClass">当前：{{ effectiveTheme.toUpperCase() }}</span>
           </div>
         </section>
 
-        <section class="sim-tab-panel">
-          <div class="sim-tabbar" role="tablist" aria-label="运行区">
+        <section :class="tabPanelStyles.base()">
+          <div :class="tabPanelStyles.bar()" role="tablist" aria-label="运行区">
             <button
-              class="sim-tabbar__tab"
-              :class="{ 'is-active': primaryTab === 'scenario' }"
-              @click="primaryTab = 'scenario'"
+              v-for="tab in primaryTabs"
+              :key="tab.value"
+              :aria-selected="primaryTab === tab.value"
+              :class="tabButton({ active: primaryTab === tab.value })"
+              @click="primaryTab = tab.value"
             >
-              场景
-            </button>
-            <button
-              class="sim-tabbar__tab"
-              :class="{ 'is-active': primaryTab === 'routes' }"
-              @click="primaryTab = 'routes'"
-            >
-              路由
-            </button>
-            <button
-              class="sim-tabbar__tab"
-              :class="{ 'is-active': primaryTab === 'actions' }"
-              @click="primaryTab = 'actions'"
-            >
-              操作
-            </button>
-            <button
-              class="sim-tabbar__tab"
-              :class="{ 'is-active': primaryTab === 'stack' }"
-              @click="primaryTab = 'stack'"
-            >
-              页面栈
+              <span :class="cn(tab.icon, 'text-sm')" aria-hidden="true" />
+              {{ tab.label }}
             </button>
           </div>
-          <div class="sim-tab-panel__body">
+          <div :class="tabPanelStyles.body()">
             <ScenarioSelector
               v-if="primaryTab === 'scenario'"
               :active-id="currentScenarioId"
@@ -452,59 +450,20 @@ function handleSelectScope(scopeId: string) {
           </div>
         </section>
 
-        <section class="sim-tab-panel">
-          <div class="sim-tabbar" role="tablist" aria-label="检查区">
+        <section :class="tabPanelStyles.base()">
+          <div :class="tabPanelStyles.bar()" role="tablist" aria-label="检查区">
             <button
-              class="sim-tabbar__tab"
-              :class="{ 'is-active': inspectorTab === 'scope' }"
-              @click="inspectorTab = 'scope'"
+              v-for="tab in inspectorTabs"
+              :key="tab.value"
+              :aria-selected="inspectorTab === tab.value"
+              :class="tabButton({ active: inspectorTab === tab.value })"
+              @click="inspectorTab = tab.value"
             >
-              Scope
-            </button>
-            <button
-              class="sim-tabbar__tab"
-              :class="{ 'is-active': inspectorTab === 'options' }"
-              @click="inspectorTab = 'options'"
-            >
-              Options
-            </button>
-            <button
-              class="sim-tabbar__tab"
-              :class="{ 'is-active': inspectorTab === 'page' }"
-              @click="inspectorTab = 'page'"
-            >
-              Page Data
-            </button>
-            <button
-              class="sim-tabbar__tab"
-              :class="{ 'is-active': inspectorTab === 'app' }"
-              @click="inspectorTab = 'app'"
-            >
-              App Data
-            </button>
-            <button
-              class="sim-tabbar__tab"
-              :class="{ 'is-active': inspectorTab === 'toast' }"
-              @click="inspectorTab = 'toast'"
-            >
-              Toast
-            </button>
-            <button
-              class="sim-tabbar__tab"
-              :class="{ 'is-active': inspectorTab === 'storage' }"
-              @click="inspectorTab = 'storage'"
-            >
-              Storage
-            </button>
-            <button
-              class="sim-tabbar__tab"
-              :class="{ 'is-active': inspectorTab === 'requests' }"
-              @click="inspectorTab = 'requests'"
-            >
-              Requests
+              <span :class="cn(tab.icon, 'text-sm')" aria-hidden="true" />
+              {{ tab.label }}
             </button>
           </div>
-          <div class="sim-tab-panel__body">
+          <div :class="tabPanelStyles.body()">
             <ScopePanel
               v-if="inspectorTab === 'scope'"
               :scope-id="selectedScope?.scopeId ?? ''"
@@ -512,6 +471,7 @@ function handleSelectScope(scopeId: string) {
               :methods="selectedScope?.methods ?? []"
               :properties-code="stringify(selectedScope?.properties ?? {})"
               :data-code="stringify(selectedScope?.data ?? {})"
+              :theme="effectiveTheme"
             />
 
             <JsonPanel
@@ -519,36 +479,42 @@ function handleSelectScope(scopeId: string) {
               title="🕛 页面参数"
               subtitle="当前页面 options 快照。"
               :code="currentOptions"
+              :theme="effectiveTheme"
             />
             <JsonPanel
               v-else-if="inspectorTab === 'page'"
               title="🕛 页面数据"
               subtitle="当前页面 data 快照。"
               :code="pageData"
+              :theme="effectiveTheme"
             />
             <JsonPanel
               v-else-if="inspectorTab === 'app'"
               title="🕛 应用数据"
               subtitle="App.globalData，用来观察启动和找不到页面等轨迹。"
               :code="appData"
+              :theme="effectiveTheme"
             />
             <JsonPanel
               v-else-if="inspectorTab === 'toast'"
               title="🕛 Toast"
               subtitle="showToast / hideToast 的宿主快照。"
               :code="toastData"
+              :theme="effectiveTheme"
             />
             <JsonPanel
               v-else-if="inspectorTab === 'storage'"
               title="🕛 Storage"
               subtitle="setStorageSync / getStorageSync 当前内存快照。"
               :code="storageData"
+              :theme="effectiveTheme"
             />
             <JsonPanel
               v-else
               title="🕛 Requests"
               subtitle="request mock 命中日志。"
               :code="requestLogData"
+              :theme="effectiveTheme"
             />
           </div>
         </section>

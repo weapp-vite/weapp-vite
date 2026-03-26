@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { BuiltInScenario } from '../scenarios'
+import { dropzoneCard, labelClass, mutedTextClass, sceneButton } from '../lib/ui'
 import SectionCard from './SectionCard.vue'
 
 defineProps<{
@@ -20,18 +21,22 @@ const emit = defineEmits<{
       <button
         v-for="scenario in scenarios"
         :key="scenario.id"
-        class="sim-scene-btn"
-        :class="{ 'is-active': activeId === scenario.id }"
+        :class="sceneButton({ active: activeId === scenario.id })"
         @click="emit('pick', scenario.id)"
       >
-        <strong>{{ scenario.name }}</strong>
-        <span>{{ scenario.description }}</span>
+        <strong class="text-[15px] font-semibold tracking-tight text-[color:var(--sim-text)]">
+          {{ scenario.name }}
+        </strong>
+        <span :class="mutedTextClass">{{ scenario.description }}</span>
       </button>
     </div>
-    <label class="sim-import-btn" :class="{ 'is-loading': loading }">
-      <span class="sim-import-btn__title">🕛 导入目录</span>
-      <span class="sim-import-btn__hint">选择包含 app.json / app.js / pages 的构建目录。</span>
+    <label :class="dropzoneCard()">
+      <span class="text-[14px] font-semibold tracking-tight text-[color:var(--sim-text)]">🕛 导入目录</span>
+      <span :class="labelClass">
+        {{ loading ? '正在解析目录...' : '选择包含 app.json / app.js / pages 的构建目录。' }}
+      </span>
       <input
+        class="absolute inset-0 cursor-pointer opacity-0"
         type="file"
         multiple
         webkitdirectory
