@@ -4,8 +4,21 @@
   <view class="panel-row">Status: {{status}}</view>
   <view class="panel-row">Observer: {{observerLog}}</view>
   <view class="panel-row">Clicks: {{internalClicks}}</view>
+  <view
+    wx:for="{{actionPills}}"
+    wx:key="*this"
+    class="panel-row"
+    data-phase="{{item}}"
+    catchtap="applyInternalAction"
+  >
+    内部动作：{{item}}
+  </view>
   <mini-badge id="mini-badge" label="{{status}}" />
   <view class="panel-row" id="status-card-pulse" data-phase="pulse" data-card="status" bindtap="pulse">组件内部触发 pulse</view>
   <view class="panel-row" bindtap="inspectNested">组件内部查询子组件</view>
+  <view wx:if="{{isBoosted}}" class="panel-row">状态已加速</view>
+  <view wx:elif="{{status}}" class="panel-row">状态存在：{{status}}</view>
+  <view wx:else class="panel-row">状态缺失</view>
   <view class="panel-row">Nested: {{nestedBadge}}</view>
+  <view class="panel-row">ActionLog: {{actionLog.0}}</view>
 </view>

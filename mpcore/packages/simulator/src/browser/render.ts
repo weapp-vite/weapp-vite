@@ -2,6 +2,8 @@ import type { HeadlessComponentDefinition } from '../host'
 import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
 import type { HeadlessComponentInstance } from '../runtime/componentInstance'
 import type { HeadlessPageInstance } from '../runtime/pageInstance'
+import type { BrowserModuleLoader } from './moduleLoader'
+import type { BrowserVirtualFiles } from './virtualFiles'
 import { parseDocument } from 'htmlparser2'
 import { dirname, join, normalize } from 'pathe'
 import {
@@ -9,11 +11,10 @@ import {
   createComponentInstance,
   normalizeComponentPropertyValue,
   runComponentLifecycle,
-  runComponentPageLifetime,
   runComponentObservers,
+  runComponentPageLifetime,
 } from '../runtime/componentInstance'
-import type { BrowserModuleLoader } from './moduleLoader'
-import { type BrowserVirtualFiles, readBrowserVirtualFile } from './virtualFiles'
+import { readBrowserVirtualFile } from './virtualFiles'
 
 interface DomNodeLike {
   attribs?: Record<string, string>
@@ -62,13 +63,24 @@ export interface BrowserRendererContext {
 
 const LEADING_SLASH_RE = /^\/+/
 const TEMPLATE_INTERPOLATION_RE = /\{\{([^{}]+)\}\}/g
-const EVENT_BINDING_ATTRS = ['bindtap', 'bind:tap']
-const COMPONENT_EVENT_PREFIXES = ['bind:', 'bind']
+const EVENT_BINDING_ATTRS = ['bindtap', 'bind:tap', 'catchtap', 'catch:tap']
+const COMPONENT_EVENT_PREFIXES = ['bind:', 'bind', 'catch:', 'catch']
+const STRUCTURAL_ATTRS = ['wx:if', 'wx:elif', 'wx:else', 'wx:for', 'wx:for-item', 'wx:for-index', 'wx:key']
+const WX_ELSE_ATTRS = new Set(['wx:elif', 'wx:else'])
+const DATASET_NAME_RE = /-([a-z])/g
+const BRACKET_INDEX_RE = /\[(\d+)\]/g
+const CLASS_SPLIT_RE = /\s+/
+const JS_FILE_RE = /\.js$/
+
+function isMustacheOnly(value: string) {
+  const trimmed = value.trim()
+  return trimmed.startsWith('{{') && trimmed.endsWith('}}') && !trimmed.includes('{{', 2)
+}
 
 function toDatasetKey(attributeName: string) {
   return attributeName
     .slice('data-'.length)
-    .replace(/-([a-z])/g, (_match, char: string) => char.toUpperCase())
+    .replace(DATASET_NAME_RE, (_match, char: string) => char.toUpperCase())
 }
 
 function collectDataset(node: DomNodeLike) {
@@ -101,30 +113,74 @@ function cloneNode(node: DomNodeLike): DomNodeLike {
   }
 }
 
-function resolveValueByPath(source: Record<string, any>, expression: string) {
-  const normalized = expression.trim()
-  if (!normalized) {
-    return ''
-  }
-  const segments = normalized.split('.').filter(Boolean)
-  let current: any = source
-  for (const segment of segments) {
-    current = current?.[segment]
-  }
-  return current ?? ''
+function parseExpressionSegments(expression: string) {
+  return expression
+    .replace(BRACKET_INDEX_RE, '.$1')
+    .split('.')
+    .map(segment => segment.trim())
+    .filter(Boolean)
 }
 
-function resolveRawValueByPath(source: Record<string, any>, expression: string) {
+function unwrapMustacheExpression(expression: string) {
   const normalized = expression.trim()
+  if (isMustacheOnly(normalized)) {
+    return normalized.slice(2, -2).trim()
+  }
+  return normalized
+}
+
+function resolveLiteralValue(expression: string) {
+  if (expression === 'true') {
+    return true
+  }
+  if (expression === 'false') {
+    return false
+  }
+  if (expression === 'null') {
+    return null
+  }
+  if (expression === 'undefined') {
+    return undefined
+  }
+  if ((expression.startsWith('"') && expression.endsWith('"')) || (expression.startsWith('\'') && expression.endsWith('\''))) {
+    return expression.slice(1, -1)
+  }
+  const numericValue = Number(expression)
+  if (!Number.isNaN(numericValue) && expression !== '') {
+    return numericValue
+  }
+  return undefined
+}
+
+function resolveValueByExpression(source: Record<string, any>, expression: string) {
+  const normalized = unwrapMustacheExpression(expression)
   if (!normalized) {
     return undefined
   }
-  const segments = normalized.split('.').filter(Boolean)
+
+  if (normalized.startsWith('!')) {
+    return !resolveValueByExpression(source, normalized.slice(1))
+  }
+
+  const literalValue = resolveLiteralValue(normalized)
+  if (literalValue !== undefined || normalized === 'undefined') {
+    return literalValue
+  }
+
+  const segments = parseExpressionSegments(normalized)
   let current: any = source
   for (const segment of segments) {
     current = current?.[segment]
   }
   return current
+}
+
+function resolveValueByPath(source: Record<string, any>, expression: string) {
+  return resolveValueByExpression(source, expression) ?? ''
+}
+
+function resolveRawValueByPath(source: Record<string, any>, expression: string) {
+  return resolveValueByExpression(source, expression)
 }
 
 function interpolateTemplate(input: string, data: Record<string, any>) {
@@ -137,7 +193,7 @@ function interpolateTemplate(input: string, data: Record<string, any>) {
 function readTemplateSource(files: BrowserVirtualFiles, filePath: string) {
   const templateSource = readBrowserVirtualFile(files, filePath)
   if (typeof templateSource !== 'string') {
-    throw new Error(`Missing template in browser simulator runtime: ${filePath}`)
+    throw new TypeError(`Missing template in browser simulator runtime: ${filePath}`)
   }
   return templateSource
 }
@@ -175,9 +231,8 @@ function isTagNode(node: DomNodeLike): node is DomNodeLike & { name: string, typ
   return node.type === 'tag' && typeof node.name === 'string'
 }
 
-function isMustacheOnly(value: string) {
-  const trimmed = value.trim()
-  return trimmed.startsWith('{{') && trimmed.endsWith('}}') && trimmed.indexOf('{{', 2) === -1
+function isIgnorableTextNode(node: DomNodeLike) {
+  return node.type === 'text' && typeof node.data === 'string' && node.data.trim() === ''
 }
 
 function resolveAttributeValue(value: string, scope: BrowserRenderScope) {
@@ -312,7 +367,11 @@ function applyNodeBindings(node: DomNodeLike, scope: BrowserRenderScope) {
   node.attribs ??= {}
   node.attribs['data-sim-scope'] = scope.getScopeId()
 
-  for (const [key, value] of Object.entries(node.attribs)) {
+  for (const key of STRUCTURAL_ATTRS) {
+    delete node.attribs[key]
+  }
+
+  for (const [key, value] of Object.entries({ ...node.attribs })) {
     if (EVENT_BINDING_ATTRS.includes(key)) {
       node.attribs['data-sim-tap'] = value
       continue
@@ -368,6 +427,162 @@ function createMergedScopeData(
     ...componentProperties,
     ...componentData,
   }
+}
+
+function isTruthy(value: unknown) {
+  return Boolean(value)
+}
+
+function createLoopScope(scope: BrowserRenderScope, itemName: string, indexName: string, item: unknown, index: number): BrowserRenderScope {
+  return {
+    ...scope,
+    data: {
+      ...scope.data,
+      [indexName]: index,
+      [itemName]: item,
+    },
+  }
+}
+
+function evaluateConditionalBranch(node: DomNodeLike, scope: BrowserRenderScope) {
+  const condition = node.attribs?.['wx:if'] ?? node.attribs?.['wx:elif']
+  if (condition == null) {
+    return true
+  }
+  return isTruthy(resolveRawValueByPath(scope.data, condition))
+}
+
+function expandNodeByFor(node: DomNodeLike, scope: BrowserRenderScope) {
+  const forExpression = node.attribs?.['wx:for']
+  if (!forExpression) {
+    return [{ node, scope, instanceSuffix: '' }]
+  }
+
+  const list = resolveRawValueByPath(scope.data, forExpression)
+  const items = Array.isArray(list) ? list : []
+  const itemName = node.attribs?.['wx:for-item']?.trim() || 'item'
+  const indexName = node.attribs?.['wx:for-index']?.trim() || 'index'
+
+  return items.map((item, index) => ({
+    node: cloneNode(node),
+    scope: createLoopScope(scope, itemName, indexName, item, index),
+    instanceSuffix: `:for-${index}`,
+  }))
+}
+
+function renderNodeVariants(
+  node: DomNodeLike,
+  scope: BrowserRenderScope,
+  context: BrowserRendererContext,
+  ownerJsonPath: string,
+  ownerFilePath: string,
+  instancePath: string,
+  seenComponentScopes: Set<string>,
+) {
+  return expandNodeByFor(node, scope).map(({ node: expandedNode, scope: expandedScope, instanceSuffix }) => renderNodeTree(
+    expandedNode,
+    expandedScope,
+    context,
+    ownerJsonPath,
+    ownerFilePath,
+    `${instancePath}${instanceSuffix}`,
+    seenComponentScopes,
+  ))
+}
+
+function renderChildren(
+  children: DomNodeLike[],
+  scope: BrowserRenderScope,
+  context: BrowserRendererContext,
+  ownerJsonPath: string,
+  ownerFilePath: string,
+  instancePath: string,
+  seenComponentScopes: Set<string>,
+) {
+  const renderedChildren: DomNodeLike[] = []
+
+  for (let index = 0; index < children.length; index += 1) {
+    const child = children[index]!
+    if (!isTagNode(child)) {
+      renderedChildren.push(...renderNodeVariants(
+        child,
+        scope,
+        context,
+        ownerJsonPath,
+        ownerFilePath,
+        `${instancePath}/node-${index}`,
+        seenComponentScopes,
+      ))
+      continue
+    }
+
+    const hasConditional = child.attribs?.['wx:if'] != null
+    const isElseBranch = child.attribs?.['wx:elif'] != null || child.attribs?.['wx:else'] != null
+
+    if (hasConditional) {
+      let branchMatched = false
+      let cursor = index
+      while (cursor < children.length) {
+        const branch = children[cursor]!
+        if (cursor !== index && isIgnorableTextNode(branch)) {
+          cursor += 1
+          continue
+        }
+        if (!isTagNode(branch)) {
+          break
+        }
+        if (cursor !== index && !WX_ELSE_ATTRS.has(Object.keys(branch.attribs ?? {}).find(key => key.startsWith('wx:')) ?? '')) {
+          break
+        }
+
+        const isElseOnly = branch.attribs?.['wx:else'] != null
+        const shouldRender = isElseOnly ? !branchMatched : (!branchMatched && evaluateConditionalBranch(branch, scope))
+        if (shouldRender) {
+          renderedChildren.push(...renderNodeVariants(
+            branch,
+            scope,
+            context,
+            ownerJsonPath,
+            ownerFilePath,
+            `${instancePath}/node-${cursor}`,
+            seenComponentScopes,
+          ))
+          branchMatched = true
+        }
+
+        let nextBranchIndex = cursor + 1
+        while (nextBranchIndex < children.length && isIgnorableTextNode(children[nextBranchIndex]!)) {
+          nextBranchIndex += 1
+        }
+        const nextBranch = children[nextBranchIndex]
+        const hasNextElseBranch = !!nextBranch
+          && isTagNode(nextBranch)
+          && (nextBranch.attribs?.['wx:elif'] != null || nextBranch.attribs?.['wx:else'] != null)
+        if (!hasNextElseBranch) {
+          break
+        }
+        cursor = nextBranchIndex
+      }
+      index = cursor
+      continue
+    }
+
+    if (isElseBranch) {
+      continue
+    }
+
+    renderedChildren.push(...renderNodeVariants(
+      child,
+      scope,
+      context,
+      ownerJsonPath,
+      ownerFilePath,
+      `${instancePath}/node-${index}`,
+      seenComponentScopes,
+    ))
+  }
+
+  return renderedChildren
 }
 
 function renderNodeTree(
@@ -432,10 +647,10 @@ function renderNodeTree(
 
     seenComponentScopes.add(componentScopeId)
 
-  const componentScope: BrowserRenderScope = {
+    const componentScope: BrowserRenderScope = {
       alias: clonedNode.name,
       classList: String(clonedNode.attribs?.class ?? '')
-        .split(/\s+/)
+        .split(CLASS_SPLIT_RE)
         .map(item => item.trim())
         .filter(Boolean),
       data: createMergedScopeData(scope.data, componentInstance.properties, componentInstance.data),
@@ -457,7 +672,7 @@ function renderNodeTree(
       componentRoot,
       componentScope,
       context,
-      `${componentEntry.filePath.replace(/\.js$/, '')}.json`,
+      `${componentEntry.filePath.replace(JS_FILE_RE, '')}.json`,
       componentEntry.filePath,
       componentScopeId,
       seenComponentScopes,
@@ -473,15 +688,15 @@ function renderNodeTree(
   }
 
   applyNodeBindings(clonedNode, scope)
-  clonedNode.children = (clonedNode.children ?? []).map((child, index) => renderNodeTree(
-    child,
+  clonedNode.children = renderChildren(
+    clonedNode.children ?? [],
     scope,
     context,
     ownerJsonPath,
     ownerFilePath,
-    `${instancePath}/${clonedNode.name}-${index}`,
+    `${instancePath}/${clonedNode.name}`,
     seenComponentScopes,
-  ))
+  )
   return clonedNode
 }
 

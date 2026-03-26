@@ -1,6 +1,17 @@
 <view class="screen">
   <view class="headline">{{title}}</view>
   <view class="panel-row" bindtap="promote">页面自己加一档</view>
+  <view
+    wx:for="{{quickActions}}"
+    wx:key="status"
+    wx:for-item="action"
+    class="panel-row"
+    data-status="{{action.status}}"
+    catchtap="applyStatus"
+  >
+    {{action.label}}
+  </view>
+  <view class="panel-row" bindtap="toggleMeta">切换 meta 区块</view>
   <view class="panel-row" bindtap="inspectCard">检查组件实例</view>
   <status-card
     id="status-card"
@@ -9,7 +20,9 @@
     status="{{status}}"
     bind:pulse="handlePulse"
   />
-  <view class="panel-row">最近事件：{{events.0}}</view>
+  <view wx:if="{{flags.showMeta}}" class="panel-row">最近事件：{{events.0}}</view>
+  <view wx:elif="{{eventShape}}" class="panel-row">meta 已隐藏，但保留事件形态</view>
+  <view wx:else class="panel-row">meta 已隐藏且还没有事件</view>
   <view class="panel-row">事件形态：{{eventShape}}</view>
   <view class="panel-row">组件快照：{{componentSnapshot}}</view>
   <view class="panel-row">最近轨迹：{{traces.0}}</view>
