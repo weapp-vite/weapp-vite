@@ -471,14 +471,14 @@ export function createComponentInstance(options: CreateComponentInstanceOptions)
     },
   }
 
-  for (const [key, value] of Object.entries(definition.methods ?? {})) {
-    bindFunction(instance, key, value)
-  }
-
   for (const [key, value] of Object.entries(definition)) {
     if (key === 'data' || key === 'methods' || key === 'properties' || key === 'observers' || key === 'lifetimes') {
       continue
     }
+    bindFunction(instance, key, value)
+  }
+
+  for (const [key, value] of Object.entries(definition.methods ?? {})) {
     bindFunction(instance, key, value)
   }
 
