@@ -25,10 +25,10 @@ const breadcrumbs = computed(() => props.filePath.split('/').filter(Boolean))
 </script>
 
 <template>
-  <section class="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-[24px] border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)] shadow-[var(--sim-shadow)]">
-    <div class="flex items-center gap-2 border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-strong)] px-3 py-2">
+  <section class="grid min-h-0 grid-rows-[32px_40px_minmax(0,1fr)] overflow-hidden border border-[color:var(--sim-border)] bg-[color:var(--sim-panel-soft)]">
+    <div class="flex items-center gap-2 border-b border-[color:var(--sim-divider)] bg-[color:var(--sim-panel-strong)] px-3 py-1.5">
       <span class="icon-[mdi--language-javascript] text-sm text-[color:var(--sim-accent-strong)]" aria-hidden="true" />
-      <span class="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--sim-muted)]">编辑器</span>
+      <span class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--sim-muted)]">编辑器</span>
       <div class="ml-auto flex items-center gap-2">
         <span class="icon-[mdi--magnify] text-sm text-[color:var(--sim-muted)]" aria-hidden="true" />
         <span class="icon-[mdi--dots-horizontal] text-sm text-[color:var(--sim-muted)]" aria-hidden="true" />
@@ -40,7 +40,7 @@ const breadcrumbs = computed(() => props.filePath.split('/').filter(Boolean))
         v-for="path in openFiles"
         :key="path"
         :class="cn(
-          'flex shrink-0 items-center gap-2 border-r border-[color:var(--sim-divider)] px-4 py-2 text-[12px] transition-colors first:border-l',
+          'flex shrink-0 items-center gap-2 border-r border-[color:var(--sim-divider)] px-3 py-2 text-[12px] transition-colors first:border-l',
           path === filePath
             ? 'bg-[color:var(--sim-tab-active)] text-[color:var(--sim-text)]'
             : 'text-[color:var(--sim-muted)] hover:bg-[color:var(--sim-tab-hover)] hover:text-[color:var(--sim-text)]',
@@ -53,7 +53,7 @@ const breadcrumbs = computed(() => props.filePath.split('/').filter(Boolean))
     </div>
 
     <div class="grid min-h-0 grid-rows-[auto_minmax(0,1fr)]">
-      <div class="flex items-center gap-2 border-b border-[color:var(--sim-divider)] px-4 py-2 text-[11px] text-[color:var(--sim-muted)]">
+      <div class="flex items-center gap-2 border-b border-[color:var(--sim-divider)] px-4 py-1.5 text-[11px] text-[color:var(--sim-muted)]">
         <span class="truncate font-semibold uppercase tracking-[0.16em]">{{ projectLabel }}</span>
         <span class="icon-[mdi--chevron-right] text-xs" aria-hidden="true" />
         <template v-for="(crumb, index) in breadcrumbs" :key="`${crumb}-${index}`">
@@ -77,7 +77,7 @@ const breadcrumbs = computed(() => props.filePath.split('/').filter(Boolean))
           </div>
         </div>
 
-        <div class="min-h-0 overflow-hidden p-3">
+        <div class="min-h-0 overflow-hidden p-2.5">
           <HighlightedCode
             :code="code"
             :lang="lang"
