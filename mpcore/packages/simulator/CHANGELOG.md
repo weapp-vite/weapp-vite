@@ -1,5 +1,63 @@
 # @mpcore/simulator
 
+## 0.0.3
+
+### Patch Changes
+
+- 🐛 **为 `@mpcore/simulator` 的页面事件补充可观测的下拉刷新状态，使 `wx.stopPullDownRefresh()` 在 headless runtime 与 browser runtime 中都能被稳定验证。** [`6bc8273`](https://github.com/weapp-vite/weapp-vite/commit/6bc82739a083333a08389e49e7ae4052b3aeb8ac) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 页面句柄补充组件定位与等待能力，使页面级测试可以直接等待组件出现并获取对应组件句柄，而无需回到会话级接口。** [`4c3c23e`](https://github.com/weapp-vite/weapp-vite/commit/4c3c23e8ff133fc3135f101bfbb9fcd1f8815f67) by @sonofmagic
+
+- 🐛 **完善 `@mpcore/simulator` 的 headless runtime 能力，新增 `wx.createSelectorQuery`，并为文件系统运行时补齐自定义组件渲染、组件实例选择与测试桥接支持，使更多小程序页面和组件场景可以直接在模拟器中运行与断言。** [`540be9b`](https://github.com/weapp-vite/weapp-vite/commit/540be9bcde9120bb9171e1f19db33a8928eab53b) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 节点句柄补充到作用域句柄的桥接能力，使测试可以从节点直接获取所属作用域并继续进行组件级调试。** [`f2b2bf3`](https://github.com/weapp-vite/weapp-vite/commit/f2b2bf30aeb35a9f1cb887564e3956fb77ce46d7) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 补充等待式组件定位能力，使 headless 测试可以直接等待异步出现的组件与组件列表，无需手工轮询页面渲染结果。** [`f1180ee`](https://github.com/weapp-vite/weapp-vite/commit/f1180eed3e38bea6ecb5d9726cb3f9552eb6bcc6) by @sonofmagic
+
+- 🐛 **补充 `@mpcore/simulator` 中组件作用域的选择器查询支持，使 `wx.createSelectorQuery().in(component)` 能在 headless runtime 与 browser runtime 中按组件根作用域执行节点查询。** [`fb60bb5`](https://github.com/weapp-vite/weapp-vite/commit/fb60bb5758cce10f8d9f05d0f640f0e2998abe02) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 节点句柄补充页面句柄桥接能力，使测试可以从任意节点直接回到当前页面上下文继续读取页面数据。** [`77deafd`](https://github.com/weapp-vite/weapp-vite/commit/77deafdc6637f8563f0c56afb9a4fe0129b54ff0) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 组件句柄补充等待式组件定位能力，使嵌套组件测试可以直接在组件作用域中等待子组件出现并继续调试。** [`220debd`](https://github.com/weapp-vite/weapp-vite/commit/220debd1543f1da269b72967f38fc98818f3d094) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 组件句柄补充父组件等待能力，使嵌套组件测试可以在组件作用域中直接等待宿主组件可用后继续断言。** [`f961982`](https://github.com/weapp-vite/weapp-vite/commit/f96198270198e754b13f3bde10a74b658516c602) by @sonofmagic
+
+- 🐛 **完善 `@mpcore/simulator` 中组件事件对象的对齐行为，使 testing bridge 命中组件内部节点后，冒泡到页面的事件可以保留更准确的 `target`、`currentTarget` 与 `mark` 信息。** [`fa855da`](https://github.com/weapp-vite/weapp-vite/commit/fa855daee0061eb1581a40c34d02719a93ea11ce) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 增加组件句柄定位能力，使 headless 测试可以直接按选择器获取组件作用域句柄并读取快照，减少对内部渲染标记的依赖。** [`410bb1a`](https://github.com/weapp-vite/weapp-vite/commit/410bb1a8332cc1bc8c4bea714103422db621bf39) by @sonofmagic
+
+- 🐛 **补充 `@mpcore/simulator` 的选择器查询回归覆盖，验证 `selectAll(...).fields(...)` 在页面与组件作用域下都能稳定返回数组结果，减少后续选择器行为回退风险。** [`6ce4cf6`](https://github.com/weapp-vite/weapp-vite/commit/6ce4cf67a5dfb950ceb57e20077aee9626717eca) by @sonofmagic
+
+- 🐛 **完善 `@mpcore/simulator` 的选择器查询结果形状，支持从节点属性中解析 `mark`，并为 `context` 与 `node` 字段返回可辨识的占位结果，便于测试中区分未实现能力与缺失节点。** [`1c61128`](https://github.com/weapp-vite/weapp-vite/commit/1c61128471a03604effe932eedeaf3e48f68ea04) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 节点句柄补充页面作用域与组件作用域的显式区分能力，便于从节点直接切换到正确的调试上下文。** [`2f2d79d`](https://github.com/weapp-vite/weapp-vite/commit/2f2d79d23ee7d27f29e7d7b3c98189859cc93163) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 补充作用域快照读取能力，使 headless 测试可以直接通过会话句柄查看组件作用域状态，而不必依赖页面外部断言路径。** [`fd49af8`](https://github.com/weapp-vite/weapp-vite/commit/fd49af886c95a22a98c3ff6ebafbde4b8ed6d62d) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 组件句柄补充直接方法调用能力，使测试可以不经过节点事件分发，直接驱动组件实例方法并观察页面与组件状态变化。** [`c4fe66e`](https://github.com/weapp-vite/weapp-vite/commit/c4fe66e079760091cf0fa0942b380b3425d53650) by @sonofmagic
+
+- 🐛 **补充 `@mpcore/simulator` 中文件系统 headless runtime 的组件生命周期覆盖，确保自定义组件的 `lifetimes` 与 `pageLifetimes` 在运行时和回归测试中都有明确验证。** [`0ee9669`](https://github.com/weapp-vite/weapp-vite/commit/0ee96698f7ed6ae9ce4a7d5b6508c06305b5919f) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 组件句柄补充嵌套组件选择能力，使 headless 测试可以从父组件句柄继续定位子组件并读取子组件作用域快照。** [`a602ff0`](https://github.com/weapp-vite/weapp-vite/commit/a602ff06c674a988823a270c3268b8616aa09e6b) by @sonofmagic
+
+- 🐛 **增强 `@mpcore/simulator` 的 testing bridge 组件表单事件支持，使组件内部节点上的 `input`、`change` 与 `blur` 事件可以在 headless 测试中正确驱动组件实例状态更新。** [`4aa66c6`](https://github.com/weapp-vite/weapp-vite/commit/4aa66c645cec231365709990b4afb28462deac4e) by @sonofmagic
+
+- 🐛 **增强 `@mpcore/simulator` 的 testing bridge 组件事件分发能力，使测试中命中的组件内部节点可以按作用域调用对应组件实例方法，并正确回流到页面事件断言。** [`37d0856`](https://github.com/weapp-vite/weapp-vite/commit/37d0856aafc582699d437664f131c33cb47a60d5) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 组件句柄补充页面句柄桥接能力，使测试可以从组件上下文直接回到当前页面并继续读取页面数据。** [`f771374`](https://github.com/weapp-vite/weapp-vite/commit/f77137473effc562be77258fd9686379e80fad44) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 组件句柄补充页面作用域桥接能力，使测试可以从组件上下文直接切换到页面作用域并读取页面级快照。** [`2a19ebd`](https://github.com/weapp-vite/weapp-vite/commit/2a19ebd0ad73d5615107607f86954f8f4f12db0b) by @sonofmagic
+
+- 🐛 **重构 `@mpcore/simulator` 的测试结构：将浏览器 e2e 用例独立到 `e2e/` 目录，并新增 `test-d/` + `tsd` 类型验证机制。现在该包具备清晰的单元/集成、浏览器 e2e 与类型契约三层测试入口。** [`406fce2`](https://github.com/weapp-vite/weapp-vite/commit/406fce2b80b8cf969a2c326a438d749d3a9dde95) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的文件系统 headless runtime 补充组件作用域快照能力，便于在运行时直接检查组件的 `data`、`properties` 与方法暴露情况。** [`abb8481`](https://github.com/weapp-vite/weapp-vite/commit/abb8481f845c6a0f578b54e1c86ce7470c8498f4) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 节点句柄补充父组件作用域桥接能力，使嵌套组件内部节点可以直接回到宿主组件上下文继续调试。** [`06bd1d9`](https://github.com/weapp-vite/weapp-vite/commit/06bd1d996afd06418a6365d8f540ac739e63fb56) by @sonofmagic
+
+- 🐛 **为 `@mpcore/simulator` 的 testing bridge 组件句柄补充父组件定位能力，使嵌套组件测试可以直接从子组件句柄回溯到其宿主组件并读取宿主作用域快照。** [`8afa5d9`](https://github.com/weapp-vite/weapp-vite/commit/8afa5d9d617c7a8ec80edf16046f59938fa583fb) by @sonofmagic
+
+- 🐛 **修复 `@mpcore/simulator` 在真实浏览器环境中的兼容性问题，并新增浏览器 e2e 测试基线。现在 web demo 会暴露稳定的 e2e 调试桥，且 `test:e2e` 可在真实浏览器中验证场景加载、路由跳转、请求、存储与页面事件等核心能力。** [`2a16fe6`](https://github.com/weapp-vite/weapp-vite/commit/2a16fe64acb1ecc95fedc6d42c5636cfe40d2895) by @sonofmagic
+
 ## 0.0.2
 
 ### Patch Changes
