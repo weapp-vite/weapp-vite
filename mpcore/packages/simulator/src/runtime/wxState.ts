@@ -1191,7 +1191,11 @@ export function createHeadlessWxState() {
       const savedFilePath = allocateFilePath('saved', option.filePath)
       ensureDirectoryTree(savedFilePath)
       files.set(savedFilePath, fileContent)
-      setSavedFileMetadata(savedFilePath, fileContent)
+      setSavedFileMetadata(
+        savedFilePath,
+        fileContent,
+        savedFiles.get(savedFilePath)?.createTime ?? Date.now(),
+      )
       return {
         errMsg: 'saveFile:ok',
         savedFilePath,
