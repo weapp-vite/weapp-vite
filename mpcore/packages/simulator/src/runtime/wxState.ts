@@ -14,7 +14,6 @@ import type {
   HeadlessWxShowModalResult,
   HeadlessWxShowToastOption,
 } from '../host'
-import { Buffer } from 'node:buffer'
 
 export interface HeadlessWxLoadingSnapshot {
   mask: boolean
@@ -88,6 +87,11 @@ const DEFAULT_MODAL_CANCEL_COLOR = '#000000'
 const DEFAULT_MODAL_CANCEL_TEXT = '取消'
 const DEFAULT_MODAL_CONFIRM_COLOR = '#576B95'
 const DEFAULT_MODAL_CONFIRM_TEXT = '确定'
+const textEncoder = new TextEncoder()
+
+function byteLength(input: string) {
+  return textEncoder.encode(input).byteLength
+}
 
 function cloneShareMenuSnapshot(snapshot: HeadlessWxShareMenuSnapshot) {
   return {
@@ -222,7 +226,7 @@ export function createHeadlessWxState() {
     getStorageInfoSync() {
       const keys = Array.from(storage.keys()).sort((a, b) => a.localeCompare(b))
       const totalBytes = Array.from(storage.entries()).reduce((sum, [key, value]) => {
-        return sum + Buffer.byteLength(JSON.stringify([key, value]))
+        return sum + byteLength(JSON.stringify([key, value]))
       }, 0)
       return {
         currentSize: Math.ceil(totalBytes / 1024),

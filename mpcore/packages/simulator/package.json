@@ -41,7 +41,9 @@
     "dev": "tsdown -w",
     "build": "tsdown",
     "test": "vitest run",
+    "test:all": "pnpm test && pnpm test:e2e",
     "test:dev": "vitest",
+    "test:e2e": "vitest run -c ./vitest.e2e.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

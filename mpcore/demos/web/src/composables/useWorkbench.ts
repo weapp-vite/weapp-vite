@@ -41,6 +41,50 @@ export function useWorkbench() {
       files.resetFiles()
       sessionState.loadSession(firstScenario.name, firstScenario.files, firstScenario.id)
     }
+
+    ;(window as any).__SIMULATOR_E2E__ = {
+      getState: () => ({
+        appData: sessionState.appData.value,
+        currentRoute: sessionState.currentRoute.value,
+        currentScenarioId: sessionState.currentScenarioId.value,
+        pageData: sessionState.pageData.value,
+        pageRoutes: sessionState.pageRoutes.value,
+        pageStack: sessionState.pageStack.value,
+        previewMarkup: sessionState.previewMarkup.value,
+        requestLogData: sessionState.requestLogData.value,
+        selectedScope: sessionState.selectedScope.value,
+        storageData: sessionState.storageData.value,
+        toastData: sessionState.toastData.value,
+        viewportSize: viewportSize.value,
+      }),
+      navigateBack: (delta = 1) => sessionState.run(() => sessionState.session.value?.navigateBack(delta)),
+      openRoute: (route: string) => sessionState.handleOpenRoute(route),
+      pickScenario: (scenarioId: string) => handlePickScenario(scenarioId),
+      readScopeSnapshot: (scopeId: string) => sessionState.session.value?.getScopeSnapshot(scopeId) ?? null,
+      renderCurrentPage: () => sessionState.session.value?.renderCurrentPage().wxml ?? '',
+      runPageMethod: (method: string) => sessionState.handleCallMethod(method),
+      sessionSnapshot: () => ({
+        actionSheetLogs: sessionState.session.value?.getActionSheetLogs() ?? [],
+        modalLogs: sessionState.session.value?.getModalLogs() ?? [],
+        requestLogs: sessionState.session.value?.getRequestLogs() ?? [],
+        shareMenu: sessionState.session.value?.getShareMenu() ?? null,
+        storageSnapshot: sessionState.session.value?.getStorageSnapshot() ?? {},
+        tabBarSnapshot: sessionState.session.value?.getTabBarSnapshot?.() ?? null,
+        toast: sessionState.session.value?.getToast() ?? null,
+      }),
+      triggerPullDownRefresh: () => sessionState.run(() => sessionState.session.value?.triggerPullDownRefresh()),
+      triggerReachBottom: () => sessionState.run(() => sessionState.session.value?.triggerReachBottom()),
+      triggerResize: (width: number, height: number) => {
+        viewportSize.value = { height, width }
+        sessionState.run(() => sessionState.session.value?.triggerResize({
+          size: {
+            windowHeight: height,
+            windowWidth: width,
+          },
+        }))
+      },
+      triggerRouteDone: (payload: Record<string, unknown> = { from: 'e2e' }) => sessionState.run(() => sessionState.session.value?.triggerRouteDone(payload)),
+    }
   })
 
   return {
