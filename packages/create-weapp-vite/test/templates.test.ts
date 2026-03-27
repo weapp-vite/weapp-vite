@@ -21,4 +21,19 @@ describe('templates', () => {
       expect(await fs.pathExists(path.join(templatesRoot, name))).toBe(true)
     }
   })
+
+  it('rebuilds partial templates when a sync marker already exists', async () => {
+    const templatesRoot = path.resolve(import.meta.dirname, '../templates')
+    const defaultTemplateRoot = path.join(templatesRoot, TemplateName.default)
+    const restoredFile = path.join(defaultTemplateRoot, 'project.config.json')
+
+    await syncTemplates()
+    await fs.remove(restoredFile)
+
+    expect(await fs.pathExists(restoredFile)).toBe(false)
+
+    await syncTemplates()
+
+    expect(await fs.pathExists(restoredFile)).toBe(true)
+  })
 })
