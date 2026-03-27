@@ -399,6 +399,10 @@ describe('HeadlessSession', () => {
     writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
 Page({
   data: {
+    asyncClearSummary: '',
+    asyncGetSummary: '',
+    asyncRemoveSummary: '',
+    asyncSetSummary: '',
     requestSummary: '',
     storageSummary: '',
     toastSummary: ''
@@ -418,6 +422,45 @@ Page({
     })
     this.setData({
       storageSummary: JSON.stringify(wx.getStorageSync('lab'))
+    })
+    wx.setStorage({
+      key: 'async-lab',
+      data: {
+        count: 5,
+        status: 'queued'
+      },
+      success: (result) => {
+        this.setData({
+          asyncSetSummary: result.errMsg
+        })
+      }
+    })
+    wx.getStorage({
+      key: 'async-lab',
+      success: (result) => {
+        this.setData({
+          asyncGetSummary: JSON.stringify(result.data)
+        })
+      }
+    })
+    wx.removeStorage({
+      key: 'async-lab',
+      success: (result) => {
+        this.setData({
+          asyncRemoveSummary: result.errMsg
+        })
+      }
+    })
+    wx.clearStorage({
+      success: (result) => {
+        this.setData({
+          asyncClearSummary: result.errMsg
+        })
+      }
+    })
+    wx.setStorageSync('lab', {
+      count: 3,
+      status: 'stable'
     })
     wx.showToast({
       title: 'queued',
@@ -447,6 +490,10 @@ Page({
 
     expect(page.data.requestSummary).toContain('"queue":"alpha"')
     expect(page.data.storageSummary).toContain('"count":3')
+    expect(page.data.asyncSetSummary).toBe('setStorage:ok')
+    expect(page.data.asyncGetSummary).toContain('"count":5')
+    expect(page.data.asyncRemoveSummary).toBe('removeStorage:ok')
+    expect(page.data.asyncClearSummary).toBe('clearStorage:ok')
     expect(page.data.toastSummary).toBe('showToast:ok')
     expect(session.getStorageSnapshot()).toEqual({
       lab: {
