@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import AppFilterGroup from '../features/dashboard/components/AppFilterGroup.vue'
 import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
@@ -321,53 +322,26 @@ watch(filteredRuntimeEvents, (events) => {
                   </p>
                 </div>
 
-                <div>
-                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                    类型过滤
-                  </p>
-                  <div class="mt-2 flex flex-wrap gap-2">
-                    <button
-                      v-for="option in eventKindOptions"
-                      :key="option.value"
-                      :class="pillButtonStyles({ kind: 'theme', active: eventKindFilter === option.value })"
-                      @click="eventKindFilter = option.value"
-                    >
-                      {{ option.label }}
-                    </button>
-                  </div>
-                </div>
+                <AppFilterGroup
+                  title="类型过滤"
+                  :options="eventKindOptions"
+                  :selected-value="eventKindFilter"
+                  @select="eventKindFilter = $event as EventKindFilter"
+                />
 
-                <div>
-                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                    等级过滤
-                  </p>
-                  <div class="mt-2 flex flex-wrap gap-2">
-                    <button
-                      v-for="option in eventLevelOptions"
-                      :key="option.value"
-                      :class="pillButtonStyles({ kind: 'theme', active: eventLevelFilter === option.value })"
-                      @click="eventLevelFilter = option.value"
-                    >
-                      {{ option.label }}
-                    </button>
-                  </div>
-                </div>
+                <AppFilterGroup
+                  title="等级过滤"
+                  :options="eventLevelOptions"
+                  :selected-value="eventLevelFilter"
+                  @select="eventLevelFilter = $event as EventLevelFilter"
+                />
 
-                <div>
-                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                    来源过滤
-                  </p>
-                  <div class="mt-2 flex flex-wrap gap-2">
-                    <button
-                      v-for="option in eventSourceOptions"
-                      :key="option.value"
-                      :class="pillButtonStyles({ kind: 'theme', active: eventSourceFilter === option.value })"
-                      @click="eventSourceFilter = option.value"
-                    >
-                      {{ option.label }}
-                    </button>
-                  </div>
-                </div>
+                <AppFilterGroup
+                  title="来源过滤"
+                  :options="eventSourceOptions"
+                  :selected-value="eventSourceFilter"
+                  @select="eventSourceFilter = $event"
+                />
               </div>
             </div>
           </div>
