@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import AppDiagnosticItem from '../features/dashboard/components/AppDiagnosticItem.vue'
 import AppFilterGroup from '../features/dashboard/components/AppFilterGroup.vue'
 import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
+import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
@@ -235,18 +237,12 @@ watch(filteredRuntimeEvents, (events) => {
         icon-name="metric-time"
       >
         <div class="grid gap-2 sm:grid-cols-2">
-          <div
+          <AppStatCard
             v-for="item in [...eventSummary, ...filteredEventSummary]"
             :key="item.label"
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
-          >
-            <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-              {{ item.label }}
-            </p>
-            <p class="mt-1 text-lg font-semibold">
-              {{ item.value }}
-            </p>
-          </div>
+            :label="item.label"
+            :value="item.value"
+          />
         </div>
       </AppSurfaceCard>
 
@@ -257,25 +253,13 @@ watch(filteredRuntimeEvents, (events) => {
         icon-name="metric-health"
       >
         <ul class="grid gap-2">
-          <li
+          <AppDiagnosticItem
             v-for="item in diagnostics"
             :key="item.label"
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
-          >
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="font-medium">
-                  {{ item.label }}
-                </p>
-                <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-                  {{ item.detail }}
-                </p>
-              </div>
-              <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
-                {{ item.status }}
-              </span>
-            </div>
-          </li>
+            :label="item.label"
+            :detail="item.detail"
+            :status="item.status"
+          />
         </ul>
       </AppSurfaceCard>
 
