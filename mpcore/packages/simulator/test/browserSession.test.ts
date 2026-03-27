@@ -345,6 +345,50 @@ Page({
     expect(session.renderCurrentPage().wxml).toContain('browser rewritten payload')
   })
 
+  it('supports getFileSystemManager copyFile and rename in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    copiedSummary: '',
+    originalSummary: '',
+    renamedSummary: ''
+  },
+  runFsCopyRenameLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://saved/browser-source.txt', 'browser source payload')
+    fsManager.copyFileSync('headless://saved/browser-source.txt', 'headless://saved/browser-copy.txt')
+    fsManager.rename({
+      oldPath: 'headless://saved/browser-copy.txt',
+      newPath: 'headless://saved/browser-renamed.txt',
+      success: (result) => {
+        this.setData({
+          copiedSummary: 'copyFileSync:ok',
+          originalSummary: fsManager.readFileSync('headless://saved/browser-source.txt'),
+          renamedSummary: result.errMsg + ':' + fsManager.readFileSync('headless://saved/browser-renamed.txt')
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{copiedSummary}}</view><view>{{originalSummary}}</view><view>{{renamedSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsCopyRenameLab()
+
+    expect(page.data.copiedSummary).toBe('copyFileSync:ok')
+    expect(page.data.originalSummary).toBe('browser source payload')
+    expect(page.data.renamedSummary).toBe('rename:ok:browser source payload')
+    expect(session.getFileText('headless://saved/browser-source.txt')).toBe('browser source payload')
+    expect(session.getFileText('headless://saved/browser-copy.txt')).toBeNull()
+    expect(session.getFileText('headless://saved/browser-renamed.txt')).toBe('browser source payload')
+  })
+
   it('supports showModal defaults and queued modal mocks in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
