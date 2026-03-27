@@ -673,6 +673,45 @@ Page({
     expect(session.getFileText('headless://temp/browser-moved.txt')).toBe('alpha')
   })
 
+  it('updates saved metadata when renaming a non-saved file onto a saved path in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    infoSummary: '',
+    listSummary: ''
+  },
+  runSavedRenameIntoLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/browser-original.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-original.txt',
+      success: (saveResult) => {
+        fsManager.renameSync('headless://temp/browser-source.txt', saveResult.savedFilePath)
+        this.setData({
+          infoSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: saveResult.savedFilePath })),
+          listSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{infoSummary}}</view><view>{{listSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedRenameIntoLab()
+
+    expect(page.data.infoSummary).toContain('"size":10')
+    expect(page.data.listSummary).toContain('"size":10')
+    expect(session.getSavedFileListSnapshot()).toHaveLength(1)
+  })
+
   it('reports stat sizes and fs manager failures in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
