@@ -51,6 +51,9 @@
     "htmlparser2": "catalog:",
     "pathe": "catalog:"
   },
+  "devDependencies": {
+    "@vitest/browser-playwright": "4.1.2"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
