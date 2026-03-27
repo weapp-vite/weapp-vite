@@ -5,16 +5,15 @@ import AppEmptyState from '../features/dashboard/components/AppEmptyState.vue'
 import AppFilterGroup from '../features/dashboard/components/AppFilterGroup.vue'
 import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
 import AppKeyValueList from '../features/dashboard/components/AppKeyValueList.vue'
-import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
+import AppRuntimeEventListItem from '../features/dashboard/components/AppRuntimeEventListItem.vue'
 import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
-import AppTagList from '../features/dashboard/components/AppTagList.vue'
 import AppTimelineItem from '../features/dashboard/components/AppTimelineItem.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
-import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventMeta, formatRuntimeEventSource, getRuntimeEventBadgeTone } from '../features/dashboard/utils/format'
+import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventSource } from '../features/dashboard/utils/format'
 import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 
@@ -358,33 +357,13 @@ watch(filteredRuntimeEvents, (events) => {
           </AppEmptyState>
 
           <ul class="grid gap-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-            <li
+            <AppRuntimeEventListItem
               v-for="event in filteredRuntimeEvents"
               :key="event.id"
-              class="rounded-[18px] border bg-[color:var(--dashboard-panel-muted)] px-4 py-3 transition"
-              :class="[
-                selectedEvent?.id === event.id
-                  ? 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel)]'
-                  : 'border-[color:var(--dashboard-border)]',
-              ]"
+              :event="event"
+              :selected="selectedEvent?.id === event.id"
               @click="selectedEventId = event.id"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="font-medium text-[color:var(--dashboard-text)]">
-                    {{ event.title }}
-                  </p>
-                  <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-                    {{ event.detail }}
-                  </p>
-                  <p class="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                    {{ formatRuntimeEventMeta(event) }}
-                  </p>
-                  <AppTagList v-if="event.tags?.length" class="mt-2" :tags="event.tags" />
-                </div>
-                <AppRuntimeBadge :label="formatRuntimeEventLevel(event.level)" :tone="getRuntimeEventBadgeTone(event.level)" />
-              </div>
-            </li>
+            />
           </ul>
         </div>
       </AppSurfaceCard>
