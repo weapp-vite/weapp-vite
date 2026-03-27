@@ -18,8 +18,6 @@ jobs:
       matrix:
         platform:
           - weapp
-          - alipay
-          - tt
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
