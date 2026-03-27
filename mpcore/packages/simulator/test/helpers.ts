@@ -725,3 +725,89 @@ Component({
 
   return root
 }
+
+export function createComponentLifecycleFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-component-lifecycle-'))
+
+  writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx123',
+    miniprogramRoot: 'dist',
+  })
+  writeJson(path.join(root, 'dist/app.json'), {
+    pages: ['pages/a/index', 'pages/b/index'],
+  })
+  writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
+  writeJson(path.join(root, 'dist/pages/a/index.json'), {
+    usingComponents: {
+      'status-card': '../../components/status-card/index',
+    },
+  })
+  writeScript(path.join(root, 'dist/pages/a/index.js'), `
+Page({
+  openB() {
+    wx.navigateTo({
+      url: '/pages/b/index'
+    })
+  }
+})
+`)
+  writeText(path.join(root, 'dist/pages/a/index.wxml'), '<status-card id="status-card" mode="alpha" />')
+  writeScript(path.join(root, 'dist/pages/b/index.js'), 'Page({})\n')
+  writeText(path.join(root, 'dist/pages/b/index.wxml'), '<view>b</view>')
+  writeJson(path.join(root, 'dist/components/status-card/index.json'), {})
+  writeScript(path.join(root, 'dist/components/status-card/index.js'), `
+Component({
+  properties: {
+    mode: {
+      type: String,
+      value: ''
+    }
+  },
+  data: {
+    lifecycleLog: []
+  },
+  lifetimes: {
+    created() {
+      this.setData({
+        lifecycleLog: [...this.data.lifecycleLog, 'created']
+      })
+    },
+    attached() {
+      this.setData({
+        lifecycleLog: [...this.data.lifecycleLog, 'attached']
+      })
+    },
+    ready() {
+      this.setData({
+        lifecycleLog: [...this.data.lifecycleLog, 'ready']
+      })
+    },
+    detached() {
+      this.setData({
+        lifecycleLog: [...this.data.lifecycleLog, 'detached']
+      })
+    }
+  },
+  pageLifetimes: {
+    show() {
+      this.setData({
+        lifecycleLog: [...this.data.lifecycleLog, 'show']
+      })
+    },
+    hide() {
+      this.setData({
+        lifecycleLog: [...this.data.lifecycleLog, 'hide']
+      })
+    },
+    resize(options) {
+      this.setData({
+        lifecycleLog: [...this.data.lifecycleLog, 'resize:' + options?.size?.windowWidth]
+      })
+    }
+  }
+})
+`)
+  writeText(path.join(root, 'dist/components/status-card/index.wxml'), '<view>{{mode}}</view><view>{{lifecycleLog.0}}</view><view>{{lifecycleLog.1}}</view><view>{{lifecycleLog.2}}</view><view>{{lifecycleLog.3}}</view><view>{{lifecycleLog.4}}</view><view>{{lifecycleLog.5}}</view>')
+
+  return root
+}

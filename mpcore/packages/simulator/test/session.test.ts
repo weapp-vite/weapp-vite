@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
-import { cleanupTempDirs, createBaseFixture, createComponentFixture, createNavigationFixture, createSelectorQueryFixture } from './helpers'
+import { cleanupTempDirs, createBaseFixture, createComponentFixture, createComponentLifecycleFixture, createNavigationFixture, createSelectorQueryFixture } from './helpers'
 
 function writeFixtureFile(target: string, content: string) {
   fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -1485,5 +1485,30 @@ Page({
     expect(page.data.metaSummary).toContain('"source":"component-card"')
     expect(page.data.metaSummary).toContain('"type":"unsupported-context"')
     expect(page.data.metaSummary).toContain('"type":"view"')
+  })
+
+  it('runs component lifetimes and pageLifetimes in headless runtime', () => {
+    const projectPath = createComponentLifecycleFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const pageA = session.reLaunch('/pages/a/index')
+    let rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('created')
+    expect(rendered.wxml).toContain('attached')
+    rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('ready')
+    expect(rendered.wxml).toContain('show')
+
+    session.triggerResize({
+      size: {
+        windowWidth: 375,
+      },
+    })
+    rendered = session.renderCurrentPage()
+    expect(rendered.wxml).toContain('resize:375')
+
+    pageA.openB()
+    expect(rendered.wxml).toContain('resize:375')
   })
 })
