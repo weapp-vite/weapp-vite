@@ -442,6 +442,45 @@ Page({
     expect(page.data.listSummary).not.toContain('headless://wxfile/saved/browser-copied.txt')
   })
 
+  it('updates existing saved metadata when copyFile overwrites a saved target in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    infoSummary: '',
+    listSummary: ''
+  },
+  runSavedFileCopyOverwriteLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/browser-target.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-target.txt',
+      success: (saveResult) => {
+        fsManager.copyFileSync('headless://temp/browser-source.txt', saveResult.savedFilePath)
+        this.setData({
+          infoSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: saveResult.savedFilePath })),
+          listSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{infoSummary}}</view><view>{{listSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileCopyOverwriteLab()
+
+    expect(page.data.infoSummary).toContain('"size":10')
+    expect(page.data.listSummary).toContain('"size":10')
+    expect(session.getSavedFileListSnapshot()).toHaveLength(1)
+  })
+
   it('supports getFileSystemManager mkdir readdir and stat in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
@@ -746,6 +785,51 @@ Page({
 
     expect(page.data.infoSummary).toContain('"size":10')
     expect(page.data.listSummary).toContain('"size":10')
+    expect(session.getSavedFileListSnapshot()).toHaveLength(1)
+  })
+
+  it('keeps a single saved registration when renaming one saved file onto another in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    listSummary: ''
+  },
+  runSavedRenameOverwriteLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/browser-target.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-source.txt',
+      filePath: 'headless://wxfile/saved/browser-source.txt',
+      success: () => {
+        wx.saveFile({
+          tempFilePath: 'headless://temp/browser-target.txt',
+          filePath: 'headless://wxfile/saved/browser-target.txt',
+          success: () => {
+            fsManager.renameSync('headless://wxfile/saved/browser-source.txt', 'headless://wxfile/saved/browser-target.txt')
+            this.setData({
+              listSummary: JSON.stringify(wx.getSavedFileList().fileList)
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{listSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedRenameOverwriteLab()
+
+    expect(page.data.listSummary).toContain('"filePath":"headless://wxfile/saved/browser-target.txt"')
+    expect(page.data.listSummary).toContain('"size":10')
+    expect(page.data.listSummary).not.toContain('headless://wxfile/saved/browser-source.txt')
     expect(session.getSavedFileListSnapshot()).toHaveLength(1)
   })
 
