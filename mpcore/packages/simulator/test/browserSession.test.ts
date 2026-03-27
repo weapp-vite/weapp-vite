@@ -279,6 +279,72 @@ Page({
     })
   })
 
+  it('supports getFileSystemManager in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    accessSummary: '',
+    readSummary: '',
+    unlinkSummary: '',
+    writeSummary: ''
+  },
+  runFsManagerLab() {
+    const fsManager = wx.getFileSystemManager()
+    wx.downloadFile({
+      url: 'https://mock.mpcore.dev/files/browser-fs.txt',
+      success: (downloadResult) => {
+        wx.saveFile({
+          tempFilePath: downloadResult.tempFilePath,
+          success: (saveResult) => {
+            fsManager.access({
+              path: saveResult.savedFilePath,
+              success: (result) => {
+                this.setData({
+                  accessSummary: result.errMsg
+                })
+              }
+            })
+            this.setData({
+              readSummary: fsManager.readFileSync(saveResult.savedFilePath)
+            })
+            fsManager.writeFileSync(saveResult.savedFilePath, 'browser rewritten payload')
+            this.setData({
+              readSummary: fsManager.readFileSync(saveResult.savedFilePath, 'utf8'),
+              writeSummary: 'writeFileSync:ok'
+            })
+            fsManager.unlinkSync(saveResult.savedFilePath)
+            this.setData({
+              unlinkSummary: 'unlinkSync:ok'
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{accessSummary}}</view><view>{{readSummary}}</view><view>{{writeSummary}}</view><view>{{unlinkSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.mockDownloadFile({
+      fileContent: 'browser initial payload',
+      url: 'https://mock.mpcore.dev/files/browser-fs.txt',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsManagerLab()
+
+    expect(page.data.accessSummary).toBe('access:ok')
+    expect(page.data.readSummary).toBe('browser rewritten payload')
+    expect(page.data.writeSummary).toBe('writeFileSync:ok')
+    expect(page.data.unlinkSummary).toBe('unlinkSync:ok')
+    expect(session.renderCurrentPage().wxml).toContain('browser rewritten payload')
+  })
+
   it('supports showModal defaults and queued modal mocks in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

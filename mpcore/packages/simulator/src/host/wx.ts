@@ -314,9 +314,49 @@ export interface HeadlessWxSaveFileOption extends HeadlessWxCallbackOption<Headl
   tempFilePath: string
 }
 
+export interface HeadlessWxFileSystemResult {
+  errMsg: string
+}
+
+export interface HeadlessWxReadFileSuccessResult {
+  data: string
+  errMsg: string
+}
+
+export interface HeadlessWxReadFileOption extends HeadlessWxCallbackOption<HeadlessWxReadFileSuccessResult> {
+  encoding?: string
+  filePath: string
+}
+
+export interface HeadlessWxWriteFileOption extends HeadlessWxCallbackOption<HeadlessWxFileSystemResult> {
+  data: string
+  encoding?: string
+  filePath: string
+}
+
+export interface HeadlessWxAccessFileOption extends HeadlessWxCallbackOption<HeadlessWxFileSystemResult> {
+  path: string
+}
+
+export interface HeadlessWxUnlinkOption extends HeadlessWxCallbackOption<HeadlessWxFileSystemResult> {
+  filePath: string
+}
+
+export interface HeadlessWxFileSystemManager {
+  access: (option: HeadlessWxAccessFileOption) => HeadlessWxFileSystemResult | undefined
+  accessSync: (path: string) => void
+  readFile: (option: HeadlessWxReadFileOption) => HeadlessWxReadFileSuccessResult | undefined
+  readFileSync: (filePath: string, encoding?: string) => string
+  unlink: (option: HeadlessWxUnlinkOption) => HeadlessWxFileSystemResult | undefined
+  unlinkSync: (filePath: string) => void
+  writeFile: (option: HeadlessWxWriteFileOption) => HeadlessWxFileSystemResult | undefined
+  writeFileSync: (filePath: string, data: string, encoding?: string) => void
+}
+
 export interface HeadlessWxDriver {
   executeSelectorQuery: (requests: HeadlessWxSelectorQueryRequest[], scope?: Record<string, any>) => unknown[]
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
+  getFileSystemManager: () => HeadlessWxFileSystemManager
   clearStorageSync: () => void
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getLaunchOptionsSync: () => HeadlessWxLaunchOptions
@@ -370,6 +410,7 @@ export interface HeadlessWx {
   clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
   createSelectorQuery: () => HeadlessWxSelectorQuery
+  getFileSystemManager: () => HeadlessWxFileSystemManager
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getAppBaseInfo: (option?: HeadlessWxGetAppBaseInfoOption) => HeadlessWxAppBaseInfoResult | undefined
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
@@ -464,6 +505,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     clearStorage: true,
     clearStorageSync: true,
     createSelectorQuery: true,
+    getFileSystemManager: true,
     getAppBaseInfo: {
       return: {
         SDKVersion: true,
@@ -716,6 +758,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       return query
     },
     getEnterOptionsSync: () => driver.getEnterOptionsSync(),
+    getFileSystemManager: () => driver.getFileSystemManager(),
     getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),
     getAppBaseInfoSync: () => driver.getAppBaseInfoSync(),
     getLaunchOptionsSync: () => driver.getLaunchOptionsSync(),

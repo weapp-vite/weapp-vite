@@ -741,6 +741,94 @@ Page({
     ])
   })
 
+  it('supports getFileSystemManager with read/write/access/unlink operations', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-manager-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    accessSummary: '',
+    readSummary: '',
+    unlinkSummary: '',
+    writeSummary: ''
+  },
+  runFsManagerLab() {
+    const fsManager = wx.getFileSystemManager()
+    wx.downloadFile({
+      url: 'https://mock.mpcore.dev/files/fs-manager.txt',
+      success: (downloadResult) => {
+        wx.saveFile({
+          tempFilePath: downloadResult.tempFilePath,
+          filePath: 'headless://saved/fs-lab.txt',
+          success: (saveResult) => {
+            this.setData({
+              accessSummary: 'begin'
+            })
+            fsManager.access({
+              path: saveResult.savedFilePath,
+              success: (result) => {
+                this.setData({
+                  accessSummary: result.errMsg
+                })
+              }
+            })
+            this.setData({
+              readSummary: fsManager.readFileSync(saveResult.savedFilePath, 'utf8')
+            })
+            fsManager.writeFile({
+              filePath: saveResult.savedFilePath,
+              data: 'rewritten payload',
+              success: (result) => {
+                this.setData({
+                  writeSummary: result.errMsg
+                })
+              }
+            })
+            this.setData({
+              readSummary: fsManager.readFileSync(saveResult.savedFilePath)
+            })
+            fsManager.unlink({
+              filePath: saveResult.savedFilePath,
+              success: (result) => {
+                this.setData({
+                  unlinkSummary: result.errMsg
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>fs-manager</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    session.mockDownloadFile({
+      fileContent: 'initial payload',
+      url: 'https://mock.mpcore.dev/files/fs-manager.txt',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsManagerLab()
+
+    expect(page.data.accessSummary).toBe('access:ok')
+    expect(page.data.readSummary).toBe('rewritten payload')
+    expect(page.data.writeSummary).toBe('writeFile:ok')
+    expect(page.data.unlinkSummary).toBe('unlink:ok')
+    expect(session.getFileText('headless://saved/fs-lab.txt')).toBeNull()
+  })
+
   it('supports showModal defaults and queued modal mocks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-show-modal-'))
     tempDirs.push(root)
