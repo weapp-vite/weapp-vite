@@ -15,9 +15,12 @@ keywords:
 
 本页说明 **产物输出目录** 与 **JS 输出格式/兼容策略**。它们直接决定：
 - `dist/` 的目录结构
+- 当前按哪个小程序平台解析 `project.config.*`
 - 是否输出 CommonJS 或 ESM
 - 是否启用 ES5 兼容降级
 - 是否启用多平台 `project.config` 解析
+- 开发态是否清空输出目录
+- 何时给包体积发出告警
 - 是否压缩代码、是否生成 sourcemap
 
 [[toc]]
@@ -31,6 +34,27 @@ keywords:
 
 > [!NOTE]
 > 当启用 `weapp.multiPlatform` 且 `miniprogramRoot` 为相对路径 `dist` 时，输出会自动调整为 `dist/<platform>/dist`，以避免不同平台互相覆盖。
+
+## `weapp.platform` {#weapp-platform}
+- **类型**：`'weapp' | 'alipay' | 'tt' | 'swan' | 'jd' | 'xhs'`
+- **默认值**：`'weapp'`
+- **作用**：指定当前构建按哪个小程序平台解析输出扩展名、`project.config` 文件名、平台差异逻辑与部分模板/JSON 兼容行为。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    platform: 'alipay',
+  },
+})
+```
+
+行为说明：
+- 不配时默认按微信小程序处理。
+- 在单平台项目里，直接写死 `weapp.platform` 即可。
+- 在多平台项目里，通常配合 CLI `--platform` 与 `weapp.multiPlatform` 一起使用。
+- 不同平台会影响输出扩展名与项目配置文件名，例如微信默认读取 `project.config.json`，支付宝读取 `mini.project.json`。
 
 ## `weapp.multiPlatform` {#weapp-multiplatform}
 - **类型**：`boolean | { enabled?: boolean; projectConfigRoot?: string }`
@@ -53,8 +77,47 @@ export default defineConfig({
 行为说明：
 - `true` 等价于 `{ enabled: true, projectConfigRoot: 'config' }`。
 - 启用后会按 `${projectConfigRoot}/${platform}/<platform-config-file>` 解析平台配置。
-- 需要配合 CLI `--platform` 指定目标平台，例如 `weapp-vite build --platform alipay`。
+- 需要配合 CLI `--platform` 指定目标平台，例如 `weapp-vite build --platform alipay`；未显式传入时，仍会回退到 `weapp.platform`。
 - 若你的多端项目都使用相对 `miniprogramRoot`，建议显式检查最终输出目录，避免多个平台互相覆盖。
+
+## `weapp.cleanOutputsInDev` {#weapp-cleanoutputsindev}
+- **类型**：`boolean`
+- **默认值**：`true`
+- **作用**：控制开发态启动构建前是否清空输出目录。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    cleanOutputsInDev: false,
+  },
+})
+```
+
+行为说明：
+- `dev` 模式默认会先清空输出目录，避免旧产物残留干扰调试。
+- 设为 `false` 后，可跳过每次启动前的全量清理，适合大项目或你明确知道输出残留不会造成误判的场景。
+- `build` 生产构建仍然会清空输出目录，不受此项影响。
+
+## `weapp.packageSizeWarningBytes` {#weapp-packagesizewarningbytes}
+- **类型**：`number`
+- **默认值**：`2097152`（`2 * 1024 * 1024`）
+- **作用**：控制主包/分包包体积告警阈值，超过时在构建日志中给出提示。
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    packageSizeWarningBytes: 1.5 * 1024 * 1024,
+  },
+})
+```
+
+适用场景：
+- 团队希望更早发现主包逼近平台体积限制。
+- 项目有严格包体预算，需要把告警阈值调得比平台硬限制更保守。
 
 ## `weapp.jsFormat` {#weapp-jsformat}
 - **类型**：`'cjs' | 'esm'`
