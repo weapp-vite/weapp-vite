@@ -14,6 +14,7 @@ type EventLevelFilter = 'all' | typeof runtimeEvents.value[number]['level']
 
 const eventKindFilter = ref<EventKindFilter>('all')
 const eventLevelFilter = ref<EventLevelFilter>('all')
+const eventSourceFilter = ref('all')
 const searchQuery = ref('')
 const selectedEventId = ref<string | null>(null)
 
@@ -42,6 +43,7 @@ const filterPresets = [
     apply() {
       eventKindFilter.value = 'all'
       eventLevelFilter.value = 'all'
+      eventSourceFilter.value = 'all'
       searchQuery.value = ''
     },
   },
@@ -52,6 +54,7 @@ const filterPresets = [
     apply() {
       eventKindFilter.value = 'all'
       eventLevelFilter.value = 'warning'
+      eventSourceFilter.value = 'all'
       searchQuery.value = ''
     },
   },
@@ -62,6 +65,7 @@ const filterPresets = [
     apply() {
       eventKindFilter.value = 'command'
       eventLevelFilter.value = 'all'
+      eventSourceFilter.value = 'all'
       searchQuery.value = ''
     },
   },
@@ -72,10 +76,26 @@ const filterPresets = [
     apply() {
       eventKindFilter.value = 'hmr'
       eventLevelFilter.value = 'all'
+      eventSourceFilter.value = 'all'
       searchQuery.value = ''
     },
   },
 ]
+
+const eventSourceOptions = computed(() => {
+  const sourceSet = new Set(
+    runtimeEvents.value
+      .map(event => event.source ?? 'dashboard')
+      .filter(Boolean),
+  )
+
+  return [
+    { value: 'all', label: '全部来源' },
+    ...[...sourceSet]
+      .sort((left, right) => left.localeCompare(right, 'zh-CN'))
+      .map(source => ({ value: source, label: source })),
+  ]
+})
 
 const filteredRuntimeEvents = computed(() => {
   const keyword = searchQuery.value.trim().toLowerCase()
@@ -86,6 +106,10 @@ const filteredRuntimeEvents = computed(() => {
     }
 
     if (eventLevelFilter.value !== 'all' && event.level !== eventLevelFilter.value) {
+      return false
+    }
+
+    if (eventSourceFilter.value !== 'all' && (event.source ?? 'dashboard') !== eventSourceFilter.value) {
       return false
     }
 
@@ -117,9 +141,47 @@ const filteredEventSummary = computed(() => {
     { label: '筛选后事件', value: String(filteredRuntimeEvents.value.length) },
     { label: '当前类型', value: eventKindFilter.value === 'all' ? '全部' : formatRuntimeEventKind(eventKindFilter.value) },
     { label: '当前等级', value: eventLevelFilter.value === 'all' ? '全部' : formatRuntimeEventLevel(eventLevelFilter.value) },
+    { label: '当前来源', value: eventSourceFilter.value === 'all' ? '全部' : eventSourceFilter.value },
     { label: '搜索关键字', value: searchQuery.value.trim() || '未设置' },
     { label: '筛选平均耗时', value: formatDuration(averageDuration) },
   ]
+})
+
+const sourceBreakdown = computed(() => {
+  const sourceMap = new Map<string, { count: number, errorCount: number, latestTimestamp: string, durationTotal: number, timedCount: number }>()
+
+  for (const event of filteredRuntimeEvents.value) {
+    const source = event.source ?? 'dashboard'
+    const existing = sourceMap.get(source)
+
+    if (!existing) {
+      sourceMap.set(source, {
+        count: 1,
+        errorCount: event.level === 'error' ? 1 : 0,
+        latestTimestamp: event.timestamp,
+        durationTotal: event.durationMs ?? 0,
+        timedCount: typeof event.durationMs === 'number' ? 1 : 0,
+      })
+      continue
+    }
+
+    sourceMap.set(source, {
+      count: existing.count + 1,
+      errorCount: existing.errorCount + (event.level === 'error' ? 1 : 0),
+      latestTimestamp: existing.latestTimestamp,
+      durationTotal: existing.durationTotal + (event.durationMs ?? 0),
+      timedCount: existing.timedCount + (typeof event.durationMs === 'number' ? 1 : 0),
+    })
+  }
+
+  return Array.from(sourceMap, ([source, meta]) => ({
+    source,
+    count: meta.count,
+    errorCount: meta.errorCount,
+    latestTimestamp: meta.latestTimestamp,
+    averageDuration: formatDuration(meta.timedCount > 0 ? Math.round(meta.durationTotal / meta.timedCount) : undefined),
+  }))
+    .sort((left, right) => right.count - left.count || left.source.localeCompare(right.source, 'zh-CN'))
 })
 
 const selectedEvent = computed(() =>
@@ -317,6 +379,55 @@ watch(filteredRuntimeEvents, (events) => {
                     </button>
                   </div>
                 </div>
+
+                <div>
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                    来源过滤
+                  </p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <button
+                      v-for="option in eventSourceOptions"
+                      :key="option.value"
+                      :class="pillButtonStyles({ kind: 'theme', active: eventSourceFilter === option.value })"
+                      @click="eventSourceFilter = option.value"
+                    >
+                      {{ option.label }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-if="sourceBreakdown.length > 0"
+            class="grid gap-2 md:grid-cols-2 xl:grid-cols-3"
+          >
+            <div
+              v-for="source in sourceBreakdown"
+              :key="source.source"
+              class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold text-[color:var(--dashboard-text)]">
+                    {{ source.source }}
+                  </p>
+                  <p class="mt-1 text-[11px] uppercase tracking-[0.16em] text-[color:var(--dashboard-text-soft)]">
+                    最近事件 {{ source.latestTimestamp }}
+                  </p>
+                </div>
+                <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
+                  {{ source.count }} 条
+                </span>
+              </div>
+              <div class="mt-3 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-[color:var(--dashboard-text-soft)]">
+                <span class="rounded-full border border-[color:var(--dashboard-border)] px-2 py-0.5">
+                  错误 {{ source.errorCount }}
+                </span>
+                <span class="rounded-full border border-[color:var(--dashboard-border)] px-2 py-0.5">
+                  平均耗时 {{ source.averageDuration }}
+                </span>
               </div>
             </div>
           </div>
