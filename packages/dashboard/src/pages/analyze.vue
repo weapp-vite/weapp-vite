@@ -51,6 +51,40 @@ const visibleLargestFiles = computed(() => largestFiles.value.slice(0, 10))
 const statusText = computed(() => `${updateCount.value} 次数据同步`)
 const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'status-dark' : 'status-light')
 const recentRuntimeEvents = computed(() => runtimeEvents.value.slice(0, 3))
+const runtimeSourceSummary = computed(() =>
+  Array.from(
+    runtimeEvents.value.reduce((sourceMap, event) => {
+      const source = event.source ?? 'dashboard'
+      const existing = sourceMap.get(source)
+
+      if (!existing) {
+        sourceMap.set(source, {
+          count: 1,
+          errorCount: event.level === 'error' ? 1 : 0,
+          durationTotal: event.durationMs ?? 0,
+          timedCount: typeof event.durationMs === 'number' ? 1 : 0,
+        })
+        return sourceMap
+      }
+
+      sourceMap.set(source, {
+        count: existing.count + 1,
+        errorCount: existing.errorCount + (event.level === 'error' ? 1 : 0),
+        durationTotal: existing.durationTotal + (event.durationMs ?? 0),
+        timedCount: existing.timedCount + (typeof event.durationMs === 'number' ? 1 : 0),
+      })
+      return sourceMap
+    }, new Map<string, { count: number, errorCount: number, durationTotal: number, timedCount: number }>()),
+    ([source, meta]) => ({
+      source,
+      count: meta.count,
+      errorCount: meta.errorCount,
+      averageDuration: formatDuration(meta.timedCount > 0 ? Math.round(meta.durationTotal / meta.timedCount) : undefined),
+    }),
+  )
+    .sort((left, right) => right.count - left.count || left.source.localeCompare(right.source, 'zh-CN'))
+    .slice(0, 4),
+)
 const { activeTab, topCards, packageTypeSummary: metricPackageTypeSummary } = useDashboardPage({
   summary,
   packageInsights,
@@ -271,6 +305,38 @@ onBeforeUnmount(() => {
                   {{ item.value }}
                 </p>
               </div>
+            </div>
+          </div>
+        </AppSurfaceCard>
+
+        <AppSurfaceCard
+          eyebrow="Source Signals"
+          title="事件来源摘要"
+          description="分析页直接按来源折叠运行事件，方便判断当前这份 payload 主要来自哪条链路。"
+          icon-name="hero-system"
+        >
+          <div class="grid gap-2 sm:grid-cols-2">
+            <div
+              v-for="source in runtimeSourceSummary"
+              :key="source.source"
+              class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="truncate font-medium text-[color:var(--dashboard-text)]">
+                    {{ source.source }}
+                  </p>
+                  <p class="mt-1 text-[11px] uppercase tracking-[0.16em] text-[color:var(--dashboard-text-soft)]">
+                    {{ source.count }} 条事件
+                  </p>
+                </div>
+                <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
+                  错误 {{ source.errorCount }}
+                </span>
+              </div>
+              <p class="mt-3 text-sm text-[color:var(--dashboard-text-muted)]">
+                平均耗时 {{ source.averageDuration }}
+              </p>
             </div>
           </div>
         </AppSurfaceCard>
