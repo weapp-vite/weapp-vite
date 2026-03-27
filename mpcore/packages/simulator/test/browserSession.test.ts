@@ -2957,4 +2957,41 @@ Page({
     expect(page.data.summary).toContain('"type":"unsupported-context"')
     expect(page.data.summary).toContain('"type":"view"')
   })
+
+  it('tracks pull-down refresh state and stop calls in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/events/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/events/index.js', `
+Page({
+  data: {
+    logs: []
+  },
+  onPullDownRefresh() {
+    this.setData({
+      logs: [...this.data.logs, 'pull-down']
+    })
+    wx.stopPullDownRefresh()
+  }
+})
+`],
+      ['pages/events/index.wxml', '<view>{{logs.0}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.reLaunch('/pages/events/index')
+
+    expect(session.getPullDownRefreshState()).toEqual({
+      active: false,
+      stopCalls: 0,
+    })
+
+    session.triggerPullDownRefresh()
+
+    expect(session.getPullDownRefreshState()).toEqual({
+      active: false,
+      stopCalls: 1,
+    })
+    expect(session.renderCurrentPage().wxml).toContain('pull-down')
+  })
 })
