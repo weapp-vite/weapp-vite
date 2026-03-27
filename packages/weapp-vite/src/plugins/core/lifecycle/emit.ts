@@ -488,7 +488,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
 
     if (isPluginBuild) {
       filterPluginBundleOutputs(rolldownBundle, configService)
-      if (configService.platform !== 'alipay') {
+      if (!shouldRewriteBundleNpmImports(configService.platform)) {
         for (const output of Object.values(rolldownBundle)) {
           if (output?.type !== 'chunk') {
             continue

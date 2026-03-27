@@ -1,6 +1,7 @@
 import type { OutputExtensions } from '../../../../platforms/types'
 import {
   shouldEmitGenericPlaceholderAsset,
+  shouldNormalizeUsingComponents,
   shouldNormalizeVueTemplateForPlatform,
 } from '../../../../platform'
 import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson } from '../../../../utils'
@@ -20,7 +21,7 @@ export function normalizeVueConfigForPlatform(
     alipayNpmMode?: string
   },
 ) {
-  if (!config || options.platform !== 'alipay') {
+  if (!config || !shouldNormalizeUsingComponents(options.platform as any)) {
     return config
   }
 
