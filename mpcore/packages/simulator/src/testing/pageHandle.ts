@@ -1,7 +1,6 @@
-import type { HeadlessPageInstance } from '../runtime'
 import type { HeadlessProjectDescriptor } from '../project'
-import { HeadlessTestingNodeHandle } from '../view'
-import { renderPageTree } from '../view'
+import type { HeadlessPageInstance } from '../runtime'
+import { HeadlessTestingNodeHandle, renderPageTree } from '../view'
 
 export class HeadlessTestingPageHandle {
   constructor(
@@ -12,7 +11,7 @@ export class HeadlessTestingPageHandle {
   async callMethod(methodName: string, ...args: any[]) {
     const method = this.page[methodName]
     if (typeof method !== 'function') {
-      throw new Error(`Method "${methodName}" does not exist on headless page ${this.page.route}.`)
+      throw new TypeError(`Method "${methodName}" does not exist on headless page ${this.page.route}.`)
     }
     return await method.apply(this.page, args)
   }
@@ -39,7 +38,9 @@ export class HeadlessTestingPageHandle {
 
   async $(selector: string) {
     const tree = renderPageTree(this.project, this.page)
-    const root = new HeadlessTestingNodeHandle(tree.root.children?.[0] ?? tree.root)
+    const root = new HeadlessTestingNodeHandle(tree.root.children?.[0] ?? tree.root, {
+      callMethod: (methodName, event) => this.callMethod(methodName, event),
+    })
     if (selector === 'page') {
       return root
     }
