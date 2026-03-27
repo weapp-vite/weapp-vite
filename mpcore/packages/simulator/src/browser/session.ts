@@ -47,6 +47,11 @@ interface HeadlessTabBarSnapshotItem extends HeadlessTabBarItem {
   redDot: boolean
 }
 
+interface HeadlessPullDownRefreshState {
+  active: boolean
+  stopCalls: number
+}
+
 const LEADING_SLASH_RE = /^\/+/
 const PAGE_STACK_LIMIT = 10
 const DATA_ATTR_SELECTOR_RE = /^\[data-([^=\]]+)="([^"]*)"\]$/
@@ -146,6 +151,10 @@ export class BrowserHeadlessSession {
   private enterOptions = createAppLaunchOptions('', {})
   private launchOptions = createAppLaunchOptions('', {})
   private readonly wxState = createHeadlessWxState()
+  private pullDownRefreshState: HeadlessPullDownRefreshState = {
+    active: false,
+    stopCalls: 0,
+  }
 
   constructor(options: BrowserHeadlessSessionOptions) {
     this.files = options.files
@@ -292,6 +301,10 @@ export class BrowserHeadlessSession {
 
   getStorageInfo() {
     return this.wxState.getStorageInfoSync()
+  }
+
+  getPullDownRefreshState() {
+    return { ...this.pullDownRefreshState }
   }
 
   getSystemInfo() {
@@ -932,6 +945,10 @@ export class BrowserHeadlessSession {
 
   triggerPullDownRefresh() {
     const current = this.requireCurrentPage('triggerPullDownRefresh()')
+    this.pullDownRefreshState = {
+      ...this.pullDownRefreshState,
+      active: true,
+    }
     current.onPullDownRefresh?.()
     return current
   }
@@ -957,7 +974,10 @@ export class BrowserHeadlessSession {
   }
 
   stopPullDownRefresh() {
-
+    this.pullDownRefreshState = {
+      active: false,
+      stopCalls: this.pullDownRefreshState.stopCalls + 1,
+    }
   }
 
   private executeSelectorQuery(

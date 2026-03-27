@@ -83,6 +83,25 @@ describe('page event alignment', () => {
     })
   })
 
+  it('tracks pull-down refresh state and stop calls in headless runtime', () => {
+    const projectPath = createPageEventsFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    session.reLaunch('/pages/events/index')
+    expect(session.getPullDownRefreshState()).toEqual({
+      active: false,
+      stopCalls: 0,
+    })
+
+    session.triggerPullDownRefresh()
+
+    expect(session.getPullDownRefreshState()).toEqual({
+      active: false,
+      stopCalls: 1,
+    })
+  })
+
   it('exposes compatibility info through getWindowInfo, getAppBaseInfo and canIUse', () => {
     const projectPath = createPageEventsFixture()
     tempDirs.push(projectPath)
