@@ -924,6 +924,54 @@ Page({
     expect(afterInfo.size).toBe(10)
   })
 
+  it('preserves target createTime when saveFile overwrites an existing saved path in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    afterSummary: '',
+    beforeSummary: ''
+  },
+  runSavedSaveFileOverwriteCreateTimeLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-first.txt', 'x')
+    fsManager.writeFileSync('headless://temp/browser-second.txt', 'alpha-beta')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-first.txt',
+      filePath: 'headless://wxfile/saved/browser-target.txt',
+      success: () => {
+        this.setData({
+          beforeSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/browser-target.txt' }))
+        })
+        wx.saveFile({
+          tempFilePath: 'headless://temp/browser-second.txt',
+          filePath: 'headless://wxfile/saved/browser-target.txt',
+          success: () => {
+            this.setData({
+              afterSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/browser-target.txt' }))
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{beforeSummary}}</view><view>{{afterSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedSaveFileOverwriteCreateTimeLab()
+
+    const beforeInfo = JSON.parse(page.data.beforeSummary) as { createTime: number, size: number }
+    const afterInfo = JSON.parse(page.data.afterSummary) as { createTime: number, size: number }
+    expect(afterInfo.createTime).toBe(beforeInfo.createTime)
+    expect(afterInfo.size).toBe(10)
+  })
+
   it('reports stat sizes and fs manager failures in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
