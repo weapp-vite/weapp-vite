@@ -454,6 +454,32 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('waits for owner component lookup from a nested testing scope handle', async () => {
+    const projectPath = createNestedComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.reLaunch('/pages/lab/index')
+    const card = await miniProgram.waitForComponent('#status-card', {
+      timeout: 200,
+    })
+    const badge = await card.waitForComponent('#mini-badge', {
+      timeout: 200,
+    })
+    const owner = await badge.waitForOwnerComponent({
+      timeout: 200,
+    })
+
+    expect(owner.scopeId).toContain('status-card')
+    expect(await owner.snapshot()).toMatchObject({
+      properties: {
+        status: 'stable',
+      },
+    })
+  })
+
   it('waits for nested components through a testing scope handle', async () => {
     const projectPath = createNestedComponentFixture()
     tempDirs.push(projectPath)
