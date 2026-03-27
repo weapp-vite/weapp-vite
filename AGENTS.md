@@ -122,6 +122,19 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 
 - Co-locate tests with source and use `*.test.ts` or `*.spec.ts`.
 - Update snapshots/assertions together with behavior changes.
+- For `mpcore/packages/simulator` specifically:
+  - Treat test coverage as three layers that must stay in sync for behavior changes:
+    - unit/integration tests in `mpcore/packages/simulator/test/**`
+    - browser e2e tests in `mpcore/packages/simulator/e2e/**`
+    - type contract tests in `mpcore/packages/simulator/test-d/**`
+  - When changing exported types, public APIs, browser runtime behavior, testing bridge behavior, or simulator-observable runtime state, add or update all relevant layers instead of only one layer.
+  - Prefer adding the narrowest realistic browser e2e that exercises the public demo/debug bridge instead of duplicating low-level unit assertions.
+  - Keep browser e2e assertions stable: prefer scenario ids, route values, bridge-returned snapshots, and explicit scope ids over brittle visual selectors.
+  - Keep `mpcore/packages/simulator/package.json` scripts working together:
+    - `pnpm test`
+    - `pnpm test:e2e`
+    - `pnpm test:types`
+    - `pnpm test:all`
 - For WeChat DevTools runtime e2e in `e2e/ide/**`:
   - For the same `e2e-app`, launch automator only once per test suite (`describe`) and reuse that session.
   - Validate multiple cases by `miniProgram.reLaunch(...)` across different pages/routes instead of re-launching DevTools for each case.

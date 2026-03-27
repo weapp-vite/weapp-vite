@@ -62,6 +62,9 @@ export function useWorkbench() {
           .map(component => sessionState.session.value?.getScopeIdForComponent(component))
           .filter((scopeId): scopeId is string => Boolean(scopeId))
       },
+      callComponentMethod: (scopeId: string, method: string, ...args: any[]) => {
+        return sessionState.session.value?.callScopeMethodDirect(scopeId, method, ...args)
+      },
       navigateBack: (delta = 1) => sessionState.run(() => sessionState.session.value?.navigateBack(delta)),
       openRoute: (route: string) => sessionState.handleOpenRoute(route),
       pickScenario: (scenarioId: string) => handlePickScenario(scenarioId),
@@ -71,6 +74,7 @@ export function useWorkbench() {
       sessionSnapshot: () => ({
         actionSheetLogs: sessionState.session.value?.getActionSheetLogs() ?? [],
         modalLogs: sessionState.session.value?.getModalLogs() ?? [],
+        pullDownRefreshState: sessionState.session.value?.getPullDownRefreshState?.() ?? null,
         requestLogs: sessionState.session.value?.getRequestLogs() ?? [],
         shareMenu: sessionState.session.value?.getShareMenu() ?? null,
         storageSnapshot: sessionState.session.value?.getStorageSnapshot() ?? {},

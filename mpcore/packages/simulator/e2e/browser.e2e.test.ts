@@ -4,6 +4,7 @@ import { createApp } from 'vue'
 import App from '../../../demos/web/src/App.vue'
 
 interface SimulatorE2EApi {
+  callComponentMethod: (scopeId: string, method: string, ...args: any[]) => unknown
   findComponentScopeIds: (selector: string) => string[]
   getState: () => {
     appData: string
@@ -28,6 +29,7 @@ interface SimulatorE2EApi {
   sessionSnapshot: () => {
     actionSheetLogs: unknown[]
     modalLogs: unknown[]
+    pullDownRefreshState: { active: boolean, stopCalls: number } | null
     requestLogs: unknown[]
     shareMenu: unknown
     storageSnapshot: Record<string, unknown>
@@ -144,6 +146,15 @@ describe.sequential('simulator browser e2e', () => {
       },
       type: 'component',
     })
+
+    bridge.callComponentMethod(scopeIds[0], 'inspectNested')
+    const nestedSnapshot = await waitFor(
+      () => bridge.readScopeSnapshot(scopeIds[0]) as Record<string, any> | null,
+      snapshot => Boolean(snapshot?.data?.nestedBadge),
+      20_000,
+    )
+    expect(nestedSnapshot?.data?.nestedBadge).toContain('"label":"stable"')
+    expect(nestedSnapshot?.data?.nestedBadge).toContain('"size":1')
   })
 
   it('drives browser session host features through the demo workbench api', async () => {
@@ -185,6 +196,10 @@ describe.sequential('simulator browser e2e', () => {
 
     const snapshot = bridge.sessionSnapshot()
     expect(Array.isArray(snapshot.requestLogs)).toBe(true)
+    expect(snapshot.pullDownRefreshState).toEqual({
+      active: true,
+      stopCalls: 0,
+    })
     expect(snapshot.storageSnapshot).toBeTypeOf('object')
   })
 })
