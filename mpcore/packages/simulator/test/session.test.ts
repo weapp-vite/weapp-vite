@@ -1511,6 +1511,61 @@ Page({
     expect(afterInfo.size).toBe(10)
   })
 
+  it('preserves target createTime when saveFile overwrites an existing saved path', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-saved-savefile-createtime-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    afterSummary: '',
+    beforeSummary: ''
+  },
+  runSavedSaveFileOverwriteCreateTimeLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/first.txt', 'x')
+    fsManager.writeFileSync('headless://temp/second.txt', 'alpha-beta')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/first.txt',
+      filePath: 'headless://saved/target.txt',
+      success: () => {
+        this.setData({
+          beforeSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' }))
+        })
+        wx.saveFile({
+          tempFilePath: 'headless://temp/second.txt',
+          filePath: 'headless://saved/target.txt',
+          success: () => {
+            this.setData({
+              afterSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' }))
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-savefile-createtime</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedSaveFileOverwriteCreateTimeLab()
+
+    const beforeInfo = JSON.parse(page.data.beforeSummary) as { createTime: number, size: number }
+    const afterInfo = JSON.parse(page.data.afterSummary) as { createTime: number, size: number }
+    expect(afterInfo.createTime).toBe(beforeInfo.createTime)
+    expect(afterInfo.size).toBe(10)
+  })
+
   it('reports stat sizes and fs manager failures through callbacks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-errors-'))
     tempDirs.push(root)
