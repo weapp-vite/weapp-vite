@@ -116,3 +116,28 @@ export interface DashboardNavItem {
   caption: string
   iconName: DashboardIconName
 }
+
+export interface WorkspaceCommandItem {
+  label: string
+  command: string
+  note: string
+}
+
+export interface WorkspaceActivityItem {
+  time: string
+  title: string
+  summary: string
+  tone: 'live' | 'default'
+}
+
+export interface WorkspaceDiagnosticItem {
+  label: string
+  detail: string
+  status: string
+}
+
+export interface WorkspaceSignalItem {
+  label: string
+  value: string
+  iconName: DashboardIconName
+}

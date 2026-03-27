@@ -2,7 +2,9 @@
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
-import { activityFeed, diagnosticsQueue } from '../features/dashboard/constants/shell'
+import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
+
+const { activityItems, diagnostics } = useDashboardWorkspace()
 </script>
 
 <template>
@@ -15,7 +17,7 @@ import { activityFeed, diagnosticsQueue } from '../features/dashboard/constants/
       />
       <ol class="mt-5 grid gap-3">
         <li
-          v-for="item in activityFeed"
+          v-for="item in activityItems"
           :key="`${item.time}-${item.title}`"
           class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4"
         >
@@ -50,7 +52,7 @@ import { activityFeed, diagnosticsQueue } from '../features/dashboard/constants/
       >
         <ul class="grid gap-2">
           <li
-            v-for="item in diagnosticsQueue"
+            v-for="item in diagnostics"
             :key="item.label"
             class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
           >

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { AnalyzeSubpackagesResult } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
@@ -16,6 +15,7 @@ import SectionNote from '../features/dashboard/components/SectionNote.vue'
 import { useAnalyzeDashboardData } from '../features/dashboard/composables/useAnalyzeDashboardData'
 import { useDashboardPage } from '../features/dashboard/composables/useDashboardPage'
 import { useDashboardTheme } from '../features/dashboard/composables/useDashboardTheme'
+import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs } from '../features/dashboard/constants/view'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
@@ -29,13 +29,10 @@ echarts.use([
   CanvasRenderer,
 ])
 
-const resultRef = shallowRef<AnalyzeSubpackagesResult | null>(window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null)
 const chartRef = shallowRef<HTMLDivElement>()
-const updateCount = shallowRef(0)
-const lastUpdatedAt = shallowRef('—')
 let chart: echarts.ECharts | undefined
-let updateListener: (() => void) | undefined
 const { themePreference, resolvedTheme, setThemePreference } = useDashboardTheme()
+const { lastUpdatedAt, resultRef, updateCount } = useDashboardWorkspace()
 
 const { treemapOption } = useTreemapData(resultRef, resolvedTheme)
 const {
@@ -74,14 +71,6 @@ function bindChartRef(element: Element | null) {
   chartRef.value = element instanceof HTMLDivElement
     ? element
     : undefined
-}
-
-function syncFromWindow() {
-  if (window.__WEAPP_VITE_ANALYZE_RESULT__) {
-    resultRef.value = window.__WEAPP_VITE_ANALYZE_RESULT__
-    updateCount.value += 1
-    lastUpdatedAt.value = new Date().toLocaleTimeString('zh-CN', { hour12: false })
-  }
 }
 
 async function ensureChart() {
@@ -127,17 +116,11 @@ watch(resolvedTheme, async () => {
 
 onMounted(() => {
   window.addEventListener('resize', handleResize)
-  window.addEventListener('weapp-analyze:update', syncFromWindow)
-  updateListener = syncFromWindow
-  syncFromWindow()
   void ensureChart()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
-  if (updateListener) {
-    window.removeEventListener('weapp-analyze:update', updateListener)
-  }
   destroyChart()
 })
 </script>

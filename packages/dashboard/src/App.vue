@@ -5,6 +5,7 @@ import AppShellHeader from './features/dashboard/components/AppShellHeader.vue'
 import AppShellNav from './features/dashboard/components/AppShellNav.vue'
 import AppSurfaceCard from './features/dashboard/components/AppSurfaceCard.vue'
 import { provideDashboardTheme } from './features/dashboard/composables/useDashboardTheme'
+import { createDashboardWorkspace, provideDashboardWorkspace } from './features/dashboard/composables/useDashboardWorkspace'
 import { useThemeMode } from './features/dashboard/composables/useThemeMode'
 import { workspaceNavigation } from './features/dashboard/constants/shell'
 import { themeOptions } from './features/dashboard/constants/view'
@@ -12,12 +13,15 @@ import { themeOptions } from './features/dashboard/constants/view'
 const route = useRoute()
 const mobileNavOpen = ref(false)
 const { themePreference, resolvedTheme, setThemePreference } = useThemeMode()
+const workspace = createDashboardWorkspace()
+const hasPayload = computed(() => Boolean(workspace.resultRef.value))
 
 provideDashboardTheme({
   themePreference,
   resolvedTheme,
   setThemePreference,
 })
+provideDashboardWorkspace(workspace)
 
 const pageMeta = computed(() => {
   if (route.path.startsWith('/analyze')) {
@@ -68,9 +72,9 @@ watch(() => route.fullPath, () => {
           </AppSurfaceCard>
           <AppSurfaceCard
             eyebrow="Theme"
-            title="Console Mode"
-            :description="resolvedTheme === 'dark' ? '当前使用暗色控制台语义。' : '当前使用亮色控制台语义。'"
-            :icon-name="resolvedTheme === 'dark' ? 'theme-dark' : 'theme-light'"
+            :title="workspace.statusLabel.value"
+            :description="workspace.statusSummary.value"
+            :icon-name="hasPayload ? 'status-live' : (resolvedTheme === 'dark' ? 'theme-dark' : 'theme-light')"
             padding="sm"
           />
         </div>
