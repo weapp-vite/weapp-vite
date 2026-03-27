@@ -146,6 +146,21 @@ function collectText(node: DomNodeLike): string {
   return (node.children ?? []).map(collectText).join('')
 }
 
+function resolvePageScopeId(scopeId?: string | null) {
+  if (!scopeId) {
+    return null
+  }
+  const pagePathIndex = scopeId.indexOf('/page/')
+  return pagePathIndex >= 0 ? scopeId.slice(0, pagePathIndex) : scopeId
+}
+
+function resolveComponentScopeId(scopeId?: string | null) {
+  if (!scopeId || !scopeId.includes('/')) {
+    return null
+  }
+  return scopeId
+}
+
 export class HeadlessTestingNodeHandle {
   constructor(
     private readonly node: DomNodeLike,
@@ -174,6 +189,20 @@ export class HeadlessTestingNodeHandle {
       throw new Error('Node interactions are not available for this headless testing node.')
     }
     return this.interactions.createScopeHandle(this.node.attribs?.['data-sim-scope'] ?? null)
+  }
+
+  async componentScope() {
+    if (!this.interactions) {
+      throw new Error('Node interactions are not available for this headless testing node.')
+    }
+    return this.interactions.createScopeHandle(resolveComponentScopeId(this.node.attribs?.['data-sim-scope'] ?? null))
+  }
+
+  async pageScope() {
+    if (!this.interactions) {
+      throw new Error('Node interactions are not available for this headless testing node.')
+    }
+    return this.interactions.createScopeHandle(resolvePageScopeId(this.node.attribs?.['data-sim-scope'] ?? null))
   }
 
   async text() {

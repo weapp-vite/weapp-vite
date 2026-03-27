@@ -562,4 +562,25 @@ describe('headless testing bridge', () => {
       type: 'component',
     })
   })
+
+  it('distinguishes component scope and page scope from a testing node handle', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const trigger = await page.$('#card-trigger')
+    const componentScope = await trigger?.componentScope()
+    const pageScope = await trigger?.pageScope()
+
+    expect(componentScope).not.toBeNull()
+    expect(pageScope).not.toBeNull()
+    expect(componentScope?.scopeId).toContain('status-card')
+    expect(pageScope?.scopeId).toBe('page:pages/lab/index')
+    expect(await pageScope?.snapshot()).toMatchObject({
+      type: 'page',
+    })
+  })
 })
