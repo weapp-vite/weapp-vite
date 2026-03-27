@@ -9,7 +9,7 @@ import type {
 } from '../types'
 import { computed, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
 import { activityFeed, diagnosticsQueue, quickCommands, sampleRuntimeEvents } from '../constants/shell'
-import { formatBytes } from '../utils/format'
+import { formatBytes, formatDuration } from '../utils/format'
 import { normalizeRuntimeEvents } from '../utils/runtimeEvents'
 
 interface DashboardWorkspaceContext {
@@ -75,10 +75,16 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     const errorCount = runtimeEvents.value.filter(event => event.level === 'error').length
     const warningCount = runtimeEvents.value.filter(event => event.level === 'warning').length
     const commandCount = runtimeEvents.value.filter(event => event.kind === 'command').length
+    const timedEvents = runtimeEvents.value.filter(event => typeof event.durationMs === 'number')
+    const averageDuration = timedEvents.length > 0
+      ? Math.round(timedEvents.reduce((sum, event) => sum + (event.durationMs ?? 0), 0) / timedEvents.length)
+      : undefined
 
     return [
       { label: '总事件数', value: String(runtimeEvents.value.length) },
       { label: '命令事件', value: String(commandCount) },
+      { label: '已记录耗时', value: String(timedEvents.length) },
+      { label: '平均耗时', value: formatDuration(averageDuration) },
       { label: '警告事件', value: String(warningCount) },
       { label: '错误事件', value: String(errorCount) },
     ]
