@@ -589,6 +589,7 @@ Page({
   data: {
     count: 2,
     log: [],
+    scopedRect: null,
     snapshot: ''
   },
   inspect() {
@@ -601,6 +602,18 @@ Page({
         size: cards.length
       })
     })
+  },
+  inspectScopedQuery() {
+    const card = this.selectComponent('#status-card')
+    wx.createSelectorQuery()
+      .in(card)
+      .select('.card-shell')
+      .boundingClientRect((result) => {
+        this.setData({
+          scopedRect: result
+        })
+      })
+      .exec()
   },
   onPulse(event) {
     this.setData({

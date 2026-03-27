@@ -19,7 +19,7 @@ import {
   deriveWindowInfo,
 } from '../runtime/systemInfo'
 import { createHeadlessWxState } from '../runtime/wxState'
-import { executeSelectorQueryRequests } from '../view'
+import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
 import { renderBrowserPageTree } from './render'
@@ -902,9 +902,12 @@ export class BrowserHeadlessSession {
     scope?: Record<string, any>,
   ) {
     const current = this.requireCurrentPage('wx.createSelectorQuery().exec()')
-    if (scope && scope !== current) {
-      throw new Error('wx.createSelectorQuery().in(component) is not supported yet in browser simulator runtime.')
+    if (scope && scope !== current && !Array.from(this.componentCache.values()).includes(scope as import('../runtime').HeadlessComponentInstance)) {
+      throw new Error('wx.createSelectorQuery().in(component) received an unknown scope in browser simulator runtime.')
     }
+    const scopeId = scope && scope !== current
+      ? this.getComponentScopeId(scope as import('../runtime').HeadlessComponentInstance)
+      : null
     const rendered = renderBrowserPageTree({
       changedPageKeys: current.__lastChangedKeys__ ?? [],
       componentCache: this.componentCache,
@@ -920,7 +923,7 @@ export class BrowserHeadlessSession {
     }, current)
     return executeSelectorQueryRequests(requests, {
       page: current,
-      root: rendered.root,
+      root: resolveSelectorQueryScopeRoot(rendered.root, scopeId),
       windowInfo: this.getWindowInfo(),
     })
   }
@@ -1049,6 +1052,15 @@ export class BrowserHeadlessSession {
       }
       runComponentPageLifetime(instance, lifetimeName, payload)
     }
+  }
+
+  private getComponentScopeId(component: import('../runtime').HeadlessComponentInstance) {
+    for (const [scopeId, instance] of this.componentCache.entries()) {
+      if (instance === component) {
+        return scopeId
+      }
+    }
+    return null
   }
 }
 
