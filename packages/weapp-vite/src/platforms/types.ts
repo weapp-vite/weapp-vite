@@ -54,4 +54,23 @@ export interface MiniProgramPlatformAdapter {
   resolvePreservedNpmDirNames: (options?: {
     alipayNpmMode?: string
   }) => readonly string[]
+  /**
+   * JSON 归一化相关的平台能力。
+   */
+  json?: {
+    normalizeUsingComponents?: boolean
+    fillComponentGenericsDefault?: boolean
+  }
+  /**
+   * npm 构建相关的平台能力。
+   */
+  npm?: {
+    distDirName?: (options?: {
+      alipayNpmMode?: string
+    }) => string
+    normalizeMiniprogramPackage?: boolean
+    copyEsModuleDirectory?: boolean
+    hoistNestedDependencies?: boolean
+    shouldRebuildCachedPackage?: boolean
+  }
 }

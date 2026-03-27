@@ -19,6 +19,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
+    json: {},
+    npm: {
+      distDirName: () => 'miniprogram_npm',
+    },
   },
   {
     id: 'alipay',
@@ -42,6 +46,17 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       defaultProjectRoot: 'dist/alipay/dist',
     },
     resolvePreservedNpmDirNames: options => [getAlipayNpmDistDirName(options?.alipayNpmMode)],
+    json: {
+      normalizeUsingComponents: true,
+      fillComponentGenericsDefault: true,
+    },
+    npm: {
+      distDirName: options => getAlipayNpmDistDirName(options?.alipayNpmMode),
+      normalizeMiniprogramPackage: true,
+      copyEsModuleDirectory: true,
+      hoistNestedDependencies: true,
+      shouldRebuildCachedPackage: true,
+    },
   },
   {
     id: 'swan',
@@ -58,6 +73,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     projectConfigRootKeys: ['smartProgramRoot', ...DEFAULT_PROJECT_CONFIG_ROOT_KEYS],
     ide: {},
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
+    json: {},
+    npm: {
+      distDirName: () => 'miniprogram_npm',
+    },
   },
   {
     id: 'tt',
@@ -73,6 +92,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
+    json: {},
+    npm: {
+      distDirName: () => 'miniprogram_npm',
+    },
   },
   {
     id: 'jd',
@@ -89,6 +112,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
+    json: {},
+    npm: {
+      distDirName: () => 'miniprogram_npm',
+    },
   },
   {
     id: 'xhs',
@@ -105,5 +132,9 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
     ide: {},
     resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
+    json: {},
+    npm: {
+      distDirName: () => 'miniprogram_npm',
+    },
   },
 ] as const

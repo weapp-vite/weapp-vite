@@ -77,3 +77,42 @@ export function getPreservedNpmDirNames(
 ): readonly string[] {
   return getMiniProgramPlatformAdapter(platform).resolvePreservedNpmDirNames(options)
 }
+
+export function shouldNormalizeUsingComponents(platform?: MpPlatform): boolean {
+  if (!platform) {
+    return false
+  }
+  return getMiniProgramPlatformAdapter(platform).json?.normalizeUsingComponents === true
+}
+
+export function shouldFillComponentGenericsDefault(platform?: MpPlatform): boolean {
+  if (!platform) {
+    return false
+  }
+  return getMiniProgramPlatformAdapter(platform).json?.fillComponentGenericsDefault === true
+}
+
+export function getPlatformNpmDistDirName(
+  platform: MpPlatform,
+  options?: {
+    alipayNpmMode?: string
+  },
+): string {
+  return getMiniProgramPlatformAdapter(platform).npm?.distDirName?.(options) ?? 'miniprogram_npm'
+}
+
+export function shouldRebuildCachedMiniprogramPackage(platform: MpPlatform): boolean {
+  return getMiniProgramPlatformAdapter(platform).npm?.shouldRebuildCachedPackage === true
+}
+
+export function shouldNormalizeMiniprogramPackage(platform: MpPlatform): boolean {
+  return getMiniProgramPlatformAdapter(platform).npm?.normalizeMiniprogramPackage === true
+}
+
+export function shouldCopyEsModuleDirectory(platform: MpPlatform): boolean {
+  return getMiniProgramPlatformAdapter(platform).npm?.copyEsModuleDirectory === true
+}
+
+export function shouldHoistNestedMiniprogramDependencies(platform: MpPlatform): boolean {
+  return getMiniProgramPlatformAdapter(platform).npm?.hoistNestedDependencies === true
+}

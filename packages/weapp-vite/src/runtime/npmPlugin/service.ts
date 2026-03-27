@@ -3,10 +3,11 @@ import type { InputOption } from 'rolldown'
 import type { Plugin } from 'vite'
 import type { MutableCompilerContext } from '../../context'
 import type { NpmBuildOptions } from '../../types'
+/* eslint-disable e18e/ban-dependencies -- fs-extra is still the project-standard file helper in this module. */
 import fs from 'fs-extra'
 import path from 'pathe'
 import { debug } from '../../context/shared'
-import { getAlipayNpmDistDirName } from '../../utils/alipayNpm'
+import { getPlatformNpmDistDirName } from '../../platform'
 import { toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { createPackageBuilder } from './builder'
@@ -129,10 +130,12 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
   const builder = createPackageBuilder(ctx, oxcVitePlugin as Plugin | undefined)
 
   function getNpmDistDirName() {
-    if (ctx.configService?.platform === 'alipay') {
-      return getAlipayNpmDistDirName(ctx.configService.weappViteConfig?.npm?.alipayNpmMode)
+    if (ctx.configService?.platform) {
+      return getPlatformNpmDistDirName(ctx.configService.platform, {
+        alipayNpmMode: ctx.configService.weappViteConfig?.npm?.alipayNpmMode,
+      })
     }
-    return 'miniprogram_npm'
+    return getPlatformNpmDistDirName('weapp')
   }
 
   async function build(options?: NpmBuildOptions) {
