@@ -1169,6 +1169,50 @@ Page({
     expect(session.getSavedFileListSnapshot()).toEqual([])
   })
 
+  it('removes saved file registrations when renaming to non-saved paths', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-saved-file-rename-out-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    listSummary: ''
+  },
+  runSavedRenameOutLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/source.txt', 'alpha')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/source.txt',
+      filePath: 'headless://saved/source.txt',
+      success: (saveResult) => {
+        fsManager.renameSync(saveResult.savedFilePath, 'headless://temp/moved.txt')
+        this.setData({
+          listSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-rename-out</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedRenameOutLab()
+
+    expect(page.data.listSummary).toBe('[]')
+    expect(session.getSavedFileListSnapshot()).toEqual([])
+    expect(session.getFileText('headless://temp/moved.txt')).toBe('alpha')
+  })
+
   it('reports stat sizes and fs manager failures through callbacks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-errors-'))
     tempDirs.push(root)
