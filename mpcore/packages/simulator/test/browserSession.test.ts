@@ -389,6 +389,47 @@ Page({
     expect(session.getFileText('headless://saved/browser-renamed.txt')).toBe('browser source payload')
   })
 
+  it('supports getFileSystemManager mkdir readdir and stat in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    dirSummary: '',
+    dirTypeSummary: '',
+    fileTypeSummary: ''
+  },
+  runFsDirectoryLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.mkdir({
+      dirPath: 'headless://saved/browser-reports/daily',
+      recursive: true,
+      success: () => {
+        fsManager.writeFileSync('headless://saved/browser-reports/daily/summary.txt', 'browser daily payload')
+        this.setData({
+          dirSummary: JSON.stringify(fsManager.readdirSync('headless://saved/browser-reports')),
+          dirTypeSummary: String(fsManager.statSync('headless://saved/browser-reports/daily').isDirectory()),
+          fileTypeSummary: String(fsManager.statSync('headless://saved/browser-reports/daily/summary.txt').isFile())
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{dirSummary}}</view><view>{{dirTypeSummary}}</view><view>{{fileTypeSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsDirectoryLab()
+
+    expect(page.data.dirSummary).toBe('["daily"]')
+    expect(page.data.dirTypeSummary).toBe('true')
+    expect(page.data.fileTypeSummary).toBe('true')
+    expect(session.renderCurrentPage().wxml).toContain('["daily"]')
+  })
+
   it('supports showModal defaults and queued modal mocks in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
