@@ -7,13 +7,17 @@ import path from 'pathe'
 import { mayContainPlatformApiAccess, mayContainStaticRequireLiteral, resolveAstEngine } from '../../../ast'
 import logger from '../../../logger'
 import {
-  normalizePlatformNpmImportPath,
-  shouldNormalizePlatformNpmImportPath,
   shouldRewriteBundleNpmImports,
 } from '../../../platform'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
 import { toPosixPath } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
+import {
+  hasNpmDependencyPrefix,
+  normalizeNpmImportLookupPath,
+  normalizeNpmImportPathByPlatform,
+  resolveNpmDependencyId,
+} from '../../../utils/npmImport'
 import { normalizeWatchPath } from '../../../utils/path'
 import { createWeapiAccessExpression } from '../../../utils/weapi'
 import { emitWxmlAssetsWithCache } from '../../utils/wxmlEmit'
@@ -29,9 +33,7 @@ import {
 } from '../helpers'
 
 const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
-const WINDOWS_SEPARATOR_RE = /\\/g
 const NPM_PROTOCOL_RE = /^npm:/
-const PLUGIN_PROTOCOL_RE = /^plugin:\/\//
 const ABSOLUTE_NPM_PREFIX_RE = /^\/(?:miniprogram_npm|node_modules)\//
 const PRETTY_NODE_MODULES_RE = /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(.+)/
 
@@ -103,70 +105,17 @@ function replacePlatformApiAccess(
   }
 }
 
-function hasDependencyPrefix(dependencies: Record<string, string> | undefined, importee: string) {
-  if (!dependencies) {
-    return false
-  }
-
-  const normalizedImportee = importee.replace(WINDOWS_SEPARATOR_RE, '/').replace(NPM_PROTOCOL_RE, '')
-  const importeeTokens = normalizedImportee.split('/').filter(Boolean)
-  if (importeeTokens.length === 0) {
-    return false
-  }
-
-  return Object.keys(dependencies).some((dep) => {
-    const depTokens = dep.replace(WINDOWS_SEPARATOR_RE, '/').split('/').filter(Boolean)
-    if (depTokens.length === 0 || depTokens.length > importeeTokens.length) {
-      return false
-    }
-
-    for (let i = 0; i < depTokens.length; i++) {
-      if (depTokens[i] !== importeeTokens[i]) {
-        return false
-      }
-    }
-
-    return true
-  })
-}
-
-function resolveDependencyId(importee: string) {
-  const normalizedImportee = importee.replace(WINDOWS_SEPARATOR_RE, '/').replace(NPM_PROTOCOL_RE, '').replace(ABSOLUTE_NPM_PREFIX_RE, '')
-  const importeeTokens = normalizedImportee.split('/').filter(Boolean)
-  if (importeeTokens.length === 0) {
-    return ''
-  }
-  if (normalizedImportee.startsWith('@') && importeeTokens.length > 1) {
-    return `${importeeTokens[0]}/${importeeTokens[1]}`
-  }
-  return importeeTokens[0]
-}
-
 function normalizeNpmImportByPlatform(
   platform: MpPlatform | undefined,
   importee: string,
   dependencies: Record<string, string> | undefined,
   mode?: string,
 ) {
-  const trimmed = importee.trim()
-  if (!trimmed || PLUGIN_PROTOCOL_RE.test(trimmed)) {
-    return importee
-  }
-
-  if (!platform || !shouldNormalizePlatformNpmImportPath(platform)) {
-    return importee
-  }
-
-  const normalized = trimmed.replace(NPM_PROTOCOL_RE, '')
-  if (normalized.startsWith('/miniprogram_npm/') || normalized.startsWith('/node_modules/')) {
-    return normalizePlatformNpmImportPath(platform, normalized, { alipayNpmMode: mode })
-  }
-
-  if (!hasDependencyPrefix(dependencies, normalized)) {
-    return importee
-  }
-
-  return normalizePlatformNpmImportPath(platform, normalized, { alipayNpmMode: mode })
+  return normalizeNpmImportPathByPlatform(importee, {
+    platform,
+    dependencies,
+    alipayNpmMode: mode,
+  })
 }
 
 function rewriteChunkNpmImportsByPlatform(
@@ -298,9 +247,9 @@ function rewriteBundlePlatformApi(
 }
 
 function matchesSubPackageDependency(dependencies: (string | RegExp)[] | undefined, importee: string, fallbackDependencies?: Record<string, string>) {
-  const normalized = importee.replace(NPM_PROTOCOL_RE, '').replace(ABSOLUTE_NPM_PREFIX_RE, '')
+  const normalized = normalizeNpmImportLookupPath(importee)
   if (Array.isArray(dependencies) && dependencies.length > 0) {
-    const dependencyId = resolveDependencyId(normalized)
+    const dependencyId = resolveNpmDependencyId(normalized)
     return dependencies.some((pattern) => {
       if (typeof pattern === 'string') {
         return dependencyId === pattern || normalized === pattern || normalized.startsWith(`${pattern}/`)
@@ -316,7 +265,7 @@ function matchesSubPackageDependency(dependencies: (string | RegExp)[] | undefin
     })
   }
 
-  return hasDependencyPrefix(fallbackDependencies, normalized)
+  return hasNpmDependencyPrefix(fallbackDependencies, normalized)
 }
 
 function normalizeWeappLocalNpmImport(importee: string) {

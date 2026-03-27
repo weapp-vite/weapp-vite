@@ -3,12 +3,11 @@ import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import path from 'pathe'
 import {
-  getPlatformNpmImportPrefix,
-  normalizePlatformNpmImportPath,
   shouldFillComponentGenericsDefault,
   shouldNormalizeUsingComponents,
 } from '../platform'
 import { changeFileExtension } from './file'
+import { hasNpmDependencyPrefix, normalizeNpmImportPathByPlatform } from './npmImport'
 import { toPosixPath } from './path'
 
 export interface JsonResolvableEntry {
@@ -27,10 +26,6 @@ const JSON_FILE_JS_EXTENSION_RE = /\.[jt]s$/
 const COMPONENT_NAME_LOWER_TO_UPPER_RE = /([a-z0-9])([A-Z])/g
 const COMPONENT_NAME_MULTI_UPPER_RE = /([A-Z]+)([A-Z][a-z])/g
 const COMPONENT_NAME_HAS_UPPER_RE = /[A-Z]/
-const WINDOWS_PATH_SEPARATORS_RE = /\\/g
-const NPM_PROTOCOL_RE = /^npm:/
-const PLUGIN_PROTOCOL_RE = /^plugin:\/\//
-const EXPLICIT_ALIPAY_NPM_DIR_RE = /^\/(?:miniprogram_npm|node_modules)\//
 
 export function parseCommentJson(json: string) {
   return parseJson(json, undefined, true)
@@ -103,60 +98,20 @@ function toKebabCaseComponentName(name: string) {
     .toLowerCase()
 }
 
-function hasDependencyPrefix(dependencies: Record<string, string> | undefined, importee: string) {
-  if (!dependencies) {
-    return false
-  }
-
-  const normalizedImportee = importee.replace(WINDOWS_PATH_SEPARATORS_RE, '/').replace(NPM_PROTOCOL_RE, '')
-  const importeeTokens = normalizedImportee.split('/').filter(Boolean)
-
-  if (importeeTokens.length === 0) {
-    return false
-  }
-
-  return Object.keys(dependencies).some((dep) => {
-    const depTokens = dep.replace(WINDOWS_PATH_SEPARATORS_RE, '/').split('/').filter(Boolean)
-    if (depTokens.length === 0 || depTokens.length > importeeTokens.length) {
-      return false
-    }
-
-    for (let i = 0; i < depTokens.length; i++) {
-      if (depTokens[i] !== importeeTokens[i]) {
-        return false
-      }
-    }
-
-    return true
-  })
-}
-
 function normalizeUsingComponentPathByPlatform(
   importee: string,
   platform: MpPlatform,
   dependencies?: Record<string, string>,
   mode?: string,
 ) {
-  const raw = importee.trim()
-  if (!raw || PLUGIN_PROTOCOL_RE.test(raw)) {
+  if (!hasNpmDependencyPrefix(dependencies, importee) && !importee.trim().startsWith('/')) {
     return importee
   }
-
-  const normalized = raw.replace(NPM_PROTOCOL_RE, '')
-  const npmPrefix = getPlatformNpmImportPrefix(platform, { alipayNpmMode: mode })
-  if (EXPLICIT_ALIPAY_NPM_DIR_RE.test(normalized)) {
-    return normalizePlatformNpmImportPath(platform, normalized, { alipayNpmMode: mode })
-  }
-
-  if (!hasDependencyPrefix(dependencies, normalized)) {
-    return importee
-  }
-
-  if (normalized.startsWith(npmPrefix)) {
-    return normalized
-  }
-
-  return normalizePlatformNpmImportPath(platform, normalized, { alipayNpmMode: mode })
+  return normalizeNpmImportPathByPlatform(importee, {
+    platform,
+    dependencies,
+    alipayNpmMode: mode,
+  })
 }
 
 function normalizeUsingComponentsByPlatform(

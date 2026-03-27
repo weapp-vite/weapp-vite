@@ -8,6 +8,7 @@ import fs from 'fs-extra'
 import path from 'pathe'
 import { debug } from '../../context/shared'
 import { getPlatformNpmDistDirName } from '../../platform'
+import { resolveNpmDependencyId } from '../../utils/npmImport'
 import { toPosixPath } from '../../utils/path'
 import { createOxcRuntimeSupport } from '../oxcRuntime'
 import { createPackageBuilder } from './builder'
@@ -27,20 +28,8 @@ function matchDependencyName(patterns: (string | RegExp)[], dep: string) {
   })
 }
 
-function resolveDependencyId(value: string) {
-  const normalized = toPosixPath(value).replace(LEADING_SLASHES_RE, '')
-  const segments = normalized.split('/').filter(Boolean)
-  if (segments.length === 0) {
-    return ''
-  }
-  if (normalized.startsWith('@') && segments.length > 1) {
-    return `${segments[0]}/${segments[1]}`
-  }
-  return segments[0]
-}
-
 function matchDependencyPath(patterns: (string | RegExp)[], value: string) {
-  const dependencyId = resolveDependencyId(value)
+  const dependencyId = resolveNpmDependencyId(toPosixPath(value).replace(LEADING_SLASHES_RE, ''))
   return patterns.some((pattern) => {
     if (typeof pattern === 'string') {
       return dependencyId === pattern || value === pattern || value.startsWith(`${pattern}/`)
