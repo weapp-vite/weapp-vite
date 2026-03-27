@@ -32,10 +32,16 @@ browserPage?.wx.saveFile({
   success: (result) => {
     expectType<{ errMsg: string, savedFilePath: string }>(result)
   },
+  complete: (result) => {
+    expectType<{ errMsg: string, savedFilePath: string } | undefined>(result)
+  },
 })
 browserPage?.wx.getSavedFileList({
   success: (result) => {
     expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> }>(result)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(result)
   },
 })
 browserPage?.wx.getSavedFileInfo({
@@ -46,6 +52,9 @@ browserPage?.wx.getSavedFileInfo({
   fail: (error) => {
     expectType<Error>(error)
   },
+  complete: (result) => {
+    expectType<{ createTime: number, errMsg: string, size: number } | undefined>(result)
+  },
 })
 browserPage?.wx.removeSavedFile({
   filePath: 'headless://wxfile/saved/0001',
@@ -54,6 +63,9 @@ browserPage?.wx.removeSavedFile({
   },
   fail: (error) => {
     expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
   },
 })
 
@@ -74,10 +86,16 @@ headlessPage?.wx.saveFile({
   success: (result) => {
     expectType<{ errMsg: string, savedFilePath: string }>(result)
   },
+  complete: (result) => {
+    expectType<{ errMsg: string, savedFilePath: string } | undefined>(result)
+  },
 })
 headlessPage?.wx.getSavedFileList({
   success: (result) => {
     expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> }>(result)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(result)
   },
 })
 headlessPage?.wx.getSavedFileInfo({
@@ -88,6 +106,9 @@ headlessPage?.wx.getSavedFileInfo({
   fail: (error) => {
     expectType<Error>(error)
   },
+  complete: (result) => {
+    expectType<{ createTime: number, errMsg: string, size: number } | undefined>(result)
+  },
 })
 headlessPage?.wx.removeSavedFile({
   filePath: 'headless://wxfile/saved/0001',
@@ -96,6 +117,9 @@ headlessPage?.wx.removeSavedFile({
   },
   fail: (error) => {
     expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
   },
 })
 
