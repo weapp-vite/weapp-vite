@@ -9,6 +9,7 @@ import {
   getPlatformNpmImportPrefix,
   getPlatformScriptModuleTag,
   getPreservedNpmDirNames,
+  getProjectPlatformOptions,
   getScriptModulePlatformOptions,
   getWxmlDirectivePrefix,
   getWxmlEventBindingStyle,
@@ -29,6 +30,7 @@ import {
   shouldPassPlatformArgToIdeOpen,
   shouldRebuildCachedMiniprogramPackage,
   shouldRewriteBundleNpmImports,
+  shouldUseProjectRootNpmDir,
 } from './platform'
 
 describe('platform adapter registry', () => {
@@ -92,6 +94,16 @@ describe('platform adapter registry', () => {
     expect(getDefaultIdeProjectRoot()).toBeUndefined()
     expect(getDefaultIdeProjectRoot('weapp')).toBeUndefined()
     expect(getDefaultIdeProjectRoot('alipay')).toBe('dist/alipay/dist')
+    expect(getProjectPlatformOptions('weapp')).toEqual({
+      projectConfigFileName: 'project.config.json',
+      projectConfigRootKeys: ['miniprogramRoot', 'srcMiniprogramRoot'],
+      usesProjectRootNpmDir: false,
+    })
+    expect(getProjectPlatformOptions('alipay')).toEqual({
+      projectConfigFileName: 'mini.project.json',
+      projectConfigRootKeys: ['miniprogramRoot', 'srcMiniprogramRoot'],
+      usesProjectRootNpmDir: true,
+    })
     expect(shouldNormalizeUsingComponents()).toBe(false)
     expect(shouldNormalizeUsingComponents('weapp')).toBe(false)
     expect(shouldNormalizeUsingComponents('alipay')).toBe(true)
@@ -147,9 +159,12 @@ describe('platform adapter registry', () => {
         sjs: 'import-sjs',
       },
     })
+    expect(getPlatformScriptModuleTag(undefined, undefined)).toBeUndefined()
     expect(getPlatformScriptModuleTag(undefined, 'sjs')).toBeUndefined()
     expect(getPlatformScriptModuleTag('alipay', 'sjs')).toBe('import-sjs')
     expect(getPlatformScriptModuleTag('alipay', 'wxs')).toBeUndefined()
+    expect(shouldUseProjectRootNpmDir('weapp')).toBe(false)
+    expect(shouldUseProjectRootNpmDir('alipay')).toBe(true)
     expect(getPreservedNpmDirNames('weapp')).toEqual(['miniprogram_npm'])
     expect(getPreservedNpmDirNames('alipay', { alipayNpmMode: 'miniprogram_npm' })).toEqual(['miniprogram_npm'])
     expect(getPreservedNpmDirNames('alipay', { alipayNpmMode: 'node_modules' })).toEqual(['node_modules'])
