@@ -1,8 +1,10 @@
 import type { CompilerOptions } from 'typescript'
 import type { MutableCompilerContext } from '../context'
 import { parse as parseJson } from 'comment-json'
+/* eslint-disable e18e/ban-dependencies -- fs-extra is still the project-standard file helper in this module. */
 import fs from 'fs-extra'
 import path from 'pathe'
+import { getPlatformAppTypesPackage } from '../platform'
 import { resolveBaseDir, WEAPP_VITE_INTERNAL_DIRNAME } from './autoImport/config/base'
 import { requireConfigService } from './utils/requireConfigService'
 
@@ -176,9 +178,10 @@ function getAppTypes(ctx: MutableCompilerContext, legacyConfig?: LegacyManagedTy
   const userTypes = getManagedTypeScriptConfig(ctx)?.app?.compilerOptions?.types
   const legacyTypes = legacyConfig?.app?.compilerOptions?.types
 
+  const platformAppTypesPackage = getPlatformAppTypesPackage(config.platform)
   const types = [
-    config.platform === 'alipay' && hasDependency(packageJson, '@mini-types/alipay')
-      ? '@mini-types/alipay'
+    platformAppTypesPackage !== 'miniprogram-api-typings' && hasDependency(packageJson, platformAppTypesPackage)
+      ? platformAppTypesPackage
       : 'miniprogram-api-typings',
     'weapp-vite/client',
   ]

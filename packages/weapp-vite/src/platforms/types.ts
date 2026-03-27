@@ -60,6 +60,7 @@ export interface MiniProgramPlatformAdapter {
   json?: {
     normalizeUsingComponents?: boolean
     fillComponentGenericsDefault?: boolean
+    rewriteBundleNpmImports?: boolean
   }
   /**
    * npm 构建相关的平台能力。
@@ -82,5 +83,11 @@ export interface MiniProgramPlatformAdapter {
     normalizeComponentTagName?: boolean
     normalizeVueTemplate?: boolean
     emitGenericPlaceholder?: boolean
+  }
+  /**
+   * TypeScript 支持相关的平台能力。
+   */
+  typescript?: {
+    appTypesPackage?: string
   }
 }

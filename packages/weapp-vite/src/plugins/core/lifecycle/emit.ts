@@ -6,6 +6,7 @@ import type { CorePluginState } from '../helpers'
 import path from 'pathe'
 import { mayContainPlatformApiAccess, mayContainStaticRequireLiteral, resolveAstEngine } from '../../../ast'
 import logger from '../../../logger'
+import { shouldRewriteBundleNpmImports } from '../../../platform'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
 import { toPosixPath } from '../../../utils'
 import { normalizeAlipayNpmImportPath } from '../../../utils/alipayNpm'
@@ -695,7 +696,7 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
       entriesMap: state.entriesMap,
     })
 
-    if (configService.platform === 'alipay') {
+    if (shouldRewriteBundleNpmImports(configService.platform)) {
       rewriteBundleNpmImportsForAlipay(
         rolldownBundle,
         configService.packageJson.dependencies,

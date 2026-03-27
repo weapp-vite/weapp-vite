@@ -27,6 +27,9 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       eventBindingStyle: 'default',
       directivePrefix: 'wx',
     },
+    typescript: {
+      appTypesPackage: 'miniprogram-api-typings',
+    },
   },
   {
     id: 'alipay',
@@ -53,6 +56,7 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     json: {
       normalizeUsingComponents: true,
       fillComponentGenericsDefault: true,
+      rewriteBundleNpmImports: true,
     },
     npm: {
       distDirName: options => getAlipayNpmDistDirName(options?.alipayNpmMode),
@@ -67,6 +71,9 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       normalizeComponentTagName: true,
       normalizeVueTemplate: true,
       emitGenericPlaceholder: true,
+    },
+    typescript: {
+      appTypesPackage: '@mini-types/alipay',
     },
   },
   {
@@ -92,6 +99,9 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       eventBindingStyle: 'default',
       directivePrefix: 'wx',
     },
+    typescript: {
+      appTypesPackage: 'miniprogram-api-typings',
+    },
   },
   {
     id: 'tt',
@@ -114,6 +124,9 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     wxml: {
       eventBindingStyle: 'default',
       directivePrefix: 'wx',
+    },
+    typescript: {
+      appTypesPackage: 'miniprogram-api-typings',
     },
   },
   {
@@ -139,6 +152,9 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       eventBindingStyle: 'default',
       directivePrefix: 'wx',
     },
+    typescript: {
+      appTypesPackage: 'miniprogram-api-typings',
+    },
   },
   {
     id: 'xhs',
@@ -162,6 +178,9 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     wxml: {
       eventBindingStyle: 'default',
       directivePrefix: 'wx',
+    },
+    typescript: {
+      appTypesPackage: 'miniprogram-api-typings',
     },
   },
 ] as const
