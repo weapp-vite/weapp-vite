@@ -1035,6 +1035,77 @@ Page({
     ])
   })
 
+  it('supports showTabBar and hideTabBar state transitions', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-tab-bar-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/home/index', 'pages/profile/index'],
+      tabBar: {
+        list: [
+          { pagePath: 'pages/home/index', text: 'Home' },
+          { pagePath: 'pages/profile/index', text: 'Profile' },
+        ],
+      },
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/home/index.js'), `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  hideTabBarLab() {
+    wx.hideTabBar({
+      success: () => this.push('hide:success'),
+      complete: (result) => this.push('hide:complete:' + (result?.errMsg ?? 'none'))
+    })
+  },
+  showTabBarLab() {
+    wx.showTabBar({
+      success: () => this.push('show:success'),
+      complete: (result) => this.push('show:complete:' + (result?.errMsg ?? 'none'))
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/home/index.wxml'), '<view>home</view>')
+    writeFixtureFile(path.join(root, 'dist/pages/profile/index.js'), 'Page({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/profile/index.wxml'), '<view>profile</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/home/index')
+
+    expect(session.getTabBar()).toEqual({
+      visible: true,
+    })
+
+    page.hideTabBarLab()
+    expect(session.getTabBar()).toEqual({
+      visible: false,
+    })
+
+    page.showTabBarLab()
+    expect(session.getTabBar()).toEqual({
+      visible: true,
+    })
+
+    expect(page.data.logs).toEqual([
+      'hide:success',
+      'hide:complete:hideTabBar:ok',
+      'show:success',
+      'show:complete:showTabBar:ok',
+    ])
+  })
+
   it('supports share menu state transitions', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-share-menu-'))
     tempDirs.push(root)

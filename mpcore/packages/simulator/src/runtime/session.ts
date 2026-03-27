@@ -119,6 +119,7 @@ export class HeadlessSession {
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
+  private tabBarVisible = false
   private readonly systemInfo = createDefaultSystemInfo()
   private enterOptions = createAppLaunchOptions('', {})
   private launchOptions = createAppLaunchOptions('', {})
@@ -146,6 +147,7 @@ export class HeadlessSession {
         text: typeof item.text === 'string' ? item.text : undefined,
       })
     })
+    this.tabBarVisible = this.tabBarRoutes.size > 0
     this.moduleLoader = createModuleLoader(
       this.registries,
       () => this.pages.slice(),
@@ -178,8 +180,10 @@ export class HeadlessSession {
         setNavigationBarTitle: option => this.setNavigationBarTitle(option.title),
         hideShareMenu: () => this.wxState.hideShareMenu(),
         hideNavigationBarLoading: () => this.hideNavigationBarLoading(),
+        hideTabBar: () => this.hideTabBar(),
         showShareMenu: option => this.wxState.showShareMenu(option),
         showNavigationBarLoading: () => this.showNavigationBarLoading(),
+        showTabBar: () => this.showTabBar(),
         showActionSheet: option => this.wxState.showActionSheet(option),
         showLoading: option => this.wxState.showLoading(option),
         showModal: option => this.wxState.showModal(option),
@@ -222,6 +226,12 @@ export class HeadlessSession {
 
   getShareMenu() {
     return this.wxState.getShareMenu()
+  }
+
+  getTabBar() {
+    return {
+      visible: this.tabBarVisible,
+    }
   }
 
   getStorageInfo() {
@@ -374,6 +384,20 @@ export class HeadlessSession {
     current.__navigationBar__.loading = false
     return {
       errMsg: 'hideNavigationBarLoading:ok',
+    }
+  }
+
+  hideTabBar() {
+    this.tabBarVisible = false
+    return {
+      errMsg: 'hideTabBar:ok',
+    }
+  }
+
+  showTabBar() {
+    this.tabBarVisible = this.tabBarRoutes.size > 0
+    return {
+      errMsg: 'showTabBar:ok',
     }
   }
 

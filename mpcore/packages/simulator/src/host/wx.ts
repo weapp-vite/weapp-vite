@@ -150,6 +150,8 @@ export interface HeadlessWxShareMenuOption extends HeadlessWxCallbackOption<{ er
   withShareTicket?: boolean
 }
 
+export interface HeadlessWxTabBarOption extends HeadlessWxCallbackOption<{ errMsg: string }> {}
+
 export interface HeadlessWxShowActionSheetResult {
   errMsg: string
   tapIndex: number
@@ -234,8 +236,10 @@ export interface HeadlessWxDriver {
   setNavigationBarTitle: (option: HeadlessWxSetNavigationBarTitleOption) => { errMsg: string }
   hideShareMenu: () => { errMsg: string }
   hideNavigationBarLoading: () => { errMsg: string }
+  hideTabBar: () => { errMsg: string }
   showShareMenu: (option: HeadlessWxShareMenuOption) => { errMsg: string }
   showNavigationBarLoading: () => { errMsg: string }
+  showTabBar: () => { errMsg: string }
   showActionSheet: (option: HeadlessWxShowActionSheetOption) => HeadlessWxShowActionSheetResult
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string }
   showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult
@@ -282,8 +286,10 @@ export interface HeadlessWx {
   setNavigationBarTitle: (option: HeadlessWxSetNavigationBarTitleOption) => { errMsg: string } | undefined
   hideShareMenu: (option?: HeadlessWxCallbackOption<{ errMsg: string }>) => { errMsg: string } | undefined
   hideNavigationBarLoading: (option?: HeadlessWxHideNavigationBarLoadingOption) => { errMsg: string } | undefined
+  hideTabBar: (option?: HeadlessWxTabBarOption) => { errMsg: string } | undefined
   showShareMenu: (option?: HeadlessWxShareMenuOption) => { errMsg: string } | undefined
   showNavigationBarLoading: (option?: HeadlessWxShowNavigationBarLoadingOption) => { errMsg: string } | undefined
+  showTabBar: (option?: HeadlessWxTabBarOption) => { errMsg: string } | undefined
   showActionSheet: (option: HeadlessWxShowActionSheetOption) => HeadlessWxShowActionSheetResult | undefined
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string } | undefined
   showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult | undefined
@@ -479,8 +485,10 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     setNavigationBarTitle: true,
     hideShareMenu: true,
     hideNavigationBarLoading: true,
+    hideTabBar: true,
     showShareMenu: true,
     showNavigationBarLoading: true,
+    showTabBar: true,
     showActionSheet: true,
     showLoading: true,
     showModal: true,
@@ -555,8 +563,10 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     setNavigationBarTitle: option => invokeWxApi(() => driver.setNavigationBarTitle(option), option),
     hideShareMenu: option => invokeWxApi(() => driver.hideShareMenu(), option),
     hideNavigationBarLoading: option => invokeWxApi(() => driver.hideNavigationBarLoading(), option),
+    hideTabBar: option => invokeWxApi(() => driver.hideTabBar(), option),
     showShareMenu: option => invokeWxApi(() => driver.showShareMenu(option ?? {}), option),
     showNavigationBarLoading: option => invokeWxApi(() => driver.showNavigationBarLoading(), option),
+    showTabBar: option => invokeWxApi(() => driver.showTabBar(), option),
     showActionSheet: option => invokeWxApi(() => driver.showActionSheet(option), option),
     showLoading: option => invokeWxApi(() => driver.showLoading(option), option),
     showModal: option => invokeWxApi(() => driver.showModal(option), option),
