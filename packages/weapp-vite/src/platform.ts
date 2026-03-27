@@ -15,6 +15,10 @@ export interface WxmlPlatformTransformOptions {
   emitGenericPlaceholder: boolean
 }
 
+export interface ScriptModulePlatformOptions {
+  tagByExtension: Readonly<Partial<Record<string, string>>>
+}
+
 export function createMiniProgramPlatformRegistry(adapters: readonly MiniProgramPlatformAdapter[]) {
   const adapterById = new Map<MpPlatform, MiniProgramPlatformAdapter>()
   const aliasToId = new Map<string, MpPlatform>()
@@ -166,6 +170,12 @@ export function shouldHoistNestedMiniprogramDependencies(platform: MpPlatform): 
   return getMiniProgramPlatformAdapter(platform).npm?.hoistNestedDependencies === true
 }
 
+export function getScriptModulePlatformOptions(platform?: MpPlatform): ScriptModulePlatformOptions {
+  return {
+    tagByExtension: platform ? (getMiniProgramPlatformAdapter(platform).scriptModuleTagByExtension ?? {}) : {},
+  }
+}
+
 export function getWxmlPlatformTransformOptions(platform?: MpPlatform): WxmlPlatformTransformOptions {
   const wxml = platform ? getMiniProgramPlatformAdapter(platform).wxml : undefined
 
@@ -196,6 +206,13 @@ export function shouldNormalizeVueTemplateForPlatform(platform?: MpPlatform): bo
 
 export function shouldEmitGenericPlaceholderAsset(platform?: MpPlatform): boolean {
   return getWxmlPlatformTransformOptions(platform).emitGenericPlaceholder
+}
+
+export function getPlatformScriptModuleTag(platform: MpPlatform | undefined, scriptModuleExtension: string | undefined) {
+  if (!scriptModuleExtension) {
+    return undefined
+  }
+  return getScriptModulePlatformOptions(platform).tagByExtension[scriptModuleExtension]
 }
 
 export function getPlatformAppTypesPackage(platform?: MpPlatform): string {

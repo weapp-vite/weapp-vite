@@ -1,5 +1,5 @@
 import type { MpPlatform } from '../types'
-import { getMiniProgramPlatformAdapter } from '../platform'
+import { getPlatformScriptModuleTag } from '../platform'
 import { MINI_PROGRAM_PLATFORM_ADAPTERS } from '../platforms/adapters'
 
 const IMPORT_SJS_TAG_RE = /<import-sjs([\s\S]*?)>/g
@@ -17,10 +17,7 @@ const SCRIPT_MODULE_IMPORT_ATTRS = Object.freeze({
 } satisfies Readonly<Record<string, readonly string[]>>)
 
 export function resolveScriptModuleTagByPlatform(platform?: MpPlatform, scriptModuleExtension?: string) {
-  if (!platform || !scriptModuleExtension) {
-    return undefined
-  }
-  return getMiniProgramPlatformAdapter(platform).scriptModuleTagByExtension?.[scriptModuleExtension]
+  return getPlatformScriptModuleTag(platform, scriptModuleExtension)
 }
 
 export function getDefaultScriptModuleTagByExtension(scriptModuleExtension?: string) {
