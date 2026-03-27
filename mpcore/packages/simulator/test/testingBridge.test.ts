@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { launch } from '../src/testing'
-import { cleanupTempDirs, createBaseFixture, createComponentFixture, createNavigationFixture } from './helpers'
+import { cleanupTempDirs, createBaseFixture, createComponentFixture, createNavigationFixture, createNestedComponentFixture } from './helpers'
 
 describe('headless testing bridge', () => {
   const tempDirs: string[] = []
@@ -404,5 +404,31 @@ describe('headless testing bridge', () => {
     expect(await page.data('formSnapshot')).toContain('"input":"typed-in-component"')
     expect(await page.data('formSnapshot')).toContain('"change":"changed-in-component"')
     expect(await page.data('formSnapshot')).toContain('"blur":"blurred-in-component"')
+  })
+
+  it('supports nested component selection from a testing scope handle', async () => {
+    const projectPath = createNestedComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.reLaunch('/pages/lab/index')
+    const card = await miniProgram.selectComponent('#status-card')
+    const badge = await card?.selectComponent('#mini-badge')
+    const badges = await card?.selectAllComponents('mini-badge')
+
+    expect(card).not.toBeNull()
+    expect(badge).not.toBeNull()
+    expect(badges).toHaveLength(1)
+    expect(await badge?.snapshot()).toMatchObject({
+      data: {
+        readyState: 'ready',
+      },
+      properties: {
+        label: 'stable',
+      },
+      type: 'component',
+    })
   })
 })
