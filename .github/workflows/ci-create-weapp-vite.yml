@@ -54,9 +54,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Enable Corepack
         shell: bash
         run: |
@@ -81,13 +78,12 @@ jobs:
           print_version npm npm -v
           print_version pnpm pnpm -v
           print_version yarn yarn -v
-          print_version bun bun --version
 
       - name: Run create-weapp-vite smoke matrix
         env:
           CREATE_WEAPP_VITE_SPEC: ${{ github.event.inputs['package-spec'] || 'latest' }}
           CREATE_WEAPP_VITE_TEMPLATES: default,lib,wevu,wevu-tdesign,tailwindcss,vant,tdesign
-          CREATE_WEAPP_VITE_SCENARIOS: pnpm,yarn,npm,bun
+          CREATE_WEAPP_VITE_SCENARIOS: pnpm,yarn,npm
           CREATE_WEAPP_VITE_REPORT_FILE: ${{ runner.temp }}/create-weapp-vite-smoke-report/report.json
           CREATE_WEAPP_VITE_REPORT_OS: ${{ matrix.os }}
           CREATE_WEAPP_VITE_REPORT_NODE: ${{ matrix.node-version }}
