@@ -50,10 +50,10 @@
     "catalog:sync": "node --import tsx scripts/generate-template-catalog.ts",
     "dev": "tsdown -w --sourcemap",
     "build": "tsdown",
+    "prepack": "node --import tsx scripts/prepublish.ts && pnpm build",
     "test": "vitest run",
     "test:dev": "vitest",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "node --import tsx scripts/prepublish.ts && pnpm build",
     "release": "pnpm publish",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

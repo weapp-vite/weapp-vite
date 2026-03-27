@@ -82,10 +82,26 @@ async function getTemplateSyncSignature() {
   return hasher.digest('hex').slice(0, 16)
 }
 
+async function hasSyncedTemplates() {
+  for (const { dest } of templates) {
+    const absDest = path.resolve(import.meta.dirname, dest)
+    if (!await fs.pathExists(absDest)) {
+      return false
+    }
+
+    const entries = await fs.readdir(absDest)
+    if (entries.length === 0) {
+      return false
+    }
+  }
+
+  return true
+}
+
 export async function main() {
   const signature = await getTemplateSyncSignature()
   const markerFile = path.join(os.tmpdir(), `create-weapp-vite-templates.${signature}.done`)
-  if (await fs.pathExists(markerFile)) {
+  if (await fs.pathExists(markerFile) && await hasSyncedTemplates()) {
     return
   }
 
@@ -110,7 +126,7 @@ export async function main() {
   }
 
   try {
-    if (await fs.pathExists(markerFile)) {
+    if (await fs.pathExists(markerFile) && await hasSyncedTemplates()) {
       return
     }
 
