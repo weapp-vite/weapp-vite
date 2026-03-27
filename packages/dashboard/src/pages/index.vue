@@ -3,7 +3,10 @@ import { RouterLink } from 'vue-router'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
-import { quickCommands, releaseChecklist, workspaceHighlights, workspaceMetrics, workspaceNavigation } from '../features/dashboard/constants/shell'
+import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
+import { releaseChecklist, workspaceHighlights, workspaceNavigation } from '../features/dashboard/constants/shell'
+
+const { commandItems, signals } = useDashboardWorkspace()
 </script>
 
 <template>
@@ -51,7 +54,7 @@ import { quickCommands, releaseChecklist, workspaceHighlights, workspaceMetrics,
             </p>
             <ul class="mt-3 grid gap-2 text-sm">
               <li
-                v-for="metric in workspaceMetrics"
+                v-for="metric in signals"
                 :key="metric.label"
                 class="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-3"
               >
@@ -110,7 +113,7 @@ import { quickCommands, releaseChecklist, workspaceHighlights, workspaceMetrics,
         />
         <div class="mt-4 grid gap-3">
           <article
-            v-for="command in quickCommands"
+            v-for="command in commandItems"
             :key="command.command"
             class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4"
           >
