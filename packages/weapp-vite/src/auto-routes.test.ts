@@ -180,6 +180,25 @@ describe('auto-routes module exports', () => {
     expect(callLog.navigateBack).toEqual([{ delta: 1 }])
   })
 
+  it.each(['swan', 'jd', 'xhs'])('wxRouter falls back to %s runtime globals', async (runtimeKey) => {
+    const navigateTo = vi.fn()
+    ;(globalThis as Record<string, any>)[runtimeKey] = {
+      navigateTo,
+    }
+
+    vi.doMock('./context', () => {
+      return {
+        getCompilerContext: () => ({}),
+      }
+    })
+
+    const module = await import(modulePath)
+    module.wxRouter.navigateTo({ url: '/pages/index/index' })
+
+    expect(navigateTo).toHaveBeenCalledWith({ url: '/pages/index/index' })
+    delete (globalThis as Record<string, any>)[runtimeKey]
+  })
+
   it.skip('wxRouter throws when route capability is unavailable', async () => {
     delete (globalThis as Record<string | symbol, unknown>)[routeRuntimeOverrideKey]
     vi.stubGlobal('wx', undefined)

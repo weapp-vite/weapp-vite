@@ -11,6 +11,7 @@ import process from 'node:process'
 import PQueue from 'p-queue'
 import { FileCache } from '../cache'
 import { getOutputExtensions } from '../defaults'
+import { createMiniProgramGlobalResolveExpression, getRouteRuntimeGlobalKeys } from '../utils/miniProgramGlobals'
 
 interface AutoRoutesCandidateState {
   base: string
@@ -134,6 +135,9 @@ export interface RuntimeState {
 }
 
 export function createRuntimeState(): RuntimeState {
+  const routeRuntimeGlobalExpression = createMiniProgramGlobalResolveExpression({
+    globalKeys: getRouteRuntimeGlobalKeys(),
+  })
   return {
     autoRoutes: {
       routes: {
@@ -155,7 +159,7 @@ export function createRuntimeState(): RuntimeState {
         'const pages = routes.pages;',
         'const entries = routes.entries;',
         'const subPackages = routes.subPackages;',
-        'const resolveMiniProgramGlobal = () => (globalThis.wx ?? globalThis.tt ?? globalThis.my);',
+        `const resolveMiniProgramGlobal = () => ${routeRuntimeGlobalExpression};`,
         'const callRouteMethod = (methodName, option) => {',
         '  const miniProgramGlobal = resolveMiniProgramGlobal();',
         '  const routeMethod = miniProgramGlobal?.[methodName];',

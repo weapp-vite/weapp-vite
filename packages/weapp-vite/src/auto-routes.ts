@@ -1,5 +1,6 @@
 import type { AutoRoutes, AutoRoutesSubPackage } from './types/routes'
 import { getCompilerContext } from './context'
+import { getRouteRuntimeGlobalKeys } from './utils/miniProgramGlobals'
 
 type RouteMethodName = 'switchTab' | 'reLaunch' | 'redirectTo' | 'navigateTo' | 'navigateBack'
 type RouteOption = Record<string, any> | undefined
@@ -39,7 +40,13 @@ function resolveMiniProgramGlobal() {
   if (overrideRuntime) {
     return overrideRuntime
   }
-  return runtime.wx ?? runtime.tt ?? runtime.my
+  for (const key of getRouteRuntimeGlobalKeys()) {
+    const candidate = runtime[key]
+    if (candidate) {
+      return candidate
+    }
+  }
+  return undefined
 }
 
 function callRouteMethod(methodName: RouteMethodName, option?: RouteOption) {
