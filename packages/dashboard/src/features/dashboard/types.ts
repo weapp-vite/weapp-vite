@@ -141,3 +141,18 @@ export interface WorkspaceSignalItem {
   value: string
   iconName: DashboardIconName
 }
+
+export type DashboardRuntimeEventKind = 'command' | 'build' | 'diagnostic' | 'hmr' | 'system'
+export type DashboardRuntimeEventLevel = 'info' | 'success' | 'warning' | 'error'
+
+export interface DashboardRuntimeEvent {
+  id: string
+  kind: DashboardRuntimeEventKind
+  level: DashboardRuntimeEventLevel
+  title: string
+  detail: string
+  timestamp: string
+  source?: string
+  durationMs?: number
+  tags?: string[]
+}
