@@ -434,6 +434,174 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(code).not.toContain('/miniprogram_npm/foo/path')
   })
 
+  it('skips subpackage root chunks and ignores invalid local npm rewrite targets', async () => {
+    const state = createState({
+      ctx: {
+        scanService: {
+          subPackageMap: new Map([
+            ['packageA', {
+              subPackage: {
+                root: 'packageA',
+                dependencies: ['dayjs', '@scope/pkg'],
+              },
+            }],
+          ]),
+        },
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              'dayjs': '^1.11.13',
+              '@scope/pkg': '^1.0.0',
+            },
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'packageA.js': {
+        type: 'chunk',
+        fileName: 'packageA',
+        code: 'const rootLevel = require("dayjs")',
+        imports: [],
+        dynamicImports: [],
+      },
+      'packageA/pages/foo.js': {
+        type: 'chunk',
+        fileName: 'packageA/pages/foo.js',
+        code: [
+          'function scoped(require) { return require("dayjs") }',
+          'const a = require("@scope/pkg")',
+          'const b = require(null)',
+          'const c = require("other-lib")',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+      'packageA/pages/foo.json': {
+        type: 'asset',
+        fileName: 'packageA/pages/foo.json',
+        source: JSON.stringify({
+          usingComponents: {
+            scoped: '@scope/pkg',
+            ignored: 1,
+            other: 'other-lib',
+          },
+        }),
+      },
+      'packageA.json': {
+        type: 'asset',
+        fileName: 'packageA.json',
+        source: JSON.stringify({
+          usingComponents: {
+            rootOnly: 'dayjs',
+          },
+        }),
+      },
+      'packageA/pages/invalid.json': {
+        type: 'asset',
+        fileName: 'packageA/pages/invalid.json',
+        source: '{',
+      },
+      'packageA/pages/empty.json': {
+        type: 'asset',
+        fileName: 'packageA/pages/empty.json',
+        source: '',
+      },
+      'packageA/pages/array.json': {
+        type: 'asset',
+        fileName: 'packageA/pages/array.json',
+        source: JSON.stringify({
+          usingComponents: ['dayjs'],
+        }),
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['packageA.js'].code).toBe('const rootLevel = require("dayjs")')
+    expect(bundle['packageA/pages/foo.js'].code).toContain('function scoped(require) {')
+    expect(bundle['packageA/pages/foo.js'].code).toContain('../miniprogram_npm/@scope/pkg/index')
+    expect(bundle['packageA/pages/foo.js'].code).toContain('require(null)')
+    expect(bundle['packageA/pages/foo.js'].code).toContain('other-lib')
+    expect(bundle['packageA/pages/foo.json'].source).toContain('"scoped": "../miniprogram_npm/@scope/pkg/index"')
+    expect(bundle['packageA/pages/foo.json'].source).toContain('"ignored": 1')
+    expect(bundle['packageA/pages/foo.json'].source).toContain('"other": "other-lib"')
+    expect(bundle['packageA.json'].source).toContain('"rootOnly":"dayjs"')
+    expect(bundle['packageA/pages/invalid.json'].source).toBe('{')
+    expect(bundle['packageA/pages/empty.json'].source).toBe('')
+    expect(bundle['packageA/pages/array.json'].source).toContain('"usingComponents":["dayjs"]')
+  })
+
+  it('handles non-logging shared chunk duplicates and empty watch files gracefully', async () => {
+    applySharedChunkStrategyMock.mockImplementationOnce((_bundle, options) => {
+      options.onDuplicate?.({
+        sharedFileName: 'shared/common.js',
+        retainedInMain: false,
+        ignoredMainImporters: [],
+        chunkBytes: 32,
+        duplicates: [
+          {
+            fileName: 'pkg-a/pages/a.js',
+            importers: ['pkg-a/pages/a.js'],
+          },
+        ],
+        requiresRuntimeLocalization: true,
+      })
+    })
+
+    applyRuntimeChunkLocalizationMock.mockImplementationOnce((_bundle, options) => {
+      expect([...options.forceRoots]).toEqual(['pkg-a'])
+      expect(options.onDuplicate).toBeUndefined()
+    })
+
+    const watchFiles = vi.fn()
+    const state = createState({
+      subPackageMeta: null,
+      ctx: {
+        scanService: {
+          subPackageMap: new Map([
+            ['pkg-a', {}],
+          ]),
+        },
+        watcherService: {
+          getRollupWatcher: vi.fn(() => ({
+            getWatchFiles: vi.fn(async () => []),
+          })),
+        },
+        configService: {
+          isDev: false,
+          weappViteConfig: {
+            chunks: {
+              logOptimization: false,
+              duplicateWarningBytes: 1,
+            },
+            debug: {
+              watchFiles,
+            },
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+
+    await hook.call({}, {}, {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'module.exports = 1',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any)
+
+    expect(loggerInfoMock).not.toHaveBeenCalled()
+    expect(loggerWarnMock).not.toHaveBeenCalled()
+    expect(watchFiles).not.toHaveBeenCalled()
+    expect(state.watchFilesSnapshot).toEqual([])
+  })
+
   it('ignores non-chunk outputs while rewriting alipay imports and platform api access', async () => {
     const state = createState({
       ctx: {
