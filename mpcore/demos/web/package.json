@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@mpcore/simulator": "workspace:*",
-    "tailwind-merge": "^3.5.0",
-    "tailwind-variants": "^3.2.2",
+    "tailwind-merge": "catalog:",
+    "tailwind-variants": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {
@@ -22,7 +22,7 @@
     "@shikijs/langs": "^4.0.2",
     "@shikijs/themes": "^4.0.2",
     "@tailwindcss/vite": "catalog:",
-    "@vitejs/plugin-vue": "^6.0.5",
+    "@vitejs/plugin-vue": "catalog:",
     "shiki": "^4.0.2",
     "tailwindcss": "catalog:tailwind4",
     "typescript": "catalog:",

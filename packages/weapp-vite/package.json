@@ -145,8 +145,8 @@
     "registry": "https://registry.npmjs.org"
   },
   "devDependencies": {
-    "oxc-parser": "^0.121.0",
-    "oxc-walker": "^0.7.0",
+    "oxc-parser": "catalog:",
+    "oxc-walker": "catalog:",
     "tailwindcss": "catalog:tailwind4",
     "ts-morph": "catalog:"
   }
