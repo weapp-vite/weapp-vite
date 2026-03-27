@@ -620,6 +620,63 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['weird.js'].code).toBe('loader("dayjs");require();require(`dayjs/' + '${' + 'name}`)')
   })
 
+  it('matches local npm dependencies by regex against normalized import path and skips chunks without static require', async () => {
+    const state = createState({
+      ctx: {
+        scanService: {
+          subPackageMap: new Map([
+            ['packageA', {
+              subPackage: {
+                root: 'packageA',
+                dependencies: [/^tdesign-miniprogram\/button\//],
+              },
+            }],
+          ]),
+        },
+        configService: {
+          platform: 'weapp',
+          packageJson: {
+            dependencies: {
+              'tdesign-miniprogram': '^1.12.3',
+            },
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'packageA/pages/keep.js': {
+        type: 'chunk',
+        fileName: 'packageA/pages/keep.js',
+        code: 'const value = 1',
+        imports: [],
+        dynamicImports: [],
+      },
+      'packageA/pages/foo.js': {
+        type: 'chunk',
+        fileName: 'packageA/pages/foo.js',
+        code: 'const button = require("tdesign-miniprogram/button/index")',
+        imports: [],
+        dynamicImports: [],
+      },
+      'packageA/pages/foo.json': {
+        type: 'asset',
+        fileName: 'packageA/pages/foo.json',
+        source: JSON.stringify({
+          usingComponents: {
+            't-button': 'tdesign-miniprogram/button/index',
+          },
+        }),
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['packageA/pages/keep.js'].code).toBe('const value = 1')
+    expect(bundle['packageA/pages/foo.js'].code).toContain('../miniprogram_npm/tdesign-miniprogram/button/index')
+    expect(bundle['packageA/pages/foo.json'].source).toContain('"t-button": "../miniprogram_npm/tdesign-miniprogram/button/index"')
+  })
+
   it('handles non-logging shared chunk duplicates and empty watch files gracefully', async () => {
     applySharedChunkStrategyMock.mockImplementationOnce((_bundle, options) => {
       options.onDuplicate?.({
