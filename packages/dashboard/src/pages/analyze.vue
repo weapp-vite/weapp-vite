@@ -6,7 +6,9 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
+import AppRuntimeEventCard from '../features/dashboard/components/AppRuntimeEventCard.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
+import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
 import DashboardTabs from '../features/dashboard/components/DashboardTabs.vue'
@@ -269,18 +271,12 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="grid gap-2 sm:grid-cols-2">
-              <div
+              <AppStatCard
                 v-for="item in eventSummary"
                 :key="item.label"
-                class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
-              >
-                <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                  {{ item.label }}
-                </p>
-                <p class="mt-1 text-lg font-semibold">
-                  {{ item.value }}
-                </p>
-              </div>
+                :label="item.label"
+                :value="item.value"
+              />
             </div>
           </div>
         </AppSurfaceCard>
@@ -316,20 +312,7 @@ onBeforeUnmount(() => {
               :key="event.id"
               class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
             >
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="font-medium text-[color:var(--dashboard-text)]">
-                    {{ event.title }}
-                  </p>
-                  <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-                    {{ event.detail }}
-                  </p>
-                  <p class="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                    {{ formatRuntimeEventMeta(event) }}
-                  </p>
-                </div>
-                <AppRuntimeBadge :label="formatRuntimeEventLevel(event.level)" :tone="getRuntimeEventBadgeTone(event.level)" />
-              </div>
+              <AppRuntimeEventCard :event="event" />
             </li>
           </ul>
         </AppSurfaceCard>
