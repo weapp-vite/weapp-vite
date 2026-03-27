@@ -16,6 +16,7 @@ Page({
     savedFileInfo: '',
     savedMissingInfo: '',
     savedMissingRemovalInfo: '',
+    fileManagerMissingAccessInfo: '',
     fileManagerMissingReadInfo: '',
     fileManagerMissingReadDirInfo: '',
     fileManagerMissingStatInfo: '',
@@ -334,6 +335,21 @@ Page({
           }),
         }, () => {
           this.push('lab:runMissingReadFileLab')
+        })
+      },
+    })
+  },
+  runMissingAccessLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.access({
+      path: 'headless://saved/component-lab/missing-access.txt',
+      fail: (error) => {
+        this.setData({
+          fileManagerMissingAccessInfo: JSON.stringify({
+            missingAccessError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runMissingAccessLab')
         })
       },
     })

@@ -129,6 +129,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('runMissingStatLab')
     bridge.runPageMethod('runMissingReadDirLab')
     bridge.runPageMethod('runMissingReadFileLab')
+    bridge.runPageMethod('runMissingAccessLab')
     bridge.runPageMethod('loadMockQueue')
     bridge.runPageMethod('runFileTransferLab')
     bridge.runPageMethod('runSavedOverwriteLab')
@@ -148,6 +149,7 @@ describe.sequential('simulator browser e2e', () => {
           pageData.componentSnapshot
           && pageData.directorySnapshot
           && pageData.downloadSnapshot
+          && pageData.fileManagerMissingAccessInfo
           && pageData.fileManagerMissingReadInfo
           && pageData.fileManagerMissingReadDirInfo
           && pageData.fileManagerMissingStatInfo
@@ -173,6 +175,7 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.componentSnapshot).toContain('"size":1')
     expect(pageData.directorySnapshot).toBe('["daily"]')
     expect(pageData.downloadSnapshot).toContain('"errMsg":"downloadFile:ok"')
+    expect(pageData.fileManagerMissingAccessInfo).toContain('"missingAccessError":"access:fail no such file or directory')
     expect(pageData.fileManagerMissingReadInfo).toContain('"missingReadError":"readFile:fail no such file or directory')
     expect(pageData.fileManagerMissingReadDirInfo).toContain('"missingReadDirError":"readdir:fail no such file or directory')
     expect(pageData.fileManagerMissingStatInfo).toContain('"missingStatError":"stat:fail no such file or directory')
