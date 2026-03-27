@@ -506,3 +506,133 @@ Page({
 
   return root
 }
+
+export function createSelectorQueryFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-selector-query-'))
+
+  writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx123',
+    miniprogramRoot: 'dist',
+  })
+  writeJson(path.join(root, 'dist/app.json'), {
+    pages: ['pages/index/index'],
+  })
+  writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
+  writeScript(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    selectorQueryResult: null,
+    viewportResult: null,
+  },
+  runSelectorQuery() {
+    wx.createSelectorQuery()
+      .select('#card')
+      .fields({
+        id: true,
+        dataset: true,
+        rect: true,
+        size: true,
+        properties: ['class']
+      }, (result) => {
+        this.setData({
+          selectorQueryResult: result
+        })
+      })
+      .exec()
+  },
+  runViewportQuery() {
+    wx.pageScrollTo({
+      scrollTop: 64
+    })
+    wx.createSelectorQuery()
+      .selectViewport()
+      .scrollOffset((result) => {
+        this.setData({
+          viewportResult: result
+        })
+      })
+      .exec()
+  }
+})
+`)
+  writeText(path.join(root, 'dist/pages/index/index.wxml'), `
+<view
+  id="card"
+  class="panel primary"
+  data-role="hero"
+  data-phase="ready"
+  style="left: 12px; top: 24px; width: 120px; height: 48px;"
+>Card</view>
+`)
+
+  return root
+}
+
+export function createComponentFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-component-'))
+
+  writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx123',
+    miniprogramRoot: 'dist',
+  })
+  writeJson(path.join(root, 'dist/app.json'), {
+    pages: ['pages/lab/index'],
+  })
+  writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
+  writeJson(path.join(root, 'dist/pages/lab/index.json'), {
+    usingComponents: {
+      'status-card': '../../components/status-card/index',
+    },
+  })
+  writeScript(path.join(root, 'dist/pages/lab/index.js'), `
+Page({
+  data: {
+    count: 2,
+    log: [],
+    snapshot: ''
+  },
+  inspect() {
+    const card = this.selectComponent('#status-card')
+    const cards = this.selectAllComponents('status-card')
+    this.setData({
+      snapshot: JSON.stringify({
+        count: card?.properties?.count,
+        hasPulse: typeof card?.pulse === 'function',
+        size: cards.length
+      })
+    })
+  },
+  onPulse(event) {
+    this.setData({
+      log: [...this.data.log, event?.detail?.source ?? 'none']
+    })
+  }
+})
+`)
+  writeText(path.join(root, 'dist/pages/lab/index.wxml'), `
+<status-card id="status-card" count="{{count}}" bind:pulse="onPulse" />
+<view>{{snapshot}}</view>
+<view>{{log.0}}</view>
+`)
+  writeJson(path.join(root, 'dist/components/status-card/index.json'), {})
+  writeScript(path.join(root, 'dist/components/status-card/index.js'), `
+Component({
+  properties: {
+    count: {
+      type: Number,
+      value: 0
+    }
+  },
+  methods: {
+    pulse() {
+      this.triggerEvent('pulse', {
+        source: 'status-card'
+      })
+    }
+  }
+})
+`)
+  writeText(path.join(root, 'dist/components/status-card/index.wxml'), '<view class="card-shell">count: {{count}}</view>')
+
+  return root
+}

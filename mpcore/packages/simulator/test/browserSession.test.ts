@@ -2764,4 +2764,71 @@ Component({
     const rerendered = session.renderCurrentPage()
     expect(rerendered.wxml).toContain('shell:leaf')
   })
+
+  it('supports createSelectorQuery in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    selectorQueryResult: null,
+    viewportResult: null
+  },
+  runSelectorQuery() {
+    wx.createSelectorQuery()
+      .select('#card')
+      .fields({
+        id: true,
+        dataset: true,
+        rect: true,
+        size: true
+      }, (result) => {
+        this.setData({
+          selectorQueryResult: result
+        })
+      })
+      .exec()
+  },
+  runViewportQuery() {
+    wx.pageScrollTo({
+      scrollTop: 88
+    })
+    wx.createSelectorQuery()
+      .selectViewport()
+      .scrollOffset((result) => {
+        this.setData({
+          viewportResult: result
+        })
+      })
+      .exec()
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view id="card" data-kind="browser" style="left: 8px; top: 10px; width: 200px; height: 40px;">Browser Card</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runSelectorQuery()
+    expect(page.data.selectorQueryResult).toEqual({
+      bottom: 50,
+      dataset: {
+        kind: 'browser',
+      },
+      height: 40,
+      id: 'card',
+      left: 8,
+      right: 208,
+      top: 10,
+      width: 200,
+    })
+
+    page.runViewportQuery()
+    expect(page.data.viewportResult).toEqual({
+      scrollLeft: 0,
+      scrollTop: 88,
+    })
+  })
 })

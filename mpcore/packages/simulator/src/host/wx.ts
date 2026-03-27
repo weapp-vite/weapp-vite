@@ -18,6 +18,57 @@ export interface HeadlessWxPageScrollToOption extends HeadlessWxCallbackOption {
   selector?: string
 }
 
+export interface HeadlessWxSelectorQueryBoundingClientRectResult {
+  bottom: number
+  height: number
+  left: number
+  right: number
+  top: number
+  width: number
+}
+
+export interface HeadlessWxSelectorQueryScrollOffsetResult {
+  scrollLeft: number
+  scrollTop: number
+}
+
+export interface HeadlessWxSelectorQueryFieldsOption {
+  computedStyle?: string[]
+  context?: boolean
+  dataset?: boolean
+  id?: boolean
+  mark?: boolean
+  node?: boolean
+  properties?: string[]
+  rect?: boolean
+  scrollOffset?: boolean
+  size?: boolean
+}
+
+export interface HeadlessWxSelectorQueryRequest {
+  fields: HeadlessWxSelectorQueryFieldsOption
+  selector?: string
+  single: boolean
+  target: 'selector' | 'viewport'
+}
+
+export interface HeadlessWxSelectorQueryNode {
+  boundingClientRect: (callback?: (result: HeadlessWxSelectorQueryBoundingClientRectResult | HeadlessWxSelectorQueryBoundingClientRectResult[] | null) => void) => HeadlessWxSelectorQuery
+  fields: (
+    fields: HeadlessWxSelectorQueryFieldsOption,
+    callback?: (result: Record<string, any> | Record<string, any>[] | null) => void,
+  ) => HeadlessWxSelectorQuery
+  scrollOffset: (callback?: (result: HeadlessWxSelectorQueryScrollOffsetResult | HeadlessWxSelectorQueryScrollOffsetResult[] | null) => void) => HeadlessWxSelectorQuery
+}
+
+export interface HeadlessWxSelectorQuery {
+  exec: (callback?: (result: unknown[]) => void) => unknown[]
+  in: (component: Record<string, any>) => HeadlessWxSelectorQuery
+  select: (selector: string) => HeadlessWxSelectorQueryNode
+  selectAll: (selector: string) => HeadlessWxSelectorQueryNode
+  selectViewport: () => HeadlessWxSelectorQueryNode
+}
+
 export interface HeadlessWxStorageResult {
   errMsg: string
 }
@@ -227,6 +278,7 @@ export interface HeadlessWxRequestTask {
 }
 
 export interface HeadlessWxDriver {
+  executeSelectorQuery: (requests: HeadlessWxSelectorQueryRequest[], scope?: Record<string, any>) => unknown[]
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   clearStorageSync: () => void
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
@@ -277,6 +329,7 @@ export interface HeadlessWx {
   canIUse: (schema: string) => boolean
   clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
+  createSelectorQuery: () => HeadlessWxSelectorQuery
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getAppBaseInfo: (option?: HeadlessWxGetAppBaseInfoOption) => HeadlessWxAppBaseInfoResult | undefined
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
@@ -367,6 +420,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     canIUse: true,
     clearStorage: true,
     clearStorageSync: true,
+    createSelectorQuery: true,
     getAppBaseInfo: {
       return: {
         SDKVersion: true,
@@ -543,6 +597,78 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       }
     }, option),
     clearStorageSync: () => driver.clearStorageSync(),
+    createSelectorQuery: () => {
+      const requests: HeadlessWxSelectorQueryRequest[] = []
+      let scope: Record<string, any> | undefined
+      const callbacks: Array<(result: any) => void> = []
+      let query!: HeadlessWxSelectorQuery
+
+      const createNode = (target: HeadlessWxSelectorQueryRequest['target'], selector?: string, single = true): HeadlessWxSelectorQueryNode => ({
+        boundingClientRect: (callback) => {
+          requests.push({
+            fields: {
+              rect: true,
+              size: true,
+            },
+            selector,
+            single,
+            target,
+          })
+          if (callback) {
+            callbacks.push(callback as (result: Record<string, any> | null) => void)
+          }
+          return query
+        },
+        fields: (fields, callback) => {
+          requests.push({
+            fields: {
+              ...fields,
+            },
+            selector,
+            single,
+            target,
+          })
+          if (callback) {
+            callbacks.push(callback)
+          }
+          return query
+        },
+        scrollOffset: (callback) => {
+          requests.push({
+            fields: {
+              scrollOffset: true,
+            },
+            selector,
+            single,
+            target,
+          })
+          if (callback) {
+            callbacks.push(callback as (result: Record<string, any> | null) => void)
+          }
+          return query
+        },
+      })
+
+      query = {
+        exec: (callback) => {
+          const result = driver.executeSelectorQuery(requests, scope)
+          for (const [index, item] of result.entries()) {
+            callbacks[index]?.(item)
+          }
+          callback?.(result)
+          return result
+        },
+        in: (component) => {
+          scope = component
+          return query
+        },
+        select: selector => createNode('selector', selector, true),
+        selectAll: selector => createNode('selector', selector, false),
+        selectViewport: () => createNode('viewport', undefined, true),
+      }
+
+      return query
+    },
     getEnterOptionsSync: () => driver.getEnterOptionsSync(),
     getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),
     getAppBaseInfoSync: () => driver.getAppBaseInfoSync(),

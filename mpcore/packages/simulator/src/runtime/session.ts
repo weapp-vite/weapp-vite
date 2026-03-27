@@ -1,6 +1,7 @@
 import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType } from '../host'
 import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessAppInstance } from './appInstance'
+import type { HeadlessComponentInstance } from './componentInstance'
 import type { HeadlessPageInstance } from './pageInstance'
 import type { HeadlessWxActionSheetMockDefinition, HeadlessWxModalMockDefinition, HeadlessWxRequestMockDefinition } from './wxState'
 import fs from 'node:fs'
@@ -8,9 +9,11 @@ import path from 'node:path'
 import { createHostRegistries } from '../host'
 import { loadProject } from '../project'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
+import { executeSelectorQueryRequests } from '../view'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
+import { renderRuntimePageTree } from './render'
 import {
   applyResizeToSystemInfo,
   createDefaultSystemInfo,
@@ -43,6 +46,8 @@ interface HeadlessTabBarSnapshotItem extends HeadlessTabBarItem {
 
 const LEADING_SLASH_RE = /^\/+/
 const PAGE_STACK_LIMIT = 10
+const DATA_ATTR_SELECTOR_RE = /^\[data-([^=\]]+)="([^"]*)"\]$/
+const DATASET_KEY_RE = /-([a-z])/g
 
 function stripLeadingSlash(route: string) {
   return route.replace(LEADING_SLASH_RE, '')
@@ -121,6 +126,8 @@ export class HeadlessSession {
   private readonly registries: HeadlessHostRegistries
   private currentPageInstance: HeadlessPageInstance | null = null
   private readonly pages: HeadlessPageInstance[] = []
+  private readonly componentCache = new Map<string, HeadlessComponentInstance>()
+  private readonly componentScopes = new Map<string, any>()
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
@@ -166,6 +173,7 @@ export class HeadlessSession {
       () => this.pages.slice(),
       () => this.getApp(),
       {
+        executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
         getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
@@ -244,12 +252,56 @@ export class HeadlessSession {
     return this.wxState.getRequestLogs()
   }
 
+  renderCurrentPage() {
+    const current = this.requireCurrentPage('renderCurrentPage()')
+    return renderRuntimePageTree({
+      changedPageKeys: current.__lastChangedKeys__ ?? [],
+      componentCache: this.componentCache,
+      componentScopes: this.componentScopes,
+      moduleLoader: this.moduleLoader,
+      project: this.project,
+      session: {
+        selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
+        selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
+        selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
+      },
+    }, current)
+  }
+
   getStorageSnapshot() {
     return this.wxState.getStorageSnapshot()
   }
 
   getShareMenu() {
     return this.wxState.getShareMenu()
+  }
+
+  selectComponent(selector: string) {
+    this.renderCurrentPage()
+    return this.selectComponentsWithin(null, selector)[0] ?? null
+  }
+
+  selectAllComponents(selector: string) {
+    this.renderCurrentPage()
+    return this.selectComponentsWithin(null, selector)
+  }
+
+  selectComponentWithin(scopeId: string, selector: string) {
+    this.renderCurrentPage()
+    return this.selectComponentsWithin(scopeId, selector)[0] ?? null
+  }
+
+  selectAllComponentsWithin(scopeId: string, selector: string) {
+    this.renderCurrentPage()
+    return this.selectComponentsWithin(scopeId, selector)
+  }
+
+  selectOwnerComponent(scopeId: string) {
+    const scope = this.componentScopes.get(scopeId)
+    if (!scope?.ownerScopeId) {
+      return null
+    }
+    return this.componentCache.get(scope.ownerScopeId) ?? null
   }
 
   getTabBar() {
@@ -553,6 +605,9 @@ export class HeadlessSession {
     }
 
     this.currentPageInstance?.onHide?.()
+    if (this.currentPageInstance) {
+      this.runPageComponentLifetime(this.currentPageInstance.route, 'hide')
+    }
     const pageInstance = this.createFreshPage(target)
     this.pages.push(pageInstance)
     this.currentPageInstance = pageInstance
@@ -594,6 +649,9 @@ export class HeadlessSession {
     const nextPage = this.pages.at(-1) ?? null
     this.currentPageInstance = nextPage
     nextPage?.onShow?.()
+    if (nextPage) {
+      this.runPageComponentLifetime(nextPage.route, 'show')
+    }
     return nextPage
   }
 
@@ -618,6 +676,7 @@ export class HeadlessSession {
 
     if (current && current !== cachedTarget) {
       current.onHide?.()
+      this.runPageComponentLifetime(current.route, 'hide')
     }
 
     for (const page of [...this.pages].reverse()) {
@@ -635,6 +694,7 @@ export class HeadlessSession {
     }
     else if (current !== nextPage) {
       nextPage.onShow?.()
+      this.runPageComponentLifetime(nextPage.route, 'show')
     }
 
     nextPage.onTabItemTap?.(tabItem)
@@ -654,8 +714,9 @@ export class HeadlessSession {
     complete?: () => void
   }) {
     const current = this.requireCurrentPage('wx.pageScrollTo()')
+    current.__scrollTop__ = Number(option.scrollTop ?? 0)
     current.onPageScroll?.({
-      scrollTop: Number(option.scrollTop ?? 0),
+      scrollTop: current.__scrollTop__,
     })
   }
 
@@ -675,6 +736,7 @@ export class HeadlessSession {
     const current = this.requireCurrentPage('triggerResize()')
     applyResizeToSystemInfo(this.systemInfo, options)
     current.onResize?.(options)
+    this.runPageComponentLifetime(current.route, 'resize', options)
     return current
   }
 
@@ -688,6 +750,22 @@ export class HeadlessSession {
 
   }
 
+  private executeSelectorQuery(
+    requests: import('../host').HeadlessWxSelectorQueryRequest[],
+    scope?: Record<string, any>,
+  ) {
+    const current = this.requireCurrentPage('wx.createSelectorQuery().exec()')
+    if (scope && scope !== current && !Array.from(this.componentCache.values()).includes(scope as HeadlessComponentInstance)) {
+      throw new Error('wx.createSelectorQuery().in(component) received an unknown scope in headless runtime.')
+    }
+    const rendered = this.renderCurrentPage()
+    return executeSelectorQueryRequests(requests, {
+      page: current,
+      root: rendered.root,
+      windowInfo: this.getWindowInfo(),
+    })
+  }
+
   private createFreshPage(target: ResolvedNavigationTarget) {
     const pageModulePath = path.resolve(this.project.miniprogramRootPath, `${target.routeRecord.route}.js`)
     const pageConfigPath = path.resolve(this.project.miniprogramRootPath, `${target.routeRecord.route}.json`)
@@ -697,6 +775,8 @@ export class HeadlessSession {
       background: resolveBackgroundSnapshot(this.project.appConfig, pageConfig),
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
     })
+    pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
+    pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
     pageInstance.onLoad?.(target.query)
     pageInstance.onShow?.()
     pageInstance.onReady?.()
@@ -766,11 +846,14 @@ export class HeadlessSession {
     }
     this.pages.length = 0
     this.tabPages.clear()
+    this.componentCache.clear()
+    this.componentScopes.clear()
     this.currentPageInstance = null
   }
 
   private unloadPage(page: HeadlessPageInstance) {
     page.onUnload?.()
+    this.detachPageComponents(page.route)
     this.tabPages.delete(stripLeadingSlash(page.route))
   }
 
@@ -781,6 +864,67 @@ export class HeadlessSession {
       throw new Error(`Cannot call ${action} without an active page in headless runtime.`)
     }
     return current
+  }
+
+  private selectComponentsWithin(rootScopeId: string | null, selector: string) {
+    const normalizedSelector = selector.trim()
+    if (!normalizedSelector) {
+      return []
+    }
+
+    return [...this.componentScopes.entries()]
+      .filter(([candidateScopeId, scope]) => {
+        if (!candidateScopeId.includes('/')) {
+          return false
+        }
+        if (rootScopeId && candidateScopeId === rootScopeId) {
+          return false
+        }
+        if (rootScopeId && !candidateScopeId.startsWith(`${rootScopeId}/`)) {
+          return false
+        }
+        if (normalizedSelector.startsWith('#')) {
+          return scope.id === normalizedSelector.slice(1)
+        }
+        if (normalizedSelector.startsWith('.')) {
+          return scope.classList?.includes(normalizedSelector.slice(1)) ?? false
+        }
+        const dataAttrMatch = normalizedSelector.match(DATA_ATTR_SELECTOR_RE)
+        if (dataAttrMatch) {
+          const [, key, value] = dataAttrMatch
+          const datasetKey = key.replace(DATASET_KEY_RE, (_match, char: string) => char.toUpperCase())
+          return scope.dataset?.[datasetKey] === value
+        }
+        return scope.alias === normalizedSelector
+      })
+      .map(([candidateScopeId]) => this.componentCache.get(candidateScopeId))
+      .filter(Boolean)
+  }
+
+  private detachPageComponents(route: string) {
+    const prefix = `page:${stripLeadingSlash(route)}`
+    for (const [scopeId, instance] of [...this.componentCache.entries()]) {
+      if (!scopeId.startsWith(prefix)) {
+        continue
+      }
+      instance.__definition__?.lifetimes?.detached?.call(instance)
+      this.componentCache.delete(scopeId)
+      this.componentScopes.delete(scopeId)
+    }
+  }
+
+  private runPageComponentLifetime(
+    route: string,
+    lifetimeName: 'hide' | 'resize' | 'show',
+    payload?: unknown,
+  ) {
+    const prefix = `page:${stripLeadingSlash(route)}`
+    for (const [scopeId, instance] of this.componentCache.entries()) {
+      if (!scopeId.startsWith(prefix)) {
+        continue
+      }
+      instance.__definition__?.pageLifetimes?.[lifetimeName]?.call(instance, payload)
+    }
   }
 }
 

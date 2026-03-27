@@ -56,16 +56,16 @@ export class HeadlessTestingSessionHandle {
   async currentPage() {
     const pages = this.session.getCurrentPages()
     const current = pages.at(-1)
-    return current ? new HeadlessTestingPageHandle(this.project, current) : null
+    return current ? new HeadlessTestingPageHandle(this.project, current, this.session) : null
   }
 
   async getCurrentPages() {
-    return this.session.getCurrentPages().map(page => new HeadlessTestingPageHandle(this.project, page))
+    return this.session.getCurrentPages().map(page => new HeadlessTestingPageHandle(this.project, page, this.session))
   }
 
   async reLaunch(route: string) {
     const page = this.session.reLaunch(route)
-    return new HeadlessTestingPageHandle(this.project, page)
+    return new HeadlessTestingPageHandle(this.project, page, this.session)
   }
 
   async waitForCurrentPage(route?: string, options: HeadlessTestingWaitOptions = {}) {
@@ -80,7 +80,7 @@ export class HeadlessTestingSessionHandle {
         if (!currentPageInstance) {
           return null
         }
-        const current = new HeadlessTestingPageHandle(this.project, currentPageInstance)
+        const current = new HeadlessTestingPageHandle(this.project, currentPageInstance, this.session)
         if (!normalizedRoute) {
           return current
         }

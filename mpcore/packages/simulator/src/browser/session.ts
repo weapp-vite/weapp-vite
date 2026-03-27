@@ -19,6 +19,7 @@ import {
   deriveWindowInfo,
 } from '../runtime/systemInfo'
 import { createHeadlessWxState } from '../runtime/wxState'
+import { executeSelectorQueryRequests } from '../view'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
 import { renderBrowserPageTree } from './render'
@@ -183,6 +184,7 @@ export class BrowserHeadlessSession {
       () => this.pages.slice(),
       () => this.getApp(),
       {
+        executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
         getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
@@ -859,8 +861,9 @@ export class BrowserHeadlessSession {
     scrollTop?: number
   }) {
     const current = this.requireCurrentPage('wx.pageScrollTo()')
+    current.__scrollTop__ = Number(option.scrollTop ?? 0)
     current.onPageScroll?.({
-      scrollTop: Number(option.scrollTop ?? 0),
+      scrollTop: current.__scrollTop__,
     })
   }
 
@@ -892,6 +895,34 @@ export class BrowserHeadlessSession {
 
   stopPullDownRefresh() {
 
+  }
+
+  private executeSelectorQuery(
+    requests: import('../host').HeadlessWxSelectorQueryRequest[],
+    scope?: Record<string, any>,
+  ) {
+    const current = this.requireCurrentPage('wx.createSelectorQuery().exec()')
+    if (scope && scope !== current) {
+      throw new Error('wx.createSelectorQuery().in(component) is not supported yet in browser simulator runtime.')
+    }
+    const rendered = renderBrowserPageTree({
+      changedPageKeys: current.__lastChangedKeys__ ?? [],
+      componentCache: this.componentCache,
+      componentScopes: this.componentScopes,
+      files: this.files,
+      moduleLoader: this.moduleLoader,
+      project: this.project,
+      session: {
+        selectAllComponentsWithin: (scopeId: string, selector: string) => this.selectAllComponentsWithin(scopeId, selector),
+        selectComponentWithin: (scopeId: string, selector: string) => this.selectComponentWithin(scopeId, selector),
+        selectOwnerComponent: (scopeId: string) => this.selectOwnerComponent(scopeId),
+      },
+    }, current)
+    return executeSelectorQueryRequests(requests, {
+      page: current,
+      root: rendered.root,
+      windowInfo: this.getWindowInfo(),
+    })
   }
 
   private createFreshPage(target: ResolvedNavigationTarget) {

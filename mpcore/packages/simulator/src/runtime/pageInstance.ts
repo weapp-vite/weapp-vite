@@ -13,6 +13,7 @@ export interface HeadlessPageInstance extends Record<string, any> {
   __navigationBar__?: HeadlessNavigationBarSnapshot
   __navigationBarTitle__?: string
   __route__: string
+  __scrollTop__?: number
   data: Record<string, any>
   options: Record<string, string>
   route: string
