@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  getDefaultScriptModuleTagByExtension,
   getScriptModuleImportAttrs,
   getScriptModuleTagNames,
   isScriptModuleImportAttr,
   isScriptModuleTagName,
   normalizeImportSjsAttributes,
   resolveScriptModuleTagByPlatform,
+  resolveScriptModuleTagName,
+  shouldNormalizeScriptModuleAttributes,
 } from './wxmlScriptModule'
 
 describe('wxmlScriptModule utils', () => {
@@ -25,6 +28,12 @@ describe('wxmlScriptModule utils', () => {
 
   it('exposes shared script module tag metadata', () => {
     expect(getScriptModuleTagNames()).toEqual(['wxs', 'sjs', 'import-sjs'])
+    expect(getDefaultScriptModuleTagByExtension()).toBe('wxs')
+    expect(getDefaultScriptModuleTagByExtension('.sjs')).toBe('sjs')
+    expect(getDefaultScriptModuleTagByExtension('unknown')).toBe('wxs')
+    expect(resolveScriptModuleTagName({ scriptModuleExtension: 'sjs' })).toBe('sjs')
+    expect(resolveScriptModuleTagName({ platform: 'alipay', scriptModuleExtension: 'sjs' })).toBe('import-sjs')
+    expect(resolveScriptModuleTagName({ scriptModuleExtension: 'sjs', scriptModuleTag: 'custom-sjs' })).toBe('custom-sjs')
     expect(isScriptModuleTagName('wxs')).toBe(true)
     expect(isScriptModuleTagName('import-sjs')).toBe(true)
     expect(isScriptModuleTagName('include')).toBe(false)
@@ -35,5 +44,7 @@ describe('wxmlScriptModule utils', () => {
     expect(isScriptModuleImportAttr('import-sjs', 'from')).toBe(true)
     expect(isScriptModuleImportAttr('import-sjs', 'src')).toBe(false)
     expect(isScriptModuleImportAttr(undefined, 'src')).toBe(false)
+    expect(shouldNormalizeScriptModuleAttributes('import-sjs')).toBe(true)
+    expect(shouldNormalizeScriptModuleAttributes('sjs')).toBe(false)
   })
 })

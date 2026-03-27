@@ -326,6 +326,34 @@ describe('handleWxml', () => {
     expect(result.code).toBe(expected)
   })
 
+  it('uses extension-derived default script module tag when explicit tag is omitted', () => {
+    const value = './helper.wxs'
+    const code = '<wxs src="./helper.wxs"></wxs>'
+    const srcStart = code.indexOf(value)
+    const closeTagStart = code.lastIndexOf('</wxs>')
+    const closeNameStart = closeTagStart + 2
+    const data = {
+      code,
+      wxsImportNormalizeTokens: [{ start: srcStart, end: srcStart + value.length, value }],
+      templateImportNormalizeTokens: [],
+      removeWxsLangAttrTokens: [],
+      inlineWxsTokens: [],
+      scriptModuleTagTokens: [
+        { start: 1, end: 4, value: 'wxs' },
+        { start: closeNameStart, end: closeNameStart + 3, value: 'wxs' },
+      ],
+      eventTokens: [],
+      commentTokens: [],
+      removalRanges: [],
+      components: {},
+      deps: [],
+    }
+
+    const result = handleWxml(data, { scriptModuleExtension: 'sjs' })
+
+    expect(result.code).toBe('<sjs src="normalized/./helper.wxs.sjs"></sjs>')
+  })
+
   it('reuses inline wxs transforms across instances', () => {
     const createData = (moduleName: string) => {
       const code = `<wxs module="${moduleName}">inline()</wxs>`

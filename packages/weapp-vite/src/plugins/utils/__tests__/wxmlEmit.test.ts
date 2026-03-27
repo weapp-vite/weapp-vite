@@ -105,6 +105,29 @@ describe('emitWxmlAssetsWithCache', () => {
     expect(payload.source).toContain('from="./helper.sjs"')
   })
 
+  it('falls back to extension-derived script module tag when adapter does not override it', () => {
+    ctx = createMockCompiler({
+      outputExtensions: { wxml: 'swan', wxs: 'sjs' },
+      platform: 'swan',
+    })
+    const token = ctx.wxmlService!.analyze('<wxs src="./helper.wxs" />')
+    ctx.wxmlService!.tokenMap.set(filePath, token)
+    ctx.wxmlService!.depsMap.set(filePath, new Set())
+
+    const emitFile = vi.fn()
+
+    emitWxmlAssetsWithCache({
+      runtime: { emitFile },
+      compiler: ctx as any,
+      emittedCodeCache: ctx.runtimeState.wxml.emittedCode,
+    })
+
+    const payload = emitFile.mock.calls[0]?.[0]
+    expect(payload.fileName).toBe('pages/index/index.swan')
+    expect(payload.source).toContain('<sjs')
+    expect(payload.source).toContain('src="./helper.sjs"')
+  })
+
   it('rewrites wx directives and pascal-case tags for alipay output', () => {
     ctx = createMockCompiler({
       outputExtensions: { wxml: 'axml', wxs: 'sjs' },
