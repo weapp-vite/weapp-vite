@@ -1,3 +1,4 @@
+import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 import {
   shouldEmitGenericPlaceholderAsset,
@@ -69,6 +70,40 @@ export function normalizeVueTemplateForPlatform(
   catch {
     return template
   }
+}
+
+export function emitPlatformTemplateAsset(
+  bundle: Record<string, any>,
+  options: {
+    ctx: CompilerContext
+    pluginCtx: any
+    filename: string
+    relativeBase: string
+    template: string
+    platform: string
+    templateExtension: string
+    scriptModuleExtension?: string
+  },
+) {
+  const normalizedTemplate = normalizeVueTemplateForPlatform(options.template, {
+    platform: options.platform,
+    templateExtension: options.templateExtension,
+    scriptModuleExtension: options.scriptModuleExtension,
+  })
+
+  if (options.ctx.wxmlService) {
+    try {
+      const token = options.ctx.wxmlService.analyze(normalizedTemplate)
+      options.ctx.wxmlService.tokenMap.set(options.filename, token)
+      options.ctx.wxmlService.setWxmlComponentsMap(options.filename, token.components)
+    }
+    catch {
+      // 忽略模板扫描异常，保持模板发射流程可继续
+    }
+  }
+
+  emitSfcTemplateIfMissing(options.pluginCtx, bundle, options.relativeBase, normalizedTemplate, options.templateExtension)
+  return normalizedTemplate
 }
 
 export function emitAlipayGenericPlaceholderAssets(

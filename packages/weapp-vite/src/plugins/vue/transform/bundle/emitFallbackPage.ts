@@ -1,4 +1,5 @@
 import type { ClassStyleWxsAsset, VueBundleState } from './shared'
+// eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
 import fs from 'fs-extra'
 import { getClassStyleWxsSource } from 'wevu/compiler'
 import logger from '../../../../logger'
@@ -6,15 +7,15 @@ import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { resolveClassStyleWxsLocationForBase } from '../classStyle'
-import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../emitAssets'
+import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing } from '../emitAssets'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
 import { emitNativeLayoutAssetsIfNeeded, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
-import { emitAlipayGenericPlaceholderAssets, normalizeVueConfigForPlatform, normalizeVueTemplateForPlatform } from './platform'
-import { compileVueLikeFile, registerVueTemplateToken } from './shared'
+import { emitAlipayGenericPlaceholderAssets, emitPlatformTemplateAsset, normalizeVueConfigForPlatform } from './platform'
+import { compileVueLikeFile } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -125,13 +126,16 @@ export async function emitFallbackPageAssets(
       }
 
       if (result.template) {
-        const normalizedTemplate = normalizeVueTemplateForPlatform(result.template, {
+        emitPlatformTemplateAsset(bundle, {
+          ctx,
+          pluginCtx,
+          filename: entryFilePath,
+          relativeBase,
+          template: result.template,
           platform: configService.platform,
           templateExtension,
           scriptModuleExtension: configService.outputExtensions?.wxs,
         })
-        registerVueTemplateToken(ctx, entryFilePath, normalizedTemplate)
-        emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, normalizedTemplate, templateExtension)
       }
 
       const wxsExtension = configService.outputExtensions?.wxs
