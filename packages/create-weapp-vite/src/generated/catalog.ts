@@ -58,7 +58,7 @@ export const TEMPLATE_CATALOG = {
   tailwindcss: '^4.2.2',
   tslib: '^2.8.1',
   typescript: '^6.0.2',
-  vite: '8.0.3',
+  vite: '8.0.2',
   vue: '^3.5.31',
   zod: '^4.3.6'
 } as const
