@@ -113,6 +113,45 @@ browserPage?.wx.getFileSystemManager().unlink({
     expectType<{ errMsg: string } | undefined>(result)
   },
 })
+browserPage?.wx.getFileSystemManager().writeFile({
+  filePath: 'headless://temp/source.txt',
+  data: 'payload',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+browserPage?.wx.getFileSystemManager().appendFile({
+  filePath: 'headless://temp/source.txt',
+  data: 'payload',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+browserPage?.wx.getFileSystemManager().mkdir({
+  dirPath: 'headless://saved/example',
+  recursive: true,
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
 browserPage?.wx.saveFile({
   tempFilePath: 'headless://wxfile/temp/0001',
   success: (result) => {
@@ -243,6 +282,45 @@ headlessPage?.wx.getFileSystemManager().copyFile({
 })
 headlessPage?.wx.getFileSystemManager().unlink({
   filePath: 'headless://temp/source.txt',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+headlessPage?.wx.getFileSystemManager().writeFile({
+  filePath: 'headless://temp/source.txt',
+  data: 'payload',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+headlessPage?.wx.getFileSystemManager().appendFile({
+  filePath: 'headless://temp/source.txt',
+  data: 'payload',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+headlessPage?.wx.getFileSystemManager().mkdir({
+  dirPath: 'headless://saved/example',
+  recursive: true,
   success: (result) => {
     expectType<{ errMsg: string }>(result)
   },
