@@ -11,7 +11,7 @@ import process from 'node:process'
 import PQueue from 'p-queue'
 import { FileCache } from '../cache'
 import { getOutputExtensions } from '../defaults'
-import { createMiniProgramGlobalResolveExpression, getRouteRuntimeGlobalKeys } from '../utils/miniProgramGlobals'
+import { createAutoRoutesArtifacts, createEmptyAutoRoutesSnapshot } from './autoRoutesPlugin/service/shared'
 
 interface AutoRoutesCandidateState {
   base: string
@@ -135,52 +135,13 @@ export interface RuntimeState {
 }
 
 export function createRuntimeState(): RuntimeState {
-  const routeRuntimeGlobalExpression = createMiniProgramGlobalResolveExpression({
-    globalKeys: getRouteRuntimeGlobalKeys(),
-  })
+  const emptyAutoRoutesSnapshot = createEmptyAutoRoutesSnapshot()
+  const emptyAutoRoutesArtifacts = createAutoRoutesArtifacts(emptyAutoRoutesSnapshot)
   return {
     autoRoutes: {
-      routes: {
-        pages: [],
-        entries: [],
-        subPackages: [],
-      },
-      serialized: JSON.stringify({
-        pages: [],
-        entries: [],
-        subPackages: [],
-      }),
-      moduleCode: [
-        'const routes = {',
-        '  pages: [],',
-        '  entries: [],',
-        '  subPackages: [],',
-        '};',
-        'const pages = routes.pages;',
-        'const entries = routes.entries;',
-        'const subPackages = routes.subPackages;',
-        `const resolveMiniProgramGlobal = () => ${routeRuntimeGlobalExpression};`,
-        'const callRouteMethod = (methodName, option) => {',
-        '  const miniProgramGlobal = resolveMiniProgramGlobal();',
-        '  const routeMethod = miniProgramGlobal?.[methodName];',
-        '  if (typeof routeMethod !== "function") {',
-        '    throw new Error("[weapp-vite] 当前运行环境不支持路由方法: " + methodName);',
-        '  }',
-        '  if (option === undefined) {',
-        '    return routeMethod.call(miniProgramGlobal);',
-        '  }',
-        '  return routeMethod.call(miniProgramGlobal, option);',
-        '};',
-        'const wxRouter = {',
-        '  switchTab(option) { return callRouteMethod("switchTab", option); },',
-        '  reLaunch(option) { return callRouteMethod("reLaunch", option); },',
-        '  redirectTo(option) { return callRouteMethod("redirectTo", option); },',
-        '  navigateTo(option) { return callRouteMethod("navigateTo", option); },',
-        '  navigateBack(option) { return callRouteMethod("navigateBack", option); },',
-        '};',
-        'export { routes, pages, entries, subPackages, wxRouter };',
-        'export default routes;',
-      ].join('\n'),
+      routes: emptyAutoRoutesSnapshot,
+      serialized: emptyAutoRoutesArtifacts.serialized,
+      moduleCode: emptyAutoRoutesArtifacts.moduleCode,
       typedDefinition: '',
       watchFiles: new Set<string>(),
       watchDirs: new Set<string>(),

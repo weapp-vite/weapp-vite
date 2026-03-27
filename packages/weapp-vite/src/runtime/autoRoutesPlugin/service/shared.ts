@@ -33,14 +33,11 @@ export function createEmptyAutoRoutesSnapshot(): AutoRoutes {
   }
 }
 
-export function createAutoRoutesModuleCode(serialized: string) {
+function createAutoRoutesRuntimeLines() {
   const routeRuntimeGlobalExpression = createMiniProgramGlobalResolveExpression({
     globalKeys: getRouteRuntimeGlobalKeys(),
   })
   return [
-    'const routes = ',
-    serialized,
-    ';',
     'const pages = routes.pages;',
     'const entries = routes.entries;',
     'const subPackages = routes.subPackages;',
@@ -65,15 +62,34 @@ export function createAutoRoutesModuleCode(serialized: string) {
     '};',
     'export { routes, pages, entries, subPackages, wxRouter };',
     'export default routes;',
+  ]
+}
+
+export function createAutoRoutesModuleCode(serialized: string) {
+  return [
+    'const routes = ',
+    serialized,
+    ';',
+    ...createAutoRoutesRuntimeLines(),
   ].join('\n')
+}
+
+export function createAutoRoutesArtifacts(snapshot: AutoRoutes) {
+  const serialized = JSON.stringify(snapshot, null, 2)
+  return {
+    serialized,
+    moduleCode: createAutoRoutesModuleCode(serialized),
+    typedDefinition: createTypedRouterDefinition(snapshot),
+  }
 }
 
 export function resetAutoRoutesState(state: RuntimeState['autoRoutes']) {
   const emptySnapshot = createEmptyAutoRoutesSnapshot()
+  const artifacts = createAutoRoutesArtifacts(emptySnapshot)
   updateRoutesReference(state.routes, emptySnapshot)
-  state.serialized = JSON.stringify(emptySnapshot, null, 2)
-  state.typedDefinition = createTypedRouterDefinition(emptySnapshot)
-  state.moduleCode = createAutoRoutesModuleCode(state.serialized)
+  state.serialized = artifacts.serialized
+  state.typedDefinition = artifacts.typedDefinition
+  state.moduleCode = artifacts.moduleCode
   updateWatchTargets(state.watchFiles, new Set())
   updateWatchTargets(state.watchDirs, new Set())
   state.dirty = false
