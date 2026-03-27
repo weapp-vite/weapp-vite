@@ -64,6 +64,31 @@ browserPage?.wx.getFileSystemManager().rename({
     expectType<{ errMsg: string } | undefined>(result)
   },
 })
+browserPage?.wx.getFileSystemManager().copyFile({
+  srcPath: 'headless://temp/source.txt',
+  destPath: 'headless://temp/copied.txt',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+browserPage?.wx.getFileSystemManager().unlink({
+  filePath: 'headless://temp/source.txt',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
 browserPage?.wx.saveFile({
   tempFilePath: 'headless://wxfile/temp/0001',
   success: (result) => {
@@ -145,6 +170,31 @@ headlessPage?.wx.getFileSystemManager().readdir({
 headlessPage?.wx.getFileSystemManager().rename({
   oldPath: 'headless://temp/source.txt',
   newPath: 'headless://temp/target.txt',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+headlessPage?.wx.getFileSystemManager().copyFile({
+  srcPath: 'headless://temp/source.txt',
+  destPath: 'headless://temp/copied.txt',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+headlessPage?.wx.getFileSystemManager().unlink({
+  filePath: 'headless://temp/source.txt',
   success: (result) => {
     expectType<{ errMsg: string }>(result)
   },
