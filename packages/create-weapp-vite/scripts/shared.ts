@@ -102,8 +102,8 @@ async function isTemplateDirSynced(sourceRoot: string, destRoot: string) {
       return false
     }
 
-    let sourceContent: Buffer
-    let destContent: Buffer
+    let sourceContent
+    let destContent
     try {
       [sourceContent, destContent] = await Promise.all([
         fs.readFile(sourceFilePath),
