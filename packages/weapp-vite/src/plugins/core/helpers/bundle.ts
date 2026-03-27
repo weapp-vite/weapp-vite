@@ -5,6 +5,7 @@ import { isEmptyObject, isObject } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import { changeFileExtension } from '../../../utils/file'
+import { resolveCompilerOutputExtensions } from '../../../utils/outputExtensions'
 import { isPathInside, normalizeRelativePath } from '../../../utils/path'
 import { emitJsonAsset } from '../../utils/wxmlEmit'
 
@@ -54,7 +55,7 @@ export function emitJsonAssets(this: any, state: CorePluginState) {
     ) {
       const source = jsonService.resolve(jsonEmitFile.entry)
       if (source && jsonEmitFile.fileName) {
-        const jsonExtension = configService?.outputExtensions?.json ?? 'json'
+        const { jsonExtension } = resolveCompilerOutputExtensions(configService?.outputExtensions)
         emitJsonAsset(
           {
             emitFile: (asset) => {
@@ -68,6 +69,55 @@ export function emitJsonAssets(this: any, state: CorePluginState) {
       }
     }
   }
+}
+
+interface RemovalRange {
+  start: number
+  end: number
+}
+
+function stripQuotes(value: string) {
+  if (!value) {
+    return value
+  }
+  const first = value[0]
+  const last = value.at(-1)
+  if ((first === last && (first === '"' || first === '\'')) || (first === '`' && last === '`')) {
+    return value.slice(1, -1)
+  }
+  return value
+}
+
+function resolveRelativeImport(fromFile: string, specifier: string) {
+  if (!specifier) {
+    return ''
+  }
+  const dir = path.posix.dirname(fromFile)
+  const absolute = path.posix.resolve('/', dir, specifier)
+  return absolute.startsWith('/') ? absolute.slice(1) : absolute
+}
+
+function findImplicitRequireRemovalRanges(
+  chunk: OutputChunk,
+  targetFileNames: Set<string>,
+): RemovalRange[] {
+  const code = chunk.code
+  const ranges: RemovalRange[] = []
+
+  for (const match of code.matchAll(IMPLICIT_REQUIRE_RE)) {
+    const specifier = stripQuotes(match[1])
+    const resolved = resolveRelativeImport(chunk.fileName, specifier)
+
+    if (!resolved || !targetFileNames.has(resolved)) {
+      continue
+    }
+
+    const start = match.index
+    const end = start + match[0].length
+    ranges.push({ start, end })
+  }
+
+  return ranges
 }
 
 export function removeImplicitPagePreloads(
@@ -141,53 +191,4 @@ export function removeImplicitPagePreloads(
       (chunk as any).implicitlyLoadedBefore = implicitlyLoaded.filter(name => !targetSet.has(name))
     }
   }
-}
-
-interface RemovalRange {
-  start: number
-  end: number
-}
-
-function findImplicitRequireRemovalRanges(
-  chunk: OutputChunk,
-  targetFileNames: Set<string>,
-): RemovalRange[] {
-  const code = chunk.code
-  const ranges: RemovalRange[] = []
-
-  for (const match of code.matchAll(IMPLICIT_REQUIRE_RE)) {
-    const specifier = stripQuotes(match[1])
-    const resolved = resolveRelativeImport(chunk.fileName, specifier)
-
-    if (!resolved || !targetFileNames.has(resolved)) {
-      continue
-    }
-
-    const start = match.index
-    const end = start + match[0].length
-    ranges.push({ start, end })
-  }
-
-  return ranges
-}
-
-function stripQuotes(value: string) {
-  if (!value) {
-    return value
-  }
-  const first = value[0]
-  const last = value.at(-1)
-  if ((first === last && (first === '"' || first === '\'')) || (first === '`' && last === '`')) {
-    return value.slice(1, -1)
-  }
-  return value
-}
-
-function resolveRelativeImport(fromFile: string, specifier: string) {
-  if (!specifier) {
-    return ''
-  }
-  const dir = path.posix.dirname(fromFile)
-  const absolute = path.posix.resolve('/', dir, specifier)
-  return absolute.startsWith('/') ? absolute.slice(1) : absolute
 }

@@ -1,6 +1,7 @@
 import type { BuildTarget, CompilerContext } from '../../context'
 import type { SubPackageMetaValue } from '../../types'
 import { changeFileExtension } from '../../utils/file'
+import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { isPathInside, normalizeWatchPath } from '../../utils/path'
 import { resolveScriptModuleTagName } from '../../utils/wxmlScriptModule'
 import { handleWxml } from '../../wxml/handle'
@@ -32,8 +33,7 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
     throw new Error('emitWxmlAssets 需要先初始化 wxmlService、configService 和 scanService。')
   }
 
-  const templateExtension = configService.outputExtensions?.wxml ?? 'wxml'
-  const scriptModuleExtension = configService.outputExtensions?.wxs
+  const { templateExtension, scriptModuleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
   const scriptModuleTag = resolveScriptModuleTagName({
     platform: configService.platform,
     scriptModuleExtension,
