@@ -139,6 +139,36 @@ export class HeadlessTestingSessionHandle {
       .map(scopeId => new HeadlessTestingScopeHandle(scopeId, this.session))
   }
 
+  async waitForComponent(selector: string, options: HeadlessTestingWaitOptions = {}) {
+    const normalizedSelector = selector.trim()
+    if (!normalizedSelector) {
+      throw new Error('Selector must be a non-empty string in headless testing runtime.')
+    }
+
+    return await this.pollUntil(
+      async () => await this.selectComponent(normalizedSelector),
+      `Timed out waiting for component "${normalizedSelector}" in headless testing runtime.`,
+      options,
+    )
+  }
+
+  async waitForComponents(selector: string, count = 1, options: HeadlessTestingWaitOptions = {}) {
+    const normalizedSelector = selector.trim()
+    if (!normalizedSelector) {
+      throw new Error('Selector must be a non-empty string in headless testing runtime.')
+    }
+    const normalizedCount = Number.isFinite(count) ? Math.max(1, Math.trunc(count)) : 1
+
+    return await this.pollUntil(
+      async () => {
+        const components = await this.selectAllComponents(normalizedSelector)
+        return components.length >= normalizedCount ? components : null
+      },
+      `Timed out waiting for ${normalizedCount} component(s) matching "${normalizedSelector}" in headless testing runtime.`,
+      options,
+    )
+  }
+
   async reLaunch(route: string) {
     const page = this.session.reLaunch(route)
     return new HeadlessTestingPageHandle(this.project, page, this.session)
