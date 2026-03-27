@@ -48,6 +48,46 @@ Page({
     expect(session.renderCurrentPage().wxml).toContain('index')
   })
 
+  it('runs wx.nextTick callbacks after page setData in browser runtime', async () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    status: 'idle',
+    detail: 'cold'
+  },
+  runNextTickUpdate() {
+    this.setData({
+      status: 'browser-next-tick',
+      detail: 'pending'
+    })
+    wx.nextTick(() => {
+      this.setData({
+        detail: this.data.status
+      })
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{status}}</view><view>{{detail}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.runNextTickUpdate()
+    await Promise.resolve()
+
+    expect(session.renderCurrentPage().wxml).toContain('browser-next-tick')
+    expect(session.renderCurrentPage().wxml).toContain('browser-next-tick')
+    expect(page.data).toEqual({
+      status: 'browser-next-tick',
+      detail: 'browser-next-tick',
+    })
+  })
+
   it('renders custom components and routes triggerEvent back to the page', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

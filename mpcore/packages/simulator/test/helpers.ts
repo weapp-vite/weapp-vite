@@ -107,6 +107,17 @@ Page({
       })
     }, 20)
   },
+  runNextTickUpdate() {
+    this.setData({
+      '__e2eResult.status': 'next-tick-ready',
+      '__e2eResult.detail': 'pending',
+    })
+    wx.nextTick(() => {
+      this.setData({
+        '__e2eResult.detail': this.data.__e2eResult.status,
+      })
+    })
+  },
 })
 `)
   writeText(path.join(root, 'dist/pages/index/index.wxml'), `
