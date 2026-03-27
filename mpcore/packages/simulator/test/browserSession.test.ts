@@ -549,6 +549,59 @@ Page({
     expect(session.renderCurrentPage().wxml).toContain('browser-alpha-browser-beta-browser-gamma')
   })
 
+  it('keeps saved file metadata in sync with fs mutations in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    afterAppendSummary: '',
+    afterRenameSummary: '',
+    afterUnlinkSummary: '',
+    afterWriteSummary: ''
+  },
+  runSavedFileFsSyncLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-report.txt', 'alpha')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-report.txt',
+      success: (saveResult) => {
+        fsManager.writeFileSync(saveResult.savedFilePath, 'beta')
+        this.setData({
+          afterWriteSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+        fsManager.appendFileSync(saveResult.savedFilePath, '-gamma')
+        this.setData({
+          afterAppendSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+        fsManager.renameSync(saveResult.savedFilePath, 'headless://wxfile/saved/browser-report-renamed.txt')
+        this.setData({
+          afterRenameSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+        fsManager.unlinkSync('headless://wxfile/saved/browser-report-renamed.txt')
+        this.setData({
+          afterUnlinkSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{afterWriteSummary}}</view><view>{{afterAppendSummary}}</view><view>{{afterRenameSummary}}</view><view>{{afterUnlinkSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileFsSyncLab()
+
+    expect(page.data.afterWriteSummary).toContain('"size":4')
+    expect(page.data.afterAppendSummary).toContain('"size":10')
+    expect(page.data.afterRenameSummary).toContain('"filePath":"headless://wxfile/saved/browser-report-renamed.txt"')
+    expect(page.data.afterUnlinkSummary).toBe('[]')
+    expect(session.getSavedFileListSnapshot()).toEqual([])
+  })
+
   it('reports stat sizes and fs manager failures in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
