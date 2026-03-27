@@ -208,6 +208,57 @@ describe('core lifecycle emit hook injectWeapi', () => {
     expect(bundle['common.js'].code).toContain('/miniprogram_npm/tdesign-miniprogram/toast/index')
   })
 
+  it('rewrites template literal requires for platform npm imports and ignores plugin imports', async () => {
+    const state = {
+      ctx: {
+        scanService: {
+          subPackageMap: new Map(),
+        },
+        configService: {
+          isDev: false,
+          platform: 'alipay',
+          packageJson: {
+            dependencies: {
+              'tdesign-miniprogram': '^1.12.3',
+            },
+          },
+          weappViteConfig: {},
+        },
+      },
+      subPackageMeta: {
+        subPackage: {
+          root: 'pkg',
+        },
+      },
+      entriesMap: new Map(),
+      pendingIndependentBuilds: [],
+      moduleImporters: new Map(),
+      entryModuleIds: new Set(),
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: false,
+      },
+      hmrSharedChunksMode: 'auto',
+      hmrSharedChunkImporters: new Map(),
+    } as any
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'const toast = require(`tdesign-miniprogram/toast/index`); const plugin = require(`plugin://demo/card`)',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['common.js'].code).toContain('/node_modules/tdesign-miniprogram/toast/index')
+    expect(bundle['common.js'].code).toContain('plugin://demo/card')
+  })
+
   it('localizes plugin build npm imports to plugin-local miniprogram_npm', async () => {
     const state = {
       ctx: {

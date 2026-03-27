@@ -13,6 +13,7 @@ describe('utils/json resolveJson', () => {
     expect(parseCommentJson('{/*c*/"a":1}')).toEqual({ a: 1 })
     expect(jsonFileRemoveJsExtension('pages/home/index.ts')).toBe('pages/home/index')
     expect(jsonFileRemoveJsExtension('pages/home/index.js')).toBe('pages/home/index')
+    expect(matches('foo', 'foo')).toBe(true)
     expect(matches('foo', 'foo/bar')).toBe(true)
     expect(matches(/^foo\//, 'foo/bar')).toBe(true)
     expect(matches('foobar', 'foo')).toBe(false)
@@ -32,6 +33,13 @@ describe('utils/json resolveJson', () => {
     })).toEqual([{ find: /^~\//, replacement: '/project/src/' }])
 
     expect(resolveImportee('@/components/card', '')).toBe('@/components/card')
+    expect(
+      resolveImportee(
+        '@/components/card',
+        '',
+        [{ find: '@', replacement: '/project/src' }],
+      ),
+    ).toBe('@/components/card')
     expect(
       resolveImportee(
         '@/components/card',
@@ -249,5 +257,87 @@ describe('utils/json resolveJson', () => {
 
   it('returns undefined when json payload is missing', () => {
     expect(resolveJson({})).toBeUndefined()
+  })
+
+  it('resolves aliases before platform normalization for app json and removes schema', () => {
+    const source = resolveJson(
+      {
+        json: {
+          $schema: 'https://example.com/schema.json',
+          usingComponents: {
+            TButton: '@/components/TButton',
+          },
+          subPackages: [
+            { root: 'pkg-a', entry: 'workers/task.ts' },
+          ],
+          subpackages: [
+            { root: 'pkg-b', entry: 'workers/legacy.mts' },
+          ],
+        },
+        jsonPath: '/project/src/app.json',
+        type: 'app',
+      },
+      [{ find: '@', replacement: '/project/src' }],
+      'alipay',
+      {
+        dependencies: {},
+      },
+    )!
+
+    const normalized = JSON.parse(source)
+    expect(normalized.$schema).toBeUndefined()
+    expect(normalized.usingComponents['t-button']).toBe('components/TButton')
+    expect(normalized.subPackages[0].entry).toBe('workers/task.js')
+    expect(normalized.subpackages[0].entry).toBe('workers/legacy.js')
+  })
+
+  it('keeps already-normalized npm prefix and ignores unmatched dependencies', () => {
+    const source = resolveJson(
+      {
+        json: {
+          usingComponents: {
+            't-button': '/node_modules/tdesign-miniprogram/button/button',
+            'x-card': 'custom-lib/card/index',
+          },
+        },
+      },
+      undefined,
+      'alipay',
+      {
+        dependencies: {
+          'tdesign-miniprogram': '^1.12.3',
+        },
+      },
+    )!
+
+    const normalized = JSON.parse(source)
+    expect(normalized.usingComponents['t-button']).toBe('/node_modules/tdesign-miniprogram/button/button')
+    expect(normalized.usingComponents['x-card']).toBe('custom-lib/card/index')
+  })
+
+  it('keeps blank and already-prefixed npm-like component ids stable', () => {
+    const source = resolveJson(
+      {
+        json: {
+          usingComponents: {
+            'empty': 'npm:',
+            't-button': '/node_modules/tdesign-miniprogram/button/button',
+          },
+        },
+      },
+      undefined,
+      'alipay',
+      {
+        dependencies: {
+          '': '0.0.0',
+          'tdesign-miniprogram/button/button/extra': '^1.0.0',
+          'tdesign-miniprogram': '^1.12.3',
+        },
+      },
+    )!
+
+    const normalized = JSON.parse(source)
+    expect(normalized.usingComponents.empty).toBe('npm:')
+    expect(normalized.usingComponents['t-button']).toBe('/node_modules/tdesign-miniprogram/button/button')
   })
 })
