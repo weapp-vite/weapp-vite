@@ -561,4 +561,66 @@ Page({
     expect(page.data.hideLoadingSummary).toBe('hideLoading:ok')
     expect(session.getLoading()).toBeNull()
   })
+
+  it('supports delayed request mocks and request task abort', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-request-abort-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  startRequestAndAbort() {
+    const task = wx.request({
+      url: 'https://mock.mpcore.dev/api/slow',
+      success: () => {
+        this.push('success')
+      },
+      fail: (error) => {
+        this.push('fail:' + error.message)
+      },
+      complete: () => {
+        this.push('complete')
+      }
+    })
+    task.abort()
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>lab</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    session.mockRequest({
+      delay: 50,
+      method: 'GET',
+      response: {
+        ok: true,
+      },
+      url: 'https://mock.mpcore.dev/api/slow',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.startRequestAndAbort()
+    await new Promise(resolve => setTimeout(resolve, 80))
+
+    expect(page.data.logs).toEqual([
+      'fail:request:fail abort',
+      'complete',
+    ])
+    expect(session.getRequestLogs()).toEqual([])
+  })
 })

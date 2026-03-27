@@ -161,7 +161,7 @@ export interface HeadlessWxDriver {
   reLaunch: (option: HeadlessWxNavigateOption) => unknown
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
   removeStorageSync: (key: string) => void
-  request: (option: HeadlessWxRequestOption) => HeadlessWxRequestSuccessResult
+  request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
   setStorageSync: (key: string, value: unknown) => void
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string }
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string }
@@ -436,12 +436,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       }
     }, option),
     removeStorageSync: key => driver.removeStorageSync(key),
-    request: (option) => {
-      invokeWxApi(() => driver.request(option), option)
-      return {
-        abort() {},
-      }
-    },
+    request: option => driver.request(option),
     setStorage: option => invokeWxApi(() => {
       driver.setStorageSync(option.key, option.data)
       return {

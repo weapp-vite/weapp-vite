@@ -1,6 +1,7 @@
 import type {
   HeadlessWxRequestOption,
   HeadlessWxRequestSuccessResult,
+  HeadlessWxRequestTask,
   HeadlessWxShowLoadingOption,
   HeadlessWxShowToastOption,
 } from '../host'
@@ -19,6 +20,7 @@ export interface HeadlessWxToastSnapshot {
 }
 
 export interface HeadlessWxRequestMockDefinition {
+  delay?: number
   header?: Record<string, string>
   method?: string
   response:
@@ -163,13 +165,14 @@ export function createHeadlessWxState() {
     mockRequest(definition: HeadlessWxRequestMockDefinition) {
       requestMocks.push({
         ...definition,
+        delay: definition.delay,
         header: definition.header ? { ...definition.header } : undefined,
       })
     },
     removeStorageSync(key: string) {
       storage.delete(key)
     },
-    request(option: HeadlessWxRequestOption) {
+    request(option: HeadlessWxRequestOption): HeadlessWxRequestTask {
       const matchedMock = requestMocks.find(mock => matchesRequestMock(mock, option))
       if (!matchedMock) {
         const logEntry: HeadlessWxRequestLogEntry = {
@@ -180,19 +183,59 @@ export function createHeadlessWxState() {
           url: option.url,
         }
         requestLogs.push(logEntry)
-        throw new Error(`No request mock matched in headless runtime: ${normalizeMethod(option.method)} ${option.url}`)
+        const error = new Error(`No request mock matched in headless runtime: ${normalizeMethod(option.method)} ${option.url}`)
+        option.fail?.(error)
+        option.complete?.()
+        return {
+          abort() {},
+        }
       }
 
       const response = resolveRequestResponse(matchedMock, option)
-      requestLogs.push({
+      const requestLogEntry: HeadlessWxRequestLogEntry = {
         data: cloneValue(option.data),
         header: { ...(option.header ?? {}) },
         matched: true,
         method: normalizeMethod(option.method),
         response,
         url: option.url,
-      })
-      return response
+      }
+      const delay = Number.isFinite(matchedMock.delay)
+        ? Math.max(0, Math.trunc(matchedMock.delay ?? 0))
+        : 0
+
+      if (delay <= 0) {
+        requestLogs.push(requestLogEntry)
+        option.success?.(response)
+        option.complete?.(response)
+        return {
+          abort() {},
+        }
+      }
+
+      let completed = false
+      const timer = setTimeout(() => {
+        if (completed) {
+          return
+        }
+        completed = true
+        requestLogs.push(requestLogEntry)
+        option.success?.(response)
+        option.complete?.(response)
+      }, delay)
+
+      return {
+        abort() {
+          if (completed) {
+            return
+          }
+          completed = true
+          clearTimeout(timer)
+          const error = new Error('request:fail abort')
+          option.fail?.(error)
+          option.complete?.()
+        },
+      }
     },
     setStorageSync(key: string, value: unknown) {
       storage.set(key, cloneValue(value))
