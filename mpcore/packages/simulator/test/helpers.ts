@@ -591,6 +591,7 @@ Page({
     eventSnapshot: '',
     formSnapshot: '',
     log: [],
+    multiRectSummary: '',
     scopedRect: null,
     snapshot: ''
   },
@@ -613,6 +614,21 @@ Page({
       .boundingClientRect((result) => {
         this.setData({
           scopedRect: result
+        })
+      })
+      .exec()
+  },
+  inspectScopedSelectAll() {
+    const card = this.selectComponent('#status-card')
+    wx.createSelectorQuery()
+      .in(card)
+      .selectAll('.multi-item')
+      .fields({
+        dataset: true,
+        id: true
+      }, (result) => {
+        this.setData({
+          multiRectSummary: JSON.stringify(result)
         })
       })
       .exec()
@@ -686,6 +702,8 @@ Component({
   writeText(path.join(root, 'dist/components/status-card/index.wxml'), `
 <view id="card-trigger" class="card-shell" bindtap="pulse">count: {{count}}</view>
 <input id="card-input" bindinput="onInnerInput" bindchange="onInnerChange" bindblur="onInnerBlur" value="{{formState.input}}" />
+<view id="multi-a" class="multi-item" data-kind="alpha"></view>
+<view id="multi-b" class="multi-item" data-kind="beta"></view>
 `)
 
   return root

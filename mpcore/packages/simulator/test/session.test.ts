@@ -1474,5 +1474,11 @@ Page({
       top: 0,
       width: 0,
     })
+
+    page.inspectScopedSelectAll()
+    expect(page.data.multiRectSummary).toContain('"id":"multi-a"')
+    expect(page.data.multiRectSummary).toContain('"kind":"alpha"')
+    expect(page.data.multiRectSummary).toContain('"id":"multi-b"')
+    expect(page.data.multiRectSummary).toContain('"kind":"beta"')
   })
 })
