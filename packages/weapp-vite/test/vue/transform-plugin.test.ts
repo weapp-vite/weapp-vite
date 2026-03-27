@@ -1,5 +1,6 @@
 import type { OutputBundle } from 'rollup'
 import os from 'node:os'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -1227,6 +1228,45 @@ export default {}
     const createPageMatcherArg = createPageEntryMatcherMock.mock.calls.at(-1)?.[0]
     createPageMatcherArg?.warn?.('warn-message')
     expect(warnSpy).toHaveBeenCalledWith('warn-message')
+  })
+
+  it('transform() keeps auto-routes imports untouched for normal vue files', async () => {
+    compileVueFileMock.mockResolvedValue({ script: 'export default {}', meta: {} })
+    const ensureFresh = vi.fn(async () => {})
+    const getReference = vi.fn(() => ({
+      pages: ['pages/home/index'],
+      entries: ['pages/home/index'],
+      subPackages: [{ root: 'pkgA', pages: ['pages/a'] }],
+    }))
+    const normalVuePath = path.join(tmpDir!, 'components/RouteConsumer.vue')
+    await fs.ensureDir(path.dirname(normalVuePath))
+    await fs.writeFile(normalVuePath, '<template><view/></template>', 'utf8')
+
+    const { createVueTransformPlugin } = await import('../../src/plugins/vue/transform/plugin')
+    const ctx = createCtx({
+      autoRoutesService: {
+        ensureFresh,
+        getReference,
+      },
+    })
+    const plugin = createVueTransformPlugin(ctx as any)
+
+    await plugin.transform!.call(
+      { addWatchFile: vi.fn() } as any,
+      `
+import autoRoutes from 'weapp-vite/auto-routes'
+const lazy = () => import('weapp-vite/auto-routes')
+export default autoRoutes
+`,
+      normalVuePath,
+    )
+
+    expect(ensureFresh).not.toHaveBeenCalled()
+    const [transformedSource] = compileVueFileMock.mock.calls.at(-1)!
+    expect(String(transformedSource)).toContain('import autoRoutes from \'weapp-vite/auto-routes\'')
+    expect(String(transformedSource)).toContain('import(\'weapp-vite/auto-routes\')')
+    expect(String(transformedSource)).not.toContain('const autoRoutes =')
+    expect(String(transformedSource)).not.toContain('Promise.resolve(')
   })
 
   it('transform() registers wxml token and tracks sfc src deps', async () => {

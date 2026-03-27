@@ -1,7 +1,7 @@
 import type { AutoRoutes } from './types/routes'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-describe.skip('auto-routes module exports', () => {
+describe('auto-routes module exports', () => {
   const modulePath = './auto-routes'
   const routeRuntimeOverrideKey = Symbol.for('weapp-vite.route-runtime')
 
@@ -38,8 +38,18 @@ describe.skip('auto-routes module exports', () => {
     })
 
     const module = await import(modulePath)
+    const autoRoutes = module.default
 
     expect(getReference).toHaveBeenCalled()
+    expect(autoRoutes).toBe(module.routes)
+    expect(autoRoutes.pages).toEqual(['pages/index/index'])
+    expect(autoRoutes.entries).toEqual(['pages/index/index'])
+    expect(autoRoutes.subPackages).toEqual([
+      {
+        root: 'packageA',
+        pages: ['pages/dog'],
+      },
+    ])
     expect(module.routes.pages).toBe(reference.pages)
     expect(module.routes.entries).toBe(reference.entries)
     expect(module.routes.subPackages).toBe(reference.subPackages)
@@ -53,6 +63,83 @@ describe.skip('auto-routes module exports', () => {
     reference.pages.push('pages/about/index')
     expect(module.pages).toContain('pages/about/index')
     expect(module.routes.pages).toContain('pages/about/index')
+    expect(autoRoutes.pages).toContain('pages/about/index')
+  })
+
+  it('supports default import semantics for normal ts usage', async () => {
+    const reference: AutoRoutes = {
+      pages: ['pages/home/index', 'pages/detail/index'],
+      entries: ['pages/home/index', 'pages/detail/index', 'packageA/pages/foo'],
+      subPackages: [
+        {
+          root: 'packageA',
+          pages: ['pages/foo'],
+        },
+      ],
+    }
+
+    vi.doMock('./context', () => {
+      return {
+        getCompilerContext: () => ({
+          autoRoutesService: {
+            getReference: () => reference,
+          },
+        }),
+      }
+    })
+
+    const { default: autoRoutes, entries, pages, routes, subPackages } = await import(modulePath)
+
+    expect(autoRoutes).toBe(routes)
+    expect(autoRoutes.pages).toBe(pages)
+    expect(autoRoutes.entries).toBe(entries)
+    expect(autoRoutes.subPackages).toBe(subPackages)
+    expect(autoRoutes).toEqual({
+      pages: ['pages/home/index', 'pages/detail/index'],
+      entries: ['pages/home/index', 'pages/detail/index', 'packageA/pages/foo'],
+      subPackages: [
+        {
+          root: 'packageA',
+          pages: ['pages/foo'],
+        },
+      ],
+    })
+  })
+
+  it('supports dynamic import semantics for normal ts usage', async () => {
+    const reference: AutoRoutes = {
+      pages: ['pages/home/index'],
+      entries: ['pages/home/index', 'subpackages/lab/pages/demo/index'],
+      subPackages: [
+        {
+          root: 'subpackages/lab',
+          pages: ['pages/demo/index'],
+        },
+      ],
+    }
+
+    vi.doMock('./context', () => {
+      return {
+        getCompilerContext: () => ({
+          autoRoutesService: {
+            getReference: () => reference,
+          },
+        }),
+      }
+    })
+
+    const loaded = await import(modulePath)
+    const dynamicLoaded = await import(modulePath)
+
+    expect(dynamicLoaded.default).toBe(loaded.default)
+    expect(dynamicLoaded.default.pages).toEqual(['pages/home/index'])
+    expect(dynamicLoaded.default.entries).toEqual(['pages/home/index', 'subpackages/lab/pages/demo/index'])
+    expect(dynamicLoaded.default.subPackages).toEqual([
+      {
+        root: 'subpackages/lab',
+        pages: ['pages/demo/index'],
+      },
+    ])
   })
 
   it('wxRouter proxies route methods to global mini-program object', async () => {
