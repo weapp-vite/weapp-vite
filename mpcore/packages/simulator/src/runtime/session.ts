@@ -3,9 +3,11 @@ import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessAppInstance } from './appInstance'
 import type { HeadlessPageInstance } from './pageInstance'
 import type { HeadlessWxModalMockDefinition, HeadlessWxRequestMockDefinition } from './wxState'
+import fs from 'node:fs'
 import path from 'node:path'
 import { createHostRegistries } from '../host'
 import { loadProject } from '../project'
+import { resolveNavigationBarTitle } from '../project/pageConfig'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
@@ -73,6 +75,18 @@ function createAppLaunchOptions(pathname: string, query: Record<string, string>)
       extraData: {},
     },
     scene: 1001,
+  }
+}
+
+function readJsonObject(filePath: string) {
+  try {
+    const value = JSON.parse(fs.readFileSync(filePath, 'utf8'))
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? value as Record<string, any>
+      : undefined
+  }
+  catch {
+    return undefined
   }
 }
 
@@ -160,6 +174,7 @@ export class HeadlessSession {
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         request: option => this.wxState.request(option),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
+        setNavigationBarTitle: option => this.setNavigationBarTitle(option.title),
         showLoading: option => this.wxState.showLoading(option),
         showModal: option => this.wxState.showModal(option),
         showToast: option => this.wxState.showToast(option),
@@ -175,6 +190,10 @@ export class HeadlessSession {
 
   getCurrentPages() {
     return this.pages.slice()
+  }
+
+  getCurrentPageNavigationBarTitle() {
+    return this.currentPageInstance?.__navigationBarTitle__ ?? null
   }
 
   getRequestLogs() {
@@ -253,6 +272,14 @@ export class HeadlessSession {
 
   setNetworkType(networkType: HeadlessWxNetworkType) {
     return this.wxState.setNetworkType(networkType)
+  }
+
+  setNavigationBarTitle(title: string) {
+    const current = this.requireCurrentPage('wx.setNavigationBarTitle()')
+    current.__navigationBarTitle__ = title
+    return {
+      errMsg: 'setNavigationBarTitle:ok',
+    }
   }
 
   bootstrap(launchOptions = createAppLaunchOptions('', {})) {
@@ -429,8 +456,12 @@ export class HeadlessSession {
 
   private createFreshPage(target: ResolvedNavigationTarget) {
     const pageModulePath = path.resolve(this.project.miniprogramRootPath, `${target.routeRecord.route}.js`)
+    const pageConfigPath = path.resolve(this.project.miniprogramRootPath, `${target.routeRecord.route}.json`)
     const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
-    const pageInstance = createPageInstance(`/${target.routeRecord.route}`, pageDefinition, target.query)
+    const pageConfig = readJsonObject(pageConfigPath)
+    const pageInstance = createPageInstance(`/${target.routeRecord.route}`, pageDefinition, target.query, {
+      navigationBarTitle: resolveNavigationBarTitle(this.project.appConfig, pageConfig),
+    })
     pageInstance.onLoad?.(target.query)
     pageInstance.onShow?.()
     pageInstance.onReady?.()

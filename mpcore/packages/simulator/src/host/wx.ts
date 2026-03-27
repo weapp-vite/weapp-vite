@@ -127,6 +127,10 @@ export interface HeadlessWxClearStorageOption extends HeadlessWxCallbackOption<H
 
 export interface HeadlessWxHideLoadingOption extends HeadlessWxCallbackOption<{ errMsg: string }> {}
 
+export interface HeadlessWxSetNavigationBarTitleOption extends HeadlessWxCallbackOption<{ errMsg: string }> {
+  title: string
+}
+
 export interface HeadlessWxShowModalResult {
   cancel: boolean
   confirm: boolean
@@ -198,6 +202,7 @@ export interface HeadlessWxDriver {
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
   setStorageSync: (key: string, value: unknown) => void
+  setNavigationBarTitle: (option: HeadlessWxSetNavigationBarTitleOption) => { errMsg: string }
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string }
   showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string }
@@ -238,6 +243,7 @@ export interface HeadlessWx {
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
   setStorage: (option: HeadlessWxSetStorageOption) => HeadlessWxStorageResult | undefined
   setStorageSync: (key: string, value: unknown) => void
+  setNavigationBarTitle: (option: HeadlessWxSetNavigationBarTitleOption) => { errMsg: string } | undefined
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string } | undefined
   showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult | undefined
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string } | undefined
@@ -427,6 +433,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     request: true,
     setStorage: true,
     setStorageSync: true,
+    setNavigationBarTitle: true,
     showLoading: true,
     showModal: true,
     showToast: true,
@@ -495,6 +502,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       }
     }, option),
     setStorageSync: (key, value) => driver.setStorageSync(key, value),
+    setNavigationBarTitle: option => invokeWxApi(() => driver.setNavigationBarTitle(option), option),
     showLoading: option => invokeWxApi(() => driver.showLoading(option), option),
     showModal: option => invokeWxApi(() => driver.showModal(option), option),
     showToast: option => invokeWxApi(() => driver.showToast(option), option),
