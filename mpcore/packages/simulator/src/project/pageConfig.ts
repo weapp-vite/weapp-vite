@@ -9,9 +9,12 @@ export interface HeadlessNavigationBarSnapshot {
   title: string
 }
 
+export type HeadlessBackgroundTextStyle = 'dark' | 'light'
+
 const DEFAULT_NAVIGATION_BAR_BACKGROUND_COLOR = '#ffffff'
 const DEFAULT_NAVIGATION_BAR_FRONT_COLOR = '#000000'
 const DEFAULT_NAVIGATION_BAR_FRONT_COLOR_WHITE = '#ffffff'
+const DEFAULT_BACKGROUND_TEXT_STYLE: HeadlessBackgroundTextStyle = 'dark'
 
 function resolveNavigationBarTitle(
   appConfig: Record<string, any>,
@@ -79,6 +82,19 @@ export function resolveNavigationBarSnapshot(
     loading: false,
     title: resolveNavigationBarTitle(appConfig, pageConfig),
   }
+}
+
+export function resolveBackgroundTextStyle(
+  appConfig: Record<string, any>,
+  pageConfig?: Record<string, any>,
+): HeadlessBackgroundTextStyle {
+  const textStyle = typeof pageConfig?.backgroundTextStyle === 'string'
+    ? pageConfig.backgroundTextStyle
+    : typeof appConfig.window?.backgroundTextStyle === 'string'
+      ? appConfig.window.backgroundTextStyle
+      : undefined
+
+  return textStyle === 'light' ? 'light' : DEFAULT_BACKGROUND_TEXT_STYLE
 }
 
 export { resolveNavigationBarTitle }

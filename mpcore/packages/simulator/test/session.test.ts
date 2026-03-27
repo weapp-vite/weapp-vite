@@ -1213,6 +1213,88 @@ Page({
     ])
   })
 
+  it('supports setBackgroundTextStyle defaults and updates', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-background-text-style-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index', 'pages/detail/index'],
+      window: {
+        backgroundTextStyle: 'light',
+      },
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.json'), JSON.stringify({
+      backgroundTextStyle: 'dark',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  setLight() {
+    wx.setBackgroundTextStyle({
+      textStyle: 'light',
+      success: () => this.push('light:success'),
+      complete: (result) => this.push('light:complete:' + (result?.errMsg ?? 'none'))
+    })
+  },
+  setInvalid() {
+    wx.setBackgroundTextStyle({
+      textStyle: 'weird',
+      fail: (error) => this.push('invalid:fail:' + error.message),
+      complete: (result) => this.push('invalid:complete:' + (result?.errMsg ?? 'none'))
+    })
+  },
+  goDetail() {
+    wx.navigateTo({
+      url: '/pages/detail/index'
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>index</view>')
+    writeFixtureFile(path.join(root, 'dist/pages/detail/index.js'), 'Page({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/detail/index.wxml'), '<view>detail</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(session.getCurrentPageBackground()).toEqual({
+      textStyle: 'dark',
+    })
+
+    page.setLight()
+    expect(session.getCurrentPageBackground()).toEqual({
+      textStyle: 'light',
+    })
+
+    page.setInvalid()
+    expect(session.getCurrentPageBackground()).toEqual({
+      textStyle: 'light',
+    })
+    expect(page.data.logs).toEqual([
+      'light:success',
+      'light:complete:setBackgroundTextStyle:ok',
+      'invalid:fail:setBackgroundTextStyle:fail invalid textStyle',
+      'invalid:complete:none',
+    ])
+
+    page.goDetail()
+    expect(session.getCurrentPageBackground()).toEqual({
+      textStyle: 'light',
+    })
+  })
+
   it('supports share menu state transitions', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-share-menu-'))
     tempDirs.push(root)

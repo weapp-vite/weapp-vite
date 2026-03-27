@@ -1,5 +1,5 @@
 import type { HeadlessPageDefinition } from '../host'
-import type { HeadlessNavigationBarSnapshot } from '../project/pageConfig'
+import type { HeadlessBackgroundTextStyle, HeadlessNavigationBarSnapshot } from '../project/pageConfig'
 import { cloneNavigationBarSnapshot } from '../project/pageConfig'
 
 const ARRAY_INDEX_PATH_RE = /\[(\d+)\]/g
@@ -7,6 +7,7 @@ const ARRAY_INDEX_SEGMENT_RE = /^\d+$/
 const LEADING_ROUTE_SLASH_RE = /^\/+/
 
 export interface HeadlessPageInstance extends Record<string, any> {
+  __backgroundTextStyle__?: HeadlessBackgroundTextStyle
   __lastChangedKeys__?: string[]
   __navigationBar__?: HeadlessNavigationBarSnapshot
   __navigationBarTitle__?: string
@@ -92,11 +93,13 @@ export function createPageInstance(
   definition: HeadlessPageDefinition,
   options: Record<string, string> = {},
   pageState: {
+    backgroundTextStyle?: HeadlessBackgroundTextStyle
     navigationBar?: HeadlessNavigationBarSnapshot
   } = {},
 ): HeadlessPageInstance {
   const normalizedRoute = normalizeRoute(route)
   const instance: HeadlessPageInstance = {
+    __backgroundTextStyle__: pageState.backgroundTextStyle,
     __route__: normalizedRoute,
     __navigationBar__: pageState.navigationBar
       ? cloneNavigationBarSnapshot(pageState.navigationBar)
