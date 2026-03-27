@@ -185,6 +185,36 @@ describe('headless testing bridge', () => {
     })).resolves.toBeUndefined()
   })
 
+  it('waits for async page data updates through the testing bridge', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/index/index')
+
+    expect(await page.waitForData('__e2eAsyncCount', 0, {
+      timeout: 30,
+    })).toBe(0)
+
+    await page.callMethod('bumpAsyncCount')
+
+    expect(await page.waitForData('__e2eAsyncCount', 2, {
+      timeout: 200,
+    })).toBe(2)
+    expect(await page.waitForData('__e2eAsyncCount', (value: unknown) => Number(value) >= 2, {
+      timeout: 30,
+    })).toBe(2)
+
+    const countNode = await page.waitForSelector('#async-count')
+    expect(await countNode?.text()).toBe('2')
+
+    await expect(page.waitForData('__e2eAsyncCount', 99, {
+      timeout: 30,
+    })).rejects.toThrow('Timed out waiting for data "__e2eAsyncCount"')
+  })
+
   it('renders interpolated wxml and supports basic selectors', async () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)

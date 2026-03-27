@@ -7,6 +7,10 @@ export interface HeadlessTestingWaitOptions {
   timeout?: number
 }
 
+export type HeadlessTestingDataMatcher
+  = | unknown
+    | ((value: unknown) => boolean)
+
 export interface HeadlessTestingWaitForSelectorOptions extends HeadlessTestingWaitOptions {
   state?: 'attached' | 'detached'
 }
@@ -19,6 +23,19 @@ export class HeadlessTestingPageHandle {
     private readonly project: HeadlessProjectDescriptor,
     private readonly page: HeadlessPageInstance,
   ) {}
+
+  private resolveDataByPath(path?: string) {
+    if (!path) {
+      return this.page.data
+    }
+
+    const segments = path.split('.').filter(Boolean)
+    let current: any = this.page.data
+    for (const segment of segments) {
+      current = current?.[segment]
+    }
+    return current
+  }
 
   private async pollUntil<T>(
     check: () => Promise<T | null>,
@@ -54,16 +71,7 @@ export class HeadlessTestingPageHandle {
   }
 
   async data(path?: string) {
-    if (!path) {
-      return this.page.data
-    }
-
-    const segments = path.split('.').filter(Boolean)
-    let current: any = this.page.data
-    for (const segment of segments) {
-      current = current?.[segment]
-    }
-    return current
+    return this.resolveDataByPath(path)
   }
 
   async waitFor(ms = 0) {
@@ -146,6 +154,29 @@ export class HeadlessTestingPageHandle {
         return wxml.includes(normalizedText) ? null : true
       },
       `Timed out waiting for text "${normalizedText}" to disappear in headless testing runtime.`,
+      options,
+    )
+  }
+
+  async waitForData(path: string, matcher?: HeadlessTestingDataMatcher, options: HeadlessTestingWaitOptions = {}) {
+    const normalizedPath = path.trim()
+    if (!normalizedPath) {
+      throw new Error('Data path must be a non-empty string in headless testing runtime.')
+    }
+    const hasMatcher = arguments.length >= 2
+
+    return await this.pollUntil(
+      async () => {
+        const value = this.resolveDataByPath(normalizedPath)
+        if (typeof matcher === 'function') {
+          return matcher(value) ? value : null
+        }
+        if (hasMatcher) {
+          return Object.is(value, matcher) ? value : null
+        }
+        return value === undefined ? null : value
+      },
+      `Timed out waiting for data "${normalizedPath}" in headless testing runtime.`,
       options,
     )
   }

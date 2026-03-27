@@ -37,6 +37,7 @@ export function createBaseFixture() {
   writeScript(path.join(root, 'dist/pages/index/index.js'), `
 Page({
   data: {
+    __e2eAsyncCount: 0,
     __e2eAsyncText: '',
     __e2eData: {
       greeting: 'Hello',
@@ -99,12 +100,20 @@ Page({
       })
     }, 20)
   },
+  bumpAsyncCount() {
+    setTimeout(() => {
+      this.setData({
+        __e2eAsyncCount: this.data.__e2eAsyncCount + 2,
+      })
+    }, 20)
+  },
 })
 `)
   writeText(path.join(root, 'dist/pages/index/index.wxml'), `
 <view id="greeting-button" data-phase="initial" data-card-type="primary" bind:tap="onTap">{{__e2eData.greeting}}</view>
 <input id="greeting-input" data-field="greeting" bindinput="onInput" bindchange="onChange" bindblur="onBlur" value="{{__e2eData.greeting}}" />
 <view id="async-text">{{__e2eAsyncText}}</view>
+<view id="async-count">{{__e2eAsyncCount}}</view>
 <view class="panel-row">Status: {{__e2eResult.status}}</view>
 <view class="panel-row">Detail: {{__e2eResult.detail}}</view>
 <view class="panel-row">Greeting: {{__e2eData.greeting}}</view>
