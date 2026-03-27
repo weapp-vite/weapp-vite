@@ -50,6 +50,7 @@ export interface HeadlessWxDriver {
   hideToast: () => { errMsg: string }
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
   navigateTo: (option: HeadlessWxNavigateOption) => unknown
+  nextTick: (callback?: () => void) => void
   pageScrollTo: (option: HeadlessWxPageScrollToOption) => unknown
   reLaunch: (option: HeadlessWxNavigateOption) => unknown
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
@@ -67,6 +68,7 @@ export interface HeadlessWx {
   hideToast: () => { errMsg: string }
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
   navigateTo: (option: HeadlessWxNavigateOption) => unknown
+  nextTick: (callback?: () => void) => void
   pageScrollTo: (option: HeadlessWxPageScrollToOption) => unknown
   reLaunch: (option: HeadlessWxNavigateOption) => unknown
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
@@ -106,6 +108,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     navigateTo: option => invokeWxApi(() => {
       driver.navigateTo(option)
     }, option),
+    nextTick: callback => driver.nextTick(callback),
     pageScrollTo: option => invokeWxApi(() => {
       driver.pageScrollTo(option)
     }, option),

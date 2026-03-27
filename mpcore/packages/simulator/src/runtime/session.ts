@@ -145,6 +145,7 @@ export class HeadlessSession {
         hideToast: () => this.wxState.hideToast(),
         reLaunch: option => this.reLaunch(option.url),
         redirectTo: option => this.redirectTo(option.url),
+        nextTick: callback => queueMicrotask(() => callback?.()),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         request: option => this.wxState.request(option),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),

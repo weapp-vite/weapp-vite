@@ -215,6 +215,25 @@ describe('headless testing bridge', () => {
     })).rejects.toThrow('Timed out waiting for data "__e2eAsyncCount"')
   })
 
+  it('runs wx.nextTick callbacks after setData in headless runtime', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/index/index')
+    await page.callMethod('runNextTickUpdate')
+
+    expect(await page.waitForData('__e2eResult.detail', 'next-tick-ready', {
+      timeout: 200,
+    })).toBe('next-tick-ready')
+    expect(await page.data('__e2eResult')).toEqual({
+      status: 'next-tick-ready',
+      detail: 'next-tick-ready',
+    })
+  })
+
   it('waits for async current-page navigation through the session handle', async () => {
     const projectPath = createNavigationFixture()
     tempDirs.push(projectPath)
