@@ -562,6 +562,7 @@ export function createHeadlessWxState() {
     if (fileContent == null) {
       throw new Error(`rename:fail no such file or directory, rename '${normalizedOldPath}'`)
     }
+    const targetSavedFile = savedFiles.get(normalizedNewPath)
     files.delete(normalizedOldPath)
     const savedFile = savedFiles.get(normalizedOldPath)
     if (savedFile) {
@@ -573,6 +574,12 @@ export function createHeadlessWxState() {
       savedFiles.set(normalizedNewPath, {
         ...savedFile,
         filePath: normalizedNewPath,
+        size: fileContent.length,
+      })
+    }
+    else if (targetSavedFile) {
+      savedFiles.set(normalizedNewPath, {
+        ...targetSavedFile,
         size: fileContent.length,
       })
     }
