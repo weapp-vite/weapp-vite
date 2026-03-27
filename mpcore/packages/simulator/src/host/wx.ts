@@ -277,6 +277,43 @@ export interface HeadlessWxRequestTask {
   abort: () => void
 }
 
+export interface HeadlessWxDownloadFileSuccessResult {
+  errMsg: string
+  statusCode: number
+  tempFilePath: string
+}
+
+export interface HeadlessWxDownloadFileOption extends HeadlessWxCallbackOption<HeadlessWxDownloadFileSuccessResult> {
+  filePath?: string
+  header?: Record<string, string>
+  url: string
+}
+
+export interface HeadlessWxUploadFileSuccessResult {
+  data: string
+  errMsg: string
+  statusCode: number
+}
+
+export interface HeadlessWxUploadFileOption extends HeadlessWxCallbackOption<HeadlessWxUploadFileSuccessResult> {
+  fileName?: string
+  filePath: string
+  formData?: Record<string, unknown>
+  header?: Record<string, string>
+  name: string
+  url: string
+}
+
+export interface HeadlessWxSaveFileSuccessResult {
+  errMsg: string
+  savedFilePath: string
+}
+
+export interface HeadlessWxSaveFileOption extends HeadlessWxCallbackOption<HeadlessWxSaveFileSuccessResult> {
+  filePath?: string
+  tempFilePath: string
+}
+
 export interface HeadlessWxDriver {
   executeSelectorQuery: (requests: HeadlessWxSelectorQueryRequest[], scope?: Record<string, any>) => unknown[]
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
@@ -291,6 +328,7 @@ export interface HeadlessWxDriver {
   getWindowInfoSync: () => HeadlessWxWindowInfoResult
   hideLoading: () => { errMsg: string }
   hideToast: () => { errMsg: string }
+  downloadFile: (option: HeadlessWxDownloadFileOption) => HeadlessWxRequestTask
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
   navigateTo: (option: HeadlessWxNavigateOption) => unknown
   nextTick: (callback?: () => void) => void
@@ -301,6 +339,7 @@ export interface HeadlessWxDriver {
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
+  saveFile: (option: HeadlessWxSaveFileOption) => HeadlessWxSaveFileSuccessResult
   setBackgroundColor: (option: HeadlessWxSetBackgroundColorOption) => { errMsg: string }
   setBackgroundTextStyle: (option: HeadlessWxSetBackgroundTextStyleOption) => { errMsg: string }
   setStorageSync: (key: string, value: unknown) => void
@@ -320,6 +359,7 @@ export interface HeadlessWxDriver {
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string }
   stopPullDownRefresh: () => void
   switchTab: (option: HeadlessWxNavigateOption) => unknown
+  uploadFile: (option: HeadlessWxUploadFileOption) => HeadlessWxRequestTask
   removeTabBarBadge: (option: HeadlessWxTabBarItemOption) => { errMsg: string }
   setTabBarBadge: (option: HeadlessWxSetTabBarBadgeOption) => { errMsg: string }
   updateShareMenu: (option: HeadlessWxShareMenuOption) => { errMsg: string }
@@ -346,6 +386,7 @@ export interface HeadlessWx {
   getWindowInfoSync: () => HeadlessWxWindowInfoResult
   hideLoading: (option?: HeadlessWxHideLoadingOption) => { errMsg: string } | undefined
   hideToast: () => { errMsg: string }
+  downloadFile: (option: HeadlessWxDownloadFileOption) => HeadlessWxRequestTask
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
   navigateTo: (option: HeadlessWxNavigateOption) => unknown
   nextTick: (callback?: () => void) => void
@@ -357,6 +398,7 @@ export interface HeadlessWx {
   removeStorage: (option: HeadlessWxRemoveStorageOption) => HeadlessWxStorageResult | undefined
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
+  saveFile: (option: HeadlessWxSaveFileOption) => HeadlessWxSaveFileSuccessResult | undefined
   setBackgroundColor: (option: HeadlessWxSetBackgroundColorOption) => { errMsg: string } | undefined
   setBackgroundTextStyle: (option: HeadlessWxSetBackgroundTextStyleOption) => { errMsg: string } | undefined
   setStorage: (option: HeadlessWxSetStorageOption) => HeadlessWxStorageResult | undefined
@@ -377,6 +419,7 @@ export interface HeadlessWx {
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string } | undefined
   stopPullDownRefresh: () => void
   switchTab: (option: HeadlessWxNavigateOption) => unknown
+  uploadFile: (option: HeadlessWxUploadFileOption) => HeadlessWxRequestTask
   removeTabBarBadge: (option: HeadlessWxTabBarItemOption) => { errMsg: string } | undefined
   setTabBarBadge: (option: HeadlessWxSetTabBarBadgeOption) => { errMsg: string } | undefined
   updateShareMenu: (option?: HeadlessWxShareMenuOption) => { errMsg: string } | undefined
@@ -552,6 +595,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     },
     hideLoading: true,
     hideToast: true,
+    downloadFile: true,
     navigateBack: true,
     navigateTo: true,
     nextTick: true,
@@ -563,6 +607,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     removeStorage: true,
     removeStorageSync: true,
     request: true,
+    saveFile: true,
     setBackgroundColor: true,
     setBackgroundTextStyle: true,
     setStorage: true,
@@ -583,6 +628,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     showToast: true,
     stopPullDownRefresh: true,
     switchTab: true,
+    uploadFile: true,
     removeTabBarBadge: true,
     setTabBarBadge: true,
     updateShareMenu: true,
@@ -688,6 +734,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     getWindowInfoSync: () => driver.getWindowInfoSync(),
     hideLoading: option => invokeWxApi(() => driver.hideLoading(), option),
     hideToast: () => driver.hideToast(),
+    downloadFile: option => driver.downloadFile(option),
     navigateBack: option => invokeWxApi(() => {
       driver.navigateBack(option)
     }, option),
@@ -714,6 +761,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     }, option),
     removeStorageSync: key => driver.removeStorageSync(key),
     request: option => driver.request(option),
+    saveFile: option => invokeWxApi(() => driver.saveFile(option), option),
     setBackgroundColor: option => invokeWxApi(() => driver.setBackgroundColor(option), option),
     setBackgroundTextStyle: option => invokeWxApi(() => driver.setBackgroundTextStyle(option), option),
     setStorage: option => invokeWxApi(() => {
@@ -741,6 +789,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     switchTab: option => invokeWxApi(() => {
       driver.switchTab(option)
     }, option),
+    uploadFile: option => driver.uploadFile(option),
     removeTabBarBadge: option => invokeWxApi(() => driver.removeTabBarBadge(option), option),
     setTabBarBadge: option => invokeWxApi(() => driver.setTabBarBadge(option), option),
     updateShareMenu: option => invokeWxApi(() => driver.updateShareMenu(option ?? {}), option),

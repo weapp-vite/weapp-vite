@@ -207,6 +207,78 @@ Page({
     expect(session.getRequestLogs()).toEqual([])
   })
 
+  it('supports downloadFile, saveFile and uploadFile in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    downloadSummary: '',
+    saveSummary: '',
+    uploadSummary: ''
+  },
+  runFileTransferLab() {
+    wx.downloadFile({
+      url: 'https://mock.mpcore.dev/files/browser-report.txt',
+      success: (downloadResult) => {
+        this.setData({
+          downloadSummary: JSON.stringify(downloadResult)
+        })
+        wx.saveFile({
+          tempFilePath: downloadResult.tempFilePath,
+          success: (saveResult) => {
+            this.setData({
+              saveSummary: JSON.stringify(saveResult)
+            })
+            wx.uploadFile({
+              url: 'https://mock.mpcore.dev/upload/browser-report',
+              filePath: saveResult.savedFilePath,
+              name: 'artifact',
+              success: (uploadResult) => {
+                this.setData({
+                  uploadSummary: uploadResult.data
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{downloadSummary}}</view><view>{{saveSummary}}</view><view>{{uploadSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.mockDownloadFile({
+      fileContent: 'browser report body',
+      url: 'https://mock.mpcore.dev/files/browser-report.txt',
+    })
+    session.mockUploadFile({
+      response: ({ fileContent }) => JSON.stringify({
+        browser: true,
+        fileContent,
+      }),
+      url: 'https://mock.mpcore.dev/upload/browser-report',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.runFileTransferLab()
+
+    expect(page.data.downloadSummary).toContain('"errMsg":"downloadFile:ok"')
+    expect(page.data.saveSummary).toContain('"savedFilePath":"headless://wxfile/saved/')
+    expect(page.data.uploadSummary).toContain('"browser":true')
+    expect(session.renderCurrentPage().wxml).toContain('browser report body')
+    expect(session.getUploadFileLogs()[0]).toMatchObject({
+      fileContent: 'browser report body',
+      matched: true,
+      name: 'artifact',
+      url: 'https://mock.mpcore.dev/upload/browser-report',
+    })
+  })
+
   it('supports showModal defaults and queued modal mocks in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
