@@ -27,6 +27,34 @@ expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: str
 expectType<{ errMsg: string } | undefined>(browserPage?.wx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
 expectType<void>(browserPage?.wx.getFileSystemManager().rmdirSync('headless://saved/archive', true))
 expectType<string>(browserPage?.wx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+browserPage?.wx.getFileSystemManager().stat({
+  path: 'headless://wxfile/temp/0001',
+  success: (result) => {
+    expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } }>(result)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } } | undefined>(result)
+  },
+})
+browserPage?.wx.getFileSystemManager().readdir({
+  dirPath: 'headless://saved',
+  success: (result) => {
+    expectType<{ errMsg: string, files: string[] }>(result)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string, files: string[] } | undefined>(result)
+  },
+})
+browserPage?.wx.getFileSystemManager().rename({
+  oldPath: 'headless://temp/source.txt',
+  newPath: 'headless://temp/target.txt',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
 browserPage?.wx.saveFile({
   tempFilePath: 'headless://wxfile/temp/0001',
   success: (result) => {
@@ -81,6 +109,34 @@ expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: str
 expectType<{ errMsg: string } | undefined>(headlessPage?.wx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
 expectType<void>(headlessPage?.wx.getFileSystemManager().rmdirSync('headless://saved/archive', true))
 expectType<string>(headlessPage?.wx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+headlessPage?.wx.getFileSystemManager().stat({
+  path: 'headless://wxfile/temp/0001',
+  success: (result) => {
+    expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } }>(result)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } } | undefined>(result)
+  },
+})
+headlessPage?.wx.getFileSystemManager().readdir({
+  dirPath: 'headless://saved',
+  success: (result) => {
+    expectType<{ errMsg: string, files: string[] }>(result)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string, files: string[] } | undefined>(result)
+  },
+})
+headlessPage?.wx.getFileSystemManager().rename({
+  oldPath: 'headless://temp/source.txt',
+  newPath: 'headless://temp/target.txt',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
 headlessPage?.wx.saveFile({
   tempFilePath: 'headless://wxfile/temp/0001',
   success: (result) => {
