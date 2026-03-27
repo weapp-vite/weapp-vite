@@ -1,10 +1,15 @@
 import type {
+  HeadlessWxAccessFileOption,
   HeadlessWxDownloadFileOption,
   HeadlessWxDownloadFileSuccessResult,
+  HeadlessWxFileSystemManager,
+  HeadlessWxFileSystemResult,
   HeadlessWxGetNetworkTypeResult,
   HeadlessWxNetworkStatusChangeCallback,
   HeadlessWxNetworkStatusChangeResult,
   HeadlessWxNetworkType,
+  HeadlessWxReadFileOption,
+  HeadlessWxReadFileSuccessResult,
   HeadlessWxRequestOption,
   HeadlessWxRequestSuccessResult,
   HeadlessWxRequestTask,
@@ -17,8 +22,10 @@ import type {
   HeadlessWxShowModalOption,
   HeadlessWxShowModalResult,
   HeadlessWxShowToastOption,
+  HeadlessWxUnlinkOption,
   HeadlessWxUploadFileOption,
   HeadlessWxUploadFileSuccessResult,
+  HeadlessWxWriteFileOption,
 } from '../host'
 
 export interface HeadlessWxLoadingSnapshot {
@@ -284,6 +291,14 @@ function createNoopTask(): HeadlessWxRequestTask {
   }
 }
 
+function normalizeEncoding(encoding?: string) {
+  const normalized = (encoding ?? 'utf8').trim().toLowerCase()
+  if (normalized === 'utf8' || normalized === 'utf-8') {
+    return 'utf8'
+  }
+  throw new Error(`Unsupported file encoding in headless runtime: ${encoding}`)
+}
+
 export function createHeadlessWxState() {
   const actionSheetLogs: HeadlessWxActionSheetLogEntry[] = []
   const actionSheetMocks: HeadlessWxActionSheetMockDefinition[] = []
@@ -347,6 +362,112 @@ export function createHeadlessWxState() {
         onFail(new Error(abortMessage))
       },
     }
+  }
+
+  const accessFile = (filePath: string): HeadlessWxFileSystemResult => {
+    if (!files.has(filePath)) {
+      throw new Error(`access:fail no such file or directory, access '${filePath}'`)
+    }
+    return {
+      errMsg: 'access:ok',
+    }
+  }
+
+  const readFile = (filePath: string, encoding?: string): HeadlessWxReadFileSuccessResult => {
+    normalizeEncoding(encoding)
+    const fileContent = files.get(filePath)
+    if (fileContent == null) {
+      throw new Error(`readFile:fail no such file or directory, open '${filePath}'`)
+    }
+    return {
+      data: fileContent,
+      errMsg: 'readFile:ok',
+    }
+  }
+
+  const writeFile = (filePath: string, data: string, encoding?: string): HeadlessWxFileSystemResult => {
+    normalizeEncoding(encoding)
+    files.set(filePath, String(data))
+    return {
+      errMsg: 'writeFile:ok',
+    }
+  }
+
+  const unlinkFile = (filePath: string): HeadlessWxFileSystemResult => {
+    if (!files.has(filePath)) {
+      throw new Error(`unlink:fail no such file or directory, unlink '${filePath}'`)
+    }
+    files.delete(filePath)
+    return {
+      errMsg: 'unlink:ok',
+    }
+  }
+
+  const fileSystemManager: HeadlessWxFileSystemManager = {
+    access(option: HeadlessWxAccessFileOption) {
+      try {
+        const result = accessFile(option.path)
+        option.success?.(result)
+        option.complete?.(result)
+        return result
+      }
+      catch (error) {
+        option.fail?.(error as Error)
+        option.complete?.()
+        return undefined
+      }
+    },
+    accessSync(path: string) {
+      accessFile(path)
+    },
+    readFile(option: HeadlessWxReadFileOption) {
+      try {
+        const result = readFile(option.filePath, option.encoding)
+        option.success?.(result)
+        option.complete?.(result)
+        return result
+      }
+      catch (error) {
+        option.fail?.(error as Error)
+        option.complete?.()
+        return undefined
+      }
+    },
+    readFileSync(filePath: string, encoding?: string) {
+      return readFile(filePath, encoding).data
+    },
+    unlink(option: HeadlessWxUnlinkOption) {
+      try {
+        const result = unlinkFile(option.filePath)
+        option.success?.(result)
+        option.complete?.(result)
+        return result
+      }
+      catch (error) {
+        option.fail?.(error as Error)
+        option.complete?.()
+        return undefined
+      }
+    },
+    unlinkSync(filePath: string) {
+      unlinkFile(filePath)
+    },
+    writeFile(option: HeadlessWxWriteFileOption) {
+      try {
+        const result = writeFile(option.filePath, option.data, option.encoding)
+        option.success?.(result)
+        option.complete?.(result)
+        return result
+      }
+      catch (error) {
+        option.fail?.(error as Error)
+        option.complete?.()
+        return undefined
+      }
+    },
+    writeFileSync(filePath: string, data: string, encoding?: string) {
+      writeFile(filePath, data, encoding)
+    },
   }
 
   return {
@@ -419,6 +540,9 @@ export function createHeadlessWxState() {
     },
     getFileSnapshot() {
       return Object.fromEntries(files.entries())
+    },
+    getFileSystemManager() {
+      return fileSystemManager
     },
     getFileText(filePath: string) {
       return files.get(filePath) ?? null
