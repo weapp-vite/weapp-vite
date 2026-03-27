@@ -159,7 +159,10 @@ Do not default to full monorepo test runs when a targeted test can prove the cha
 
 - Use Conventional Commits, e.g.:
   - `feat(weapp-vite): add css preprocess support`
+- Before every commit, run the smallest lint checks that match the staged changes, not just build/test checks.
+- `lint-staged` and `.husky/pre-commit` are mandatory enforcement layers, not optional convenience tooling; when adjusting lint scope, keep both aligned so staged files fail locally before CI, including in `git worktree` directories.
 - Run needed local checks before review (`build`, `test`, `lint` scope depends on touched area).
+- Before pushing or opening a PR, run the smallest package- or path-scoped `lint` / `test` / `build` checks that cover the changed area; do not rely on `pre-commit` as a substitute for review-time verification.
 - Add a changeset only for user-visible or behavior-impacting changes, such as `feat`, functional `fix`, or other changes that alter runtime/build behavior, public APIs, generated outputs, or template/app observable results.
 - Do not add a changeset for changes that are purely tests, docs, comments, refactors, internal tooling, or other non-user-visible maintenance work, unless they also include a user-visible or behavior-impacting change.
 - For source code bug fixes that change real behavior (including GitHub issue fixes with unit/e2e updates), adding a changeset is mandatory; do not skip it.

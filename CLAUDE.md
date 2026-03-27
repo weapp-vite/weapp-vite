@@ -208,6 +208,9 @@ The system uses a **service-oriented architecture** centered around `CompilerCon
 
 ### Commit 和 Changeset 规范
 - 使用 Conventional Commits，如：`feat(weapp-vite): add css preprocess support`
+- 每次提交前必须先跑与 staged 改动范围匹配的最小 lint 校验，不能把 eslint/stylelint 问题留给 CI 兜底
+- `lint-staged` 与 `.husky/pre-commit` 属于强制校验层；如果调整 lint 范围或提交流程，必须同步更新两者，保证 staged 文件在本地提交前就会失败，包括 `git worktree` 场景
+- 推送前或提 PR 前，必须按改动范围补跑最小必要的 `lint` / `test` / `build` 校验，不能把 `pre-commit` 当成完整验证
 - 对于用户可见或影响行为的变更，必须添加 changeset
 - 对于源码 bug 修复（包括带有单元/e2e 更新的 GitHub issue 修复），必须添加 changeset
 - 如果发布包含 `weapp-vite`、`wevu` 或 `templates/` 下的内容，还需包含 `create-weapp-vite` 的 bump changeset
