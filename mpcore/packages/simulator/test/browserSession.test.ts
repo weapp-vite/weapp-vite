@@ -367,17 +367,21 @@ Page({
     })
   })
 
-  it('supports setNavigationBarTitle and preserves page title defaults in browser runtime', () => {
+  it('supports navigation bar title, color and loading state defaults in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({
         pages: ['pages/index/index', 'pages/detail/index'],
         window: {
+          navigationBarBackgroundColor: '#112233',
           navigationBarTitleText: 'Browser Shell',
+          navigationBarTextStyle: 'white',
         },
       })],
       ['app.js', 'App({})'],
       ['pages/index/index.json', JSON.stringify({
+        navigationBarBackgroundColor: '#abc123',
         navigationBarTitleText: 'Browser Index',
+        navigationBarTextStyle: 'black',
       })],
       ['pages/index/index.js', `
 Page({
@@ -399,6 +403,44 @@ Page({
       }
     })
   },
+  updateColor() {
+    wx.setNavigationBarColor({
+      frontColor: '#ffffff',
+      backgroundColor: '#135790',
+      animation: {
+        duration: 240,
+        timingFunction: 'easeIn'
+      },
+      success: () => {
+        this.setData({
+          logs: [...this.data.logs, 'color:success']
+        })
+      },
+      complete: (result) => {
+        this.setData({
+          logs: [...this.data.logs, 'color:complete:' + (result?.errMsg ?? 'none')]
+        })
+      }
+    })
+  },
+  showNavLoading() {
+    wx.showNavigationBarLoading({
+      success: () => {
+        this.setData({
+          logs: [...this.data.logs, 'show-loading:success']
+        })
+      }
+    })
+  },
+  hideNavLoading() {
+    wx.hideNavigationBarLoading({
+      complete: (result) => {
+        this.setData({
+          logs: [...this.data.logs, 'hide-loading:complete:' + (result?.errMsg ?? 'none')]
+        })
+      }
+    })
+  },
   goDetail() {
     wx.navigateTo({
       url: '/pages/detail/index'
@@ -415,16 +457,53 @@ Page({
     const page = session.reLaunch('/pages/index/index')
 
     expect(session.getCurrentPageNavigationBarTitle()).toBe('Browser Index')
+    expect(session.getCurrentPageNavigationBar()).toEqual({
+      animation: null,
+      backgroundColor: '#abc123',
+      frontColor: '#000000',
+      loading: false,
+      title: 'Browser Index',
+    })
 
     page.updateTitle()
     expect(session.getCurrentPageNavigationBarTitle()).toBe('Browser Updated')
+    expect(session.getCurrentPageNavigationBar()?.title).toBe('Browser Updated')
+
+    page.updateColor()
+    expect(session.getCurrentPageNavigationBar()).toEqual({
+      animation: {
+        duration: 240,
+        timingFunction: 'easeIn',
+      },
+      backgroundColor: '#135790',
+      frontColor: '#ffffff',
+      loading: false,
+      title: 'Browser Updated',
+    })
+
+    page.showNavLoading()
+    expect(session.getCurrentPageNavigationBar()?.loading).toBe(true)
+
+    page.hideNavLoading()
+    expect(session.getCurrentPageNavigationBar()?.loading).toBe(false)
     expect(page.data.logs).toEqual([
       'success',
       'complete:setNavigationBarTitle:ok',
+      'color:success',
+      'color:complete:setNavigationBarColor:ok',
+      'show-loading:success',
+      'hide-loading:complete:hideNavigationBarLoading:ok',
     ])
 
     page.goDetail()
     expect(session.getCurrentPageNavigationBarTitle()).toBe('Browser Shell')
+    expect(session.getCurrentPageNavigationBar()).toEqual({
+      animation: null,
+      backgroundColor: '#112233',
+      frontColor: '#ffffff',
+      loading: false,
+      title: 'Browser Shell',
+    })
   })
 
   it('supports showActionSheet defaults and cancel path in browser runtime', () => {

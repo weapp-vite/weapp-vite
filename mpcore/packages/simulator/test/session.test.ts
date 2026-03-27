@@ -806,7 +806,7 @@ Page({
     })
   })
 
-  it('supports setNavigationBarTitle and preserves page title defaults', () => {
+  it('supports navigation bar title, color and loading state defaults', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-navigation-bar-title-'))
     tempDirs.push(root)
 
@@ -817,12 +817,16 @@ Page({
     writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
       pages: ['pages/index/index', 'pages/detail/index'],
       window: {
+        navigationBarBackgroundColor: '#112233',
         navigationBarTitleText: 'App Shell',
+        navigationBarTextStyle: 'white',
       },
     }, null, 2))
     writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
     writeFixtureFile(path.join(root, 'dist/pages/index/index.json'), JSON.stringify({
+      navigationBarBackgroundColor: '#abc123',
       navigationBarTitleText: 'Index Title',
+      navigationBarTextStyle: 'black',
     }, null, 2))
     writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
 Page({
@@ -844,6 +848,44 @@ Page({
       }
     })
   },
+  updateColor() {
+    wx.setNavigationBarColor({
+      frontColor: '#ffffff',
+      backgroundColor: '#135790',
+      animation: {
+        duration: 240,
+        timingFunction: 'easeIn'
+      },
+      success: () => {
+        this.setData({
+          logs: [...this.data.logs, 'color:success']
+        })
+      },
+      complete: (result) => {
+        this.setData({
+          logs: [...this.data.logs, 'color:complete:' + (result?.errMsg ?? 'none')]
+        })
+      }
+    })
+  },
+  showNavLoading() {
+    wx.showNavigationBarLoading({
+      success: () => {
+        this.setData({
+          logs: [...this.data.logs, 'show-loading:success']
+        })
+      }
+    })
+  },
+  hideNavLoading() {
+    wx.hideNavigationBarLoading({
+      complete: (result) => {
+        this.setData({
+          logs: [...this.data.logs, 'hide-loading:complete:' + (result?.errMsg ?? 'none')]
+        })
+      }
+    })
+  },
   goDetail() {
     wx.navigateTo({
       url: '/pages/detail/index'
@@ -859,16 +901,53 @@ Page({
     const page = session.reLaunch('/pages/index/index')
 
     expect(session.getCurrentPageNavigationBarTitle()).toBe('Index Title')
+    expect(session.getCurrentPageNavigationBar()).toEqual({
+      animation: null,
+      backgroundColor: '#abc123',
+      frontColor: '#000000',
+      loading: false,
+      title: 'Index Title',
+    })
 
     page.updateTitle()
     expect(session.getCurrentPageNavigationBarTitle()).toBe('Updated Title')
+    expect(session.getCurrentPageNavigationBar()?.title).toBe('Updated Title')
+
+    page.updateColor()
+    expect(session.getCurrentPageNavigationBar()).toEqual({
+      animation: {
+        duration: 240,
+        timingFunction: 'easeIn',
+      },
+      backgroundColor: '#135790',
+      frontColor: '#ffffff',
+      loading: false,
+      title: 'Updated Title',
+    })
+
+    page.showNavLoading()
+    expect(session.getCurrentPageNavigationBar()?.loading).toBe(true)
+
+    page.hideNavLoading()
+    expect(session.getCurrentPageNavigationBar()?.loading).toBe(false)
     expect(page.data.logs).toEqual([
       'success',
       'complete:setNavigationBarTitle:ok',
+      'color:success',
+      'color:complete:setNavigationBarColor:ok',
+      'show-loading:success',
+      'hide-loading:complete:hideNavigationBarLoading:ok',
     ])
 
     page.goDetail()
     expect(session.getCurrentPageNavigationBarTitle()).toBe('App Shell')
+    expect(session.getCurrentPageNavigationBar()).toEqual({
+      animation: null,
+      backgroundColor: '#112233',
+      frontColor: '#ffffff',
+      loading: false,
+      title: 'App Shell',
+    })
   })
 
   it('supports showActionSheet defaults and cancel path', () => {

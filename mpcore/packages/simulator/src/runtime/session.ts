@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createHostRegistries } from '../host'
 import { loadProject } from '../project'
-import { resolveNavigationBarTitle } from '../project/pageConfig'
+import { cloneNavigationBarSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
@@ -174,7 +174,10 @@ export class HeadlessSession {
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         request: option => this.wxState.request(option),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
+        setNavigationBarColor: option => this.setNavigationBarColor(option),
         setNavigationBarTitle: option => this.setNavigationBarTitle(option.title),
+        hideNavigationBarLoading: () => this.hideNavigationBarLoading(),
+        showNavigationBarLoading: () => this.showNavigationBarLoading(),
         showActionSheet: option => this.wxState.showActionSheet(option),
         showLoading: option => this.wxState.showLoading(option),
         showModal: option => this.wxState.showModal(option),
@@ -195,6 +198,11 @@ export class HeadlessSession {
 
   getCurrentPageNavigationBarTitle() {
     return this.currentPageInstance?.__navigationBarTitle__ ?? null
+  }
+
+  getCurrentPageNavigationBar() {
+    const snapshot = this.currentPageInstance?.__navigationBar__
+    return snapshot ? cloneNavigationBarSnapshot(snapshot) : null
   }
 
   getActionSheetLogs() {
@@ -285,9 +293,80 @@ export class HeadlessSession {
 
   setNavigationBarTitle(title: string) {
     const current = this.requireCurrentPage('wx.setNavigationBarTitle()')
+    current.__navigationBar__ ??= {
+      animation: null,
+      backgroundColor: '#ffffff',
+      frontColor: '#000000',
+      loading: false,
+      title: '',
+    }
+    current.__navigationBar__.title = title
     current.__navigationBarTitle__ = title
     return {
       errMsg: 'setNavigationBarTitle:ok',
+    }
+  }
+
+  setNavigationBarColor(option: {
+    animation?: {
+      duration?: number
+      timingFunction?: string
+    }
+    backgroundColor?: string
+    frontColor?: string
+  }) {
+    const current = this.requireCurrentPage('wx.setNavigationBarColor()')
+    current.__navigationBar__ ??= {
+      animation: null,
+      backgroundColor: '#ffffff',
+      frontColor: '#000000',
+      loading: false,
+      title: current.__navigationBarTitle__ ?? '',
+    }
+    if (typeof option.backgroundColor === 'string') {
+      current.__navigationBar__.backgroundColor = option.backgroundColor
+    }
+    if (typeof option.frontColor === 'string') {
+      current.__navigationBar__.frontColor = option.frontColor
+    }
+    current.__navigationBar__.animation = option.animation
+      ? {
+          duration: option.animation.duration,
+          timingFunction: option.animation.timingFunction,
+        }
+      : null
+    return {
+      errMsg: 'setNavigationBarColor:ok',
+    }
+  }
+
+  showNavigationBarLoading() {
+    const current = this.requireCurrentPage('wx.showNavigationBarLoading()')
+    current.__navigationBar__ ??= {
+      animation: null,
+      backgroundColor: '#ffffff',
+      frontColor: '#000000',
+      loading: false,
+      title: current.__navigationBarTitle__ ?? '',
+    }
+    current.__navigationBar__.loading = true
+    return {
+      errMsg: 'showNavigationBarLoading:ok',
+    }
+  }
+
+  hideNavigationBarLoading() {
+    const current = this.requireCurrentPage('wx.hideNavigationBarLoading()')
+    current.__navigationBar__ ??= {
+      animation: null,
+      backgroundColor: '#ffffff',
+      frontColor: '#000000',
+      loading: false,
+      title: current.__navigationBarTitle__ ?? '',
+    }
+    current.__navigationBar__.loading = false
+    return {
+      errMsg: 'hideNavigationBarLoading:ok',
     }
   }
 
@@ -469,7 +548,7 @@ export class HeadlessSession {
     const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
     const pageConfig = readJsonObject(pageConfigPath)
     const pageInstance = createPageInstance(`/${target.routeRecord.route}`, pageDefinition, target.query, {
-      navigationBarTitle: resolveNavigationBarTitle(this.project.appConfig, pageConfig),
+      navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
     })
     pageInstance.onLoad?.(target.query)
     pageInstance.onShow?.()
