@@ -1062,6 +1062,69 @@ Page({
     expect(session.getFileText('headless://saved/log.txt')).toBe('alpha-beta-gamma')
   })
 
+  it('keeps saved file metadata in sync with fs mutations', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-saved-file-fs-sync-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    afterAppendSummary: '',
+    afterRenameSummary: '',
+    afterUnlinkSummary: '',
+    afterWriteSummary: ''
+  },
+  runSavedFileFsSyncLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/report.txt', 'alpha')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/report.txt',
+      filePath: 'headless://saved/report.txt',
+      success: (saveResult) => {
+        fsManager.writeFileSync(saveResult.savedFilePath, 'beta')
+        this.setData({
+          afterWriteSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+        fsManager.appendFileSync(saveResult.savedFilePath, '-gamma')
+        this.setData({
+          afterAppendSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+        fsManager.renameSync(saveResult.savedFilePath, 'headless://saved/report-renamed.txt')
+        this.setData({
+          afterRenameSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+        fsManager.unlinkSync('headless://saved/report-renamed.txt')
+        this.setData({
+          afterUnlinkSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-file-fs-sync</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileFsSyncLab()
+
+    expect(page.data.afterWriteSummary).toContain('"filePath":"headless://saved/report.txt"')
+    expect(page.data.afterWriteSummary).toContain('"size":4')
+    expect(page.data.afterAppendSummary).toContain('"size":10')
+    expect(page.data.afterRenameSummary).toContain('"filePath":"headless://saved/report-renamed.txt"')
+    expect(page.data.afterRenameSummary).not.toContain('headless://saved/report.txt')
+    expect(page.data.afterUnlinkSummary).toBe('[]')
+    expect(session.getSavedFileListSnapshot()).toEqual([])
+  })
+
   it('reports stat sizes and fs manager failures through callbacks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-errors-'))
     tempDirs.push(root)

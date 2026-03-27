@@ -462,6 +462,17 @@ export function createHeadlessWxState() {
     size,
   })
 
+  const updateSavedFileMetadata = (normalizedPath: string, fileContent: string) => {
+    const savedFile = savedFiles.get(normalizedPath)
+    if (!savedFile) {
+      return
+    }
+    savedFiles.set(normalizedPath, {
+      ...savedFile,
+      size: fileContent.length,
+    })
+  }
+
   const accessFile = (filePath: string): HeadlessWxFileSystemResult => {
     const normalizedPath = normalizeFsPath(filePath)
     if (!files.has(normalizedPath) && !directories.has(normalizedPath)) {
@@ -489,7 +500,9 @@ export function createHeadlessWxState() {
     const normalizedPath = normalizeFsPath(filePath)
     normalizeEncoding(encoding)
     ensureDirectoryTree(normalizedPath)
-    files.set(normalizedPath, String(data))
+    const fileContent = String(data)
+    files.set(normalizedPath, fileContent)
+    updateSavedFileMetadata(normalizedPath, fileContent)
     return {
       errMsg: 'writeFile:ok',
     }
@@ -500,7 +513,9 @@ export function createHeadlessWxState() {
     normalizeEncoding(encoding)
     ensureDirectoryTree(normalizedPath)
     const currentContent = files.get(normalizedPath) ?? ''
-    files.set(normalizedPath, `${currentContent}${String(data)}`)
+    const nextFileContent = `${currentContent}${String(data)}`
+    files.set(normalizedPath, nextFileContent)
+    updateSavedFileMetadata(normalizedPath, nextFileContent)
     return {
       errMsg: 'appendFile:ok',
     }
@@ -528,8 +543,19 @@ export function createHeadlessWxState() {
       throw new Error(`rename:fail no such file or directory, rename '${normalizedOldPath}'`)
     }
     files.delete(normalizedOldPath)
+    const savedFile = savedFiles.get(normalizedOldPath)
+    if (savedFile) {
+      savedFiles.delete(normalizedOldPath)
+    }
     ensureDirectoryTree(normalizedNewPath)
     files.set(normalizedNewPath, fileContent)
+    if (savedFile) {
+      savedFiles.set(normalizedNewPath, {
+        ...savedFile,
+        filePath: normalizedNewPath,
+        size: fileContent.length,
+      })
+    }
     return {
       errMsg: 'rename:ok',
     }
@@ -541,6 +567,7 @@ export function createHeadlessWxState() {
       throw new Error(`unlink:fail no such file or directory, unlink '${normalizedPath}'`)
     }
     files.delete(normalizedPath)
+    savedFiles.delete(normalizedPath)
     return {
       errMsg: 'unlink:ok',
     }
