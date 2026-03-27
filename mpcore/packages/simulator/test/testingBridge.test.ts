@@ -473,4 +473,24 @@ describe('headless testing bridge', () => {
     expect(component?.scopeId).toContain('status-card')
     expect(components).toHaveLength(2)
   })
+
+  it('waits for components to appear through the testing bridge page handle', async () => {
+    const projectPath = createAsyncComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const component = await page.waitForComponent('#status-card', {
+      timeout: 200,
+    })
+    const components = await page.waitForComponents('status-card', 2, {
+      timeout: 200,
+    })
+
+    expect(component).not.toBeNull()
+    expect(component?.scopeId).toContain('status-card')
+    expect(components).toHaveLength(2)
+  })
 })
