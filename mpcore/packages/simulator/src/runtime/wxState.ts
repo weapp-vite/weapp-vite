@@ -1,5 +1,6 @@
 import type {
   HeadlessWxAccessFileOption,
+  HeadlessWxAppendFileOption,
   HeadlessWxCopyFileOption,
   HeadlessWxDownloadFileOption,
   HeadlessWxDownloadFileSuccessResult,
@@ -487,6 +488,17 @@ export function createHeadlessWxState() {
     }
   }
 
+  const appendFile = (filePath: string, data: string, encoding?: string): HeadlessWxFileSystemResult => {
+    const normalizedPath = normalizeFsPath(filePath)
+    normalizeEncoding(encoding)
+    ensureDirectoryTree(normalizedPath)
+    const currentContent = files.get(normalizedPath) ?? ''
+    files.set(normalizedPath, `${currentContent}${String(data)}`)
+    return {
+      errMsg: 'appendFile:ok',
+    }
+  }
+
   const copyFile = (srcPath: string, destPath: string): HeadlessWxFileSystemResult => {
     const normalizedSrcPath = normalizeFsPath(srcPath)
     const normalizedDestPath = normalizeFsPath(destPath)
@@ -616,6 +628,22 @@ export function createHeadlessWxState() {
     },
     accessSync(path: string) {
       accessFile(path)
+    },
+    appendFile(option: HeadlessWxAppendFileOption) {
+      try {
+        const result = appendFile(option.filePath, option.data, option.encoding)
+        option.success?.(result)
+        option.complete?.(result)
+        return result
+      }
+      catch (error) {
+        option.fail?.(error as Error)
+        option.complete?.()
+        return undefined
+      }
+    },
+    appendFileSync(filePath: string, data: string, encoding?: string) {
+      appendFile(filePath, data, encoding)
     },
     copyFile(option: HeadlessWxCopyFileOption) {
       try {
