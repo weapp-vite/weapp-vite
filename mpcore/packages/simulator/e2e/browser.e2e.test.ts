@@ -203,4 +203,42 @@ describe.sequential('simulator browser e2e', () => {
     })
     expect(snapshot.storageSnapshot).toBeTypeOf('object')
   })
+
+  it('tracks browser route stack transitions through runtime navigation', async () => {
+    const bridge = getBridge()!
+    bridge.pickScenario('route-maze')
+
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentScenarioId === 'route-maze' && state.currentRoute === 'pages/hub/index',
+      20_000,
+    )
+
+    bridge.runPageMethod('openQueue')
+    await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'package-flow/queue/index' && state.pageStack.length === 2,
+      20_000,
+    )
+
+    bridge.runPageMethod('openDetail')
+    const detailState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'package-flow/detail/index' && state.pageStack.length === 3,
+      20_000,
+    )
+    expect(detailState.pageStack).toEqual([
+      'pages/hub/index',
+      'package-flow/queue/index',
+      'package-flow/detail/index',
+    ])
+
+    bridge.navigateBack(2)
+    const backState = await waitFor(
+      () => bridge.getState(),
+      state => state.currentRoute === 'pages/hub/index' && state.pageStack.length === 1,
+      20_000,
+    )
+    expect(backState.pageStack).toEqual(['pages/hub/index'])
+  })
 })
