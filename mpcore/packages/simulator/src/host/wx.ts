@@ -131,6 +131,19 @@ export interface HeadlessWxSetNavigationBarTitleOption extends HeadlessWxCallbac
   title: string
 }
 
+export interface HeadlessWxSetNavigationBarColorOption extends HeadlessWxCallbackOption<{ errMsg: string }> {
+  animation?: {
+    duration?: number
+    timingFunction?: string
+  }
+  backgroundColor?: string
+  frontColor?: string
+}
+
+export interface HeadlessWxShowNavigationBarLoadingOption extends HeadlessWxCallbackOption<{ errMsg: string }> {}
+
+export interface HeadlessWxHideNavigationBarLoadingOption extends HeadlessWxCallbackOption<{ errMsg: string }> {}
+
 export interface HeadlessWxShowActionSheetResult {
   errMsg: string
   tapIndex: number
@@ -211,7 +224,10 @@ export interface HeadlessWxDriver {
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
   setStorageSync: (key: string, value: unknown) => void
+  setNavigationBarColor: (option: HeadlessWxSetNavigationBarColorOption) => { errMsg: string }
   setNavigationBarTitle: (option: HeadlessWxSetNavigationBarTitleOption) => { errMsg: string }
+  hideNavigationBarLoading: () => { errMsg: string }
+  showNavigationBarLoading: () => { errMsg: string }
   showActionSheet: (option: HeadlessWxShowActionSheetOption) => HeadlessWxShowActionSheetResult
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string }
   showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult
@@ -253,7 +269,10 @@ export interface HeadlessWx {
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
   setStorage: (option: HeadlessWxSetStorageOption) => HeadlessWxStorageResult | undefined
   setStorageSync: (key: string, value: unknown) => void
+  setNavigationBarColor: (option: HeadlessWxSetNavigationBarColorOption) => { errMsg: string } | undefined
   setNavigationBarTitle: (option: HeadlessWxSetNavigationBarTitleOption) => { errMsg: string } | undefined
+  hideNavigationBarLoading: (option?: HeadlessWxHideNavigationBarLoadingOption) => { errMsg: string } | undefined
+  showNavigationBarLoading: (option?: HeadlessWxShowNavigationBarLoadingOption) => { errMsg: string } | undefined
   showActionSheet: (option: HeadlessWxShowActionSheetOption) => HeadlessWxShowActionSheetResult | undefined
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string } | undefined
   showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult | undefined
@@ -444,7 +463,10 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     request: true,
     setStorage: true,
     setStorageSync: true,
+    setNavigationBarColor: true,
     setNavigationBarTitle: true,
+    hideNavigationBarLoading: true,
+    showNavigationBarLoading: true,
     showActionSheet: true,
     showLoading: true,
     showModal: true,
@@ -514,7 +536,10 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       }
     }, option),
     setStorageSync: (key, value) => driver.setStorageSync(key, value),
+    setNavigationBarColor: option => invokeWxApi(() => driver.setNavigationBarColor(option), option),
     setNavigationBarTitle: option => invokeWxApi(() => driver.setNavigationBarTitle(option), option),
+    hideNavigationBarLoading: option => invokeWxApi(() => driver.hideNavigationBarLoading(), option),
+    showNavigationBarLoading: option => invokeWxApi(() => driver.showNavigationBarLoading(), option),
     showActionSheet: option => invokeWxApi(() => driver.showActionSheet(option), option),
     showLoading: option => invokeWxApi(() => driver.showLoading(option), option),
     showModal: option => invokeWxApi(() => driver.showModal(option), option),

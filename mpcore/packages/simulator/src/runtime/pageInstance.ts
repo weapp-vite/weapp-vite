@@ -1,4 +1,6 @@
 import type { HeadlessPageDefinition } from '../host'
+import type { HeadlessNavigationBarSnapshot } from '../project/pageConfig'
+import { cloneNavigationBarSnapshot } from '../project/pageConfig'
 
 const ARRAY_INDEX_PATH_RE = /\[(\d+)\]/g
 const ARRAY_INDEX_SEGMENT_RE = /^\d+$/
@@ -6,6 +8,7 @@ const LEADING_ROUTE_SLASH_RE = /^\/+/
 
 export interface HeadlessPageInstance extends Record<string, any> {
   __lastChangedKeys__?: string[]
+  __navigationBar__?: HeadlessNavigationBarSnapshot
   __navigationBarTitle__?: string
   __route__: string
   data: Record<string, any>
@@ -89,13 +92,16 @@ export function createPageInstance(
   definition: HeadlessPageDefinition,
   options: Record<string, string> = {},
   pageState: {
-    navigationBarTitle?: string
+    navigationBar?: HeadlessNavigationBarSnapshot
   } = {},
 ): HeadlessPageInstance {
   const normalizedRoute = normalizeRoute(route)
   const instance: HeadlessPageInstance = {
     __route__: normalizedRoute,
-    __navigationBarTitle__: pageState.navigationBarTitle,
+    __navigationBar__: pageState.navigationBar
+      ? cloneNavigationBarSnapshot(pageState.navigationBar)
+      : undefined,
+    __navigationBarTitle__: pageState.navigationBar?.title,
     data: resolveInitialData(definition),
     options: { ...options },
     route: normalizedRoute,
