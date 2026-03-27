@@ -624,6 +624,123 @@ Page({
     expect(session.getRequestLogs()).toEqual([])
   })
 
+  it('supports downloadFile, saveFile and uploadFile through wx api state', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-file-transfer-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    downloadSummary: '',
+    saveSummary: '',
+    uploadSummary: '',
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  runFileTransferLab() {
+    wx.downloadFile({
+      url: 'https://mock.mpcore.dev/files/report.txt',
+      success: (downloadResult) => {
+        this.setData({
+          downloadSummary: JSON.stringify(downloadResult)
+        })
+        wx.saveFile({
+          tempFilePath: downloadResult.tempFilePath,
+          filePath: 'headless://saved/report.txt',
+          success: (saveResult) => {
+            this.setData({
+              saveSummary: JSON.stringify(saveResult)
+            })
+            wx.uploadFile({
+              url: 'https://mock.mpcore.dev/upload/report',
+              filePath: saveResult.savedFilePath,
+              name: 'file',
+              formData: {
+                ticket: 'alpha'
+              },
+              success: (uploadResult) => {
+                this.setData({
+                  uploadSummary: uploadResult.data
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>file-transfer</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    session.mockDownloadFile({
+      fileContent: 'downloaded report body',
+      url: 'https://mock.mpcore.dev/files/report.txt',
+    })
+    session.mockUploadFile({
+      response: ({ fileContent, formData }) => JSON.stringify({
+        accepted: true,
+        fileContent,
+        ticket: formData?.ticket ?? null,
+      }),
+      url: 'https://mock.mpcore.dev/upload/report',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.runFileTransferLab()
+
+    expect(page.data.downloadSummary).toContain('"errMsg":"downloadFile:ok"')
+    expect(page.data.saveSummary).toContain('"savedFilePath":"headless://saved/report.txt"')
+    expect(page.data.uploadSummary).toContain('"accepted":true')
+    expect(page.data.uploadSummary).toContain('"ticket":"alpha"')
+    expect(session.getFileText('headless://saved/report.txt')).toBe('downloaded report body')
+    expect(session.getDownloadFileLogs()).toEqual([
+      {
+        header: {},
+        matched: true,
+        response: {
+          errMsg: 'downloadFile:ok',
+          statusCode: 200,
+          tempFilePath: expect.any(String),
+        },
+        tempFilePath: expect.any(String),
+        url: 'https://mock.mpcore.dev/files/report.txt',
+      },
+    ])
+    expect(session.getUploadFileLogs()).toEqual([
+      {
+        fileContent: 'downloaded report body',
+        fileName: undefined,
+        filePath: 'headless://saved/report.txt',
+        formData: {
+          ticket: 'alpha',
+        },
+        header: {},
+        matched: true,
+        name: 'file',
+        response: {
+          data: page.data.uploadSummary,
+          errMsg: 'uploadFile:ok',
+          statusCode: 200,
+        },
+        url: 'https://mock.mpcore.dev/upload/report',
+      },
+    ])
+  })
+
   it('supports showModal defaults and queued modal mocks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-show-modal-'))
     tempDirs.push(root)

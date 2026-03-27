@@ -1,4 +1,6 @@
 import type {
+  HeadlessWxDownloadFileOption,
+  HeadlessWxDownloadFileSuccessResult,
   HeadlessWxGetNetworkTypeResult,
   HeadlessWxNetworkStatusChangeCallback,
   HeadlessWxNetworkStatusChangeResult,
@@ -6,6 +8,8 @@ import type {
   HeadlessWxRequestOption,
   HeadlessWxRequestSuccessResult,
   HeadlessWxRequestTask,
+  HeadlessWxSaveFileOption,
+  HeadlessWxSaveFileSuccessResult,
   HeadlessWxShareMenuOption,
   HeadlessWxShowActionSheetOption,
   HeadlessWxShowActionSheetResult,
@@ -13,6 +17,8 @@ import type {
   HeadlessWxShowModalOption,
   HeadlessWxShowModalResult,
   HeadlessWxShowToastOption,
+  HeadlessWxUploadFileOption,
+  HeadlessWxUploadFileSuccessResult,
 } from '../host'
 
 export interface HeadlessWxLoadingSnapshot {
@@ -79,6 +85,48 @@ export interface HeadlessWxRequestLogEntry {
   matched: boolean
   method: string
   response?: HeadlessWxRequestSuccessResult
+  url: string
+}
+
+export interface HeadlessWxDownloadFileMockDefinition {
+  delay?: number
+  fileContent:
+    | string
+    | ((option: HeadlessWxDownloadFileOption) => string)
+  header?: Record<string, string>
+  statusCode?: number
+  url: RegExp | string
+}
+
+export interface HeadlessWxDownloadFileLogEntry {
+  header: Record<string, string>
+  matched: boolean
+  response?: HeadlessWxDownloadFileSuccessResult
+  tempFilePath?: string
+  url: string
+}
+
+export interface HeadlessWxUploadFileMockDefinition {
+  delay?: number
+  header?: Record<string, string>
+  method?: string
+  response:
+    | string
+    | Partial<HeadlessWxUploadFileSuccessResult>
+    | ((option: HeadlessWxUploadFileOption & { fileContent: string }) => string | Partial<HeadlessWxUploadFileSuccessResult>)
+  statusCode?: number
+  url: RegExp | string
+}
+
+export interface HeadlessWxUploadFileLogEntry {
+  fileContent: string
+  fileName?: string
+  filePath: string
+  formData: Record<string, unknown>
+  header: Record<string, string>
+  matched: boolean
+  name: string
+  response?: HeadlessWxUploadFileSuccessResult
   url: string
 }
 
@@ -166,15 +214,91 @@ function resolveRequestResponse(
   }
 }
 
+function matchesSimpleUrlMock(
+  mock: { url: RegExp | string },
+  url: string,
+) {
+  if (typeof mock.url === 'string') {
+    return mock.url === url
+  }
+
+  mock.url.lastIndex = 0
+  return mock.url.test(url)
+}
+
+function resolveDownloadFileResponse(
+  mock: HeadlessWxDownloadFileMockDefinition,
+  option: HeadlessWxDownloadFileOption,
+  tempFilePath: string,
+): { fileContent: string, result: HeadlessWxDownloadFileSuccessResult } {
+  const fileContent = typeof mock.fileContent === 'function'
+    ? mock.fileContent(option)
+    : mock.fileContent
+
+  return {
+    fileContent,
+    result: {
+      errMsg: 'downloadFile:ok',
+      statusCode: mock.statusCode ?? 200,
+      tempFilePath,
+    },
+  }
+}
+
+function resolveUploadFileResponse(
+  mock: HeadlessWxUploadFileMockDefinition,
+  option: HeadlessWxUploadFileOption,
+  fileContent: string,
+): HeadlessWxUploadFileSuccessResult {
+  const rawResponse = typeof mock.response === 'function'
+    ? mock.response({
+        ...option,
+        fileContent,
+      })
+    : mock.response
+
+  if (typeof rawResponse === 'string') {
+    return {
+      data: rawResponse,
+      errMsg: 'uploadFile:ok',
+      statusCode: mock.statusCode ?? 200,
+    }
+  }
+
+  return {
+    data: rawResponse.data == null ? '' : String(rawResponse.data),
+    errMsg: rawResponse.errMsg ?? 'uploadFile:ok',
+    statusCode: rawResponse.statusCode ?? mock.statusCode ?? 200,
+  }
+}
+
+function normalizeDelay(delay?: number) {
+  return Number.isFinite(delay)
+    ? Math.max(0, Math.trunc(delay ?? 0))
+    : 0
+}
+
+function createNoopTask(): HeadlessWxRequestTask {
+  return {
+    abort() {},
+  }
+}
+
 export function createHeadlessWxState() {
   const actionSheetLogs: HeadlessWxActionSheetLogEntry[] = []
   const actionSheetMocks: HeadlessWxActionSheetMockDefinition[] = []
+  const downloadFileLogs: HeadlessWxDownloadFileLogEntry[] = []
+  const downloadFileMocks: HeadlessWxDownloadFileMockDefinition[] = []
   const modalLogs: HeadlessWxModalLogEntry[] = []
   const networkStatusChangeCallbacks = new Set<HeadlessWxNetworkStatusChangeCallback>()
   const modalMocks: HeadlessWxModalMockDefinition[] = []
   const requestLogs: HeadlessWxRequestLogEntry[] = []
   const requestMocks: HeadlessWxRequestMockDefinition[] = []
   const storage = new Map<string, unknown>()
+  const uploadFileLogs: HeadlessWxUploadFileLogEntry[] = []
+  const uploadFileMocks: HeadlessWxUploadFileMockDefinition[] = []
+  const files = new Map<string, string>()
+  let fileId = 0
   let loading: HeadlessWxLoadingSnapshot | null = null
   let networkType: HeadlessWxNetworkType = 'wifi'
   let shareMenu: HeadlessWxShareMenuSnapshot = {
@@ -185,9 +309,99 @@ export function createHeadlessWxState() {
   }
   let toast: HeadlessWxToastSnapshot | null = null
 
+  const allocateFilePath = (bucket: 'saved' | 'temp', preferredPath?: string) => {
+    if (typeof preferredPath === 'string' && preferredPath.trim()) {
+      return preferredPath.trim()
+    }
+    fileId += 1
+    return `headless://wxfile/${bucket}/${String(fileId).padStart(4, '0')}`
+  }
+
+  const runDelayedTask = <TResult>(
+    delay: number,
+    onSuccess: (result: TResult) => void,
+    onFail: (error: Error) => void,
+    abortMessage: string,
+  ) => {
+    if (delay <= 0) {
+      onSuccess(undefined as TResult)
+      return createNoopTask()
+    }
+
+    let completed = false
+    const timer = setTimeout(() => {
+      if (completed) {
+        return
+      }
+      completed = true
+      onSuccess(undefined as TResult)
+    }, delay)
+
+    return {
+      abort() {
+        if (completed) {
+          return
+        }
+        completed = true
+        clearTimeout(timer)
+        onFail(new Error(abortMessage))
+      },
+    }
+  }
+
   return {
     clearStorageSync() {
       storage.clear()
+    },
+    downloadFile(option: HeadlessWxDownloadFileOption): HeadlessWxRequestTask {
+      const matchedMock = downloadFileMocks.find(mock => matchesSimpleUrlMock(mock, option.url))
+      if (!matchedMock) {
+        const logEntry: HeadlessWxDownloadFileLogEntry = {
+          header: { ...(option.header ?? {}) },
+          matched: false,
+          url: option.url,
+        }
+        downloadFileLogs.push(logEntry)
+        const error = new Error(`No downloadFile mock matched in headless runtime: ${option.url}`)
+        option.fail?.(error)
+        option.complete?.()
+        return createNoopTask()
+      }
+
+      const tempFilePath = allocateFilePath('temp', option.filePath)
+      const delay = normalizeDelay(matchedMock.delay)
+      const logEntry: HeadlessWxDownloadFileLogEntry = {
+        header: { ...(option.header ?? {}) },
+        matched: true,
+        response: {
+          errMsg: 'downloadFile:ok',
+          statusCode: matchedMock.statusCode ?? 200,
+          tempFilePath,
+        },
+        tempFilePath,
+        url: option.url,
+      }
+
+      const commit = () => {
+        const { fileContent, result } = resolveDownloadFileResponse(matchedMock, option, tempFilePath)
+        files.set(tempFilePath, fileContent)
+        logEntry.response = { ...result }
+        downloadFileLogs.push(logEntry)
+        option.success?.(result)
+        option.complete?.(result)
+      }
+
+      const fail = (error: Error) => {
+        option.fail?.(error)
+        option.complete?.()
+      }
+
+      if (delay <= 0) {
+        commit()
+        return createNoopTask()
+      }
+
+      return runDelayedTask(delay, commit, fail, 'downloadFile:fail abort')
     },
     getActionSheetLogs() {
       return actionSheetLogs.map(entry => ({
@@ -195,6 +409,19 @@ export function createHeadlessWxState() {
         itemList: [...entry.itemList],
         result: entry.result ? { ...entry.result } : undefined,
       }))
+    },
+    getDownloadFileLogs() {
+      return downloadFileLogs.map(entry => ({
+        ...entry,
+        header: { ...entry.header },
+        response: entry.response ? { ...entry.response } : undefined,
+      }))
+    },
+    getFileSnapshot() {
+      return Object.fromEntries(files.entries())
+    },
+    getFileText(filePath: string) {
+      return files.get(filePath) ?? null
     },
     getNetworkType(): HeadlessWxGetNetworkTypeResult {
       return {
@@ -261,6 +488,14 @@ export function createHeadlessWxState() {
     getToast() {
       return toast ? { ...toast } : null
     },
+    getUploadFileLogs() {
+      return uploadFileLogs.map(entry => ({
+        ...entry,
+        formData: cloneValue(entry.formData),
+        header: { ...entry.header },
+        response: entry.response ? { ...entry.response } : undefined,
+      }))
+    },
     hideLoading() {
       loading = null
       return {
@@ -287,10 +522,24 @@ export function createHeadlessWxState() {
         header: definition.header ? { ...definition.header } : undefined,
       })
     },
+    mockDownloadFile(definition: HeadlessWxDownloadFileMockDefinition) {
+      downloadFileMocks.push({
+        ...definition,
+        delay: definition.delay,
+        header: definition.header ? { ...definition.header } : undefined,
+      })
+    },
     mockModal(definition: HeadlessWxModalMockDefinition = {}) {
       modalMocks.push({
         cancel: definition.cancel,
         confirm: definition.confirm,
+      })
+    },
+    mockUploadFile(definition: HeadlessWxUploadFileMockDefinition) {
+      uploadFileMocks.push({
+        ...definition,
+        delay: definition.delay,
+        header: definition.header ? { ...definition.header } : undefined,
       })
     },
     mockActionSheet(definition: HeadlessWxActionSheetMockDefinition = {}) {
@@ -319,9 +568,7 @@ export function createHeadlessWxState() {
         const error = new Error(`No request mock matched in headless runtime: ${normalizeMethod(option.method)} ${option.url}`)
         option.fail?.(error)
         option.complete?.()
-        return {
-          abort() {},
-        }
+        return createNoopTask()
       }
 
       const response = resolveRequestResponse(matchedMock, option)
@@ -341,37 +588,36 @@ export function createHeadlessWxState() {
         requestLogs.push(requestLogEntry)
         option.success?.(response)
         option.complete?.(response)
-        return {
-          abort() {},
-        }
+        return createNoopTask()
       }
 
-      let completed = false
-      const timer = setTimeout(() => {
-        if (completed) {
-          return
-        }
-        completed = true
+      return runDelayedTask(delay, () => {
         requestLogs.push(requestLogEntry)
         option.success?.(response)
         option.complete?.(response)
-      }, delay)
+      }, (error) => {
+        option.fail?.(error)
+        option.complete?.()
+      }, 'request:fail abort')
+    },
+    saveFile(option: HeadlessWxSaveFileOption): HeadlessWxSaveFileSuccessResult {
+      const fileContent = files.get(option.tempFilePath)
+      if (fileContent == null) {
+        throw new Error(`saveFile:fail tempFilePath not found: ${option.tempFilePath}`)
+      }
 
+      const savedFilePath = allocateFilePath('saved', option.filePath)
+      files.set(savedFilePath, fileContent)
       return {
-        abort() {
-          if (completed) {
-            return
-          }
-          completed = true
-          clearTimeout(timer)
-          const error = new Error('request:fail abort')
-          option.fail?.(error)
-          option.complete?.()
-        },
+        errMsg: 'saveFile:ok',
+        savedFilePath,
       }
     },
     setStorageSync(key: string, value: unknown) {
       storage.set(key, cloneValue(value))
+    },
+    setFile(filePath: string, fileContent: string) {
+      files.set(filePath, fileContent)
     },
     setNetworkType(nextNetworkType: HeadlessWxNetworkType) {
       networkType = nextNetworkType
@@ -487,6 +733,57 @@ export function createHeadlessWxState() {
       return {
         errMsg: 'showToast:ok',
       }
+    },
+    uploadFile(option: HeadlessWxUploadFileOption): HeadlessWxRequestTask {
+      const fileContent = files.get(option.filePath)
+      if (fileContent == null) {
+        const error = new Error(`uploadFile:fail file not found: ${option.filePath}`)
+        option.fail?.(error)
+        option.complete?.()
+        return createNoopTask()
+      }
+
+      const matchedMock = uploadFileMocks.find(mock => matchesSimpleUrlMock(mock, option.url))
+      const logEntry: HeadlessWxUploadFileLogEntry = {
+        fileContent,
+        fileName: option.fileName,
+        filePath: option.filePath,
+        formData: cloneValue(option.formData ?? {}),
+        header: { ...(option.header ?? {}) },
+        matched: Boolean(matchedMock),
+        name: option.name,
+        url: option.url,
+      }
+
+      if (!matchedMock) {
+        uploadFileLogs.push(logEntry)
+        const error = new Error(`No uploadFile mock matched in headless runtime: ${option.url}`)
+        option.fail?.(error)
+        option.complete?.()
+        return createNoopTask()
+      }
+
+      const response = resolveUploadFileResponse(matchedMock, option, fileContent)
+      const delay = normalizeDelay(matchedMock.delay)
+
+      const commit = () => {
+        logEntry.response = { ...response }
+        uploadFileLogs.push(logEntry)
+        option.success?.(response)
+        option.complete?.(response)
+      }
+
+      const fail = (error: Error) => {
+        option.fail?.(error)
+        option.complete?.()
+      }
+
+      if (delay <= 0) {
+        commit()
+        return createNoopTask()
+      }
+
+      return runDelayedTask(delay, commit, fail, 'uploadFile:fail abort')
     },
     updateShareMenu(option: HeadlessWxShareMenuOption = {}) {
       shareMenu = {

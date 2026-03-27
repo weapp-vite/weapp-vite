@@ -3,7 +3,13 @@ import type { HeadlessProjectDescriptor } from '../project/createProjectDescript
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
 import type { HeadlessAppInstance } from '../runtime/appInstance'
 import type { HeadlessPageInstance } from '../runtime/pageInstance'
-import type { HeadlessWxActionSheetMockDefinition, HeadlessWxModalMockDefinition, HeadlessWxRequestMockDefinition } from '../runtime/wxState'
+import type {
+  HeadlessWxActionSheetMockDefinition,
+  HeadlessWxDownloadFileMockDefinition,
+  HeadlessWxModalMockDefinition,
+  HeadlessWxRequestMockDefinition,
+  HeadlessWxUploadFileMockDefinition,
+} from '../runtime/wxState'
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
@@ -209,6 +215,7 @@ export class BrowserHeadlessSession {
         getWindowInfoSync: () => deriveWindowInfo(this.systemInfo),
         hideLoading: () => this.wxState.hideLoading(),
         hideToast: () => this.wxState.hideToast(),
+        downloadFile: option => this.wxState.downloadFile(option),
         reLaunch: option => this.reLaunch(option.url),
         redirectTo: option => this.redirectTo(option.url),
         nextTick: callback => queueMicrotask(() => callback?.()),
@@ -216,6 +223,7 @@ export class BrowserHeadlessSession {
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         request: option => this.wxState.request(option),
+        saveFile: option => this.wxState.saveFile(option),
         setBackgroundColor: option => this.setBackgroundColor(option),
         setBackgroundTextStyle: option => this.setBackgroundTextStyle(option.textStyle),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
@@ -235,6 +243,7 @@ export class BrowserHeadlessSession {
         showToast: option => this.wxState.showToast(option),
         stopPullDownRefresh: () => this.stopPullDownRefresh(),
         switchTab: option => this.switchTab(option.url),
+        uploadFile: option => this.wxState.uploadFile(option),
         removeTabBarBadge: option => this.removeTabBarBadge(option.index),
         setTabBarBadge: option => this.setTabBarBadge(option.index, option.text),
         updateShareMenu: option => this.wxState.updateShareMenu(option),
@@ -270,6 +279,22 @@ export class BrowserHeadlessSession {
 
   getRequestLogs() {
     return this.wxState.getRequestLogs()
+  }
+
+  getDownloadFileLogs() {
+    return this.wxState.getDownloadFileLogs()
+  }
+
+  getUploadFileLogs() {
+    return this.wxState.getUploadFileLogs()
+  }
+
+  getFileSnapshot() {
+    return this.wxState.getFileSnapshot()
+  }
+
+  getFileText(filePath: string) {
+    return this.wxState.getFileText(filePath)
   }
 
   getStorageSnapshot() {
@@ -371,6 +396,18 @@ export class BrowserHeadlessSession {
 
   mockRequest(definition: HeadlessWxRequestMockDefinition) {
     this.wxState.mockRequest(definition)
+  }
+
+  mockDownloadFile(definition: HeadlessWxDownloadFileMockDefinition) {
+    this.wxState.mockDownloadFile(definition)
+  }
+
+  mockUploadFile(definition: HeadlessWxUploadFileMockDefinition) {
+    this.wxState.mockUploadFile(definition)
+  }
+
+  setFile(filePath: string, fileContent: string) {
+    this.wxState.setFile(filePath, fileContent)
   }
 
   setNetworkType(networkType: HeadlessWxNetworkType) {
