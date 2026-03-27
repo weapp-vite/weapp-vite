@@ -946,6 +946,54 @@ Page({
     expect(page.data.listSummary).not.toContain('headless://saved/copied.txt')
   })
 
+  it('updates existing saved metadata when copyFile overwrites a saved target', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-saved-copy-overwrite-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    infoSummary: '',
+    listSummary: ''
+  },
+  runSavedFileCopyOverwriteLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/target.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/target.txt',
+      filePath: 'headless://saved/target.txt',
+      success: () => {
+        fsManager.copyFileSync('headless://temp/source.txt', 'headless://saved/target.txt')
+        this.setData({
+          infoSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' })),
+          listSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-copy-overwrite</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileCopyOverwriteLab()
+
+    expect(page.data.infoSummary).toContain('"size":10')
+    expect(page.data.listSummary).toContain('"filePath":"headless://saved/target.txt"')
+    expect(page.data.listSummary).toContain('"size":10')
+    expect(session.getSavedFileListSnapshot()).toHaveLength(1)
+  })
+
   it('supports getFileSystemManager mkdir readdir and stat operations', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-dir-ops-'))
     tempDirs.push(root)
@@ -1303,6 +1351,58 @@ Page({
     expect(page.data.listSummary).toContain('"filePath":"headless://saved/target.txt"')
     expect(page.data.listSummary).toContain('"size":10')
     expect(session.getFileText('headless://saved/target.txt')).toBe('alpha-beta')
+  })
+
+  it('keeps a single saved registration when renaming one saved file onto another', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-saved-rename-overwrite-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    listSummary: ''
+  },
+  runSavedRenameOverwriteLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/target.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/source.txt',
+      filePath: 'headless://saved/source.txt',
+      success: () => {
+        wx.saveFile({
+          tempFilePath: 'headless://temp/target.txt',
+          filePath: 'headless://saved/target.txt',
+          success: () => {
+            fsManager.renameSync('headless://saved/source.txt', 'headless://saved/target.txt')
+            this.setData({
+              listSummary: JSON.stringify(wx.getSavedFileList().fileList)
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-rename-overwrite</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedRenameOverwriteLab()
+
+    expect(page.data.listSummary).toContain('"filePath":"headless://saved/target.txt"')
+    expect(page.data.listSummary).toContain('"size":10')
+    expect(page.data.listSummary).not.toContain('headless://saved/source.txt')
+    expect(session.getSavedFileListSnapshot()).toHaveLength(1)
   })
 
   it('reports stat sizes and fs manager failures through callbacks', () => {
