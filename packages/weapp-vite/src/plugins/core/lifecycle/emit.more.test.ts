@@ -10,6 +10,7 @@ const filterPluginBundleOutputsMock = vi.hoisted(() => vi.fn())
 const flushIndependentBuildsMock = vi.hoisted(() => vi.fn(async () => {}))
 const formatBytesMock = vi.hoisted(() => vi.fn((value: number) => `${value}B`))
 const refreshModuleGraphMock = vi.hoisted(() => vi.fn())
+const refreshPartialSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const refreshSharedChunkImportersMock = vi.hoisted(() => vi.fn())
 const removeImplicitPagePreloadsMock = vi.hoisted(() => vi.fn())
 const loggerInfoMock = vi.hoisted(() => vi.fn())
@@ -31,6 +32,7 @@ vi.mock('../helpers', () => ({
   flushIndependentBuilds: flushIndependentBuildsMock,
   formatBytes: formatBytesMock,
   refreshModuleGraph: refreshModuleGraphMock,
+  refreshPartialSharedChunkImporters: refreshPartialSharedChunkImportersMock,
   refreshSharedChunkImporters: refreshSharedChunkImportersMock,
   removeImplicitPagePreloads: removeImplicitPagePreloadsMock,
 }))
@@ -279,6 +281,48 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(state.watchFilesSnapshot).toEqual([])
     expect(removeImplicitPagePreloadsMock).toHaveBeenCalledTimes(1)
     expect(refreshModuleGraphMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses partial shared chunk importer refresh during hmr incremental builds', async () => {
+    const state = createState({
+      subPackageMeta: null,
+      hmrState: {
+        didEmitAllEntries: false,
+        hasBuiltOnce: true,
+        lastEmittedEntryIds: new Set(['pages/home/index.ts']),
+      },
+      ctx: {
+        configService: {
+          isDev: true,
+          weappViteConfig: {
+            chunks: {
+              logOptimization: false,
+            },
+          },
+        },
+      },
+    })
+
+    const hook = createGenerateBundleHook(state, false)
+    const bundle = {
+      'common.js': {
+        type: 'chunk',
+        fileName: 'common.js',
+        code: 'module.exports = 1',
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(refreshSharedChunkImportersMock).not.toHaveBeenCalled()
+    expect(refreshPartialSharedChunkImportersMock).toHaveBeenCalledWith(
+      bundle,
+      state,
+      state.hmrState.lastEmittedEntryIds,
+    )
+    expect(state.hmrState.hasBuiltOnce).toBe(true)
   })
 
   it('falls back to watch file snapshot when watcher is unavailable', async () => {
@@ -532,6 +576,48 @@ describe('core lifecycle emit hook extra branches', () => {
     expect(bundle['packageA/pages/invalid.json'].source).toBe('{')
     expect(bundle['packageA/pages/empty.json'].source).toBe('')
     expect(bundle['packageA/pages/array.json'].source).toContain('"usingComponents":["dayjs"]')
+  })
+
+  it('keeps local npm chunk code unchanged for non-static or unmatched require forms', async () => {
+    const state = createState({
+      ctx: {
+        configService: {
+          platform: 'weapp',
+          pluginOnly: true,
+          packageJson: {
+            dependencies: {
+              dayjs: '^1.11.13',
+            },
+          },
+        },
+      },
+    })
+    const hook = createGenerateBundleHook(state, true)
+    const bundle = {
+      'plain.js': {
+        type: 'chunk',
+        fileName: 'plain.js',
+        code: 'const value = 1',
+        imports: [],
+        dynamicImports: [],
+      },
+      'weird.js': {
+        type: 'chunk',
+        fileName: 'weird.js',
+        code: [
+          'loader("dayjs")',
+          'require()',
+          'require(`dayjs/' + '${' + 'name}`)',
+        ].join(';'),
+        imports: [],
+        dynamicImports: [],
+      },
+    } as any
+
+    await hook.call({}, {}, bundle)
+
+    expect(bundle['plain.js'].code).toBe('const value = 1')
+    expect(bundle['weird.js'].code).toBe('loader("dayjs");require();require(`dayjs/' + '${' + 'name}`)')
   })
 
   it('handles non-logging shared chunk duplicates and empty watch files gracefully', async () => {
