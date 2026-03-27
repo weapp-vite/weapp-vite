@@ -5,11 +5,17 @@ export type DashboardIconName
   = | 'theme-system'
     | 'theme-light'
     | 'theme-dark'
+    | 'nav-menu'
+    | 'nav-home'
+    | 'nav-analyze'
+    | 'nav-activity'
+    | 'nav-tokens'
     | 'tab-overview'
     | 'tab-packages'
     | 'tab-modules'
     | 'status-dark'
     | 'status-light'
+    | 'status-live'
     | 'metric-packages'
     | 'metric-subpackages'
     | 'metric-chunks'
@@ -28,6 +34,16 @@ export type DashboardIconName
     | 'duplicate-modules'
     | 'module-sources'
     | 'file-samples'
+    | 'hero-workspace'
+    | 'hero-commands'
+    | 'hero-system'
+    | 'metric-ready'
+    | 'metric-health'
+    | 'metric-latency'
+    | 'metric-quality'
+    | 'token-color'
+    | 'token-surface'
+    | 'token-type'
 
 export interface ModuleInFile {
   id: string
@@ -92,4 +108,11 @@ export interface DashboardMetricCard {
   value: string
   iconName: DashboardIconName
   wide?: boolean
+}
+
+export interface DashboardNavItem {
+  to: string
+  label: string
+  caption: string
+  iconName: DashboardIconName
 }

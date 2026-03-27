@@ -34,6 +34,27 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/activity': RouteRecordInfo<
+      '/activity',
+      '/activity',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/analyze': RouteRecordInfo<
+      '/analyze',
+      '/analyze',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/tokens': RouteRecordInfo<
+      '/tokens',
+      '/tokens',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
   }
 
   /**
@@ -50,6 +71,24 @@ declare module 'vue-router/auto-routes' {
     'src/pages/index.vue': {
       routes:
         | '/'
+      views:
+        | never
+    }
+    'src/pages/activity.vue': {
+      routes:
+        | '/activity'
+      views:
+        | never
+    }
+    'src/pages/analyze.vue': {
+      routes:
+        | '/analyze'
+      views:
+        | never
+    }
+    'src/pages/tokens.vue': {
+      routes:
+        | '/tokens'
       views:
         | never
     }
