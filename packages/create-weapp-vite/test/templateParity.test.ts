@@ -34,6 +34,18 @@ function normalizeExpectedProjectPath(relativePath: string) {
   return relativePath
 }
 
+function shouldSkipCreatedProjectFile(relativePath: string) {
+  return (
+    relativePath === 'CHANGELOG.md'
+    || relativePath.startsWith('node_modules/')
+    || relativePath.startsWith('.weapp-vite/')
+    || relativePath.startsWith('dist/')
+    || relativePath.startsWith('.turbo/')
+    || relativePath === '.DS_Store'
+    || relativePath === 'vite.config.ts.timestamp'
+  )
+}
+
 async function scanFiles(root: string) {
   const out: string[] = []
 
@@ -45,7 +57,11 @@ async function scanFiles(root: string) {
         await walk(full)
         continue
       }
-      out.push(normalizeRelativePath(path.relative(root, full)))
+      const relativePath = normalizeRelativePath(path.relative(root, full))
+      if (shouldSkipCreatedProjectFile(relativePath)) {
+        continue
+      }
+      out.push(relativePath)
     }
   }
 
@@ -154,7 +170,16 @@ function upsertDependencyVersion(pkgJson: Record<string, any>, packageName: stri
 
 async function buildExpectedPackageJson(templateName: TemplateName) {
   const { preferredTemplateDir } = await createProjectInternal.resolveTemplateDirs(templateName)
-  const templatePackageJson = await fs.readJSON(path.join(preferredTemplateDir, 'package.json'))
+  const templatePackageJsonPath = path.join(preferredTemplateDir, 'package.json')
+  const templatePackageJson = await fs.pathExists(templatePackageJsonPath)
+    ? await fs.readJSON(templatePackageJsonPath)
+    : {
+        name: 'weapp-vite-app',
+        homepage: 'https://vite.icebreaker.top/',
+        type: 'module',
+        scripts: {},
+        devDependencies: {},
+      }
   const expectedPackageJson = cloneJson(templatePackageJson)
   const { version: weappViteVersion } = await fs.readJSON(
     path.resolve(import.meta.dirname, '../../..', 'packages/weapp-vite/package.json'),
