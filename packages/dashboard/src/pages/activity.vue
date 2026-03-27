@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import AppDiagnosticItem from '../features/dashboard/components/AppDiagnosticItem.vue'
 import AppFilterGroup from '../features/dashboard/components/AppFilterGroup.vue'
 import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
+import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
@@ -334,26 +335,12 @@ watch(filteredRuntimeEvents, (events) => {
             v-if="selectedEvent"
             class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(16rem,0.78fr)]"
           >
-            <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-accent)]">
-                    selected event
-                  </p>
-                  <h3 class="mt-1 text-lg font-semibold tracking-tight text-[color:var(--dashboard-text)]">
-                    {{ selectedEvent.title }}
-                  </h3>
-                </div>
-                <AppRuntimeBadge :label="formatRuntimeEventLevel(selectedEvent.level)" :tone="getRuntimeEventBadgeTone(selectedEvent.level)" />
-              </div>
-              <p class="mt-3 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-                {{ selectedEvent.detail }}
-              </p>
-              <p class="mt-3 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                {{ formatRuntimeEventMeta(selectedEvent) }}
-              </p>
+            <AppRuntimeFocusCard
+              :event="selectedEvent"
+              eyebrow="selected event"
+            >
               <AppTagList v-if="selectedEvent.tags?.length" class="mt-4" :tags="selectedEvent.tags" />
-            </div>
+            </AppRuntimeFocusCard>
 
             <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
               <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
