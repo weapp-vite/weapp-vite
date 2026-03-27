@@ -19,7 +19,7 @@ keywords:
 [[toc]]
 
 ## `weapp.tsconfigPaths` {#weapp-tsconfigpaths}
-- **类型**：`boolean | TsconfigPathsOptions | false`
+- **类型**：`true | TsconfigPathsOptions | false`
 - **默认值**：`undefined`（按需自动启用）
 
 启用规则：
@@ -81,6 +81,34 @@ export default defineConfig({
 
 - **修改 `paths` 没生效？** 需要重启 `pnpm dev`，并确认 tsconfig 在 `projects` 列表内。
 - **JSON 别名怎么配？** JSON 使用 `weapp.jsonAlias`（见 [JSON 配置](/config/json.md#weapp-jsonalias)），与 JS/TS 别名相互独立。
+
+## `weapp.ast` {#weapp-ast}
+- **类型**：`{ engine?: 'babel' | 'oxc' }`
+- **默认值**：`{ engine: 'babel' }`
+
+`weapp.ast` 用来控制部分“静态分析链路”优先使用哪套 AST 引擎，例如：
+
+- 组件 props 元数据提取
+- `usingComponents` / 自动导入相关分析
+- `setData.pick` 模板 key 收集
+- 一部分平台 API / require 快速判定
+
+```ts
+import { defineConfig } from 'weapp-vite/config'
+
+export default defineConfig({
+  weapp: {
+    ast: {
+      engine: 'oxc',
+    },
+  },
+})
+```
+
+使用建议：
+- 默认保持 `babel` 即可，兼容性最稳。
+- 当你明确想在“分析链路”上尝试更快的解析实现时，再切到 `oxc`。
+- 这不是“所有编译流程全部切换引擎”的总开关，而是给已接入 AST 抽象层的分析能力提供统一入口。
 
 ---
 

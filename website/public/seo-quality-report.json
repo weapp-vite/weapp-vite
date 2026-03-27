@@ -1,27 +1,27 @@
 {
-  "generatedAt": "2026-03-24T12:27:23.879Z",
+  "generatedAt": "2026-03-27T06:02:32.307Z",
   "site": "https://vite.icebreaker.top",
   "totals": {
-    "files": 272,
-    "docs": 257,
+    "files": 288,
+    "docs": 273,
     "blog": 10,
     "page": 5,
-    "withFrontmatter": 271,
-    "missingFrontmatter": 1
+    "withFrontmatter": 288,
+    "missingFrontmatter": 0
   },
   "coverage": {
     "all": {
-      "total": 272,
-      "title": 271,
-      "description": 271,
-      "keywords": 187,
+      "total": 288,
+      "title": 288,
+      "description": 288,
+      "keywords": 204,
       "date": 9
     },
     "docs": {
-      "total": 257,
-      "title": 256,
-      "description": 256,
-      "keywords": 172,
+      "total": 273,
+      "title": 273,
+      "description": 273,
+      "keywords": 189,
       "date": 1
     },
     "blog": {
@@ -41,15 +41,15 @@
   },
   "coveragePercent": {
     "all": {
-      "title": 99.6,
-      "description": 99.6,
-      "keywords": 68.8,
-      "date": 3.3
+      "title": 100,
+      "description": 100,
+      "keywords": 70.8,
+      "date": 3.1
     },
     "docs": {
-      "title": 99.6,
-      "description": 99.6,
-      "keywords": 66.9,
+      "title": 100,
+      "description": 100,
+      "keywords": 69.2,
       "date": 0.4
     },
     "blog": {
@@ -107,18 +107,8 @@
     "seoQualityReportPublic": true
   },
   "quality": {
-    "checked": 272,
+    "checked": 288,
     "issues": [
-      {
-        "path": "demos/my-app/README.md",
-        "type": "missing-description",
-        "message": "缺少 description。"
-      },
-      {
-        "path": "demos/my-app/README.md",
-        "type": "missing-keywords",
-        "message": "缺少 keywords。"
-      },
       {
         "path": "guide/directory-structure/app-bar.md",
         "type": "missing-keywords",
@@ -656,8 +646,7 @@
     ]
   },
   "qualityIssueCounts": {
-    "missing-description": 1,
-    "missing-keywords": 85,
+    "missing-keywords": 84,
     "short-description": 18,
     "non-normalized-keywords": 1
   }

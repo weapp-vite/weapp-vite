@@ -193,7 +193,7 @@ setWevuDefaults({
 > 关键点：必须是**顶层语句**（不要放进 `setup()`/hook 里），这样才能早于 `createApp()` 执行。
 
 > [!TIP]
-> 使用 Weapp-vite 时，可以通过 `weapp.wevu.defaults` 在编译期自动注入 `setWevuDefaults()`（见 `/config/shared#weapp-wevu-defaults`）。
+> 使用 Weapp-vite 时，可以通过 `weapp.wevu.defaults` 在编译期自动注入 `setWevuDefaults()`（见 `/config/wevu#weapp-wevu-defaults`）。
 
 ## setup：签名与上下文
 

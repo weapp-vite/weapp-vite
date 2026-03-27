@@ -50,7 +50,7 @@ export default defineConfig({
 | 想减少手写 `app.json.pages` / `usingComponents` | [共享配置](./shared.md)、[自动导入组件配置](./auto-import-components.md) |
 | 想给页面统一套 `layout`，或按路由批量指定页面外壳 | [Route Rules 与 Layout](./route-rules.md) |
 | 项目有分包、独立分包、共享样式或分包特化自动导入 | [分包配置](./subpackages.md)、[npm 配置](./npm.md)、[共享 Chunk 配置](./chunks.md) |
-| 在 Vue SFC / Wevu 项目里调模板编译与运行时默认值 | [Vue SFC 配置](./vue.md)、[共享配置](./shared.md) |
+| 在 Vue SFC / Wevu 项目里调模板编译、运行时默认值与 HMR 策略 | [Vue SFC 配置](./vue.md)、[Wevu 编译期配置](./wevu.md)、[开发态 HMR 配置](./hmr.md) |
 | 想做组件库、多入口模块输出或 DTS 构建 | [库模式配置](./lib.md) |
 | 想做浏览器预览、AI 协作或本地 MCP | [Web 运行时配置](./web.md)、[共享配置](./shared.md) |
 
@@ -59,12 +59,14 @@ export default defineConfig({
 | 主题 | 内容概览 |
 | --- | --- |
 | [基础目录与资源收集](./paths.md) | `srcRoot` / `pluginRoot` / 静态资源拷贝 / 预留字段 |
-| [构建输出与兼容](./build-and-output.md) | `jsFormat` / `es5` / `multiPlatform` / 输出目录推导 |
+| [构建输出与兼容](./build-and-output.md) | `platform` / `multiPlatform` / `jsFormat` / `cleanOutputsInDev` / `packageSizeWarningBytes` |
 | [TypeScript 支持文件](./typescript.md) | `.weapp-vite/tsconfig.*`、托管引用、编辑器类型支持 |
 | [Route Rules 与 Layout](./route-rules.md) | `weapp.routeRules`、页面 layout 默认值、`layouts/` 约定 |
 | [JSON 配置](./json.md) | `jsonAlias` / JSON 默认值 / 合并策略 |
-| [JS 配置](./js.md) | `tsconfigPaths`、脚本侧解析行为 |
+| [JS 配置](./js.md) | `tsconfigPaths`、`ast`、脚本侧解析行为 |
 | [Vue SFC 配置](./vue.md) | `weapp.vue.template` 模板编译与 class/style 运行时 |
+| [Wevu 编译期配置](./wevu.md) | `weapp.wevu.defaults` / `preset` / `autoSetDataPick` |
+| [开发态 HMR 配置](./hmr.md) | `weapp.hmr.sharedChunks` / `touchAppWxss` |
 | [分包配置](./subpackages.md) | 独立/普通分包、`inlineConfig`、共享样式 |
 | [Worker 配置](./worker.md) | Worker 入口与构建输出 |
 | [库模式配置](./lib.md) | `weapp.lib` 入口、路径保持、组件 JSON 与 DTS |
@@ -74,11 +76,11 @@ export default defineConfig({
 | [WXS 配置](./wxs.md) <span class="wv-badge wv-badge--experimental">experimental</span> | WXS 处理与调试建议 |
 | [自动导入组件配置](./auto-import-components.md) | `weapp.autoImportComponents` 字段与产物输出 |
 | [共享 Chunk 配置](./chunks.md) | `weapp.chunks` 的输出策略、`common.js` 治理、分包共享优化 |
-| [共享配置](./shared.md) | 自动路由、日志、`injectWeapi`、MCP 与辅助支持文件 |
+| [共享配置](./shared.md) | 自动路由、调试、日志、`forwardConsole`、`injectWeapi`、MCP |
 | [Web 运行时配置](./web.md) <span class="wv-badge wv-badge--experimental">experimental</span> | `weapp.web` 浏览器端预览与调试 |
 
 > 仍在寻找 Vite 原生配置？可直接参考 [Vite 官方配置文档](https://cn.vitejs.dev/config/)。
 
 ---
 
-如果你不确定从哪里开始，建议先看 **基础目录与资源收集**、**构建输出与兼容**、**共享配置** 这三页。前两页决定项目能不能稳定跑起来，后一页决定你怎么接入当前版本最有价值的增强能力。
+如果你不确定从哪里开始，建议先看 **基础目录与资源收集**、**构建输出与兼容**、**共享配置** 这三页。前两页决定项目能不能稳定跑起来，后一页决定你怎么接入当前版本最常用的增强能力。若项目已经进入 Vue SFC / Wevu 阶段，再继续看 **Wevu 编译期配置** 与 **开发态 HMR 配置**。
