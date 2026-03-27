@@ -9,6 +9,7 @@ import { LRUCache } from 'lru-cache'
 import path from 'pathe'
 import { jsExtensions } from '../constants'
 import { changeFileExtension } from '../utils/file'
+import { resolveCompilerOutputExtensions } from '../utils/outputExtensions'
 import { normalizeWatchPath } from '../utils/path'
 import { isScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { scanWxml } from '../wxml'
@@ -31,7 +32,7 @@ async function transformWxsFile(
 ) {
   const { ctx } = state
   const { configService } = ctx
-  const scriptModuleExtension = configService.outputExtensions?.wxs ?? 'wxs'
+  const { scriptModuleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
 
   this.addWatchFile(normalizeWatchPath(wxsPath))
   if (!(await fs.pathExists(wxsPath))) {
@@ -114,7 +115,7 @@ async function handleWxsDepsFromBundle(
   state: WxsPluginState,
   bundle: Record<string, any>,
 ) {
-  const templateExtension = state.ctx.configService.outputExtensions?.wxml ?? 'wxml'
+  const { templateExtension } = resolveCompilerOutputExtensions(state.ctx.configService.outputExtensions)
   const platform = state.ctx.configService.platform
 
   await Promise.all(

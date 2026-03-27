@@ -8,6 +8,7 @@ import fs from 'node:fs/promises'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../../../logger'
+import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
@@ -140,9 +141,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
 
     const assets = await collectNativeLayoutAssets(layoutBasePath)
     const emittedLayoutAssets: Set<string> = (pluginCtx as any).__weappViteNativeLayoutAssets ?? ((pluginCtx as any).__weappViteNativeLayoutAssets = new Set<string>())
-    const templateExtension = configService.outputExtensions?.wxml ?? 'wxml'
-    const styleExtension = configService.outputExtensions?.wxss ?? 'wxss'
-    const scriptExtension = configService.outputExtensions?.js ?? 'js'
+    const { templateExtension, styleExtension, scriptExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
 
     if (assets.json) {
       registerJsonAsset({
