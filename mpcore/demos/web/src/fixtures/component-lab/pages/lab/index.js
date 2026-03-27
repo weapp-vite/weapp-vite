@@ -7,7 +7,10 @@ Page({
     events: [],
     eventShape: '',
     componentSnapshot: '',
+    downloadSnapshot: '',
     requestSnapshot: '',
+    savedFilePath: '',
+    uploadedSnapshot: '',
     storageSnapshot: '',
     toastState: '',
     tapTrail: [],
@@ -83,6 +86,43 @@ Page({
       },
       complete: () => {
         this.push('lab:loadMockQueue')
+      }
+    })
+  },
+  runFileTransferLab() {
+    wx.downloadFile({
+      url: 'https://mock.mpcore.dev/files/component-lab-report.txt',
+      success: (downloadResult) => {
+        this.setData({
+          downloadSnapshot: JSON.stringify(downloadResult),
+        })
+        wx.saveFile({
+          tempFilePath: downloadResult.tempFilePath,
+          success: (saveResult) => {
+            this.setData({
+              savedFilePath: saveResult.savedFilePath,
+            })
+            wx.uploadFile({
+              url: 'https://mock.mpcore.dev/upload/component-lab-report',
+              filePath: saveResult.savedFilePath,
+              name: 'report',
+              success: (uploadResult) => {
+                this.setData({
+                  uploadedSnapshot: uploadResult.data,
+                })
+              },
+              complete: () => {
+                this.push('lab:runFileTransferLab:upload')
+              }
+            })
+          },
+          complete: () => {
+            this.push('lab:runFileTransferLab:save')
+          }
+        })
+      },
+      complete: () => {
+        this.push('lab:runFileTransferLab:download')
       }
     })
   },

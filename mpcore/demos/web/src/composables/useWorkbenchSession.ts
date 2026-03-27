@@ -96,6 +96,17 @@ export function useWorkbenchSession(viewportSize: Ref<{ height: number, width: n
       },
       url: 'https://mock.mpcore.dev/api/queue-health',
     })
+    nextSession.mockDownloadFile({
+      fileContent: 'component-lab report',
+      url: 'https://mock.mpcore.dev/files/component-lab-report.txt',
+    })
+    nextSession.mockUploadFile({
+      response: ({ fileContent }) => JSON.stringify({
+        accepted: true,
+        fileContent,
+      }),
+      url: 'https://mock.mpcore.dev/upload/component-lab-report',
+    })
   }
 
   function loadSession(label: string, files: BrowserHeadlessSession['files'], scenarioId?: string) {
