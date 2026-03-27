@@ -10,6 +10,7 @@ import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDat
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
 import { emitNativeLayoutAssetsIfNeeded, emitScriptlessComponentJsFallbackIfMissing, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
+import { resolveBundleOutputExtensions } from './outputExtensions'
 import { emitPlatformTemplateAsset, preparePlatformConfigAsset } from './platform'
 import { compileVueLikeFile, getEntryBaseName, isAppVueLikeFile } from './shared'
 
@@ -31,9 +32,12 @@ export async function emitCompiledVueEntryAssets(
 
   const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned }
   const outputExtensions = configService.outputExtensions
-  const templateExtension = outputExtensions?.wxml ?? 'wxml'
-  const jsonExtension = outputExtensions?.json ?? 'json'
-  const scriptExtension = outputExtensions?.js ?? 'js'
+  const {
+    templateExtension,
+    jsonExtension,
+    scriptExtension,
+    scriptModuleExtension,
+  } = resolveBundleOutputExtensions(outputExtensions)
 
   let result = cached.result
   if (configService.isDev) {
@@ -141,11 +145,11 @@ export async function emitCompiledVueEntryAssets(
       template: result.template,
       platform: configService.platform,
       templateExtension,
-      scriptModuleExtension: configService.outputExtensions?.wxs,
+      scriptModuleExtension,
     })
   }
 
-  const wxsExtension = configService.outputExtensions?.wxs
+  const wxsExtension = scriptModuleExtension
   const needsClassStyleWxs = Boolean(result.classStyleWxs)
     || Boolean(result.scopedSlotComponents?.some(slot => slot.classStyleWxs))
   let classStyleWxs: ClassStyleWxsAsset | undefined
