@@ -1,4 +1,4 @@
-import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions } from '../host'
+import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType } from '../host'
 import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessAppInstance } from './appInstance'
 import type { HeadlessPageInstance } from './pageInstance'
@@ -141,6 +141,7 @@ export class HeadlessSession {
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
+        getNetworkType: () => this.wxState.getNetworkType(),
         navigateBack: option => this.navigateBack(option?.delta),
         navigateTo: option => this.navigateTo(option.url),
         pageScrollTo: option => this.pageScrollTo(option),
@@ -154,6 +155,8 @@ export class HeadlessSession {
         reLaunch: option => this.reLaunch(option.url),
         redirectTo: option => this.redirectTo(option.url),
         nextTick: callback => queueMicrotask(() => callback?.()),
+        offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
+        onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         request: option => this.wxState.request(option),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
@@ -224,6 +227,10 @@ export class HeadlessSession {
     return deriveMenuButtonBoundingClientRect(this.systemInfo)
   }
 
+  getNetworkType() {
+    return this.wxState.getNetworkType()
+  }
+
   getLoading() {
     return this.wxState.getLoading()
   }
@@ -242,6 +249,10 @@ export class HeadlessSession {
 
   mockRequest(definition: HeadlessWxRequestMockDefinition) {
     this.wxState.mockRequest(definition)
+  }
+
+  setNetworkType(networkType: HeadlessWxNetworkType) {
+    return this.wxState.setNetworkType(networkType)
   }
 
   bootstrap(launchOptions = createAppLaunchOptions('', {})) {

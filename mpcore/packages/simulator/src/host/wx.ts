@@ -32,6 +32,20 @@ export interface HeadlessWxStorageInfoResult extends HeadlessWxStorageResult {
   limitSize: number
 }
 
+export type HeadlessWxNetworkType = '2g' | '3g' | '4g' | '5g' | 'none' | 'unknown' | 'wifi'
+
+export interface HeadlessWxGetNetworkTypeResult {
+  errMsg: string
+  networkType: HeadlessWxNetworkType
+}
+
+export interface HeadlessWxNetworkStatusChangeResult {
+  isConnected: boolean
+  networkType: HeadlessWxNetworkType
+}
+
+export type HeadlessWxNetworkStatusChangeCallback = (result: HeadlessWxNetworkStatusChangeResult) => void
+
 export interface HeadlessWxSystemInfoResult {
   SDKVersion: string
   brand: string
@@ -96,6 +110,8 @@ export interface HeadlessWxGetStorageOption extends HeadlessWxCallbackOption<Hea
 }
 
 export interface HeadlessWxGetStorageInfoOption extends HeadlessWxCallbackOption<HeadlessWxStorageInfoResult> {}
+
+export interface HeadlessWxGetNetworkTypeOption extends HeadlessWxCallbackOption<HeadlessWxGetNetworkTypeResult> {}
 
 export interface HeadlessWxGetSystemInfoOption extends HeadlessWxCallbackOption<HeadlessWxSystemInfoResult> {}
 
@@ -164,6 +180,7 @@ export interface HeadlessWxDriver {
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getLaunchOptionsSync: () => HeadlessWxLaunchOptions
   getMenuButtonBoundingClientRect: () => HeadlessWxMenuButtonBoundingClientRectResult
+  getNetworkType: () => HeadlessWxGetNetworkTypeResult
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorageSync: (key: string) => unknown
   getSystemInfoSync: () => HeadlessWxSystemInfoResult
@@ -173,6 +190,8 @@ export interface HeadlessWxDriver {
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
   navigateTo: (option: HeadlessWxNavigateOption) => unknown
   nextTick: (callback?: () => void) => void
+  offNetworkStatusChange: (callback?: HeadlessWxNetworkStatusChangeCallback) => void
+  onNetworkStatusChange: (callback: HeadlessWxNetworkStatusChangeCallback) => void
   pageScrollTo: (option: HeadlessWxPageScrollToOption) => unknown
   reLaunch: (option: HeadlessWxNavigateOption) => unknown
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
@@ -195,6 +214,7 @@ export interface HeadlessWx {
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   getLaunchOptionsSync: () => HeadlessWxLaunchOptions
   getMenuButtonBoundingClientRect: () => HeadlessWxMenuButtonBoundingClientRectResult
+  getNetworkType: (option?: HeadlessWxGetNetworkTypeOption) => HeadlessWxGetNetworkTypeResult | undefined
   getStorageInfo: (option?: HeadlessWxGetStorageInfoOption) => HeadlessWxStorageInfoResult | undefined
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorage: (option: HeadlessWxGetStorageOption) => HeadlessWxGetStorageResult | undefined
@@ -208,6 +228,8 @@ export interface HeadlessWx {
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
   navigateTo: (option: HeadlessWxNavigateOption) => unknown
   nextTick: (callback?: () => void) => void
+  offNetworkStatusChange: (callback?: HeadlessWxNetworkStatusChangeCallback) => void
+  onNetworkStatusChange: (callback: HeadlessWxNetworkStatusChangeCallback) => void
   pageScrollTo: (option: HeadlessWxPageScrollToOption) => unknown
   reLaunch: (option: HeadlessWxNavigateOption) => unknown
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
@@ -317,6 +339,11 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
         width: true,
       },
     },
+    getNetworkType: {
+      return: {
+        networkType: true,
+      },
+    },
     getStorage: true,
     getStorageInfo: {
       return: {
@@ -390,6 +417,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     navigateBack: true,
     navigateTo: true,
     nextTick: true,
+    offNetworkStatusChange: true,
+    onNetworkStatusChange: true,
     pageScrollTo: true,
     reLaunch: true,
     redirectTo: true,
@@ -419,6 +448,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     getAppBaseInfoSync: () => driver.getAppBaseInfoSync(),
     getLaunchOptionsSync: () => driver.getLaunchOptionsSync(),
     getMenuButtonBoundingClientRect: () => driver.getMenuButtonBoundingClientRect(),
+    getNetworkType: option => invokeWxApi(() => driver.getNetworkType(), option),
     getStorageInfo: option => invokeWxApi(() => driver.getStorageInfoSync(), option),
     getStorageInfoSync: () => driver.getStorageInfoSync(),
     getStorage: option => invokeWxApi(() => ({
@@ -439,6 +469,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       driver.navigateTo(option)
     }, option),
     nextTick: callback => driver.nextTick(callback),
+    offNetworkStatusChange: callback => driver.offNetworkStatusChange(callback),
+    onNetworkStatusChange: callback => driver.onNetworkStatusChange(callback),
     pageScrollTo: option => invokeWxApi(() => {
       driver.pageScrollTo(option)
     }, option),

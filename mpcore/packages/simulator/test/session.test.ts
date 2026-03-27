@@ -732,4 +732,77 @@ Page({
       },
     ])
   })
+
+  it('supports getNetworkType and network status change listeners', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-network-type-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    currentType: '',
+    initialType: '',
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  inspectNetwork() {
+    wx.getNetworkType({
+      success: (result) => {
+        this.setData({
+          initialType: result.networkType
+        })
+        this.push('get:' + result.networkType)
+      }
+    })
+  },
+  startWatchingNetwork() {
+    this.networkHandler = (result) => {
+      this.setData({
+        currentType: result.networkType
+      })
+      this.push('change:' + result.networkType + ':' + result.isConnected)
+    }
+    wx.onNetworkStatusChange(this.networkHandler)
+  },
+  stopWatchingNetwork() {
+    wx.offNetworkStatusChange(this.networkHandler)
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>network</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.startWatchingNetwork()
+    page.inspectNetwork()
+    session.setNetworkType('none')
+    session.setNetworkType('4g')
+    page.stopWatchingNetwork()
+    session.setNetworkType('5g')
+
+    expect(page.data.initialType).toBe('wifi')
+    expect(page.data.currentType).toBe('4g')
+    expect(page.data.logs).toEqual([
+      'get:wifi',
+      'change:none:false',
+      'change:4g:true',
+    ])
+    expect(session.getNetworkType()).toEqual({
+      errMsg: 'getNetworkType:ok',
+      networkType: '5g',
+    })
+  })
 })

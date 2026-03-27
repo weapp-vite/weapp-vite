@@ -1,4 +1,8 @@
 import type {
+  HeadlessWxGetNetworkTypeResult,
+  HeadlessWxNetworkStatusChangeCallback,
+  HeadlessWxNetworkStatusChangeResult,
+  HeadlessWxNetworkType,
   HeadlessWxRequestOption,
   HeadlessWxRequestSuccessResult,
   HeadlessWxRequestTask,
@@ -20,6 +24,8 @@ export interface HeadlessWxToastSnapshot {
   mask: boolean
   title: string
 }
+
+export interface HeadlessWxNetworkSnapshot extends HeadlessWxNetworkStatusChangeResult {}
 
 export interface HeadlessWxModalMockDefinition {
   cancel?: boolean
@@ -62,6 +68,13 @@ const DEFAULT_MODAL_CANCEL_COLOR = '#000000'
 const DEFAULT_MODAL_CANCEL_TEXT = '取消'
 const DEFAULT_MODAL_CONFIRM_COLOR = '#576B95'
 const DEFAULT_MODAL_CONFIRM_TEXT = '确定'
+
+function createNetworkSnapshot(networkType: HeadlessWxNetworkType): HeadlessWxNetworkSnapshot {
+  return {
+    isConnected: networkType !== 'none',
+    networkType,
+  }
+}
 
 function cloneValue<T>(value: T): T {
   if (value == null || typeof value !== 'object') {
@@ -122,16 +135,24 @@ function resolveRequestResponse(
 
 export function createHeadlessWxState() {
   const modalLogs: HeadlessWxModalLogEntry[] = []
+  const networkStatusChangeCallbacks = new Set<HeadlessWxNetworkStatusChangeCallback>()
   const modalMocks: HeadlessWxModalMockDefinition[] = []
   const requestLogs: HeadlessWxRequestLogEntry[] = []
   const requestMocks: HeadlessWxRequestMockDefinition[] = []
   const storage = new Map<string, unknown>()
   let loading: HeadlessWxLoadingSnapshot | null = null
+  let networkType: HeadlessWxNetworkType = 'wifi'
   let toast: HeadlessWxToastSnapshot | null = null
 
   return {
     clearStorageSync() {
       storage.clear()
+    },
+    getNetworkType(): HeadlessWxGetNetworkTypeResult {
+      return {
+        errMsg: 'getNetworkType:ok',
+        networkType,
+      }
     },
     getModalLogs() {
       return modalLogs.map(entry => ({
@@ -192,6 +213,13 @@ export function createHeadlessWxState() {
         errMsg: 'hideToast:ok',
       }
     },
+    offNetworkStatusChange(callback?: HeadlessWxNetworkStatusChangeCallback) {
+      if (!callback) {
+        networkStatusChangeCallbacks.clear()
+        return
+      }
+      networkStatusChangeCallbacks.delete(callback)
+    },
     mockRequest(definition: HeadlessWxRequestMockDefinition) {
       requestMocks.push({
         ...definition,
@@ -204,6 +232,9 @@ export function createHeadlessWxState() {
         cancel: definition.cancel,
         confirm: definition.confirm,
       })
+    },
+    onNetworkStatusChange(callback: HeadlessWxNetworkStatusChangeCallback) {
+      networkStatusChangeCallbacks.add(callback)
     },
     removeStorageSync(key: string) {
       storage.delete(key)
@@ -275,6 +306,15 @@ export function createHeadlessWxState() {
     },
     setStorageSync(key: string, value: unknown) {
       storage.set(key, cloneValue(value))
+    },
+    setNetworkType(nextNetworkType: HeadlessWxNetworkType) {
+      networkType = nextNetworkType
+      const snapshot = createNetworkSnapshot(networkType)
+      networkStatusChangeCallbacks.forEach(callback => callback({ ...snapshot }))
+      return {
+        errMsg: 'getNetworkType:ok',
+        networkType,
+      }
     },
     showLoading(option: HeadlessWxShowLoadingOption) {
       loading = {
