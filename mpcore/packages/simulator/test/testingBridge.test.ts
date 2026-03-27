@@ -109,6 +109,42 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('provides convenience helpers for input, change and blur events', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/index/index')
+    const input = await page.$('#greeting-input')
+
+    expect(input).not.toBeNull()
+
+    await input?.input('Typed from helper')
+    await input?.change('Committed from helper')
+    await input?.blur('Blurred from helper')
+
+    expect(await page.data('__e2eInput')).toEqual({
+      detail: {
+        value: 'Typed from helper',
+      },
+      type: 'input',
+    })
+    expect(await page.data('__e2eChange')).toEqual({
+      detail: {
+        value: 'Committed from helper',
+      },
+      type: 'change',
+    })
+    expect(await page.data('__e2eBlur')).toEqual({
+      detail: {
+        value: 'Blurred from helper',
+      },
+      type: 'blur',
+    })
+  })
+
   it('renders interpolated wxml and supports basic selectors', async () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)
