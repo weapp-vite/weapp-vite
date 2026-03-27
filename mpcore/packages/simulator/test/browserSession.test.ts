@@ -407,7 +407,7 @@ Page({
     expect(session.getFileText('headless://saved/browser-renamed.txt')).toBe('browser source payload')
   })
 
-  it('tracks saved file metadata across copyFile operations in browser runtime', () => {
+  it('does not create new saved file metadata across copyFile operations in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
       ['app.js', 'App({})'],
@@ -438,8 +438,8 @@ Page({
     const page = session.reLaunch('/pages/index/index')
     page.runSavedFileCopyLab()
 
-    expect(page.data.listSummary).toContain('"filePath":"headless://wxfile/saved/browser-copied.txt"')
     expect(page.data.listSummary).toContain('"size":5')
+    expect(page.data.listSummary).not.toContain('headless://wxfile/saved/browser-copied.txt')
   })
 
   it('supports getFileSystemManager mkdir readdir and stat in browser runtime', () => {
