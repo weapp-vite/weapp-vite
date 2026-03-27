@@ -191,6 +191,133 @@ function formatRolldownVersionReport(projectRoot, versions) {
   return lines.join('\n')
 }
 
+function collectRolldownDependencyMatrix(
+  projectRoot,
+  {
+    lockfile = readLockfile(projectRoot),
+    readPackageJsonImpl = readPackageJson,
+    targets = collectRolldownPublishTargets(projectRoot, readPackageJsonImpl),
+    workspaceManifest = readWorkspaceManifest(projectRoot),
+  } = {},
+) {
+  const rows = []
+  const workspacePackagesByName = new Map(
+    targets.map(target => [target.packageJson.name, target.packageJson]),
+  )
+
+  for (const target of targets) {
+    for (const section of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
+      const deps = target.packageJson[section]
+      if (!deps) {
+        continue
+      }
+
+      const spec = deps.rolldown
+      if (typeof spec !== 'string') {
+        continue
+      }
+      rows.push({
+        dependencyName: 'rolldown',
+        packageName: target.packageJson.name,
+        resolvedSpec: resolveDependencySpecVersion(spec, 'rolldown', workspaceManifest),
+        section,
+        spec,
+      })
+
+      for (const dependencyName of ['rolldown-plugin-dts', 'rolldown-require']) {
+        const dependencySpec = deps[dependencyName]
+        if (typeof dependencySpec !== 'string') {
+          continue
+        }
+
+        const resolvedPeerSpec = resolveRolldownPeerRequirement({
+          dependencyName,
+          lockfile,
+          resolvedVersion: deps[dependencyName],
+          spec: dependencySpec,
+          workspaceManifest,
+          workspacePackagesByName,
+        })
+
+        if (!resolvedPeerSpec) {
+          continue
+        }
+
+        rows.push({
+          dependencyName: 'rolldown',
+          packageName: target.packageJson.name,
+          resolvedSpec: resolvedPeerSpec,
+          section,
+          sourceDependencyName: dependencyName,
+          spec: dependencySpec,
+        })
+      }
+    }
+  }
+
+  return rows.sort((a, b) => {
+    return a.packageName.localeCompare(b.packageName)
+      || a.section.localeCompare(b.section)
+      || (a.sourceDependencyName ?? '').localeCompare(b.sourceDependencyName ?? '')
+      || a.dependencyName.localeCompare(b.dependencyName)
+  })
+}
+
+function formatRolldownDependencyMatrix(rows) {
+  if (rows.length === 0) {
+    return ''
+  }
+
+  const lines = [
+    colorize('[workspace] PACKAGE ROLLDOWN SPECS', ANSI.bold, ANSI.cyan),
+  ]
+
+  for (const row of rows) {
+    const dependencyPath = row.sourceDependencyName
+      ? `${row.section}.${row.sourceDependencyName} -> peerDependencies.${row.dependencyName}`
+      : `${row.section}.${row.dependencyName}`
+    lines.push(
+      `${colorize(row.packageName, ANSI.bold, ANSI.blue)} ${colorize(dependencyPath, ANSI.bold, ANSI.magenta)} = ${colorize(row.resolvedSpec, ANSI.bold, ANSI.yellow)}`,
+    )
+  }
+
+  return `${lines.join('\n')}\n`
+}
+
+function resolveLockfilePackageRolldownPeerVersion(lockfile, dependencyName, version) {
+  const baseVersion = stripPeerSuffix(version)
+  if (!baseVersion) {
+    return null
+  }
+  return lockfile.packages?.[`${dependencyName}@${baseVersion}`]?.peerDependencies?.rolldown ?? null
+}
+
+function resolveWorkspacePackageRolldownPeerVersion(workspacePackage, workspaceManifest) {
+  const peerSpec = workspacePackage?.peerDependencies?.rolldown
+  if (typeof peerSpec !== 'string') {
+    return null
+  }
+  return resolveDependencySpecVersion(peerSpec, 'rolldown', workspaceManifest)
+}
+
+function resolveRolldownPeerRequirement({
+  dependencyName,
+  lockfile,
+  resolvedVersion,
+  spec,
+  workspaceManifest,
+  workspacePackagesByName,
+}) {
+  if (spec.startsWith('workspace:') || String(resolvedVersion).startsWith('link:')) {
+    return resolveWorkspacePackageRolldownPeerVersion(
+      workspacePackagesByName.get(dependencyName),
+      workspaceManifest,
+    )
+  }
+
+  return resolveLockfilePackageRolldownPeerVersion(lockfile, dependencyName, resolvedVersion)
+}
+
 function readLockfile(projectRoot) {
   const lockfilePath = path.join(projectRoot, 'pnpm-lock.yaml')
   if (!existsSync(lockfilePath)) {
@@ -657,7 +784,8 @@ function main(options = {}) {
     const lockfile = readLockfile(projectRoot)
     const workspaceManifest = readWorkspaceManifest(projectRoot)
     const versions = collectRolldownVersions(lockfile)
-    console.log(formatRolldownVersionReport(projectRoot, versions))
+    const dependencyMatrix = collectRolldownDependencyMatrix(projectRoot)
+    console.log(`${formatRolldownVersionReport(projectRoot, versions)}\n${formatRolldownDependencyMatrix(dependencyMatrix)}`.trimEnd())
     if (mode === 'report') {
       return
     }
@@ -687,12 +815,14 @@ function main(options = {}) {
 }
 
 export {
+  collectRolldownDependencyMatrix,
   collectRolldownExpectedPublishedSpecs,
   collectRolldownPublishArtifactIssues,
   collectRolldownPublishTargets,
   collectRolldownVersions,
   collectViteRolldownVersions,
   collectWorkspacePackageVersions,
+  formatRolldownDependencyMatrix,
   formatRolldownVersionReport,
   formatRolldownWarningReport,
   main,

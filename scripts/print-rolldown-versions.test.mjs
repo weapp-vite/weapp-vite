@@ -7,9 +7,11 @@ import { fileURLToPath } from 'node:url'
 import { it } from 'vitest'
 
 import {
+  collectRolldownDependencyMatrix,
   collectRolldownExpectedPublishedSpecs,
   collectRolldownPublishArtifactIssues,
   collectViteRolldownVersions,
+  formatRolldownDependencyMatrix,
   formatRolldownVersionReport,
   formatRolldownWarningReport,
   packWorkspacePackageJson,
@@ -23,6 +25,8 @@ import {
   verifyRolldownCatalogReferences,
   verifySingleRolldownVersion,
 } from './print-rolldown-versions.mjs'
+
+const ANSI_ESCAPE_RE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g')
 
 it('formatRolldownVersionReport appends a compact summary after detailed sections', () => {
   const report = formatRolldownVersionReport('/workspace', new Map([
@@ -211,6 +215,59 @@ it('formatRolldownWarningReport highlights multiple installed versions', () => {
 
   assert.match(report, /rolldown warning/)
   assert.match(report, /multiple rolldown versions detected: 1.0.0-rc.10, 1.0.0-rc.11/)
+})
+
+it('collectRolldownDependencyMatrix and formatter print package specs', () => {
+  const projectRoot = '/workspace'
+  const manifests = new Map([
+    [`${projectRoot}/packages/weapp-vite/package.json`, {
+      name: 'weapp-vite',
+      dependencies: {
+        'rolldown': 'catalog:',
+        'rolldown-plugin-dts': '0.22.5',
+        'rolldown-require': 'workspace:*',
+      },
+    }],
+    [`${projectRoot}/packages/rolldown-require/package.json`, {
+      name: 'rolldown-require',
+      peerDependencies: {
+        rolldown: 'catalog:',
+      },
+    }],
+  ])
+  const lockfile = {
+    packages: {
+      'rolldown-plugin-dts@0.22.5': {
+        peerDependencies: {
+          rolldown: '1.0.0-rc.11',
+        },
+      },
+    },
+  }
+
+  const rows = collectRolldownDependencyMatrix(projectRoot, {
+    lockfile,
+    readPackageJsonImpl: filePath => manifests.get(filePath),
+    targets: Array.from(manifests.entries(), ([filePath, packageJson]) => ({
+      filePath,
+      packageJson,
+      packageRoot: path.dirname(filePath),
+    })),
+    workspaceManifest: {
+      catalog: {
+        rolldown: '1.0.0-rc.11',
+      },
+    },
+  })
+  const formatted = formatRolldownDependencyMatrix(rows).replaceAll(ANSI_ESCAPE_RE, '')
+
+  assert.equal(rows.length, 4)
+  assert.match(formatted, /weapp-vite/)
+  assert.match(formatted, /dependencies\.rolldown = 1.0.0-rc.11/)
+  assert.match(formatted, /dependencies\.rolldown-plugin-dts -> peerDependencies\.rolldown = 1.0.0-rc.11/)
+  assert.match(formatted, /dependencies\.rolldown-require -> peerDependencies\.rolldown = 1.0.0-rc.11/)
+  assert.match(formatted, /rolldown-require/)
+  assert.match(formatted, /peerDependencies\.rolldown = 1.0.0-rc.11/)
 })
 
 it('verifyRolldownCatalogReferences accepts package manifests wired to catalog', () => {
