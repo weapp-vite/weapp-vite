@@ -12,6 +12,7 @@ import { build } from 'vite'
 import { debug, logger } from '../../context/shared'
 import { createCompilerContext } from '../../createContext'
 import { touch } from '../../utils/file'
+import { resolveCompilerOutputExtensions } from '../../utils/outputExtensions'
 import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { generateLibDts } from '../libDts'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
@@ -84,10 +85,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     }
     debug?.(`[${target}] dev build watcher start`)
     const { hasWorkersDir, workersDir } = checkWorkersOptions(target, configService, scanService)
+    // eslint-disable-next-line ts/no-use-before-define
     const buildOptions = applyTargetBuildOverride(
       configService.merge(
         undefined,
         createSharedBuildConfig(configService, scanService),
+        // eslint-disable-next-line ts/no-use-before-define
         resolveTargetBuildOverride(target),
       ),
       target,
@@ -118,8 +121,9 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       resolveWatcher = res
       rejectWatcher = rej
     })
+    const { styleExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
     const appWxssPath = target === 'app'
-      ? path.join(configService.outDir, `app.${configService.outputExtensions.wxss}`)
+      ? path.join(configService.outDir, `app.${styleExtension}`)
       : undefined
 
     watcher.on('event', (e) => {
@@ -156,10 +160,12 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
     debug?.(`[${target}] prod build start`)
     const { hasWorkersDir } = checkWorkersOptions(target, configService, scanService)
     const bundlerPromise = build(
+      // eslint-disable-next-line ts/no-use-before-define
       applyTargetBuildOverride(
         configService.merge(
           undefined,
           createSharedBuildConfig(configService, scanService),
+          // eslint-disable-next-line ts/no-use-before-define
           resolveTargetBuildOverride(target),
         ),
         target,

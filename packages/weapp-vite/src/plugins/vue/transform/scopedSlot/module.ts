@@ -1,5 +1,6 @@
 import type { InlineExpressionAsset } from 'wevu/compiler'
 import { buildClassStyleComputedCode, getClassStyleWxsSource, WE_VU_MODULE_ID, WE_VU_RUNTIME_APIS } from 'wevu/compiler'
+import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 
 const SCOPED_SLOT_VIRTUAL_PREFIX = '\0weapp-vite:scoped-slot:'
@@ -73,7 +74,7 @@ export function emitScopedSlotChunks(
     return
   }
 
-  const scriptExtension = outputExtensions?.js ?? 'js'
+  const { scriptExtension } = resolveCompilerOutputExtensions(outputExtensions)
   for (const scopedSlot of scopedSlots) {
     const componentBase = `${relativeBase}.__scoped-slot-${scopedSlot.id}`
     const jsFile = `${componentBase}.${scriptExtension}`
