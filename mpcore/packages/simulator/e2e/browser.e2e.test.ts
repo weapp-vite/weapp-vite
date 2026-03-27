@@ -129,6 +129,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('loadMockQueue')
     bridge.runPageMethod('runFileTransferLab')
     bridge.runPageMethod('runSavedOverwriteLab')
+    bridge.runPageMethod('runSavedOrderingLab')
     bridge.runPageMethod('runSavedRemovalLab')
     bridge.runPageMethod('runSavedRenameOutLab')
     bridge.runPageMethod('storeSnapshot')
@@ -145,6 +146,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.fileManagerSnapshot
           && pageData.requestSnapshot
           && pageData.savedFileInfo
+          && pageData.savedOrderingInfo
           && pageData.savedOverwriteInfo
           && pageData.savedFilePath
           && pageData.savedRemovalInfo
@@ -168,6 +170,9 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.requestSnapshot).toContain('"queue":"alpha"')
     expect(pageData.savedFileInfo).toContain('"errMsg":"getSavedFileInfo:ok"')
     expect(pageData.savedFileInfo).toContain('"size":20')
+    expect(pageData.savedOrderingInfo).toContain('"createTimesArePositive":true')
+    expect(pageData.savedOrderingInfo).toContain('"headless://saved/component-lab/ordering/alpha.txt"')
+    expect(pageData.savedOrderingInfo).toContain('"headless://saved/component-lab/ordering/zeta.txt"')
     expect(pageData.savedOverwriteInfo).toContain('"afterSize":14')
     expect(pageData.savedOverwriteInfo).toContain('"filePath":"headless://saved/component-lab/snapshots/report.txt"')
     expect(pageData.savedFilePath).toContain('headless://wxfile/saved/')
@@ -181,6 +186,11 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.uploadedSnapshot).toContain('"accepted":true')
     const savedOverwriteInfo = parseJsonString<{ afterCreateTime: number, afterSize: number, beforeCreateTime: number, filePath: string }>(pageData.savedOverwriteInfo)
     expect(savedOverwriteInfo.afterCreateTime).toBe(savedOverwriteInfo.beforeCreateTime)
+    const savedOrderingInfo = parseJsonString<{ createTimesArePositive: boolean, filePaths: string[] }>(pageData.savedOrderingInfo)
+    expect(savedOrderingInfo.filePaths).toEqual([
+      'headless://saved/component-lab/ordering/alpha.txt',
+      'headless://saved/component-lab/ordering/zeta.txt',
+    ])
 
     const scopeIds = bridge.findComponentScopeIds('status-card')
     expect(scopeIds).toHaveLength(1)
@@ -208,6 +218,14 @@ describe.sequential('simulator browser e2e', () => {
     expect(sessionSnapshot.savedFileList).toContainEqual(expect.objectContaining({
       filePath: pageData.savedFilePath,
       size: 'component-lab report'.length,
+    }))
+    expect(sessionSnapshot.savedFileList).toContainEqual(expect.objectContaining({
+      filePath: 'headless://saved/component-lab/ordering/alpha.txt',
+      size: 'alpha'.length,
+    }))
+    expect(sessionSnapshot.savedFileList).toContainEqual(expect.objectContaining({
+      filePath: 'headless://saved/component-lab/ordering/zeta.txt',
+      size: 'zeta'.length,
     }))
     expect(sessionSnapshot.savedFileList).toContainEqual(expect.objectContaining({
       filePath: 'headless://saved/component-lab/snapshots/report.txt',
