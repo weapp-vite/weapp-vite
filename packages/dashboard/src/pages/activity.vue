@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import AppDiagnosticItem from '../features/dashboard/components/AppDiagnosticItem.vue'
 import AppFilterGroup from '../features/dashboard/components/AppFilterGroup.vue'
+import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
 import AppKeyValueList from '../features/dashboard/components/AppKeyValueList.vue'
 import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
 import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
@@ -257,7 +258,7 @@ watch(filteredRuntimeEvents, (events) => {
         icon-name="hero-commands"
       >
         <div class="grid gap-3">
-          <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
+          <AppInsetPanel>
             <div class="grid gap-3">
               <div>
                 <label class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]" for="dashboard-event-search">
@@ -315,7 +316,7 @@ watch(filteredRuntimeEvents, (events) => {
                 />
               </div>
             </div>
-          </div>
+          </AppInsetPanel>
 
           <div
             v-if="sourceBreakdown.length > 0"
@@ -343,12 +344,9 @@ watch(filteredRuntimeEvents, (events) => {
               <AppTagList v-if="selectedEvent.tags?.length" class="mt-4" :tags="selectedEvent.tags" />
             </AppRuntimeFocusCard>
 
-            <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
-              <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                event metadata
-              </p>
-              <AppKeyValueList class="mt-3" :items="selectedEventMeta" />
-            </div>
+            <AppInsetPanel eyebrow="event metadata">
+              <AppKeyValueList :items="selectedEventMeta" />
+            </AppInsetPanel>
           </div>
 
           <p
