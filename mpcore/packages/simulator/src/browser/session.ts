@@ -200,6 +200,7 @@ export class BrowserHeadlessSession {
       () => this.getApp(),
       {
         executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
+        getFileSystemManager: () => this.wxState.getFileSystemManager(),
         getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
