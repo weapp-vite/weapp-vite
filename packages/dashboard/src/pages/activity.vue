@@ -107,12 +107,20 @@ const filteredRuntimeEvents = computed(() => {
   })
 })
 
-const filteredEventSummary = computed(() => [
-  { label: '筛选后事件', value: String(filteredRuntimeEvents.value.length) },
-  { label: '当前类型', value: eventKindFilter.value === 'all' ? '全部' : formatRuntimeEventKind(eventKindFilter.value) },
-  { label: '当前等级', value: eventLevelFilter.value === 'all' ? '全部' : formatRuntimeEventLevel(eventLevelFilter.value) },
-  { label: '搜索关键字', value: searchQuery.value.trim() || '未设置' },
-])
+const filteredEventSummary = computed(() => {
+  const timedEvents = filteredRuntimeEvents.value.filter(event => typeof event.durationMs === 'number')
+  const averageDuration = timedEvents.length > 0
+    ? Math.round(timedEvents.reduce((sum, event) => sum + (event.durationMs ?? 0), 0) / timedEvents.length)
+    : undefined
+
+  return [
+    { label: '筛选后事件', value: String(filteredRuntimeEvents.value.length) },
+    { label: '当前类型', value: eventKindFilter.value === 'all' ? '全部' : formatRuntimeEventKind(eventKindFilter.value) },
+    { label: '当前等级', value: eventLevelFilter.value === 'all' ? '全部' : formatRuntimeEventLevel(eventLevelFilter.value) },
+    { label: '搜索关键字', value: searchQuery.value.trim() || '未设置' },
+    { label: '筛选平均耗时', value: formatDuration(averageDuration) },
+  ]
+})
 
 const selectedEvent = computed(() =>
   filteredRuntimeEvents.value.find(event => event.id === selectedEventId.value)
