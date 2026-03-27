@@ -15,29 +15,77 @@ const browserFiles = createBrowserVirtualFiles([
 
 const browserSession = createBrowserHeadlessSession({ files: browserFiles })
 browserSession.reLaunch('/pages/index/index')
+const browserPage = browserSession.getCurrentPages()[0]
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
 expectType<{ active: boolean, stopCalls: number }>(browserSession.getPullDownRefreshState())
 expectType<{ visible: boolean }>(browserSession.getTabBar())
 expectType<Record<string, string>>(browserSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(browserSession.getSavedFileListSnapshot())
 expectType<string | null>(browserSession.getFileText('headless://wxfile/temp/0001'))
-expectType<{ createTime: number, errMsg: string, size: number } | undefined>(browserSession.getCurrentPages()[0]?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
-expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(browserSession.getCurrentPages()[0]?.wx.getSavedFileList())
-expectType<{ errMsg: string } | undefined>(browserSession.getCurrentPages()[0]?.wx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
-expectType<void>(browserSession.getCurrentPages()[0]?.wx.getFileSystemManager().rmdirSync('headless://saved/archive', true))
-expectType<string>(browserSession.getCurrentPages()[0]?.wx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+expectType<{ createTime: number, errMsg: string, size: number } | undefined>(browserPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
+expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(browserPage?.wx.getSavedFileList())
+expectType<{ errMsg: string } | undefined>(browserPage?.wx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
+expectType<void>(browserPage?.wx.getFileSystemManager().rmdirSync('headless://saved/archive', true))
+expectType<string>(browserPage?.wx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+browserPage?.wx.saveFile({
+  tempFilePath: 'headless://wxfile/temp/0001',
+  success: (result) => {
+    expectType<{ errMsg: string, savedFilePath: string }>(result)
+  },
+})
+browserPage?.wx.getSavedFileList({
+  success: (result) => {
+    expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> }>(result)
+  },
+})
+browserPage?.wx.getSavedFileInfo({
+  filePath: 'headless://wxfile/saved/0001',
+  success: (result) => {
+    expectType<{ createTime: number, errMsg: string, size: number }>(result)
+  },
+})
+browserPage?.wx.removeSavedFile({
+  filePath: 'headless://wxfile/saved/0001',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+})
 
 const headlessSession = createHeadlessSession({ projectPath: '/tmp/project' })
+const headlessPage = headlessSession.getCurrentPages()[0]
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())
 expectType<{ visible: boolean }>(headlessSession.getTabBar())
 expectType<Record<string, string>>(headlessSession.getFileSnapshot())
 expectType<Array<{ createTime: number, filePath: string, size: number }>>(headlessSession.getSavedFileListSnapshot())
 expectType<string | null>(headlessSession.getFileText('headless://wxfile/temp/0001'))
-expectType<{ createTime: number, errMsg: string, size: number } | undefined>(headlessSession.getCurrentPages()[0]?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
-expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(headlessSession.getCurrentPages()[0]?.wx.getSavedFileList())
-expectType<{ errMsg: string } | undefined>(headlessSession.getCurrentPages()[0]?.wx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
-expectType<void>(headlessSession.getCurrentPages()[0]?.wx.getFileSystemManager().rmdirSync('headless://saved/archive', true))
-expectType<string>(headlessSession.getCurrentPages()[0]?.wx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+expectType<{ createTime: number, errMsg: string, size: number } | undefined>(headlessPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
+expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(headlessPage?.wx.getSavedFileList())
+expectType<{ errMsg: string } | undefined>(headlessPage?.wx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
+expectType<void>(headlessPage?.wx.getFileSystemManager().rmdirSync('headless://saved/archive', true))
+expectType<string>(headlessPage?.wx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+headlessPage?.wx.saveFile({
+  tempFilePath: 'headless://wxfile/temp/0001',
+  success: (result) => {
+    expectType<{ errMsg: string, savedFilePath: string }>(result)
+  },
+})
+headlessPage?.wx.getSavedFileList({
+  success: (result) => {
+    expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> }>(result)
+  },
+})
+headlessPage?.wx.getSavedFileInfo({
+  filePath: 'headless://wxfile/saved/0001',
+  success: (result) => {
+    expectType<{ createTime: number, errMsg: string, size: number }>(result)
+  },
+})
+headlessPage?.wx.removeSavedFile({
+  filePath: 'headless://wxfile/saved/0001',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+})
 
 const launchResult = launch({ projectPath: '/tmp/project' })
 expectType<Promise<{
