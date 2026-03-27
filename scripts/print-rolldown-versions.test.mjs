@@ -10,6 +10,7 @@ import {
   resolveCatalogDependencyVersion,
   resolveDependencySpecVersion,
   resolveMode,
+  syncRolldownCatalogReferences,
   verifyRolldownCatalogReferences,
   verifySingleRolldownVersion,
 } from './print-rolldown-versions.mjs'
@@ -140,6 +141,66 @@ it('verifyRolldownCatalogReferences rejects literal rolldown versions in managed
   }, /must reference workspace catalog/)
 })
 
+it('syncRolldownCatalogReferences rewrites managed manifests back to catalog protocol', () => {
+  const projectRoot = '/workspace'
+  const manifests = new Map([
+    [`${projectRoot}/packages/weapp-vite/package.json`, {
+      dependencies: {
+        rolldown: '1.0.0-rc.12',
+      },
+    }],
+    [`${projectRoot}/packages/rolldown-require/package.json`, {
+      peerDependencies: {
+        rolldown: '^1.0.0-rc.12',
+      },
+    }],
+  ])
+  const writes = new Map()
+
+  const changedFiles = syncRolldownCatalogReferences(projectRoot, {
+    readPackageJsonImpl(filePath) {
+      return JSON.parse(JSON.stringify(manifests.get(filePath)))
+    },
+    writePackageJsonImpl(filePath, packageJson) {
+      writes.set(filePath, packageJson)
+    },
+  })
+
+  assert.deepEqual(changedFiles, [
+    `${projectRoot}/packages/weapp-vite/package.json`,
+    `${projectRoot}/packages/rolldown-require/package.json`,
+  ])
+  assert.equal(writes.get(`${projectRoot}/packages/weapp-vite/package.json`)?.dependencies?.rolldown, 'catalog:')
+  assert.equal(writes.get(`${projectRoot}/packages/rolldown-require/package.json`)?.peerDependencies?.rolldown, 'catalog:')
+})
+
+it('syncRolldownCatalogReferences keeps already-synced manifests untouched', () => {
+  const projectRoot = '/workspace'
+  const manifests = new Map([
+    [`${projectRoot}/packages/weapp-vite/package.json`, {
+      dependencies: {
+        rolldown: 'catalog:',
+      },
+    }],
+    [`${projectRoot}/packages/rolldown-require/package.json`, {
+      peerDependencies: {
+        rolldown: 'catalog:',
+      },
+    }],
+  ])
+
+  const changedFiles = syncRolldownCatalogReferences(projectRoot, {
+    readPackageJsonImpl(filePath) {
+      return JSON.parse(JSON.stringify(manifests.get(filePath)))
+    },
+    writePackageJsonImpl() {
+      throw new Error('should not write synced manifests')
+    },
+  })
+
+  assert.deepEqual(changedFiles, [])
+})
+
 it('verifyRolldownCatalogReferences accepts the real workspace manifests', () => {
   const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -151,6 +212,7 @@ it('verifyRolldownCatalogReferences accepts the real workspace manifests', () =>
 it('resolveMode reads explicit report mode from cli args', () => {
   assert.equal(resolveMode(['--mode', 'report']), 'report')
   assert.equal(resolveMode(['--mode=report']), 'report')
+  assert.equal(resolveMode(['--mode', 'sync']), 'sync')
   assert.equal(resolveMode([]), 'strict')
 })
 
