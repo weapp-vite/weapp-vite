@@ -48,6 +48,22 @@ describe('scanWxml', () => {
     })
   })
 
+  it('should collect dependencies for import-sjs from attribute', () => {
+    const wxml = '<import-sjs from="./helper.sjs" name="helper"></import-sjs>'
+    const result = scanWxml(wxml, { platform: 'alipay' })
+
+    expect(result.deps).toHaveLength(1)
+    expect(result.deps[0]).toMatchObject({
+      name: 'from',
+      value: './helper.sjs',
+      tagName: 'import-sjs',
+      attrs: {
+        from: './helper.sjs',
+        name: 'helper',
+      },
+    })
+  })
+
   it('should collect dependencies for non-self-closing wxs tags', () => {
     const wxml = '<wxs src="./normal.wxs" module="normal"></wxs>'
     const result = scanWxml(wxml)

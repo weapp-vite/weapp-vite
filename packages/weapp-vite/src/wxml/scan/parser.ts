@@ -7,6 +7,11 @@ import {
   getWxmlDirectivePrefix,
   shouldNormalizeWxmlComponentTagName,
 } from '../../platform'
+import {
+  getScriptModuleImportAttrs,
+  isScriptModuleImportAttr,
+  isScriptModuleTagName,
+} from '../../utils/wxmlScriptModule'
 import { srcImportTagsMap } from '../shared'
 import { resolveEventDirectiveName } from './events'
 
@@ -73,13 +78,12 @@ export function parseWxml(options: ParserOptions): ParserResult {
   const tagNameTokens: Token[] = []
   // 标签调用栈（tag stack）
   const tagStack: string[] = []
-  const scriptModuleTags = new Set(['wxs', 'sjs', 'import-sjs'])
   const parser = new Parser(
     {
       onopentagname(name) {
         tagStack.push(name)
         currentTagName = name
-        importAttrs = srcImportTagsMap[currentTagName]
+        importAttrs = getScriptModuleImportAttrs(currentTagName) ?? srcImportTagsMap[currentTagName]
         tagStartIndex = parser.startIndex
         if (shouldNormalizeWxmlComponentTagName(platform) && shouldNormalizeTagName(name)) {
           const normalized = toKebabCaseTagName(name)
@@ -91,7 +95,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
             })
           }
         }
-        if (scriptModuleTags.has(name)) {
+        if (isScriptModuleTagName(name)) {
           scriptModuleTagTokens.push({
             start: parser.startIndex + 1,
             end: parser.startIndex + 1 + name.length,
@@ -113,9 +117,8 @@ export function parseWxml(options: ParserOptions): ParserResult {
                 end: parser.endIndex,
                 attrs,
               })
-              const isScriptModuleImportAttr = currentTagName && scriptModuleTags.has(currentTagName)
-                && (name === 'src' || (currentTagName === 'import-sjs' && name === 'from'))
-              if (isScriptModuleImportAttr) {
+              const matchesScriptModuleImportAttr = isScriptModuleImportAttr(currentTagName, name)
+              if (matchesScriptModuleImportAttr) {
                 if (SCRIPT_MODULE_IMPORT_RE.test(value)) {
                   const valueStart = parser.startIndex + name.length + 2
                   wxsImportNormalizeTokens.push(
@@ -164,7 +167,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
           })
         }
         // 移除内联 wxs 的 lang
-        if (currentTagName && scriptModuleTags.has(currentTagName) && name === 'lang' && jsExtensions.includes(value)) {
+        if (currentTagName && isScriptModuleTagName(currentTagName) && name === 'lang' && jsExtensions.includes(value)) {
           removeWxsLangAttrTokens.push({
             start: parser.startIndex,
             end: parser.endIndex,
@@ -204,7 +207,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
           }
         }
 
-        if (currentTagName && scriptModuleTags.has(currentTagName)) {
+        if (currentTagName && isScriptModuleTagName(currentTagName)) {
           if (parser.startIndex !== tagStartIndex) {
             const nameStart = parser.startIndex + 2
             scriptModuleTagTokens.push({
@@ -221,7 +224,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
         tagStartIndex = 0
       },
       ontext(data) {
-        if (currentTagName && scriptModuleTags.has(currentTagName) && jsExtensions.includes(attrs.lang)) {
+        if (currentTagName && isScriptModuleTagName(currentTagName) && jsExtensions.includes(attrs.lang)) {
           inlineWxsTokens.push({
             start: parser.startIndex,
             end: parser.endIndex,

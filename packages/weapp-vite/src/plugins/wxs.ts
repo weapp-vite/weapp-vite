@@ -3,18 +3,21 @@ import type { Plugin } from 'vite'
 import type { CompilerContext } from '../context'
 import type { WxmlDep } from '../types'
 import { removeExtension } from '@weapp-core/shared'
+// eslint-disable-next-line e18e/ban-dependencies -- 现有插件文件系统读写沿用 fs-extra，避免扩大本次抽象范围
 import fs from 'fs-extra'
 import { LRUCache } from 'lru-cache'
 import path from 'pathe'
 import { jsExtensions } from '../constants'
 import { changeFileExtension } from '../utils/file'
 import { normalizeWatchPath } from '../utils/path'
+import { isScriptModuleTagName } from '../utils/wxmlScriptModule'
 import { scanWxml } from '../wxml'
 import { transformWxsCode } from '../wxs'
 
 export const wxsCodeCache = new LRUCache<string, string>({
   max: 512,
 })
+const WXS_FILE_SUFFIX_RE = /\.(?:wxs|sjs)(\.[jt]s)?$/
 
 interface WxsPluginState {
   ctx: CompilerContext
@@ -35,7 +38,7 @@ async function transformWxsFile(
     return
   }
 
-  const suffixMatch = wxsPath.match(/\.(?:wxs|sjs)(\.[jt]s)?$/)
+  const suffixMatch = wxsPath.match(WXS_FILE_SUFFIX_RE)
   let isRaw = true
   if (suffixMatch) {
     isRaw = !suffixMatch[1]
@@ -93,9 +96,9 @@ async function handleWxsDeps(
 ) {
   await Promise.all(
     deps
-      .filter(dep => dep.tagName === 'wxs' || dep.tagName === 'sjs' || dep.tagName === 'import-sjs')
+      .filter(dep => isScriptModuleTagName(dep.tagName))
       .map(async (dep) => {
-        const arr = dep.value.match(/\.(?:wxs|sjs)(\.[jt]s)?$/)
+        const arr = dep.value.match(WXS_FILE_SUFFIX_RE)
         if (!jsExtensions.includes(dep.attrs.lang) && !arr) {
           return
         }
