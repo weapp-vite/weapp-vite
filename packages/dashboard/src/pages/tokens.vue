@@ -2,6 +2,7 @@
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
+import AppSurfaceSampleCard from '../features/dashboard/components/AppSurfaceSampleCard.vue'
 import AppTokenSwatch from '../features/dashboard/components/AppTokenSwatch.vue'
 import { tokenGroups } from '../features/dashboard/constants/shell'
 import { themeOptions } from '../features/dashboard/constants/view'
@@ -53,15 +54,9 @@ import { themeOptions } from '../features/dashboard/constants/view'
         icon-name="token-surface"
       >
         <div class="grid gap-3 md:grid-cols-3">
-          <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] p-4">
-            Default surface
-          </div>
-          <div class="rounded-[18px] border border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel-strong)] p-4 shadow-[var(--dashboard-shadow)]">
-            Strong surface
-          </div>
-          <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
-            Muted surface
-          </div>
+          <AppSurfaceSampleCard label="Default surface" tone="default" />
+          <AppSurfaceSampleCard label="Strong surface" tone="strong" />
+          <AppSurfaceSampleCard label="Muted surface" tone="muted" />
         </div>
       </AppSurfaceCard>
 
