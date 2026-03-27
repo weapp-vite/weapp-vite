@@ -80,6 +80,35 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('triggers arbitrary bound events from rendered nodes', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/index/index')
+    const input = await page.$('#greeting-input')
+
+    expect(input).not.toBeNull()
+    expect(await input?.dataset()).toEqual({
+      field: 'greeting',
+    })
+
+    await input?.trigger('input', {
+      detail: {
+        value: 'Updated by trigger',
+      },
+    })
+
+    expect(await page.data('__e2eInput')).toEqual({
+      detail: {
+        value: 'Updated by trigger',
+      },
+      type: 'input',
+    })
+  })
+
   it('renders interpolated wxml and supports basic selectors', async () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)
