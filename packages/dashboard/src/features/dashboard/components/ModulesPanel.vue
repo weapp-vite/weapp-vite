@@ -5,9 +5,9 @@ import type {
   ModuleSourceSummary,
 } from '../composables/useAnalyzeDashboardData'
 import { formatBuildOrigin, formatBytes, formatSourceType } from '../utils/format'
-import { iconFrameStyles, surfaceStyles } from '../utils/styles'
+import { surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
-import DashboardIcon from './DashboardIcon.vue'
+import AppPanelHeader from './AppPanelHeader.vue'
 
 defineProps<{
   visibleDuplicateModules: DuplicateModuleEntry[]
@@ -19,24 +19,11 @@ defineProps<{
 <template>
   <section class="grid gap-3 xl:grid-cols-[minmax(0,1.24fr)_minmax(0,0.76fr)]">
     <div :class="surfaceStyles({ padding: 'md' })">
-      <div class="flex items-center gap-2">
-        <span :class="iconFrameStyles()">
-          <span class="h-5 w-5">
-            <DashboardIcon name="duplicate-modules" />
-          </span>
-        </span>
-        <div>
-          <h2 class="text-lg font-semibold text-[color:var(--dashboard-text)]">
-            重复模块
-          </h2>
-          <p class="mt-0.5 text-sm text-[color:var(--dashboard-text-soft)]">
-            优先看被多个包重复包含的源码与依赖。
-          </p>
-        </div>
-      </div>
-      <p class="mt-3 text-sm text-[color:var(--dashboard-text-soft)]">
-        优先看被多个包重复包含的源码与依赖。
-      </p>
+      <AppPanelHeader
+        icon-name="duplicate-modules"
+        title="重复模块"
+        description="优先看被多个包重复包含的源码与依赖。"
+      />
       <div v-if="visibleDuplicateModules.length" class="mt-4 space-y-2.5">
         <article
           v-for="module in visibleDuplicateModules"
@@ -69,16 +56,7 @@ defineProps<{
 
     <div class="flex flex-col gap-3">
       <section :class="surfaceStyles({ padding: 'md' })">
-        <div class="flex items-center gap-2">
-          <span :class="iconFrameStyles()">
-            <span class="h-5 w-5">
-              <DashboardIcon name="module-sources" />
-            </span>
-          </span>
-          <h2 class="text-lg font-semibold text-[color:var(--dashboard-text)]">
-            模块来源
-          </h2>
-        </div>
+        <AppPanelHeader icon-name="module-sources" title="模块来源" />
         <div class="mt-4 space-y-2.5">
           <article
             v-for="item in moduleSourceSummary"
@@ -103,16 +81,7 @@ defineProps<{
       </section>
 
       <section :class="surfaceStyles({ padding: 'md' })">
-        <div class="flex items-center gap-2">
-          <span :class="iconFrameStyles()">
-            <span class="h-5 w-5">
-              <DashboardIcon name="file-samples" />
-            </span>
-          </span>
-          <h2 class="text-lg font-semibold text-[color:var(--dashboard-text)]">
-            文件样本
-          </h2>
-        </div>
+        <AppPanelHeader icon-name="file-samples" title="文件样本" />
         <ul class="mt-4 space-y-2.5 text-sm text-[color:var(--dashboard-text-muted)]">
           <li
             v-for="file in visibleLargestFiles.slice(0, 6)"
