@@ -1,5 +1,17 @@
 # weapp-vite
 
+## 6.11.9
+
+### Patch Changes
+
+- 🐛 **修复新建项目在使用 Yarn 安装依赖时的 `rolldown` peer dependency 警告。`weapp-vite` 现将 `rolldown-plugin-dts` 回退到与 `rolldown@1.0.0-rc.11` 兼容的 `0.22.5`，并同步重新发布 `rolldown-require` 与 `create-weapp-vite`，确保脚手架默认生成项目的依赖版本保持一致，减少安装期的误导性告警。** [`60487a4`](https://github.com/weapp-vite/weapp-vite/commit/60487a4e9ea8057c4b3b6952870ab94355a20cc8) by @sonofmagic
+- 📦 Updated 4 dependencies [`0066308`](https://github.com/weapp-vite/weapp-vite/commit/0066308e1af282e9bc204143e685c54edd490f41)
+  <details><summary>Details</summary>
+
+  `rolldown-require@2.0.11`, `@weapp-vite/web@1.3.9`, `wevu@6.11.9`, `@weapp-vite/ast@6.11.9`
+
+  </details>
+
 ## 6.11.8
 
 ### Patch Changes
