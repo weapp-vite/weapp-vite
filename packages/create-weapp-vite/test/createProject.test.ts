@@ -1,4 +1,5 @@
 import os from 'node:os'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, vi } from 'vitest'
@@ -166,6 +167,50 @@ describe('createProject', () => {
     await createProjectInternal.ensureDotGitignore(root)
     expect(await fs.readFile(path.join(root, '.gitignore'), 'utf8')).toBe('# existing')
     expect(await fs.pathExists(path.join(root, 'gitignore'))).toBe(false)
+  })
+
+  it('copies nested template files when the template source lives under node_modules', async () => {
+    const sourceRoot = await createTmpRoot('installed-template-source')
+    const targetRoot = await createTmpRoot('installed-template-target')
+    const fakeInstalledTemplateRoot = path.join(
+      sourceRoot,
+      'node_modules',
+      'create-weapp-vite',
+      'templates',
+      TemplateName.default,
+    )
+    const { preferredTemplateDir } = await createProjectInternal.resolveTemplateDirs(TemplateName.default)
+
+    await fs.copy(preferredTemplateDir, fakeInstalledTemplateRoot)
+    await createProjectInternal.copyTemplateDir(fakeInstalledTemplateRoot, fakeInstalledTemplateRoot, targetRoot)
+
+    const files = await scanFiles(targetRoot)
+    expect(files).toContain('src/app.json')
+    expect(files).toContain('public/logo.png')
+    expect(files).toContain('project.config.json')
+  })
+
+  it('does not treat the installed package path itself as a nested template node_modules directory', () => {
+    const fakeInstalledTemplateRoot = path.join(
+      '/tmp',
+      'node_modules',
+      'create-weapp-vite',
+      'templates',
+      TemplateName.default,
+    )
+
+    expect(
+      createProjectInternal.shouldSkipTemplateFile(
+        path.join(fakeInstalledTemplateRoot, 'src', 'app.json'),
+        fakeInstalledTemplateRoot,
+      ),
+    ).toBe(false)
+    expect(
+      createProjectInternal.shouldSkipTemplateFile(
+        path.join(fakeInstalledTemplateRoot, 'node_modules', 'foo', 'index.js'),
+        fakeInstalledTemplateRoot,
+      ),
+    ).toBe(true)
   })
 
   it('upserts tailwindcss versions across code paths', async () => {

@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
 import fsPromises from 'node:fs/promises'
 import os from 'node:os'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 import { Templates } from './constants'
@@ -21,15 +22,40 @@ async function ensureGitignoreForTemplate(templateRoot: string) {
   }
 }
 
-function shouldSkipTemplateFile(filePath: string) {
+function normalizeTemplateRelativePath(relativePath: string) {
+  if (!relativePath || relativePath === '.') {
+    return ''
+  }
+
+  return relativePath.split('\\').join('/')
+}
+
+function shouldSkipTemplateFile(filePath: string, templateRoot: string) {
+  const relativePath = normalizeTemplateRelativePath(path.relative(templateRoot, filePath))
+
+  if (!relativePath) {
+    return false
+  }
+
   return (
-    filePath.includes('node_modules')
-    || filePath.includes(`${path.sep}.weapp-vite${path.sep}`)
-    || filePath.includes('vite.config.ts.timestamp')
-    || filePath.includes('dist')
-    || filePath.includes('CHANGELOG.md')
-    || filePath.includes('.turbo')
-    || filePath.includes('.DS_Store')
+    relativePath === 'node_modules'
+    || relativePath.startsWith('node_modules/')
+    || relativePath.includes('/node_modules/')
+    || relativePath === '.weapp-vite'
+    || relativePath.startsWith('.weapp-vite/')
+    || relativePath.includes('/.weapp-vite/')
+    || relativePath === 'vite.config.ts.timestamp'
+    || relativePath.endsWith('/vite.config.ts.timestamp')
+    || relativePath === 'dist'
+    || relativePath.startsWith('dist/')
+    || relativePath.includes('/dist/')
+    || relativePath === 'CHANGELOG.md'
+    || relativePath.endsWith('/CHANGELOG.md')
+    || relativePath === '.turbo'
+    || relativePath.startsWith('.turbo/')
+    || relativePath.includes('/.turbo/')
+    || relativePath === '.DS_Store'
+    || relativePath.endsWith('/.DS_Store')
   )
 }
 
@@ -40,7 +66,7 @@ async function collectTemplateFiles(root: string) {
     const entries = await fs.readdir(currentDir, { withFileTypes: true })
     for (const entry of entries) {
       const absolutePath = path.join(currentDir, entry.name)
-      if (shouldSkipTemplateFile(absolutePath)) {
+      if (shouldSkipTemplateFile(absolutePath, root)) {
         continue
       }
 
@@ -60,7 +86,7 @@ async function collectTemplateFiles(root: string) {
   return files
 }
 
-function normalizeTemplateRelativePath(filePath: string) {
+function normalizeTemplateOutputRelativePath(filePath: string) {
   const relativePath = filePath.split(path.sep).join('/')
   return relativePath === '.gitignore' ? 'gitignore' : relativePath
 }
@@ -96,8 +122,8 @@ async function isTemplateDirSynced(sourceRoot: string, destRoot: string) {
       return false
     }
 
-    const sourceRelativePath = normalizeTemplateRelativePath(path.relative(sourceRoot, sourceFilePath))
-    const destRelativePath = normalizeTemplateRelativePath(path.relative(destRoot, destFilePath))
+    const sourceRelativePath = normalizeTemplateOutputRelativePath(path.relative(sourceRoot, sourceFilePath))
+    const destRelativePath = normalizeTemplateOutputRelativePath(path.relative(destRoot, destFilePath))
     if (sourceRelativePath !== destRelativePath) {
       return false
     }
@@ -198,7 +224,7 @@ export async function main() {
         absDest,
         {
           filter(src: string) {
-            if (shouldSkipTemplateFile(src)) {
+            if (shouldSkipTemplateFile(src, path.resolve(import.meta.dirname, target))) {
               return false
             }
             return true
