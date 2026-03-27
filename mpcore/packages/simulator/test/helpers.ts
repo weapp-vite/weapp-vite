@@ -588,6 +588,7 @@ export function createComponentFixture() {
 Page({
   data: {
     count: 2,
+    eventSnapshot: '',
     formSnapshot: '',
     log: [],
     scopedRect: null,
@@ -624,6 +625,13 @@ Page({
   },
   onPulse(event) {
     this.setData({
+      eventSnapshot: JSON.stringify({
+        currentTargetDataset: event?.currentTarget?.dataset ?? {},
+        currentTargetId: event?.currentTarget?.id ?? '',
+        mark: event?.mark ?? null,
+        targetDataset: event?.target?.dataset ?? {},
+        targetId: event?.target?.id ?? '',
+      }),
       log: [...this.data.log, event?.detail?.source ?? 'none']
     })
   }
@@ -632,6 +640,7 @@ Page({
   writeText(path.join(root, 'dist/pages/lab/index.wxml'), `
 <status-card id="status-card" count="{{count}}" bind:pulse="onPulse" />
 <view>{{snapshot}}</view>
+<view>{{eventSnapshot}}</view>
 <view>{{log.0}}</view>
 `)
   writeJson(path.join(root, 'dist/components/status-card/index.json'), {})
