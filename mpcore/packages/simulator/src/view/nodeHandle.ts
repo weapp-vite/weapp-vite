@@ -24,6 +24,13 @@ interface HeadlessTestingNodeEventInit {
   }
 }
 
+interface HeadlessTestingNodeValueEventInit extends HeadlessTestingNodeEventInit {
+  detail?: {
+    value?: string
+    [key: string]: unknown
+  }
+}
+
 interface HeadlessTestingNodeInteractionHandlers {
   callMethod: (methodName: string, event: Record<string, any>) => unknown
 }
@@ -93,6 +100,13 @@ function createEventPayload(node: DomNodeLike, eventName: string, event: Headles
       id: event.target?.id ?? event.id ?? nodeId,
     },
     type: eventName,
+  }
+}
+
+function createValueEventDetail(value: string, detail?: HeadlessTestingNodeValueEventInit['detail']) {
+  return {
+    value,
+    ...(detail ?? {}),
   }
 }
 
@@ -177,6 +191,27 @@ export class HeadlessTestingNodeHandle {
 
   async tap(event: HeadlessTestingNodeEventInit = {}) {
     return await this.trigger('tap', event)
+  }
+
+  async input(value: string, event: HeadlessTestingNodeValueEventInit = {}) {
+    return await this.trigger('input', {
+      ...event,
+      detail: createValueEventDetail(value, event.detail),
+    })
+  }
+
+  async change(value: string, event: HeadlessTestingNodeValueEventInit = {}) {
+    return await this.trigger('change', {
+      ...event,
+      detail: createValueEventDetail(value, event.detail),
+    })
+  }
+
+  async blur(value?: string, event: HeadlessTestingNodeValueEventInit = {}) {
+    return await this.trigger('blur', {
+      ...event,
+      detail: value == null ? event.detail : createValueEventDetail(value, event.detail),
+    })
   }
 
   async wxml() {
