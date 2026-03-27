@@ -1,7 +1,8 @@
 import type { App as VueApp } from 'vue'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { createApp } from 'vue'
-import App from '../../../demos/web/src/App.vue'
+import SimulatorE2EApp from '../../../demos/web/src/e2e/SimulatorE2EApp.vue'
+import '../../../demos/web/src/styles.css'
 
 interface SimulatorE2EApi {
   callComponentMethod: (scopeId: string, method: string, ...args: any[]) => unknown
@@ -76,7 +77,7 @@ describe.sequential('simulator browser e2e', () => {
     mountNode.id = 'app'
     document.body.innerHTML = ''
     document.body.appendChild(mountNode)
-    app = createApp(App)
+    app = createApp(SimulatorE2EApp)
     app.mount(mountNode)
 
     await waitFor(
