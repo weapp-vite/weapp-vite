@@ -1,10 +1,17 @@
 import type { CompilerContext } from '../../../context'
 import os from 'node:os'
+// eslint-disable-next-line e18e/ban-dependencies -- 测试临时目录清理沿用现有 fs-extra 用法
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { scanWxml } from '../../../wxml'
+import * as wxmlHandleModule from '../../../wxml/handle'
 import { emitVueBundleAssets } from './bundle'
+import {
+  emitAlipayGenericPlaceholderAssets,
+  normalizeVueConfigForPlatform,
+  normalizeVueTemplateForPlatform,
+} from './bundle/platform'
 
 const collectFallbackPageEntryIdsMock = vi.hoisted(() => vi.fn(async () => new Set<string>()))
 const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(async (_ctx: any, code: string) => ({
@@ -68,6 +75,99 @@ describe('emitVueBundleAssets platform output', () => {
     tempDirs.push(dir)
     return dir
   }
+
+  it('returns original config/template when direct platform helpers hit fallback branches', () => {
+    expect(normalizeVueConfigForPlatform(undefined, {
+      platform: 'alipay',
+    })).toBeUndefined()
+
+    expect(normalizeVueConfigForPlatform('[]', {
+      platform: 'alipay',
+    })).toBe('[]')
+
+    expect(normalizeVueTemplateForPlatform('<view', {
+      platform: 'alipay',
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+    })).toBe('<view')
+  })
+
+  it('returns original template when wxml normalization throws internally', () => {
+    const handleSpy = vi.spyOn(wxmlHandleModule, 'handleWxml').mockImplementationOnce(() => {
+      throw new Error('normalize failed')
+    })
+
+    expect(normalizeVueTemplateForPlatform('<view />', {
+      platform: 'alipay',
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+    })).toBe('<view />')
+
+    handleSpy.mockRestore()
+  })
+
+  it('returns early when placeholder config is array-shaped or platform is unsupported', () => {
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    emitAlipayGenericPlaceholderAssets(
+      { emitFile },
+      bundle,
+      'components/demo/index',
+      JSON.stringify([]),
+      {
+        wxml: 'axml',
+        json: 'json',
+        js: 'js',
+      },
+      'alipay',
+    )
+
+    emitAlipayGenericPlaceholderAssets(
+      { emitFile },
+      bundle,
+      'components/demo/index',
+      JSON.stringify({
+        componentGenerics: {
+          slotA: true,
+        },
+      }),
+      {
+        wxml: 'axml',
+        json: 'json',
+        js: 'js',
+      },
+      'weapp',
+    )
+
+    expect(emitFile).not.toHaveBeenCalled()
+  })
+
+  it('emits placeholder assets when direct helper sees boolean componentGenerics', () => {
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    emitAlipayGenericPlaceholderAssets(
+      { emitFile },
+      bundle,
+      'components/direct/index',
+      JSON.stringify({
+        componentGenerics: {
+          slotA: true,
+        },
+      }),
+      {
+        wxml: 'axml',
+        json: 'json',
+        js: 'js',
+      },
+      'alipay',
+    )
+
+    const emittedFiles = emitFile.mock.calls.map(call => call[0]?.fileName)
+    expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.axml')
+    expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.js')
+  })
 
   it('uses platform output extensions for template, json, and wxs assets', async () => {
     const configService = {

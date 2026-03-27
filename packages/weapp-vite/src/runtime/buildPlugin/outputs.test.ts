@@ -190,4 +190,46 @@ describe('buildPlugin outputs', () => {
     expect(mkdirMock).not.toHaveBeenCalled()
     expect(cpMock).not.toHaveBeenCalled()
   })
+
+  it('returns early when sync plugin roots are missing', async () => {
+    await syncExternalPluginOutputs(createConfigService({
+      absolutePluginRoot: undefined,
+      absolutePluginOutputRoot: '/project/dist-plugin',
+    }))
+
+    expect(statMock).not.toHaveBeenCalled()
+    expect(mkdirMock).not.toHaveBeenCalled()
+  })
+
+  it('rethrows non-ENOENT cleanup errors from output root scan', async () => {
+    const configService = createConfigService()
+    const error = Object.assign(new Error('permission denied'), { code: 'EACCES' })
+    readdirMock.mockRejectedValueOnce(error)
+
+    await expect(cleanOutputs(configService)).rejects.toThrow('permission denied')
+  })
+
+  it('treats missing output root as empty directory during cleanup', async () => {
+    const configService = createConfigService()
+    const error = Object.assign(new Error('missing'), { code: 'ENOENT' })
+    readdirMock.mockRejectedValueOnce(error)
+
+    await cleanOutputs(configService)
+
+    expect(loggerMock.success).toHaveBeenCalledWith('已清空 /project/dist 目录')
+    expect(rmMock).not.toHaveBeenCalled()
+  })
+
+  it('returns quietly when plugin bundle root does not exist yet', async () => {
+    const configService = createConfigService({
+      absolutePluginRoot: '/project/plugin',
+      absolutePluginOutputRoot: '/project/dist-plugin',
+    })
+
+    await syncExternalPluginOutputs(configService)
+
+    expect(mkdirMock).not.toHaveBeenCalled()
+    expect(cpMock).not.toHaveBeenCalled()
+    expect(loggerMock.success).not.toHaveBeenCalled()
+  })
 })
