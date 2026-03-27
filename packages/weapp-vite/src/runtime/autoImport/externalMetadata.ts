@@ -2,8 +2,10 @@ import type { AstEngineName } from '../../ast'
 import type { ExternalMetadataFileCandidates, Resolver } from '../../auto-import-components/resolvers'
 import type { ComponentPropMap } from '../componentProps'
 import { createRequire } from 'node:module'
+// eslint-disable-next-line e18e/ban-dependencies -- 这里仍复用 fs-extra 的同步读取能力
 import fs from 'fs-extra'
 import path from 'pathe'
+import { parseNpmPackageSpecifier } from '../../utils/npmImport'
 import { extractComponentProps } from '../componentProps'
 import { extractComponentPropsFromDts } from './dtsProps'
 
@@ -74,33 +76,8 @@ function resolveExternalMetadataCandidates(from: string, resolvers: Resolver[] |
   return undefined
 }
 
-function splitPackageImport(from: string) {
-  const normalized = from.trim()
-  if (!normalized || normalized.startsWith('/') || normalized.startsWith('.')) {
-    return undefined
-  }
-
-  const parts = normalized.split('/').filter(Boolean)
-  if (parts.length === 0) {
-    return undefined
-  }
-
-  if (normalized.startsWith('@')) {
-    if (parts.length < 2) {
-      return undefined
-    }
-    const packageName = `${parts[0]}/${parts[1]}`
-    const subPath = parts.slice(2).join('/')
-    return { packageName, subPath }
-  }
-
-  const packageName = parts[0]
-  const subPath = parts.slice(1).join('/')
-  return { packageName, subPath }
-}
-
 function resolveHeuristicExternalMetadataCandidates(from: string): ExternalMetadataFileCandidates | undefined {
-  const parsed = splitPackageImport(from)
+  const parsed = parseNpmPackageSpecifier(from)
   if (!parsed?.packageName) {
     return undefined
   }

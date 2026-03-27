@@ -3,6 +3,7 @@ import {
   hasNpmDependencyPrefix,
   normalizeNpmImportLookupPath,
   normalizeNpmImportPathByPlatform,
+  parseNpmPackageSpecifier,
   resolveNpmDependencyId,
 } from './npmImport'
 
@@ -17,6 +18,25 @@ describe('utils/npmImport', () => {
     expect(resolveNpmDependencyId('npm:dayjs/plugin/timezone')).toBe('dayjs')
     expect(resolveNpmDependencyId('/node_modules/@scope/pkg/button/index')).toBe('@scope/pkg')
     expect(resolveNpmDependencyId('')).toBe('')
+  })
+
+  it('parses package specifiers into package name and sub path', () => {
+    expect(parseNpmPackageSpecifier('plain-lib/button')).toEqual({
+      packageName: 'plain-lib',
+      subPath: 'button',
+    })
+    expect(parseNpmPackageSpecifier('@scope/pkg/button/index')).toEqual({
+      packageName: '@scope/pkg',
+      subPath: 'button/index',
+    })
+    expect(parseNpmPackageSpecifier('plain-lib')).toEqual({
+      packageName: 'plain-lib',
+      subPath: '',
+    })
+    expect(parseNpmPackageSpecifier('./local/button')).toBeUndefined()
+    expect(parseNpmPackageSpecifier('/absolute/button')).toBeUndefined()
+    expect(parseNpmPackageSpecifier('C:\\windows\\button')).toBeUndefined()
+    expect(parseNpmPackageSpecifier('@scope-only')).toBeUndefined()
   })
 
   it('detects dependency prefixes from normalized package importees', () => {
