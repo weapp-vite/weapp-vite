@@ -72,6 +72,7 @@ e2e-apps/lib-mode/dist-matrix
 packages/weapp-vite/test-d/.tmp-tsd
 .playwright-cli
 .tmp
+.codex-tmp
 
 # local ide e2e reports
 docs/reports/*-ide-warning-report/
