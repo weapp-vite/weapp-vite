@@ -129,6 +129,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('loadMockQueue')
     bridge.runPageMethod('runFileTransferLab')
     bridge.runPageMethod('runSavedOverwriteLab')
+    bridge.runPageMethod('runSavedRemovalLab')
     bridge.runPageMethod('runSavedRenameOutLab')
     bridge.runPageMethod('storeSnapshot')
     bridge.runPageMethod('toastSnapshot')
@@ -146,6 +147,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.savedFileInfo
           && pageData.savedOverwriteInfo
           && pageData.savedFilePath
+          && pageData.savedRemovalInfo
           && pageData.savedRenameOutInfo
           && pageData.storageSnapshot
           && pageData.toastState
@@ -169,6 +171,9 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.savedOverwriteInfo).toContain('"afterSize":14')
     expect(pageData.savedOverwriteInfo).toContain('"filePath":"headless://saved/component-lab/snapshots/report.txt"')
     expect(pageData.savedFilePath).toContain('headless://wxfile/saved/')
+    expect(pageData.savedRemovalInfo).toContain('"hasSavedRegistration":false')
+    expect(pageData.savedRemovalInfo).toContain('"removeErrMsg":"removeSavedFile:ok"')
+    expect(pageData.savedRemovalInfo).toContain('"missingInfoError":"getSavedFileInfo:fail no such file or directory')
     expect(pageData.savedRenameOutInfo).toContain('"hasSavedRegistration":false')
     expect(pageData.savedRenameOutInfo).toContain('"movedText":"rename-out"')
     expect(pageData.storageSnapshot).toContain('"status"')
@@ -209,11 +214,15 @@ describe.sequential('simulator browser e2e', () => {
       size: 'second-version'.length,
     }))
     expect(sessionSnapshot.savedFileList).not.toContainEqual(expect.objectContaining({
+      filePath: 'headless://saved/component-lab/removals/report.txt',
+    }))
+    expect(sessionSnapshot.savedFileList).not.toContainEqual(expect.objectContaining({
       filePath: 'headless://saved/component-lab/transfers/rename-out.txt',
     }))
     expect(sessionSnapshot.uploadFileLogs).toHaveLength(1)
     expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab report')
     expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab')
+    expect(sessionSnapshot.fileSnapshot['headless://saved/component-lab/removals/report.txt']).toBeUndefined()
     expect(sessionSnapshot.fileSnapshot['headless://temp/component-lab-renamed.txt']).toBe('rename-out')
   })
 
