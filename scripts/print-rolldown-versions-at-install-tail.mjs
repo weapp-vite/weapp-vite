@@ -173,7 +173,7 @@ async function waitForInstallTail() {
 
 async function main() {
   await waitForInstallTail()
-  printRolldownVersions({ mode: 'report' })
+  printRolldownVersions({ mode: 'warn' })
 }
 
 export {

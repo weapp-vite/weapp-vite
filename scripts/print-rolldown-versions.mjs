@@ -1,13 +1,20 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { gunzipSync } from 'node:zlib'
 
 import { parse } from 'yaml'
 
 const DEFAULT_MODE = 'strict'
+const PUBLISH_ROOTS = ['packages', '@weapp-core', 'mpcore/packages']
+const TAR_NULL_SUFFIX_RE = /\0.*$/
+const ROLLDOWN_RELATED_DEPENDENCIES = ['rolldown', 'rolldown-plugin-dts', 'rolldown-require']
+const PACKAGE_JSON_ENTRY_NAME = 'package/package.json'
 let ansiEnabled = true
 const ANSI = {
   reset: '\x1B[0m',
@@ -58,6 +65,24 @@ function isExternalReference(version = '') {
     || version.startsWith('file:')
     || version.startsWith('workspace:')
     || version.startsWith('portal:')
+}
+
+function isZeroBlock(buffer, offset) {
+  for (let index = offset; index < offset + 512; index += 1) {
+    if (buffer[index] !== 0) {
+      return false
+    }
+  }
+  return true
+}
+
+function readTarOctal(buffer, start, length) {
+  const raw = buffer.subarray(start, start + length).toString('utf8').replace(TAR_NULL_SUFFIX_RE, '').trim()
+  return raw ? Number.parseInt(raw, 8) : 0
+}
+
+function readTarString(buffer, start, length) {
+  return buffer.subarray(start, start + length).toString('utf8').replace(TAR_NULL_SUFFIX_RE, '')
 }
 
 function createNodeLabel(name, version, importerPath) {
@@ -224,6 +249,31 @@ function readPackageJson(filePath) {
   return JSON.parse(readFileSync(filePath, 'utf8'))
 }
 
+function readPackedPackageJsonFromTarball(tarballPath) {
+  const archive = gunzipSync(readFileSync(tarballPath))
+
+  for (let offset = 0; offset < archive.length; offset += 512) {
+    if (isZeroBlock(archive, offset)) {
+      break
+    }
+
+    const name = readTarString(archive, offset, 100)
+    const prefix = readTarString(archive, offset + 345, 155)
+    const entryName = prefix ? `${prefix}/${name}` : name
+    const size = readTarOctal(archive, offset + 124, 12)
+    const dataStart = offset + 512
+    const dataEnd = dataStart + size
+
+    if (entryName === PACKAGE_JSON_ENTRY_NAME) {
+      return JSON.parse(archive.subarray(dataStart, dataEnd).toString('utf8'))
+    }
+
+    offset = dataStart + Math.ceil(size / 512) * 512 - 512
+  }
+
+  throw new Error(`packed package.json not found in tarball: ${tarballPath}`)
+}
+
 function writePackageJson(filePath, packageJson) {
   writeFileSync(filePath, `${JSON.stringify(packageJson, null, 2)}\n`)
 }
@@ -252,6 +302,34 @@ function resolveDependencySpecVersion(spec, dependencyName, workspaceManifest) {
     return resolveCatalogDependencyVersion(workspaceManifest, dependencyName)
   }
   return spec
+}
+
+function resolveWorkspacePackageSpecVersion(spec, dependencyName, workspaceManifest, workspaceVersionsByName) {
+  if (typeof spec !== 'string' || spec.length === 0) {
+    return spec
+  }
+
+  if (spec === 'catalog:') {
+    return resolveCatalogDependencyVersion(workspaceManifest, dependencyName)
+  }
+
+  if (!spec.startsWith('workspace:')) {
+    return spec
+  }
+
+  const workspaceVersion = workspaceVersionsByName.get(dependencyName)
+  if (!workspaceVersion) {
+    return spec
+  }
+
+  const range = spec.slice('workspace:'.length)
+  if (!range || range === '*') {
+    return workspaceVersion
+  }
+  if (range === '^' || range === '~') {
+    return `${range}${workspaceVersion}`
+  }
+  return range
 }
 
 function getManagedRolldownCatalogReferences(projectRoot) {
@@ -345,6 +423,206 @@ function verifySingleRolldownVersion(versions) {
   }
 }
 
+function collectWorkspacePackageJsonPaths(projectRoot) {
+  const packageJsonPaths = []
+  const ignoredDirNames = new Set(['node_modules', 'dist', '.git', '.turbo'])
+
+  function walk(currentDir) {
+    if (!existsSync(currentDir)) {
+      return
+    }
+
+    for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
+      if (entry.isDirectory()) {
+        if (ignoredDirNames.has(entry.name)) {
+          continue
+        }
+        walk(path.join(currentDir, entry.name))
+        continue
+      }
+      if (entry.isFile() && entry.name === 'package.json') {
+        packageJsonPaths.push(path.join(currentDir, entry.name))
+      }
+    }
+  }
+
+  for (const root of PUBLISH_ROOTS) {
+    walk(path.join(projectRoot, root))
+  }
+
+  return packageJsonPaths.sort((a, b) => a.localeCompare(b))
+}
+
+function collectWorkspacePackageVersions(projectRoot, readPackageJsonImpl = readPackageJson) {
+  const versionsByName = new Map()
+
+  for (const filePath of collectWorkspacePackageJsonPaths(projectRoot)) {
+    const packageJson = readPackageJsonImpl(filePath)
+    if (packageJson.private === true || typeof packageJson.name !== 'string' || typeof packageJson.version !== 'string') {
+      continue
+    }
+    versionsByName.set(packageJson.name, packageJson.version)
+  }
+
+  return versionsByName
+}
+
+function collectRolldownPublishTargets(projectRoot, readPackageJsonImpl = readPackageJson) {
+  const targets = []
+
+  for (const filePath of collectWorkspacePackageJsonPaths(projectRoot)) {
+    const packageJson = readPackageJsonImpl(filePath)
+    if (packageJson.private === true || typeof packageJson.name !== 'string') {
+      continue
+    }
+
+    const sections = ['dependencies', 'peerDependencies', 'optionalDependencies']
+    const hasRelatedDependency = sections.some(section =>
+      ROLLDOWN_RELATED_DEPENDENCIES.some(name => typeof packageJson[section]?.[name] === 'string'),
+    )
+
+    if (!hasRelatedDependency) {
+      continue
+    }
+
+    targets.push({
+      filePath,
+      packageJson,
+      packageRoot: path.dirname(filePath),
+    })
+  }
+
+  return targets
+}
+
+function collectRolldownExpectedPublishedSpecs(packageJson, workspaceManifest, workspaceVersionsByName) {
+  const expectedSpecs = []
+
+  for (const section of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
+    const deps = packageJson[section]
+    if (!deps) {
+      continue
+    }
+
+    for (const dependencyName of ROLLDOWN_RELATED_DEPENDENCIES) {
+      const spec = deps[dependencyName]
+      if (typeof spec !== 'string') {
+        continue
+      }
+      expectedSpecs.push({
+        dependencyName,
+        expected: resolveWorkspacePackageSpecVersion(spec, dependencyName, workspaceManifest, workspaceVersionsByName),
+        section,
+      })
+    }
+  }
+
+  return expectedSpecs
+}
+
+function resolvePnpmExecutable(platform = process.platform) {
+  return platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+}
+
+function packWorkspacePackageJson(
+  packageRoot,
+  {
+    execFileSyncImpl = execFileSync,
+    mkdtempSyncImpl = mkdtempSync,
+    readPackedPackageJsonImpl = readPackedPackageJsonFromTarball,
+    rmSyncImpl = rmSync,
+  } = {},
+) {
+  const packDir = mkdtempSyncImpl(path.join(os.tmpdir(), 'rolldown-pack-'))
+  try {
+    const stdout = execFileSyncImpl(
+      resolvePnpmExecutable(),
+      ['--dir', packageRoot, 'pack', '--pack-destination', packDir, '--json'],
+      {
+        cwd: packageRoot,
+        encoding: 'utf8',
+      },
+    )
+    const parsed = JSON.parse(stdout)
+    const tarballPath = Array.isArray(parsed) ? parsed[0]?.filename : parsed?.filename
+    if (typeof tarballPath !== 'string' || tarballPath.length === 0) {
+      throw new Error(`pnpm pack did not return a tarball filename for ${packageRoot}`)
+    }
+    return readPackedPackageJsonImpl(tarballPath)
+  }
+  finally {
+    rmSyncImpl(packDir, { force: true, recursive: true })
+  }
+}
+
+function collectRolldownPublishArtifactIssues(
+  projectRoot,
+  {
+    packWorkspacePackageJsonImpl = packWorkspacePackageJson,
+    readPackageJsonImpl = readPackageJson,
+    targets = collectRolldownPublishTargets(projectRoot, readPackageJsonImpl),
+    workspaceManifest = readWorkspaceManifest(projectRoot),
+    workspaceVersionsByName = collectWorkspacePackageVersions(projectRoot, readPackageJsonImpl),
+  } = {},
+) {
+  const issues = []
+
+  for (const target of targets) {
+    const packedPackageJson = packWorkspacePackageJsonImpl(target.packageRoot)
+    const expectedSpecs = collectRolldownExpectedPublishedSpecs(
+      target.packageJson,
+      workspaceManifest,
+      workspaceVersionsByName,
+    )
+
+    for (const item of expectedSpecs) {
+      const actual = packedPackageJson[item.section]?.[item.dependencyName]
+      if (actual !== item.expected) {
+        issues.push(
+          [
+            `${target.packageJson.name} packed manifest mismatch`,
+            `section: ${item.section}`,
+            `dependency: ${item.dependencyName}`,
+            `expected: ${item.expected}`,
+            `actual: ${String(actual)}`,
+            `file: ${target.filePath}`,
+          ].join('\n'),
+        )
+      }
+    }
+  }
+
+  return issues
+}
+
+function verifyRolldownPublishArtifacts(projectRoot, options = {}) {
+  const issues = collectRolldownPublishArtifactIssues(projectRoot, options)
+  if (issues.length > 0) {
+    throw new Error(
+      [
+        'rolldown-related packed manifests are out of date',
+        ...issues,
+      ].join('\n\n'),
+    )
+  }
+}
+
+function formatRolldownWarningReport(projectRoot, versions, extraWarnings = []) {
+  const lines = [
+    colorize('[workspace] rolldown warning', ANSI.bold, ANSI.yellow),
+    `project: ${projectRoot}`,
+  ]
+
+  if (versions.size > 1) {
+    lines.push(
+      `multiple rolldown versions detected: ${[...versions.keys()].join(', ')}`,
+    )
+  }
+
+  lines.push(...extraWarnings)
+  return lines.join('\n')
+}
+
 function resolveMode(argv = process.argv.slice(2)) {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
@@ -383,9 +661,20 @@ function main(options = {}) {
     if (mode === 'report') {
       return
     }
+    if (mode === 'warn') {
+      const warnings = []
+      if (versions.size > 1) {
+        warnings.push('install completed with multiple rolldown versions in pnpm-lock.yaml')
+      }
+      if (warnings.length > 0) {
+        console.warn(`\n${formatRolldownWarningReport(projectRoot, versions, warnings)}\n`)
+      }
+      return
+    }
     verifyRolldownCatalogReferences(projectRoot)
     verifyRolldownRequirePeer(projectRoot, workspaceManifest)
     verifySingleRolldownVersion(versions)
+    verifyRolldownPublishArtifacts(projectRoot, { workspaceManifest })
   }
   catch (error) {
     const line = '!'.repeat(78)
@@ -398,18 +687,27 @@ function main(options = {}) {
 }
 
 export {
+  collectRolldownExpectedPublishedSpecs,
+  collectRolldownPublishArtifactIssues,
+  collectRolldownPublishTargets,
   collectRolldownVersions,
   collectViteRolldownVersions,
+  collectWorkspacePackageVersions,
   formatRolldownVersionReport,
+  formatRolldownWarningReport,
   main,
+  packWorkspacePackageJson,
+  readPackedPackageJsonFromTarball,
   readWorkspaceManifest,
   resolveAnsiEnabled,
   resolveCatalogDependencyVersion,
   resolveDependencySpecVersion,
   resolveMode,
+  resolveWorkspacePackageSpecVersion,
   stripPeerSuffix,
   syncRolldownCatalogReferences,
   verifyRolldownCatalogReferences,
+  verifyRolldownPublishArtifacts,
   verifyRolldownRequirePeer,
   verifySingleRolldownVersion,
 }

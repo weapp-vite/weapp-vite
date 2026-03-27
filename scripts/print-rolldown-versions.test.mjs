@@ -1,15 +1,24 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, rmSync } from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { it } from 'vitest'
 
 import {
+  collectRolldownExpectedPublishedSpecs,
+  collectRolldownPublishArtifactIssues,
   collectViteRolldownVersions,
   formatRolldownVersionReport,
+  formatRolldownWarningReport,
+  packWorkspacePackageJson,
+  readPackedPackageJsonFromTarball,
   resolveAnsiEnabled,
   resolveCatalogDependencyVersion,
   resolveDependencySpecVersion,
   resolveMode,
+  resolveWorkspacePackageSpecVersion,
   syncRolldownCatalogReferences,
   verifyRolldownCatalogReferences,
   verifySingleRolldownVersion,
@@ -99,6 +108,109 @@ it('resolveDependencySpecVersion resolves catalog protocol through workspace cat
   })
 
   assert.equal(actual, '1.0.0-rc.9')
+})
+
+it('resolveWorkspacePackageSpecVersion resolves workspace protocol to published versions', () => {
+  const workspaceVersionsByName = new Map([
+    ['rolldown-require', '2.0.10'],
+  ])
+  const workspaceManifest = {
+    catalog: {
+      rolldown: '1.0.0-rc.11',
+    },
+  }
+
+  assert.equal(
+    resolveWorkspacePackageSpecVersion('catalog:', 'rolldown', workspaceManifest, workspaceVersionsByName),
+    '1.0.0-rc.11',
+  )
+  assert.equal(
+    resolveWorkspacePackageSpecVersion('workspace:*', 'rolldown-require', workspaceManifest, workspaceVersionsByName),
+    '2.0.10',
+  )
+  assert.equal(
+    resolveWorkspacePackageSpecVersion('workspace:^', 'rolldown-require', workspaceManifest, workspaceVersionsByName),
+    '^2.0.10',
+  )
+})
+
+it('collectRolldownExpectedPublishedSpecs keeps only rolldown-related dependencies', () => {
+  const specs = collectRolldownExpectedPublishedSpecs(
+    {
+      dependencies: {
+        'rolldown': 'catalog:',
+        'rolldown-plugin-dts': '0.22.5',
+        'rolldown-require': 'workspace:*',
+        'vite': '8.0.2',
+      },
+    },
+    {
+      catalog: {
+        rolldown: '1.0.0-rc.11',
+      },
+    },
+    new Map([
+      ['rolldown-require', '2.0.10'],
+    ]),
+  )
+
+  assert.deepEqual(specs, [
+    { section: 'dependencies', dependencyName: 'rolldown', expected: '1.0.0-rc.11' },
+    { section: 'dependencies', dependencyName: 'rolldown-plugin-dts', expected: '0.22.5' },
+    { section: 'dependencies', dependencyName: 'rolldown-require', expected: '2.0.10' },
+  ])
+})
+
+it('collectRolldownPublishArtifactIssues reports mismatched packed manifests', () => {
+  const projectRoot = '/workspace'
+  const issues = collectRolldownPublishArtifactIssues(projectRoot, {
+    targets: [
+      {
+        filePath: `${projectRoot}/packages/weapp-vite/package.json`,
+        packageRoot: `${projectRoot}/packages/weapp-vite`,
+        packageJson: {
+          name: 'weapp-vite',
+          dependencies: {
+            'rolldown': 'catalog:',
+            'rolldown-plugin-dts': '0.22.5',
+            'rolldown-require': 'workspace:*',
+          },
+        },
+      },
+    ],
+    workspaceManifest: {
+      catalog: {
+        rolldown: '1.0.0-rc.11',
+      },
+    },
+    workspaceVersionsByName: new Map([
+      ['rolldown-require', '2.0.10'],
+    ]),
+    packWorkspacePackageJsonImpl() {
+      return {
+        dependencies: {
+          'rolldown': '1.0.0-rc.12',
+          'rolldown-plugin-dts': '0.23.0',
+          'rolldown-require': '2.0.10',
+        },
+      }
+    },
+  })
+
+  assert.equal(issues.length, 2)
+  assert.match(issues[0], /weapp-vite packed manifest mismatch/)
+  assert.match(issues[0], /dependency: rolldown/)
+  assert.match(issues[1], /dependency: rolldown-plugin-dts/)
+})
+
+it('formatRolldownWarningReport highlights multiple installed versions', () => {
+  const report = formatRolldownWarningReport('/workspace', new Map([
+    ['1.0.0-rc.10', new Set(['packages/weapp-vite'])],
+    ['1.0.0-rc.11', new Set(['packages/rolldown-require'])],
+  ]), ['install completed with multiple rolldown versions in pnpm-lock.yaml'])
+
+  assert.match(report, /rolldown warning/)
+  assert.match(report, /multiple rolldown versions detected: 1.0.0-rc.10, 1.0.0-rc.11/)
 })
 
 it('verifyRolldownCatalogReferences accepts package manifests wired to catalog', () => {
@@ -207,6 +319,32 @@ it('verifyRolldownCatalogReferences accepts the real workspace manifests', () =>
   assert.doesNotThrow(() => {
     verifyRolldownCatalogReferences(projectRoot)
   })
+})
+
+it('packWorkspacePackageJson reads the packed manifest using pnpm pack output', () => {
+  const packedPackageJson = packWorkspacePackageJson(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../packages/rolldown-require'))
+
+  assert.equal(packedPackageJson.name, 'rolldown-require')
+  assert.equal(packedPackageJson.peerDependencies.rolldown, '1.0.0-rc.11')
+})
+
+it('readPackedPackageJsonFromTarball reads package/package.json from a pnpm pack tarball', () => {
+  const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../packages/rolldown-require')
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'rolldown-pack-test-'))
+
+  try {
+    const stdout = execFileSync(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', ['--dir', packageRoot, 'pack', '--pack-destination', tmpDir, '--json'], {
+      cwd: packageRoot,
+      encoding: 'utf8',
+    })
+    const parsed = JSON.parse(stdout)
+    const tarballPath = Array.isArray(parsed) ? parsed[0].filename : parsed.filename
+    const packedPackageJson = readPackedPackageJsonFromTarball(tarballPath)
+    assert.equal(packedPackageJson.name, 'rolldown-require')
+  }
+  finally {
+    rmSync(tmpDir, { force: true, recursive: true })
+  }
 })
 
 it('resolveMode reads explicit report mode from cli args', () => {
