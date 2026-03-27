@@ -6,9 +6,12 @@ import type {
   HeadlessWxFileSystemManager,
   HeadlessWxFileSystemResult,
   HeadlessWxGetNetworkTypeResult,
+  HeadlessWxMkdirOption,
   HeadlessWxNetworkStatusChangeCallback,
   HeadlessWxNetworkStatusChangeResult,
   HeadlessWxNetworkType,
+  HeadlessWxReadDirOption,
+  HeadlessWxReadDirSuccessResult,
   HeadlessWxReadFileOption,
   HeadlessWxReadFileSuccessResult,
   HeadlessWxRenameOption,
@@ -24,6 +27,9 @@ import type {
   HeadlessWxShowModalOption,
   HeadlessWxShowModalResult,
   HeadlessWxShowToastOption,
+  HeadlessWxStatOption,
+  HeadlessWxStats,
+  HeadlessWxStatSuccessResult,
   HeadlessWxUnlinkOption,
   HeadlessWxUploadFileOption,
   HeadlessWxUploadFileSuccessResult,
@@ -144,6 +150,7 @@ const DEFAULT_MODAL_CANCEL_COLOR = '#000000'
 const DEFAULT_MODAL_CANCEL_TEXT = '取消'
 const DEFAULT_MODAL_CONFIRM_COLOR = '#576B95'
 const DEFAULT_MODAL_CONFIRM_TEXT = '确定'
+const TRAILING_SLASH_RE = /\/+$/
 const textEncoder = new TextEncoder()
 
 function byteLength(input: string) {
@@ -301,6 +308,74 @@ function normalizeEncoding(encoding?: string) {
   throw new Error(`Unsupported file encoding in headless runtime: ${encoding}`)
 }
 
+function normalizeFsPath(input: string) {
+  const trimmed = input.trim()
+  if (!trimmed) {
+    throw new Error('File path must be a non-empty string in headless runtime.')
+  }
+  if (trimmed.length > 1 && trimmed.endsWith('/')) {
+    return trimmed.replace(TRAILING_SLASH_RE, '')
+  }
+  return trimmed
+}
+
+function splitFsPath(input: string) {
+  const normalized = normalizeFsPath(input)
+  const schemeIndex = normalized.indexOf('://')
+  if (schemeIndex >= 0) {
+    const afterScheme = schemeIndex + 3
+    const firstSlash = normalized.indexOf('/', afterScheme)
+    if (firstSlash < 0) {
+      return {
+        prefix: normalized,
+        segments: [] as string[],
+      }
+    }
+    return {
+      prefix: normalized.slice(0, firstSlash),
+      segments: normalized.slice(firstSlash + 1).split('/').filter(Boolean),
+    }
+  }
+
+  const absolute = normalized.startsWith('/')
+  return {
+    prefix: absolute ? '/' : '',
+    segments: normalized.split('/').filter(Boolean),
+  }
+}
+
+function joinFsPath(prefix: string, segments: string[]) {
+  if (segments.length === 0) {
+    return prefix || '.'
+  }
+  if (!prefix) {
+    return segments.join('/')
+  }
+  if (prefix === '/') {
+    return `/${segments.join('/')}`
+  }
+  return `${prefix}/${segments.join('/')}`
+}
+
+function listParentDirectories(input: string) {
+  const { prefix, segments } = splitFsPath(input)
+  const parents: string[] = []
+  if (segments.length === 0) {
+    if (prefix && prefix !== '/') {
+      parents.push(prefix)
+    }
+    return parents
+  }
+
+  for (let index = 0; index < segments.length; index += 1) {
+    const parentPath = joinFsPath(prefix, segments.slice(0, index))
+    if (parentPath !== '.' && parentPath !== '/') {
+      parents.push(parentPath)
+    }
+  }
+  return parents
+}
+
 export function createHeadlessWxState() {
   const actionSheetLogs: HeadlessWxActionSheetLogEntry[] = []
   const actionSheetMocks: HeadlessWxActionSheetMockDefinition[] = []
@@ -315,6 +390,7 @@ export function createHeadlessWxState() {
   const uploadFileLogs: HeadlessWxUploadFileLogEntry[] = []
   const uploadFileMocks: HeadlessWxUploadFileMockDefinition[] = []
   const files = new Map<string, string>()
+  const directories = new Set<string>()
   let fileId = 0
   let loading: HeadlessWxLoadingSnapshot | null = null
   let networkType: HeadlessWxNetworkType = 'wifi'
@@ -366,9 +442,22 @@ export function createHeadlessWxState() {
     }
   }
 
+  const ensureDirectoryTree = (targetPath: string) => {
+    for (const directoryPath of listParentDirectories(targetPath)) {
+      directories.add(directoryPath)
+    }
+  }
+
+  const createStats = (isDirectory: boolean, size: number): HeadlessWxStats => ({
+    isDirectory: () => isDirectory,
+    isFile: () => !isDirectory,
+    size,
+  })
+
   const accessFile = (filePath: string): HeadlessWxFileSystemResult => {
-    if (!files.has(filePath)) {
-      throw new Error(`access:fail no such file or directory, access '${filePath}'`)
+    const normalizedPath = normalizeFsPath(filePath)
+    if (!files.has(normalizedPath) && !directories.has(normalizedPath)) {
+      throw new Error(`access:fail no such file or directory, access '${normalizedPath}'`)
     }
     return {
       errMsg: 'access:ok',
@@ -377,9 +466,10 @@ export function createHeadlessWxState() {
 
   const readFile = (filePath: string, encoding?: string): HeadlessWxReadFileSuccessResult => {
     normalizeEncoding(encoding)
-    const fileContent = files.get(filePath)
+    const normalizedPath = normalizeFsPath(filePath)
+    const fileContent = files.get(normalizedPath)
     if (fileContent == null) {
-      throw new Error(`readFile:fail no such file or directory, open '${filePath}'`)
+      throw new Error(`readFile:fail no such file or directory, open '${normalizedPath}'`)
     }
     return {
       data: fileContent,
@@ -388,44 +478,126 @@ export function createHeadlessWxState() {
   }
 
   const writeFile = (filePath: string, data: string, encoding?: string): HeadlessWxFileSystemResult => {
+    const normalizedPath = normalizeFsPath(filePath)
     normalizeEncoding(encoding)
-    files.set(filePath, String(data))
+    ensureDirectoryTree(normalizedPath)
+    files.set(normalizedPath, String(data))
     return {
       errMsg: 'writeFile:ok',
     }
   }
 
   const copyFile = (srcPath: string, destPath: string): HeadlessWxFileSystemResult => {
-    const fileContent = files.get(srcPath)
+    const normalizedSrcPath = normalizeFsPath(srcPath)
+    const normalizedDestPath = normalizeFsPath(destPath)
+    const fileContent = files.get(normalizedSrcPath)
     if (fileContent == null) {
-      throw new Error(`copyFile:fail no such file or directory, copyfile '${srcPath}'`)
+      throw new Error(`copyFile:fail no such file or directory, copyfile '${normalizedSrcPath}'`)
     }
-    files.set(destPath, fileContent)
+    ensureDirectoryTree(normalizedDestPath)
+    files.set(normalizedDestPath, fileContent)
     return {
       errMsg: 'copyFile:ok',
     }
   }
 
   const renameFile = (oldPath: string, newPath: string): HeadlessWxFileSystemResult => {
-    const fileContent = files.get(oldPath)
+    const normalizedOldPath = normalizeFsPath(oldPath)
+    const normalizedNewPath = normalizeFsPath(newPath)
+    const fileContent = files.get(normalizedOldPath)
     if (fileContent == null) {
-      throw new Error(`rename:fail no such file or directory, rename '${oldPath}'`)
+      throw new Error(`rename:fail no such file or directory, rename '${normalizedOldPath}'`)
     }
-    files.delete(oldPath)
-    files.set(newPath, fileContent)
+    files.delete(normalizedOldPath)
+    ensureDirectoryTree(normalizedNewPath)
+    files.set(normalizedNewPath, fileContent)
     return {
       errMsg: 'rename:ok',
     }
   }
 
   const unlinkFile = (filePath: string): HeadlessWxFileSystemResult => {
-    if (!files.has(filePath)) {
-      throw new Error(`unlink:fail no such file or directory, unlink '${filePath}'`)
+    const normalizedPath = normalizeFsPath(filePath)
+    if (!files.has(normalizedPath)) {
+      throw new Error(`unlink:fail no such file or directory, unlink '${normalizedPath}'`)
     }
-    files.delete(filePath)
+    files.delete(normalizedPath)
     return {
       errMsg: 'unlink:ok',
     }
+  }
+
+  const mkdir = (dirPath: string, recursive = false): HeadlessWxFileSystemResult => {
+    const normalizedPath = normalizeFsPath(dirPath)
+    if (!recursive) {
+      const directParent = listParentDirectories(normalizedPath).at(-1)
+      if (directParent && !directories.has(directParent)) {
+        throw new Error(`mkdir:fail no such file or directory, mkdir '${normalizedPath}'`)
+      }
+    }
+    for (const directoryPath of [...listParentDirectories(normalizedPath), normalizedPath]) {
+      directories.add(directoryPath)
+    }
+    return {
+      errMsg: 'mkdir:ok',
+    }
+  }
+
+  const readdir = (dirPath: string): HeadlessWxReadDirSuccessResult => {
+    const normalizedPath = normalizeFsPath(dirPath)
+    if (!directories.has(normalizedPath)) {
+      throw new Error(`readdir:fail no such file or directory, scandir '${normalizedPath}'`)
+    }
+    const { prefix, segments } = splitFsPath(normalizedPath)
+    const baseDepth = segments.length
+    const entries = new Set<string>()
+
+    for (const directoryPath of directories) {
+      if (directoryPath === normalizedPath) {
+        continue
+      }
+      const current = splitFsPath(directoryPath)
+      if (current.prefix !== prefix || current.segments.length <= baseDepth) {
+        continue
+      }
+      if (current.segments.slice(0, baseDepth).join('/') !== segments.join('/')) {
+        continue
+      }
+      entries.add(current.segments[baseDepth])
+    }
+
+    for (const filePath of files.keys()) {
+      const current = splitFsPath(filePath)
+      if (current.prefix !== prefix || current.segments.length <= baseDepth) {
+        continue
+      }
+      if (current.segments.slice(0, baseDepth).join('/') !== segments.join('/')) {
+        continue
+      }
+      entries.add(current.segments[baseDepth])
+    }
+
+    return {
+      errMsg: 'readdir:ok',
+      files: Array.from(entries).sort((a, b) => a.localeCompare(b)),
+    }
+  }
+
+  const stat = (inputPath: string): HeadlessWxStatSuccessResult => {
+    const normalizedPath = normalizeFsPath(inputPath)
+    if (files.has(normalizedPath)) {
+      return {
+        errMsg: 'stat:ok',
+        stats: createStats(false, files.get(normalizedPath)?.length ?? 0),
+      }
+    }
+    if (directories.has(normalizedPath)) {
+      return {
+        errMsg: 'stat:ok',
+        stats: createStats(true, 0),
+      }
+    }
+    throw new Error(`stat:fail no such file or directory, stat '${normalizedPath}'`)
   }
 
   const fileSystemManager: HeadlessWxFileSystemManager = {
@@ -461,6 +633,22 @@ export function createHeadlessWxState() {
     copyFileSync(srcPath: string, destPath: string) {
       copyFile(srcPath, destPath)
     },
+    mkdir(option: HeadlessWxMkdirOption) {
+      try {
+        const result = mkdir(option.dirPath, option.recursive)
+        option.success?.(result)
+        option.complete?.(result)
+        return result
+      }
+      catch (error) {
+        option.fail?.(error as Error)
+        option.complete?.()
+        return undefined
+      }
+    },
+    mkdirSync(dirPath: string, recursive?: boolean) {
+      mkdir(dirPath, recursive)
+    },
     readFile(option: HeadlessWxReadFileOption) {
       try {
         const result = readFile(option.filePath, option.encoding)
@@ -477,6 +665,22 @@ export function createHeadlessWxState() {
     readFileSync(filePath: string, encoding?: string) {
       return readFile(filePath, encoding).data
     },
+    readdir(option: HeadlessWxReadDirOption) {
+      try {
+        const result = readdir(option.dirPath)
+        option.success?.(result)
+        option.complete?.(result)
+        return result
+      }
+      catch (error) {
+        option.fail?.(error as Error)
+        option.complete?.()
+        return undefined
+      }
+    },
+    readdirSync(dirPath: string) {
+      return readdir(dirPath).files
+    },
     rename(option: HeadlessWxRenameOption) {
       try {
         const result = renameFile(option.oldPath, option.newPath)
@@ -492,6 +696,22 @@ export function createHeadlessWxState() {
     },
     renameSync(oldPath: string, newPath: string) {
       renameFile(oldPath, newPath)
+    },
+    stat(option: HeadlessWxStatOption) {
+      try {
+        const result = stat(option.path)
+        option.success?.(result)
+        option.complete?.(result)
+        return result
+      }
+      catch (error) {
+        option.fail?.(error as Error)
+        option.complete?.()
+        return undefined
+      }
+    },
+    statSync(path: string) {
+      return stat(path).stats
     },
     unlink(option: HeadlessWxUnlinkOption) {
       try {
@@ -562,6 +782,7 @@ export function createHeadlessWxState() {
 
       const commit = () => {
         const { fileContent, result } = resolveDownloadFileResponse(matchedMock, option, tempFilePath)
+        ensureDirectoryTree(tempFilePath)
         files.set(tempFilePath, fileContent)
         logEntry.response = { ...result }
         downloadFileLogs.push(logEntry)
@@ -788,6 +1009,7 @@ export function createHeadlessWxState() {
       }
 
       const savedFilePath = allocateFilePath('saved', option.filePath)
+      ensureDirectoryTree(savedFilePath)
       files.set(savedFilePath, fileContent)
       return {
         errMsg: 'saveFile:ok',
@@ -798,7 +1020,9 @@ export function createHeadlessWxState() {
       storage.set(key, cloneValue(value))
     },
     setFile(filePath: string, fileContent: string) {
-      files.set(filePath, fileContent)
+      const normalizedPath = normalizeFsPath(filePath)
+      ensureDirectoryTree(normalizedPath)
+      files.set(normalizedPath, fileContent)
     },
     setNetworkType(nextNetworkType: HeadlessWxNetworkType) {
       networkType = nextNetworkType
