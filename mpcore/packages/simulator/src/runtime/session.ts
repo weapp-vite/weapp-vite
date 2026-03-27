@@ -283,6 +283,10 @@ export class HeadlessSession {
     return this.wxState.getFileSnapshot()
   }
 
+  getDirectorySnapshot() {
+    return this.wxState.getDirectorySnapshot()
+  }
+
   getFileText(filePath: string) {
     return this.wxState.getFileText(filePath)
   }
