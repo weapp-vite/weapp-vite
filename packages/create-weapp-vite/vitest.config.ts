@@ -9,6 +9,7 @@ export default defineProject({
         replacement: path.resolve(__dirname, './src'),
       },
     ],
+    fileParallelism: false,
     globals: true,
     testTimeout: 60_000,
     setupFiles: ['./vitest.setup.ts'],
