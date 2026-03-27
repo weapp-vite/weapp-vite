@@ -63,6 +63,14 @@ export class HeadlessTestingSessionHandle {
     return this.session.getCurrentPages().map(page => new HeadlessTestingPageHandle(this.project, page, this.session))
   }
 
+  async scopeSnapshot(scopeId: string) {
+    const normalizedScopeId = scopeId.trim()
+    if (!normalizedScopeId) {
+      throw new Error('Scope id must be a non-empty string in headless testing runtime.')
+    }
+    return this.session.getScopeSnapshot(normalizedScopeId)
+  }
+
   async reLaunch(route: string) {
     const page = this.session.reLaunch(route)
     return new HeadlessTestingPageHandle(this.project, page, this.session)
