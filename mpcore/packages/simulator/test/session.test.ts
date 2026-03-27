@@ -1213,6 +1213,54 @@ Page({
     expect(session.getFileText('headless://temp/moved.txt')).toBe('alpha')
   })
 
+  it('updates saved metadata when renaming a non-saved file onto a saved path', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-saved-file-rename-into-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    infoSummary: '',
+    listSummary: ''
+  },
+  runSavedRenameIntoLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/original.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/original.txt',
+      filePath: 'headless://saved/target.txt',
+      success: () => {
+        fsManager.renameSync('headless://temp/source.txt', 'headless://saved/target.txt')
+        this.setData({
+          infoSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' })),
+          listSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-rename-into</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedRenameIntoLab()
+
+    expect(page.data.infoSummary).toContain('"size":10')
+    expect(page.data.listSummary).toContain('"filePath":"headless://saved/target.txt"')
+    expect(page.data.listSummary).toContain('"size":10')
+    expect(session.getFileText('headless://saved/target.txt')).toBe('alpha-beta')
+  })
+
   it('reports stat sizes and fs manager failures through callbacks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-errors-'))
     tempDirs.push(root)
