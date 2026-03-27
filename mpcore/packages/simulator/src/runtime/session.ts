@@ -268,6 +268,33 @@ export class HeadlessSession {
     }, current)
   }
 
+  callScopeMethod(scopeId: string | null, methodName: string, event: Record<string, any>) {
+    const current = this.requireCurrentPage(`scope method "${methodName}"`)
+    this.renderCurrentPage()
+
+    if (!scopeId || scopeId === `page:${stripLeadingSlash(current.route)}`) {
+      const method = current[methodName]
+      if (typeof method !== 'function') {
+        throw new TypeError(`Method "${methodName}" does not exist on headless page ${current.route}.`)
+      }
+      return method.call(current, event)
+    }
+
+    const instance = this.componentCache.get(scopeId)
+    if (!instance) {
+      throw new Error(`Unknown scope "${scopeId}" in headless runtime.`)
+    }
+    instance.__lastInteractionEvent__ = {
+      currentTarget: event.currentTarget,
+      target: event.target,
+    }
+    const method = instance[methodName]
+    if (typeof method !== 'function') {
+      throw new TypeError(`Method "${methodName}" does not exist on headless component scope "${scopeId}".`)
+    }
+    return method.call(instance, event)
+  }
+
   getStorageSnapshot() {
     return this.wxState.getStorageSnapshot()
   }

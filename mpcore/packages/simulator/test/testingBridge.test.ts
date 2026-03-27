@@ -299,4 +299,20 @@ describe('headless testing bridge', () => {
     await page.callMethod('inspect')
     expect(await page.data('snapshot')).toContain('"size":1')
   })
+
+  it('dispatches component node events to the component instance through the testing bridge', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const trigger = await page.$('#card-trigger')
+
+    expect(trigger).not.toBeNull()
+    await trigger?.tap()
+
+    expect(await page.data('log')).toEqual(['status-card'])
+  })
 })
