@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import AppDiagnosticItem from '../features/dashboard/components/AppDiagnosticItem.vue'
 import AppFilterGroup from '../features/dashboard/components/AppFilterGroup.vue'
+import AppKeyValueList from '../features/dashboard/components/AppKeyValueList.vue'
 import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
 import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
@@ -346,20 +347,7 @@ watch(filteredRuntimeEvents, (events) => {
               <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
                 event metadata
               </p>
-              <ul class="mt-3 grid gap-2">
-                <li
-                  v-for="item in selectedEventMeta"
-                  :key="item.label"
-                  class="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-2.5"
-                >
-                  <span class="text-xs uppercase tracking-[0.16em] text-[color:var(--dashboard-text-soft)]">
-                    {{ item.label }}
-                  </span>
-                  <strong class="text-sm text-[color:var(--dashboard-text)]">
-                    {{ item.value }}
-                  </strong>
-                </li>
-              </ul>
+              <AppKeyValueList class="mt-3" :items="selectedEventMeta" />
             </div>
           </div>
 
