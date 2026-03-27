@@ -8,11 +8,13 @@ import type { ResolvedEntryRecord } from './resolve'
 import { performance } from 'node:perf_hooks'
 import { isObject, removeExtensionDeep } from '@weapp-core/shared'
 import * as t from '@weapp-vite/ast/babelTypes'
+// eslint-disable-next-line e18e/ban-dependencies -- 本模块仍沿用 fs-extra 处理入口文件系统读写
 import fs from 'fs-extra'
 import { parse as parseSfc } from 'vue/compiler-sfc'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse } from '../../../../utils/babel'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
+import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
 import { isPathInside, normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
@@ -322,9 +324,10 @@ export function createEntryLoader(options: EntryLoaderOptions) {
                 continue
               }
               emittedScriptlessVueLayoutJs.add(relativeLayoutBase)
+              const { scriptExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
               this.emitFile({
                 type: 'asset',
-                fileName: `${relativeLayoutBase}.${configService.outputExtensions?.js ?? 'js'}`,
+                fileName: `${relativeLayoutBase}.${scriptExtension}`,
                 source: 'Component({})',
               })
             }
