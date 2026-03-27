@@ -18,9 +18,9 @@ import { useDashboardTheme } from '../features/dashboard/composables/useDashboar
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs } from '../features/dashboard/constants/view'
-import { formatDuration, formatRuntimeEventLevel, formatRuntimeEventMeta } from '../features/dashboard/utils/format'
+import { formatDuration, formatRuntimeEventLevel, formatRuntimeEventMeta, getRuntimeEventBadgeTone, getRuntimeSourceBadgeTone } from '../features/dashboard/utils/format'
 import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
-import { pillButtonStyles } from '../features/dashboard/utils/styles'
+import { pillButtonStyles, runtimeBadgeStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
 
 echarts.use([
@@ -239,7 +239,7 @@ onBeforeUnmount(() => {
                 </div>
                 <span
                   v-if="latestRuntimeEvent"
-                  class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]"
+                  :class="runtimeBadgeStyles({ tone: getRuntimeEventBadgeTone(latestRuntimeEvent.level) })"
                 >
                   {{ formatRuntimeEventLevel(latestRuntimeEvent.level) }}
                 </span>
@@ -305,7 +305,7 @@ onBeforeUnmount(() => {
                     {{ source.count }} 条事件
                   </p>
                 </div>
-                <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
+                <span :class="runtimeBadgeStyles({ tone: getRuntimeSourceBadgeTone(source.errorCount) })">
                   错误 {{ source.errorCount }}
                 </span>
               </div>
@@ -340,7 +340,7 @@ onBeforeUnmount(() => {
                     {{ formatRuntimeEventMeta(event) }}
                   </p>
                 </div>
-                <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
+                <span :class="runtimeBadgeStyles({ tone: getRuntimeEventBadgeTone(event.level) })">
                   {{ formatRuntimeEventLevel(event.level) }}
                 </span>
               </div>

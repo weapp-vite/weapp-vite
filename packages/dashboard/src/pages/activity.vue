@@ -4,9 +4,9 @@ import AppSectionHeading from '../features/dashboard/components/AppSectionHeadin
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
-import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventMeta } from '../features/dashboard/utils/format'
+import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventMeta, formatRuntimeEventSource, getRuntimeEventBadgeTone, getRuntimeSourceBadgeTone } from '../features/dashboard/utils/format'
 import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
-import { pillButtonStyles } from '../features/dashboard/utils/styles'
+import { pillButtonStyles, runtimeBadgeStyles } from '../features/dashboard/utils/styles'
 
 const { activityItems, diagnostics, eventSummary, runtimeEvents } = useDashboardWorkspace()
 
@@ -169,7 +169,7 @@ const selectedEventMeta = computed(() => {
   return [
     { label: '事件类型', value: formatRuntimeEventKind(selectedEvent.value.kind) },
     { label: '事件等级', value: formatRuntimeEventLevel(selectedEvent.value.level) },
-    { label: '事件来源', value: selectedEvent.value.source ?? 'dashboard' },
+    { label: '事件来源', value: formatRuntimeEventSource(selectedEvent.value.source) },
     { label: '发生时间', value: selectedEvent.value.timestamp },
     { label: '持续时间', value: formatDuration(selectedEvent.value.durationMs) },
     { label: '标签数量', value: String(selectedEvent.value.tags?.length ?? 0) },
@@ -388,7 +388,7 @@ watch(filteredRuntimeEvents, (events) => {
                     最近事件 {{ source.latestTimestamp }}
                   </p>
                 </div>
-                <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
+                <span :class="runtimeBadgeStyles({ tone: getRuntimeSourceBadgeTone(source.errorCount) })">
                   {{ source.count }} 条
                 </span>
               </div>
@@ -417,7 +417,7 @@ watch(filteredRuntimeEvents, (events) => {
                     {{ selectedEvent.title }}
                   </h3>
                 </div>
-                <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
+                <span :class="runtimeBadgeStyles({ tone: getRuntimeEventBadgeTone(selectedEvent.level) })">
                   {{ formatRuntimeEventLevel(selectedEvent.level) }}
                 </span>
               </div>
@@ -499,7 +499,7 @@ watch(filteredRuntimeEvents, (events) => {
                     </span>
                   </p>
                 </div>
-                <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
+                <span :class="runtimeBadgeStyles({ tone: getRuntimeEventBadgeTone(event.level) })">
                   {{ formatRuntimeEventLevel(event.level) }}
                 </span>
               </div>
