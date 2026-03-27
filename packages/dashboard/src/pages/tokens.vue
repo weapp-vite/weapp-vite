@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
-import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { tokenGroups } from '../features/dashboard/constants/shell'
 import { themeOptions } from '../features/dashboard/constants/view'
 </script>
@@ -15,27 +15,13 @@ import { themeOptions } from '../features/dashboard/constants/view'
         description="这个页面不是给最终用户看的功能页，而是给 dashboard 自己看的设计控制台。后面改视觉体系时，先看这里再改其它页面。"
       />
       <div class="mt-5 grid gap-3 lg:grid-cols-3">
-        <article
+        <AppIconFeatureCard
           v-for="option in themeOptions"
           :key="option.value"
-          class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4"
-        >
-          <div class="flex items-center gap-3">
-            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]">
-              <span class="h-5 w-5">
-                <DashboardIcon :name="option.iconName" />
-              </span>
-            </span>
-            <div>
-              <p class="font-medium">
-                {{ option.label }}
-              </p>
-              <p class="text-xs uppercase tracking-[0.16em] text-[color:var(--dashboard-text-soft)]">
-                {{ option.value }}
-              </p>
-            </div>
-          </div>
-        </article>
+          :icon-name="option.iconName"
+          :title="option.label"
+          :meta="option.value"
+        />
       </div>
     </AppSurfaceCard>
 
