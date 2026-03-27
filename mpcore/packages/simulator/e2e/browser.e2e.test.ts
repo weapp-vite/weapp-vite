@@ -158,6 +158,7 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.fileManagerSnapshot).toContain('"isDirectory":true')
     expect(pageData.fileManagerSnapshot).toContain('"isFile":true')
     expect(pageData.fileManagerSnapshot).toContain('"text":"component-lab"')
+    expect(pageData.fileManagerSnapshot).toContain('"archiveRemoved":true')
     expect(pageData.requestSnapshot).toContain('"queue":"alpha"')
     expect(pageData.savedFileInfo).toContain('"errMsg":"getSavedFileInfo:ok"')
     expect(pageData.savedFileInfo).toContain('"size":20')
@@ -187,6 +188,7 @@ describe.sequential('simulator browser e2e', () => {
     const sessionSnapshot = bridge.sessionSnapshot()
     expect(sessionSnapshot.directorySnapshot).toContain('headless://saved/component-lab/reports')
     expect(sessionSnapshot.directorySnapshot).toContain('headless://saved/component-lab/reports/daily')
+    expect(sessionSnapshot.directorySnapshot).not.toContain('headless://saved/component-lab/archive')
     expect(sessionSnapshot.downloadFileLogs).toHaveLength(1)
     expect(sessionSnapshot.savedFileList).toHaveLength(1)
     expect(sessionSnapshot.savedFileList[0]).toMatchObject({

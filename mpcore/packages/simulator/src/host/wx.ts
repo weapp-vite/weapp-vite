@@ -390,6 +390,11 @@ export interface HeadlessWxMkdirOption extends HeadlessWxCallbackOption<Headless
   recursive?: boolean
 }
 
+export interface HeadlessWxRmdirOption extends HeadlessWxCallbackOption<HeadlessWxFileSystemResult> {
+  dirPath: string
+  recursive?: boolean
+}
+
 export interface HeadlessWxReadDirSuccessResult {
   errMsg: string
   files: string[]
@@ -427,6 +432,8 @@ export interface HeadlessWxFileSystemManager {
   readFileSync: (filePath: string, encoding?: string) => string
   readdir: (option: HeadlessWxReadDirOption) => HeadlessWxReadDirSuccessResult | undefined
   readdirSync: (dirPath: string) => string[]
+  rmdir: (option: HeadlessWxRmdirOption) => HeadlessWxFileSystemResult | undefined
+  rmdirSync: (dirPath: string, recursive?: boolean) => void
   rename: (option: HeadlessWxRenameOption) => HeadlessWxFileSystemResult | undefined
   renameSync: (oldPath: string, newPath: string) => void
   stat: (option: HeadlessWxStatOption) => HeadlessWxStatSuccessResult | undefined
