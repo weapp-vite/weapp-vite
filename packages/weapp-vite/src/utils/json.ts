@@ -3,10 +3,11 @@ import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import path from 'pathe'
 import {
+  getPlatformNpmImportPrefix,
+  normalizePlatformNpmImportPath,
   shouldFillComponentGenericsDefault,
   shouldNormalizeUsingComponents,
 } from '../platform'
-import { getAlipayNpmImportPrefix, normalizeAlipayNpmImportPath } from './alipayNpm'
 import { changeFileExtension } from './file'
 import { toPosixPath } from './path'
 
@@ -130,16 +131,21 @@ function hasDependencyPrefix(dependencies: Record<string, string> | undefined, i
   })
 }
 
-function normalizeUsingComponentPathForAlipay(importee: string, dependencies?: Record<string, string>, mode?: string) {
+function normalizeUsingComponentPathByPlatform(
+  importee: string,
+  platform: MpPlatform,
+  dependencies?: Record<string, string>,
+  mode?: string,
+) {
   const raw = importee.trim()
   if (!raw || PLUGIN_PROTOCOL_RE.test(raw)) {
     return importee
   }
 
   const normalized = raw.replace(NPM_PROTOCOL_RE, '')
-  const npmPrefix = getAlipayNpmImportPrefix(mode)
+  const npmPrefix = getPlatformNpmImportPrefix(platform, { alipayNpmMode: mode })
   if (EXPLICIT_ALIPAY_NPM_DIR_RE.test(normalized)) {
-    return normalizeAlipayNpmImportPath(normalized, mode)
+    return normalizePlatformNpmImportPath(platform, normalized, { alipayNpmMode: mode })
   }
 
   if (!hasDependencyPrefix(dependencies, normalized)) {
@@ -150,7 +156,7 @@ function normalizeUsingComponentPathForAlipay(importee: string, dependencies?: R
     return normalized
   }
 
-  return normalizeAlipayNpmImportPath(normalized, mode)
+  return normalizePlatformNpmImportPath(platform, normalized, { alipayNpmMode: mode })
 }
 
 function normalizeUsingComponentsByPlatform(
@@ -167,7 +173,7 @@ function normalizeUsingComponentsByPlatform(
     const nextKey = COMPONENT_NAME_HAS_UPPER_RE.test(key)
       ? toKebabCaseComponentName(key)
       : key
-    const nextValue = normalizeUsingComponentPathForAlipay(value, options?.dependencies, options?.alipayNpmMode)
+    const nextValue = normalizeUsingComponentPathByPlatform(value, platform!, options?.dependencies, options?.alipayNpmMode)
     if (!Reflect.has(normalized, nextKey)) {
       normalized[nextKey] = nextValue
     }

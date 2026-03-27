@@ -69,6 +69,7 @@ export interface MiniProgramPlatformAdapter {
     distDirName?: (options?: {
       alipayNpmMode?: string
     }) => string
+    normalizeImportPath?: boolean
     normalizeMiniprogramPackage?: boolean
     copyEsModuleDirectory?: boolean
     hoistNestedDependencies?: boolean

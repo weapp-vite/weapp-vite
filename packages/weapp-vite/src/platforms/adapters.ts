@@ -60,6 +60,7 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     },
     npm: {
       distDirName: options => getAlipayNpmDistDirName(options?.alipayNpmMode),
+      normalizeImportPath: true,
       normalizeMiniprogramPackage: true,
       copyEsModuleDirectory: true,
       hoistNestedDependencies: true,
