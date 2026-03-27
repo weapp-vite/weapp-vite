@@ -53,4 +53,33 @@ describe('page event alignment', () => {
     ])
     expect(await page.data('scrollTop')).toBe(64)
   })
+
+  it('updates getSystemInfo results after resize events', () => {
+    const projectPath = createPageEventsFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/events/index')
+    page.readSystemInfo()
+
+    expect(page.data.systemInfoSync).toContain('"windowWidth":375')
+    expect(page.data.systemInfoAsync).toContain('"windowHeight":667')
+
+    session.triggerResize({
+      size: {
+        windowWidth: 412,
+        windowHeight: 915,
+      },
+    })
+    page.readSystemInfo()
+
+    expect(page.data.systemInfoSync).toContain('"windowWidth":412')
+    expect(page.data.systemInfoSync).toContain('"windowHeight":915')
+    expect(session.getSystemInfo()).toMatchObject({
+      screenHeight: 915,
+      screenWidth: 412,
+      windowHeight: 915,
+      windowWidth: 412,
+    })
+  })
 })

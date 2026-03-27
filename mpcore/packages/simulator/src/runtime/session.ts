@@ -9,6 +9,7 @@ import { loadProject } from '../project'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
+import { applyResizeToSystemInfo, createDefaultSystemInfo } from './systemInfo'
 import { createHeadlessWxState } from './wxState'
 
 export interface HeadlessSessionOptions {
@@ -108,6 +109,7 @@ export class HeadlessSession {
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
+  private readonly systemInfo = createDefaultSystemInfo()
   private readonly wxState = createHeadlessWxState()
 
   constructor(options: HeadlessSessionOptions) {
@@ -143,6 +145,7 @@ export class HeadlessSession {
         clearStorageSync: () => this.wxState.clearStorageSync(),
         getStorageInfoSync: () => this.wxState.getStorageInfoSync(),
         getStorageSync: key => this.wxState.getStorageSync(key),
+        getSystemInfoSync: () => ({ ...this.systemInfo }),
         hideLoading: () => this.wxState.hideLoading(),
         hideToast: () => this.wxState.hideToast(),
         reLaunch: option => this.reLaunch(option.url),
@@ -177,6 +180,10 @@ export class HeadlessSession {
 
   getStorageInfo() {
     return this.wxState.getStorageInfoSync()
+  }
+
+  getSystemInfo() {
+    return { ...this.systemInfo }
   }
 
   getLoading() {
@@ -346,6 +353,7 @@ export class HeadlessSession {
 
   triggerResize(options: Record<string, any>) {
     const current = this.requireCurrentPage('triggerResize()')
+    applyResizeToSystemInfo(this.systemInfo, options)
     current.onResize?.(options)
     return current
   }
