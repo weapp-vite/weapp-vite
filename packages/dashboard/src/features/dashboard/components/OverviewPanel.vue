@@ -3,6 +3,7 @@ import type { LargestFileEntry } from '../composables/useAnalyzeDashboardData'
 import type { SubPackageDescriptor } from '../types'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { iconFrameStyles, surfaceStyles } from '../utils/styles'
+import AppEmptyState from './AppEmptyState.vue'
 import DashboardIcon from './DashboardIcon.vue'
 import TreemapCard from './TreemapCard.vue'
 
@@ -78,12 +79,9 @@ defineProps<{
           <span class="text-[11px] uppercase tracking-[0.2em] text-[color:var(--dashboard-text-soft)]">Roots</span>
         </div>
         <ul class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm text-[color:var(--dashboard-text-muted)]">
-          <li
-            v-if="subPackages.length === 0"
-            class="rounded-xl border border-dashed border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-3 py-4 text-sm text-[color:var(--dashboard-text-soft)]"
-          >
+          <AppEmptyState v-if="subPackages.length === 0" as="li" compact>
             当前构建没有配置分包。
-          </li>
+          </AppEmptyState>
           <li
             v-for="pkg in subPackages"
             :key="pkg.root"

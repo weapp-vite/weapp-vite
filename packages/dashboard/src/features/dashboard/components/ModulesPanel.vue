@@ -6,6 +6,7 @@ import type {
 } from '../composables/useAnalyzeDashboardData'
 import { formatBuildOrigin, formatBytes, formatSourceType } from '../utils/format'
 import { iconFrameStyles, surfaceStyles } from '../utils/styles'
+import AppEmptyState from './AppEmptyState.vue'
 import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
@@ -61,12 +62,9 @@ defineProps<{
           </ul>
         </article>
       </div>
-      <div
-        v-else
-        class="mt-4 rounded-xl border border-dashed border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-5 text-sm text-[color:var(--dashboard-text-soft)]"
-      >
+      <AppEmptyState v-else class="mt-4">
         当前构建未检测到跨包重复模块。
-      </div>
+      </AppEmptyState>
     </div>
 
     <div class="flex flex-col gap-3">

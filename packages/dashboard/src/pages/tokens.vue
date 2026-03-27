@@ -2,6 +2,7 @@
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
+import AppTokenSwatch from '../features/dashboard/components/AppTokenSwatch.vue'
 import { tokenGroups } from '../features/dashboard/constants/shell'
 import { themeOptions } from '../features/dashboard/constants/view'
 </script>
@@ -34,19 +35,12 @@ import { themeOptions } from '../features/dashboard/constants/view'
         padding="md"
       >
         <ul class="grid gap-3">
-          <li
+          <AppTokenSwatch
             v-for="token in group.tokens"
             :key="token.name"
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4"
-          >
-            <div class="flex items-center justify-between gap-3">
-              <code class="text-xs text-[color:var(--dashboard-text-soft)]">{{ token.name }}</code>
-              <span
-                class="h-8 w-14 rounded-xl border border-[color:var(--dashboard-border)]"
-                :style="{ background: token.sample }"
-              />
-            </div>
-          </li>
+            :name="token.name"
+            :sample="token.sample"
+          />
         </ul>
       </AppSurfaceCard>
     </section>
