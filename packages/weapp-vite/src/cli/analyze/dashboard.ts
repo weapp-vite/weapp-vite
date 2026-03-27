@@ -29,6 +29,7 @@ interface DashboardRuntimeEvent {
   detail: string
   timestamp: string
   source: string
+  durationMs?: number
   tags?: string[]
 }
 
@@ -38,6 +39,7 @@ export interface DashboardRuntimeEventInput {
   title: string
   detail: string
   source?: string
+  durationMs?: number
   tags?: string[]
 }
 
@@ -75,6 +77,7 @@ function createDashboardRuntimeEvent(input: DashboardRuntimeEventInput) {
     detail: input.detail,
     timestamp: formatEventTimestamp(),
     source: input.source ?? 'weapp-vite',
+    durationMs: input.durationMs,
     tags: input.tags,
   } satisfies DashboardRuntimeEvent
 }
