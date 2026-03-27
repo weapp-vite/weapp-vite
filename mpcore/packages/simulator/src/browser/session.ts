@@ -3,7 +3,7 @@ import type { HeadlessProjectDescriptor } from '../project/createProjectDescript
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
 import type { HeadlessAppInstance } from '../runtime/appInstance'
 import type { HeadlessPageInstance } from '../runtime/pageInstance'
-import type { HeadlessWxRequestMockDefinition } from '../runtime/wxState'
+import type { HeadlessWxModalMockDefinition, HeadlessWxRequestMockDefinition } from '../runtime/wxState'
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
@@ -170,6 +170,7 @@ export class BrowserHeadlessSession {
         request: option => this.wxState.request(option),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
         showLoading: option => this.wxState.showLoading(option),
+        showModal: option => this.wxState.showModal(option),
         showToast: option => this.wxState.showToast(option),
         stopPullDownRefresh: () => this.stopPullDownRefresh(),
         switchTab: option => this.switchTab(option.url),
@@ -239,8 +240,16 @@ export class BrowserHeadlessSession {
     return this.wxState.getLoading()
   }
 
+  getModalLogs() {
+    return this.wxState.getModalLogs()
+  }
+
   getToast() {
     return this.wxState.getToast()
+  }
+
+  mockModal(definition: HeadlessWxModalMockDefinition = {}) {
+    this.wxState.mockModal(definition)
   }
 
   mockRequest(definition: HeadlessWxRequestMockDefinition) {
