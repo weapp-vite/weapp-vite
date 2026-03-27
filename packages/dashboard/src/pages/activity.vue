@@ -5,6 +5,7 @@ import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventMeta } from '../features/dashboard/utils/format'
+import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 
 const { activityItems, diagnostics, eventSummary, runtimeEvents } = useDashboardWorkspace()
@@ -148,40 +149,10 @@ const filteredEventSummary = computed(() => {
 })
 
 const sourceBreakdown = computed(() => {
-  const sourceMap = new Map<string, { count: number, errorCount: number, latestTimestamp: string, durationTotal: number, timedCount: number }>()
-
-  for (const event of filteredRuntimeEvents.value) {
-    const source = event.source ?? 'dashboard'
-    const existing = sourceMap.get(source)
-
-    if (!existing) {
-      sourceMap.set(source, {
-        count: 1,
-        errorCount: event.level === 'error' ? 1 : 0,
-        latestTimestamp: event.timestamp,
-        durationTotal: event.durationMs ?? 0,
-        timedCount: typeof event.durationMs === 'number' ? 1 : 0,
-      })
-      continue
-    }
-
-    sourceMap.set(source, {
-      count: existing.count + 1,
-      errorCount: existing.errorCount + (event.level === 'error' ? 1 : 0),
-      latestTimestamp: existing.latestTimestamp,
-      durationTotal: existing.durationTotal + (event.durationMs ?? 0),
-      timedCount: existing.timedCount + (typeof event.durationMs === 'number' ? 1 : 0),
-    })
-  }
-
-  return Array.from(sourceMap, ([source, meta]) => ({
-    source,
-    count: meta.count,
-    errorCount: meta.errorCount,
-    latestTimestamp: meta.latestTimestamp,
-    averageDuration: formatDuration(meta.timedCount > 0 ? Math.round(meta.durationTotal / meta.timedCount) : undefined),
+  return summarizeRuntimeEventsBySource(filteredRuntimeEvents.value).map(source => ({
+    ...source,
+    averageDuration: formatDuration(source.averageDurationMs),
   }))
-    .sort((left, right) => right.count - left.count || left.source.localeCompare(right.source, 'zh-CN'))
 })
 
 const selectedEvent = computed(() =>
