@@ -1,5 +1,6 @@
 import { createRequire } from 'node:module'
 import process from 'node:process'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import { recursive as mergeRecursive } from 'merge'
 import path from 'pathe'
@@ -21,6 +22,12 @@ const AUTO_ROUTES_SPECIFIER_RE = /(['"])(?:weapp-vite\/auto-routes|virtual:weapp
 const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
 const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
 const JSON_MACRO_HINT_RE = /\bdefine(?:App|Page|Component|Sitemap|Theme)Json\s*\(/
+
+interface AutoRoutesInlineSnapshot {
+  pages: string[]
+  entries: string[]
+  subPackages: Array<{ root: string, pages: string[] }>
+}
 
 function resolveAutoRoutesMacroImportPath() {
   const fallbackCandidates = [
@@ -47,7 +54,7 @@ function resolveAutoRoutesMacroImportPath() {
   throw new Error('无法解析 auto-routes 模块路径。')
 }
 
-async function resolveAutoRoutesInlineSnapshot() {
+export async function resolveAutoRoutesInlineSnapshot(): Promise<AutoRoutesInlineSnapshot> {
   try {
     const { getCompilerContext } = await import('../context/getInstance')
     const compilerContext = getCompilerContext()
@@ -75,6 +82,18 @@ async function resolveAutoRoutesInlineSnapshot() {
       subPackages: [] as Array<{ root: string, pages: string[] }>,
     }
   }
+}
+
+export function inlineAutoRoutesImports(
+  source: string,
+  inlineRoutes: AutoRoutesInlineSnapshot,
+) {
+  return source
+    .replace(AUTO_ROUTES_DEFAULT_IMPORT_RE, (_, localName: string) => {
+      return `const ${localName} = ${JSON.stringify(inlineRoutes)};`
+    })
+    .replace(AUTO_ROUTES_DYNAMIC_IMPORT_RE, `Promise.resolve(${JSON.stringify(inlineRoutes)})`)
+    .replace(AUTO_ROUTES_SPECIFIER_RE, JSON.stringify(resolveAutoRoutesMacroImportPath()))
 }
 
 function pathExistsCached(filePath: string) {
@@ -325,13 +344,7 @@ export async function extractConfigFromVue(vueFilePath: string): Promise<Record<
       const { extractJsonMacroFromScriptSetup } = await import('wevu/compiler')
       try {
         const autoRoutesInline = await resolveAutoRoutesInlineSnapshot()
-        const autoRoutesModulePath = resolveAutoRoutesMacroImportPath()
-        const macroEvalContent = setupContent!
-          .replace(AUTO_ROUTES_DEFAULT_IMPORT_RE, (_, localName: string) => {
-            return `const ${localName} = ${JSON.stringify(autoRoutesInline)};`
-          })
-          .replace(AUTO_ROUTES_DYNAMIC_IMPORT_RE, `Promise.resolve(${JSON.stringify(autoRoutesInline)})`)
-          .replace(AUTO_ROUTES_SPECIFIER_RE, JSON.stringify(autoRoutesModulePath))
+        const macroEvalContent = inlineAutoRoutesImports(setupContent!, autoRoutesInline)
         const extracted = await extractJsonMacroFromScriptSetup(
           macroEvalContent,
           vueFilePath,

@@ -4,10 +4,12 @@ import type { JsonResolvableEntry } from '../utils'
 import type { FileCache } from '@/cache'
 import { createRequire } from 'node:module'
 import process from 'node:process'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
+import path from 'pathe'
 import { bundleRequire } from 'rolldown-require'
 import { debug, logger } from '../context/shared'
-import { parseCommentJson, resolveJson } from '../utils'
+import { inlineAutoRoutesImports, parseCommentJson, resolveJson } from '../utils'
 import { requireConfigService } from './utils/requireConfigService'
 
 const APP_CONFIG_RE = /app\.json(?:\.[jt]s)?$/
@@ -45,6 +47,13 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
       if (SCRIPT_JSON_CONFIG_RE.test(filepath)) {
         const routesReference = ctx.autoRoutesService?.getReference()
         const fallbackRoutes = routesReference ?? { pages: [], entries: [], subPackages: [] }
+        const scriptContent = await fs.readFile(filepath, 'utf8')
+        const inlinedContent = isAppConfig
+          ? inlineAutoRoutesImports(scriptContent, fallbackRoutes)
+          : scriptContent
+        const tempFilepath = inlinedContent === scriptContent
+          ? filepath
+          : path.join(path.dirname(filepath), `.${path.basename(filepath, path.extname(filepath))}.auto-routes-inline${path.extname(filepath)}`)
         const routesModule = {
           routes: fallbackRoutes,
           default: fallbackRoutes,
@@ -70,25 +79,37 @@ function createJsonService(ctx: MutableCompilerContext): JsonService {
           }
           return nodeRequire(id)
         }
-
-        const { mod } = await bundleRequire({
-          filepath,
-          cwd: configService.options.cwd,
-          preserveTemporaryFile: true,
-          require: customRequire,
-          rolldownOptions: {
-            input: {
-              // @ts-ignore
-              define: configService.defineImportMetaEnv,
+        try {
+          if (tempFilepath !== filepath) {
+            await fs.writeFile(tempFilepath, inlinedContent, 'utf8')
+          }
+          const { mod } = await bundleRequire({
+            filepath: tempFilepath,
+            cwd: configService.options.cwd,
+            preserveTemporaryFile: true,
+            require: customRequire,
+            rolldownOptions: {
+              input: {
+                // @ts-ignore
+                define: configService.defineImportMetaEnv,
+              },
+              output: {
+                exports: 'named',
+              },
             },
-            output: {
-              exports: 'named',
-            },
-          },
-        })
-        resultJson = typeof mod.default === 'function'
-          ? await mod.default(ctx)
-          : mod.default
+          })
+          const exportedConfig = Object.hasOwn(mod, 'default')
+            ? mod.default
+            : mod
+          resultJson = typeof exportedConfig === 'function'
+            ? await exportedConfig(ctx)
+            : exportedConfig
+        }
+        finally {
+          if (tempFilepath !== filepath) {
+            await fs.remove(tempFilepath)
+          }
+        }
       }
       else {
         resultJson = parseCommentJson(await fs.readFile(filepath, 'utf8'))

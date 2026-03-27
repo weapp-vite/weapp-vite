@@ -1,3 +1,4 @@
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -63,6 +64,44 @@ describe('auto-routes', () => {
     finally {
       await dispose()
       await fs.remove(typedRouterPath)
+    }
+  })
+
+  it('hydrates app.json.ts auto-routes imports with scanned routes', async () => {
+    const fixtureRoot = getFixture('watch')
+    const tempRoot = await fs.mkdtemp(path.join(path.dirname(fixtureRoot), '.tmp-auto-routes-app-json-'))
+    await fs.copy(fixtureRoot, tempRoot)
+    const appJsonPath = path.join(tempRoot, 'src/app.json.ts')
+
+    await fs.writeFile(
+      appJsonPath,
+      [
+        'import routes from \'weapp-vite/auto-routes\'',
+        '',
+        'export default {',
+        '  pages: routes.pages,',
+        '  subPackages: routes.subPackages,',
+        '}',
+        '',
+      ].join('\n'),
+      'utf8',
+    )
+
+    const { ctx, dispose } = await createTestCompilerContext({
+      cwd: tempRoot,
+      isDev: true,
+    })
+
+    try {
+      const entry = await ctx.scanService.loadAppEntry()
+      const routes = ctx.autoRoutesService.getReference()
+      expect(routes.pages).toContain('pages/index/index')
+      expect(entry.json.pages).toEqual(routes.pages)
+      expect(entry.json.subPackages).toEqual(routes.subPackages)
+    }
+    finally {
+      await dispose()
+      await fs.remove(tempRoot)
     }
   })
 })
