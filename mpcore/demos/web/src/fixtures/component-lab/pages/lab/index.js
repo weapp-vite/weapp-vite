@@ -14,6 +14,7 @@ Page({
     savedOverwriteInfo: '',
     savedFilePath: '',
     savedFileInfo: '',
+    savedOrderingInfo: '',
     savedRemovalInfo: '',
     savedRenameOutInfo: '',
     uploadedSnapshot: '',
@@ -177,6 +178,34 @@ Page({
           }
         })
       }
+    })
+  },
+  runSavedOrderingLab() {
+    const root = 'headless://saved/component-lab/ordering'
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/component-lab-order-zeta.txt', 'zeta')
+    fsManager.writeFileSync('headless://temp/component-lab-order-alpha.txt', 'alpha')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/component-lab-order-zeta.txt',
+      filePath: `${root}/zeta.txt`,
+      success: () => {
+        wx.saveFile({
+          tempFilePath: 'headless://temp/component-lab-order-alpha.txt',
+          filePath: `${root}/alpha.txt`,
+          success: () => {
+            const orderedFiles = wx.getSavedFileList().fileList
+              .filter(file => file.filePath.startsWith(`${root}/`))
+            this.setData({
+              savedOrderingInfo: JSON.stringify({
+                createTimesArePositive: orderedFiles.every(file => file.createTime > 0),
+                filePaths: orderedFiles.map(file => file.filePath),
+              }),
+            }, () => {
+              this.push('lab:runSavedOrderingLab')
+            })
+          },
+        })
+      },
     })
   },
   runSavedRenameOutLab() {
