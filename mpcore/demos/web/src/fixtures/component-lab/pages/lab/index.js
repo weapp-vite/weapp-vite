@@ -16,6 +16,7 @@ Page({
     savedFileInfo: '',
     savedMissingInfo: '',
     savedMissingRemovalInfo: '',
+    fileManagerMissingReadInfo: '',
     fileManagerMissingReadDirInfo: '',
     fileManagerMissingStatInfo: '',
     savedOrderingInfo: '',
@@ -318,6 +319,21 @@ Page({
           }),
         }, () => {
           this.push('lab:runMissingReadDirLab')
+        })
+      },
+    })
+  },
+  runMissingReadFileLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.readFile({
+      filePath: 'headless://saved/component-lab/missing-file.txt',
+      fail: (error) => {
+        this.setData({
+          fileManagerMissingReadInfo: JSON.stringify({
+            missingReadError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runMissingReadFileLab')
         })
       },
     })
