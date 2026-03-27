@@ -43,6 +43,28 @@ function collectDataset(node: DomNodeLike) {
   return dataset
 }
 
+function createScopedRoot(node: DomNodeLike): DomNodeLike {
+  return {
+    children: [node],
+    type: 'root',
+  }
+}
+
+function findNodeByScopeId(root: DomNodeLike, scopeId: string): DomNodeLike | null {
+  if (root.attribs?.['data-sim-scope'] === scopeId) {
+    return root
+  }
+
+  for (const child of root.children ?? []) {
+    const match = findNodeByScopeId(child, scopeId)
+    if (match) {
+      return match
+    }
+  }
+
+  return null
+}
+
 function parseStyleDeclarations(styleValue?: string) {
   const declarations: Record<string, string> = {}
   if (!styleValue) {
@@ -226,4 +248,13 @@ export function executeSelectorQueryRequests(
   options: HeadlessSelectorQueryResolverOptions,
 ) {
   return requests.map(request => resolveRequestResult(request, options))
+}
+
+export function resolveSelectorQueryScopeRoot(root: DomNodeLike, scopeId?: string | null) {
+  if (!scopeId) {
+    return root
+  }
+
+  const scopedNode = findNodeByScopeId(root, scopeId)
+  return scopedNode ? createScopedRoot(scopedNode) : root
 }

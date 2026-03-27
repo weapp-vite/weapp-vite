@@ -1464,5 +1464,15 @@ Page({
     card?.pulse()
 
     expect(page.data.log).toEqual(['status-card'])
+
+    page.inspectScopedQuery()
+    expect(page.data.scopedRect).toEqual({
+      bottom: 0,
+      height: 0,
+      left: 0,
+      right: 0,
+      top: 0,
+      width: 0,
+    })
   })
 })

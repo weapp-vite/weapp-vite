@@ -2831,4 +2831,54 @@ Page({
       scrollTop: 88,
     })
   })
+
+  it('supports createSelectorQuery.in(component) in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/lab/index.json', JSON.stringify({
+        usingComponents: {
+          'status-card': '../../components/status-card/index',
+        },
+      })],
+      ['pages/lab/index.js', `
+Page({
+  data: {
+    scopedRect: null
+  },
+  inspectScopedQuery() {
+    const card = this.selectComponent('#status-card')
+    wx.createSelectorQuery()
+      .in(card)
+      .select('.card-shell')
+      .boundingClientRect((result) => {
+        this.setData({
+          scopedRect: result
+        })
+      })
+      .exec()
+  }
+})
+`],
+      ['pages/lab/index.wxml', '<status-card id="status-card" />'],
+      ['components/status-card/index.json', '{}'],
+      ['components/status-card/index.js', 'Component({})'],
+      ['components/status-card/index.wxml', '<view class="card-shell" style="left: 6px; top: 9px; width: 30px; height: 20px;">card</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/lab/index')
+    session.renderCurrentPage()
+
+    page.inspectScopedQuery()
+
+    expect(page.data.scopedRect).toEqual({
+      bottom: 29,
+      height: 20,
+      left: 6,
+      right: 36,
+      top: 9,
+      width: 30,
+    })
+  })
 })

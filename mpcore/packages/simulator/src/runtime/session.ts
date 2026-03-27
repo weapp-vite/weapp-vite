@@ -9,7 +9,7 @@ import path from 'node:path'
 import { createHostRegistries } from '../host'
 import { loadProject } from '../project'
 import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
-import { executeSelectorQueryRequests } from '../view'
+import { executeSelectorQueryRequests, resolveSelectorQueryScopeRoot } from '../view'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
@@ -759,9 +759,12 @@ export class HeadlessSession {
       throw new Error('wx.createSelectorQuery().in(component) received an unknown scope in headless runtime.')
     }
     const rendered = this.renderCurrentPage()
+    const scopeId = scope && scope !== current
+      ? this.getComponentScopeId(scope as HeadlessComponentInstance)
+      : null
     return executeSelectorQueryRequests(requests, {
       page: current,
-      root: rendered.root,
+      root: resolveSelectorQueryScopeRoot(rendered.root, scopeId),
       windowInfo: this.getWindowInfo(),
     })
   }
@@ -925,6 +928,15 @@ export class HeadlessSession {
       }
       instance.__definition__?.pageLifetimes?.[lifetimeName]?.call(instance, payload)
     }
+  }
+
+  private getComponentScopeId(component: HeadlessComponentInstance) {
+    for (const [scopeId, instance] of this.componentCache.entries()) {
+      if (instance === component) {
+        return scopeId
+      }
+    }
+    return null
   }
 }
 
