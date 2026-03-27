@@ -1,4 +1,5 @@
 import path from 'node:path'
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
@@ -9,7 +10,7 @@ const mpcoreRoot = path.resolve(simulatorRoot, '../..')
 
 export default defineConfig({
   root: demoWebRoot,
-  plugins: [vue()],
+  plugins: [vue(), tailwindcss()],
   server: {
     fs: {
       allow: [mpcoreRoot],

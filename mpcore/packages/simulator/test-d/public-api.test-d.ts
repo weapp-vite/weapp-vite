@@ -17,10 +17,14 @@ const browserSession = createBrowserHeadlessSession({ files: browserFiles })
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
 expectType<{ active: boolean, stopCalls: number }>(browserSession.getPullDownRefreshState())
 expectType<{ visible: boolean }>(browserSession.getTabBar())
+expectType<Record<string, string>>(browserSession.getFileSnapshot())
+expectType<string | null>(browserSession.getFileText('headless://wxfile/temp/0001'))
 
 const headlessSession = createHeadlessSession({ projectPath: '/tmp/project' })
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())
 expectType<{ visible: boolean }>(headlessSession.getTabBar())
+expectType<Record<string, string>>(headlessSession.getFileSnapshot())
+expectType<string | null>(headlessSession.getFileText('headless://wxfile/temp/0001'))
 
 const launchResult = launch({ projectPath: '/tmp/project' })
 expectType<Promise<{
