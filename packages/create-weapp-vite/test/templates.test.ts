@@ -1,7 +1,7 @@
 import path from 'node:path'
 import fs from 'fs-extra'
-import { main as syncTemplates } from '../scripts/shared'
 import { TemplateName } from '@/enums'
+import { main as syncTemplates } from '../scripts/shared'
 
 describe('templates', () => {
   it('contains a folder for every template name', async () => {
