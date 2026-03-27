@@ -286,6 +286,7 @@ export class HeadlessSession {
     }
     instance.__lastInteractionEvent__ = {
       currentTarget: event.currentTarget,
+      mark: event.mark,
       target: event.target,
     }
     const method = instance[methodName]

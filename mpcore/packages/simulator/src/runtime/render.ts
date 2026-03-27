@@ -336,6 +336,7 @@ function buildComponentTrigger(
   ) => {
     const interactionTarget = instance.__lastInteractionEvent__?.target
     const interactionCurrentTarget = instance.__lastInteractionEvent__?.currentTarget
+    const interactionMark = instance.__lastInteractionEvent__?.mark
     const target = {
       dataset: interactionTarget?.dataset ?? hostDataset,
       id: interactionTarget?.id ?? hostId,
@@ -362,7 +363,7 @@ function buildComponentTrigger(
             id: currentScope?.hostId ?? interactionCurrentTarget?.id ?? hostId,
           },
           detail,
-          mark: undefined,
+          mark: interactionMark,
           target,
           type: eventName,
         })

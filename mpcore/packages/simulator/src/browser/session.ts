@@ -671,6 +671,7 @@ export class BrowserHeadlessSession {
     }
     instance.__lastInteractionEvent__ = {
       currentTarget: event.currentTarget,
+      mark: event.mark,
       target: event.target,
     }
     const method = instance[methodName]
@@ -702,6 +703,7 @@ export class BrowserHeadlessSession {
       }
       dataset?: Record<string, string>
       id?: string
+      mark?: Record<string, unknown>
       target?: {
         dataset?: Record<string, string>
         id?: string
@@ -723,6 +725,7 @@ export class BrowserHeadlessSession {
           dataset: event.currentTarget?.dataset ?? event.dataset ?? {},
           id: event.currentTarget?.id ?? event.id ?? '',
         },
+        mark: event.mark,
         target: {
           dataset: event.target?.dataset ?? event.dataset ?? {},
           id: event.target?.id ?? event.id ?? '',
@@ -738,7 +741,7 @@ export class BrowserHeadlessSession {
         id: event.currentTarget?.id ?? event.id ?? '',
       },
       detail: undefined,
-      mark: undefined,
+      mark: event.mark,
       target: {
         dataset: event.target?.dataset ?? event.dataset ?? {},
         id: event.target?.id ?? event.id ?? '',

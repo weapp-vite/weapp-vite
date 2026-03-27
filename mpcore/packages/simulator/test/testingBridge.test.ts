@@ -316,6 +316,27 @@ describe('headless testing bridge', () => {
     expect(await page.data('log')).toEqual(['status-card'])
   })
 
+  it('preserves component event target, currentTarget and mark through the testing bridge', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const trigger = await page.$('#card-trigger')
+
+    await trigger?.tap({
+      mark: {
+        source: 'testing-bridge',
+      },
+    })
+
+    expect(await page.data('eventSnapshot')).toContain('"targetId":"card-trigger"')
+    expect(await page.data('eventSnapshot')).toContain('"currentTargetId":"status-card"')
+    expect(await page.data('eventSnapshot')).toContain('"source":"testing-bridge"')
+  })
+
   it('dispatches component input, change and blur events through the testing bridge', async () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)
