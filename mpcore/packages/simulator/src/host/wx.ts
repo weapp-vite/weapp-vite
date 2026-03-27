@@ -338,6 +338,12 @@ export interface HeadlessWxAccessFileOption extends HeadlessWxCallbackOption<Hea
   path: string
 }
 
+export interface HeadlessWxAppendFileOption extends HeadlessWxCallbackOption<HeadlessWxFileSystemResult> {
+  data: string
+  encoding?: string
+  filePath: string
+}
+
 export interface HeadlessWxUnlinkOption extends HeadlessWxCallbackOption<HeadlessWxFileSystemResult> {
   filePath: string
 }
@@ -384,6 +390,8 @@ export interface HeadlessWxStatOption extends HeadlessWxCallbackOption<HeadlessW
 export interface HeadlessWxFileSystemManager {
   access: (option: HeadlessWxAccessFileOption) => HeadlessWxFileSystemResult | undefined
   accessSync: (path: string) => void
+  appendFile: (option: HeadlessWxAppendFileOption) => HeadlessWxFileSystemResult | undefined
+  appendFileSync: (filePath: string, data: string, encoding?: string) => void
   copyFile: (option: HeadlessWxCopyFileOption) => HeadlessWxFileSystemResult | undefined
   copyFileSync: (srcPath: string, destPath: string) => void
   mkdir: (option: HeadlessWxMkdirOption) => HeadlessWxFileSystemResult | undefined

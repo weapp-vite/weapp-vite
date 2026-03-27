@@ -927,6 +927,54 @@ Page({
     expect(session.getFileText('headless://saved/reports/daily/summary.txt')).toBe('daily payload')
   })
 
+  it('supports getFileSystemManager appendFile operations', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-append-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    appendSummary: '',
+    fileSummary: ''
+  },
+  runFsAppendLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://saved/log.txt', 'alpha')
+    fsManager.appendFile({
+      filePath: 'headless://saved/log.txt',
+      data: '-beta',
+      success: (result) => {
+        this.setData({
+          appendSummary: result.errMsg
+        })
+      }
+    })
+    fsManager.appendFileSync('headless://saved/log.txt', '-gamma')
+    this.setData({
+      fileSummary: fsManager.readFileSync('headless://saved/log.txt')
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>fs-append</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsAppendLab()
+
+    expect(page.data.appendSummary).toBe('appendFile:ok')
+    expect(page.data.fileSummary).toBe('alpha-beta-gamma')
+    expect(session.getFileText('headless://saved/log.txt')).toBe('alpha-beta-gamma')
+  })
+
   it('supports showModal defaults and queued modal mocks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-show-modal-'))
     tempDirs.push(root)
