@@ -7,6 +7,7 @@ import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSou
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
+import AppTagList from '../features/dashboard/components/AppTagList.vue'
 import AppTimelineItem from '../features/dashboard/components/AppTimelineItem.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventMeta, formatRuntimeEventSource, getRuntimeEventBadgeTone } from '../features/dashboard/utils/format'
@@ -351,15 +352,7 @@ watch(filteredRuntimeEvents, (events) => {
               <p class="mt-3 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
                 {{ formatRuntimeEventMeta(selectedEvent) }}
               </p>
-              <div v-if="selectedEvent.tags?.length" class="mt-4 flex flex-wrap gap-1.5">
-                <span
-                  v-for="tag in selectedEvent.tags"
-                  :key="tag"
-                  class="rounded-full border border-[color:var(--dashboard-border)] px-2 py-0.5 text-[11px] uppercase tracking-[0.12em] text-[color:var(--dashboard-text-soft)]"
-                >
-                  {{ tag }}
-                </span>
-              </div>
+              <AppTagList v-if="selectedEvent.tags?.length" class="mt-4" :tags="selectedEvent.tags" />
             </div>
 
             <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
@@ -413,15 +406,7 @@ watch(filteredRuntimeEvents, (events) => {
                   <p class="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
                     {{ formatRuntimeEventMeta(event) }}
                   </p>
-                  <p v-if="event.tags?.length" class="mt-2 flex flex-wrap gap-1.5">
-                    <span
-                      v-for="tag in event.tags"
-                      :key="tag"
-                      class="rounded-full border border-[color:var(--dashboard-border)] px-2 py-0.5 text-[11px] uppercase tracking-[0.12em] text-[color:var(--dashboard-text-soft)]"
-                    >
-                      {{ tag }}
-                    </span>
-                  </p>
+                  <AppTagList v-if="event.tags?.length" class="mt-2" :tags="event.tags" />
                 </div>
                 <AppRuntimeBadge :label="formatRuntimeEventLevel(event.level)" :tone="getRuntimeEventBadgeTone(event.level)" />
               </div>
