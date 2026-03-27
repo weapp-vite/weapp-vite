@@ -4,9 +4,10 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { setTimeout as delay } from 'node:timers/promises'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const CREATE_PACKAGE_NAME = 'weapp-vite'
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_PACKAGE_SPEC = process.env.CREATE_WEAPP_VITE_SPEC?.trim() || 'latest'
 const DEFAULT_TEMPLATE_NAMES = ['default', 'lib', 'wevu', 'wevu-tdesign', 'tailwindcss', 'vant', 'tdesign']
 const TEMPLATE_NAMES = (process.env.CREATE_WEAPP_VITE_TEMPLATES?.split(',') ?? DEFAULT_TEMPLATE_NAMES)
@@ -31,6 +32,15 @@ const REPORT_META = {
   runAttempt: process.env.GITHUB_RUN_ATTEMPT?.trim() || '',
 }
 const NEWLINE_RE = /\r?\n/
+const TEMPLATE_DIR_MAP = {
+  'default': 'weapp-vite-template',
+  'lib': 'weapp-vite-lib-template',
+  'wevu': 'weapp-vite-wevu-template',
+  'wevu-tdesign': 'weapp-vite-wevu-tailwindcss-tdesign-template',
+  'tailwindcss': 'weapp-vite-tailwindcss-template',
+  'tdesign': 'weapp-vite-tailwindcss-tdesign-template',
+  'vant': 'weapp-vite-tailwindcss-vant-template',
+}
 
 function getExecutableName(command) {
   return process.platform === 'win32' ? `${command}.cmd` : command
@@ -49,6 +59,123 @@ function createChildProcess(command, args, options) {
 
 function isFilePresent(file) {
   return fs.access(file).then(() => true).catch(() => false)
+}
+
+function normalizeRelativePath(value) {
+  return value.split(path.sep).join('/')
+}
+
+function resolveWorkspaceTemplateDir(templateName) {
+  const templateDirName = TEMPLATE_DIR_MAP[templateName] || templateName
+  return path.resolve(MODULE_DIR, '../templates', templateDirName)
+}
+
+async function resolveExpectedTemplateDir(templateName) {
+  const packagedTemplateDir = path.resolve(MODULE_DIR, '../packages/create-weapp-vite/templates', templateName)
+  if (await isFilePresent(packagedTemplateDir)) {
+    return packagedTemplateDir
+  }
+  return resolveWorkspaceTemplateDir(templateName)
+}
+
+function shouldSkipTemplateFile(filePath) {
+  return (
+    filePath.includes('node_modules')
+    || filePath.includes(`${path.sep}.weapp-vite${path.sep}`)
+    || filePath.includes('vite.config.ts.timestamp')
+    || filePath.includes(`${path.sep}dist${path.sep}`)
+    || filePath.endsWith(`${path.sep}CHANGELOG.md`)
+    || filePath.includes(`${path.sep}.turbo${path.sep}`)
+    || filePath.endsWith(`${path.sep}.DS_Store`)
+  )
+}
+
+function normalizeExpectedProjectPath(relativePath) {
+  if (relativePath === 'gitignore') {
+    return '.gitignore'
+  }
+  return relativePath
+}
+
+async function collectProjectFiles(rootDir) {
+  const files = []
+
+  async function walk(currentDir) {
+    const entries = await fs.readdir(currentDir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name)
+      const relativePath = normalizeRelativePath(path.relative(rootDir, fullPath))
+      if (entry.isDirectory()) {
+        await walk(fullPath)
+        continue
+      }
+      files.push(relativePath)
+    }
+  }
+
+  if (await isFilePresent(rootDir)) {
+    await walk(rootDir)
+  }
+
+  return files.sort((a, b) => a.localeCompare(b))
+}
+
+async function collectExpectedTemplateFiles(templateName) {
+  const templateDir = await resolveExpectedTemplateDir(templateName)
+  const files = []
+
+  async function walk(currentDir) {
+    const entries = await fs.readdir(currentDir, { withFileTypes: true })
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name)
+      if (shouldSkipTemplateFile(fullPath)) {
+        continue
+      }
+      if (entry.isDirectory()) {
+        await walk(fullPath)
+        continue
+      }
+      const relativePath = normalizeRelativePath(path.relative(templateDir, fullPath))
+      files.push(normalizeExpectedProjectPath(relativePath))
+    }
+  }
+
+  await walk(templateDir)
+
+  return files.sort((a, b) => a.localeCompare(b))
+}
+
+function formatMissingFiles(files, limit = 20) {
+  if (files.length === 0) {
+    return ''
+  }
+
+  const visible = files.slice(0, limit).map(file => `- ${file}`).join('\n')
+  const remaining = files.length - Math.min(files.length, limit)
+  return remaining > 0
+    ? `${visible}\n- ... and ${remaining} more`
+    : visible
+}
+
+async function validateCreatedProjectStructure(projectDir, templateName, label) {
+  const [expectedFiles, actualFiles] = await Promise.all([
+    collectExpectedTemplateFiles(templateName),
+    collectProjectFiles(projectDir),
+  ])
+  const actualFileSet = new Set(actualFiles)
+  const missingFiles = expectedFiles.filter(file => !actualFileSet.has(file))
+
+  if (missingFiles.length > 0) {
+    throw new Error(
+      [
+        `[${label}] Generated project is missing ${missingFiles.length} expected file(s) for template "${templateName}"`,
+        `expected files: ${expectedFiles.length}`,
+        `actual files: ${actualFiles.length}`,
+        'missing files:',
+        formatMissingFiles(missingFiles),
+      ].join('\n'),
+    )
+  }
 }
 
 function getCreatePackageSpecifier(packageManager, packageSpec) {
@@ -466,6 +593,8 @@ async function runScenario({ scenario, templateName, packageSpec, scenarioRoot }
   })
 
   const projectDir = path.join(scenarioRoot, projectName)
+
+  await validateCreatedProjectStructure(projectDir, templateName, `${labelPrefix} create`)
 
   const installMs = await timedRunCommand({
     cwd: projectDir,
