@@ -5,8 +5,8 @@ import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { RouterLink } from 'vue-router'
-import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
 import AppRuntimeEventCard from '../features/dashboard/components/AppRuntimeEventCard.vue'
+import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
@@ -22,7 +22,7 @@ import { useDashboardTheme } from '../features/dashboard/composables/useDashboar
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs } from '../features/dashboard/constants/view'
-import { formatDuration, formatRuntimeEventLevel, formatRuntimeEventMeta, getRuntimeEventBadgeTone } from '../features/dashboard/utils/format'
+import { formatDuration } from '../features/dashboard/utils/format'
 import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
@@ -231,44 +231,18 @@ onBeforeUnmount(() => {
           icon-name="metric-time"
         >
           <div class="grid gap-3 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
-            <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-accent)]">
-                    latest event
-                  </p>
-                  <h3 class="mt-1 text-lg font-semibold tracking-tight">
-                    {{ latestRuntimeEvent?.title ?? '尚无运行事件' }}
-                  </h3>
-                </div>
-                <AppRuntimeBadge
-                  v-if="latestRuntimeEvent"
-                  :label="formatRuntimeEventLevel(latestRuntimeEvent.level)"
-                  :tone="getRuntimeEventBadgeTone(latestRuntimeEvent.level)"
-                />
-              </div>
-              <p class="mt-3 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-                {{ latestRuntimeEvent?.detail ?? '当前工作区还没有推入结构化运行事件。' }}
-              </p>
-              <p
-                v-if="latestRuntimeEvent"
-                class="mt-3 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]"
-              >
-                {{ formatRuntimeEventMeta(latestRuntimeEvent) }}
-              </p>
-              <p
-                v-if="latestRuntimeEvent?.durationMs !== undefined"
-                class="mt-2 text-sm font-medium text-[color:var(--dashboard-text)]"
-              >
-                最近一次耗时: {{ formatDuration(latestRuntimeEvent.durationMs) }}
-              </p>
+            <AppRuntimeFocusCard
+              :event="latestRuntimeEvent"
+              eyebrow="latest event"
+              :duration-text="latestRuntimeEvent?.durationMs !== undefined ? `最近一次耗时: ${formatDuration(latestRuntimeEvent.durationMs)}` : undefined"
+            >
               <RouterLink
                 class="mt-4 inline-flex rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-1.5 text-xs font-medium text-[color:var(--dashboard-text)] transition hover:border-[color:var(--dashboard-border-strong)]"
                 to="/activity"
               >
                 打开事件控制台
               </RouterLink>
-            </div>
+            </AppRuntimeFocusCard>
 
             <div class="grid gap-2 sm:grid-cols-2">
               <AppStatCard
