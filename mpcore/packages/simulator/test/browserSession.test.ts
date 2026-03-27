@@ -2881,4 +2881,42 @@ Page({
       width: 30,
     })
   })
+
+  it('returns array results for selectAll(...).fields(...) in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    summary: ''
+  },
+  inspectAll() {
+    wx.createSelectorQuery()
+      .selectAll('.item')
+      .fields({
+        id: true,
+        dataset: true
+      }, (result) => {
+        this.setData({
+          summary: JSON.stringify(result)
+        })
+      })
+      .exec()
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view id="item-a" class="item" data-kind="alpha"></view><view id="item-b" class="item" data-kind="beta"></view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.inspectAll()
+
+    expect(page.data.summary).toContain('"id":"item-a"')
+    expect(page.data.summary).toContain('"kind":"alpha"')
+    expect(page.data.summary).toContain('"id":"item-b"')
+    expect(page.data.summary).toContain('"kind":"beta"')
+  })
 })
