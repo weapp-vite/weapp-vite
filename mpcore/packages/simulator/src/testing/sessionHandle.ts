@@ -56,6 +56,56 @@ export class HeadlessTestingScopeHandle {
       .map(component => this.createScopeHandle(component))
       .filter((handle): handle is HeadlessTestingScopeHandle => Boolean(handle))
   }
+
+  async waitForComponent(
+    selector: string,
+    options: { interval?: number, timeout?: number } = {},
+  ) {
+    const normalizedSelector = selector.trim()
+    if (!normalizedSelector) {
+      throw new Error('Selector must be a non-empty string in headless testing runtime.')
+    }
+    const timeout = Number.isFinite(options.timeout) ? Math.max(0, Math.trunc(options.timeout ?? 1_000)) : 1_000
+    const interval = Number.isFinite(options.interval) ? Math.max(1, Math.trunc(options.interval ?? 10)) : 10
+    const deadline = Date.now() + timeout
+
+    while (true) {
+      const component = await this.selectComponent(normalizedSelector)
+      if (component) {
+        return component
+      }
+      if (Date.now() >= deadline) {
+        throw new Error(`Timed out waiting for component "${normalizedSelector}" in headless testing runtime.`)
+      }
+      await new Promise(resolve => setTimeout(resolve, interval))
+    }
+  }
+
+  async waitForComponents(
+    selector: string,
+    count = 1,
+    options: { interval?: number, timeout?: number } = {},
+  ) {
+    const normalizedSelector = selector.trim()
+    if (!normalizedSelector) {
+      throw new Error('Selector must be a non-empty string in headless testing runtime.')
+    }
+    const normalizedCount = Number.isFinite(count) ? Math.max(1, Math.trunc(count)) : 1
+    const timeout = Number.isFinite(options.timeout) ? Math.max(0, Math.trunc(options.timeout ?? 1_000)) : 1_000
+    const interval = Number.isFinite(options.interval) ? Math.max(1, Math.trunc(options.interval ?? 10)) : 10
+    const deadline = Date.now() + timeout
+
+    while (true) {
+      const components = await this.selectAllComponents(normalizedSelector)
+      if (components.length >= normalizedCount) {
+        return components
+      }
+      if (Date.now() >= deadline) {
+        throw new Error(`Timed out waiting for ${normalizedCount} component(s) matching "${normalizedSelector}" in headless testing runtime.`)
+      }
+      await new Promise(resolve => setTimeout(resolve, interval))
+    }
+  }
 }
 
 export class HeadlessTestingSessionHandle {
