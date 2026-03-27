@@ -902,7 +902,7 @@ Page({
     expect(session.getFileText('headless://saved/renamed.txt')).toBe('source payload')
   })
 
-  it('tracks saved file metadata across copyFile operations', () => {
+  it('does not create new saved file metadata across copyFile operations', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-saved-copy-'))
     tempDirs.push(root)
 
@@ -941,9 +941,9 @@ Page({
     const page = session.reLaunch('/pages/index/index')
     page.runSavedFileCopyLab()
 
-    expect(page.data.listSummary).toContain('"filePath":"headless://saved/copied.txt"')
     expect(page.data.listSummary).toContain('"filePath":"headless://saved/source.txt"')
     expect(page.data.listSummary).toContain('"size":5')
+    expect(page.data.listSummary).not.toContain('headless://saved/copied.txt')
   })
 
   it('supports getFileSystemManager mkdir readdir and stat operations', () => {

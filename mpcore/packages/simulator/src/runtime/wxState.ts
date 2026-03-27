@@ -538,7 +538,7 @@ export function createHeadlessWxState() {
     }
     ensureDirectoryTree(normalizedDestPath)
     files.set(normalizedDestPath, fileContent)
-    if (savedFiles.has(normalizedSrcPath) || savedFiles.has(normalizedDestPath)) {
+    if (savedFiles.has(normalizedDestPath)) {
       setSavedFileMetadata(
         normalizedDestPath,
         fileContent,
