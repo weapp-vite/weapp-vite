@@ -165,12 +165,24 @@ describe('headless testing bridge', () => {
     const asyncNode = await page.waitForSelector('#async-text')
     expect(await asyncNode?.text()).toBe('async ready')
 
+    await page.callMethod('clearAsyncText')
+    await page.waitForTextGone('async ready', {
+      timeout: 200,
+    })
+    expect(await page.waitForSelector('#missing-node', {
+      state: 'detached',
+      timeout: 30,
+    })).toBeNull()
+
     await expect(page.waitForSelector('#missing-node', {
       timeout: 30,
     })).rejects.toThrow('Timed out waiting for selector "#missing-node" to appear')
     await expect(page.waitForText('definitely-missing-text', {
       timeout: 30,
     })).rejects.toThrow('Timed out waiting for text "definitely-missing-text"')
+    await expect(page.waitForTextGone('async ready', {
+      timeout: 10,
+    })).resolves.toBeUndefined()
   })
 
   it('renders interpolated wxml and supports basic selectors', async () => {

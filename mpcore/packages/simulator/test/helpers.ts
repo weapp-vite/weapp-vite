@@ -92,6 +92,13 @@ Page({
       })
     }, 20)
   },
+  clearAsyncText() {
+    setTimeout(() => {
+      this.setData({
+        __e2eAsyncText: '',
+      })
+    }, 20)
+  },
 })
 `)
   writeText(path.join(root, 'dist/pages/index/index.wxml'), `
