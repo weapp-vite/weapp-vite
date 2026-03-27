@@ -733,6 +733,108 @@ Page({
     ])
   })
 
+  it('supports tabBar badge and red dot state transitions in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({
+        pages: ['pages/home/index', 'pages/profile/index'],
+        tabBar: {
+          list: [
+            { pagePath: 'pages/home/index', text: 'Home' },
+            { pagePath: 'pages/profile/index', text: 'Profile' },
+          ],
+        },
+      })],
+      ['app.js', 'App({})'],
+      ['pages/home/index.js', `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  showDot() {
+    wx.showTabBarRedDot({
+      index: 1,
+      success: () => this.push('dot:success')
+    })
+  },
+  hideDot() {
+    wx.hideTabBarRedDot({
+      index: 1,
+      complete: (result) => this.push('hide-dot:complete:' + (result?.errMsg ?? 'none'))
+    })
+  },
+  setBadge() {
+    wx.setTabBarBadge({
+      index: 1,
+      text: '9+',
+      success: () => this.push('badge:success')
+    })
+  },
+  removeBadge() {
+    wx.removeTabBarBadge({
+      index: 1,
+      complete: (result) => this.push('remove-badge:complete:' + (result?.errMsg ?? 'none'))
+    })
+  }
+})
+`],
+      ['pages/home/index.wxml', '<view>{{logs.0}}</view><view>{{logs.1}}</view><view>{{logs.2}}</view><view>{{logs.3}}</view><view>{{logs.4}}</view>'],
+      ['pages/profile/index.js', 'Page({})'],
+      ['pages/profile/index.wxml', '<view>profile</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/home/index')
+
+    expect(session.getTabBarSnapshot()).toEqual({
+      items: [
+        { badge: null, index: 0, pagePath: 'pages/home/index', redDot: false, text: 'Home' },
+        { badge: null, index: 1, pagePath: 'pages/profile/index', redDot: false, text: 'Profile' },
+      ],
+      visible: true,
+    })
+
+    page.showDot()
+    expect(session.getTabBarSnapshot().items[1]).toEqual({
+      badge: null,
+      index: 1,
+      pagePath: 'pages/profile/index',
+      redDot: true,
+      text: 'Profile',
+    })
+
+    page.setBadge()
+    expect(session.getTabBarSnapshot().items[1]).toEqual({
+      badge: '9+',
+      index: 1,
+      pagePath: 'pages/profile/index',
+      redDot: false,
+      text: 'Profile',
+    })
+
+    page.removeBadge()
+    page.showDot()
+    page.hideDot()
+    expect(session.getTabBarSnapshot().items[1]).toEqual({
+      badge: null,
+      index: 1,
+      pagePath: 'pages/profile/index',
+      redDot: false,
+      text: 'Profile',
+    })
+    expect(page.data.logs).toEqual([
+      'dot:success',
+      'badge:success',
+      'remove-badge:complete:removeTabBarBadge:ok',
+      'dot:success',
+      'hide-dot:complete:hideTabBarRedDot:ok',
+    ])
+  })
+
   it('renders custom components and routes triggerEvent back to the page', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
