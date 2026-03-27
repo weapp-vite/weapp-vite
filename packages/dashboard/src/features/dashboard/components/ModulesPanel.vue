@@ -6,6 +6,7 @@ import type {
 } from '../composables/useAnalyzeDashboardData'
 import { formatBuildOrigin, formatBytes, formatSourceType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
+import AppCompactListItem from './AppCompactListItem.vue'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 
@@ -83,18 +84,13 @@ defineProps<{
       <section :class="surfaceStyles({ padding: 'md' })">
         <AppPanelHeader icon-name="file-samples" title="文件样本" />
         <ul class="mt-4 space-y-2.5 text-sm text-[color:var(--dashboard-text-muted)]">
-          <li
+          <AppCompactListItem
             v-for="file in visibleLargestFiles.slice(0, 6)"
             :key="`${file.packageId}:${file.file}`"
-            class="rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-3"
-          >
-            <p class="truncate font-mono text-xs text-[color:var(--dashboard-text)]">
-              {{ file.file }}
-            </p>
-            <p class="mt-1 text-xs text-[color:var(--dashboard-text-soft)]">
-              {{ file.packageLabel }} · {{ formatBuildOrigin(file.from) }} · {{ file.moduleCount }} 模块
-            </p>
-          </li>
+            :title="file.file"
+            :meta="`${file.packageLabel} · ${formatBuildOrigin(file.from)} · ${file.moduleCount} 模块`"
+            mono-title
+          />
         </ul>
       </section>
     </div>
