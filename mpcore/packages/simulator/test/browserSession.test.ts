@@ -469,6 +469,68 @@ Page({
     expect(session.renderCurrentPage().wxml).toContain('browser-alpha-browser-beta-browser-gamma')
   })
 
+  it('reports stat sizes and fs manager failures in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    dirSizeSummary: '',
+    fileSizeSummary: '',
+    missingAccessSummary: '',
+    missingReadSummary: '',
+    missingReadDirSummary: ''
+  },
+  runFsErrorLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.mkdirSync('headless://saved/browser-errors', true)
+    fsManager.writeFileSync('headless://saved/browser-errors/report.txt', 'browser-error-lab')
+    this.setData({
+      dirSizeSummary: String(fsManager.statSync('headless://saved/browser-errors').size),
+      fileSizeSummary: String(fsManager.statSync('headless://saved/browser-errors/report.txt').size)
+    })
+    fsManager.access({
+      path: 'headless://saved/browser-errors/missing.txt',
+      fail: (error) => {
+        this.setData({
+          missingAccessSummary: error.message
+        })
+      }
+    })
+    fsManager.readFile({
+      filePath: 'headless://saved/browser-errors/missing.txt',
+      fail: (error) => {
+        this.setData({
+          missingReadSummary: error.message
+        })
+      }
+    })
+    fsManager.readdir({
+      dirPath: 'headless://saved/browser-errors/missing-dir',
+      fail: (error) => {
+        this.setData({
+          missingReadDirSummary: error.message
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{dirSizeSummary}}</view><view>{{fileSizeSummary}}</view><view>{{missingAccessSummary}}</view><view>{{missingReadSummary}}</view><view>{{missingReadDirSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsErrorLab()
+
+    expect(page.data.dirSizeSummary).toBe('0')
+    expect(page.data.fileSizeSummary).toBe(String('browser-error-lab'.length))
+    expect(page.data.missingAccessSummary).toContain('access:fail no such file or directory')
+    expect(page.data.missingReadSummary).toContain('readFile:fail no such file or directory')
+    expect(page.data.missingReadDirSummary).toContain('readdir:fail no such file or directory')
+  })
+
   it('supports showModal defaults and queued modal mocks in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

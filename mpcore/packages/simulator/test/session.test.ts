@@ -975,6 +975,75 @@ Page({
     expect(session.getFileText('headless://saved/log.txt')).toBe('alpha-beta-gamma')
   })
 
+  it('reports stat sizes and fs manager failures through callbacks', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-errors-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    dirSizeSummary: '',
+    fileSizeSummary: '',
+    missingAccessSummary: '',
+    missingReadSummary: '',
+    missingReadDirSummary: ''
+  },
+  runFsErrorLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.mkdirSync('headless://saved/errors', true)
+    fsManager.writeFileSync('headless://saved/errors/report.txt', 'error-lab')
+    this.setData({
+      dirSizeSummary: String(fsManager.statSync('headless://saved/errors').size),
+      fileSizeSummary: String(fsManager.statSync('headless://saved/errors/report.txt').size)
+    })
+    fsManager.access({
+      path: 'headless://saved/errors/missing.txt',
+      fail: (error) => {
+        this.setData({
+          missingAccessSummary: error.message
+        })
+      }
+    })
+    fsManager.readFile({
+      filePath: 'headless://saved/errors/missing.txt',
+      fail: (error) => {
+        this.setData({
+          missingReadSummary: error.message
+        })
+      }
+    })
+    fsManager.readdir({
+      dirPath: 'headless://saved/errors/missing-dir',
+      fail: (error) => {
+        this.setData({
+          missingReadDirSummary: error.message
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>fs-error-lab</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsErrorLab()
+
+    expect(page.data.dirSizeSummary).toBe('0')
+    expect(page.data.fileSizeSummary).toBe(String('error-lab'.length))
+    expect(page.data.missingAccessSummary).toContain('access:fail no such file or directory')
+    expect(page.data.missingReadSummary).toContain('readFile:fail no such file or directory')
+    expect(page.data.missingReadDirSummary).toContain('readdir:fail no such file or directory')
+  })
+
   it('supports showModal defaults and queued modal mocks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-show-modal-'))
     tempDirs.push(root)
