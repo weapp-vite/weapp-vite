@@ -3,11 +3,19 @@ import type { MutableCompilerContext } from '../../../context'
 import type { ComponentMetadata } from '../metadata'
 import type { LocalAutoImportMatch } from '../types'
 import { createRequire } from 'node:module'
+// eslint-disable-next-line e18e/ban-dependencies -- 这里仍依赖 fs-extra 的同步 JSON/存在性读取
 import fs from 'fs-extra'
 import path from 'pathe'
+import { parseNpmPackageSpecifier } from '../../../utils/npmImport'
 import { getAutoImportConfig } from '../config'
 
 const require = createRequire(import.meta.url)
+const COMPONENT_HAS_UPPER_RE = /[A-Z]/
+const CAMEL_TO_KEBAB_RE = /([a-z0-9])([A-Z])/g
+const MULTI_UPPER_TO_KEBAB_RE = /([A-Z]+)([A-Z][a-z])/g
+const TRAILING_RELATIVE_PREFIX_RE = /^[./]+/
+const TRAILING_SLASH_RE = /\/+$/
+const SCRIPT_OR_DTS_EXTENSION_RE = /\.(?:[cm]?js|tsx?|jsx|d\.ts)$/
 
 export interface ResolverHelpers {
   collectResolverComponents: () => Record<string, string>
@@ -33,10 +41,10 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
     }
 
     const candidates: string[] = [componentName]
-    if (!componentName.includes('-') && /[A-Z]/.test(componentName)) {
+    if (!componentName.includes('-') && COMPONENT_HAS_UPPER_RE.test(componentName)) {
       const kebab = componentName
-        .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+        .replace(CAMEL_TO_KEBAB_RE, '$1-$2')
+        .replace(MULTI_UPPER_TO_KEBAB_RE, '$1-$2')
         .toLowerCase()
       if (kebab && kebab !== componentName) {
         candidates.push(kebab)
@@ -70,37 +78,6 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
     return undefined
   }
 
-  function parsePackageSpecifier(specifier: string) {
-    const normalized = specifier.trim()
-    if (!normalized || normalized.startsWith('.') || normalized.startsWith('/') || normalized.startsWith('\\')) {
-      return undefined
-    }
-    // Windows 绝对路径（如 C:\...）
-    if (/^[a-z]:[\\/]/i.test(normalized)) {
-      return undefined
-    }
-
-    const parts = normalized.split('/').filter(Boolean)
-    if (parts.length === 0) {
-      return undefined
-    }
-
-    if (normalized.startsWith('@')) {
-      if (parts.length < 2) {
-        return undefined
-      }
-      return {
-        pkgName: `${parts[0]}/${parts[1]}`,
-        subpath: parts.slice(2).join('/'),
-      }
-    }
-
-    return {
-      pkgName: parts[0],
-      subpath: parts.slice(1).join('/'),
-    }
-  }
-
   function getMiniprogramDir(pkgName: string, cwd: string) {
     if (miniprogramDirCache.has(pkgName)) {
       return miniprogramDirCache.get(pkgName)
@@ -109,7 +86,7 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
       const packageJsonPath = require.resolve(`${pkgName}/package.json`, { paths: [cwd] })
       const raw = fs.readJsonSync(packageJsonPath, { throws: false }) as { miniprogram?: unknown } | undefined
       const miniprogram = typeof raw?.miniprogram === 'string' ? raw.miniprogram.trim() : undefined
-      const normalized = miniprogram?.replace(/^[./]+/, '').replace(/\/+$/, '')
+      const normalized = miniprogram?.replace(TRAILING_RELATIVE_PREFIX_RE, '').replace(TRAILING_SLASH_RE, '')
       miniprogramDirCache.set(pkgName, normalized || undefined)
       return normalized || undefined
     }
@@ -136,18 +113,18 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
       return undefined
     }
 
-    const parsed = parsePackageSpecifier(from)
-    if (!parsed || !parsed.pkgName || !parsed.subpath) {
+    const parsed = parseNpmPackageSpecifier(from)
+    if (!parsed?.packageName || !parsed.subPath) {
       return undefined
     }
 
-    const miniprogramDir = getMiniprogramDir(parsed.pkgName, cwd)
-    const withMiniprogramSubpath = miniprogramDir && !parsed.subpath.startsWith(`${miniprogramDir}/`) && parsed.subpath !== miniprogramDir
-      ? `${miniprogramDir}/${parsed.subpath}`
-      : parsed.subpath
-    const withMiniprogramDir = `${parsed.pkgName}/${withMiniprogramSubpath}`
+    const miniprogramDir = getMiniprogramDir(parsed.packageName, cwd)
+    const withMiniprogramSubpath = miniprogramDir && !parsed.subPath.startsWith(`${miniprogramDir}/`) && parsed.subPath !== miniprogramDir
+      ? `${miniprogramDir}/${parsed.subPath}`
+      : parsed.subPath
+    const withMiniprogramDir = `${parsed.packageName}/${withMiniprogramSubpath}`
 
-    const pkgRoot = getPackageRoot(parsed.pkgName, cwd)
+    const pkgRoot = getPackageRoot(parsed.packageName, cwd)
     if (pkgRoot) {
       const dtsCandidates = [
         path.join(pkgRoot, `${withMiniprogramSubpath}.d.ts`),
@@ -159,7 +136,7 @@ export function createResolverHelpers(state: ResolverState): ResolverHelpers {
     }
 
     const candidates: string[] = []
-    if (!/\.(?:[cm]?js|tsx?|jsx|d\.ts)$/.test(withMiniprogramDir)) {
+    if (!SCRIPT_OR_DTS_EXTENSION_RE.test(withMiniprogramDir)) {
       candidates.push(withMiniprogramDir)
       candidates.push(`${withMiniprogramDir}.js`)
       candidates.push(`${withMiniprogramDir}/index.js`)

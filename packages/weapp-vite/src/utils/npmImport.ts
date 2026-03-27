@@ -5,6 +5,7 @@ import {
 } from '../platform'
 
 const WINDOWS_PATH_SEPARATORS_RE = /\\/g
+const WINDOWS_ABSOLUTE_PATH_RE = /^[a-z]:[\\/]/i
 const NPM_PROTOCOL_RE = /^npm:/
 const PLUGIN_PROTOCOL_RE = /^plugin:\/\//
 const EXPLICIT_NPM_DIR_RE = /^\/(?:miniprogram_npm|node_modules)\//
@@ -28,6 +29,31 @@ export function resolveNpmDependencyId(importee: string) {
     return `${importeeTokens[0]}/${importeeTokens[1]}`
   }
   return importeeTokens[0]
+}
+
+export function parseNpmPackageSpecifier(specifier: string) {
+  const normalized = specifier.trim()
+  if (!normalized || normalized.startsWith('.') || normalized.startsWith('/') || normalized.startsWith('\\')) {
+    return undefined
+  }
+  if (WINDOWS_ABSOLUTE_PATH_RE.test(normalized)) {
+    return undefined
+  }
+
+  const normalizedImportee = normalizeNpmImportLookupPath(normalized)
+  if (normalizedImportee.startsWith('@') && !normalizedImportee.includes('/')) {
+    return undefined
+  }
+  const packageName = resolveNpmDependencyId(normalizedImportee)
+  if (!packageName) {
+    return undefined
+  }
+
+  const subPath = normalizedImportee.slice(packageName.length).replace(LEADING_SLASHES_RE, '')
+  return {
+    packageName,
+    subPath,
+  }
 }
 
 export function hasNpmDependencyPrefix(
