@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.11.8
+
+### Patch Changes
+
+- 🐛 **将 Vite 回退到 `8.0.2`，恢复其默认依赖的 `rolldown@1.0.0-rc.11`，临时规避小程序 `dev/watch` 模式下二次增量构建触发的 `[FILE_NAME_CONFLICT]` 告警。** [`56adc6b`](https://github.com/weapp-vite/weapp-vite/commit/56adc6b31fcc104b0f62be7a6c112e33232e7077) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.11.8`, `wevu@6.11.8`
+
 ## 6.11.7
 
 ### Patch Changes
