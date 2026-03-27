@@ -131,6 +131,12 @@ export interface HeadlessWxSetBackgroundTextStyleOption extends HeadlessWxCallba
   textStyle: string
 }
 
+export interface HeadlessWxSetBackgroundColorOption extends HeadlessWxCallbackOption<{ errMsg: string }> {
+  backgroundColor?: string
+  backgroundColorBottom?: string
+  backgroundColorTop?: string
+}
+
 export interface HeadlessWxSetNavigationBarTitleOption extends HeadlessWxCallbackOption<{ errMsg: string }> {
   title: string
 }
@@ -243,6 +249,7 @@ export interface HeadlessWxDriver {
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
+  setBackgroundColor: (option: HeadlessWxSetBackgroundColorOption) => { errMsg: string }
   setBackgroundTextStyle: (option: HeadlessWxSetBackgroundTextStyleOption) => { errMsg: string }
   setStorageSync: (key: string, value: unknown) => void
   setNavigationBarColor: (option: HeadlessWxSetNavigationBarColorOption) => { errMsg: string }
@@ -297,6 +304,7 @@ export interface HeadlessWx {
   removeStorage: (option: HeadlessWxRemoveStorageOption) => HeadlessWxStorageResult | undefined
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
+  setBackgroundColor: (option: HeadlessWxSetBackgroundColorOption) => { errMsg: string } | undefined
   setBackgroundTextStyle: (option: HeadlessWxSetBackgroundTextStyleOption) => { errMsg: string } | undefined
   setStorage: (option: HeadlessWxSetStorageOption) => HeadlessWxStorageResult | undefined
   setStorageSync: (key: string, value: unknown) => void
@@ -501,6 +509,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     removeStorage: true,
     removeStorageSync: true,
     request: true,
+    setBackgroundColor: true,
     setBackgroundTextStyle: true,
     setStorage: true,
     setStorageSync: true,
@@ -579,6 +588,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     }, option),
     removeStorageSync: key => driver.removeStorageSync(key),
     request: option => driver.request(option),
+    setBackgroundColor: option => invokeWxApi(() => driver.setBackgroundColor(option), option),
     setBackgroundTextStyle: option => invokeWxApi(() => driver.setBackgroundTextStyle(option), option),
     setStorage: option => invokeWxApi(() => {
       driver.setStorageSync(option.key, option.data)

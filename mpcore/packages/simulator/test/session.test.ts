@@ -1213,7 +1213,7 @@ Page({
     ])
   })
 
-  it('supports setBackgroundTextStyle defaults and updates', () => {
+  it('supports background text style and color defaults and updates', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-background-text-style-'))
     tempDirs.push(root)
 
@@ -1224,11 +1224,17 @@ Page({
     writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
       pages: ['pages/index/index', 'pages/detail/index'],
       window: {
+        backgroundColor: '#fefefe',
+        backgroundColorBottom: '#eeeeee',
+        backgroundColorTop: '#ffffff',
         backgroundTextStyle: 'light',
       },
     }, null, 2))
     writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
     writeFixtureFile(path.join(root, 'dist/pages/index/index.json'), JSON.stringify({
+      backgroundColor: '#101010',
+      backgroundColorBottom: '#202020',
+      backgroundColorTop: '#303030',
       backgroundTextStyle: 'dark',
     }, null, 2))
     writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
@@ -1246,6 +1252,15 @@ Page({
       textStyle: 'light',
       success: () => this.push('light:success'),
       complete: (result) => this.push('light:complete:' + (result?.errMsg ?? 'none'))
+    })
+  },
+  setBackgroundColorLab() {
+    wx.setBackgroundColor({
+      backgroundColor: '#444444',
+      backgroundColorTop: '#555555',
+      backgroundColorBottom: '#666666',
+      success: () => this.push('color:success'),
+      complete: (result) => this.push('color:complete:' + (result?.errMsg ?? 'none'))
     })
   },
   setInvalid() {
@@ -1270,27 +1285,42 @@ Page({
     const page = session.reLaunch('/pages/index/index')
 
     expect(session.getCurrentPageBackground()).toEqual({
+      backgroundColor: '#101010',
+      backgroundColorBottom: '#202020',
+      backgroundColorTop: '#303030',
       textStyle: 'dark',
     })
 
     page.setLight()
+    page.setBackgroundColorLab()
     expect(session.getCurrentPageBackground()).toEqual({
+      backgroundColor: '#444444',
+      backgroundColorBottom: '#666666',
+      backgroundColorTop: '#555555',
       textStyle: 'light',
     })
 
     page.setInvalid()
     expect(session.getCurrentPageBackground()).toEqual({
+      backgroundColor: '#444444',
+      backgroundColorBottom: '#666666',
+      backgroundColorTop: '#555555',
       textStyle: 'light',
     })
     expect(page.data.logs).toEqual([
       'light:success',
       'light:complete:setBackgroundTextStyle:ok',
+      'color:success',
+      'color:complete:setBackgroundColor:ok',
       'invalid:fail:setBackgroundTextStyle:fail invalid textStyle',
       'invalid:complete:none',
     ])
 
     page.goDetail()
     expect(session.getCurrentPageBackground()).toEqual({
+      backgroundColor: '#fefefe',
+      backgroundColorBottom: '#eeeeee',
+      backgroundColorTop: '#ffffff',
       textStyle: 'light',
     })
   })

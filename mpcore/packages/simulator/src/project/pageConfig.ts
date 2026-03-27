@@ -11,10 +11,18 @@ export interface HeadlessNavigationBarSnapshot {
 
 export type HeadlessBackgroundTextStyle = 'dark' | 'light'
 
+export interface HeadlessBackgroundSnapshot {
+  backgroundColor: string
+  backgroundColorBottom: string
+  backgroundColorTop: string
+  textStyle: HeadlessBackgroundTextStyle
+}
+
 const DEFAULT_NAVIGATION_BAR_BACKGROUND_COLOR = '#ffffff'
 const DEFAULT_NAVIGATION_BAR_FRONT_COLOR = '#000000'
 const DEFAULT_NAVIGATION_BAR_FRONT_COLOR_WHITE = '#ffffff'
 const DEFAULT_BACKGROUND_TEXT_STYLE: HeadlessBackgroundTextStyle = 'dark'
+const DEFAULT_BACKGROUND_COLOR = '#ffffff'
 
 function resolveNavigationBarTitle(
   appConfig: Record<string, any>,
@@ -95,6 +103,41 @@ export function resolveBackgroundTextStyle(
       : undefined
 
   return textStyle === 'light' ? 'light' : DEFAULT_BACKGROUND_TEXT_STYLE
+}
+
+function resolveBackgroundColorValue(
+  appConfig: Record<string, any>,
+  pageConfig: Record<string, any> | undefined,
+  key: 'backgroundColor' | 'backgroundColorTop' | 'backgroundColorBottom',
+) {
+  if (typeof pageConfig?.[key] === 'string') {
+    return pageConfig[key]
+  }
+  if (typeof appConfig.window?.[key] === 'string') {
+    return appConfig.window[key]
+  }
+  return DEFAULT_BACKGROUND_COLOR
+}
+
+export function cloneBackgroundSnapshot(snapshot: HeadlessBackgroundSnapshot) {
+  return {
+    backgroundColor: snapshot.backgroundColor,
+    backgroundColorBottom: snapshot.backgroundColorBottom,
+    backgroundColorTop: snapshot.backgroundColorTop,
+    textStyle: snapshot.textStyle,
+  }
+}
+
+export function resolveBackgroundSnapshot(
+  appConfig: Record<string, any>,
+  pageConfig?: Record<string, any>,
+): HeadlessBackgroundSnapshot {
+  return {
+    backgroundColor: resolveBackgroundColorValue(appConfig, pageConfig, 'backgroundColor'),
+    backgroundColorBottom: resolveBackgroundColorValue(appConfig, pageConfig, 'backgroundColorBottom'),
+    backgroundColorTop: resolveBackgroundColorValue(appConfig, pageConfig, 'backgroundColorTop'),
+    textStyle: resolveBackgroundTextStyle(appConfig, pageConfig),
+  }
 }
 
 export { resolveNavigationBarTitle }
