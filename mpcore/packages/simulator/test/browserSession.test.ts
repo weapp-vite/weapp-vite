@@ -662,6 +662,57 @@ Page({
     expect(page.data.secondRemoveSummary).toContain('removeSavedFile:fail no such file or directory')
   })
 
+  it('returns stable saved file metadata ordering in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    listSummary: ''
+  },
+  runSavedFileOrderingLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-zeta.txt', 'zeta')
+    fsManager.writeFileSync('headless://temp/browser-alpha.txt', 'alpha')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-zeta.txt',
+      filePath: 'headless://saved/browser-zeta.txt',
+      success: () => {
+        wx.saveFile({
+          tempFilePath: 'headless://temp/browser-alpha.txt',
+          filePath: 'headless://saved/browser-alpha.txt',
+          success: () => {
+            wx.getSavedFileList({
+              success: (result) => {
+                this.setData({
+                  listSummary: JSON.stringify(result.fileList)
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{listSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileOrderingLab()
+
+    const fileList = JSON.parse(page.data.listSummary) as Array<{ createTime: number, filePath: string, size: number }>
+    expect(fileList.map(item => item.filePath)).toEqual([
+      'headless://saved/browser-alpha.txt',
+      'headless://saved/browser-zeta.txt',
+    ])
+    expect(fileList.every(item => typeof item.createTime === 'number' && item.createTime > 0)).toBe(true)
+    expect(fileList.map(item => item.size)).toEqual([5, 4])
+  })
+
   it('supports showModal defaults and queued modal mocks in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
