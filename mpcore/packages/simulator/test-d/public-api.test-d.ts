@@ -57,6 +57,9 @@ browserPage?.wx.getFileSystemManager().rename({
   success: (result) => {
     expectType<{ errMsg: string }>(result)
   },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
   complete: (result) => {
     expectType<{ errMsg: string } | undefined>(result)
   },
@@ -144,6 +147,9 @@ headlessPage?.wx.getFileSystemManager().rename({
   newPath: 'headless://temp/target.txt',
   success: (result) => {
     expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
   },
   complete: (result) => {
     expectType<{ errMsg: string } | undefined>(result)
