@@ -7,6 +7,7 @@ import type { HeadlessWxModalMockDefinition, HeadlessWxRequestMockDefinition } f
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
+import { resolveNavigationBarTitle } from '../project/pageConfig'
 import { createAppInstance } from '../runtime/appInstance'
 import { runComponentPageLifetime } from '../runtime/componentInstance'
 import { createPageInstance } from '../runtime/pageInstance'
@@ -21,6 +22,7 @@ import { createHeadlessWxState } from '../runtime/wxState'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
 import { renderBrowserPageTree } from './render'
+import { readBrowserVirtualFile } from './virtualFiles'
 
 export interface BrowserHeadlessSessionOptions {
   files: BrowserVirtualFiles
@@ -80,6 +82,23 @@ function createAppLaunchOptions(pathname: string, query: Record<string, string>)
       extraData: {},
     },
     scene: 1001,
+  }
+}
+
+function readJsonObject(files: BrowserVirtualFiles, filePath: string) {
+  const content = readBrowserVirtualFile(files, filePath)
+  if (!content) {
+    return undefined
+  }
+
+  try {
+    const value = JSON.parse(content)
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? value as Record<string, any>
+      : undefined
+  }
+  catch {
+    return undefined
   }
 }
 
@@ -172,6 +191,7 @@ export class BrowserHeadlessSession {
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         request: option => this.wxState.request(option),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
+        setNavigationBarTitle: option => this.setNavigationBarTitle(option.title),
         showLoading: option => this.wxState.showLoading(option),
         showModal: option => this.wxState.showModal(option),
         showToast: option => this.wxState.showToast(option),
@@ -187,6 +207,10 @@ export class BrowserHeadlessSession {
 
   getCurrentPages() {
     return this.pages.slice()
+  }
+
+  getCurrentPageNavigationBarTitle() {
+    return this.currentPageInstance?.__navigationBarTitle__ ?? null
   }
 
   getRequestLogs() {
@@ -265,6 +289,14 @@ export class BrowserHeadlessSession {
 
   setNetworkType(networkType: HeadlessWxNetworkType) {
     return this.wxState.setNetworkType(networkType)
+  }
+
+  setNavigationBarTitle(title: string) {
+    const current = this.requireCurrentPage('wx.setNavigationBarTitle()')
+    current.__navigationBarTitle__ = title
+    return {
+      errMsg: 'setNavigationBarTitle:ok',
+    }
   }
 
   getScopeSnapshot(scopeId: string) {
@@ -630,8 +662,12 @@ export class BrowserHeadlessSession {
 
   private createFreshPage(target: ResolvedNavigationTarget) {
     const pageModulePath = join(this.project.miniprogramRootPath, `${target.routeRecord.route}.js`)
+    const pageConfigPath = join(this.project.miniprogramRootPath, `${target.routeRecord.route}.json`)
     const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
-    const pageInstance = createPageInstance(target.routeRecord.route, pageDefinition, target.query)
+    const pageConfig = readJsonObject(this.files, pageConfigPath)
+    const pageInstance = createPageInstance(target.routeRecord.route, pageDefinition, target.query, {
+      navigationBarTitle: resolveNavigationBarTitle(this.project.appConfig, pageConfig),
+    })
     pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
     pageInstance.selectAllComponents = (selector: string) => this.selectAllComponents(selector)
     pageInstance.onLoad?.(target.query)

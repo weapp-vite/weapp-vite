@@ -367,6 +367,66 @@ Page({
     })
   })
 
+  it('supports setNavigationBarTitle and preserves page title defaults in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({
+        pages: ['pages/index/index', 'pages/detail/index'],
+        window: {
+          navigationBarTitleText: 'Browser Shell',
+        },
+      })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.json', JSON.stringify({
+        navigationBarTitleText: 'Browser Index',
+      })],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    logs: []
+  },
+  updateTitle() {
+    wx.setNavigationBarTitle({
+      title: 'Browser Updated',
+      success: () => {
+        this.setData({
+          logs: [...this.data.logs, 'success']
+        })
+      },
+      complete: (result) => {
+        this.setData({
+          logs: [...this.data.logs, 'complete:' + (result?.errMsg ?? 'none')]
+        })
+      }
+    })
+  },
+  goDetail() {
+    wx.navigateTo({
+      url: '/pages/detail/index'
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{logs.0}}</view><view>{{logs.1}}</view>'],
+      ['pages/detail/index.js', 'Page({})'],
+      ['pages/detail/index.wxml', '<view>detail</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(session.getCurrentPageNavigationBarTitle()).toBe('Browser Index')
+
+    page.updateTitle()
+    expect(session.getCurrentPageNavigationBarTitle()).toBe('Browser Updated')
+    expect(page.data.logs).toEqual([
+      'success',
+      'complete:setNavigationBarTitle:ok',
+    ])
+
+    page.goDetail()
+    expect(session.getCurrentPageNavigationBarTitle()).toBe('Browser Shell')
+  })
+
   it('renders custom components and routes triggerEvent back to the page', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

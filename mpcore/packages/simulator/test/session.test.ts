@@ -805,4 +805,69 @@ Page({
       networkType: '5g',
     })
   })
+
+  it('supports setNavigationBarTitle and preserves page title defaults', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-navigation-bar-title-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index', 'pages/detail/index'],
+      window: {
+        navigationBarTitleText: 'App Shell',
+      },
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.json'), JSON.stringify({
+      navigationBarTitleText: 'Index Title',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    logs: []
+  },
+  updateTitle() {
+    wx.setNavigationBarTitle({
+      title: 'Updated Title',
+      success: () => {
+        this.setData({
+          logs: [...this.data.logs, 'success']
+        })
+      },
+      complete: (result) => {
+        this.setData({
+          logs: [...this.data.logs, 'complete:' + (result?.errMsg ?? 'none')]
+        })
+      }
+    })
+  },
+  goDetail() {
+    wx.navigateTo({
+      url: '/pages/detail/index'
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>index</view>')
+    writeFixtureFile(path.join(root, 'dist/pages/detail/index.js'), 'Page({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/detail/index.wxml'), '<view>detail</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(session.getCurrentPageNavigationBarTitle()).toBe('Index Title')
+
+    page.updateTitle()
+    expect(session.getCurrentPageNavigationBarTitle()).toBe('Updated Title')
+    expect(page.data.logs).toEqual([
+      'success',
+      'complete:setNavigationBarTitle:ok',
+    ])
+
+    page.goDetail()
+    expect(session.getCurrentPageNavigationBarTitle()).toBe('App Shell')
+  })
 })

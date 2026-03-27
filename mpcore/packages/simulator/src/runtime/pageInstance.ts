@@ -1,7 +1,12 @@
 import type { HeadlessPageDefinition } from '../host'
 
+const ARRAY_INDEX_PATH_RE = /\[(\d+)\]/g
+const ARRAY_INDEX_SEGMENT_RE = /^\d+$/
+const LEADING_ROUTE_SLASH_RE = /^\/+/
+
 export interface HeadlessPageInstance extends Record<string, any> {
   __lastChangedKeys__?: string[]
+  __navigationBarTitle__?: string
   __route__: string
   data: Record<string, any>
   options: Record<string, string>
@@ -38,14 +43,14 @@ function resolveInitialData(definition: HeadlessPageDefinition) {
 
 function parseDataPath(path: string) {
   return path
-    .replace(/\[(\d+)\]/g, '.$1')
+    .replace(ARRAY_INDEX_PATH_RE, '.$1')
     .split('.')
     .map(segment => segment.trim())
     .filter(Boolean)
 }
 
 function isArrayIndexSegment(segment: string) {
-  return /^\d+$/.test(segment)
+  return ARRAY_INDEX_SEGMENT_RE.test(segment)
 }
 
 function createContainerByNextSegment(nextSegment?: string) {
@@ -70,23 +75,27 @@ function assignByPath(target: Record<string, any>, path: string, value: unknown)
     current = current[normalizedSegment]
   }
 
-  const leafSegment = segments[segments.length - 1]!
+  const leafSegment = segments.at(-1)!
   const normalizedLeafSegment = isArrayIndexSegment(leafSegment) ? Number(leafSegment) : leafSegment
   current[normalizedLeafSegment] = value
 }
 
 function normalizeRoute(route: string) {
-  return route.replace(/^\/+/, '')
+  return route.replace(LEADING_ROUTE_SLASH_RE, '')
 }
 
 export function createPageInstance(
   route: string,
   definition: HeadlessPageDefinition,
   options: Record<string, string> = {},
+  pageState: {
+    navigationBarTitle?: string
+  } = {},
 ): HeadlessPageInstance {
   const normalizedRoute = normalizeRoute(route)
   const instance: HeadlessPageInstance = {
     __route__: normalizedRoute,
+    __navigationBarTitle__: pageState.navigationBarTitle,
     data: resolveInitialData(definition),
     options: { ...options },
     route: normalizedRoute,
