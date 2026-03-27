@@ -9,6 +9,7 @@ import { createProject } from '@/index'
 import * as npm from '@/npm'
 
 const DIGIT_RE = /\d/
+const FIXED_OUTPUT_ENV_NAME = 'CREATE_WEAPP_VITE_TEST_OUTPUT_DIR'
 
 function normalizeRelativePath(value: string) {
   return value.split(path.sep).join('/')
@@ -195,6 +196,14 @@ describe('template parity', () => {
   })
 
   async function createTmpRoot(suffix: string) {
+    const fixedOutputRoot = process.env[FIXED_OUTPUT_ENV_NAME]
+    if (fixedOutputRoot) {
+      const root = path.resolve(fixedOutputRoot, suffix)
+      await fs.remove(root)
+      await fs.ensureDir(root)
+      return root
+    }
+
     return await fs.mkdtemp(path.join(os.tmpdir(), `weapp-template-parity-${suffix}-`))
   }
 
