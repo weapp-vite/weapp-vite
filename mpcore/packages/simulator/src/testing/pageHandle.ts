@@ -134,6 +134,22 @@ export class HeadlessTestingPageHandle {
     )
   }
 
+  async waitForTextGone(text: string, options: HeadlessTestingWaitOptions = {}) {
+    const normalizedText = text.trim()
+    if (!normalizedText) {
+      throw new Error('Text must be a non-empty string in headless testing runtime.')
+    }
+
+    await this.pollUntil(
+      async () => {
+        const wxml = await this.wxml()
+        return wxml.includes(normalizedText) ? null : true
+      },
+      `Timed out waiting for text "${normalizedText}" to disappear in headless testing runtime.`,
+      options,
+    )
+  }
+
   async wxml() {
     return renderPageTree(this.project, this.page).wxml
   }
