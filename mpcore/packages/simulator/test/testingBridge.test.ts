@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { launch } from '../src/testing'
-import { cleanupTempDirs, createBaseFixture } from './helpers'
+import { cleanupTempDirs, createBaseFixture, createNavigationFixture } from './helpers'
 
 describe('headless testing bridge', () => {
   const tempDirs: string[] = []
@@ -213,6 +213,36 @@ describe('headless testing bridge', () => {
     await expect(page.waitForData('__e2eAsyncCount', 99, {
       timeout: 30,
     })).rejects.toThrow('Timed out waiting for data "__e2eAsyncCount"')
+  })
+
+  it('waits for async current-page navigation through the session handle', async () => {
+    const projectPath = createNavigationFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const homePage = await miniProgram.reLaunch('/pages/home/index')
+    await homePage.callMethod('goDetailLater')
+
+    const detailPage = await miniProgram.waitForCurrentPage('/pages/detail/index', {
+      timeout: 200,
+    })
+
+    expect(detailPage).not.toBeNull()
+    expect(await detailPage?.data('logs')).toEqual([
+      'home:onLoad:{}',
+      'home:onShow',
+      'home:onReady',
+      'home:onHide',
+      'detail:onLoad:{"from":"home-later"}',
+      'detail:onShow',
+      'detail:onReady',
+    ])
+
+    await expect(miniProgram.waitForCurrentPage('/pages/missing/index', {
+      timeout: 30,
+    })).rejects.toThrow('Timed out waiting for current page "pages/missing/index"')
   })
 
   it('renders interpolated wxml and supports basic selectors', async () => {
