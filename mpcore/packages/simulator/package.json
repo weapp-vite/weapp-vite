@@ -23,13 +23,13 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
     }
   },
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "README.md",
     "dist"
@@ -41,9 +41,10 @@
     "dev": "tsdown -w",
     "build": "tsdown",
     "test": "vitest run",
-    "test:all": "pnpm test && pnpm test:e2e",
+    "test:all": "pnpm test && pnpm test:types && pnpm test:e2e",
     "test:dev": "vitest",
     "test:e2e": "vitest run -c ./vitest.e2e.config.ts",
+    "test:types": "pnpm build && tsd",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
