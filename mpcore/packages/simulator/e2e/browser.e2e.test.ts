@@ -141,6 +141,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.downloadSnapshot
           && pageData.fileManagerSnapshot
           && pageData.requestSnapshot
+          && pageData.savedFileInfo
           && pageData.savedFilePath
           && pageData.storageSnapshot
           && pageData.toastState
@@ -158,6 +159,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.fileManagerSnapshot).toContain('"isFile":true')
     expect(pageData.fileManagerSnapshot).toContain('"text":"component-lab"')
     expect(pageData.requestSnapshot).toContain('"queue":"alpha"')
+    expect(pageData.savedFileInfo).toContain('"errMsg":"getSavedFileInfo:ok"')
+    expect(pageData.savedFileInfo).toContain('"size":20')
     expect(pageData.savedFilePath).toContain('headless://wxfile/saved/')
     expect(pageData.storageSnapshot).toContain('"status"')
     expect(pageData.toastState).toContain('showToast:ok')

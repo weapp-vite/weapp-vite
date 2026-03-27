@@ -201,6 +201,7 @@ export class BrowserHeadlessSession {
       {
         executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
         getFileSystemManager: () => this.wxState.getFileSystemManager(),
+        getSavedFileInfo: option => this.wxState.getSavedFileInfo(option),
         getSavedFileList: () => this.wxState.getSavedFileList(),
         getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
