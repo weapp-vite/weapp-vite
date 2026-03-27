@@ -1,12 +1,13 @@
 import type { HeadlessPageDefinition } from '../host'
-import type { HeadlessBackgroundTextStyle, HeadlessNavigationBarSnapshot } from '../project/pageConfig'
-import { cloneNavigationBarSnapshot } from '../project/pageConfig'
+import type { HeadlessBackgroundSnapshot, HeadlessBackgroundTextStyle, HeadlessNavigationBarSnapshot } from '../project/pageConfig'
+import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot } from '../project/pageConfig'
 
 const ARRAY_INDEX_PATH_RE = /\[(\d+)\]/g
 const ARRAY_INDEX_SEGMENT_RE = /^\d+$/
 const LEADING_ROUTE_SLASH_RE = /^\/+/
 
 export interface HeadlessPageInstance extends Record<string, any> {
+  __background__?: HeadlessBackgroundSnapshot
   __backgroundTextStyle__?: HeadlessBackgroundTextStyle
   __lastChangedKeys__?: string[]
   __navigationBar__?: HeadlessNavigationBarSnapshot
@@ -93,13 +94,17 @@ export function createPageInstance(
   definition: HeadlessPageDefinition,
   options: Record<string, string> = {},
   pageState: {
+    background?: HeadlessBackgroundSnapshot
     backgroundTextStyle?: HeadlessBackgroundTextStyle
     navigationBar?: HeadlessNavigationBarSnapshot
   } = {},
 ): HeadlessPageInstance {
   const normalizedRoute = normalizeRoute(route)
   const instance: HeadlessPageInstance = {
-    __backgroundTextStyle__: pageState.backgroundTextStyle,
+    __background__: pageState.background
+      ? cloneBackgroundSnapshot(pageState.background)
+      : undefined,
+    __backgroundTextStyle__: pageState.background?.textStyle ?? pageState.backgroundTextStyle,
     __route__: normalizedRoute,
     __navigationBar__: pageState.navigationBar
       ? cloneNavigationBarSnapshot(pageState.navigationBar)

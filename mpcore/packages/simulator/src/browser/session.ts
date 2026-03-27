@@ -7,7 +7,7 @@ import type { HeadlessWxActionSheetMockDefinition, HeadlessWxModalMockDefinition
 import type { BrowserVirtualFiles } from './virtualFiles'
 import { join, posix } from 'pathe'
 import { createHostRegistries } from '../host'
-import { cloneNavigationBarSnapshot, resolveBackgroundTextStyle, resolveNavigationBarSnapshot } from '../project/pageConfig'
+import { cloneBackgroundSnapshot, cloneNavigationBarSnapshot, resolveBackgroundSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { createAppInstance } from '../runtime/appInstance'
 import { runComponentPageLifetime } from '../runtime/componentInstance'
 import { createPageInstance } from '../runtime/pageInstance'
@@ -205,6 +205,7 @@ export class BrowserHeadlessSession {
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         request: option => this.wxState.request(option),
+        setBackgroundColor: option => this.setBackgroundColor(option),
         setBackgroundTextStyle: option => this.setBackgroundTextStyle(option.textStyle),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
         setNavigationBarColor: option => this.setNavigationBarColor(option),
@@ -248,9 +249,8 @@ export class BrowserHeadlessSession {
   }
 
   getCurrentPageBackground() {
-    return {
-      textStyle: this.currentPageInstance?.__backgroundTextStyle__ ?? null,
-    }
+    const snapshot = this.currentPageInstance?.__background__
+    return snapshot ? cloneBackgroundSnapshot(snapshot) : null
   }
 
   getActionSheetLogs() {
@@ -367,9 +367,42 @@ export class BrowserHeadlessSession {
       throw new Error('setBackgroundTextStyle:fail invalid textStyle')
     }
     const current = this.requireCurrentPage('wx.setBackgroundTextStyle()')
+    current.__background__ ??= {
+      backgroundColor: '#ffffff',
+      backgroundColorBottom: '#ffffff',
+      backgroundColorTop: '#ffffff',
+      textStyle: 'dark',
+    }
+    current.__background__.textStyle = textStyle
     current.__backgroundTextStyle__ = textStyle
     return {
       errMsg: 'setBackgroundTextStyle:ok',
+    }
+  }
+
+  setBackgroundColor(option: {
+    backgroundColor?: string
+    backgroundColorBottom?: string
+    backgroundColorTop?: string
+  }) {
+    const current = this.requireCurrentPage('wx.setBackgroundColor()')
+    current.__background__ ??= {
+      backgroundColor: '#ffffff',
+      backgroundColorBottom: '#ffffff',
+      backgroundColorTop: '#ffffff',
+      textStyle: current.__backgroundTextStyle__ ?? 'dark',
+    }
+    if (typeof option.backgroundColor === 'string') {
+      current.__background__.backgroundColor = option.backgroundColor
+    }
+    if (typeof option.backgroundColorTop === 'string') {
+      current.__background__.backgroundColorTop = option.backgroundColorTop
+    }
+    if (typeof option.backgroundColorBottom === 'string') {
+      current.__background__.backgroundColorBottom = option.backgroundColorBottom
+    }
+    return {
+      errMsg: 'setBackgroundColor:ok',
     }
   }
 
@@ -867,7 +900,7 @@ export class BrowserHeadlessSession {
     const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
     const pageConfig = readJsonObject(this.files, pageConfigPath)
     const pageInstance = createPageInstance(target.routeRecord.route, pageDefinition, target.query, {
-      backgroundTextStyle: resolveBackgroundTextStyle(this.project.appConfig, pageConfig),
+      background: resolveBackgroundSnapshot(this.project.appConfig, pageConfig),
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
     })
     pageInstance.selectComponent = (selector: string) => this.selectComponent(selector)
