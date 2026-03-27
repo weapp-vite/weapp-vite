@@ -156,3 +156,11 @@ export interface DashboardRuntimeEvent {
   durationMs?: number
   tags?: string[]
 }
+
+export interface DashboardRuntimeSourceSummary {
+  source: string
+  count: number
+  errorCount: number
+  latestTimestamp: string
+  averageDurationMs?: number
+}

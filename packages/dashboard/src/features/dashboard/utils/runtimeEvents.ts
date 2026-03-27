@@ -2,6 +2,7 @@ import type {
   DashboardRuntimeEvent,
   DashboardRuntimeEventKind,
   DashboardRuntimeEventLevel,
+  DashboardRuntimeSourceSummary,
 } from '../types'
 
 const EVENT_KINDS: DashboardRuntimeEventKind[] = ['command', 'build', 'diagnostic', 'hmr', 'system']
@@ -77,4 +78,49 @@ export function normalizeRuntimeEvents(input: unknown) {
   }
 
   return [...deduped.values()]
+}
+
+export function summarizeRuntimeEventsBySource(events: DashboardRuntimeEvent[]): DashboardRuntimeSourceSummary[] {
+  const sourceMap = new Map<string, {
+    count: number
+    errorCount: number
+    latestTimestamp: string
+    durationTotal: number
+    timedCount: number
+  }>()
+
+  for (const event of events) {
+    const source = event.source ?? 'dashboard'
+    const existing = sourceMap.get(source)
+
+    if (!existing) {
+      sourceMap.set(source, {
+        count: 1,
+        errorCount: event.level === 'error' ? 1 : 0,
+        latestTimestamp: event.timestamp,
+        durationTotal: event.durationMs ?? 0,
+        timedCount: typeof event.durationMs === 'number' ? 1 : 0,
+      })
+      continue
+    }
+
+    sourceMap.set(source, {
+      count: existing.count + 1,
+      errorCount: existing.errorCount + (event.level === 'error' ? 1 : 0),
+      latestTimestamp: existing.latestTimestamp,
+      durationTotal: existing.durationTotal + (event.durationMs ?? 0),
+      timedCount: existing.timedCount + (typeof event.durationMs === 'number' ? 1 : 0),
+    })
+  }
+
+  return Array.from(sourceMap, ([source, meta]) => ({
+    source,
+    count: meta.count,
+    errorCount: meta.errorCount,
+    latestTimestamp: meta.latestTimestamp,
+    averageDurationMs: meta.timedCount > 0
+      ? Math.round(meta.durationTotal / meta.timedCount)
+      : undefined,
+  }))
+    .sort((left, right) => right.count - left.count || left.source.localeCompare(right.source, 'zh-CN'))
 }

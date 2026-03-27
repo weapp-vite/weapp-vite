@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeRuntimeEvents } from './runtimeEvents'
+import { normalizeRuntimeEvents, summarizeRuntimeEventsBySource } from './runtimeEvents'
 
 describe('normalizeRuntimeEvents', () => {
   it('normalizes partial event payloads and fills defaults', () => {
@@ -53,6 +53,55 @@ describe('normalizeRuntimeEvents', () => {
         source: 'dashboard',
         durationMs: undefined,
         tags: ['hmr'],
+      },
+    ])
+  })
+
+  it('summarizes runtime events by source with average duration', () => {
+    expect(summarizeRuntimeEventsBySource([
+      {
+        id: 'evt-1',
+        kind: 'command',
+        level: 'success',
+        title: 'first',
+        detail: 'first detail',
+        timestamp: '10:00:00',
+        source: 'cli',
+        durationMs: 200,
+      },
+      {
+        id: 'evt-2',
+        kind: 'command',
+        level: 'error',
+        title: 'second',
+        detail: 'second detail',
+        timestamp: '10:01:00',
+        source: 'cli',
+      },
+      {
+        id: 'evt-3',
+        kind: 'hmr',
+        level: 'info',
+        title: 'third',
+        detail: 'third detail',
+        timestamp: '10:02:00',
+        source: 'vite-hmr',
+        durationMs: 40,
+      },
+    ])).toEqual([
+      {
+        source: 'cli',
+        count: 2,
+        errorCount: 1,
+        latestTimestamp: '10:00:00',
+        averageDurationMs: 200,
+      },
+      {
+        source: 'vite-hmr',
+        count: 1,
+        errorCount: 0,
+        latestTimestamp: '10:02:00',
+        averageDurationMs: 40,
       },
     ])
   })

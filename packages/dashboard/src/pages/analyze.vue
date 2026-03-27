@@ -19,6 +19,7 @@ import { useDashboardWorkspace } from '../features/dashboard/composables/useDash
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs } from '../features/dashboard/constants/view'
 import { formatDuration, formatRuntimeEventLevel, formatRuntimeEventMeta } from '../features/dashboard/utils/format'
+import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
 
@@ -52,37 +53,11 @@ const statusText = computed(() => `${updateCount.value} 次数据同步`)
 const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'status-dark' : 'status-light')
 const recentRuntimeEvents = computed(() => runtimeEvents.value.slice(0, 3))
 const runtimeSourceSummary = computed(() =>
-  Array.from(
-    runtimeEvents.value.reduce((sourceMap, event) => {
-      const source = event.source ?? 'dashboard'
-      const existing = sourceMap.get(source)
-
-      if (!existing) {
-        sourceMap.set(source, {
-          count: 1,
-          errorCount: event.level === 'error' ? 1 : 0,
-          durationTotal: event.durationMs ?? 0,
-          timedCount: typeof event.durationMs === 'number' ? 1 : 0,
-        })
-        return sourceMap
-      }
-
-      sourceMap.set(source, {
-        count: existing.count + 1,
-        errorCount: existing.errorCount + (event.level === 'error' ? 1 : 0),
-        durationTotal: existing.durationTotal + (event.durationMs ?? 0),
-        timedCount: existing.timedCount + (typeof event.durationMs === 'number' ? 1 : 0),
-      })
-      return sourceMap
-    }, new Map<string, { count: number, errorCount: number, durationTotal: number, timedCount: number }>()),
-    ([source, meta]) => ({
-      source,
-      count: meta.count,
-      errorCount: meta.errorCount,
-      averageDuration: formatDuration(meta.timedCount > 0 ? Math.round(meta.durationTotal / meta.timedCount) : undefined),
-    }),
-  )
-    .sort((left, right) => right.count - left.count || left.source.localeCompare(right.source, 'zh-CN'))
+  summarizeRuntimeEventsBySource(runtimeEvents.value)
+    .map(source => ({
+      ...source,
+      averageDuration: formatDuration(source.averageDurationMs),
+    }))
     .slice(0, 4),
 )
 const { activeTab, topCards, packageTypeSummary: metricPackageTypeSummary } = useDashboardPage({
