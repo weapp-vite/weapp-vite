@@ -92,6 +92,13 @@ export function shouldFillComponentGenericsDefault(platform?: MpPlatform): boole
   return getMiniProgramPlatformAdapter(platform).json?.fillComponentGenericsDefault === true
 }
 
+export function shouldRewriteBundleNpmImports(platform?: MpPlatform): boolean {
+  if (!platform) {
+    return false
+  }
+  return getMiniProgramPlatformAdapter(platform).json?.rewriteBundleNpmImports === true
+}
+
 export function getPlatformNpmDistDirName(
   platform: MpPlatform,
   options?: {
@@ -150,4 +157,11 @@ export function shouldEmitGenericPlaceholderAsset(platform?: MpPlatform): boolea
     return false
   }
   return getMiniProgramPlatformAdapter(platform).wxml?.emitGenericPlaceholder === true
+}
+
+export function getPlatformAppTypesPackage(platform?: MpPlatform): string {
+  if (!platform) {
+    return 'miniprogram-api-typings'
+  }
+  return getMiniProgramPlatformAdapter(platform).typescript?.appTypesPackage ?? 'miniprogram-api-typings'
 }
