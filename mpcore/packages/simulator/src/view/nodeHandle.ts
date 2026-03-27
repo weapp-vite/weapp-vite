@@ -32,7 +32,7 @@ interface HeadlessTestingNodeValueEventInit extends HeadlessTestingNodeEventInit
 }
 
 interface HeadlessTestingNodeInteractionHandlers {
-  callMethod: (methodName: string, event: Record<string, any>) => unknown
+  callMethod: (scopeId: string | null, methodName: string, event: Record<string, any>) => unknown
 }
 
 const DATASET_NAME_RE = /-([a-z])/g
@@ -187,7 +187,11 @@ export class HeadlessTestingNodeHandle {
       throw new Error(`No ${normalizedEventName} binding was found on <${this.node.name ?? 'unknown'}> in headless testing runtime.`)
     }
 
-    return await this.interactions.callMethod(methodName, createEventPayload(this.node, normalizedEventName, event))
+    return await this.interactions.callMethod(
+      this.node.attribs?.['data-sim-scope'] ?? null,
+      methodName,
+      createEventPayload(this.node, normalizedEventName, event),
+    )
   }
 
   async tap(event: HeadlessTestingNodeEventInit = {}) {

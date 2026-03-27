@@ -90,7 +90,12 @@ export class HeadlessTestingPageHandle {
       ? (tree.root.children?.[0] ?? tree.root)
       : tree.root
     const root = new HeadlessTestingNodeHandle(rootNode, {
-      callMethod: (methodName, event) => this.callMethod(methodName, event),
+      callMethod: (scopeId, methodName, event) => {
+        if (this.session?.getCurrentPages().includes(this.page)) {
+          return this.session.callScopeMethod(scopeId, methodName, event)
+        }
+        return this.callMethod(methodName, event)
+      },
     })
     if (selector === 'page') {
       return root

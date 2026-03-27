@@ -645,7 +645,7 @@ Component({
   }
 })
 `)
-  writeText(path.join(root, 'dist/components/status-card/index.wxml'), '<view class="card-shell">count: {{count}}</view>')
+  writeText(path.join(root, 'dist/components/status-card/index.wxml'), '<view id="card-trigger" class="card-shell" bindtap="pulse">count: {{count}}</view>')
 
   return root
 }
