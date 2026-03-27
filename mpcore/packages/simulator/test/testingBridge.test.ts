@@ -40,6 +40,46 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('triggers tap bindings from rendered nodes and maps dataset keys', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/index/index')
+    const button = await page.$('#greeting-button')
+
+    expect(button).not.toBeNull()
+    expect(await button?.dataset()).toEqual({
+      cardType: 'primary',
+      phase: 'initial',
+    })
+
+    await button?.tap()
+
+    expect(await page.data('__e2eResult')).toEqual({
+      status: 'tapped',
+      detail: 'tap handled',
+    })
+    expect(await page.data('__e2eTap')).toEqual({
+      currentTarget: {
+        dataset: {
+          cardType: 'primary',
+          phase: 'initial',
+        },
+        id: 'greeting-button',
+      },
+      target: {
+        dataset: {
+          cardType: 'primary',
+          phase: 'initial',
+        },
+        id: 'greeting-button',
+      },
+    })
+  })
+
   it('renders interpolated wxml and supports basic selectors', async () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)
@@ -57,7 +97,7 @@ describe('headless testing bridge', () => {
     expect(await panelRows[3]?.text()).toBe('Target: index snapshot')
 
     const wxml = await root?.wxml()
-    expect(wxml).toContain('<view bind:tap="onTap">Hello</view>')
+    expect(wxml).toContain('<view id="greeting-button" data-phase="initial" data-card-type="primary" bind:tap="onTap">Hello</view>')
     expect(wxml).toContain('Status: ready')
     expect(wxml).toContain('Greeting: Hello')
   })

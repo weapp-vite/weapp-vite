@@ -45,17 +45,22 @@ Page({
       status: 'ready',
       detail: 'rendered',
     },
+    __e2eTap: null,
   },
-  onTap() {
+  onTap(event) {
     this.setData({
       '__e2eResult.status': 'tapped',
       '__e2eResult.detail': 'tap handled',
+      __e2eTap: {
+        currentTarget: event?.currentTarget ?? null,
+        target: event?.target ?? null,
+      },
     })
   },
 })
 `)
   writeText(path.join(root, 'dist/pages/index/index.wxml'), `
-<view bind:tap="onTap">{{__e2eData.greeting}}</view>
+<view id="greeting-button" data-phase="initial" data-card-type="primary" bind:tap="onTap">{{__e2eData.greeting}}</view>
 <view class="panel-row">Status: {{__e2eResult.status}}</view>
 <view class="panel-row">Detail: {{__e2eResult.detail}}</view>
 <view class="panel-row">Greeting: {{__e2eData.greeting}}</view>

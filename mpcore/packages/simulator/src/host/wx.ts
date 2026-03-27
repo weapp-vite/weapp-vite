@@ -100,11 +100,21 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     clearStorageSync: () => driver.clearStorageSync(),
     getStorageSync: key => driver.getStorageSync(key),
     hideToast: () => driver.hideToast(),
-    navigateBack: option => invokeWxApi(() => driver.navigateBack(option), option),
-    navigateTo: option => invokeWxApi(() => driver.navigateTo(option), option),
-    pageScrollTo: option => invokeWxApi(() => driver.pageScrollTo(option), option),
-    reLaunch: option => invokeWxApi(() => driver.reLaunch(option), option),
-    redirectTo: option => invokeWxApi(() => driver.redirectTo(option), option),
+    navigateBack: option => invokeWxApi(() => {
+      driver.navigateBack(option)
+    }, option),
+    navigateTo: option => invokeWxApi(() => {
+      driver.navigateTo(option)
+    }, option),
+    pageScrollTo: option => invokeWxApi(() => {
+      driver.pageScrollTo(option)
+    }, option),
+    reLaunch: option => invokeWxApi(() => {
+      driver.reLaunch(option)
+    }, option),
+    redirectTo: option => invokeWxApi(() => {
+      driver.redirectTo(option)
+    }, option),
     removeStorageSync: key => driver.removeStorageSync(key),
     request: (option) => {
       invokeWxApi(() => driver.request(option), option)
@@ -115,6 +125,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     setStorageSync: (key, value) => driver.setStorageSync(key, value),
     showToast: option => invokeWxApi(() => driver.showToast(option), option),
     stopPullDownRefresh: () => driver.stopPullDownRefresh(),
-    switchTab: option => invokeWxApi(() => driver.switchTab(option), option),
+    switchTab: option => invokeWxApi(() => {
+      driver.switchTab(option)
+    }, option),
   }
 }

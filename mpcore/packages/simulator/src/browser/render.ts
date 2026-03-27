@@ -155,7 +155,7 @@ function resolveLiteralValue(expression: string) {
   return undefined
 }
 
-function resolveValueByExpression(source: Record<string, any>, expression: string) {
+function resolveValueByExpression(source: Record<string, any>, expression: string): unknown {
   const normalized = unwrapMustacheExpression(expression)
   if (!normalized) {
     return undefined
