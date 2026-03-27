@@ -623,4 +623,113 @@ Page({
     ])
     expect(session.getRequestLogs()).toEqual([])
   })
+
+  it('supports showModal defaults and queued modal mocks', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-show-modal-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    defaultSummary: '',
+    cancelSummary: '',
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  openDefaultModal() {
+    wx.showModal({
+      title: 'Warmup',
+      content: 'Confirm flow',
+      success: (result) => {
+        this.setData({
+          defaultSummary: JSON.stringify(result)
+        })
+        this.push('default:success')
+      },
+      complete: (result) => {
+        this.push('default:complete:' + (result?.errMsg ?? 'none'))
+      }
+    })
+  },
+  openCancelModal() {
+    wx.showModal({
+      title: 'Blocker',
+      content: 'Cancel flow',
+      cancelText: '返回',
+      confirmText: '继续',
+      success: (result) => {
+        this.setData({
+          cancelSummary: JSON.stringify(result)
+        })
+        this.push('cancel:success')
+      },
+      complete: (result) => {
+        this.push('cancel:complete:' + (result?.errMsg ?? 'none'))
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>modal</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.openDefaultModal()
+    session.mockModal({ confirm: false })
+    page.openCancelModal()
+
+    expect(page.data.defaultSummary).toContain('"confirm":true')
+    expect(page.data.defaultSummary).toContain('"cancel":false')
+    expect(page.data.cancelSummary).toContain('"confirm":false')
+    expect(page.data.cancelSummary).toContain('"cancel":true')
+    expect(page.data.logs).toEqual([
+      'default:success',
+      'default:complete:showModal:ok',
+      'cancel:success',
+      'cancel:complete:showModal:ok',
+    ])
+    expect(session.getModalLogs()).toEqual([
+      {
+        cancelColor: '#000000',
+        cancelText: '取消',
+        confirmColor: '#576B95',
+        confirmText: '确定',
+        content: 'Confirm flow',
+        result: {
+          cancel: false,
+          confirm: true,
+          errMsg: 'showModal:ok',
+        },
+        showCancel: true,
+        title: 'Warmup',
+      },
+      {
+        cancelColor: '#000000',
+        cancelText: '返回',
+        confirmColor: '#576B95',
+        confirmText: '继续',
+        content: 'Cancel flow',
+        result: {
+          cancel: true,
+          confirm: false,
+          errMsg: 'showModal:ok',
+        },
+        showCancel: true,
+        title: 'Blocker',
+      },
+    ])
+  })
 })

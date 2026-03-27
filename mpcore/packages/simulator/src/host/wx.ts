@@ -111,6 +111,22 @@ export interface HeadlessWxClearStorageOption extends HeadlessWxCallbackOption<H
 
 export interface HeadlessWxHideLoadingOption extends HeadlessWxCallbackOption<{ errMsg: string }> {}
 
+export interface HeadlessWxShowModalResult {
+  cancel: boolean
+  confirm: boolean
+  errMsg: string
+}
+
+export interface HeadlessWxShowModalOption extends HeadlessWxCallbackOption<HeadlessWxShowModalResult> {
+  cancelColor?: string
+  cancelText?: string
+  confirmColor?: string
+  confirmText?: string
+  content: string
+  showCancel?: boolean
+  title?: string
+}
+
 export interface HeadlessWxShowToastOption extends HeadlessWxCallbackOption<{ errMsg: string }> {
   duration?: number
   icon?: string
@@ -164,6 +180,7 @@ export interface HeadlessWxDriver {
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
   setStorageSync: (key: string, value: unknown) => void
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string }
+  showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string }
   stopPullDownRefresh: () => void
   switchTab: (option: HeadlessWxNavigateOption) => unknown
@@ -200,6 +217,7 @@ export interface HeadlessWx {
   setStorage: (option: HeadlessWxSetStorageOption) => HeadlessWxStorageResult | undefined
   setStorageSync: (key: string, value: unknown) => void
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string } | undefined
+  showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult | undefined
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string } | undefined
   stopPullDownRefresh: () => void
   switchTab: (option: HeadlessWxNavigateOption) => unknown
@@ -381,6 +399,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     setStorage: true,
     setStorageSync: true,
     showLoading: true,
+    showModal: true,
     showToast: true,
     stopPullDownRefresh: true,
     switchTab: true,
@@ -445,6 +464,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     }, option),
     setStorageSync: (key, value) => driver.setStorageSync(key, value),
     showLoading: option => invokeWxApi(() => driver.showLoading(option), option),
+    showModal: option => invokeWxApi(() => driver.showModal(option), option),
     showToast: option => invokeWxApi(() => driver.showToast(option), option),
     stopPullDownRefresh: () => driver.stopPullDownRefresh(),
     switchTab: option => invokeWxApi(() => {

@@ -88,6 +88,217 @@ Page({
     })
   })
 
+  it('tracks delayed request mocks in browser runtime request state', async () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    logs: [],
+    requestSummary: ''
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  startRequest() {
+    wx.request({
+      url: 'https://mock.mpcore.dev/api/browser-queue',
+      success: (result) => {
+        this.setData({
+          requestSummary: JSON.stringify(result.data)
+        })
+        this.push('success')
+      },
+      complete: () => {
+        this.push('complete')
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{requestSummary}}</view><view>{{logs.0}}</view><view>{{logs.1}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.mockRequest({
+      delay: 30,
+      method: 'GET',
+      response: {
+        queue: 'browser-alpha',
+        stable: true,
+      },
+      url: 'https://mock.mpcore.dev/api/browser-queue',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.startRequest()
+
+    expect(page.data.logs).toEqual([])
+
+    await new Promise(resolve => setTimeout(resolve, 60))
+
+    expect(page.data.logs).toEqual(['success', 'complete'])
+    expect(page.data.requestSummary).toContain('"queue":"browser-alpha"')
+    expect(session.renderCurrentPage().wxml).toContain('browser-alpha')
+    expect(session.getRequestLogs()).toHaveLength(1)
+    expect(session.getRequestLogs()[0]).toMatchObject({
+      matched: true,
+      method: 'GET',
+      url: 'https://mock.mpcore.dev/api/browser-queue',
+    })
+  })
+
+  it('supports request task abort in browser runtime', async () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  startRequestAndAbort() {
+    const task = wx.request({
+      url: 'https://mock.mpcore.dev/api/browser-slow',
+      success: () => {
+        this.push('success')
+      },
+      fail: (error) => {
+        this.push('fail:' + error.message)
+      },
+      complete: () => {
+        this.push('complete')
+      }
+    })
+    task.abort()
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{logs.0}}</view><view>{{logs.1}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.mockRequest({
+      delay: 50,
+      method: 'GET',
+      response: {
+        ok: true,
+      },
+      url: 'https://mock.mpcore.dev/api/browser-slow',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.startRequestAndAbort()
+    await new Promise(resolve => setTimeout(resolve, 80))
+
+    expect(page.data.logs).toEqual([
+      'fail:request:fail abort',
+      'complete',
+    ])
+    expect(session.renderCurrentPage().wxml).toContain('request:fail abort')
+    expect(session.getRequestLogs()).toEqual([])
+  })
+
+  it('supports showModal defaults and queued modal mocks in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    defaultSummary: '',
+    cancelSummary: '',
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  openDefaultModal() {
+    wx.showModal({
+      title: 'Browser Warmup',
+      content: 'Confirm flow',
+      success: (result) => {
+        this.setData({
+          defaultSummary: JSON.stringify(result)
+        })
+        this.push('default:success')
+      }
+    })
+  },
+  openCancelModal() {
+    wx.showModal({
+      title: 'Browser Blocker',
+      content: 'Cancel flow',
+      cancelText: '返回',
+      confirmText: '继续',
+      success: (result) => {
+        this.setData({
+          cancelSummary: JSON.stringify(result)
+        })
+        this.push('cancel:success')
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{defaultSummary}}</view><view>{{cancelSummary}}</view><view>{{logs.0}}</view><view>{{logs.1}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.openDefaultModal()
+    session.mockModal({ confirm: false })
+    page.openCancelModal()
+
+    expect(page.data.defaultSummary).toContain('"confirm":true')
+    expect(page.data.cancelSummary).toContain('"cancel":true')
+    expect(page.data.logs).toEqual([
+      'default:success',
+      'cancel:success',
+    ])
+    expect(session.getModalLogs()).toEqual([
+      {
+        cancelColor: '#000000',
+        cancelText: '取消',
+        confirmColor: '#576B95',
+        confirmText: '确定',
+        content: 'Confirm flow',
+        result: {
+          cancel: false,
+          confirm: true,
+          errMsg: 'showModal:ok',
+        },
+        showCancel: true,
+        title: 'Browser Warmup',
+      },
+      {
+        cancelColor: '#000000',
+        cancelText: '返回',
+        confirmColor: '#576B95',
+        confirmText: '继续',
+        content: 'Cancel flow',
+        result: {
+          cancel: true,
+          confirm: false,
+          errMsg: 'showModal:ok',
+        },
+        showCancel: true,
+        title: 'Browser Blocker',
+      },
+    ])
+  })
+
   it('renders custom components and routes triggerEvent back to the page', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

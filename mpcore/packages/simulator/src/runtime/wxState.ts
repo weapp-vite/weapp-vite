@@ -3,6 +3,8 @@ import type {
   HeadlessWxRequestSuccessResult,
   HeadlessWxRequestTask,
   HeadlessWxShowLoadingOption,
+  HeadlessWxShowModalOption,
+  HeadlessWxShowModalResult,
   HeadlessWxShowToastOption,
 } from '../host'
 import { Buffer } from 'node:buffer'
@@ -16,6 +18,22 @@ export interface HeadlessWxToastSnapshot {
   duration: number
   icon: string
   mask: boolean
+  title: string
+}
+
+export interface HeadlessWxModalMockDefinition {
+  cancel?: boolean
+  confirm?: boolean
+}
+
+export interface HeadlessWxModalLogEntry {
+  cancelColor: string
+  cancelText: string
+  confirmColor: string
+  confirmText: string
+  content: string
+  result: HeadlessWxShowModalResult
+  showCancel: boolean
   title: string
 }
 
@@ -40,6 +58,10 @@ export interface HeadlessWxRequestLogEntry {
 }
 
 const STORAGE_LIMIT_SIZE = 10 * 1024
+const DEFAULT_MODAL_CANCEL_COLOR = '#000000'
+const DEFAULT_MODAL_CANCEL_TEXT = '取消'
+const DEFAULT_MODAL_CONFIRM_COLOR = '#576B95'
+const DEFAULT_MODAL_CONFIRM_TEXT = '确定'
 
 function cloneValue<T>(value: T): T {
   if (value == null || typeof value !== 'object') {
@@ -99,6 +121,8 @@ function resolveRequestResponse(
 }
 
 export function createHeadlessWxState() {
+  const modalLogs: HeadlessWxModalLogEntry[] = []
+  const modalMocks: HeadlessWxModalMockDefinition[] = []
   const requestLogs: HeadlessWxRequestLogEntry[] = []
   const requestMocks: HeadlessWxRequestMockDefinition[] = []
   const storage = new Map<string, unknown>()
@@ -108,6 +132,12 @@ export function createHeadlessWxState() {
   return {
     clearStorageSync() {
       storage.clear()
+    },
+    getModalLogs() {
+      return modalLogs.map(entry => ({
+        ...entry,
+        result: { ...entry.result },
+      }))
     },
     getRequestLogs() {
       return requestLogs.map(entry => ({
@@ -167,6 +197,12 @@ export function createHeadlessWxState() {
         ...definition,
         delay: definition.delay,
         header: definition.header ? { ...definition.header } : undefined,
+      })
+    },
+    mockModal(definition: HeadlessWxModalMockDefinition = {}) {
+      modalMocks.push({
+        cancel: definition.cancel,
+        confirm: definition.confirm,
       })
     },
     removeStorageSync(key: string) {
@@ -248,6 +284,42 @@ export function createHeadlessWxState() {
       return {
         errMsg: 'showLoading:ok',
       }
+    },
+    showModal(option: HeadlessWxShowModalOption) {
+      const showCancel = option.showCancel !== false
+      const nextMock = modalMocks.shift()
+      let confirm = nextMock?.confirm ?? true
+      let cancel = nextMock?.cancel ?? !confirm
+
+      if (!showCancel) {
+        confirm = true
+        cancel = false
+      }
+      else if (confirm) {
+        cancel = false
+      }
+      else {
+        cancel = true
+      }
+
+      const result: HeadlessWxShowModalResult = {
+        cancel,
+        confirm,
+        errMsg: 'showModal:ok',
+      }
+
+      modalLogs.push({
+        cancelColor: option.cancelColor ?? DEFAULT_MODAL_CANCEL_COLOR,
+        cancelText: option.cancelText ?? DEFAULT_MODAL_CANCEL_TEXT,
+        confirmColor: option.confirmColor ?? DEFAULT_MODAL_CONFIRM_COLOR,
+        confirmText: option.confirmText ?? DEFAULT_MODAL_CONFIRM_TEXT,
+        content: option.content,
+        result: { ...result },
+        showCancel,
+        title: option.title ?? '',
+      })
+
+      return result
     },
     showToast(option: HeadlessWxShowToastOption) {
       toast = {
