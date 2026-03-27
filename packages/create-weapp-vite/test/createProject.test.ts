@@ -65,6 +65,8 @@ describe('createProject', () => {
     const pkgJson = await fs.readJSON(path.join(root, 'package.json'))
     expect(pkgJson.devDependencies['weapp-vite']).toBe(`^${weappViteVersion}`)
     expect(pkgJson.devDependencies['weapp-tailwindcss']).toBe('^9.9.9')
+    expect(TEMPLATE_CATALOG.vite).toBe('8.0.2')
+    expect(TEMPLATE_CATALOG.rolldown).toBe('1.0.0-rc.11')
     expect(await fs.pathExists(path.join(root, '.gitignore'))).toBe(true)
     expect(await fs.pathExists(path.join(root, 'gitignore'))).toBe(false)
     const gitignore = await fs.readFile(path.join(root, '.gitignore'), 'utf8')
