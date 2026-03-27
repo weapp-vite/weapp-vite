@@ -5,6 +5,8 @@ import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
+import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
 import DashboardTabs from '../features/dashboard/components/DashboardTabs.vue'
@@ -18,9 +20,9 @@ import { useDashboardTheme } from '../features/dashboard/composables/useDashboar
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs } from '../features/dashboard/constants/view'
-import { formatDuration, formatRuntimeEventLevel, formatRuntimeEventMeta, getRuntimeEventBadgeTone, getRuntimeSourceBadgeTone } from '../features/dashboard/utils/format'
+import { formatDuration, formatRuntimeEventLevel, formatRuntimeEventMeta, getRuntimeEventBadgeTone } from '../features/dashboard/utils/format'
 import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
-import { pillButtonStyles, runtimeBadgeStyles } from '../features/dashboard/utils/styles'
+import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
 
 echarts.use([
@@ -237,12 +239,11 @@ onBeforeUnmount(() => {
                     {{ latestRuntimeEvent?.title ?? '尚无运行事件' }}
                   </h3>
                 </div>
-                <span
+                <AppRuntimeBadge
                   v-if="latestRuntimeEvent"
-                  :class="runtimeBadgeStyles({ tone: getRuntimeEventBadgeTone(latestRuntimeEvent.level) })"
-                >
-                  {{ formatRuntimeEventLevel(latestRuntimeEvent.level) }}
-                </span>
+                  :label="formatRuntimeEventLevel(latestRuntimeEvent.level)"
+                  :tone="getRuntimeEventBadgeTone(latestRuntimeEvent.level)"
+                />
               </div>
               <p class="mt-3 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
                 {{ latestRuntimeEvent?.detail ?? '当前工作区还没有推入结构化运行事件。' }}
@@ -291,28 +292,15 @@ onBeforeUnmount(() => {
           icon-name="hero-system"
         >
           <div class="grid gap-2 sm:grid-cols-2">
-            <div
+            <AppRuntimeSourceCard
               v-for="source in runtimeSourceSummary"
               :key="source.source"
-              class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="truncate font-medium text-[color:var(--dashboard-text)]">
-                    {{ source.source }}
-                  </p>
-                  <p class="mt-1 text-[11px] uppercase tracking-[0.16em] text-[color:var(--dashboard-text-soft)]">
-                    {{ source.count }} 条事件
-                  </p>
-                </div>
-                <span :class="runtimeBadgeStyles({ tone: getRuntimeSourceBadgeTone(source.errorCount) })">
-                  错误 {{ source.errorCount }}
-                </span>
-              </div>
-              <p class="mt-3 text-sm text-[color:var(--dashboard-text-muted)]">
-                平均耗时 {{ source.averageDuration }}
-              </p>
-            </div>
+              :source="source.source"
+              :count="source.count"
+              :error-count="source.errorCount"
+              :average-duration="source.averageDuration"
+              count-label="条事件"
+            />
           </div>
         </AppSurfaceCard>
 
@@ -340,9 +328,7 @@ onBeforeUnmount(() => {
                     {{ formatRuntimeEventMeta(event) }}
                   </p>
                 </div>
-                <span :class="runtimeBadgeStyles({ tone: getRuntimeEventBadgeTone(event.level) })">
-                  {{ formatRuntimeEventLevel(event.level) }}
-                </span>
+                <AppRuntimeBadge :label="formatRuntimeEventLevel(event.level)" :tone="getRuntimeEventBadgeTone(event.level)" />
               </div>
             </li>
           </ul>

@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import AppRuntimeBadge from '../features/dashboard/components/AppRuntimeBadge.vue'
+import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
-import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventMeta, formatRuntimeEventSource, getRuntimeEventBadgeTone, getRuntimeSourceBadgeTone } from '../features/dashboard/utils/format'
+import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventMeta, formatRuntimeEventSource, getRuntimeEventBadgeTone } from '../features/dashboard/utils/format'
 import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
-import { pillButtonStyles, runtimeBadgeStyles } from '../features/dashboard/utils/styles'
+import { pillButtonStyles } from '../features/dashboard/utils/styles'
 
 const { activityItems, diagnostics, eventSummary, runtimeEvents } = useDashboardWorkspace()
 
@@ -374,33 +376,15 @@ watch(filteredRuntimeEvents, (events) => {
             v-if="sourceBreakdown.length > 0"
             class="grid gap-2 md:grid-cols-2 xl:grid-cols-3"
           >
-            <div
+            <AppRuntimeSourceCard
               v-for="source in sourceBreakdown"
               :key="source.source"
-              class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="truncate text-sm font-semibold text-[color:var(--dashboard-text)]">
-                    {{ source.source }}
-                  </p>
-                  <p class="mt-1 text-[11px] uppercase tracking-[0.16em] text-[color:var(--dashboard-text-soft)]">
-                    最近事件 {{ source.latestTimestamp }}
-                  </p>
-                </div>
-                <span :class="runtimeBadgeStyles({ tone: getRuntimeSourceBadgeTone(source.errorCount) })">
-                  {{ source.count }} 条
-                </span>
-              </div>
-              <div class="mt-3 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-[color:var(--dashboard-text-soft)]">
-                <span class="rounded-full border border-[color:var(--dashboard-border)] px-2 py-0.5">
-                  错误 {{ source.errorCount }}
-                </span>
-                <span class="rounded-full border border-[color:var(--dashboard-border)] px-2 py-0.5">
-                  平均耗时 {{ source.averageDuration }}
-                </span>
-              </div>
-            </div>
+              :source="source.source"
+              :count="source.count"
+              :error-count="source.errorCount"
+              :latest-timestamp="source.latestTimestamp"
+              :average-duration="source.averageDuration"
+            />
           </div>
 
           <div
@@ -417,9 +401,7 @@ watch(filteredRuntimeEvents, (events) => {
                     {{ selectedEvent.title }}
                   </h3>
                 </div>
-                <span :class="runtimeBadgeStyles({ tone: getRuntimeEventBadgeTone(selectedEvent.level) })">
-                  {{ formatRuntimeEventLevel(selectedEvent.level) }}
-                </span>
+                <AppRuntimeBadge :label="formatRuntimeEventLevel(selectedEvent.level)" :tone="getRuntimeEventBadgeTone(selectedEvent.level)" />
               </div>
               <p class="mt-3 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
                 {{ selectedEvent.detail }}
@@ -499,9 +481,7 @@ watch(filteredRuntimeEvents, (events) => {
                     </span>
                   </p>
                 </div>
-                <span :class="runtimeBadgeStyles({ tone: getRuntimeEventBadgeTone(event.level) })">
-                  {{ formatRuntimeEventLevel(event.level) }}
-                </span>
+                <AppRuntimeBadge :label="formatRuntimeEventLevel(event.level)" :tone="getRuntimeEventBadgeTone(event.level)" />
               </div>
             </li>
           </ul>
