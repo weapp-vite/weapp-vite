@@ -96,8 +96,10 @@ describe('page event alignment', () => {
     expect(page.data.appBaseInfoSync).toContain('"platform":"devtools"')
     expect(page.data.canIUseSummary).toContain('"getWindowInfo":true')
     expect(page.data.canIUseSummary).toContain('"getWindowInfoReturn":true')
+    expect(page.data.canIUseSummary).toContain('"menuButtonRect":true')
     expect(page.data.canIUseSummary).toContain('"nextTick":true')
     expect(page.data.canIUseSummary).toContain('"missing":false')
+    expect(page.data.menuButtonRect).toContain('"width":87')
 
     session.triggerResize({
       size: {
@@ -108,11 +110,16 @@ describe('page event alignment', () => {
     page.readCompatibilityInfo()
 
     expect(page.data.windowInfoSync).toContain('"windowWidth":390')
+    expect(page.data.menuButtonRect).toContain('"right":378')
     expect(session.getWindowInfo()).toMatchObject({
       screenHeight: 844,
       screenWidth: 390,
       windowHeight: 844,
       windowWidth: 390,
+    })
+    expect(session.getMenuButtonBoundingClientRect()).toMatchObject({
+      right: 378,
+      width: 87,
     })
     expect(session.getAppBaseInfo()).toMatchObject({
       host: {

@@ -1,5 +1,6 @@
 import type {
   HeadlessWxAppBaseInfoResult,
+  HeadlessWxMenuButtonBoundingClientRectResult,
   HeadlessWxSystemInfoResult,
   HeadlessWxWindowInfoResult,
 } from '../host'
@@ -63,5 +64,25 @@ export function deriveAppBaseInfo(systemInfo: HeadlessWxSystemInfoResult): Headl
     language: systemInfo.language,
     platform: systemInfo.platform,
     version: systemInfo.version,
+  }
+}
+
+export function deriveMenuButtonBoundingClientRect(
+  systemInfo: HeadlessWxSystemInfoResult,
+): HeadlessWxMenuButtonBoundingClientRectResult {
+  const width = 87
+  const height = 32
+  const top = 32
+  const right = Math.max(systemInfo.windowWidth - 12, width)
+  const left = Math.max(0, right - width)
+  const bottom = top + height
+
+  return {
+    bottom,
+    height,
+    left,
+    right,
+    top,
+    width,
   }
 }
