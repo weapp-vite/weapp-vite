@@ -16,6 +16,7 @@ Page({
     savedFileInfo: '',
     savedMissingInfo: '',
     savedMissingRemovalInfo: '',
+    fileManagerMissingStatInfo: '',
     savedOrderingInfo: '',
     savedRemovalInfo: '',
     savedRenameOutInfo: '',
@@ -286,6 +287,21 @@ Page({
           }),
         }, () => {
           this.push('lab:runSavedMissingRemovalLab')
+        })
+      },
+    })
+  },
+  runMissingStatLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.stat({
+      path: 'headless://saved/component-lab/missing-stat/report.txt',
+      fail: (error) => {
+        this.setData({
+          fileManagerMissingStatInfo: JSON.stringify({
+            missingStatError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runMissingStatLab')
         })
       },
     })
