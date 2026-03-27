@@ -9,7 +9,7 @@ on:
         default: latest
         type: string
   schedule:
-    - cron: '0 3 * * 1'
+    - cron: '0 3 * * *'
 
 permissions:
   contents: read
@@ -17,15 +17,31 @@ permissions:
 jobs:
   smoke:
     name: Create Smoke (${{ matrix.os }} / Node ${{ matrix.node-version }})
-    timeout-minutes: ${{ github.event_name == 'schedule' && 90 || 30 }}
+    timeout-minutes: 90
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-      max-parallel: ${{ github.event_name == 'schedule' && 3 || 1 }}
+      max-parallel: 3
       matrix:
-        include: ${{ fromJSON(github.event_name == 'schedule'
-          && '[{"os":"ubuntu-latest","node-version":20},{"os":"windows-latest","node-version":20},{"os":"macos-latest","node-version":20},{"os":"ubuntu-latest","node-version":22},{"os":"windows-latest","node-version":22},{"os":"macos-latest","node-version":22},{"os":"ubuntu-latest","node-version":24},{"os":"windows-latest","node-version":24},{"os":"macos-latest","node-version":24}]'
-          || '[{"os":"ubuntu-latest","node-version":22}]') }}
+        include:
+          - os: ubuntu-latest
+            node-version: 20
+          - os: windows-latest
+            node-version: 20
+          - os: macos-latest
+            node-version: 20
+          - os: ubuntu-latest
+            node-version: 22
+          - os: windows-latest
+            node-version: 22
+          - os: macos-latest
+            node-version: 22
+          - os: ubuntu-latest
+            node-version: 24
+          - os: windows-latest
+            node-version: 24
+          - os: macos-latest
+            node-version: 24
 
     steps:
       - name: Check out code
@@ -70,8 +86,8 @@ jobs:
       - name: Run create-weapp-vite smoke matrix
         env:
           CREATE_WEAPP_VITE_SPEC: ${{ github.event.inputs['package-spec'] || 'latest' }}
-          CREATE_WEAPP_VITE_TEMPLATES: ${{ github.event_name == 'schedule' && 'default,lib,wevu,wevu-tdesign,tailwindcss,vant,tdesign' || 'default,wevu,wevu-tdesign' }}
-          CREATE_WEAPP_VITE_SCENARIOS: ${{ github.event_name == 'schedule' && 'pnpm,yarn,npm,bun' || 'pnpm,npm' }}
+          CREATE_WEAPP_VITE_TEMPLATES: default,lib,wevu,wevu-tdesign,tailwindcss,vant,tdesign
+          CREATE_WEAPP_VITE_SCENARIOS: pnpm,yarn,npm,bun
           CREATE_WEAPP_VITE_REPORT_FILE: ${{ runner.temp }}/create-weapp-vite-smoke-report/report.json
           CREATE_WEAPP_VITE_REPORT_OS: ${{ matrix.os }}
           CREATE_WEAPP_VITE_REPORT_NODE: ${{ matrix.node-version }}
