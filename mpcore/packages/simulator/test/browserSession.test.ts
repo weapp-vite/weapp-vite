@@ -667,6 +667,72 @@ Page({
     ])
   })
 
+  it('supports showTabBar and hideTabBar state transitions in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({
+        pages: ['pages/home/index', 'pages/profile/index'],
+        tabBar: {
+          list: [
+            { pagePath: 'pages/home/index', text: 'Home' },
+            { pagePath: 'pages/profile/index', text: 'Profile' },
+          ],
+        },
+      })],
+      ['app.js', 'App({})'],
+      ['pages/home/index.js', `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  hideTabBarLab() {
+    wx.hideTabBar({
+      success: () => this.push('hide:success'),
+      complete: (result) => this.push('hide:complete:' + (result?.errMsg ?? 'none'))
+    })
+  },
+  showTabBarLab() {
+    wx.showTabBar({
+      success: () => this.push('show:success'),
+      complete: (result) => this.push('show:complete:' + (result?.errMsg ?? 'none'))
+    })
+  }
+})
+`],
+      ['pages/home/index.wxml', '<view>{{logs.0}}</view><view>{{logs.1}}</view><view>{{logs.2}}</view><view>{{logs.3}}</view>'],
+      ['pages/profile/index.js', 'Page({})'],
+      ['pages/profile/index.wxml', '<view>profile</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/home/index')
+
+    expect(session.getTabBar()).toEqual({
+      visible: true,
+    })
+
+    page.hideTabBarLab()
+    expect(session.getTabBar()).toEqual({
+      visible: false,
+    })
+
+    page.showTabBarLab()
+    expect(session.getTabBar()).toEqual({
+      visible: true,
+    })
+
+    expect(page.data.logs).toEqual([
+      'hide:success',
+      'hide:complete:hideTabBar:ok',
+      'show:success',
+      'show:complete:showTabBar:ok',
+    ])
+  })
+
   it('renders custom components and routes triggerEvent back to the page', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
