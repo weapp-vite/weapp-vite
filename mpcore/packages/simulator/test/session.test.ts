@@ -1044,6 +1044,71 @@ Page({
     expect(page.data.missingReadDirSummary).toContain('readdir:fail no such file or directory')
   })
 
+  it('supports getSavedFileList and removeSavedFile through wx api state', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-saved-files-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    listSummary: '',
+    removeSummary: ''
+  },
+  runSavedFileLab() {
+    wx.downloadFile({
+      url: 'https://mock.mpcore.dev/files/saved-file.txt',
+      success: (downloadResult) => {
+        wx.saveFile({
+          tempFilePath: downloadResult.tempFilePath,
+          filePath: 'headless://saved/saved-file.txt',
+          success: (saveResult) => {
+            wx.getSavedFileList({
+              success: (result) => {
+                this.setData({
+                  listSummary: JSON.stringify(result.fileList)
+                })
+              }
+            })
+            wx.removeSavedFile({
+              filePath: saveResult.savedFilePath,
+              success: (result) => {
+                this.setData({
+                  removeSummary: result.errMsg
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-files</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    session.mockDownloadFile({
+      fileContent: 'saved payload',
+      url: 'https://mock.mpcore.dev/files/saved-file.txt',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileLab()
+
+    expect(page.data.listSummary).toContain('"filePath":"headless://saved/saved-file.txt"')
+    expect(page.data.listSummary).toContain('"size":13')
+    expect(page.data.removeSummary).toBe('removeSavedFile:ok')
+    expect(session.getFileText('headless://saved/saved-file.txt')).toBeNull()
+  })
+
   it('supports showModal defaults and queued modal mocks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-show-modal-'))
     tempDirs.push(root)
