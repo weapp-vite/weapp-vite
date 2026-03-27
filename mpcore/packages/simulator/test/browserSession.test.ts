@@ -407,6 +407,41 @@ Page({
     expect(session.getFileText('headless://saved/browser-renamed.txt')).toBe('browser source payload')
   })
 
+  it('tracks saved file metadata across copyFile operations in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    listSummary: ''
+  },
+  runSavedFileCopyLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-source.txt', 'alpha')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-source.txt',
+      success: (saveResult) => {
+        fsManager.copyFileSync(saveResult.savedFilePath, 'headless://wxfile/saved/browser-copied.txt')
+        this.setData({
+          listSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{listSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileCopyLab()
+
+    expect(page.data.listSummary).toContain('"filePath":"headless://wxfile/saved/browser-copied.txt"')
+    expect(page.data.listSummary).toContain('"size":5')
+  })
+
   it('supports getFileSystemManager mkdir readdir and stat in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
