@@ -14,6 +14,7 @@ Page({
     savedOverwriteInfo: '',
     savedFilePath: '',
     savedFileInfo: '',
+    savedRemovalInfo: '',
     savedRenameOutInfo: '',
     uploadedSnapshot: '',
     storageSnapshot: '',
@@ -197,6 +198,37 @@ Page({
           this.push('lab:runSavedRenameOutLab')
         })
       }
+    })
+  },
+  runSavedRemovalLab() {
+    const filePath = 'headless://saved/component-lab/removals/report.txt'
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/component-lab-remove.txt', 'remove-me')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/component-lab-remove.txt',
+      filePath,
+      success: (saveResult) => {
+        wx.removeSavedFile({
+          filePath: saveResult.savedFilePath,
+          success: (removeResult) => {
+            wx.getSavedFileInfo({
+              filePath: saveResult.savedFilePath,
+              fail: (error) => {
+                const remainingSavedFiles = wx.getSavedFileList().fileList
+                this.setData({
+                  savedRemovalInfo: JSON.stringify({
+                    hasSavedRegistration: remainingSavedFiles.some(file => file.filePath === saveResult.savedFilePath),
+                    missingInfoError: error.message,
+                    removeErrMsg: removeResult.errMsg,
+                  }),
+                }, () => {
+                  this.push('lab:runSavedRemovalLab')
+                })
+              },
+            })
+          },
+        })
+      },
     })
   },
   runFileManagerLab() {
