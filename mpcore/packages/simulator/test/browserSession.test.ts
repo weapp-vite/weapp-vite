@@ -299,6 +299,74 @@ Page({
     ])
   })
 
+  it('supports getNetworkType and network status change listeners in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    currentType: '',
+    initialType: '',
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  inspectNetwork() {
+    wx.getNetworkType({
+      success: (result) => {
+        this.setData({
+          initialType: result.networkType
+        })
+        this.push('get:' + result.networkType)
+      }
+    })
+  },
+  startWatchingNetwork() {
+    this.networkHandler = (result) => {
+      this.setData({
+        currentType: result.networkType
+      })
+      this.push('change:' + result.networkType + ':' + result.isConnected)
+    }
+    wx.onNetworkStatusChange(this.networkHandler)
+  },
+  stopWatchingNetwork() {
+    wx.offNetworkStatusChange(this.networkHandler)
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{initialType}}</view><view>{{currentType}}</view><view>{{logs.0}}</view><view>{{logs.1}}</view><view>{{logs.2}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.startWatchingNetwork()
+    page.inspectNetwork()
+    session.setNetworkType('none')
+    session.setNetworkType('4g')
+    page.stopWatchingNetwork()
+    session.setNetworkType('5g')
+
+    expect(page.data.initialType).toBe('wifi')
+    expect(page.data.currentType).toBe('4g')
+    expect(page.data.logs).toEqual([
+      'get:wifi',
+      'change:none:false',
+      'change:4g:true',
+    ])
+    expect(session.renderCurrentPage().wxml).toContain('wifi')
+    expect(session.renderCurrentPage().wxml).toContain('4g')
+    expect(session.getNetworkType()).toEqual({
+      errMsg: 'getNetworkType:ok',
+      networkType: '5g',
+    })
+  })
+
   it('renders custom components and routes triggerEvent back to the page', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

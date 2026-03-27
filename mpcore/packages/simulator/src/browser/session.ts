@@ -1,4 +1,4 @@
-import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions } from '../host'
+import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType } from '../host'
 import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
 import type { HeadlessAppInstance } from '../runtime/appInstance'
@@ -153,6 +153,7 @@ export class BrowserHeadlessSession {
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
+        getNetworkType: () => this.wxState.getNetworkType(),
         navigateBack: option => this.navigateBack(option?.delta),
         navigateTo: option => this.navigateTo(option.url),
         pageScrollTo: option => this.pageScrollTo(option),
@@ -166,6 +167,8 @@ export class BrowserHeadlessSession {
         reLaunch: option => this.reLaunch(option.url),
         redirectTo: option => this.redirectTo(option.url),
         nextTick: callback => queueMicrotask(() => callback?.()),
+        offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
+        onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         request: option => this.wxState.request(option),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
@@ -236,6 +239,10 @@ export class BrowserHeadlessSession {
     return deriveMenuButtonBoundingClientRect(this.systemInfo)
   }
 
+  getNetworkType() {
+    return this.wxState.getNetworkType()
+  }
+
   getLoading() {
     return this.wxState.getLoading()
   }
@@ -254,6 +261,10 @@ export class BrowserHeadlessSession {
 
   mockRequest(definition: HeadlessWxRequestMockDefinition) {
     this.wxState.mockRequest(definition)
+  }
+
+  setNetworkType(networkType: HeadlessWxNetworkType) {
+    return this.wxState.setNetworkType(networkType)
   }
 
   getScopeSnapshot(scopeId: string) {
