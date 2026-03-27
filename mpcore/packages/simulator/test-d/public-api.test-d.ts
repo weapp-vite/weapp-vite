@@ -43,11 +43,17 @@ browserPage?.wx.getSavedFileInfo({
   success: (result) => {
     expectType<{ createTime: number, errMsg: string, size: number }>(result)
   },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
 })
 browserPage?.wx.removeSavedFile({
   filePath: 'headless://wxfile/saved/0001',
   success: (result) => {
     expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
   },
 })
 
@@ -79,11 +85,17 @@ headlessPage?.wx.getSavedFileInfo({
   success: (result) => {
     expectType<{ createTime: number, errMsg: string, size: number }>(result)
   },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
 })
 headlessPage?.wx.removeSavedFile({
   filePath: 'headless://wxfile/saved/0001',
   success: (result) => {
     expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
   },
 })
 
