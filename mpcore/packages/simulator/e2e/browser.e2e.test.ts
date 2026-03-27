@@ -129,6 +129,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('loadMockQueue')
     bridge.runPageMethod('runFileTransferLab')
     bridge.runPageMethod('runSavedOverwriteLab')
+    bridge.runPageMethod('runSavedRenameOutLab')
     bridge.runPageMethod('storeSnapshot')
     bridge.runPageMethod('toastSnapshot')
 
@@ -145,6 +146,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.savedFileInfo
           && pageData.savedOverwriteInfo
           && pageData.savedFilePath
+          && pageData.savedRenameOutInfo
           && pageData.storageSnapshot
           && pageData.toastState
           && pageData.uploadedSnapshot,
@@ -167,6 +169,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.savedOverwriteInfo).toContain('"afterSize":14')
     expect(pageData.savedOverwriteInfo).toContain('"filePath":"headless://saved/component-lab/snapshots/report.txt"')
     expect(pageData.savedFilePath).toContain('headless://wxfile/saved/')
+    expect(pageData.savedRenameOutInfo).toContain('"hasSavedRegistration":false')
+    expect(pageData.savedRenameOutInfo).toContain('"movedText":"rename-out"')
     expect(pageData.storageSnapshot).toContain('"status"')
     expect(pageData.toastState).toContain('showToast:ok')
     expect(pageData.uploadedSnapshot).toContain('"accepted":true')
@@ -204,9 +208,13 @@ describe.sequential('simulator browser e2e', () => {
       filePath: 'headless://saved/component-lab/snapshots/report.txt',
       size: 'second-version'.length,
     }))
+    expect(sessionSnapshot.savedFileList).not.toContainEqual(expect.objectContaining({
+      filePath: 'headless://saved/component-lab/transfers/rename-out.txt',
+    }))
     expect(sessionSnapshot.uploadFileLogs).toHaveLength(1)
     expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab report')
     expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab')
+    expect(sessionSnapshot.fileSnapshot['headless://temp/component-lab-renamed.txt']).toBe('rename-out')
   })
 
   it('drives browser session host features through the demo workbench api', async () => {
