@@ -9,6 +9,7 @@ import { surfaceStyles } from '../utils/styles'
 import AppCompactListItem from './AppCompactListItem.vue'
 import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
+import AppSummaryValueCard from './AppSummaryValueCard.vue'
 
 defineProps<{
   visibleDuplicateModules: DuplicateModuleEntry[]
@@ -26,21 +27,13 @@ defineProps<{
         description="优先看被多个包重复包含的源码与依赖。"
       />
       <div v-if="visibleDuplicateModules.length" class="mt-4 space-y-2.5">
-        <article
+        <AppSummaryValueCard
           v-for="module in visibleDuplicateModules"
           :key="module.id"
-          class="rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-3.5"
+          :title="module.source"
+          :meta="`${formatSourceType(module.sourceType)} · ${module.packageCount} 个包 · ${formatBytes(module.bytes)}`"
+          break-title
         >
-          <div class="flex flex-wrap items-start justify-between gap-3">
-            <div class="min-w-0">
-              <p class="break-all font-medium text-[color:var(--dashboard-text)]">
-                {{ module.source }}
-              </p>
-              <p class="mt-1 text-xs text-[color:var(--dashboard-text-soft)]">
-                {{ formatSourceType(module.sourceType) }} · {{ module.packageCount }} 个包 · {{ formatBytes(module.bytes) }}
-              </p>
-            </div>
-          </div>
           <ul class="mt-3 space-y-1.5 text-xs text-[color:var(--dashboard-text-muted)]">
             <li v-for="pkg in module.packages" :key="`${module.id}:${pkg.packageId}`">
               <span class="font-medium text-[color:var(--dashboard-text)]">{{ pkg.packageLabel }}</span>
@@ -48,7 +41,7 @@ defineProps<{
               <span>{{ pkg.files.join('、') }}</span>
             </li>
           </ul>
-        </article>
+        </AppSummaryValueCard>
       </div>
       <AppEmptyState v-else class="mt-4">
         当前构建未检测到跨包重复模块。
@@ -59,25 +52,13 @@ defineProps<{
       <section :class="surfaceStyles({ padding: 'md' })">
         <AppPanelHeader icon-name="module-sources" title="模块来源" />
         <div class="mt-4 space-y-2.5">
-          <article
+          <AppSummaryValueCard
             v-for="item in moduleSourceSummary"
             :key="item.sourceType"
-            class="rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-3.5"
-          >
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <p class="font-medium text-[color:var(--dashboard-text)]">
-                  {{ formatSourceType(item.sourceType) }}
-                </p>
-                <p class="mt-1 text-xs text-[color:var(--dashboard-text-soft)]">
-                  {{ item.count }} 个模块
-                </p>
-              </div>
-              <p class="font-medium text-[color:var(--dashboard-accent)]">
-                {{ formatBytes(item.bytes) }}
-              </p>
-            </div>
-          </article>
+            :title="formatSourceType(item.sourceType)"
+            :meta="`${item.count} 个模块`"
+            :value="formatBytes(item.bytes)"
+          />
         </div>
       </section>
 
