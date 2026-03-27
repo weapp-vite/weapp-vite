@@ -369,8 +369,12 @@ export function createPageEventsFixture() {
   writeScript(path.join(root, 'dist/pages/events/index.js'), `
 Page({
   data: {
+    appBaseInfoSync: '',
+    canIUseSummary: '',
     logs: [],
     callbacks: [],
+    windowInfoAsync: '',
+    windowInfoSync: '',
     systemInfoAsync: '',
     systemInfoSync: '',
     scrollTop: 0,
@@ -422,6 +426,25 @@ Page({
       success: (result) => {
         this.setData({
           systemInfoAsync: JSON.stringify(result)
+        })
+      }
+    })
+  },
+  readCompatibilityInfo() {
+    this.setData({
+      appBaseInfoSync: JSON.stringify(wx.getAppBaseInfoSync()),
+      canIUseSummary: JSON.stringify({
+        getWindowInfo: wx.canIUse('getWindowInfo'),
+        getWindowInfoReturn: wx.canIUse('getWindowInfo.return.windowWidth'),
+        nextTick: wx.canIUse('nextTick'),
+        missing: wx.canIUse('shareFileMessage')
+      }),
+      windowInfoSync: JSON.stringify(wx.getWindowInfoSync())
+    })
+    wx.getWindowInfo({
+      success: (result) => {
+        this.setData({
+          windowInfoAsync: JSON.stringify(result)
         })
       }
     })

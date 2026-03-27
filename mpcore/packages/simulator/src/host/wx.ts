@@ -47,6 +47,26 @@ export interface HeadlessWxSystemInfoResult {
   windowWidth: number
 }
 
+export interface HeadlessWxAppBaseInfoResult {
+  SDKVersion: string
+  enableDebug: boolean
+  host: {
+    env: string
+  }
+  language: string
+  platform: string
+  version: string
+}
+
+export interface HeadlessWxWindowInfoResult {
+  pixelRatio: number
+  screenHeight: number
+  screenWidth: number
+  statusBarHeight: number
+  windowHeight: number
+  windowWidth: number
+}
+
 export interface HeadlessWxSetStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {
   data: unknown
   key: string
@@ -59,6 +79,10 @@ export interface HeadlessWxGetStorageOption extends HeadlessWxCallbackOption<Hea
 export interface HeadlessWxGetStorageInfoOption extends HeadlessWxCallbackOption<HeadlessWxStorageInfoResult> {}
 
 export interface HeadlessWxGetSystemInfoOption extends HeadlessWxCallbackOption<HeadlessWxSystemInfoResult> {}
+
+export interface HeadlessWxGetWindowInfoOption extends HeadlessWxCallbackOption<HeadlessWxWindowInfoResult> {}
+
+export interface HeadlessWxGetAppBaseInfoOption extends HeadlessWxCallbackOption<HeadlessWxAppBaseInfoResult> {}
 
 export interface HeadlessWxRemoveStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {
   key: string
@@ -100,10 +124,12 @@ export interface HeadlessWxRequestTask {
 }
 
 export interface HeadlessWxDriver {
+  getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   clearStorageSync: () => void
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorageSync: (key: string) => unknown
   getSystemInfoSync: () => HeadlessWxSystemInfoResult
+  getWindowInfoSync: () => HeadlessWxWindowInfoResult
   hideLoading: () => { errMsg: string }
   hideToast: () => { errMsg: string }
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
@@ -122,14 +148,19 @@ export interface HeadlessWxDriver {
 }
 
 export interface HeadlessWx {
+  canIUse: (schema: string) => boolean
   clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
+  getAppBaseInfo: (option?: HeadlessWxGetAppBaseInfoOption) => HeadlessWxAppBaseInfoResult | undefined
+  getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   getStorageInfo: (option?: HeadlessWxGetStorageInfoOption) => HeadlessWxStorageInfoResult | undefined
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorage: (option: HeadlessWxGetStorageOption) => HeadlessWxGetStorageResult | undefined
   getStorageSync: (key: string) => unknown
   getSystemInfo: (option?: HeadlessWxGetSystemInfoOption) => HeadlessWxSystemInfoResult | undefined
   getSystemInfoSync: () => HeadlessWxSystemInfoResult
+  getWindowInfo: (option?: HeadlessWxGetWindowInfoOption) => HeadlessWxWindowInfoResult | undefined
+  getWindowInfoSync: () => HeadlessWxWindowInfoResult
   hideLoading: (option?: HeadlessWxHideLoadingOption) => { errMsg: string } | undefined
   hideToast: () => { errMsg: string }
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
@@ -166,8 +197,140 @@ function invokeWxApi<TOption extends HeadlessWxCallbackOption<TResult>, TResult>
   }
 }
 
+function resolveCapabilityValue(source: Record<string, any>, schema: string) {
+  const segments = schema
+    .split('.')
+    .map(segment => segment.trim())
+    .filter(Boolean)
+
+  let current: any = source
+  for (const segment of segments) {
+    if (current == null || !(segment in current)) {
+      return undefined
+    }
+    current = current[segment]
+  }
+  return current
+}
+
 export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
+  const capabilityTree = {
+    canIUse: true,
+    clearStorage: true,
+    clearStorageSync: true,
+    getAppBaseInfo: {
+      return: {
+        SDKVersion: true,
+        enableDebug: true,
+        host: {
+          env: true,
+        },
+        language: true,
+        platform: true,
+        version: true,
+      },
+    },
+    getAppBaseInfoSync: {
+      return: {
+        SDKVersion: true,
+        enableDebug: true,
+        host: {
+          env: true,
+        },
+        language: true,
+        platform: true,
+        version: true,
+      },
+    },
+    getStorage: true,
+    getStorageInfo: {
+      return: {
+        currentSize: true,
+        keys: true,
+        limitSize: true,
+      },
+    },
+    getStorageInfoSync: {
+      return: {
+        currentSize: true,
+        keys: true,
+        limitSize: true,
+      },
+    },
+    getStorageSync: true,
+    getSystemInfo: {
+      return: {
+        SDKVersion: true,
+        brand: true,
+        language: true,
+        model: true,
+        pixelRatio: true,
+        platform: true,
+        screenHeight: true,
+        screenWidth: true,
+        system: true,
+        version: true,
+        windowHeight: true,
+        windowWidth: true,
+      },
+    },
+    getSystemInfoSync: {
+      return: {
+        SDKVersion: true,
+        brand: true,
+        language: true,
+        model: true,
+        pixelRatio: true,
+        platform: true,
+        screenHeight: true,
+        screenWidth: true,
+        system: true,
+        version: true,
+        windowHeight: true,
+        windowWidth: true,
+      },
+    },
+    getWindowInfo: {
+      return: {
+        pixelRatio: true,
+        screenHeight: true,
+        screenWidth: true,
+        statusBarHeight: true,
+        windowHeight: true,
+        windowWidth: true,
+      },
+    },
+    getWindowInfoSync: {
+      return: {
+        pixelRatio: true,
+        screenHeight: true,
+        screenWidth: true,
+        statusBarHeight: true,
+        windowHeight: true,
+        windowWidth: true,
+      },
+    },
+    hideLoading: true,
+    hideToast: true,
+    navigateBack: true,
+    navigateTo: true,
+    nextTick: true,
+    pageScrollTo: true,
+    reLaunch: true,
+    redirectTo: true,
+    removeStorage: true,
+    removeStorageSync: true,
+    request: true,
+    setStorage: true,
+    setStorageSync: true,
+    showLoading: true,
+    showToast: true,
+    stopPullDownRefresh: true,
+    switchTab: true,
+  }
+
   return {
+    canIUse: schema => typeof schema === 'string' && schema.trim() !== '' && resolveCapabilityValue(capabilityTree, schema.trim()) != null,
     clearStorage: option => invokeWxApi(() => {
       driver.clearStorageSync()
       return {
@@ -175,6 +338,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       }
     }, option),
     clearStorageSync: () => driver.clearStorageSync(),
+    getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),
+    getAppBaseInfoSync: () => driver.getAppBaseInfoSync(),
     getStorageInfo: option => invokeWxApi(() => driver.getStorageInfoSync(), option),
     getStorageInfoSync: () => driver.getStorageInfoSync(),
     getStorage: option => invokeWxApi(() => ({
@@ -184,6 +349,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     getStorageSync: key => driver.getStorageSync(key),
     getSystemInfo: option => invokeWxApi(() => driver.getSystemInfoSync(), option),
     getSystemInfoSync: () => driver.getSystemInfoSync(),
+    getWindowInfo: option => invokeWxApi(() => driver.getWindowInfoSync(), option),
+    getWindowInfoSync: () => driver.getWindowInfoSync(),
     hideLoading: option => invokeWxApi(() => driver.hideLoading(), option),
     hideToast: () => driver.hideToast(),
     navigateBack: option => invokeWxApi(() => {

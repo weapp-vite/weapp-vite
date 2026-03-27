@@ -10,7 +10,12 @@ import { createHostRegistries } from '../host'
 import { createAppInstance } from '../runtime/appInstance'
 import { runComponentPageLifetime } from '../runtime/componentInstance'
 import { createPageInstance } from '../runtime/pageInstance'
-import { applyResizeToSystemInfo, createDefaultSystemInfo } from '../runtime/systemInfo'
+import {
+  applyResizeToSystemInfo,
+  createDefaultSystemInfo,
+  deriveAppBaseInfo,
+  deriveWindowInfo,
+} from '../runtime/systemInfo'
 import { createHeadlessWxState } from '../runtime/wxState'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
@@ -151,6 +156,7 @@ export class BrowserHeadlessSession {
       () => this.pages.slice(),
       () => this.getApp(),
       {
+        getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         navigateBack: option => this.navigateBack(option?.delta),
         navigateTo: option => this.navigateTo(option.url),
         pageScrollTo: option => this.pageScrollTo(option),
@@ -158,6 +164,7 @@ export class BrowserHeadlessSession {
         getStorageInfoSync: () => this.wxState.getStorageInfoSync(),
         getStorageSync: key => this.wxState.getStorageSync(key),
         getSystemInfoSync: () => ({ ...this.systemInfo }),
+        getWindowInfoSync: () => deriveWindowInfo(this.systemInfo),
         hideLoading: () => this.wxState.hideLoading(),
         hideToast: () => this.wxState.hideToast(),
         reLaunch: option => this.reLaunch(option.url),
@@ -196,6 +203,14 @@ export class BrowserHeadlessSession {
 
   getSystemInfo() {
     return { ...this.systemInfo }
+  }
+
+  getWindowInfo() {
+    return deriveWindowInfo(this.systemInfo)
+  }
+
+  getAppBaseInfo() {
+    return deriveAppBaseInfo(this.systemInfo)
   }
 
   getLoading() {
