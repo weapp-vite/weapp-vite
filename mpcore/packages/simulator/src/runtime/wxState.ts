@@ -473,6 +473,14 @@ export function createHeadlessWxState() {
     })
   }
 
+  const setSavedFileMetadata = (normalizedPath: string, fileContent: string, createTime = Date.now()) => {
+    savedFiles.set(normalizedPath, {
+      createTime,
+      filePath: normalizedPath,
+      size: fileContent.length,
+    })
+  }
+
   const accessFile = (filePath: string): HeadlessWxFileSystemResult => {
     const normalizedPath = normalizeFsPath(filePath)
     if (!files.has(normalizedPath) && !directories.has(normalizedPath)) {
@@ -530,6 +538,13 @@ export function createHeadlessWxState() {
     }
     ensureDirectoryTree(normalizedDestPath)
     files.set(normalizedDestPath, fileContent)
+    if (savedFiles.has(normalizedSrcPath) || savedFiles.has(normalizedDestPath)) {
+      setSavedFileMetadata(
+        normalizedDestPath,
+        fileContent,
+        savedFiles.get(normalizedDestPath)?.createTime ?? Date.now(),
+      )
+    }
     return {
       errMsg: 'copyFile:ok',
     }
@@ -1164,11 +1179,7 @@ export function createHeadlessWxState() {
       const savedFilePath = allocateFilePath('saved', option.filePath)
       ensureDirectoryTree(savedFilePath)
       files.set(savedFilePath, fileContent)
-      savedFiles.set(savedFilePath, {
-        createTime: Date.now(),
-        filePath: savedFilePath,
-        size: fileContent.length,
-      })
+      setSavedFileMetadata(savedFilePath, fileContent)
       return {
         errMsg: 'saveFile:ok',
         savedFilePath,
