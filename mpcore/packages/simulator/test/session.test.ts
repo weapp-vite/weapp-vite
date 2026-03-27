@@ -739,6 +739,13 @@ Page({
         url: 'https://mock.mpcore.dev/upload/report',
       },
     ])
+    expect(session.getSavedFileListSnapshot()).toEqual([
+      {
+        createTime: expect.any(Number),
+        filePath: 'headless://saved/report.txt',
+        size: 'downloaded report body'.length,
+      },
+    ])
   })
 
   it('supports getFileSystemManager with read/write/access/unlink operations', () => {
