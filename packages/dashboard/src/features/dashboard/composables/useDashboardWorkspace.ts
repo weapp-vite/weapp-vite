@@ -10,6 +10,7 @@ import type {
 import { computed, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
 import { activityFeed, diagnosticsQueue, quickCommands, sampleRuntimeEvents } from '../constants/shell'
 import { formatBytes } from '../utils/format'
+import { normalizeRuntimeEvents } from '../utils/runtimeEvents'
 
 interface DashboardWorkspaceContext {
   resultRef: ShallowRef<AnalyzeSubpackagesResult | null>
@@ -35,8 +36,8 @@ function formatCurrentTime() {
 export function createDashboardWorkspace(): DashboardWorkspaceContext {
   const resultRef = shallowRef<AnalyzeSubpackagesResult | null>(window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null)
   const runtimeEvents = shallowRef<DashboardRuntimeEvent[]>(window.__WEAPP_VITE_DASHBOARD_EVENTS__?.length
-    ? [...window.__WEAPP_VITE_DASHBOARD_EVENTS__]
-    : [...sampleRuntimeEvents])
+    ? normalizeRuntimeEvents(window.__WEAPP_VITE_DASHBOARD_EVENTS__)
+    : normalizeRuntimeEvents(sampleRuntimeEvents))
   const updateCount = shallowRef(0)
   const lastUpdatedAt = shallowRef(resultRef.value ? formatCurrentTime() : '—')
 
@@ -198,11 +199,13 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
   })
 
   const pushRuntimeEvents = (payload: DashboardRuntimeEvent[] | null | undefined) => {
-    if (!payload?.length) {
+    const normalizedPayload = normalizeRuntimeEvents(payload)
+
+    if (normalizedPayload.length === 0) {
       return
     }
 
-    const nextEvents = [...payload, ...runtimeEvents.value]
+    const nextEvents = [...normalizedPayload, ...runtimeEvents.value]
     const deduped = new Map<string, DashboardRuntimeEvent>()
 
     for (const event of nextEvents) {

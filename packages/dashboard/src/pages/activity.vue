@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { DashboardRuntimeEventKind, DashboardRuntimeEventLevel } from '../features/dashboard/types'
 import { computed, ref, watch } from 'vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
+import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventMeta } from '../features/dashboard/utils/format'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 
 const { activityItems, diagnostics, eventSummary, runtimeEvents } = useDashboardWorkspace()
 
-type EventKindFilter = 'all' | DashboardRuntimeEventKind
-type EventLevelFilter = 'all' | DashboardRuntimeEventLevel
+type EventKindFilter = 'all' | typeof runtimeEvents.value[number]['kind']
+type EventLevelFilter = 'all' | typeof runtimeEvents.value[number]['level']
 
 const eventKindFilter = ref<EventKindFilter>('all')
 const eventLevelFilter = ref<EventLevelFilter>('all')
@@ -77,38 +77,6 @@ const filterPresets = [
   },
 ]
 
-function formatEventKind(kind: DashboardRuntimeEventKind) {
-  switch (kind) {
-    case 'command':
-      return '命令'
-    case 'build':
-      return '构建'
-    case 'diagnostic':
-      return '诊断'
-    case 'hmr':
-      return 'HMR'
-    case 'system':
-      return '系统'
-    default:
-      return kind
-  }
-}
-
-function formatEventLevel(level: DashboardRuntimeEventLevel) {
-  switch (level) {
-    case 'info':
-      return '信息'
-    case 'success':
-      return '成功'
-    case 'warning':
-      return '警告'
-    case 'error':
-      return '错误'
-    default:
-      return level
-  }
-}
-
 const filteredRuntimeEvents = computed(() => {
   const keyword = searchQuery.value.trim().toLowerCase()
 
@@ -141,8 +109,8 @@ const filteredRuntimeEvents = computed(() => {
 
 const filteredEventSummary = computed(() => [
   { label: '筛选后事件', value: String(filteredRuntimeEvents.value.length) },
-  { label: '当前类型', value: eventKindFilter.value === 'all' ? '全部' : formatEventKind(eventKindFilter.value) },
-  { label: '当前等级', value: eventLevelFilter.value === 'all' ? '全部' : formatEventLevel(eventLevelFilter.value) },
+  { label: '当前类型', value: eventKindFilter.value === 'all' ? '全部' : formatRuntimeEventKind(eventKindFilter.value) },
+  { label: '当前等级', value: eventLevelFilter.value === 'all' ? '全部' : formatRuntimeEventLevel(eventLevelFilter.value) },
   { label: '搜索关键字', value: searchQuery.value.trim() || '未设置' },
 ])
 
@@ -158,11 +126,11 @@ const selectedEventMeta = computed(() => {
   }
 
   return [
-    { label: '事件类型', value: formatEventKind(selectedEvent.value.kind) },
-    { label: '事件等级', value: formatEventLevel(selectedEvent.value.level) },
+    { label: '事件类型', value: formatRuntimeEventKind(selectedEvent.value.kind) },
+    { label: '事件等级', value: formatRuntimeEventLevel(selectedEvent.value.level) },
     { label: '事件来源', value: selectedEvent.value.source ?? 'dashboard' },
     { label: '发生时间', value: selectedEvent.value.timestamp },
-    { label: '持续时间', value: selectedEvent.value.durationMs ? `${selectedEvent.value.durationMs} ms` : '未记录' },
+    { label: '持续时间', value: formatDuration(selectedEvent.value.durationMs) },
     { label: '标签数量', value: String(selectedEvent.value.tags?.length ?? 0) },
   ]
 })
@@ -360,11 +328,14 @@ watch(filteredRuntimeEvents, (events) => {
                   </h3>
                 </div>
                 <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
-                  {{ formatEventLevel(selectedEvent.level) }}
+                  {{ formatRuntimeEventLevel(selectedEvent.level) }}
                 </span>
               </div>
               <p class="mt-3 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
                 {{ selectedEvent.detail }}
+              </p>
+              <p class="mt-3 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                {{ formatRuntimeEventMeta(selectedEvent) }}
               </p>
               <div v-if="selectedEvent.tags?.length" class="mt-4 flex flex-wrap gap-1.5">
                 <span
@@ -426,7 +397,7 @@ watch(filteredRuntimeEvents, (events) => {
                     {{ event.detail }}
                   </p>
                   <p class="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                    {{ formatEventKind(event.kind) }} · {{ event.source ?? 'dashboard' }} · {{ event.timestamp }}
+                    {{ formatRuntimeEventMeta(event) }}
                   </p>
                   <p v-if="event.tags?.length" class="mt-2 flex flex-wrap gap-1.5">
                     <span
@@ -439,7 +410,7 @@ watch(filteredRuntimeEvents, (events) => {
                   </p>
                 </div>
                 <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
-                  {{ formatEventLevel(event.level) }}
+                  {{ formatRuntimeEventLevel(event.level) }}
                 </span>
               </div>
             </li>

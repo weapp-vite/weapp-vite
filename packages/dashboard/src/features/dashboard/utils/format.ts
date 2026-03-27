@@ -1,3 +1,5 @@
+import type { DashboardRuntimeEventKind, DashboardRuntimeEventLevel } from '../types'
+
 export function formatBytes(bytes?: number) {
   if (!bytes || Number.isNaN(bytes)) {
     return '—'
@@ -48,4 +50,67 @@ export function formatSourceType(type: string) {
     default:
       return type
   }
+}
+
+export function formatRuntimeEventKind(kind: DashboardRuntimeEventKind) {
+  switch (kind) {
+    case 'command':
+      return '命令'
+    case 'build':
+      return '构建'
+    case 'diagnostic':
+      return '诊断'
+    case 'hmr':
+      return 'HMR'
+    case 'system':
+      return '系统'
+    default:
+      return kind
+  }
+}
+
+export function formatRuntimeEventLevel(level: DashboardRuntimeEventLevel) {
+  switch (level) {
+    case 'info':
+      return '信息'
+    case 'success':
+      return '成功'
+    case 'warning':
+      return '警告'
+    case 'error':
+      return '错误'
+    default:
+      return level
+  }
+}
+
+export function formatDuration(durationMs?: number) {
+  if (typeof durationMs !== 'number' || Number.isNaN(durationMs) || durationMs < 0) {
+    return '未记录'
+  }
+
+  if (durationMs >= 1000) {
+    return `${(durationMs / 1000).toFixed(durationMs >= 10_000 ? 1 : 2)} s`
+  }
+
+  return `${durationMs} ms`
+}
+
+export function formatRuntimeEventMeta(options: {
+  kind: DashboardRuntimeEventKind
+  source?: string
+  timestamp: string
+  durationMs?: number
+}) {
+  const parts = [
+    formatRuntimeEventKind(options.kind),
+    options.source ?? 'dashboard',
+    options.timestamp,
+  ]
+
+  if (typeof options.durationMs === 'number' && Number.isFinite(options.durationMs) && options.durationMs >= 0) {
+    parts.push(formatDuration(options.durationMs))
+  }
+
+  return parts.join(' · ')
 }
