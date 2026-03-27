@@ -308,6 +308,13 @@ export class HeadlessSession {
     }
   }
 
+  getScopeIdForComponent(component: HeadlessComponentInstance | null | undefined) {
+    if (!component) {
+      return null
+    }
+    return this.getComponentScopeId(component)
+  }
+
   callScopeMethod(scopeId: string | null, methodName: string, event: Record<string, any>) {
     const current = this.requireCurrentPage(`scope method "${methodName}"`)
     this.renderCurrentPage()

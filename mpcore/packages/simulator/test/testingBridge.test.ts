@@ -358,6 +358,28 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('selects component scope handles directly from the testing bridge session handle', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.reLaunch('/pages/lab/index')
+    const component = await miniProgram.selectComponent('#status-card')
+    const components = await miniProgram.selectAllComponents('status-card')
+
+    expect(component).not.toBeNull()
+    expect(component?.scopeId).toContain('status-card')
+    expect(components).toHaveLength(1)
+    expect(await component?.snapshot()).toMatchObject({
+      properties: {
+        count: 2,
+      },
+      type: 'component',
+    })
+  })
+
   it('dispatches component input, change and blur events through the testing bridge', async () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)

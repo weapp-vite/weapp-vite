@@ -575,6 +575,13 @@ export class BrowserHeadlessSession {
     }
   }
 
+  getScopeIdForComponent(component: import('../runtime').HeadlessComponentInstance | null | undefined) {
+    if (!component) {
+      return null
+    }
+    return this.getComponentScopeId(component)
+  }
+
   selectComponent(selector: string) {
     return this.selectComponentsWithin(null, selector)[0] ?? null
   }
