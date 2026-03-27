@@ -17,6 +17,14 @@ export class HeadlessTestingScopeHandle {
     private readonly session: HeadlessSession,
   ) {}
 
+  async callMethod(methodName: string, ...args: any[]) {
+    const normalizedMethodName = methodName.trim()
+    if (!normalizedMethodName) {
+      throw new Error('Method name must be a non-empty string in headless testing runtime.')
+    }
+    return this.session.callScopeMethodDirect(this.scopeId, normalizedMethodName, ...args)
+  }
+
   async snapshot() {
     return this.session.getScopeSnapshot(this.scopeId)
   }
