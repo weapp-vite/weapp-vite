@@ -14,6 +14,7 @@ Page({
     savedOverwriteInfo: '',
     savedFilePath: '',
     savedFileInfo: '',
+    savedRenameOutInfo: '',
     uploadedSnapshot: '',
     storageSnapshot: '',
     toastState: '',
@@ -173,6 +174,27 @@ Page({
               }
             })
           }
+        })
+      }
+    })
+  },
+  runSavedRenameOutLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/component-lab-rename-out.txt', 'rename-out')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/component-lab-rename-out.txt',
+      filePath: 'headless://saved/component-lab/transfers/rename-out.txt',
+      success: (saveResult) => {
+        fsManager.renameSync(saveResult.savedFilePath, 'headless://temp/component-lab-renamed.txt')
+        const remainingSavedFiles = wx.getSavedFileList().fileList
+        this.setData({
+          savedRenameOutInfo: JSON.stringify({
+            hasSavedRegistration: remainingSavedFiles.some(file => file.filePath === saveResult.savedFilePath),
+            movedText: fsManager.readFileSync('headless://temp/component-lab-renamed.txt'),
+            remainingSavedFiles,
+          }),
+        }, () => {
+          this.push('lab:runSavedRenameOutLab')
         })
       }
     })
