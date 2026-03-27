@@ -79,6 +79,7 @@ export function useWorkbench() {
         modalLogs: sessionState.session.value?.getModalLogs() ?? [],
         pullDownRefreshState: sessionState.session.value?.getPullDownRefreshState?.() ?? null,
         requestLogs: sessionState.session.value?.getRequestLogs() ?? [],
+        savedFileList: sessionState.session.value?.getSavedFileListSnapshot?.() ?? [],
         shareMenu: sessionState.session.value?.getShareMenu() ?? null,
         storageSnapshot: sessionState.session.value?.getStorageSnapshot() ?? {},
         tabBarSnapshot: sessionState.session.value?.getTabBarSnapshot?.() ?? null,

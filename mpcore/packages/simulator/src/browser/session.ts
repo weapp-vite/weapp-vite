@@ -1,4 +1,4 @@
-import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType } from '../host'
+import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions, HeadlessWxNetworkType, HeadlessWxSavedFileInfo } from '../host'
 import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
 import type { HeadlessAppInstance } from '../runtime/appInstance'
@@ -302,6 +302,10 @@ export class BrowserHeadlessSession {
 
   getFileText(filePath: string) {
     return this.wxState.getFileText(filePath)
+  }
+
+  getSavedFileListSnapshot(): HeadlessWxSavedFileInfo[] {
+    return this.wxState.getSavedFileList().fileList
   }
 
   getStorageSnapshot() {
