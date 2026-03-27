@@ -1,0 +1,35 @@
+<script setup lang="ts">
+import type { DashboardIconName } from '../types'
+import { iconFrameStyles } from '../utils/styles'
+import DashboardIcon from './DashboardIcon.vue'
+
+defineProps<{
+  iconName: DashboardIconName
+  title: string
+  description?: string
+}>()
+</script>
+
+<template>
+  <div class="flex items-center justify-between gap-3">
+    <div class="flex items-center gap-2">
+      <span :class="iconFrameStyles()">
+        <span class="h-5 w-5">
+          <DashboardIcon :name="iconName" />
+        </span>
+      </span>
+      <div>
+        <h2 class="text-lg font-semibold text-[color:var(--dashboard-text)]">
+          {{ title }}
+        </h2>
+        <p
+          v-if="description"
+          class="text-xs text-[color:var(--dashboard-text-soft)] md:text-sm"
+        >
+          {{ description }}
+        </p>
+      </div>
+    </div>
+    <slot name="meta" />
+  </div>
+</template>

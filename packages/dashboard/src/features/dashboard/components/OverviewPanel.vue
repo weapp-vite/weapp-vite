@@ -2,9 +2,9 @@
 import type { LargestFileEntry } from '../composables/useAnalyzeDashboardData'
 import type { SubPackageDescriptor } from '../types'
 import { formatBytes, formatPackageType } from '../utils/format'
-import { iconFrameStyles, surfaceStyles } from '../utils/styles'
+import { surfaceStyles } from '../utils/styles'
 import AppEmptyState from './AppEmptyState.vue'
-import DashboardIcon from './DashboardIcon.vue'
+import AppPanelHeader from './AppPanelHeader.vue'
 import TreemapCard from './TreemapCard.vue'
 
 defineProps<{
@@ -20,24 +20,15 @@ defineProps<{
 
     <div class="grid gap-3 xl:h-[min(58vh,36rem)] xl:grid-rows-[minmax(0,1fr)_minmax(0,0.82fr)]">
       <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-2">
-            <span :class="iconFrameStyles()">
-              <span class="h-5 w-5">
-                <DashboardIcon name="top-files" />
-              </span>
-            </span>
-            <div>
-              <h2 class="text-lg font-semibold">
-                Top Files
-              </h2>
-              <p class="text-xs text-[color:var(--dashboard-text-soft)]">
-                最大体积样本
-              </p>
-            </div>
-          </div>
-          <span class="text-[11px] uppercase tracking-[0.2em] text-[color:var(--dashboard-text-soft)]">Top 10</span>
-        </div>
+        <AppPanelHeader
+          icon-name="top-files"
+          title="Top Files"
+          description="最大体积样本"
+        >
+          <template #meta>
+            <span class="text-[11px] uppercase tracking-[0.2em] text-[color:var(--dashboard-text-soft)]">Top 10</span>
+          </template>
+        </AppPanelHeader>
         <ol class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm xl:grid-cols-1">
           <li
             v-for="file in visibleLargestFiles"
@@ -60,24 +51,15 @@ defineProps<{
       </section>
 
       <section :class="surfaceStyles({ padding: 'md' })" class="min-h-0 overflow-hidden">
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-2">
-            <span :class="iconFrameStyles()">
-              <span class="h-5 w-5">
-                <DashboardIcon name="subpackages" />
-              </span>
-            </span>
-            <div>
-              <h2 class="text-lg font-semibold">
-                Subpackages
-              </h2>
-              <p class="text-xs text-[color:var(--dashboard-text-soft)]">
-                分包根目录与模式
-              </p>
-            </div>
-          </div>
-          <span class="text-[11px] uppercase tracking-[0.2em] text-[color:var(--dashboard-text-soft)]">Roots</span>
-        </div>
+        <AppPanelHeader
+          icon-name="subpackages"
+          title="Subpackages"
+          description="分包根目录与模式"
+        >
+          <template #meta>
+            <span class="text-[11px] uppercase tracking-[0.2em] text-[color:var(--dashboard-text-soft)]">Roots</span>
+          </template>
+        </AppPanelHeader>
         <ul class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm text-[color:var(--dashboard-text-muted)]">
           <AppEmptyState v-if="subPackages.length === 0" as="li" compact>
             当前构建没有配置分包。
