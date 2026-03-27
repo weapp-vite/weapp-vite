@@ -10,6 +10,7 @@ import { createHostRegistries } from '../host'
 import { createAppInstance } from '../runtime/appInstance'
 import { runComponentPageLifetime } from '../runtime/componentInstance'
 import { createPageInstance } from '../runtime/pageInstance'
+import { applyResizeToSystemInfo, createDefaultSystemInfo } from '../runtime/systemInfo'
 import { createHeadlessWxState } from '../runtime/wxState'
 import { createBrowserModuleLoader } from './moduleLoader'
 import { createBrowserProject } from './project'
@@ -118,6 +119,7 @@ export class BrowserHeadlessSession {
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
+  private readonly systemInfo = createDefaultSystemInfo()
   private readonly wxState = createHeadlessWxState()
 
   constructor(options: BrowserHeadlessSessionOptions) {
@@ -155,6 +157,7 @@ export class BrowserHeadlessSession {
         clearStorageSync: () => this.wxState.clearStorageSync(),
         getStorageInfoSync: () => this.wxState.getStorageInfoSync(),
         getStorageSync: key => this.wxState.getStorageSync(key),
+        getSystemInfoSync: () => ({ ...this.systemInfo }),
         hideLoading: () => this.wxState.hideLoading(),
         hideToast: () => this.wxState.hideToast(),
         reLaunch: option => this.reLaunch(option.url),
@@ -189,6 +192,10 @@ export class BrowserHeadlessSession {
 
   getStorageInfo() {
     return this.wxState.getStorageInfoSync()
+  }
+
+  getSystemInfo() {
+    return { ...this.systemInfo }
   }
 
   getLoading() {
@@ -546,6 +553,7 @@ export class BrowserHeadlessSession {
 
   triggerResize(options: Record<string, any>) {
     const current = this.requireCurrentPage('triggerResize()')
+    applyResizeToSystemInfo(this.systemInfo, options)
     current.onResize?.(options)
     this.runPageComponentLifetime(current.route, 'resize', options)
     return current

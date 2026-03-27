@@ -371,6 +371,8 @@ Page({
   data: {
     logs: [],
     callbacks: [],
+    systemInfoAsync: '',
+    systemInfoSync: '',
     scrollTop: 0,
   },
   push(message) {
@@ -411,6 +413,18 @@ Page({
   },
   onRouteDone(options) {
     this.push('onRouteDone:' + JSON.stringify(options))
+  },
+  readSystemInfo() {
+    this.setData({
+      systemInfoSync: JSON.stringify(wx.getSystemInfoSync())
+    })
+    wx.getSystemInfo({
+      success: (result) => {
+        this.setData({
+          systemInfoAsync: JSON.stringify(result)
+        })
+      }
+    })
   },
 })
 `)

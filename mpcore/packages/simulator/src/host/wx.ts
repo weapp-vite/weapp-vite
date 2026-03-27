@@ -32,6 +32,21 @@ export interface HeadlessWxStorageInfoResult extends HeadlessWxStorageResult {
   limitSize: number
 }
 
+export interface HeadlessWxSystemInfoResult {
+  SDKVersion: string
+  brand: string
+  language: string
+  model: string
+  pixelRatio: number
+  platform: string
+  screenHeight: number
+  screenWidth: number
+  system: string
+  version: string
+  windowHeight: number
+  windowWidth: number
+}
+
 export interface HeadlessWxSetStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {
   data: unknown
   key: string
@@ -42,6 +57,8 @@ export interface HeadlessWxGetStorageOption extends HeadlessWxCallbackOption<Hea
 }
 
 export interface HeadlessWxGetStorageInfoOption extends HeadlessWxCallbackOption<HeadlessWxStorageInfoResult> {}
+
+export interface HeadlessWxGetSystemInfoOption extends HeadlessWxCallbackOption<HeadlessWxSystemInfoResult> {}
 
 export interface HeadlessWxRemoveStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {
   key: string
@@ -86,6 +103,7 @@ export interface HeadlessWxDriver {
   clearStorageSync: () => void
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorageSync: (key: string) => unknown
+  getSystemInfoSync: () => HeadlessWxSystemInfoResult
   hideLoading: () => { errMsg: string }
   hideToast: () => { errMsg: string }
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
@@ -110,6 +128,8 @@ export interface HeadlessWx {
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorage: (option: HeadlessWxGetStorageOption) => HeadlessWxGetStorageResult | undefined
   getStorageSync: (key: string) => unknown
+  getSystemInfo: (option?: HeadlessWxGetSystemInfoOption) => HeadlessWxSystemInfoResult | undefined
+  getSystemInfoSync: () => HeadlessWxSystemInfoResult
   hideLoading: (option?: HeadlessWxHideLoadingOption) => { errMsg: string } | undefined
   hideToast: () => { errMsg: string }
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
@@ -162,6 +182,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       errMsg: 'getStorage:ok',
     }), option),
     getStorageSync: key => driver.getStorageSync(key),
+    getSystemInfo: option => invokeWxApi(() => driver.getSystemInfoSync(), option),
+    getSystemInfoSync: () => driver.getSystemInfoSync(),
     hideLoading: option => invokeWxApi(() => driver.hideLoading(), option),
     hideToast: () => driver.hideToast(),
     navigateBack: option => invokeWxApi(() => {
