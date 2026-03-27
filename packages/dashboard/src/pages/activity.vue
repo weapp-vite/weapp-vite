@@ -1,10 +1,106 @@
 <script setup lang="ts">
+import type { DashboardRuntimeEventKind, DashboardRuntimeEventLevel } from '../features/dashboard/types'
+import { computed, ref } from 'vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
+import { pillButtonStyles } from '../features/dashboard/utils/styles'
 
 const { activityItems, diagnostics, eventSummary, runtimeEvents } = useDashboardWorkspace()
+
+type EventKindFilter = 'all' | DashboardRuntimeEventKind
+type EventLevelFilter = 'all' | DashboardRuntimeEventLevel
+
+const eventKindFilter = ref<EventKindFilter>('all')
+const eventLevelFilter = ref<EventLevelFilter>('all')
+const searchQuery = ref('')
+
+const eventKindOptions: Array<{ value: EventKindFilter, label: string }> = [
+  { value: 'all', label: '全部类型' },
+  { value: 'command', label: '命令' },
+  { value: 'build', label: '构建' },
+  { value: 'diagnostic', label: '诊断' },
+  { value: 'hmr', label: 'HMR' },
+  { value: 'system', label: '系统' },
+]
+
+const eventLevelOptions: Array<{ value: EventLevelFilter, label: string }> = [
+  { value: 'all', label: '全部等级' },
+  { value: 'info', label: '信息' },
+  { value: 'success', label: '成功' },
+  { value: 'warning', label: '警告' },
+  { value: 'error', label: '错误' },
+]
+
+function formatEventKind(kind: DashboardRuntimeEventKind) {
+  switch (kind) {
+    case 'command':
+      return '命令'
+    case 'build':
+      return '构建'
+    case 'diagnostic':
+      return '诊断'
+    case 'hmr':
+      return 'HMR'
+    case 'system':
+      return '系统'
+    default:
+      return kind
+  }
+}
+
+function formatEventLevel(level: DashboardRuntimeEventLevel) {
+  switch (level) {
+    case 'info':
+      return '信息'
+    case 'success':
+      return '成功'
+    case 'warning':
+      return '警告'
+    case 'error':
+      return '错误'
+    default:
+      return level
+  }
+}
+
+const filteredRuntimeEvents = computed(() => {
+  const keyword = searchQuery.value.trim().toLowerCase()
+
+  return runtimeEvents.value.filter((event) => {
+    if (eventKindFilter.value !== 'all' && event.kind !== eventKindFilter.value) {
+      return false
+    }
+
+    if (eventLevelFilter.value !== 'all' && event.level !== eventLevelFilter.value) {
+      return false
+    }
+
+    if (!keyword) {
+      return true
+    }
+
+    return [
+      event.title,
+      event.detail,
+      event.kind,
+      event.level,
+      event.source ?? '',
+      ...(event.tags ?? []),
+    ]
+      .join(' ')
+      .toLowerCase()
+      .includes(keyword)
+  })
+})
+
+const filteredEventSummary = computed(() => [
+  { label: '筛选后事件', value: String(filteredRuntimeEvents.value.length) },
+  { label: '当前类型', value: eventKindFilter.value === 'all' ? '全部' : formatEventKind(eventKindFilter.value) },
+  { label: '当前等级', value: eventLevelFilter.value === 'all' ? '全部' : formatEventLevel(eventLevelFilter.value) },
+  { label: '搜索关键字', value: searchQuery.value.trim() || '未设置' },
+])
 </script>
 
 <template>
@@ -52,7 +148,7 @@ const { activityItems, diagnostics, eventSummary, runtimeEvents } = useDashboard
       >
         <div class="grid gap-2 sm:grid-cols-2">
           <div
-            v-for="item in eventSummary"
+            v-for="item in [...eventSummary, ...filteredEventSummary]"
             :key="item.label"
             class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
           >
@@ -97,34 +193,103 @@ const { activityItems, diagnostics, eventSummary, runtimeEvents } = useDashboard
 
       <AppSurfaceCard
         eyebrow="Event Feed"
-        title="结构化事件样本"
-        description="当前先展示 dashboard 自己维护的前端事件流，后续可以直接换成主包持续注入的真实事件。"
+        title="结构化事件控制台"
+        description="当前事件已经支持按类型、等级和关键字过滤。后续即便接入主包真实事件，也可以复用这套前端交互层。"
         icon-name="hero-commands"
       >
-        <ul class="grid gap-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-          <li
-            v-for="event in runtimeEvents.slice(0, 5)"
-            :key="event.id"
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
-          >
-            <div class="flex items-start justify-between gap-3">
+        <div class="grid gap-3">
+          <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
+            <div class="grid gap-3">
               <div>
-                <p class="font-medium text-[color:var(--dashboard-text)]">
-                  {{ event.title }}
-                </p>
-                <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-                  {{ event.detail }}
-                </p>
-                <p class="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                  {{ event.kind }} · {{ event.source ?? 'dashboard' }} · {{ event.timestamp }}
-                </p>
+                <label class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]" for="dashboard-event-search">
+                  搜索事件
+                </label>
+                <input
+                  id="dashboard-event-search"
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="搜索标题、详情、来源或标签"
+                  class="mt-2 w-full rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-2 text-sm text-[color:var(--dashboard-text)] outline-none transition focus:border-[color:var(--dashboard-border-strong)]"
+                >
               </div>
-              <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
-                {{ event.level }}
-              </span>
+
+              <div class="grid gap-3">
+                <div>
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                    类型过滤
+                  </p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <button
+                      v-for="option in eventKindOptions"
+                      :key="option.value"
+                      :class="pillButtonStyles({ kind: 'theme', active: eventKindFilter === option.value })"
+                      @click="eventKindFilter = option.value"
+                    >
+                      {{ option.label }}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                    等级过滤
+                  </p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <button
+                      v-for="option in eventLevelOptions"
+                      :key="option.value"
+                      :class="pillButtonStyles({ kind: 'theme', active: eventLevelFilter === option.value })"
+                      @click="eventLevelFilter = option.value"
+                    >
+                      {{ option.label }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-          </li>
-        </ul>
+          </div>
+
+          <p
+            v-if="filteredRuntimeEvents.length === 0"
+            class="rounded-[18px] border border-dashed border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-4 text-sm leading-6 text-[color:var(--dashboard-text-soft)]"
+          >
+            当前过滤条件下没有匹配的事件。你可以清空关键字，或者切回“全部类型 / 全部等级”。
+          </p>
+
+          <ul class="grid gap-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+            <li
+              v-for="event in filteredRuntimeEvents"
+              :key="event.id"
+              class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="font-medium text-[color:var(--dashboard-text)]">
+                    {{ event.title }}
+                  </p>
+                  <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+                    {{ event.detail }}
+                  </p>
+                  <p class="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                    {{ formatEventKind(event.kind) }} · {{ event.source ?? 'dashboard' }} · {{ event.timestamp }}
+                  </p>
+                  <p v-if="event.tags?.length" class="mt-2 flex flex-wrap gap-1.5">
+                    <span
+                      v-for="tag in event.tags"
+                      :key="tag"
+                      class="rounded-full border border-[color:var(--dashboard-border)] px-2 py-0.5 text-[11px] uppercase tracking-[0.12em] text-[color:var(--dashboard-text-soft)]"
+                    >
+                      {{ tag }}
+                    </span>
+                  </p>
+                </div>
+                <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
+                  {{ formatEventLevel(event.level) }}
+                </span>
+              </div>
+            </li>
+          </ul>
+        </div>
       </AppSurfaceCard>
     </div>
   </div>
