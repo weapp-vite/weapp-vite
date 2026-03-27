@@ -1,29 +1,19 @@
 import * as t from '@weapp-vite/ast/babelTypes'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 import { generate, parseJsLike, traverse } from '../../../utils'
+import {
+  ALIPAY_TEMPLATE_EXTENSION_MAP,
+  containsIncompatibleAlipayTemplateSyntax,
+  rewriteAlipayReferenceExtensions,
+  transformTemplateForAlipay,
+} from './alipayTemplate'
 import { collectFiles } from './shared'
-
-const ALIPAY_EXTENSION_MAP: Record<string, string> = {
-  '.wxml': '.axml',
-  '.wxss': '.acss',
-  '.wxs': '.sjs',
-}
 
 const WX_TEMPLATE_REFERENCE_RE = /\.wxml\b|\.wxss\b|\.wxs\b/
 const ESM_SYNTAX_RE = /\bimport\s|\bexport\s/
 const NULLISH_COALESCING_RE = /\?\?/
-const WX_DIRECTIVE_RE = /\bwx:(?:if|elif|else|for|for-item|for-index|key)\b/
-const WX_DIRECTIVE_CAPTURE_RE = /\bwx:(if|elif|else|for|for-item|for-index|key)\b/g
-const WXS_TAG_RE = /<\s*(?:\/\s*)?wxs\b/
-const WXS_CLOSING_TAG_RE = /<\s*\/\s*wxs\b/g
-const ELSE_ATTRIBUTE_RE = /\selse(?=[\s/>])/
-const IMPORT_SJS_TAG_RE = /<import-sjs([\s\S]*?)>/g
-const SRC_ATTRIBUTE_RE = /\bsrc\s*=\s*/g
-const MODULE_ATTRIBUTE_RE = /\bmodule\s*=\s*/g
-const WXML_EXTENSION_RE = /\.wxml\b/g
-const WXSS_EXTENSION_RE = /\.wxss\b/g
-const WXS_EXTENSION_RE = /\.wxs\b/g
 
 const ALIPAY_TEXT_FILE_EXTENSIONS = new Set([
   '.js',
@@ -38,30 +28,6 @@ const ALIPAY_TEXT_FILE_EXTENSIONS = new Set([
 
 function hasEsmSyntax(source: string) {
   return ESM_SYNTAX_RE.test(source)
-}
-
-function rewriteAlipayWxmlSyntax(source: string) {
-  return source
-    .replace(WX_DIRECTIVE_CAPTURE_RE, (_, directive: string) => `a:${directive}`)
-    .replace(WXS_CLOSING_TAG_RE, '</import-sjs')
-    .replace(WXS_TAG_RE, '<import-sjs')
-    .replace(IMPORT_SJS_TAG_RE, (tag) => {
-      return tag
-        .replace(SRC_ATTRIBUTE_RE, 'from=')
-        .replace(MODULE_ATTRIBUTE_RE, 'name=')
-    })
-    .replace(ELSE_ATTRIBUTE_RE, ' a:else')
-}
-
-function rewriteAlipayExtensionReferences(source: string) {
-  return source
-    .replace(WXML_EXTENSION_RE, '.axml')
-    .replace(WXSS_EXTENSION_RE, '.acss')
-    .replace(WXS_EXTENSION_RE, '.sjs')
-}
-
-function transformWxmlToAxmlForAlipay(source: string) {
-  return rewriteAlipayWxmlSyntax(source)
 }
 
 function createExportsMember(name: string) {
@@ -220,6 +186,7 @@ async function transformJsModuleToCjsForAlipay(source: string) {
 
         if (path.node.source) {
           const requireId = path.scope.generateUidIdentifier('reExported')
+          const exportSpecifiers = specifiers.filter(t.isExportSpecifier)
           const statements: t.Statement[] = [
             t.variableDeclaration('const', [
               t.variableDeclarator(
@@ -228,10 +195,7 @@ async function transformJsModuleToCjsForAlipay(source: string) {
               ),
             ]),
           ]
-          for (const specifier of specifiers) {
-            if (!t.isExportSpecifier(specifier)) {
-              continue
-            }
+          for (const specifier of exportSpecifiers) {
             const localName = specifier.local.name
             const exportedName = getModuleExportName(specifier.exported)
             statements.push(createExportsAssignment(exportedName, createRequireMemberExpression(requireId, localName)))
@@ -241,11 +205,9 @@ async function transformJsModuleToCjsForAlipay(source: string) {
           return
         }
 
+        const exportSpecifiers = specifiers.filter(t.isExportSpecifier)
         const statements: t.Statement[] = []
-        for (const specifier of specifiers) {
-          if (!t.isExportSpecifier(specifier)) {
-            continue
-          }
+        for (const specifier of exportSpecifiers) {
           const localName = specifier.local.name
           const exportedName = getModuleExportName(specifier.exported)
           statements.push(createExportsAssignment(exportedName, t.identifier(localName)))
@@ -317,7 +279,7 @@ export async function shouldRebuildCachedAlipayMiniprogramPackage(
       return true
     }
 
-    if ((ext === '.axml' || ext === '.wxml') && (WX_DIRECTIVE_RE.test(source) || WXS_TAG_RE.test(source) || ELSE_ATTRIBUTE_RE.test(source))) {
+    if ((ext === '.axml' || ext === '.wxml') && containsIncompatibleAlipayTemplateSyntax(source)) {
       return true
     }
   }
@@ -347,7 +309,7 @@ export async function normalizeMiniprogramPackageForAlipay(pkgRoot: string) {
   const renameTasks = initialFiles
     .map((filePath) => {
       const ext = path.extname(filePath)
-      const nextExt = ALIPAY_EXTENSION_MAP[ext]
+      const nextExt = ALIPAY_TEMPLATE_EXTENSION_MAP[ext]
       if (!nextExt) {
         return null
       }
@@ -359,9 +321,6 @@ export async function normalizeMiniprogramPackageForAlipay(pkgRoot: string) {
     .filter((item): item is { from: string, to: string } => item !== null)
 
   for (const task of renameTasks) {
-    if (task.from === task.to) {
-      continue
-    }
     await fs.move(task.from, task.to, { overwrite: true })
   }
 
@@ -380,10 +339,10 @@ export async function normalizeMiniprogramPackageForAlipay(pkgRoot: string) {
     }
 
     if (ext === '.axml' || ext === '.wxml') {
-      nextSource = transformWxmlToAxmlForAlipay(nextSource)
+      nextSource = transformTemplateForAlipay(nextSource)
     }
 
-    nextSource = rewriteAlipayExtensionReferences(nextSource)
+    nextSource = rewriteAlipayReferenceExtensions(nextSource)
 
     if (nextSource !== source) {
       await fs.writeFile(filePath, nextSource)

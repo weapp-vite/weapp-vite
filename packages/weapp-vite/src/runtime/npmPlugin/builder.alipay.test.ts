@@ -1,7 +1,8 @@
 import os from 'node:os'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   copyEsModuleDirectoryForAlipay,
   hoistNestedMiniprogramDependenciesForAlipay,
@@ -198,6 +199,27 @@ describe('runtime npm builder alipay adaptation', () => {
     expect(broken).toBe('import {')
   })
 
+  it('keeps unsupported export namespace re-exports stable while still converting surrounding esm syntax', async () => {
+    const root = await createTempDir()
+    const pkgRoot = path.resolve(root, 'namespace-pkg')
+    await fs.ensureDir(pkgRoot)
+
+    await fs.writeFile(path.resolve(pkgRoot, 'dep.js'), 'exports.foo = 1')
+    await fs.writeFile(path.resolve(pkgRoot, 'main.js'), [
+      'import dep from "./dep.js"',
+      'export * as namespaceAlias from "./dep.js"',
+      'export default dep',
+    ].join('\n'))
+
+    await normalizeMiniprogramPackageForAlipay(pkgRoot)
+
+    const main = await fs.readFile(path.resolve(pkgRoot, 'main.js'), 'utf8')
+    expect(main).toContain('const _imported = require("./dep.js")')
+    expect(main).toContain('const _reExported = require("./dep.js")')
+    expect(main).not.toContain('exports.namespaceAlias')
+    expect(main).toContain('exports["default"]')
+  })
+
   it('keeps hoist/copy helpers no-op when source is missing or target already exists', async () => {
     const root = await createTempDir()
     const pkgRoot = path.resolve(root, 'pkg')
@@ -215,5 +237,50 @@ describe('runtime npm builder alipay adaptation', () => {
 
     const copied = await copyEsModuleDirectoryForAlipay(path.resolve(root, 'source-no-es'), path.resolve(root, 'target'))
     expect(copied).toBe(false)
+  })
+
+  it('treats json template references as stale cache and skips unreadable or non-text files during detection', async () => {
+    const root = await createTempDir()
+    const outDir = path.resolve(root, 'out/miniprogram_npm')
+
+    const staleJsonPkg = path.resolve(root, 'json-pkg')
+    await fs.ensureDir(staleJsonPkg)
+    await fs.writeFile(path.resolve(staleJsonPkg, 'index.json'), '{"template":"./entry.wxml"}')
+    expect(await shouldRebuildCachedAlipayMiniprogramPackage(staleJsonPkg, outDir)).toBe(true)
+
+    const assetPkg = path.resolve(root, 'asset-pkg')
+    await fs.ensureDir(assetPkg)
+    const unreadablePath = path.resolve(assetPkg, 'broken.axml')
+    await fs.writeFile(unreadablePath, '<view />')
+    await fs.writeFile(path.resolve(assetPkg, 'image.png'), 'binary')
+    await fs.writeFile(path.resolve(assetPkg, 'index.js'), 'module.exports = 1')
+
+    const originalReadFile = fs.readFile.bind(fs)
+    const readFileSpy = vi.spyOn(fs, 'readFile').mockImplementation(async (filePath: any, ...args: any[]) => {
+      if (filePath === unreadablePath) {
+        throw new Error('mock read failure')
+      }
+      return originalReadFile(filePath, ...args)
+    })
+
+    await expect(shouldRebuildCachedAlipayMiniprogramPackage(assetPkg, outDir)).resolves.toBe(false)
+
+    readFileSpy.mockRestore()
+  })
+
+  it('keeps normalize helper as a no-op for missing roots and non-text assets', async () => {
+    const root = await createTempDir()
+
+    await expect(normalizeMiniprogramPackageForAlipay(path.resolve(root, 'missing'))).resolves.toBeUndefined()
+
+    const pkgRoot = path.resolve(root, 'asset-only-pkg')
+    await fs.ensureDir(pkgRoot)
+    await fs.writeFile(path.resolve(pkgRoot, 'icon.png'), 'binary')
+    await fs.writeFile(path.resolve(pkgRoot, 'style.acss'), '@import "./base.acss";')
+
+    await normalizeMiniprogramPackageForAlipay(pkgRoot)
+
+    expect(await fs.readFile(path.resolve(pkgRoot, 'icon.png'), 'utf8')).toBe('binary')
+    expect(await fs.readFile(path.resolve(pkgRoot, 'style.acss'), 'utf8')).toBe('@import "./base.acss";')
   })
 })
