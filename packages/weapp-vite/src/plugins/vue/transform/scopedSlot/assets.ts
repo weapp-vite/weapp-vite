@@ -6,6 +6,7 @@ import { createJsonMerger } from 'wevu/compiler'
 import { shouldNormalizeUsingComponents } from '../../../../platform'
 import { resolveJson } from '../../../../utils'
 import { toPosixPath } from '../../../../utils/path'
+import { resolveBundleOutputExtensions } from '../bundle/outputExtensions'
 import { emitClassStyleWxsAssetIfMissing } from '../emitAssets'
 
 interface ClassStyleWxsAsset {
@@ -118,8 +119,7 @@ export function emitScopedSlotAssets(
     return
   }
 
-  const templateExtension = outputExtensions?.wxml ?? 'wxml'
-  const jsonExtension = outputExtensions?.json ?? 'json'
+  const { templateExtension, jsonExtension } = resolveBundleOutputExtensions(outputExtensions)
   const configObj = parseJsonSafely(result.config) ?? {}
   const baseUsingComponents: Record<string, string> = (configObj.usingComponents && typeof configObj.usingComponents === 'object' && !Array.isArray(configObj.usingComponents))
     ? { ...configObj.usingComponents }

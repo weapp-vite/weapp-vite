@@ -1,8 +1,10 @@
 import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
+// eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取布局资产
 import fs from 'fs-extra'
 import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../emitAssets'
 import { collectNativeLayoutAssets } from '../pageLayout'
+import { resolveBundleOutputExtensions } from './outputExtensions'
 import { compileVueLikeFile, getEntryBaseName, SCRIPTLESS_COMPONENT_STUB } from './shared'
 
 export async function emitNativeLayoutScriptChunkIfNeeded(options: {
@@ -22,7 +24,7 @@ export async function emitNativeLayoutScriptChunkIfNeeded(options: {
     return
   }
 
-  const scriptExtension = outputExtensions?.js ?? 'js'
+  const { scriptExtension } = resolveBundleOutputExtensions(outputExtensions)
   const fileName = `${relativeBase}.${scriptExtension}`
   const emittedLayoutScripts: Set<string> = (pluginCtx as any).__weappViteNativeLayoutScripts ?? ((pluginCtx as any).__weappViteNativeLayoutScripts = new Set<string>())
   if (emittedLayoutScripts.has(fileName)) {
@@ -53,9 +55,7 @@ export async function emitNativeLayoutAssetsIfNeeded(options: {
   }
 
   const assets = await collectNativeLayoutAssets(layoutBasePath)
-  const jsonExtension = outputExtensions?.json ?? 'json'
-  const templateExtension = outputExtensions?.wxml ?? 'wxml'
-  const styleExtension = outputExtensions?.wxss ?? 'wxss'
+  const { jsonExtension, templateExtension, styleExtension } = resolveBundleOutputExtensions(outputExtensions)
 
   if (assets.json) {
     const source = await fs.readFile(assets.json, 'utf8')
@@ -75,6 +75,25 @@ export async function emitNativeLayoutAssetsIfNeeded(options: {
     const source = await fs.readFile(assets.style, 'utf8')
     emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, source, styleExtension)
   }
+}
+
+export function emitScriptlessComponentJsFallbackIfMissing(options: {
+  pluginCtx: any
+  bundle: Record<string, any>
+  relativeBase: string
+  scriptExtension: string
+}) {
+  const { pluginCtx, bundle, relativeBase, scriptExtension } = options
+  const scriptFileName = `${relativeBase}.${scriptExtension}`
+  if (bundle[scriptFileName]) {
+    return
+  }
+
+  pluginCtx.emitFile({
+    type: 'asset',
+    fileName: scriptFileName,
+    source: SCRIPTLESS_COMPONENT_STUB,
+  })
 }
 
 export async function emitVueLayoutScriptFallbackIfNeeded(options: {
@@ -101,7 +120,7 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
     return
   }
 
-  const scriptExtension = outputExtensions?.js ?? 'js'
+  const { scriptExtension } = resolveBundleOutputExtensions(outputExtensions)
   const scriptFileName = `${relativeBase}.${scriptExtension}`
   if (bundle[scriptFileName]) {
     return
@@ -128,24 +147,5 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
     bundle,
     relativeBase,
     scriptExtension,
-  })
-}
-
-export function emitScriptlessComponentJsFallbackIfMissing(options: {
-  pluginCtx: any
-  bundle: Record<string, any>
-  relativeBase: string
-  scriptExtension: string
-}) {
-  const { pluginCtx, bundle, relativeBase, scriptExtension } = options
-  const scriptFileName = `${relativeBase}.${scriptExtension}`
-  if (bundle[scriptFileName]) {
-    return
-  }
-
-  pluginCtx.emitFile({
-    type: 'asset',
-    fileName: scriptFileName,
-    source: SCRIPTLESS_COMPONENT_STUB,
   })
 }

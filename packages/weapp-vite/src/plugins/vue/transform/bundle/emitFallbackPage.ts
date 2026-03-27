@@ -14,6 +14,7 @@ import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDat
 import { resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
 import { emitNativeLayoutAssetsIfNeeded, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
+import { resolveBundleOutputExtensions } from './outputExtensions'
 import { emitPlatformTemplateAsset, preparePlatformConfigAsset } from './platform'
 import { compileVueLikeFile } from './shared'
 
@@ -29,9 +30,12 @@ export async function emitFallbackPageAssets(
 
   const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned }
   const outputExtensions = configService.outputExtensions
-  const templateExtension = outputExtensions?.wxml ?? 'wxml'
-  const styleExtension = outputExtensions?.wxss ?? 'wxss'
-  const jsonExtension = outputExtensions?.json ?? 'json'
+  const {
+    templateExtension,
+    styleExtension,
+    jsonExtension,
+    scriptModuleExtension,
+  } = resolveBundleOutputExtensions(outputExtensions)
 
   const collectedEntries = await collectFallbackPageEntryIds(configService, scanService)
   for (const entryId of collectedEntries) {
@@ -134,11 +138,11 @@ export async function emitFallbackPageAssets(
           template: result.template,
           platform: configService.platform,
           templateExtension,
-          scriptModuleExtension: configService.outputExtensions?.wxs,
+          scriptModuleExtension,
         })
       }
 
-      const wxsExtension = configService.outputExtensions?.wxs
+      const wxsExtension = scriptModuleExtension
       const needsClassStyleWxs = Boolean(result.classStyleWxs)
         || Boolean(result.scopedSlotComponents?.some(slot => slot.classStyleWxs))
       let classStyleWxs: ClassStyleWxsAsset | undefined
