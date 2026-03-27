@@ -4,7 +4,7 @@ import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 
-const { activityItems, diagnostics } = useDashboardWorkspace()
+const { activityItems, diagnostics, eventSummary, runtimeEvents } = useDashboardWorkspace()
 </script>
 
 <template>
@@ -45,6 +45,28 @@ const { activityItems, diagnostics } = useDashboardWorkspace()
 
     <div class="grid gap-3">
       <AppSurfaceCard
+        eyebrow="Runtime"
+        title="事件摘要"
+        description="这组摘要来自共享工作区状态层。未来接 CLI 或 MCP 时，只需要持续往事件流里追加结构化事件。"
+        icon-name="metric-time"
+      >
+        <div class="grid gap-2 sm:grid-cols-2">
+          <div
+            v-for="item in eventSummary"
+            :key="item.label"
+            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+          >
+            <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+              {{ item.label }}
+            </p>
+            <p class="mt-1 text-lg font-semibold">
+              {{ item.value }}
+            </p>
+          </div>
+        </div>
+      </AppSurfaceCard>
+
+      <AppSurfaceCard
         eyebrow="Diagnostics"
         title="当前诊断队列"
         description="这里不是产品逻辑页，而是 dashboard 未来最需要的第二层能力: 把运行状态和建议动作结构化展示。"
@@ -74,20 +96,33 @@ const { activityItems, diagnostics } = useDashboardWorkspace()
       </AppSurfaceCard>
 
       <AppSurfaceCard
-        eyebrow="Next"
-        title="后续接入建议"
-        description="如果继续增强，这一页优先接真实事件流，其次再做更细的过滤、搜索和日志详情。"
+        eyebrow="Event Feed"
+        title="结构化事件样本"
+        description="当前先展示 dashboard 自己维护的前端事件流，后续可以直接换成主包持续注入的真实事件。"
         icon-name="hero-commands"
       >
         <ul class="grid gap-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-          <li class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3">
-            将 CLI 生命周期拆成标准事件流，例如 `command:start`、`bundle:done`、`diagnostic:error`。
-          </li>
-          <li class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3">
-            为每条事件保留来源、阶段、耗时和建议动作，避免日志只有原始文本。
-          </li>
-          <li class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3">
-            把最近任务和事件筛选器提升成通用状态层，供 analyze 和未来页面共享。
+          <li
+            v-for="event in runtimeEvents.slice(0, 5)"
+            :key="event.id"
+            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="font-medium text-[color:var(--dashboard-text)]">
+                  {{ event.title }}
+                </p>
+                <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+                  {{ event.detail }}
+                </p>
+                <p class="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                  {{ event.kind }} · {{ event.source ?? 'dashboard' }} · {{ event.timestamp }}
+                </p>
+              </div>
+              <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
+                {{ event.level }}
+              </span>
+            </div>
           </li>
         </ul>
       </AppSurfaceCard>

@@ -1,4 +1,4 @@
-import type { DashboardNavItem } from '../types'
+import type { DashboardNavItem, DashboardRuntimeEvent } from '../types'
 
 export const workspaceNavigation: DashboardNavItem[] = [
   { to: '/', label: '工作台', caption: '应用入口与状态总览', iconName: 'nav-home' },
@@ -73,6 +73,40 @@ export const diagnosticsQueue = [
   { label: '路由拓展性', detail: '新增页面采用文件路由，后续新增面板不需要修改主路由表。', status: '可扩展' },
   { label: '组件复用', detail: '通用卡片与区块标题已独立，避免页面继续拷贝结构。', status: '已落地' },
   { label: '视觉令牌', detail: '颜色、表面、排版预览集中在 tokens 页面统一检查。', status: '可验证' },
+]
+
+export const sampleRuntimeEvents: DashboardRuntimeEvent[] = [
+  {
+    id: 'evt-command-build-ui',
+    kind: 'command',
+    level: 'success',
+    title: 'build --ui completed',
+    detail: '示例事件: dashboard 已经准备好承接来自 CLI 的真实命令生命周期事件。',
+    timestamp: '10:18:12',
+    source: 'cli',
+    durationMs: 842,
+    tags: ['build', 'ui'],
+  },
+  {
+    id: 'evt-hmr-shell',
+    kind: 'hmr',
+    level: 'info',
+    title: 'workspace shell hot updated',
+    detail: '应用壳子页面已完成一次热更新，后续可以继续细分到模块级刷新记录。',
+    timestamp: '10:19:44',
+    source: 'vite-hmr',
+    tags: ['hmr', 'shell'],
+  },
+  {
+    id: 'evt-diagnostic-payload',
+    kind: 'diagnostic',
+    level: 'warning',
+    title: 'analyze payload pending',
+    detail: '示例事件: 当前页面支持在没有 payload 时进入空态，而不是直接崩溃。',
+    timestamp: '10:20:07',
+    source: 'dashboard',
+    tags: ['diagnostic'],
+  },
 ]
 
 export const tokenGroups = [

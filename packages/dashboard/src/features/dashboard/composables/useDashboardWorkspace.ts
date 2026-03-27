@@ -1,13 +1,14 @@
 import type { ComputedRef, InjectionKey, Ref, ShallowRef } from 'vue'
 import type {
   AnalyzeSubpackagesResult,
+  DashboardRuntimeEvent,
   WorkspaceActivityItem,
   WorkspaceCommandItem,
   WorkspaceDiagnosticItem,
   WorkspaceSignalItem,
 } from '../types'
 import { computed, inject, onBeforeUnmount, onMounted, provide, shallowRef } from 'vue'
-import { activityFeed, diagnosticsQueue, quickCommands } from '../constants/shell'
+import { activityFeed, diagnosticsQueue, quickCommands, sampleRuntimeEvents } from '../constants/shell'
 import { formatBytes } from '../utils/format'
 
 interface DashboardWorkspaceContext {
@@ -20,6 +21,9 @@ interface DashboardWorkspaceContext {
   activityItems: ComputedRef<WorkspaceActivityItem[]>
   diagnostics: ComputedRef<WorkspaceDiagnosticItem[]>
   signals: ComputedRef<WorkspaceSignalItem[]>
+  runtimeEvents: Ref<DashboardRuntimeEvent[]>
+  latestRuntimeEvent: ComputedRef<DashboardRuntimeEvent | null>
+  eventSummary: ComputedRef<Array<{ label: string, value: string }>>
 }
 
 const dashboardWorkspaceKey: InjectionKey<DashboardWorkspaceContext> = Symbol('dashboard-workspace')
@@ -30,6 +34,9 @@ function formatCurrentTime() {
 
 export function createDashboardWorkspace(): DashboardWorkspaceContext {
   const resultRef = shallowRef<AnalyzeSubpackagesResult | null>(window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null)
+  const runtimeEvents = shallowRef<DashboardRuntimeEvent[]>(window.__WEAPP_VITE_DASHBOARD_EVENTS__?.length
+    ? [...window.__WEAPP_VITE_DASHBOARD_EVENTS__]
+    : [...sampleRuntimeEvents])
   const updateCount = shallowRef(0)
   const lastUpdatedAt = shallowRef(resultRef.value ? formatCurrentTime() : '—')
 
@@ -61,6 +68,20 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
       ? `${summary.value.packageCount} 个包 · ${summary.value.moduleCount} 个模块`
       : '尚未接收到 CLI analyze 数据',
   )
+  const latestRuntimeEvent = computed(() => runtimeEvents.value[0] ?? null)
+
+  const eventSummary = computed(() => {
+    const errorCount = runtimeEvents.value.filter(event => event.level === 'error').length
+    const warningCount = runtimeEvents.value.filter(event => event.level === 'warning').length
+    const commandCount = runtimeEvents.value.filter(event => event.kind === 'command').length
+
+    return [
+      { label: '总事件数', value: String(runtimeEvents.value.length) },
+      { label: '命令事件', value: String(commandCount) },
+      { label: '警告事件', value: String(warningCount) },
+      { label: '错误事件', value: String(errorCount) },
+    ]
+  })
 
   const signals = computed<WorkspaceSignalItem[]>(() => [
     {
@@ -82,6 +103,11 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
       label: '产物体积',
       value: resultRef.value ? formatBytes(summary.value.totalBytes) : '未载入',
       iconName: 'metric-quality',
+    },
+    {
+      label: '运行事件',
+      value: `${runtimeEvents.value.length} 条`,
+      iconName: latestRuntimeEvent.value?.level === 'error' ? 'metric-health' : 'metric-time',
     },
   ])
 
@@ -112,6 +138,15 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
   const activityItems = computed<WorkspaceActivityItem[]>(() => {
     const items = [...activityFeed]
 
+    for (const event of runtimeEvents.value.slice(0, 4)) {
+      items.unshift({
+        time: event.timestamp,
+        title: event.title,
+        summary: event.detail,
+        tone: event.level === 'error' || event.level === 'warning' ? 'default' : 'live',
+      })
+    }
+
     if (resultRef.value) {
       items.unshift({
         time: lastUpdatedAt.value,
@@ -126,6 +161,15 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
 
   const diagnostics = computed<WorkspaceDiagnosticItem[]>(() => {
     const items = [...diagnosticsQueue]
+    const latestEvent = latestRuntimeEvent.value
+
+    if (latestEvent) {
+      items.unshift({
+        label: '最新运行事件',
+        detail: `${latestEvent.title} · ${latestEvent.detail}`,
+        status: latestEvent.level,
+      })
+    }
 
     if (!resultRef.value) {
       return [
@@ -153,6 +197,22 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     ]
   })
 
+  const pushRuntimeEvents = (payload: DashboardRuntimeEvent[] | null | undefined) => {
+    if (!payload?.length) {
+      return
+    }
+
+    const nextEvents = [...payload, ...runtimeEvents.value]
+    const deduped = new Map<string, DashboardRuntimeEvent>()
+
+    for (const event of nextEvents) {
+      deduped.set(event.id, event)
+    }
+
+    runtimeEvents.value = [...deduped.values()].slice(0, 24)
+    window.__WEAPP_VITE_DASHBOARD_EVENTS__ = [...runtimeEvents.value]
+  }
+
   const syncFromWindow = () => {
     if (!window.__WEAPP_VITE_ANALYZE_RESULT__) {
       return
@@ -163,13 +223,25 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     lastUpdatedAt.value = formatCurrentTime()
   }
 
+  const handleRuntimeEvent = (event: Event) => {
+    const payload = event instanceof CustomEvent
+      ? event.detail
+      : null
+    const events = Array.isArray(payload) ? payload : payload ? [payload] : null
+
+    pushRuntimeEvents(events)
+  }
+
   onMounted(() => {
     window.addEventListener('weapp-analyze:update', syncFromWindow)
+    window.addEventListener('weapp-dashboard:event', handleRuntimeEvent)
     syncFromWindow()
+    pushRuntimeEvents(window.__WEAPP_VITE_DASHBOARD_EVENTS__)
   })
 
   onBeforeUnmount(() => {
     window.removeEventListener('weapp-analyze:update', syncFromWindow)
+    window.removeEventListener('weapp-dashboard:event', handleRuntimeEvent)
   })
 
   return {
@@ -182,6 +254,9 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     activityItems,
     diagnostics,
     signals,
+    runtimeEvents,
+    latestRuntimeEvent,
+    eventSummary,
   }
 }
 
