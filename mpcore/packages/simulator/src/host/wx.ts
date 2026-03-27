@@ -327,6 +327,16 @@ export interface HeadlessWxGetSavedFileListSuccessResult {
 
 export interface HeadlessWxGetSavedFileListOption extends HeadlessWxCallbackOption<HeadlessWxGetSavedFileListSuccessResult> {}
 
+export interface HeadlessWxGetSavedFileInfoSuccessResult {
+  createTime: number
+  errMsg: string
+  size: number
+}
+
+export interface HeadlessWxGetSavedFileInfoOption extends HeadlessWxCallbackOption<HeadlessWxGetSavedFileInfoSuccessResult> {
+  filePath: string
+}
+
 export interface HeadlessWxRemoveSavedFileOption extends HeadlessWxCallbackOption<{ errMsg: string }> {
   filePath: string
 }
@@ -431,6 +441,7 @@ export interface HeadlessWxDriver {
   executeSelectorQuery: (requests: HeadlessWxSelectorQueryRequest[], scope?: Record<string, any>) => unknown[]
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   getFileSystemManager: () => HeadlessWxFileSystemManager
+  getSavedFileInfo: (option: HeadlessWxGetSavedFileInfoOption) => HeadlessWxGetSavedFileInfoSuccessResult
   getSavedFileList: (option?: HeadlessWxGetSavedFileListOption) => HeadlessWxGetSavedFileListSuccessResult
   clearStorageSync: () => void
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
@@ -487,6 +498,7 @@ export interface HeadlessWx {
   clearStorageSync: () => void
   createSelectorQuery: () => HeadlessWxSelectorQuery
   getFileSystemManager: () => HeadlessWxFileSystemManager
+  getSavedFileInfo: (option: HeadlessWxGetSavedFileInfoOption) => HeadlessWxGetSavedFileInfoSuccessResult | undefined
   getSavedFileList: (option?: HeadlessWxGetSavedFileListOption) => HeadlessWxGetSavedFileListSuccessResult | undefined
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getAppBaseInfo: (option?: HeadlessWxGetAppBaseInfoOption) => HeadlessWxAppBaseInfoResult | undefined
@@ -584,6 +596,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     clearStorageSync: true,
     createSelectorQuery: true,
     getFileSystemManager: true,
+    getSavedFileInfo: true,
     getSavedFileList: true,
     getAppBaseInfo: {
       return: {
@@ -838,6 +851,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     },
     getEnterOptionsSync: () => driver.getEnterOptionsSync(),
     getFileSystemManager: () => driver.getFileSystemManager(),
+    getSavedFileInfo: option => invokeWxApi(() => driver.getSavedFileInfo(option), option),
     getSavedFileList: option => invokeWxApi(() => driver.getSavedFileList(option), option),
     getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),
     getAppBaseInfoSync: () => driver.getAppBaseInfoSync(),

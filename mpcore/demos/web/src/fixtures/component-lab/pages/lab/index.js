@@ -12,6 +12,7 @@ Page({
     fileManagerSnapshot: '',
     requestSnapshot: '',
     savedFilePath: '',
+    savedFileInfo: '',
     uploadedSnapshot: '',
     storageSnapshot: '',
     toastState: '',
@@ -104,17 +105,27 @@ Page({
             this.setData({
               savedFilePath: saveResult.savedFilePath,
             })
-            wx.uploadFile({
-              url: 'https://mock.mpcore.dev/upload/component-lab-report',
+            wx.getSavedFileInfo({
               filePath: saveResult.savedFilePath,
-              name: 'report',
-              success: (uploadResult) => {
+              success: (savedFileInfo) => {
                 this.setData({
-                  uploadedSnapshot: uploadResult.data,
+                  savedFileInfo: JSON.stringify(savedFileInfo),
                 })
               },
               complete: () => {
-                this.push('lab:runFileTransferLab:upload')
+                wx.uploadFile({
+                  url: 'https://mock.mpcore.dev/upload/component-lab-report',
+                  filePath: saveResult.savedFilePath,
+                  name: 'report',
+                  success: (uploadResult) => {
+                    this.setData({
+                      uploadedSnapshot: uploadResult.data,
+                    })
+                  },
+                  complete: () => {
+                    this.push('lab:runFileTransferLab:upload')
+                  }
+                })
               }
             })
           },
