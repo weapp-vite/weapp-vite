@@ -116,3 +116,38 @@ export function shouldCopyEsModuleDirectory(platform: MpPlatform): boolean {
 export function shouldHoistNestedMiniprogramDependencies(platform: MpPlatform): boolean {
   return getMiniProgramPlatformAdapter(platform).npm?.hoistNestedDependencies === true
 }
+
+export function getWxmlEventBindingStyle(platform?: MpPlatform): 'default' | 'alipay' {
+  if (!platform) {
+    return 'default'
+  }
+  return getMiniProgramPlatformAdapter(platform).wxml?.eventBindingStyle ?? 'default'
+}
+
+export function getWxmlDirectivePrefix(platform?: MpPlatform): string {
+  if (!platform) {
+    return 'wx'
+  }
+  return getMiniProgramPlatformAdapter(platform).wxml?.directivePrefix ?? 'wx'
+}
+
+export function shouldNormalizeWxmlComponentTagName(platform?: MpPlatform): boolean {
+  if (!platform) {
+    return false
+  }
+  return getMiniProgramPlatformAdapter(platform).wxml?.normalizeComponentTagName === true
+}
+
+export function shouldNormalizeVueTemplateForPlatform(platform?: MpPlatform): boolean {
+  if (!platform) {
+    return false
+  }
+  return getMiniProgramPlatformAdapter(platform).wxml?.normalizeVueTemplate === true
+}
+
+export function shouldEmitGenericPlaceholderAsset(platform?: MpPlatform): boolean {
+  if (!platform) {
+    return false
+  }
+  return getMiniProgramPlatformAdapter(platform).wxml?.emitGenericPlaceholder === true
+}

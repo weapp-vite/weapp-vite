@@ -73,4 +73,14 @@ export interface MiniProgramPlatformAdapter {
     hoistNestedDependencies?: boolean
     shouldRebuildCachedPackage?: boolean
   }
+  /**
+   * WXML / 模板转换相关的平台能力。
+   */
+  wxml?: {
+    eventBindingStyle?: 'default' | 'alipay'
+    directivePrefix?: string
+    normalizeComponentTagName?: boolean
+    normalizeVueTemplate?: boolean
+    emitGenericPlaceholder?: boolean
+  }
 }

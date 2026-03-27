@@ -1,4 +1,8 @@
 import type { OutputExtensions } from '../../../../platforms/types'
+import {
+  shouldEmitGenericPlaceholderAsset,
+  shouldNormalizeVueTemplateForPlatform,
+} from '../../../../platform'
 import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson } from '../../../../utils'
 import { resolveScriptModuleTagByPlatform } from '../../../../utils/wxmlScriptModule'
 import { scanWxml } from '../../../../wxml'
@@ -47,7 +51,7 @@ export function normalizeVueTemplateForPlatform(
     scriptModuleExtension?: string
   },
 ) {
-  if (options.platform !== 'alipay') {
+  if (!shouldNormalizeVueTemplateForPlatform(options.platform as any)) {
     return template
   }
 
@@ -74,7 +78,7 @@ export function emitAlipayGenericPlaceholderAssets(
   outputExtensions: OutputExtensions | undefined,
   platform: string,
 ) {
-  if (platform !== 'alipay' || !configSource) {
+  if (!shouldEmitGenericPlaceholderAsset(platform as any) || !configSource) {
     return
   }
 
