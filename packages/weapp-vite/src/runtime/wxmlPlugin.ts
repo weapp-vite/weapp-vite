@@ -3,12 +3,13 @@ import type { MutableCompilerContext } from '../context'
 import type { ComponentsMap } from '../types'
 import type { ScanWxmlResult } from '../wxml'
 import { removeExtensionDeep } from '@weapp-core/shared'
+// eslint-disable-next-line e18e/ban-dependencies -- 运行时扫描链路当前统一复用 fs-extra 异步文件接口
 import fs from 'fs-extra'
 import path from 'pathe'
 import { isEmptyObject } from '../context/shared'
 import logger from '../logger'
 import { isTemplate, toPosixPath } from '../utils'
-import { isImportTag, scanWxml } from '../wxml'
+import { isTemplateImportTag, scanWxml } from '../wxml'
 import { requireConfigService } from './utils/requireConfigService'
 
 export interface WxmlService {
@@ -167,7 +168,7 @@ function createWxmlService(ctx: MutableCompilerContext): WxmlService {
     cache.set(filepath, res)
     await addDeps(
       filepath,
-      res.deps.filter(x => isImportTag(x.tagName) && isTemplate(x.value)).map((x) => {
+      res.deps.filter(x => isTemplateImportTag(x.tagName) && isTemplate(x.value)).map((x) => {
         if (x.value.startsWith('/')) {
           return path.resolve(configService.absoluteSrcRoot, x.value.slice(1))
         }
