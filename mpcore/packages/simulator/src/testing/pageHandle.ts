@@ -66,7 +66,7 @@ export class HeadlessTestingPageHandle {
 
   private createScopeHandle(component: any) {
     const scopeId = this.session?.getScopeIdForComponent(component)
-    return scopeId ? new HeadlessTestingScopeHandle(scopeId, this.session!) : null
+    return scopeId ? new HeadlessTestingScopeHandle(scopeId, this.project, this.session!) : null
   }
 
   async callMethod(methodName: string, ...args: any[]) {
@@ -129,7 +129,7 @@ export class HeadlessTestingPageHandle {
         if (!scopeId) {
           return null
         }
-        return new HeadlessTestingScopeHandle(scopeId, this.session)
+        return new HeadlessTestingScopeHandle(scopeId, this.project, this.session)
       },
       ownerScopeId: (scopeId) => {
         if (!this.session || !scopeId) {

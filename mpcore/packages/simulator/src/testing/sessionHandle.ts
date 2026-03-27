@@ -14,12 +14,13 @@ function normalizeRoute(route: string) {
 export class HeadlessTestingScopeHandle {
   constructor(
     readonly scopeId: string,
+    private readonly project: HeadlessProjectDescriptor,
     private readonly session: HeadlessSession,
   ) {}
 
   private createScopeHandle(component: any) {
     const scopeId = this.session.getScopeIdForComponent(component)
-    return scopeId ? new HeadlessTestingScopeHandle(scopeId, this.session) : null
+    return scopeId ? new HeadlessTestingScopeHandle(scopeId, this.project, this.session) : null
   }
 
   async callMethod(methodName: string, ...args: any[]) {
@@ -32,6 +33,11 @@ export class HeadlessTestingScopeHandle {
 
   async snapshot() {
     return this.session.getScopeSnapshot(this.scopeId)
+  }
+
+  async page() {
+    const currentPage = this.session.getCurrentPages().at(-1)
+    return currentPage ? new HeadlessTestingPageHandle(this.project, currentPage, this.session) : null
   }
 
   async ownerComponent() {
@@ -194,7 +200,7 @@ export class HeadlessTestingSessionHandle {
     }
     const component = this.session.selectComponent(normalizedSelector)
     const scopeId = this.session.getScopeIdForComponent(component)
-    return scopeId ? new HeadlessTestingScopeHandle(scopeId, this.session) : null
+    return scopeId ? new HeadlessTestingScopeHandle(scopeId, this.project, this.session) : null
   }
 
   async selectAllComponents(selector: string) {
@@ -205,7 +211,7 @@ export class HeadlessTestingSessionHandle {
     return this.session.selectAllComponents(normalizedSelector)
       .map(component => this.session.getScopeIdForComponent(component))
       .filter((scopeId): scopeId is string => Boolean(scopeId))
-      .map(scopeId => new HeadlessTestingScopeHandle(scopeId, this.session))
+      .map(scopeId => new HeadlessTestingScopeHandle(scopeId, this.project, this.session))
   }
 
   async waitForComponent(selector: string, options: HeadlessTestingWaitOptions = {}) {
