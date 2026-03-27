@@ -201,6 +201,7 @@ export class BrowserHeadlessSession {
       {
         executeSelectorQuery: (requests, scope) => this.executeSelectorQuery(requests, scope),
         getFileSystemManager: () => this.wxState.getFileSystemManager(),
+        getSavedFileList: () => this.wxState.getSavedFileList(),
         getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
@@ -219,6 +220,7 @@ export class BrowserHeadlessSession {
         downloadFile: option => this.wxState.downloadFile(option),
         reLaunch: option => this.reLaunch(option.url),
         redirectTo: option => this.redirectTo(option.url),
+        removeSavedFile: option => this.wxState.removeSavedFile(option),
         nextTick: callback => queueMicrotask(() => callback?.()),
         offNetworkStatusChange: callback => this.wxState.offNetworkStatusChange(callback),
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
