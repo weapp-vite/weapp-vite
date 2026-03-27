@@ -14,6 +14,7 @@ Page({
     savedOverwriteInfo: '',
     savedFilePath: '',
     savedFileInfo: '',
+    savedMissingRemovalInfo: '',
     savedOrderingInfo: '',
     savedRemovalInfo: '',
     savedRenameOutInfo: '',
@@ -256,6 +257,20 @@ Page({
               },
             })
           },
+        })
+      },
+    })
+  },
+  runSavedMissingRemovalLab() {
+    wx.removeSavedFile({
+      filePath: 'headless://saved/component-lab/removals/missing.txt',
+      fail: (error) => {
+        this.setData({
+          savedMissingRemovalInfo: JSON.stringify({
+            missingRemoveError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runSavedMissingRemovalLab')
         })
       },
     })
