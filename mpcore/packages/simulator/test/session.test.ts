@@ -1507,6 +1507,18 @@ Page({
     })
     rendered = session.renderCurrentPage()
     expect(rendered.wxml).toContain('resize:375')
+    const scopes = Array.from(rendered.wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
+    const componentScopeId = scopes.find(scopeId => scopeId.includes('status-card'))
+    expect(componentScopeId).toBeTruthy()
+    expect(session.getScopeSnapshot(componentScopeId!)).toMatchObject({
+      data: {
+        lifecycleLog: ['created', 'attached', 'ready', 'show', 'resize:375'],
+      },
+      properties: {
+        mode: 'alpha',
+      },
+      type: 'component',
+    })
 
     pageA.openB()
     expect(rendered.wxml).toContain('resize:375')
