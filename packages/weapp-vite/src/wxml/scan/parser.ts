@@ -3,8 +3,20 @@ import type { Token } from '../shared'
 import type { RemovalRange, WxmlToken } from './types'
 import { Parser } from 'htmlparser2'
 import { jsExtensions } from '../../constants'
+import {
+  getWxmlDirectivePrefix,
+  shouldNormalizeWxmlComponentTagName,
+} from '../../platform'
 import { srcImportTagsMap } from '../shared'
 import { resolveEventDirectiveName } from './events'
+
+const TAG_NAME_LOWER_TO_UPPER_RE = /([a-z0-9])([A-Z])/g
+const TAG_NAME_MULTI_UPPER_RE = /([A-Z]+)([A-Z][a-z])/g
+const TAG_NAME_HAS_UPPER_RE = /[A-Z]/
+const SCRIPT_MODULE_IMPORT_RE = /\.(?:wxs|sjs)(?:\.[jt]s)?$/i
+const TEMPLATE_IMPORT_RE = /\.(?:wxml|html)$/i
+const COMMENT_IFDEF_RE = /#ifdef\s+(\w+)/
+const COMMENT_ENDIF_RE = /#endif/
 
 interface ParserResult {
   token: WxmlToken
@@ -18,13 +30,13 @@ interface ParserOptions {
 
 function toKebabCaseTagName(tagName: string) {
   return tagName
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .replace(TAG_NAME_LOWER_TO_UPPER_RE, '$1-$2')
+    .replace(TAG_NAME_MULTI_UPPER_RE, '$1-$2')
     .toLowerCase()
 }
 
-function shouldNormalizeTagNameForAlipay(tagName: string) {
-  return /[A-Z]/.test(tagName)
+function shouldNormalizeTagName(tagName: string) {
+  return TAG_NAME_HAS_UPPER_RE.test(tagName)
 }
 
 export function parseWxml(options: ParserOptions): ParserResult {
@@ -69,7 +81,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
         currentTagName = name
         importAttrs = srcImportTagsMap[currentTagName]
         tagStartIndex = parser.startIndex
-        if (platform === 'alipay' && shouldNormalizeTagNameForAlipay(name)) {
+        if (shouldNormalizeWxmlComponentTagName(platform) && shouldNormalizeTagName(name)) {
           const normalized = toKebabCaseTagName(name)
           if (normalized !== name) {
             tagNameTokens.push({
@@ -104,7 +116,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
               const isScriptModuleImportAttr = currentTagName && scriptModuleTags.has(currentTagName)
                 && (name === 'src' || (currentTagName === 'import-sjs' && name === 'from'))
               if (isScriptModuleImportAttr) {
-                if (/\.(?:wxs|sjs)(?:\.[jt]s)?$/i.test(value)) {
+                if (SCRIPT_MODULE_IMPORT_RE.test(value)) {
                   const valueStart = parser.startIndex + name.length + 2
                   wxsImportNormalizeTokens.push(
                     {
@@ -117,7 +129,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
               }
             }
             if ((currentTagName === 'import' || currentTagName === 'include') && name === 'src') {
-              if (/\.(?:wxml|html)$/i.test(value)) {
+              if (TEMPLATE_IMPORT_RE.test(value)) {
                 const valueStart = parser.startIndex + name.length + 2
                 templateImportNormalizeTokens.push({
                   start: valueStart,
@@ -141,13 +153,14 @@ export function parseWxml(options: ParserOptions): ParserResult {
             })
           }
         }
-        if (platform === 'alipay' && name.startsWith('wx:')) {
+        const directivePrefix = getWxmlDirectivePrefix(platform)
+        if (directivePrefix !== 'wx' && name.startsWith('wx:')) {
           const start = parser.startIndex
           const end = parser.startIndex + name.length
           directiveTokens.push({
             start,
             end,
-            value: `a:${name.slice(3)}`,
+            value: `${directivePrefix}:${name.slice(3)}`,
           })
         }
         // 移除内联 wxs 的 lang
@@ -162,7 +175,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
       onclosetag(name) {
         currentTagName = tagStack.pop()
         if (currentTagName && !excludeComponent(currentTagName)) {
-          const componentName = platform === 'alipay' && shouldNormalizeTagNameForAlipay(currentTagName)
+          const componentName = shouldNormalizeWxmlComponentTagName(platform) && shouldNormalizeTagName(currentTagName)
             ? toKebabCaseTagName(currentTagName)
             : currentTagName
           if (Array.isArray(components[componentName])) {
@@ -179,7 +192,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
           }
         }
 
-        if (platform === 'alipay' && shouldNormalizeTagNameForAlipay(name)) {
+        if (shouldNormalizeWxmlComponentTagName(platform) && shouldNormalizeTagName(name)) {
           const normalized = toKebabCaseTagName(name)
           if (normalized !== name && parser.startIndex !== tagStartIndex) {
             const nameStart = parser.startIndex + 2
@@ -220,13 +233,13 @@ export function parseWxml(options: ParserOptions): ParserResult {
       // 平台特有的组件
       // <!--  #endif -->
       oncomment(data) {
-        let match = /#ifdef\s+(\w+)/.exec(data)
+        let match = COMMENT_IFDEF_RE.exec(data)
         if (match) {
           if (match[1] !== platform) {
             conditionalStack.push(parser.startIndex)
           }
         }
-        match = /#endif/.exec(data)
+        match = COMMENT_ENDIF_RE.exec(data)
         if (match) {
           const start = conditionalStack.pop()
           if (start !== undefined) {

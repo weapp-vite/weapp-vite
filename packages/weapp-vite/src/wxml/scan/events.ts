@@ -1,5 +1,9 @@
 import type { MpPlatform } from '../../types'
 import { isBuiltinComponent } from '../../auto-import-components/builtin'
+import { getWxmlEventBindingStyle } from '../../platform'
+
+const ALIPAY_COLON_EVENT_RE = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/
+const ALIPAY_PLAIN_EVENT_RE = /^(bind|catch)([A-Za-z].*)$/
 
 function toPascalCaseEvent(eventName: string) {
   if (!eventName) {
@@ -26,7 +30,7 @@ function resolveAlipayEventName(prefix: 'bind' | 'catch' | 'capture-bind' | 'cap
 }
 
 function resolveAlipayNativeEventBinding(raw: string) {
-  const colonMatch = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/.exec(raw)
+  const colonMatch = ALIPAY_COLON_EVENT_RE.exec(raw)
   if (colonMatch) {
     const prefix = colonMatch[1] as 'bind' | 'catch' | 'capture-bind' | 'capture-catch' | 'mut-bind'
     const eventName = colonMatch[2]
@@ -36,7 +40,7 @@ function resolveAlipayNativeEventBinding(raw: string) {
     return resolveAlipayEventName(prefix, eventName)
   }
 
-  const plainMatch = /^(bind|catch)([A-Za-z].*)$/.exec(raw)
+  const plainMatch = ALIPAY_PLAIN_EVENT_RE.exec(raw)
   if (plainMatch) {
     const prefix = plainMatch[1] as 'bind' | 'catch'
     const eventName = plainMatch[2]
@@ -115,7 +119,7 @@ function resolveEventDirective(raw: string, platform: MpPlatform) {
     prefix = 'capture-bind'
   }
 
-  if (platform === 'alipay') {
+  if (getWxmlEventBindingStyle(platform) === 'alipay') {
     return resolveAlipayEventName(prefix as 'bind' | 'catch' | 'capture-bind' | 'capture-catch' | 'mut-bind', dir)
   }
 
@@ -132,7 +136,7 @@ export function resolveEventDirectiveName(raw: string, platform: MpPlatform = 'w
     return directive
   }
 
-  if (platform === 'alipay') {
+  if (getWxmlEventBindingStyle(platform) === 'alipay') {
     return resolveAlipayNativeEventBinding(raw)
   }
 

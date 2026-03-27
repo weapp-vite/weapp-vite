@@ -23,6 +23,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     npm: {
       distDirName: () => 'miniprogram_npm',
     },
+    wxml: {
+      eventBindingStyle: 'default',
+      directivePrefix: 'wx',
+    },
   },
   {
     id: 'alipay',
@@ -57,6 +61,13 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       hoistNestedDependencies: true,
       shouldRebuildCachedPackage: true,
     },
+    wxml: {
+      eventBindingStyle: 'alipay',
+      directivePrefix: 'a',
+      normalizeComponentTagName: true,
+      normalizeVueTemplate: true,
+      emitGenericPlaceholder: true,
+    },
   },
   {
     id: 'swan',
@@ -77,6 +88,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     npm: {
       distDirName: () => 'miniprogram_npm',
     },
+    wxml: {
+      eventBindingStyle: 'default',
+      directivePrefix: 'wx',
+    },
   },
   {
     id: 'tt',
@@ -95,6 +110,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     json: {},
     npm: {
       distDirName: () => 'miniprogram_npm',
+    },
+    wxml: {
+      eventBindingStyle: 'default',
+      directivePrefix: 'wx',
     },
   },
   {
@@ -116,6 +135,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     npm: {
       distDirName: () => 'miniprogram_npm',
     },
+    wxml: {
+      eventBindingStyle: 'default',
+      directivePrefix: 'wx',
+    },
   },
   {
     id: 'xhs',
@@ -135,6 +158,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
     json: {},
     npm: {
       distDirName: () => 'miniprogram_npm',
+    },
+    wxml: {
+      eventBindingStyle: 'default',
+      directivePrefix: 'wx',
     },
   },
 ] as const
