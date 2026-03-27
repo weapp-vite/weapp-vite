@@ -32,6 +32,9 @@ browserPage?.wx.getFileSystemManager().stat({
   success: (result) => {
     expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } }>(result)
   },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
   complete: (result) => {
     expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } } | undefined>(result)
   },
@@ -40,6 +43,9 @@ browserPage?.wx.getFileSystemManager().readdir({
   dirPath: 'headless://saved',
   success: (result) => {
     expectType<{ errMsg: string, files: string[] }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
   },
   complete: (result) => {
     expectType<{ errMsg: string, files: string[] } | undefined>(result)
@@ -114,6 +120,9 @@ headlessPage?.wx.getFileSystemManager().stat({
   success: (result) => {
     expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } }>(result)
   },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
   complete: (result) => {
     expectType<{ errMsg: string, stats: { isDirectory: () => boolean, isFile: () => boolean, size: number } } | undefined>(result)
   },
@@ -122,6 +131,9 @@ headlessPage?.wx.getFileSystemManager().readdir({
   dirPath: 'headless://saved',
   success: (result) => {
     expectType<{ errMsg: string, files: string[] }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
   },
   complete: (result) => {
     expectType<{ errMsg: string, files: string[] } | undefined>(result)
