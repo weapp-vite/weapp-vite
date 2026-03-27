@@ -11,6 +11,7 @@ Page({
     downloadSnapshot: '',
     fileManagerSnapshot: '',
     requestSnapshot: '',
+    savedOverwriteInfo: '',
     savedFilePath: '',
     savedFileInfo: '',
     uploadedSnapshot: '',
@@ -136,6 +137,43 @@ Page({
       },
       complete: () => {
         this.push('lab:runFileTransferLab:download')
+      }
+    })
+  },
+  runSavedOverwriteLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/component-lab-first.txt', 'first')
+    fsManager.writeFileSync('headless://temp/component-lab-second.txt', 'second-version')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/component-lab-first.txt',
+      filePath: 'headless://saved/component-lab/snapshots/report.txt',
+      success: (firstSaveResult) => {
+        wx.getSavedFileInfo({
+          filePath: firstSaveResult.savedFilePath,
+          success: (beforeInfo) => {
+            wx.saveFile({
+              tempFilePath: 'headless://temp/component-lab-second.txt',
+              filePath: firstSaveResult.savedFilePath,
+              success: () => {
+                wx.getSavedFileInfo({
+                  filePath: firstSaveResult.savedFilePath,
+                  success: (afterInfo) => {
+                    this.setData({
+                      savedOverwriteInfo: JSON.stringify({
+                        afterCreateTime: afterInfo.createTime,
+                        afterSize: afterInfo.size,
+                        beforeCreateTime: beforeInfo.createTime,
+                        filePath: firstSaveResult.savedFilePath,
+                      }),
+                    }, () => {
+                      this.push('lab:runSavedOverwriteLab')
+                    })
+                  }
+                })
+              }
+            })
+          }
+        })
       }
     })
   },
