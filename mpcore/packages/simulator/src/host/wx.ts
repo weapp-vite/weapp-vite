@@ -18,6 +18,29 @@ export interface HeadlessWxPageScrollToOption extends HeadlessWxCallbackOption {
   selector?: string
 }
 
+export interface HeadlessWxStorageResult {
+  errMsg: string
+}
+
+export interface HeadlessWxGetStorageResult extends HeadlessWxStorageResult {
+  data: unknown
+}
+
+export interface HeadlessWxSetStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {
+  data: unknown
+  key: string
+}
+
+export interface HeadlessWxGetStorageOption extends HeadlessWxCallbackOption<HeadlessWxGetStorageResult> {
+  key: string
+}
+
+export interface HeadlessWxRemoveStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {
+  key: string
+}
+
+export interface HeadlessWxClearStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {}
+
 export interface HeadlessWxShowToastOption extends HeadlessWxCallbackOption<{ errMsg: string }> {
   duration?: number
   icon?: string
@@ -63,7 +86,9 @@ export interface HeadlessWxDriver {
 }
 
 export interface HeadlessWx {
+  clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
+  getStorage: (option: HeadlessWxGetStorageOption) => HeadlessWxGetStorageResult | undefined
   getStorageSync: (key: string) => unknown
   hideToast: () => { errMsg: string }
   navigateBack: (option?: HeadlessWxNavigateBackOption) => unknown
@@ -72,8 +97,10 @@ export interface HeadlessWx {
   pageScrollTo: (option: HeadlessWxPageScrollToOption) => unknown
   reLaunch: (option: HeadlessWxNavigateOption) => unknown
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
+  removeStorage: (option: HeadlessWxRemoveStorageOption) => HeadlessWxStorageResult | undefined
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
+  setStorage: (option: HeadlessWxSetStorageOption) => HeadlessWxStorageResult | undefined
   setStorageSync: (key: string, value: unknown) => void
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string } | undefined
   stopPullDownRefresh: () => void
@@ -99,7 +126,17 @@ function invokeWxApi<TOption extends HeadlessWxCallbackOption<TResult>, TResult>
 
 export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
   return {
+    clearStorage: option => invokeWxApi(() => {
+      driver.clearStorageSync()
+      return {
+        errMsg: 'clearStorage:ok',
+      }
+    }, option),
     clearStorageSync: () => driver.clearStorageSync(),
+    getStorage: option => invokeWxApi(() => ({
+      data: driver.getStorageSync(option.key),
+      errMsg: 'getStorage:ok',
+    }), option),
     getStorageSync: key => driver.getStorageSync(key),
     hideToast: () => driver.hideToast(),
     navigateBack: option => invokeWxApi(() => {
@@ -118,6 +155,12 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     redirectTo: option => invokeWxApi(() => {
       driver.redirectTo(option)
     }, option),
+    removeStorage: option => invokeWxApi(() => {
+      driver.removeStorageSync(option.key)
+      return {
+        errMsg: 'removeStorage:ok',
+      }
+    }, option),
     removeStorageSync: key => driver.removeStorageSync(key),
     request: (option) => {
       invokeWxApi(() => driver.request(option), option)
@@ -125,6 +168,12 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
         abort() {},
       }
     },
+    setStorage: option => invokeWxApi(() => {
+      driver.setStorageSync(option.key, option.data)
+      return {
+        errMsg: 'setStorage:ok',
+      }
+    }, option),
     setStorageSync: (key, value) => driver.setStorageSync(key, value),
     showToast: option => invokeWxApi(() => driver.showToast(option), option),
     stopPullDownRefresh: () => driver.stopPullDownRefresh(),
