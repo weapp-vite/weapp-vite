@@ -6,6 +6,8 @@ import type {
   HeadlessWxRequestOption,
   HeadlessWxRequestSuccessResult,
   HeadlessWxRequestTask,
+  HeadlessWxShowActionSheetOption,
+  HeadlessWxShowActionSheetResult,
   HeadlessWxShowLoadingOption,
   HeadlessWxShowModalOption,
   HeadlessWxShowModalResult,
@@ -26,6 +28,16 @@ export interface HeadlessWxToastSnapshot {
 }
 
 export interface HeadlessWxNetworkSnapshot extends HeadlessWxNetworkStatusChangeResult {}
+
+export interface HeadlessWxActionSheetMockDefinition {
+  cancel?: boolean
+  tapIndex?: number
+}
+
+export interface HeadlessWxActionSheetLogEntry {
+  itemList: string[]
+  result?: HeadlessWxShowActionSheetResult
+}
 
 export interface HeadlessWxModalMockDefinition {
   cancel?: boolean
@@ -134,6 +146,8 @@ function resolveRequestResponse(
 }
 
 export function createHeadlessWxState() {
+  const actionSheetLogs: HeadlessWxActionSheetLogEntry[] = []
+  const actionSheetMocks: HeadlessWxActionSheetMockDefinition[] = []
   const modalLogs: HeadlessWxModalLogEntry[] = []
   const networkStatusChangeCallbacks = new Set<HeadlessWxNetworkStatusChangeCallback>()
   const modalMocks: HeadlessWxModalMockDefinition[] = []
@@ -147,6 +161,13 @@ export function createHeadlessWxState() {
   return {
     clearStorageSync() {
       storage.clear()
+    },
+    getActionSheetLogs() {
+      return actionSheetLogs.map(entry => ({
+        ...entry,
+        itemList: [...entry.itemList],
+        result: entry.result ? { ...entry.result } : undefined,
+      }))
     },
     getNetworkType(): HeadlessWxGetNetworkTypeResult {
       return {
@@ -233,6 +254,12 @@ export function createHeadlessWxState() {
         confirm: definition.confirm,
       })
     },
+    mockActionSheet(definition: HeadlessWxActionSheetMockDefinition = {}) {
+      actionSheetMocks.push({
+        cancel: definition.cancel,
+        tapIndex: definition.tapIndex,
+      })
+    },
     onNetworkStatusChange(callback: HeadlessWxNetworkStatusChangeCallback) {
       networkStatusChangeCallbacks.add(callback)
     },
@@ -315,6 +342,43 @@ export function createHeadlessWxState() {
         errMsg: 'getNetworkType:ok',
         networkType,
       }
+    },
+    showActionSheet(option: HeadlessWxShowActionSheetOption) {
+      const itemList = Array.isArray(option.itemList)
+        ? option.itemList.filter((item): item is string => typeof item === 'string')
+        : []
+
+      if (itemList.length === 0) {
+        throw new Error('showActionSheet:fail invalid itemList')
+      }
+
+      const nextMock = actionSheetMocks.shift()
+      if (nextMock?.cancel) {
+        actionSheetLogs.push({
+          itemList: [...itemList],
+        })
+        throw new Error('showActionSheet:fail cancel')
+      }
+
+      const tapIndex = Number.isInteger(nextMock?.tapIndex)
+        ? Number(nextMock?.tapIndex)
+        : 0
+
+      if (tapIndex < 0 || tapIndex >= itemList.length) {
+        throw new Error('showActionSheet:fail invalid tapIndex')
+      }
+
+      const result: HeadlessWxShowActionSheetResult = {
+        errMsg: 'showActionSheet:ok',
+        tapIndex,
+      }
+
+      actionSheetLogs.push({
+        itemList: [...itemList],
+        result: { ...result },
+      })
+
+      return result
     },
     showLoading(option: HeadlessWxShowLoadingOption) {
       loading = {

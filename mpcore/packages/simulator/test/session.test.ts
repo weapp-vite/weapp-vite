@@ -870,4 +870,89 @@ Page({
     page.goDetail()
     expect(session.getCurrentPageNavigationBarTitle()).toBe('App Shell')
   })
+
+  it('supports showActionSheet defaults and cancel path', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-action-sheet-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    cancelSummary: '',
+    defaultSummary: '',
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  openDefaultActionSheet() {
+    wx.showActionSheet({
+      itemList: ['copy', 'open'],
+      success: (result) => {
+        this.setData({
+          defaultSummary: JSON.stringify(result)
+        })
+        this.push('default:success')
+      },
+      complete: (result) => {
+        this.push('default:complete:' + (result?.errMsg ?? 'none'))
+      }
+    })
+  },
+  openCancelledActionSheet() {
+    wx.showActionSheet({
+      itemList: ['copy', 'open'],
+      fail: (error) => {
+        this.setData({
+          cancelSummary: error.message
+        })
+        this.push('cancel:fail')
+      },
+      complete: (result) => {
+        this.push('cancel:complete:' + (result?.errMsg ?? 'none'))
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>actions</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.openDefaultActionSheet()
+    session.mockActionSheet({ cancel: true })
+    page.openCancelledActionSheet()
+
+    expect(page.data.defaultSummary).toContain('"tapIndex":0')
+    expect(page.data.cancelSummary).toBe('showActionSheet:fail cancel')
+    expect(page.data.logs).toEqual([
+      'default:success',
+      'default:complete:showActionSheet:ok',
+      'cancel:fail',
+      'cancel:complete:none',
+    ])
+    expect(session.getActionSheetLogs()).toEqual([
+      {
+        itemList: ['copy', 'open'],
+        result: {
+          errMsg: 'showActionSheet:ok',
+          tapIndex: 0,
+        },
+      },
+      {
+        itemList: ['copy', 'open'],
+      },
+    ])
+  })
 })

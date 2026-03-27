@@ -2,7 +2,7 @@ import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOpt
 import type { HeadlessProjectDescriptor, HeadlessRouteRecord } from '../project'
 import type { HeadlessAppInstance } from './appInstance'
 import type { HeadlessPageInstance } from './pageInstance'
-import type { HeadlessWxModalMockDefinition, HeadlessWxRequestMockDefinition } from './wxState'
+import type { HeadlessWxActionSheetMockDefinition, HeadlessWxModalMockDefinition, HeadlessWxRequestMockDefinition } from './wxState'
 import fs from 'node:fs'
 import path from 'node:path'
 import { createHostRegistries } from '../host'
@@ -175,6 +175,7 @@ export class HeadlessSession {
         request: option => this.wxState.request(option),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
         setNavigationBarTitle: option => this.setNavigationBarTitle(option.title),
+        showActionSheet: option => this.wxState.showActionSheet(option),
         showLoading: option => this.wxState.showLoading(option),
         showModal: option => this.wxState.showModal(option),
         showToast: option => this.wxState.showToast(option),
@@ -194,6 +195,10 @@ export class HeadlessSession {
 
   getCurrentPageNavigationBarTitle() {
     return this.currentPageInstance?.__navigationBarTitle__ ?? null
+  }
+
+  getActionSheetLogs() {
+    return this.wxState.getActionSheetLogs()
   }
 
   getRequestLogs() {
@@ -264,6 +269,10 @@ export class HeadlessSession {
 
   mockModal(definition: HeadlessWxModalMockDefinition = {}) {
     this.wxState.mockModal(definition)
+  }
+
+  mockActionSheet(definition: HeadlessWxActionSheetMockDefinition = {}) {
+    this.wxState.mockActionSheet(definition)
   }
 
   mockRequest(definition: HeadlessWxRequestMockDefinition) {

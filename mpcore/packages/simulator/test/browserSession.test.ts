@@ -427,6 +427,84 @@ Page({
     expect(session.getCurrentPageNavigationBarTitle()).toBe('Browser Shell')
   })
 
+  it('supports showActionSheet defaults and cancel path in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    cancelSummary: '',
+    defaultSummary: '',
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  openDefaultActionSheet() {
+    wx.showActionSheet({
+      itemList: ['copy', 'open'],
+      success: (result) => {
+        this.setData({
+          defaultSummary: JSON.stringify(result)
+        })
+        this.push('default:success')
+      },
+      complete: (result) => {
+        this.push('default:complete:' + (result?.errMsg ?? 'none'))
+      }
+    })
+  },
+  openCancelledActionSheet() {
+    wx.showActionSheet({
+      itemList: ['copy', 'open'],
+      fail: (error) => {
+        this.setData({
+          cancelSummary: error.message
+        })
+        this.push('cancel:fail')
+      },
+      complete: (result) => {
+        this.push('cancel:complete:' + (result?.errMsg ?? 'none'))
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{defaultSummary}}</view><view>{{cancelSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.openDefaultActionSheet()
+    session.mockActionSheet({ cancel: true })
+    page.openCancelledActionSheet()
+
+    expect(page.data.defaultSummary).toContain('"tapIndex":0')
+    expect(page.data.cancelSummary).toBe('showActionSheet:fail cancel')
+    expect(page.data.logs).toEqual([
+      'default:success',
+      'default:complete:showActionSheet:ok',
+      'cancel:fail',
+      'cancel:complete:none',
+    ])
+    expect(session.getActionSheetLogs()).toEqual([
+      {
+        itemList: ['copy', 'open'],
+        result: {
+          errMsg: 'showActionSheet:ok',
+          tapIndex: 0,
+        },
+      },
+      {
+        itemList: ['copy', 'open'],
+      },
+    ])
+  })
+
   it('renders custom components and routes triggerEvent back to the page', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],
