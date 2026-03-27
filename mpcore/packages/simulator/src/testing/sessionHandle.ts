@@ -34,6 +34,10 @@ export class HeadlessTestingScopeHandle {
     return this.session.getScopeSnapshot(this.scopeId)
   }
 
+  async ownerComponent() {
+    return this.createScopeHandle(this.session.selectOwnerComponent(this.scopeId))
+  }
+
   async selectComponent(selector: string) {
     const normalizedSelector = selector.trim()
     if (!normalizedSelector) {
