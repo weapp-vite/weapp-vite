@@ -945,6 +945,75 @@ Page({
     expect(session.getFileText('headless://saved/reports/daily/summary.txt')).toBe('daily payload')
   })
 
+  it('supports getFileSystemManager rmdir operations', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-rmdir-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    missingDirSummary: '',
+    nonEmptyDirSummary: '',
+    removeSummary: '',
+    removedDirSummary: ''
+  },
+  runFsRemoveDirectoryLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.mkdirSync('headless://saved/archive/daily', true)
+    fsManager.writeFileSync('headless://saved/archive/daily/report.txt', 'daily payload')
+    fsManager.rmdir({
+      dirPath: 'headless://saved/missing-archive',
+      fail: (error) => {
+        this.setData({
+          missingDirSummary: error.message
+        })
+      }
+    })
+    fsManager.rmdir({
+      dirPath: 'headless://saved/archive',
+      fail: (error) => {
+        this.setData({
+          nonEmptyDirSummary: error.message
+        })
+      }
+    })
+    fsManager.rmdirSync('headless://saved/archive', true)
+    try {
+      fsManager.statSync('headless://saved/archive')
+    }
+    catch (error) {
+      this.setData({
+        removedDirSummary: error.message
+      })
+    }
+    this.setData({
+      removeSummary: JSON.stringify(fsManager.readdirSync('headless://saved'))
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>fs-rmdir</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsRemoveDirectoryLab()
+
+    expect(page.data.missingDirSummary).toContain('rmdir:fail no such file or directory')
+    expect(page.data.nonEmptyDirSummary).toContain('rmdir:fail directory not empty')
+    expect(page.data.removedDirSummary).toContain('stat:fail no such file or directory')
+    expect(page.data.removeSummary).toBe('[]')
+    expect(session.getDirectorySnapshot()).not.toContain('headless://saved/archive')
+    expect(session.getFileText('headless://saved/archive/daily/report.txt')).toBeNull()
+  })
+
   it('supports getFileSystemManager appendFile operations', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-append-'))
     tempDirs.push(root)

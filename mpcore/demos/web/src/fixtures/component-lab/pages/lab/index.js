@@ -144,9 +144,20 @@ Page({
     fsManager.mkdirSync('headless://saved/component-lab/reports/daily', true)
     fsManager.writeFileSync('headless://saved/component-lab/reports/daily/report.txt', 'component')
     fsManager.appendFileSync('headless://saved/component-lab/reports/daily/report.txt', '-lab')
+    fsManager.mkdirSync('headless://saved/component-lab/archive/obsolete', true)
+    fsManager.writeFileSync('headless://saved/component-lab/archive/obsolete/report.txt', 'archive')
+    fsManager.rmdirSync('headless://saved/component-lab/archive', true)
+    let archiveRemoved = false
+    try {
+      fsManager.statSync('headless://saved/component-lab/archive')
+    }
+    catch {
+      archiveRemoved = true
+    }
     this.setData({
       directorySnapshot: JSON.stringify(fsManager.readdirSync('headless://saved/component-lab/reports')),
       fileManagerSnapshot: JSON.stringify({
+        archiveRemoved,
         isDirectory: fsManager.statSync('headless://saved/component-lab/reports/daily').isDirectory(),
         isFile: fsManager.statSync('headless://saved/component-lab/reports/daily/report.txt').isFile(),
         text: fsManager.readFileSync('headless://saved/component-lab/reports/daily/report.txt'),
