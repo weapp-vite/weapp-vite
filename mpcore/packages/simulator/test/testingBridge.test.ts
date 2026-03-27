@@ -383,6 +383,9 @@ describe('headless testing bridge', () => {
     const currentPage = await miniProgram.currentPage()
     expect(await currentPage?.data('log')).toEqual(['status-card'])
     expect(await (await component?.page())?.data('count')).toBe(2)
+    expect(await (await component?.pageScope())?.snapshot()).toMatchObject({
+      type: 'page',
+    })
   })
 
   it('dispatches component input, change and blur events through the testing bridge', async () => {
