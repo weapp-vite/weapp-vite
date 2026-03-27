@@ -847,6 +847,9 @@ export function createHeadlessWxState() {
     getFileSnapshot() {
       return Object.fromEntries(files.entries())
     },
+    getDirectorySnapshot() {
+      return Array.from(directories.values()).sort((a, b) => a.localeCompare(b))
+    },
     getFileSystemManager() {
       return fileSystemManager
     },

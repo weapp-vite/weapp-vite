@@ -73,6 +73,7 @@ export function useWorkbench() {
       runPageMethod: (method: string) => sessionState.handleCallMethod(method),
       sessionSnapshot: () => ({
         actionSheetLogs: sessionState.session.value?.getActionSheetLogs() ?? [],
+        directorySnapshot: sessionState.session.value?.getDirectorySnapshot?.() ?? [],
         downloadFileLogs: sessionState.session.value?.getDownloadFileLogs?.() ?? [],
         fileSnapshot: sessionState.session.value?.getFileSnapshot?.() ?? {},
         modalLogs: sessionState.session.value?.getModalLogs() ?? [],
