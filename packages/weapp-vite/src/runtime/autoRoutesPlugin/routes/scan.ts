@@ -3,11 +3,10 @@ import type { AutoRoutes, AutoRoutesSubPackage } from '../../../types/routes'
 import type { CandidateEntry } from '../candidates'
 import path from 'pathe'
 import { resolveWeappAutoRoutesConfig } from '../../../autoRoutesConfig'
-import { createMiniProgramGlobalResolveExpression, getRouteRuntimeGlobalKeys } from '../../../utils/miniProgramGlobals'
 import { toPosixPath } from '../../../utils/path'
 import { createAutoRoutesMatcher } from '../matcher'
+import { createAutoRoutesArtifacts } from '../service/shared'
 import { getAutoRoutesSubPackageRoots } from '../subPackageRoots'
-import { createTypedRouterDefinition } from './format'
 import { resolveRoute } from './resolve'
 
 export interface ScanResult {
@@ -147,40 +146,7 @@ export async function scanRoutes(
     subPackages: subPackageList,
   }
 
-  const serialized = JSON.stringify(snapshot, null, 2)
-  const typedDefinition = createTypedRouterDefinition(snapshot)
-  const routeRuntimeGlobalExpression = createMiniProgramGlobalResolveExpression({
-    globalKeys: getRouteRuntimeGlobalKeys(),
-  })
-  const moduleCode = [
-    'const routes = ',
-    serialized,
-    ';',
-    'const pages = routes.pages;',
-    'const entries = routes.entries;',
-    'const subPackages = routes.subPackages;',
-    `const resolveMiniProgramGlobal = () => ${routeRuntimeGlobalExpression};`,
-    'const callRouteMethod = (methodName, option) => {',
-    '  const miniProgramGlobal = resolveMiniProgramGlobal();',
-    '  const routeMethod = miniProgramGlobal?.[methodName];',
-    '  if (typeof routeMethod !== "function") {',
-    '    throw new Error("[weapp-vite] 当前运行环境不支持路由方法: " + methodName);',
-    '  }',
-    '  if (option === undefined) {',
-    '    return routeMethod.call(miniProgramGlobal);',
-    '  }',
-    '  return routeMethod.call(miniProgramGlobal, option);',
-    '};',
-    'const wxRouter = {',
-    '  switchTab(option) { return callRouteMethod("switchTab", option); },',
-    '  reLaunch(option) { return callRouteMethod("reLaunch", option); },',
-    '  redirectTo(option) { return callRouteMethod("redirectTo", option); },',
-    '  navigateTo(option) { return callRouteMethod("navigateTo", option); },',
-    '  navigateBack(option) { return callRouteMethod("navigateBack", option); },',
-    '};',
-    'export { routes, pages, entries, subPackages, wxRouter };',
-    'export default routes;',
-  ].join('\n')
+  const { serialized, moduleCode, typedDefinition } = createAutoRoutesArtifacts(snapshot)
 
   return {
     snapshot,
