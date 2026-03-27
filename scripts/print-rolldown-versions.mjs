@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
@@ -224,6 +224,10 @@ function readPackageJson(filePath) {
   return JSON.parse(readFileSync(filePath, 'utf8'))
 }
 
+function writePackageJson(filePath, packageJson) {
+  writeFileSync(filePath, `${JSON.stringify(packageJson, null, 2)}\n`)
+}
+
 function findWorkspaceRoot(from) {
   let current = path.resolve(from)
   while (true) {
@@ -250,8 +254,8 @@ function resolveDependencySpecVersion(spec, dependencyName, workspaceManifest) {
   return spec
 }
 
-function verifyRolldownCatalogReferences(projectRoot, readPackageJsonImpl = readPackageJson) {
-  const checks = [
+function getManagedRolldownCatalogReferences(projectRoot) {
+  return [
     {
       expected: 'catalog:',
       filePath: path.join(projectRoot, 'packages/weapp-vite/package.json'),
@@ -263,6 +267,10 @@ function verifyRolldownCatalogReferences(projectRoot, readPackageJsonImpl = read
       section: 'peerDependencies',
     },
   ]
+}
+
+function verifyRolldownCatalogReferences(projectRoot, readPackageJsonImpl = readPackageJson) {
+  const checks = getManagedRolldownCatalogReferences(projectRoot)
 
   for (const check of checks) {
     const packageJson = readPackageJsonImpl(check.filePath)
@@ -277,6 +285,34 @@ function verifyRolldownCatalogReferences(projectRoot, readPackageJsonImpl = read
       )
     }
   }
+}
+
+function syncRolldownCatalogReferences(
+  projectRoot,
+  {
+    readPackageJsonImpl = readPackageJson,
+    writePackageJsonImpl = writePackageJson,
+  } = {},
+) {
+  const changedFiles = []
+
+  for (const check of getManagedRolldownCatalogReferences(projectRoot)) {
+    const packageJson = readPackageJsonImpl(check.filePath)
+    const section = packageJson[check.section] ?? {}
+
+    if (section.rolldown === check.expected) {
+      continue
+    }
+
+    packageJson[check.section] = {
+      ...section,
+      rolldown: check.expected,
+    }
+    writePackageJsonImpl(check.filePath, packageJson)
+    changedFiles.push(check.filePath)
+  }
+
+  return changedFiles
 }
 
 function verifyRolldownRequirePeer(projectRoot, workspaceManifest = readWorkspaceManifest(projectRoot)) {
@@ -328,6 +364,18 @@ function main(options = {}) {
     const mode = options.mode ?? resolveMode()
     const scriptDir = path.dirname(fileURLToPath(import.meta.url))
     const projectRoot = findWorkspaceRoot(process.env.INIT_CWD || process.cwd() || scriptDir)
+    if (mode === 'sync') {
+      const changedFiles = syncRolldownCatalogReferences(projectRoot)
+      if (changedFiles.length > 0) {
+        console.log(
+          [
+            '[workspace] synced rolldown catalog references',
+            ...changedFiles.map(filePath => `- ${path.relative(projectRoot, filePath)}`),
+          ].join('\n'),
+        )
+      }
+      return
+    }
     const lockfile = readLockfile(projectRoot)
     const workspaceManifest = readWorkspaceManifest(projectRoot)
     const versions = collectRolldownVersions(lockfile)
@@ -360,6 +408,7 @@ export {
   resolveDependencySpecVersion,
   resolveMode,
   stripPeerSuffix,
+  syncRolldownCatalogReferences,
   verifyRolldownCatalogReferences,
   verifyRolldownRequirePeer,
   verifySingleRolldownVersion,
