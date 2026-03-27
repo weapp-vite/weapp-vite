@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { PackageInsight } from '../composables/useAnalyzeDashboardData'
 import { formatBuildOrigin, formatBytes, formatPackageType } from '../utils/format'
-import { iconFrameStyles, surfaceStyles } from '../utils/styles'
-import DashboardIcon from './DashboardIcon.vue'
+import { surfaceStyles } from '../utils/styles'
+import AppMetricTile from './AppMetricTile.vue'
+import AppPanelHeader from './AppPanelHeader.vue'
 
 defineProps<{
   packageInsights: PackageInsight[]
@@ -19,21 +20,11 @@ defineProps<{
       >
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <span :class="iconFrameStyles()">
-                <span class="h-5 w-5">
-                  <DashboardIcon name="tab-packages" />
-                </span>
-              </span>
-              <div>
-                <h2 class="truncate text-lg font-semibold text-[color:var(--dashboard-text)]">
-                  {{ pkg.label }}
-                </h2>
-                <p class="mt-0.5 text-xs text-[color:var(--dashboard-text-soft)]">
-                  {{ formatPackageType(pkg.type) }}
-                </p>
-              </div>
-            </div>
+            <AppPanelHeader
+              icon-name="tab-packages"
+              :title="pkg.label"
+              :description="formatPackageType(pkg.type)"
+            />
             <p class="mt-2 text-sm text-[color:var(--dashboard-text-soft)]">
               {{ formatPackageType(pkg.type) }} · {{ pkg.fileCount }} 个产物 · {{ pkg.moduleCount }} 个模块
             </p>
@@ -49,38 +40,10 @@ defineProps<{
         </div>
 
         <div class="mt-4 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-          <div class="rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-3">
-            <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-              Chunks
-            </p>
-            <p class="mt-1.5 text-base font-semibold text-[color:var(--dashboard-text)]">
-              {{ pkg.chunkCount }}
-            </p>
-          </div>
-          <div class="rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-3">
-            <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-              Assets
-            </p>
-            <p class="mt-1.5 text-base font-semibold text-[color:var(--dashboard-text)]">
-              {{ pkg.assetCount }}
-            </p>
-          </div>
-          <div class="rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-3">
-            <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-              模块数
-            </p>
-            <p class="mt-1.5 text-base font-semibold text-[color:var(--dashboard-text)]">
-              {{ pkg.moduleCount }}
-            </p>
-          </div>
-          <div class="rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-3">
-            <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-              跨包模块
-            </p>
-            <p class="mt-1.5 text-base font-semibold text-[color:var(--dashboard-text)]">
-              {{ pkg.duplicateModuleCount }}
-            </p>
-          </div>
+          <AppMetricTile label="Chunks" :value="pkg.chunkCount" />
+          <AppMetricTile label="Assets" :value="pkg.assetCount" />
+          <AppMetricTile label="模块数" :value="pkg.moduleCount" />
+          <AppMetricTile label="跨包模块" :value="pkg.duplicateModuleCount" />
         </div>
 
         <div class="mt-4 overflow-hidden rounded-xl border border-[color:var(--dashboard-border)]">
