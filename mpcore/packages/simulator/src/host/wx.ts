@@ -67,6 +67,16 @@ export interface HeadlessWxWindowInfoResult {
   windowWidth: number
 }
 
+export interface HeadlessWxLaunchOptions {
+  path: string
+  query: Record<string, string>
+  referrerInfo: {
+    appId: string
+    extraData: Record<string, never>
+  }
+  scene: number
+}
+
 export interface HeadlessWxMenuButtonBoundingClientRectResult {
   bottom: number
   height: number
@@ -135,6 +145,8 @@ export interface HeadlessWxRequestTask {
 export interface HeadlessWxDriver {
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   clearStorageSync: () => void
+  getEnterOptionsSync: () => HeadlessWxLaunchOptions
+  getLaunchOptionsSync: () => HeadlessWxLaunchOptions
   getMenuButtonBoundingClientRect: () => HeadlessWxMenuButtonBoundingClientRectResult
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorageSync: (key: string) => unknown
@@ -161,8 +173,10 @@ export interface HeadlessWx {
   canIUse: (schema: string) => boolean
   clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
+  getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getAppBaseInfo: (option?: HeadlessWxGetAppBaseInfoOption) => HeadlessWxAppBaseInfoResult | undefined
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
+  getLaunchOptionsSync: () => HeadlessWxLaunchOptions
   getMenuButtonBoundingClientRect: () => HeadlessWxMenuButtonBoundingClientRectResult
   getStorageInfo: (option?: HeadlessWxGetStorageInfoOption) => HeadlessWxStorageInfoResult | undefined
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
@@ -251,6 +265,28 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
         language: true,
         platform: true,
         version: true,
+      },
+    },
+    getEnterOptionsSync: {
+      return: {
+        path: true,
+        query: true,
+        referrerInfo: {
+          appId: true,
+          extraData: true,
+        },
+        scene: true,
+      },
+    },
+    getLaunchOptionsSync: {
+      return: {
+        path: true,
+        query: true,
+        referrerInfo: {
+          appId: true,
+          extraData: true,
+        },
+        scene: true,
       },
     },
     getMenuButtonBoundingClientRect: {
@@ -359,8 +395,10 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       }
     }, option),
     clearStorageSync: () => driver.clearStorageSync(),
+    getEnterOptionsSync: () => driver.getEnterOptionsSync(),
     getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),
     getAppBaseInfoSync: () => driver.getAppBaseInfoSync(),
+    getLaunchOptionsSync: () => driver.getLaunchOptionsSync(),
     getMenuButtonBoundingClientRect: () => driver.getMenuButtonBoundingClientRect(),
     getStorageInfo: option => invokeWxApi(() => driver.getStorageInfoSync(), option),
     getStorageInfoSync: () => driver.getStorageInfoSync(),

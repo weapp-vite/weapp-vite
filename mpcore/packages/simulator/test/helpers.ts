@@ -471,8 +471,16 @@ export function createAppLifecycleFixture() {
   writeScript(path.join(root, 'dist/app.js'), `
 App({
   globalData: {
+    enterOptions: null,
+    launchOptions: null,
     logs: [],
     ready: true,
+  },
+  captureEnterOptions() {
+    this.globalData.enterOptions = wx.getEnterOptionsSync()
+  },
+  captureLaunchOptions() {
+    this.globalData.launchOptions = wx.getLaunchOptionsSync()
   },
   push(message) {
     this.globalData.logs.push(message)
