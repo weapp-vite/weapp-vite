@@ -1,6 +1,7 @@
 import type { PackageJson } from 'pkg-types'
 import { fileURLToPath } from 'node:url'
 import logger from '@weapp-core/logger'
+// eslint-disable-next-line e18e/ban-dependencies
 import fs from 'fs-extra'
 import path from 'pathe'
 import { version } from '../../weapp-vite/package.json'
@@ -35,6 +36,14 @@ function resolveWorkspaceTemplateDir(templateName: TemplateName) {
     : path.resolve(moduleDir, '../../../templates', templateName)
 }
 
+function normalizeTemplateRelativePath(relativePath: string) {
+  if (!relativePath || relativePath === '.') {
+    return ''
+  }
+
+  return relativePath.split('\\').join('/')
+}
+
 async function resolveTemplateDirs(templateName: TemplateName) {
   const packagedTemplateDir = path.resolve(moduleDir, '../templates', templateName)
   const workspaceTemplateDir = resolveWorkspaceTemplateDir(templateName)
@@ -49,15 +58,32 @@ async function resolveTemplateDirs(templateName: TemplateName) {
   }
 }
 
-function shouldSkipTemplateFile(filePath: string) {
+function shouldSkipTemplateFile(filePath: string, templateRoot: string) {
+  const relativePath = normalizeTemplateRelativePath(path.relative(templateRoot, filePath))
+
+  if (!relativePath) {
+    return false
+  }
+
   return (
-    filePath.includes('node_modules')
-    || filePath.includes(`${path.sep}.weapp-vite${path.sep}`)
-    || filePath.includes('vite.config.ts.timestamp')
-    || filePath.includes(`${path.sep}dist${path.sep}`)
-    || filePath.endsWith(`${path.sep}CHANGELOG.md`)
-    || filePath.includes(`${path.sep}.turbo${path.sep}`)
-    || filePath.endsWith(`${path.sep}.DS_Store`)
+    relativePath === 'node_modules'
+    || relativePath.startsWith('node_modules/')
+    || relativePath.includes('/node_modules/')
+    || relativePath === '.weapp-vite'
+    || relativePath.startsWith('.weapp-vite/')
+    || relativePath.includes('/.weapp-vite/')
+    || relativePath === 'vite.config.ts.timestamp'
+    || relativePath.endsWith('/vite.config.ts.timestamp')
+    || relativePath === 'dist'
+    || relativePath.startsWith('dist/')
+    || relativePath.includes('/dist/')
+    || relativePath === 'CHANGELOG.md'
+    || relativePath.endsWith('/CHANGELOG.md')
+    || relativePath === '.turbo'
+    || relativePath.startsWith('.turbo/')
+    || relativePath.includes('/.turbo/')
+    || relativePath === '.DS_Store'
+    || relativePath.endsWith('/.DS_Store')
   )
 }
 
@@ -87,7 +113,7 @@ function mergeGitignoreSource(existing: string, template: string) {
 async function copyTemplateDir(sourceDir: string, fallbackDir: string, targetDir: string) {
   const copyOptions = {
     filter(src: string) {
-      return !shouldSkipTemplateFile(src)
+      return !shouldSkipTemplateFile(src, sourceDir)
     },
   }
 
@@ -266,7 +292,9 @@ export async function createProject(targetDir: string = '', templateName: Templa
 }
 
 export const __internal = {
+  copyTemplateDir,
   ensureDotGitignore,
   resolveTemplateDirs,
+  shouldSkipTemplateFile,
   upsertTailwindcssVersion,
 }
