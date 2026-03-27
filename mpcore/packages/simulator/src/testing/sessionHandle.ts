@@ -11,6 +11,17 @@ function normalizeRoute(route: string) {
   return route.replace(LEADING_SLASH_RE, '')
 }
 
+export class HeadlessTestingScopeHandle {
+  constructor(
+    readonly scopeId: string,
+    private readonly session: HeadlessSession,
+  ) {}
+
+  async snapshot() {
+    return this.session.getScopeSnapshot(this.scopeId)
+  }
+}
+
 export class HeadlessTestingSessionHandle {
   constructor(
     private readonly project: HeadlessProjectDescriptor,
@@ -69,6 +80,27 @@ export class HeadlessTestingSessionHandle {
       throw new Error('Scope id must be a non-empty string in headless testing runtime.')
     }
     return this.session.getScopeSnapshot(normalizedScopeId)
+  }
+
+  async selectComponent(selector: string) {
+    const normalizedSelector = selector.trim()
+    if (!normalizedSelector) {
+      throw new Error('Selector must be a non-empty string in headless testing runtime.')
+    }
+    const component = this.session.selectComponent(normalizedSelector)
+    const scopeId = this.session.getScopeIdForComponent(component)
+    return scopeId ? new HeadlessTestingScopeHandle(scopeId, this.session) : null
+  }
+
+  async selectAllComponents(selector: string) {
+    const normalizedSelector = selector.trim()
+    if (!normalizedSelector) {
+      throw new Error('Selector must be a non-empty string in headless testing runtime.')
+    }
+    return this.session.selectAllComponents(normalizedSelector)
+      .map(component => this.session.getScopeIdForComponent(component))
+      .filter((scopeId): scopeId is string => Boolean(scopeId))
+      .map(scopeId => new HeadlessTestingScopeHandle(scopeId, this.session))
   }
 
   async reLaunch(route: string) {
