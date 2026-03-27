@@ -121,6 +121,7 @@ export class HeadlessTestingPageHandle {
         }
         return this.callMethod(methodName, event)
       },
+      createPageHandle: () => this,
       createScopeHandle: (scopeId) => {
         if (!this.session) {
           throw new Error('Scope handles are not available without an active headless testing session.')
