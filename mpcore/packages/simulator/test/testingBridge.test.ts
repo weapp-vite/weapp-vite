@@ -454,6 +454,28 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('waits for nested components through a testing scope handle', async () => {
+    const projectPath = createNestedComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.reLaunch('/pages/lab/index')
+    const card = await miniProgram.waitForComponent('#status-card', {
+      timeout: 200,
+    })
+    const badge = await card.waitForComponent('#mini-badge', {
+      timeout: 200,
+    })
+    const badges = await card.waitForComponents('mini-badge', 1, {
+      timeout: 200,
+    })
+
+    expect(badge.scopeId).toContain('mini-badge')
+    expect(badges).toHaveLength(1)
+  })
+
   it('waits for components to appear through the testing bridge session handle', async () => {
     const projectPath = createAsyncComponentFixture()
     tempDirs.push(projectPath)
