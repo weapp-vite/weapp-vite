@@ -342,11 +342,25 @@ export interface HeadlessWxUnlinkOption extends HeadlessWxCallbackOption<Headles
   filePath: string
 }
 
+export interface HeadlessWxCopyFileOption extends HeadlessWxCallbackOption<HeadlessWxFileSystemResult> {
+  destPath: string
+  srcPath: string
+}
+
+export interface HeadlessWxRenameOption extends HeadlessWxCallbackOption<HeadlessWxFileSystemResult> {
+  newPath: string
+  oldPath: string
+}
+
 export interface HeadlessWxFileSystemManager {
   access: (option: HeadlessWxAccessFileOption) => HeadlessWxFileSystemResult | undefined
   accessSync: (path: string) => void
+  copyFile: (option: HeadlessWxCopyFileOption) => HeadlessWxFileSystemResult | undefined
+  copyFileSync: (srcPath: string, destPath: string) => void
   readFile: (option: HeadlessWxReadFileOption) => HeadlessWxReadFileSuccessResult | undefined
   readFileSync: (filePath: string, encoding?: string) => string
+  rename: (option: HeadlessWxRenameOption) => HeadlessWxFileSystemResult | undefined
+  renameSync: (oldPath: string, newPath: string) => void
   unlink: (option: HeadlessWxUnlinkOption) => HeadlessWxFileSystemResult | undefined
   unlinkSync: (filePath: string) => void
   writeFile: (option: HeadlessWxWriteFileOption) => HeadlessWxFileSystemResult | undefined
