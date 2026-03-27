@@ -61,6 +61,21 @@ async function patchTemplateConfigSource(root) {
   await fs.writeFile(configPath, injected, 'utf8')
 }
 
+async function ensureWorkspacePackageNodeModules() {
+  const workspaceRoot = path.resolve(import.meta.dirname, '..')
+  const rootNodeModules = path.join(workspaceRoot, 'node_modules')
+  const packageNodeModules = path.join(workspaceRoot, 'packages/weapp-vite/node_modules')
+
+  try {
+    await fs.access(packageNodeModules)
+    return
+  }
+  catch {
+  }
+
+  await fs.symlink(rootNodeModules, packageNodeModules, 'dir')
+}
+
 async function createTempProject() {
   const workspaceRoot = path.resolve(import.meta.dirname, '..')
   const fixtureSource = path.join(workspaceRoot, 'templates/weapp-vite-template')
@@ -88,6 +103,7 @@ async function updateFile(root, relativeFile, mode) {
 }
 
 async function main() {
+  await ensureWorkspacePackageNodeModules()
   const tempRoot = await createTempProject()
   const output = []
   let rebuildCount = 0
