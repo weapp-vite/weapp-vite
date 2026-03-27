@@ -588,6 +588,7 @@ export function createComponentFixture() {
 Page({
   data: {
     count: 2,
+    formSnapshot: '',
     log: [],
     scopedRect: null,
     snapshot: ''
@@ -615,6 +616,12 @@ Page({
       })
       .exec()
   },
+  inspectForm() {
+    const card = this.selectComponent('#status-card')
+    this.setData({
+      formSnapshot: JSON.stringify(card?.data?.formState ?? null)
+    })
+  },
   onPulse(event) {
     this.setData({
       log: [...this.data.log, event?.detail?.source ?? 'none']
@@ -636,7 +643,29 @@ Component({
       value: 0
     }
   },
+  data: {
+    formState: {
+      blur: '',
+      change: '',
+      input: ''
+    }
+  },
   methods: {
+    onInnerInput(event) {
+      this.setData({
+        'formState.input': event?.detail?.value ?? ''
+      })
+    },
+    onInnerChange(event) {
+      this.setData({
+        'formState.change': event?.detail?.value ?? ''
+      })
+    },
+    onInnerBlur(event) {
+      this.setData({
+        'formState.blur': event?.detail?.value ?? ''
+      })
+    },
     pulse() {
       this.triggerEvent('pulse', {
         source: 'status-card'
@@ -645,7 +674,10 @@ Component({
   }
 })
 `)
-  writeText(path.join(root, 'dist/components/status-card/index.wxml'), '<view id="card-trigger" class="card-shell" bindtap="pulse">count: {{count}}</view>')
+  writeText(path.join(root, 'dist/components/status-card/index.wxml'), `
+<view id="card-trigger" class="card-shell" bindtap="pulse">count: {{count}}</view>
+<input id="card-input" bindinput="onInnerInput" bindchange="onInnerChange" bindblur="onInnerBlur" value="{{formState.input}}" />
+`)
 
   return root
 }

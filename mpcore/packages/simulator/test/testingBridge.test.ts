@@ -315,4 +315,26 @@ describe('headless testing bridge', () => {
 
     expect(await page.data('log')).toEqual(['status-card'])
   })
+
+  it('dispatches component input, change and blur events through the testing bridge', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const input = await page.$('#card-input')
+
+    expect(input).not.toBeNull()
+
+    await input?.input('typed-in-component')
+    await input?.change('changed-in-component')
+    await input?.blur('blurred-in-component')
+    await page.callMethod('inspectForm')
+
+    expect(await page.data('formSnapshot')).toContain('"input":"typed-in-component"')
+    expect(await page.data('formSnapshot')).toContain('"change":"changed-in-component"')
+    expect(await page.data('formSnapshot')).toContain('"blur":"blurred-in-component"')
+  })
 })
