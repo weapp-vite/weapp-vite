@@ -65,15 +65,20 @@ async function ensureWorkspacePackageNodeModules() {
   const workspaceRoot = path.resolve(import.meta.dirname, '..')
   const rootNodeModules = path.join(workspaceRoot, 'node_modules')
   const packageNodeModules = path.join(workspaceRoot, 'packages/weapp-vite/node_modules')
+  const rootWeappCore = path.join(rootNodeModules, '@weapp-core')
+  const packageScopedNodeModules = path.join(packageNodeModules, '@weapp-core')
+  const loggerEntry = path.join(packageScopedNodeModules, 'logger')
 
   try {
-    await fs.access(packageNodeModules)
+    await fs.access(loggerEntry)
     return
   }
   catch {
   }
 
-  await fs.symlink(rootNodeModules, packageNodeModules, 'dir')
+  await fs.mkdir(packageNodeModules, { recursive: true })
+  await fs.rm(packageScopedNodeModules, { recursive: true, force: true })
+  await fs.symlink(rootWeappCore, packageScopedNodeModules, 'dir')
 }
 
 async function createTempProject() {
