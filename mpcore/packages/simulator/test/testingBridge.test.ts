@@ -145,6 +145,34 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('waits for selectors and async text updates through the testing bridge', async () => {
+    const projectPath = createBaseFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/index/index')
+
+    const button = await page.waitForSelector('#greeting-button')
+    expect(await button?.text()).toBe('Hello')
+
+    await page.callMethod('showAsyncText')
+    expect(await page.waitForText('async ready', {
+      timeout: 200,
+    })).toBe('async ready')
+
+    const asyncNode = await page.waitForSelector('#async-text')
+    expect(await asyncNode?.text()).toBe('async ready')
+
+    await expect(page.waitForSelector('#missing-node', {
+      timeout: 30,
+    })).rejects.toThrow('Timed out waiting for selector "#missing-node" to appear')
+    await expect(page.waitForText('definitely-missing-text', {
+      timeout: 30,
+    })).rejects.toThrow('Timed out waiting for text "definitely-missing-text"')
+  })
+
   it('renders interpolated wxml and supports basic selectors', async () => {
     const projectPath = createBaseFixture()
     tempDirs.push(projectPath)
