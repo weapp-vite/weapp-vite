@@ -6,7 +6,6 @@ const debugMock = vi.hoisted(() => vi.fn())
 const loggerMock = vi.hoisted(() => ({
   success: vi.fn(),
 }))
-const getAlipayNpmDistDirNameMock = vi.hoisted(() => vi.fn(() => 'miniprogram_npm_alipay'))
 const statMock = vi.hoisted(() => vi.fn(async () => {
   throw new Error('ENOENT')
 }))
@@ -14,6 +13,7 @@ const mkdirMock = vi.hoisted(() => vi.fn(async () => undefined))
 const readdirMock = vi.hoisted(() => vi.fn(async () => []))
 const rmMock = vi.hoisted(() => vi.fn(async () => undefined))
 const cpMock = vi.hoisted(() => vi.fn(async () => undefined))
+const getPreservedNpmDirNamesMock = vi.hoisted(() => vi.fn(() => ['miniprogram_npm']))
 
 vi.mock('node:fs/promises', () => {
   return {
@@ -32,9 +32,9 @@ vi.mock('../../context/shared', () => {
   }
 })
 
-vi.mock('../../utils/alipayNpm', () => {
+vi.mock('../../platform', () => {
   return {
-    getAlipayNpmDistDirName: getAlipayNpmDistDirNameMock,
+    getPreservedNpmDirNames: getPreservedNpmDirNamesMock,
   }
 })
 
@@ -54,8 +54,8 @@ describe('buildPlugin outputs', () => {
   beforeEach(() => {
     debugMock.mockReset()
     loggerMock.success.mockReset()
-    getAlipayNpmDistDirNameMock.mockReset()
-    getAlipayNpmDistDirNameMock.mockReturnValue('miniprogram_npm_alipay')
+    getPreservedNpmDirNamesMock.mockReset()
+    getPreservedNpmDirNamesMock.mockReturnValue(['miniprogram_npm'])
     statMock.mockReset()
     statMock.mockImplementation(async () => {
       throw new Error('ENOENT')
@@ -102,10 +102,13 @@ describe('buildPlugin outputs', () => {
       { name: 'miniprogram_npm_alipay' },
       { name: 'miniprogram_npm' },
     ])
+    getPreservedNpmDirNamesMock.mockReturnValue(['miniprogram_npm_alipay'])
 
     await cleanOutputs(configService)
 
-    expect(getAlipayNpmDistDirNameMock).toHaveBeenCalledWith('plugin')
+    expect(getPreservedNpmDirNamesMock).toHaveBeenCalledWith('alipay', {
+      alipayNpmMode: 'plugin',
+    })
     expect(rmMock).toHaveBeenCalledTimes(1)
     expect(rmMock).toHaveBeenCalledWith('/project/dist/miniprogram_npm', {
       recursive: true,

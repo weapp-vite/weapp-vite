@@ -1,17 +1,22 @@
 import type { MpPlatform } from '../types'
+import { getMiniProgramPlatformAdapter } from '../platform'
+
+const IMPORT_SJS_TAG_RE = /<import-sjs([\s\S]*?)>/g
+const IMPORT_SJS_SRC_RE = /\bsrc\s*=\s*/g
+const IMPORT_SJS_MODULE_RE = /\bmodule\s*=\s*/g
 
 export function resolveScriptModuleTagByPlatform(platform?: MpPlatform, scriptModuleExtension?: string) {
-  if (platform === 'alipay' && scriptModuleExtension === 'sjs') {
-    return 'import-sjs'
+  if (!platform || !scriptModuleExtension) {
+    return undefined
   }
-  return undefined
+  return getMiniProgramPlatformAdapter(platform).scriptModuleTagByExtension?.[scriptModuleExtension]
 }
 
 export function normalizeImportSjsAttributes(source: string) {
   return source
-    .replace(/<import-sjs([\s\S]*?)>/g, (tag) => {
+    .replace(IMPORT_SJS_TAG_RE, (tag) => {
       return tag
-        .replace(/\bsrc\s*=\s*/g, 'from=')
-        .replace(/\bmodule\s*=\s*/g, 'name=')
+        .replace(IMPORT_SJS_SRC_RE, 'from=')
+        .replace(IMPORT_SJS_MODULE_RE, 'name=')
     })
 }

@@ -13,6 +13,10 @@ import {
 } from 'weapp-ide-cli'
 import { createCompilerContext } from '../createContext'
 import logger, { colors } from '../logger'
+import {
+  getDefaultIdeProjectRoot,
+  shouldPassPlatformArgToIdeOpen,
+} from '../platform'
 import { createInlineConfig } from './runtime'
 
 const execFileAsync = promisify(execFile)
@@ -31,98 +35,6 @@ export interface ResolvedIdeCommandContext {
   projectPath?: string
   weappViteConfig?: Awaited<ReturnType<typeof createCompilerContext>>['configService']['weappViteConfig']
   mpDistRoot?: string
-}
-
-export async function openIde(platform?: MpPlatform, projectPath?: string) {
-  const argv = ['open', '-p']
-  if (projectPath) {
-    argv.push(projectPath)
-  }
-  if (platform === 'alipay') {
-    argv.push('--platform', platform)
-  }
-
-  await runWechatIdeOpenWithRetry(argv)
-}
-
-export async function closeIde() {
-  const config = await getConfig()
-  const cliPath = config.cliPath?.trim() ? config.cliPath : null
-
-  try {
-    await parse(['close'])
-    return true
-  }
-  catch (error) {
-    if (isWechatIdeLoginRequiredError(error)) {
-      try {
-        await runWechatIdeOpenWithRetry(['close'])
-        return true
-      }
-      catch (retryError) {
-        logger.error(retryError)
-      }
-    }
-    else {
-      logger.warn('微信开发者工具 CLI close 执行失败，尝试回退为系统级关闭。')
-      logger.error(error)
-    }
-
-    if (await closeIdeByAppleScript()) {
-      logger.info('已回退为系统级关闭微信开发者工具。')
-      return true
-    }
-
-    if (await closeIdeByProcessKill(cliPath)) {
-      logger.info('已回退为进程级关闭微信开发者工具。')
-      return true
-    }
-
-    return false
-  }
-}
-
-/**
- * @description 解析 IDE 相关命令所需的平台、项目目录与配置上下文。
- */
-export async function resolveIdeCommandContext(options: ResolveIdeCommandOptions): Promise<ResolvedIdeCommandContext> {
-  const cwd = options.cwd ?? process.cwd()
-  let platform = options.platform
-  let projectPath = options.projectPath
-
-  if (!platform || !projectPath) {
-    try {
-      const ctx = await createCompilerContext({
-        cwd,
-        mode: options.mode ?? 'development',
-        configFile: options.configFile,
-        inlineConfig: createInlineConfig(platform),
-        cliPlatform: options.cliPlatform,
-      })
-      platform ??= ctx.configService.platform
-      if (!projectPath) {
-        projectPath = resolveIdeProjectRoot(ctx.configService.mpDistRoot, ctx.configService.cwd)
-      }
-      return {
-        platform,
-        projectPath,
-        weappViteConfig: ctx.configService.weappViteConfig,
-        mpDistRoot: ctx.configService.mpDistRoot,
-      }
-    }
-    catch {
-      // 忽略配置加载失败，回退到静态推导
-    }
-  }
-
-  if (!projectPath && platform === 'alipay') {
-    projectPath = resolveIdeProjectRoot('dist/alipay/dist', cwd)
-  }
-
-  return {
-    platform,
-    projectPath,
-  }
 }
 
 /**
@@ -211,4 +123,99 @@ export function resolveIdeProjectPath(mpDistRoot?: string) {
  */
 export function resolveIdeProjectRoot(mpDistRoot?: string, cwd?: string) {
   return resolveIdeProjectPath(mpDistRoot) ?? cwd
+}
+
+export async function openIde(platform?: MpPlatform, projectPath?: string) {
+  const argv = ['open', '-p']
+  if (projectPath) {
+    argv.push(projectPath)
+  }
+  if (shouldPassPlatformArgToIdeOpen(platform)) {
+    argv.push('--platform', platform)
+  }
+
+  await runWechatIdeOpenWithRetry(argv)
+}
+
+export async function closeIde() {
+  const config = await getConfig()
+  const cliPath = config.cliPath?.trim() ? config.cliPath : null
+
+  try {
+    await parse(['close'])
+    return true
+  }
+  catch (error) {
+    if (isWechatIdeLoginRequiredError(error)) {
+      try {
+        await runWechatIdeOpenWithRetry(['close'])
+        return true
+      }
+      catch (retryError) {
+        logger.error(retryError)
+      }
+    }
+    else {
+      logger.warn('微信开发者工具 CLI close 执行失败，尝试回退为系统级关闭。')
+      logger.error(error)
+    }
+
+    if (await closeIdeByAppleScript()) {
+      logger.info('已回退为系统级关闭微信开发者工具。')
+      return true
+    }
+
+    if (await closeIdeByProcessKill(cliPath)) {
+      logger.info('已回退为进程级关闭微信开发者工具。')
+      return true
+    }
+
+    return false
+  }
+}
+
+/**
+ * @description 解析 IDE 相关命令所需的平台、项目目录与配置上下文。
+ */
+export async function resolveIdeCommandContext(options: ResolveIdeCommandOptions): Promise<ResolvedIdeCommandContext> {
+  const cwd = options.cwd ?? process.cwd()
+  let platform = options.platform
+  let projectPath = options.projectPath
+
+  if (!platform || !projectPath) {
+    try {
+      const ctx = await createCompilerContext({
+        cwd,
+        mode: options.mode ?? 'development',
+        configFile: options.configFile,
+        inlineConfig: createInlineConfig(platform),
+        cliPlatform: options.cliPlatform,
+      })
+      platform ??= ctx.configService.platform
+      if (!projectPath) {
+        projectPath = resolveIdeProjectRoot(ctx.configService.mpDistRoot, ctx.configService.cwd)
+      }
+      return {
+        platform,
+        projectPath,
+        weappViteConfig: ctx.configService.weappViteConfig,
+        mpDistRoot: ctx.configService.mpDistRoot,
+      }
+    }
+    catch {
+      // 忽略配置加载失败，回退到静态推导
+    }
+  }
+
+  if (!projectPath) {
+    const defaultProjectRoot = getDefaultIdeProjectRoot(platform)
+    if (defaultProjectRoot) {
+      projectPath = resolveIdeProjectRoot(defaultProjectRoot, cwd)
+    }
+  }
+
+  return {
+    platform,
+    projectPath,
+  }
 }

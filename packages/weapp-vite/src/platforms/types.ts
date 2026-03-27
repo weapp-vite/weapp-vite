@@ -25,4 +25,33 @@ export interface MiniProgramPlatformAdapter {
    * 编译产物应输出的文件扩展名。
    */
   outputExtensions: OutputExtensions
+  /**
+   * IDE 项目配置文件名。
+   */
+  projectConfigFileName: string
+  /**
+   * 项目根目录候选字段，按优先级排序。
+   */
+  projectConfigRootKeys: readonly string[]
+  /**
+   * 不同脚本模块扩展名对应的模板标签名。
+   */
+  scriptModuleTagByExtension?: Readonly<Partial<Record<string, string>>>
+  /**
+   * 是否使用项目根目录作为 npm 产物目录基准。
+   */
+  usesProjectRootNpmDir?: boolean
+  /**
+   * IDE 打开项目时的平台级默认行为。
+   */
+  ide?: {
+    requiresOpenPlatformArg?: boolean
+    defaultProjectRoot?: string
+  }
+  /**
+   * 构建清理时需要保留的 npm 产物目录名。
+   */
+  resolvePreservedNpmDirNames: (options?: {
+    alipayNpmMode?: string
+  }) => readonly string[]
 }

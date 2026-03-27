@@ -1,27 +1,25 @@
 import type { MutableCompilerContext } from '../../context'
 import type { MpPlatform, ProjectConfig } from '../../types'
 import path from 'pathe'
+import { getMiniProgramPlatformAdapter } from '../../platform'
 import { toPosixPath } from '../../utils/path'
 import { resolveProjectConfigRoot } from '../../utils/projectConfig'
 import { requireConfigService } from '../utils/requireConfigService'
 
 const TRAILING_SLASHES_RE = /\/+$/
+const EMPTY_VALUE_RE = /^$/
 
 function normalizeRelativeDir(value: string) {
   const normalized = toPosixPath(value).replace(TRAILING_SLASHES_RE, '')
   const trimmed = normalized.startsWith('./') ? normalized.slice(2) : normalized
-  return trimmed || '.'
+  return trimmed.replace(EMPTY_VALUE_RE, '.')
 }
 
-function shouldUseProjectRootNpmStrategy(platform: string) {
-  return platform === 'alipay'
+function shouldUseProjectRootNpmStrategy(platform: MpPlatform) {
+  return getMiniProgramPlatformAdapter(platform).usesProjectRootNpmDir === true
 }
 
 function resolvePlatformProjectRoot(configService: MutableCompilerContext['configService']) {
-  if (!configService) {
-    return 'dist'
-  }
-
   const projectRoot = resolveProjectConfigRoot(
     configService.projectConfig as ProjectConfig,
     configService.platform as MpPlatform,
