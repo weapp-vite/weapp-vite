@@ -563,6 +563,21 @@ describe('headless testing bridge', () => {
     })
   })
 
+  it('bridges from a testing node handle back to the current page handle', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const trigger = await page.$('#card-trigger')
+    const currentPage = await trigger?.page()
+
+    expect(currentPage).not.toBeNull()
+    expect(await currentPage?.data('count')).toBe(2)
+  })
+
   it('distinguishes component scope and page scope from a testing node handle', async () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)
