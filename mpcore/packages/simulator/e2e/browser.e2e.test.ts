@@ -35,6 +35,7 @@ interface SimulatorE2EApi {
     modalLogs: unknown[]
     pullDownRefreshState: { active: boolean, stopCalls: number } | null
     requestLogs: unknown[]
+    savedFileList: Array<{ createTime: number, filePath: string, size: number }>
     shareMenu: unknown
     storageSnapshot: Record<string, unknown>
     tabBarSnapshot: unknown
@@ -184,6 +185,11 @@ describe.sequential('simulator browser e2e', () => {
     expect(sessionSnapshot.directorySnapshot).toContain('headless://saved/component-lab/reports')
     expect(sessionSnapshot.directorySnapshot).toContain('headless://saved/component-lab/reports/daily')
     expect(sessionSnapshot.downloadFileLogs).toHaveLength(1)
+    expect(sessionSnapshot.savedFileList).toHaveLength(1)
+    expect(sessionSnapshot.savedFileList[0]).toMatchObject({
+      filePath: pageData.savedFilePath,
+      size: 'component-lab report'.length,
+    })
     expect(sessionSnapshot.uploadFileLogs).toHaveLength(1)
     expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab report')
     expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab')

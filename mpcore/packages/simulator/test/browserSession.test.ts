@@ -271,6 +271,13 @@ Page({
     expect(page.data.saveSummary).toContain('"savedFilePath":"headless://wxfile/saved/')
     expect(page.data.uploadSummary).toContain('"browser":true')
     expect(session.renderCurrentPage().wxml).toContain('browser report body')
+    expect(session.getSavedFileListSnapshot()).toEqual([
+      {
+        createTime: expect.any(Number),
+        filePath: expect.stringContaining('headless://wxfile/saved/'),
+        size: 'browser report body'.length,
+      },
+    ])
     expect(session.getUploadFileLogs()[0]).toMatchObject({
       fileContent: 'browser report body',
       matched: true,
