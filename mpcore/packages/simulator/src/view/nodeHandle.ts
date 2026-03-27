@@ -53,7 +53,7 @@ function toDatasetKey(attributeName: string) {
 function collectDataset(node: DomNodeLike) {
   const dataset: Record<string, string> = {}
   for (const [key, value] of Object.entries(node.attribs ?? {})) {
-    if (!key.startsWith('data-')) {
+    if (!key.startsWith('data-') || key.startsWith('data-sim-')) {
       continue
     }
     dataset[toDatasetKey(key)] = value
@@ -131,6 +131,7 @@ function serializeNode(node: DomNodeLike): string {
   }
 
   const attrs = Object.entries(node.attribs ?? {})
+    .filter(([key]) => !key.startsWith('data-sim-'))
     .map(([key, value]) => ` ${key}="${escapeAttribute(value)}"`)
     .join('')
   const children = (node.children ?? []).map(serializeNode).join('')

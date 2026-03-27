@@ -3,7 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createHeadlessSession } from '../src/runtime'
-import { cleanupTempDirs, createBaseFixture, createNavigationFixture } from './helpers'
+import { cleanupTempDirs, createBaseFixture, createComponentFixture, createNavigationFixture, createSelectorQueryFixture } from './helpers'
 
 function writeFixtureFile(target: string, content: string) {
   fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -1413,5 +1413,56 @@ Page({
       'update:complete:updateShareMenu:ok',
       'hide:complete:hideShareMenu:ok',
     ])
+  })
+
+  it('supports createSelectorQuery for node fields and viewport scroll offset', () => {
+    const projectPath = createSelectorQueryFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.runSelectorQuery()
+
+    expect(page.data.selectorQueryResult).toEqual({
+      class: 'panel primary',
+      dataset: {
+        phase: 'ready',
+        role: 'hero',
+      },
+      height: 48,
+      id: 'card',
+      left: 12,
+      right: 132,
+      top: 24,
+      bottom: 72,
+      width: 120,
+    })
+
+    page.runViewportQuery()
+
+    expect(page.data.viewportResult).toEqual({
+      scrollLeft: 0,
+      scrollTop: 64,
+    })
+  })
+
+  it('renders custom components and exposes selectComponent APIs in headless runtime', () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/lab/index')
+    expect(session.renderCurrentPage().wxml).toContain('count: 2')
+
+    page.inspect()
+
+    expect(page.data.snapshot).toContain('"count":2')
+    expect(page.data.snapshot).toContain('"hasPulse":true')
+    expect(page.data.snapshot).toContain('"size":1')
+
+    const card = page.selectComponent?.('#status-card')
+    card?.pulse()
+
+    expect(page.data.log).toEqual(['status-card'])
   })
 })

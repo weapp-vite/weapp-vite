@@ -1,5 +1,5 @@
 import type { HeadlessProjectDescriptor } from '../project'
-import type { HeadlessPageInstance } from '../runtime'
+import type { HeadlessPageInstance, HeadlessSession } from '../runtime'
 import { HeadlessTestingNodeHandle, renderPageTree } from '../view'
 
 export interface HeadlessTestingWaitOptions {
@@ -22,6 +22,7 @@ export class HeadlessTestingPageHandle {
   constructor(
     private readonly project: HeadlessProjectDescriptor,
     private readonly page: HeadlessPageInstance,
+    private readonly session?: HeadlessSession,
   ) {}
 
   private resolveDataByPath(path?: string) {
@@ -82,8 +83,13 @@ export class HeadlessTestingPageHandle {
   }
 
   async $(selector: string) {
-    const tree = renderPageTree(this.project, this.page)
-    const root = new HeadlessTestingNodeHandle(tree.root.children?.[0] ?? tree.root, {
+    const tree = this.session?.getCurrentPages().includes(this.page)
+      ? this.session.renderCurrentPage()
+      : renderPageTree(this.project, this.page)
+    const rootNode = tree.root.type === 'root'
+      ? (tree.root.children?.[0] ?? tree.root)
+      : tree.root
+    const root = new HeadlessTestingNodeHandle(rootNode, {
       callMethod: (methodName, event) => this.callMethod(methodName, event),
     })
     if (selector === 'page') {
@@ -182,6 +188,8 @@ export class HeadlessTestingPageHandle {
   }
 
   async wxml() {
-    return renderPageTree(this.project, this.page).wxml
+    return this.session?.getCurrentPages().includes(this.page)
+      ? this.session.renderCurrentPage().wxml
+      : renderPageTree(this.project, this.page).wxml
   }
 }

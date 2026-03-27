@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { launch } from '../src/testing'
-import { cleanupTempDirs, createBaseFixture, createNavigationFixture } from './helpers'
+import { cleanupTempDirs, createBaseFixture, createComponentFixture, createNavigationFixture } from './helpers'
 
 describe('headless testing bridge', () => {
   const tempDirs: string[] = []
@@ -284,5 +284,19 @@ describe('headless testing bridge', () => {
     expect(wxml).toContain('<view id="greeting-button" data-phase="initial" data-card-type="primary" bind:tap="onTap">Hello</view>')
     expect(wxml).toContain('Status: ready')
     expect(wxml).toContain('Greeting: Hello')
+  })
+
+  it('renders custom component output through the testing bridge', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+
+    expect(await page.wxml()).toContain('count: 2')
+    await page.callMethod('inspect')
+    expect(await page.data('snapshot')).toContain('"size":1')
   })
 })

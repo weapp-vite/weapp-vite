@@ -19,6 +19,7 @@ import {
 } from '../host'
 
 export interface HeadlessModuleLoader {
+  executeComponentModule: (filePath: string, id: string) => HeadlessComponentDefinition
   executeAppModule: (filePath: string) => HeadlessAppDefinition
   executePageModule: (filePath: string, route: string) => HeadlessPageDefinition
 }
@@ -152,6 +153,14 @@ export function createModuleLoader(
       const definition = registries.pages.get(route)
       if (!definition) {
         throw new Error(`Page() was not registered for route "${route}" while executing ${normalize(filePath)}.`)
+      }
+      return definition
+    },
+    executeComponentModule(filePath, id) {
+      executeModule(filePath, { kind: 'component', route: id })
+      const definition = registries.components.get(id)
+      if (!definition) {
+        throw new Error(`Component() was not registered for id "${id}" while executing ${normalize(filePath)}.`)
       }
       return definition
     },
