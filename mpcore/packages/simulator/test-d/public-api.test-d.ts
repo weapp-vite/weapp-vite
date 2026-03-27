@@ -27,6 +27,30 @@ expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: str
 expectType<{ errMsg: string } | undefined>(browserPage?.wx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
 expectType<void>(browserPage?.wx.getFileSystemManager().rmdirSync('headless://saved/archive', true))
 expectType<string>(browserPage?.wx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+browserPage?.wx.getFileSystemManager().access({
+  path: 'headless://wxfile/temp/0001',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+browserPage?.wx.getFileSystemManager().readFile({
+  filePath: 'headless://wxfile/temp/0001',
+  success: (result) => {
+    expectType<{ data: string, errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ data: string, errMsg: string } | undefined>(result)
+  },
+})
 browserPage?.wx.getFileSystemManager().stat({
   path: 'headless://wxfile/temp/0001',
   success: (result) => {
@@ -143,6 +167,30 @@ expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: str
 expectType<{ errMsg: string } | undefined>(headlessPage?.wx.getFileSystemManager().rmdir({ dirPath: 'headless://saved/archive', recursive: true }))
 expectType<void>(headlessPage?.wx.getFileSystemManager().rmdirSync('headless://saved/archive', true))
 expectType<string>(headlessPage?.wx.getFileSystemManager().readFileSync('headless://wxfile/temp/0001') ?? '')
+headlessPage?.wx.getFileSystemManager().access({
+  path: 'headless://wxfile/temp/0001',
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+headlessPage?.wx.getFileSystemManager().readFile({
+  filePath: 'headless://wxfile/temp/0001',
+  success: (result) => {
+    expectType<{ data: string, errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ data: string, errMsg: string } | undefined>(result)
+  },
+})
 headlessPage?.wx.getFileSystemManager().stat({
   path: 'headless://wxfile/temp/0001',
   success: (result) => {
