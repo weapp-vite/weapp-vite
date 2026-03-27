@@ -175,3 +175,31 @@ export function emitAlipayGenericPlaceholderAssets(
 
   ctx.emitFile({ type: 'asset', fileName: scriptFileName, source: scriptSource })
 }
+
+export function preparePlatformConfigAsset(
+  bundle: Record<string, any>,
+  options: {
+    pluginCtx: any
+    relativeBase: string
+    config: string | undefined
+    outputExtensions: OutputExtensions | undefined
+    platform: string
+    dependencies?: Record<string, string>
+    alipayNpmMode?: string
+  },
+) {
+  const normalizedConfig = normalizeVueConfigForPlatform(options.config, {
+    platform: options.platform,
+    dependencies: options.dependencies,
+    alipayNpmMode: options.alipayNpmMode,
+  })
+  emitAlipayGenericPlaceholderAssets(
+    options.pluginCtx,
+    bundle,
+    options.relativeBase,
+    normalizedConfig,
+    options.outputExtensions,
+    options.platform,
+  )
+  return normalizedConfig
+}

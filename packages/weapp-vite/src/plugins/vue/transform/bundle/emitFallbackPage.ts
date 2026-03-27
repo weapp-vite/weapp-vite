@@ -14,7 +14,7 @@ import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDat
 import { resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
 import { emitNativeLayoutAssetsIfNeeded, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
-import { emitAlipayGenericPlaceholderAssets, emitPlatformTemplateAsset, normalizeVueConfigForPlatform } from './platform'
+import { emitPlatformTemplateAsset, preparePlatformConfigAsset } from './platform'
 import { compileVueLikeFile } from './shared'
 
 export async function emitFallbackPageAssets(
@@ -169,12 +169,15 @@ export async function emitFallbackPageAssets(
         emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, result.style, styleExtension)
       }
 
-      const normalizedConfig = normalizeVueConfigForPlatform(result.config, {
+      const normalizedConfig = preparePlatformConfigAsset(bundle, {
+        pluginCtx,
+        relativeBase,
+        config: result.config,
+        outputExtensions,
         platform: configService.platform,
         dependencies: configService.packageJson?.dependencies,
         alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
       })
-      emitAlipayGenericPlaceholderAssets(pluginCtx, bundle, relativeBase, normalizedConfig, outputExtensions, configService.platform)
       emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: normalizedConfig }, {
         mergeExistingAsset: true,
         mergeStrategy: jsonConfig?.mergeStrategy,

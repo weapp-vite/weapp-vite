@@ -11,6 +11,7 @@ import {
   emitAlipayGenericPlaceholderAssets,
   normalizeVueConfigForPlatform,
   normalizeVueTemplateForPlatform,
+  preparePlatformConfigAsset,
 } from './bundle/platform'
 
 const collectFallbackPageEntryIdsMock = vi.hoisted(() => vi.fn(async () => new Set<string>()))
@@ -164,6 +165,35 @@ describe('emitVueBundleAssets platform output', () => {
       'alipay',
     )
 
+    const emittedFiles = emitFile.mock.calls.map(call => call[0]?.fileName)
+    expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.axml')
+    expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.js')
+  })
+
+  it('prepares normalized config and placeholder assets through shared platform helper', () => {
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    const normalizedConfig = preparePlatformConfigAsset(bundle, {
+      pluginCtx: { emitFile },
+      relativeBase: 'components/direct/index',
+      config: JSON.stringify({
+        componentGenerics: {
+          slotA: true,
+        },
+        usingComponents: {
+          capsule: 'demo',
+        },
+      }),
+      outputExtensions: {
+        wxml: 'axml',
+        json: 'json',
+        js: 'js',
+      },
+      platform: 'alipay',
+    })
+
+    expect(normalizedConfig).toContain('"componentGenerics"')
     const emittedFiles = emitFile.mock.calls.map(call => call[0]?.fileName)
     expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.axml')
     expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.js')
