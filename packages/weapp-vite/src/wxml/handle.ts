@@ -3,7 +3,11 @@ import type { scanWxml } from './scan'
 import { defu } from '@weapp-core/shared'
 import MagicString from 'magic-string'
 import { changeFileExtension } from '../utils/file'
-import { normalizeImportSjsAttributes } from '../utils/wxmlScriptModule'
+import {
+  normalizeImportSjsAttributes,
+  resolveScriptModuleTagName,
+  shouldNormalizeScriptModuleAttributes,
+} from '../utils/wxmlScriptModule'
 import { normalizeWxsFilename, transformWxsCode } from '../wxs'
 
 type ScanResult = ReturnType<typeof scanWxml>
@@ -103,8 +107,10 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
   const normalizedTemplateExtension = opts.templateExtension?.startsWith('.')
     ? opts.templateExtension.slice(1)
     : opts.templateExtension
-  const resolvedScriptTag = opts.scriptModuleTag
-    ?? (normalizedScriptExtension === 'sjs' ? 'sjs' : 'wxs')
+  const resolvedScriptTag = resolveScriptModuleTagName({
+    scriptModuleExtension: normalizedScriptExtension,
+    scriptModuleTag: opts.scriptModuleTag,
+  })
   const shouldNormalizeImports = wxsImportNormalizeTokens.length > 0
   const shouldNormalizeTemplateImports = templateImportNormalizeTokens.length > 0 && normalizedTemplateExtension
   const shouldRemoveLang = removeWxsLangAttrTokens.length > 0
@@ -201,7 +207,7 @@ export function handleWxml(data: ReturnType<typeof scanWxml>, options?: HandleWx
     }
   }
 
-  const finalCode = resolvedScriptTag === 'import-sjs'
+  const finalCode = shouldNormalizeScriptModuleAttributes(resolvedScriptTag)
     ? normalizeImportSjsAttributes(ms.toString())
     : ms.toString()
 
