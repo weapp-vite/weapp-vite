@@ -3,6 +3,7 @@ import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 import type { JsonMergeStrategy } from '../../../../types'
 import { createJsonMerger } from 'wevu/compiler'
+import { shouldNormalizeUsingComponents } from '../../../../platform'
 import { resolveJson } from '../../../../utils'
 import { toPosixPath } from '../../../../utils/path'
 import { emitClassStyleWxsAssetIfMissing } from '../emitAssets'
@@ -33,7 +34,7 @@ function normalizeJsonConfigForPlatform(
     return json
   }
   const platform = configService?.platform
-  if (platform !== 'alipay') {
+  if (!shouldNormalizeUsingComponents(platform)) {
     return json
   }
 
