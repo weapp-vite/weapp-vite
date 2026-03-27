@@ -84,6 +84,18 @@ export function formatRuntimeEventLevel(level: DashboardRuntimeEventLevel) {
   }
 }
 
+export function formatRuntimeEventSource(source?: string) {
+  return source ?? 'dashboard'
+}
+
+export function getRuntimeEventBadgeTone(level: DashboardRuntimeEventLevel) {
+  return level
+}
+
+export function getRuntimeSourceBadgeTone(errorCount: number) {
+  return errorCount > 0 ? 'error' : 'info'
+}
+
 export function formatDuration(durationMs?: number) {
   if (typeof durationMs !== 'number' || Number.isNaN(durationMs) || durationMs < 0) {
     return '未记录'
@@ -104,7 +116,7 @@ export function formatRuntimeEventMeta(options: {
 }) {
   const parts = [
     formatRuntimeEventKind(options.kind),
-    options.source ?? 'dashboard',
+    formatRuntimeEventSource(options.source),
     options.timestamp,
   ]
 

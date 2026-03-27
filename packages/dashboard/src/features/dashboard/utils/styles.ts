@@ -58,6 +58,22 @@ export const pillButtonStyles = tv({
   },
 })
 
+export const runtimeBadgeStyles = tv({
+  base: 'rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em]',
+  variants: {
+    tone: {
+      neutral: 'border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] text-[color:var(--dashboard-text-soft)]',
+      info: 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]',
+      success: 'border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/12 dark:text-emerald-300',
+      warning: 'border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/12 dark:text-amber-300',
+      error: 'border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/12 dark:text-rose-300',
+    },
+  },
+  defaultVariants: {
+    tone: 'neutral',
+  },
+})
+
 export const sectionNoteStyles = tv({
   base: 'rounded-[20px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-[color:var(--dashboard-text-soft)] shadow-[var(--dashboard-shadow)]',
 })
