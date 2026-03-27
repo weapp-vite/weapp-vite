@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import AppChecklistItem from '../features/dashboard/components/AppChecklistItem.vue'
+import AppCommandPreviewCard from '../features/dashboard/components/AppCommandPreviewCard.vue'
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
 import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
@@ -85,25 +87,13 @@ const { commandItems, signals } = useDashboardWorkspace()
           description="这里先用假数据承载常用动作。等 CLI 和 dashboard 进一步打通后，可以把这些条目替换成真实任务状态、最近运行记录和直接操作入口。"
         />
         <div class="mt-4 grid gap-3">
-          <article
+          <AppCommandPreviewCard
             v-for="command in commandItems"
             :key="command.command"
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4"
-          >
-            <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h3 class="font-medium">
-                  {{ command.label }}
-                </h3>
-                <p class="mt-1 text-sm text-[color:var(--dashboard-text-muted)]">
-                  {{ command.note }}
-                </p>
-              </div>
-              <code class="rounded-xl bg-slate-950 px-3 py-2 text-xs text-slate-100 dark:bg-slate-900">
-                {{ command.command }}
-              </code>
-            </div>
-          </article>
+            :label="command.label"
+            :note="command.note"
+            :command="command.command"
+          />
         </div>
       </AppSurfaceCard>
 
@@ -114,13 +104,11 @@ const { commandItems, signals } = useDashboardWorkspace()
         icon-name="metric-quality"
       >
         <ol class="grid gap-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-          <li
+          <AppChecklistItem
             v-for="item in releaseChecklist"
             :key="item"
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
-          >
-            {{ item }}
-          </li>
+            :text="item"
+          />
         </ol>
       </AppSurfaceCard>
     </section>
