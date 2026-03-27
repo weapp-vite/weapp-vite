@@ -77,3 +77,7 @@ packages/weapp-vite/test-d/.tmp-tsd
 docs/reports/*-ide-warning-report/
 docs/reports/*-ide-type-uncompatible-warning-report.md
 docs/reports/*-ide-type-uncompatible-warning-report.json
+
+# simulator browser test artifacts
+mpcore/packages/simulator/.vitest-attachments/
+mpcore/packages/simulator/e2e/__screenshots__/
