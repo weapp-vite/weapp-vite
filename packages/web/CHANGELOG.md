@@ -1,5 +1,12 @@
 # @weapp-vite/web
 
+## 1.3.9
+
+### Patch Changes
+
+- 📦 **Dependencies** [`0066308`](https://github.com/weapp-vite/weapp-vite/commit/0066308e1af282e9bc204143e685c54edd490f41)
+  → `rolldown-require@2.0.11`
+
 ## 1.3.8
 
 ### Patch Changes
