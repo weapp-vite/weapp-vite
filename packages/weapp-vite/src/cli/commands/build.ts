@@ -1,6 +1,6 @@
 import type { CAC } from 'cac'
 import type { ChildProcess } from 'node:child_process'
-import type { AnalyzeDashboardHandle } from '../analyze/dashboard'
+import type { AnalyzeDashboardHandle, DashboardRuntimeEventInput } from '../analyze/dashboard'
 import type { GlobalCLIOptions } from '../types'
 import process from 'node:process'
 import { analyzeSubpackages } from '../../analyze/subpackages'
@@ -12,6 +12,37 @@ import { logBuildPackageSizeReport } from '../logBuildPackageSizeReport'
 import { openIde, resolveIdeProjectPath } from '../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
+
+function isSassEmbeddedChild(handle: unknown): handle is ChildProcess {
+  return Boolean(
+    handle
+    && typeof handle === 'object'
+    && 'kill' in handle
+    && 'spawnfile' in handle
+    && typeof (handle as ChildProcess).spawnfile === 'string'
+    && (handle as ChildProcess).spawnfile?.includes('sass-embedded'),
+  )
+}
+
+function terminateStaleSassEmbeddedProcess() {
+  const getHandles = (process as typeof process & { _getActiveHandles?: () => unknown[] })._getActiveHandles
+  const handles = typeof getHandles === 'function' ? getHandles() : undefined
+  if (!Array.isArray(handles)) {
+    return
+  }
+  for (const handle of handles) {
+    if (isSassEmbeddedChild(handle)) {
+      try {
+        handle.kill()
+      }
+      catch { }
+    }
+  }
+}
+
+function emitDashboardEvents(handle: AnalyzeDashboardHandle | undefined, events: DashboardRuntimeEventInput[]) {
+  handle?.emitRuntimeEvents(events)
+}
 
 export function registerBuildCommand(cli: CAC) {
   cli
@@ -71,6 +102,15 @@ export function registerBuildCommand(cli: CAC) {
             cwd: configService.cwd,
             packageManagerAgent: configService.packageManager.agent,
           }) ?? undefined
+          emitDashboardEvents(analyzeHandle, [
+            {
+              kind: 'build',
+              level: 'success',
+              title: 'mini build completed',
+              detail: `生产构建已完成，当前 analyze 结果包含 ${analyzeResult.packages.length} 个包。`,
+              tags: ['build', 'mini'],
+            },
+          ])
         }
       }
       const webConfig = configService.weappWebConfig
@@ -78,8 +118,26 @@ export function registerBuildCommand(cli: CAC) {
         try {
           await webService?.build()
           logger.success(`Web 构建完成，输出目录：${colors.green(configService.relativeCwd(webConfig.outDir))}`)
+          emitDashboardEvents(analyzeHandle, [
+            {
+              kind: 'build',
+              level: 'success',
+              title: 'web build completed',
+              detail: `Web 构建已完成，输出目录 ${configService.relativeCwd(webConfig.outDir)}。`,
+              tags: ['build', 'web'],
+            },
+          ])
         }
         catch (error) {
+          emitDashboardEvents(analyzeHandle, [
+            {
+              kind: 'diagnostic',
+              level: 'error',
+              title: 'web build failed',
+              detail: error instanceof Error ? error.message : String(error),
+              tags: ['build', 'web'],
+            },
+          ])
           logger.error(error)
           throw error
         }
@@ -88,6 +146,15 @@ export function registerBuildCommand(cli: CAC) {
         logBuildAppFinish(configService, undefined, { skipWeb: !targets.runWeb })
       }
       if (options.open && targets.runMini) {
+        emitDashboardEvents(analyzeHandle, [
+          {
+            kind: 'command',
+            level: 'info',
+            title: 'opening ide',
+            detail: '构建完成后准备打开 IDE 项目。',
+            tags: ['ide', 'open'],
+          },
+        ])
         await openIde(configService.platform, resolveIdeProjectPath(configService.mpDistRoot))
       }
 
@@ -97,31 +164,4 @@ export function registerBuildCommand(cli: CAC) {
       ctx.watcherService?.closeAll()
       terminateStaleSassEmbeddedProcess()
     })
-}
-
-function terminateStaleSassEmbeddedProcess() {
-  const getHandles = (process as typeof process & { _getActiveHandles?: () => unknown[] })._getActiveHandles
-  const handles = typeof getHandles === 'function' ? getHandles() : undefined
-  if (!Array.isArray(handles)) {
-    return
-  }
-  for (const handle of handles) {
-    if (isSassEmbeddedChild(handle)) {
-      try {
-        handle.kill()
-      }
-      catch { }
-    }
-  }
-}
-
-function isSassEmbeddedChild(handle: unknown): handle is ChildProcess {
-  return Boolean(
-    handle
-    && typeof handle === 'object'
-    && 'kill' in handle
-    && 'spawnfile' in handle
-    && typeof (handle as ChildProcess).spawnfile === 'string'
-    && (handle as ChildProcess).spawnfile?.includes('sass-embedded'),
-  )
 }

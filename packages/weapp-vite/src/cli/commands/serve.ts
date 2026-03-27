@@ -2,7 +2,7 @@ import type { CAC } from 'cac'
 import type { RolldownWatcher } from 'rolldown'
 import type { ViteDevServer } from 'vite'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
-import type { AnalyzeDashboardHandle } from '../analyze/dashboard'
+import type { AnalyzeDashboardHandle, DashboardRuntimeEventInput } from '../analyze/dashboard'
 import type { GlobalCLIOptions } from '../types'
 import fs from 'node:fs/promises'
 import process from 'node:process'
@@ -16,6 +16,10 @@ import { logBuildAppFinish } from '../logBuildAppFinish'
 import { openIde, resolveIdeProjectRoot } from '../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
+
+function emitDashboardEvents(handle: AnalyzeDashboardHandle | undefined, events: DashboardRuntimeEventInput[]) {
+  handle?.emitRuntimeEvents(events)
+}
 
 function resolveWebHost(host: GlobalCLIOptions['host']) {
   if (host === undefined) {
@@ -258,6 +262,15 @@ export function registerServeCommand(cli: CAC) {
             packageManagerAgent: configService.packageManager.agent,
             silentStartupLog: true,
           }) ?? undefined
+          emitDashboardEvents(analyzeHandle, [
+            {
+              kind: 'command',
+              level: 'success',
+              title: 'dev ui session ready',
+              detail: `开发态分析面板已启动，当前包含 ${initialResult.packages.length} 个包。`,
+              tags: ['dev', 'ui'],
+            },
+          ])
 
           let updating = false
           if (analyzeHandle && buildResult && typeof (buildResult as RolldownWatcher).on === 'function') {
@@ -266,6 +279,15 @@ export function registerServeCommand(cli: CAC) {
               if (event.code !== 'END' || updating) {
                 return
               }
+              emitDashboardEvents(analyzeHandle, [
+                {
+                  kind: 'hmr',
+                  level: 'info',
+                  title: 'watch rebuild finished',
+                  detail: '检测到新的构建结束事件，正在刷新 analyze 面板。',
+                  tags: ['watch', 'rebuild'],
+                },
+              ])
               updating = true
               triggerAnalyzeUpdate().finally(() => {
                 updating = false
@@ -283,8 +305,26 @@ export function registerServeCommand(cli: CAC) {
       if (targets.runWeb) {
         try {
           webServer = await webService?.startDevServer()
+          emitDashboardEvents(analyzeHandle, [
+            {
+              kind: 'system',
+              level: 'success',
+              title: 'web dev server started',
+              detail: 'Web 开发服务器已启动，可与小程序调试 UI 并行工作。',
+              tags: ['dev', 'web'],
+            },
+          ])
         }
         catch (error) {
+          emitDashboardEvents(analyzeHandle, [
+            {
+              kind: 'diagnostic',
+              level: 'error',
+              title: 'web dev server failed',
+              detail: error instanceof Error ? error.message : String(error),
+              tags: ['dev', 'web'],
+            },
+          ])
           logger.error(error)
           throw error
         }
@@ -299,6 +339,15 @@ export function registerServeCommand(cli: CAC) {
         logBuildAppFinish(configService, webServer, { skipMini: true })
       }
       if (options.open && targets.runMini) {
+        emitDashboardEvents(analyzeHandle, [
+          {
+            kind: 'command',
+            level: 'info',
+            title: 'opening ide',
+            detail: '开发服务已就绪，准备打开 IDE 项目。',
+            tags: ['ide', 'open'],
+          },
+        ])
         const openedByForwardConsole = await maybeStartForwardConsole({
           platform: configService.platform,
           mpDistRoot: configService.mpDistRoot,

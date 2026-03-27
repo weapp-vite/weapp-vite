@@ -180,7 +180,7 @@ describe('analyze dashboard', () => {
     const updatePayload = createAnalyzeResult('next')
     await handle?.update(updatePayload)
     const sendCalls = server.ws?.send.mock.calls ?? []
-    expect(server.ws?.send).toHaveBeenLastCalledWith({
+    expect(sendCalls.at(-2)?.[0]).toEqual({
       type: 'custom',
       event: 'weapp-dashboard:event',
       data: [
@@ -191,7 +191,7 @@ describe('analyze dashboard', () => {
         }),
       ],
     })
-    expect(sendCalls.at(-2)?.[0]).toEqual({
+    expect(server.ws?.send).toHaveBeenLastCalledWith({
       type: 'custom',
       event: 'weapp-analyze:update',
       data: updatePayload,
@@ -215,6 +215,27 @@ describe('analyze dashboard', () => {
     })
     expect(bridgeScript?.children).toContain(`import.meta.hot.on('weapp-analyze:update'`)
     expect(bridgeScript?.children).toContain(`import.meta.hot.on('weapp-dashboard:event'`)
+
+    handle?.emitRuntimeEvents([
+      {
+        kind: 'system',
+        level: 'warning',
+        title: 'custom runtime warning',
+        detail: 'custom event',
+        tags: ['custom'],
+      },
+    ])
+    expect(server.ws?.send).toHaveBeenLastCalledWith({
+      type: 'custom',
+      event: 'weapp-dashboard:event',
+      data: [
+        expect.objectContaining({
+          kind: 'system',
+          level: 'warning',
+          title: 'custom runtime warning',
+        }),
+      ],
+    })
 
     await handle?.close()
     expect(server.close).toHaveBeenCalledTimes(1)

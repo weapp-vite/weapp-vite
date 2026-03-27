@@ -32,6 +32,15 @@ interface DashboardRuntimeEvent {
   tags?: string[]
 }
 
+export interface DashboardRuntimeEventInput {
+  kind: DashboardRuntimeEventKind
+  level: DashboardRuntimeEventLevel
+  title: string
+  detail: string
+  source?: string
+  tags?: string[]
+}
+
 function createInstallCommand(agent: PackageManagerAgent | undefined) {
   const resolved = resolveCommand(agent ?? 'npm', 'install', [ANALYZE_DASHBOARD_PACKAGE_NAME])
   if (!resolved) {
@@ -57,14 +66,7 @@ function formatEventTimestamp(date = new Date()) {
   return date.toLocaleTimeString('zh-CN', { hour12: false })
 }
 
-function createDashboardRuntimeEvent(input: {
-  kind: DashboardRuntimeEventKind
-  level: DashboardRuntimeEventLevel
-  title: string
-  detail: string
-  source?: string
-  tags?: string[]
-}) {
+function createDashboardRuntimeEvent(input: DashboardRuntimeEventInput) {
   return {
     id: `dashboard:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
     kind: input.kind,
@@ -296,6 +298,7 @@ async function waitForServerExit(server: ViteDevServer) {
 
 export interface AnalyzeDashboardHandle {
   update: (result: AnalyzeSubpackagesResult) => Promise<void>
+  emitRuntimeEvents: (events: DashboardRuntimeEventInput[]) => void
   waitForExit: () => Promise<void>
   close: () => Promise<void>
   urls: string[]
@@ -393,31 +396,45 @@ export async function startAnalyzeDashboard(
   }
   broadcastAnalyzeResult?.(state.current)
 
+  const emitRuntimeEvents = (events: DashboardRuntimeEventInput[]) => {
+    if (events.length === 0) {
+      return
+    }
+
+    const nextEvents = events.map(event => createDashboardRuntimeEvent(event))
+    runtimeEvents.current = [...nextEvents, ...runtimeEvents.current].slice(0, 24)
+
+    if (serverRef) {
+      serverRef.ws.send({
+        type: 'custom',
+        event: DASHBOARD_EVENT_NAME,
+        data: nextEvents,
+      })
+    }
+  }
+
   const handle: AnalyzeDashboardHandle = {
     async update(nextResult) {
       state.current = nextResult
-      const nextEvent = createDashboardRuntimeEvent({
-        kind: 'build',
-        level: 'info',
-        title: 'analyze payload refreshed',
-        detail: `已推送新的 analyze 结果，当前包含 ${nextResult.packages.length} 个包与 ${nextResult.modules.length} 个模块。`,
-        tags: ['analyze', 'refresh'],
-      })
-      runtimeEvents.current = [nextEvent, ...runtimeEvents.current].slice(0, 24)
+      emitRuntimeEvents([
+        {
+          kind: 'build',
+          level: 'info',
+          title: 'analyze payload refreshed',
+          detail: `已推送新的 analyze 结果，当前包含 ${nextResult.packages.length} 个包与 ${nextResult.modules.length} 个模块。`,
+          tags: ['analyze', 'refresh'],
+        },
+      ])
       if (serverRef) {
         serverRef.ws.send({
           type: 'custom',
           event: 'weapp-analyze:update',
           data: nextResult,
         })
-        serverRef.ws.send({
-          type: 'custom',
-          event: DASHBOARD_EVENT_NAME,
-          data: [nextEvent],
-        })
       }
       broadcastAnalyzeResult?.(nextResult)
     },
+    emitRuntimeEvents,
     waitForExit: () => waitPromise,
     close: async () => {
       await server.close()
