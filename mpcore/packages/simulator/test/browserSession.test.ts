@@ -584,6 +584,89 @@ Page({
     ])
   })
 
+  it('supports share menu state transitions in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  showShareMenuLab() {
+    wx.showShareMenu({
+      withShareTicket: true,
+      success: () => {
+        this.push('show:success')
+      }
+    })
+  },
+  updateShareMenuLab() {
+    wx.updateShareMenu({
+      isUpdatableMessage: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+      complete: (result) => {
+        this.push('update:complete:' + (result?.errMsg ?? 'none'))
+      }
+    })
+  },
+  hideShareMenuLab() {
+    wx.hideShareMenu({
+      complete: (result) => {
+        this.push('hide:complete:' + (result?.errMsg ?? 'none'))
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{logs.0}}</view><view>{{logs.1}}</view><view>{{logs.2}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(session.getShareMenu()).toEqual({
+      isUpdatableMessage: false,
+      menus: [],
+      visible: false,
+      withShareTicket: false,
+    })
+
+    page.showShareMenuLab()
+    expect(session.getShareMenu()).toEqual({
+      isUpdatableMessage: false,
+      menus: [],
+      visible: true,
+      withShareTicket: true,
+    })
+
+    page.updateShareMenuLab()
+    expect(session.getShareMenu()).toEqual({
+      isUpdatableMessage: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+      visible: true,
+      withShareTicket: true,
+    })
+
+    page.hideShareMenuLab()
+    expect(session.getShareMenu()).toEqual({
+      isUpdatableMessage: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+      visible: false,
+      withShareTicket: true,
+    })
+    expect(page.data.logs).toEqual([
+      'show:success',
+      'update:complete:updateShareMenu:ok',
+      'hide:complete:hideShareMenu:ok',
+    ])
+  })
+
   it('renders custom components and routes triggerEvent back to the page', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

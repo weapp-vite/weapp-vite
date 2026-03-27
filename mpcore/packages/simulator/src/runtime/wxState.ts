@@ -6,6 +6,7 @@ import type {
   HeadlessWxRequestOption,
   HeadlessWxRequestSuccessResult,
   HeadlessWxRequestTask,
+  HeadlessWxShareMenuOption,
   HeadlessWxShowActionSheetOption,
   HeadlessWxShowActionSheetResult,
   HeadlessWxShowLoadingOption,
@@ -28,6 +29,13 @@ export interface HeadlessWxToastSnapshot {
 }
 
 export interface HeadlessWxNetworkSnapshot extends HeadlessWxNetworkStatusChangeResult {}
+
+export interface HeadlessWxShareMenuSnapshot {
+  isUpdatableMessage: boolean
+  menus: string[]
+  visible: boolean
+  withShareTicket: boolean
+}
 
 export interface HeadlessWxActionSheetMockDefinition {
   cancel?: boolean
@@ -80,6 +88,15 @@ const DEFAULT_MODAL_CANCEL_COLOR = '#000000'
 const DEFAULT_MODAL_CANCEL_TEXT = '取消'
 const DEFAULT_MODAL_CONFIRM_COLOR = '#576B95'
 const DEFAULT_MODAL_CONFIRM_TEXT = '确定'
+
+function cloneShareMenuSnapshot(snapshot: HeadlessWxShareMenuSnapshot) {
+  return {
+    isUpdatableMessage: snapshot.isUpdatableMessage,
+    menus: [...snapshot.menus],
+    visible: snapshot.visible,
+    withShareTicket: snapshot.withShareTicket,
+  }
+}
 
 function createNetworkSnapshot(networkType: HeadlessWxNetworkType): HeadlessWxNetworkSnapshot {
   return {
@@ -156,6 +173,12 @@ export function createHeadlessWxState() {
   const storage = new Map<string, unknown>()
   let loading: HeadlessWxLoadingSnapshot | null = null
   let networkType: HeadlessWxNetworkType = 'wifi'
+  let shareMenu: HeadlessWxShareMenuSnapshot = {
+    isUpdatableMessage: false,
+    menus: [],
+    visible: false,
+    withShareTicket: false,
+  }
   let toast: HeadlessWxToastSnapshot | null = null
 
   return {
@@ -216,8 +239,20 @@ export function createHeadlessWxState() {
     getStorageSync(key: string) {
       return cloneValue(storage.get(key))
     },
+    getShareMenu() {
+      return cloneShareMenuSnapshot(shareMenu)
+    },
     getLoading() {
       return loading ? { ...loading } : null
+    },
+    hideShareMenu() {
+      shareMenu = {
+        ...shareMenu,
+        visible: false,
+      }
+      return {
+        errMsg: 'hideShareMenu:ok',
+      }
     },
     getToast() {
       return toast ? { ...toast } : null
@@ -380,6 +415,19 @@ export function createHeadlessWxState() {
 
       return result
     },
+    showShareMenu(option: HeadlessWxShareMenuOption = {}) {
+      shareMenu = {
+        isUpdatableMessage: Boolean(option.isUpdatableMessage),
+        menus: Array.isArray(option.menus)
+          ? option.menus.filter((item): item is string => typeof item === 'string')
+          : shareMenu.menus,
+        visible: true,
+        withShareTicket: Boolean(option.withShareTicket),
+      }
+      return {
+        errMsg: 'showShareMenu:ok',
+      }
+    },
     showLoading(option: HeadlessWxShowLoadingOption) {
       loading = {
         mask: Boolean(option.mask),
@@ -434,6 +482,23 @@ export function createHeadlessWxState() {
       }
       return {
         errMsg: 'showToast:ok',
+      }
+    },
+    updateShareMenu(option: HeadlessWxShareMenuOption = {}) {
+      shareMenu = {
+        isUpdatableMessage: option.isUpdatableMessage == null
+          ? shareMenu.isUpdatableMessage
+          : Boolean(option.isUpdatableMessage),
+        menus: Array.isArray(option.menus)
+          ? option.menus.filter((item): item is string => typeof item === 'string')
+          : shareMenu.menus,
+        visible: true,
+        withShareTicket: option.withShareTicket == null
+          ? shareMenu.withShareTicket
+          : Boolean(option.withShareTicket),
+      }
+      return {
+        errMsg: 'updateShareMenu:ok',
       }
     },
   }

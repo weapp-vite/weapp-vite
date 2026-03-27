@@ -144,6 +144,12 @@ export interface HeadlessWxShowNavigationBarLoadingOption extends HeadlessWxCall
 
 export interface HeadlessWxHideNavigationBarLoadingOption extends HeadlessWxCallbackOption<{ errMsg: string }> {}
 
+export interface HeadlessWxShareMenuOption extends HeadlessWxCallbackOption<{ errMsg: string }> {
+  isUpdatableMessage?: boolean
+  menus?: string[]
+  withShareTicket?: boolean
+}
+
 export interface HeadlessWxShowActionSheetResult {
   errMsg: string
   tapIndex: number
@@ -226,7 +232,9 @@ export interface HeadlessWxDriver {
   setStorageSync: (key: string, value: unknown) => void
   setNavigationBarColor: (option: HeadlessWxSetNavigationBarColorOption) => { errMsg: string }
   setNavigationBarTitle: (option: HeadlessWxSetNavigationBarTitleOption) => { errMsg: string }
+  hideShareMenu: () => { errMsg: string }
   hideNavigationBarLoading: () => { errMsg: string }
+  showShareMenu: (option: HeadlessWxShareMenuOption) => { errMsg: string }
   showNavigationBarLoading: () => { errMsg: string }
   showActionSheet: (option: HeadlessWxShowActionSheetOption) => HeadlessWxShowActionSheetResult
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string }
@@ -234,6 +242,7 @@ export interface HeadlessWxDriver {
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string }
   stopPullDownRefresh: () => void
   switchTab: (option: HeadlessWxNavigateOption) => unknown
+  updateShareMenu: (option: HeadlessWxShareMenuOption) => { errMsg: string }
 }
 
 export interface HeadlessWx {
@@ -271,7 +280,9 @@ export interface HeadlessWx {
   setStorageSync: (key: string, value: unknown) => void
   setNavigationBarColor: (option: HeadlessWxSetNavigationBarColorOption) => { errMsg: string } | undefined
   setNavigationBarTitle: (option: HeadlessWxSetNavigationBarTitleOption) => { errMsg: string } | undefined
+  hideShareMenu: (option?: HeadlessWxCallbackOption<{ errMsg: string }>) => { errMsg: string } | undefined
   hideNavigationBarLoading: (option?: HeadlessWxHideNavigationBarLoadingOption) => { errMsg: string } | undefined
+  showShareMenu: (option?: HeadlessWxShareMenuOption) => { errMsg: string } | undefined
   showNavigationBarLoading: (option?: HeadlessWxShowNavigationBarLoadingOption) => { errMsg: string } | undefined
   showActionSheet: (option: HeadlessWxShowActionSheetOption) => HeadlessWxShowActionSheetResult | undefined
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string } | undefined
@@ -279,6 +290,7 @@ export interface HeadlessWx {
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string } | undefined
   stopPullDownRefresh: () => void
   switchTab: (option: HeadlessWxNavigateOption) => unknown
+  updateShareMenu: (option?: HeadlessWxShareMenuOption) => { errMsg: string } | undefined
 }
 
 function invokeWxApi<TOption extends HeadlessWxCallbackOption<TResult>, TResult>(
@@ -465,7 +477,9 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     setStorageSync: true,
     setNavigationBarColor: true,
     setNavigationBarTitle: true,
+    hideShareMenu: true,
     hideNavigationBarLoading: true,
+    showShareMenu: true,
     showNavigationBarLoading: true,
     showActionSheet: true,
     showLoading: true,
@@ -473,6 +487,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     showToast: true,
     stopPullDownRefresh: true,
     switchTab: true,
+    updateShareMenu: true,
   }
 
   return {
@@ -538,7 +553,9 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     setStorageSync: (key, value) => driver.setStorageSync(key, value),
     setNavigationBarColor: option => invokeWxApi(() => driver.setNavigationBarColor(option), option),
     setNavigationBarTitle: option => invokeWxApi(() => driver.setNavigationBarTitle(option), option),
+    hideShareMenu: option => invokeWxApi(() => driver.hideShareMenu(), option),
     hideNavigationBarLoading: option => invokeWxApi(() => driver.hideNavigationBarLoading(), option),
+    showShareMenu: option => invokeWxApi(() => driver.showShareMenu(option ?? {}), option),
     showNavigationBarLoading: option => invokeWxApi(() => driver.showNavigationBarLoading(), option),
     showActionSheet: option => invokeWxApi(() => driver.showActionSheet(option), option),
     showLoading: option => invokeWxApi(() => driver.showLoading(option), option),
@@ -548,5 +565,6 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     switchTab: option => invokeWxApi(() => {
       driver.switchTab(option)
     }, option),
+    updateShareMenu: option => invokeWxApi(() => driver.updateShareMenu(option ?? {}), option),
   }
 }

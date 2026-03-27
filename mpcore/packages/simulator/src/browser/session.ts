@@ -193,7 +193,9 @@ export class BrowserHeadlessSession {
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
         setNavigationBarColor: option => this.setNavigationBarColor(option),
         setNavigationBarTitle: option => this.setNavigationBarTitle(option.title),
+        hideShareMenu: () => this.wxState.hideShareMenu(),
         hideNavigationBarLoading: () => this.hideNavigationBarLoading(),
+        showShareMenu: option => this.wxState.showShareMenu(option),
         showNavigationBarLoading: () => this.showNavigationBarLoading(),
         showActionSheet: option => this.wxState.showActionSheet(option),
         showLoading: option => this.wxState.showLoading(option),
@@ -201,6 +203,7 @@ export class BrowserHeadlessSession {
         showToast: option => this.wxState.showToast(option),
         stopPullDownRefresh: () => this.stopPullDownRefresh(),
         switchTab: option => this.switchTab(option.url),
+        updateShareMenu: option => this.wxState.updateShareMenu(option),
       },
     )
   }
@@ -232,6 +235,10 @@ export class BrowserHeadlessSession {
 
   getStorageSnapshot() {
     return this.wxState.getStorageSnapshot()
+  }
+
+  getShareMenu() {
+    return this.wxState.getShareMenu()
   }
 
   getStorageInfo() {

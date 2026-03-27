@@ -1034,4 +1034,94 @@ Page({
       },
     ])
   })
+
+  it('supports share menu state transitions', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-share-menu-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  showShareMenuLab() {
+    wx.showShareMenu({
+      withShareTicket: true,
+      success: () => {
+        this.push('show:success')
+      }
+    })
+  },
+  updateShareMenuLab() {
+    wx.updateShareMenu({
+      isUpdatableMessage: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+      complete: (result) => {
+        this.push('update:complete:' + (result?.errMsg ?? 'none'))
+      }
+    })
+  },
+  hideShareMenuLab() {
+    wx.hideShareMenu({
+      complete: (result) => {
+        this.push('hide:complete:' + (result?.errMsg ?? 'none'))
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>share</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(session.getShareMenu()).toEqual({
+      isUpdatableMessage: false,
+      menus: [],
+      visible: false,
+      withShareTicket: false,
+    })
+
+    page.showShareMenuLab()
+    expect(session.getShareMenu()).toEqual({
+      isUpdatableMessage: false,
+      menus: [],
+      visible: true,
+      withShareTicket: true,
+    })
+
+    page.updateShareMenuLab()
+    expect(session.getShareMenu()).toEqual({
+      isUpdatableMessage: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+      visible: true,
+      withShareTicket: true,
+    })
+
+    page.hideShareMenuLab()
+    expect(session.getShareMenu()).toEqual({
+      isUpdatableMessage: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+      visible: false,
+      withShareTicket: true,
+    })
+    expect(page.data.logs).toEqual([
+      'show:success',
+      'update:complete:updateShareMenu:ok',
+      'hide:complete:hideShareMenu:ok',
+    ])
+  })
 })
