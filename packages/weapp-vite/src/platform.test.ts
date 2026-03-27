@@ -7,6 +7,7 @@ import {
   getPlatformAppTypesPackage,
   getPlatformNpmDistDirName,
   getPlatformNpmImportPrefix,
+  getPlatformOutputExtensions,
   getPlatformScriptModuleTag,
   getPreservedNpmDirNames,
   getProjectPlatformOptions,
@@ -94,6 +95,20 @@ describe('platform adapter registry', () => {
     expect(getDefaultIdeProjectRoot()).toBeUndefined()
     expect(getDefaultIdeProjectRoot('weapp')).toBeUndefined()
     expect(getDefaultIdeProjectRoot('alipay')).toBe('dist/alipay/dist')
+    expect(getPlatformOutputExtensions('weapp')).toEqual({
+      js: 'js',
+      json: 'json',
+      wxml: 'wxml',
+      wxss: 'wxss',
+      wxs: 'wxs',
+    })
+    expect(getPlatformOutputExtensions('alipay')).toEqual({
+      js: 'js',
+      json: 'json',
+      wxml: 'axml',
+      wxss: 'acss',
+      wxs: 'sjs',
+    })
     expect(getProjectPlatformOptions('weapp')).toEqual({
       projectConfigFileName: 'project.config.json',
       projectConfigRootKeys: ['miniprogramRoot', 'srcMiniprogramRoot'],

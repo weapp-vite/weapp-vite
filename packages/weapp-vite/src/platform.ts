@@ -1,4 +1,4 @@
-import type { MiniProgramPlatformAdapter } from './platforms/types'
+import type { MiniProgramPlatformAdapter, OutputExtensions } from './platforms/types'
 import type { MpPlatform } from './types'
 import { MINI_PROGRAM_PLATFORM_ADAPTERS } from './platforms/adapters'
 
@@ -97,6 +97,12 @@ export function getPreservedNpmDirNames(
   },
 ): readonly string[] {
   return getMiniProgramPlatformAdapter(platform).resolvePreservedNpmDirNames(options)
+}
+
+export function getPlatformOutputExtensions(platform: MpPlatform): OutputExtensions {
+  return {
+    ...getMiniProgramPlatformAdapter(platform).outputExtensions,
+  }
 }
 
 export function shouldNormalizeUsingComponents(platform?: MpPlatform): boolean {
