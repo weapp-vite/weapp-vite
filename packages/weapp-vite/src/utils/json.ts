@@ -2,6 +2,10 @@ import type { AliasOptions, MpPlatform, ResolvedAlias, SubPackage } from '@/type
 import { get, isObject, set } from '@weapp-core/shared'
 import { parse as parseJson, stringify } from 'comment-json'
 import path from 'pathe'
+import {
+  shouldFillComponentGenericsDefault,
+  shouldNormalizeUsingComponents,
+} from '../platform'
 import { getAlipayNpmImportPrefix, normalizeAlipayNpmImportPath } from './alipayNpm'
 import { changeFileExtension } from './file'
 import { toPosixPath } from './path'
@@ -18,13 +22,21 @@ interface ResolveJsonOptions {
 }
 
 export const ALIPAY_GENERIC_COMPONENT_PLACEHOLDER = './__weapp_vite_generic_component'
+const JSON_FILE_JS_EXTENSION_RE = /\.[jt]s$/
+const COMPONENT_NAME_LOWER_TO_UPPER_RE = /([a-z0-9])([A-Z])/g
+const COMPONENT_NAME_MULTI_UPPER_RE = /([A-Z]+)([A-Z][a-z])/g
+const COMPONENT_NAME_HAS_UPPER_RE = /[A-Z]/
+const WINDOWS_PATH_SEPARATORS_RE = /\\/g
+const NPM_PROTOCOL_RE = /^npm:/
+const PLUGIN_PROTOCOL_RE = /^plugin:\/\//
+const EXPLICIT_ALIPAY_NPM_DIR_RE = /^\/(?:miniprogram_npm|node_modules)\//
 
 export function parseCommentJson(json: string) {
   return parseJson(json, undefined, true)
 }
 
 export function jsonFileRemoveJsExtension(fileName: string) {
-  return fileName.replace(/\.[jt]s$/, '')
+  return fileName.replace(JSON_FILE_JS_EXTENSION_RE, '')
 }
 
 export function stringifyJson(value: object, replacer?: (
@@ -85,31 +97,9 @@ export function resolveImportee(importee: string, jsonPath: string, aliasEntries
 
 function toKebabCaseComponentName(name: string) {
   return name
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .replace(COMPONENT_NAME_LOWER_TO_UPPER_RE, '$1-$2')
+    .replace(COMPONENT_NAME_MULTI_UPPER_RE, '$1-$2')
     .toLowerCase()
-}
-
-function normalizeUsingComponentsByPlatform(
-  usingComponents: Record<string, string>,
-  platform?: MpPlatform,
-  options?: ResolveJsonOptions,
-) {
-  if (platform !== 'alipay') {
-    return usingComponents
-  }
-
-  const normalized: Record<string, string> = {}
-  for (const [key, value] of Object.entries(usingComponents)) {
-    const nextKey = /[A-Z]/.test(key)
-      ? toKebabCaseComponentName(key)
-      : key
-    const nextValue = normalizeUsingComponentPathForAlipay(value, options?.dependencies, options?.alipayNpmMode)
-    if (!Reflect.has(normalized, nextKey)) {
-      normalized[nextKey] = nextValue
-    }
-  }
-  return normalized
 }
 
 function hasDependencyPrefix(dependencies: Record<string, string> | undefined, importee: string) {
@@ -117,7 +107,7 @@ function hasDependencyPrefix(dependencies: Record<string, string> | undefined, i
     return false
   }
 
-  const normalizedImportee = importee.replace(/\\/g, '/').replace(/^npm:/, '')
+  const normalizedImportee = importee.replace(WINDOWS_PATH_SEPARATORS_RE, '/').replace(NPM_PROTOCOL_RE, '')
   const importeeTokens = normalizedImportee.split('/').filter(Boolean)
 
   if (importeeTokens.length === 0) {
@@ -125,7 +115,7 @@ function hasDependencyPrefix(dependencies: Record<string, string> | undefined, i
   }
 
   return Object.keys(dependencies).some((dep) => {
-    const depTokens = dep.replace(/\\/g, '/').split('/').filter(Boolean)
+    const depTokens = dep.replace(WINDOWS_PATH_SEPARATORS_RE, '/').split('/').filter(Boolean)
     if (depTokens.length === 0 || depTokens.length > importeeTokens.length) {
       return false
     }
@@ -140,11 +130,56 @@ function hasDependencyPrefix(dependencies: Record<string, string> | undefined, i
   })
 }
 
+function normalizeUsingComponentPathForAlipay(importee: string, dependencies?: Record<string, string>, mode?: string) {
+  const raw = importee.trim()
+  if (!raw || PLUGIN_PROTOCOL_RE.test(raw)) {
+    return importee
+  }
+
+  const normalized = raw.replace(NPM_PROTOCOL_RE, '')
+  const npmPrefix = getAlipayNpmImportPrefix(mode)
+  if (EXPLICIT_ALIPAY_NPM_DIR_RE.test(normalized)) {
+    return normalizeAlipayNpmImportPath(normalized, mode)
+  }
+
+  if (!hasDependencyPrefix(dependencies, normalized)) {
+    return importee
+  }
+
+  if (normalized.startsWith(npmPrefix)) {
+    return normalized
+  }
+
+  return normalizeAlipayNpmImportPath(normalized, mode)
+}
+
+function normalizeUsingComponentsByPlatform(
+  usingComponents: Record<string, string>,
+  platform?: MpPlatform,
+  options?: ResolveJsonOptions,
+) {
+  if (!shouldNormalizeUsingComponents(platform)) {
+    return usingComponents
+  }
+
+  const normalized: Record<string, string> = {}
+  for (const [key, value] of Object.entries(usingComponents)) {
+    const nextKey = COMPONENT_NAME_HAS_UPPER_RE.test(key)
+      ? toKebabCaseComponentName(key)
+      : key
+    const nextValue = normalizeUsingComponentPathForAlipay(value, options?.dependencies, options?.alipayNpmMode)
+    if (!Reflect.has(normalized, nextKey)) {
+      normalized[nextKey] = nextValue
+    }
+  }
+  return normalized
+}
+
 function normalizeComponentGenericsByPlatform(
   componentGenerics: Record<string, any>,
   platform?: MpPlatform,
 ) {
-  if (platform !== 'alipay') {
+  if (!shouldFillComponentGenericsDefault(platform)) {
     return componentGenerics
   }
 
@@ -168,29 +203,6 @@ function normalizeComponentGenericsByPlatform(
   }
 
   return normalized
-}
-
-function normalizeUsingComponentPathForAlipay(importee: string, dependencies?: Record<string, string>, mode?: string) {
-  const raw = importee.trim()
-  if (!raw || /^plugin:\/\//.test(raw)) {
-    return importee
-  }
-
-  const normalized = raw.replace(/^npm:/, '')
-  const npmPrefix = getAlipayNpmImportPrefix(mode)
-  if (normalized.startsWith('/miniprogram_npm/') || normalized.startsWith('/node_modules/')) {
-    return normalizeAlipayNpmImportPath(normalized, mode)
-  }
-
-  if (!hasDependencyPrefix(dependencies, normalized)) {
-    return importee
-  }
-
-  if (normalized.startsWith(npmPrefix)) {
-    return normalized
-  }
-
-  return normalizeAlipayNpmImportPath(normalized, mode)
 }
 
 export function resolveJson(entry: JsonResolvableEntry, aliasEntries?: ResolvedAlias[], platform?: MpPlatform, options?: ResolveJsonOptions) {

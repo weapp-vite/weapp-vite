@@ -6,12 +6,19 @@ import type { NpmBuildOptions } from '../../../types'
 import { isBuiltin } from 'node:module'
 import process from 'node:process'
 import { defu, isObject } from '@weapp-core/shared'
+/* eslint-disable e18e/ban-dependencies -- fs-extra is still the project-standard file helper in this module. */
 import fs from 'fs-extra'
 import { getPackageInfo, resolveModule } from 'local-pkg'
 import path from 'pathe'
 import { build as viteBuild } from 'vite'
 import { logger } from '../../../context/shared'
-import { getAlipayNpmDistDirName } from '../../../utils/alipayNpm'
+import {
+  getPlatformNpmDistDirName,
+  shouldCopyEsModuleDirectory,
+  shouldHoistNestedMiniprogramDependencies,
+  shouldNormalizeMiniprogramPackage,
+  shouldRebuildCachedMiniprogramPackage,
+} from '../../../platform'
 import {
   copyEsModuleDirectoryForAlipay,
   hoistNestedMiniprogramDependenciesForAlipay,
@@ -208,11 +215,13 @@ export function createPackageBuilder(
       }
 
       if (await shouldSkipBuild(destOutDir, isDependenciesCacheOutdate)) {
-        const alipayNpmDistDirName = getAlipayNpmDistDirName(ctx.configService.weappViteConfig?.npm?.alipayNpmMode)
-        const shouldRebuildAlipayPackage = ctx.configService.platform === 'alipay'
-          ? await shouldRebuildCachedAlipayMiniprogramPackage(destOutDir, outDir, rootPath, alipayNpmDistDirName)
+        const platformNpmDistDirName = getPlatformNpmDistDirName(ctx.configService.platform, {
+          alipayNpmMode: ctx.configService.weappViteConfig?.npm?.alipayNpmMode,
+        })
+        const shouldRebuildPackage = shouldRebuildCachedMiniprogramPackage(ctx.configService.platform)
+          ? await shouldRebuildCachedAlipayMiniprogramPackage(destOutDir, outDir, rootPath, platformNpmDistDirName)
           : false
-        if (!shouldRebuildAlipayPackage) {
+        if (!shouldRebuildPackage) {
           npmLogger.info(`[npm] 依赖 \`${dep}\` 未发生变化，跳过处理!`)
           return
         }
@@ -223,13 +232,17 @@ export function createPackageBuilder(
         name: dep,
       })
 
-      if (ctx.configService.platform === 'alipay') {
-        const alipayNpmDistDirName = getAlipayNpmDistDirName(ctx.configService.weappViteConfig?.npm?.alipayNpmMode)
-        if (alipayNpmDistDirName === 'node_modules') {
+      if (shouldNormalizeMiniprogramPackage(ctx.configService.platform)) {
+        const platformNpmDistDirName = getPlatformNpmDistDirName(ctx.configService.platform, {
+          alipayNpmMode: ctx.configService.weappViteConfig?.npm?.alipayNpmMode,
+        })
+        if (shouldCopyEsModuleDirectory(ctx.configService.platform) && platformNpmDistDirName === 'node_modules') {
           await copyEsModuleDirectoryForAlipay(rootPath, destOutDir)
         }
         await normalizeMiniprogramPackageForAlipay(destOutDir)
-        await hoistNestedMiniprogramDependenciesForAlipay(destOutDir, outDir)
+        if (shouldHoistNestedMiniprogramDependencies(ctx.configService.platform)) {
+          await hoistNestedMiniprogramDependenciesForAlipay(destOutDir, outDir)
+        }
       }
 
       if (keys.length > 0) {

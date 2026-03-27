@@ -4,11 +4,18 @@ import {
   DEFAULT_MP_PLATFORM,
   getDefaultIdeProjectRoot,
   getMiniProgramPlatformAdapter,
+  getPlatformNpmDistDirName,
   getPreservedNpmDirNames,
   MINI_PLATFORM_ALIASES,
   normalizeMiniPlatform,
   resolveMiniPlatform,
+  shouldCopyEsModuleDirectory,
+  shouldFillComponentGenericsDefault,
+  shouldHoistNestedMiniprogramDependencies,
+  shouldNormalizeMiniprogramPackage,
+  shouldNormalizeUsingComponents,
   shouldPassPlatformArgToIdeOpen,
+  shouldRebuildCachedMiniprogramPackage,
 } from './platform'
 
 describe('platform adapter registry', () => {
@@ -72,9 +79,23 @@ describe('platform adapter registry', () => {
     expect(getDefaultIdeProjectRoot()).toBeUndefined()
     expect(getDefaultIdeProjectRoot('weapp')).toBeUndefined()
     expect(getDefaultIdeProjectRoot('alipay')).toBe('dist/alipay/dist')
+    expect(shouldNormalizeUsingComponents('weapp')).toBe(false)
+    expect(shouldNormalizeUsingComponents('alipay')).toBe(true)
+    expect(shouldFillComponentGenericsDefault('weapp')).toBe(false)
+    expect(shouldFillComponentGenericsDefault('alipay')).toBe(true)
+    expect(getPlatformNpmDistDirName('weapp')).toBe('miniprogram_npm')
+    expect(getPlatformNpmDistDirName('alipay', { alipayNpmMode: 'node_modules' })).toBe('node_modules')
     expect(getPreservedNpmDirNames('weapp')).toEqual(['miniprogram_npm'])
     expect(getPreservedNpmDirNames('alipay', { alipayNpmMode: 'miniprogram_npm' })).toEqual(['miniprogram_npm'])
     expect(getPreservedNpmDirNames('alipay', { alipayNpmMode: 'node_modules' })).toEqual(['node_modules'])
+    expect(shouldRebuildCachedMiniprogramPackage('weapp')).toBe(false)
+    expect(shouldRebuildCachedMiniprogramPackage('alipay')).toBe(true)
+    expect(shouldNormalizeMiniprogramPackage('weapp')).toBe(false)
+    expect(shouldNormalizeMiniprogramPackage('alipay')).toBe(true)
+    expect(shouldCopyEsModuleDirectory('weapp')).toBe(false)
+    expect(shouldCopyEsModuleDirectory('alipay')).toBe(true)
+    expect(shouldHoistNestedMiniprogramDependencies('weapp')).toBe(false)
+    expect(shouldHoistNestedMiniprogramDependencies('alipay')).toBe(true)
   })
 
   it('throws for unsupported platform ids', () => {
