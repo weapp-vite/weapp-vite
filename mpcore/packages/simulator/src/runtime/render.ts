@@ -710,6 +710,7 @@ function renderNodeTree(
     if (!componentInstance.__ready__) {
       runComponentLifecycle(componentInstance, 'ready')
       componentInstance.__ready__ = true
+      componentInstance.__definition__?.pageLifetimes?.show?.call(componentInstance)
     }
     return renderedComponentRoot
   }
