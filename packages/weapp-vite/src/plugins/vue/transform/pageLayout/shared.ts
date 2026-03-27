@@ -7,6 +7,7 @@ const LAYOUT_NAME_SEPARATORS_RE = /[_\s]+/g
 const DUPLICATE_DASH_RE = /-+/g
 const EDGE_DASH_RE = /^-|-$/g
 const PATH_SEGMENT_RE = /[\\/]/
+const DEFAULT_LAYOUT_DIRECTIVE_PREFIX = 'wx'
 
 export function normalizeComparablePath(input: string) {
   const resolved = path.resolve(input)
@@ -75,4 +76,12 @@ export function escapeDoubleQuotedAttr(value: string) {
 export function removeFileExtension(filename: string) {
   const ext = path.extname(filename)
   return ext ? filename.slice(0, -ext.length) : filename
+}
+
+export function getLayoutConditionalDirective(index: number, directivePrefix = DEFAULT_LAYOUT_DIRECTIVE_PREFIX) {
+  return `${directivePrefix}:${index === 0 ? 'if' : 'elif'}`
+}
+
+export function getLayoutElseDirective(directivePrefix = DEFAULT_LAYOUT_DIRECTIVE_PREFIX) {
+  return `${directivePrefix}:else`
 }
