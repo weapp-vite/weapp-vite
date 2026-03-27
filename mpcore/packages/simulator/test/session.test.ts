@@ -829,6 +829,61 @@ Page({
     expect(session.getFileText('headless://saved/fs-lab.txt')).toBeNull()
   })
 
+  it('supports getFileSystemManager copyFile and rename operations', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-copy-rename-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    copiedSummary: '',
+    originalSummary: '',
+    renamedSummary: ''
+  },
+  runFsCopyRenameLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://saved/source.txt', 'source payload')
+    fsManager.copyFile({
+      srcPath: 'headless://saved/source.txt',
+      destPath: 'headless://saved/copied.txt',
+      success: (result) => {
+        this.setData({
+          copiedSummary: result.errMsg
+        })
+      }
+    })
+    this.setData({
+      originalSummary: fsManager.readFileSync('headless://saved/source.txt')
+    })
+    fsManager.renameSync('headless://saved/copied.txt', 'headless://saved/renamed.txt')
+    this.setData({
+      renamedSummary: fsManager.readFileSync('headless://saved/renamed.txt')
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>fs-copy-rename</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsCopyRenameLab()
+
+    expect(page.data.copiedSummary).toBe('copyFile:ok')
+    expect(page.data.originalSummary).toBe('source payload')
+    expect(page.data.renamedSummary).toBe('source payload')
+    expect(session.getFileText('headless://saved/source.txt')).toBe('source payload')
+    expect(session.getFileText('headless://saved/copied.txt')).toBeNull()
+    expect(session.getFileText('headless://saved/renamed.txt')).toBe('source payload')
+  })
+
   it('supports showModal defaults and queued modal mocks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-show-modal-'))
     tempDirs.push(root)
