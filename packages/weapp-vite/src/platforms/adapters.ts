@@ -1,4 +1,7 @@
 import type { MiniProgramPlatformAdapter } from './types'
+import { getAlipayNpmDistDirName } from '../utils/alipayNpm'
+
+const DEFAULT_PROJECT_CONFIG_ROOT_KEYS = ['miniprogramRoot', 'srcMiniprogramRoot'] as const
 
 export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter[] = [
   {
@@ -12,6 +15,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       wxss: 'wxss',
       wxs: 'wxs',
     },
+    projectConfigFileName: 'project.config.json',
+    projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
+    ide: {},
+    resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
   },
   {
     id: 'alipay',
@@ -24,6 +31,17 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       wxss: 'acss',
       wxs: 'sjs',
     },
+    projectConfigFileName: 'mini.project.json',
+    projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
+    scriptModuleTagByExtension: {
+      sjs: 'import-sjs',
+    },
+    usesProjectRootNpmDir: true,
+    ide: {
+      requiresOpenPlatformArg: true,
+      defaultProjectRoot: 'dist/alipay/dist',
+    },
+    resolvePreservedNpmDirNames: options => [getAlipayNpmDistDirName(options?.alipayNpmMode)],
   },
   {
     id: 'swan',
@@ -36,6 +54,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       wxss: 'css',
       wxs: 'sjs',
     },
+    projectConfigFileName: 'project.swan.json',
+    projectConfigRootKeys: ['smartProgramRoot', ...DEFAULT_PROJECT_CONFIG_ROOT_KEYS],
+    ide: {},
+    resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
   },
   {
     id: 'tt',
@@ -47,6 +69,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       wxml: 'ttml',
       wxss: 'ttss',
     },
+    projectConfigFileName: 'project.config.json',
+    projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
+    ide: {},
+    resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
   },
   {
     id: 'jd',
@@ -59,6 +85,10 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       wxss: 'jxss',
       wxs: 'wxs',
     },
+    projectConfigFileName: 'project.config.json',
+    projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
+    ide: {},
+    resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
   },
   {
     id: 'xhs',
@@ -71,5 +101,9 @@ export const MINI_PROGRAM_PLATFORM_ADAPTERS: readonly MiniProgramPlatformAdapter
       wxss: 'css',
       wxs: 'wxs',
     },
+    projectConfigFileName: 'project.config.json',
+    projectConfigRootKeys: DEFAULT_PROJECT_CONFIG_ROOT_KEYS,
+    ide: {},
+    resolvePreservedNpmDirNames: () => ['miniprogram_npm'],
   },
 ] as const

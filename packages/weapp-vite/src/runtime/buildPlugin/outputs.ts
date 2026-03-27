@@ -2,13 +2,12 @@ import type { MutableCompilerContext } from '../../context'
 import { cp, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import path from 'pathe'
 import { debug, logger } from '../../context/shared'
-import { getAlipayNpmDistDirName } from '../../utils/alipayNpm'
+import { getPreservedNpmDirNames } from '../../platform'
 
 function resolvePreservedNpmDirNames(configService: NonNullable<MutableCompilerContext['configService']>) {
-  if (configService.platform === 'alipay') {
-    return new Set([getAlipayNpmDistDirName(configService.weappViteConfig?.npm?.alipayNpmMode)])
-  }
-  return new Set(['miniprogram_npm'])
+  return new Set(getPreservedNpmDirNames(configService.platform, {
+    alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
+  }))
 }
 
 async function removeDirectoryEntries(

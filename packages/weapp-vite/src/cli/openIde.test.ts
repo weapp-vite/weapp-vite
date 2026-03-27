@@ -207,4 +207,18 @@ describe('openIde', () => {
     expect(resolveIdeProjectPath('')).toBeUndefined()
     expect(resolveIdeProjectRoot('dist', '/workspace/project')).toBe('/workspace/project')
   })
+
+  it('falls back to adapter default project root when config loading fails for alipay', async () => {
+    const { resolveIdeCommandContext } = await import('./openIde')
+
+    const result = await resolveIdeCommandContext({
+      cwd: '/workspace/project',
+      platform: 'alipay',
+    })
+
+    expect(result).toEqual({
+      platform: 'alipay',
+      projectPath: 'dist/alipay',
+    })
+  })
 })
