@@ -1,11 +1,11 @@
 import { createApp } from 'vue'
 import App from './App.vue'
+import { normalizeRuntimeEvents } from './features/dashboard/utils/runtimeEvents'
 import { router } from './router'
 import './style.css'
 
 function dispatchDashboardEvents(payload: unknown) {
-  const events = Array.isArray(payload) ? payload : [payload]
-  const validEvents = events.filter(Boolean)
+  const validEvents = normalizeRuntimeEvents(payload)
 
   if (validEvents.length === 0) {
     return

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { DashboardRuntimeEventKind, DashboardRuntimeEventLevel } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
@@ -19,6 +18,7 @@ import { useDashboardTheme } from '../features/dashboard/composables/useDashboar
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs } from '../features/dashboard/constants/view'
+import { formatDuration, formatRuntimeEventLevel, formatRuntimeEventMeta } from '../features/dashboard/utils/format'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
 
@@ -59,38 +59,6 @@ const { activeTab, topCards, packageTypeSummary: metricPackageTypeSummary } = us
   moduleSourceSummary,
   lastUpdatedAt,
 })
-
-function formatEventKind(kind: DashboardRuntimeEventKind) {
-  switch (kind) {
-    case 'command':
-      return '命令'
-    case 'build':
-      return '构建'
-    case 'diagnostic':
-      return '诊断'
-    case 'hmr':
-      return 'HMR'
-    case 'system':
-      return '系统'
-    default:
-      return kind
-  }
-}
-
-function formatEventLevel(level: DashboardRuntimeEventLevel) {
-  switch (level) {
-    case 'info':
-      return '信息'
-    case 'success':
-      return '成功'
-    case 'warning':
-      return '警告'
-    case 'error':
-      return '错误'
-    default:
-      return level
-  }
-}
 
 function handleResize() {
   chart?.resize()
@@ -264,7 +232,7 @@ onBeforeUnmount(() => {
                   v-if="latestRuntimeEvent"
                   class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]"
                 >
-                  {{ formatEventLevel(latestRuntimeEvent.level) }}
+                  {{ formatRuntimeEventLevel(latestRuntimeEvent.level) }}
                 </span>
               </div>
               <p class="mt-3 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
@@ -274,7 +242,13 @@ onBeforeUnmount(() => {
                 v-if="latestRuntimeEvent"
                 class="mt-3 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]"
               >
-                {{ formatEventKind(latestRuntimeEvent.kind) }} · {{ latestRuntimeEvent.source ?? 'dashboard' }} · {{ latestRuntimeEvent.timestamp }}
+                {{ formatRuntimeEventMeta(latestRuntimeEvent) }}
+              </p>
+              <p
+                v-if="latestRuntimeEvent?.durationMs !== undefined"
+                class="mt-2 text-sm font-medium text-[color:var(--dashboard-text)]"
+              >
+                最近一次耗时: {{ formatDuration(latestRuntimeEvent.durationMs) }}
               </p>
               <RouterLink
                 class="mt-4 inline-flex rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-1.5 text-xs font-medium text-[color:var(--dashboard-text)] transition hover:border-[color:var(--dashboard-border-strong)]"
@@ -322,11 +296,11 @@ onBeforeUnmount(() => {
                     {{ event.detail }}
                   </p>
                   <p class="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-                    {{ formatEventKind(event.kind) }} · {{ event.timestamp }}
+                    {{ formatRuntimeEventMeta(event) }}
                   </p>
                 </div>
                 <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
-                  {{ formatEventLevel(event.level) }}
+                  {{ formatRuntimeEventLevel(event.level) }}
                 </span>
               </div>
             </li>
