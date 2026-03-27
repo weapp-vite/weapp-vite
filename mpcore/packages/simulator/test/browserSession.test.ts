@@ -589,6 +589,79 @@ Page({
     expect(session.getFileText('headless://saved/browser-saved-file.txt')).toBeNull()
   })
 
+  it('reports removeSavedFile failures and post-remove read failures in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    missingRemoveSummary: '',
+    postRemoveReadSummary: '',
+    secondRemoveSummary: ''
+  },
+  runSavedFileErrorLab() {
+    const fsManager = wx.getFileSystemManager()
+    wx.removeSavedFile({
+      filePath: 'headless://saved/browser-missing-file.txt',
+      fail: (error) => {
+        this.setData({
+          missingRemoveSummary: error.message
+        })
+      }
+    })
+    wx.downloadFile({
+      url: 'https://mock.mpcore.dev/files/browser-removable.txt',
+      success: (downloadResult) => {
+        wx.saveFile({
+          tempFilePath: downloadResult.tempFilePath,
+          filePath: 'headless://saved/browser-removable.txt',
+          success: (saveResult) => {
+            wx.removeSavedFile({
+              filePath: saveResult.savedFilePath,
+              success: () => {
+                try {
+                  fsManager.readFileSync(saveResult.savedFilePath)
+                }
+                catch (error) {
+                  this.setData({
+                    postRemoveReadSummary: error.message
+                  })
+                }
+                wx.removeSavedFile({
+                  filePath: saveResult.savedFilePath,
+                  fail: (secondError) => {
+                    this.setData({
+                      secondRemoveSummary: secondError.message
+                    })
+                  }
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{missingRemoveSummary}}</view><view>{{postRemoveReadSummary}}</view><view>{{secondRemoveSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.mockDownloadFile({
+      fileContent: 'browser removable',
+      url: 'https://mock.mpcore.dev/files/browser-removable.txt',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileErrorLab()
+
+    expect(page.data.missingRemoveSummary).toContain('removeSavedFile:fail no such file or directory')
+    expect(page.data.postRemoveReadSummary).toContain('readFile:fail no such file or directory')
+    expect(page.data.secondRemoveSummary).toContain('removeSavedFile:fail no such file or directory')
+  })
+
   it('supports showModal defaults and queued modal mocks in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
