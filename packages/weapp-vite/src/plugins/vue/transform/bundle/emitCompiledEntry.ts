@@ -10,7 +10,7 @@ import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDat
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
 import { emitNativeLayoutAssetsIfNeeded, emitScriptlessComponentJsFallbackIfMissing, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
-import { emitAlipayGenericPlaceholderAssets, emitPlatformTemplateAsset, normalizeVueConfigForPlatform } from './platform'
+import { emitPlatformTemplateAsset, preparePlatformConfigAsset } from './platform'
 import { compileVueLikeFile, getEntryBaseName, isAppVueLikeFile } from './shared'
 
 export async function emitCompiledVueEntryAssets(
@@ -172,12 +172,15 @@ export async function emitCompiledVueEntryAssets(
   })
 
   if (result.config || shouldEmitComponentJson) {
-    const normalizedConfig = normalizeVueConfigForPlatform(result.config, {
+    const normalizedConfig = preparePlatformConfigAsset(bundle, {
+      pluginCtx,
+      relativeBase,
+      config: result.config,
+      outputExtensions,
       platform: configService.platform,
       dependencies: configService.packageJson?.dependencies,
       alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
     })
-    emitAlipayGenericPlaceholderAssets(pluginCtx, bundle, relativeBase, normalizedConfig, outputExtensions, configService.platform)
     emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: normalizedConfig }, {
       defaultConfig: shouldEmitComponentJson ? { component: true } : undefined,
       mergeExistingAsset: shouldMergeJsonAsset,
