@@ -11,6 +11,11 @@ function normalizeRoute(route: string) {
   return route.replace(LEADING_SLASH_RE, '')
 }
 
+function resolvePageScopeId(scopeId: string) {
+  const pagePathIndex = scopeId.indexOf('/page/')
+  return pagePathIndex >= 0 ? scopeId.slice(0, pagePathIndex) : scopeId
+}
+
 export class HeadlessTestingScopeHandle {
   constructor(
     readonly scopeId: string,
@@ -38,6 +43,10 @@ export class HeadlessTestingScopeHandle {
   async page() {
     const currentPage = this.session.getCurrentPages().at(-1)
     return currentPage ? new HeadlessTestingPageHandle(this.project, currentPage, this.session) : null
+  }
+
+  async pageScope() {
+    return new HeadlessTestingScopeHandle(resolvePageScopeId(this.scopeId), this.project, this.session)
   }
 
   async ownerComponent() {
