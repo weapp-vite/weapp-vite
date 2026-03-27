@@ -166,10 +166,32 @@ describe('analyze dashboard', () => {
       event: 'weapp-analyze:update',
       data: initial,
     })
+    expect(server.ws?.send).toHaveBeenCalledWith({
+      type: 'custom',
+      event: 'weapp-dashboard:event',
+      data: expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'command',
+          level: 'success',
+        }),
+      ]),
+    })
 
     const updatePayload = createAnalyzeResult('next')
     await handle?.update(updatePayload)
+    const sendCalls = server.ws?.send.mock.calls ?? []
     expect(server.ws?.send).toHaveBeenLastCalledWith({
+      type: 'custom',
+      event: 'weapp-dashboard:event',
+      data: [
+        expect.objectContaining({
+          kind: 'build',
+          level: 'info',
+          detail: expect.stringContaining('1 个包'),
+        }),
+      ],
+    })
+    expect(sendCalls.at(-2)?.[0]).toEqual({
       type: 'custom',
       event: 'weapp-analyze:update',
       data: updatePayload,
@@ -181,8 +203,10 @@ describe('analyze dashboard', () => {
     const plugin = createServerArg.plugins[0]
     const transformed = plugin.transformIndexHtml('<!doctype html>')
     const script = transformed.tags[0]?.children as string
+    const eventScript = transformed.tags[1]?.children as string
     const bridgeScript = transformed.tags.find((tag: any) => tag?.attrs?.type === 'module' && typeof tag?.children === 'string')
     expect(script).toContain('"label":"next"')
+    expect(eventScript).toContain('__WEAPP_VITE_DASHBOARD_EVENTS__')
     expect(bridgeScript).toMatchObject({
       tag: 'script',
       attrs: {
@@ -190,6 +214,7 @@ describe('analyze dashboard', () => {
       },
     })
     expect(bridgeScript?.children).toContain(`import.meta.hot.on('weapp-analyze:update'`)
+    expect(bridgeScript?.children).toContain(`import.meta.hot.on('weapp-dashboard:event'`)
 
     await handle?.close()
     expect(server.close).toHaveBeenCalledTimes(1)
