@@ -1109,6 +1109,87 @@ Page({
     expect(session.getFileText('headless://saved/saved-file.txt')).toBeNull()
   })
 
+  it('reports removeSavedFile failures and post-remove read failures', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-saved-files-errors-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    missingRemoveSummary: '',
+    postRemoveReadSummary: '',
+    secondRemoveSummary: ''
+  },
+  runSavedFileErrorLab() {
+    const fsManager = wx.getFileSystemManager()
+    wx.removeSavedFile({
+      filePath: 'headless://saved/missing-file.txt',
+      fail: (error) => {
+        this.setData({
+          missingRemoveSummary: error.message
+        })
+      }
+    })
+    fsManager.writeFileSync('headless://saved/removable.txt', 'removable')
+    wx.downloadFile({
+      url: 'https://mock.mpcore.dev/files/removable.txt',
+      success: (downloadResult) => {
+        wx.saveFile({
+          tempFilePath: downloadResult.tempFilePath,
+          filePath: 'headless://saved/removable.txt',
+          success: (saveResult) => {
+            wx.removeSavedFile({
+              filePath: saveResult.savedFilePath,
+              success: () => {
+                try {
+                  fsManager.readFileSync(saveResult.savedFilePath)
+                }
+                catch (error) {
+                  this.setData({
+                    postRemoveReadSummary: error.message
+                  })
+                }
+                wx.removeSavedFile({
+                  filePath: saveResult.savedFilePath,
+                  fail: (secondError) => {
+                    this.setData({
+                      secondRemoveSummary: secondError.message
+                    })
+                  }
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-file-errors</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    session.mockDownloadFile({
+      fileContent: 'removable',
+      url: 'https://mock.mpcore.dev/files/removable.txt',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileErrorLab()
+
+    expect(page.data.missingRemoveSummary).toContain('removeSavedFile:fail no such file or directory')
+    expect(page.data.postRemoveReadSummary).toContain('readFile:fail no such file or directory')
+    expect(page.data.secondRemoveSummary).toContain('removeSavedFile:fail no such file or directory')
+  })
+
   it('supports showModal defaults and queued modal mocks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-show-modal-'))
     tempDirs.push(root)
