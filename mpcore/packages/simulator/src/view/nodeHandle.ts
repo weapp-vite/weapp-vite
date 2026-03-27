@@ -34,6 +34,7 @@ interface HeadlessTestingNodeValueEventInit extends HeadlessTestingNodeEventInit
 interface HeadlessTestingNodeInteractionHandlers {
   callMethod: (scopeId: string | null, methodName: string, event: Record<string, any>) => unknown
   createScopeHandle: (scopeId: string | null) => { scopeId: string, snapshot: () => Promise<unknown> } | null
+  ownerScopeId: (scopeId: string | null) => string | null
 }
 
 const DATASET_NAME_RE = /-([a-z])/g
@@ -203,6 +204,14 @@ export class HeadlessTestingNodeHandle {
       throw new Error('Node interactions are not available for this headless testing node.')
     }
     return this.interactions.createScopeHandle(resolvePageScopeId(this.node.attribs?.['data-sim-scope'] ?? null))
+  }
+
+  async ownerComponentScope() {
+    if (!this.interactions) {
+      throw new Error('Node interactions are not available for this headless testing node.')
+    }
+    const scopeId = resolveComponentScopeId(this.node.attribs?.['data-sim-scope'] ?? null)
+    return this.interactions.createScopeHandle(this.interactions.ownerScopeId(scopeId))
   }
 
   async text() {

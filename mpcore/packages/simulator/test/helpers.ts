@@ -856,7 +856,7 @@ Component({
   }
 })
 `)
-  writeText(path.join(root, 'dist/components/mini-badge/index.wxml'), '<view>{{label}}</view><view>{{readyState}}</view>')
+  writeText(path.join(root, 'dist/components/mini-badge/index.wxml'), '<view id="mini-badge-inner">{{label}}</view><view>{{readyState}}</view>')
 
   return root
 }
