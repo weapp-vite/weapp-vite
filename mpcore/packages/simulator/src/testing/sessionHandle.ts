@@ -38,6 +38,25 @@ export class HeadlessTestingScopeHandle {
     return this.createScopeHandle(this.session.selectOwnerComponent(this.scopeId))
   }
 
+  async waitForOwnerComponent(
+    options: { interval?: number, timeout?: number } = {},
+  ) {
+    const timeout = Number.isFinite(options.timeout) ? Math.max(0, Math.trunc(options.timeout ?? 1_000)) : 1_000
+    const interval = Number.isFinite(options.interval) ? Math.max(1, Math.trunc(options.interval ?? 10)) : 10
+    const deadline = Date.now() + timeout
+
+    while (true) {
+      const owner = await this.ownerComponent()
+      if (owner) {
+        return owner
+      }
+      if (Date.now() >= deadline) {
+        throw new Error('Timed out waiting for owner component in headless testing runtime.')
+      }
+      await new Promise(resolve => setTimeout(resolve, interval))
+    }
+  }
+
   async selectComponent(selector: string) {
     const normalizedSelector = selector.trim()
     if (!normalizedSelector) {
