@@ -337,6 +337,27 @@ describe('headless testing bridge', () => {
     expect(await page.data('eventSnapshot')).toContain('"source":"testing-bridge"')
   })
 
+  it('exposes scope snapshots through the testing bridge session handle', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const wxml = await page.wxml()
+    const scopeIds = Array.from(wxml.matchAll(/data-sim-scope="([^"]+)"/g), match => match[1]!)
+    const componentScopeId = scopeIds.find(scopeId => scopeId.includes('status-card'))
+
+    expect(componentScopeId).toBeTruthy()
+    expect(await miniProgram.scopeSnapshot(componentScopeId!)).toMatchObject({
+      properties: {
+        count: 2,
+      },
+      type: 'component',
+    })
+  })
+
   it('dispatches component input, change and blur events through the testing bridge', async () => {
     const projectPath = createComponentFixture()
     tempDirs.push(projectPath)
