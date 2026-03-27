@@ -158,6 +158,7 @@ const DEFAULT_MODAL_CANCEL_TEXT = '取消'
 const DEFAULT_MODAL_CONFIRM_COLOR = '#576B95'
 const DEFAULT_MODAL_CONFIRM_TEXT = '确定'
 const TRAILING_SLASH_RE = /\/+$/
+const SAVED_FILE_PREFIXES = ['headless://saved/', 'headless://wxfile/saved/'] as const
 const textEncoder = new TextEncoder()
 
 function byteLength(input: string) {
@@ -313,6 +314,10 @@ function normalizeEncoding(encoding?: string) {
     return 'utf8'
   }
   throw new Error(`Unsupported file encoding in headless runtime: ${encoding}`)
+}
+
+function isSavedFilePath(path: string) {
+  return SAVED_FILE_PREFIXES.some(prefix => path === prefix.slice(0, -1) || path.startsWith(prefix))
 }
 
 function normalizeFsPath(input: string) {
@@ -564,7 +569,7 @@ export function createHeadlessWxState() {
     }
     ensureDirectoryTree(normalizedNewPath)
     files.set(normalizedNewPath, fileContent)
-    if (savedFile) {
+    if (savedFile && isSavedFilePath(normalizedNewPath)) {
       savedFiles.set(normalizedNewPath, {
         ...savedFile,
         filePath: normalizedNewPath,
