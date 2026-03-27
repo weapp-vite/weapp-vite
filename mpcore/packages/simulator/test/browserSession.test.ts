@@ -531,6 +531,64 @@ Page({
     expect(page.data.missingReadDirSummary).toContain('readdir:fail no such file or directory')
   })
 
+  it('supports getSavedFileList and removeSavedFile in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    listSummary: '',
+    removeSummary: ''
+  },
+  runSavedFileLab() {
+    wx.downloadFile({
+      url: 'https://mock.mpcore.dev/files/browser-saved-file.txt',
+      success: (downloadResult) => {
+        wx.saveFile({
+          tempFilePath: downloadResult.tempFilePath,
+          filePath: 'headless://saved/browser-saved-file.txt',
+          success: (saveResult) => {
+            wx.getSavedFileList({
+              success: (result) => {
+                this.setData({
+                  listSummary: JSON.stringify(result.fileList)
+                })
+              }
+            })
+            wx.removeSavedFile({
+              filePath: saveResult.savedFilePath,
+              success: (result) => {
+                this.setData({
+                  removeSummary: result.errMsg
+                })
+              }
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{listSummary}}</view><view>{{removeSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.mockDownloadFile({
+      fileContent: 'browser saved payload',
+      url: 'https://mock.mpcore.dev/files/browser-saved-file.txt',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileLab()
+
+    expect(page.data.listSummary).toContain('"filePath":"headless://saved/browser-saved-file.txt"')
+    expect(page.data.listSummary).toContain('"size":21')
+    expect(page.data.removeSummary).toBe('removeSavedFile:ok')
+    expect(session.getFileText('headless://saved/browser-saved-file.txt')).toBeNull()
+  })
+
   it('supports showModal defaults and queued modal mocks in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
