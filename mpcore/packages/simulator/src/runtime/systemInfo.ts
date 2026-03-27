@@ -1,4 +1,8 @@
-import type { HeadlessWxSystemInfoResult } from '../host'
+import type {
+  HeadlessWxAppBaseInfoResult,
+  HeadlessWxSystemInfoResult,
+  HeadlessWxWindowInfoResult,
+} from '../host'
 
 export function createDefaultSystemInfo(): HeadlessWxSystemInfoResult {
   return {
@@ -36,4 +40,28 @@ export function applyResizeToSystemInfo(
   }
 
   return systemInfo
+}
+
+export function deriveWindowInfo(systemInfo: HeadlessWxSystemInfoResult): HeadlessWxWindowInfoResult {
+  return {
+    pixelRatio: systemInfo.pixelRatio,
+    screenHeight: systemInfo.screenHeight,
+    screenWidth: systemInfo.screenWidth,
+    statusBarHeight: 20,
+    windowHeight: systemInfo.windowHeight,
+    windowWidth: systemInfo.windowWidth,
+  }
+}
+
+export function deriveAppBaseInfo(systemInfo: HeadlessWxSystemInfoResult): HeadlessWxAppBaseInfoResult {
+  return {
+    SDKVersion: systemInfo.SDKVersion,
+    enableDebug: false,
+    host: {
+      env: systemInfo.platform,
+    },
+    language: systemInfo.language,
+    platform: systemInfo.platform,
+    version: systemInfo.version,
+  }
 }

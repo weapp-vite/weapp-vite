@@ -82,4 +82,43 @@ describe('page event alignment', () => {
       windowWidth: 412,
     })
   })
+
+  it('exposes compatibility info through getWindowInfo, getAppBaseInfo and canIUse', () => {
+    const projectPath = createPageEventsFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    const page = session.reLaunch('/pages/events/index')
+    page.readCompatibilityInfo()
+
+    expect(page.data.windowInfoSync).toContain('"windowWidth":375')
+    expect(page.data.windowInfoAsync).toContain('"statusBarHeight":20')
+    expect(page.data.appBaseInfoSync).toContain('"platform":"devtools"')
+    expect(page.data.canIUseSummary).toContain('"getWindowInfo":true')
+    expect(page.data.canIUseSummary).toContain('"getWindowInfoReturn":true')
+    expect(page.data.canIUseSummary).toContain('"nextTick":true')
+    expect(page.data.canIUseSummary).toContain('"missing":false')
+
+    session.triggerResize({
+      size: {
+        windowWidth: 390,
+        windowHeight: 844,
+      },
+    })
+    page.readCompatibilityInfo()
+
+    expect(page.data.windowInfoSync).toContain('"windowWidth":390')
+    expect(session.getWindowInfo()).toMatchObject({
+      screenHeight: 844,
+      screenWidth: 390,
+      windowHeight: 844,
+      windowWidth: 390,
+    })
+    expect(session.getAppBaseInfo()).toMatchObject({
+      host: {
+        env: 'devtools',
+      },
+      platform: 'devtools',
+    })
+  })
 })

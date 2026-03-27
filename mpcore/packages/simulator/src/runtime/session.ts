@@ -9,7 +9,12 @@ import { loadProject } from '../project'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
-import { applyResizeToSystemInfo, createDefaultSystemInfo } from './systemInfo'
+import {
+  applyResizeToSystemInfo,
+  createDefaultSystemInfo,
+  deriveAppBaseInfo,
+  deriveWindowInfo,
+} from './systemInfo'
 import { createHeadlessWxState } from './wxState'
 
 export interface HeadlessSessionOptions {
@@ -139,6 +144,7 @@ export class HeadlessSession {
       () => this.pages.slice(),
       () => this.getApp(),
       {
+        getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
         navigateBack: option => this.navigateBack(option?.delta),
         navigateTo: option => this.navigateTo(option.url),
         pageScrollTo: option => this.pageScrollTo(option),
@@ -146,6 +152,7 @@ export class HeadlessSession {
         getStorageInfoSync: () => this.wxState.getStorageInfoSync(),
         getStorageSync: key => this.wxState.getStorageSync(key),
         getSystemInfoSync: () => ({ ...this.systemInfo }),
+        getWindowInfoSync: () => deriveWindowInfo(this.systemInfo),
         hideLoading: () => this.wxState.hideLoading(),
         hideToast: () => this.wxState.hideToast(),
         reLaunch: option => this.reLaunch(option.url),
@@ -184,6 +191,14 @@ export class HeadlessSession {
 
   getSystemInfo() {
     return { ...this.systemInfo }
+  }
+
+  getWindowInfo() {
+    return deriveWindowInfo(this.systemInfo)
+  }
+
+  getAppBaseInfo() {
+    return deriveAppBaseInfo(this.systemInfo)
   }
 
   getLoading() {
