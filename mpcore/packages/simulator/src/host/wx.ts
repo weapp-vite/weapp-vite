@@ -26,6 +26,12 @@ export interface HeadlessWxGetStorageResult extends HeadlessWxStorageResult {
   data: unknown
 }
 
+export interface HeadlessWxStorageInfoResult extends HeadlessWxStorageResult {
+  currentSize: number
+  keys: string[]
+  limitSize: number
+}
+
 export interface HeadlessWxSetStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {
   data: unknown
   key: string
@@ -34,6 +40,8 @@ export interface HeadlessWxSetStorageOption extends HeadlessWxCallbackOption<Hea
 export interface HeadlessWxGetStorageOption extends HeadlessWxCallbackOption<HeadlessWxGetStorageResult> {
   key: string
 }
+
+export interface HeadlessWxGetStorageInfoOption extends HeadlessWxCallbackOption<HeadlessWxStorageInfoResult> {}
 
 export interface HeadlessWxRemoveStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {
   key: string
@@ -76,6 +84,7 @@ export interface HeadlessWxRequestTask {
 
 export interface HeadlessWxDriver {
   clearStorageSync: () => void
+  getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorageSync: (key: string) => unknown
   hideLoading: () => { errMsg: string }
   hideToast: () => { errMsg: string }
@@ -97,6 +106,8 @@ export interface HeadlessWxDriver {
 export interface HeadlessWx {
   clearStorage: (option?: HeadlessWxClearStorageOption) => HeadlessWxStorageResult | undefined
   clearStorageSync: () => void
+  getStorageInfo: (option?: HeadlessWxGetStorageInfoOption) => HeadlessWxStorageInfoResult | undefined
+  getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorage: (option: HeadlessWxGetStorageOption) => HeadlessWxGetStorageResult | undefined
   getStorageSync: (key: string) => unknown
   hideLoading: (option?: HeadlessWxHideLoadingOption) => { errMsg: string } | undefined
@@ -144,6 +155,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
       }
     }, option),
     clearStorageSync: () => driver.clearStorageSync(),
+    getStorageInfo: option => invokeWxApi(() => driver.getStorageInfoSync(), option),
+    getStorageInfoSync: () => driver.getStorageInfoSync(),
     getStorage: option => invokeWxApi(() => ({
       data: driver.getStorageSync(option.key),
       errMsg: 'getStorage:ok',

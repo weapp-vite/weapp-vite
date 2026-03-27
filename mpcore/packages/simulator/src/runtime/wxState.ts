@@ -4,6 +4,7 @@ import type {
   HeadlessWxShowLoadingOption,
   HeadlessWxShowToastOption,
 } from '../host'
+import { Buffer } from 'node:buffer'
 
 export interface HeadlessWxLoadingSnapshot {
   mask: boolean
@@ -35,6 +36,8 @@ export interface HeadlessWxRequestLogEntry {
   response?: HeadlessWxRequestSuccessResult
   url: string
 }
+
+const STORAGE_LIMIT_SIZE = 10 * 1024
 
 function cloneValue<T>(value: T): T {
   if (value == null || typeof value !== 'object') {
@@ -118,6 +121,18 @@ export function createHeadlessWxState() {
             }
           : undefined,
       }))
+    },
+    getStorageInfoSync() {
+      const keys = Array.from(storage.keys()).sort((a, b) => a.localeCompare(b))
+      const totalBytes = Array.from(storage.entries()).reduce((sum, [key, value]) => {
+        return sum + Buffer.byteLength(JSON.stringify([key, value]))
+      }, 0)
+      return {
+        currentSize: Math.ceil(totalBytes / 1024),
+        errMsg: 'getStorageInfo:ok',
+        keys,
+        limitSize: STORAGE_LIMIT_SIZE,
+      }
     },
     getStorageSnapshot() {
       return Object.fromEntries(
