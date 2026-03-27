@@ -60,6 +60,70 @@ async function collectTemplateFiles(root: string) {
   return files
 }
 
+function normalizeTemplateRelativePath(filePath: string) {
+  const relativePath = filePath.split(path.sep).join('/')
+  return relativePath === '.gitignore' ? 'gitignore' : relativePath
+}
+
+async function isTemplateDirSynced(sourceRoot: string, destRoot: string) {
+  if (!await fs.pathExists(destRoot)) {
+    return false
+  }
+
+  let sourceFiles: string[]
+  let destFiles: string[]
+  try {
+    [sourceFiles, destFiles] = await Promise.all([
+      collectTemplateFiles(sourceRoot),
+      collectTemplateFiles(destRoot),
+    ])
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+      return false
+    }
+    throw error
+  }
+
+  if (sourceFiles.length !== destFiles.length) {
+    return false
+  }
+
+  for (let i = 0; i < sourceFiles.length; i++) {
+    const sourceFilePath = sourceFiles[i]
+    const destFilePath = destFiles[i]
+    if (!sourceFilePath || !destFilePath) {
+      return false
+    }
+
+    const sourceRelativePath = normalizeTemplateRelativePath(path.relative(sourceRoot, sourceFilePath))
+    const destRelativePath = normalizeTemplateRelativePath(path.relative(destRoot, destFilePath))
+    if (sourceRelativePath !== destRelativePath) {
+      return false
+    }
+
+    let sourceContent: Buffer
+    let destContent: Buffer
+    try {
+      [sourceContent, destContent] = await Promise.all([
+        fs.readFile(sourceFilePath),
+        fs.readFile(destFilePath),
+      ])
+    }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+        return false
+      }
+      throw error
+    }
+    if (!sourceContent.equals(destContent)) {
+      return false
+    }
+  }
+
+  return true
+}
+
 async function getTemplateSyncSignature() {
   const hasher = crypto.createHash('sha256')
 
@@ -83,14 +147,10 @@ async function getTemplateSyncSignature() {
 }
 
 async function hasSyncedTemplates() {
-  for (const { dest } of templates) {
+  for (const { dest, target } of templates) {
+    const absTarget = path.resolve(import.meta.dirname, target)
     const absDest = path.resolve(import.meta.dirname, dest)
-    if (!await fs.pathExists(absDest)) {
-      return false
-    }
-
-    const entries = await fs.readdir(absDest)
-    if (entries.length === 0) {
+    if (!await isTemplateDirSynced(absTarget, absDest)) {
       return false
     }
   }
