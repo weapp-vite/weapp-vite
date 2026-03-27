@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { launch } from '../src/testing'
-import { cleanupTempDirs, createBaseFixture, createComponentFixture, createNavigationFixture, createNestedComponentFixture } from './helpers'
+import { cleanupTempDirs, createAsyncComponentFixture, createBaseFixture, createComponentFixture, createNavigationFixture, createNestedComponentFixture } from './helpers'
 
 describe('headless testing bridge', () => {
   const tempDirs: string[] = []
@@ -452,5 +452,25 @@ describe('headless testing bridge', () => {
       },
       type: 'component',
     })
+  })
+
+  it('waits for components to appear through the testing bridge session handle', async () => {
+    const projectPath = createAsyncComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    await miniProgram.reLaunch('/pages/lab/index')
+    const component = await miniProgram.waitForComponent('#status-card', {
+      timeout: 200,
+    })
+    const components = await miniProgram.waitForComponents('status-card', 2, {
+      timeout: 200,
+    })
+
+    expect(component).not.toBeNull()
+    expect(component?.scopeId).toContain('status-card')
+    expect(components).toHaveLength(2)
   })
 })

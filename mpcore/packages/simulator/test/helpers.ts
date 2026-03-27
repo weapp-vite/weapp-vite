@@ -860,3 +860,41 @@ Component({
 
   return root
 }
+
+export function createAsyncComponentFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-async-component-'))
+
+  writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx123',
+    miniprogramRoot: 'dist',
+  })
+  writeJson(path.join(root, 'dist/app.json'), {
+    pages: ['pages/lab/index'],
+  })
+  writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
+  writeJson(path.join(root, 'dist/pages/lab/index.json'), {
+    usingComponents: {
+      'status-card': '../../components/status-card/index',
+    },
+  })
+  writeScript(path.join(root, 'dist/pages/lab/index.js'), `
+Page({
+  data: {
+    ready: false
+  },
+  onLoad() {
+    setTimeout(() => {
+      this.setData({
+        ready: true
+      })
+    }, 20)
+  }
+})
+`)
+  writeText(path.join(root, 'dist/pages/lab/index.wxml'), '<status-card wx:if="{{ready}}" id="status-card" /><status-card wx:if="{{ready}}" class="secondary-card" />')
+  writeJson(path.join(root, 'dist/components/status-card/index.json'), {})
+  writeScript(path.join(root, 'dist/components/status-card/index.js'), 'Component({})\n')
+  writeText(path.join(root, 'dist/components/status-card/index.wxml'), '<view>async-card</view>')
+
+  return root
+}
