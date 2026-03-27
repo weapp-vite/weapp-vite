@@ -2,7 +2,7 @@ import type { MpPlatform, ProjectConfig } from '@/types'
 /* eslint-disable e18e/ban-dependencies -- fs-extra is the existing project utility for JSON/copy helpers here. */
 import fs from 'fs-extra'
 import path from 'pathe'
-import { getMiniProgramPlatformAdapter } from '../platform'
+import { getProjectPlatformOptions } from '../platform'
 
 interface ProjectConfigOptions {
   ignorePrivate?: boolean
@@ -13,7 +13,7 @@ interface ProjectConfigOptions {
 const DEFAULT_PROJECT_PRIVATE_CONFIG_FILE_NAME = 'project.private.config.json'
 
 export function getProjectConfigFileName(platform: MpPlatform): string {
-  return getMiniProgramPlatformAdapter(platform).projectConfigFileName
+  return getProjectPlatformOptions(platform).projectConfigFileName
 }
 
 export function getProjectPrivateConfigFileName(_: MpPlatform): string {
@@ -21,7 +21,7 @@ export function getProjectPrivateConfigFileName(_: MpPlatform): string {
 }
 
 export function getProjectConfigRootKeys(platform: MpPlatform): readonly string[] {
-  return getMiniProgramPlatformAdapter(platform).projectConfigRootKeys
+  return getProjectPlatformOptions(platform).projectConfigRootKeys
 }
 
 export function resolveProjectConfigRoot(projectConfig: ProjectConfig, platform: MpPlatform): string | undefined {

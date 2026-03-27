@@ -1,7 +1,7 @@
 import type { MutableCompilerContext } from '../../context'
 import type { MpPlatform, ProjectConfig } from '../../types'
 import path from 'pathe'
-import { getMiniProgramPlatformAdapter } from '../../platform'
+import { shouldUseProjectRootNpmDir } from '../../platform'
 import { toPosixPath } from '../../utils/path'
 import { resolveProjectConfigRoot } from '../../utils/projectConfig'
 import { requireConfigService } from '../utils/requireConfigService'
@@ -13,10 +13,6 @@ function normalizeRelativeDir(value: string) {
   const normalized = toPosixPath(value).replace(TRAILING_SLASHES_RE, '')
   const trimmed = normalized.startsWith('./') ? normalized.slice(2) : normalized
   return trimmed.replace(EMPTY_VALUE_RE, '.')
-}
-
-function shouldUseProjectRootNpmStrategy(platform: MpPlatform) {
-  return getMiniProgramPlatformAdapter(platform).usesProjectRootNpmDir === true
 }
 
 function resolvePlatformProjectRoot(configService: MutableCompilerContext['configService']) {
@@ -69,7 +65,7 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext) {
   }
 
   if (!isMultiPlatformEnabled) {
-    if (!hasManualRelations && shouldUseProjectRootNpmStrategy(configService.platform)) {
+    if (!hasManualRelations && shouldUseProjectRootNpmDir(configService.platform)) {
       return [
         {
           ...packNpmRelationList[0],
@@ -81,7 +77,7 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext) {
     return packNpmRelationList
   }
 
-  if (!hasManualRelations && shouldUseProjectRootNpmStrategy(configService.platform)) {
+  if (!hasManualRelations && shouldUseProjectRootNpmDir(configService.platform)) {
     return [
       {
         ...packNpmRelationList[0],
@@ -97,7 +93,7 @@ export function getPackNpmRelationList(ctx: MutableCompilerContext) {
     }
 
     const trimmed = normalizeRelativeDir(rawDir)
-    const shouldRewriteRootDir = shouldUseProjectRootNpmStrategy(configService.platform)
+    const shouldRewriteRootDir = shouldUseProjectRootNpmDir(configService.platform)
     const shouldRewrite = trimmed === 'dist' || (shouldRewriteRootDir && trimmed === '.')
     if (!shouldRewrite) {
       return entry

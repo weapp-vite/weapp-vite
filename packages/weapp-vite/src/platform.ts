@@ -19,6 +19,12 @@ export interface ScriptModulePlatformOptions {
   tagByExtension: Readonly<Partial<Record<string, string>>>
 }
 
+export interface ProjectPlatformOptions {
+  projectConfigFileName: string
+  projectConfigRootKeys: readonly string[]
+  usesProjectRootNpmDir: boolean
+}
+
 export function createMiniProgramPlatformRegistry(adapters: readonly MiniProgramPlatformAdapter[]) {
   const adapterById = new Map<MpPlatform, MiniProgramPlatformAdapter>()
   const aliasToId = new Map<string, MpPlatform>()
@@ -170,6 +176,15 @@ export function shouldHoistNestedMiniprogramDependencies(platform: MpPlatform): 
   return getMiniProgramPlatformAdapter(platform).npm?.hoistNestedDependencies === true
 }
 
+export function getProjectPlatformOptions(platform: MpPlatform): ProjectPlatformOptions {
+  const adapter = getMiniProgramPlatformAdapter(platform)
+  return {
+    projectConfigFileName: adapter.projectConfigFileName,
+    projectConfigRootKeys: adapter.projectConfigRootKeys,
+    usesProjectRootNpmDir: adapter.usesProjectRootNpmDir === true,
+  }
+}
+
 export function getScriptModulePlatformOptions(platform?: MpPlatform): ScriptModulePlatformOptions {
   return {
     tagByExtension: platform ? (getMiniProgramPlatformAdapter(platform).scriptModuleTagByExtension ?? {}) : {},
@@ -213,6 +228,10 @@ export function getPlatformScriptModuleTag(platform: MpPlatform | undefined, scr
     return undefined
   }
   return getScriptModulePlatformOptions(platform).tagByExtension[scriptModuleExtension]
+}
+
+export function shouldUseProjectRootNpmDir(platform: MpPlatform): boolean {
+  return getProjectPlatformOptions(platform).usesProjectRootNpmDir
 }
 
 export function getPlatformAppTypesPackage(platform?: MpPlatform): string {
