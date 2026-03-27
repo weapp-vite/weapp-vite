@@ -29,6 +29,7 @@ interface SimulatorE2EApi {
   runPageMethod: (method: string) => void
   sessionSnapshot: () => {
     actionSheetLogs: unknown[]
+    directorySnapshot: string[]
     downloadFileLogs: unknown[]
     fileSnapshot: Record<string, string>
     modalLogs: unknown[]
@@ -123,6 +124,7 @@ describe.sequential('simulator browser e2e', () => {
     )
 
     bridge.runPageMethod('inspectCard')
+    bridge.runPageMethod('runFileManagerLab')
     bridge.runPageMethod('loadMockQueue')
     bridge.runPageMethod('runFileTransferLab')
     bridge.runPageMethod('storeSnapshot')
@@ -134,7 +136,9 @@ describe.sequential('simulator browser e2e', () => {
         const pageData = parseJsonString<Record<string, any>>(nextState.pageData)
         return Boolean(
           pageData.componentSnapshot
+          && pageData.directorySnapshot
           && pageData.downloadSnapshot
+          && pageData.fileManagerSnapshot
           && pageData.requestSnapshot
           && pageData.savedFilePath
           && pageData.storageSnapshot
@@ -147,7 +151,11 @@ describe.sequential('simulator browser e2e', () => {
 
     const pageData = parseJsonString<Record<string, any>>(state.pageData)
     expect(pageData.componentSnapshot).toContain('"size":1')
+    expect(pageData.directorySnapshot).toBe('["daily"]')
     expect(pageData.downloadSnapshot).toContain('"errMsg":"downloadFile:ok"')
+    expect(pageData.fileManagerSnapshot).toContain('"isDirectory":true')
+    expect(pageData.fileManagerSnapshot).toContain('"isFile":true')
+    expect(pageData.fileManagerSnapshot).toContain('"text":"component-lab"')
     expect(pageData.requestSnapshot).toContain('"queue":"alpha"')
     expect(pageData.savedFilePath).toContain('headless://wxfile/saved/')
     expect(pageData.storageSnapshot).toContain('"status"')
@@ -173,9 +181,12 @@ describe.sequential('simulator browser e2e', () => {
     expect(nestedSnapshot?.data?.nestedBadge).toContain('"size":1')
 
     const sessionSnapshot = bridge.sessionSnapshot()
+    expect(sessionSnapshot.directorySnapshot).toContain('headless://saved/component-lab/reports')
+    expect(sessionSnapshot.directorySnapshot).toContain('headless://saved/component-lab/reports/daily')
     expect(sessionSnapshot.downloadFileLogs).toHaveLength(1)
     expect(sessionSnapshot.uploadFileLogs).toHaveLength(1)
     expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab report')
+    expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab')
   })
 
   it('drives browser session host features through the demo workbench api', async () => {

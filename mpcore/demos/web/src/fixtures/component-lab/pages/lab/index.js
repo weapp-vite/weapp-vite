@@ -7,7 +7,9 @@ Page({
     events: [],
     eventShape: '',
     componentSnapshot: '',
+    directorySnapshot: '',
     downloadSnapshot: '',
+    fileManagerSnapshot: '',
     requestSnapshot: '',
     savedFilePath: '',
     uploadedSnapshot: '',
@@ -124,6 +126,22 @@ Page({
       complete: () => {
         this.push('lab:runFileTransferLab:download')
       }
+    })
+  },
+  runFileManagerLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.mkdirSync('headless://saved/component-lab/reports/daily', true)
+    fsManager.writeFileSync('headless://saved/component-lab/reports/daily/report.txt', 'component')
+    fsManager.appendFileSync('headless://saved/component-lab/reports/daily/report.txt', '-lab')
+    this.setData({
+      directorySnapshot: JSON.stringify(fsManager.readdirSync('headless://saved/component-lab/reports')),
+      fileManagerSnapshot: JSON.stringify({
+        isDirectory: fsManager.statSync('headless://saved/component-lab/reports/daily').isDirectory(),
+        isFile: fsManager.statSync('headless://saved/component-lab/reports/daily/report.txt').isFile(),
+        text: fsManager.readFileSync('headless://saved/component-lab/reports/daily/report.txt'),
+      }),
+    }, () => {
+      this.push('lab:runFileManagerLab')
     })
   },
   storeSnapshot() {
