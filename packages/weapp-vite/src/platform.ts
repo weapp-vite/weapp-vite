@@ -3,6 +3,9 @@ import type { MpPlatform } from './types'
 import { MINI_PROGRAM_PLATFORM_ADAPTERS } from './platforms/adapters'
 
 export const DEFAULT_MP_PLATFORM: MpPlatform = 'weapp'
+const NPM_PROTOCOL_RE = /^npm:/
+const EXPLICIT_NPM_DIR_RE = /^\/(?:miniprogram_npm|node_modules)\//
+const LEADING_SLASH_RE = /^\/+/
 
 export function createMiniProgramPlatformRegistry(adapters: readonly MiniProgramPlatformAdapter[]) {
   const adapterById = new Map<MpPlatform, MiniProgramPlatformAdapter>()
@@ -106,6 +109,37 @@ export function getPlatformNpmDistDirName(
   },
 ): string {
   return getMiniProgramPlatformAdapter(platform).npm?.distDirName?.(options) ?? 'miniprogram_npm'
+}
+
+export function shouldNormalizePlatformNpmImportPath(platform?: MpPlatform): boolean {
+  if (!platform) {
+    return false
+  }
+  return getMiniProgramPlatformAdapter(platform).npm?.normalizeImportPath === true
+}
+
+export function getPlatformNpmImportPrefix(
+  platform: MpPlatform,
+  options?: {
+    alipayNpmMode?: string
+  },
+): string {
+  return `/${getPlatformNpmDistDirName(platform, options)}/`
+}
+
+export function normalizePlatformNpmImportPath(
+  platform: MpPlatform,
+  importee: string,
+  options?: {
+    alipayNpmMode?: string
+  },
+): string {
+  if (!shouldNormalizePlatformNpmImportPath(platform)) {
+    return importee
+  }
+
+  const normalized = importee.replace(NPM_PROTOCOL_RE, '').replace(EXPLICIT_NPM_DIR_RE, '')
+  return `${getPlatformNpmImportPrefix(platform, options)}${normalized.replace(LEADING_SLASH_RE, '')}`
 }
 
 export function shouldRebuildCachedMiniprogramPackage(platform: MpPlatform): boolean {

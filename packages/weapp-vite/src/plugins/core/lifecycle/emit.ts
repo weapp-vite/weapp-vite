@@ -1,15 +1,18 @@
 import type { OutputBundle, OutputChunk } from 'rolldown'
 import type { RuntimeChunkDuplicatePayload, SharedChunkDuplicatePayload } from '../../../runtime/chunkStrategy'
-import type { SubPackageMetaValue } from '../../../types'
+import type { MpPlatform, SubPackageMetaValue } from '../../../types'
 import type { WxmlEmitRuntime } from '../../utils/wxmlEmit'
 import type { CorePluginState } from '../helpers'
 import path from 'pathe'
 import { mayContainPlatformApiAccess, mayContainStaticRequireLiteral, resolveAstEngine } from '../../../ast'
 import logger from '../../../logger'
-import { shouldRewriteBundleNpmImports } from '../../../platform'
+import {
+  normalizePlatformNpmImportPath,
+  shouldNormalizePlatformNpmImportPath,
+  shouldRewriteBundleNpmImports,
+} from '../../../platform'
 import { applyRuntimeChunkLocalization, applySharedChunkStrategy, DEFAULT_SHARED_CHUNK_STRATEGY } from '../../../runtime/chunkStrategy'
 import { toPosixPath } from '../../../utils'
-import { normalizeAlipayNpmImportPath } from '../../../utils/alipayNpm'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
 import { normalizeWatchPath } from '../../../utils/path'
 import { createWeapiAccessExpression } from '../../../utils/weapi'
@@ -139,25 +142,35 @@ function resolveDependencyId(importee: string) {
   return importeeTokens[0]
 }
 
-function normalizeNpmImportForAlipay(importee: string, dependencies: Record<string, string> | undefined, mode?: string) {
+function normalizeNpmImportByPlatform(
+  platform: MpPlatform | undefined,
+  importee: string,
+  dependencies: Record<string, string> | undefined,
+  mode?: string,
+) {
   const trimmed = importee.trim()
   if (!trimmed || PLUGIN_PROTOCOL_RE.test(trimmed)) {
     return importee
   }
 
+  if (!platform || !shouldNormalizePlatformNpmImportPath(platform)) {
+    return importee
+  }
+
   const normalized = trimmed.replace(NPM_PROTOCOL_RE, '')
   if (normalized.startsWith('/miniprogram_npm/') || normalized.startsWith('/node_modules/')) {
-    return normalizeAlipayNpmImportPath(normalized, mode)
+    return normalizePlatformNpmImportPath(platform, normalized, { alipayNpmMode: mode })
   }
 
   if (!hasDependencyPrefix(dependencies, normalized)) {
     return importee
   }
 
-  return normalizeAlipayNpmImportPath(normalized, mode)
+  return normalizePlatformNpmImportPath(platform, normalized, { alipayNpmMode: mode })
 }
 
-function rewriteChunkNpmImportsForAlipay(
+function rewriteChunkNpmImportsByPlatform(
+  platform: MpPlatform | undefined,
   code: string,
   dependencies: Record<string, string> | undefined,
   mode?: string,
@@ -212,7 +225,7 @@ function rewriteChunkNpmImportsForAlipay(
           return
         }
 
-        const nextValue = normalizeNpmImportForAlipay(currentValue, dependencies, mode)
+        const nextValue = normalizeNpmImportByPlatform(platform, currentValue, dependencies, mode)
         if (nextValue === currentValue) {
           return
         }
@@ -240,7 +253,8 @@ function rewriteChunkNpmImportsForAlipay(
   }
 }
 
-function rewriteBundleNpmImportsForAlipay(
+function rewriteBundleNpmImportsByPlatform(
+  platform: MpPlatform | undefined,
   bundle: OutputBundle,
   dependencies: Record<string, string> | undefined,
   mode?: string,
@@ -254,7 +268,7 @@ function rewriteBundleNpmImportsForAlipay(
     }
 
     const chunk = output as OutputChunk
-    const nextCode = rewriteChunkNpmImportsForAlipay(chunk.code, dependencies, mode, options)
+    const nextCode = rewriteChunkNpmImportsByPlatform(platform, chunk.code, dependencies, mode, options)
     if (nextCode === chunk.code) {
       continue
     }
@@ -697,7 +711,8 @@ export function createGenerateBundleHook(state: CorePluginState, isPluginBuild: 
     })
 
     if (shouldRewriteBundleNpmImports(configService.platform)) {
-      rewriteBundleNpmImportsForAlipay(
+      rewriteBundleNpmImportsByPlatform(
+        configService.platform,
         rolldownBundle,
         configService.packageJson.dependencies,
         configService.weappViteConfig?.npm?.alipayNpmMode,
