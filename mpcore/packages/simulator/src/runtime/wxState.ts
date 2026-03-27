@@ -1,5 +1,6 @@
 import type {
   HeadlessWxAccessFileOption,
+  HeadlessWxCopyFileOption,
   HeadlessWxDownloadFileOption,
   HeadlessWxDownloadFileSuccessResult,
   HeadlessWxFileSystemManager,
@@ -10,6 +11,7 @@ import type {
   HeadlessWxNetworkType,
   HeadlessWxReadFileOption,
   HeadlessWxReadFileSuccessResult,
+  HeadlessWxRenameOption,
   HeadlessWxRequestOption,
   HeadlessWxRequestSuccessResult,
   HeadlessWxRequestTask,
@@ -393,6 +395,29 @@ export function createHeadlessWxState() {
     }
   }
 
+  const copyFile = (srcPath: string, destPath: string): HeadlessWxFileSystemResult => {
+    const fileContent = files.get(srcPath)
+    if (fileContent == null) {
+      throw new Error(`copyFile:fail no such file or directory, copyfile '${srcPath}'`)
+    }
+    files.set(destPath, fileContent)
+    return {
+      errMsg: 'copyFile:ok',
+    }
+  }
+
+  const renameFile = (oldPath: string, newPath: string): HeadlessWxFileSystemResult => {
+    const fileContent = files.get(oldPath)
+    if (fileContent == null) {
+      throw new Error(`rename:fail no such file or directory, rename '${oldPath}'`)
+    }
+    files.delete(oldPath)
+    files.set(newPath, fileContent)
+    return {
+      errMsg: 'rename:ok',
+    }
+  }
+
   const unlinkFile = (filePath: string): HeadlessWxFileSystemResult => {
     if (!files.has(filePath)) {
       throw new Error(`unlink:fail no such file or directory, unlink '${filePath}'`)
@@ -420,6 +445,22 @@ export function createHeadlessWxState() {
     accessSync(path: string) {
       accessFile(path)
     },
+    copyFile(option: HeadlessWxCopyFileOption) {
+      try {
+        const result = copyFile(option.srcPath, option.destPath)
+        option.success?.(result)
+        option.complete?.(result)
+        return result
+      }
+      catch (error) {
+        option.fail?.(error as Error)
+        option.complete?.()
+        return undefined
+      }
+    },
+    copyFileSync(srcPath: string, destPath: string) {
+      copyFile(srcPath, destPath)
+    },
     readFile(option: HeadlessWxReadFileOption) {
       try {
         const result = readFile(option.filePath, option.encoding)
@@ -435,6 +476,22 @@ export function createHeadlessWxState() {
     },
     readFileSync(filePath: string, encoding?: string) {
       return readFile(filePath, encoding).data
+    },
+    rename(option: HeadlessWxRenameOption) {
+      try {
+        const result = renameFile(option.oldPath, option.newPath)
+        option.success?.(result)
+        option.complete?.(result)
+        return result
+      }
+      catch (error) {
+        option.fail?.(error as Error)
+        option.complete?.()
+        return undefined
+      }
+    },
+    renameSync(oldPath: string, newPath: string) {
+      renameFile(oldPath, newPath)
     },
     unlink(option: HeadlessWxUnlinkOption) {
       try {
