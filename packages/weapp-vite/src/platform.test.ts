@@ -7,7 +7,9 @@ import {
   getPlatformAppTypesPackage,
   getPlatformNpmDistDirName,
   getPlatformNpmImportPrefix,
+  getPlatformScriptModuleTag,
   getPreservedNpmDirNames,
+  getScriptModulePlatformOptions,
   getWxmlDirectivePrefix,
   getWxmlEventBindingStyle,
   getWxmlPlatformTransformOptions,
@@ -137,6 +139,17 @@ describe('platform adapter registry', () => {
     expect(normalizePlatformNpmImportPath('weapp', 'npm:dayjs')).toBe('npm:dayjs')
     expect(normalizePlatformNpmImportPath('alipay', 'npm:dayjs')).toBe('/node_modules/dayjs')
     expect(normalizePlatformNpmImportPath('alipay', '/miniprogram_npm/dayjs', { alipayNpmMode: 'node_modules' })).toBe('/node_modules/dayjs')
+    expect(getScriptModulePlatformOptions()).toEqual({
+      tagByExtension: {},
+    })
+    expect(getScriptModulePlatformOptions('alipay')).toEqual({
+      tagByExtension: {
+        sjs: 'import-sjs',
+      },
+    })
+    expect(getPlatformScriptModuleTag(undefined, 'sjs')).toBeUndefined()
+    expect(getPlatformScriptModuleTag('alipay', 'sjs')).toBe('import-sjs')
+    expect(getPlatformScriptModuleTag('alipay', 'wxs')).toBeUndefined()
     expect(getPreservedNpmDirNames('weapp')).toEqual(['miniprogram_npm'])
     expect(getPreservedNpmDirNames('alipay', { alipayNpmMode: 'miniprogram_npm' })).toEqual(['miniprogram_npm'])
     expect(getPreservedNpmDirNames('alipay', { alipayNpmMode: 'node_modules' })).toEqual(['node_modules'])
