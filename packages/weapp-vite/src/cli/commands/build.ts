@@ -87,6 +87,7 @@ export function registerBuildCommand(cli: CAC) {
       const enableAnalyze = Boolean(isUiEnabled(options) && targets.runMini)
       let analyzeHandle: AnalyzeDashboardHandle | undefined
       if (targets.runMini) {
+        const miniBuildStartedAt = Date.now()
         const output = await buildService.build(options)
         if (!Array.isArray(output) && 'output' in output) {
           logBuildPackageSizeReport({
@@ -108,6 +109,7 @@ export function registerBuildCommand(cli: CAC) {
               level: 'success',
               title: 'mini build completed',
               detail: `生产构建已完成，当前 analyze 结果包含 ${analyzeResult.packages.length} 个包。`,
+              durationMs: Date.now() - miniBuildStartedAt,
               tags: ['build', 'mini'],
             },
           ])
@@ -115,6 +117,7 @@ export function registerBuildCommand(cli: CAC) {
       }
       const webConfig = configService.weappWebConfig
       if (targets.runWeb && webConfig?.enabled) {
+        const webBuildStartedAt = Date.now()
         try {
           await webService?.build()
           logger.success(`Web 构建完成，输出目录：${colors.green(configService.relativeCwd(webConfig.outDir))}`)
@@ -124,6 +127,7 @@ export function registerBuildCommand(cli: CAC) {
               level: 'success',
               title: 'web build completed',
               detail: `Web 构建已完成，输出目录 ${configService.relativeCwd(webConfig.outDir)}。`,
+              durationMs: Date.now() - webBuildStartedAt,
               tags: ['build', 'web'],
             },
           ])
@@ -135,6 +139,7 @@ export function registerBuildCommand(cli: CAC) {
               level: 'error',
               title: 'web build failed',
               detail: error instanceof Error ? error.message : String(error),
+              durationMs: Date.now() - webBuildStartedAt,
               tags: ['build', 'web'],
             },
           ])
