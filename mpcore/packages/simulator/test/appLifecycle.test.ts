@@ -37,6 +37,39 @@ describe('app lifecycle alignment', () => {
     ])
   })
 
+  it('exposes launch and enter options through sync wx apis after bootstrap', () => {
+    const projectPath = createAppLifecycleFixture()
+    tempDirs.push(projectPath)
+    const session = createHeadlessSession({ projectPath })
+
+    session.reLaunch('/pages/home/index?from=entry')
+    const app = session.getApp()
+
+    app?.captureLaunchOptions()
+    app?.captureEnterOptions()
+
+    expect(app?.globalData.launchOptions).toEqual({
+      path: 'pages/home/index',
+      query: { from: 'entry' },
+      referrerInfo: {
+        appId: '',
+        extraData: {},
+      },
+      scene: 1001,
+    })
+    expect(app?.globalData.enterOptions).toEqual({
+      path: 'pages/home/index',
+      query: { from: 'entry' },
+      referrerInfo: {
+        appId: '',
+        extraData: {},
+      },
+      scene: 1001,
+    })
+    expect(session.getLaunchOptions()).toEqual(app?.globalData.launchOptions)
+    expect(session.getEnterOptions()).toEqual(app?.globalData.enterOptions)
+  })
+
   it('calls onPageNotFound with normalized route info before throwing', () => {
     const projectPath = createAppLifecycleFixture()
     tempDirs.push(projectPath)

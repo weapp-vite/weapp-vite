@@ -1,4 +1,4 @@
-import type { HeadlessAppDefinition, HeadlessHostRegistries } from '../host'
+import type { HeadlessAppDefinition, HeadlessHostRegistries, HeadlessWxLaunchOptions } from '../host'
 import type { HeadlessProjectDescriptor } from '../project/createProjectDescriptor'
 import type { HeadlessRouteRecord } from '../project/resolveRoutes'
 import type { HeadlessAppInstance } from '../runtime/appInstance'
@@ -31,16 +31,6 @@ interface ResolvedNavigationTarget {
   normalizedRoute: string
   query: Record<string, string>
   routeRecord: HeadlessRouteRecord
-}
-
-interface HeadlessAppLaunchOptions {
-  path: string
-  query: Record<string, string>
-  referrerInfo: {
-    appId: string
-    extraData: Record<string, never>
-  }
-  scene: number
 }
 
 interface HeadlessTabBarItem {
@@ -81,7 +71,7 @@ function parseNavigationUrl(url: string) {
   }
 }
 
-function createAppLaunchOptions(pathname: string, query: Record<string, string>): HeadlessAppLaunchOptions {
+function createAppLaunchOptions(pathname: string, query: Record<string, string>): HeadlessWxLaunchOptions {
   return {
     path: stripLeadingSlash(pathname),
     query: { ...query },
@@ -126,6 +116,8 @@ export class BrowserHeadlessSession {
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
   private readonly systemInfo = createDefaultSystemInfo()
+  private enterOptions = createAppLaunchOptions('', {})
+  private launchOptions = createAppLaunchOptions('', {})
   private readonly wxState = createHeadlessWxState()
 
   constructor(options: BrowserHeadlessSessionOptions) {
@@ -157,7 +149,9 @@ export class BrowserHeadlessSession {
       () => this.pages.slice(),
       () => this.getApp(),
       {
+        getEnterOptionsSync: () => ({ ...this.enterOptions, query: { ...this.enterOptions.query }, referrerInfo: { ...this.enterOptions.referrerInfo, extraData: { ...this.enterOptions.referrerInfo.extraData } } }),
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
+        getLaunchOptionsSync: () => ({ ...this.launchOptions, query: { ...this.launchOptions.query }, referrerInfo: { ...this.launchOptions.referrerInfo, extraData: { ...this.launchOptions.referrerInfo.extraData } } }),
         getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
         navigateBack: option => this.navigateBack(option?.delta),
         navigateTo: option => this.navigateTo(option.url),
@@ -213,6 +207,28 @@ export class BrowserHeadlessSession {
 
   getAppBaseInfo() {
     return deriveAppBaseInfo(this.systemInfo)
+  }
+
+  getLaunchOptions() {
+    return {
+      ...this.launchOptions,
+      query: { ...this.launchOptions.query },
+      referrerInfo: {
+        ...this.launchOptions.referrerInfo,
+        extraData: { ...this.launchOptions.referrerInfo.extraData },
+      },
+    }
+  }
+
+  getEnterOptions() {
+    return {
+      ...this.enterOptions,
+      query: { ...this.enterOptions.query },
+      referrerInfo: {
+        ...this.enterOptions.referrerInfo,
+        extraData: { ...this.enterOptions.referrerInfo.extraData },
+      },
+    }
   }
 
   getMenuButtonBoundingClientRect() {
@@ -421,6 +437,8 @@ export class BrowserHeadlessSession {
       return this.appInstance
     }
 
+    this.launchOptions = createAppLaunchOptions(launchOptions.path, launchOptions.query)
+    this.enterOptions = createAppLaunchOptions(launchOptions.path, launchOptions.query)
     const appModulePath = join(this.project.miniprogramRootPath, 'app.js')
     this.appDefinition = this.moduleLoader.executeAppModule(appModulePath)
     this.appInstance = createAppInstance(this.appDefinition)
