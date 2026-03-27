@@ -1,6 +1,6 @@
 import type { OutputExtensions } from './platforms/types'
 import type { MpPlatform, WeappViteConfig } from './types'
-import { DEFAULT_MP_PLATFORM, getMiniProgramPlatformAdapter } from './platform'
+import { DEFAULT_MP_PLATFORM, getPlatformOutputExtensions } from './platform'
 
 export const defaultExcluded: string[] = [
   '**/node_modules/**',
@@ -35,10 +35,7 @@ export const defaultExcluded: string[] = [
 
 export function getOutputExtensions(platform?: MpPlatform): OutputExtensions {
   const target = platform ?? DEFAULT_MP_PLATFORM
-  const adapter = getMiniProgramPlatformAdapter(target)
-  return {
-    ...adapter.outputExtensions,
-  }
+  return getPlatformOutputExtensions(target)
 }
 
 export function getWeappViteConfig(): WeappViteConfig {
