@@ -24,7 +24,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v6
@@ -52,6 +52,6 @@ jobs:
           NPM_CONFIG_PROVENANCE: true
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
