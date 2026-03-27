@@ -1,4 +1,10 @@
 {
+  "files.associations": {
+    "*.wxml": "html"
+  },
+  "html.customData": [
+    "./.weapp-vite/mini-program.html-data.json"
+  ],
   "tailwindCSS.includeLanguages": {
     "wxml": "html"
   }
