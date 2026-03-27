@@ -637,6 +637,42 @@ Page({
     expect(session.getSavedFileListSnapshot()).toEqual([])
   })
 
+  it('removes saved file registrations when renaming to non-saved paths in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    listSummary: ''
+  },
+  runSavedRenameOutLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-source.txt', 'alpha')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-source.txt',
+      success: (saveResult) => {
+        fsManager.renameSync(saveResult.savedFilePath, 'headless://temp/browser-moved.txt')
+        this.setData({
+          listSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{listSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedRenameOutLab()
+
+    expect(page.data.listSummary).toBe('[]')
+    expect(session.getSavedFileListSnapshot()).toEqual([])
+    expect(session.getFileText('headless://temp/browser-moved.txt')).toBe('alpha')
+  })
+
   it('reports stat sizes and fs manager failures in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
