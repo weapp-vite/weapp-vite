@@ -7,6 +7,8 @@ import type {
   HeadlessWxFileSystemManager,
   HeadlessWxFileSystemResult,
   HeadlessWxGetNetworkTypeResult,
+  HeadlessWxGetSavedFileInfoOption,
+  HeadlessWxGetSavedFileInfoSuccessResult,
   HeadlessWxGetSavedFileListSuccessResult,
   HeadlessWxMkdirOption,
   HeadlessWxNetworkStatusChangeCallback,
@@ -625,6 +627,19 @@ export function createHeadlessWxState() {
     }
   }
 
+  const getSavedFileInfo = (filePath: string): HeadlessWxGetSavedFileInfoSuccessResult => {
+    const normalizedPath = normalizeFsPath(filePath)
+    const savedFile = savedFiles.get(normalizedPath)
+    if (!savedFile) {
+      throw new Error(`getSavedFileInfo:fail no such file or directory, stat '${normalizedPath}'`)
+    }
+    return {
+      createTime: savedFile.createTime,
+      errMsg: 'getSavedFileInfo:ok',
+      size: savedFile.size,
+    }
+  }
+
   const removeSavedFile = (filePath: string) => {
     const normalizedPath = normalizeFsPath(filePath)
     if (!savedFiles.has(normalizedPath)) {
@@ -877,6 +892,9 @@ export function createHeadlessWxState() {
     },
     getFileSystemManager() {
       return fileSystemManager
+    },
+    getSavedFileInfo(option: HeadlessWxGetSavedFileInfoOption) {
+      return getSavedFileInfo(option.filePath)
     },
     getSavedFileList() {
       return getSavedFileList()

@@ -215,6 +215,7 @@ Page({
 Page({
   data: {
     downloadSummary: '',
+    savedInfoSummary: '',
     saveSummary: '',
     uploadSummary: ''
   },
@@ -230,6 +231,14 @@ Page({
           success: (saveResult) => {
             this.setData({
               saveSummary: JSON.stringify(saveResult)
+            })
+            wx.getSavedFileInfo({
+              filePath: saveResult.savedFilePath,
+              success: (savedFileInfo) => {
+                this.setData({
+                  savedInfoSummary: JSON.stringify(savedFileInfo)
+                })
+              }
             })
             wx.uploadFile({
               url: 'https://mock.mpcore.dev/upload/browser-report',
@@ -268,6 +277,8 @@ Page({
     page.runFileTransferLab()
 
     expect(page.data.downloadSummary).toContain('"errMsg":"downloadFile:ok"')
+    expect(page.data.savedInfoSummary).toContain('"errMsg":"getSavedFileInfo:ok"')
+    expect(page.data.savedInfoSummary).toContain('"size":19')
     expect(page.data.saveSummary).toContain('"savedFilePath":"headless://wxfile/saved/')
     expect(page.data.uploadSummary).toContain('"browser":true')
     expect(session.renderCurrentPage().wxml).toContain('browser report body')
@@ -596,7 +607,7 @@ Page({
     expect(session.getFileText('headless://saved/browser-saved-file.txt')).toBeNull()
   })
 
-  it('reports removeSavedFile failures and post-remove read failures in browser runtime', () => {
+  it('reports removeSavedFile and getSavedFileInfo failures after removal in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
       ['app.js', 'App({})'],
@@ -604,6 +615,7 @@ Page({
 Page({
   data: {
     missingRemoveSummary: '',
+    postRemoveInfoSummary: '',
     postRemoveReadSummary: '',
     secondRemoveSummary: ''
   },
@@ -635,6 +647,14 @@ Page({
                     postRemoveReadSummary: error.message
                   })
                 }
+                wx.getSavedFileInfo({
+                  filePath: saveResult.savedFilePath,
+                  fail: (infoError) => {
+                    this.setData({
+                      postRemoveInfoSummary: infoError.message
+                    })
+                  }
+                })
                 wx.removeSavedFile({
                   filePath: saveResult.savedFilePath,
                   fail: (secondError) => {
@@ -665,6 +685,7 @@ Page({
     page.runSavedFileErrorLab()
 
     expect(page.data.missingRemoveSummary).toContain('removeSavedFile:fail no such file or directory')
+    expect(page.data.postRemoveInfoSummary).toContain('getSavedFileInfo:fail no such file or directory')
     expect(page.data.postRemoveReadSummary).toContain('readFile:fail no such file or directory')
     expect(page.data.secondRemoveSummary).toContain('removeSavedFile:fail no such file or directory')
   })
