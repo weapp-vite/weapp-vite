@@ -1,5 +1,13 @@
 # weapp-vite
 
+## 6.11.7
+
+### Patch Changes
+
+- 🐛 **回退 Rolldown 到 `1.0.0-rc.11`，临时规避 `weapp-vite@6.11.6` 在小程序 `dev/watch` 模式下二次增量构建触发的 `[FILE_NAME_CONFLICT]` 告警，并同步模板 catalog 依赖版本。** [`60cb50f`](https://github.com/weapp-vite/weapp-vite/commit/60cb50ff0b0fd2973247efbd1db46e708fccb2bf) by @sonofmagic
+- 📦 **Dependencies**
+  → `@weapp-vite/ast@6.11.7`, `wevu@6.11.7`
+
 ## 6.11.6
 
 ### Patch Changes
