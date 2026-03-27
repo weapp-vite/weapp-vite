@@ -1,8 +1,14 @@
 import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
+import { afterEach, vi } from 'vitest'
+import { __internal as createProjectInternal } from '@/createProject'
 import { TemplateName } from '@/enums'
+import { TEMPLATE_CATALOG, TEMPLATE_NAMED_CATALOG } from '@/generated/catalog'
 import { createProject } from '@/index'
+import * as npm from '@/npm'
+
+const DIGIT_RE = /\d/
 
 function normalizeRelativePath(value: string) {
   return value.split(path.sep).join('/')
@@ -50,7 +56,7 @@ async function scanFiles(root: string) {
 }
 
 async function collectExpectedTemplateFiles(templateName: TemplateName) {
-  const templateDir = path.resolve(import.meta.dirname, '../templates', templateName)
+  const { preferredTemplateDir } = await createProjectInternal.resolveTemplateDirs(templateName)
   const files: string[] = []
 
   async function walk(currentDir: string) {
@@ -64,32 +70,165 @@ async function collectExpectedTemplateFiles(templateName: TemplateName) {
         await walk(full)
         continue
       }
-      files.push(normalizeExpectedProjectPath(normalizeRelativePath(path.relative(templateDir, full))))
+      files.push(
+        normalizeExpectedProjectPath(normalizeRelativePath(path.relative(preferredTemplateDir, full))),
+      )
     }
   }
 
-  await walk(templateDir)
+  await walk(preferredTemplateDir)
 
   return files.sort((a, b) => a.localeCompare(b))
 }
 
+function cloneJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value))
+}
+
+function resolveCatalogSpec(packageName: string, spec: string) {
+  if (!spec.startsWith('catalog:')) {
+    return spec
+  }
+
+  const catalogName = spec.slice('catalog:'.length)
+  if (!catalogName) {
+    return TEMPLATE_CATALOG[packageName as keyof typeof TEMPLATE_CATALOG] ?? spec
+  }
+
+  const namedCatalog = TEMPLATE_NAMED_CATALOG[catalogName as keyof typeof TEMPLATE_NAMED_CATALOG]
+  const fromNamedCatalog = namedCatalog?.[packageName as keyof typeof namedCatalog]
+  if (!fromNamedCatalog) {
+    return TEMPLATE_CATALOG[packageName as keyof typeof TEMPLATE_CATALOG] ?? spec
+  }
+
+  if (fromNamedCatalog === 'latest') {
+    return TEMPLATE_CATALOG[packageName as keyof typeof TEMPLATE_CATALOG] ?? fromNamedCatalog
+  }
+
+  return fromNamedCatalog
+}
+
+function normalizeDependencySpecs(pkgJson: Record<string, any>) {
+  for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
+    const deps = pkgJson[field]
+    if (!deps) {
+      continue
+    }
+
+    for (const [name, rawSpec] of Object.entries(deps)) {
+      if (typeof rawSpec !== 'string') {
+        continue
+      }
+
+      if (rawSpec.startsWith('catalog:')) {
+        deps[name] = resolveCatalogSpec(name, rawSpec)
+        continue
+      }
+
+      if (!rawSpec.startsWith('workspace:')) {
+        continue
+      }
+
+      const workspaceSpec = rawSpec.slice('workspace:'.length)
+      if (workspaceSpec && DIGIT_RE.test(workspaceSpec)) {
+        deps[name] = workspaceSpec
+        continue
+      }
+
+      const fromCatalog = TEMPLATE_CATALOG[name as keyof typeof TEMPLATE_CATALOG]
+      if (fromCatalog) {
+        deps[name] = fromCatalog
+      }
+    }
+  }
+}
+
+function upsertDependencyVersion(pkgJson: Record<string, any>, packageName: string, resolvedVersion: string) {
+  for (const field of ['dependencies', 'devDependencies', 'peerDependencies']) {
+    if (pkgJson[field]?.[packageName]) {
+      pkgJson[field][packageName] = resolvedVersion
+    }
+  }
+}
+
+async function buildExpectedPackageJson(templateName: TemplateName) {
+  const { preferredTemplateDir } = await createProjectInternal.resolveTemplateDirs(templateName)
+  const templatePackageJson = await fs.readJSON(path.join(preferredTemplateDir, 'package.json'))
+  const expectedPackageJson = cloneJson(templatePackageJson)
+  const { version: weappViteVersion } = await fs.readJSON(
+    path.resolve(import.meta.dirname, '../../..', 'packages/weapp-vite/package.json'),
+  )
+  const { version: wevuVersion } = await fs.readJSON(
+    path.resolve(import.meta.dirname, '../../..', 'packages/wevu/package.json'),
+  )
+
+  normalizeDependencySpecs(expectedPackageJson)
+  expectedPackageJson.devDependencies ??= {}
+  upsertDependencyVersion(expectedPackageJson, 'weapp-vite', `^${weappViteVersion}`)
+  upsertDependencyVersion(expectedPackageJson, 'wevu', `^${wevuVersion}`)
+
+  if (!expectedPackageJson.devDependencies['weapp-tailwindcss']) {
+    expectedPackageJson.devDependencies['weapp-tailwindcss'] = '^4.3.3'
+  }
+
+  return expectedPackageJson
+}
+
+function expectNoUnresolvedDependencySpec(pkgJson: Record<string, any>) {
+  for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
+    const deps = pkgJson[field]
+    if (!deps) {
+      continue
+    }
+
+    for (const spec of Object.values(deps)) {
+      expect(typeof spec).toBe('string')
+      expect(spec).not.toMatch(/^catalog:/)
+      expect(spec).not.toMatch(/^workspace:/)
+    }
+  }
+}
+
 describe('template parity', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   async function createTmpRoot(suffix: string) {
     return await fs.mkdtemp(path.join(os.tmpdir(), `weapp-template-parity-${suffix}-`))
   }
 
-  it.each(Object.values(TemplateName))('copies all expected files for template %s', async (templateName) => {
+  it.each(Object.values(TemplateName))('creates complete offline output for template %s', async (templateName) => {
     const root = await createTmpRoot(templateName)
+    vi.spyOn(npm, 'latestVersion').mockResolvedValue(null)
 
     await createProject(root, templateName)
 
-    const [expectedFiles, actualFiles] = await Promise.all([
+    const [expectedFiles, actualFiles, expectedPackageJson, actualPackageJson] = await Promise.all([
       collectExpectedTemplateFiles(templateName),
       scanFiles(root),
+      buildExpectedPackageJson(templateName),
+      fs.readJSON(path.join(root, 'package.json')),
     ])
     const actualFileSet = new Set(actualFiles)
+    const expectedFileSet = new Set(expectedFiles)
     const missingFiles = expectedFiles.filter(file => !actualFileSet.has(file))
+    const unexpectedFiles = actualFiles.filter(file => !expectedFileSet.has(file))
 
     expect(missingFiles).toEqual([])
+    expect(unexpectedFiles).toEqual([])
+    expect(await fs.pathExists(path.join(root, '.gitignore'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, 'gitignore'))).toBe(false)
+    expect(await fs.pathExists(path.join(root, 'package.json'))).toBe(true)
+    expect(await fs.pathExists(path.join(root, 'project.config.json'))).toBe(true)
+    expect(actualPackageJson.scripts).toEqual(expectedPackageJson.scripts)
+    expect(actualPackageJson.type).toBe(expectedPackageJson.type)
+    expect(actualPackageJson.private).toBe(expectedPackageJson.private)
+    expect(actualPackageJson.homepage).toBe(expectedPackageJson.homepage)
+    expect(actualPackageJson.dependencies).toEqual(expectedPackageJson.dependencies)
+    expect(actualPackageJson.devDependencies).toEqual(expectedPackageJson.devDependencies)
+    expect(actualPackageJson.peerDependencies).toEqual(expectedPackageJson.peerDependencies)
+    expect(actualPackageJson.optionalDependencies).toEqual(expectedPackageJson.optionalDependencies)
+    expectNoUnresolvedDependencySpec(actualPackageJson)
   })
 })
