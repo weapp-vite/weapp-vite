@@ -41,6 +41,11 @@ interface HeadlessTabBarItem {
   text?: string
 }
 
+interface HeadlessTabBarSnapshotItem extends HeadlessTabBarItem {
+  badge: string | null
+  redDot: boolean
+}
+
 const LEADING_SLASH_RE = /^\/+/
 const PAGE_STACK_LIMIT = 10
 const DATA_ATTR_SELECTOR_RE = /^\[data-([^=\]]+)="([^"]*)"\]$/
@@ -134,6 +139,7 @@ export class BrowserHeadlessSession {
   private readonly tabBarRoutes: Set<string>
   private readonly tabPages = new Map<string, HeadlessPageInstance>()
   private readonly tabBarItems = new Map<string, HeadlessTabBarItem>()
+  private readonly tabBarState = new Map<number, HeadlessTabBarSnapshotItem>()
   private tabBarVisible = false
   private readonly systemInfo = createDefaultSystemInfo()
   private enterOptions = createAppLaunchOptions('', {})
@@ -160,6 +166,13 @@ export class BrowserHeadlessSession {
       this.tabBarItems.set(pagePath, {
         index,
         pagePath,
+        text: typeof item.text === 'string' ? item.text : undefined,
+      })
+      this.tabBarState.set(index, {
+        badge: null,
+        index,
+        pagePath,
+        redDot: false,
         text: typeof item.text === 'string' ? item.text : undefined,
       })
     })
@@ -198,15 +211,19 @@ export class BrowserHeadlessSession {
         hideShareMenu: () => this.wxState.hideShareMenu(),
         hideNavigationBarLoading: () => this.hideNavigationBarLoading(),
         hideTabBar: () => this.hideTabBar(),
+        hideTabBarRedDot: option => this.hideTabBarRedDot(option.index),
         showShareMenu: option => this.wxState.showShareMenu(option),
         showNavigationBarLoading: () => this.showNavigationBarLoading(),
         showTabBar: () => this.showTabBar(),
+        showTabBarRedDot: option => this.showTabBarRedDot(option.index),
         showActionSheet: option => this.wxState.showActionSheet(option),
         showLoading: option => this.wxState.showLoading(option),
         showModal: option => this.wxState.showModal(option),
         showToast: option => this.wxState.showToast(option),
         stopPullDownRefresh: () => this.stopPullDownRefresh(),
         switchTab: option => this.switchTab(option.url),
+        removeTabBarBadge: option => this.removeTabBarBadge(option.index),
+        setTabBarBadge: option => this.setTabBarBadge(option.index, option.text),
         updateShareMenu: option => this.wxState.updateShareMenu(option),
       },
     )
@@ -247,6 +264,19 @@ export class BrowserHeadlessSession {
 
   getTabBar() {
     return {
+      visible: this.tabBarVisible,
+    }
+  }
+
+  getTabBarSnapshot() {
+    return {
+      items: Array.from(this.tabBarState.values(), item => ({
+        badge: item.badge,
+        index: item.index,
+        pagePath: item.pagePath,
+        redDot: item.redDot,
+        text: item.text,
+      })),
       visible: this.tabBarVisible,
     }
   }
@@ -411,10 +441,44 @@ export class BrowserHeadlessSession {
     }
   }
 
+  hideTabBarRedDot(index: number) {
+    const item = this.requireTabBarItem(index, 'wx.hideTabBarRedDot()')
+    item.redDot = false
+    return {
+      errMsg: 'hideTabBarRedDot:ok',
+    }
+  }
+
   showTabBar() {
     this.tabBarVisible = this.tabBarRoutes.size > 0
     return {
       errMsg: 'showTabBar:ok',
+    }
+  }
+
+  showTabBarRedDot(index: number) {
+    const item = this.requireTabBarItem(index, 'wx.showTabBarRedDot()')
+    item.badge = null
+    item.redDot = true
+    return {
+      errMsg: 'showTabBarRedDot:ok',
+    }
+  }
+
+  removeTabBarBadge(index: number) {
+    const item = this.requireTabBarItem(index, 'wx.removeTabBarBadge()')
+    item.badge = null
+    return {
+      errMsg: 'removeTabBarBadge:ok',
+    }
+  }
+
+  setTabBarBadge(index: number, text: string) {
+    const item = this.requireTabBarItem(index, 'wx.setTabBarBadge()')
+    item.badge = text
+    item.redDot = false
+    return {
+      errMsg: 'setTabBarBadge:ok',
     }
   }
 
@@ -837,6 +901,15 @@ export class BrowserHeadlessSession {
     return {
       ...item,
     }
+  }
+
+  private requireTabBarItem(index: number, action: string) {
+    const normalizedIndex = Number.isFinite(index) ? Math.trunc(index) : Number.NaN
+    const item = this.tabBarState.get(normalizedIndex)
+    if (!item) {
+      throw new Error(`Cannot call ${action} with unknown tabBar index ${index} in browser simulator runtime.`)
+    }
+    return item
   }
 
   private unloadAllPages() {

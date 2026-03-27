@@ -152,6 +152,14 @@ export interface HeadlessWxShareMenuOption extends HeadlessWxCallbackOption<{ er
 
 export interface HeadlessWxTabBarOption extends HeadlessWxCallbackOption<{ errMsg: string }> {}
 
+export interface HeadlessWxTabBarItemOption extends HeadlessWxCallbackOption<{ errMsg: string }> {
+  index: number
+}
+
+export interface HeadlessWxSetTabBarBadgeOption extends HeadlessWxTabBarItemOption {
+  text: string
+}
+
 export interface HeadlessWxShowActionSheetResult {
   errMsg: string
   tapIndex: number
@@ -237,15 +245,19 @@ export interface HeadlessWxDriver {
   hideShareMenu: () => { errMsg: string }
   hideNavigationBarLoading: () => { errMsg: string }
   hideTabBar: () => { errMsg: string }
+  hideTabBarRedDot: (option: HeadlessWxTabBarItemOption) => { errMsg: string }
   showShareMenu: (option: HeadlessWxShareMenuOption) => { errMsg: string }
   showNavigationBarLoading: () => { errMsg: string }
   showTabBar: () => { errMsg: string }
+  showTabBarRedDot: (option: HeadlessWxTabBarItemOption) => { errMsg: string }
   showActionSheet: (option: HeadlessWxShowActionSheetOption) => HeadlessWxShowActionSheetResult
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string }
   showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string }
   stopPullDownRefresh: () => void
   switchTab: (option: HeadlessWxNavigateOption) => unknown
+  removeTabBarBadge: (option: HeadlessWxTabBarItemOption) => { errMsg: string }
+  setTabBarBadge: (option: HeadlessWxSetTabBarBadgeOption) => { errMsg: string }
   updateShareMenu: (option: HeadlessWxShareMenuOption) => { errMsg: string }
 }
 
@@ -287,15 +299,19 @@ export interface HeadlessWx {
   hideShareMenu: (option?: HeadlessWxCallbackOption<{ errMsg: string }>) => { errMsg: string } | undefined
   hideNavigationBarLoading: (option?: HeadlessWxHideNavigationBarLoadingOption) => { errMsg: string } | undefined
   hideTabBar: (option?: HeadlessWxTabBarOption) => { errMsg: string } | undefined
+  hideTabBarRedDot: (option: HeadlessWxTabBarItemOption) => { errMsg: string } | undefined
   showShareMenu: (option?: HeadlessWxShareMenuOption) => { errMsg: string } | undefined
   showNavigationBarLoading: (option?: HeadlessWxShowNavigationBarLoadingOption) => { errMsg: string } | undefined
   showTabBar: (option?: HeadlessWxTabBarOption) => { errMsg: string } | undefined
+  showTabBarRedDot: (option: HeadlessWxTabBarItemOption) => { errMsg: string } | undefined
   showActionSheet: (option: HeadlessWxShowActionSheetOption) => HeadlessWxShowActionSheetResult | undefined
   showLoading: (option: HeadlessWxShowLoadingOption) => { errMsg: string } | undefined
   showModal: (option: HeadlessWxShowModalOption) => HeadlessWxShowModalResult | undefined
   showToast: (option: HeadlessWxShowToastOption) => { errMsg: string } | undefined
   stopPullDownRefresh: () => void
   switchTab: (option: HeadlessWxNavigateOption) => unknown
+  removeTabBarBadge: (option: HeadlessWxTabBarItemOption) => { errMsg: string } | undefined
+  setTabBarBadge: (option: HeadlessWxSetTabBarBadgeOption) => { errMsg: string } | undefined
   updateShareMenu: (option?: HeadlessWxShareMenuOption) => { errMsg: string } | undefined
 }
 
@@ -486,15 +502,19 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     hideShareMenu: true,
     hideNavigationBarLoading: true,
     hideTabBar: true,
+    hideTabBarRedDot: true,
     showShareMenu: true,
     showNavigationBarLoading: true,
     showTabBar: true,
+    showTabBarRedDot: true,
     showActionSheet: true,
     showLoading: true,
     showModal: true,
     showToast: true,
     stopPullDownRefresh: true,
     switchTab: true,
+    removeTabBarBadge: true,
+    setTabBarBadge: true,
     updateShareMenu: true,
   }
 
@@ -564,9 +584,11 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     hideShareMenu: option => invokeWxApi(() => driver.hideShareMenu(), option),
     hideNavigationBarLoading: option => invokeWxApi(() => driver.hideNavigationBarLoading(), option),
     hideTabBar: option => invokeWxApi(() => driver.hideTabBar(), option),
+    hideTabBarRedDot: option => invokeWxApi(() => driver.hideTabBarRedDot(option), option),
     showShareMenu: option => invokeWxApi(() => driver.showShareMenu(option ?? {}), option),
     showNavigationBarLoading: option => invokeWxApi(() => driver.showNavigationBarLoading(), option),
     showTabBar: option => invokeWxApi(() => driver.showTabBar(), option),
+    showTabBarRedDot: option => invokeWxApi(() => driver.showTabBarRedDot(option), option),
     showActionSheet: option => invokeWxApi(() => driver.showActionSheet(option), option),
     showLoading: option => invokeWxApi(() => driver.showLoading(option), option),
     showModal: option => invokeWxApi(() => driver.showModal(option), option),
@@ -575,6 +597,8 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     switchTab: option => invokeWxApi(() => {
       driver.switchTab(option)
     }, option),
+    removeTabBarBadge: option => invokeWxApi(() => driver.removeTabBarBadge(option), option),
+    setTabBarBadge: option => invokeWxApi(() => driver.setTabBarBadge(option), option),
     updateShareMenu: option => invokeWxApi(() => driver.updateShareMenu(option ?? {}), option),
   }
 }

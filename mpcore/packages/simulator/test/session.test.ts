@@ -1106,6 +1106,113 @@ Page({
     ])
   })
 
+  it('supports tabBar badge and red dot state transitions', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-tab-bar-badge-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/home/index', 'pages/profile/index'],
+      tabBar: {
+        list: [
+          { pagePath: 'pages/home/index', text: 'Home' },
+          { pagePath: 'pages/profile/index', text: 'Profile' },
+        ],
+      },
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/home/index.js'), `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  showDot() {
+    wx.showTabBarRedDot({
+      index: 1,
+      success: () => this.push('dot:success')
+    })
+  },
+  hideDot() {
+    wx.hideTabBarRedDot({
+      index: 1,
+      complete: (result) => this.push('hide-dot:complete:' + (result?.errMsg ?? 'none'))
+    })
+  },
+  setBadge() {
+    wx.setTabBarBadge({
+      index: 1,
+      text: '9+',
+      success: () => this.push('badge:success')
+    })
+  },
+  removeBadge() {
+    wx.removeTabBarBadge({
+      index: 1,
+      complete: (result) => this.push('remove-badge:complete:' + (result?.errMsg ?? 'none'))
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/home/index.wxml'), '<view>home</view>')
+    writeFixtureFile(path.join(root, 'dist/pages/profile/index.js'), 'Page({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/profile/index.wxml'), '<view>profile</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/home/index')
+
+    expect(session.getTabBarSnapshot()).toEqual({
+      items: [
+        { badge: null, index: 0, pagePath: 'pages/home/index', redDot: false, text: 'Home' },
+        { badge: null, index: 1, pagePath: 'pages/profile/index', redDot: false, text: 'Profile' },
+      ],
+      visible: true,
+    })
+
+    page.showDot()
+    expect(session.getTabBarSnapshot().items[1]).toEqual({
+      badge: null,
+      index: 1,
+      pagePath: 'pages/profile/index',
+      redDot: true,
+      text: 'Profile',
+    })
+
+    page.setBadge()
+    expect(session.getTabBarSnapshot().items[1]).toEqual({
+      badge: '9+',
+      index: 1,
+      pagePath: 'pages/profile/index',
+      redDot: false,
+      text: 'Profile',
+    })
+
+    page.removeBadge()
+    page.showDot()
+    page.hideDot()
+    expect(session.getTabBarSnapshot().items[1]).toEqual({
+      badge: null,
+      index: 1,
+      pagePath: 'pages/profile/index',
+      redDot: false,
+      text: 'Profile',
+    })
+    expect(page.data.logs).toEqual([
+      'dot:success',
+      'badge:success',
+      'remove-badge:complete:removeTabBarBadge:ok',
+      'dot:success',
+      'hide-dot:complete:hideTabBarRedDot:ok',
+    ])
+  })
+
   it('supports share menu state transitions', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-share-menu-'))
     tempDirs.push(root)
