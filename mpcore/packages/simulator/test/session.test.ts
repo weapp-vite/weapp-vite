@@ -1480,5 +1480,10 @@ Page({
     expect(page.data.multiRectSummary).toContain('"kind":"alpha"')
     expect(page.data.multiRectSummary).toContain('"id":"multi-b"')
     expect(page.data.multiRectSummary).toContain('"kind":"beta"')
+
+    page.inspectMetaQuery()
+    expect(page.data.metaSummary).toContain('"source":"component-card"')
+    expect(page.data.metaSummary).toContain('"type":"unsupported-context"')
+    expect(page.data.metaSummary).toContain('"type":"view"')
   })
 })

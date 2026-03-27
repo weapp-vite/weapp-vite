@@ -2919,4 +2919,42 @@ Page({
     expect(page.data.summary).toContain('"id":"item-b"')
     expect(page.data.summary).toContain('"kind":"beta"')
   })
+
+  it('returns mark, context and node placeholders in browser runtime selector query', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    summary: ''
+  },
+  inspectMeta() {
+    wx.createSelectorQuery()
+      .select('#meta-card')
+      .fields({
+        context: true,
+        mark: true,
+        node: true
+      }, (result) => {
+        this.setData({
+          summary: JSON.stringify(result)
+        })
+      })
+      .exec()
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view id="meta-card" mark:source="browser-meta"></view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    page.inspectMeta()
+
+    expect(page.data.summary).toContain('"source":"browser-meta"')
+    expect(page.data.summary).toContain('"type":"unsupported-context"')
+    expect(page.data.summary).toContain('"type":"view"')
+  })
 })

@@ -590,6 +590,7 @@ Page({
     count: 2,
     eventSnapshot: '',
     formSnapshot: '',
+    metaSummary: '',
     log: [],
     multiRectSummary: '',
     scopedRect: null,
@@ -629,6 +630,22 @@ Page({
       }, (result) => {
         this.setData({
           multiRectSummary: JSON.stringify(result)
+        })
+      })
+      .exec()
+  },
+  inspectMetaQuery() {
+    const card = this.selectComponent('#status-card')
+    wx.createSelectorQuery()
+      .in(card)
+      .select('#card-trigger')
+      .fields({
+        context: true,
+        mark: true,
+        node: true
+      }, (result) => {
+        this.setData({
+          metaSummary: JSON.stringify(result)
         })
       })
       .exec()
@@ -700,7 +717,7 @@ Component({
 })
 `)
   writeText(path.join(root, 'dist/components/status-card/index.wxml'), `
-<view id="card-trigger" class="card-shell" bindtap="pulse">count: {{count}}</view>
+<view id="card-trigger" class="card-shell" mark:source="component-card" bindtap="pulse">count: {{count}}</view>
 <input id="card-input" bindinput="onInnerInput" bindchange="onInnerChange" bindblur="onInnerBlur" value="{{formState.input}}" />
 <view id="multi-a" class="multi-item" data-kind="alpha"></view>
 <view id="multi-b" class="multi-item" data-kind="beta"></view>

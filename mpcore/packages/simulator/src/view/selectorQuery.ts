@@ -24,6 +24,8 @@ export interface HeadlessSelectorQueryResolverOptions {
 }
 
 const DATASET_NAME_RE = /-([a-z])/g
+const LEADING_MARK_PREFIX_RE = /^mark[:\-]?/
+const MARK_NAME_RE = /[:\-]([a-z])/g
 const NUMERIC_LIKE_VALUE_RE = /-?\d+(?:\.\d+)?/
 
 function toDatasetKey(attributeName: string) {
@@ -41,6 +43,23 @@ function collectDataset(node: DomNodeLike) {
     dataset[toDatasetKey(key)] = value
   }
   return dataset
+}
+
+function toMarkKey(attributeName: string) {
+  return attributeName
+    .replace(LEADING_MARK_PREFIX_RE, '')
+    .replace(MARK_NAME_RE, (_match, char: string) => char.toUpperCase())
+}
+
+function collectMark(node: DomNodeLike) {
+  const mark: Record<string, string> = {}
+  for (const [key, value] of Object.entries(node.attribs ?? {})) {
+    if (!(key.startsWith('mark:') || key.startsWith('mark-'))) {
+      continue
+    }
+    mark[toMarkKey(key)] = value
+  }
+  return mark
 }
 
 function createScopedRoot(node: DomNodeLike): DomNodeLike {
@@ -163,7 +182,7 @@ function resolveFieldsResult(
     result.dataset = collectDataset(node)
   }
   if (fields.mark) {
-    result.mark = {}
+    result.mark = collectMark(node)
   }
   if (fields.rect || fields.size) {
     const rect = resolveRect(node)
@@ -185,10 +204,14 @@ function resolveFieldsResult(
     Object.assign(result, pickComputedStyle(node, fields.computedStyle))
   }
   if (fields.context) {
-    result.context = null
+    result.context = {
+      type: 'unsupported-context',
+    }
   }
   if (fields.node) {
-    result.node = null
+    result.node = {
+      type: node.name ?? 'unknown',
+    }
   }
 
   return result
