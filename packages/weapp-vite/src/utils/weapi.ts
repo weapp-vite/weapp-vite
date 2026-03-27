@@ -1,3 +1,5 @@
+import { getMiniProgramGlobalKeys } from './miniProgramGlobals'
+
 function createGlobalHostExpression() {
   return [
     `((typeof globalThis !== 'undefined' && globalThis)`,
@@ -15,13 +17,12 @@ function createGlobalHostExpression() {
 }
 
 export function createNativeApiFallbackExpression() {
+  const globalChecks = getMiniProgramGlobalKeys().map((key, index) => {
+    const prefix = index === 0 ? '((' : ' || ('
+    return `${prefix}typeof ${key} !== 'undefined' && ${key})`
+  })
   return [
-    `((typeof my !== 'undefined' && my)`,
-    ` || (typeof wx !== 'undefined' && wx)`,
-    ` || (typeof tt !== 'undefined' && tt)`,
-    ` || (typeof swan !== 'undefined' && swan)`,
-    ` || (typeof jd !== 'undefined' && jd)`,
-    ` || (typeof xhs !== 'undefined' && xhs)`,
+    ...globalChecks,
     ` || undefined)`,
   ].join('')
 }

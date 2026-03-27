@@ -7,6 +7,7 @@ import logger from '../../../logger'
 import { resolveWeappLibEntries } from '../../../runtime/lib'
 import { findJsEntry, findVueEntry, isCSSRequest } from '../../../utils'
 import { generate, parseJsLike, traverse } from '../../../utils/babel'
+import { getMiniProgramPlatformGlobalKey } from '../../../utils/miniProgramGlobals'
 import { normalizeWatchPath } from '../../../utils/path'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { createNativeApiFallbackExpression, createWeapiAccessExpression, createWeapiHostExpression } from '../../../utils/weapi'
@@ -156,18 +157,6 @@ export function createLoadHook(state: CorePluginState) {
       globalName,
       replaceWx,
     }
-  }
-
-  function resolveWeapiPlatform(platform: string) {
-    const platformMap: Record<string, string> = {
-      weapp: 'wx',
-      alipay: 'my',
-      tt: 'tt',
-      swan: 'swan',
-      jd: 'jd',
-      xhs: 'xhs',
-    }
-    return platformMap[platform] ?? platform
   }
 
   function createWeapiInjectionCode(options: {
@@ -359,7 +348,7 @@ export function createLoadHook(state: CorePluginState) {
         return result
       }
       if (result && typeof result === 'object' && 'code' in result) {
-        const platform = resolveWeapiPlatform(configService.platform)
+        const platform = getMiniProgramPlatformGlobalKey(configService.platform)
         const injectedCode = createWeapiInjectionCode({
           globalName: injectOptions.globalName,
           replaceWx: injectOptions.replaceWx,

@@ -1,6 +1,7 @@
 import type { AutoRoutes } from '../../types/routes'
 import type { RuntimeState } from '../runtimeState'
 import path from 'pathe'
+import { createMiniProgramGlobalResolveExpression, getRouteRuntimeGlobalKeys } from '../../../utils/miniProgramGlobals'
 import { cloneRoutes, createTypedRouterDefinition, updateRoutesReference } from '../routes'
 
 export interface AutoRoutesPersistentCache {
@@ -33,6 +34,9 @@ export function createEmptyAutoRoutesSnapshot(): AutoRoutes {
 }
 
 export function createAutoRoutesModuleCode(serialized: string) {
+  const routeRuntimeGlobalExpression = createMiniProgramGlobalResolveExpression({
+    globalKeys: getRouteRuntimeGlobalKeys(),
+  })
   return [
     'const routes = ',
     serialized,
@@ -40,7 +44,7 @@ export function createAutoRoutesModuleCode(serialized: string) {
     'const pages = routes.pages;',
     'const entries = routes.entries;',
     'const subPackages = routes.subPackages;',
-    'const resolveMiniProgramGlobal = () => (globalThis.wx ?? globalThis.tt ?? globalThis.my);',
+    `const resolveMiniProgramGlobal = () => ${routeRuntimeGlobalExpression};`,
     'const callRouteMethod = (methodName, option) => {',
     '  const miniProgramGlobal = resolveMiniProgramGlobal();',
     '  const routeMethod = miniProgramGlobal?.[methodName];',

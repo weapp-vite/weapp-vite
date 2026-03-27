@@ -3,6 +3,7 @@ import type { AutoRoutes, AutoRoutesSubPackage } from '../../../types/routes'
 import type { CandidateEntry } from '../candidates'
 import path from 'pathe'
 import { resolveWeappAutoRoutesConfig } from '../../../autoRoutesConfig'
+import { createMiniProgramGlobalResolveExpression, getRouteRuntimeGlobalKeys } from '../../../utils/miniProgramGlobals'
 import { toPosixPath } from '../../../utils/path'
 import { createAutoRoutesMatcher } from '../matcher'
 import { getAutoRoutesSubPackageRoots } from '../subPackageRoots'
@@ -148,6 +149,9 @@ export async function scanRoutes(
 
   const serialized = JSON.stringify(snapshot, null, 2)
   const typedDefinition = createTypedRouterDefinition(snapshot)
+  const routeRuntimeGlobalExpression = createMiniProgramGlobalResolveExpression({
+    globalKeys: getRouteRuntimeGlobalKeys(),
+  })
   const moduleCode = [
     'const routes = ',
     serialized,
@@ -155,7 +159,7 @@ export async function scanRoutes(
     'const pages = routes.pages;',
     'const entries = routes.entries;',
     'const subPackages = routes.subPackages;',
-    'const resolveMiniProgramGlobal = () => (globalThis.wx ?? globalThis.tt ?? globalThis.my);',
+    `const resolveMiniProgramGlobal = () => ${routeRuntimeGlobalExpression};`,
     'const callRouteMethod = (methodName, option) => {',
     '  const miniProgramGlobal = resolveMiniProgramGlobal();',
     '  const routeMethod = miniProgramGlobal?.[methodName];',
