@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DashboardRuntimeEventKind, DashboardRuntimeEventLevel } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
@@ -32,7 +33,7 @@ echarts.use([
 const chartRef = shallowRef<HTMLDivElement>()
 let chart: echarts.ECharts | undefined
 const { themePreference, resolvedTheme, setThemePreference } = useDashboardTheme()
-const { lastUpdatedAt, resultRef, updateCount } = useDashboardWorkspace()
+const { eventSummary, lastUpdatedAt, latestRuntimeEvent, resultRef, runtimeEvents, updateCount } = useDashboardWorkspace()
 
 const { treemapOption } = useTreemapData(resultRef, resolvedTheme)
 const {
@@ -49,6 +50,7 @@ const visibleDuplicateModules = computed(() => duplicateModules.value.slice(0, 1
 const visibleLargestFiles = computed(() => largestFiles.value.slice(0, 10))
 const statusText = computed(() => `${updateCount.value} 次数据同步`)
 const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'status-dark' : 'status-light')
+const recentRuntimeEvents = computed(() => runtimeEvents.value.slice(0, 3))
 const { activeTab, topCards, packageTypeSummary: metricPackageTypeSummary } = useDashboardPage({
   summary,
   packageInsights,
@@ -57,6 +59,38 @@ const { activeTab, topCards, packageTypeSummary: metricPackageTypeSummary } = us
   moduleSourceSummary,
   lastUpdatedAt,
 })
+
+function formatEventKind(kind: DashboardRuntimeEventKind) {
+  switch (kind) {
+    case 'command':
+      return '命令'
+    case 'build':
+      return '构建'
+    case 'diagnostic':
+      return '诊断'
+    case 'hmr':
+      return 'HMR'
+    case 'system':
+      return '系统'
+    default:
+      return kind
+  }
+}
+
+function formatEventLevel(level: DashboardRuntimeEventLevel) {
+  switch (level) {
+    case 'info':
+      return '信息'
+    case 'success':
+      return '成功'
+    case 'warning':
+      return '警告'
+    case 'error':
+      return '错误'
+    default:
+      return level
+  }
+}
 
 function handleResize() {
   chart?.resize()
@@ -208,6 +242,98 @@ onBeforeUnmount(() => {
     </section>
 
     <template v-if="resultRef">
+      <section class="grid gap-3 xl:grid-cols-[minmax(0,1.05fr)_minmax(20rem,0.95fr)]">
+        <AppSurfaceCard
+          eyebrow="Runtime Context"
+          title="分析视图关联的运行上下文"
+          description="treemap 和包体指标不再是孤立结果，这里会同步展示最近的运行事件，让你知道这份分析结果处在什么执行背景里。"
+          icon-name="metric-time"
+        >
+          <div class="grid gap-3 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+            <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-accent)]">
+                    latest event
+                  </p>
+                  <h3 class="mt-1 text-lg font-semibold tracking-tight">
+                    {{ latestRuntimeEvent?.title ?? '尚无运行事件' }}
+                  </h3>
+                </div>
+                <span
+                  v-if="latestRuntimeEvent"
+                  class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]"
+                >
+                  {{ formatEventLevel(latestRuntimeEvent.level) }}
+                </span>
+              </div>
+              <p class="mt-3 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+                {{ latestRuntimeEvent?.detail ?? '当前工作区还没有推入结构化运行事件。' }}
+              </p>
+              <p
+                v-if="latestRuntimeEvent"
+                class="mt-3 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]"
+              >
+                {{ formatEventKind(latestRuntimeEvent.kind) }} · {{ latestRuntimeEvent.source ?? 'dashboard' }} · {{ latestRuntimeEvent.timestamp }}
+              </p>
+              <RouterLink
+                class="mt-4 inline-flex rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-1.5 text-xs font-medium text-[color:var(--dashboard-text)] transition hover:border-[color:var(--dashboard-border-strong)]"
+                to="/activity"
+              >
+                打开事件控制台
+              </RouterLink>
+            </div>
+
+            <div class="grid gap-2 sm:grid-cols-2">
+              <div
+                v-for="item in eventSummary"
+                :key="item.label"
+                class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+              >
+                <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                  {{ item.label }}
+                </p>
+                <p class="mt-1 text-lg font-semibold">
+                  {{ item.value }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </AppSurfaceCard>
+
+        <AppSurfaceCard
+          eyebrow="Recent Feed"
+          title="最近事件样本"
+          description="这些事件是分析页最直接的上游线索。后面如果某次 analyze 或 build 结果异常，这里会比看全量时间线更快定位。"
+          icon-name="hero-commands"
+        >
+          <ul class="grid gap-2">
+            <li
+              v-for="event in recentRuntimeEvents"
+              :key="event.id"
+              class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="font-medium text-[color:var(--dashboard-text)]">
+                    {{ event.title }}
+                  </p>
+                  <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+                    {{ event.detail }}
+                  </p>
+                  <p class="mt-2 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                    {{ formatEventKind(event.kind) }} · {{ event.timestamp }}
+                  </p>
+                </div>
+                <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
+                  {{ formatEventLevel(event.level) }}
+                </span>
+              </div>
+            </li>
+          </ul>
+        </AppSurfaceCard>
+      </section>
+
       <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" />
 
       <section v-if="activeTab === 'overview'">
