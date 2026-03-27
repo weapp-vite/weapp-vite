@@ -430,6 +430,45 @@ Page({
     expect(session.renderCurrentPage().wxml).toContain('["daily"]')
   })
 
+  it('supports getFileSystemManager appendFile in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    appendSummary: '',
+    fileSummary: ''
+  },
+  runFsAppendLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://saved/browser-log.txt', 'browser-alpha')
+    fsManager.appendFileSync('headless://saved/browser-log.txt', '-browser-beta')
+    fsManager.appendFile({
+      filePath: 'headless://saved/browser-log.txt',
+      data: '-browser-gamma',
+      success: (result) => {
+        this.setData({
+          appendSummary: result.errMsg,
+          fileSummary: fsManager.readFileSync('headless://saved/browser-log.txt')
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{appendSummary}}</view><view>{{fileSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsAppendLab()
+
+    expect(page.data.appendSummary).toBe('appendFile:ok')
+    expect(page.data.fileSummary).toBe('browser-alpha-browser-beta-browser-gamma')
+    expect(session.renderCurrentPage().wxml).toContain('browser-alpha-browser-beta-browser-gamma')
+  })
+
   it('supports showModal defaults and queued modal mocks in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
