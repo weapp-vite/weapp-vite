@@ -11,10 +11,26 @@ import logger, { colors } from '../../logger'
 import { parseCommentJson } from '../../utils'
 
 const ANALYZE_GLOBAL_KEY = '__WEAPP_VITE_ANALYZE_RESULT__'
+const DASHBOARD_EVENTS_GLOBAL_KEY = '__WEAPP_VITE_DASHBOARD_EVENTS__'
 const ANALYZE_DASHBOARD_PACKAGE_NAME = '@weapp-vite/dashboard'
 const ANALYZE_SSE_PATH = '/__weapp_vite_analyze'
+const DASHBOARD_EVENT_NAME = 'weapp-dashboard:event'
 type PackageManagerAgent = Parameters<typeof resolveCommand>[0]
 const require = createRequire(import.meta.url)
+
+type DashboardRuntimeEventKind = 'command' | 'build' | 'diagnostic' | 'hmr' | 'system'
+type DashboardRuntimeEventLevel = 'info' | 'success' | 'warning' | 'error'
+
+interface DashboardRuntimeEvent {
+  id: string
+  kind: DashboardRuntimeEventKind
+  level: DashboardRuntimeEventLevel
+  title: string
+  detail: string
+  timestamp: string
+  source: string
+  tags?: string[]
+}
 
 function createInstallCommand(agent: PackageManagerAgent | undefined) {
   const resolved = resolveCommand(agent ?? 'npm', 'install', [ANALYZE_DASHBOARD_PACKAGE_NAME])
@@ -35,6 +51,30 @@ interface DashboardPackageManifest {
     devConfigFile?: string
     distDir?: string
   }
+}
+
+function formatEventTimestamp(date = new Date()) {
+  return date.toLocaleTimeString('zh-CN', { hour12: false })
+}
+
+function createDashboardRuntimeEvent(input: {
+  kind: DashboardRuntimeEventKind
+  level: DashboardRuntimeEventLevel
+  title: string
+  detail: string
+  source?: string
+  tags?: string[]
+}) {
+  return {
+    id: `dashboard:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+    kind: input.kind,
+    level: input.level,
+    title: input.title,
+    detail: input.detail,
+    timestamp: formatEventTimestamp(),
+    source: input.source ?? 'weapp-vite',
+    tags: input.tags,
+  } satisfies DashboardRuntimeEvent
 }
 
 function readDashboardManifest(packageJsonPath: string): DashboardPackageManifest | undefined {
@@ -113,6 +153,7 @@ function resolveDashboardRoot(options?: { cwd?: string, packageManagerAgent?: Pa
 
 function createAnalyzeHtmlPlugin(
   state: { current: AnalyzeSubpackagesResult },
+  runtimeEvents: { current: DashboardRuntimeEvent[] },
   onServerInstance: (server: ViteDevServer) => void,
   onBroadcastReady: (broadcast: (payload: AnalyzeSubpackagesResult) => void) => void,
 ): PluginOption {
@@ -121,6 +162,18 @@ function createAnalyzeHtmlPlugin(
     const applyAnalyzePayload = (payload) => {
       window.${ANALYZE_GLOBAL_KEY} = payload
       window.dispatchEvent(new CustomEvent('weapp-analyze:update', { detail: payload }))
+    }
+    const applyDashboardEvents = (payload) => {
+      const events = Array.isArray(payload) ? payload : [payload]
+      const nextEvents = events.filter(Boolean)
+      if (nextEvents.length === 0) {
+        return
+      }
+      window.${DASHBOARD_EVENTS_GLOBAL_KEY} = [
+        ...(window.${DASHBOARD_EVENTS_GLOBAL_KEY} ?? []),
+        ...nextEvents,
+      ]
+      window.dispatchEvent(new CustomEvent('${DASHBOARD_EVENT_NAME}', { detail: nextEvents }))
     }
     const source = new EventSource('${ANALYZE_SSE_PATH}')
     source.onmessage = (event) => {
@@ -132,6 +185,9 @@ function createAnalyzeHtmlPlugin(
     if (import.meta.hot) {
       import.meta.hot.on('weapp-analyze:update', (payload) => {
         applyAnalyzePayload(payload)
+      })
+      import.meta.hot.on('${DASHBOARD_EVENT_NAME}', (payload) => {
+        applyDashboardEvents(payload)
       })
     }
   `.trim()
@@ -154,6 +210,11 @@ function createAnalyzeHtmlPlugin(
           {
             tag: 'script',
             children: `window.${ANALYZE_GLOBAL_KEY} = ${JSON.stringify(state.current)}`,
+            injectTo: 'head-prepend',
+          },
+          {
+            tag: 'script',
+            children: `window.${DASHBOARD_EVENTS_GLOBAL_KEY} = ${JSON.stringify(runtimeEvents.current)}`,
             injectTo: 'head-prepend',
           },
           {
@@ -251,12 +312,26 @@ export async function startAnalyzeDashboard(
   const { root, configFile } = resolved
 
   const state = { current: result }
+  const runtimeEvents = {
+    current: [
+      createDashboardRuntimeEvent({
+        kind: 'command',
+        level: 'success',
+        title: options?.watch ? 'dashboard watch session started' : 'dashboard static session started',
+        detail: options?.watch
+          ? 'weapp-vite UI 已进入实时分析模式，后续 analyze 结果会继续推送到 dashboard。'
+          : 'weapp-vite UI 已进入静态分析模式，当前页面展示的是一次性分析结果。',
+        tags: options?.watch ? ['watch', 'analyze'] : ['static', 'analyze'],
+      }),
+    ],
+  }
   let serverRef: ViteDevServer | undefined
   let broadcastAnalyzeResult: ((payload: AnalyzeSubpackagesResult) => void) | undefined
 
   const plugins: PluginOption[] = [
     createAnalyzeHtmlPlugin(
       state,
+      runtimeEvents,
       (server) => {
         serverRef = server
       },
@@ -310,17 +385,35 @@ export async function startAnalyzeDashboard(
       event: 'weapp-analyze:update',
       data: state.current,
     })
+    serverRef.ws.send({
+      type: 'custom',
+      event: DASHBOARD_EVENT_NAME,
+      data: runtimeEvents.current,
+    })
   }
   broadcastAnalyzeResult?.(state.current)
 
   const handle: AnalyzeDashboardHandle = {
     async update(nextResult) {
       state.current = nextResult
+      const nextEvent = createDashboardRuntimeEvent({
+        kind: 'build',
+        level: 'info',
+        title: 'analyze payload refreshed',
+        detail: `已推送新的 analyze 结果，当前包含 ${nextResult.packages.length} 个包与 ${nextResult.modules.length} 个模块。`,
+        tags: ['analyze', 'refresh'],
+      })
+      runtimeEvents.current = [nextEvent, ...runtimeEvents.current].slice(0, 24)
       if (serverRef) {
         serverRef.ws.send({
           type: 'custom',
           event: 'weapp-analyze:update',
           data: nextResult,
+        })
+        serverRef.ws.send({
+          type: 'custom',
+          event: DASHBOARD_EVENT_NAME,
+          data: [nextEvent],
         })
       }
       broadcastAnalyzeResult?.(nextResult)
