@@ -1,15 +1,48 @@
 import type { MpPlatform } from '../types'
 import { getMiniProgramPlatformAdapter } from '../platform'
+import { MINI_PROGRAM_PLATFORM_ADAPTERS } from '../platforms/adapters'
 
 const IMPORT_SJS_TAG_RE = /<import-sjs([\s\S]*?)>/g
 const IMPORT_SJS_SRC_RE = /\bsrc\s*=\s*/g
 const IMPORT_SJS_MODULE_RE = /\bmodule\s*=\s*/g
+const DEFAULT_SCRIPT_MODULE_TAG_NAMES = ['wxs', 'sjs'] as const
+const SCRIPT_MODULE_IMPORT_ATTRS = Object.freeze({
+  'wxs': ['src'],
+  'sjs': ['src'],
+  'import-sjs': ['from'],
+} satisfies Readonly<Record<string, readonly string[]>>)
 
 export function resolveScriptModuleTagByPlatform(platform?: MpPlatform, scriptModuleExtension?: string) {
   if (!platform || !scriptModuleExtension) {
     return undefined
   }
   return getMiniProgramPlatformAdapter(platform).scriptModuleTagByExtension?.[scriptModuleExtension]
+}
+
+export function getScriptModuleTagNames() {
+  const derivedTagNames = MINI_PROGRAM_PLATFORM_ADAPTERS
+    .flatMap(adapter => Object.values(adapter.scriptModuleTagByExtension ?? {}))
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+
+  return [...new Set([...DEFAULT_SCRIPT_MODULE_TAG_NAMES, ...derivedTagNames])]
+}
+
+export function isScriptModuleTagName(tagName?: string) {
+  return typeof tagName === 'string' && getScriptModuleTagNames().includes(tagName)
+}
+
+export function getScriptModuleImportAttrs(tagName?: string) {
+  if (!tagName) {
+    return undefined
+  }
+  return SCRIPT_MODULE_IMPORT_ATTRS[tagName]
+}
+
+export function isScriptModuleImportAttr(tagName: string | undefined, attrName: string) {
+  if (!tagName) {
+    return false
+  }
+  return getScriptModuleImportAttrs(tagName)?.includes(attrName) === true
 }
 
 export function normalizeImportSjsAttributes(source: string) {
