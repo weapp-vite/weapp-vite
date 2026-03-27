@@ -9,13 +9,15 @@ interface DomNodeLike {
   type?: string
 }
 
-interface HeadlessTestingTapEventInit {
+interface HeadlessTestingNodeEventInit {
   currentTarget?: {
     dataset?: Record<string, string>
     id?: string
   }
   dataset?: Record<string, string>
+  detail?: unknown
   id?: string
+  mark?: Record<string, unknown>
   target?: {
     dataset?: Record<string, string>
     id?: string
@@ -27,7 +29,6 @@ interface HeadlessTestingNodeInteractionHandlers {
 }
 
 const DATASET_NAME_RE = /-([a-z])/g
-const TAP_BINDING_ATTRS = ['bindtap', 'bind:tap', 'catchtap', 'catch:tap']
 
 function escapeText(text: string) {
   return text
@@ -53,14 +54,46 @@ function collectDataset(node: DomNodeLike) {
   return dataset
 }
 
-function resolveTapBinding(node: DomNodeLike) {
-  for (const attributeName of TAP_BINDING_ATTRS) {
+function resolveEventBinding(node: DomNodeLike, eventName: string) {
+  const normalizedEventName = eventName.trim()
+  if (!normalizedEventName) {
+    return null
+  }
+
+  const bindingAttrs = [
+    `bind${normalizedEventName}`,
+    `bind:${normalizedEventName}`,
+    `catch${normalizedEventName}`,
+    `catch:${normalizedEventName}`,
+  ]
+  for (const attributeName of bindingAttrs) {
     const methodName = node.attribs?.[attributeName]?.trim()
     if (methodName) {
       return methodName
     }
   }
   return null
+}
+
+function createEventPayload(node: DomNodeLike, eventName: string, event: HeadlessTestingNodeEventInit) {
+  const dataset = collectDataset(node)
+  const nodeId = node.attribs?.id ?? ''
+  return {
+    bubbles: false,
+    capturePhase: false,
+    composed: false,
+    currentTarget: {
+      dataset: event.currentTarget?.dataset ?? event.dataset ?? dataset,
+      id: event.currentTarget?.id ?? event.id ?? nodeId,
+    },
+    detail: event.detail,
+    mark: event.mark,
+    target: {
+      dataset: event.target?.dataset ?? event.dataset ?? dataset,
+      id: event.target?.id ?? event.id ?? nodeId,
+    },
+    type: eventName,
+  }
 }
 
 function escapeAttribute(value: string) {
@@ -124,34 +157,26 @@ export class HeadlessTestingNodeHandle {
     return collectText(this.node)
   }
 
-  async tap(event: HeadlessTestingTapEventInit = {}) {
+  async trigger(eventName: string, event: HeadlessTestingNodeEventInit = {}) {
     if (!this.interactions) {
-      throw new Error('Tap interactions are not available for this headless testing node.')
+      throw new Error('Node interactions are not available for this headless testing node.')
     }
 
-    const methodName = resolveTapBinding(this.node)
+    const normalizedEventName = eventName.trim()
+    if (!normalizedEventName) {
+      throw new Error('Event name must be a non-empty string in headless testing runtime.')
+    }
+
+    const methodName = resolveEventBinding(this.node, normalizedEventName)
     if (!methodName) {
-      throw new Error(`No tap binding was found on <${this.node.name ?? 'unknown'}> in headless testing runtime.`)
+      throw new Error(`No ${normalizedEventName} binding was found on <${this.node.name ?? 'unknown'}> in headless testing runtime.`)
     }
 
-    const dataset = collectDataset(this.node)
-    const nodeId = this.node.attribs?.id ?? ''
-    return await this.interactions.callMethod(methodName, {
-      bubbles: false,
-      capturePhase: false,
-      composed: false,
-      currentTarget: {
-        dataset: event.currentTarget?.dataset ?? event.dataset ?? dataset,
-        id: event.currentTarget?.id ?? event.id ?? nodeId,
-      },
-      detail: undefined,
-      mark: undefined,
-      target: {
-        dataset: event.target?.dataset ?? event.dataset ?? dataset,
-        id: event.target?.id ?? event.id ?? nodeId,
-      },
-      type: 'tap',
-    })
+    return await this.interactions.callMethod(methodName, createEventPayload(this.node, normalizedEventName, event))
+  }
+
+  async tap(event: HeadlessTestingNodeEventInit = {}) {
+    return await this.trigger('tap', event)
   }
 
   async wxml() {

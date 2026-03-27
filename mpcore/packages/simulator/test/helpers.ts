@@ -41,6 +41,7 @@ Page({
       greeting: 'Hello',
       target: 'index snapshot',
     },
+    __e2eInput: null,
     __e2eResult: {
       status: 'ready',
       detail: 'rendered',
@@ -57,10 +58,19 @@ Page({
       },
     })
   },
+  onInput(event) {
+    this.setData({
+      __e2eInput: {
+        detail: event?.detail ?? null,
+        type: event?.type ?? '',
+      },
+    })
+  },
 })
 `)
   writeText(path.join(root, 'dist/pages/index/index.wxml'), `
 <view id="greeting-button" data-phase="initial" data-card-type="primary" bind:tap="onTap">{{__e2eData.greeting}}</view>
+<input id="greeting-input" data-field="greeting" bindinput="onInput" value="{{__e2eData.greeting}}" />
 <view class="panel-row">Status: {{__e2eResult.status}}</view>
 <view class="panel-row">Detail: {{__e2eResult.detail}}</view>
 <view class="panel-row">Greeting: {{__e2eData.greeting}}</view>
