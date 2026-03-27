@@ -835,6 +835,83 @@ Page({
     ])
   })
 
+  it('supports setBackgroundTextStyle defaults and updates in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({
+        pages: ['pages/index/index', 'pages/detail/index'],
+        window: {
+          backgroundTextStyle: 'light',
+        },
+      })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.json', JSON.stringify({
+        backgroundTextStyle: 'dark',
+      })],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  setLight() {
+    wx.setBackgroundTextStyle({
+      textStyle: 'light',
+      success: () => this.push('light:success'),
+      complete: (result) => this.push('light:complete:' + (result?.errMsg ?? 'none'))
+    })
+  },
+  setInvalid() {
+    wx.setBackgroundTextStyle({
+      textStyle: 'weird',
+      fail: (error) => this.push('invalid:fail:' + error.message),
+      complete: (result) => this.push('invalid:complete:' + (result?.errMsg ?? 'none'))
+    })
+  },
+  goDetail() {
+    wx.navigateTo({
+      url: '/pages/detail/index'
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{logs.0}}</view><view>{{logs.1}}</view><view>{{logs.2}}</view><view>{{logs.3}}</view>'],
+      ['pages/detail/index.js', 'Page({})'],
+      ['pages/detail/index.wxml', '<view>detail</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+
+    expect(session.getCurrentPageBackground()).toEqual({
+      textStyle: 'dark',
+    })
+
+    page.setLight()
+    expect(session.getCurrentPageBackground()).toEqual({
+      textStyle: 'light',
+    })
+
+    page.setInvalid()
+    expect(session.getCurrentPageBackground()).toEqual({
+      textStyle: 'light',
+    })
+    expect(page.data.logs).toEqual([
+      'light:success',
+      'light:complete:setBackgroundTextStyle:ok',
+      'invalid:fail:setBackgroundTextStyle:fail invalid textStyle',
+      'invalid:complete:none',
+    ])
+
+    page.goDetail()
+    expect(session.getCurrentPageBackground()).toEqual({
+      textStyle: 'light',
+    })
+  })
+
   it('renders custom components and routes triggerEvent back to the page', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/lab/index'] })],

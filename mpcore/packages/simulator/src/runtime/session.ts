@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { createHostRegistries } from '../host'
 import { loadProject } from '../project'
-import { cloneNavigationBarSnapshot, resolveNavigationBarSnapshot } from '../project/pageConfig'
+import { cloneNavigationBarSnapshot, resolveBackgroundTextStyle, resolveNavigationBarSnapshot } from '../project/pageConfig'
 import { createAppInstance } from './appInstance'
 import { createModuleLoader } from './moduleLoader'
 import { createPageInstance } from './pageInstance'
@@ -188,6 +188,7 @@ export class HeadlessSession {
         onNetworkStatusChange: callback => this.wxState.onNetworkStatusChange(callback),
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         request: option => this.wxState.request(option),
+        setBackgroundTextStyle: option => this.setBackgroundTextStyle(option.textStyle),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
         setNavigationBarColor: option => this.setNavigationBarColor(option),
         setNavigationBarTitle: option => this.setNavigationBarTitle(option.title),
@@ -227,6 +228,12 @@ export class HeadlessSession {
   getCurrentPageNavigationBar() {
     const snapshot = this.currentPageInstance?.__navigationBar__
     return snapshot ? cloneNavigationBarSnapshot(snapshot) : null
+  }
+
+  getCurrentPageBackground() {
+    return {
+      textStyle: this.currentPageInstance?.__backgroundTextStyle__ ?? null,
+    }
   }
 
   getActionSheetLogs() {
@@ -336,6 +343,17 @@ export class HeadlessSession {
 
   setNetworkType(networkType: HeadlessWxNetworkType) {
     return this.wxState.setNetworkType(networkType)
+  }
+
+  setBackgroundTextStyle(textStyle: string) {
+    if (textStyle !== 'dark' && textStyle !== 'light') {
+      throw new Error('setBackgroundTextStyle:fail invalid textStyle')
+    }
+    const current = this.requireCurrentPage('wx.setBackgroundTextStyle()')
+    current.__backgroundTextStyle__ = textStyle
+    return {
+      errMsg: 'setBackgroundTextStyle:ok',
+    }
   }
 
   setNavigationBarTitle(title: string) {
@@ -643,6 +661,7 @@ export class HeadlessSession {
     const pageDefinition = this.moduleLoader.executePageModule(pageModulePath, target.routeRecord.route)
     const pageConfig = readJsonObject(pageConfigPath)
     const pageInstance = createPageInstance(`/${target.routeRecord.route}`, pageDefinition, target.query, {
+      backgroundTextStyle: resolveBackgroundTextStyle(this.project.appConfig, pageConfig),
       navigationBar: resolveNavigationBarSnapshot(this.project.appConfig, pageConfig),
     })
     pageInstance.onLoad?.(target.query)
