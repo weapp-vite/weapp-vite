@@ -79,9 +79,28 @@ jobs:
           print_version pnpm pnpm -v
           print_version yarn yarn -v
 
+      - name: Resolve create-weapp-vite version from npm
+        id: resolve-create-weapp-vite-version
+        shell: bash
+        env:
+          CREATE_WEAPP_VITE_SPEC: ${{ github.event.inputs['package-spec'] || 'latest' }}
+        run: |
+          resolved_version="$(npm view "create-weapp-vite@${CREATE_WEAPP_VITE_SPEC}" version)"
+          echo "create-weapp-vite spec: ${CREATE_WEAPP_VITE_SPEC}"
+          echo "create-weapp-vite resolved version: ${resolved_version}"
+          {
+            echo "CREATE_WEAPP_VITE_RESOLVED_VERSION=${resolved_version}"
+          } >> "$GITHUB_ENV"
+          {
+            echo "### create-weapp-vite"
+            echo "- spec: \`${CREATE_WEAPP_VITE_SPEC}\`"
+            echo "- resolved version: \`${resolved_version}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Run create-weapp-vite smoke matrix
         env:
           CREATE_WEAPP_VITE_SPEC: ${{ github.event.inputs['package-spec'] || 'latest' }}
+          CREATE_WEAPP_VITE_RESOLVED_VERSION: ${{ env.CREATE_WEAPP_VITE_RESOLVED_VERSION }}
           CREATE_WEAPP_VITE_TEMPLATES: default,lib,wevu,wevu-tdesign,tailwindcss,vant,tdesign
           CREATE_WEAPP_VITE_SCENARIOS: pnpm,yarn,npm
           CREATE_WEAPP_VITE_REPORT_FILE: ${{ runner.temp }}/create-weapp-vite-smoke-report/report.json

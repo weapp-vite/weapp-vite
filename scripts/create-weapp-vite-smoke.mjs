@@ -31,6 +31,7 @@ const REPORT_META = {
   runId: process.env.GITHUB_RUN_ID?.trim() || '',
   runAttempt: process.env.GITHUB_RUN_ATTEMPT?.trim() || '',
 }
+const RESOLVED_CREATE_WEAPP_VITE_VERSION = process.env.CREATE_WEAPP_VITE_RESOLVED_VERSION?.trim() || ''
 const NEWLINE_RE = /\r?\n/
 const TEMPLATE_DIR_MAP = {
   'default': 'weapp-vite-template',
@@ -641,6 +642,9 @@ async function main() {
 
   console.log(`Node ${process.version}`)
   console.log(`Package spec: ${DEFAULT_PACKAGE_SPEC}`)
+  if (RESOLVED_CREATE_WEAPP_VITE_VERSION) {
+    console.log(`Resolved create-weapp-vite version: ${RESOLVED_CREATE_WEAPP_VITE_VERSION}`)
+  }
   console.log(`Templates: ${TEMPLATE_NAMES.join(', ')}`)
   console.log(`Scenarios: ${SCENARIOS.map(scenario => scenario.name).join(', ')}`)
   console.log(`Workspace: ${tmpRoot}`)
@@ -676,6 +680,7 @@ async function main() {
   await writeReport({
     ...REPORT_META,
     packageSpec: DEFAULT_PACKAGE_SPEC,
+    resolvedCreateWeappViteVersion: RESOLVED_CREATE_WEAPP_VITE_VERSION,
     templates: TEMPLATE_NAMES,
     scenarios: SCENARIOS.map(scenario => scenario.name),
     results,
