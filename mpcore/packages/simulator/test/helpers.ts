@@ -811,3 +811,52 @@ Component({
 
   return root
 }
+
+export function createNestedComponentFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-nested-component-'))
+
+  writeJson(path.join(root, 'project.config.json'), {
+    appid: 'wx123',
+    miniprogramRoot: 'dist',
+  })
+  writeJson(path.join(root, 'dist/app.json'), {
+    pages: ['pages/lab/index'],
+  })
+  writeScript(path.join(root, 'dist/app.js'), 'App({})\n')
+  writeJson(path.join(root, 'dist/pages/lab/index.json'), {
+    usingComponents: {
+      'status-card': '../../components/status-card/index',
+    },
+  })
+  writeScript(path.join(root, 'dist/pages/lab/index.js'), 'Page({})\n')
+  writeText(path.join(root, 'dist/pages/lab/index.wxml'), '<status-card id="status-card" status="stable" />')
+  writeJson(path.join(root, 'dist/components/status-card/index.json'), {
+    usingComponents: {
+      'mini-badge': '../mini-badge/index',
+    },
+  })
+  writeScript(path.join(root, 'dist/components/status-card/index.js'), 'Component({ properties: { status: String } })\n')
+  writeText(path.join(root, 'dist/components/status-card/index.wxml'), '<mini-badge id="mini-badge" label="{{status}}" />')
+  writeJson(path.join(root, 'dist/components/mini-badge/index.json'), {})
+  writeScript(path.join(root, 'dist/components/mini-badge/index.js'), `
+Component({
+  properties: {
+    label: String
+  },
+  data: {
+    readyState: 'cold'
+  },
+  lifetimes: {
+    created() {
+      this.setData({ readyState: 'created' })
+    },
+    ready() {
+      this.setData({ readyState: 'ready' })
+    }
+  }
+})
+`)
+  writeText(path.join(root, 'dist/components/mini-badge/index.wxml'), '<view>{{label}}</view><view>{{readyState}}</view>')
+
+  return root
+}

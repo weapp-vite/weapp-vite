@@ -17,6 +17,11 @@ export class HeadlessTestingScopeHandle {
     private readonly session: HeadlessSession,
   ) {}
 
+  private createScopeHandle(component: any) {
+    const scopeId = this.session.getScopeIdForComponent(component)
+    return scopeId ? new HeadlessTestingScopeHandle(scopeId, this.session) : null
+  }
+
   async callMethod(methodName: string, ...args: any[]) {
     const normalizedMethodName = methodName.trim()
     if (!normalizedMethodName) {
@@ -27,6 +32,25 @@ export class HeadlessTestingScopeHandle {
 
   async snapshot() {
     return this.session.getScopeSnapshot(this.scopeId)
+  }
+
+  async selectComponent(selector: string) {
+    const normalizedSelector = selector.trim()
+    if (!normalizedSelector) {
+      throw new Error('Selector must be a non-empty string in headless testing runtime.')
+    }
+    const component = this.session.selectComponentWithin(this.scopeId, normalizedSelector)
+    return this.createScopeHandle(component)
+  }
+
+  async selectAllComponents(selector: string) {
+    const normalizedSelector = selector.trim()
+    if (!normalizedSelector) {
+      throw new Error('Selector must be a non-empty string in headless testing runtime.')
+    }
+    return this.session.selectAllComponentsWithin(this.scopeId, normalizedSelector)
+      .map(component => this.createScopeHandle(component))
+      .filter((handle): handle is HeadlessTestingScopeHandle => Boolean(handle))
   }
 }
 
