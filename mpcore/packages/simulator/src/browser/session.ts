@@ -688,6 +688,32 @@ export class BrowserHeadlessSession {
     return method.call(instance, event)
   }
 
+  callScopeMethodDirect(scopeId: string, methodName: string, ...args: any[]) {
+    const normalizedScopeId = scopeId.trim()
+    if (!normalizedScopeId) {
+      throw new Error('Scope id must be a non-empty string in browser simulator runtime.')
+    }
+
+    const current = this.requireCurrentPage(`scope method "${methodName}"`)
+    if (normalizedScopeId === `page:${stripLeadingSlash(current.route)}`) {
+      const method = current[methodName]
+      if (typeof method !== 'function') {
+        throw new TypeError(`Method "${methodName}" does not exist on browser simulator page ${current.route}.`)
+      }
+      return method.apply(current, args)
+    }
+
+    const instance = this.componentCache.get(normalizedScopeId)
+    if (!instance) {
+      throw new Error(`Unknown scope "${normalizedScopeId}" in browser simulator runtime.`)
+    }
+    const method = instance[methodName]
+    if (typeof method !== 'function') {
+      throw new TypeError(`Method "${methodName}" does not exist on browser simulator component scope "${normalizedScopeId}".`)
+    }
+    return method.apply(instance, args)
+  }
+
   callTapBinding(scopeId: string, methodName: string) {
     const scope = this.componentScopes.get(scopeId)
     if (!scope) {

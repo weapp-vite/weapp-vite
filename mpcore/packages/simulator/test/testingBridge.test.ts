@@ -378,6 +378,10 @@ describe('headless testing bridge', () => {
       },
       type: 'component',
     })
+
+    await component?.callMethod('pulse')
+    const currentPage = await miniProgram.currentPage()
+    expect(await currentPage?.data('log')).toEqual(['status-card'])
   })
 
   it('dispatches component input, change and blur events through the testing bridge', async () => {
