@@ -2,6 +2,10 @@ import type { CompilerContext } from '../../../context'
 import { isObject } from '@weapp-core/shared'
 import path from 'pathe'
 import { matches } from '../../../utils'
+import { hasNpmDependencyPrefix, normalizeNpmImportLookupPath } from '../../../utils/npmImport'
+
+const PLUGIN_PROTOCOL_RE = /plugin:\/\//
+const WINDOWS_PATH_SEPARATOR_RE = /\\/g
 
 function resolveImportee(
   importee: string,
@@ -24,38 +28,25 @@ function resolveImportee(
   return path.resolve(baseDir, updated)
 }
 
-function hasDependencyPrefix(dependencies: Record<string, string>, tokens: string[]) {
-  return Object.keys(dependencies).some((dep) => {
-    const depTokens = dep.replace(/\\/g, '/').split('/')
-    for (let i = 0; i < Math.min(tokens.length, depTokens.length); i++) {
-      if (tokens[i] !== depTokens[i]) {
-        return false
-      }
-    }
-    return true
-  })
-}
-
 export function createEntryNormalizer(
   configService: CompilerContext['configService'],
 ) {
   return function normalizeEntry(entry: string, jsonPath: string) {
-    if (/plugin:\/\//.test(entry)) {
+    if (PLUGIN_PROTOCOL_RE.test(entry)) {
       return entry
     }
 
-    const normalizedEntry = entry.replace(/\\/g, '/')
-    const tokens = normalizedEntry.split('/')
+    const normalizedEntry = normalizeNpmImportLookupPath(entry)
     if (
-      tokens[0]
+      normalizedEntry
       && isObject(configService.packageJson.dependencies)
-      && hasDependencyPrefix(configService.packageJson.dependencies, tokens)
+      && hasNpmDependencyPrefix(configService.packageJson.dependencies, normalizedEntry)
     ) {
       return `npm:${normalizedEntry}`
     }
 
-    if (tokens[0] === '') {
-      return normalizedEntry.substring(1)
+    if (entry.replace(WINDOWS_PATH_SEPARATOR_RE, '/').startsWith('/')) {
+      return normalizedEntry
     }
 
     const normalized = resolveImportee(normalizedEntry, jsonPath, configService)
