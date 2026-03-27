@@ -481,6 +481,48 @@ Page({
     expect(session.getSavedFileListSnapshot()).toHaveLength(1)
   })
 
+  it('preserves saved target createTime when copyFile overwrites it in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    afterSummary: '',
+    beforeSummary: ''
+  },
+  runSavedFileCopyOverwriteCreateTimeLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/browser-target.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-target.txt',
+      success: (saveResult) => {
+        this.setData({
+          beforeSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: saveResult.savedFilePath }))
+        })
+        fsManager.copyFileSync('headless://temp/browser-source.txt', saveResult.savedFilePath)
+        this.setData({
+          afterSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: saveResult.savedFilePath }))
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{beforeSummary}}</view><view>{{afterSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileCopyOverwriteCreateTimeLab()
+
+    const beforeInfo = JSON.parse(page.data.beforeSummary) as { createTime: number, size: number }
+    const afterInfo = JSON.parse(page.data.afterSummary) as { createTime: number, size: number }
+    expect(afterInfo.createTime).toBe(beforeInfo.createTime)
+    expect(afterInfo.size).toBe(10)
+  })
+
   it('supports getFileSystemManager mkdir readdir and stat in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
@@ -831,6 +873,55 @@ Page({
     expect(page.data.listSummary).toContain('"size":10')
     expect(page.data.listSummary).not.toContain('headless://wxfile/saved/browser-source.txt')
     expect(session.getSavedFileListSnapshot()).toHaveLength(1)
+  })
+
+  it('preserves target createTime when renaming one saved file onto another in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    afterSummary: '',
+    beforeSummary: ''
+  },
+  runSavedRenameOverwriteCreateTimeLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/browser-target.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-source.txt',
+      filePath: 'headless://wxfile/saved/browser-source.txt',
+      success: () => {
+        wx.saveFile({
+          tempFilePath: 'headless://temp/browser-target.txt',
+          filePath: 'headless://wxfile/saved/browser-target.txt',
+          success: () => {
+            this.setData({
+              beforeSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/browser-target.txt' }))
+            })
+            fsManager.renameSync('headless://wxfile/saved/browser-source.txt', 'headless://wxfile/saved/browser-target.txt')
+            this.setData({
+              afterSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/browser-target.txt' }))
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{beforeSummary}}</view><view>{{afterSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedRenameOverwriteCreateTimeLab()
+
+    const beforeInfo = JSON.parse(page.data.beforeSummary) as { createTime: number, size: number }
+    const afterInfo = JSON.parse(page.data.afterSummary) as { createTime: number, size: number }
+    expect(afterInfo.createTime).toBe(beforeInfo.createTime)
+    expect(afterInfo.size).toBe(10)
   })
 
   it('reports stat sizes and fs manager failures in browser runtime', () => {

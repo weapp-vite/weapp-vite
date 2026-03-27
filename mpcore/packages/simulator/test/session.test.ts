@@ -994,6 +994,56 @@ Page({
     expect(session.getSavedFileListSnapshot()).toHaveLength(1)
   })
 
+  it('preserves saved target createTime when copyFile overwrites it', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-saved-copy-createtime-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    afterSummary: '',
+    beforeSummary: ''
+  },
+  runSavedFileCopyOverwriteCreateTimeLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/target.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/target.txt',
+      filePath: 'headless://saved/target.txt',
+      success: () => {
+        this.setData({
+          beforeSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' }))
+        })
+        fsManager.copyFileSync('headless://temp/source.txt', 'headless://saved/target.txt')
+        this.setData({
+          afterSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' }))
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-copy-createtime</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedFileCopyOverwriteCreateTimeLab()
+
+    const beforeInfo = JSON.parse(page.data.beforeSummary) as { createTime: number, size: number }
+    const afterInfo = JSON.parse(page.data.afterSummary) as { createTime: number, size: number }
+    expect(afterInfo.createTime).toBe(beforeInfo.createTime)
+    expect(afterInfo.size).toBe(10)
+  })
+
   it('supports getFileSystemManager mkdir readdir and stat operations', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-dir-ops-'))
     tempDirs.push(root)
@@ -1403,6 +1453,62 @@ Page({
     expect(page.data.listSummary).toContain('"size":10')
     expect(page.data.listSummary).not.toContain('headless://saved/source.txt')
     expect(session.getSavedFileListSnapshot()).toHaveLength(1)
+  })
+
+  it('preserves target createTime when renaming one saved file onto another', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-saved-rename-createtime-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    afterSummary: '',
+    beforeSummary: ''
+  },
+  runSavedRenameOverwriteCreateTimeLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/target.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/source.txt',
+      filePath: 'headless://saved/source.txt',
+      success: () => {
+        wx.saveFile({
+          tempFilePath: 'headless://temp/target.txt',
+          filePath: 'headless://saved/target.txt',
+          success: () => {
+            this.setData({
+              beforeSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' }))
+            })
+            fsManager.renameSync('headless://saved/source.txt', 'headless://saved/target.txt')
+            this.setData({
+              afterSummary: JSON.stringify(wx.getSavedFileInfo({ filePath: 'headless://saved/target.txt' }))
+            })
+          }
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>saved-rename-createtime</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runSavedRenameOverwriteCreateTimeLab()
+
+    const beforeInfo = JSON.parse(page.data.beforeSummary) as { createTime: number, size: number }
+    const afterInfo = JSON.parse(page.data.afterSummary) as { createTime: number, size: number }
+    expect(afterInfo.createTime).toBe(beforeInfo.createTime)
+    expect(afterInfo.size).toBe(10)
   })
 
   it('reports stat sizes and fs manager failures through callbacks', () => {
