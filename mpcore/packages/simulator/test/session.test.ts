@@ -403,6 +403,8 @@ Page({
     asyncGetSummary: '',
     asyncRemoveSummary: '',
     asyncSetSummary: '',
+    hideLoadingSummary: '',
+    loadingSummary: '',
     requestSummary: '',
     storageSummary: '',
     toastSummary: ''
@@ -462,11 +464,29 @@ Page({
       count: 3,
       status: 'stable'
     })
+    wx.showLoading({
+      title: 'syncing',
+      mask: true,
+      success: (result) => {
+        this.setData({
+          loadingSummary: result.errMsg
+        })
+      }
+    })
     wx.showToast({
       title: 'queued',
       success: (result) => {
         this.setData({
           toastSummary: result.errMsg
+        })
+      }
+    })
+  },
+  hideLoadingLab() {
+    wx.hideLoading({
+      success: (result) => {
+        this.setData({
+          hideLoadingSummary: result.errMsg
         })
       }
     })
@@ -494,7 +514,12 @@ Page({
     expect(page.data.asyncGetSummary).toContain('"count":5')
     expect(page.data.asyncRemoveSummary).toBe('removeStorage:ok')
     expect(page.data.asyncClearSummary).toBe('clearStorage:ok')
+    expect(page.data.loadingSummary).toBe('showLoading:ok')
     expect(page.data.toastSummary).toBe('showToast:ok')
+    expect(session.getLoading()).toEqual({
+      mask: true,
+      title: 'syncing',
+    })
     expect(session.getStorageSnapshot()).toEqual({
       lab: {
         count: 3,
@@ -513,5 +538,9 @@ Page({
       method: 'GET',
       url: 'https://mock.mpcore.dev/api/queue-health',
     })
+
+    page.hideLoadingLab()
+    expect(page.data.hideLoadingSummary).toBe('hideLoading:ok')
+    expect(session.getLoading()).toBeNull()
   })
 })

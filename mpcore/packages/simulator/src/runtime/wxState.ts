@@ -1,4 +1,14 @@
-import type { HeadlessWxRequestOption, HeadlessWxRequestSuccessResult, HeadlessWxShowToastOption } from '../host'
+import type {
+  HeadlessWxRequestOption,
+  HeadlessWxRequestSuccessResult,
+  HeadlessWxShowLoadingOption,
+  HeadlessWxShowToastOption,
+} from '../host'
+
+export interface HeadlessWxLoadingSnapshot {
+  mask: boolean
+  title: string
+}
 
 export interface HeadlessWxToastSnapshot {
   duration: number
@@ -87,6 +97,7 @@ export function createHeadlessWxState() {
   const requestLogs: HeadlessWxRequestLogEntry[] = []
   const requestMocks: HeadlessWxRequestMockDefinition[] = []
   const storage = new Map<string, unknown>()
+  let loading: HeadlessWxLoadingSnapshot | null = null
   let toast: HeadlessWxToastSnapshot | null = null
 
   return {
@@ -116,8 +127,17 @@ export function createHeadlessWxState() {
     getStorageSync(key: string) {
       return cloneValue(storage.get(key))
     },
+    getLoading() {
+      return loading ? { ...loading } : null
+    },
     getToast() {
       return toast ? { ...toast } : null
+    },
+    hideLoading() {
+      loading = null
+      return {
+        errMsg: 'hideLoading:ok',
+      }
     },
     hideToast() {
       toast = null
@@ -161,6 +181,15 @@ export function createHeadlessWxState() {
     },
     setStorageSync(key: string, value: unknown) {
       storage.set(key, cloneValue(value))
+    },
+    showLoading(option: HeadlessWxShowLoadingOption) {
+      loading = {
+        mask: Boolean(option.mask),
+        title: option.title,
+      }
+      return {
+        errMsg: 'showLoading:ok',
+      }
     },
     showToast(option: HeadlessWxShowToastOption) {
       toast = {
