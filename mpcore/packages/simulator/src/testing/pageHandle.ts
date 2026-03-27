@@ -130,6 +130,17 @@ export class HeadlessTestingPageHandle {
         }
         return new HeadlessTestingScopeHandle(scopeId, this.session)
       },
+      ownerScopeId: (scopeId) => {
+        if (!this.session || !scopeId) {
+          return null
+        }
+        const scopeSnapshot = this.session.getScopeSnapshot(scopeId) as { type?: string } | null
+        if (scopeSnapshot?.type !== 'component') {
+          return null
+        }
+        const owner = this.session.selectOwnerComponent(scopeId)
+        return this.session.getScopeIdForComponent(owner)
+      },
     })
     if (selector === 'page') {
       return root
