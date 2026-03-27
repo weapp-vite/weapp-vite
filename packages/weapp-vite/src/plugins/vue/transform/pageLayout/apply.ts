@@ -4,6 +4,7 @@ import type { LayoutPropValue, LayoutTransformLikeResult, ResolvedPageLayout, Re
 import * as t from '@weapp-vite/ast/babelTypes'
 import { BABEL_TS_MODULE_PARSER_OPTIONS, parse as babelParse, generate } from '../../../../utils/babel'
 import { createStaticObjectKey, findNativePageOptionsObject, findWevuOptionsObject, getObjectPropertyByKey, parseExpressionAst, stripDefinePageMetaCalls, stripTypeSyntaxFromAst } from './ast'
+import { getLayoutConditionalDirective, getLayoutElseDirective } from './shared'
 import { buildDynamicLayoutTemplate, collapseNestedLayoutWrapper, hasDynamicExpressionLayoutProps, serializeLayoutProps } from './template'
 
 function mergeLayoutUsingComponent(config: string | undefined, tagName: string, importPath: string) {
@@ -146,7 +147,8 @@ function hasDynamicLayoutTemplateWrapper(
   template: string,
   plan: ResolvedPageLayoutPlan,
 ) {
-  if (!plan.layouts.length || !template.startsWith('<block wx:if=')) {
+  const firstDirective = getLayoutConditionalDirective(0)
+  if (!plan.layouts.length || !template.startsWith(`<block ${firstDirective}=`)) {
     return false
   }
 
@@ -154,10 +156,10 @@ function hasDynamicLayoutTemplateWrapper(
     const condition = plan.currentLayout?.layoutName === layout.layoutName
       ? `{{!__wv_page_layout_name || __wv_page_layout_name === '${layout.layoutName}'}}`
       : `{{__wv_page_layout_name === '${layout.layoutName}'}}`
-    const directive = index === 0 ? 'wx:if' : 'wx:elif'
+    const directive = getLayoutConditionalDirective(index)
 
     return template.includes(`<block ${directive}="${condition}"><${layout.tagName}`)
-  }) && template.includes('<block wx:else>')
+  }) && template.includes(`<block ${getLayoutElseDirective()}>`)
 }
 
 export function applyPageLayout(

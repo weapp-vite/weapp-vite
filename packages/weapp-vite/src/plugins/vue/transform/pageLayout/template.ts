@@ -1,5 +1,10 @@
 import type { LayoutPropValue, ResolvedPageLayout } from './types'
-import { escapeDoubleQuotedAttr, toKebabCase } from './shared'
+import {
+  escapeDoubleQuotedAttr,
+  getLayoutConditionalDirective,
+  getLayoutElseDirective,
+  toKebabCase,
+} from './shared'
 
 function toKebabAttrName(key: string) {
   return toKebabCase(key)
@@ -88,9 +93,9 @@ export function buildDynamicLayoutTemplate(
     const condition = currentLayout?.layoutName === layout.layoutName
       ? `{{!__wv_page_layout_name || __wv_page_layout_name === '${layout.layoutName}'}}`
       : `{{__wv_page_layout_name === '${layout.layoutName}'}}`
-    const directive = index === 0 ? 'wx:if' : 'wx:elif'
+    const directive = getLayoutConditionalDirective(index)
     return `<block ${directive}="${condition}"><${layout.tagName}${attrs}>${innerTemplate}</${layout.tagName}></block>`
   })
 
-  return `${blocks.join('')}<block wx:else>${innerTemplate}</block>`
+  return `${blocks.join('')}<block ${getLayoutElseDirective()}>${innerTemplate}</block>`
 }
