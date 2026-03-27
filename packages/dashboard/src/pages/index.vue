@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
@@ -21,30 +22,14 @@ const { commandItems, signals } = useDashboardWorkspace()
     >
       <div class="grid gap-3 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.8fr)]">
         <div class="grid gap-3 md:grid-cols-3">
-          <article
+          <AppIconFeatureCard
             v-for="item in workspaceHighlights"
             :key="item.title"
-            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4"
-          >
-            <p class="text-[11px] uppercase tracking-[0.22em] text-[color:var(--dashboard-accent)]">
-              {{ item.eyebrow }}
-            </p>
-            <div class="mt-3 flex items-start gap-3">
-              <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]">
-                <span class="h-5 w-5">
-                  <DashboardIcon :name="item.iconName" />
-                </span>
-              </span>
-              <div>
-                <h3 class="font-semibold tracking-tight">
-                  {{ item.title }}
-                </h3>
-                <p class="mt-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-                  {{ item.description }}
-                </p>
-              </div>
-            </div>
-          </article>
+            :icon-name="item.iconName"
+            :title="item.title"
+            :description="item.description"
+            :eyebrow="item.eyebrow"
+          />
         </div>
 
         <div class="grid gap-3">
@@ -83,23 +68,13 @@ const { commandItems, signals } = useDashboardWorkspace()
           v-for="item in workspaceNavigation"
           :key="item.to"
           :to="item.to"
-          class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4 transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]"
         >
-          <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]">
-              <span class="h-5 w-5">
-                <DashboardIcon :name="item.iconName" />
-              </span>
-            </span>
-            <div>
-              <p class="font-medium">
-                {{ item.label }}
-              </p>
-              <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-                {{ item.caption }}
-              </p>
-            </div>
-          </div>
+          <AppIconFeatureCard
+            :icon-name="item.iconName"
+            :title="item.label"
+            :description="item.caption"
+            interactive
+          />
         </RouterLink>
       </div>
     </AppSurfaceCard>
