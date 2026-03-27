@@ -545,6 +545,43 @@ Page({
     expect(session.getFileText('headless://saved/browser-archive/daily/report.txt')).toBeNull()
   })
 
+  it('removes saved file registrations when rmdir deletes saved files in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    listSummary: ''
+  },
+  runRmdirSavedFilesLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-report.txt', 'alpha')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-report.txt',
+      filePath: 'headless://wxfile/saved/archive/report.txt',
+      success: () => {
+        fsManager.rmdirSync('headless://wxfile/saved/archive', true)
+        this.setData({
+          listSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{listSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runRmdirSavedFilesLab()
+
+    expect(page.data.listSummary).toBe('[]')
+    expect(session.getSavedFileListSnapshot()).toEqual([])
+    expect(session.getFileText('headless://wxfile/saved/archive/report.txt')).toBeNull()
+  })
+
   it('supports getFileSystemManager appendFile in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

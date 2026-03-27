@@ -1058,6 +1058,50 @@ Page({
     expect(session.getFileText('headless://saved/archive/daily/report.txt')).toBeNull()
   })
 
+  it('removes saved file registrations when rmdir deletes saved files', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-rmdir-saved-files-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    listSummary: ''
+  },
+  runRmdirSavedFilesLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/report.txt', 'alpha')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/report.txt',
+      filePath: 'headless://saved/archive/report.txt',
+      success: () => {
+        fsManager.rmdirSync('headless://saved/archive', true)
+        this.setData({
+          listSummary: JSON.stringify(wx.getSavedFileList().fileList)
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>rmdir-saved-files</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runRmdirSavedFilesLab()
+
+    expect(page.data.listSummary).toBe('[]')
+    expect(session.getSavedFileListSnapshot()).toEqual([])
+    expect(session.getFileText('headless://saved/archive/report.txt')).toBeNull()
+  })
+
   it('supports getFileSystemManager appendFile operations', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-append-'))
     tempDirs.push(root)
