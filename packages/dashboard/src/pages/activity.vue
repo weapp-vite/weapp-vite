@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DashboardRuntimeEventKind, DashboardRuntimeEventLevel } from '../features/dashboard/types'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
@@ -15,6 +15,7 @@ type EventLevelFilter = 'all' | DashboardRuntimeEventLevel
 const eventKindFilter = ref<EventKindFilter>('all')
 const eventLevelFilter = ref<EventLevelFilter>('all')
 const searchQuery = ref('')
+const selectedEventId = ref<string | null>(null)
 
 const eventKindOptions: Array<{ value: EventKindFilter, label: string }> = [
   { value: 'all', label: '全部类型' },
@@ -31,6 +32,49 @@ const eventLevelOptions: Array<{ value: EventLevelFilter, label: string }> = [
   { value: 'success', label: '成功' },
   { value: 'warning', label: '警告' },
   { value: 'error', label: '错误' },
+]
+
+const filterPresets = [
+  {
+    key: 'all',
+    label: '查看全部',
+    description: '回到完整事件流',
+    apply() {
+      eventKindFilter.value = 'all'
+      eventLevelFilter.value = 'all'
+      searchQuery.value = ''
+    },
+  },
+  {
+    key: 'issues',
+    label: '异常优先',
+    description: '只看警告和错误',
+    apply() {
+      eventKindFilter.value = 'all'
+      eventLevelFilter.value = 'warning'
+      searchQuery.value = ''
+    },
+  },
+  {
+    key: 'commands',
+    label: '命令流',
+    description: '聚焦命令执行事件',
+    apply() {
+      eventKindFilter.value = 'command'
+      eventLevelFilter.value = 'all'
+      searchQuery.value = ''
+    },
+  },
+  {
+    key: 'hmr',
+    label: 'HMR',
+    description: '观察热更新相关事件',
+    apply() {
+      eventKindFilter.value = 'hmr'
+      eventLevelFilter.value = 'all'
+      searchQuery.value = ''
+    },
+  },
 ]
 
 function formatEventKind(kind: DashboardRuntimeEventKind) {
@@ -101,6 +145,38 @@ const filteredEventSummary = computed(() => [
   { label: '当前等级', value: eventLevelFilter.value === 'all' ? '全部' : formatEventLevel(eventLevelFilter.value) },
   { label: '搜索关键字', value: searchQuery.value.trim() || '未设置' },
 ])
+
+const selectedEvent = computed(() =>
+  filteredRuntimeEvents.value.find(event => event.id === selectedEventId.value)
+  ?? filteredRuntimeEvents.value[0]
+  ?? null,
+)
+
+const selectedEventMeta = computed(() => {
+  if (!selectedEvent.value) {
+    return []
+  }
+
+  return [
+    { label: '事件类型', value: formatEventKind(selectedEvent.value.kind) },
+    { label: '事件等级', value: formatEventLevel(selectedEvent.value.level) },
+    { label: '事件来源', value: selectedEvent.value.source ?? 'dashboard' },
+    { label: '发生时间', value: selectedEvent.value.timestamp },
+    { label: '持续时间', value: selectedEvent.value.durationMs ? `${selectedEvent.value.durationMs} ms` : '未记录' },
+    { label: '标签数量', value: String(selectedEvent.value.tags?.length ?? 0) },
+  ]
+})
+
+watch(filteredRuntimeEvents, (events) => {
+  if (events.length === 0) {
+    selectedEventId.value = null
+    return
+  }
+
+  if (!events.some(event => event.id === selectedEventId.value)) {
+    selectedEventId.value = events[0]?.id ?? null
+  }
+}, { immediate: true })
 </script>
 
 <template>
@@ -216,6 +292,26 @@ const filteredEventSummary = computed(() => [
               <div class="grid gap-3">
                 <div>
                   <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                    快速预设
+                  </p>
+                  <div class="mt-2 flex flex-wrap gap-2">
+                    <button
+                      v-for="preset in filterPresets"
+                      :key="preset.key"
+                      :class="pillButtonStyles({ kind: 'theme', active: false })"
+                      @click="preset.apply()"
+                    >
+                      {{ preset.label }}
+                    </button>
+                  </div>
+                  <p class="mt-2 text-xs leading-5 text-[color:var(--dashboard-text-soft)]">
+                    {{ filterPresets.find(preset => preset.key === 'all')?.description }}
+                    也可以直接组合下面的类型、等级和关键字筛选。
+                  </p>
+                </div>
+
+                <div>
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
                     类型过滤
                   </p>
                   <div class="mt-2 flex flex-wrap gap-2">
@@ -249,6 +345,59 @@ const filteredEventSummary = computed(() => [
             </div>
           </div>
 
+          <div
+            v-if="selectedEvent"
+            class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(16rem,0.78fr)]"
+          >
+            <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-accent)]">
+                    selected event
+                  </p>
+                  <h3 class="mt-1 text-lg font-semibold tracking-tight text-[color:var(--dashboard-text)]">
+                    {{ selectedEvent.title }}
+                  </h3>
+                </div>
+                <span class="rounded-full bg-[color:var(--dashboard-accent-soft)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-[color:var(--dashboard-accent)]">
+                  {{ formatEventLevel(selectedEvent.level) }}
+                </span>
+              </div>
+              <p class="mt-3 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+                {{ selectedEvent.detail }}
+              </p>
+              <div v-if="selectedEvent.tags?.length" class="mt-4 flex flex-wrap gap-1.5">
+                <span
+                  v-for="tag in selectedEvent.tags"
+                  :key="tag"
+                  class="rounded-full border border-[color:var(--dashboard-border)] px-2 py-0.5 text-[11px] uppercase tracking-[0.12em] text-[color:var(--dashboard-text-soft)]"
+                >
+                  {{ tag }}
+                </span>
+              </div>
+            </div>
+
+            <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
+              <p class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
+                event metadata
+              </p>
+              <ul class="mt-3 grid gap-2">
+                <li
+                  v-for="item in selectedEventMeta"
+                  :key="item.label"
+                  class="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-2.5"
+                >
+                  <span class="text-xs uppercase tracking-[0.16em] text-[color:var(--dashboard-text-soft)]">
+                    {{ item.label }}
+                  </span>
+                  <strong class="text-sm text-[color:var(--dashboard-text)]">
+                    {{ item.value }}
+                  </strong>
+                </li>
+              </ul>
+            </div>
+          </div>
+
           <p
             v-if="filteredRuntimeEvents.length === 0"
             class="rounded-[18px] border border-dashed border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-4 text-sm leading-6 text-[color:var(--dashboard-text-soft)]"
@@ -260,7 +409,13 @@ const filteredEventSummary = computed(() => [
             <li
               v-for="event in filteredRuntimeEvents"
               :key="event.id"
-              class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3"
+              class="rounded-[18px] border bg-[color:var(--dashboard-panel-muted)] px-4 py-3 transition"
+              :class="[
+                selectedEvent?.id === event.id
+                  ? 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel)]'
+                  : 'border-[color:var(--dashboard-border)]',
+              ]"
+              @click="selectedEventId = event.id"
             >
               <div class="flex items-start justify-between gap-3">
                 <div>
