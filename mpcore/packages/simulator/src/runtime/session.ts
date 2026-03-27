@@ -141,6 +141,7 @@ export class HeadlessSession {
         navigateTo: option => this.navigateTo(option.url),
         pageScrollTo: option => this.pageScrollTo(option),
         clearStorageSync: () => this.wxState.clearStorageSync(),
+        getStorageInfoSync: () => this.wxState.getStorageInfoSync(),
         getStorageSync: key => this.wxState.getStorageSync(key),
         hideLoading: () => this.wxState.hideLoading(),
         hideToast: () => this.wxState.hideToast(),
@@ -172,6 +173,10 @@ export class HeadlessSession {
 
   getStorageSnapshot() {
     return this.wxState.getStorageSnapshot()
+  }
+
+  getStorageInfo() {
+    return this.wxState.getStorageInfoSync()
   }
 
   getLoading() {

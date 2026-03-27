@@ -401,11 +401,13 @@ Page({
   data: {
     asyncClearSummary: '',
     asyncGetSummary: '',
+    asyncInfoSummary: '',
     asyncRemoveSummary: '',
     asyncSetSummary: '',
     hideLoadingSummary: '',
     loadingSummary: '',
     requestSummary: '',
+    storageInfoSummary: '',
     storageSummary: '',
     toastSummary: ''
   },
@@ -423,6 +425,7 @@ Page({
       status: 'stable'
     })
     this.setData({
+      storageInfoSummary: JSON.stringify(wx.getStorageInfoSync()),
       storageSummary: JSON.stringify(wx.getStorageSync('lab'))
     })
     wx.setStorage({
@@ -442,6 +445,13 @@ Page({
       success: (result) => {
         this.setData({
           asyncGetSummary: JSON.stringify(result.data)
+        })
+      }
+    })
+    wx.getStorageInfo({
+      success: (result) => {
+        this.setData({
+          asyncInfoSummary: JSON.stringify(result)
         })
       }
     })
@@ -510,8 +520,10 @@ Page({
 
     expect(page.data.requestSummary).toContain('"queue":"alpha"')
     expect(page.data.storageSummary).toContain('"count":3')
+    expect(page.data.storageInfoSummary).toContain('"keys":["lab"]')
     expect(page.data.asyncSetSummary).toBe('setStorage:ok')
     expect(page.data.asyncGetSummary).toContain('"count":5')
+    expect(page.data.asyncInfoSummary).toContain('"keys":["async-lab","lab"]')
     expect(page.data.asyncRemoveSummary).toBe('removeStorage:ok')
     expect(page.data.asyncClearSummary).toBe('clearStorage:ok')
     expect(page.data.loadingSummary).toBe('showLoading:ok')
@@ -525,6 +537,12 @@ Page({
         count: 3,
         status: 'stable',
       },
+    })
+    expect(session.getStorageInfo()).toEqual({
+      currentSize: 1,
+      errMsg: 'getStorageInfo:ok',
+      keys: ['lab'],
+      limitSize: 10240,
     })
     expect(session.getToast()).toEqual({
       duration: 1500,
