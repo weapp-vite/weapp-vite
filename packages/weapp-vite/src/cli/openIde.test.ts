@@ -16,6 +16,8 @@ const colorsMock = vi.hoisted(() => ({
   bold: vi.fn((value: string) => value),
 }))
 const execFileMock = vi.hoisted(() => vi.fn())
+const createCompilerContextMock = vi.hoisted(() => vi.fn())
+const createInlineConfigMock = vi.hoisted(() => vi.fn((platform?: string) => ({ platform })))
 
 vi.mock('weapp-ide-cli', () => ({
   parse: parseMock,
@@ -28,6 +30,14 @@ vi.mock('weapp-ide-cli', () => ({
 
 vi.mock('node:child_process', () => ({
   execFile: execFileMock,
+}))
+
+vi.mock('../createContext', () => ({
+  createCompilerContext: createCompilerContextMock,
+}))
+
+vi.mock('./runtime', () => ({
+  createInlineConfig: createInlineConfigMock,
 }))
 
 vi.mock('../logger', () => ({
@@ -47,6 +57,8 @@ describe('openIde', () => {
     loggerMock.warn.mockReset()
     loggerMock.error.mockReset()
     execFileMock.mockReset()
+    createCompilerContextMock.mockReset()
+    createInlineConfigMock.mockClear()
     colorsMock.green.mockClear()
     colorsMock.bold.mockClear()
 
@@ -62,6 +74,7 @@ describe('openIde', () => {
       callback(null, '', '')
       return {} as any
     })
+    createCompilerContextMock.mockRejectedValue(new Error('load config failed'))
   })
 
   it('passes project path and alipay platform to weapp-ide-cli parse', async () => {
@@ -151,6 +164,70 @@ describe('openIde', () => {
     }
   })
 
+  it('returns false when close command and all fallback closers fail', async () => {
+    const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
+    Object.defineProperty(process, 'platform', { value: 'linux' })
+    parseMock.mockRejectedValueOnce(new Error('close failed'))
+    execFileMock.mockImplementation((_file: string, _args: string[], callback: (error: any) => void) => {
+      callback(new Error('pkill failed'))
+      return {} as any
+    })
+
+    try {
+      const { closeIde } = await import('./openIde')
+      const result = await closeIde()
+
+      expect(result).toBe(false)
+      expect(execFileMock).toHaveBeenCalledWith(
+        'pkill',
+        ['-f', '/Applications/wechatwebdevtools.app'],
+        expect.any(Function),
+      )
+    }
+    finally {
+      if (platformDescriptor) {
+        Object.defineProperty(process, 'platform', platformDescriptor)
+      }
+    }
+  })
+
+  it('logs retry failure when close command hits login-required path twice', async () => {
+    const loginRequiredError = new Error('login required')
+    parseMock
+      .mockRejectedValueOnce(loginRequiredError)
+      .mockRejectedValueOnce(new Error('retry failed'))
+    isWechatIdeLoginRequiredErrorMock.mockReturnValue(true)
+
+    const { closeIde } = await import('./openIde')
+    const result = await closeIde()
+
+    expect(result).toBe(true)
+    expect(parseMock).toHaveBeenCalledTimes(2)
+    expect(loggerMock.error).toHaveBeenCalledWith('检测到微信开发者工具登录状态失效，请先登录后重试。')
+  })
+
+  it('returns false when close fallback has no cli path to kill process', async () => {
+    const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')
+    Object.defineProperty(process, 'platform', { value: 'linux' })
+    parseMock.mockRejectedValueOnce(new Error('close failed'))
+    getConfigMock.mockResolvedValueOnce({
+      cliPath: '   ',
+    })
+
+    try {
+      const { closeIde } = await import('./openIde')
+      const result = await closeIde()
+
+      expect(result).toBe(false)
+      expect(execFileMock).not.toHaveBeenCalled()
+    }
+    finally {
+      if (platformDescriptor) {
+        Object.defineProperty(process, 'platform', platformDescriptor)
+      }
+    }
+  })
+
   it('retries open flow when login is required and user presses r', async () => {
     const { openIde } = await import('./openIde')
     const loginRequiredError = new Error('需要重新登录 (code 10)')
@@ -219,6 +296,44 @@ describe('openIde', () => {
     expect(result).toEqual({
       platform: 'alipay',
       projectPath: 'dist/alipay',
+    })
+  })
+
+  it('resolves ide command context from compiler context when config loading succeeds', async () => {
+    createCompilerContextMock.mockResolvedValueOnce({
+      configService: {
+        platform: 'weapp',
+        cwd: '/workspace/project',
+        mpDistRoot: '/workspace/project/dist/weapp/dist',
+        weappViteConfig: {
+          mcp: { enabled: true },
+        },
+      },
+    })
+
+    const { resolveIdeCommandContext } = await import('./openIde')
+
+    const result = await resolveIdeCommandContext({
+      cwd: '/workspace/project',
+      mode: 'production',
+      cliPlatform: 'weapp',
+    })
+
+    expect(createInlineConfigMock).toHaveBeenCalledWith(undefined)
+    expect(createCompilerContextMock).toHaveBeenCalledWith({
+      cwd: '/workspace/project',
+      mode: 'production',
+      configFile: undefined,
+      inlineConfig: { platform: undefined },
+      cliPlatform: 'weapp',
+    })
+    expect(result).toEqual({
+      platform: 'weapp',
+      projectPath: '/workspace/project/dist/weapp',
+      weappViteConfig: {
+        mcp: { enabled: true },
+      },
+      mpDistRoot: '/workspace/project/dist/weapp/dist',
     })
   })
 })
