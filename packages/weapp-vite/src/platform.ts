@@ -7,6 +7,14 @@ const NPM_PROTOCOL_RE = /^npm:/
 const EXPLICIT_NPM_DIR_RE = /^\/(?:miniprogram_npm|node_modules)\//
 const LEADING_SLASH_RE = /^\/+/
 
+export interface WxmlPlatformTransformOptions {
+  eventBindingStyle: 'default' | 'alipay'
+  directivePrefix: string
+  normalizeComponentTagName: boolean
+  normalizeVueTemplate: boolean
+  emitGenericPlaceholder: boolean
+}
+
 export function createMiniProgramPlatformRegistry(adapters: readonly MiniProgramPlatformAdapter[]) {
   const adapterById = new Map<MpPlatform, MiniProgramPlatformAdapter>()
   const aliasToId = new Map<string, MpPlatform>()
@@ -158,39 +166,36 @@ export function shouldHoistNestedMiniprogramDependencies(platform: MpPlatform): 
   return getMiniProgramPlatformAdapter(platform).npm?.hoistNestedDependencies === true
 }
 
-export function getWxmlEventBindingStyle(platform?: MpPlatform): 'default' | 'alipay' {
-  if (!platform) {
-    return 'default'
+export function getWxmlPlatformTransformOptions(platform?: MpPlatform): WxmlPlatformTransformOptions {
+  const wxml = platform ? getMiniProgramPlatformAdapter(platform).wxml : undefined
+
+  return {
+    eventBindingStyle: wxml?.eventBindingStyle ?? 'default',
+    directivePrefix: wxml?.directivePrefix ?? 'wx',
+    normalizeComponentTagName: wxml?.normalizeComponentTagName === true,
+    normalizeVueTemplate: wxml?.normalizeVueTemplate === true,
+    emitGenericPlaceholder: wxml?.emitGenericPlaceholder === true,
   }
-  return getMiniProgramPlatformAdapter(platform).wxml?.eventBindingStyle ?? 'default'
+}
+
+export function getWxmlEventBindingStyle(platform?: MpPlatform): 'default' | 'alipay' {
+  return getWxmlPlatformTransformOptions(platform).eventBindingStyle
 }
 
 export function getWxmlDirectivePrefix(platform?: MpPlatform): string {
-  if (!platform) {
-    return 'wx'
-  }
-  return getMiniProgramPlatformAdapter(platform).wxml?.directivePrefix ?? 'wx'
+  return getWxmlPlatformTransformOptions(platform).directivePrefix
 }
 
 export function shouldNormalizeWxmlComponentTagName(platform?: MpPlatform): boolean {
-  if (!platform) {
-    return false
-  }
-  return getMiniProgramPlatformAdapter(platform).wxml?.normalizeComponentTagName === true
+  return getWxmlPlatformTransformOptions(platform).normalizeComponentTagName
 }
 
 export function shouldNormalizeVueTemplateForPlatform(platform?: MpPlatform): boolean {
-  if (!platform) {
-    return false
-  }
-  return getMiniProgramPlatformAdapter(platform).wxml?.normalizeVueTemplate === true
+  return getWxmlPlatformTransformOptions(platform).normalizeVueTemplate
 }
 
 export function shouldEmitGenericPlaceholderAsset(platform?: MpPlatform): boolean {
-  if (!platform) {
-    return false
-  }
-  return getMiniProgramPlatformAdapter(platform).wxml?.emitGenericPlaceholder === true
+  return getWxmlPlatformTransformOptions(platform).emitGenericPlaceholder
 }
 
 export function getPlatformAppTypesPackage(platform?: MpPlatform): string {

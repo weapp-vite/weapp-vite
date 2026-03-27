@@ -10,6 +10,7 @@ import {
   getPreservedNpmDirNames,
   getWxmlDirectivePrefix,
   getWxmlEventBindingStyle,
+  getWxmlPlatformTransformOptions,
   MINI_PLATFORM_ALIASES,
   normalizeMiniPlatform,
   normalizePlatformNpmImportPath,
@@ -95,6 +96,7 @@ describe('platform adapter registry', () => {
     expect(shouldFillComponentGenericsDefault()).toBe(false)
     expect(shouldFillComponentGenericsDefault('weapp')).toBe(false)
     expect(shouldFillComponentGenericsDefault('alipay')).toBe(true)
+    expect(shouldRewriteBundleNpmImports()).toBe(false)
     expect(shouldRewriteBundleNpmImports('weapp')).toBe(false)
     expect(shouldRewriteBundleNpmImports('alipay')).toBe(true)
     expect(shouldNormalizePlatformNpmImportPath()).toBe(false)
@@ -103,6 +105,20 @@ describe('platform adapter registry', () => {
     expect(getWxmlEventBindingStyle('alipay')).toBe('alipay')
     expect(getWxmlDirectivePrefix()).toBe('wx')
     expect(getWxmlDirectivePrefix('alipay')).toBe('a')
+    expect(getWxmlPlatformTransformOptions()).toEqual({
+      eventBindingStyle: 'default',
+      directivePrefix: 'wx',
+      normalizeComponentTagName: false,
+      normalizeVueTemplate: false,
+      emitGenericPlaceholder: false,
+    })
+    expect(getWxmlPlatformTransformOptions('alipay')).toEqual({
+      eventBindingStyle: 'alipay',
+      directivePrefix: 'a',
+      normalizeComponentTagName: true,
+      normalizeVueTemplate: true,
+      emitGenericPlaceholder: true,
+    })
     expect(shouldNormalizeWxmlComponentTagName('weapp')).toBe(false)
     expect(shouldNormalizeWxmlComponentTagName('alipay')).toBe(true)
     expect(shouldNormalizeVueTemplateForPlatform('weapp')).toBe(false)

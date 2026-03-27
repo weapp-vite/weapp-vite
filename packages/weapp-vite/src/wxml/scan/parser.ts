@@ -3,10 +3,7 @@ import type { Token } from '../shared'
 import type { RemovalRange, WxmlToken } from './types'
 import { Parser } from 'htmlparser2'
 import { jsExtensions } from '../../constants'
-import {
-  getWxmlDirectivePrefix,
-  shouldNormalizeWxmlComponentTagName,
-} from '../../platform'
+import { getWxmlPlatformTransformOptions } from '../../platform'
 import {
   getScriptModuleImportAttrs,
   isScriptModuleImportAttr,
@@ -49,6 +46,7 @@ function shouldNormalizeTagName(tagName: string) {
 
 export function parseWxml(options: ParserOptions): ParserResult {
   const { source, platform, excludeComponent } = options
+  const { directivePrefix, normalizeComponentTagName } = getWxmlPlatformTransformOptions(platform)
   const deps: WxmlDep[] = []
   let currentTagName: string | undefined
   let importAttrs: undefined | string[]
@@ -88,7 +86,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
         currentTagName = name
         importAttrs = getScriptModuleImportAttrs(currentTagName) ?? getTemplateImportAttrs(currentTagName)
         tagStartIndex = parser.startIndex
-        if (shouldNormalizeWxmlComponentTagName(platform) && shouldNormalizeTagName(name)) {
+        if (normalizeComponentTagName && shouldNormalizeTagName(name)) {
           const normalized = toKebabCaseTagName(name)
           if (normalized !== name) {
             tagNameTokens.push({
@@ -157,7 +155,6 @@ export function parseWxml(options: ParserOptions): ParserResult {
             })
           }
         }
-        const directivePrefix = getWxmlDirectivePrefix(platform)
         if (directivePrefix !== 'wx' && name.startsWith('wx:')) {
           const start = parser.startIndex
           const end = parser.startIndex + name.length
@@ -179,7 +176,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
       onclosetag(name) {
         currentTagName = tagStack.pop()
         if (currentTagName && !excludeComponent(currentTagName)) {
-          const componentName = shouldNormalizeWxmlComponentTagName(platform) && shouldNormalizeTagName(currentTagName)
+          const componentName = normalizeComponentTagName && shouldNormalizeTagName(currentTagName)
             ? toKebabCaseTagName(currentTagName)
             : currentTagName
           if (Array.isArray(components[componentName])) {
@@ -196,7 +193,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
           }
         }
 
-        if (shouldNormalizeWxmlComponentTagName(platform) && shouldNormalizeTagName(name)) {
+        if (normalizeComponentTagName && shouldNormalizeTagName(name)) {
           const normalized = toKebabCaseTagName(name)
           if (normalized !== name && parser.startIndex !== tagStartIndex) {
             const nameStart = parser.startIndex + 2
