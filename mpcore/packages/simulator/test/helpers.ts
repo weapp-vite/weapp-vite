@@ -372,6 +372,7 @@ Page({
     appBaseInfoSync: '',
     canIUseSummary: '',
     logs: [],
+    menuButtonRect: '',
     callbacks: [],
     windowInfoAsync: '',
     windowInfoSync: '',
@@ -436,9 +437,11 @@ Page({
       canIUseSummary: JSON.stringify({
         getWindowInfo: wx.canIUse('getWindowInfo'),
         getWindowInfoReturn: wx.canIUse('getWindowInfo.return.windowWidth'),
+        menuButtonRect: wx.canIUse('getMenuButtonBoundingClientRect'),
         nextTick: wx.canIUse('nextTick'),
         missing: wx.canIUse('shareFileMessage')
       }),
+      menuButtonRect: JSON.stringify(wx.getMenuButtonBoundingClientRect()),
       windowInfoSync: JSON.stringify(wx.getWindowInfoSync())
     })
     wx.getWindowInfo({

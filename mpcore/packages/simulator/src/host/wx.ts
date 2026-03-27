@@ -67,6 +67,15 @@ export interface HeadlessWxWindowInfoResult {
   windowWidth: number
 }
 
+export interface HeadlessWxMenuButtonBoundingClientRectResult {
+  bottom: number
+  height: number
+  left: number
+  right: number
+  top: number
+  width: number
+}
+
 export interface HeadlessWxSetStorageOption extends HeadlessWxCallbackOption<HeadlessWxStorageResult> {
   data: unknown
   key: string
@@ -126,6 +135,7 @@ export interface HeadlessWxRequestTask {
 export interface HeadlessWxDriver {
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   clearStorageSync: () => void
+  getMenuButtonBoundingClientRect: () => HeadlessWxMenuButtonBoundingClientRectResult
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorageSync: (key: string) => unknown
   getSystemInfoSync: () => HeadlessWxSystemInfoResult
@@ -153,6 +163,7 @@ export interface HeadlessWx {
   clearStorageSync: () => void
   getAppBaseInfo: (option?: HeadlessWxGetAppBaseInfoOption) => HeadlessWxAppBaseInfoResult | undefined
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
+  getMenuButtonBoundingClientRect: () => HeadlessWxMenuButtonBoundingClientRectResult
   getStorageInfo: (option?: HeadlessWxGetStorageInfoOption) => HeadlessWxStorageInfoResult | undefined
   getStorageInfoSync: () => HeadlessWxStorageInfoResult
   getStorage: (option: HeadlessWxGetStorageOption) => HeadlessWxGetStorageResult | undefined
@@ -240,6 +251,16 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
         language: true,
         platform: true,
         version: true,
+      },
+    },
+    getMenuButtonBoundingClientRect: {
+      return: {
+        bottom: true,
+        height: true,
+        left: true,
+        right: true,
+        top: true,
+        width: true,
       },
     },
     getStorage: true,
@@ -340,6 +361,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     clearStorageSync: () => driver.clearStorageSync(),
     getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),
     getAppBaseInfoSync: () => driver.getAppBaseInfoSync(),
+    getMenuButtonBoundingClientRect: () => driver.getMenuButtonBoundingClientRect(),
     getStorageInfo: option => invokeWxApi(() => driver.getStorageInfoSync(), option),
     getStorageInfoSync: () => driver.getStorageInfoSync(),
     getStorage: option => invokeWxApi(() => ({

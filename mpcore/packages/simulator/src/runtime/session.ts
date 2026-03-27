@@ -13,6 +13,7 @@ import {
   applyResizeToSystemInfo,
   createDefaultSystemInfo,
   deriveAppBaseInfo,
+  deriveMenuButtonBoundingClientRect,
   deriveWindowInfo,
 } from './systemInfo'
 import { createHeadlessWxState } from './wxState'
@@ -145,6 +146,7 @@ export class HeadlessSession {
       () => this.getApp(),
       {
         getAppBaseInfoSync: () => deriveAppBaseInfo(this.systemInfo),
+        getMenuButtonBoundingClientRect: () => deriveMenuButtonBoundingClientRect(this.systemInfo),
         navigateBack: option => this.navigateBack(option?.delta),
         navigateTo: option => this.navigateTo(option.url),
         pageScrollTo: option => this.pageScrollTo(option),
@@ -199,6 +201,10 @@ export class HeadlessSession {
 
   getAppBaseInfo() {
     return deriveAppBaseInfo(this.systemInfo)
+  }
+
+  getMenuButtonBoundingClientRect() {
+    return deriveMenuButtonBoundingClientRect(this.systemInfo)
   }
 
   getLoading() {
