@@ -1,5 +1,11 @@
 # create-weapp-vite
 
+## 2.0.64
+
+### Patch Changes
+
+- 🐛 **修复 `create-weapp-vite` 在新工作区或发布打包流程中可能跳过模板同步的问题，避免 `npm create weapp-vite@latest` 生成项目时只落下 `package.json` 而缺失完整模板文件。** [#361](https://github.com/weapp-vite/weapp-vite/pull/361) by @sonofmagic
+
 ## 2.0.63
 
 ### Patch Changes
