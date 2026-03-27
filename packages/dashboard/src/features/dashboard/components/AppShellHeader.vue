@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ThemePreference } from '../composables/useThemeMode'
 import type { ThemeOption } from '../types'
+import AppInfoPill from './AppInfoPill.vue'
 import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
@@ -90,12 +91,7 @@ const emit = defineEmits<{
         </select>
       </label>
 
-      <span class="inline-flex items-center gap-2 rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-3 py-2 text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-        <span class="h-4 w-4 text-[color:var(--dashboard-accent)]">
-          <DashboardIcon name="status-live" />
-        </span>
-        shell ready
-      </span>
+      <AppInfoPill icon-name="status-live" label="shell ready" uppercase />
     </div>
   </header>
 </template>
