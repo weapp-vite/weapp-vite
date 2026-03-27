@@ -29,6 +29,8 @@ interface SimulatorE2EApi {
   runPageMethod: (method: string) => void
   sessionSnapshot: () => {
     actionSheetLogs: unknown[]
+    downloadFileLogs: unknown[]
+    fileSnapshot: Record<string, string>
     modalLogs: unknown[]
     pullDownRefreshState: { active: boolean, stopCalls: number } | null
     requestLogs: unknown[]
@@ -36,6 +38,7 @@ interface SimulatorE2EApi {
     storageSnapshot: Record<string, unknown>
     tabBarSnapshot: unknown
     toast: unknown
+    uploadFileLogs: unknown[]
   }
   triggerPullDownRefresh: () => void
   triggerReachBottom: () => void
@@ -121,6 +124,7 @@ describe.sequential('simulator browser e2e', () => {
 
     bridge.runPageMethod('inspectCard')
     bridge.runPageMethod('loadMockQueue')
+    bridge.runPageMethod('runFileTransferLab')
     bridge.runPageMethod('storeSnapshot')
     bridge.runPageMethod('toastSnapshot')
 
@@ -128,16 +132,27 @@ describe.sequential('simulator browser e2e', () => {
       () => bridge.getState(),
       (nextState) => {
         const pageData = parseJsonString<Record<string, any>>(nextState.pageData)
-        return Boolean(pageData.componentSnapshot && pageData.requestSnapshot && pageData.storageSnapshot && pageData.toastState)
+        return Boolean(
+          pageData.componentSnapshot
+          && pageData.downloadSnapshot
+          && pageData.requestSnapshot
+          && pageData.savedFilePath
+          && pageData.storageSnapshot
+          && pageData.toastState
+          && pageData.uploadedSnapshot,
+        )
       },
       20_000,
     )
 
     const pageData = parseJsonString<Record<string, any>>(state.pageData)
     expect(pageData.componentSnapshot).toContain('"size":1')
+    expect(pageData.downloadSnapshot).toContain('"errMsg":"downloadFile:ok"')
     expect(pageData.requestSnapshot).toContain('"queue":"alpha"')
+    expect(pageData.savedFilePath).toContain('headless://wxfile/saved/')
     expect(pageData.storageSnapshot).toContain('"status"')
     expect(pageData.toastState).toContain('showToast:ok')
+    expect(pageData.uploadedSnapshot).toContain('"accepted":true')
 
     const scopeIds = bridge.findComponentScopeIds('status-card')
     expect(scopeIds).toHaveLength(1)
@@ -156,6 +171,11 @@ describe.sequential('simulator browser e2e', () => {
     )
     expect(nestedSnapshot?.data?.nestedBadge).toContain('"label":"stable"')
     expect(nestedSnapshot?.data?.nestedBadge).toContain('"size":1')
+
+    const sessionSnapshot = bridge.sessionSnapshot()
+    expect(sessionSnapshot.downloadFileLogs).toHaveLength(1)
+    expect(sessionSnapshot.uploadFileLogs).toHaveLength(1)
+    expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab report')
   })
 
   it('drives browser session host features through the demo workbench api', async () => {

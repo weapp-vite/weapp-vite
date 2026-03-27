@@ -73,6 +73,8 @@ export function useWorkbench() {
       runPageMethod: (method: string) => sessionState.handleCallMethod(method),
       sessionSnapshot: () => ({
         actionSheetLogs: sessionState.session.value?.getActionSheetLogs() ?? [],
+        downloadFileLogs: sessionState.session.value?.getDownloadFileLogs?.() ?? [],
+        fileSnapshot: sessionState.session.value?.getFileSnapshot?.() ?? {},
         modalLogs: sessionState.session.value?.getModalLogs() ?? [],
         pullDownRefreshState: sessionState.session.value?.getPullDownRefreshState?.() ?? null,
         requestLogs: sessionState.session.value?.getRequestLogs() ?? [],
@@ -80,6 +82,7 @@ export function useWorkbench() {
         storageSnapshot: sessionState.session.value?.getStorageSnapshot() ?? {},
         tabBarSnapshot: sessionState.session.value?.getTabBarSnapshot?.() ?? null,
         toast: sessionState.session.value?.getToast() ?? null,
+        uploadFileLogs: sessionState.session.value?.getUploadFileLogs?.() ?? [],
       }),
       triggerPullDownRefresh: () => sessionState.run(() => sessionState.session.value?.triggerPullDownRefresh()),
       triggerReachBottom: () => sessionState.run(() => sessionState.session.value?.triggerReachBottom()),
