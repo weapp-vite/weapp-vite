@@ -6,6 +6,7 @@ import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppCommandListCard from '../features/dashboard/components/AppCommandListCard.vue'
+import AppInfoPill from '../features/dashboard/components/AppInfoPill.vue'
 import AppRouteActionCard from '../features/dashboard/components/AppRouteActionCard.vue'
 import AppRuntimeEventCard from '../features/dashboard/components/AppRuntimeEventCard.vue'
 import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
@@ -194,13 +195,8 @@ onBeforeUnmount(() => {
           <span class="h-4 w-4" :class="option.iconClass" />
           {{ option.label }}
         </button>
-        <span class="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-          <span class="h-4 w-4 text-[color:var(--dashboard-accent)]" :class="statusTone" />
-          {{ statusText }}
-        </span>
-        <span class="inline-flex items-center rounded-full border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]">
-          {{ lastUpdatedAt }}
-        </span>
+        <AppInfoPill :icon-name="statusTone" :label="statusText" uppercase />
+        <AppInfoPill :label="lastUpdatedAt" uppercase />
       </div>
     </section>
 
