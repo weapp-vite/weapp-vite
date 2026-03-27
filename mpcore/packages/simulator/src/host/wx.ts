@@ -314,6 +314,23 @@ export interface HeadlessWxSaveFileOption extends HeadlessWxCallbackOption<Headl
   tempFilePath: string
 }
 
+export interface HeadlessWxSavedFileInfo {
+  createTime: number
+  filePath: string
+  size: number
+}
+
+export interface HeadlessWxGetSavedFileListSuccessResult {
+  errMsg: string
+  fileList: HeadlessWxSavedFileInfo[]
+}
+
+export interface HeadlessWxGetSavedFileListOption extends HeadlessWxCallbackOption<HeadlessWxGetSavedFileListSuccessResult> {}
+
+export interface HeadlessWxRemoveSavedFileOption extends HeadlessWxCallbackOption<{ errMsg: string }> {
+  filePath: string
+}
+
 export interface HeadlessWxFileSystemResult {
   errMsg: string
 }
@@ -414,6 +431,7 @@ export interface HeadlessWxDriver {
   executeSelectorQuery: (requests: HeadlessWxSelectorQueryRequest[], scope?: Record<string, any>) => unknown[]
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
   getFileSystemManager: () => HeadlessWxFileSystemManager
+  getSavedFileList: (option?: HeadlessWxGetSavedFileListOption) => HeadlessWxGetSavedFileListSuccessResult
   clearStorageSync: () => void
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getLaunchOptionsSync: () => HeadlessWxLaunchOptions
@@ -436,6 +454,7 @@ export interface HeadlessWxDriver {
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
+  removeSavedFile: (option: HeadlessWxRemoveSavedFileOption) => { errMsg: string }
   saveFile: (option: HeadlessWxSaveFileOption) => HeadlessWxSaveFileSuccessResult
   setBackgroundColor: (option: HeadlessWxSetBackgroundColorOption) => { errMsg: string }
   setBackgroundTextStyle: (option: HeadlessWxSetBackgroundTextStyleOption) => { errMsg: string }
@@ -468,6 +487,7 @@ export interface HeadlessWx {
   clearStorageSync: () => void
   createSelectorQuery: () => HeadlessWxSelectorQuery
   getFileSystemManager: () => HeadlessWxFileSystemManager
+  getSavedFileList: (option?: HeadlessWxGetSavedFileListOption) => HeadlessWxGetSavedFileListSuccessResult | undefined
   getEnterOptionsSync: () => HeadlessWxLaunchOptions
   getAppBaseInfo: (option?: HeadlessWxGetAppBaseInfoOption) => HeadlessWxAppBaseInfoResult | undefined
   getAppBaseInfoSync: () => HeadlessWxAppBaseInfoResult
@@ -493,6 +513,7 @@ export interface HeadlessWx {
   pageScrollTo: (option: HeadlessWxPageScrollToOption) => unknown
   reLaunch: (option: HeadlessWxNavigateOption) => unknown
   redirectTo: (option: HeadlessWxNavigateOption) => unknown
+  removeSavedFile: (option: HeadlessWxRemoveSavedFileOption) => { errMsg: string } | undefined
   removeStorage: (option: HeadlessWxRemoveStorageOption) => HeadlessWxStorageResult | undefined
   removeStorageSync: (key: string) => void
   request: (option: HeadlessWxRequestOption) => HeadlessWxRequestTask
@@ -563,6 +584,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     clearStorageSync: true,
     createSelectorQuery: true,
     getFileSystemManager: true,
+    getSavedFileList: true,
     getAppBaseInfo: {
       return: {
         SDKVersion: true,
@@ -816,6 +838,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     },
     getEnterOptionsSync: () => driver.getEnterOptionsSync(),
     getFileSystemManager: () => driver.getFileSystemManager(),
+    getSavedFileList: option => invokeWxApi(() => driver.getSavedFileList(option), option),
     getAppBaseInfo: option => invokeWxApi(() => driver.getAppBaseInfoSync(), option),
     getAppBaseInfoSync: () => driver.getAppBaseInfoSync(),
     getLaunchOptionsSync: () => driver.getLaunchOptionsSync(),
@@ -853,6 +876,7 @@ export function createHeadlessWx(driver: HeadlessWxDriver): HeadlessWx {
     redirectTo: option => invokeWxApi(() => {
       driver.redirectTo(option)
     }, option),
+    removeSavedFile: option => invokeWxApi(() => driver.removeSavedFile(option), option),
     removeStorage: option => invokeWxApi(() => {
       driver.removeStorageSync(option.key)
       return {

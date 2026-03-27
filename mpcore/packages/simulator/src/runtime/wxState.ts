@@ -7,6 +7,7 @@ import type {
   HeadlessWxFileSystemManager,
   HeadlessWxFileSystemResult,
   HeadlessWxGetNetworkTypeResult,
+  HeadlessWxGetSavedFileListSuccessResult,
   HeadlessWxMkdirOption,
   HeadlessWxNetworkStatusChangeCallback,
   HeadlessWxNetworkStatusChangeResult,
@@ -15,10 +16,12 @@ import type {
   HeadlessWxReadDirSuccessResult,
   HeadlessWxReadFileOption,
   HeadlessWxReadFileSuccessResult,
+  HeadlessWxRemoveSavedFileOption,
   HeadlessWxRenameOption,
   HeadlessWxRequestOption,
   HeadlessWxRequestSuccessResult,
   HeadlessWxRequestTask,
+  HeadlessWxSavedFileInfo,
   HeadlessWxSaveFileOption,
   HeadlessWxSaveFileSuccessResult,
   HeadlessWxShareMenuOption,
@@ -391,6 +394,7 @@ export function createHeadlessWxState() {
   const uploadFileLogs: HeadlessWxUploadFileLogEntry[] = []
   const uploadFileMocks: HeadlessWxUploadFileMockDefinition[] = []
   const files = new Map<string, string>()
+  const savedFiles = new Map<string, HeadlessWxSavedFileInfo>()
   const directories = new Set<string>()
   let fileId = 0
   let loading: HeadlessWxLoadingSnapshot | null = null
@@ -610,6 +614,27 @@ export function createHeadlessWxState() {
       }
     }
     throw new Error(`stat:fail no such file or directory, stat '${normalizedPath}'`)
+  }
+
+  const getSavedFileList = (): HeadlessWxGetSavedFileListSuccessResult => {
+    return {
+      errMsg: 'getSavedFileList:ok',
+      fileList: Array.from(savedFiles.values())
+        .map(item => ({ ...item }))
+        .sort((a, b) => a.filePath.localeCompare(b.filePath)),
+    }
+  }
+
+  const removeSavedFile = (filePath: string) => {
+    const normalizedPath = normalizeFsPath(filePath)
+    if (!savedFiles.has(normalizedPath)) {
+      throw new Error(`removeSavedFile:fail no such file or directory, unlink '${normalizedPath}'`)
+    }
+    savedFiles.delete(normalizedPath)
+    files.delete(normalizedPath)
+    return {
+      errMsg: 'removeSavedFile:ok',
+    }
   }
 
   const fileSystemManager: HeadlessWxFileSystemManager = {
@@ -853,6 +878,9 @@ export function createHeadlessWxState() {
     getFileSystemManager() {
       return fileSystemManager
     },
+    getSavedFileList() {
+      return getSavedFileList()
+    },
     getFileText(filePath: string) {
       return files.get(filePath) ?? null
     },
@@ -1033,6 +1061,9 @@ export function createHeadlessWxState() {
         option.complete?.()
       }, 'request:fail abort')
     },
+    removeSavedFile(option: HeadlessWxRemoveSavedFileOption) {
+      return removeSavedFile(option.filePath)
+    },
     saveFile(option: HeadlessWxSaveFileOption): HeadlessWxSaveFileSuccessResult {
       const fileContent = files.get(option.tempFilePath)
       if (fileContent == null) {
@@ -1042,6 +1073,11 @@ export function createHeadlessWxState() {
       const savedFilePath = allocateFilePath('saved', option.filePath)
       ensureDirectoryTree(savedFilePath)
       files.set(savedFilePath, fileContent)
+      savedFiles.set(savedFilePath, {
+        createTime: Date.now(),
+        filePath: savedFilePath,
+        size: fileContent.length,
+      })
       return {
         errMsg: 'saveFile:ok',
         savedFilePath,
