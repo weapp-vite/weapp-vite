@@ -5,6 +5,8 @@ import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/co
 import * as echarts from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { computed, nextTick, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
+import { RouterLink } from 'vue-router'
+import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
 import DashboardTabs from '../features/dashboard/components/DashboardTabs.vue'
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
@@ -34,10 +36,6 @@ const lastUpdatedAt = shallowRef('—')
 let chart: echarts.ECharts | undefined
 let updateListener: (() => void) | undefined
 const { themePreference, resolvedTheme, setThemePreference } = useDashboardTheme()
-
-if (!resultRef.value) {
-  throw new Error('[weapp-vite analyze] 未检测到分析数据，请通过 CLI 注入后再访问。')
-}
 
 const { treemapOption } = useTreemapData(resultRef, resolvedTheme)
 const {
@@ -146,6 +144,60 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="grid gap-3">
+    <AppSurfaceCard
+      v-if="!resultRef"
+      eyebrow="Analyze"
+      title="等待分析数据注入"
+      description="当前路由已经可独立打开，但还没有接收到来自 CLI 的 analyze payload。你可以先从工作台查看壳子结构，或者通过命令启动真实数据联调。"
+      icon-name="hero-commands"
+      tone="strong"
+      padding="header"
+    >
+      <div class="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.92fr)]">
+        <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
+          <p class="text-[11px] uppercase tracking-[0.24em] text-[color:var(--dashboard-text-soft)]">
+            recommended commands
+          </p>
+          <div class="mt-4 grid gap-2">
+            <code class="rounded-xl bg-slate-950 px-3 py-3 text-xs text-slate-100 dark:bg-slate-900">
+              weapp-vite analyze
+            </code>
+            <code class="rounded-xl bg-slate-950 px-3 py-3 text-xs text-slate-100 dark:bg-slate-900">
+              weapp-vite build --ui
+            </code>
+            <code class="rounded-xl bg-slate-950 px-3 py-3 text-xs text-slate-100 dark:bg-slate-900">
+              weapp-vite dev --ui
+            </code>
+          </div>
+        </div>
+
+        <div class="grid gap-2">
+          <RouterLink
+            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-4 transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]"
+            to="/"
+          >
+            <p class="font-medium">
+              返回工作台
+            </p>
+            <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+              继续查看应用壳子、命令面板和当前增强节奏。
+            </p>
+          </RouterLink>
+          <RouterLink
+            class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-4 transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]"
+            to="/activity"
+          >
+            <p class="font-medium">
+              查看活动流
+            </p>
+            <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+              后续可以在这里观察真实的构建事件和诊断状态。
+            </p>
+          </RouterLink>
+        </div>
+      </div>
+    </AppSurfaceCard>
+
     <section class="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
       <DashboardTabs :tabs="dashboardTabs" :active-tab="activeTab" @select="activeTab = $event" />
       <div class="flex flex-wrap items-center gap-2">
@@ -172,28 +224,30 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" />
+    <template v-if="resultRef">
+      <DashboardMetricGrid :cards="topCards" :package-type-summary="metricPackageTypeSummary" />
 
-    <section v-if="activeTab === 'overview'">
-      <OverviewPanel
-        :bind-chart-ref="bindChartRef"
-        :visible-largest-files="visibleLargestFiles"
-        :sub-packages="subPackages"
-      />
-    </section>
+      <section v-if="activeTab === 'overview'">
+        <OverviewPanel
+          :bind-chart-ref="bindChartRef"
+          :visible-largest-files="visibleLargestFiles"
+          :sub-packages="subPackages"
+        />
+      </section>
 
-    <section v-else-if="activeTab === 'packages'" class="grid gap-3">
-      <SectionNote text="包与产物视图优先展示每个包的结构和最大文件，支持在一个屏幕内快速对比。" />
-      <PackagesPanel :package-insights="packageInsights" />
-    </section>
+      <section v-else-if="activeTab === 'packages'" class="grid gap-3">
+        <SectionNote text="包与产物视图优先展示每个包的结构和最大文件，支持在一个屏幕内快速对比。" />
+        <PackagesPanel :package-insights="packageInsights" />
+      </section>
 
-    <section v-else class="grid gap-3">
-      <SectionNote text="模块与复用视图聚焦跨包重复、来源分布与文件样本。" />
-      <ModulesPanel
-        :visible-duplicate-modules="visibleDuplicateModules"
-        :module-source-summary="moduleSourceSummary"
-        :visible-largest-files="visibleLargestFiles"
-      />
-    </section>
+      <section v-else class="grid gap-3">
+        <SectionNote text="模块与复用视图聚焦跨包重复、来源分布与文件样本。" />
+        <ModulesPanel
+          :visible-duplicate-modules="visibleDuplicateModules"
+          :module-source-summary="moduleSourceSummary"
+          :visible-largest-files="visibleLargestFiles"
+        />
+      </section>
+    </template>
   </div>
 </template>

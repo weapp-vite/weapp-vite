@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
-import { quickCommands, releaseChecklist, workspaceHighlights, workspaceMetrics } from '../features/dashboard/constants/shell'
+import { quickCommands, releaseChecklist, workspaceHighlights, workspaceMetrics, workspaceNavigation } from '../features/dashboard/constants/shell'
 </script>
 
 <template>
@@ -65,6 +66,38 @@ import { quickCommands, releaseChecklist, workspaceHighlights, workspaceMetrics 
             </ul>
           </div>
         </div>
+      </div>
+    </AppSurfaceCard>
+
+    <AppSurfaceCard
+      eyebrow="Routes"
+      title="页面跳转入口"
+      description="工作台本身也要承担路由索引职责，后续页面越来越多时，首页需要负责把用户送到正确的功能区域。"
+      icon-name="nav-home"
+    >
+      <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <RouterLink
+          v-for="item in workspaceNavigation"
+          :key="item.to"
+          :to="item.to"
+          class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4 transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]"
+        >
+          <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]">
+              <span class="h-5 w-5">
+                <DashboardIcon :name="item.iconName" />
+              </span>
+            </span>
+            <div>
+              <p class="font-medium">
+                {{ item.label }}
+              </p>
+              <p class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+                {{ item.caption }}
+              </p>
+            </div>
+          </div>
+        </RouterLink>
       </div>
     </AppSurfaceCard>
 
