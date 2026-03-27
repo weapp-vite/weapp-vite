@@ -1,6 +1,15 @@
 import type { HeadlessProjectDescriptor } from '../project'
 import type { HeadlessSession } from '../runtime'
+import type { HeadlessTestingWaitOptions } from './pageHandle'
 import { HeadlessTestingPageHandle } from './pageHandle'
+
+const LEADING_SLASH_RE = /^\/+/
+const DEFAULT_WAIT_TIMEOUT = 1_000
+const DEFAULT_WAIT_INTERVAL = 10
+
+function normalizeRoute(route: string) {
+  return route.replace(LEADING_SLASH_RE, '')
+}
 
 export class HeadlessTestingSessionHandle {
   constructor(
@@ -8,8 +17,40 @@ export class HeadlessTestingSessionHandle {
     private readonly session: HeadlessSession,
   ) {}
 
+  private async waitFor(ms = 0) {
+    if (ms <= 0) {
+      return
+    }
+    await new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  private async pollUntil<T>(
+    check: () => Promise<T | null>,
+    errorMessage: string,
+    options: HeadlessTestingWaitOptions = {},
+  ) {
+    const timeout = Number.isFinite(options.timeout)
+      ? Math.max(0, Math.trunc(options.timeout ?? DEFAULT_WAIT_TIMEOUT))
+      : DEFAULT_WAIT_TIMEOUT
+    const interval = Number.isFinite(options.interval)
+      ? Math.max(1, Math.trunc(options.interval ?? DEFAULT_WAIT_INTERVAL))
+      : DEFAULT_WAIT_INTERVAL
+    const deadline = Date.now() + timeout
+
+    while (true) {
+      const result = await check()
+      if (result != null) {
+        return result
+      }
+      if (Date.now() >= deadline) {
+        throw new Error(errorMessage)
+      }
+      await this.waitFor(interval)
+    }
+  }
+
   async close() {
-    return
+
   }
 
   async currentPage() {
@@ -25,6 +66,34 @@ export class HeadlessTestingSessionHandle {
   async reLaunch(route: string) {
     const page = this.session.reLaunch(route)
     return new HeadlessTestingPageHandle(this.project, page)
+  }
+
+  async waitForCurrentPage(route?: string, options: HeadlessTestingWaitOptions = {}) {
+    const normalizedRoute = route?.trim()
+    if (normalizedRoute != null && !normalizedRoute) {
+      throw new Error('Route must be a non-empty string in headless testing runtime.')
+    }
+
+    return await this.pollUntil(
+      async () => {
+        const currentPageInstance = this.session.getCurrentPages().at(-1)
+        if (!currentPageInstance) {
+          return null
+        }
+        const current = new HeadlessTestingPageHandle(this.project, currentPageInstance)
+        if (!normalizedRoute) {
+          return current
+        }
+        if (normalizeRoute(currentPageInstance.route) === normalizeRoute(normalizedRoute)) {
+          return current
+        }
+        return null
+      },
+      normalizedRoute
+        ? `Timed out waiting for current page "${normalizeRoute(normalizedRoute)}" in headless testing runtime.`
+        : 'Timed out waiting for a current page in headless testing runtime.',
+      options,
+    )
   }
 
   async pageScrollTo(scrollTop: number) {

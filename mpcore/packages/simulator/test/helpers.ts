@@ -191,6 +191,13 @@ Page({
       complete: () => this.push('home:navigateTo:complete'),
     })
   },
+  goDetailLater() {
+    setTimeout(() => {
+      wx.navigateTo({
+        url: '../detail/index?from=home-later',
+      })
+    }, 20)
+  },
   goMissingWithCallbacks() {
     wx.navigateTo({
       url: '../missing/index',
