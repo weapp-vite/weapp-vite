@@ -1,6 +1,7 @@
 import type { MutableCompilerContext } from '../../context'
 import type { WxmlService } from '../wxmlPlugin'
 import { Buffer } from 'node:buffer'
+// eslint-disable-next-line e18e/ban-dependencies -- 这里需要直接 mock 运行时当前使用的 fs-extra 模块
 import fs from 'fs-extra'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../runtimeState'
@@ -62,6 +63,13 @@ vi.mock('@/wxml', () => ({
         ],
       }
     }
+    if (content.includes('<include src="./footer.wxml" />')) {
+      return {
+        deps: [
+          { tagName: 'include', value: './footer.wxml' },
+        ],
+      }
+    }
     if (content.includes('<import src="/header.wxml" />')) {
       return {
         deps: [
@@ -73,7 +81,7 @@ vi.mock('@/wxml', () => ({
       deps: [],
     }
   }),
-  isImportTag: vi.fn(tagName => tagName === 'import'),
+  isTemplateImportTag: vi.fn(tagName => tagName === 'import' || tagName === 'include'),
 }))
 
 vi.mock('@/utils', async (importOriginal) => {
@@ -132,6 +140,13 @@ describe('wxmlService', () => {
     const allDeps = wxmlService.getAllDeps()
 
     expect(allDeps).toEqual(new Set(['/mock/project/file.wxml', './header.wxml']))
+  })
+
+  it('merges dependencies when addDeps is called repeatedly for the same file', async () => {
+    await wxmlService.addDeps('/mock/project/file.wxml', ['./header.wxml'])
+    await wxmlService.addDeps('/mock/project/file.wxml', ['./footer.wxml'])
+
+    expect(wxmlService.depsMap.get('/mock/project/file.wxml')).toEqual(new Set(['./header.wxml', './footer.wxml']))
   })
 
   it('clears dependency and token maps', () => {
@@ -208,6 +223,19 @@ describe('wxmlService', () => {
     expect(wxmlService.depsMap.get(filepath)).toEqual(new Set(['/mock/project/header.wxml']))
   })
 
+  it('resolves include template deps from current directory', async () => {
+    const filepath = '/mock/project/file.wxml'
+    mockFileSystem[filepath] = '<include src="./footer.wxml" />'
+    mockFileSystem['/mock/project/footer.wxml'] = '<view>Footer</view>'
+
+    const result = await wxmlService.scan(filepath)
+
+    expect(result?.deps).toMatchObject([
+      { tagName: 'include', value: './footer.wxml' },
+    ])
+    expect(wxmlService.depsMap.get(filepath)).toEqual(new Set(['/mock/project/footer.wxml']))
+  })
+
   it('throws non-ENOENT fs.stat errors during scan', async () => {
     vi.mocked(fs.stat).mockRejectedValueOnce(Object.assign(new Error('permission denied'), { code: 'EACCES' }))
     await expect(wxmlService.scan('/mock/project/file.wxml')).rejects.toThrow('permission denied')
@@ -246,5 +274,19 @@ describe('wxmlService', () => {
     expect(ctx.runtimeState.wxml.cache.mtimeMap.has(packageBFile)).toBe(true)
     expect(ctx.runtimeState.wxml.emittedCode.has('packageA/pages/a.wxml')).toBe(false)
     expect(ctx.runtimeState.wxml.emittedCode.has('packageB/pages/b.wxml')).toBe(true)
+  })
+
+  it('clears subpackage mtime entries when only the mtime cache is populated', () => {
+    mockConfigService.currentSubPackageRoot = 'packageA'
+    const packageAFile = '/mock/project/packageA/pages/a.wxml'
+    const packageBFile = '/mock/project/packageB/pages/b.wxml'
+
+    ctx.runtimeState.wxml.cache.mtimeMap.set(packageAFile, 1)
+    ctx.runtimeState.wxml.cache.mtimeMap.set(packageBFile, 1)
+
+    wxmlService.clearAll()
+
+    expect(ctx.runtimeState.wxml.cache.mtimeMap.has(packageAFile)).toBe(false)
+    expect(ctx.runtimeState.wxml.cache.mtimeMap.has(packageBFile)).toBe(true)
   })
 })

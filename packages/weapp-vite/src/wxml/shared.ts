@@ -1,15 +1,38 @@
-export const srcImportTagsMap: Record<string, string[]> = {
-  // 参考：https://developers.weixin.qq.com/miniprogram/dev/reference/wxs/01wxs-module.html
-  'wxs': ['src'],
-  'sjs': ['src'],
-  'import-sjs': ['from'],
-  // 参考：https://developers.weixin.qq.com/miniprogram/dev/reference/wxml/import.html
-  'import': ['src'],
-  'include': ['src'],
+const TEMPLATE_IMPORT_RE = /\.(?:wxml|html)$/i
+const TEMPLATE_IMPORT_TAG_NAMES = ['import', 'include'] as const
+const TEMPLATE_IMPORT_ATTRS = Object.freeze({
+  import: ['src'],
+  include: ['src'],
+} satisfies Readonly<Record<string, readonly string[]>>)
+
+export function getTemplateImportTagNames() {
+  return [...TEMPLATE_IMPORT_TAG_NAMES]
 }
 
-export function isImportTag(tagName: string) {
-  return ['import', 'include'].includes(tagName)
+export function isTemplateImportTag(tagName?: string) {
+  return typeof tagName === 'string' && getTemplateImportTagNames().includes(tagName)
+}
+
+export function getTemplateImportAttrs(tagName?: string) {
+  if (!tagName) {
+    return undefined
+  }
+  return TEMPLATE_IMPORT_ATTRS[tagName]
+}
+
+export function isTemplateImportAttr(tagName: string | undefined, attrName: string) {
+  if (!tagName) {
+    return false
+  }
+  return getTemplateImportAttrs(tagName)?.includes(attrName) === true
+}
+
+export function shouldNormalizeTemplateImportSource(value: string) {
+  return TEMPLATE_IMPORT_RE.test(value)
+}
+
+export function isImportTag(tagName?: string) {
+  return isTemplateImportTag(tagName)
 }
 
 export interface Token {

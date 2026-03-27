@@ -15,6 +15,22 @@ describe('scanWxml', () => {
     })
   })
 
+  it('should append locations for repeated components', () => {
+    const wxml = '<custom-component></custom-component><custom-component></custom-component>'
+    const result = scanWxml(wxml)
+
+    expect(result.components['custom-component']).toEqual([
+      {
+        start: 0,
+        end: 37,
+      },
+      {
+        start: 37,
+        end: 74,
+      },
+    ])
+  })
+
   it('should collect dependencies for src attributes', () => {
     const wxml = '<wxs src="./file.wxs"/>'
     const result = scanWxml(wxml)
@@ -62,6 +78,30 @@ describe('scanWxml', () => {
         name: 'helper',
       },
     })
+  })
+
+  it('should collect dependencies for include src attributes', () => {
+    const wxml = '<include src="./partials/item.wxml" />'
+    const result = scanWxml(wxml)
+
+    expect(result.deps).toEqual([
+      {
+        name: 'src',
+        value: './partials/item.wxml',
+        quote: '"',
+        tagName: 'include',
+        start: 9,
+        end: 35,
+        attrs: { src: './partials/item.wxml' },
+      },
+    ])
+    expect(result.templateImportNormalizeTokens).toEqual([
+      {
+        start: 14,
+        end: 34,
+        value: './partials/item.wxml',
+      },
+    ])
   })
 
   it('should collect dependencies for non-self-closing wxs tags', () => {
@@ -296,5 +336,18 @@ describe('scanWxml', () => {
 
     expect(result.removalRanges.length).toBe(2)
     expect(result.removalRanges[0].start).toBeGreaterThan(result.removalRanges[1].start)
+  })
+
+  it('should not normalize template imports that already use target extensions', () => {
+    const wxml = '<include src="./partials/item.axml" />'
+    const result = scanWxml(wxml)
+
+    expect(result.deps).toEqual([
+      expect.objectContaining({
+        tagName: 'include',
+        value: './partials/item.axml',
+      }),
+    ])
+    expect(result.templateImportNormalizeTokens).toEqual([])
   })
 })

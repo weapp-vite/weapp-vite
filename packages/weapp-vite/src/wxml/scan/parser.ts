@@ -12,14 +12,17 @@ import {
   isScriptModuleImportAttr,
   isScriptModuleTagName,
 } from '../../utils/wxmlScriptModule'
-import { srcImportTagsMap } from '../shared'
+import {
+  getTemplateImportAttrs,
+  isTemplateImportAttr,
+  shouldNormalizeTemplateImportSource,
+} from '../shared'
 import { resolveEventDirectiveName } from './events'
 
 const TAG_NAME_LOWER_TO_UPPER_RE = /([a-z0-9])([A-Z])/g
 const TAG_NAME_MULTI_UPPER_RE = /([A-Z]+)([A-Z][a-z])/g
 const TAG_NAME_HAS_UPPER_RE = /[A-Z]/
 const SCRIPT_MODULE_IMPORT_RE = /\.(?:wxs|sjs)(?:\.[jt]s)?$/i
-const TEMPLATE_IMPORT_RE = /\.(?:wxml|html)$/i
 const COMMENT_IFDEF_RE = /#ifdef\s+(\w+)/
 const COMMENT_ENDIF_RE = /#endif/
 
@@ -83,7 +86,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
       onopentagname(name) {
         tagStack.push(name)
         currentTagName = name
-        importAttrs = getScriptModuleImportAttrs(currentTagName) ?? srcImportTagsMap[currentTagName]
+        importAttrs = getScriptModuleImportAttrs(currentTagName) ?? getTemplateImportAttrs(currentTagName)
         tagStartIndex = parser.startIndex
         if (shouldNormalizeWxmlComponentTagName(platform) && shouldNormalizeTagName(name)) {
           const normalized = toKebabCaseTagName(name)
@@ -130,9 +133,7 @@ export function parseWxml(options: ParserOptions): ParserResult {
                   )
                 }
               }
-            }
-            if ((currentTagName === 'import' || currentTagName === 'include') && name === 'src') {
-              if (TEMPLATE_IMPORT_RE.test(value)) {
+              if (isTemplateImportAttr(currentTagName, name) && shouldNormalizeTemplateImportSource(value)) {
                 const valueStart = parser.startIndex + name.length + 2
                 templateImportNormalizeTokens.push({
                   start: valueStart,
