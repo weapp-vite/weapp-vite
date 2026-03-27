@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import AppDiagnosticItem from '../features/dashboard/components/AppDiagnosticItem.vue'
+import AppEmptyState from '../features/dashboard/components/AppEmptyState.vue'
 import AppFilterGroup from '../features/dashboard/components/AppFilterGroup.vue'
 import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
 import AppKeyValueList from '../features/dashboard/components/AppKeyValueList.vue'
@@ -349,12 +350,12 @@ watch(filteredRuntimeEvents, (events) => {
             </AppInsetPanel>
           </div>
 
-          <p
+          <AppEmptyState
             v-if="filteredRuntimeEvents.length === 0"
-            class="rounded-[18px] border border-dashed border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-4 text-sm leading-6 text-[color:var(--dashboard-text-soft)]"
+            as="p"
           >
             当前过滤条件下没有匹配的事件。你可以清空关键字，或者切回“全部类型 / 全部等级”。
-          </p>
+          </AppEmptyState>
 
           <ul class="grid gap-2 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
             <li
