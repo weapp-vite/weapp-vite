@@ -142,6 +142,7 @@ export class HeadlessSession {
         pageScrollTo: option => this.pageScrollTo(option),
         clearStorageSync: () => this.wxState.clearStorageSync(),
         getStorageSync: key => this.wxState.getStorageSync(key),
+        hideLoading: () => this.wxState.hideLoading(),
         hideToast: () => this.wxState.hideToast(),
         reLaunch: option => this.reLaunch(option.url),
         redirectTo: option => this.redirectTo(option.url),
@@ -149,6 +150,7 @@ export class HeadlessSession {
         removeStorageSync: key => this.wxState.removeStorageSync(key),
         request: option => this.wxState.request(option),
         setStorageSync: (key, value) => this.wxState.setStorageSync(key, value),
+        showLoading: option => this.wxState.showLoading(option),
         showToast: option => this.wxState.showToast(option),
         stopPullDownRefresh: () => this.stopPullDownRefresh(),
         switchTab: option => this.switchTab(option.url),
@@ -170,6 +172,10 @@ export class HeadlessSession {
 
   getStorageSnapshot() {
     return this.wxState.getStorageSnapshot()
+  }
+
+  getLoading() {
+    return this.wxState.getLoading()
   }
 
   getToast() {
