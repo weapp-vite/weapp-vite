@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
+import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
@@ -33,11 +34,8 @@ const { commandItems, signals } = useDashboardWorkspace()
         </div>
 
         <div class="grid gap-3">
-          <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
-            <p class="text-[11px] uppercase tracking-[0.22em] text-[color:var(--dashboard-text-soft)]">
-              rollout signal
-            </p>
-            <ul class="mt-3 grid gap-2 text-sm">
+          <AppInsetPanel eyebrow="rollout signal">
+            <ul class="grid gap-2 text-sm">
               <li
                 v-for="metric in signals"
                 :key="metric.label"
@@ -52,7 +50,7 @@ const { commandItems, signals } = useDashboardWorkspace()
                 <strong class="text-[color:var(--dashboard-text)]">{{ metric.value }}</strong>
               </li>
             </ul>
-          </div>
+          </AppInsetPanel>
         </div>
       </div>
     </AppSurfaceCard>
