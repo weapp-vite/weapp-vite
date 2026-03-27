@@ -1,14 +1,11 @@
 import type { MpPlatform } from '../../types'
 import { isBuiltinComponent } from '../../auto-import-components/builtin'
-import { getWxmlEventBindingStyle } from '../../platform'
+import { getWxmlPlatformTransformOptions } from '../../platform'
 
 const ALIPAY_COLON_EVENT_RE = /^(bind|catch|capture-bind|capture-catch|mut-bind):(.+)$/
 const ALIPAY_PLAIN_EVENT_RE = /^(bind|catch)([A-Za-z].*)$/
 
 function toPascalCaseEvent(eventName: string) {
-  if (!eventName) {
-    return ''
-  }
   const first = eventName[0] ?? ''
   return `${first.toUpperCase()}${eventName.slice(1)}`
 }
@@ -34,9 +31,6 @@ function resolveAlipayNativeEventBinding(raw: string) {
   if (colonMatch) {
     const prefix = colonMatch[1] as 'bind' | 'catch' | 'capture-bind' | 'capture-catch' | 'mut-bind'
     const eventName = colonMatch[2]
-    if (!eventName) {
-      return undefined
-    }
     return resolveAlipayEventName(prefix, eventName)
   }
 
@@ -44,9 +38,6 @@ function resolveAlipayNativeEventBinding(raw: string) {
   if (plainMatch) {
     const prefix = plainMatch[1] as 'bind' | 'catch'
     const eventName = plainMatch[2]
-    if (!eventName) {
-      return undefined
-    }
     const normalized = eventName[0].toLowerCase() + eventName.slice(1)
     return resolveAlipayEventName(prefix, normalized)
   }
@@ -58,6 +49,7 @@ function resolveEventDirective(raw: string, platform: MpPlatform) {
   if (!raw.startsWith('@')) {
     return undefined
   }
+  const { eventBindingStyle } = getWxmlPlatformTransformOptions(platform)
 
   let dir = ''
   let segment = ''
@@ -119,7 +111,7 @@ function resolveEventDirective(raw: string, platform: MpPlatform) {
     prefix = 'capture-bind'
   }
 
-  if (getWxmlEventBindingStyle(platform) === 'alipay') {
+  if (eventBindingStyle === 'alipay') {
     return resolveAlipayEventName(prefix as 'bind' | 'catch' | 'capture-bind' | 'capture-catch' | 'mut-bind', dir)
   }
 
@@ -136,7 +128,7 @@ export function resolveEventDirectiveName(raw: string, platform: MpPlatform = 'w
     return directive
   }
 
-  if (getWxmlEventBindingStyle(platform) === 'alipay') {
+  if (getWxmlPlatformTransformOptions(platform).eventBindingStyle === 'alipay') {
     return resolveAlipayNativeEventBinding(raw)
   }
 
