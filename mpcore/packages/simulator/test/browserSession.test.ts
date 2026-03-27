@@ -448,6 +448,68 @@ Page({
     expect(session.renderCurrentPage().wxml).toContain('["daily"]')
   })
 
+  it('supports getFileSystemManager rmdir in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    missingDirSummary: '',
+    nonEmptyDirSummary: '',
+    removeSummary: '',
+    removedDirSummary: ''
+  },
+  runFsRemoveDirectoryLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.mkdirSync('headless://saved/browser-archive/daily', true)
+    fsManager.writeFileSync('headless://saved/browser-archive/daily/report.txt', 'browser daily payload')
+    fsManager.rmdir({
+      dirPath: 'headless://saved/browser-missing-archive',
+      fail: (error) => {
+        this.setData({
+          missingDirSummary: error.message
+        })
+      }
+    })
+    fsManager.rmdir({
+      dirPath: 'headless://saved/browser-archive',
+      fail: (error) => {
+        this.setData({
+          nonEmptyDirSummary: error.message
+        })
+      }
+    })
+    fsManager.rmdirSync('headless://saved/browser-archive', true)
+    try {
+      fsManager.statSync('headless://saved/browser-archive')
+    }
+    catch (error) {
+      this.setData({
+        removedDirSummary: error.message
+      })
+    }
+    this.setData({
+      removeSummary: JSON.stringify(fsManager.readdirSync('headless://saved'))
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{missingDirSummary}}</view><view>{{nonEmptyDirSummary}}</view><view>{{removeSummary}}</view><view>{{removedDirSummary}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsRemoveDirectoryLab()
+
+    expect(page.data.missingDirSummary).toContain('rmdir:fail no such file or directory')
+    expect(page.data.nonEmptyDirSummary).toContain('rmdir:fail directory not empty')
+    expect(page.data.removedDirSummary).toContain('stat:fail no such file or directory')
+    expect(page.data.removeSummary).toBe('[]')
+    expect(session.getDirectorySnapshot()).not.toContain('headless://saved/browser-archive')
+    expect(session.getFileText('headless://saved/browser-archive/daily/report.txt')).toBeNull()
+  })
+
   it('supports getFileSystemManager appendFile in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],

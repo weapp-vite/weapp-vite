@@ -23,6 +23,7 @@ import type {
   HeadlessWxRequestOption,
   HeadlessWxRequestSuccessResult,
   HeadlessWxRequestTask,
+  HeadlessWxRmdirOption,
   HeadlessWxSavedFileInfo,
   HeadlessWxSaveFileOption,
   HeadlessWxSaveFileSuccessResult,
@@ -601,6 +602,35 @@ export function createHeadlessWxState() {
     }
   }
 
+  const rmdir = (dirPath: string, recursive = false): HeadlessWxFileSystemResult => {
+    const normalizedPath = normalizeFsPath(dirPath)
+    if (files.has(normalizedPath)) {
+      throw new Error(`rmdir:fail not a directory, rmdir '${normalizedPath}'`)
+    }
+    if (!directories.has(normalizedPath)) {
+      throw new Error(`rmdir:fail no such file or directory, rmdir '${normalizedPath}'`)
+    }
+
+    const childDirectoryPaths = Array.from(directories)
+      .filter(currentPath => currentPath !== normalizedPath && currentPath.startsWith(`${normalizedPath}/`))
+    const childFilePaths = Array.from(files.keys())
+      .filter(currentPath => currentPath.startsWith(`${normalizedPath}/`))
+
+    if (!recursive && (childDirectoryPaths.length > 0 || childFilePaths.length > 0)) {
+      throw new Error(`rmdir:fail directory not empty, rmdir '${normalizedPath}'`)
+    }
+
+    directories.delete(normalizedPath)
+    childDirectoryPaths.forEach(currentPath => directories.delete(currentPath))
+    childFilePaths.forEach((currentPath) => {
+      files.delete(currentPath)
+      savedFiles.delete(currentPath)
+    })
+    return {
+      errMsg: 'rmdir:ok',
+    }
+  }
+
   const stat = (inputPath: string): HeadlessWxStatSuccessResult => {
     const normalizedPath = normalizeFsPath(inputPath)
     if (files.has(normalizedPath)) {
@@ -748,6 +778,22 @@ export function createHeadlessWxState() {
     },
     readdirSync(dirPath: string) {
       return readdir(dirPath).files
+    },
+    rmdir(option: HeadlessWxRmdirOption) {
+      try {
+        const result = rmdir(option.dirPath, option.recursive)
+        option.success?.(result)
+        option.complete?.(result)
+        return result
+      }
+      catch (error) {
+        option.fail?.(error as Error)
+        option.complete?.()
+        return undefined
+      }
+    },
+    rmdirSync(dirPath: string, recursive?: boolean) {
+      rmdir(dirPath, recursive)
     },
     rename(option: HeadlessWxRenameOption) {
       try {
