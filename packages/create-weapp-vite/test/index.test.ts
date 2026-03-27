@@ -103,10 +103,6 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
     await waitForFile(path.join(out, 'package.json'))
     expect(lastSelectChoices?.some(c => c.value === 'wevu')).toBe(true)
     expect(lastSelectChoices?.some(c => c.value === 'wevu-tdesign')).toBe(true)
-    const packageJson = await fs.readJSON(path.join(out, 'package.json'))
-    expect(packageJson.pnpm?.overrides?.rolldown).toBe('1.0.0-rc.11')
-    expect(packageJson.overrides?.rolldown).toBe('1.0.0-rc.11')
-    expect(packageJson.resolutions?.rolldown).toBe('1.0.0-rc.11')
     const hasProjectConfig = await fs.pathExists(path.join(out, 'project.config.json'))
     if (!hasProjectConfig) {
       // debug aid
@@ -133,10 +129,6 @@ describe('create-weapp-vite CLI (mocked prompts)', () => {
 
     const out = path.join(cwd, name)
     await waitForFile(path.join(out, 'package.json'))
-    const packageJson = await fs.readJSON(path.join(out, 'package.json'))
-    expect(packageJson.pnpm?.overrides?.rolldown).toBe('1.0.0-rc.11')
-    expect(packageJson.overrides?.rolldown).toBe('1.0.0-rc.11')
-    expect(packageJson.resolutions?.rolldown).toBe('1.0.0-rc.11')
     // check a tailwind related file exists
     const hasTailwind = await fs.pathExists(path.join(out, 'tailwind.config.ts'))
     expect(hasTailwind).toBe(true)

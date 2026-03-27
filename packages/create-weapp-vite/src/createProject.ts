@@ -218,35 +218,6 @@ function normalizeTemplateDependencySpecs(pkgJson: PackageJson) {
   }
 }
 
-function upsertRolldownOverrides(pkgJson: PackageJson) {
-  const rolldownVersion = templateCatalogMap.rolldown
-  if (!rolldownVersion) {
-    return
-  }
-
-  const pnpmConfig = typeof pkgJson.pnpm === 'object' && pkgJson.pnpm
-    ? pkgJson.pnpm as Record<string, any>
-    : {}
-  const pnpmOverrides = typeof pnpmConfig.overrides === 'object' && pnpmConfig.overrides
-    ? pnpmConfig.overrides as Record<string, string>
-    : {}
-  pnpmOverrides.rolldown = rolldownVersion
-  pnpmConfig.overrides = pnpmOverrides
-  pkgJson.pnpm = pnpmConfig as any
-
-  const npmOverrides = typeof pkgJson.overrides === 'object' && pkgJson.overrides
-    ? pkgJson.overrides as Record<string, string>
-    : {}
-  npmOverrides.rolldown = rolldownVersion
-  pkgJson.overrides = npmOverrides as any
-
-  const yarnResolutions = typeof pkgJson.resolutions === 'object' && pkgJson.resolutions
-    ? pkgJson.resolutions as Record<string, string>
-    : {}
-  yarnResolutions.rolldown = rolldownVersion
-  pkgJson.resolutions = yarnResolutions as any
-}
-
 /**
  * @description 根据模板创建项目
  */
@@ -285,7 +256,6 @@ export async function createProject(targetDir: string = '', templateName: Templa
 
   upsertExistingDependencyVersion(pkgJson, 'weapp-vite', toCaretVersion(version))
   upsertExistingDependencyVersion(pkgJson, 'wevu', toCaretVersion(wevuVersion))
-  upsertRolldownOverrides(pkgJson)
 
   await upsertTailwindcssVersion(pkgJson)
 
@@ -298,6 +268,5 @@ export async function createProject(targetDir: string = '', templateName: Templa
 export const __internal = {
   ensureDotGitignore,
   resolveTemplateDirs,
-  upsertRolldownOverrides,
   upsertTailwindcssVersion,
 }
