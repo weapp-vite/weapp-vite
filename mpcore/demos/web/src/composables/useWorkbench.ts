@@ -57,6 +57,11 @@ export function useWorkbench() {
         toastData: sessionState.toastData.value,
         viewportSize: viewportSize.value,
       }),
+      findComponentScopeIds: (selector: string) => {
+        return (sessionState.session.value?.selectAllComponents(selector) ?? [])
+          .map(component => sessionState.session.value?.getScopeIdForComponent(component))
+          .filter((scopeId): scopeId is string => Boolean(scopeId))
+      },
       navigateBack: (delta = 1) => sessionState.run(() => sessionState.session.value?.navigateBack(delta)),
       openRoute: (route: string) => sessionState.handleOpenRoute(route),
       pickScenario: (scenarioId: string) => handlePickScenario(scenarioId),

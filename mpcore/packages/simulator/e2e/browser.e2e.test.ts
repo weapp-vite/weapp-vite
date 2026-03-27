@@ -183,6 +183,16 @@ describeE2E.sequential('simulator browser e2e', () => {
     expect(pageData.requestSnapshot).toContain('"queue":"alpha"')
     expect(pageData.storageSnapshot).toContain('"status"')
     expect(pageData.toastState).toContain('showToast:ok')
+
+    const scopeIds = await callWorkbench<string[]>(page!, 'findComponentScopeIds', 'status-card')
+    expect(scopeIds).toHaveLength(1)
+    const scopeSnapshot = await callWorkbench<any>(page!, 'readScopeSnapshot', scopeIds[0])
+    expect(scopeSnapshot).toMatchObject({
+      properties: {
+        count: 3,
+      },
+      type: 'component',
+    })
   })
 
   it('drives browser session host features through the demo workbench api', async () => {
