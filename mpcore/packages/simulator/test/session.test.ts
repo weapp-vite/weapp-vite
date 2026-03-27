@@ -884,6 +884,49 @@ Page({
     expect(session.getFileText('headless://saved/renamed.txt')).toBe('source payload')
   })
 
+  it('supports getFileSystemManager mkdir readdir and stat operations', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-dir-ops-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    dirSummary: '',
+    dirTypeSummary: '',
+    fileTypeSummary: ''
+  },
+  runFsDirectoryLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.mkdirSync('headless://saved/reports/daily', true)
+    fsManager.writeFileSync('headless://saved/reports/daily/summary.txt', 'daily payload')
+    this.setData({
+      dirSummary: JSON.stringify(fsManager.readdirSync('headless://saved/reports')),
+      dirTypeSummary: String(fsManager.statSync('headless://saved/reports/daily').isDirectory()),
+      fileTypeSummary: String(fsManager.statSync('headless://saved/reports/daily/summary.txt').isFile())
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>fs-dir-ops</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runFsDirectoryLab()
+
+    expect(page.data.dirSummary).toBe('["daily"]')
+    expect(page.data.dirTypeSummary).toBe('true')
+    expect(page.data.fileTypeSummary).toBe('true')
+    expect(session.getFileText('headless://saved/reports/daily/summary.txt')).toBe('daily payload')
+  })
+
   it('supports showModal defaults and queued modal mocks', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-show-modal-'))
     tempDirs.push(root)
