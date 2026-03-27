@@ -131,6 +131,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('runSavedOverwriteLab')
     bridge.runPageMethod('runSavedOrderingLab')
     bridge.runPageMethod('runSavedRemovalLab')
+    bridge.runPageMethod('runSavedMissingRemovalLab')
     bridge.runPageMethod('runSavedRenameOutLab')
     bridge.runPageMethod('storeSnapshot')
     bridge.runPageMethod('toastSnapshot')
@@ -149,6 +150,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.savedOrderingInfo
           && pageData.savedOverwriteInfo
           && pageData.savedFilePath
+          && pageData.savedMissingRemovalInfo
           && pageData.savedRemovalInfo
           && pageData.savedRenameOutInfo
           && pageData.storageSnapshot
@@ -176,6 +178,7 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.savedOverwriteInfo).toContain('"afterSize":14')
     expect(pageData.savedOverwriteInfo).toContain('"filePath":"headless://saved/component-lab/snapshots/report.txt"')
     expect(pageData.savedFilePath).toContain('headless://wxfile/saved/')
+    expect(pageData.savedMissingRemovalInfo).toContain('"missingRemoveError":"removeSavedFile:fail no such file or directory')
     expect(pageData.savedRemovalInfo).toContain('"hasSavedRegistration":false')
     expect(pageData.savedRemovalInfo).toContain('"removeErrMsg":"removeSavedFile:ok"')
     expect(pageData.savedRemovalInfo).toContain('"missingInfoError":"getSavedFileInfo:fail no such file or directory')
