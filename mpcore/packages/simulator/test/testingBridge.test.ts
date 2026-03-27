@@ -541,4 +541,25 @@ describe('headless testing bridge', () => {
     expect(component?.scopeId).toContain('status-card')
     expect(components).toHaveLength(2)
   })
+
+  it('bridges from a testing node handle to its owning scope handle', async () => {
+    const projectPath = createComponentFixture()
+    tempDirs.push(projectPath)
+    const miniProgram = await launch({
+      projectPath,
+    })
+
+    const page = await miniProgram.reLaunch('/pages/lab/index')
+    const trigger = await page.$('#card-trigger')
+    const scope = await trigger?.scope()
+
+    expect(scope).not.toBeNull()
+    expect(scope?.scopeId).toContain('status-card')
+    expect(await scope?.snapshot()).toMatchObject({
+      properties: {
+        count: 2,
+      },
+      type: 'component',
+    })
+  })
 })
