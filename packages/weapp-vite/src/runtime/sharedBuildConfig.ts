@@ -14,6 +14,33 @@ import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
 const REG_COMMONJS_HELPERS = /commonjsHelpers\.js$/
 
+function resolveSharedPathRoot(
+  configService: ConfigService,
+  sharedPathRoot?: string,
+) {
+  const absoluteSrcRoot = configService.absoluteSrcRoot
+  const configuredRoot = sharedPathRoot
+    ? path.resolve(configService.cwd, sharedPathRoot)
+    : absoluteSrcRoot
+  const resolvedRoot = isPathInside(absoluteSrcRoot, configuredRoot)
+    ? configuredRoot
+    : absoluteSrcRoot
+
+  return {
+    configuredRoot,
+    resolvedRoot,
+  }
+}
+
+function normalizeSharedPathCandidate(absoluteId: string) {
+  return normalizeViteId(absoluteId, {
+    stripQuery: true,
+    fileProtocolToPath: true,
+    stripAtFsPrefix: true,
+    stripLeadingNullByte: true,
+  })
+}
+
 function createStringOrRegExpMatcher(pattern: string | RegExp) {
   if (typeof pattern === 'string') {
     const matcher = picomatch(pattern, { dot: true })
@@ -91,13 +118,7 @@ function createSharedPathResolver(
   configService: ConfigService,
   sharedPathRoot?: string,
 ) {
-  const absoluteSrcRoot = configService.absoluteSrcRoot
-  const configuredRoot = sharedPathRoot
-    ? path.resolve(configService.cwd, sharedPathRoot)
-    : absoluteSrcRoot
-  const resolvedRoot = isPathInside(absoluteSrcRoot, configuredRoot)
-    ? configuredRoot
-    : absoluteSrcRoot
+  const { configuredRoot, resolvedRoot } = resolveSharedPathRoot(configService, sharedPathRoot)
 
   if (configuredRoot !== resolvedRoot) {
     logger.warn(
@@ -106,12 +127,7 @@ function createSharedPathResolver(
   }
 
   return (absoluteId: string) => {
-    const cleaned = normalizeViteId(absoluteId, {
-      stripQuery: true,
-      fileProtocolToPath: true,
-      stripAtFsPrefix: true,
-      stripLeadingNullByte: true,
-    })
+    const cleaned = normalizeSharedPathCandidate(absoluteId)
     if (!path.isAbsolute(cleaned)) {
       return undefined
     }
@@ -192,4 +208,14 @@ export function createSharedBuildConfig(
       },
     },
   }
+}
+
+export {
+  createDualIdMatcher,
+  createForceDuplicateTester,
+  createSharedModeResolver,
+  createSharedPathResolver,
+  createStringOrRegExpMatcher,
+  normalizeSharedPathCandidate,
+  resolveSharedPathRoot,
 }

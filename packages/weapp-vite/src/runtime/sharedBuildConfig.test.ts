@@ -2,7 +2,16 @@ import type { ConfigService } from './config/types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { logger } from '../context/shared'
 import { __clearSharedChunkDiagnosticsForTest } from './chunkStrategy'
-import { createSharedBuildConfig, createSharedBuildOutput } from './sharedBuildConfig'
+import {
+  createForceDuplicateTester,
+  createSharedBuildConfig,
+  createSharedBuildOutput,
+  createSharedModeResolver,
+  createSharedPathResolver,
+  createStringOrRegExpMatcher,
+  normalizeSharedPathCandidate,
+  resolveSharedPathRoot,
+} from './sharedBuildConfig'
 
 function createConfigService(chunks: Record<string, unknown> = {}): ConfigService {
   return {
@@ -34,6 +43,52 @@ afterEach(() => {
 })
 
 describe('sharedBuildConfig', () => {
+  it('creates string and regexp matchers with reset lastIndex behavior', () => {
+    const stringMatcher = createStringOrRegExpMatcher('shared/**')
+    const regexpMatcher = createStringOrRegExpMatcher(/shared\/.+\.ts$/g)
+
+    expect(stringMatcher?.('shared/feature.ts')).toBe(true)
+    expect(stringMatcher?.('pages/index.ts')).toBe(false)
+
+    regexpMatcher?.('shared/feature.ts')
+    expect(regexpMatcher?.('shared/feature.ts')).toBe(true)
+    expect(createStringOrRegExpMatcher({} as never)).toBeUndefined()
+  })
+
+  it('returns undefined duplicate tester and shared mode resolver when no valid matchers exist', () => {
+    expect(createForceDuplicateTester()).toBeUndefined()
+    expect(createForceDuplicateTester([])).toBeUndefined()
+    expect(createForceDuplicateTester([{} as never])).toBeUndefined()
+
+    expect(createSharedModeResolver('common')).toBeUndefined()
+    expect(createSharedModeResolver('common', [])).toBeUndefined()
+    expect(createSharedModeResolver('common', [
+      { test: {} as never, mode: 'path' },
+    ])).toBeUndefined()
+  })
+
+  it('resolves shared path root inside src root and normalizes vite ids', () => {
+    expect(resolveSharedPathRoot(
+      createConfigService(),
+      'src/shared',
+    ).resolvedRoot).toBe('/project/src/shared')
+    expect(resolveSharedPathRoot(
+      createConfigService(),
+      '../outside-src',
+    ).resolvedRoot).toBe('/project/src')
+
+    expect(normalizeSharedPathCandidate('\0/@fs//project/src/shared/feature.ts?import')).toBe('/@fs//project/src/shared/feature.ts')
+  })
+
+  it('returns undefined for non-absolute or outside-root shared path candidates', () => {
+    const resolveSharedPath = createSharedPathResolver(createConfigService({
+      sharedPathRoot: 'src/shared',
+    }), 'src/shared')
+
+    expect(resolveSharedPath('shared/feature.ts')).toBeUndefined()
+    expect(resolveSharedPath('/project/src/pages/index.ts')).toBeUndefined()
+  })
+
   it('returns undefined for path mode when there is only one importer', () => {
     const resolveName = createChunkNameResolver({
       sharedMode: 'path',
