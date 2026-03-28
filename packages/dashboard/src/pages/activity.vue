@@ -2,17 +2,16 @@
 import { computed, ref, watch } from 'vue'
 import AppDiagnosticItem from '../features/dashboard/components/AppDiagnosticItem.vue'
 import AppEmptyState from '../features/dashboard/components/AppEmptyState.vue'
-import AppFilterGroup from '../features/dashboard/components/AppFilterGroup.vue'
-import AppFilterPresetGroup from '../features/dashboard/components/AppFilterPresetGroup.vue'
+import AppEventFilterPanel from '../features/dashboard/components/AppEventFilterPanel.vue'
 import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
 import AppKeyValueList from '../features/dashboard/components/AppKeyValueList.vue'
 import AppRuntimeEventListItem from '../features/dashboard/components/AppRuntimeEventListItem.vue'
 import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
-import AppSearchField from '../features/dashboard/components/AppSearchField.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
+import AppTagList from '../features/dashboard/components/AppTagList.vue'
 import AppTimelineItem from '../features/dashboard/components/AppTimelineItem.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventSource } from '../features/dashboard/utils/format'
@@ -264,46 +263,22 @@ watch(filteredRuntimeEvents, (events) => {
         icon-name="hero-commands"
       >
         <div class="grid gap-3">
-          <AppInsetPanel>
-            <div class="grid gap-3">
-              <AppSearchField
-                v-model="searchQuery"
-                input-id="dashboard-event-search"
-                label="搜索事件"
-                placeholder="搜索标题、详情、来源或标签"
-              />
-
-              <div class="grid gap-3">
-                <AppFilterPresetGroup
-                  title="快速预设"
-                  :description="presetDescription"
-                  :presets="filterPresets"
-                  @apply="filterPresets.find(preset => preset.key === $event)?.apply()"
-                />
-
-                <AppFilterGroup
-                  title="类型过滤"
-                  :options="eventKindOptions"
-                  :selected-value="eventKindFilter"
-                  @select="eventKindFilter = $event as EventKindFilter"
-                />
-
-                <AppFilterGroup
-                  title="等级过滤"
-                  :options="eventLevelOptions"
-                  :selected-value="eventLevelFilter"
-                  @select="eventLevelFilter = $event as EventLevelFilter"
-                />
-
-                <AppFilterGroup
-                  title="来源过滤"
-                  :options="eventSourceOptions"
-                  :selected-value="eventSourceFilter"
-                  @select="eventSourceFilter = $event"
-                />
-              </div>
-            </div>
-          </AppInsetPanel>
+          <AppEventFilterPanel
+            :search-query="searchQuery"
+            :preset-description="presetDescription"
+            :filter-presets="filterPresets"
+            :event-kind-options="eventKindOptions"
+            :event-level-options="eventLevelOptions"
+            :event-source-options="eventSourceOptions"
+            :event-kind-filter="eventKindFilter"
+            :event-level-filter="eventLevelFilter"
+            :event-source-filter="eventSourceFilter"
+            @update:search-query="searchQuery = $event"
+            @update:event-kind-filter="eventKindFilter = $event as EventKindFilter"
+            @update:event-level-filter="eventLevelFilter = $event as EventLevelFilter"
+            @update:event-source-filter="eventSourceFilter = $event"
+            @apply-preset="filterPresets.find(preset => preset.key === $event)?.apply()"
+          />
 
           <div
             v-if="sourceBreakdown.length > 0"
