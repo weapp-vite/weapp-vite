@@ -35,6 +35,20 @@ export function getScriptSetupImportedName(imported: any) {
       : undefined
 }
 
+export function createScriptSetupImport(
+  localName: string,
+  importSource: string,
+  kind: ScriptSetupImport['kind'],
+  imported?: any,
+): ScriptSetupImport {
+  return {
+    localName,
+    importSource,
+    importedName: kind === 'default' ? 'default' : getScriptSetupImportedName(imported),
+    kind,
+  }
+}
+
 export function collectScriptSetupImportsWithOxc(scriptSetup: string, templateComponentNames: Set<string>) {
   const results: ScriptSetupImport[] = []
   const ast = parseJsLikeWithEngine(scriptSetup, {
@@ -61,11 +75,10 @@ export function collectScriptSetupImportsWithOxc(scriptSetup: string, templateCo
         continue
       }
       if (specifier.type === 'ImportDefaultSpecifier') {
-        results.push({ localName, importSource, importedName: 'default', kind: 'default' })
+        results.push(createScriptSetupImport(localName, importSource, 'default'))
       }
       else if (specifier.type === 'ImportSpecifier') {
-        const importedName = getScriptSetupImportedName(specifier.imported)
-        results.push({ localName, importSource, importedName, kind: 'named' })
+        results.push(createScriptSetupImport(localName, importSource, 'named', specifier.imported))
       }
     }
   }
@@ -96,11 +109,10 @@ export function collectScriptSetupImportsWithBabel(scriptSetup: string, template
         continue
       }
       if (specifier.type === 'ImportDefaultSpecifier') {
-        results.push({ localName, importSource, importedName: 'default', kind: 'default' })
+        results.push(createScriptSetupImport(localName, importSource, 'default'))
       }
       else if (specifier.type === 'ImportSpecifier') {
-        const importedName = getScriptSetupImportedName((specifier as any).imported)
-        results.push({ localName, importSource, importedName, kind: 'named' })
+        results.push(createScriptSetupImport(localName, importSource, 'named', (specifier as any).imported))
       }
     }
   }
