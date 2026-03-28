@@ -4,6 +4,8 @@ import * as babelModule from './babel'
 import * as engineModule from './engine'
 import {
   BABEL_TS_MODULE_PARSER_OPTIONS,
+  collectComponentPropsWithBabel,
+  collectComponentPropsWithOxc,
   collectIdentifiersFromExpression,
   collectIdentifiersFromExpressionWithOxc,
   collectJsxAutoComponentsWithBabel,
@@ -410,6 +412,24 @@ export function useCounter() {
       } as any,
       t.identifier('missing'),
     )).toBeUndefined()
+    expect(collectComponentPropsWithBabel(`
+const options = {
+  properties: {
+    title: String,
+  },
+}
+Component(options)
+`)).toEqual(new Map([['title', 'string']]))
+    expect(collectComponentPropsWithBabel('Component(foo)')).toEqual(new Map())
+    expect(collectComponentPropsWithOxc(`
+const options = {
+  properties: {
+    title: String,
+  },
+}
+Component(options)
+`)).toEqual(new Map([['title', 'string']]))
+    expect(collectComponentPropsWithOxc('Component(foo)')).toEqual(new Map())
     expect(getStaticPropertyName({ type: 'Identifier', name: 'title' })).toBe('title')
     expect(getStaticPropertyName({ type: 'StringLiteral', value: 'count' })).toBe('count')
     expect(getStaticPropertyName({ type: 'NumericLiteral', value: 2 })).toBe('2')
