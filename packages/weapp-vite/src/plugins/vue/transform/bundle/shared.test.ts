@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { addBundleWatchFile, compileAndFinalizeVueLikeFile, compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, compileAndFinalizeVueLikeFile, compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, getEntryBaseName, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveClassStyleWxsAsset, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -205,6 +205,19 @@ describe('emitSharedVueEntryAssets', () => {
     })
   })
 
+  it('returns undefined for class style wxs assets when runtime module is not needed', () => {
+    expect(resolveClassStyleWxsAsset(
+      {} as any,
+      'pages/index/index',
+      '',
+      {} as any,
+      {
+        classStyleWxs: false,
+        scopedSlotComponents: [],
+      } as any,
+    )).toBeUndefined()
+  })
+
   it('resolves shared bundle asset context from config service', () => {
     expect(resolveVueBundleAssetContext({
       platform: 'alipay',
@@ -248,6 +261,10 @@ describe('emitSharedVueEntryAssets', () => {
         alipayNpmMode: 'node_modules',
       },
     })
+  })
+
+  it('keeps entry base names unchanged when filenames have no extension', () => {
+    expect(getEntryBaseName('/project/src/pages/index/index')).toBe('/project/src/pages/index/index')
   })
 
   it('emits bundle vue entry assets with shared component json defaults', () => {
@@ -632,6 +649,29 @@ describe('emitSharedVueEntryAssets', () => {
       result: { script: 'Page({ cached: true })' },
       relativeBase: 'pages/index/index',
     })
+  })
+
+  it('returns undefined for compiled entry emit state when output path cannot be resolved', async () => {
+    const cached = {
+      result: { script: 'Page({ cached: true })' },
+      source: '<view />',
+      isPage: true,
+    } as any
+
+    await expect(resolveCompiledEntryEmitState({
+      filename: '/project/src/pages/index/index.vue',
+      cached,
+      ctx: {} as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: false,
+        relativeOutputPath: () => '',
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })).resolves.toBeUndefined()
   })
 
   it('returns cached compiled result when source is unchanged in dev', async () => {
