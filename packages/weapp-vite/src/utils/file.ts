@@ -159,6 +159,10 @@ export function isTemplateRequest(request: string) {
   return request.endsWith('.wxml') || request.endsWith('.html')
 }
 
+export function normalizeFileExtension(extension: string) {
+  return extension ? (extension.startsWith('.') ? extension : `.${extension}`) : ''
+}
+
 export function changeFileExtension(filePath: string, extension: string) {
   if (typeof filePath !== 'string') {
     throw new TypeError(`Expected \`filePath\` to be a string, got \`${typeof filePath}\`.`)
@@ -172,7 +176,7 @@ export function changeFileExtension(filePath: string, extension: string) {
     return ''
   }
 
-  extension = extension ? (extension.startsWith('.') ? extension : `.${extension}`) : ''
+  extension = normalizeFileExtension(extension)
 
   const basename = path.basename(filePath, path.extname(filePath))
   return path.join(path.dirname(filePath), basename + extension)

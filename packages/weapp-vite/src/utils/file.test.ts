@@ -1,5 +1,6 @@
 import os from 'node:os'
 import path from 'node:path'
+/* eslint-disable e18e/ban-dependencies -- tests reuse fs-extra helpers to mirror module behavior. */
 import fs from 'fs-extra'
 import { describe, expect, it, vi } from 'vitest'
 import { jsExtensions } from '../constants'
@@ -14,6 +15,7 @@ import {
   isJsOrTs,
   isTemplate,
   isTemplateRequest,
+  normalizeFileExtension,
   touch,
   touchSync,
 } from './file'
@@ -42,6 +44,12 @@ describe('utils/file', () => {
   })
 
   describe('changeFileExtension', () => {
+    it('normalizes file extensions before replacement', () => {
+      expect(normalizeFileExtension('.js')).toBe('.js')
+      expect(normalizeFileExtension('json')).toBe('.json')
+      expect(normalizeFileExtension('')).toBe('')
+    })
+
     it('replaces extensions while preserving directories', () => {
       expect(changeFileExtension('src/app/main.ts', '.js')).toBe('src/app/main.js')
     })
