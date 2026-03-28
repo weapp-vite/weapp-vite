@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PackageInsight } from '../types'
+import type { DashboardMetricItem, PackageInsight } from '../types'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
 import AppMetricTile from './AppMetricTile.vue'
@@ -9,6 +9,15 @@ import AppPanelHeader from './AppPanelHeader.vue'
 defineProps<{
   packageInsights: PackageInsight[]
 }>()
+
+function createPackageMetrics(pkg: PackageInsight): DashboardMetricItem[] {
+  return [
+    { label: 'Chunks', value: pkg.chunkCount },
+    { label: 'Assets', value: pkg.assetCount },
+    { label: '模块数', value: pkg.moduleCount },
+    { label: '跨包模块', value: pkg.duplicateModuleCount },
+  ]
+}
 </script>
 
 <template>
@@ -41,10 +50,11 @@ defineProps<{
         </div>
 
         <div class="mt-4 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
-          <AppMetricTile label="Chunks" :value="pkg.chunkCount" />
-          <AppMetricTile label="Assets" :value="pkg.assetCount" />
-          <AppMetricTile label="模块数" :value="pkg.moduleCount" />
-          <AppMetricTile label="跨包模块" :value="pkg.duplicateModuleCount" />
+          <AppMetricTile
+            v-for="metric in createPackageMetrics(pkg)"
+            :key="metric.label"
+            v-bind="metric"
+          />
         </div>
 
         <div class="mt-4">

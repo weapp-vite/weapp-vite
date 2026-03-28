@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { DashboardMetricItem } from '../types'
 import AppMetaLabel from './AppMetaLabel.vue'
 
 defineProps<{
-  label: string
-  value: string | number
+  label: DashboardMetricItem['label']
+  value: DashboardMetricItem['value']
 }>()
 </script>
 
