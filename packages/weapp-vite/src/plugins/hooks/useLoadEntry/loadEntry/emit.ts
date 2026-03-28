@@ -8,11 +8,11 @@ import fs from 'node:fs/promises'
 import MagicString from 'magic-string'
 import path from 'pathe'
 import logger from '../../../../logger'
-import { normalizeWatchPath } from '../../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { emitNativeLayoutScriptChunkIfNeeded, resolveNativeLayoutOutputOptions } from '../../../utils/nativeLayout'
 import { expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
+import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectStyleImports } from './watch'
 
@@ -229,7 +229,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       && !isSkippableResolvedId(normalizedResolvedId)
       && path.isAbsolute(normalizedResolvedId)
     ) {
-      pluginCtx.addWatchFile(normalizeWatchPath(normalizedResolvedId))
+      addNormalizedWatchFile(pluginCtx, normalizedResolvedId)
     }
     if (normalizedResolvedId && !isSkippableResolvedId(normalizedResolvedId)) {
       resolvedEntryMap.set(normalizedResolvedId, resolvedId)
@@ -264,7 +264,7 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     if (layoutPlan) {
       const layoutDependencies = new Set<string>()
       for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
-        pluginCtx.addWatchFile(normalizeWatchPath(file))
+        addNormalizedWatchFile(pluginCtx, file)
         layoutDependencies.add(normalizeFsResolvedId(file))
       }
       replaceLayoutDependencies(id, layoutDependencies)
