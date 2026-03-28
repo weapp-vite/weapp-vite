@@ -5,6 +5,7 @@ import {
   getAlipayNpmImportPrefix,
   normalizeAlipayNpmImportPath,
   resolveAlipayNpmMode,
+  stripAlipayNpmImportPrefixes,
 } from './alipayNpm'
 
 describe('alipayNpm utils', () => {
@@ -24,6 +25,9 @@ describe('alipayNpm utils', () => {
   })
 
   it('normalizes alipay npm import paths across npm protocol and explicit prefixes', () => {
+    expect(stripAlipayNpmImportPrefixes('npm:dayjs')).toBe('dayjs')
+    expect(stripAlipayNpmImportPrefixes('/node_modules/dayjs')).toBe('dayjs')
+    expect(stripAlipayNpmImportPrefixes('/miniprogram_npm/dayjs')).toBe('dayjs')
     expect(normalizeAlipayNpmImportPath('npm:dayjs')).toBe('/node_modules/dayjs')
     expect(normalizeAlipayNpmImportPath('/node_modules/dayjs')).toBe('/node_modules/dayjs')
     expect(normalizeAlipayNpmImportPath('/miniprogram_npm/dayjs', 'miniprogram_npm')).toBe('/miniprogram_npm/dayjs')

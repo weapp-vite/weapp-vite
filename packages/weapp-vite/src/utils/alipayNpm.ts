@@ -17,7 +17,11 @@ export function getAlipayNpmImportPrefix(mode?: string): string {
   return `/${getAlipayNpmDistDirName(mode)}/`
 }
 
+export function stripAlipayNpmImportPrefixes(importee: string): string {
+  return importee.replace(NPM_PROTOCOL_RE, '').replace(EXPLICIT_NPM_PREFIX_RE, '')
+}
+
 export function normalizeAlipayNpmImportPath(importee: string, mode?: string): string {
-  const normalized = importee.replace(NPM_PROTOCOL_RE, '').replace(EXPLICIT_NPM_PREFIX_RE, '')
+  const normalized = stripAlipayNpmImportPrefixes(importee)
   return `${getAlipayNpmImportPrefix(mode)}${normalized.replace(LEADING_SLASH_RE, '')}`
 }
