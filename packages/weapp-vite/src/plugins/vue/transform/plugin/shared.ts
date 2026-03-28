@@ -17,6 +17,18 @@ export function isAppEntry(filename: string) {
   return APP_ENTRY_RE.test(filename)
 }
 
+export function isVueLikeId(id: string) {
+  return id.endsWith('.vue') || id.endsWith('.jsx') || id.endsWith('.tsx')
+}
+
+export async function resolveSfcSrc(pluginCtx: any, source: string, importer?: string) {
+  if (typeof pluginCtx.resolve !== 'function') {
+    return undefined
+  }
+  const resolved = await pluginCtx.resolve(source, importer)
+  return resolved?.id
+}
+
 export function invalidatePageLayoutCaches(
   configService: NonNullable<CompilerContext['configService']> | undefined,
   compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>,

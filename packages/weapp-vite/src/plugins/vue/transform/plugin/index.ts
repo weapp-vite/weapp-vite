@@ -13,7 +13,7 @@ import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { invalidateResolvedPageLayoutsCache, isLayoutFile } from '../pageLayout'
 import { loadScopedSlotModule, resolveScopedSlotVirtualId } from '../scopedSlot'
 import { parseWeappVueStyleRequest } from '../styleRequest'
-import { invalidatePageLayoutCaches, invalidateVueFileCaches, registerNativeLayoutChunksForEntry } from './shared'
+import { invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, registerNativeLayoutChunksForEntry, resolveSfcSrc } from './shared'
 import { transformVueLikeFile } from './transformFile'
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
@@ -24,15 +24,6 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
   const scopedSlotModules = new Map<string, string>()
   const emittedScopedSlotChunks = new Set<string>()
   const classStyleRuntimeWarned = { value: false }
-  const resolveSfcSrc = async (pluginCtx: any, source: string, importer?: string) => {
-    if (typeof pluginCtx.resolve !== 'function') {
-      return undefined
-    }
-    const resolved = await pluginCtx.resolve(source, importer)
-    return resolved?.id
-  }
-
-  const isVueLikeId = (id: string) => id.endsWith('.vue') || id.endsWith('.jsx') || id.endsWith('.tsx')
 
   return {
     name: `${VUE_PLUGIN_NAME}:transform`,
