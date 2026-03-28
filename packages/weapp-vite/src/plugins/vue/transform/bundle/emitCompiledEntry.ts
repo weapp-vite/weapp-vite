@@ -4,10 +4,8 @@ import fs from 'fs-extra'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import {
-  emitNativeLayoutAssetsIfNeeded,
-  emitResolvedBundleLayouts,
+  emitBundlePageLayoutsIfNeeded,
   emitScriptlessComponentJsFallbackIfMissing,
-  emitVueLayoutScriptFallbackIfNeeded,
 } from './layoutAssets'
 import { compileAndFinalizeVueLikeFile, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, getEntryBaseName, isAppVueLikeFile, resolveVueBundleAssetContext } from './shared'
 
@@ -81,31 +79,15 @@ export async function emitCompiledVueEntryAssets(
     if (resolvedLayoutPlan) {
       applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
     }
-    if (resolvedLayoutPlan?.layouts.length) {
-      await emitResolvedBundleLayouts({
-        layouts: resolvedLayoutPlan.layouts,
-        emitNativeLayout: async (layoutFilePath) => {
-          await emitNativeLayoutAssetsIfNeeded({
-            pluginCtx,
-            bundle,
-            layoutBasePath: layoutFilePath,
-            configService,
-            outputExtensions,
-          })
-        },
-        emitVueLayout: async (layoutFilePath) => {
-          await emitVueLayoutScriptFallbackIfNeeded({
-            pluginCtx,
-            bundle,
-            layoutFilePath,
-            ctx,
-            configService,
-            compileOptionsState,
-            outputExtensions,
-          })
-        },
-      })
-    }
+    await emitBundlePageLayoutsIfNeeded({
+      layouts: resolvedLayoutPlan?.layouts,
+      pluginCtx,
+      bundle,
+      ctx,
+      configService,
+      compileOptionsState,
+      outputExtensions,
+    })
   }
 
   emitSharedVueEntryAssets({

@@ -183,3 +183,42 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
     scriptExtension: resolvedOptions.scriptExtension,
   })
 }
+
+export async function emitBundlePageLayoutsIfNeeded(options: {
+  layouts: ResolvedBundleLayout[] | undefined
+  pluginCtx: any
+  bundle: Record<string, any>
+  ctx: CompilerContext
+  configService: NonNullable<CompilerContext['configService']>
+  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+  outputExtensions: OutputExtensions | undefined
+}) {
+  const { layouts, pluginCtx, bundle, ctx, configService, compileOptionsState, outputExtensions } = options
+  if (!layouts?.length) {
+    return
+  }
+
+  await emitResolvedBundleLayouts({
+    layouts,
+    emitNativeLayout: async (layoutFilePath) => {
+      await emitNativeLayoutAssetsIfNeeded({
+        pluginCtx,
+        bundle,
+        layoutBasePath: layoutFilePath,
+        configService,
+        outputExtensions,
+      })
+    },
+    emitVueLayout: async (layoutFilePath) => {
+      await emitVueLayoutScriptFallbackIfNeeded({
+        pluginCtx,
+        bundle,
+        layoutFilePath,
+        ctx,
+        configService,
+        compileOptionsState,
+        outputExtensions,
+      })
+    },
+  })
+}
