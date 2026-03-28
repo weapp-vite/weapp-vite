@@ -20,13 +20,16 @@ export function createGlobalHostExpression() {
   return getWeapiGlobalHostCandidates().join('')
 }
 
-export function createNativeApiFallbackExpression() {
-  const globalChecks = getMiniProgramGlobalKeys().map((key, index) => {
+export function getNativeApiFallbackChecks() {
+  return getMiniProgramGlobalKeys().map((key, index) => {
     const prefix = index === 0 ? '((' : ' || ('
     return `${prefix}typeof ${key} !== 'undefined' && ${key})`
   })
+}
+
+export function createNativeApiFallbackExpression() {
   return [
-    ...globalChecks,
+    ...getNativeApiFallbackChecks(),
     ` || undefined)`,
   ].join('')
 }
