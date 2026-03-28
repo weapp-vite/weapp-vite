@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { createInjectWeapiDefine } from './injectWeapiDefine'
+import {
+  createInjectWeapiDefine,
+  isInjectWeapiReplaceEnabled,
+  resolveInjectWeapiGlobalName,
+} from './injectWeapiDefine'
 
 describe('createInjectWeapiDefine', () => {
+  it('resolves injectWeapi enablement and global names', () => {
+    expect(isInjectWeapiReplaceEnabled(false)).toBe(false)
+    expect(isInjectWeapiReplaceEnabled(true)).toBe(false)
+    expect(isInjectWeapiReplaceEnabled({ enabled: true })).toBe(false)
+    expect(isInjectWeapiReplaceEnabled({ enabled: true, replaceWx: true })).toBe(true)
+
+    expect(resolveInjectWeapiGlobalName(undefined)).toBe('wpi')
+    expect(resolveInjectWeapiGlobalName({ enabled: true, globalName: ' weapi ' })).toBe('weapi')
+    expect(resolveInjectWeapiGlobalName({ enabled: true, globalName: '   ' })).toBe('wpi')
+  })
+
   it('returns empty define when injectWeapi is disabled', () => {
     expect(createInjectWeapiDefine(false)).toEqual({})
     expect(createInjectWeapiDefine(undefined)).toEqual({})
