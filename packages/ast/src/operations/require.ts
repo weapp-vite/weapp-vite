@@ -39,29 +39,39 @@ export function getStaticRequireLiteralValue(node: any) {
 /**
  * 收集 `require.async()` 依赖字面量。
  */
+export function getRequireAsyncLiteralToken(node: any): RequireToken | null {
+  if (
+    node?.type !== 'CallExpression'
+    || node.callee?.type !== 'MemberExpression'
+    || node.callee.object?.type !== 'Identifier'
+    || node.callee.object.name !== 'require'
+    || node.callee.property?.type !== 'Identifier'
+    || node.callee.property.name !== 'async'
+  ) {
+    return null
+  }
+
+  const argv0 = node.arguments?.[0]
+  if (!argv0 || argv0.type !== 'Literal' || typeof argv0.value !== 'string') {
+    return null
+  }
+
+  return {
+    start: argv0.start,
+    end: argv0.end,
+    value: argv0.value,
+    async: true,
+  }
+}
+
 export function collectRequireTokens(ast: unknown) {
   const requireTokens: RequireToken[] = []
 
   walk(ast as Program, {
     enter(node) {
-      if (node.type === 'CallExpression') {
-        if (
-          node.callee.type === 'MemberExpression'
-          && node.callee.object.type === 'Identifier'
-          && node.callee.object.name === 'require'
-          && node.callee.property.type === 'Identifier'
-          && node.callee.property.name === 'async'
-        ) {
-          const argv0 = node.arguments[0]
-          if (argv0 && argv0.type === 'Literal' && typeof argv0.value === 'string') {
-            requireTokens.push({
-              start: argv0.start,
-              end: argv0.end,
-              value: argv0.value,
-              async: true,
-            })
-          }
-        }
+      const token = getRequireAsyncLiteralToken(node)
+      if (token) {
+        requireTokens.push(token)
       }
     },
   })
