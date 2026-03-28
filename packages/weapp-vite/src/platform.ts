@@ -37,6 +37,9 @@ export interface JsonPlatformOptions {
 }
 
 export interface NpmPlatformOptions {
+  distDirName: string
+  preservedDirNames: readonly string[]
+  importPrefix: string
   normalizeImportPath: boolean
   normalizeMiniprogramPackage: boolean
   copyEsModuleDirectory: boolean
@@ -116,15 +119,6 @@ export function getDefaultIdeProjectRoot(platform?: MpPlatform): string | undefi
   return getIdePlatformOptions(platform).defaultProjectRoot
 }
 
-export function getPreservedNpmDirNames(
-  platform: MpPlatform,
-  options?: {
-    alipayNpmMode?: string
-  },
-): readonly string[] {
-  return getMiniProgramPlatformAdapter(platform).resolvePreservedNpmDirNames(options)
-}
-
 export function getPlatformOutputExtensions(platform: MpPlatform): OutputExtensions {
   return {
     ...getMiniProgramPlatformAdapter(platform).outputExtensions,
@@ -152,24 +146,43 @@ export function shouldRewriteBundleNpmImports(platform?: MpPlatform): boolean {
   return getJsonPlatformOptions(platform).rewriteBundleNpmImports
 }
 
-export function getPlatformNpmDistDirName(
-  platform: MpPlatform,
+export function getNpmPlatformOptions(
+  platform?: MpPlatform,
   options?: {
     alipayNpmMode?: string
   },
-): string {
-  return getMiniProgramPlatformAdapter(platform).npm?.distDirName?.(options) ?? 'miniprogram_npm'
-}
-
-export function getNpmPlatformOptions(platform?: MpPlatform): NpmPlatformOptions {
+): NpmPlatformOptions {
   const npm = platform ? getMiniProgramPlatformAdapter(platform).npm : undefined
+  const adapter = platform ? getMiniProgramPlatformAdapter(platform) : undefined
+  const distDirName = npm?.distDirName?.(options) ?? 'miniprogram_npm'
   return {
+    distDirName,
+    preservedDirNames: adapter?.resolvePreservedNpmDirNames(options) ?? ['miniprogram_npm'],
+    importPrefix: `/${distDirName}/`,
     normalizeImportPath: npm?.normalizeImportPath === true,
     normalizeMiniprogramPackage: npm?.normalizeMiniprogramPackage === true,
     copyEsModuleDirectory: npm?.copyEsModuleDirectory === true,
     hoistNestedDependencies: npm?.hoistNestedDependencies === true,
     shouldRebuildCachedPackage: npm?.shouldRebuildCachedPackage === true,
   }
+}
+
+export function getPreservedNpmDirNames(
+  platform: MpPlatform,
+  options?: {
+    alipayNpmMode?: string
+  },
+): readonly string[] {
+  return getNpmPlatformOptions(platform, options).preservedDirNames
+}
+
+export function getPlatformNpmDistDirName(
+  platform: MpPlatform,
+  options?: {
+    alipayNpmMode?: string
+  },
+): string {
+  return getNpmPlatformOptions(platform, options).distDirName
 }
 
 export function shouldNormalizePlatformNpmImportPath(platform?: MpPlatform): boolean {
@@ -182,7 +195,7 @@ export function getPlatformNpmImportPrefix(
     alipayNpmMode?: string
   },
 ): string {
-  return `/${getPlatformNpmDistDirName(platform, options)}/`
+  return getNpmPlatformOptions(platform, options).importPrefix
 }
 
 export function normalizePlatformNpmImportPath(
