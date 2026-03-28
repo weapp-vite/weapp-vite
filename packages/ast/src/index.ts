@@ -81,6 +81,7 @@ export {
   isStaticPropertyName,
 } from './operations/onPageScroll'
 export {
+  hasPlatformApiMemberExpression,
   isPlatformApiIdentifier,
   isPlatformApiMemberExpression,
   mayContainPlatformApiAccess,
