@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { compileTransformEntryResult, createTransformStageMeasurer, ensureSfcStyleBlocks, finalizeTransformCompiledResult, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, logTransformFileError, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+import { compileTransformEntryResult, createTransformStageMeasurer, ensureSfcStyleBlocks, finalizeTransformCompiledResult, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, logTransformFileError, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn())
@@ -177,6 +177,63 @@ describe('vue transform plugin shared helpers', () => {
     )
     expect(compilationCache.has('/project/src/components/card.vue')).toBe(false)
     expect(styleBlocksCache.has('/project/src/components/card.vue')).toBe(false)
+  })
+
+  it('handles transform layout invalidation only for layout files with config service', () => {
+    const compilationCache = new Map<string, any>([
+      ['/project/src/pages/home/index.vue', { isPage: true, source: '<template />', result: {} }],
+    ])
+    const styleBlocksCache = new Map<string, any>([
+      ['/project/src/pages/home/index.vue', []],
+    ])
+    const invalidateLayouts = vi.fn()
+    const isLayoutFile = vi.fn((file: string) => file.endsWith('layout.vue'))
+
+    expect(handleTransformLayoutInvalidation('/project/src/layouts/default/layout.vue', {
+      configService: {
+        absoluteSrcRoot: '/project/src',
+      } as any,
+      compilationCache,
+      styleBlocksCache,
+      isLayoutFile,
+      invalidateResolvedPageLayoutsCache: invalidateLayouts,
+    })).toBe(true)
+
+    expect(invalidateLayouts).toHaveBeenCalledWith('/project/src')
+    expect(compilationCache.get('/project/src/pages/home/index.vue')?.source).toBeUndefined()
+
+    expect(handleTransformLayoutInvalidation('/project/src/pages/home/index.vue', {
+      configService: {
+        absoluteSrcRoot: '/project/src',
+      } as any,
+      compilationCache,
+      styleBlocksCache,
+      isLayoutFile,
+      invalidateResolvedPageLayoutsCache: invalidateLayouts,
+    })).toBe(false)
+  })
+
+  it('handles transform vue file invalidation only for vue-like files', () => {
+    const compilationCache = new Map<string, any>([
+      ['/project/src/pages/home/index.vue', { isPage: true, source: '<template />', result: {} }],
+    ])
+    const styleBlocksCache = new Map<string, any>([
+      ['/project/src/pages/home/index.vue', []],
+    ])
+    const existsSync = vi.fn(() => true)
+
+    expect(handleTransformVueFileInvalidation('/project/src/pages/home/index.vue', {
+      compilationCache,
+      styleBlocksCache,
+      existsSync,
+    })).toBe(true)
+    expect(compilationCache.get('/project/src/pages/home/index.vue')?.source).toBeUndefined()
+
+    expect(handleTransformVueFileInvalidation('/project/src/pages/home/index.ts', {
+      compilationCache,
+      styleBlocksCache,
+      existsSync,
+    })).toBe(false)
   })
 
   it('loads and caches sfc style blocks', async () => {

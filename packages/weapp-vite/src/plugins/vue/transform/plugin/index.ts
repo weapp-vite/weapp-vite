@@ -14,7 +14,7 @@ import { invalidateResolvedPageLayoutsCache, isLayoutFile } from '../pageLayout'
 import { loadScopedSlotModule, resolveScopedSlotVirtualId } from '../scopedSlot'
 import { findFirstResolvedVueLikeEntry } from '../shared'
 import { parseWeappVueStyleRequest } from '../styleRequest'
-import { ensureSfcStyleBlocks, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, registerNativeLayoutChunksForEntry } from './shared'
+import { ensureSfcStyleBlocks, handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, isVueLikeId, registerNativeLayoutChunksForEntry } from './shared'
 import { transformVueLikeFile } from './transformFile'
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
@@ -131,32 +131,38 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
     watchChange(id) {
       const normalizedId = normalizeFsResolvedId(id)
-      if (ctx.configService && isLayoutFile(normalizedId, ctx.configService)) {
-        invalidateResolvedPageLayoutsCache(ctx.configService.absoluteSrcRoot)
-        invalidatePageLayoutCaches(ctx.configService, compilationCache, styleBlocksCache)
-      }
-      if (!isVueLikeId(normalizedId)) {
-        return
-      }
-      invalidateVueFileCaches(normalizedId, compilationCache, styleBlocksCache, {
+      handleTransformLayoutInvalidation(normalizedId, {
+        configService: ctx.configService,
+        compilationCache,
+        styleBlocksCache,
+        isLayoutFile,
+        invalidateResolvedPageLayoutsCache,
+      })
+      handleTransformVueFileInvalidation(normalizedId, {
+        compilationCache,
+        styleBlocksCache,
         existsSync: fs.existsSync,
       })
     },
 
     async handleHotUpdate({ file }) {
-      if (ctx.configService && isLayoutFile(file, ctx.configService)) {
-        invalidateResolvedPageLayoutsCache(ctx.configService.absoluteSrcRoot)
-        invalidatePageLayoutCaches(ctx.configService, compilationCache, styleBlocksCache)
+      if (handleTransformLayoutInvalidation(file, {
+        configService: ctx.configService,
+        compilationCache,
+        styleBlocksCache,
+        isLayoutFile,
+        invalidateResolvedPageLayoutsCache,
+      })) {
         return []
       }
 
-      if (!isVueLikeId(file)) {
+      if (!handleTransformVueFileInvalidation(file, {
+        compilationCache,
+        styleBlocksCache,
+        existsSync: fs.existsSync,
+      })) {
         return
       }
-
-      invalidateVueFileCaches(file, compilationCache, styleBlocksCache, {
-        existsSync: fs.existsSync,
-      })
 
       return []
     },
