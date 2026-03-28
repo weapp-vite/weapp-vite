@@ -14,10 +14,20 @@ const props = defineProps<{
   countLabel?: string
 }>()
 
-const badge = computed<DashboardRuntimeBadgeItem>(() => ({
-  label: props.latestTimestamp ? `${props.count} 条` : `错误 ${props.errorCount}`,
-  tone: getRuntimeSourceBadgeTone(props.errorCount),
-}))
+function createRuntimeSourceBadge(): DashboardRuntimeBadgeItem {
+  return {
+    label: props.latestTimestamp ? `${props.count} 条` : `错误 ${props.errorCount}`,
+    tone: getRuntimeSourceBadgeTone(props.errorCount),
+  }
+}
+
+const badge = computed<DashboardRuntimeBadgeItem>(() => createRuntimeSourceBadge())
+
+const subtitle = computed(() =>
+  props.latestTimestamp
+    ? `最近事件 ${props.latestTimestamp}`
+    : `${props.count} ${props.countLabel ?? '条事件'}`,
+)
 </script>
 
 <template>
@@ -28,12 +38,7 @@ const badge = computed<DashboardRuntimeBadgeItem>(() => ({
           {{ props.source }}
         </p>
         <p class="mt-1 text-[11px] uppercase tracking-[0.16em] text-[color:var(--dashboard-text-soft)]">
-          <template v-if="props.latestTimestamp">
-            最近事件 {{ props.latestTimestamp }}
-          </template>
-          <template v-else>
-            {{ props.count }} {{ props.countLabel ?? '条事件' }}
-          </template>
+          {{ subtitle }}
         </p>
       </div>
       <AppRuntimeBadge v-bind="badge" />

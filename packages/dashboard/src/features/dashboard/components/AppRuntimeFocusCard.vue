@@ -13,14 +13,20 @@ const props = defineProps<{
   durationText?: string
 }>()
 
+function createRuntimeEventBadge(event: DashboardRuntimeEvent): DashboardRuntimeBadgeItem {
+  return {
+    label: formatRuntimeEventLevel(event.level),
+    tone: getRuntimeEventBadgeTone(event.level),
+  }
+}
+
 const badge = computed<DashboardRuntimeBadgeItem | null>(() => (
   props.event
-    ? {
-        label: formatRuntimeEventLevel(props.event.level),
-        tone: getRuntimeEventBadgeTone(props.event.level),
-      }
+    ? createRuntimeEventBadge(props.event)
     : null
 ))
+
+const eventMeta = computed(() => props.event ? formatRuntimeEventMeta(props.event) : null)
 </script>
 
 <template>
@@ -43,7 +49,7 @@ const badge = computed<DashboardRuntimeBadgeItem | null>(() => (
       v-if="props.event"
       class="mt-3 text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]"
     >
-      {{ formatRuntimeEventMeta(props.event) }}
+      {{ eventMeta }}
     </p>
     <p
       v-if="props.durationText"

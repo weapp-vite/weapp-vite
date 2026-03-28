@@ -11,10 +11,15 @@ const props = defineProps<{
   selected?: boolean
 }>()
 
-const badge = computed<DashboardRuntimeBadgeItem>(() => ({
-  label: formatRuntimeEventLevel(props.event.level),
-  tone: getRuntimeEventBadgeTone(props.event.level),
-}))
+function createRuntimeEventBadge(event: DashboardRuntimeEvent): DashboardRuntimeBadgeItem {
+  return {
+    label: formatRuntimeEventLevel(event.level),
+    tone: getRuntimeEventBadgeTone(event.level),
+  }
+}
+
+const badge = computed<DashboardRuntimeBadgeItem>(() => createRuntimeEventBadge(props.event))
+const eventMeta = computed(() => formatRuntimeEventMeta(props.event))
 </script>
 
 <template>
@@ -33,7 +38,7 @@ const badge = computed<DashboardRuntimeBadgeItem>(() => ({
           {{ props.event.detail }}
         </p>
         <AppMetaLabel class="mt-2">
-          {{ formatRuntimeEventMeta(props.event) }}
+          {{ eventMeta }}
         </AppMetaLabel>
         <AppTagList v-if="props.event.tags?.length" class="mt-2" :tags="props.event.tags" />
       </div>
