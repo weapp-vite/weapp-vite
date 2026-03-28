@@ -60,7 +60,9 @@ export {
   getOxcCallExpressionCalleeName,
   getOxcMemberExpressionPropertyName,
   getOxcStaticPropertyName,
+  isOnPageScrollCallee,
   isOxcFunctionLike,
+  isOxcOnPageScrollCallee,
   isStaticPropertyName,
 } from './operations/onPageScroll'
 export {

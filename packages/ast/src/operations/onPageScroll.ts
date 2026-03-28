@@ -31,7 +31,7 @@ export function getMemberExpressionPropertyName(node: t.MemberExpression | t.Opt
   return node.property.type === 'Identifier' ? node.property.name : undefined
 }
 
-function isOnPageScrollCallee(
+export function isOnPageScrollCallee(
   callee: t.Expression | t.V8IntrinsicIdentifier,
   hookNames: Set<string>,
   namespaceImports: Set<string>,
@@ -154,7 +154,7 @@ export function isOxcFunctionLike(node: any) {
     || node?.type === 'ArrowFunctionExpression'
 }
 
-function isOxcOnPageScrollCallee(
+export function isOxcOnPageScrollCallee(
   callee: any,
   hookNames: Set<string>,
   namespaceImports: Set<string>,
