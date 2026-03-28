@@ -17,9 +17,11 @@ Page({
     savedMissingInfo: '',
     savedMissingRemovalInfo: '',
     fileManagerMissingAccessInfo: '',
+    fileManagerMissingCopyInfo: '',
     fileManagerMissingReadInfo: '',
     fileManagerMissingReadDirInfo: '',
     fileManagerMissingStatInfo: '',
+    fileManagerMissingUnlinkInfo: '',
     savedOrderingInfo: '',
     savedRemovalInfo: '',
     savedRenameOutInfo: '',
@@ -335,6 +337,37 @@ Page({
           }),
         }, () => {
           this.push('lab:runMissingReadFileLab')
+        })
+      },
+    })
+  },
+  runMissingUnlinkLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.unlink({
+      filePath: 'headless://saved/component-lab/missing-unlink.txt',
+      fail: (error) => {
+        this.setData({
+          fileManagerMissingUnlinkInfo: JSON.stringify({
+            missingUnlinkError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runMissingUnlinkLab')
+        })
+      },
+    })
+  },
+  runMissingCopyFileLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.copyFile({
+      srcPath: 'headless://saved/component-lab/missing-copy-source.txt',
+      destPath: 'headless://saved/component-lab/missing-copy-target.txt',
+      fail: (error) => {
+        this.setData({
+          fileManagerMissingCopyInfo: JSON.stringify({
+            missingCopyError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runMissingCopyFileLab')
         })
       },
     })
