@@ -227,6 +227,22 @@ export function shouldEmitAlipayGenericPlaceholder(configSource: string | undefi
   })
 }
 
+export function resolveGenericPlaceholderBaseForPlatform(
+  relativeBase: string,
+  configSource: string | undefined,
+  platform: string,
+) {
+  if (!resolveVueBundlePlatformOptions({ platform }).emitGenericPlaceholder || !configSource) {
+    return undefined
+  }
+
+  if (!shouldEmitAlipayGenericPlaceholder(configSource)) {
+    return undefined
+  }
+
+  return resolveAlipayGenericPlaceholderBase(relativeBase)
+}
+
 export function emitAlipayGenericPlaceholderAssets(
   ctx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
   bundle: Record<string, any>,
@@ -235,18 +251,15 @@ export function emitAlipayGenericPlaceholderAssets(
   outputExtensions: OutputExtensions | undefined,
   platform: string,
 ) {
-  if (!resolveVueBundlePlatformOptions({ platform }).emitGenericPlaceholder || !configSource) {
-    return
-  }
-
-  if (!shouldEmitAlipayGenericPlaceholder(configSource)) {
+  const placeholderBase = resolveGenericPlaceholderBaseForPlatform(relativeBase, configSource, platform)
+  if (!placeholderBase) {
     return
   }
 
   emitAlipayGenericPlaceholderAssetsByBase(
     ctx,
     bundle,
-    resolveAlipayGenericPlaceholderBase(relativeBase),
+    placeholderBase,
     outputExtensions,
   )
 }
