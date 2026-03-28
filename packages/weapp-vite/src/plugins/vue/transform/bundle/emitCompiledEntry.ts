@@ -1,11 +1,10 @@
 import type { CompilationCacheEntry, VueBundleState } from './shared'
-import { normalizeWatchPath } from '../../../../utils/path'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import {
   emitBundlePageLayoutsIfNeeded,
   emitScriptlessComponentJsFallbackIfMissing,
 } from './layoutAssets'
-import { emitBundleVueEntryAssets, emitSharedVueEntryJsonAsset, getEntryBaseName, isAppVueLikeFile, refreshCompiledVueEntryCacheInDev, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, emitCompiledEntryBundleAssets, getEntryBaseName, refreshCompiledVueEntryCacheInDev, resolveVueBundleAssetContext } from './shared'
 
 export async function emitCompiledVueEntryAssets(
   bundle: Record<string, any>,
@@ -19,9 +18,7 @@ export async function emitCompiledVueEntryAssets(
     return
   }
 
-  if (typeof pluginCtx.addWatchFile === 'function') {
-    pluginCtx.addWatchFile(normalizeWatchPath(filename))
-  }
+  addBundleWatchFile(pluginCtx, filename)
 
   const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned }
   const {
@@ -48,11 +45,6 @@ export async function emitCompiledVueEntryAssets(
     return
   }
 
-  const isAppVue = isAppVueLikeFile(filename)
-  const shouldEmitComponentJson = !isAppVue && !cached.isPage
-  const shouldMergeJsonAsset = isAppVue
-  const jsonKind = isAppVue ? 'app' : cached.isPage ? 'page' : 'component'
-
   if (cached.isPage && cached.source) {
     const resolvedLayoutPlan = await resolvePageLayoutPlan(cached.source, filename, configService)
     if (resolvedLayoutPlan) {
@@ -69,40 +61,23 @@ export async function emitCompiledVueEntryAssets(
     })
   }
 
-  const { jsonConfig } = emitBundleVueEntryAssets({
+  const { shouldEmitComponentJson } = emitCompiledEntryBundleAssets({
     bundle,
     pluginCtx,
     ctx,
     filename,
     relativeBase,
     result,
+    isPage: cached.isPage,
     configService,
     templateExtension,
+    jsonExtension,
     scriptModuleExtension,
     outputExtensions,
     platformAssetOptions,
   })
 
-  if (result.config || shouldEmitComponentJson) {
-    emitSharedVueEntryJsonAsset({
-      bundle,
-      pluginCtx,
-      relativeBase,
-      config: result.config,
-      outputExtensions,
-      platformAssetOptions,
-      jsonOptions: {
-        defaultConfig: shouldEmitComponentJson ? { component: true } : undefined,
-        mergeExistingAsset: shouldMergeJsonAsset,
-        mergeStrategy: jsonConfig?.mergeStrategy,
-        defaults: jsonConfig?.defaults?.[jsonKind],
-        kind: jsonKind,
-        extension: jsonExtension,
-      },
-    })
-  }
-
-  if (!isAppVue && !cached.isPage && !result.script?.trim()) {
+  if (shouldEmitComponentJson && !result.script?.trim()) {
     emitScriptlessComponentJsFallbackIfMissing({
       pluginCtx,
       bundle,

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { addBundleWatchFile, emitBundleVueEntryAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -282,6 +282,118 @@ describe('emitSharedVueEntryAssets', () => {
         },
         mergeStrategy: 'override',
       },
+    })
+  })
+
+  it('emits compiled component entry assets with default component json config', () => {
+    const result = emitCompiledEntryBundleAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {} as any,
+      filename: '/project/src/components/demo-card/index.vue',
+      relativeBase: 'components/demo-card/index',
+      result: {
+        template: '<view />',
+        scopedSlotComponents: [],
+      } as any,
+      isPage: false,
+      configService: {
+        weappViteConfig: {
+          json: {
+            defaults: {
+              component: {
+                styleIsolation: 'apply-shared',
+              },
+            },
+            mergeStrategy: 'override',
+          },
+        },
+      } as any,
+      templateExtension: 'axml',
+      jsonExtension: 'json',
+      scriptModuleExtension: 'sjs',
+      outputExtensions: {},
+      platformAssetOptions: {
+        platform: 'alipay',
+        templateExtension: 'axml',
+        scriptModuleExtension: 'sjs',
+      },
+    })
+
+    expect(emitPlatformTemplateAssetMock).toHaveBeenCalledTimes(1)
+    expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'components/demo-card/index',
+      { config: '{"component":true}' },
+      {
+        defaultConfig: { component: true },
+        mergeExistingAsset: false,
+        mergeStrategy: 'override',
+        defaults: { styleIsolation: 'apply-shared' },
+        kind: 'component',
+        extension: 'json',
+      },
+    )
+    expect(result).toEqual({
+      isAppVue: false,
+      shouldEmitComponentJson: true,
+    })
+  })
+
+  it('emits compiled app entry assets with merged app json config', () => {
+    const result = emitCompiledEntryBundleAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {} as any,
+      filename: '/project/src/app.vue',
+      relativeBase: 'app',
+      result: {
+        template: '<view />',
+        config: '{"window":{"navigationBarTitleText":"首页"}}',
+        scopedSlotComponents: [],
+      } as any,
+      isPage: false,
+      configService: {
+        weappViteConfig: {
+          json: {
+            defaults: {
+              app: {
+                lazyCodeLoading: 'requiredComponents',
+              },
+            },
+            mergeStrategy: 'override',
+          },
+        },
+      } as any,
+      templateExtension: 'axml',
+      jsonExtension: 'json',
+      scriptModuleExtension: 'sjs',
+      outputExtensions: {},
+      platformAssetOptions: {
+        platform: 'alipay',
+        templateExtension: 'axml',
+        scriptModuleExtension: 'sjs',
+      },
+    })
+
+    expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'app',
+      { config: '{"component":true}' },
+      {
+        defaultConfig: undefined,
+        mergeExistingAsset: true,
+        mergeStrategy: 'override',
+        defaults: { lazyCodeLoading: 'requiredComponents' },
+        kind: 'app',
+        extension: 'json',
+      },
+    )
+    expect(result).toEqual({
+      isAppVue: true,
+      shouldEmitComponentJson: false,
     })
   })
 
