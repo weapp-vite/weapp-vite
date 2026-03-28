@@ -22,6 +22,7 @@ import {
   mayContainJsxAutoComponentEntry,
   mayContainPlatformApiAccess,
   mayContainPlatformApiIdentifierByText,
+  mayContainRelevantScriptSetupImports,
   mayContainRequireCallByText,
   mayContainStaticRequireLiteral,
   parse,
@@ -102,6 +103,13 @@ export function useCounter() {
 
     babelParseSpy.mockRestore()
     engineParseSpy.mockRestore()
+  })
+
+  it('exposes script setup import prechecks', () => {
+    expect(mayContainRelevantScriptSetupImports(`import FooCard from './FooCard'`, new Set(['FooCard']))).toBe(true)
+    expect(mayContainRelevantScriptSetupImports(`import BarCard from './BarCard'`, new Set(['FooCard']))).toBe(false)
+    expect(mayContainRelevantScriptSetupImports('const count = 1', new Set(['FooCard']))).toBe(false)
+    expect(mayContainRelevantScriptSetupImports(`import FooCard from './FooCard'`, new Set())).toBe(false)
   })
 
   it('supports oxc fast prechecks', () => {
