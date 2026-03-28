@@ -8,6 +8,23 @@ import { createLegacyEs5Plugin } from '../../legacyEs5'
 import { getDefaultBuildTarget, isNonConcreteBuildTarget, sanitizeBuildTarget } from '../../targets'
 import { formatProjectConfigPath, pluginMatchesName, resolveMultiPlatformConfig } from './shared'
 
+export function resolveCliPlatformRuntime(cliPlatform?: string) {
+  const normalizedCliPlatform = normalizeMiniPlatform(cliPlatform)
+  const isWebRuntime = normalizedCliPlatform === 'h5' || normalizedCliPlatform === 'web'
+
+  return {
+    normalizedCliPlatform,
+    isWebRuntime,
+  }
+}
+
+export function resolveMultiPlatformProjectConfigHint(
+  platform: string,
+  projectConfigRoot = 'config',
+) {
+  return `${projectConfigRoot}/${platform}/project.config.${platform}.json`
+}
+
 export function configureBuildAndPlugins(options: {
   config: InlineConfig
   pluginOnly: boolean
@@ -126,14 +143,18 @@ export function configureBuildAndPlugins(options: {
 
   const platform = config.weapp?.platform ?? DEFAULT_MP_PLATFORM
   const multiPlatform = resolveMultiPlatformConfig(config.weapp?.multiPlatform)
-  const normalizedCliPlatform = normalizeMiniPlatform(cliPlatform)
-  const isWebRuntime = normalizedCliPlatform === 'h5' || normalizedCliPlatform === 'web'
+  const {
+    normalizedCliPlatform,
+    isWebRuntime,
+  } = resolveCliPlatformRuntime(cliPlatform)
   if (multiPlatform.enabled && !isWebRuntime && !normalizedCliPlatform) {
     throw new Error('已开启 weapp.multiPlatform，请通过 --platform 指定目标小程序平台，例如：weapp-vite dev -p weapp')
   }
   if (multiPlatform.enabled && !isWebRuntime && projectConfigPath) {
-    const rootDir = multiPlatform.projectConfigRoot || 'config'
-    const expectedPath = `${rootDir}/${platform}/project.config.${platform}.json`
+    const expectedPath = resolveMultiPlatformProjectConfigHint(
+      platform,
+      multiPlatform.projectConfigRoot || 'config',
+    )
     throw new Error(`已开启 weapp.multiPlatform，--project-config 不再支持，请使用 ${formatProjectConfigPath(cwd, expectedPath)}`)
   }
 
