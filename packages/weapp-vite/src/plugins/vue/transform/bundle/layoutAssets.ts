@@ -72,6 +72,60 @@ export async function emitNativeLayoutScriptChunkIfNeeded(options: {
   })
 }
 
+export async function resolveNativeLayoutAssetState(options: {
+  layoutBasePath: string
+  configService: NonNullable<CompilerContext['configService']>
+  outputExtensions: OutputExtensions | undefined
+}) {
+  const resolvedOptions = resolveVueLayoutAssetOptions({
+    configService: options.configService,
+    layoutBasePath: options.layoutBasePath,
+    outputExtensions: options.outputExtensions,
+  })
+  if (!resolvedOptions) {
+    return undefined
+  }
+
+  const assets = await collectNativeLayoutAssets(options.layoutBasePath)
+
+  return {
+    resolvedOptions,
+    assets,
+  }
+}
+
+export async function emitResolvedNativeLayoutStaticAssets(options: {
+  pluginCtx: any
+  bundle: Record<string, any>
+  assets: Awaited<ReturnType<typeof collectNativeLayoutAssets>>
+  resolvedOptions: NonNullable<ReturnType<typeof resolveVueLayoutAssetOptions>>
+}) {
+  const staticAssetEntries = await resolveNativeLayoutStaticAssetEntries({
+    assets: options.assets,
+    resolvedOptions: options.resolvedOptions,
+    readFile: fs.readFile,
+  })
+  for (const asset of staticAssetEntries) {
+    if (asset.kind === 'template') {
+      emitSfcTemplateIfMissing(
+        options.pluginCtx,
+        options.bundle,
+        options.resolvedOptions.relativeBase,
+        asset.source,
+        options.resolvedOptions.templateExtension,
+      )
+      continue
+    }
+    emitSfcStyleIfMissing(
+      options.pluginCtx,
+      options.bundle,
+      options.resolvedOptions.relativeBase,
+      asset.source,
+      options.resolvedOptions.styleExtension,
+    )
+  }
+}
+
 export async function emitNativeLayoutAssetsIfNeeded(options: {
   pluginCtx: any
   bundle: Record<string, any>
@@ -79,17 +133,13 @@ export async function emitNativeLayoutAssetsIfNeeded(options: {
   configService: NonNullable<CompilerContext['configService']>
   outputExtensions: OutputExtensions | undefined
 }) {
-  const { pluginCtx, bundle, layoutBasePath, configService, outputExtensions } = options
-  const resolvedOptions = resolveVueLayoutAssetOptions({
-    configService,
-    layoutBasePath,
-    outputExtensions,
-  })
-  if (!resolvedOptions) {
+  const { pluginCtx, bundle } = options
+  const nativeLayoutState = await resolveNativeLayoutAssetState(options)
+  if (!nativeLayoutState) {
     return
   }
 
-  const assets = await collectNativeLayoutAssets(layoutBasePath)
+  const { resolvedOptions, assets } = nativeLayoutState
 
   if (assets.json) {
     const source = await fs.readFile(assets.json, 'utf8')
@@ -100,18 +150,12 @@ export async function emitNativeLayoutAssetsIfNeeded(options: {
     })
   }
 
-  const staticAssetEntries = await resolveNativeLayoutStaticAssetEntries({
+  await emitResolvedNativeLayoutStaticAssets({
+    pluginCtx,
+    bundle,
     assets,
     resolvedOptions,
-    readFile: fs.readFile,
   })
-  for (const asset of staticAssetEntries) {
-    if (asset.kind === 'template') {
-      emitSfcTemplateIfMissing(pluginCtx, bundle, resolvedOptions.relativeBase, asset.source, resolvedOptions.templateExtension)
-      continue
-    }
-    emitSfcStyleIfMissing(pluginCtx, bundle, resolvedOptions.relativeBase, asset.source, resolvedOptions.styleExtension)
-  }
 }
 
 export function emitScriptlessComponentJsFallbackIfMissing(options: {
