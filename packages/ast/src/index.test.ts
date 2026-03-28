@@ -8,10 +8,13 @@ import {
   collectJsxTemplateTagsFromBabelExpression,
   getObjectPropertyByKey,
   getRenderPropertyFromComponentOptions,
+  isPlatformApiIdentifier,
   mayContainPlatformApiAccess,
+  mayContainPlatformApiIdentifierByText,
   mayContainStaticRequireLiteral,
   parse,
   parseJsLikeWithEngine,
+  platformApiIdentifierList,
   resolveRenderableExpression,
   resolveRenderExpressionFromComponentOptions,
   toStaticObjectKey,
@@ -90,6 +93,11 @@ export function useCounter() {
   })
 
   it('supports oxc fast prechecks', () => {
+    expect(platformApiIdentifierList).toEqual(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
+    expect(isPlatformApiIdentifier('wx')).toBe(true)
+    expect(isPlatformApiIdentifier('console')).toBe(false)
+    expect(mayContainPlatformApiIdentifierByText('const value = my.request({})')).toBe(true)
+    expect(mayContainPlatformApiIdentifierByText('const value = localStorage.getItem("x")')).toBe(false)
     expect(mayContainPlatformApiAccess('const value = wx.getStorageSync("x")', { engine: 'oxc' })).toBe(true)
     expect(mayContainPlatformApiAccess('const value = localStorage.getItem("x")', { engine: 'oxc' })).toBe(false)
     expect(mayContainStaticRequireLiteral('const mod = require("./dep")', { engine: 'oxc' })).toBe(true)
