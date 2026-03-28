@@ -6,6 +6,16 @@ interface Emitter {
   emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void
 }
 
+/**
+ * 统一拼接 SFC 相关产物文件名。
+ */
+export function resolveSfcAssetFileName(
+  relativeBase: string,
+  extension: string,
+) {
+  return `${relativeBase}.${extension}`
+}
+
 function parseJsonSafely(source: string | undefined): Record<string, any> | undefined {
   if (!source) {
     return undefined
@@ -25,7 +35,7 @@ export function emitSfcTemplateIfMissing(
   template: string,
   extension = 'wxml',
 ) {
-  const fileName = `${relativeBase}.${extension}`
+  const fileName = resolveSfcAssetFileName(relativeBase, extension)
   const existing = bundle[fileName]
   if (existing && existing.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
@@ -44,7 +54,7 @@ export function emitSfcStyleIfMissing(
   style: string,
   extension = 'wxss',
 ) {
-  const fileName = `${relativeBase}.${extension}`
+  const fileName = resolveSfcAssetFileName(relativeBase, extension)
   const existing = bundle[fileName]
   if (existing && existing.type === 'asset') {
     const current = existing.source?.toString?.() ?? ''
@@ -71,7 +81,7 @@ export function emitSfcJsonAsset(
     extension?: string
   },
 ) {
-  const jsonFileName = `${relativeBase}.${options.extension ?? 'json'}`
+  const jsonFileName = resolveSfcAssetFileName(relativeBase, options.extension ?? 'json')
   const existing = bundle[jsonFileName]
   const mergeJson = createJsonMerger(options.mergeStrategy, {
     filename: jsonFileName,
@@ -143,7 +153,7 @@ export function emitSfcScriptAssetReplacingBundleEntry(
   code: string,
   extension = 'js',
 ) {
-  const jsFileName = `${relativeBase}.${extension}`
+  const jsFileName = resolveSfcAssetFileName(relativeBase, extension)
   if (bundle[jsFileName]) {
     delete bundle[jsFileName]
   }
