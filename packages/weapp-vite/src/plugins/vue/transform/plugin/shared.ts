@@ -1,3 +1,5 @@
+import type { SFCStyleBlock } from 'vue/compiler-sfc'
+import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { emitNativeLayoutScriptChunkIfNeeded } from '../bundle'
@@ -13,6 +15,43 @@ export function resolveScriptlessVueEntryStub(isPage: boolean) {
 
 export function isAppEntry(filename: string) {
   return APP_ENTRY_RE.test(filename)
+}
+
+export function invalidatePageLayoutCaches(
+  configService: NonNullable<CompilerContext['configService']> | undefined,
+  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>,
+  styleBlocksCache: Map<string, SFCStyleBlock[]>,
+) {
+  if (!configService) {
+    return
+  }
+
+  for (const [cachedId, cached] of compilationCache.entries()) {
+    if (cached.isPage) {
+      cached.source = undefined
+    }
+    styleBlocksCache.delete(cachedId)
+  }
+}
+
+export function invalidateVueFileCaches(
+  file: string,
+  compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>,
+  styleBlocksCache: Map<string, SFCStyleBlock[]>,
+  options: {
+    existsSync: (filePath: string) => boolean
+  },
+) {
+  if (!options.existsSync(file)) {
+    compilationCache.delete(file)
+  }
+  else {
+    const cached = compilationCache.get(file)
+    if (cached) {
+      cached.source = undefined
+    }
+  }
+  styleBlocksCache.delete(file)
 }
 
 export async function registerNativeLayoutChunksForEntry(

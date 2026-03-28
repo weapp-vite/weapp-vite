@@ -3,6 +3,7 @@ import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import type { createPageEntryMatcher } from '../../../wevu'
+// eslint-disable-next-line e18e/ban-dependencies -- 当前 transform 插件阶段仍统一复用 fs-extra 读写与 exists 判断
 import fs from 'fs-extra'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { getSfcCheckMtime, readAndParseSfc } from '../../../utils/vueSfc'
@@ -12,7 +13,7 @@ import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { invalidateResolvedPageLayoutsCache, isLayoutFile } from '../pageLayout'
 import { loadScopedSlotModule, resolveScopedSlotVirtualId } from '../scopedSlot'
 import { parseWeappVueStyleRequest } from '../styleRequest'
-import { registerNativeLayoutChunksForEntry } from './shared'
+import { invalidatePageLayoutCaches, invalidateVueFileCaches, registerNativeLayoutChunksForEntry } from './shared'
 import { transformVueLikeFile } from './transformFile'
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
@@ -146,37 +147,20 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       const normalizedId = normalizeFsResolvedId(id)
       if (ctx.configService && isLayoutFile(normalizedId, ctx.configService)) {
         invalidateResolvedPageLayoutsCache(ctx.configService.absoluteSrcRoot)
-        for (const [cachedId, cached] of compilationCache.entries()) {
-          if (cached.isPage) {
-            cached.source = undefined
-          }
-          styleBlocksCache.delete(cachedId)
-        }
+        invalidatePageLayoutCaches(ctx.configService, compilationCache, styleBlocksCache)
       }
       if (!isVueLikeId(normalizedId)) {
         return
       }
-      if (!fs.existsSync(normalizedId)) {
-        compilationCache.delete(normalizedId)
-      }
-      else {
-        const cached = compilationCache.get(normalizedId)
-        if (cached) {
-          cached.source = undefined
-        }
-      }
-      styleBlocksCache.delete(normalizedId)
+      invalidateVueFileCaches(normalizedId, compilationCache, styleBlocksCache, {
+        existsSync: fs.existsSync,
+      })
     },
 
     async handleHotUpdate({ file }) {
       if (ctx.configService && isLayoutFile(file, ctx.configService)) {
         invalidateResolvedPageLayoutsCache(ctx.configService.absoluteSrcRoot)
-        for (const [cachedId, cached] of compilationCache.entries()) {
-          if (cached.isPage) {
-            cached.source = undefined
-          }
-          styleBlocksCache.delete(cachedId)
-        }
+        invalidatePageLayoutCaches(ctx.configService, compilationCache, styleBlocksCache)
         return []
       }
 
@@ -184,16 +168,9 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
         return
       }
 
-      if (!fs.existsSync(file)) {
-        compilationCache.delete(file)
-      }
-      else {
-        const cached = compilationCache.get(file)
-        if (cached) {
-          cached.source = undefined
-        }
-      }
-      styleBlocksCache.delete(file)
+      invalidateVueFileCaches(file, compilationCache, styleBlocksCache, {
+        existsSync: fs.existsSync,
+      })
 
       return []
     },
