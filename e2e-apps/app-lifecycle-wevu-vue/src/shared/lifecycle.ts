@@ -105,7 +105,7 @@ export function finalizeAppLifecycle(
 ) {
   const data = ensureAppData(app)
   for (const hook of hooks) {
-    if (data.__lifecycleSeen?.[hook]) {
+    if (hook in (data.__lifecycleSeen ?? {})) {
       continue
     }
     const order = nextOrder(data)
