@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { compileTransformEntryResult, createTransformStageMeasurer, ensureSfcStyleBlocks, finalizeTransformCompiledResult, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, logTransformFileError, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
+import { compileTransformEntryResult, createTransformStageMeasurer, ensureSfcStyleBlocks, finalizeTransformCompiledResult, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, loadTransformStyleBlock, logTransformFileError, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadNativeLayoutEntries, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags, resolveTransformFilename } from './shared'
 
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn())
@@ -671,6 +671,95 @@ console.log(routes, promise)
     expect(loggerErrorMock).toHaveBeenNthCalledWith(1, '[Vue 编译] 编译 /project/src/components/demo.vue 失败：compile failed')
     expect(loggerErrorMock).toHaveBeenNthCalledWith(2, '[Vue 编译] 编译 /project/src/components/demo.vue 失败：plain failure')
     expect(loggerWarnMock).not.toHaveBeenCalled()
+  })
+
+  it('preloads native layout entries through resolved fallback pages and ignores preload failures', async () => {
+    const collectFallbackPageEntryIds = vi.fn(async () => ['pages/home/index', 'pages/missing/index'])
+    const findFirstResolvedVueLikeEntry = vi.fn(async (entryId: string) => entryId === 'pages/home/index'
+      ? '/project/src/pages/home/index.vue'
+      : undefined)
+    const pathExists = vi.fn(async () => true)
+    const readFile = vi.fn(async () => '<template />')
+    resolvePageLayoutPlanMock.mockResolvedValue({
+      layouts: [
+        { kind: 'native', file: '/project/src/layouts/default' },
+      ],
+    })
+
+    await preloadNativeLayoutEntries({
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {
+        configService: {
+          outputExtensions: { js: 'js' },
+        },
+      } as any,
+      configService: {
+        outputExtensions: { js: 'js' },
+      } as any,
+      scanService: {} as any,
+      collectFallbackPageEntryIds,
+      findFirstResolvedVueLikeEntry,
+      pathExists,
+      readFile,
+    })
+
+    expect(collectFallbackPageEntryIds).toHaveBeenCalledTimes(1)
+    expect(findFirstResolvedVueLikeEntry).toHaveBeenCalledTimes(2)
+    expect(readFile).toHaveBeenCalledWith('/project/src/pages/home/index.vue', 'utf8')
+    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('loads transform style blocks from scoped slot, parsed style requests, and fallback null branches', async () => {
+    const styleBlocksCache = new Map<string, any>()
+    const loadScopedSlotModule = vi.fn((id: string) => id === 'virtual:scoped-slot' ? 'scoped slot module' : null)
+    const parseWeappVueStyleRequest = vi.fn((id: string) => id === 'virtual:style'
+      ? { filename: '/project/src/components/card.vue', index: 0 }
+      : null)
+    const readAndParseSfc = vi.fn(async () => ({
+      descriptor: {
+        styles: [{ content: '.card{}' }],
+      },
+    }))
+    const createReadAndParseSfcOptions = vi.fn(() => ({}))
+
+    await expect(loadTransformStyleBlock({
+      id: 'virtual:scoped-slot',
+      pluginCtx: {},
+      configService: {} as any,
+      styleBlocksCache,
+      loadScopedSlotModule,
+      scopedSlotModules: new Map(),
+      parseWeappVueStyleRequest,
+      readAndParseSfc,
+      createReadAndParseSfcOptions,
+    })).resolves.toBe('scoped slot module')
+
+    await expect(loadTransformStyleBlock({
+      id: 'virtual:style',
+      pluginCtx: {},
+      configService: {} as any,
+      styleBlocksCache,
+      loadScopedSlotModule,
+      scopedSlotModules: new Map(),
+      parseWeappVueStyleRequest,
+      readAndParseSfc,
+      createReadAndParseSfcOptions,
+    })).resolves.toEqual({
+      code: '.card{}',
+      map: null,
+    })
+
+    await expect(loadTransformStyleBlock({
+      id: 'virtual:none',
+      pluginCtx: {},
+      configService: {} as any,
+      styleBlocksCache,
+      loadScopedSlotModule,
+      scopedSlotModules: new Map(),
+      parseWeappVueStyleRequest,
+      readAndParseSfc,
+      createReadAndParseSfcOptions,
+    })).resolves.toBeNull()
   })
 
   it('finalizes compiled transform results through layout, watch deps, script finalize, cache, and scoped slots', async () => {

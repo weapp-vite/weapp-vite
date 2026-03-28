@@ -14,7 +14,7 @@ import { invalidateResolvedPageLayoutsCache, isLayoutFile } from '../pageLayout'
 import { loadScopedSlotModule, resolveScopedSlotVirtualId } from '../scopedSlot'
 import { findFirstResolvedVueLikeEntry } from '../shared'
 import { parseWeappVueStyleRequest } from '../styleRequest'
-import { ensureSfcStyleBlocks, handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, isVueLikeId, registerNativeLayoutChunksForEntry } from './shared'
+import { handleTransformLayoutInvalidation, handleTransformVueFileInvalidation, isVueLikeId, loadTransformStyleBlock, preloadNativeLayoutEntries } from './shared'
 import { transformVueLikeFile } from './transformFile'
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
@@ -33,28 +33,16 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       scopedSlotModules.clear()
       emittedScopedSlotChunks.clear()
 
-      const configService = ctx.configService
-      const scanService = ctx.scanService
-      if (!configService || !scanService) {
-        return
-      }
-
-      const entryIds = await collectFallbackPageEntryIds(configService, scanService)
-      for (const entryId of entryIds) {
-        const entryFilePath = await findFirstResolvedVueLikeEntry(entryId, {
-          resolve: async candidate => await fs.pathExists(candidate) ? candidate : undefined,
-        })
-        if (!entryFilePath) {
-          continue
-        }
-        try {
-          const source = await fs.readFile(entryFilePath, 'utf8')
-          await registerNativeLayoutChunksForEntry(this, ctx, entryFilePath, source)
-        }
-        catch {
-          // 忽略预扫描失败，交给后续 transform/generateBundle 兜底
-        }
-      }
+      await preloadNativeLayoutEntries({
+        pluginCtx: this,
+        ctx,
+        configService: ctx.configService,
+        scanService: ctx.scanService,
+        collectFallbackPageEntryIds,
+        findFirstResolvedVueLikeEntry,
+        pathExists: fs.pathExists,
+        readFile: fs.readFile,
+      })
     },
 
     resolveId(id) {
@@ -62,40 +50,17 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
     },
 
     async load(id) {
-      const scopedSlot = loadScopedSlotModule(id, scopedSlotModules)
-      if (scopedSlot) {
-        return scopedSlot
-      }
-
-      const parsed = parseWeappVueStyleRequest(id)
-      if (!parsed) {
-        return null
-      }
-
-      const { filename, index } = parsed
-      let styles: SFCStyleBlock[]
-      try {
-        styles = await ensureSfcStyleBlocks(filename, styleBlocksCache, {
-          load: async target => (
-            await readAndParseSfc(target, {
-              ...createReadAndParseSfcOptions(this, ctx.configService),
-            })
-          ).descriptor.styles,
-        })
-      }
-      catch {
-        return null
-      }
-
-      const block = styles[index]
-      if (!block) {
-        return null
-      }
-
-      return {
-        code: block.content,
-        map: null,
-      }
+      return await loadTransformStyleBlock({
+        id,
+        pluginCtx: this,
+        configService: ctx.configService,
+        styleBlocksCache,
+        loadScopedSlotModule,
+        scopedSlotModules,
+        parseWeappVueStyleRequest,
+        readAndParseSfc,
+        createReadAndParseSfcOptions,
+      })
     },
 
     async transform(code, id) {
