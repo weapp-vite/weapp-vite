@@ -19,8 +19,12 @@
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "typecheck": "vue-tsc --noEmit -p .weapp-vite/tsconfig.app.json",
     "open": "weapp-vite open",
+    "stylelint": "stylelint \"src/**/*.{css,scss,vue}\" --allow-empty-input",
+    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue}\" --fix --allow-empty-input",
     "postinstall": "weapp-tw patch && weapp-vite prepare"
   },
   "dependencies": {
@@ -30,9 +34,13 @@
     "wevu": "workspace:*"
   },
   "devDependencies": {
+    "@icebreakers/eslint-config": "^2.0.3",
+    "@icebreakers/stylelint-config": "^2.1.2",
     "autoprefixer": "catalog:",
+    "eslint": "^10.1.0",
     "miniprogram-api-typings": "catalog:",
     "postcss": "catalog:",
+    "stylelint": "^17.6.0",
     "tailwindcss": "catalog:tailwind3",
     "typescript": "catalog:",
     "vue-tsc": "catalog:",

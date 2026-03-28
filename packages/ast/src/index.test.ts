@@ -14,6 +14,8 @@ import {
   collectJsxTemplateTagsFromBabelExpression,
   collectJsxTemplateTagsFromOxc,
   collectLoopScopeAliases,
+  collectOnPageScrollWarningsWithBabel,
+  collectOnPageScrollWarningsWithOxc,
   collectPageScrollInspection,
   collectPageScrollInspectionWithOxc,
   collectPatternBindingNames,
@@ -962,6 +964,22 @@ export function useCounter() {
       syncApis: new Set(['wx.getStorageSync']),
     })
     expect(babelInspectionState.skipped).toBe(true)
+    expect(collectOnPageScrollWarningsWithBabel(`
+const page = {
+  onPageScroll() {
+    this.setData({ top: 1 })
+  },
+}
+`, '/src/pages/index.ts')[0]).toContain('onPageScroll 内调用 setData')
+    expect(collectOnPageScrollWarningsWithBabel('const page = {}', '/src/pages/index.ts')).toEqual([])
+    expect(collectOnPageScrollWarningsWithOxc(`
+const page = {
+  onPageScroll() {
+    this.setData({ top: 1 })
+  },
+}
+`, '/src/pages/index.ts')[0]).toContain('onPageScroll 内调用 setData')
+    expect(collectOnPageScrollWarningsWithOxc('const page = {}', '/src/pages/index.ts')).toEqual([])
     expect(collectPageScrollInspectionWithOxc({
       type: 'ArrowFunctionExpression',
       body: {
