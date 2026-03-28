@@ -3,7 +3,7 @@ import type { OutputExtensions } from '../../../../platforms/types'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取布局资产
 import fs from 'fs-extra'
 import { emitNativeLayoutScriptChunkIfNeeded as emitSharedNativeLayoutScriptChunkIfNeeded, resolveNativeLayoutOutputOptions } from '../../../utils/nativeLayout'
-import { emitScriptlessComponentAsset } from '../../../utils/scriptlessComponent'
+import { ensureScriptlessComponentAsset, resolveScriptlessComponentFileName } from '../../../utils/scriptlessComponent'
 import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../emitAssets'
 import { collectNativeLayoutAssets } from '../pageLayout'
 import { compileVueLikeFile, getEntryBaseName } from './shared'
@@ -37,7 +37,10 @@ export async function emitNativeLayoutScriptChunkIfNeeded(options: {
     return
   }
 
-  const fileName = `${resolvedOptions.relativeBase}.${resolvedOptions.scriptExtension}`
+  const fileName = resolveScriptlessComponentFileName(
+    resolvedOptions.relativeBase,
+    resolvedOptions.scriptExtension,
+  )
   emitSharedNativeLayoutScriptChunkIfNeeded({
     pluginCtx,
     scriptId: assets.script,
@@ -91,12 +94,7 @@ export function emitScriptlessComponentJsFallbackIfMissing(options: {
   scriptExtension: string
 }) {
   const { pluginCtx, bundle, relativeBase, scriptExtension } = options
-  const scriptFileName = `${relativeBase}.${scriptExtension}`
-  if (bundle[scriptFileName]) {
-    return
-  }
-
-  emitScriptlessComponentAsset(pluginCtx, scriptFileName)
+  ensureScriptlessComponentAsset(pluginCtx, bundle, relativeBase, scriptExtension)
 }
 
 export async function emitVueLayoutScriptFallbackIfNeeded(options: {
@@ -127,7 +125,10 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
     return
   }
 
-  const scriptFileName = `${resolvedOptions.relativeBase}.${resolvedOptions.scriptExtension}`
+  const scriptFileName = resolveScriptlessComponentFileName(
+    resolvedOptions.relativeBase,
+    resolvedOptions.scriptExtension,
+  )
   if (bundle[scriptFileName]) {
     return
   }

@@ -8,7 +8,7 @@ import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson } from '../../../../u
 import { resolveScriptModuleTagByPlatform } from '../../../../utils/wxmlScriptModule'
 import { scanWxml } from '../../../../wxml'
 import { handleWxml } from '../../../../wxml/handle'
-import { emitScriptlessComponentAsset, SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
+import { ensureScriptlessComponentAsset } from '../../../utils/scriptlessComponent'
 import { emitSfcJsonAsset, emitSfcTemplateIfMissing } from '../emitAssets'
 import { resolveVueTransformJsonPlatformOptions } from '../platform'
 
@@ -224,18 +224,7 @@ export function emitAlipayGenericPlaceholderAssets(
     kind: 'component',
   })
 
-  const scriptFileName = `${placeholderBase}.${scriptExtension}`
-  const existing = bundle[scriptFileName]
-  const scriptSource = SCRIPTLESS_COMPONENT_STUB
-  if (existing && existing.type === 'asset') {
-    const current = existing.source?.toString?.() ?? ''
-    if (current !== scriptSource) {
-      existing.source = scriptSource
-    }
-    return
-  }
-
-  emitScriptlessComponentAsset(ctx, scriptFileName)
+  ensureScriptlessComponentAsset(ctx, bundle, placeholderBase, scriptExtension)
 }
 
 export function preparePlatformConfigAsset(
