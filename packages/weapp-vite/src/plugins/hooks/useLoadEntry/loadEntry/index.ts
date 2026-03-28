@@ -12,13 +12,14 @@ import fs from 'fs-extra'
 import { changeFileExtension, extractConfigFromVue, findCssEntry, findJsonEntry, findVueEntry } from '../../../../utils'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensions'
-import { isPathInside, normalizeWatchPath } from '../../../../utils/path'
+import { isPathInside } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
 import { markComponentEntries, registerResolvedPageLayoutEntries } from '../../../utils/layoutEntries'
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { emitScriptlessComponentAsset } from '../../../utils/scriptlessComponent'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
+import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
@@ -118,7 +119,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       ? ctx.runtimeState.lib.entries.get(normalizedId)
       : undefined
 
-    this.addWatchFile(normalizeWatchPath(id))
+    addNormalizedWatchFile(this, id)
     const baseName = removeExtensionDeep(id)
 
     const jsonEntry = await findJsonEntry(id)
@@ -143,7 +144,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
       : await findVueEntry(removeExtensionDeep(id))
 
     if (vueEntryPath) {
-      this.addWatchFile(normalizeWatchPath(vueEntryPath))
+      addNormalizedWatchFile(this, vueEntryPath)
     }
 
     if (!jsonEntry.path) {

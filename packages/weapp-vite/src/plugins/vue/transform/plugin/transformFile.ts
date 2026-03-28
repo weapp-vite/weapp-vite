@@ -8,11 +8,11 @@ import path from 'pathe'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
-import { normalizeWatchPath } from '../../../../utils/path'
 import { toAbsoluteId } from '../../../../utils/toAbsoluteId'
 import { collectOnPageScrollPerformanceWarnings } from '../../../performance/onPageScrollDiagnostics'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
+import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
@@ -105,7 +105,7 @@ export async function transformVueLikeFile(options: {
   }
 
   if (typeof pluginCtx.addWatchFile === 'function') {
-    pluginCtx.addWatchFile(normalizeWatchPath(filename))
+    addNormalizedWatchFile(pluginCtx, filename)
   }
 
   try {
@@ -217,7 +217,7 @@ export async function transformVueLikeFile(options: {
 
     if (Array.isArray(result.meta?.sfcSrcDeps) && typeof pluginCtx.addWatchFile === 'function') {
       for (const dep of result.meta.sfcSrcDeps) {
-        pluginCtx.addWatchFile(normalizeWatchPath(dep))
+        addNormalizedWatchFile(pluginCtx, dep)
       }
     }
 
