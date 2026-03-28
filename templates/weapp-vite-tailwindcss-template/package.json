@@ -29,8 +29,8 @@
   },
   "devDependencies": {
     "@egoist/tailwindcss-icons": "catalog:",
-    "@icebreakers/eslint-config": "^2.0.3",
-    "@icebreakers/stylelint-config": "^2.1.2",
+    "@icebreakers/eslint-config": "^2.1.0",
+    "@icebreakers/stylelint-config": "^2.2.0",
     "@iconify-json/mdi": "catalog:",
     "autoprefixer": "catalog:",
     "eslint": "^10.1.0",
