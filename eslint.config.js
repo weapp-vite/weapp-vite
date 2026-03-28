@@ -2,6 +2,7 @@ import { icebreaker } from '@icebreakers/eslint-config'
 
 export default icebreaker(
   {
+    miniProgram: true,
     vue: true,
     // tailwindcss: true,
     ignores: [
@@ -29,20 +30,6 @@ export default icebreaker(
       '.qoder/**',
       '.changeset/**',
     ],
-    languageOptions: {
-      globals: {
-        getRegExp: true,
-        getDate: true,
-        wx: true,
-        Page: true,
-        App: true,
-        Component: true,
-        requirePlugin: true,
-        getApp: true,
-        getCurrentPages: true,
-        WechatMiniprogram: true,
-      },
-    },
   },
   {
     files: ['**/*.vue'],
