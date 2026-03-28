@@ -339,6 +339,7 @@ export interface DashboardRuntimeBadgeItem {
 }
 
 export type DashboardSurfaceTone = 'default' | 'strong' | 'muted'
+export type DashboardSurfacePadding = 'none' | 'sm' | 'md' | 'header'
 
 export interface DashboardSurfaceSampleItem {
   label: string
