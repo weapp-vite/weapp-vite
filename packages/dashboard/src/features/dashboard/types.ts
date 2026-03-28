@@ -288,3 +288,13 @@ export interface DashboardLabelValueItem {
   label: string
   value: string
 }
+
+export interface DashboardValueOption<T extends string = string> {
+  value: T
+  label: string
+}
+
+export interface DashboardKeyOption<T extends string = string> {
+  key: T
+  label: string
+}
