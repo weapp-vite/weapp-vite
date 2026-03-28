@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { normalizePath } from '../../../utils/path'
 import {
   inspectTsconfigPathsUsage,
   shouldEnableTsconfigPathsPlugin,
@@ -45,8 +46,8 @@ describe('tsconfigPaths', () => {
       root: true,
       references: false,
       referenceAliases: [
-        { find: '@', replacement: path.join(tempRoot, 'src') },
-        { find: '@shared', replacement: path.join(tempRoot, 'shared/index.ts') },
+        { find: '@', replacement: normalizePath(path.join(tempRoot, 'src')) },
+        { find: '@shared', replacement: normalizePath(path.join(tempRoot, 'shared/index.ts')) },
       ],
     })
   })
@@ -69,7 +70,7 @@ describe('tsconfigPaths', () => {
       root: true,
       references: false,
       referenceAliases: [
-        { find: '@base', replacement: path.join(tempRoot, 'configs/base-src') },
+        { find: '@base', replacement: normalizePath(path.join(tempRoot, 'configs/base-src')) },
       ],
     })
   })
@@ -94,7 +95,7 @@ describe('tsconfigPaths', () => {
       root: false,
       references: true,
       referenceAliases: [
-        { find: '@pkg-a', replacement: path.join(tempRoot, 'packages/pkg-a/src') },
+        { find: '@pkg-a', replacement: normalizePath(path.join(tempRoot, 'packages/pkg-a/src')) },
       ],
     })
   })
@@ -134,8 +135,8 @@ describe('tsconfigPaths', () => {
       root: true,
       references: true,
       referenceAliases: [
-        { find: '@dup', replacement: path.join(tempRoot, 'root-src') },
-        { find: '@ref', replacement: path.join(tempRoot, 'packages/pkg-a/ref-only') },
+        { find: '@dup', replacement: normalizePath(path.join(tempRoot, 'root-src')) },
+        { find: '@ref', replacement: normalizePath(path.join(tempRoot, 'packages/pkg-a/ref-only')) },
       ],
     })
   })
@@ -165,7 +166,7 @@ describe('tsconfigPaths', () => {
       root: false,
       references: true,
       referenceAliases: [
-        { find: '@b', replacement: path.join(tempRoot, 'b/src') },
+        { find: '@b', replacement: normalizePath(path.join(tempRoot, 'b/src')) },
       ],
     })
   })

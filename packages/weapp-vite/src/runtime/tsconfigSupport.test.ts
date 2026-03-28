@@ -30,6 +30,7 @@ describe('tsconfig support', () => {
     expect(app.compilerOptions.lib).toEqual(['ES2023', 'DOM'])
     expect(app.compilerOptions.types).toContain('miniprogram-api-typings')
     expect(app.compilerOptions.types).toContain('weapp-vite/client')
+    expect(app.compilerOptions.types).not.toContain('vite/client')
     expect(app.include).toContain('../src/**/*')
     expect(app.compilerOptions.paths['@/*']).toEqual(['../src/*'])
     expect(node.extends).toBe('./tsconfig.shared.json')
@@ -51,7 +52,7 @@ describe('tsconfig support', () => {
       },
       weappViteConfig: {
         web: {
-          enabled: true,
+          enable: true,
         },
         typescript: {
           app: {
@@ -145,6 +146,9 @@ describe('tsconfig support', () => {
   it('keeps builtin app macro types when user overrides app compilerOptions.types', async () => {
     const files = await createManagedTsconfigFiles(createCtx({
       weappViteConfig: {
+        web: {
+          enable: true,
+        },
         typescript: {
           app: {
             compilerOptions: {

@@ -27,7 +27,7 @@ apps/** linguist-vendored
 *.bat             text eol=crlf
 *.cmd             text eol=crlf
 *.coffee          text
-*.css             text diff=css
+*.css             text eol=lf diff=css
 *.htm             text diff=html
 *.html            text diff=html
 *.inc             text
@@ -37,7 +37,7 @@ apps/** linguist-vendored
 *.cjs             text eol=lf
 *.json            text eol=lf
 *.jsx             text eol=lf
-*.less            text
+*.less            text eol=lf
 *.ls              text
 *.map             text -diff
 *.od              text
@@ -47,13 +47,14 @@ apps/** linguist-vendored
 *.ps1             text eol=crlf
 *.py              text diff=python
 *.rb              text diff=ruby
-*.sass            text
+*.sass            text eol=lf
 *.scm             text
-*.scss            text diff=css
+*.scss            text eol=lf diff=css
 *.sh              text eol=lf
 .husky/*          text eol=lf
 *.sql             text
-*.styl            text
+*.styl            text eol=lf
+*.wxss            text eol=lf diff=css
 *.tag             text
 *.ts              text eol=lf
 *.tsx             text eol=lf
