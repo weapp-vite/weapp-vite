@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { DashboardTitleBlock, ThemeOption, ThemePreference } from '../types'
+import { computed } from 'vue'
 import AppInfoPill from './AppInfoPill.vue'
 import DashboardIcon from './DashboardIcon.vue'
 
-defineProps<{
+const props = defineProps<{
   title: DashboardTitleBlock['title']
   description: NonNullable<DashboardTitleBlock['description']>
   themeOptions: ThemeOption[]
@@ -14,6 +15,14 @@ const emit = defineEmits<{
   menu: []
   setTheme: [value: ThemePreference]
 }>()
+
+const currentThemeIconName = computed(() =>
+  props.themeOptions.find(option => option.value === props.themePreference)?.iconName ?? 'theme-system',
+)
+
+function handleThemeChange(event: Event): void {
+  emit('setTheme', (event.target as HTMLSelectElement).value as ThemePreference)
+}
 </script>
 
 <template>
@@ -47,13 +56,13 @@ const emit = defineEmits<{
         for="dashboard-global-theme"
       >
         <span class="h-4 w-4 text-[color:var(--dashboard-accent)]">
-          <DashboardIcon :name="themeOptions.find(option => option.value === themePreference)?.iconName ?? 'theme-system'" />
+          <DashboardIcon :name="currentThemeIconName" />
         </span>
         <select
           id="dashboard-global-theme"
           class="min-w-[8rem] bg-transparent text-[color:var(--dashboard-text)] outline-none"
           :value="themePreference"
-          @change="emit('setTheme', ($event.target as HTMLSelectElement).value as ThemePreference)"
+          @change="handleThemeChange"
         >
           <option
             v-for="option in themeOptions"
@@ -72,13 +81,13 @@ const emit = defineEmits<{
         for="dashboard-mobile-theme"
       >
         <span class="h-4 w-4 text-[color:var(--dashboard-accent)]">
-          <DashboardIcon :name="themeOptions.find(option => option.value === themePreference)?.iconName ?? 'theme-system'" />
+          <DashboardIcon :name="currentThemeIconName" />
         </span>
         <select
           id="dashboard-mobile-theme"
           class="min-w-[8rem] bg-transparent text-[color:var(--dashboard-text)] outline-none"
           :value="themePreference"
-          @change="emit('setTheme', ($event.target as HTMLSelectElement).value as ThemePreference)"
+          @change="handleThemeChange"
         >
           <option
             v-for="option in themeOptions"
