@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import type { DashboardRuntimeBadgeItem, DashboardRuntimeSourceCardItem } from '../types'
+import type {
+  DashboardKeyedLabelItem,
+  DashboardRuntimeBadgeItem,
+  DashboardRuntimeSourceCardItem,
+} from '../types'
 import { computed } from 'vue'
 import { getRuntimeSourceBadgeTone } from '../utils/format'
 import { mutedPanelStyles } from '../utils/styles'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
-
-interface RuntimeSourceDetailItem {
-  key: string
-  label: string
-}
 
 const props = defineProps<{
   source: DashboardRuntimeSourceCardItem['source']
@@ -34,7 +33,7 @@ const subtitle = computed(() =>
     : `${props.count} ${props.countLabel ?? '条事件'}`,
 )
 
-const detailItems = computed<RuntimeSourceDetailItem[]>(() => [
+const detailItems = computed<DashboardKeyedLabelItem[]>(() => [
   {
     key: 'error-count',
     label: `错误 ${props.errorCount}`,
