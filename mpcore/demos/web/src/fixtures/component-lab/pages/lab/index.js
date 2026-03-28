@@ -20,6 +20,8 @@ Page({
     fileManagerMissingCopyInfo: '',
     fileManagerMissingReadInfo: '',
     fileManagerMissingReadDirInfo: '',
+    fileManagerMissingRenameInfo: '',
+    fileManagerMissingRmdirInfo: '',
     fileManagerMissingStatInfo: '',
     fileManagerMissingUnlinkInfo: '',
     savedOrderingInfo: '',
@@ -368,6 +370,38 @@ Page({
           }),
         }, () => {
           this.push('lab:runMissingCopyFileLab')
+        })
+      },
+    })
+  },
+  runMissingRenameLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.rename({
+      oldPath: 'headless://saved/component-lab/missing-rename-source.txt',
+      newPath: 'headless://saved/component-lab/missing-rename-target.txt',
+      fail: (error) => {
+        this.setData({
+          fileManagerMissingRenameInfo: JSON.stringify({
+            missingRenameError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runMissingRenameLab')
+        })
+      },
+    })
+  },
+  runMissingRmdirLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.rmdir({
+      dirPath: 'headless://saved/component-lab/missing-directory-remove',
+      recursive: true,
+      fail: (error) => {
+        this.setData({
+          fileManagerMissingRmdirInfo: JSON.stringify({
+            missingRmdirError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runMissingRmdirLab')
         })
       },
     })
