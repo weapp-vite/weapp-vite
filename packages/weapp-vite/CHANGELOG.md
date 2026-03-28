@@ -1,5 +1,25 @@
 # weapp-vite
 
+## 6.12.0
+
+### Patch Changes
+
+- 🐛 **修复 Windows 环境下的路径与包元数据兼容问题。`weapp-vite` 现在会将 watch file 路径统一规范化为 POSIX 形式，避免布局与依赖监听在 Windows 上产出反斜杠路径；`rolldown-require` 现在会在读取 `package.json` 时自动去除 UTF-8 BOM，避免部分环境下解析版本信息时报 JSON 语法错误。** [#367](https://github.com/weapp-vite/weapp-vite/pull/367) by @sonofmagic
+
+- 🐛 **增强 `@weapp-vite/dashboard` 的应用壳子，新增工作台、活动流、设计令牌等页面骨架，并将现有 analyze 面板迁移为独立路由页面。现在 dashboard 具备统一导航、全局主题切换和可持续扩展的页面结构，后续接入真实 CLI 事件与诊断数据会更稳定。** [#368](https://github.com/weapp-vite/weapp-vite/pull/368) by @sonofmagic
+
+- 🐛 **统一小程序全局 API 名称与路由运行时的跨平台能力映射。`weapp-vite/auto-routes` 及其内部生成代码现在会覆盖 `swan`、`jd`、`xhs` 等运行时全局对象回退，同时把平台到全局 API 名称的映射抽到共享 helper，减少重复判断并为后续多平台扩展提供一致入口。** [`931293e`](https://github.com/weapp-vite/weapp-vite/commit/931293ebfa0f5e6f884af24778e938e5fc41853b) by @sonofmagic
+
+- 🐛 **修复托管 `.weapp-vite/tsconfig.app.json` 在未配置 `weapp.web` 时仍默认注入 `vite/client` 的问题。现在仅在显式启用 `weapp.web` 时才会加入该类型声明，避免 `create-weapp-vite` 生成的默认模板在 `pnpm install` 后因为未直接依赖 `vite` 而出现 TypeScript 类型报错。** [#370](https://github.com/weapp-vite/weapp-vite/pull/370) by @sonofmagic
+
+- 🐛 **修复 `app.json.ts` 中直接 `import 'weapp-vite/auto-routes'` 时的构建失败问题。现在会在执行脚本化 app 配置前内联当前的自动路由快照，并兼容 `rolldown-require` 返回非 `default` 导出的结果，确保 `pages` 与 `subPackages` 可正常写入最终 `app.json`。** [`e593d55`](https://github.com/weapp-vite/weapp-vite/commit/e593d550f29d9b2c2956c2ccadaee4e8110f3a89) by @sonofmagic
+- 📦 Updated 4 dependencies [`c46de52`](https://github.com/weapp-vite/weapp-vite/commit/c46de52e65ed10146784ab583580600daa4320bf)
+  <details><summary>Details</summary>
+
+  `@weapp-vite/ast@6.12.0`, `rolldown-require@2.0.12`, `@weapp-vite/web@1.3.10`, `wevu@6.12.0`
+
+  </details>
+
 ## 6.11.9
 
 ### Patch Changes
