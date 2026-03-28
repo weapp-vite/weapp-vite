@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -446,6 +446,39 @@ describe('emitSharedVueEntryAssets', () => {
       compilationCache,
       pathExists,
     })).toBe('/project/src/pages/demo/index.vue')
+  })
+
+  it('loads fallback page entry compilation through shared read-and-compile flow', async () => {
+    readFileMock.mockResolvedValue('<view>{{title}}</view>')
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
+      transformed: true,
+      code: 'Page({ loaded: true })',
+    })
+
+    const result = await loadFallbackPageEntryCompilation({
+      entryFilePath: '/project/src/pages/demo/index.vue',
+      ctx: {
+        autoImportService: {
+          resolve: () => undefined,
+        },
+      } as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(readFileMock).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', 'utf-8')
+    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
+    expect(result.source).toBe('<view>{{title}}</view>')
+    expect(result.result.script).toBe('Page({ loaded: true })')
   })
 
   it('normalizes config before emitting shared json asset', () => {

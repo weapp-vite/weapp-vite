@@ -1,6 +1,4 @@
 import type { VueBundleState } from './shared'
-// eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
-import fs from 'fs-extra'
 import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../../utils/path'
@@ -8,7 +6,7 @@ import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { resolvePageLayoutPlan } from '../pageLayout'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
-import { compileAndFinalizeVueLikeFile, emitBundleVueEntryAssets, emitSharedFallbackPageAssets, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, loadFallbackPageEntryCompilation, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -57,14 +55,10 @@ export async function emitFallbackPageAssets(
     }
 
     try {
-      const source = await fs.readFile(entryFilePath, 'utf-8')
-      const result = await compileAndFinalizeVueLikeFile({
-        source,
-        filename: entryFilePath,
+      const { source, result } = await loadFallbackPageEntryCompilation({
+        entryFilePath,
         ctx,
         pluginCtx,
-        isPage: true,
-        isApp: false,
         configService,
         compileOptionsState,
       })
