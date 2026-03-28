@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DashboardLabelValueItem } from '../features/dashboard/types'
 import { computed, ref, watch } from 'vue'
 import AppEmptyState from '../features/dashboard/components/AppEmptyState.vue'
 import AppEventFilterPanel from '../features/dashboard/components/AppEventFilterPanel.vue'
@@ -141,7 +142,7 @@ const filteredRuntimeEvents = computed(() => {
   })
 })
 
-const filteredEventSummary = computed(() => {
+const filteredEventSummary = computed<DashboardLabelValueItem[]>(() => {
   const timedEvents = filteredRuntimeEvents.value.filter(event => typeof event.durationMs === 'number')
   const averageDuration = timedEvents.length > 0
     ? Math.round(timedEvents.reduce((sum, event) => sum + (event.durationMs ?? 0), 0) / timedEvents.length)
@@ -175,7 +176,7 @@ const presetDescription = computed(() => {
   return `${description} 也可以直接组合下面的类型、等级和关键字筛选。`
 })
 
-const selectedEventMeta = computed(() => {
+const selectedEventMeta = computed<DashboardLabelValueItem[]>(() => {
   if (!selectedEvent.value) {
     return []
   }

@@ -25,7 +25,6 @@ import { useDashboardWorkspace } from '../features/dashboard/composables/useDash
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs, themeOptions } from '../features/dashboard/constants/view'
 import { formatDuration } from '../features/dashboard/utils/format'
-import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
 
@@ -40,7 +39,7 @@ echarts.use([
 const chartRef = shallowRef<HTMLDivElement>()
 let chart: echarts.ECharts | undefined
 const { themePreference, resolvedTheme, setThemePreference } = useDashboardTheme()
-const { eventSummary, lastUpdatedAt, latestRuntimeEvent, resultRef, runtimeEvents, updateCount } = useDashboardWorkspace()
+const { eventSummary, lastUpdatedAt, latestRuntimeEvent, resultRef, runtimeEvents, runtimeSourceSummary, updateCount } = useDashboardWorkspace()
 
 const { treemapOption } = useTreemapData(resultRef, resolvedTheme)
 const {
@@ -58,8 +57,8 @@ const visibleLargestFiles = computed(() => largestFiles.value.slice(0, 10))
 const statusText = computed(() => `${updateCount.value} 次数据同步`)
 const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'status-dark' : 'status-light')
 const recentRuntimeEvents = computed(() => runtimeEvents.value.slice(0, 3))
-const runtimeSourceSummary = computed(() =>
-  summarizeRuntimeEventsBySource(runtimeEvents.value)
+const visibleRuntimeSourceSummary = computed(() =>
+  runtimeSourceSummary.value
     .map(source => ({
       ...source,
       averageDuration: formatDuration(source.averageDurationMs),
@@ -274,7 +273,7 @@ onBeforeUnmount(() => {
         >
           <div class="grid gap-2 sm:grid-cols-2">
             <AppRuntimeSourceCard
-              v-for="source in runtimeSourceSummary"
+              v-for="source in visibleRuntimeSourceSummary"
               :key="source.source"
               :source="source.source"
               :count="source.count"

@@ -274,3 +274,8 @@ export interface DashboardRuntimeSourceSummary {
   latestTimestamp: string
   averageDurationMs?: number
 }
+
+export interface DashboardLabelValueItem {
+  label: string
+  value: string
+}
