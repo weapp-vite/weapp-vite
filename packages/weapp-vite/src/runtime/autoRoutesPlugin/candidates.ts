@@ -24,6 +24,11 @@ const SKIPPED_DIRECTORIES = new Set(['node_modules', 'miniprogram_npm', '.git', 
 const SCRIPT_SIDECAR_PATTERN = /\.(?:wxs|sjs)\.[jt]s$/i
 const TEMPLATE_SIDECAR_PATTERN = /\.wxml\.[jt]s$/i
 
+interface DirentLike {
+  name: string
+  isDirectory: () => boolean
+}
+
 function hasNestedPagesRoot(
   root: string,
   discoveredPagesRoots: Iterable<string>,
@@ -34,6 +39,24 @@ function hasNestedPagesRoot(
     return normalizedPagesRoot === `${normalizedRoot}/pages`
       || normalizedPagesRoot.startsWith(`${normalizedRoot}/pages/`)
   })
+}
+
+function classifyPagesRootEntry(
+  current: string,
+  entry: DirentLike,
+) {
+  if (!entry.isDirectory()) {
+    return undefined
+  }
+
+  if (SKIPPED_DIRECTORIES.has(entry.name)) {
+    return undefined
+  }
+
+  const nextPath = path.join(current, entry.name)
+  return entry.name === 'pages'
+    ? { pageRoot: nextPath }
+    : { nextPath }
 }
 
 async function discoverPagesRoots(root: string) {
@@ -55,21 +78,17 @@ async function discoverPagesRoots(root: string) {
     }
 
     for (const entry of entries) {
-      if (!entry.isDirectory()) {
+      const classified = classifyPagesRootEntry(current, entry)
+      if (!classified) {
         continue
       }
 
-      if (SKIPPED_DIRECTORIES.has(entry.name)) {
+      if ('pageRoot' in classified) {
+        pagesRoots.add(classified.pageRoot)
         continue
       }
 
-      const nextPath = path.join(current, entry.name)
-      if (entry.name === 'pages') {
-        pagesRoots.add(nextPath)
-        continue
-      }
-
-      queue.push(nextPath)
+      queue.push(classified.nextPath)
     }
   }
 
@@ -312,6 +331,7 @@ export function areSetsEqual(a: Set<string>, b: Set<string>) {
 export {
   applyCandidateEntryFile,
   buildDefaultSearchRoots,
+  classifyPagesRootEntry,
   hasNestedPagesRoot,
   resolveCandidateEntryPath,
   resolveCandidateSearchRoots,
