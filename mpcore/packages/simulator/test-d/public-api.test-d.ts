@@ -152,6 +152,19 @@ browserPage?.wx.getFileSystemManager().mkdir({
     expectType<{ errMsg: string } | undefined>(result)
   },
 })
+browserPage?.wx.getFileSystemManager().rmdir({
+  dirPath: 'headless://saved/example',
+  recursive: true,
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
 browserPage?.wx.saveFile({
   tempFilePath: 'headless://wxfile/temp/0001',
   success: (result) => {
@@ -319,6 +332,19 @@ headlessPage?.wx.getFileSystemManager().appendFile({
   },
 })
 headlessPage?.wx.getFileSystemManager().mkdir({
+  dirPath: 'headless://saved/example',
+  recursive: true,
+  success: (result) => {
+    expectType<{ errMsg: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string } | undefined>(result)
+  },
+})
+headlessPage?.wx.getFileSystemManager().rmdir({
   dirPath: 'headless://saved/example',
   recursive: true,
   success: (result) => {
