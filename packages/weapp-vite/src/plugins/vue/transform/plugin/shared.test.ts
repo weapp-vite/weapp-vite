@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, resolveSfcSrc } from './shared'
+import { ensureSfcStyleBlocks, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, resolveSfcSrc } from './shared'
 
 describe('vue transform plugin shared helpers', () => {
   it('detects vue-like ids and resolves sfc src ids', async () => {
@@ -68,5 +68,22 @@ describe('vue transform plugin shared helpers', () => {
     )
     expect(compilationCache.has('/project/src/components/card.vue')).toBe(false)
     expect(styleBlocksCache.has('/project/src/components/card.vue')).toBe(false)
+  })
+
+  it('loads and caches sfc style blocks', async () => {
+    const styleBlocksCache = new Map<string, any>()
+    const load = vi.fn(async () => [{ content: '.card{}' }])
+
+    const first = await ensureSfcStyleBlocks('/project/src/components/card.vue', styleBlocksCache, {
+      load,
+    })
+    const second = await ensureSfcStyleBlocks('/project/src/components/card.vue', styleBlocksCache, {
+      load,
+    })
+
+    expect(first).toEqual([{ content: '.card{}' }])
+    expect(second).toBe(first)
+    expect(styleBlocksCache.get('/project/src/components/card.vue')).toBe(first)
+    expect(load).toHaveBeenCalledTimes(1)
   })
 })
