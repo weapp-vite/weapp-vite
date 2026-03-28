@@ -2,7 +2,7 @@ import type { CAC } from 'cac'
 import type { RolldownWatcher } from 'rolldown'
 import type { ViteDevServer } from 'vite'
 import type { AnalyzeSubpackagesResult } from '../../analyze/subpackages'
-import type { AnalyzeDashboardHandle } from '../analyze/dashboard'
+import type { AnalyzeDashboardHandle, DashboardRuntimeEventInput } from '../analyze/dashboard'
 import type { GlobalCLIOptions } from '../types'
 import fs from 'node:fs/promises'
 import process from 'node:process'
@@ -16,6 +16,10 @@ import { logBuildAppFinish } from '../logBuildAppFinish'
 import { openIde, resolveIdeProjectRoot } from '../openIde'
 import { filterDuplicateOptions, isUiEnabled, resolveConfigFile } from '../options'
 import { createInlineConfig, logRuntimeTarget, resolveRuntimeTargets } from '../runtime'
+
+function emitDashboardEvents(handle: AnalyzeDashboardHandle | undefined, events: DashboardRuntimeEventInput[]) {
+  handle?.emitRuntimeEvents(events)
+}
 
 function resolveWebHost(host: GlobalCLIOptions['host']) {
   if (host === undefined) {
@@ -35,6 +39,13 @@ const REG_DIST_POSIX_SEP = /\\/g
 
 function hasAnalyzeData(result: AnalyzeSubpackagesResult) {
   return result.packages.length > 0 || result.modules.length > 0
+}
+
+interface AnalyzeRunResult {
+  result: AnalyzeSubpackagesResult
+  durationMs: number
+  mode: 'full' | 'fallback'
+  fallbackReason?: string
 }
 
 async function collectOutputFiles(root: string) {
@@ -213,7 +224,8 @@ export function registerServeCommand(cli: CAC) {
       let analyzeHandle: AnalyzeDashboardHandle | undefined
       let analyzeRunId = 0
 
-      const runAnalyze = async () => {
+      const runAnalyze = async (): Promise<AnalyzeRunResult> => {
+        const startedAt = Date.now()
         try {
           const analyzeCtx = await createCompilerContext({
             key: `serve-ui-analyze:${process.pid}:${++analyzeRunId}`,
@@ -228,36 +240,110 @@ export function registerServeCommand(cli: CAC) {
           })
           const result = await analyzeSubpackages(analyzeCtx)
           if (hasAnalyzeData(result)) {
-            return result
+            return {
+              result,
+              durationMs: Date.now() - startedAt,
+              mode: 'full',
+            }
           }
         }
         catch (error) {
           const message = error instanceof Error ? error.message : String(error)
           logger.warn(`[ui] 完整分析失败，已回退到 dist 文件扫描：${message}`)
+          return {
+            result: await analyzeUiFallback(ctx),
+            durationMs: Date.now() - startedAt,
+            mode: 'fallback',
+            fallbackReason: message,
+          }
         }
 
-        return analyzeUiFallback(ctx)
+        return {
+          result: await analyzeUiFallback(ctx),
+          durationMs: Date.now() - startedAt,
+          mode: 'fallback',
+          fallbackReason: '完整分析结果为空，已回退到 dist 文件扫描。',
+        }
       }
 
-      const triggerAnalyzeUpdate = async () => {
+      const triggerAnalyzeUpdate = async (reason: 'initial' | 'watch' = 'watch') => {
         if (!analyzeHandle) {
           return
         }
+        emitDashboardEvents(analyzeHandle, [
+          {
+            kind: reason === 'watch' ? 'hmr' : 'build',
+            level: 'info',
+            title: reason === 'watch' ? 'analyze refresh started' : 'initial analyze started',
+            detail: reason === 'watch'
+              ? '检测到新的构建结束事件，开始刷新 analyze 面板。'
+              : '开发态 UI 已启动，开始生成第一份 analyze 结果。',
+            tags: reason === 'watch' ? ['watch', 'analyze'] : ['initial', 'analyze'],
+          },
+        ])
         const next = await runAnalyze()
-        await analyzeHandle.update(next)
+        if (next.mode === 'fallback') {
+          emitDashboardEvents(analyzeHandle, [
+            {
+              kind: 'diagnostic',
+              level: 'warning',
+              title: 'analyze fallback enabled',
+              detail: next.fallbackReason ?? '完整分析不可用，已回退到 dist 文件扫描。',
+              durationMs: next.durationMs,
+              tags: ['analyze', 'fallback'],
+            },
+          ])
+        }
+        await analyzeHandle.update(next.result)
+        emitDashboardEvents(analyzeHandle, [
+          {
+            kind: next.mode === 'fallback' ? 'diagnostic' : 'build',
+            level: next.mode === 'fallback' ? 'warning' : 'success',
+            title: reason === 'watch' ? 'analyze refresh completed' : 'initial analyze completed',
+            detail: next.mode === 'fallback'
+              ? `analyze 已回退到 dist 扫描，当前包含 ${next.result.packages.length} 个包。`
+              : `analyze 已刷新完成，当前包含 ${next.result.packages.length} 个包与 ${next.result.modules.length} 个模块。`,
+            durationMs: next.durationMs,
+            tags: next.mode === 'fallback'
+              ? ['analyze', 'fallback']
+              : ['analyze', reason === 'watch' ? 'refresh' : 'initial'],
+          },
+        ])
       }
 
       if (targets.runMini) {
         const buildResult = await buildService.build(options)
 
         if (enableAnalyze) {
-          const initialResult = await runAnalyze()
-          analyzeHandle = await startAnalyzeDashboard(initialResult, {
+          const initialAnalyze = await runAnalyze()
+          analyzeHandle = await startAnalyzeDashboard(initialAnalyze.result, {
             watch: true,
             cwd: configService.cwd,
             packageManagerAgent: configService.packageManager.agent,
             silentStartupLog: true,
           }) ?? undefined
+          emitDashboardEvents(analyzeHandle, [
+            {
+              kind: 'command',
+              level: 'success',
+              title: 'dev ui session ready',
+              detail: `开发态分析面板已启动，当前包含 ${initialAnalyze.result.packages.length} 个包。`,
+              durationMs: initialAnalyze.durationMs,
+              tags: ['dev', 'ui'],
+            },
+          ])
+          if (initialAnalyze.mode === 'fallback') {
+            emitDashboardEvents(analyzeHandle, [
+              {
+                kind: 'diagnostic',
+                level: 'warning',
+                title: 'initial analyze fallback enabled',
+                detail: initialAnalyze.fallbackReason ?? '完整分析不可用，已回退到 dist 文件扫描。',
+                durationMs: initialAnalyze.durationMs,
+                tags: ['analyze', 'fallback', 'initial'],
+              },
+            ])
+          }
 
           let updating = false
           if (analyzeHandle && buildResult && typeof (buildResult as RolldownWatcher).on === 'function') {
@@ -267,24 +353,45 @@ export function registerServeCommand(cli: CAC) {
                 return
               }
               updating = true
-              triggerAnalyzeUpdate().finally(() => {
+              triggerAnalyzeUpdate('watch').finally(() => {
                 updating = false
               })
             })
           }
           if (analyzeHandle) {
             updating = true
-            await triggerAnalyzeUpdate()
+            await triggerAnalyzeUpdate('initial')
             updating = false
           }
         }
       }
       let webServer: ViteDevServer | undefined
       if (targets.runWeb) {
+        const webServerStartedAt = Date.now()
         try {
           webServer = await webService?.startDevServer()
+          emitDashboardEvents(analyzeHandle, [
+            {
+              kind: 'system',
+              level: 'success',
+              title: 'web dev server started',
+              detail: 'Web 开发服务器已启动，可与小程序调试 UI 并行工作。',
+              durationMs: Date.now() - webServerStartedAt,
+              tags: ['dev', 'web'],
+            },
+          ])
         }
         catch (error) {
+          emitDashboardEvents(analyzeHandle, [
+            {
+              kind: 'diagnostic',
+              level: 'error',
+              title: 'web dev server failed',
+              detail: error instanceof Error ? error.message : String(error),
+              durationMs: Date.now() - webServerStartedAt,
+              tags: ['dev', 'web'],
+            },
+          ])
           logger.error(error)
           throw error
         }
@@ -299,6 +406,15 @@ export function registerServeCommand(cli: CAC) {
         logBuildAppFinish(configService, webServer, { skipMini: true })
       }
       if (options.open && targets.runMini) {
+        emitDashboardEvents(analyzeHandle, [
+          {
+            kind: 'command',
+            level: 'info',
+            title: 'opening ide',
+            detail: '开发服务已就绪，准备打开 IDE 项目。',
+            tags: ['ide', 'open'],
+          },
+        ])
         const openedByForwardConsole = await maybeStartForwardConsole({
           platform: configService.platform,
           mpDistRoot: configService.mpDistRoot,

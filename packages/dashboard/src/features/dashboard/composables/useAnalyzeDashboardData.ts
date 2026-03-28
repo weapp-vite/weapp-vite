@@ -1,73 +1,72 @@
 import type { Ref } from 'vue'
 import type {
+  AnalyzeDashboardSummary,
   AnalyzeSubpackagesResult,
-  BuildOrigin,
+  DuplicateModuleEntry,
+  LargestFileEntry,
+  ModuleSourceSummary,
   ModuleSourceType,
   PackageFileEntry,
+  PackageInsight,
   PackageType,
+  SummaryMetric,
 } from '../types'
 import { computed } from 'vue'
 
-export interface SummaryMetric {
-  label: string
-  value: number
-}
-
-export interface PackageInsight {
-  id: string
-  label: string
-  type: PackageType
-  totalBytes: number
-  fileCount: number
-  chunkCount: number
-  assetCount: number
-  moduleCount: number
-  duplicateModuleCount: number
-  entryFileCount: number
-  topFiles: Array<{
-    file: string
-    size: number
-    type: PackageFileEntry['type']
-    from: BuildOrigin
-    isEntry: boolean
-    moduleCount: number
-  }>
-}
-
-export interface LargestFileEntry {
-  packageId: string
-  packageLabel: string
-  packageType: PackageType
-  file: string
-  size: number
-  type: PackageFileEntry['type']
-  from: BuildOrigin
-  isEntry: boolean
-  moduleCount: number
-  source?: string
-}
-
-export interface DuplicateModuleEntry {
-  id: string
-  source: string
-  sourceType: ModuleSourceType
-  packageCount: number
-  bytes: number
-  packages: Array<{
-    packageId: string
-    packageLabel: string
-    files: string[]
-  }>
-}
-
-export interface ModuleSourceSummary {
-  sourceType: ModuleSourceType
-  count: number
-  bytes: number
-}
-
 function getFileSize(file: PackageFileEntry) {
   return file.size ?? 0
+}
+
+function createSummaryMetric(label: PackageType, value: number): SummaryMetric {
+  return { label, value }
+}
+
+function createLargestFileEntry(
+  packageInfo: Pick<AnalyzeSubpackagesResult['packages'][number], 'id' | 'label' | 'type'>,
+  file: PackageFileEntry,
+): LargestFileEntry {
+  return {
+    packageId: packageInfo.id,
+    packageLabel: packageInfo.label,
+    packageType: packageInfo.type,
+    file: file.file,
+    size: getFileSize(file),
+    type: file.type,
+    from: file.from,
+    isEntry: Boolean(file.isEntry),
+    moduleCount: file.modules?.length ?? 0,
+    source: file.source,
+  }
+}
+
+function createPackageTopFile(file: PackageFileEntry): PackageInsight['topFiles'][number] {
+  return {
+    file: file.file,
+    size: getFileSize(file),
+    type: file.type,
+    from: file.from,
+    isEntry: Boolean(file.isEntry),
+    moduleCount: file.modules?.length ?? 0,
+  }
+}
+
+function createDuplicateModulePackageEntry(
+  packageLabelMap: Map<string, string>,
+  pkg: AnalyzeSubpackagesResult['modules'][number]['packages'][number],
+): DuplicateModuleEntry['packages'][number] {
+  return {
+    packageId: pkg.packageId,
+    packageLabel: packageLabelMap.get(pkg.packageId) ?? pkg.packageId,
+    files: pkg.files,
+  }
+}
+
+function createModuleSourceSummary(sourceType: ModuleSourceType): ModuleSourceSummary {
+  return {
+    sourceType,
+    count: 0,
+    bytes: 0,
+  }
 }
 
 export function useAnalyzeDashboardData(resultRef: Ref<AnalyzeSubpackagesResult | null>) {
@@ -104,7 +103,7 @@ export function useAnalyzeDashboardData(resultRef: Ref<AnalyzeSubpackagesResult 
     return map
   })
 
-  const summary = computed(() => {
+  const summary = computed<AnalyzeDashboardSummary>(() => {
     const result = resultRef.value
     if (!result) {
       return {
@@ -133,7 +132,7 @@ export function useAnalyzeDashboardData(resultRef: Ref<AnalyzeSubpackagesResult 
     for (const pkg of resultRef.value?.packages ?? []) {
       counts.set(pkg.type, (counts.get(pkg.type) ?? 0) + 1)
     }
-    return Array.from(counts.entries(), ([label, value]) => ({ label, value }))
+    return Array.from(counts.entries(), ([label, value]) => createSummaryMetric(label, value))
       .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
   })
 
@@ -157,14 +156,7 @@ export function useAnalyzeDashboardData(resultRef: Ref<AnalyzeSubpackagesResult 
         }
 
         const topFiles = pkg.files
-          .map(file => ({
-            file: file.file,
-            size: getFileSize(file),
-            type: file.type,
-            from: file.from,
-            isEntry: Boolean(file.isEntry),
-            moduleCount: file.modules?.length ?? 0,
-          }))
+          .map(file => createPackageTopFile(file))
           .sort((a, b) => b.size - a.size || a.file.localeCompare(b.file))
           .slice(0, 5)
 
@@ -190,18 +182,7 @@ export function useAnalyzeDashboardData(resultRef: Ref<AnalyzeSubpackagesResult 
 
     for (const pkg of resultRef.value?.packages ?? []) {
       for (const file of pkg.files) {
-        entries.push({
-          packageId: pkg.id,
-          packageLabel: pkg.label,
-          packageType: pkg.type,
-          file: file.file,
-          size: getFileSize(file),
-          type: file.type,
-          from: file.from,
-          isEntry: Boolean(file.isEntry),
-          moduleCount: file.modules?.length ?? 0,
-          source: file.source,
-        })
+        entries.push(createLargestFileEntry(pkg, file))
       }
     }
 
@@ -226,11 +207,7 @@ export function useAnalyzeDashboardData(resultRef: Ref<AnalyzeSubpackagesResult 
           sourceType: mod.sourceType,
           packageCount: mod.packages.length,
           bytes: info?.bytes ?? info?.originalBytes ?? 0,
-          packages: mod.packages.map(pkg => ({
-            packageId: pkg.packageId,
-            packageLabel: packageLabelMap.value.get(pkg.packageId) ?? pkg.packageId,
-            files: pkg.files,
-          })),
+          packages: mod.packages.map(pkg => createDuplicateModulePackageEntry(packageLabelMap.value, pkg)),
         }
       })
       .sort((a, b) =>
@@ -245,11 +222,7 @@ export function useAnalyzeDashboardData(resultRef: Ref<AnalyzeSubpackagesResult 
 
     for (const mod of resultRef.value?.modules ?? []) {
       const info = moduleInfoMap.value.get(mod.id)
-      const entry = summaryMap.get(mod.sourceType) ?? {
-        sourceType: mod.sourceType,
-        count: 0,
-        bytes: 0,
-      }
+      const entry = summaryMap.get(mod.sourceType) ?? createModuleSourceSummary(mod.sourceType)
       entry.count += 1
       entry.bytes += info?.bytes ?? info?.originalBytes ?? 0
       summaryMap.set(mod.sourceType, entry)
