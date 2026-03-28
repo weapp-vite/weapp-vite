@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import AppDiagnosticItem from '../features/dashboard/components/AppDiagnosticItem.vue'
+import AppActivityTimelineCard from '../features/dashboard/components/AppActivityTimelineCard.vue'
+import AppDiagnosticsCard from '../features/dashboard/components/AppDiagnosticsCard.vue'
 import AppEmptyState from '../features/dashboard/components/AppEmptyState.vue'
 import AppEventFilterPanel from '../features/dashboard/components/AppEventFilterPanel.vue'
 import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
@@ -8,11 +9,9 @@ import AppKeyValueList from '../features/dashboard/components/AppKeyValueList.vu
 import AppRuntimeEventListItem from '../features/dashboard/components/AppRuntimeEventListItem.vue'
 import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocusCard.vue'
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
-import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
 import AppTagList from '../features/dashboard/components/AppTagList.vue'
-import AppTimelineItem from '../features/dashboard/components/AppTimelineItem.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventSource } from '../features/dashboard/utils/format'
 import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
@@ -204,23 +203,7 @@ watch(filteredRuntimeEvents, (events) => {
 
 <template>
   <div class="grid gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(21rem,0.85fr)]">
-    <AppSurfaceCard tone="strong" padding="md">
-      <AppSectionHeading
-        eyebrow="Timeline"
-        title="活动流与增强节奏"
-        description="这一页先承载假数据时间线，后续最适合接入 dev server 事件、构建阶段、HMR 推送和 CLI 诊断结果。"
-      />
-      <ol class="mt-5 grid gap-3">
-        <AppTimelineItem
-          v-for="item in activityItems"
-          :key="`${item.time}-${item.title}`"
-          :title="item.title"
-          :time="item.time"
-          :summary="item.summary"
-          :icon-name="item.tone === 'live' ? 'status-live' : 'metric-time'"
-        />
-      </ol>
-    </AppSurfaceCard>
+    <AppActivityTimelineCard :items="activityItems" />
 
     <div class="grid gap-3">
       <AppSurfaceCard
@@ -239,22 +222,7 @@ watch(filteredRuntimeEvents, (events) => {
         </div>
       </AppSurfaceCard>
 
-      <AppSurfaceCard
-        eyebrow="Diagnostics"
-        title="当前诊断队列"
-        description="这里不是产品逻辑页，而是 dashboard 未来最需要的第二层能力: 把运行状态和建议动作结构化展示。"
-        icon-name="metric-health"
-      >
-        <ul class="grid gap-2">
-          <AppDiagnosticItem
-            v-for="item in diagnostics"
-            :key="item.label"
-            :label="item.label"
-            :detail="item.detail"
-            :status="item.status"
-          />
-        </ul>
-      </AppSurfaceCard>
+      <AppDiagnosticsCard :items="diagnostics" />
 
       <AppSurfaceCard
         eyebrow="Event Feed"
