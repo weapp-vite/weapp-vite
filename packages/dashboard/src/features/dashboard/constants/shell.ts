@@ -28,13 +28,6 @@ export const workspaceHighlights = [
   },
 ]
 
-export const workspaceMetrics = [
-  { label: '页面骨架', value: '4 个', iconName: 'metric-ready' as const },
-  { label: '健康评分', value: '92 / 100', iconName: 'metric-health' as const },
-  { label: '交互延迟预算', value: '< 120ms', iconName: 'metric-latency' as const },
-  { label: '视觉一致性', value: '已收敛', iconName: 'metric-quality' as const },
-]
-
 export const quickCommands = [
   { label: '启动开发', command: 'pnpm --filter @weapp-vite/dashboard dev', note: '本地预览完整 UI 壳子' },
   { label: '生产构建', command: 'pnpm --filter @weapp-vite/dashboard build', note: '验证静态产物可发布' },
