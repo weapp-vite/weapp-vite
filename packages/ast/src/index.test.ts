@@ -37,6 +37,8 @@ import {
   parse,
   parseJsLikeWithEngine,
   platformApiIdentifierList,
+  resolveOxcComponentExpression,
+  resolveOxcRenderExpression,
   resolveRenderableExpression,
   resolveRenderExpressionFromComponentOptions,
   toStaticObjectKey,
@@ -408,6 +410,34 @@ export default page
     })).toBe('render')
     expect(getJsxOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
     expect(getJsxOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
+    expect(resolveOxcComponentExpression(
+      { type: 'ObjectExpression', properties: [] },
+      new Map(),
+      new Set(['defineComponent']),
+    )).toEqual({ type: 'ObjectExpression', properties: [] })
+    expect(resolveOxcComponentExpression(
+      {
+        type: 'CallExpression',
+        callee: { type: 'Identifier', name: 'defineComponent' },
+        arguments: [{ type: 'Identifier', name: 'page' }],
+      },
+      new Map([['page', { type: 'ObjectExpression', properties: [] }]]),
+      new Set(['defineComponent']),
+    )).toEqual({ type: 'ObjectExpression', properties: [] })
+    expect(resolveOxcRenderExpression({
+      type: 'ObjectExpression',
+      properties: [{
+        key: { type: 'Identifier', name: 'render' },
+        value: {
+          type: 'FunctionExpression',
+          body: {
+            type: 'BlockStatement',
+            body: [{ type: 'ReturnStatement', argument: { type: 'Identifier', name: 'view' } }],
+          },
+        },
+      }],
+    })).toEqual({ type: 'Identifier', name: 'view' })
+    expect(resolveOxcRenderExpression({ type: 'Identifier', name: 'page' })).toBeNull()
   })
 
   it('fast rejects jsx auto component analysis without imports or default export', () => {
