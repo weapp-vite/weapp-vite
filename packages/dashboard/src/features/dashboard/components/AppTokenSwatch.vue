@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { mutedPanelStyles } from '../utils/styles'
+
 defineProps<{
   name: string
   sample: string
@@ -6,7 +8,7 @@ defineProps<{
 </script>
 
 <template>
-  <li class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
+  <li :class="mutedPanelStyles()">
     <div class="flex items-center justify-between gap-3">
       <code class="text-xs text-[color:var(--dashboard-text-soft)]">{{ name }}</code>
       <span

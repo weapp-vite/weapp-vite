@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getRuntimeSourceBadgeTone } from '../utils/format'
+import { mutedPanelStyles } from '../utils/styles'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
 
 defineProps<{
@@ -13,7 +14,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3">
+  <div :class="mutedPanelStyles({ padding: 'sm' })">
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <p class="truncate font-medium text-[color:var(--dashboard-text)]">

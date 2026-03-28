@@ -35,6 +35,24 @@ export const iconFrameStyles = tv({
   },
 })
 
+export const mutedPanelStyles = tv({
+  base: 'rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)]',
+  variants: {
+    padding: {
+      sm: 'px-4 py-3',
+      md: 'p-4',
+    },
+    interactive: {
+      true: 'transition hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]',
+      false: '',
+    },
+  },
+  defaultVariants: {
+    padding: 'md',
+    interactive: false,
+  },
+})
+
 export const pillButtonStyles = tv({
   base: 'inline-flex items-center gap-2 rounded-full border transition',
   variants: {

@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { mutedPanelStyles } from '../utils/styles'
+
 defineProps<{
   eyebrow?: string
 }>()
 </script>
 
 <template>
-  <div class="rounded-[18px] border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] p-4">
+  <div :class="mutedPanelStyles()">
     <p
       v-if="eyebrow"
       class="text-[11px] uppercase tracking-[0.18em] text-[color:var(--dashboard-text-soft)]"
