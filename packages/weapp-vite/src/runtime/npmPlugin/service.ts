@@ -45,7 +45,7 @@ function matchDependencyPath(patterns: (string | RegExp)[], value: string) {
   })
 }
 
-function resolveTargetDependencies(
+export function resolveTargetDependencies(
   allDependencies: string[],
   patterns?: false | (string | RegExp)[],
 ) {
@@ -89,12 +89,21 @@ function resolvePluginPackageDependencyPatterns(ctx: MutableCompilerContext) {
   return ctx.configService?.weappViteConfig?.npm?.pluginPackage?.dependencies
 }
 
-function hasLocalSubPackageNpmConfig(ctx: MutableCompilerContext) {
+export function hasLocalSubPackageNpmConfig(ctx: MutableCompilerContext) {
   const npmSubPackages = ctx.configService?.weappViteConfig?.npm?.subPackages
   if (npmSubPackages && Object.values(npmSubPackages).some(config => Array.isArray(config?.dependencies) && config.dependencies.length > 0)) {
     return true
   }
   return false
+}
+
+export function resolveNpmDistDirName(configService?: MutableCompilerContext['configService']) {
+  if (configService?.platform) {
+    return getPlatformNpmDistDirName(configService.platform, {
+      alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
+    })
+  }
+  return getPlatformNpmDistDirName('weapp')
 }
 
 export interface NpmService {
@@ -118,15 +127,6 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
   const cache = createDependenciesCache(ctx)
   const builder = createPackageBuilder(ctx, oxcVitePlugin as Plugin | undefined)
 
-  function getNpmDistDirName() {
-    if (ctx.configService?.platform) {
-      return getPlatformNpmDistDirName(ctx.configService.platform, {
-        alipayNpmMode: ctx.configService.weappViteConfig?.npm?.alipayNpmMode,
-      })
-    }
-    return getPlatformNpmDistDirName('weapp')
-  }
-
   async function build(options?: NpmBuildOptions) {
     if (!ctx.configService?.weappViteConfig?.npm?.enable) {
       return
@@ -146,7 +146,7 @@ export function createNpmService(ctx: MutableCompilerContext): NpmService {
     const packageJsonPath = path.resolve(ctx.configService.cwd, mainRelation.packageJsonPath)
     if (await fs.pathExists(packageJsonPath)) {
       const pkgJson: PackageJson = await fs.readJson(packageJsonPath)
-      const npmDistDirName = getNpmDistDirName()
+      const npmDistDirName = resolveNpmDistDirName(ctx.configService)
       const outDir = path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir, npmDistDirName)
       const cachedSourceOutDir = path.resolve(ctx.configService.cwd, 'node_modules/weapp-vite/.cache/npm-source', npmDistDirName)
       const localSubPackageOutRoot = ctx.configService.outDir || path.resolve(ctx.configService.cwd, mainRelation.miniprogramNpmDistDir)

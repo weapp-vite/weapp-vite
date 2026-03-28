@@ -3,7 +3,12 @@ import os from 'node:os'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createNpmService } from './service'
+import {
+  createNpmService,
+  hasLocalSubPackageNpmConfig,
+  resolveNpmDistDirName,
+  resolveTargetDependencies,
+} from './service'
 
 const buildPackageMock = vi.hoisted(() => vi.fn(async () => {}))
 const checkDependenciesCacheOutdateMock = vi.hoisted(() => vi.fn(async () => true))
@@ -57,6 +62,59 @@ describe('runtime npm service', () => {
   afterEach(async () => {
     await Promise.all(tempDirs.map(dir => fs.remove(dir)))
     tempDirs.length = 0
+  })
+
+  it('resolves target dependencies from string and regex patterns', () => {
+    expect(resolveTargetDependencies(['dayjs', 'lodash'])).toEqual(['dayjs', 'lodash'])
+    expect(resolveTargetDependencies(['dayjs', 'lodash'], false)).toEqual([])
+    expect(resolveTargetDependencies(['dayjs', 'lodash'], ['dayjs', /^lod/])).toEqual(['dayjs', 'lodash'])
+    expect(resolveTargetDependencies(['dayjs'], ['custom-only'])).toEqual(['custom-only'])
+  })
+
+  it('detects whether local subpackages define npm dependency lists', () => {
+    expect(hasLocalSubPackageNpmConfig({
+      configService: {
+        weappViteConfig: {
+          npm: {
+            subPackages: {
+              a: {
+                dependencies: ['dayjs'],
+              },
+            },
+          },
+        },
+      },
+    } as any)).toBe(true)
+
+    expect(hasLocalSubPackageNpmConfig({
+      configService: {
+        weappViteConfig: {
+          npm: {
+            subPackages: {
+              a: {
+                dependencies: [],
+              },
+            },
+          },
+        },
+      },
+    } as any)).toBe(false)
+  })
+
+  it('resolves npm dist dir names from platform-specific config', () => {
+    expect(resolveNpmDistDirName(undefined)).toBe('miniprogram_npm')
+    expect(resolveNpmDistDirName({
+      platform: 'weapp',
+      weappViteConfig: {},
+    } as any)).toBe('miniprogram_npm')
+    expect(resolveNpmDistDirName({
+      platform: 'alipay',
+      weappViteConfig: {
+        npm: {
+          alipayNpmMode: 'node_modules',
+        },
+      },
+    } as any)).toBe('node_modules')
   })
 
   it('builds cached npm source and removes main output when main output is disabled', async () => {
