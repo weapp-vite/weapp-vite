@@ -25,6 +25,24 @@ export interface ProjectPlatformOptions {
   usesProjectRootNpmDir: boolean
 }
 
+export interface JsonPlatformOptions {
+  normalizeUsingComponents: boolean
+  fillComponentGenericsDefault: boolean
+  rewriteBundleNpmImports: boolean
+}
+
+export interface NpmPlatformOptions {
+  normalizeImportPath: boolean
+  normalizeMiniprogramPackage: boolean
+  copyEsModuleDirectory: boolean
+  hoistNestedDependencies: boolean
+  shouldRebuildCachedPackage: boolean
+}
+
+export interface TypeScriptPlatformOptions {
+  appTypesPackage: string
+}
+
 export function createMiniProgramPlatformRegistry(adapters: readonly MiniProgramPlatformAdapter[]) {
   const adapterById = new Map<MpPlatform, MiniProgramPlatformAdapter>()
   const aliasToId = new Map<string, MpPlatform>()
@@ -105,25 +123,25 @@ export function getPlatformOutputExtensions(platform: MpPlatform): OutputExtensi
   }
 }
 
-export function shouldNormalizeUsingComponents(platform?: MpPlatform): boolean {
-  if (!platform) {
-    return false
+export function getJsonPlatformOptions(platform?: MpPlatform): JsonPlatformOptions {
+  const json = platform ? getMiniProgramPlatformAdapter(platform).json : undefined
+  return {
+    normalizeUsingComponents: json?.normalizeUsingComponents === true,
+    fillComponentGenericsDefault: json?.fillComponentGenericsDefault === true,
+    rewriteBundleNpmImports: json?.rewriteBundleNpmImports === true,
   }
-  return getMiniProgramPlatformAdapter(platform).json?.normalizeUsingComponents === true
+}
+
+export function shouldNormalizeUsingComponents(platform?: MpPlatform): boolean {
+  return getJsonPlatformOptions(platform).normalizeUsingComponents
 }
 
 export function shouldFillComponentGenericsDefault(platform?: MpPlatform): boolean {
-  if (!platform) {
-    return false
-  }
-  return getMiniProgramPlatformAdapter(platform).json?.fillComponentGenericsDefault === true
+  return getJsonPlatformOptions(platform).fillComponentGenericsDefault
 }
 
 export function shouldRewriteBundleNpmImports(platform?: MpPlatform): boolean {
-  if (!platform) {
-    return false
-  }
-  return getMiniProgramPlatformAdapter(platform).json?.rewriteBundleNpmImports === true
+  return getJsonPlatformOptions(platform).rewriteBundleNpmImports
 }
 
 export function getPlatformNpmDistDirName(
@@ -135,11 +153,19 @@ export function getPlatformNpmDistDirName(
   return getMiniProgramPlatformAdapter(platform).npm?.distDirName?.(options) ?? 'miniprogram_npm'
 }
 
-export function shouldNormalizePlatformNpmImportPath(platform?: MpPlatform): boolean {
-  if (!platform) {
-    return false
+export function getNpmPlatformOptions(platform?: MpPlatform): NpmPlatformOptions {
+  const npm = platform ? getMiniProgramPlatformAdapter(platform).npm : undefined
+  return {
+    normalizeImportPath: npm?.normalizeImportPath === true,
+    normalizeMiniprogramPackage: npm?.normalizeMiniprogramPackage === true,
+    copyEsModuleDirectory: npm?.copyEsModuleDirectory === true,
+    hoistNestedDependencies: npm?.hoistNestedDependencies === true,
+    shouldRebuildCachedPackage: npm?.shouldRebuildCachedPackage === true,
   }
-  return getMiniProgramPlatformAdapter(platform).npm?.normalizeImportPath === true
+}
+
+export function shouldNormalizePlatformNpmImportPath(platform?: MpPlatform): boolean {
+  return getNpmPlatformOptions(platform).normalizeImportPath
 }
 
 export function getPlatformNpmImportPrefix(
@@ -167,19 +193,19 @@ export function normalizePlatformNpmImportPath(
 }
 
 export function shouldRebuildCachedMiniprogramPackage(platform: MpPlatform): boolean {
-  return getMiniProgramPlatformAdapter(platform).npm?.shouldRebuildCachedPackage === true
+  return getNpmPlatformOptions(platform).shouldRebuildCachedPackage
 }
 
 export function shouldNormalizeMiniprogramPackage(platform: MpPlatform): boolean {
-  return getMiniProgramPlatformAdapter(platform).npm?.normalizeMiniprogramPackage === true
+  return getNpmPlatformOptions(platform).normalizeMiniprogramPackage
 }
 
 export function shouldCopyEsModuleDirectory(platform: MpPlatform): boolean {
-  return getMiniProgramPlatformAdapter(platform).npm?.copyEsModuleDirectory === true
+  return getNpmPlatformOptions(platform).copyEsModuleDirectory
 }
 
 export function shouldHoistNestedMiniprogramDependencies(platform: MpPlatform): boolean {
-  return getMiniProgramPlatformAdapter(platform).npm?.hoistNestedDependencies === true
+  return getNpmPlatformOptions(platform).hoistNestedDependencies
 }
 
 export function getProjectPlatformOptions(platform: MpPlatform): ProjectPlatformOptions {
@@ -240,9 +266,14 @@ export function shouldUseProjectRootNpmDir(platform: MpPlatform): boolean {
   return getProjectPlatformOptions(platform).usesProjectRootNpmDir
 }
 
-export function getPlatformAppTypesPackage(platform?: MpPlatform): string {
-  if (!platform) {
-    return 'miniprogram-api-typings'
+export function getTypeScriptPlatformOptions(platform?: MpPlatform): TypeScriptPlatformOptions {
+  return {
+    appTypesPackage: platform
+      ? (getMiniProgramPlatformAdapter(platform).typescript?.appTypesPackage ?? 'miniprogram-api-typings')
+      : 'miniprogram-api-typings',
   }
-  return getMiniProgramPlatformAdapter(platform).typescript?.appTypesPackage ?? 'miniprogram-api-typings'
+}
+
+export function getPlatformAppTypesPackage(platform?: MpPlatform): string {
+  return getTypeScriptPlatformOptions(platform).appTypesPackage
 }

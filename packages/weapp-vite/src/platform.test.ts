@@ -3,7 +3,9 @@ import {
   createMiniProgramPlatformRegistry,
   DEFAULT_MP_PLATFORM,
   getDefaultIdeProjectRoot,
+  getJsonPlatformOptions,
   getMiniProgramPlatformAdapter,
+  getNpmPlatformOptions,
   getPlatformAppTypesPackage,
   getPlatformNpmDistDirName,
   getPlatformNpmImportPrefix,
@@ -12,6 +14,7 @@ import {
   getPreservedNpmDirNames,
   getProjectPlatformOptions,
   getScriptModulePlatformOptions,
+  getTypeScriptPlatformOptions,
   getWxmlDirectivePrefix,
   getWxmlEventBindingStyle,
   getWxmlPlatformTransformOptions,
@@ -119,6 +122,16 @@ describe('platform adapter registry', () => {
       projectConfigRootKeys: ['miniprogramRoot', 'srcMiniprogramRoot'],
       usesProjectRootNpmDir: true,
     })
+    expect(getJsonPlatformOptions()).toEqual({
+      normalizeUsingComponents: false,
+      fillComponentGenericsDefault: false,
+      rewriteBundleNpmImports: false,
+    })
+    expect(getJsonPlatformOptions('alipay')).toEqual({
+      normalizeUsingComponents: true,
+      fillComponentGenericsDefault: true,
+      rewriteBundleNpmImports: true,
+    })
     expect(shouldNormalizeUsingComponents()).toBe(false)
     expect(shouldNormalizeUsingComponents('weapp')).toBe(false)
     expect(shouldNormalizeUsingComponents('alipay')).toBe(true)
@@ -159,6 +172,20 @@ describe('platform adapter registry', () => {
     expect(getPlatformAppTypesPackage('alipay')).toBe('@mini-types/alipay')
     expect(getPlatformNpmDistDirName('weapp')).toBe('miniprogram_npm')
     expect(getPlatformNpmDistDirName('alipay', { alipayNpmMode: 'node_modules' })).toBe('node_modules')
+    expect(getNpmPlatformOptions()).toEqual({
+      normalizeImportPath: false,
+      normalizeMiniprogramPackage: false,
+      copyEsModuleDirectory: false,
+      hoistNestedDependencies: false,
+      shouldRebuildCachedPackage: false,
+    })
+    expect(getNpmPlatformOptions('alipay')).toEqual({
+      normalizeImportPath: true,
+      normalizeMiniprogramPackage: true,
+      copyEsModuleDirectory: true,
+      hoistNestedDependencies: true,
+      shouldRebuildCachedPackage: true,
+    })
     expect(shouldNormalizePlatformNpmImportPath('weapp')).toBe(false)
     expect(shouldNormalizePlatformNpmImportPath('alipay')).toBe(true)
     expect(getPlatformNpmImportPrefix('weapp')).toBe('/miniprogram_npm/')
@@ -180,6 +207,12 @@ describe('platform adapter registry', () => {
     expect(getPlatformScriptModuleTag('alipay', 'wxs')).toBeUndefined()
     expect(shouldUseProjectRootNpmDir('weapp')).toBe(false)
     expect(shouldUseProjectRootNpmDir('alipay')).toBe(true)
+    expect(getTypeScriptPlatformOptions()).toEqual({
+      appTypesPackage: 'miniprogram-api-typings',
+    })
+    expect(getTypeScriptPlatformOptions('alipay')).toEqual({
+      appTypesPackage: '@mini-types/alipay',
+    })
     expect(getPreservedNpmDirNames('weapp')).toEqual(['miniprogram_npm'])
     expect(getPreservedNpmDirNames('alipay', { alipayNpmMode: 'miniprogram_npm' })).toEqual(['miniprogram_npm'])
     expect(getPreservedNpmDirNames('alipay', { alipayNpmMode: 'node_modules' })).toEqual(['node_modules'])
