@@ -10,7 +10,11 @@ import path from 'pathe'
 import logger from '../../../../logger'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
-import { emitNativeLayoutScriptChunkIfNeeded, resolveNativeLayoutOutputOptions } from '../../../utils/nativeLayout'
+import {
+  emitNativeLayoutScriptChunkIfNeeded,
+  resolveNativeLayoutOutputOptions,
+  resolveNativeLayoutStaticAssetEntries,
+} from '../../../utils/nativeLayout'
 import { expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
@@ -155,23 +159,14 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
       })
     }
 
-    const assetEntries = [
-      assets.template
-        ? {
-            fileName: `${resolvedOptions.relativeBase}.${resolvedOptions.templateExtension}`,
-            source: await fs.readFile(assets.template, 'utf8'),
-          }
-        : undefined,
-      assets.style
-        ? {
-            fileName: `${resolvedOptions.relativeBase}.${resolvedOptions.styleExtension}`,
-            source: await fs.readFile(assets.style, 'utf8'),
-          }
-        : undefined,
-    ]
+    const assetEntries = await resolveNativeLayoutStaticAssetEntries({
+      assets,
+      resolvedOptions,
+      readFile: fs.readFile,
+    })
 
     for (const asset of assetEntries) {
-      if (!asset || emittedLayoutAssets.has(asset.fileName)) {
+      if (emittedLayoutAssets.has(asset.fileName)) {
         continue
       }
       emittedLayoutAssets.add(asset.fileName)
