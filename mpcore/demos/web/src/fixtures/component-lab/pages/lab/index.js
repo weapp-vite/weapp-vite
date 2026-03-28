@@ -18,6 +18,7 @@ Page({
     savedMissingRemovalInfo: '',
     fileManagerMissingAccessInfo: '',
     fileManagerMissingCopyInfo: '',
+    fileManagerMissingMkdirInfo: '',
     fileManagerMissingReadInfo: '',
     fileManagerMissingReadDirInfo: '',
     fileManagerMissingRenameInfo: '',
@@ -370,6 +371,22 @@ Page({
           }),
         }, () => {
           this.push('lab:runMissingCopyFileLab')
+        })
+      },
+    })
+  },
+  runMissingMkdirLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.mkdir({
+      dirPath: 'headless://saved/component-lab/missing-parent/child',
+      recursive: false,
+      fail: (error) => {
+        this.setData({
+          fileManagerMissingMkdirInfo: JSON.stringify({
+            missingMkdirError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runMissingMkdirLab')
         })
       },
     })

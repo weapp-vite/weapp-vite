@@ -131,6 +131,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('runMissingReadFileLab')
     bridge.runPageMethod('runMissingUnlinkLab')
     bridge.runPageMethod('runMissingCopyFileLab')
+    bridge.runPageMethod('runMissingMkdirLab')
     bridge.runPageMethod('runMissingRenameLab')
     bridge.runPageMethod('runMissingRmdirLab')
     bridge.runPageMethod('runMissingAccessLab')
@@ -155,6 +156,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.downloadSnapshot
           && pageData.fileManagerMissingAccessInfo
           && pageData.fileManagerMissingCopyInfo
+          && pageData.fileManagerMissingMkdirInfo
           && pageData.fileManagerMissingReadInfo
           && pageData.fileManagerMissingReadDirInfo
           && pageData.fileManagerMissingRenameInfo
@@ -185,6 +187,7 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.downloadSnapshot).toContain('"errMsg":"downloadFile:ok"')
     expect(pageData.fileManagerMissingAccessInfo).toContain('"missingAccessError":"access:fail no such file or directory')
     expect(pageData.fileManagerMissingCopyInfo).toContain('"missingCopyError":"copyFile:fail no such file or directory')
+    expect(pageData.fileManagerMissingMkdirInfo).toContain('"missingMkdirError":"mkdir:fail no such file or directory')
     expect(pageData.fileManagerMissingReadInfo).toContain('"missingReadError":"readFile:fail no such file or directory')
     expect(pageData.fileManagerMissingReadDirInfo).toContain('"missingReadDirError":"readdir:fail no such file or directory')
     expect(pageData.fileManagerMissingRenameInfo).toContain('"missingRenameError":"rename:fail no such file or directory')
