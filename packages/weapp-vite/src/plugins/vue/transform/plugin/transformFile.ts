@@ -15,8 +15,7 @@ import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks } from '../scopedSlot'
-import { buildWeappVueStyleRequest } from '../styleRequest'
-import { ensureSfcStyleBlocks, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, isAppEntry, registerVueTemplateToken, resolveScriptlessVueEntryStub, resolveVueOutputBase } from './shared'
+import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, isAppEntry, registerVueTemplateToken, resolveVueOutputBase } from './shared'
 
 const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
 const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
@@ -211,32 +210,14 @@ export async function transformVueLikeFile(options: {
       })
     }
 
-    let returnedCode = result.script ?? ''
-    const styleBlocks = styleBlocksCache.get(filename)
-    if (styleBlocks?.length) {
-      returnedCode = await measureStage('injectStyleImports', async () => {
-        const styleImports = styleBlocks
-          .map((styleBlock, index) => {
-            const request = buildWeappVueStyleRequest(filename, styleBlock, index)
-            return `import ${JSON.stringify(request)};\n`
-          })
-          .join('')
-        return styleImports + returnedCode
-      })
-    }
-
-    if (!isApp && !result.script?.trim()) {
-      returnedCode += resolveScriptlessVueEntryStub(isPage)
-    }
-
-    const macroHash = result.meta?.jsonMacroHash
-    if (macroHash && configService.isDev) {
-      returnedCode += `\n;Object.defineProperty({}, '__weappViteJsonMacroHash', { value: ${JSON.stringify(macroHash)} })\n`
-    }
-    const defineOptionsHash = result.meta?.defineOptionsHash
-    if (defineOptionsHash && configService.isDev) {
-      returnedCode += `\n;Object.defineProperty({}, '__weappViteDefineOptionsHash', { value: ${JSON.stringify(defineOptionsHash)} })\n`
-    }
+    const returnedCode = await measureStage('finalizeCode', async () => finalizeTransformEntryCode({
+      result,
+      filename,
+      styleBlocks: styleBlocksCache.get(filename),
+      isPage,
+      isApp,
+      isDev: configService.isDev,
+    }))
 
     if (vueTransformTiming) {
       vueTransformTiming({
