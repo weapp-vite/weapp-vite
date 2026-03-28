@@ -2,6 +2,8 @@ import type { SubPackageStyleScope } from '../../../types'
 import { toPosixPath } from '../../../utils'
 import { DEFAULT_SCOPE_INCLUDES } from './config'
 
+const LEADING_SLASH_RE = /^\/+/
+
 function toArray<T>(value: T | T[] | undefined): T[] {
   if (value === undefined) {
     return []
@@ -9,7 +11,7 @@ function toArray<T>(value: T | T[] | undefined): T[] {
   return Array.isArray(value) ? value : [value]
 }
 
-function normalizePattern(pattern: string, normalizedRoot: string): string | undefined {
+export function normalizePattern(pattern: string, normalizedRoot: string): string | undefined {
   const trimmed = pattern.trim()
   if (!trimmed) {
     return undefined
@@ -22,7 +24,7 @@ function normalizePattern(pattern: string, normalizedRoot: string): string | und
   if (normalized.startsWith('./')) {
     normalized = normalized.slice(2)
   }
-  normalized = normalized.replace(/^\/+/, '')
+  normalized = normalized.replace(LEADING_SLASH_RE, '')
   if (!normalized) {
     return '**/*'
   }
