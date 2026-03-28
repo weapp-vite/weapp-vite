@@ -12,7 +12,7 @@ import AppRuntimeFocusCard from '../features/dashboard/components/AppRuntimeFocu
 import AppRuntimeSourceCard from '../features/dashboard/components/AppRuntimeSourceCard.vue'
 import AppStatCard from '../features/dashboard/components/AppStatCard.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
-import AppThemeOptionGroup from '../features/dashboard/components/AppThemeOptionGroup.vue'
+import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import DashboardMetricGrid from '../features/dashboard/components/DashboardMetricGrid.vue'
 import DashboardTabs from '../features/dashboard/components/DashboardTabs.vue'
 import ModulesPanel from '../features/dashboard/components/ModulesPanel.vue'
@@ -27,6 +27,7 @@ import { useTreemapData } from '../features/dashboard/composables/useTreemapData
 import { dashboardTabs, themeOptions } from '../features/dashboard/constants/view'
 import { formatDuration } from '../features/dashboard/utils/format'
 import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
+import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
 
 echarts.use([
@@ -203,11 +204,19 @@ onBeforeUnmount(() => {
     <section class="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
       <DashboardTabs :tabs="dashboardTabs" :active-tab="activeTab" @select="activeTab = $event" />
       <div class="flex flex-wrap items-center gap-2">
-        <AppThemeOptionGroup
-          :options="themeOptions"
-          :selected-value="themePreference"
-          @select="setThemePreference"
-        />
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            v-for="option in themeOptions"
+            :key="option.value"
+            :class="pillButtonStyles({ kind: 'theme', active: themePreference === option.value })"
+            @click="setThemePreference(option.value)"
+          >
+            <span class="h-4 w-4">
+              <DashboardIcon :name="option.iconName" />
+            </span>
+            {{ option.label }}
+          </button>
+        </div>
         <AppInfoPill :icon-name="statusTone" :label="statusText" uppercase />
         <AppInfoPill :label="lastUpdatedAt" uppercase />
       </div>
