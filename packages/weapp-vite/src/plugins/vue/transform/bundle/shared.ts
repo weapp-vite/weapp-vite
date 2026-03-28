@@ -600,3 +600,23 @@ export async function handleFallbackPageLayouts(options: {
   )
   await options.emitLayouts(resolvedLayoutPlan?.layouts)
 }
+
+export async function handleCompiledEntryPageLayouts(options: {
+  source: string
+  filename: string
+  result: VueTransformResult
+  configService: NonNullable<CompilerContext['configService']>
+  emitLayouts: (layouts: Awaited<ReturnType<typeof resolvePageLayoutPlan>>['layouts'] | undefined) => Promise<void>
+}) {
+  const resolvedLayoutPlan = await resolvePageLayoutPlan(
+    options.source,
+    options.filename,
+    options.configService,
+  )
+
+  if (resolvedLayoutPlan) {
+    applyPageLayoutPlan(options.result, options.filename, resolvedLayoutPlan)
+  }
+
+  await options.emitLayouts(resolvedLayoutPlan?.layouts)
+}

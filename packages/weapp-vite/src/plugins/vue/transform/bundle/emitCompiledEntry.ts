@@ -1,10 +1,9 @@
 import type { CompilationCacheEntry, VueBundleState } from './shared'
-import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import {
   emitBundlePageLayoutsIfNeeded,
   emitScriptlessComponentJsFallbackIfMissing,
 } from './layoutAssets'
-import { addBundleWatchFile, emitCompiledEntryBundleAssets, getEntryBaseName, refreshCompiledVueEntryCacheInDev, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, emitCompiledEntryBundleAssets, getEntryBaseName, handleCompiledEntryPageLayouts, refreshCompiledVueEntryCacheInDev, resolveVueBundleAssetContext } from './shared'
 
 export async function emitCompiledVueEntryAssets(
   bundle: Record<string, any>,
@@ -46,18 +45,22 @@ export async function emitCompiledVueEntryAssets(
   }
 
   if (cached.isPage && cached.source) {
-    const resolvedLayoutPlan = await resolvePageLayoutPlan(cached.source, filename, configService)
-    if (resolvedLayoutPlan) {
-      applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
-    }
-    await emitBundlePageLayoutsIfNeeded({
-      layouts: resolvedLayoutPlan?.layouts,
-      pluginCtx,
-      bundle,
-      ctx,
+    await handleCompiledEntryPageLayouts({
+      source: cached.source,
+      filename,
+      result,
       configService,
-      compileOptionsState,
-      outputExtensions,
+      emitLayouts: async (layouts) => {
+        await emitBundlePageLayoutsIfNeeded({
+          layouts,
+          pluginCtx,
+          bundle,
+          ctx,
+          configService,
+          compileOptionsState,
+          outputExtensions,
+        })
+      },
     })
   }
 
