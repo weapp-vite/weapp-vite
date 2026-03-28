@@ -27,7 +27,7 @@ export function mayContainRelevantScriptSetupImports(
   return false
 }
 
-function collectWithOxc(scriptSetup: string, templateComponentNames: Set<string>) {
+export function collectScriptSetupImportsWithOxc(scriptSetup: string, templateComponentNames: Set<string>) {
   const results: ScriptSetupImport[] = []
   const ast = parseJsLikeWithEngine(scriptSetup, {
     engine: 'oxc',
@@ -69,7 +69,7 @@ function collectWithOxc(scriptSetup: string, templateComponentNames: Set<string>
   return results
 }
 
-function collectWithBabel(scriptSetup: string, templateComponentNames: Set<string>) {
+export function collectScriptSetupImportsWithBabel(scriptSetup: string, templateComponentNames: Set<string>) {
   const results: ScriptSetupImport[] = []
   const ast = babelParse(scriptSetup, BABEL_TS_MODULE_PARSER_OPTIONS)
 
@@ -127,8 +127,8 @@ export function collectScriptSetupImportsFromCode(
 
   try {
     return engine === 'oxc'
-      ? collectWithOxc(scriptSetup, templateComponentNames)
-      : collectWithBabel(scriptSetup, templateComponentNames)
+      ? collectScriptSetupImportsWithOxc(scriptSetup, templateComponentNames)
+      : collectScriptSetupImportsWithBabel(scriptSetup, templateComponentNames)
   }
   catch {
     return []
