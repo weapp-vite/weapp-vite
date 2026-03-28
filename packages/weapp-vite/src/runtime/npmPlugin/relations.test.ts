@@ -1,6 +1,10 @@
 import type { MutableCompilerContext } from '../../context'
 import { describe, expect, it } from 'vitest'
-import { getPackNpmRelationList } from './relations'
+import {
+  getPackNpmRelationList,
+  normalizeRelativeDir,
+  resolvePlatformProjectRoot,
+} from './relations'
 
 function createContext(options: {
   pluginOnly?: boolean
@@ -24,6 +28,26 @@ function createContext(options: {
 }
 
 describe('runtime npmPlugin relations', () => {
+  it('normalizes relative npm directories for cross-platform relation rewriting', () => {
+    expect(normalizeRelativeDir('./dist///')).toBe('dist')
+    expect(normalizeRelativeDir('dist\\nested/')).toBe('dist/nested')
+    expect(normalizeRelativeDir('./')).toBe('.')
+  })
+
+  it('resolves platform project root with fallback normalization', () => {
+    expect(resolvePlatformProjectRoot({
+      platform: 'alipay',
+      projectConfig: {
+        miniprogramRoot: './dist///',
+      },
+    } as any)).toBe('dist')
+
+    expect(resolvePlatformProjectRoot({
+      platform: 'alipay',
+      projectConfig: {},
+    } as any)).toBe('dist')
+  })
+
   it('uses default relation in non-multi-platform mode', () => {
     const ctx = createContext({
       multiPlatform: false,
