@@ -102,6 +102,25 @@ export function normalizeVueConfigForPlatform(
   }
 }
 
+export function transformVueTemplateForPlatform(
+  template: string,
+  options: {
+    platform: string
+    templateExtension: string
+    scriptModuleExtension?: string
+    scriptModuleTag?: string
+  },
+) {
+  const token = scanWxml(template, {
+    platform: options.platform as any,
+  })
+  return handleWxml(token, {
+    templateExtension: options.templateExtension,
+    scriptModuleExtension: options.scriptModuleExtension,
+    scriptModuleTag: options.scriptModuleTag,
+  }).code
+}
+
 export function normalizeVueTemplateForPlatform(
   template: string,
   options: {
@@ -120,14 +139,12 @@ export function normalizeVueTemplateForPlatform(
   }
 
   try {
-    const token = scanWxml(template, {
-      platform: options.platform as any,
-    })
-    return handleWxml(token, {
+    return transformVueTemplateForPlatform(template, {
+      platform: options.platform,
       templateExtension: options.templateExtension,
       scriptModuleExtension: options.scriptModuleExtension,
       scriptModuleTag: platformOptions.scriptModuleTag,
-    }).code
+    })
   }
   catch {
     return template
