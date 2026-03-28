@@ -207,6 +207,90 @@ Page({
     expect(session.getRequestLogs()).toEqual([])
   })
 
+  it('supports delayed downloadFile and uploadFile task abort in browser runtime', async () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  startFileTransferAbortLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/browser-upload-abort.txt', 'browser-upload-abort')
+    const downloadTask = wx.downloadFile({
+      filePath: 'headless://temp/browser-download-abort.txt',
+      url: 'https://mock.mpcore.dev/files/browser-slow-report.txt',
+      success: () => {
+        this.push('download:success')
+      },
+      fail: (error) => {
+        this.push('download:fail:' + error.message)
+      },
+      complete: () => {
+        this.push('download:complete')
+      }
+    })
+    downloadTask.abort()
+    const uploadTask = wx.uploadFile({
+      url: 'https://mock.mpcore.dev/upload/browser-slow-report',
+      filePath: 'headless://temp/browser-upload-abort.txt',
+      name: 'artifact',
+      success: () => {
+        this.push('upload:success')
+      },
+      fail: (error) => {
+        this.push('upload:fail:' + error.message)
+      },
+      complete: () => {
+        this.push('upload:complete')
+      }
+    })
+    uploadTask.abort()
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{logs.0}}</view><view>{{logs.1}}</view><view>{{logs.2}}</view><view>{{logs.3}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    session.mockDownloadFile({
+      delay: 50,
+      fileContent: 'browser downloaded later',
+      url: 'https://mock.mpcore.dev/files/browser-slow-report.txt',
+    })
+    session.mockUploadFile({
+      delay: 50,
+      response: JSON.stringify({
+        browser: true,
+      }),
+      url: 'https://mock.mpcore.dev/upload/browser-slow-report',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.startFileTransferAbortLab()
+    await new Promise(resolve => setTimeout(resolve, 80))
+
+    expect(page.data.logs).toEqual([
+      'download:fail:downloadFile:fail abort',
+      'download:complete',
+      'upload:fail:uploadFile:fail abort',
+      'upload:complete',
+    ])
+    expect(session.renderCurrentPage().wxml).toContain('download:fail:downloadFile:fail abort')
+    expect(session.renderCurrentPage().wxml).toContain('upload:fail:uploadFile:fail abort')
+    expect(session.getDownloadFileLogs()).toEqual([])
+    expect(session.getUploadFileLogs()).toEqual([])
+    expect(session.getFileText('headless://temp/browser-download-abort.txt')).toBeNull()
+    expect(session.getFileText('headless://temp/browser-upload-abort.txt')).toBe('browser-upload-abort')
+  })
+
   it('supports downloadFile, saveFile and uploadFile in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
