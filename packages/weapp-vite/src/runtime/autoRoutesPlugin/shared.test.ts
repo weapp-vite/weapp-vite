@@ -2,12 +2,14 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import {
   isAliasedAutoRoutesId,
+  isAutoRoutesCandidateUnchanged,
   isAutoRoutesPagesRelatedPath,
   resolveAutoRoutesAliasTargets,
   resolveAutoRoutesBasePath,
   resolveAutoRoutesMatcherContext,
   resolveAutoRoutesPath,
   shouldAutoRoutesFullRescan,
+  shouldRemoveAutoRoutesCandidate,
 } from './shared'
 
 describe('auto routes shared helpers', () => {
@@ -170,5 +172,53 @@ describe('auto routes shared helpers', () => {
     expect(shouldAutoRoutesFullRescan('rename')).toBe(true)
     expect(shouldAutoRoutesFullRescan('update')).toBe(false)
     expect(shouldAutoRoutesFullRescan()).toBe(false)
+  })
+
+  it('detects when auto-routes candidates should be removed from state', () => {
+    expect(shouldRemoveAutoRoutesCandidate({
+      hasRouteMatch: false,
+      matchesInclude: true,
+      hasCandidateEntry: true,
+    })).toBe(true)
+
+    expect(shouldRemoveAutoRoutesCandidate({
+      hasRouteMatch: true,
+      matchesInclude: false,
+      hasCandidateEntry: true,
+    })).toBe(true)
+
+    expect(shouldRemoveAutoRoutesCandidate({
+      hasRouteMatch: false,
+      matchesInclude: false,
+      hasCandidateEntry: false,
+    })).toBe(false)
+  })
+
+  it('detects unchanged auto-routes candidates by flags and file sets', () => {
+    const previous = {
+      base: '/project/src/pages/home/index',
+      files: new Set([
+        '/project/src/pages/home/index.ts',
+        '/project/src/pages/home/index.json',
+      ]),
+      hasScript: true,
+      hasTemplate: false,
+      jsonPath: '/project/src/pages/home/index.json',
+    }
+
+    expect(isAutoRoutesCandidateUnchanged(previous as any, {
+      ...previous,
+      files: new Set([
+        '/project/src/pages/home/index.json',
+        '/project/src/pages/home/index.ts',
+      ]),
+    } as any)).toBe(true)
+
+    expect(isAutoRoutesCandidateUnchanged(previous as any, {
+      ...previous,
+      hasTemplate: true,
+    } as any)).toBe(false)
+
+    expect(isAutoRoutesCandidateUnchanged(undefined, previous as any)).toBe(false)
   })
 })
