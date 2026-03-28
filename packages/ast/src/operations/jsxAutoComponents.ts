@@ -47,6 +47,32 @@ export function defaultIsDefineComponentSource(source: string) {
   return source === 'vue'
 }
 
+export function getJsxImportedName(imported: any) {
+  return t.isIdentifier(imported)
+    ? imported.name
+    : t.isStringLiteral(imported)
+      ? imported.value
+      : imported?.type === 'Identifier'
+        ? imported.name
+        : imported?.type === 'StringLiteral'
+          ? imported.value
+          : undefined
+}
+
+export function createJsxImportedComponent(
+  localName: string,
+  importSource: string,
+  kind: JsxImportedComponent['kind'],
+  imported?: any,
+): JsxImportedComponent {
+  return {
+    localName,
+    importSource,
+    importedName: kind === 'default' ? 'default' : getJsxImportedName(imported),
+    kind,
+  }
+}
+
 export function defaultResolveBabelComponentExpression(
   declaration: t.Declaration | t.Expression | null,
   defineComponentDecls: Map<string, ObjectExpression>,
@@ -139,28 +165,13 @@ export function collectJsxImportedComponentsAndDefaultExportFromBabelAst(
         }
         const localName = specifier.local.name
         if (t.isImportDefaultSpecifier(specifier)) {
-          imports.set(localName, {
-            localName,
-            importSource,
-            importedName: 'default',
-            kind: 'default',
-          })
+          imports.set(localName, createJsxImportedComponent(localName, importSource, 'default'))
           continue
         }
         if (!t.isImportSpecifier(specifier)) {
           continue
         }
-        const importedName = t.isIdentifier(specifier.imported)
-          ? specifier.imported.name
-          : t.isStringLiteral(specifier.imported)
-            ? specifier.imported.value
-            : undefined
-        imports.set(localName, {
-          localName,
-          importSource,
-          importedName,
-          kind: 'named',
-        })
+        imports.set(localName, createJsxImportedComponent(localName, importSource, 'named', specifier.imported))
       }
     },
     VariableDeclarator(path) {
@@ -471,28 +482,13 @@ export function collectJsxAutoComponentsWithOxc(source: string, options: Require
         }
         const localName = specifier.local.name
         if (specifier.type === 'ImportDefaultSpecifier') {
-          imports.set(localName, {
-            localName,
-            importSource,
-            importedName: 'default',
-            kind: 'default',
-          })
+          imports.set(localName, createJsxImportedComponent(localName, importSource, 'default'))
           continue
         }
         if (specifier.type !== 'ImportSpecifier') {
           continue
         }
-        const importedName = specifier.imported?.type === 'Identifier'
-          ? specifier.imported.name
-          : specifier.imported?.type === 'StringLiteral'
-            ? specifier.imported.value
-            : undefined
-        imports.set(localName, {
-          localName,
-          importSource,
-          importedName,
-          kind: 'named',
-        })
+        imports.set(localName, createJsxImportedComponent(localName, importSource, 'named', specifier.imported))
       }
       continue
     }

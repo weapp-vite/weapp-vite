@@ -27,6 +27,7 @@ import {
   collectSetDataPickKeysWithOxc,
   consumeNamedFeatureFlag,
   consumeNamespaceFeatureFlag,
+  createJsxImportedComponent,
   createLineStartOffsets,
   createWarningPrefix,
   defaultIsDefineComponentSource,
@@ -36,6 +37,7 @@ import {
   extractPropertiesObject,
   extractTemplateExpressions,
   getCallExpressionCalleeName,
+  getJsxImportedName,
   getJsxOxcStaticPropertyName,
   getLocationFromOffset,
   getMemberExpressionPropertyName,
@@ -699,6 +701,21 @@ export default page
       type: 'TSAsExpression',
       expression: { type: 'StringLiteral', value: 'render' },
     })).toBe('render')
+    expect(getJsxImportedName({ type: 'Identifier', name: 'TButton' })).toBe('TButton')
+    expect(getJsxImportedName({ type: 'StringLiteral', value: 'van-button' })).toBe('van-button')
+    expect(getJsxImportedName({ type: 'Literal', value: 'legacy-button' })).toBeUndefined()
+    expect(createJsxImportedComponent('TButton', './TButton', 'default')).toEqual({
+      localName: 'TButton',
+      importSource: './TButton',
+      importedName: 'default',
+      kind: 'default',
+    })
+    expect(createJsxImportedComponent('TCard', './TCard', 'named', { type: 'Identifier', name: 'CardItem' })).toEqual({
+      localName: 'TCard',
+      importSource: './TCard',
+      importedName: 'CardItem',
+      kind: 'named',
+    })
     expect(getJsxOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
     expect(getJsxOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
     expect(collectJsxAutoComponentsWithBabel(`
