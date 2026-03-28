@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createLoadConfig } from './loadConfig'
+import {
+  createLoadConfig,
+  resolveConfigFilePath,
+  shouldReuseLoadedWeappConfig,
+} from './loadConfig'
 
 const loadConfigFromFileMock = vi.hoisted(() => vi.fn())
 const tsconfigPathsMock = vi.hoisted(() => vi.fn((options?: Record<string, unknown>) => ({ name: 'tsconfig-paths', options })))
@@ -119,6 +123,17 @@ beforeEach(() => {
 })
 
 describe('runtime config internal loadConfig', () => {
+  it('resolves config file paths and loaded weapp config reuse checks', () => {
+    expect(resolveConfigFilePath('/project', 'configs/vite.config.ts')).toBe('/project/configs/vite.config.ts')
+    expect(resolveConfigFilePath('/project', '/abs/vite.config.ts')).toBe('/abs/vite.config.ts')
+    expect(resolveConfigFilePath('/project', undefined)).toBeUndefined()
+
+    expect(shouldReuseLoadedWeappConfig('/project/weapp.config.ts', '/project/weapp.config.ts')).toBe(true)
+    expect(shouldReuseLoadedWeappConfig('/project/weapp.config.ts', '/project/./weapp.config.ts')).toBe(true)
+    expect(shouldReuseLoadedWeappConfig('/project/weapp.config.ts', '/project/vite.config.ts')).toBe(false)
+    expect(shouldReuseLoadedWeappConfig('/project/weapp.config.ts', undefined)).toBe(false)
+  })
+
   it('wraps cjs config load errors', async () => {
     const wrapped = new Error('cjs wrapped')
     loadConfigFromFileMock.mockRejectedValueOnce(new Error('boom'))

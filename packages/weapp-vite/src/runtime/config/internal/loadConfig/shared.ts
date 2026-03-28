@@ -1,6 +1,7 @@
 import type { PackageJson } from 'pkg-types'
 import type { RolldownPluginOption } from 'rolldown'
 import type { MpPlatform } from '../../../../types'
+import fs from 'node:fs/promises'
 import path from 'pathe'
 import { getProjectConfigFileName, getProjectPrivateConfigFileName } from '../../../../utils'
 import { toPosixPath } from '../../../../utils/path'
@@ -98,14 +99,15 @@ export function normalizeRelativeDistRoot(value: string) {
   return normalized.startsWith('./') ? normalized.slice(2) : normalized
 }
 
-export async function loadPackageJson(fs: typeof import('fs-extra'), cwd: string) {
+export async function loadPackageJson(cwd: string) {
   const packageJsonPath = path.resolve(cwd, 'package.json')
   let packageJson: PackageJson = {}
-  if (await fs.pathExists(packageJsonPath)) {
-    const content: PackageJson = await fs.readJson(packageJsonPath, {
-      throws: false,
-    }) || {}
-    packageJson = content
+  try {
+    const content = await fs.readFile(packageJsonPath, 'utf8')
+    packageJson = JSON.parse(content) as PackageJson
+  }
+  catch {
+    packageJson = {}
   }
 
   return {

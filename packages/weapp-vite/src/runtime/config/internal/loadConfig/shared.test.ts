@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
 import {
   formatProjectConfigPath,
   loadPackageJson,
@@ -9,6 +12,12 @@ import {
 } from './shared'
 
 describe('loadConfig shared', () => {
+  const tempRoots: string[] = []
+
+  afterEach(async () => {
+    await Promise.all(tempRoots.splice(0).map(root => fs.rm(root, { recursive: true, force: true })))
+  })
+
   it('matches plugin names across nested plugin arrays', () => {
     expect(pluginMatchesName({ name: 'target' } as any, 'target')).toBe(true)
     expect(pluginMatchesName([{ name: 'other' }, [{ name: 'target' }]] as any, 'target')).toBe(true)
@@ -81,25 +90,24 @@ describe('loadConfig shared', () => {
   })
 
   it('loads package.json when present and falls back to an empty object', async () => {
-    const existingFs = {
-      pathExists: vi.fn(async () => true),
-      readJson: vi.fn(async () => ({ name: 'weapp-vite', private: true })),
-    }
+    const existingRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-load-config-shared-'))
+    tempRoots.push(existingRoot)
+    await fs.writeFile(path.join(existingRoot, 'package.json'), JSON.stringify({
+      name: 'weapp-vite',
+      private: true,
+    }), 'utf8')
 
-    await expect(loadPackageJson(existingFs as any, '/project')).resolves.toEqual({
+    await expect(loadPackageJson(existingRoot)).resolves.toEqual({
       packageJson: { name: 'weapp-vite', private: true },
-      packageJsonPath: '/project/package.json',
+      packageJsonPath: path.join(existingRoot, 'package.json'),
     })
 
-    const missingFs = {
-      pathExists: vi.fn(async () => false),
-      readJson: vi.fn(),
-    }
+    const missingRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-load-config-shared-'))
+    tempRoots.push(missingRoot)
 
-    await expect(loadPackageJson(missingFs as any, '/project')).resolves.toEqual({
+    await expect(loadPackageJson(missingRoot)).resolves.toEqual({
       packageJson: {},
-      packageJsonPath: '/project/package.json',
+      packageJsonPath: path.join(missingRoot, 'package.json'),
     })
-    expect(missingFs.readJson).not.toHaveBeenCalled()
   })
 })
