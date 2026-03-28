@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { DashboardSurfaceSampleItem } from '../types'
+
 defineProps<{
-  label: string
-  tone: 'default' | 'strong' | 'muted'
+  label: DashboardSurfaceSampleItem['label']
+  tone: DashboardSurfaceSampleItem['tone']
 }>()
 </script>
 

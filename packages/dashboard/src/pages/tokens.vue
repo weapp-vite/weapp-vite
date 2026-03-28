@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DashboardSurfaceSampleItem } from '../features/dashboard/types'
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
@@ -6,6 +7,12 @@ import AppSurfaceSampleCard from '../features/dashboard/components/AppSurfaceSam
 import AppTokenSwatch from '../features/dashboard/components/AppTokenSwatch.vue'
 import { tokenGroups } from '../features/dashboard/constants/shell'
 import { themeOptions } from '../features/dashboard/constants/view'
+
+const surfaceSamples: DashboardSurfaceSampleItem[] = [
+  { label: 'Default surface', tone: 'default' },
+  { label: 'Strong surface', tone: 'strong' },
+  { label: 'Muted surface', tone: 'muted' },
+]
 </script>
 
 <template>
@@ -54,9 +61,11 @@ import { themeOptions } from '../features/dashboard/constants/view'
         icon-name="token-surface"
       >
         <div class="grid gap-3 md:grid-cols-3">
-          <AppSurfaceSampleCard label="Default surface" tone="default" />
-          <AppSurfaceSampleCard label="Strong surface" tone="strong" />
-          <AppSurfaceSampleCard label="Muted surface" tone="muted" />
+          <AppSurfaceSampleCard
+            v-for="sample in surfaceSamples"
+            :key="sample.label"
+            v-bind="sample"
+          />
         </div>
       </AppSurfaceCard>
 
