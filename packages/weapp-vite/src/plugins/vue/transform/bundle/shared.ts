@@ -4,6 +4,7 @@ import type { JsonMergeStrategy } from '../../../../types'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
 import fs from 'fs-extra'
 import { compileJsxFile, compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
+import { normalizeWatchPath } from '../../../../utils/path'
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { resolveClassStyleWxsLocationForBase } from '../classStyle'
 import { createCompileVueFileOptions } from '../compileOptions'
@@ -271,6 +272,63 @@ export function emitBundleVueEntryAssets(options: {
   return {
     jsonConfig,
   }
+}
+
+export function addBundleWatchFile(pluginCtx: any, filePath: string) {
+  if (typeof pluginCtx.addWatchFile !== 'function') {
+    return
+  }
+
+  pluginCtx.addWatchFile(normalizeWatchPath(filePath))
+}
+
+export function emitFallbackPageBundleAssets(options: {
+  bundle: Record<string, any>
+  pluginCtx: any
+  ctx: CompilerContext
+  filename: string
+  relativeBase: string
+  result: Pick<VueTransformResult, 'template' | 'style' | 'config' | 'classStyleWxs' | 'scopedSlotComponents'>
+  configService: NonNullable<CompilerContext['configService']>
+  templateExtension: string
+  styleExtension: string
+  jsonExtension: string
+  scriptModuleExtension?: string
+  outputExtensions: NonNullable<CompilerContext['configService']>['outputExtensions']
+  platformAssetOptions: {
+    platform: string
+    templateExtension: string
+    scriptModuleExtension?: string
+    dependencies?: Record<string, string>
+    alipayNpmMode?: string
+  }
+}) {
+  const { jsonConfig } = emitBundleVueEntryAssets({
+    bundle: options.bundle,
+    pluginCtx: options.pluginCtx,
+    ctx: options.ctx,
+    filename: options.filename,
+    relativeBase: options.relativeBase,
+    result: options.result as VueTransformResult,
+    configService: options.configService,
+    templateExtension: options.templateExtension,
+    scriptModuleExtension: options.scriptModuleExtension,
+    outputExtensions: options.outputExtensions,
+    platformAssetOptions: options.platformAssetOptions,
+  })
+
+  emitSharedFallbackPageAssets({
+    bundle: options.bundle,
+    pluginCtx: options.pluginCtx,
+    relativeBase: options.relativeBase,
+    result: options.result,
+    outputExtensions: options.outputExtensions,
+    platformAssetOptions: options.platformAssetOptions,
+    styleExtension: options.styleExtension,
+    jsonExtension: options.jsonExtension,
+    jsonDefaults: jsonConfig?.defaults?.page,
+    jsonMergeStrategy: jsonConfig?.mergeStrategy,
+  })
 }
 
 export function getEntryBaseName(filename: string) {

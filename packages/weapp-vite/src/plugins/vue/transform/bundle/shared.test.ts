@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, emitBundleVueEntryAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -459,6 +459,22 @@ describe('emitSharedVueEntryAssets', () => {
     })).toBe('/project/src/pages/demo/index.vue')
   })
 
+  it('adds normalized watch file through bundle helper', () => {
+    const addWatchFile = vi.fn()
+
+    addBundleWatchFile({
+      addWatchFile,
+    }, 'C:\\project\\src\\pages\\demo\\index.vue')
+
+    expect(addWatchFile).toHaveBeenCalledWith('C:/project/src/pages/demo/index.vue')
+  })
+
+  it('skips bundle watch registration when plugin context cannot watch files', () => {
+    expect(() => {
+      addBundleWatchFile({}, '/project/src/pages/demo/index.vue')
+    }).not.toThrow()
+  })
+
   it('loads fallback page entry compilation through shared read-and-compile flow', async () => {
     readFileMock.mockResolvedValue('<view>{{title}}</view>')
     injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
@@ -490,6 +506,84 @@ describe('emitSharedVueEntryAssets', () => {
     expect(compileVueFileMock).toHaveBeenCalledTimes(1)
     expect(result.source).toBe('<view>{{title}}</view>')
     expect(result.result.script).toBe('Page({ loaded: true })')
+  })
+
+  it('emits fallback page bundle assets through shared entry and page flows', () => {
+    emitFallbackPageBundleAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {} as any,
+      filename: '/project/src/pages/index/index.vue',
+      relativeBase: 'pages/index/index',
+      result: {
+        template: '<view />',
+        style: '.page{}',
+        config: '{"navigationBarTitleText":"首页"}',
+        scopedSlotComponents: [],
+      } as any,
+      configService: {
+        weappViteConfig: {
+          json: {
+            defaults: {
+              component: {
+                styleIsolation: 'apply-shared',
+              },
+              page: {
+                navigationStyle: 'default',
+              },
+            },
+            mergeStrategy: 'override',
+          },
+        },
+      } as any,
+      templateExtension: 'axml',
+      styleExtension: 'acss',
+      jsonExtension: 'json',
+      scriptModuleExtension: 'sjs',
+      outputExtensions: {},
+      platformAssetOptions: {
+        platform: 'alipay',
+        templateExtension: 'axml',
+        scriptModuleExtension: 'sjs',
+      },
+    })
+
+    expect(emitPlatformTemplateAssetMock).toHaveBeenCalledTimes(1)
+    expect(emitScopedSlotAssetsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/index/index',
+      expect.objectContaining({ template: '<view />' }),
+      expect.anything(),
+      undefined,
+      {},
+      {
+        defaults: {
+          styleIsolation: 'apply-shared',
+        },
+        mergeStrategy: 'override',
+      },
+    )
+    expect(emitSfcStyleIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/index/index',
+      '.page{}',
+      'acss',
+    )
+    expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/index/index',
+      { config: '{"component":true}' },
+      {
+        mergeExistingAsset: true,
+        mergeStrategy: 'override',
+        defaults: { navigationStyle: 'default' },
+        kind: 'page',
+        extension: 'json',
+      },
+    )
   })
 
   it('handles fallback page layouts through shared resolve-and-emit flow', async () => {

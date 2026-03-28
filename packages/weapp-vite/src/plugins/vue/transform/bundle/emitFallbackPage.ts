@@ -1,11 +1,10 @@
 import type { VueBundleState } from './shared'
 import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
-import { normalizeWatchPath } from '../../../../utils/path'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
-import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, emitFallbackPageBundleAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -49,9 +48,7 @@ export async function emitFallbackPageAssets(
       continue
     }
 
-    if (typeof pluginCtx.addWatchFile === 'function') {
-      pluginCtx.addWatchFile(normalizeWatchPath(entryFilePath))
-    }
+    addBundleWatchFile(pluginCtx, entryFilePath)
 
     try {
       const { source, result } = await loadFallbackPageEntryCompilation({
@@ -79,7 +76,7 @@ export async function emitFallbackPageAssets(
         },
       })
 
-      const { jsonConfig } = emitBundleVueEntryAssets({
+      emitFallbackPageBundleAssets({
         bundle,
         pluginCtx,
         ctx,
@@ -88,22 +85,11 @@ export async function emitFallbackPageAssets(
         result,
         configService,
         templateExtension,
+        styleExtension,
+        jsonExtension,
         scriptModuleExtension,
         outputExtensions,
         platformAssetOptions,
-      })
-
-      emitSharedFallbackPageAssets({
-        bundle,
-        pluginCtx,
-        relativeBase,
-        result,
-        outputExtensions,
-        platformAssetOptions,
-        styleExtension,
-        jsonExtension,
-        jsonDefaults: jsonConfig?.defaults?.page,
-        jsonMergeStrategy: jsonConfig?.mergeStrategy,
       })
     }
     catch (error) {
