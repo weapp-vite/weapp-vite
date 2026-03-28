@@ -327,6 +327,13 @@ export interface DashboardRuntimeBadgeItem {
   tone?: DashboardRuntimeBadgeTone
 }
 
+export type DashboardSurfaceTone = 'default' | 'strong' | 'muted'
+
+export interface DashboardSurfaceSampleItem {
+  label: string
+  tone: DashboardSurfaceTone
+}
+
 export interface DashboardValueOption<T extends string = string> {
   value: T
   label: string
