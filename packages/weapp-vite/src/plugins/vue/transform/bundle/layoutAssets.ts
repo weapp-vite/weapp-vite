@@ -7,6 +7,22 @@ import { collectNativeLayoutAssets } from '../pageLayout'
 import { resolveBundleOutputExtensions } from './outputExtensions'
 import { compileVueLikeFile, getEntryBaseName, SCRIPTLESS_COMPONENT_STUB } from './shared'
 
+export function resolveVueLayoutAssetOptions(options: {
+  configService: NonNullable<CompilerContext['configService']>
+  layoutBasePath: string
+  outputExtensions: OutputExtensions | undefined
+}) {
+  const relativeBase = options.configService.relativeOutputPath(options.layoutBasePath)
+  if (!relativeBase) {
+    return undefined
+  }
+
+  return {
+    relativeBase,
+    ...resolveBundleOutputExtensions(options.outputExtensions),
+  }
+}
+
 export async function emitNativeLayoutScriptChunkIfNeeded(options: {
   pluginCtx: any
   layoutBasePath: string
@@ -14,8 +30,12 @@ export async function emitNativeLayoutScriptChunkIfNeeded(options: {
   outputExtensions: OutputExtensions | undefined
 }) {
   const { pluginCtx, layoutBasePath, configService, outputExtensions } = options
-  const relativeBase = configService.relativeOutputPath(layoutBasePath)
-  if (!relativeBase) {
+  const resolvedOptions = resolveVueLayoutAssetOptions({
+    configService,
+    layoutBasePath,
+    outputExtensions,
+  })
+  if (!resolvedOptions) {
     return
   }
 
@@ -24,8 +44,7 @@ export async function emitNativeLayoutScriptChunkIfNeeded(options: {
     return
   }
 
-  const { scriptExtension } = resolveBundleOutputExtensions(outputExtensions)
-  const fileName = `${relativeBase}.${scriptExtension}`
+  const fileName = `${resolvedOptions.relativeBase}.${resolvedOptions.scriptExtension}`
   const emittedLayoutScripts: Set<string> = (pluginCtx as any).__weappViteNativeLayoutScripts ?? ((pluginCtx as any).__weappViteNativeLayoutScripts = new Set<string>())
   if (emittedLayoutScripts.has(fileName)) {
     return
@@ -49,31 +68,34 @@ export async function emitNativeLayoutAssetsIfNeeded(options: {
   outputExtensions: OutputExtensions | undefined
 }) {
   const { pluginCtx, bundle, layoutBasePath, configService, outputExtensions } = options
-  const relativeBase = configService.relativeOutputPath(layoutBasePath)
-  if (!relativeBase) {
+  const resolvedOptions = resolveVueLayoutAssetOptions({
+    configService,
+    layoutBasePath,
+    outputExtensions,
+  })
+  if (!resolvedOptions) {
     return
   }
 
   const assets = await collectNativeLayoutAssets(layoutBasePath)
-  const { jsonExtension, templateExtension, styleExtension } = resolveBundleOutputExtensions(outputExtensions)
 
   if (assets.json) {
     const source = await fs.readFile(assets.json, 'utf8')
-    emitSfcJsonAsset(pluginCtx, bundle, relativeBase, { config: source }, {
+    emitSfcJsonAsset(pluginCtx, bundle, resolvedOptions.relativeBase, { config: source }, {
       emitIfMissingOnly: true,
-      extension: jsonExtension,
+      extension: resolvedOptions.jsonExtension,
       kind: 'component',
     })
   }
 
   if (assets.template) {
     const source = await fs.readFile(assets.template, 'utf8')
-    emitSfcTemplateIfMissing(pluginCtx, bundle, relativeBase, source, templateExtension)
+    emitSfcTemplateIfMissing(pluginCtx, bundle, resolvedOptions.relativeBase, source, resolvedOptions.templateExtension)
   }
 
   if (assets.style) {
     const source = await fs.readFile(assets.style, 'utf8')
-    emitSfcStyleIfMissing(pluginCtx, bundle, relativeBase, source, styleExtension)
+    emitSfcStyleIfMissing(pluginCtx, bundle, resolvedOptions.relativeBase, source, resolvedOptions.styleExtension)
   }
 }
 
@@ -115,13 +137,16 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
     outputExtensions,
   } = options
 
-  const relativeBase = configService.relativeOutputPath(getEntryBaseName(layoutFilePath))
-  if (!relativeBase) {
+  const resolvedOptions = resolveVueLayoutAssetOptions({
+    configService,
+    layoutBasePath: getEntryBaseName(layoutFilePath),
+    outputExtensions,
+  })
+  if (!resolvedOptions) {
     return
   }
 
-  const { scriptExtension } = resolveBundleOutputExtensions(outputExtensions)
-  const scriptFileName = `${relativeBase}.${scriptExtension}`
+  const scriptFileName = `${resolvedOptions.relativeBase}.${resolvedOptions.scriptExtension}`
   if (bundle[scriptFileName]) {
     return
   }
@@ -145,7 +170,7 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
   emitScriptlessComponentJsFallbackIfMissing({
     pluginCtx,
     bundle,
-    relativeBase,
-    scriptExtension,
+    relativeBase: resolvedOptions.relativeBase,
+    scriptExtension: resolvedOptions.scriptExtension,
   })
 }
