@@ -1,3 +1,7 @@
+import type {
+  HeadlessWxDownloadFileMockDefinition,
+  HeadlessWxUploadFileMockDefinition,
+} from '..'
 import { expectType } from 'tsd'
 import {
   createBrowserHeadlessSession,
@@ -16,6 +20,25 @@ const browserFiles = createBrowserVirtualFiles([
 const browserSession = createBrowserHeadlessSession({ files: browserFiles })
 browserSession.reLaunch('/pages/index/index')
 const browserPage = browserSession.getCurrentPages()[0]
+
+expectType<void>(browserSession.mockDownloadFile({
+  fileContent: (option) => {
+    expectType<string>(option.url)
+    return option.filePath ?? 'headless://wxfile/temp/browser-report.txt'
+  },
+  url: 'https://mock.mpcore.dev/files/report.txt',
+}))
+expectType<void>(browserSession.mockUploadFile({
+  response: (option) => {
+    expectType<string>(option.fileContent)
+    expectType<string>(option.name)
+    return {
+      data: option.fileContent,
+      statusCode: 201,
+    }
+  },
+  url: 'https://mock.mpcore.dev/upload/report',
+}))
 
 expectType<string | null>(browserSession.getCurrentPageNavigationBarTitle())
 expectType<{ active: boolean, stopCalls: number }>(browserSession.getPullDownRefreshState())
@@ -102,6 +125,25 @@ browserPage?.wx.removeSavedFile({
 
 const headlessSession = createHeadlessSession({ projectPath: '/tmp/project' })
 const headlessPage = headlessSession.getCurrentPages()[0]
+
+const headlessDownloadMock: HeadlessWxDownloadFileMockDefinition = {
+  fileContent: 'downloaded report',
+  url: /report\.txt$/,
+}
+expectType<void>(headlessSession.mockDownloadFile(headlessDownloadMock))
+
+const headlessUploadMock: HeadlessWxUploadFileMockDefinition = {
+  response: (option) => {
+    expectType<string>(option.fileContent)
+    expectType<Record<string, unknown>>(option.formData ?? {})
+    return JSON.stringify({
+      accepted: true,
+      filePath: option.filePath,
+    })
+  },
+  url: /upload\/report$/,
+}
+expectType<void>(headlessSession.mockUploadFile(headlessUploadMock))
 
 expectType<{ active: boolean, stopCalls: number }>(headlessSession.getPullDownRefreshState())
 expectType<{ visible: boolean }>(headlessSession.getTabBar())
