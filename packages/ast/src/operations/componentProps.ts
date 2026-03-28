@@ -258,7 +258,7 @@ export function resolveOptionsObjectExpressionWithBabel(
   return undefined
 }
 
-function extractComponentProperties(optionsNode: any): ComponentPropMap {
+export function extractComponentProperties(optionsNode: any): ComponentPropMap {
   for (const property of optionsNode?.properties ?? []) {
     if (property?.type !== 'ObjectProperty' && property?.type !== 'Property') {
       continue
