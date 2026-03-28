@@ -10,7 +10,7 @@ export interface FeatureFlagOptions<TFeature extends string> {
   hookToFeature: Record<string, TFeature>
 }
 
-function mayContainFeatureFlagHints<TFeature extends string>(
+export function mayContainFeatureFlagHints<TFeature extends string>(
   code: string,
   moduleId: string,
   hookToFeature: Record<string, TFeature>,
