@@ -7,6 +7,7 @@ import {
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
   collectJsxTemplateTagsFromBabelExpression,
   collectLoopScopeAliases,
+  collectPageScrollInspection,
   collectPageScrollInspectionWithOxc,
   createLineStartOffsets,
   createWarningPrefix,
@@ -685,6 +686,33 @@ export function useCounter() {
 
   it('exposes onPageScroll location helpers', () => {
     const lineStarts = createLineStartOffsets('first\nsecond\nthird')
+    const babelInspectionState = {
+      skipped: false,
+    }
+    const babelFunctionPath = {
+      traverse(visitors: Record<string, (path: any) => void>) {
+        visitors.CallExpression?.({
+          node: {
+            callee: t.identifier('setData'),
+          },
+        })
+        visitors.OptionalCallExpression?.({
+          node: {
+            callee: t.optionalMemberExpression(
+              t.identifier('wx'),
+              t.identifier('getStorageSync'),
+              false,
+              true,
+            ),
+          },
+        })
+        visitors.Function?.({
+          skip() {
+            babelInspectionState.skipped = true
+          },
+        })
+      },
+    }
 
     expect(lineStarts).toEqual([0, 6, 13])
     expect(getLocationFromOffset(0, lineStarts)).toEqual({ line: 1, column: 1 })
@@ -718,6 +746,18 @@ export function useCounter() {
       computed: true,
       property: { type: 'NumericLiteral', value: 1 },
     })).toBeUndefined()
+    expect(collectPageScrollInspection(
+      babelFunctionPath,
+      t.arrowFunctionExpression(
+        [],
+        t.blockStatement([]),
+      ),
+    )).toEqual({
+      empty: true,
+      hasSetDataCall: true,
+      syncApis: new Set(['wx.getStorageSync']),
+    })
+    expect(babelInspectionState.skipped).toBe(true)
     expect(collectPageScrollInspectionWithOxc({
       type: 'ArrowFunctionExpression',
       body: {

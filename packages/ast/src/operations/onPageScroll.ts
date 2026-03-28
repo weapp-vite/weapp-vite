@@ -63,7 +63,7 @@ export function getCallExpressionCalleeName(
   return undefined
 }
 
-function collectPageScrollInspection(
+export function collectPageScrollInspection(
   functionPath: any,
   node: t.ArrowFunctionExpression | t.FunctionExpression | t.ObjectMethod,
 ): PageScrollInspection {
