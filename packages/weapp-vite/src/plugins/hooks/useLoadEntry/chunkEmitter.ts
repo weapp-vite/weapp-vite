@@ -1,8 +1,8 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
 import type { CompilerContext } from '../../../context'
 import { performance } from 'node:perf_hooks'
-import { changeFileExtension } from '../../../utils'
 import { normalizeFsResolvedId } from '../../../utils/resolvedId'
+import { resolveRelativeOutputFileNameWithExtension } from '../../utils/outputFileName'
 
 export function createChunkEmitter(
   configService: CompilerContext['configService'],
@@ -24,9 +24,7 @@ export function createChunkEmitter(
         await this.load(resolvedId)
       }
 
-      const fileName = configService.relativeOutputPath(
-        changeFileExtension(resolvedId.id, '.js'),
-      )
+      const fileName = resolveRelativeOutputFileNameWithExtension(configService, resolvedId.id, '.js')
 
       this.emitFile({
         type: 'chunk',

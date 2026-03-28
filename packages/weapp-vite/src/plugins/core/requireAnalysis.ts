@@ -3,8 +3,10 @@ import type { RequireToken } from '../utils/ast'
 import type { CorePluginState } from './helpers'
 import path from 'pathe'
 import logger from '../../logger'
-import { changeFileExtension } from '../../utils/file'
 import { collectRequireTokens } from '../utils/ast'
+import { resolveRelativeOutputFileNameWithExtension } from '../utils/outputFileName'
+
+const REQUIRE_ANALYSIS_FILTER_RE = /\.[jt]s$/
 
 export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
   const { ctx, requireAsyncEmittedChunks } = state
@@ -16,7 +18,7 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
 
     transform: {
       filter: {
-        id: /\.[jt]s$/,
+        id: REQUIRE_ANALYSIS_FILTER_RE,
       },
       handler(code) {
         try {
@@ -58,9 +60,7 @@ export function createRequireAnalysisPlugin(state: CorePluginState): Plugin {
         this.emitFile({
           type: 'chunk',
           id: resolved.id,
-          fileName: configService.relativeOutputPath(
-            changeFileExtension(resolved.id, '.js'),
-          ),
+          fileName: resolveRelativeOutputFileNameWithExtension(configService, resolved.id, '.js'),
           preserveSignature: 'exports-only',
         })
       }
