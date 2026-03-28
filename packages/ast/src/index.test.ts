@@ -52,6 +52,7 @@ import {
   getStaticPropertyName,
   getStaticRequireLiteralValue,
   hasBindingInScopes,
+  hasPlatformApiMemberExpression,
   isJsxDefineComponentImportSpecifier,
   isOnPageScrollCallee,
   isOxcFunctionLike,
@@ -217,6 +218,30 @@ import FooCard, { BarButton as RenamedButton } from './components'
     expect(isPlatformApiMemberExpression({ type: 'Identifier', name: 'wx' })).toBe(false)
     expect(mayContainPlatformApiIdentifierByText('const value = my.request({})')).toBe(true)
     expect(mayContainPlatformApiIdentifierByText('const value = localStorage.getItem("x")')).toBe(false)
+    expect(hasPlatformApiMemberExpression({
+      type: 'Program',
+      body: [{
+        type: 'ExpressionStatement',
+        expression: {
+          type: 'MemberExpression',
+          object: { type: 'Identifier', name: 'wx' },
+          property: { type: 'Identifier', name: 'request' },
+        },
+      }],
+      sourceType: 'module',
+    } as any)).toBe(true)
+    expect(hasPlatformApiMemberExpression({
+      type: 'Program',
+      body: [{
+        type: 'ExpressionStatement',
+        expression: {
+          type: 'MemberExpression',
+          object: { type: 'Identifier', name: 'console' },
+          property: { type: 'Identifier', name: 'log' },
+        },
+      }],
+      sourceType: 'module',
+    } as any)).toBe(false)
     expect(mayContainPlatformApiAccess('const value = wx.getStorageSync("x")', { engine: 'oxc' })).toBe(true)
     expect(mayContainPlatformApiAccess('const value = localStorage.getItem("x")', { engine: 'oxc' })).toBe(false)
     expect(mayContainStaticRequireLiteral('const mod = require("./dep")', { engine: 'oxc' })).toBe(true)
