@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitBundlePageLayoutsIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, resolveNativeLayoutAssetState, resolveNativeLayoutScriptChunkState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
+import { createBundleLayoutEmitters, emitBundlePageLayoutsIfNeeded, emitNativeLayoutAssetsIfNeeded, emitNativeLayoutScriptChunkIfNeeded, emitResolvedBundleLayouts, emitResolvedNativeLayoutStaticAssets, emitVueLayoutScriptFallbackIfNeeded, resolveNativeLayoutAssetState, resolveNativeLayoutScriptChunkState, resolveVueLayoutAssetOptions, resolveVueLayoutScriptFallbackState } from './layoutAssets'
 
 const readFileMock = vi.hoisted(() => vi.fn(async () => '<view />'))
 const collectNativeLayoutAssetsMock = vi.hoisted(() => vi.fn(async () => ({
@@ -187,6 +187,25 @@ describe('resolveVueLayoutAssetOptions', () => {
     })).resolves.toBeUndefined()
   })
 
+  it('returns early when native layout script chunk state is missing', async () => {
+    collectNativeLayoutAssetsMock.mockResolvedValue({
+      template: '/project/layouts/default/index.wxml',
+    })
+
+    await emitNativeLayoutScriptChunkIfNeeded({
+      pluginCtx: { emitFile: vi.fn() },
+      layoutBasePath: 'layouts/default/index',
+      configService: {
+        relativeOutputPath: (value: string) => `dist/${value}`,
+      } as any,
+      outputExtensions: {
+        js: 'mjs',
+      } as any,
+    })
+
+    expect(emitSfcJsonAssetMock).not.toHaveBeenCalled()
+  })
+
   it('emits resolved native layout static assets by asset kind', async () => {
     readFileMock.mockImplementation(async (file: string) => {
       if (file.endsWith('.wxml')) {
@@ -241,6 +260,134 @@ describe('resolveVueLayoutAssetOptions', () => {
         js: 'mjs',
       } as any,
     })).toBeUndefined()
+  })
+
+  it('returns undefined for vue layout script fallback when output options cannot be resolved', () => {
+    expect(resolveVueLayoutScriptFallbackState({
+      bundle: {},
+      layoutFilePath: '/project/layouts/vue-default/index.vue',
+      configService: {
+        relativeOutputPath: () => '',
+      } as any,
+      outputExtensions: {
+        js: 'mjs',
+      } as any,
+    })).toBeUndefined()
+  })
+
+  it('returns early for vue layout fallback when shared state cannot be resolved', async () => {
+    await emitVueLayoutScriptFallbackIfNeeded({
+      pluginCtx: { emitFile: vi.fn() },
+      bundle: {},
+      layoutFilePath: '/project/layouts/vue-default/index.vue',
+      ctx: {} as any,
+      configService: {
+        relativeOutputPath: () => '',
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+      outputExtensions: {
+        js: 'mjs',
+      } as any,
+    })
+
+    expect(readFileMock).not.toHaveBeenCalledWith('/project/layouts/vue-default/index.vue', 'utf-8')
+    expect(compileVueLikeFileMock).not.toHaveBeenCalled()
+  })
+
+  it('returns early for vue layout fallback when compiled script already exists', async () => {
+    compileVueLikeFileMock.mockResolvedValue({
+      script: 'Component({})',
+    })
+
+    await emitVueLayoutScriptFallbackIfNeeded({
+      pluginCtx: { emitFile: vi.fn() },
+      bundle: {},
+      layoutFilePath: '/project/layouts/vue-default/index.vue',
+      ctx: {} as any,
+      configService: {
+        relativeOutputPath: (value: string) => `dist/${value}`,
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+      outputExtensions: {
+        js: 'mjs',
+      } as any,
+    })
+
+    expect(readFileMock).toHaveBeenCalledWith('/project/layouts/vue-default/index.vue', 'utf-8')
+    expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
+  })
+
+  it('emits native layout assets including json when present', async () => {
+    collectNativeLayoutAssetsMock.mockResolvedValue({
+      json: '/project/layouts/default/index.json',
+      template: '/project/layouts/default/index.wxml',
+    })
+    readFileMock.mockImplementation(async (file: string) => {
+      if (file.endsWith('.json')) {
+        return '{"component":true}'
+      }
+      return '<view />'
+    })
+
+    await emitNativeLayoutAssetsIfNeeded({
+      pluginCtx: { emitFile: vi.fn() },
+      bundle: {},
+      layoutBasePath: 'layouts/default/index',
+      configService: {
+        relativeOutputPath: (value: string) => `dist/${value}`,
+      } as any,
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        json: 'json',
+        js: 'js',
+      } as any,
+    })
+
+    expect(emitSfcJsonAssetMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'dist/layouts/default/index',
+      { config: '{"component":true}' },
+      {
+        emitIfMissingOnly: true,
+        extension: 'json',
+        kind: 'component',
+      },
+    )
+  })
+
+  it('creates bundle layout emitters for native and vue layout paths', async () => {
+    const emitters = createBundleLayoutEmitters({
+      pluginCtx: { emitFile: vi.fn() },
+      bundle: {},
+      ctx: {} as any,
+      configService: {
+        relativeOutputPath: (value: string) => `dist/${value}`,
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        json: 'json',
+        js: 'js',
+      },
+    })
+
+    await emitters.emitNativeLayout('layouts/native-default/index')
+    await emitters.emitVueLayout('/project/layouts/vue-default/index.vue')
+
+    expect(collectNativeLayoutAssetsMock).toHaveBeenCalledWith('layouts/native-default/index')
+    expect(compileVueLikeFileMock).toHaveBeenCalledTimes(1)
   })
 
   it('dispatches resolved bundle layouts by layout kind', async () => {

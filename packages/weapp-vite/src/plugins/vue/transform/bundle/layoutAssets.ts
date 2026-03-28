@@ -266,6 +266,38 @@ export async function emitVueLayoutScriptFallbackIfNeeded(options: {
   })
 }
 
+export function createBundleLayoutEmitters(options: {
+  pluginCtx: any
+  bundle: Record<string, any>
+  ctx: CompilerContext
+  configService: NonNullable<CompilerContext['configService']>
+  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+  outputExtensions: OutputExtensions | undefined
+}) {
+  return {
+    emitNativeLayout: async (layoutFilePath: string) => {
+      await emitNativeLayoutAssetsIfNeeded({
+        pluginCtx: options.pluginCtx,
+        bundle: options.bundle,
+        layoutBasePath: layoutFilePath,
+        configService: options.configService,
+        outputExtensions: options.outputExtensions,
+      })
+    },
+    emitVueLayout: async (layoutFilePath: string) => {
+      await emitVueLayoutScriptFallbackIfNeeded({
+        pluginCtx: options.pluginCtx,
+        bundle: options.bundle,
+        layoutFilePath,
+        ctx: options.ctx,
+        configService: options.configService,
+        compileOptionsState: options.compileOptionsState,
+        outputExtensions: options.outputExtensions,
+      })
+    },
+  }
+}
+
 export async function emitBundlePageLayoutsIfNeeded(options: {
   layouts: ResolvedBundleLayout[] | undefined
   pluginCtx: any
@@ -275,32 +307,14 @@ export async function emitBundlePageLayoutsIfNeeded(options: {
   compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
   outputExtensions: OutputExtensions | undefined
 }) {
-  const { layouts, pluginCtx, bundle, ctx, configService, compileOptionsState, outputExtensions } = options
-  if (!layouts?.length) {
+  if (!options.layouts?.length) {
     return
   }
 
+  const layoutEmitters = createBundleLayoutEmitters(options)
   await emitResolvedBundleLayouts({
-    layouts,
-    emitNativeLayout: async (layoutFilePath) => {
-      await emitNativeLayoutAssetsIfNeeded({
-        pluginCtx,
-        bundle,
-        layoutBasePath: layoutFilePath,
-        configService,
-        outputExtensions,
-      })
-    },
-    emitVueLayout: async (layoutFilePath) => {
-      await emitVueLayoutScriptFallbackIfNeeded({
-        pluginCtx,
-        bundle,
-        layoutFilePath,
-        ctx,
-        configService,
-        compileOptionsState,
-        outputExtensions,
-      })
-    },
+    layouts: options.layouts,
+    emitNativeLayout: layoutEmitters.emitNativeLayout,
+    emitVueLayout: layoutEmitters.emitVueLayout,
   })
 }
