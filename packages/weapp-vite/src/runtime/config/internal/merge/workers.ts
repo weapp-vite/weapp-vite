@@ -15,6 +15,18 @@ interface MergeWorkersOptions {
   applyRuntimePlatform: (runtime: 'miniprogram' | 'web') => void
 }
 
+export function resolveWorkersBuildDefaults(isDev: boolean) {
+  return isDev
+    ? {
+        watch: {},
+        minify: false,
+        emptyOutDir: false,
+      }
+    : {
+        emptyOutDir: false,
+      }
+}
+
 export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<InlineConfig>[]) {
   const {
     ctx,
@@ -37,11 +49,7 @@ export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<I
         mode: 'development',
         plugins: [vitePluginWeappWorkers(ctx as any)],
         define: getDefineImportMetaEnv(),
-        build: {
-          watch: {},
-          minify: false,
-          emptyOutDir: false,
-        },
+        build: resolveWorkersBuildDefaults(true),
       },
     )
     applyWeappViteHostMeta(inline, 'miniprogram')
@@ -58,9 +66,7 @@ export function mergeWorkers(options: MergeWorkersOptions, ...configs: Partial<I
       mode: 'production',
       plugins: [vitePluginWeappWorkers(ctx as any)],
       define: getDefineImportMetaEnv(),
-      build: {
-        emptyOutDir: false,
-      },
+      build: resolveWorkersBuildDefaults(false),
     },
   )
   applyWeappViteHostMeta(inlineConfig, 'miniprogram')
