@@ -1,5 +1,14 @@
 import type { CompilerContext } from '../../../context'
 
+export function resolveVueOutputBase(
+  configService: Pick<NonNullable<CompilerContext['configService']>, 'relativeOutputPath'>,
+  filePath: string,
+) {
+  const extIndex = filePath.lastIndexOf('.')
+  const basePath = extIndex >= 0 ? filePath.slice(0, extIndex) : filePath
+  return configService.relativeOutputPath(basePath)
+}
+
 export function registerVueTemplateToken(
   ctx: CompilerContext,
   filename: string,
