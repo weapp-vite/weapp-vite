@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { DashboardIconName } from '../types'
+import type { DashboardIconFeatureItem } from '../types'
 import { mutedPanelStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
-  iconName: DashboardIconName
-  title: string
-  description?: string
-  eyebrow?: string
+  iconName: DashboardIconFeatureItem['iconName']
+  title: DashboardIconFeatureItem['title']
+  description?: DashboardIconFeatureItem['description']
+  eyebrow?: DashboardIconFeatureItem['eyebrow']
   interactive?: boolean
-  meta?: string
+  meta?: DashboardIconFeatureItem['meta']
 }>()
 </script>
 

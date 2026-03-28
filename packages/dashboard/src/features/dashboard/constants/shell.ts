@@ -1,4 +1,4 @@
-import type { DashboardNavItem, DashboardRuntimeEvent } from '../types'
+import type { DashboardIconFeatureItem, DashboardNavItem, DashboardRuntimeEvent } from '../types'
 
 export const workspaceNavigation: DashboardNavItem[] = [
   { to: '/', label: '工作台', caption: '应用入口与状态总览', iconName: 'nav-home' },
@@ -7,7 +7,7 @@ export const workspaceNavigation: DashboardNavItem[] = [
   { to: '/tokens', label: '设计令牌', caption: '主题、表面与组件预览', iconName: 'nav-tokens' },
 ]
 
-export const workspaceHighlights = [
+export const workspaceHighlights: DashboardIconFeatureItem[] = [
   {
     title: 'Workspace Readiness',
     description: '把 dashboard 从单页分析器抬升成完整 UI 外壳，便于后续不断挂接调试能力。',
