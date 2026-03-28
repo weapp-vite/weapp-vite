@@ -40,7 +40,9 @@ import {
   getStaticPropertyName,
   getStaticRequireLiteralValue,
   hasBindingInScopes,
+  isOnPageScrollCallee,
   isOxcFunctionLike,
+  isOxcOnPageScrollCallee,
   isPlatformApiIdentifier,
   isStaticPropertyName,
   mapConstructorName,
@@ -899,6 +901,13 @@ export function useCounter() {
     expect(getCallExpressionCalleeName(t.identifier('setData'))).toBe('setData')
     expect(getMemberExpressionPropertyName(t.memberExpression(t.identifier('wx'), t.identifier('setData')))).toBe('setData')
     expect(getMemberExpressionPropertyName(t.memberExpression(t.identifier('wx'), t.stringLiteral('getStorageSync'), true))).toBe('getStorageSync')
+    expect(isOnPageScrollCallee(t.identifier('onScroll'), new Set(['onScroll']), new Set())).toBe(true)
+    expect(isOnPageScrollCallee(
+      t.memberExpression(t.identifier('wevu'), t.identifier('onPageScroll')),
+      new Set(['onScroll']),
+      new Set(['wevu']),
+    )).toBe(true)
+    expect(isOnPageScrollCallee(t.identifier('onLoad'), new Set(['onScroll']), new Set())).toBe(false)
     expect(isOxcFunctionLike({ type: 'FunctionExpression' })).toBe(true)
     expect(isOxcFunctionLike({ type: 'ObjectExpression' })).toBe(false)
     expect(getOxcStaticPropertyName({ type: 'Identifier', name: 'onPageScroll' })).toBe('onPageScroll')
@@ -906,6 +915,26 @@ export function useCounter() {
     expect(getOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
     expect(getOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
     expect(getOxcCallExpressionCalleeName({ type: 'Identifier', name: 'setData' })).toBe('setData')
+    expect(isOxcOnPageScrollCallee(
+      { type: 'Identifier', name: 'onScroll' },
+      new Set(['onScroll']),
+      new Set(),
+    )).toBe(true)
+    expect(isOxcOnPageScrollCallee(
+      {
+        type: 'MemberExpression',
+        object: { type: 'Identifier', name: 'wevu' },
+        property: { type: 'Identifier', name: 'onPageScroll' },
+        computed: false,
+      },
+      new Set(['onScroll']),
+      new Set(['wevu']),
+    )).toBe(true)
+    expect(isOxcOnPageScrollCallee(
+      { type: 'Identifier', name: 'onLoad' },
+      new Set(['onScroll']),
+      new Set(),
+    )).toBe(false)
     expect(getOxcMemberExpressionPropertyName({
       type: 'MemberExpression',
       computed: false,
