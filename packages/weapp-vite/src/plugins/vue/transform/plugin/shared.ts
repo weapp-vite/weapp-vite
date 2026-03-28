@@ -179,6 +179,44 @@ export function invalidateVueFileCaches(
   styleBlocksCache.delete(file)
 }
 
+export function handleTransformLayoutInvalidation(
+  file: string,
+  options: {
+    configService: NonNullable<CompilerContext['configService']> | undefined
+    compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>
+    styleBlocksCache: Map<string, SFCStyleBlock[]>
+    isLayoutFile: (file: string, configService: NonNullable<CompilerContext['configService']>) => boolean
+    invalidateResolvedPageLayoutsCache: (srcRoot: string) => void
+  },
+) {
+  const { configService, compilationCache, styleBlocksCache, isLayoutFile, invalidateResolvedPageLayoutsCache } = options
+  if (!configService || !isLayoutFile(file, configService)) {
+    return false
+  }
+
+  invalidateResolvedPageLayoutsCache(configService.absoluteSrcRoot)
+  invalidatePageLayoutCaches(configService, compilationCache, styleBlocksCache)
+  return true
+}
+
+export function handleTransformVueFileInvalidation(
+  file: string,
+  options: {
+    compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>
+    styleBlocksCache: Map<string, SFCStyleBlock[]>
+    existsSync: (filePath: string) => boolean
+  },
+) {
+  if (!isVueLikeId(file)) {
+    return false
+  }
+
+  invalidateVueFileCaches(file, options.compilationCache, options.styleBlocksCache, {
+    existsSync: options.existsSync,
+  })
+  return true
+}
+
 export async function ensureSfcStyleBlocks(
   filename: string,
   styleBlocksCache: Map<string, SFCStyleBlock[]>,
