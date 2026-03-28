@@ -120,7 +120,7 @@ function resolveTypeFromNode(node: any): string {
   return 'any'
 }
 
-function getStaticPropertyName(node: any) {
+export function getStaticPropertyName(node: any) {
   if (!node) {
     return undefined
   }

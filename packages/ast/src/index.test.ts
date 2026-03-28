@@ -14,6 +14,7 @@ import {
   getLocationFromOffset,
   getObjectPropertyByKey,
   getRenderPropertyFromComponentOptions,
+  getStaticPropertyName,
   getStaticRequireLiteralValue,
   isPlatformApiIdentifier,
   mapConstructorName,
@@ -199,6 +200,10 @@ export function useCounter() {
     expect(mapConstructorName('String')).toBe('string')
     expect(mapConstructorName('BooleanConstructor')).toBe('boolean')
     expect(mapConstructorName('CustomCtor')).toBe('any')
+    expect(getStaticPropertyName({ type: 'Identifier', name: 'title' })).toBe('title')
+    expect(getStaticPropertyName({ type: 'StringLiteral', value: 'count' })).toBe('count')
+    expect(getStaticPropertyName({ type: 'NumericLiteral', value: 2 })).toBe('2')
+    expect(getStaticPropertyName({ type: 'TemplateLiteral' })).toBeUndefined()
   })
 
   it('collects generic feature flags with babel and oxc', () => {
