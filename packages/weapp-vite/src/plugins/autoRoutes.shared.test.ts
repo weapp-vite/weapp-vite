@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addAutoRoutesWatchTargets,
   AUTO_ROUTES_ID,
   collectAutoRoutesWatchDirs,
   createAutoRoutesSidecarWatcher,
@@ -99,6 +100,29 @@ describe('auto routes plugin shared helpers', () => {
 
     sidecarWatcher.close()
     expect(closed).toBe(true)
+  })
+
+  it('adds watch targets and tolerates individual addWatchFile failures', () => {
+    const watched: string[] = []
+    const pluginCtx = {
+      addWatchFile: (id: string) => {
+        watched.push(id)
+        if (id.endsWith('/pages')) {
+          throw new Error('watch failed')
+        }
+      },
+    }
+
+    addAutoRoutesWatchTargets(pluginCtx, {
+      files: ['/project/src/pages/home/index.ts'],
+      directories: ['/project/src/pages', '/project/src/pkgA'],
+    })
+
+    expect(watched).toEqual([
+      '/project/src/pages/home/index.ts',
+      '/project/src/pages',
+      '/project/src/pkgA',
+    ])
   })
 
   it('resolves virtual auto-routes ids and alias fallbacks', () => {
