@@ -1,14 +1,15 @@
 <script setup lang="ts">
+import type { DashboardRuntimeSourceCardItem } from '../types'
 import { getRuntimeSourceBadgeTone } from '../utils/format'
 import { mutedPanelStyles } from '../utils/styles'
 import AppRuntimeBadge from './AppRuntimeBadge.vue'
 
 defineProps<{
-  source: string
-  count: number
-  errorCount: number
-  averageDuration: string
-  latestTimestamp?: string
+  source: DashboardRuntimeSourceCardItem['source']
+  count: DashboardRuntimeSourceCardItem['count']
+  errorCount: DashboardRuntimeSourceCardItem['errorCount']
+  averageDuration: DashboardRuntimeSourceCardItem['averageDuration']
+  latestTimestamp?: DashboardRuntimeSourceCardItem['latestTimestamp']
   countLabel?: string
 }>()
 </script>

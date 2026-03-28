@@ -25,6 +25,7 @@ import { useDashboardWorkspace } from '../features/dashboard/composables/useDash
 import { useTreemapData } from '../features/dashboard/composables/useTreemapData'
 import { dashboardTabs, themeOptions } from '../features/dashboard/constants/view'
 import { formatDuration } from '../features/dashboard/utils/format'
+import { formatRuntimeSourceSummary } from '../features/dashboard/utils/runtimeEvents'
 import { pillButtonStyles } from '../features/dashboard/utils/styles'
 import 'echarts/theme/dark'
 
@@ -58,11 +59,7 @@ const statusText = computed(() => `${updateCount.value} 次数据同步`)
 const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'status-dark' : 'status-light')
 const recentRuntimeEvents = computed(() => runtimeEvents.value.slice(0, 3))
 const visibleRuntimeSourceSummary = computed(() =>
-  runtimeSourceSummary.value
-    .map(source => ({
-      ...source,
-      averageDuration: formatDuration(source.averageDurationMs),
-    }))
+  formatRuntimeSourceSummary(runtimeSourceSummary.value)
     .slice(0, 4),
 )
 const { activeTab, topCards, packageTypeSummary: metricPackageTypeSummary } = useDashboardPage({

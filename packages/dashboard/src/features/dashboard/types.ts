@@ -284,6 +284,10 @@ export interface DashboardRuntimeSourceSummary {
   averageDurationMs?: number
 }
 
+export interface DashboardRuntimeSourceCardItem extends DashboardRuntimeSourceSummary {
+  averageDuration: string
+}
+
 export interface DashboardLabelValueItem {
   label: string
   value: string
