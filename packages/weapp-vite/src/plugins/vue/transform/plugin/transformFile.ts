@@ -21,7 +21,7 @@ import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDat
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotChunks } from '../scopedSlot'
 import { buildWeappVueStyleRequest } from '../styleRequest'
-import { isAppEntry, registerNativeLayoutChunksForEntry, registerVueTemplateToken, resolveScriptlessVueEntryStub, resolveVueOutputBase } from './shared'
+import { ensureSfcStyleBlocks, isAppEntry, registerNativeLayoutChunksForEntry, registerVueTemplateToken, resolveScriptlessVueEntryStub, resolveVueOutputBase } from './shared'
 
 const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
 const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
@@ -122,15 +122,18 @@ export async function transformVueLikeFile(options: {
     if (filename.endsWith('.vue') && source.includes('<style')) {
       await measureStage('preParseSfc', async () => {
         try {
-          const parsedSfc = await readAndParseSfc(filename, {
-            source,
-            checkMtime: false,
-            resolveSrc: {
-              resolveId: (src, importer) => resolveSfcSrc(pluginCtx, src, importer),
-              checkMtime: getSfcCheckMtime(ctx.configService),
-            },
+          await ensureSfcStyleBlocks(filename, styleBlocksCache, {
+            load: async target => (
+              await readAndParseSfc(target, {
+                source,
+                checkMtime: false,
+                resolveSrc: {
+                  resolveId: (src, importer) => resolveSfcSrc(pluginCtx, src, importer),
+                  checkMtime: getSfcCheckMtime(ctx.configService),
+                },
+              })
+            ).descriptor.styles,
           })
-          styleBlocksCache.set(filename, parsedSfc.descriptor.styles)
         }
         catch {
           // 忽略解析失败，后续由 compileVueFile 抛出错误

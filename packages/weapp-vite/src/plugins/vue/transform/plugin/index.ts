@@ -13,7 +13,7 @@ import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { invalidateResolvedPageLayoutsCache, isLayoutFile } from '../pageLayout'
 import { loadScopedSlotModule, resolveScopedSlotVirtualId } from '../scopedSlot'
 import { parseWeappVueStyleRequest } from '../styleRequest'
-import { invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, registerNativeLayoutChunksForEntry, resolveSfcSrc } from './shared'
+import { ensureSfcStyleBlocks, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, registerNativeLayoutChunksForEntry, resolveSfcSrc } from './shared'
 import { transformVueLikeFile } from './transformFile'
 
 export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
@@ -73,22 +73,22 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
       }
 
       const { filename, index } = parsed
-      let styles = styleBlocksCache.get(filename)
-      if (!styles) {
-        try {
-          const parsedSfc = await readAndParseSfc(filename, {
-            checkMtime: getSfcCheckMtime(ctx.configService),
-            resolveSrc: {
-              resolveId: (src, importer) => resolveSfcSrc(this, src, importer),
+      let styles: SFCStyleBlock[]
+      try {
+        styles = await ensureSfcStyleBlocks(filename, styleBlocksCache, {
+          load: async target => (
+            await readAndParseSfc(target, {
               checkMtime: getSfcCheckMtime(ctx.configService),
-            },
-          })
-          styles = parsedSfc.descriptor.styles
-          styleBlocksCache.set(filename, styles)
-        }
-        catch {
-          return null
-        }
+              resolveSrc: {
+                resolveId: (src, importer) => resolveSfcSrc(this, src, importer),
+                checkMtime: getSfcCheckMtime(ctx.configService),
+              },
+            })
+          ).descriptor.styles,
+        })
+      }
+      catch {
+        return null
       }
 
       const block = styles[index]

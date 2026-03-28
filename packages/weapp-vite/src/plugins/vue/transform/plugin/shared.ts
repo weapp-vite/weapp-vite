@@ -7,7 +7,7 @@ import { collectNativeLayoutAssets, resolvePageLayoutPlan } from '../pageLayout'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 
-export { registerVueTemplateToken } from '../shared'
+export { registerVueTemplateToken, resolveVueOutputBase } from '../shared'
 
 export function resolveScriptlessVueEntryStub(isPage: boolean) {
   return isPage ? 'Page({})' : 'Component({})'
@@ -64,6 +64,23 @@ export function invalidateVueFileCaches(
     }
   }
   styleBlocksCache.delete(file)
+}
+
+export async function ensureSfcStyleBlocks(
+  filename: string,
+  styleBlocksCache: Map<string, SFCStyleBlock[]>,
+  options: {
+    load: (filename: string) => Promise<SFCStyleBlock[]>
+  },
+) {
+  const cached = styleBlocksCache.get(filename)
+  if (cached) {
+    return cached
+  }
+
+  const styles = await options.load(filename)
+  styleBlocksCache.set(filename, styles)
+  return styles
 }
 
 export async function registerNativeLayoutChunksForEntry(
