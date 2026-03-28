@@ -170,6 +170,56 @@ export interface ModuleSourceSummary {
   bytes: number
 }
 
+export interface TreemapNodeMetaBase {
+  kind: 'package' | 'file' | 'module' | 'asset'
+  bytes?: number
+  totalBytes?: number
+  packageLabel: string
+}
+
+export interface TreemapPackageNodeMeta extends TreemapNodeMetaBase {
+  kind: 'package'
+  packageType: PackageType
+  fileCount: number
+}
+
+export interface TreemapFileNodeMeta extends TreemapNodeMetaBase {
+  kind: 'file'
+  fileName: string
+  from: BuildOrigin
+  childCount: number
+  type: PackageFileEntry['type']
+}
+
+export interface TreemapModuleNodeMeta extends TreemapNodeMetaBase {
+  kind: 'module'
+  fileName: string
+  source: string
+  sourceType: ModuleSourceType
+  originalBytes?: number
+  packageCount: number
+}
+
+export interface TreemapAssetNodeMeta extends TreemapNodeMetaBase {
+  kind: 'asset'
+  fileName: string
+  source: string
+}
+
+export type TreemapNodeMeta
+  = | TreemapPackageNodeMeta
+    | TreemapFileNodeMeta
+    | TreemapModuleNodeMeta
+    | TreemapAssetNodeMeta
+
+export interface TreemapNode {
+  name: string
+  value: number
+  meta: TreemapNodeMeta
+  children?: TreemapNode[]
+  itemStyle?: Record<string, any>
+}
+
 export interface DashboardNavItem {
   to: string
   label: string

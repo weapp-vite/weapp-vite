@@ -1,6 +1,5 @@
 import type { Ref } from 'vue'
-import type { AnalyzeSubpackagesResult, ResolvedTheme } from '../types'
-import type { TreemapNode } from '../utils/treemap'
+import type { AnalyzeSubpackagesResult, ResolvedTheme, TreemapNode, TreemapNodeMeta } from '../types'
 import { computed } from 'vue'
 import { formatTreemapTooltip, PACKAGE_STYLES, TREEMAP_LEVELS } from '../utils/treemap'
 
@@ -90,7 +89,7 @@ export function useTreemapData(resultRef: Ref<AnalyzeSubpackagesResult | null>, 
   const treemapOption = computed(() => ({
     backgroundColor: 'transparent',
     tooltip: {
-      formatter: (params: { data?: { meta?: any } }) => formatTreemapTooltip(params.data?.meta),
+      formatter: (params: { data?: { meta?: TreemapNodeMeta } }) => formatTreemapTooltip(params.data?.meta),
       borderColor: resolvedTheme.value === 'dark' ? 'rgba(148, 163, 184, 0.16)' : 'rgba(71, 85, 105, 0.14)',
       backgroundColor: resolvedTheme.value === 'dark' ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.96)',
       textStyle: {
