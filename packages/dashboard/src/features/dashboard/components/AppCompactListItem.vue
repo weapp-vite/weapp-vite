@@ -1,19 +1,12 @@
 <script setup lang="ts">
 import type { DashboardDetailItem } from '../types'
-import { computed } from 'vue'
 
-const props = defineProps<{
+defineProps<{
   title: DashboardDetailItem['title']
   meta: DashboardDetailItem['meta']
   value?: DashboardDetailItem['value']
   monoTitle?: boolean
 }>()
-
-const titleClassName = computed(() =>
-  props.monoTitle
-    ? 'truncate font-mono text-xs text-[color:var(--dashboard-text)]'
-    : 'truncate text-[color:var(--dashboard-text)]',
-)
 </script>
 
 <template>
@@ -22,7 +15,7 @@ const titleClassName = computed(() =>
       <div class="min-w-0">
         <p
           class="font-medium"
-          :class="titleClassName"
+          :class="monoTitle ? 'truncate font-mono text-xs text-[color:var(--dashboard-text)]' : 'truncate text-[color:var(--dashboard-text)]'"
         >
           {{ title }}
         </p>

@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import type { DashboardIconName, DashboardTitleBlock } from '../types'
-import { computed } from 'vue'
 import { iconFrameStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
 
-const props = defineProps<{
+defineProps<{
   iconName: DashboardIconName
   title: DashboardTitleBlock['title']
   description?: DashboardTitleBlock['description']
 }>()
 
 const iconClassName = iconFrameStyles()
-const hasDescription = computed(() => Boolean(props.description))
 </script>
 
 <template>
@@ -27,7 +25,7 @@ const hasDescription = computed(() => Boolean(props.description))
           {{ title }}
         </h2>
         <p
-          v-if="hasDescription"
+          v-if="description"
           class="text-xs text-[color:var(--dashboard-text-soft)] md:text-sm"
         >
           {{ description }}
