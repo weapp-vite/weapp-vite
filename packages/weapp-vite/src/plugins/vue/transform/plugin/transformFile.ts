@@ -18,10 +18,9 @@ import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
-import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotChunks } from '../scopedSlot'
 import { buildWeappVueStyleRequest } from '../styleRequest'
-import { ensureSfcStyleBlocks, isAppEntry, registerNativeLayoutChunksForEntry, registerVueTemplateToken, resolveScriptlessVueEntryStub, resolveVueOutputBase } from './shared'
+import { ensureSfcStyleBlocks, handleTransformEntryPageLayoutFlow, isAppEntry, registerVueTemplateToken, resolveScriptlessVueEntryStub, resolveVueOutputBase } from './shared'
 
 const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
 const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
@@ -206,11 +205,13 @@ export async function transformVueLikeFile(options: {
 
     if (isPage && result.template) {
       await measureStage('pagePostProcess', async () => {
-        const resolvedLayoutPlan = await resolvePageLayoutPlan(transformedSource, filename, configService)
-        if (resolvedLayoutPlan) {
-          applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
-        }
-        await registerNativeLayoutChunksForEntry(pluginCtx, ctx, filename, transformedSource)
+        await handleTransformEntryPageLayoutFlow({
+          pluginCtx,
+          ctx,
+          filename,
+          source: transformedSource,
+          result,
+        })
       })
     }
     registerVueTemplateToken(ctx, filename, result.template)

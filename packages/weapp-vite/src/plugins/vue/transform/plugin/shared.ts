@@ -3,7 +3,7 @@ import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { emitNativeLayoutScriptChunkIfNeeded } from '../bundle'
-import { resolvePageLayoutPlan } from '../pageLayout'
+import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { isVueLikeFile } from '../shared'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
@@ -76,33 +76,54 @@ export async function ensureSfcStyleBlocks(
   return styles
 }
 
-export async function registerNativeLayoutChunksForEntry(
-  pluginCtx: any,
-  ctx: CompilerContext,
-  filename: string,
-  source: string,
-) {
-  const configService = ctx.configService
+export async function handleTransformEntryPageLayoutFlow(options: {
+  pluginCtx: any
+  ctx: CompilerContext
+  filename: string
+  source: string
+  result?: VueTransformResult
+}) {
+  const configService = options.ctx.configService
   if (!configService) {
-    return
+    return undefined
   }
 
-  const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
+  const resolvedLayoutPlan = await resolvePageLayoutPlan(options.source, options.filename, configService)
   if (!resolvedLayoutPlan) {
-    return
+    return undefined
   }
 
-  await addResolvedPageLayoutWatchFiles(pluginCtx, resolvedLayoutPlan.layouts)
+  if (options.result) {
+    applyPageLayoutPlan(options.result, options.filename, resolvedLayoutPlan)
+  }
+
+  await addResolvedPageLayoutWatchFiles(options.pluginCtx, resolvedLayoutPlan.layouts)
 
   for (const layout of resolvedLayoutPlan.layouts) {
     if (layout.kind !== 'native') {
       continue
     }
     await emitNativeLayoutScriptChunkIfNeeded({
-      pluginCtx,
+      pluginCtx: options.pluginCtx,
       layoutBasePath: layout.file,
       configService,
       outputExtensions: configService.outputExtensions,
     })
   }
+
+  return resolvedLayoutPlan
+}
+
+export async function registerNativeLayoutChunksForEntry(
+  pluginCtx: any,
+  ctx: CompilerContext,
+  filename: string,
+  source: string,
+) {
+  await handleTransformEntryPageLayoutFlow({
+    pluginCtx,
+    ctx,
+    filename,
+    source,
+  })
 }

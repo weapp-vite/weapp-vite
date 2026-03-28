@@ -1,7 +1,39 @@
-import { describe, expect, it, vi } from 'vitest'
-import { ensureSfcStyleBlocks, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId } from './shared'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ensureSfcStyleBlocks, handleTransformEntryPageLayoutFlow, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, registerNativeLayoutChunksForEntry } from './shared'
+
+const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
+const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn())
+const addResolvedPageLayoutWatchFilesMock = vi.hoisted(() => vi.fn(async () => {}))
+const emitNativeLayoutScriptChunkIfNeededMock = vi.hoisted(() => vi.fn(async () => {}))
+
+vi.mock('../pageLayout', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../pageLayout')>()
+  return {
+    ...actual,
+    applyPageLayoutPlan: applyPageLayoutPlanMock,
+    resolvePageLayoutPlan: resolvePageLayoutPlanMock,
+  }
+})
+
+vi.mock('../../../utils/pageLayout', () => ({
+  addResolvedPageLayoutWatchFiles: addResolvedPageLayoutWatchFilesMock,
+}))
+
+vi.mock('../bundle', () => ({
+  emitNativeLayoutScriptChunkIfNeeded: emitNativeLayoutScriptChunkIfNeededMock,
+}))
 
 describe('vue transform plugin shared helpers', () => {
+  beforeEach(() => {
+    resolvePageLayoutPlanMock.mockReset()
+    resolvePageLayoutPlanMock.mockResolvedValue(undefined)
+    applyPageLayoutPlanMock.mockReset()
+    addResolvedPageLayoutWatchFilesMock.mockReset()
+    addResolvedPageLayoutWatchFilesMock.mockResolvedValue(undefined)
+    emitNativeLayoutScriptChunkIfNeededMock.mockReset()
+    emitNativeLayoutScriptChunkIfNeededMock.mockResolvedValue(undefined)
+  })
+
   it('detects vue-like ids', () => {
     expect(isVueLikeId('/project/src/pages/home/index.vue')).toBe(true)
     expect(isVueLikeId('/project/src/pages/home/index.jsx')).toBe(true)
@@ -80,5 +112,95 @@ describe('vue transform plugin shared helpers', () => {
     expect(second).toBe(first)
     expect(styleBlocksCache.get('/project/src/components/card.vue')).toBe(first)
     expect(load).toHaveBeenCalledTimes(1)
+  })
+
+  it('handles transform entry page layout flow through resolve, apply, watch, and native chunk emission', async () => {
+    const result = { template: '<view />' } as any
+    resolvePageLayoutPlanMock.mockResolvedValue({
+      layouts: [
+        { kind: 'native', file: '/project/src/layouts/default' },
+        { kind: 'vue', file: '/project/src/layouts/fallback.vue' },
+      ],
+    })
+
+    const resolved = await handleTransformEntryPageLayoutFlow({
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {
+        configService: {
+          outputExtensions: { js: 'js' },
+        },
+      } as any,
+      filename: '/project/src/pages/home/index.vue',
+      source: '<view />',
+      result,
+    })
+
+    expect(resolved).toEqual({
+      layouts: [
+        { kind: 'native', file: '/project/src/layouts/default' },
+        { kind: 'vue', file: '/project/src/layouts/fallback.vue' },
+      ],
+    })
+    expect(applyPageLayoutPlanMock).toHaveBeenCalledWith(
+      result,
+      '/project/src/pages/home/index.vue',
+      resolved,
+    )
+    expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledWith(
+      expect.anything(),
+      resolved.layouts,
+    )
+    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledTimes(1)
+    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledWith({
+      pluginCtx: expect.anything(),
+      layoutBasePath: '/project/src/layouts/default',
+      configService: { outputExtensions: { js: 'js' } },
+      outputExtensions: { js: 'js' },
+    })
+  })
+
+  it('returns early from transform entry page layout flow when config service or layout plan is missing', async () => {
+    await expect(handleTransformEntryPageLayoutFlow({
+      pluginCtx: {},
+      ctx: {} as any,
+      filename: '/project/src/pages/home/index.vue',
+      source: '<view />',
+    })).resolves.toBeUndefined()
+
+    await expect(handleTransformEntryPageLayoutFlow({
+      pluginCtx: {},
+      ctx: {
+        configService: {},
+      } as any,
+      filename: '/project/src/pages/home/index.vue',
+      source: '<view />',
+    })).resolves.toBeUndefined()
+
+    expect(applyPageLayoutPlanMock).not.toHaveBeenCalled()
+    expect(addResolvedPageLayoutWatchFilesMock).not.toHaveBeenCalled()
+    expect(emitNativeLayoutScriptChunkIfNeededMock).not.toHaveBeenCalled()
+  })
+
+  it('registers native layout chunks for entries through shared layout flow', async () => {
+    resolvePageLayoutPlanMock.mockResolvedValue({
+      layouts: [
+        { kind: 'native', file: '/project/src/layouts/default' },
+      ],
+    })
+
+    await registerNativeLayoutChunksForEntry(
+      { emitFile: vi.fn() },
+      {
+        configService: {
+          outputExtensions: { js: 'js' },
+        },
+      } as any,
+      '/project/src/pages/home/index.vue',
+      '<view />',
+    )
+
+    expect(applyPageLayoutPlanMock).not.toHaveBeenCalled()
+    expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledTimes(1)
+    expect(emitNativeLayoutScriptChunkIfNeededMock).toHaveBeenCalledTimes(1)
   })
 })
