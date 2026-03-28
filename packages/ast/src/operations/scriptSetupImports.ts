@@ -9,7 +9,7 @@ export interface ScriptSetupImport {
   kind: 'default' | 'named'
 }
 
-function mayContainRelevantScriptSetupImports(
+export function mayContainRelevantScriptSetupImports(
   scriptSetup: string,
   templateComponentNames: Set<string>,
 ) {

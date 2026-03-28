@@ -51,7 +51,7 @@ export {
   mayContainStaticRequireLiteral,
 } from './operations/require'
 export type { RequireToken } from './operations/require'
-export { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
+export { collectScriptSetupImportsFromCode, mayContainRelevantScriptSetupImports } from './operations/scriptSetupImports'
 export type { ScriptSetupImport } from './operations/scriptSetupImports'
 export {
   collectLoopScopeAliases,
