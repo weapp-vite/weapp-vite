@@ -12,12 +12,32 @@ import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } fro
 import { collectNativeLayoutAssets } from '../pageLayout'
 import { compileVueLikeFile, getEntryBaseName } from './shared'
 
+export interface ResolvedBundleLayout {
+  kind: 'native' | 'vue'
+  file: string
+}
+
 export function resolveVueLayoutAssetOptions(options: {
   configService: NonNullable<CompilerContext['configService']>
   layoutBasePath: string
   outputExtensions: OutputExtensions | undefined
 }) {
   return resolveNativeLayoutOutputOptions(options)
+}
+
+export async function emitResolvedBundleLayouts(options: {
+  layouts: ResolvedBundleLayout[]
+  emitNativeLayout: (layoutFile: string) => Promise<void>
+  emitVueLayout: (layoutFile: string) => Promise<void>
+}) {
+  for (const layout of options.layouts) {
+    if (layout.kind === 'native') {
+      await options.emitNativeLayout(layout.file)
+      continue
+    }
+
+    await options.emitVueLayout(layout.file)
+  }
 }
 
 export async function emitNativeLayoutScriptChunkIfNeeded(options: {
