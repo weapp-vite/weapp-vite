@@ -255,8 +255,7 @@ onBeforeUnmount(() => {
               <AppStatCard
                 v-for="item in eventSummary"
                 :key="item.label"
-                :label="item.label"
-                :value="item.value"
+                v-bind="item"
               />
             </div>
           </div>
