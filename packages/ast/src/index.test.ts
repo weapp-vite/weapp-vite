@@ -9,6 +9,7 @@ import {
   getObjectPropertyByKey,
   getRenderPropertyFromComponentOptions,
   isPlatformApiIdentifier,
+  mayContainFeatureFlagHints,
   mayContainPlatformApiAccess,
   mayContainPlatformApiIdentifierByText,
   mayContainStaticRequireLiteral,
@@ -219,6 +220,17 @@ export function useCounter() {
 
     babelParseSpy.mockRestore()
     engineParseSpy.mockRestore()
+  })
+
+  it('exposes feature flag text hint checks', () => {
+    const hookToFeature = {
+      onLoad: 'enableLoad',
+      onShow: 'enableShow',
+    } as const
+
+    expect(mayContainFeatureFlagHints(`import { onLoad } from 'wevu'`, 'wevu', hookToFeature)).toBe(true)
+    expect(mayContainFeatureFlagHints(`import { onReady } from 'wevu'`, 'wevu', hookToFeature)).toBe(false)
+    expect(mayContainFeatureFlagHints(`import { onLoad } from 'vue'`, 'wevu', hookToFeature)).toBe(false)
   })
 
   it('collects jsx auto components with babel and oxc', () => {
