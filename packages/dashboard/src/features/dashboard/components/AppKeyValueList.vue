@@ -1,12 +1,6 @@
 <script setup lang="ts">
-import type { DashboardLabelValueItem } from '../types'
+import type { DashboardKeyedLabelValueItem, DashboardLabelValueItem } from '../types'
 import { computed } from 'vue'
-
-interface KeyValueRowItem {
-  key: string
-  label: string
-  value: string
-}
 
 const props = defineProps<{
   items: DashboardLabelValueItem[]
@@ -14,15 +8,11 @@ const props = defineProps<{
 
 const rowClassName = 'flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-2.5'
 
-function createKeyValueRow(item: DashboardLabelValueItem): KeyValueRowItem {
-  return {
-    key: item.label,
-    label: item.label,
-    value: item.value,
-  }
-}
-
-const rows = computed(() => props.items.map(item => createKeyValueRow(item)))
+const rows = computed<DashboardKeyedLabelValueItem[]>(() => props.items.map(item => ({
+  key: item.label,
+  label: item.label,
+  value: item.value,
+})))
 </script>
 
 <template>

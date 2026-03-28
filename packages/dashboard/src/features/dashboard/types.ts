@@ -293,6 +293,15 @@ export interface DashboardLabelValueItem {
   value: string
 }
 
+export interface DashboardKeyedLabelItem {
+  key: string
+  label: string
+}
+
+export interface DashboardKeyedLabelValueItem extends DashboardKeyedLabelItem {
+  value: string
+}
+
 export interface DashboardDetailItem {
   title: string
   meta: string
