@@ -93,6 +93,23 @@ export function isStaticRequireCall(node: any) {
   return typeof getStaticRequireLiteralValue(node.arguments?.[0]) === 'string'
 }
 
+export function hasStaticRequireCall(ast: Program) {
+  let found = false
+
+  walk(ast, {
+    enter(node) {
+      if (found) {
+        return
+      }
+      if (isStaticRequireCall(node)) {
+        found = true
+      }
+    },
+  })
+
+  return found
+}
+
 /**
  * 使用统一 AST 入口预判是否存在可静态分析的 `require("...")` / ``require(`...`)``。
  */
@@ -119,20 +136,7 @@ export function mayContainStaticRequireLiteral(
       filename: 'inline.ts',
       parserLike: options?.parserLike,
     }) as Program
-    let found = false
-
-    walk(ast, {
-      enter(node) {
-        if (found) {
-          return
-        }
-        if (isStaticRequireCall(node)) {
-          found = true
-        }
-      },
-    })
-
-    return found
+    return hasStaticRequireCall(ast)
   }
   catch {
     return true

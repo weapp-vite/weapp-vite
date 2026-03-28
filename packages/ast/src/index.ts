@@ -93,6 +93,7 @@ export {
   collectRequireTokens,
   getRequireAsyncLiteralToken,
   getStaticRequireLiteralValue,
+  hasStaticRequireCall,
   isStaticRequireCall,
   mayContainRequireCallByText,
   mayContainStaticRequireLiteral,
