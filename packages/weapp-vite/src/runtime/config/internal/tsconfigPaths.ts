@@ -1,5 +1,5 @@
+import fs from 'node:fs/promises'
 import { parse as parseJson } from 'comment-json'
-import fs from 'fs-extra'
 import path from 'pathe'
 
 const PATHS_RE = /"paths"\s*:/
@@ -105,7 +105,10 @@ async function inspectTsconfigPathsState(
   }
   visited.add(filePath)
 
-  if (!await fs.pathExists(filePath)) {
+  try {
+    await fs.access(filePath)
+  }
+  catch {
     return {
       root: false,
       references: false,
