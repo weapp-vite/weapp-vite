@@ -3,6 +3,7 @@ import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import {
   applyCandidateEntryFile,
+  applyCandidateEntryToMap,
   buildDefaultSearchRoots,
   classifyPagesRootEntry,
   hasNestedPagesRoot,
@@ -10,6 +11,7 @@ import {
   resolveCandidateSearchRoots,
   resolveCollectTargetRoot,
   safeCrawlCandidateFiles,
+  shouldCollectCandidateEntry,
   shouldCollectTargetRoot,
 } from './candidates'
 import { createAutoRoutesMatcher } from './matcher'
@@ -121,6 +123,17 @@ describe('auto routes candidates helpers', () => {
     expect(resolveCandidateEntryPath('/project/src', '/project/components/card/index.vue')).toBeUndefined()
   })
 
+  it('checks whether a resolved entry should be collected by matcher', () => {
+    const matcher = createAutoRoutesMatcher(['pages/**'])
+    expect(shouldCollectCandidateEntry(matcher, {
+      relativeBase: 'pages/home/index',
+    })).toBe(true)
+    expect(shouldCollectCandidateEntry(matcher, {
+      relativeBase: 'components/card/index',
+    })).toBe(false)
+    expect(shouldCollectCandidateEntry(matcher, undefined)).toBe(false)
+  })
+
   it('applies candidate entry files to script template and json flags', () => {
     const candidate: CandidateEntry = {
       base: '/project/src/pages/home/index',
@@ -141,6 +154,27 @@ describe('auto routes candidates helpers', () => {
     expect(candidate.hasScript).toBe(true)
     expect(candidate.hasTemplate).toBe(true)
     expect(candidate.jsonPath).toBe('/project/src/pages/home/index.json')
+  })
+
+  it('applies resolved entries into candidate map', () => {
+    const candidates = new Map<string, CandidateEntry>()
+
+    applyCandidateEntryToMap(candidates, '/project/src/pages/home/index.vue', {
+      candidateBase: '/project/src/pages/home/index',
+    })
+    applyCandidateEntryToMap(candidates, '/project/src/pages/home/index.wxml', {
+      candidateBase: '/project/src/pages/home/index',
+    })
+
+    expect(candidates.get('/project/src/pages/home/index')).toEqual({
+      base: '/project/src/pages/home/index',
+      files: new Set([
+        '/project/src/pages/home/index.vue',
+        '/project/src/pages/home/index.wxml',
+      ]),
+      hasScript: true,
+      hasTemplate: true,
+    })
   })
 
   it('does not treat declaration or sidecar files as scripts', () => {
