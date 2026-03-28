@@ -15,9 +15,10 @@ import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensi
 import { isPathInside, normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
+import { registerResolvedPageLayoutEntries } from '../../../utils/layoutEntries'
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
-import { collectNativeLayoutAssets, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
+import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
 import { emitEntryOutput, prepareNormalizedEntries } from './emit'
 import { createEntryResolver } from './resolve'
@@ -256,19 +257,18 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
           if (layoutPlan) {
             await addResolvedPageLayoutWatchFiles(this, layoutPlan.layouts)
+            await registerResolvedPageLayoutEntries({
+              layouts: layoutPlan.layouts,
+              entries,
+              explicitEntryTypes,
+              nativeScriptEntries: nativeLayoutScriptEntries,
+              normalizeEntry,
+              jsonPath,
+            })
             for (const layout of layoutPlan.layouts) {
               if (layout.kind === 'native') {
-                const nativeAssets = await collectNativeLayoutAssets(layout.file)
-                if (nativeAssets.script) {
-                  entries.push(layout.importPath)
-                  nativeLayoutScriptEntries.add(normalizeEntry(layout.importPath, jsonPath))
-                  explicitEntryTypes.set(normalizeEntry(layout.importPath, jsonPath), 'component')
-                }
                 continue
               }
-              entries.push(layout.importPath)
-              explicitEntryTypes.set(normalizeEntry(layout.importPath, jsonPath), 'component')
-
               if (!layout.file.endsWith('.vue')) {
                 continue
               }
