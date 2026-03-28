@@ -6,6 +6,7 @@ import {
   emitPlatformConfigSideEffects,
   emitPlatformTemplateAsset,
   normalizeVueConfigForPlatform,
+  normalizeVueTemplateForPlatform,
   prepareNormalizedVueConfigForPlatform,
   preparePlatformConfigAsset,
   resolveAlipayGenericPlaceholderBase,
@@ -15,12 +16,15 @@ import {
   resolveVueBundlePlatformOptions,
   shouldEmitAlipayGenericPlaceholder,
   trackPlatformTemplateAnalysis,
+  transformVueTemplateForPlatform,
 } from './platform'
 
 const emitSfcJsonAssetMock = vi.hoisted(() => vi.fn())
 const emitSfcTemplateIfMissingMock = vi.hoisted(() => vi.fn())
 const ensureScriptlessComponentAssetMock = vi.hoisted(() => vi.fn())
 const resolveJsonMock = vi.hoisted(() => vi.fn((payload: any) => JSON.stringify(payload.json)))
+const scanWxmlMock = vi.hoisted(() => vi.fn((template: string) => ({ template })))
+const handleWxmlMock = vi.hoisted(() => vi.fn((token: any) => ({ code: `normalized:${token.template}` })))
 
 vi.mock('../../../utils/scriptlessComponent', () => ({
   ensureScriptlessComponentAsset: ensureScriptlessComponentAssetMock,
@@ -34,6 +38,14 @@ vi.mock('../../../../utils', async (importOriginal) => {
   }
 })
 
+vi.mock('../../../../wxml', () => ({
+  scanWxml: scanWxmlMock,
+}))
+
+vi.mock('../../../../wxml/handle', () => ({
+  handleWxml: handleWxmlMock,
+}))
+
 vi.mock('../emitAssets', () => ({
   emitSfcJsonAsset: emitSfcJsonAssetMock,
   emitSfcTemplateIfMissing: emitSfcTemplateIfMissingMock,
@@ -46,6 +58,10 @@ describe('bundle platform helpers', () => {
     ensureScriptlessComponentAssetMock.mockReset()
     resolveJsonMock.mockReset()
     resolveJsonMock.mockImplementation((payload: any) => JSON.stringify(payload.json))
+    scanWxmlMock.mockReset()
+    scanWxmlMock.mockImplementation((template: string) => ({ template }))
+    handleWxmlMock.mockReset()
+    handleWxmlMock.mockImplementation((token: any) => ({ code: `normalized:${token.template}` }))
   })
 
   it('resolves platform bundle options from platform-specific capabilities', () => {
@@ -118,6 +134,41 @@ describe('bundle platform helpers', () => {
     })).toBe(config)
 
     expect(resolveJsonMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('transforms vue template through shared platform wxml pipeline', () => {
+    expect(transformVueTemplateForPlatform('<view />', {
+      platform: 'alipay',
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+      scriptModuleTag: 'import-sjs',
+    })).toBe('normalized:<view />')
+
+    expect(scanWxmlMock).toHaveBeenCalledWith('<view />', {
+      platform: 'alipay',
+    })
+    expect(handleWxmlMock).toHaveBeenCalledWith(
+      { template: '<view />' },
+      {
+        templateExtension: 'axml',
+        scriptModuleExtension: 'sjs',
+        scriptModuleTag: 'import-sjs',
+      },
+    )
+  })
+
+  it('normalizes vue template only for platforms that require template transforms', () => {
+    expect(normalizeVueTemplateForPlatform('<view />', {
+      platform: 'weapp',
+      templateExtension: 'wxml',
+      scriptModuleExtension: 'wxs',
+    })).toBe('<view />')
+
+    expect(normalizeVueTemplateForPlatform('<view />', {
+      platform: 'alipay',
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+    })).toBe('normalized:<view />')
   })
 
   it('resolves alipay generic placeholder base from page-relative path', () => {
