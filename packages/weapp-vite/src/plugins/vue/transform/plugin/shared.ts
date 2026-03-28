@@ -5,36 +5,14 @@ import { collectNativeLayoutAssets, resolvePageLayoutPlan } from '../pageLayout'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 
+export { registerVueTemplateToken } from '../shared'
+
 export function resolveScriptlessVueEntryStub(isPage: boolean) {
   return isPage ? 'Page({})' : 'Component({})'
 }
 
 export function isAppEntry(filename: string) {
   return APP_ENTRY_RE.test(filename)
-}
-
-export function registerVueTemplateToken(
-  ctx: CompilerContext,
-  filename: string,
-  template: string | undefined,
-) {
-  if (!template) {
-    return
-  }
-
-  const wxmlService = (ctx as Partial<CompilerContext>).wxmlService
-  if (!wxmlService) {
-    return
-  }
-
-  try {
-    const token = wxmlService.analyze(template)
-    wxmlService.tokenMap.set(filename, token)
-    wxmlService.setWxmlComponentsMap(filename, token.components)
-  }
-  catch {
-    // 忽略模板扫描异常，避免阻断 Vue 编译流程
-  }
 }
 
 export async function registerNativeLayoutChunksForEntry(
