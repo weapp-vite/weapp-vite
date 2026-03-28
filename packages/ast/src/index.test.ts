@@ -15,6 +15,8 @@ import {
   collectPageScrollInspection,
   collectPageScrollInspectionWithOxc,
   collectPatternBindingNames,
+  collectSetDataPickKeysWithBabel,
+  collectSetDataPickKeysWithOxc,
   createLineStartOffsets,
   createWarningPrefix,
   defaultIsDefineComponentSource,
@@ -997,6 +999,10 @@ export function useCounter() {
     expect(hasBindingInScopes([new Set(['foo']), new Set(['bar'])], 'baz')).toBe(false)
     expect([...collectLoopScopeAliases('<view wx:for="{{ list }}"></view>')]).toEqual(['item', 'index'])
     expect([...collectLoopScopeAliases('<view wx:for="{{ list }}" wx:for-item="row" wx:for-index="i"></view>')]).toEqual(['row', 'i'])
+    expect(collectSetDataPickKeysWithBabel('<view>static</view>')).toEqual([])
+    expect(collectSetDataPickKeysWithOxc('<view>static</view>')).toEqual([])
+    expect(collectSetDataPickKeysWithBabel('<text>{{ list.map(item => item.name) + count }}</text>')).toEqual(['count', 'list'])
+    expect(collectSetDataPickKeysWithOxc('<text>{{ list.map(item => item.name) + count }}</text>')).toEqual(['count', 'list'])
     collectPatternBindingNames({
       type: 'ObjectPattern',
       properties: [
