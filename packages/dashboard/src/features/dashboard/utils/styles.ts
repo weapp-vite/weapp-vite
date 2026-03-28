@@ -35,10 +35,6 @@ export const iconFrameStyles = tv({
   },
 })
 
-export const metricCardStyles = tv({
-  base: 'rounded-xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] px-4 py-3',
-})
-
 export const pillButtonStyles = tv({
   base: 'inline-flex items-center gap-2 rounded-full border transition',
   variants: {
