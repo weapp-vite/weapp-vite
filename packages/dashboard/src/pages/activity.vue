@@ -315,11 +315,7 @@ watch(filteredRuntimeEvents, (events) => {
             <AppRuntimeSourceCard
               v-for="source in sourceBreakdown"
               :key="source.source"
-              :source="source.source"
-              :count="source.count"
-              :error-count="source.errorCount"
-              :latest-timestamp="source.latestTimestamp"
-              :average-duration="source.averageDuration"
+              v-bind="source"
             />
           </div>
 
