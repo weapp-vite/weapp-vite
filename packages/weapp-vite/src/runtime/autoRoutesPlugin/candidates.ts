@@ -76,15 +76,16 @@ async function discoverPagesRoots(root: string) {
   return pagesRoots
 }
 
-async function resolveDefaultSearchRoots(
+function buildDefaultSearchRoots(
   absoluteSrcRoot: string,
+  discoveredPagesRoots: Iterable<string>,
   subPackageRoots?: Iterable<string>,
 ) {
   const roots: string[] = []
-  const discoveredPagesRoots = await discoverPagesRoots(absoluteSrcRoot)
+  const discoveredRoots = [...discoveredPagesRoots]
 
-  if (discoveredPagesRoots.size > 0) {
-    roots.push(...discoveredPagesRoots)
+  if (discoveredRoots.length > 0) {
+    roots.push(...discoveredRoots)
   }
   else {
     roots.push(absoluteSrcRoot)
@@ -97,12 +98,21 @@ async function resolveDefaultSearchRoots(
 
     const absoluteRoot = path.resolve(absoluteSrcRoot, root)
 
-    if (!hasNestedPagesRoot(absoluteRoot, discoveredPagesRoots)) {
+    if (!hasNestedPagesRoot(absoluteRoot, discoveredRoots)) {
       roots.push(absoluteRoot)
     }
   }
 
   return roots
+}
+
+async function resolveDefaultSearchRoots(
+  absoluteSrcRoot: string,
+  subPackageRoots?: Iterable<string>,
+) {
+  const discoveredPagesRoots = await discoverPagesRoots(absoluteSrcRoot)
+
+  return buildDefaultSearchRoots(absoluteSrcRoot, discoveredPagesRoots, subPackageRoots)
 }
 
 export function isConfigFile(filePath: string) {
@@ -301,6 +311,7 @@ export function areSetsEqual(a: Set<string>, b: Set<string>) {
 
 export {
   applyCandidateEntryFile,
+  buildDefaultSearchRoots,
   hasNestedPagesRoot,
   resolveCandidateEntryPath,
   resolveCandidateSearchRoots,

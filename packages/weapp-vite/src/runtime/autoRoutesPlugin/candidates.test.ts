@@ -2,6 +2,7 @@ import type { CandidateEntry } from './candidates'
 import { describe, expect, it } from 'vitest'
 import {
   applyCandidateEntryFile,
+  buildDefaultSearchRoots,
   hasNestedPagesRoot,
   resolveCandidateEntryPath,
   resolveCandidateSearchRoots,
@@ -20,6 +21,22 @@ describe('auto routes candidates helpers', () => {
       '/project/src/pages',
       '/project/src/pkgA/pages',
     ])).toBe(false)
+  })
+
+  it('builds default search roots from discovered pages roots and subpackages', () => {
+    expect(buildDefaultSearchRoots('/project/src', [
+      '/project/src/pages',
+      '/project/src/pkgA/pages',
+    ], ['pkgA', 'pkgB'])).toEqual([
+      '/project/src/pages',
+      '/project/src/pkgA/pages',
+      '/project/src/pkgB',
+    ])
+
+    expect(buildDefaultSearchRoots('/project/src', [], ['pkgA'])).toEqual([
+      '/project/src',
+      '/project/src/pkgA',
+    ])
   })
 
   it('resolves candidate search roots from explicit roots and matcher defaults', () => {
