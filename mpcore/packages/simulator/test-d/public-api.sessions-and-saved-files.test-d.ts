@@ -25,6 +25,26 @@ expectType<Array<{ createTime: number, filePath: string, size: number }>>(browse
 expectType<string | null>(browserSession.getFileText('headless://wxfile/temp/0001'))
 expectType<{ createTime: number, errMsg: string, size: number } | undefined>(browserPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
 expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(browserPage?.wx.getSavedFileList())
+expectType<{ abort: () => void }>(browserPage?.wx.downloadFile({
+  url: 'https://mock.mpcore.dev/files/report.txt',
+  success: (result) => {
+    expectType<{ errMsg: string, statusCode: number, tempFilePath: string }>(result)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string, statusCode: number, tempFilePath: string } | undefined>(result)
+  },
+}) ?? { abort() {} })
+expectType<{ abort: () => void }>(browserPage?.wx.uploadFile({
+  url: 'https://mock.mpcore.dev/upload/report',
+  filePath: 'headless://wxfile/temp/0001',
+  name: 'report',
+  success: (result) => {
+    expectType<{ data: string, errMsg: string, statusCode: number }>(result)
+  },
+  complete: (result) => {
+    expectType<{ data: string, errMsg: string, statusCode: number } | undefined>(result)
+  },
+}) ?? { abort() {} })
 
 browserPage?.wx.saveFile({
   tempFilePath: 'headless://wxfile/temp/0001',
@@ -84,6 +104,26 @@ expectType<Array<{ createTime: number, filePath: string, size: number }>>(headle
 expectType<string | null>(headlessSession.getFileText('headless://wxfile/temp/0001'))
 expectType<{ createTime: number, errMsg: string, size: number } | undefined>(headlessPage?.wx.getSavedFileInfo({ filePath: 'headless://wxfile/saved/0001' }))
 expectType<{ errMsg: string, fileList: Array<{ createTime: number, filePath: string, size: number }> } | undefined>(headlessPage?.wx.getSavedFileList())
+expectType<{ abort: () => void }>(headlessPage?.wx.downloadFile({
+  url: 'https://mock.mpcore.dev/files/report.txt',
+  success: (result) => {
+    expectType<{ errMsg: string, statusCode: number, tempFilePath: string }>(result)
+  },
+  complete: (result) => {
+    expectType<{ errMsg: string, statusCode: number, tempFilePath: string } | undefined>(result)
+  },
+}) ?? { abort() {} })
+expectType<{ abort: () => void }>(headlessPage?.wx.uploadFile({
+  url: 'https://mock.mpcore.dev/upload/report',
+  filePath: 'headless://wxfile/temp/0001',
+  name: 'report',
+  success: (result) => {
+    expectType<{ data: string, errMsg: string, statusCode: number }>(result)
+  },
+  complete: (result) => {
+    expectType<{ data: string, errMsg: string, statusCode: number } | undefined>(result)
+  },
+}) ?? { abort() {} })
 
 headlessPage?.wx.saveFile({
   tempFilePath: 'headless://wxfile/temp/0001',
