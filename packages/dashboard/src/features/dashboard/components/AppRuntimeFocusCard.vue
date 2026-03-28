@@ -26,6 +26,8 @@ const badge = computed<DashboardRuntimeBadgeItem | null>(() => (
     : null
 ))
 
+const titleText = computed(() => props.event?.title ?? props.emptyTitle ?? '尚无运行事件')
+const detailText = computed(() => props.event?.detail ?? props.emptyDetail ?? '当前工作区还没有推入结构化运行事件。')
 const eventMeta = computed(() => props.event ? formatRuntimeEventMeta(props.event) : null)
 </script>
 
@@ -37,13 +39,13 @@ const eventMeta = computed(() => props.event ? formatRuntimeEventMeta(props.even
           {{ props.eyebrow }}
         </p>
         <h3 class="mt-1 text-lg font-semibold tracking-tight">
-          {{ props.event?.title ?? props.emptyTitle ?? '尚无运行事件' }}
+          {{ titleText }}
         </h3>
       </div>
       <AppRuntimeBadge v-if="badge" v-bind="badge" />
     </div>
     <p class="mt-3 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
-      {{ props.event?.detail ?? props.emptyDetail ?? '当前工作区还没有推入结构化运行事件。' }}
+      {{ detailText }}
     </p>
     <p
       v-if="props.event"
