@@ -2,8 +2,10 @@ import type {
   DashboardRuntimeEvent,
   DashboardRuntimeEventKind,
   DashboardRuntimeEventLevel,
+  DashboardRuntimeSourceCardItem,
   DashboardRuntimeSourceSummary,
 } from '../types'
+import { formatDuration } from './format'
 
 const EVENT_KINDS: DashboardRuntimeEventKind[] = ['command', 'build', 'diagnostic', 'hmr', 'system']
 const EVENT_LEVELS: DashboardRuntimeEventLevel[] = ['info', 'success', 'warning', 'error']
@@ -123,4 +125,11 @@ export function summarizeRuntimeEventsBySource(events: DashboardRuntimeEvent[]):
       : undefined,
   }))
     .sort((left, right) => right.count - left.count || left.source.localeCompare(right.source, 'zh-CN'))
+}
+
+export function formatRuntimeSourceSummary(items: DashboardRuntimeSourceSummary[]): DashboardRuntimeSourceCardItem[] {
+  return items.map(item => ({
+    ...item,
+    averageDuration: formatDuration(item.averageDurationMs),
+  }))
 }

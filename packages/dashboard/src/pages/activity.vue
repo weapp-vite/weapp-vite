@@ -16,7 +16,7 @@ import AppTagList from '../features/dashboard/components/AppTagList.vue'
 import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { formatDuration, formatRuntimeEventKind, formatRuntimeEventLevel, formatRuntimeEventSource } from '../features/dashboard/utils/format'
-import { summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
+import { formatRuntimeSourceSummary, summarizeRuntimeEventsBySource } from '../features/dashboard/utils/runtimeEvents'
 
 const { activityItems, diagnostics, eventSummary, runtimeEvents } = useDashboardWorkspace()
 
@@ -164,10 +164,7 @@ const filteredEventSummary = computed<DashboardLabelValueItem[]>(() => {
 })
 
 const sourceBreakdown = computed(() => {
-  return summarizeRuntimeEventsBySource(filteredRuntimeEvents.value).map(source => ({
-    ...source,
-    averageDuration: formatDuration(source.averageDurationMs),
-  }))
+  return formatRuntimeSourceSummary(summarizeRuntimeEventsBySource(filteredRuntimeEvents.value))
 })
 
 const selectedEvent = computed(() =>

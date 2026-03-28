@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeRuntimeEvents, summarizeRuntimeEventsBySource } from './runtimeEvents'
+import { formatRuntimeSourceSummary, normalizeRuntimeEvents, summarizeRuntimeEventsBySource } from './runtimeEvents'
 
 describe('normalizeRuntimeEvents', () => {
   it('normalizes partial event payloads and fills defaults', () => {
@@ -102,6 +102,40 @@ describe('normalizeRuntimeEvents', () => {
         errorCount: 0,
         latestTimestamp: '10:02:00',
         averageDurationMs: 40,
+      },
+    ])
+  })
+
+  it('formats runtime source summaries for source cards', () => {
+    expect(formatRuntimeSourceSummary([
+      {
+        source: 'cli',
+        count: 2,
+        errorCount: 1,
+        latestTimestamp: '10:00:00',
+        averageDurationMs: 200,
+      },
+      {
+        source: 'vite-hmr',
+        count: 1,
+        errorCount: 0,
+        latestTimestamp: '10:02:00',
+      },
+    ])).toEqual([
+      {
+        source: 'cli',
+        count: 2,
+        errorCount: 1,
+        latestTimestamp: '10:00:00',
+        averageDurationMs: 200,
+        averageDuration: '200 ms',
+      },
+      {
+        source: 'vite-hmr',
+        count: 1,
+        errorCount: 0,
+        latestTimestamp: '10:02:00',
+        averageDuration: '未记录',
       },
     ])
   })
