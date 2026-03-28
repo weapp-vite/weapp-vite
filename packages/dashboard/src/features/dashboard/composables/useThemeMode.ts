@@ -1,7 +1,5 @@
+import type { ResolvedTheme, ThemePreference } from '../types'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-
-export type ThemePreference = 'system' | 'light' | 'dark'
-export type ResolvedTheme = 'light' | 'dark'
 
 const STORAGE_KEY = 'weapp-vite-dashboard-theme'
 

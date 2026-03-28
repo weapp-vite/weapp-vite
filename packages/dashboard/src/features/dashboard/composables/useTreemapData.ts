@@ -1,7 +1,6 @@
 import type { Ref } from 'vue'
-import type { AnalyzeSubpackagesResult } from '../types'
+import type { AnalyzeSubpackagesResult, ResolvedTheme } from '../types'
 import type { TreemapNode } from '../utils/treemap'
-import type { ResolvedTheme } from './useThemeMode'
 import { computed } from 'vue'
 import { formatTreemapTooltip, PACKAGE_STYLES, TREEMAP_LEVELS } from '../utils/treemap'
 

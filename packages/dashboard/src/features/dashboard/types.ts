@@ -1,6 +1,8 @@
 export type PackageType = 'main' | 'subPackage' | 'independent' | 'virtual'
 export type ModuleSourceType = 'src' | 'plugin' | 'node_modules' | 'workspace'
 export type BuildOrigin = 'main' | 'independent'
+export type ThemePreference = 'system' | 'light' | 'dark'
+export type ResolvedTheme = 'light' | 'dark'
 export type DashboardIconName
   = | 'theme-system'
     | 'theme-light'
