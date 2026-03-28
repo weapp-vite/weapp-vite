@@ -3,7 +3,7 @@ import {
   emitBundlePageLayoutsIfNeeded,
   emitScriptlessComponentJsFallbackIfMissing,
 } from './layoutAssets'
-import { addBundleWatchFile, emitCompiledEntryBundleAssets, getEntryBaseName, handleCompiledEntryPageLayouts, refreshCompiledVueEntryCacheInDev, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, emitCompiledEntryBundleAssets, handleCompiledEntryPageLayouts, resolveCompiledEntryEmitState, resolveVueBundleAssetContext } from './shared'
 
 export async function emitCompiledVueEntryAssets(
   bundle: Record<string, any>,
@@ -29,7 +29,7 @@ export async function emitCompiledVueEntryAssets(
     platformAssetOptions,
   } = resolveVueBundleAssetContext(configService)
 
-  const result = await refreshCompiledVueEntryCacheInDev({
+  const emitState = await resolveCompiledEntryEmitState({
     filename,
     cached,
     ctx,
@@ -37,12 +37,10 @@ export async function emitCompiledVueEntryAssets(
     configService,
     compileOptionsState,
   })
-
-  const baseName = getEntryBaseName(filename)
-  const relativeBase = configService.relativeOutputPath(baseName)
-  if (!relativeBase) {
+  if (!emitState) {
     return
   }
+  const { result, relativeBase } = emitState
 
   if (cached.isPage && cached.source) {
     await handleCompiledEntryPageLayouts({
