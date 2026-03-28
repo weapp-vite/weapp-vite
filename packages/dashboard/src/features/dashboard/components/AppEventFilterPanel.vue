@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DashboardKeyOption, DashboardValueOption } from '../types'
 import { pillButtonStyles } from '../utils/styles'
 import AppInsetPanel from './AppInsetPanel.vue'
 import AppMetaLabel from './AppMetaLabel.vue'
@@ -6,10 +7,10 @@ import AppMetaLabel from './AppMetaLabel.vue'
 defineProps<{
   searchQuery: string
   presetDescription: string
-  filterPresets: Array<{ key: string, label: string }>
-  eventKindOptions: Array<{ value: string, label: string }>
-  eventLevelOptions: Array<{ value: string, label: string }>
-  eventSourceOptions: Array<{ value: string, label: string }>
+  filterPresets: DashboardKeyOption[]
+  eventKindOptions: DashboardValueOption[]
+  eventLevelOptions: DashboardValueOption[]
+  eventSourceOptions: DashboardValueOption[]
   eventKindFilter: string
   eventLevelFilter: string
   eventSourceFilter: string

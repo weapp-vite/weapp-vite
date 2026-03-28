@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DashboardLabelValueItem } from '../features/dashboard/types'
+import type { DashboardKeyOption, DashboardLabelValueItem, DashboardValueOption } from '../features/dashboard/types'
 import { computed, ref, watch } from 'vue'
 import AppEmptyState from '../features/dashboard/components/AppEmptyState.vue'
 import AppEventFilterPanel from '../features/dashboard/components/AppEventFilterPanel.vue'
@@ -22,6 +22,11 @@ const { activityItems, diagnostics, eventSummary, runtimeEvents } = useDashboard
 
 type EventKindFilter = 'all' | typeof runtimeEvents.value[number]['kind']
 type EventLevelFilter = 'all' | typeof runtimeEvents.value[number]['level']
+type FilterPresetKey = 'all' | 'issues' | 'commands' | 'hmr'
+type FilterPreset = DashboardKeyOption<FilterPresetKey> & {
+  description: string
+  apply: () => void
+}
 
 const eventKindFilter = ref<EventKindFilter>('all')
 const eventLevelFilter = ref<EventLevelFilter>('all')
@@ -29,7 +34,7 @@ const eventSourceFilter = ref('all')
 const searchQuery = ref('')
 const selectedEventId = ref<string | null>(null)
 
-const eventKindOptions: Array<{ value: EventKindFilter, label: string }> = [
+const eventKindOptions: DashboardValueOption<EventKindFilter>[] = [
   { value: 'all', label: '全部类型' },
   { value: 'command', label: '命令' },
   { value: 'build', label: '构建' },
@@ -38,7 +43,7 @@ const eventKindOptions: Array<{ value: EventKindFilter, label: string }> = [
   { value: 'system', label: '系统' },
 ]
 
-const eventLevelOptions: Array<{ value: EventLevelFilter, label: string }> = [
+const eventLevelOptions: DashboardValueOption<EventLevelFilter>[] = [
   { value: 'all', label: '全部等级' },
   { value: 'info', label: '信息' },
   { value: 'success', label: '成功' },
@@ -46,7 +51,7 @@ const eventLevelOptions: Array<{ value: EventLevelFilter, label: string }> = [
   { value: 'error', label: '错误' },
 ]
 
-const filterPresets = [
+const filterPresets: FilterPreset[] = [
   {
     key: 'all',
     label: '查看全部',
@@ -93,7 +98,7 @@ const filterPresets = [
   },
 ]
 
-const eventSourceOptions = computed(() => {
+const eventSourceOptions = computed<DashboardValueOption[]>(() => {
   const sourceSet = new Set(
     runtimeEvents.value
       .map(event => event.source ?? 'dashboard')
