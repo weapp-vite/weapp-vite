@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
+import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
 import AppSectionHeading from '../features/dashboard/components/AppSectionHeading.vue'
 import AppSurfaceCard from '../features/dashboard/components/AppSurfaceCard.vue'
-import AppWorkspaceSignalsPanel from '../features/dashboard/components/AppWorkspaceSignalsPanel.vue'
+import DashboardIcon from '../features/dashboard/components/DashboardIcon.vue'
 import { useDashboardWorkspace } from '../features/dashboard/composables/useDashboardWorkspace'
 import { releaseChecklist, workspaceHighlights, workspaceNavigation } from '../features/dashboard/constants/shell'
 
@@ -33,7 +34,23 @@ const { commandItems, signals } = useDashboardWorkspace()
         </div>
 
         <div class="grid gap-3">
-          <AppWorkspaceSignalsPanel :items="signals" />
+          <AppInsetPanel eyebrow="rollout signal">
+            <ul class="grid gap-2 text-sm">
+              <li
+                v-for="item in signals"
+                :key="item.label"
+                class="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-3"
+              >
+                <span class="inline-flex items-center gap-2">
+                  <span class="h-4.5 w-4.5 text-[color:var(--dashboard-accent)]">
+                    <DashboardIcon :name="item.iconName" />
+                  </span>
+                  {{ item.label }}
+                </span>
+                <strong class="text-[color:var(--dashboard-text)]">{{ item.value }}</strong>
+              </li>
+            </ul>
+          </AppInsetPanel>
         </div>
       </div>
     </AppSurfaceCard>
