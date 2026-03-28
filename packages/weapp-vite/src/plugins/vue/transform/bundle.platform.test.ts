@@ -12,6 +12,7 @@ import {
   normalizeVueConfigForPlatform,
   normalizeVueTemplateForPlatform,
   preparePlatformConfigAsset,
+  resolveVueBundlePlatformOptions,
 } from './bundle/platform'
 
 const collectFallbackPageEntryIdsMock = vi.hoisted(() => vi.fn(async () => new Set<string>()))
@@ -78,6 +79,24 @@ describe('emitVueBundleAssets platform output', () => {
   }
 
   it('returns original config/template when direct platform helpers hit fallback branches', () => {
+    expect(resolveVueBundlePlatformOptions({
+      platform: 'weapp',
+      scriptModuleExtension: 'sjs',
+    })).toEqual({
+      normalizeUsingComponents: false,
+      normalizeTemplate: false,
+      emitGenericPlaceholder: false,
+      scriptModuleTag: undefined,
+    })
+    expect(resolveVueBundlePlatformOptions({
+      platform: 'alipay',
+      scriptModuleExtension: 'sjs',
+    })).toEqual({
+      normalizeUsingComponents: true,
+      normalizeTemplate: true,
+      emitGenericPlaceholder: true,
+      scriptModuleTag: 'import-sjs',
+    })
     expect(normalizeVueConfigForPlatform(undefined, {
       platform: 'alipay',
     })).toBeUndefined()

@@ -14,6 +14,25 @@ import { SCRIPTLESS_COMPONENT_STUB } from './shared'
 
 const LEADING_DOT_SLASH_RE = /^\.\//
 
+export interface VueBundlePlatformOptions {
+  normalizeUsingComponents: boolean
+  normalizeTemplate: boolean
+  emitGenericPlaceholder: boolean
+  scriptModuleTag?: string
+}
+
+export function resolveVueBundlePlatformOptions(options: {
+  platform: string
+  scriptModuleExtension?: string
+}) {
+  return {
+    normalizeUsingComponents: shouldNormalizeUsingComponents(options.platform as any),
+    normalizeTemplate: shouldNormalizeVueTemplateForPlatform(options.platform as any),
+    emitGenericPlaceholder: shouldEmitGenericPlaceholderAsset(options.platform as any),
+    scriptModuleTag: resolveScriptModuleTagByPlatform(options.platform as any, options.scriptModuleExtension),
+  } satisfies VueBundlePlatformOptions
+}
+
 export function normalizeVueConfigForPlatform(
   config: string | undefined,
   options: {
@@ -22,7 +41,11 @@ export function normalizeVueConfigForPlatform(
     alipayNpmMode?: string
   },
 ) {
-  if (!config || !shouldNormalizeUsingComponents(options.platform as any)) {
+  const platformOptions = resolveVueBundlePlatformOptions({
+    platform: options.platform,
+  })
+
+  if (!config || !platformOptions.normalizeUsingComponents) {
     return config
   }
 
@@ -53,7 +76,12 @@ export function normalizeVueTemplateForPlatform(
     scriptModuleExtension?: string
   },
 ) {
-  if (!shouldNormalizeVueTemplateForPlatform(options.platform as any)) {
+  const platformOptions = resolveVueBundlePlatformOptions({
+    platform: options.platform,
+    scriptModuleExtension: options.scriptModuleExtension,
+  })
+
+  if (!platformOptions.normalizeTemplate) {
     return template
   }
 
@@ -64,7 +92,7 @@ export function normalizeVueTemplateForPlatform(
     return handleWxml(token, {
       templateExtension: options.templateExtension,
       scriptModuleExtension: options.scriptModuleExtension,
-      scriptModuleTag: resolveScriptModuleTagByPlatform(options.platform as any, options.scriptModuleExtension),
+      scriptModuleTag: platformOptions.scriptModuleTag,
     }).code
   }
   catch {
@@ -114,7 +142,7 @@ export function emitAlipayGenericPlaceholderAssets(
   outputExtensions: OutputExtensions | undefined,
   platform: string,
 ) {
-  if (!shouldEmitGenericPlaceholderAsset(platform as any) || !configSource) {
+  if (!resolveVueBundlePlatformOptions({ platform }).emitGenericPlaceholder || !configSource) {
     return
   }
 
