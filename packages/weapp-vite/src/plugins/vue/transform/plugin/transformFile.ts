@@ -13,7 +13,7 @@ import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks } from '../scopedSlot'
-import { finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, loadTransformSource, preloadTransformSfcStyleBlocks, registerVueTemplateToken, resolveTransformEntryFlags, resolveVueOutputBase } from './shared'
+import { compileTransformEntryResult, finalizeTransformCompiledResult, finalizeTransformEntryCode, inlineTransformAutoRoutes, loadTransformSource, preloadTransformSfcStyleBlocks, resolveTransformEntryFlags } from './shared'
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -117,49 +117,31 @@ export async function transformVueLikeFile(options: {
       classStyleRuntimeWarned,
     })
 
-    const result = await measureStage('compile', async () => (
-      filename.endsWith('.vue')
-        ? await compileVueFile(transformedSource, filename, compileOptions)
-        : await compileJsxFile(transformedSource, filename, compileOptions)
-    ))
+    const result = await measureStage('compile', async () => await compileTransformEntryResult({
+      transformedSource,
+      filename,
+      compileOptions,
+      compileVueFile,
+      compileJsxFile,
+    }))
 
-    if (isPage && result.template) {
-      await measureStage('pagePostProcess', async () => {
-        await handleTransformEntryPageLayoutFlow({
-          pluginCtx,
-          ctx,
-          filename,
-          source: transformedSource,
-          result,
-        })
-      })
-    }
-    registerVueTemplateToken(ctx, filename, result.template)
-
-    if (Array.isArray(result.meta?.sfcSrcDeps) && typeof pluginCtx.addWatchFile === 'function') {
-      for (const dep of result.meta.sfcSrcDeps) {
-        addNormalizedWatchFile(pluginCtx, dep)
-      }
-    }
-
-    await measureStage('finalizeScript', async () => {
-      await finalizeTransformEntryScript({
-        result,
-        filename,
+    await measureStage('finalizeCompiledResult', async () => {
+      await finalizeTransformCompiledResult({
+        ctx,
         pluginCtx,
+        filename,
+        source: transformedSource,
+        result,
+        compilationCache,
         configService,
         isPage,
         isApp,
+        scopedSlotModules,
+        emittedScopedSlotChunks,
+        addWatchFile: addNormalizedWatchFile,
+        emitScopedSlotChunks,
       })
     })
-    compilationCache.set(filename, { result, source, isPage })
-
-    const relativeBase = resolveVueOutputBase(configService, filename)
-    if (relativeBase) {
-      await measureStage('emitScopedSlots', async () => {
-        emitScopedSlotChunks(pluginCtx, relativeBase, result, scopedSlotModules, emittedScopedSlotChunks, configService.outputExtensions)
-      })
-    }
 
     const returnedCode = await measureStage('finalizeCode', async () => finalizeTransformEntryCode({
       result,

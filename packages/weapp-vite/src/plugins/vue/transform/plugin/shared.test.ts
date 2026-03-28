@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags } from './shared'
+import { compileTransformEntryResult, ensureSfcStyleBlocks, finalizeTransformCompiledResult, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, loadTransformPageEntries, loadTransformSource, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, preloadTransformSfcStyleBlocks, registerNativeLayoutChunksForEntry, resolveTransformEntryFlags } from './shared'
 
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn())
@@ -276,6 +276,30 @@ describe('vue transform plugin shared helpers', () => {
     expect(load).toHaveBeenCalledTimes(2)
   })
 
+  it('compiles transform entries with vue or jsx compiler based on filename', async () => {
+    const compileVueFile = vi.fn(async () => ({ script: 'vue result' }))
+    const compileJsxFile = vi.fn(async () => ({ script: 'jsx result' }))
+
+    await expect(compileTransformEntryResult({
+      transformedSource: '<template />',
+      filename: '/project/src/components/demo.vue',
+      compileOptions: { mode: 'vue' },
+      compileVueFile,
+      compileJsxFile,
+    })).resolves.toEqual({ script: 'vue result' })
+
+    await expect(compileTransformEntryResult({
+      transformedSource: 'export default () => null',
+      filename: '/project/src/components/demo.jsx',
+      compileOptions: { mode: 'jsx' },
+      compileVueFile,
+      compileJsxFile,
+    })).resolves.toEqual({ script: 'jsx result' })
+
+    expect(compileVueFile).toHaveBeenCalledTimes(1)
+    expect(compileJsxFile).toHaveBeenCalledTimes(1)
+  })
+
   it('detects transform script post-process hints', () => {
     expect(mayNeedTransformSetDataPick('<view>{{ count }}</view>')).toBe(true)
     expect(mayNeedTransformSetDataPick('<view />')).toBe(false)
@@ -525,6 +549,77 @@ console.log(routes, promise)
 
     expect(ensureFresh).not.toHaveBeenCalled()
     expect(getReference).not.toHaveBeenCalled()
+  })
+
+  it('finalizes compiled transform results through layout, watch deps, script finalize, cache, and scoped slots', async () => {
+    const pluginCtx = {
+      addWatchFile: vi.fn(),
+    }
+    const result = {
+      template: '<view />',
+      script: 'Page({ onReachBottom() {} })',
+      meta: {
+        sfcSrcDeps: ['/project/src/components/card.vue'],
+      },
+    } as any
+    const compilationCache = new Map<string, any>()
+    const scopedSlotEmitter = vi.fn()
+    const addWatchFile = vi.fn()
+    resolvePageLayoutPlanMock.mockResolvedValue({
+      layouts: [
+        { kind: 'native', file: '/project/src/layouts/default' },
+      ],
+    })
+
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
+      transformed: true,
+      code: 'Page({ enhanced: true })',
+    })
+
+    await expect(finalizeTransformCompiledResult({
+      ctx: {
+        configService: {
+          outputExtensions: { js: 'js' },
+          relativeOutputPath: vi.fn(() => 'pages/home/index'),
+          isDev: true,
+          weappViteConfig: {},
+        },
+      } as any,
+      pluginCtx,
+      filename: '/project/src/pages/home/index.vue',
+      source: '<template />',
+      result,
+      compilationCache,
+      configService: {
+        outputExtensions: { js: 'js' },
+        relativeOutputPath: vi.fn(() => 'pages/home/index'),
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: true,
+      isApp: false,
+      scopedSlotModules: new Map(),
+      emittedScopedSlotChunks: new Set(),
+      addWatchFile,
+      emitScopedSlotChunks: scopedSlotEmitter,
+    })).resolves.toBe(result)
+
+    expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledTimes(1)
+    expect(addWatchFile).toHaveBeenCalledWith(pluginCtx, '/project/src/components/card.vue')
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
+    expect(compilationCache.get('/project/src/pages/home/index.vue')).toEqual({
+      result,
+      source: '<template />',
+      isPage: true,
+    })
+    expect(scopedSlotEmitter).toHaveBeenCalledWith(
+      pluginCtx,
+      'pages/home/index',
+      result,
+      expect.any(Map),
+      expect.any(Set),
+      { js: 'js' },
+    )
   })
 
   it('resolves transform entry flags with page matcher creation, dirty invalidation, and app detection', async () => {
