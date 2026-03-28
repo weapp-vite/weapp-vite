@@ -238,6 +238,38 @@ export function emitSharedVueEntryAssets(options: {
   }
 }
 
+export function emitBundleVueEntryAssets(options: {
+  bundle: Record<string, any>
+  pluginCtx: any
+  ctx: CompilerContext
+  filename: string
+  relativeBase: string
+  result: VueTransformResult
+  configService: NonNullable<CompilerContext['configService']>
+  templateExtension: string
+  scriptModuleExtension?: string
+  outputExtensions: NonNullable<CompilerContext['configService']>['outputExtensions']
+  platformAssetOptions: {
+    platform: string
+    templateExtension: string
+    scriptModuleExtension?: string
+    dependencies?: Record<string, string>
+    alipayNpmMode?: string
+  }
+}) {
+  const jsonConfig = options.configService.weappViteConfig?.json
+
+  emitSharedVueEntryAssets({
+    ...options,
+    scopedSlotDefaults: jsonConfig?.defaults?.component,
+    scopedSlotMergeStrategy: jsonConfig?.mergeStrategy,
+  })
+
+  return {
+    jsonConfig,
+  }
+}
+
 export function getEntryBaseName(filename: string) {
   const extIndex = filename.lastIndexOf('.')
   if (extIndex < 0) {
