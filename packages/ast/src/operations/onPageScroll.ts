@@ -63,6 +63,18 @@ export function getCallExpressionCalleeName(
   return undefined
 }
 
+export function getOnPageScrollCallbackArgument(
+  node: { arguments?: Array<t.Expression | t.SpreadElement | t.ArgumentPlaceholder | null> },
+) {
+  const arg0 = node.arguments?.[0]
+  if (!arg0 || arg0.type === 'SpreadElement') {
+    return undefined
+  }
+  return arg0.type === 'FunctionExpression' || arg0.type === 'ArrowFunctionExpression'
+    ? arg0
+    : undefined
+}
+
 export function collectPageScrollInspection(
   functionPath: any,
   node: t.ArrowFunctionExpression | t.FunctionExpression | t.ObjectMethod,
@@ -465,11 +477,8 @@ export function collectOnPageScrollWarningsWithBabel(
       if (!isOnPageScrollCallee(path.node.callee, onPageScrollHookNames, namespaceImports)) {
         return
       }
-      const arg0 = path.node.arguments[0]
-      if (!arg0 || arg0.type === 'SpreadElement') {
-        return
-      }
-      if (arg0.type !== 'FunctionExpression' && arg0.type !== 'ArrowFunctionExpression') {
+      const arg0 = getOnPageScrollCallbackArgument(path.node)
+      if (!arg0) {
         return
       }
       reportInspection(path.get('arguments.0'), arg0, 'onPageScroll(...)')
@@ -478,11 +487,8 @@ export function collectOnPageScrollWarningsWithBabel(
       if (!isOnPageScrollCallee(path.node.callee, onPageScrollHookNames, namespaceImports)) {
         return
       }
-      const arg0 = path.node.arguments[0]
-      if (!arg0 || arg0.type === 'SpreadElement') {
-        return
-      }
-      if (arg0.type !== 'FunctionExpression' && arg0.type !== 'ArrowFunctionExpression') {
+      const arg0 = getOnPageScrollCallbackArgument(path.node)
+      if (!arg0) {
         return
       }
       reportInspection(path.get('arguments.0'), arg0, 'onPageScroll(...)')
