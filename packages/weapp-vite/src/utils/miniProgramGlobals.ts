@@ -24,11 +24,15 @@ export function getMiniProgramPlatformGlobalKey(platform?: string) {
   return MINI_PROGRAM_PLATFORM_GLOBAL_KEY_MAP[platform as keyof typeof MINI_PROGRAM_PLATFORM_GLOBAL_KEY_MAP] ?? platform
 }
 
+export function resolveMiniProgramGlobalHostExpression(hostExpression?: string) {
+  return hostExpression ?? 'globalThis'
+}
+
 export function createMiniProgramGlobalResolveExpression(options?: {
   globalKeys?: readonly string[]
   hostExpression?: string
 }) {
   const globalKeys = options?.globalKeys ?? getMiniProgramGlobalKeys()
-  const hostExpression = options?.hostExpression ?? 'globalThis'
+  const hostExpression = resolveMiniProgramGlobalHostExpression(options?.hostExpression)
   return `(${globalKeys.map(key => `${hostExpression}.${key}`).join(' ?? ')})`
 }
