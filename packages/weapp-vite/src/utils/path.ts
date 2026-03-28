@@ -47,7 +47,7 @@ export function normalizeWatchPath(value: string) {
   }
   const cleaned = stripWindowsDevicePath(value)
   const posix = toPosixPath(cleaned)
-  return normalizeNativePath(posix)
+  return toPosixPath(normalizeNativePath(posix))
 }
 
 export function stripLeadingSlashes(value: string) {
