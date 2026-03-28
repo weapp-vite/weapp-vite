@@ -30,6 +30,9 @@ expectType<{ abort: () => void }>(browserPage?.wx.downloadFile({
   success: (result) => {
     expectType<{ errMsg: string, statusCode: number, tempFilePath: string }>(result)
   },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
   complete: (result) => {
     expectType<{ errMsg: string, statusCode: number, tempFilePath: string } | undefined>(result)
   },
@@ -40,6 +43,9 @@ expectType<{ abort: () => void }>(browserPage?.wx.uploadFile({
   name: 'report',
   success: (result) => {
     expectType<{ data: string, errMsg: string, statusCode: number }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
   },
   complete: (result) => {
     expectType<{ data: string, errMsg: string, statusCode: number } | undefined>(result)
@@ -109,6 +115,9 @@ expectType<{ abort: () => void }>(headlessPage?.wx.downloadFile({
   success: (result) => {
     expectType<{ errMsg: string, statusCode: number, tempFilePath: string }>(result)
   },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
   complete: (result) => {
     expectType<{ errMsg: string, statusCode: number, tempFilePath: string } | undefined>(result)
   },
@@ -119,6 +128,9 @@ expectType<{ abort: () => void }>(headlessPage?.wx.uploadFile({
   name: 'report',
   success: (result) => {
     expectType<{ data: string, errMsg: string, statusCode: number }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
   },
   complete: (result) => {
     expectType<{ data: string, errMsg: string, statusCode: number } | undefined>(result)
