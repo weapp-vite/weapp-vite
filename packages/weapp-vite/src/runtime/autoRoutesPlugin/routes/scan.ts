@@ -16,6 +16,22 @@ export interface ScanResult {
   watchDirs: Set<string>
 }
 
+function sortAutoRoutesEntries(values: string[]) {
+  values.sort((a, b) => {
+    if (a === 'pages/index/index') {
+      return -1
+    }
+    if (b === 'pages/index/index') {
+      return 1
+    }
+    return a.localeCompare(b)
+  })
+}
+
+function sortAutoRoutesSubPackages(subPackages: AutoRoutesSubPackage[]) {
+  subPackages.sort((a, b) => a.root.localeCompare(b.root))
+}
+
 function ensureSubPackage(map: Map<string, Set<string>>, root: string) {
   let set = map.get(root)
   if (!set) {
@@ -23,6 +39,20 @@ function ensureSubPackage(map: Map<string, Set<string>>, root: string) {
     map.set(root, set)
   }
   return set
+}
+
+function shouldIncludeScanCandidate(
+  candidate: Pick<CandidateEntry, 'hasScript' | 'hasTemplate' | 'jsonPath'>,
+  json: Record<string, any> | undefined,
+) {
+  if (candidate.jsonPath && json === undefined) {
+    return false
+  }
+  if (json && typeof json === 'object' && json.component === true) {
+    return false
+  }
+
+  return candidate.hasScript || candidate.hasTemplate || Boolean(candidate.jsonPath)
 }
 
 export async function scanRoutes(
@@ -77,14 +107,7 @@ export async function scanRoutes(
     watchDirs.add(path.dirname(candidate.base))
 
     const json = jsonMap.get(candidate)
-    if (candidate.jsonPath && json === undefined) {
-      continue
-    }
-    if (json && typeof json === 'object' && json.component === true) {
-      continue
-    }
-
-    if (!candidate.hasScript && !candidate.hasTemplate && !candidate.jsonPath) {
+    if (!shouldIncludeScanCandidate(candidate, json)) {
       continue
     }
 
@@ -114,27 +137,9 @@ export async function scanRoutes(
     }
   })
 
-  pages.sort((a, b) => {
-    if (a === 'pages/index/index') {
-      return -1
-    }
-    if (b === 'pages/index/index') {
-      return 1
-    }
-    return a.localeCompare(b)
-  })
-
-  entries.sort((a, b) => {
-    if (a === 'pages/index/index') {
-      return -1
-    }
-    if (b === 'pages/index/index') {
-      return 1
-    }
-    return a.localeCompare(b)
-  })
-
-  subPackageList.sort((a, b) => a.root.localeCompare(b.root))
+  sortAutoRoutesEntries(pages)
+  sortAutoRoutesEntries(entries)
+  sortAutoRoutesSubPackages(subPackageList)
 
   const snapshot: AutoRoutes = {
     pages,
@@ -152,4 +157,10 @@ export async function scanRoutes(
     watchFiles,
     watchDirs,
   }
+}
+
+export {
+  shouldIncludeScanCandidate,
+  sortAutoRoutesEntries,
+  sortAutoRoutesSubPackages,
 }
