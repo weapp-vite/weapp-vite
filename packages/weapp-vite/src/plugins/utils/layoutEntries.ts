@@ -35,3 +35,15 @@ export async function registerResolvedPageLayoutEntries(options: {
     }
   }
 }
+
+export function markComponentEntries(
+  entriesMap: Map<string, Entry | undefined>,
+  entries: Iterable<string>,
+) {
+  for (const entry of entries) {
+    const mapped = entriesMap.get(entry)
+    if (mapped) {
+      mapped.type = 'component'
+    }
+  }
+}

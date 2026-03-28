@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { registerResolvedPageLayoutEntries } from './layoutEntries'
+import { markComponentEntries, registerResolvedPageLayoutEntries } from './layoutEntries'
 
 const collectNativeLayoutAssetsMock = vi.hoisted(() => vi.fn(async () => ({
   script: '/project/src/layouts/native/index.ts',
@@ -72,5 +72,20 @@ describe('layout entry helpers', () => {
 
     expect(entries).toEqual([])
     expect(explicitEntryTypes.size).toBe(0)
+  })
+
+  it('marks existing entries as component entries', () => {
+    const entriesMap = new Map<string, any>([
+      ['/layouts/native/index:/project/src/pages/home/index.json', { type: 'page' }],
+      ['/layouts/default:/project/src/pages/home/index.json', { type: 'component' }],
+    ])
+
+    markComponentEntries(entriesMap, [
+      '/layouts/native/index:/project/src/pages/home/index.json',
+      '/missing',
+    ])
+
+    expect(entriesMap.get('/layouts/native/index:/project/src/pages/home/index.json')?.type).toBe('component')
+    expect(entriesMap.get('/layouts/default:/project/src/pages/home/index.json')?.type).toBe('component')
   })
 })
