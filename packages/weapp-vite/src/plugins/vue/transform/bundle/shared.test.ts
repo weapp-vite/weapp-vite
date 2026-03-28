@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, resolveVueBundleAssetContext } from './shared'
+import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, refreshCompiledVueEntryCacheInDev, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -21,6 +21,11 @@ const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
   code,
 })))
 const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
+const readFileMock = vi.hoisted(() => vi.fn(async () => ''))
+const compileVueFileMock = vi.hoisted(() => vi.fn(async () => ({
+  template: '<view />',
+  script: 'Page({})',
+})))
 
 vi.mock('./platform', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./platform')>()
@@ -63,9 +68,16 @@ vi.mock('wevu/compiler', async (importOriginal) => {
   const actual = await importOriginal<typeof import('wevu/compiler')>()
   return {
     ...actual,
+    compileVueFile: compileVueFileMock,
     getClassStyleWxsSource: getClassStyleWxsSourceMock,
   }
 })
+
+vi.mock('fs-extra', () => ({
+  default: {
+    readFile: readFileMock,
+  },
+}))
 
 describe('emitSharedVueEntryAssets', () => {
   beforeEach(() => {
@@ -92,6 +104,13 @@ describe('emitSharedVueEntryAssets', () => {
     }))
     isAutoSetDataPickEnabledMock.mockReset()
     isAutoSetDataPickEnabledMock.mockReturnValue(false)
+    readFileMock.mockReset()
+    readFileMock.mockResolvedValue('')
+    compileVueFileMock.mockReset()
+    compileVueFileMock.mockResolvedValue({
+      template: '<view />',
+      script: 'Page({})',
+    })
   })
 
   it('emits template, class style wxs, and scoped slot assets through shared flow', () => {
@@ -309,6 +328,103 @@ describe('emitSharedVueEntryAssets', () => {
     expect(collectSetDataPickKeysFromTemplateMock).not.toHaveBeenCalled()
     expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
     expect(result.script).toBe('App({})')
+  })
+
+  it('returns cached compiled result when dev refresh is disabled', async () => {
+    const cached = {
+      result: { script: 'Page({ cached: true })' },
+      source: '<view />',
+      isPage: true,
+    } as any
+
+    const result = await refreshCompiledVueEntryCacheInDev({
+      filename: '/project/src/pages/index/index.vue',
+      cached,
+      ctx: {} as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: false,
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(readFileMock).not.toHaveBeenCalled()
+    expect(result).toBe(cached.result)
+  })
+
+  it('returns cached compiled result when source is unchanged in dev', async () => {
+    const cached = {
+      result: { script: 'Page({ cached: true })' },
+      source: '<view />',
+      isPage: true,
+    } as any
+    readFileMock.mockResolvedValue('<view />')
+
+    const result = await refreshCompiledVueEntryCacheInDev({
+      filename: '/project/src/pages/index/index.vue',
+      cached,
+      ctx: {
+        autoImportService: {
+          resolve: () => undefined,
+        },
+      } as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(result).toBe(cached.result)
+  })
+
+  it('refreshes compiled cache when source changes in dev', async () => {
+    const cached = {
+      result: { script: 'Page({ cached: true })' },
+      source: '<view />',
+      isPage: true,
+    } as any
+    readFileMock.mockResolvedValue('<view updated />')
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
+      transformed: true,
+      code: 'Page({ refreshed: true })',
+    })
+
+    const result = await refreshCompiledVueEntryCacheInDev({
+      filename: '/project/src/pages/index/index.vue',
+      cached,
+      ctx: {
+        autoImportService: {
+          resolve: () => undefined,
+        },
+      } as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
+    expect(cached.source).toBe('<view updated />')
+    expect(cached.result).toBe(result)
+    expect((result as any).script).toBe('Page({ refreshed: true })')
   })
 
   it('normalizes config before emitting shared json asset', () => {

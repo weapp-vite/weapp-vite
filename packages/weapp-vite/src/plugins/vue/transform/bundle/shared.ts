@@ -1,6 +1,8 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import type { JsonMergeStrategy } from '../../../../types'
+// eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
+import fs from 'fs-extra'
 import { compileJsxFile, compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { resolveClassStyleWxsLocationForBase } from '../classStyle'
@@ -380,4 +382,43 @@ export async function compileAndFinalizeVueLikeFile(options: {
     isPage: options.isPage,
     isApp: options.isApp,
   })
+}
+
+export async function refreshCompiledVueEntryCacheInDev(options: {
+  filename: string
+  cached: CompilationCacheEntry
+  ctx: CompilerContext
+  pluginCtx: any
+  configService: NonNullable<CompilerContext['configService']>
+  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+}) {
+  const { filename, cached, ctx, pluginCtx, configService, compileOptionsState } = options
+  if (!configService.isDev) {
+    return cached.result
+  }
+
+  try {
+    const source = await fs.readFile(filename, 'utf-8')
+    if (source === cached.source) {
+      return cached.result
+    }
+
+    const compiled = await compileAndFinalizeVueLikeFile({
+      source,
+      filename,
+      ctx,
+      pluginCtx,
+      isPage: cached.isPage,
+      isApp: isAppVueLikeFile(filename),
+      configService,
+      compileOptionsState,
+    })
+
+    cached.source = source
+    cached.result = compiled
+    return compiled
+  }
+  catch {
+    return cached.result
+  }
 }
