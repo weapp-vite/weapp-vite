@@ -3,7 +3,7 @@ import path from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRuntimeState } from '../../../runtime/runtimeState'
 import { createWxmlServicePlugin } from '../../../runtime/wxmlPlugin'
-import { emitJsonAsset, emitWxmlAssetsWithCache } from '../wxmlEmit'
+import { emitJsonAsset, emitWxmlAssetFile, emitWxmlAssetsWithCache, resolveWxmlEmitContext, resolveWxmlEmitTargets } from '../wxmlEmit'
 
 function createMockCompiler(options?: { outputExtensions?: Record<string, string>, platform?: string }): MutableCompilerContext {
   const runtimeState = createRuntimeState()
@@ -77,6 +77,89 @@ describe('emitWxmlAssetsWithCache', () => {
     })
 
     expect(emitFile).toHaveBeenCalledTimes(2)
+  })
+
+  it('resolves emit context and throws when required services are missing', () => {
+    expect(resolveWxmlEmitContext(ctx as any)).toEqual(expect.objectContaining({
+      wxmlService: ctx.wxmlService,
+      configService: ctx.configService,
+      scanService: ctx.scanService,
+      templateExtension: 'wxml',
+      scriptModuleExtension: 'wxs',
+      scriptModuleTag: 'wxs',
+    }))
+
+    expect(() => resolveWxmlEmitContext({} as any)).toThrow('emitWxmlAssets 需要先初始化 wxmlService、configService 和 scanService。')
+  })
+
+  it('resolves emit targets for main package, subpackage, and plugin builds', () => {
+    const subPackageFile = '/project/src/pkg/pages/detail/index.wxml'
+    const pluginFile = '/project/plugin/pages/demo/index.wxml'
+    ctx.wxmlService!.tokenMap.set(subPackageFile, ctx.wxmlService!.analyze('<view />'))
+    ctx.wxmlService!.tokenMap.set(pluginFile, ctx.wxmlService!.analyze('<view />'))
+    ctx.scanService = {
+      isMainPackageFileName: (fileName: string) => fileName === 'pages/index/index.wxml',
+    } as any
+    ctx.configService = {
+      ...ctx.configService,
+      absolutePluginRoot: '/project/plugin',
+    } as any
+
+    expect(resolveWxmlEmitTargets({
+      compiler: ctx as any,
+    }).map(item => item.fileName)).toEqual(['pages/index/index.wxml'])
+
+    expect(resolveWxmlEmitTargets({
+      compiler: ctx as any,
+      subPackageMeta: {
+        subPackage: {
+          root: 'pkg',
+        },
+      } as any,
+    }).map(item => item.fileName)).toEqual(['pkg/pages/detail/index.wxml'])
+
+    expect(resolveWxmlEmitTargets({
+      compiler: ctx as any,
+      buildTarget: 'plugin',
+    }).map(item => item.fileName)).toEqual(['../plugin/pages/demo/index.wxml'])
+  })
+
+  it('emits a single wxml asset file with cache-aware skip and watch deps', () => {
+    const emitFile = vi.fn()
+    const addWatchFile = vi.fn()
+    const token = ctx.wxmlService!.analyze('<view />')
+    const emittedCodeCache = new Map<string, string>()
+    const deps = new Set(['/project/src/shared/helper.wxml'])
+
+    expect(emitWxmlAssetFile({
+      runtime: { emitFile, addWatchFile },
+      id: filePath,
+      fileName: 'pages/index/index.wxml',
+      token,
+      deps,
+      emittedCodeCache,
+      scriptModuleExtension: 'wxs',
+      scriptModuleTag: 'wxs',
+      templateExtension: 'wxml',
+    })).toBe(true)
+
+    expect(addWatchFile).toHaveBeenNthCalledWith(1, filePath)
+    expect(addWatchFile).toHaveBeenNthCalledWith(2, '/project/src/shared/helper.wxml')
+    expect(emitFile).toHaveBeenCalledTimes(1)
+
+    expect(emitWxmlAssetFile({
+      runtime: { emitFile, addWatchFile },
+      id: filePath,
+      fileName: 'pages/index/index.wxml',
+      token,
+      deps,
+      emittedCodeCache,
+      scriptModuleExtension: 'wxs',
+      scriptModuleTag: 'wxs',
+      templateExtension: 'wxml',
+    })).toBe(false)
+
+    expect(emitFile).toHaveBeenCalledTimes(1)
   })
 
   it('emits platform template extension and rewrites script module tags', () => {

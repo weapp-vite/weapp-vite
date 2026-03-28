@@ -26,10 +26,8 @@ export interface EmitWxmlOptions {
   buildTarget?: BuildTarget
 }
 
-export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
-  const { runtime, compiler, subPackageMeta, emittedCodeCache, buildTarget = 'app' } = options
+export function resolveWxmlEmitContext(compiler: CompilerContext) {
   const { wxmlService, configService, scanService } = compiler
-
   if (!wxmlService || !configService || !scanService) {
     throw new Error('emitWxmlAssets 需要先初始化 wxmlService、configService 和 scanService。')
   }
@@ -39,7 +37,26 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
     platform: configService.platform,
     scriptModuleExtension,
   })
-  const currentPackageWxmls = Array.from(wxmlService.tokenMap.entries())
+
+  return {
+    wxmlService,
+    configService,
+    scanService,
+    templateExtension,
+    scriptModuleExtension,
+    scriptModuleTag,
+  }
+}
+
+export function resolveWxmlEmitTargets(options: {
+  compiler: CompilerContext
+  subPackageMeta?: SubPackageMetaValue
+  buildTarget?: BuildTarget
+}) {
+  const { compiler, subPackageMeta, buildTarget = 'app' } = options
+  const { wxmlService, configService, scanService, templateExtension } = resolveWxmlEmitContext(compiler)
+
+  return Array.from(wxmlService.tokenMap.entries())
     .map(([id, token]) => {
       const outputFileName = resolveRelativeOutputFileNameWithExtension(configService, id, templateExtension)
       return {
@@ -61,34 +78,70 @@ export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
       }
       return scanService.isMainPackageFileName(fileName)
     })
+}
+
+export function emitWxmlAssetFile(options: {
+  runtime: WxmlEmitRuntime
+  id: string
+  fileName: string
+  token: any
+  deps?: Set<string>
+  emittedCodeCache: Map<string, string>
+  scriptModuleExtension?: string
+  scriptModuleTag?: string
+  templateExtension: string
+}) {
+  const { runtime, id, fileName, token, deps, emittedCodeCache, scriptModuleExtension, scriptModuleTag, templateExtension } = options
+
+  runtime.addWatchFile?.(normalizeWatchPath(id))
+  if (deps) {
+    for (const dep of deps) {
+      runtime.addWatchFile?.(normalizeWatchPath(dep))
+    }
+  }
+
+  const result = handleWxml(token, {
+    scriptModuleExtension,
+    scriptModuleTag,
+    templateExtension,
+  })
+  const previous = emittedCodeCache.get(fileName)
+  if (previous === result.code) {
+    return false
+  }
+
+  emittedCodeCache.set(fileName, result.code)
+  runtime.emitFile({
+    type: 'asset',
+    fileName,
+    source: result.code,
+  })
+  return true
+}
+
+export function emitWxmlAssetsWithCache(options: EmitWxmlOptions): string[] {
+  const { runtime, compiler, subPackageMeta, emittedCodeCache, buildTarget = 'app' } = options
+  const { wxmlService, templateExtension, scriptModuleExtension, scriptModuleTag } = resolveWxmlEmitContext(compiler)
+  const currentPackageWxmls = resolveWxmlEmitTargets({
+    compiler,
+    subPackageMeta,
+    buildTarget,
+  })
 
   const emittedFiles: string[] = []
 
   for (const { id, fileName, token } of currentPackageWxmls) {
-    runtime.addWatchFile?.(normalizeWatchPath(id))
-    const deps = wxmlService.depsMap.get(id)
-    if (deps) {
-      for (const dep of deps) {
-        runtime.addWatchFile?.(normalizeWatchPath(dep))
-      }
-    }
-
     emittedFiles.push(fileName)
-    const result = handleWxml(token, {
+    emitWxmlAssetFile({
+      runtime,
+      id,
+      fileName,
+      token,
+      deps: wxmlService.depsMap.get(id),
+      emittedCodeCache,
       scriptModuleExtension,
       scriptModuleTag,
       templateExtension,
-    })
-    const previous = emittedCodeCache.get(fileName)
-    if (previous === result.code) {
-      continue
-    }
-
-    emittedCodeCache.set(fileName, result.code)
-    runtime.emitFile({
-      type: 'asset',
-      fileName,
-      source: result.code,
     })
   }
 
