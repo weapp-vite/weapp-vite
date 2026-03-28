@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {
+  DashboardDetailItem,
   DuplicateModuleEntry,
   LargestFileEntry,
   ModuleSourceSummary,
@@ -16,6 +17,28 @@ defineProps<{
   moduleSourceSummary: ModuleSourceSummary[]
   visibleLargestFiles: LargestFileEntry[]
 }>()
+
+function createDuplicateModuleItem(module: DuplicateModuleEntry): DashboardDetailItem {
+  return {
+    title: module.source,
+    meta: `${formatSourceType(module.sourceType)} · ${module.packageCount} 个包 · ${formatBytes(module.bytes)}`,
+  }
+}
+
+function createModuleSourceItem(item: ModuleSourceSummary): DashboardDetailItem {
+  return {
+    title: formatSourceType(item.sourceType),
+    meta: `${item.count} 个模块`,
+    value: formatBytes(item.bytes),
+  }
+}
+
+function createLargestFileSampleItem(file: LargestFileEntry): DashboardDetailItem {
+  return {
+    title: file.file,
+    meta: `${file.packageLabel} · ${formatBuildOrigin(file.from)} · ${file.moduleCount} 模块`,
+  }
+}
 </script>
 
 <template>
@@ -30,8 +53,7 @@ defineProps<{
         <AppSummaryValueCard
           v-for="module in visibleDuplicateModules"
           :key="module.id"
-          :title="module.source"
-          :meta="`${formatSourceType(module.sourceType)} · ${module.packageCount} 个包 · ${formatBytes(module.bytes)}`"
+          v-bind="createDuplicateModuleItem(module)"
           break-title
         >
           <ul class="mt-3 space-y-1.5 text-xs text-[color:var(--dashboard-text-muted)]">
@@ -55,9 +77,7 @@ defineProps<{
           <AppSummaryValueCard
             v-for="item in moduleSourceSummary"
             :key="item.sourceType"
-            :title="formatSourceType(item.sourceType)"
-            :meta="`${item.count} 个模块`"
-            :value="formatBytes(item.bytes)"
+            v-bind="createModuleSourceItem(item)"
           />
         </div>
       </section>
@@ -68,8 +88,7 @@ defineProps<{
           <AppCompactListItem
             v-for="file in visibleLargestFiles.slice(0, 6)"
             :key="`${file.packageId}:${file.file}`"
-            :title="file.file"
-            :meta="`${file.packageLabel} · ${formatBuildOrigin(file.from)} · ${file.moduleCount} 模块`"
+            v-bind="createLargestFileSampleItem(file)"
             mono-title
           />
         </ul>
