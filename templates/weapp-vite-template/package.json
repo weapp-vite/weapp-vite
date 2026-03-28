@@ -22,8 +22,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "open": "weapp-vite open",
-    "stylelint": "stylelint \"src/**/*.{css,scss,vue}\" --allow-empty-input",
-    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue}\" --fix --allow-empty-input",
+    "stylelint": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --allow-empty-input",
+    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue,wxss}\" --fix --allow-empty-input",
     "g": "weapp-vite generate",
     "postinstall": "weapp-vite prepare"
   },
