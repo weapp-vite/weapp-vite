@@ -10,6 +10,8 @@ import {
   createLineStartOffsets,
   createWarningPrefix,
   defaultIsDefineComponentSource,
+  defaultResolveBabelComponentExpression,
+  defaultResolveBabelRenderExpression,
   extractTemplateExpressions,
   getLocationFromOffset,
   getMemberExpressionPropertyName,
@@ -335,11 +337,33 @@ export default page
   })
 
   it('exposes jsx auto component prechecks', () => {
+    const componentObject = t.objectExpression([
+      t.objectMethod(
+        'method',
+        t.identifier('render'),
+        [],
+        t.blockStatement([t.returnStatement(t.identifier('view'))]),
+      ),
+    ])
+
     expect(defaultIsDefineComponentSource('vue')).toBe(true)
     expect(defaultIsDefineComponentSource('wevu')).toBe(false)
     expect(mayContainJsxAutoComponentEntry(`import Foo from './Foo'`)).toBe(true)
     expect(mayContainJsxAutoComponentEntry('export default page')).toBe(true)
     expect(mayContainJsxAutoComponentEntry('const page = createPage()')).toBe(false)
+    expect(defaultResolveBabelComponentExpression(componentObject, new Map(), new Set(['defineComponent']))).toBe(componentObject)
+    expect(defaultResolveBabelComponentExpression(
+      t.callExpression(t.identifier('defineComponent'), [componentObject]),
+      new Map(),
+      new Set(['defineComponent']),
+    )).toBe(componentObject)
+    expect(defaultResolveBabelComponentExpression(
+      t.identifier('page'),
+      new Map([['page', componentObject]]),
+      new Set(['defineComponent']),
+    )).toBe(componentObject)
+    expect(defaultResolveBabelRenderExpression(componentObject)).toEqual(t.identifier('view'))
+    expect(defaultResolveBabelRenderExpression(t.identifier('page'))).toBeNull()
   })
 
   it('fast rejects jsx auto component analysis without imports or default export', () => {
