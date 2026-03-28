@@ -16,6 +16,7 @@ import {
   resolveAlipayGenericPlaceholderBase,
   resolveVueBundlePlatformAssetOptions,
   resolveVueBundlePlatformOptions,
+  shouldEmitAlipayGenericPlaceholder,
 } from './bundle/platform'
 
 const collectFallbackPageEntryIdsMock = vi.hoisted(() => vi.fn(async () => new Set<string>()))
@@ -206,6 +207,29 @@ describe('emitVueBundleAssets platform output', () => {
       .toBe('components/direct/__weapp_vite_generic_component')
     expect(resolveAlipayGenericPlaceholderBase('index'))
       .toBe('__weapp_vite_generic_component')
+  })
+
+  it('detects whether alipay generic placeholder assets should be emitted', () => {
+    expect(shouldEmitAlipayGenericPlaceholder(undefined)).toBe(false)
+    expect(shouldEmitAlipayGenericPlaceholder('[]')).toBe(false)
+    expect(shouldEmitAlipayGenericPlaceholder('{')).toBe(false)
+    expect(shouldEmitAlipayGenericPlaceholder(JSON.stringify({
+      componentGenerics: {
+        slotA: {},
+      },
+    }))).toBe(false)
+    expect(shouldEmitAlipayGenericPlaceholder(JSON.stringify({
+      componentGenerics: {
+        slotA: true,
+      },
+    }))).toBe(true)
+    expect(shouldEmitAlipayGenericPlaceholder(JSON.stringify({
+      componentGenerics: {
+        slotA: {
+          default: './__weapp_vite_generic_component',
+        },
+      },
+    }))).toBe(true)
   })
 
   it('emits placeholder assets from a resolved placeholder base', () => {
