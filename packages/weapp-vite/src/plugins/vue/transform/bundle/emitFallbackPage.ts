@@ -8,7 +8,7 @@ import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { resolvePageLayoutPlan } from '../pageLayout'
 import { findFirstResolvedVueLikeEntry } from '../shared'
-import { emitNativeLayoutAssetsIfNeeded, emitResolvedBundleLayouts, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
+import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
 import { compileAndFinalizeVueLikeFile, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, resolveVueBundleAssetContext } from './shared'
 
 export async function emitFallbackPageAssets(
@@ -72,31 +72,15 @@ export async function emitFallbackPageAssets(
       })
 
       const resolvedLayoutPlan = await resolvePageLayoutPlan(source, entryFilePath, configService)
-      if (resolvedLayoutPlan?.layouts.length) {
-        await emitResolvedBundleLayouts({
-          layouts: resolvedLayoutPlan.layouts,
-          emitNativeLayout: async (layoutFilePath) => {
-            await emitNativeLayoutAssetsIfNeeded({
-              pluginCtx,
-              bundle,
-              layoutBasePath: layoutFilePath,
-              configService,
-              outputExtensions,
-            })
-          },
-          emitVueLayout: async (layoutFilePath) => {
-            await emitVueLayoutScriptFallbackIfNeeded({
-              pluginCtx,
-              bundle,
-              layoutFilePath,
-              ctx,
-              configService,
-              compileOptionsState,
-              outputExtensions,
-            })
-          },
-        })
-      }
+      await emitBundlePageLayoutsIfNeeded({
+        layouts: resolvedLayoutPlan?.layouts,
+        pluginCtx,
+        bundle,
+        ctx,
+        configService,
+        compileOptionsState,
+        outputExtensions,
+      })
 
       const jsonConfig = configService.weappViteConfig?.json
       emitSharedVueEntryAssets({

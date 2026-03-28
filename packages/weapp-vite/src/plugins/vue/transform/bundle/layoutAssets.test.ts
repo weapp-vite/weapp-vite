@@ -1,7 +1,68 @@
-import { describe, expect, it, vi } from 'vitest'
-import { emitResolvedBundleLayouts, resolveVueLayoutAssetOptions } from './layoutAssets'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { emitBundlePageLayoutsIfNeeded, emitResolvedBundleLayouts, resolveVueLayoutAssetOptions } from './layoutAssets'
+
+const readFileMock = vi.hoisted(() => vi.fn(async () => '<view />'))
+const collectNativeLayoutAssetsMock = vi.hoisted(() => vi.fn(async () => ({
+  template: '/project/layouts/default/index.wxml',
+})))
+const emitSfcTemplateIfMissingMock = vi.hoisted(() => vi.fn())
+const emitSfcStyleIfMissingMock = vi.hoisted(() => vi.fn())
+const emitSfcJsonAssetMock = vi.hoisted(() => vi.fn())
+const compileVueLikeFileMock = vi.hoisted(() => vi.fn(async () => ({
+  script: '',
+})))
+const ensureScriptlessComponentAssetMock = vi.hoisted(() => vi.fn())
+
+vi.mock('fs-extra', () => ({
+  default: {
+    readFile: readFileMock,
+  },
+}))
+
+vi.mock('../pageLayout', () => ({
+  collectNativeLayoutAssets: collectNativeLayoutAssetsMock,
+}))
+
+vi.mock('../emitAssets', () => ({
+  emitSfcJsonAsset: emitSfcJsonAssetMock,
+  emitSfcStyleIfMissing: emitSfcStyleIfMissingMock,
+  emitSfcTemplateIfMissing: emitSfcTemplateIfMissingMock,
+}))
+
+vi.mock('./shared', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./shared')>()
+  return {
+    ...actual,
+    compileVueLikeFile: compileVueLikeFileMock,
+  }
+})
+
+vi.mock('../../../utils/scriptlessComponent', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../utils/scriptlessComponent')>()
+  return {
+    ...actual,
+    ensureScriptlessComponentAsset: ensureScriptlessComponentAssetMock,
+  }
+})
 
 describe('resolveVueLayoutAssetOptions', () => {
+  beforeEach(() => {
+    readFileMock.mockReset()
+    readFileMock.mockResolvedValue('<view />')
+    collectNativeLayoutAssetsMock.mockReset()
+    collectNativeLayoutAssetsMock.mockResolvedValue({
+      template: '/project/layouts/default/index.wxml',
+    })
+    emitSfcTemplateIfMissingMock.mockReset()
+    emitSfcStyleIfMissingMock.mockReset()
+    emitSfcJsonAssetMock.mockReset()
+    compileVueLikeFileMock.mockReset()
+    compileVueLikeFileMock.mockResolvedValue({
+      script: '',
+    })
+    ensureScriptlessComponentAssetMock.mockReset()
+  })
+
   it('resolves layout asset output names from platform extensions', () => {
     expect(resolveVueLayoutAssetOptions({
       configService: {
@@ -54,5 +115,66 @@ describe('resolveVueLayoutAssetOptions', () => {
     expect(emitNativeLayout).toHaveBeenNthCalledWith(2, '/layouts/native-second')
     expect(emitVueLayout).toHaveBeenCalledTimes(1)
     expect(emitVueLayout).toHaveBeenCalledWith('/layouts/vue-default.vue')
+  })
+
+  it('returns early when bundle page layouts are missing', async () => {
+    await emitBundlePageLayoutsIfNeeded({
+      layouts: undefined,
+      pluginCtx: { emitFile: vi.fn() },
+      bundle: {},
+      ctx: {} as any,
+      configService: {} as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+      outputExtensions: {},
+    })
+
+    expect(collectNativeLayoutAssetsMock).not.toHaveBeenCalled()
+    expect(compileVueLikeFileMock).not.toHaveBeenCalled()
+    expect(ensureScriptlessComponentAssetMock).not.toHaveBeenCalled()
+  })
+
+  it('dispatches bundle page layouts through shared native and vue emit flows', async () => {
+    await emitBundlePageLayoutsIfNeeded({
+      layouts: [
+        { kind: 'native', file: 'layouts/native-default/index' },
+        { kind: 'vue', file: '/project/layouts/vue-default/index.vue' },
+      ],
+      pluginCtx: { emitFile: vi.fn() },
+      bundle: {},
+      ctx: {} as any,
+      configService: {
+        relativeOutputPath: (value: string) => `dist/${value}`,
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        json: 'json',
+        js: 'js',
+      },
+    })
+
+    expect(collectNativeLayoutAssetsMock).toHaveBeenCalledWith('layouts/native-default/index')
+    expect(emitSfcTemplateIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'dist/layouts/native-default/index',
+      '<view />',
+      'wxml',
+    )
+    expect(readFileMock).toHaveBeenCalledWith('/project/layouts/vue-default/index.vue', 'utf-8')
+    expect(compileVueLikeFileMock).toHaveBeenCalledTimes(1)
+    expect(ensureScriptlessComponentAssetMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'dist//project/layouts/vue-default/index',
+      'js',
+    )
   })
 })
