@@ -123,7 +123,7 @@ export function createWarningPrefix(filename: string, line?: number, column?: nu
   return `[weapp-vite][onPageScroll] ${filename}:${pos}`
 }
 
-function getOxcStaticPropertyName(node: any): string | undefined {
+export function getOxcStaticPropertyName(node: any): string | undefined {
   if (!node) {
     return undefined
   }
