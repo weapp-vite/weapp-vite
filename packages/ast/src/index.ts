@@ -37,6 +37,7 @@ export {
   createLineStartOffsets,
   createWarningPrefix,
   getLocationFromOffset,
+  getOxcMemberExpressionPropertyName,
   getOxcStaticPropertyName,
 } from './operations/onPageScroll'
 export {

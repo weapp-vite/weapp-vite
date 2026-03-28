@@ -13,6 +13,7 @@ import {
   extractTemplateExpressions,
   getLocationFromOffset,
   getObjectPropertyByKey,
+  getOxcMemberExpressionPropertyName,
   getOxcStaticPropertyName,
   getRenderPropertyFromComponentOptions,
   getStaticPropertyName,
@@ -517,6 +518,21 @@ export function useCounter() {
     expect(getOxcStaticPropertyName({ type: 'StringLiteral', value: 'render' })).toBe('render')
     expect(getOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
     expect(getOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
+    expect(getOxcMemberExpressionPropertyName({
+      type: 'MemberExpression',
+      computed: false,
+      property: { type: 'Identifier', name: 'setData' },
+    })).toBe('setData')
+    expect(getOxcMemberExpressionPropertyName({
+      type: 'MemberExpression',
+      computed: true,
+      property: { type: 'StringLiteral', value: 'getStorageSync' },
+    })).toBe('getStorageSync')
+    expect(getOxcMemberExpressionPropertyName({
+      type: 'MemberExpression',
+      computed: true,
+      property: { type: 'NumericLiteral', value: 1 },
+    })).toBeUndefined()
     expect(createWarningPrefix('/src/pages/index.ts')).toBe('[weapp-vite][onPageScroll] /src/pages/index.ts:?:?')
     expect(createWarningPrefix('/src/pages/index.ts', 2, 3)).toBe('[weapp-vite][onPageScroll] /src/pages/index.ts:2:3')
   })
