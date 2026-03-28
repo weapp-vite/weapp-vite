@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mergeMiniprogram } from './miniprogram'
+import {
+  mergeMiniprogram,
+  resolveMiniprogramWatchInclude,
+} from './miniprogram'
 
 const arrangePluginsMock = vi.hoisted(() => vi.fn())
 
@@ -10,6 +13,33 @@ vi.mock('./plugins', () => {
 })
 
 describe('runtime config merge miniprogram', () => {
+  it('resolves miniprogram watch include patterns for src and plugin roots', () => {
+    expect(resolveMiniprogramWatchInclude({
+      cwd: '/project',
+      srcRoot: 'src',
+    })).toEqual([
+      '/project/src/**',
+    ])
+
+    expect(resolveMiniprogramWatchInclude({
+      cwd: '/project',
+      srcRoot: 'src',
+      pluginRoot: '../plugin-root',
+    })).toEqual([
+      '/project/src/**',
+      '/plugin-root/**',
+    ])
+
+    expect(resolveMiniprogramWatchInclude({
+      cwd: '/project',
+      srcRoot: 'src',
+      pluginRoot: 'src/plugin',
+    })).toEqual([
+      '/project/src/**',
+      '/project/src/plugin/**',
+    ])
+  })
+
   it('builds development inline config with watch include/exclude and plugin root outside src', () => {
     const applyRuntimePlatform = vi.fn()
     const injectBuiltinAliases = vi.fn()
