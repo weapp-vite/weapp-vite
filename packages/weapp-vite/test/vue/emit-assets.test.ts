@@ -1,5 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
-import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../../src/plugins/vue/transform/emitAssets'
+import {
+  emitSfcJsonAsset,
+  emitSfcStyleIfMissing,
+  emitSfcTemplateIfMissing,
+  resolveSfcAssetFileName,
+} from '../../src/plugins/vue/transform/emitAssets'
+
+describe('resolveSfcAssetFileName', () => {
+  it('joins relative base and extension', () => {
+    expect(resolveSfcAssetFileName('components/hello/index', 'axml')).toBe('components/hello/index.axml')
+  })
+})
 
 describe('emitSfcTemplateIfMissing', () => {
   it('emits when asset missing', () => {
