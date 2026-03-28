@@ -91,7 +91,7 @@ export function resolveImportee(importee: string, jsonPath: string, aliasEntries
   return importee
 }
 
-function toKebabCaseComponentName(name: string) {
+export function toKebabCaseComponentName(name: string) {
   return name
     .replace(COMPONENT_NAME_LOWER_TO_UPPER_RE, '$1-$2')
     .replace(COMPONENT_NAME_MULTI_UPPER_RE, '$1-$2')
