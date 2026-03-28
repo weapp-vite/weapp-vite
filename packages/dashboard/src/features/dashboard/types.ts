@@ -299,6 +299,11 @@ export interface DashboardDetailItem {
   value?: string
 }
 
+export interface DashboardMetricItem {
+  label: string
+  value: string | number
+}
+
 export interface DashboardValueOption<T extends string = string> {
   value: T
   label: string
