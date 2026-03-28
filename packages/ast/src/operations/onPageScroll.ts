@@ -14,7 +14,7 @@ interface OxcLoc {
   column: number
 }
 
-function isStaticPropertyName(key: t.Expression | t.Identifier | t.PrivateName): string | undefined {
+export function isStaticPropertyName(key: t.Expression | t.Identifier | t.PrivateName): string | undefined {
   if (key.type === 'Identifier') {
     return key.name
   }
@@ -24,14 +24,14 @@ function isStaticPropertyName(key: t.Expression | t.Identifier | t.PrivateName):
   return undefined
 }
 
-function getMemberExpressionPropertyName(node: t.MemberExpression | t.OptionalMemberExpression): string | undefined {
+export function getMemberExpressionPropertyName(node: t.MemberExpression | t.OptionalMemberExpression): string | undefined {
   if (node.computed) {
     return node.property.type === 'StringLiteral' ? node.property.value : undefined
   }
   return node.property.type === 'Identifier' ? node.property.name : undefined
 }
 
-function isOnPageScrollCallee(
+export function isOnPageScrollCallee(
   callee: t.Expression | t.V8IntrinsicIdentifier,
   hookNames: Set<string>,
   namespaceImports: Set<string>,
@@ -51,7 +51,7 @@ function isOnPageScrollCallee(
   return false
 }
 
-function getCallExpressionCalleeName(
+export function getCallExpressionCalleeName(
   callee: t.Expression | t.V8IntrinsicIdentifier,
 ): string | undefined {
   if (callee.type === 'Identifier') {
@@ -63,7 +63,19 @@ function getCallExpressionCalleeName(
   return undefined
 }
 
-function collectPageScrollInspection(
+export function getOnPageScrollCallbackArgument(
+  node: { arguments?: Array<t.Expression | t.SpreadElement | t.ArgumentPlaceholder | null> },
+) {
+  const arg0 = node.arguments?.[0]
+  if (!arg0 || arg0.type === 'SpreadElement') {
+    return undefined
+  }
+  return arg0.type === 'FunctionExpression' || arg0.type === 'ArrowFunctionExpression'
+    ? arg0
+    : undefined
+}
+
+export function collectPageScrollInspection(
   functionPath: any,
   node: t.ArrowFunctionExpression | t.FunctionExpression | t.ObjectMethod,
 ): PageScrollInspection {
@@ -116,14 +128,14 @@ function collectPageScrollInspection(
   return inspection
 }
 
-function createWarningPrefix(filename: string, line?: number, column?: number): string {
+export function createWarningPrefix(filename: string, line?: number, column?: number): string {
   const pos = typeof line === 'number' && typeof column === 'number'
     ? `${line}:${column}`
     : '?:?'
   return `[weapp-vite][onPageScroll] ${filename}:${pos}`
 }
 
-function getOxcStaticPropertyName(node: any): string | undefined {
+export function getOxcStaticPropertyName(node: any): string | undefined {
   if (!node) {
     return undefined
   }
@@ -139,7 +151,7 @@ function getOxcStaticPropertyName(node: any): string | undefined {
   return undefined
 }
 
-function getOxcMemberExpressionPropertyName(node: any): string | undefined {
+export function getOxcMemberExpressionPropertyName(node: any): string | undefined {
   if (!node || node.type !== 'MemberExpression') {
     return undefined
   }
@@ -149,12 +161,12 @@ function getOxcMemberExpressionPropertyName(node: any): string | undefined {
   return node.property?.type === 'Identifier' ? node.property.name : undefined
 }
 
-function isOxcFunctionLike(node: any) {
+export function isOxcFunctionLike(node: any) {
   return node?.type === 'FunctionExpression'
     || node?.type === 'ArrowFunctionExpression'
 }
 
-function isOxcOnPageScrollCallee(
+export function isOxcOnPageScrollCallee(
   callee: any,
   hookNames: Set<string>,
   namespaceImports: Set<string>,
@@ -174,7 +186,7 @@ function isOxcOnPageScrollCallee(
   return false
 }
 
-function getOxcCallExpressionCalleeName(callee: any): string | undefined {
+export function getOxcCallExpressionCalleeName(callee: any): string | undefined {
   if (!callee) {
     return undefined
   }
@@ -187,7 +199,7 @@ function getOxcCallExpressionCalleeName(callee: any): string | undefined {
   return undefined
 }
 
-function createLineStartOffsets(code: string) {
+export function createLineStartOffsets(code: string) {
   const offsets = [0]
   for (let index = 0; index < code.length; index += 1) {
     if (code.charCodeAt(index) === 10) {
@@ -197,7 +209,7 @@ function createLineStartOffsets(code: string) {
   return offsets
 }
 
-function getLocationFromOffset(offset: number | undefined, lineStarts: number[]): OxcLoc | undefined {
+export function getLocationFromOffset(offset: number | undefined, lineStarts: number[]): OxcLoc | undefined {
   if (typeof offset !== 'number' || offset < 0) {
     return undefined
   }
@@ -219,7 +231,7 @@ function getLocationFromOffset(offset: number | undefined, lineStarts: number[])
   }
 }
 
-function collectPageScrollInspectionWithOxc(node: any): PageScrollInspection {
+export function collectPageScrollInspectionWithOxc(node: any): PageScrollInspection {
   const inspection: PageScrollInspection = {
     empty: node.body?.type === 'BlockStatement' && node.body.body.length === 0,
     hasSetDataCall: false,
@@ -278,7 +290,7 @@ function collectPageScrollInspectionWithOxc(node: any): PageScrollInspection {
   return inspection
 }
 
-function collectWithOxc(
+export function collectOnPageScrollWarningsWithOxc(
   code: string,
   filename: string,
 ): string[] {
@@ -384,37 +396,11 @@ function collectWithOxc(
   return warnings
 }
 
-/**
- * 静态检测 onPageScroll 中的常见性能风险并返回告警文案。
- */
-export function collectOnPageScrollPerformanceWarnings(
+export function collectOnPageScrollWarningsWithBabel(
   code: string,
   filename: string,
-  options?: {
-    engine?: AstEngineName
-  },
 ): string[] {
-  if (!code.includes('onPageScroll')) {
-    return []
-  }
-
-  if (options?.engine === 'oxc') {
-    try {
-      return collectWithOxc(code, filename)
-    }
-    catch {
-      return []
-    }
-  }
-
-  let ast: t.File
-  try {
-    ast = parseJsLike(code)
-  }
-  catch {
-    return []
-  }
-
+  const ast = parseJsLike(code)
   const onPageScrollHookNames = new Set<string>(['onPageScroll'])
   const namespaceImports = new Set<string>()
   for (const statement of ast.program.body) {
@@ -491,11 +477,8 @@ export function collectOnPageScrollPerformanceWarnings(
       if (!isOnPageScrollCallee(path.node.callee, onPageScrollHookNames, namespaceImports)) {
         return
       }
-      const arg0 = path.node.arguments[0]
-      if (!arg0 || arg0.type === 'SpreadElement') {
-        return
-      }
-      if (arg0.type !== 'FunctionExpression' && arg0.type !== 'ArrowFunctionExpression') {
+      const arg0 = getOnPageScrollCallbackArgument(path.node)
+      if (!arg0) {
         return
       }
       reportInspection(path.get('arguments.0'), arg0, 'onPageScroll(...)')
@@ -504,11 +487,8 @@ export function collectOnPageScrollPerformanceWarnings(
       if (!isOnPageScrollCallee(path.node.callee, onPageScrollHookNames, namespaceImports)) {
         return
       }
-      const arg0 = path.node.arguments[0]
-      if (!arg0 || arg0.type === 'SpreadElement') {
-        return
-      }
-      if (arg0.type !== 'FunctionExpression' && arg0.type !== 'ArrowFunctionExpression') {
+      const arg0 = getOnPageScrollCallbackArgument(path.node)
+      if (!arg0) {
         return
       }
       reportInspection(path.get('arguments.0'), arg0, 'onPageScroll(...)')
@@ -516,4 +496,35 @@ export function collectOnPageScrollPerformanceWarnings(
   })
 
   return warnings
+}
+
+/**
+ * 静态检测 onPageScroll 中的常见性能风险并返回告警文案。
+ */
+export function collectOnPageScrollPerformanceWarnings(
+  code: string,
+  filename: string,
+  options?: {
+    engine?: AstEngineName
+  },
+): string[] {
+  if (!code.includes('onPageScroll')) {
+    return []
+  }
+
+  if (options?.engine === 'oxc') {
+    try {
+      return collectOnPageScrollWarningsWithOxc(code, filename)
+    }
+    catch {
+      return []
+    }
+  }
+
+  try {
+    return collectOnPageScrollWarningsWithBabel(code, filename)
+  }
+  catch {
+    return []
+  }
 }

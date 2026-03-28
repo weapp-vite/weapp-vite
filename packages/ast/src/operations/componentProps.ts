@@ -9,7 +9,7 @@ export type ComponentPropMap = Map<string, string>
 
 const COMPONENT_PROPS_TEXT_HINTS = ['properties', 'props']
 
-function mayContainComponentPropsShape(code: string) {
+export function mayContainComponentPropsShape(code: string) {
   return COMPONENT_PROPS_TEXT_HINTS.some(hint => code.includes(hint))
 }
 
@@ -29,7 +29,7 @@ const CONSTRUCTOR_TYPE_MAP: Record<string, string> = {
   NullConstructor: 'any',
 }
 
-function mapConstructorName(name: string) {
+export function mapConstructorName(name: string) {
   if (Object.hasOwn(CONSTRUCTOR_TYPE_MAP, name)) {
     return CONSTRUCTOR_TYPE_MAP[name]
   }
@@ -39,7 +39,7 @@ function mapConstructorName(name: string) {
   return CONSTRUCTOR_TYPE_MAP[normalized] ?? 'any'
 }
 
-function resolveTypeFromNode(node: any): string {
+export function resolveTypeFromNode(node: any): string {
   if (!node) {
     return 'any'
   }
@@ -120,7 +120,7 @@ function resolveTypeFromNode(node: any): string {
   return 'any'
 }
 
-function getStaticPropertyName(node: any) {
+export function getStaticPropertyName(node: any) {
   if (!node) {
     return undefined
   }
@@ -142,7 +142,17 @@ function getStaticPropertyName(node: any) {
   return undefined
 }
 
-function extractPropertiesObject(node: any): ComponentPropMap | undefined {
+export function mergeComponentPropTypes(
+  primaryType: string | undefined,
+  optionalTypes: Array<string | undefined>,
+) {
+  const typeCandidates = [primaryType, ...optionalTypes]
+    .filter((candidate): candidate is string => Boolean(candidate && candidate.trim().length > 0))
+  const deduped = [...new Set(typeCandidates)]
+  return deduped.length > 0 ? deduped.join(' | ') : 'any'
+}
+
+export function extractPropertiesObject(node: any): ComponentPropMap | undefined {
   if (!node || node.type !== 'ObjectExpression') {
     return undefined
   }
@@ -186,10 +196,7 @@ function extractPropertiesObject(node: any): ComponentPropMap | undefined {
         }
       }
 
-      const typeCandidates = [primaryType, ...optionalTypes]
-        .filter((candidate): candidate is string => Boolean(candidate && candidate.trim().length > 0))
-      const deduped = [...new Set(typeCandidates)]
-      propMap.set(name, deduped.length > 0 ? deduped.join(' | ') : 'any')
+      propMap.set(name, mergeComponentPropTypes(primaryType, optionalTypes))
       continue
     }
 
@@ -199,7 +206,7 @@ function extractPropertiesObject(node: any): ComponentPropMap | undefined {
   return propMap
 }
 
-function resolveOptionsObjectExpression(node: any, bindings: Map<string, any>): any {
+export function resolveOptionsObjectExpression(node: any, bindings: Map<string, any>): any {
   if (!node) {
     return undefined
   }
@@ -223,7 +230,7 @@ function resolveOptionsObjectExpression(node: any, bindings: Map<string, any>): 
   return undefined
 }
 
-function resolveOptionsObjectExpressionWithBabel(
+export function resolveOptionsObjectExpressionWithBabel(
   path: NodePath<t.CallExpression>,
   node: t.Node | null | undefined,
 ) {
@@ -258,7 +265,7 @@ function resolveOptionsObjectExpressionWithBabel(
   return undefined
 }
 
-function extractComponentProperties(optionsNode: any): ComponentPropMap {
+export function extractComponentProperties(optionsNode: any): ComponentPropMap {
   for (const property of optionsNode?.properties ?? []) {
     if (property?.type !== 'ObjectProperty' && property?.type !== 'Property') {
       continue
@@ -275,7 +282,7 @@ function extractComponentProperties(optionsNode: any): ComponentPropMap {
   return new Map()
 }
 
-function collectComponentPropsWithBabel(code: string): ComponentPropMap {
+export function collectComponentPropsWithBabel(code: string): ComponentPropMap {
   const ast = parse(code, BABEL_TS_MODULE_PARSER_OPTIONS)
   let props: ComponentPropMap = new Map()
 
@@ -296,7 +303,7 @@ function collectComponentPropsWithBabel(code: string): ComponentPropMap {
   return props
 }
 
-function collectComponentPropsWithOxc(code: string): ComponentPropMap {
+export function collectComponentPropsWithOxc(code: string): ComponentPropMap {
   const ast = parseJsLikeWithEngine(code, {
     engine: 'oxc',
     filename: 'inline.ts',

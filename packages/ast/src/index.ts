@@ -10,11 +10,50 @@ export {
 export { parseJsLikeWithEngine } from './engine'
 export { babelAstEngine } from './engines/babel'
 export { oxcAstEngine } from './engines/oxc'
-export { collectComponentPropsFromCode } from './operations/componentProps'
+export {
+  collectComponentPropsFromCode,
+  collectComponentPropsWithBabel,
+  collectComponentPropsWithOxc,
+  extractComponentProperties,
+  extractPropertiesObject,
+  getStaticPropertyName,
+  mapConstructorName,
+  mayContainComponentPropsShape,
+  mergeComponentPropTypes,
+  resolveOptionsObjectExpression,
+  resolveOptionsObjectExpressionWithBabel,
+  resolveTypeFromNode,
+} from './operations/componentProps'
 export type { ComponentPropMap } from './operations/componentProps'
-export { collectFeatureFlagsFromCode } from './operations/featureFlags'
+export {
+  collectFeatureFlagsFromCode,
+  collectFeatureFlagsWithBabel,
+  collectFeatureFlagsWithOxc,
+  consumeNamedFeatureFlag,
+  consumeNamespaceFeatureFlag,
+  mayContainFeatureFlagHints,
+  registerNamedFeatureFlagLocal,
+  registerNamespaceFeatureFlagLocal,
+} from './operations/featureFlags'
 export type { FeatureFlagOptions } from './operations/featureFlags'
-export { collectJsxAutoComponentsFromCode } from './operations/jsxAutoComponents'
+export {
+  collectJsxAutoComponentsFromCode,
+  collectJsxAutoComponentsWithBabel,
+  collectJsxAutoComponentsWithOxc,
+  collectJsxTemplateTagsFromOxc,
+  createJsxImportedComponent,
+  defaultIsDefineComponentSource,
+  defaultResolveBabelComponentExpression,
+  defaultResolveBabelRenderExpression,
+  getJsxImportedName,
+  getJsxImportLocalName,
+  getJsxOxcStaticPropertyName,
+  isJsxDefineComponentImportSpecifier,
+  mayContainJsxAutoComponentEntry,
+  resolveOxcComponentExpression,
+  resolveOxcRenderExpression,
+  unwrapOxcExpression,
+} from './operations/jsxAutoComponents'
 export { collectJsxImportedComponentsAndDefaultExportFromBabelAst } from './operations/jsxAutoComponents'
 export { collectJsxTemplateTagsFromBabelExpression } from './operations/jsxAutoComponents'
 export type {
@@ -23,11 +62,63 @@ export type {
   JsxBabelModuleAnalysisOptions,
   JsxImportedComponent,
 } from './operations/jsxAutoComponents'
-export { collectOnPageScrollPerformanceWarnings } from './operations/onPageScroll'
-export { mayContainPlatformApiAccess, platformApiIdentifiers } from './operations/platformApi'
-export { collectRequireTokens, mayContainStaticRequireLiteral } from './operations/require'
+export {
+  collectOnPageScrollPerformanceWarnings,
+  collectOnPageScrollWarningsWithBabel,
+  collectOnPageScrollWarningsWithOxc,
+  collectPageScrollInspection,
+  collectPageScrollInspectionWithOxc,
+  createLineStartOffsets,
+  createWarningPrefix,
+  getCallExpressionCalleeName,
+  getLocationFromOffset,
+  getMemberExpressionPropertyName,
+  getOnPageScrollCallbackArgument,
+  getOxcCallExpressionCalleeName,
+  getOxcMemberExpressionPropertyName,
+  getOxcStaticPropertyName,
+  isOnPageScrollCallee,
+  isOxcFunctionLike,
+  isOxcOnPageScrollCallee,
+  isStaticPropertyName,
+} from './operations/onPageScroll'
+export {
+  hasPlatformApiMemberExpression,
+  isPlatformApiIdentifier,
+  isPlatformApiMemberExpression,
+  mayContainPlatformApiAccess,
+  mayContainPlatformApiIdentifierByText,
+  platformApiIdentifierList,
+  platformApiIdentifiers,
+} from './operations/platformApi'
+export {
+  collectRequireTokens,
+  getRequireAsyncLiteralToken,
+  getStaticRequireLiteralValue,
+  hasStaticRequireCall,
+  isStaticRequireCall,
+  mayContainRequireCallByText,
+  mayContainStaticRequireLiteral,
+} from './operations/require'
 export type { RequireToken } from './operations/require'
-export { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
+export {
+  collectScriptSetupImportsFromCode,
+  collectScriptSetupImportsWithBabel,
+  collectScriptSetupImportsWithOxc,
+  createScriptSetupImport,
+  getScriptSetupImportedName,
+  mayContainRelevantScriptSetupImports,
+} from './operations/scriptSetupImports'
 export type { ScriptSetupImport } from './operations/scriptSetupImports'
-export { collectSetDataPickKeysFromTemplateCode } from './operations/setDataPick'
+export {
+  collectIdentifiersFromExpression,
+  collectIdentifiersFromExpressionWithOxc,
+  collectLoopScopeAliases,
+  collectPatternBindingNames,
+  collectSetDataPickKeysFromTemplateCode,
+  collectSetDataPickKeysWithBabel,
+  collectSetDataPickKeysWithOxc,
+  extractTemplateExpressions,
+  hasBindingInScopes,
+} from './operations/setDataPick'
 export type { AstEngineName, AstParserLike, WeappAstConfig } from './types'

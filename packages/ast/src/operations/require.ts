@@ -10,11 +10,11 @@ export interface RequireToken {
   async?: boolean
 }
 
-function mayContainRequireCallByText(code: string) {
+export function mayContainRequireCallByText(code: string) {
   return code.includes('require(') || code.includes('require (') || code.includes('require`')
 }
 
-function getStaticRequireLiteralValue(node: any) {
+export function getStaticRequireLiteralValue(node: any) {
   if (!node) {
     return null
   }
@@ -39,29 +39,39 @@ function getStaticRequireLiteralValue(node: any) {
 /**
  * 收集 `require.async()` 依赖字面量。
  */
+export function getRequireAsyncLiteralToken(node: any): RequireToken | null {
+  if (
+    node?.type !== 'CallExpression'
+    || node.callee?.type !== 'MemberExpression'
+    || node.callee.object?.type !== 'Identifier'
+    || node.callee.object.name !== 'require'
+    || node.callee.property?.type !== 'Identifier'
+    || node.callee.property.name !== 'async'
+  ) {
+    return null
+  }
+
+  const argv0 = node.arguments?.[0]
+  if (!argv0 || argv0.type !== 'Literal' || typeof argv0.value !== 'string') {
+    return null
+  }
+
+  return {
+    start: argv0.start,
+    end: argv0.end,
+    value: argv0.value,
+    async: true,
+  }
+}
+
 export function collectRequireTokens(ast: unknown) {
   const requireTokens: RequireToken[] = []
 
   walk(ast as Program, {
     enter(node) {
-      if (node.type === 'CallExpression') {
-        if (
-          node.callee.type === 'MemberExpression'
-          && node.callee.object.type === 'Identifier'
-          && node.callee.object.name === 'require'
-          && node.callee.property.type === 'Identifier'
-          && node.callee.property.name === 'async'
-        ) {
-          const argv0 = node.arguments[0]
-          if (argv0 && argv0.type === 'Literal' && typeof argv0.value === 'string') {
-            requireTokens.push({
-              start: argv0.start,
-              end: argv0.end,
-              value: argv0.value,
-              async: true,
-            })
-          }
-        }
+      const token = getRequireAsyncLiteralToken(node)
+      if (token) {
+        requireTokens.push(token)
       }
     },
   })
@@ -69,6 +79,35 @@ export function collectRequireTokens(ast: unknown) {
   return {
     requireTokens,
   }
+}
+
+export function isStaticRequireCall(node: any) {
+  if (node?.type !== 'CallExpression') {
+    return false
+  }
+
+  if (node.callee?.type !== 'Identifier' || node.callee.name !== 'require') {
+    return false
+  }
+
+  return typeof getStaticRequireLiteralValue(node.arguments?.[0]) === 'string'
+}
+
+export function hasStaticRequireCall(ast: Program) {
+  let found = false
+
+  walk(ast, {
+    enter(node) {
+      if (found) {
+        return
+      }
+      if (isStaticRequireCall(node)) {
+        found = true
+      }
+    },
+  })
+
+  return found
 }
 
 /**
@@ -97,26 +136,7 @@ export function mayContainStaticRequireLiteral(
       filename: 'inline.ts',
       parserLike: options?.parserLike,
     }) as Program
-    let found = false
-
-    walk(ast, {
-      enter(node) {
-        if (found || node.type !== 'CallExpression') {
-          return
-        }
-
-        if (node.callee.type !== 'Identifier' || node.callee.name !== 'require') {
-          return
-        }
-
-        const value = getStaticRequireLiteralValue(node.arguments?.[0])
-        if (typeof value === 'string') {
-          found = true
-        }
-      },
-    })
-
-    return found
+    return hasStaticRequireCall(ast)
   }
   catch {
     return true

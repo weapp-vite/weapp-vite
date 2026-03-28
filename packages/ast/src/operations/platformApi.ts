@@ -3,15 +3,44 @@ import type { AstEngineName, AstParserLike } from '../types'
 import { walk } from 'oxc-walker'
 import { parseJsLikeWithEngine } from '../engine'
 
-export const platformApiIdentifiers = new Set(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
+export const platformApiIdentifierList = ['wx', 'my', 'tt', 'swan', 'jd', 'xhs'] as const
+export const platformApiIdentifiers = new Set(platformApiIdentifierList)
 
-function mayContainPlatformApiIdentifierByText(code: string) {
+export function isPlatformApiIdentifier(name: string) {
+  return platformApiIdentifiers.has(name)
+}
+
+export function mayContainPlatformApiIdentifierByText(code: string) {
   for (const identifier of platformApiIdentifiers) {
     if (code.includes(`${identifier}.`)) {
       return true
     }
   }
   return false
+}
+
+export function isPlatformApiMemberExpression(node: any) {
+  return node?.type === 'MemberExpression'
+    && node.object?.type === 'Identifier'
+    && isPlatformApiIdentifier(node.object.name)
+}
+
+export function hasPlatformApiMemberExpression(ast: Program) {
+  let found = false
+
+  walk(ast, {
+    enter(node) {
+      if (found) {
+        return
+      }
+
+      if (isPlatformApiMemberExpression(node)) {
+        found = true
+      }
+    },
+  })
+
+  return found
 }
 
 /**
@@ -40,25 +69,7 @@ export function mayContainPlatformApiAccess(
       filename: 'inline.ts',
       parserLike: options?.parserLike,
     }) as Program
-    let found = false
-
-    walk(ast, {
-      enter(node) {
-        if (found) {
-          return
-        }
-
-        if (
-          node.type === 'MemberExpression'
-          && node.object.type === 'Identifier'
-          && platformApiIdentifiers.has(node.object.name)
-        ) {
-          found = true
-        }
-      },
-    })
-
-    return found
+    return hasPlatformApiMemberExpression(ast)
   }
   catch {
     return true

@@ -4,17 +4,90 @@ import * as babelModule from './babel'
 import * as engineModule from './engine'
 import {
   BABEL_TS_MODULE_PARSER_OPTIONS,
+  collectComponentPropsWithBabel,
+  collectComponentPropsWithOxc,
+  collectFeatureFlagsWithBabel,
+  collectFeatureFlagsWithOxc,
+  collectIdentifiersFromExpression,
+  collectIdentifiersFromExpressionWithOxc,
+  collectJsxAutoComponentsWithBabel,
+  collectJsxAutoComponentsWithOxc,
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
   collectJsxTemplateTagsFromBabelExpression,
+  collectJsxTemplateTagsFromOxc,
+  collectLoopScopeAliases,
+  collectOnPageScrollWarningsWithBabel,
+  collectOnPageScrollWarningsWithOxc,
+  collectPageScrollInspection,
+  collectPageScrollInspectionWithOxc,
+  collectPatternBindingNames,
+  collectScriptSetupImportsWithBabel,
+  collectScriptSetupImportsWithOxc,
+  collectSetDataPickKeysWithBabel,
+  collectSetDataPickKeysWithOxc,
+  consumeNamedFeatureFlag,
+  consumeNamespaceFeatureFlag,
+  createJsxImportedComponent,
+  createLineStartOffsets,
+  createScriptSetupImport,
+  createWarningPrefix,
+  defaultIsDefineComponentSource,
+  defaultResolveBabelComponentExpression,
+  defaultResolveBabelRenderExpression,
+  extractComponentProperties,
+  extractPropertiesObject,
+  extractTemplateExpressions,
+  getCallExpressionCalleeName,
+  getJsxImportedName,
+  getJsxImportLocalName,
+  getJsxOxcStaticPropertyName,
+  getLocationFromOffset,
+  getMemberExpressionPropertyName,
   getObjectPropertyByKey,
+  getOnPageScrollCallbackArgument,
+  getOxcCallExpressionCalleeName,
+  getOxcMemberExpressionPropertyName,
+  getOxcStaticPropertyName,
   getRenderPropertyFromComponentOptions,
+  getRequireAsyncLiteralToken,
+  getScriptSetupImportedName,
+  getStaticPropertyName,
+  getStaticRequireLiteralValue,
+  hasBindingInScopes,
+  hasPlatformApiMemberExpression,
+  hasStaticRequireCall,
+  isJsxDefineComponentImportSpecifier,
+  isOnPageScrollCallee,
+  isOxcFunctionLike,
+  isOxcOnPageScrollCallee,
+  isPlatformApiIdentifier,
+  isPlatformApiMemberExpression,
+  isStaticPropertyName,
+  isStaticRequireCall,
+  mapConstructorName,
+  mayContainComponentPropsShape,
+  mayContainFeatureFlagHints,
+  mayContainJsxAutoComponentEntry,
   mayContainPlatformApiAccess,
+  mayContainPlatformApiIdentifierByText,
+  mayContainRelevantScriptSetupImports,
+  mayContainRequireCallByText,
   mayContainStaticRequireLiteral,
+  mergeComponentPropTypes,
   parse,
   parseJsLikeWithEngine,
+  platformApiIdentifierList,
+  registerNamedFeatureFlagLocal,
+  registerNamespaceFeatureFlagLocal,
+  resolveOptionsObjectExpression,
+  resolveOptionsObjectExpressionWithBabel,
+  resolveOxcComponentExpression,
+  resolveOxcRenderExpression,
   resolveRenderableExpression,
   resolveRenderExpressionFromComponentOptions,
+  resolveTypeFromNode,
   toStaticObjectKey,
+  unwrapOxcExpression,
   unwrapTypeScriptExpression,
 } from './index'
 import { collectComponentPropsFromCode } from './operations/componentProps'
@@ -89,7 +162,102 @@ export function useCounter() {
     engineParseSpy.mockRestore()
   })
 
+  it('exposes script setup import prechecks', () => {
+    expect(collectScriptSetupImportsWithBabel(`
+import type { FooProps } from './types'
+import FooCard, { BarButton as RenamedButton } from './components'
+`, new Set(['FooCard', 'RenamedButton']))).toEqual([
+      {
+        localName: 'FooCard',
+        importSource: './components',
+        importedName: 'default',
+        kind: 'default',
+      },
+      {
+        localName: 'RenamedButton',
+        importSource: './components',
+        importedName: 'BarButton',
+        kind: 'named',
+      },
+    ])
+    expect(collectScriptSetupImportsWithOxc(`
+import type { FooProps } from './types'
+import FooCard, { BarButton as RenamedButton } from './components'
+`, new Set(['FooCard', 'RenamedButton']))).toEqual([
+      {
+        localName: 'FooCard',
+        importSource: './components',
+        importedName: 'default',
+        kind: 'default',
+      },
+      {
+        localName: 'RenamedButton',
+        importSource: './components',
+        importedName: 'BarButton',
+        kind: 'named',
+      },
+    ])
+    expect(mayContainRelevantScriptSetupImports(`import FooCard from './FooCard'`, new Set(['FooCard']))).toBe(true)
+    expect(mayContainRelevantScriptSetupImports(`import BarCard from './BarCard'`, new Set(['FooCard']))).toBe(false)
+    expect(mayContainRelevantScriptSetupImports('const count = 1', new Set(['FooCard']))).toBe(false)
+    expect(mayContainRelevantScriptSetupImports(`import FooCard from './FooCard'`, new Set())).toBe(false)
+    expect(createScriptSetupImport('FooCard', './FooCard', 'default')).toEqual({
+      localName: 'FooCard',
+      importSource: './FooCard',
+      importedName: 'default',
+      kind: 'default',
+    })
+    expect(createScriptSetupImport('RenamedButton', './components', 'named', { type: 'Identifier', name: 'BarButton' })).toEqual({
+      localName: 'RenamedButton',
+      importSource: './components',
+      importedName: 'BarButton',
+      kind: 'named',
+    })
+    expect(getScriptSetupImportedName({ type: 'Identifier', name: 'FooCard' })).toBe('FooCard')
+    expect(getScriptSetupImportedName({ type: 'StringLiteral', value: 'van-button' })).toBe('van-button')
+    expect(getScriptSetupImportedName({ type: 'Literal', value: 'FooCard' })).toBeUndefined()
+    expect(getScriptSetupImportedName(null)).toBeUndefined()
+  })
+
   it('supports oxc fast prechecks', () => {
+    expect(platformApiIdentifierList).toEqual(['wx', 'my', 'tt', 'swan', 'jd', 'xhs'])
+    expect(isPlatformApiIdentifier('wx')).toBe(true)
+    expect(isPlatformApiIdentifier('console')).toBe(false)
+    expect(isPlatformApiMemberExpression({
+      type: 'MemberExpression',
+      object: { type: 'Identifier', name: 'wx' },
+    })).toBe(true)
+    expect(isPlatformApiMemberExpression({
+      type: 'MemberExpression',
+      object: { type: 'Identifier', name: 'console' },
+    })).toBe(false)
+    expect(isPlatformApiMemberExpression({ type: 'Identifier', name: 'wx' })).toBe(false)
+    expect(mayContainPlatformApiIdentifierByText('const value = my.request({})')).toBe(true)
+    expect(mayContainPlatformApiIdentifierByText('const value = localStorage.getItem("x")')).toBe(false)
+    expect(hasPlatformApiMemberExpression({
+      type: 'Program',
+      body: [{
+        type: 'ExpressionStatement',
+        expression: {
+          type: 'MemberExpression',
+          object: { type: 'Identifier', name: 'wx' },
+          property: { type: 'Identifier', name: 'request' },
+        },
+      }],
+      sourceType: 'module',
+    } as any)).toBe(true)
+    expect(hasPlatformApiMemberExpression({
+      type: 'Program',
+      body: [{
+        type: 'ExpressionStatement',
+        expression: {
+          type: 'MemberExpression',
+          object: { type: 'Identifier', name: 'console' },
+          property: { type: 'Identifier', name: 'log' },
+        },
+      }],
+      sourceType: 'module',
+    } as any)).toBe(false)
     expect(mayContainPlatformApiAccess('const value = wx.getStorageSync("x")', { engine: 'oxc' })).toBe(true)
     expect(mayContainPlatformApiAccess('const value = localStorage.getItem("x")', { engine: 'oxc' })).toBe(false)
     expect(mayContainStaticRequireLiteral('const mod = require("./dep")', { engine: 'oxc' })).toBe(true)
@@ -111,6 +279,89 @@ export function useCounter() {
     expect(engineParseSpy).not.toHaveBeenCalled()
 
     engineParseSpy.mockRestore()
+  })
+
+  it('exposes require prechecks', () => {
+    expect(isStaticRequireCall({
+      type: 'CallExpression',
+      callee: { type: 'Identifier', name: 'require' },
+      arguments: [{ type: 'StringLiteral', value: './dep' }],
+    })).toBe(true)
+    expect(isStaticRequireCall({
+      type: 'CallExpression',
+      callee: { type: 'Identifier', name: 'require' },
+      arguments: [{
+        type: 'TemplateLiteral',
+        expressions: [],
+        quasis: [{ value: { cooked: './tmpl' } }],
+      }],
+    })).toBe(true)
+    expect(isStaticRequireCall({
+      type: 'CallExpression',
+      callee: { type: 'Identifier', name: 'require' },
+      arguments: [{ type: 'Identifier', name: 'dep' }],
+    })).toBe(false)
+    expect(hasStaticRequireCall({
+      type: 'Program',
+      body: [{
+        type: 'ExpressionStatement',
+        expression: {
+          type: 'CallExpression',
+          callee: { type: 'Identifier', name: 'require' },
+          arguments: [{ type: 'StringLiteral', value: './dep' }],
+        },
+      }],
+      sourceType: 'module',
+    } as any)).toBe(true)
+    expect(hasStaticRequireCall({
+      type: 'Program',
+      body: [{
+        type: 'ExpressionStatement',
+        expression: {
+          type: 'CallExpression',
+          callee: { type: 'Identifier', name: 'require' },
+          arguments: [{ type: 'Identifier', name: 'dep' }],
+        },
+      }],
+      sourceType: 'module',
+    } as any)).toBe(false)
+    expect(getRequireAsyncLiteralToken({
+      type: 'CallExpression',
+      callee: {
+        type: 'MemberExpression',
+        object: { type: 'Identifier', name: 'require' },
+        property: { type: 'Identifier', name: 'async' },
+      },
+      arguments: [{ type: 'Literal', value: './async', start: 10, end: 19 }],
+    })).toEqual({
+      start: 10,
+      end: 19,
+      value: './async',
+      async: true,
+    })
+    expect(getRequireAsyncLiteralToken({
+      type: 'CallExpression',
+      callee: {
+        type: 'MemberExpression',
+        object: { type: 'Identifier', name: 'require' },
+        property: { type: 'Identifier', name: 'async' },
+      },
+      arguments: [{ type: 'Identifier', name: 'dep' }],
+    })).toBeNull()
+    expect(getRequireAsyncLiteralToken({
+      type: 'CallExpression',
+      callee: { type: 'Identifier', name: 'require' },
+      arguments: [{ type: 'Literal', value: './dep', start: 0, end: 7 }],
+    })).toBeNull()
+    expect(mayContainRequireCallByText(`const dep = require('./dep')`)).toBe(true)
+    expect(mayContainRequireCallByText('const dep = load("./dep")')).toBe(false)
+    expect(getStaticRequireLiteralValue({ type: 'StringLiteral', value: './dep' })).toBe('./dep')
+    expect(getStaticRequireLiteralValue({
+      type: 'TemplateLiteral',
+      expressions: [],
+      quasis: [{ value: { cooked: './tmpl' } }],
+    })).toBe('./tmpl')
+    expect(getStaticRequireLiteralValue({ type: 'Identifier', name: 'dep' })).toBeNull()
   })
 
   it('collects component props with babel and oxc', () => {
@@ -151,6 +402,190 @@ export function useCounter() {
 
     babelParseSpy.mockRestore()
     engineParseSpy.mockRestore()
+  })
+
+  it('exposes component prop prechecks', () => {
+    const propShape = {
+      type: 'ObjectExpression',
+      properties: [
+        {
+          type: 'ObjectProperty',
+          key: { type: 'Identifier', name: 'title' },
+          value: { type: 'Identifier', name: 'String' },
+        },
+        {
+          type: 'ObjectProperty',
+          key: { type: 'StringLiteral', value: 'count' },
+          value: {
+            type: 'ObjectExpression',
+            properties: [
+              {
+                type: 'ObjectProperty',
+                key: { type: 'Identifier', name: 'type' },
+                value: { type: 'Identifier', name: 'Number' },
+              },
+              {
+                type: 'ObjectProperty',
+                key: { type: 'Identifier', name: 'optionalTypes' },
+                value: {
+                  type: 'ArrayExpression',
+                  elements: [
+                    { type: 'Identifier', name: 'String' },
+                    { type: 'Identifier', name: 'String' },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    }
+    const optionsNode = {
+      type: 'ObjectExpression',
+      properties: [
+        {
+          type: 'ObjectProperty',
+          key: { type: 'Identifier', name: 'properties' },
+          value: propShape,
+        },
+      ],
+    }
+    const propsNode = {
+      type: 'ObjectExpression',
+      properties: [
+        {
+          type: 'ObjectProperty',
+          key: { type: 'Identifier', name: 'props' },
+          value: propShape,
+        },
+      ],
+    }
+    const invalidOptionsNode = {
+      type: 'ObjectExpression',
+      properties: [
+        {
+          type: 'ObjectProperty',
+          key: { type: 'Identifier', name: 'props' },
+          value: { type: 'Identifier', name: 'propsRef' },
+        },
+      ],
+    }
+
+    expect(mayContainComponentPropsShape('Component({ properties: { title: String } })')).toBe(true)
+    expect(mayContainComponentPropsShape('const value = ref(1)')).toBe(false)
+    expect(mapConstructorName('String')).toBe('string')
+    expect(mapConstructorName('BooleanConstructor')).toBe('boolean')
+    expect(mapConstructorName('CustomCtor')).toBe('any')
+    expect(mergeComponentPropTypes('string', ['number', 'string', '', undefined])).toBe('string | number')
+    expect(mergeComponentPropTypes(undefined, ['', undefined])).toBe('any')
+    expect(resolveTypeFromNode({ type: 'Identifier', name: 'String' })).toBe('string')
+    expect(resolveTypeFromNode({ type: 'StringLiteral', value: 'Number' })).toBe('number')
+    expect(resolveTypeFromNode({
+      type: 'MemberExpression',
+      property: { type: 'Identifier', name: 'Boolean' },
+    })).toBe('boolean')
+    expect(resolveTypeFromNode({
+      type: 'TSAsExpression',
+      expression: { type: 'Identifier', name: 'ArrayConstructor' },
+    })).toBe('any[]')
+    expect(resolveTypeFromNode({
+      type: 'ArrayExpression',
+      elements: [
+        { type: 'Identifier', name: 'String' },
+        { type: 'Identifier', name: 'Number' },
+      ],
+    })).toBe('string | number')
+    expect(extractPropertiesObject(propShape)).toEqual(new Map([
+      ['title', 'string'],
+      ['count', 'number | string'],
+    ]))
+    expect(extractComponentProperties(optionsNode)).toEqual(new Map([
+      ['title', 'string'],
+      ['count', 'number | string'],
+    ]))
+    expect(extractComponentProperties(propsNode)).toEqual(new Map([
+      ['title', 'string'],
+      ['count', 'number | string'],
+    ]))
+    expect(extractComponentProperties(invalidOptionsNode)).toEqual(new Map())
+    expect(resolveOptionsObjectExpression(
+      { type: 'Identifier', name: 'options' },
+      new Map([['options', propShape]]),
+    )).toBe(propShape)
+    expect(resolveOptionsObjectExpression(
+      {
+        type: 'TSAsExpression',
+        expression: { type: 'Identifier', name: 'options' },
+      },
+      new Map([['options', propShape]]),
+    )).toBe(propShape)
+    expect(resolveOptionsObjectExpression({ type: 'Identifier', name: 'missing' }, new Map())).toBeUndefined()
+    expect(resolveOptionsObjectExpressionWithBabel(
+      {
+        scope: {
+          getBinding() {
+            return {
+              path: {
+                isVariableDeclarator: () => true,
+                node: {
+                  init: propShape,
+                },
+              },
+            }
+          },
+        },
+      } as any,
+      t.identifier('options'),
+    )).toBe(propShape)
+    expect(resolveOptionsObjectExpressionWithBabel(
+      {
+        scope: {
+          getBinding() {
+            return {
+              path: {
+                isVariableDeclarator: () => true,
+                node: {
+                  init: propShape,
+                },
+              },
+            }
+          },
+        },
+      } as any,
+      t.tsAsExpression(t.identifier('options'), t.tsAnyKeyword()),
+    )).toBe(propShape)
+    expect(resolveOptionsObjectExpressionWithBabel(
+      {
+        scope: {
+          getBinding() {
+            return undefined
+          },
+        },
+      } as any,
+      t.identifier('missing'),
+    )).toBeUndefined()
+    expect(collectComponentPropsWithBabel(`
+const options = {
+  properties: {
+    title: String,
+  },
+}
+Component(options)
+`)).toEqual(new Map([['title', 'string']]))
+    expect(collectComponentPropsWithBabel('Component(foo)')).toEqual(new Map())
+    expect(collectComponentPropsWithOxc(`
+const options = {
+  properties: {
+    title: String,
+  },
+}
+Component(options)
+`)).toEqual(new Map([['title', 'string']]))
+    expect(collectComponentPropsWithOxc('Component(foo)')).toEqual(new Map())
+    expect(getStaticPropertyName({ type: 'Identifier', name: 'title' })).toBe('title')
+    expect(getStaticPropertyName({ type: 'StringLiteral', value: 'count' })).toBe('count')
+    expect(getStaticPropertyName({ type: 'NumericLiteral', value: 2 })).toBe('2')
+    expect(getStaticPropertyName({ type: 'TemplateLiteral' })).toBeUndefined()
   })
 
   it('collects generic feature flags with babel and oxc', () => {
@@ -213,6 +648,48 @@ export function useCounter() {
     engineParseSpy.mockRestore()
   })
 
+  it('exposes feature flag text hint checks', () => {
+    const hookToFeature = {
+      onLoad: 'enableLoad',
+      onShow: 'enableShow',
+    } as const
+
+    expect(collectFeatureFlagsWithBabel(`
+import { onLoad } from 'wevu'
+import * as wevuNs from 'wevu'
+onLoad(() => {})
+wevuNs.onShow(() => {})
+`, 'wevu', hookToFeature)).toEqual(new Set(['enableLoad', 'enableShow']))
+    expect(collectFeatureFlagsWithOxc(`
+import { onLoad } from 'wevu'
+import * as wevuNs from 'wevu'
+onLoad(() => {})
+wevuNs.onShow(() => {})
+`, 'wevu', hookToFeature)).toEqual(new Set(['enableLoad', 'enableShow']))
+    expect(collectFeatureFlagsWithBabel('const value = 1', 'wevu', hookToFeature)).toEqual(new Set())
+    expect(collectFeatureFlagsWithOxc('const value = 1', 'wevu', hookToFeature)).toEqual(new Set())
+    expect(mayContainFeatureFlagHints(`import { onLoad } from 'wevu'`, 'wevu', hookToFeature)).toBe(true)
+    expect(mayContainFeatureFlagHints(`import { onReady } from 'wevu'`, 'wevu', hookToFeature)).toBe(false)
+    expect(mayContainFeatureFlagHints(`import { onLoad } from 'vue'`, 'wevu', hookToFeature)).toBe(false)
+
+    const enabled = new Set<string>()
+    consumeNamedFeatureFlag(enabled, new Map([['onLoadAlias', 'enableLoad']]), 'onLoadAlias')
+    consumeNamedFeatureFlag(enabled, new Map([['onShowAlias', 'enableShow']]), 'onReadyAlias')
+    consumeNamespaceFeatureFlag(enabled, new Set(['wevuNs']), hookToFeature, 'wevuNs', 'onShow')
+    consumeNamespaceFeatureFlag(enabled, new Set(['wevuNs']), hookToFeature, 'otherNs', 'onLoad')
+    expect(enabled).toEqual(new Set(['enableLoad', 'enableShow']))
+
+    const namedHookLocals = new Map<string, string>()
+    registerNamedFeatureFlagLocal(namedHookLocals, hookToFeature, 'onLoad', 'useOnLoad')
+    registerNamedFeatureFlagLocal(namedHookLocals, hookToFeature, 'onReady', 'useOnReady')
+    expect(namedHookLocals).toEqual(new Map([['useOnLoad', 'enableLoad']]))
+
+    const namespaceLocals = new Set<string>()
+    registerNamespaceFeatureFlagLocal(namespaceLocals, 'wevuNs')
+    registerNamespaceFeatureFlagLocal(namespaceLocals, undefined)
+    expect(namespaceLocals).toEqual(new Set(['wevuNs']))
+  })
+
   it('collects jsx auto components with babel and oxc', () => {
     const source = `
 import { defineComponent as defineWevuComponent } from 'wevu'
@@ -264,6 +741,169 @@ export default page
         kind: 'named',
       },
     ])
+  })
+
+  it('exposes jsx auto component prechecks', () => {
+    const componentObject = t.objectExpression([
+      t.objectMethod(
+        'method',
+        t.identifier('render'),
+        [],
+        t.blockStatement([t.returnStatement(t.identifier('view'))]),
+      ),
+    ])
+
+    expect(defaultIsDefineComponentSource('vue')).toBe(true)
+    expect(defaultIsDefineComponentSource('wevu')).toBe(false)
+    expect(mayContainJsxAutoComponentEntry(`import Foo from './Foo'`)).toBe(true)
+    expect(mayContainJsxAutoComponentEntry('export default page')).toBe(true)
+    expect(mayContainJsxAutoComponentEntry('const page = createPage()')).toBe(false)
+    expect(defaultResolveBabelComponentExpression(componentObject, new Map(), new Set(['defineComponent']))).toBe(componentObject)
+    expect(defaultResolveBabelComponentExpression(
+      t.callExpression(t.identifier('defineComponent'), [componentObject]),
+      new Map(),
+      new Set(['defineComponent']),
+    )).toBe(componentObject)
+    expect(defaultResolveBabelComponentExpression(
+      t.identifier('page'),
+      new Map([['page', componentObject]]),
+      new Set(['defineComponent']),
+    )).toBe(componentObject)
+    expect(defaultResolveBabelRenderExpression(componentObject)).toEqual(t.identifier('view'))
+    expect(defaultResolveBabelRenderExpression(t.identifier('page'))).toBeNull()
+    expect(unwrapOxcExpression({
+      type: 'TSAsExpression',
+      expression: {
+        type: 'ParenthesizedExpression',
+        expression: { type: 'Identifier', name: 'page' },
+      },
+    })).toEqual({ type: 'Identifier', name: 'page' })
+    expect(getJsxOxcStaticPropertyName({
+      type: 'TSAsExpression',
+      expression: { type: 'StringLiteral', value: 'render' },
+    })).toBe('render')
+    expect(getJsxImportedName({ type: 'Identifier', name: 'TButton' })).toBe('TButton')
+    expect(getJsxImportedName({ type: 'StringLiteral', value: 'van-button' })).toBe('van-button')
+    expect(getJsxImportedName({ type: 'Literal', value: 'legacy-button' })).toBeUndefined()
+    expect(getJsxImportLocalName({ local: t.identifier('TButton') })).toBe('TButton')
+    expect(getJsxImportLocalName({ type: 'ImportSpecifier', local: { type: 'Identifier', name: 'TCard' } })).toBe('TCard')
+    expect(getJsxImportLocalName({ local: { type: 'StringLiteral', value: 'bad' } })).toBeUndefined()
+    expect(createJsxImportedComponent('TButton', './TButton', 'default')).toEqual({
+      localName: 'TButton',
+      importSource: './TButton',
+      importedName: 'default',
+      kind: 'default',
+    })
+    expect(createJsxImportedComponent('TCard', './TCard', 'named', { type: 'Identifier', name: 'CardItem' })).toEqual({
+      localName: 'TCard',
+      importSource: './TCard',
+      importedName: 'CardItem',
+      kind: 'named',
+    })
+    expect(isJsxDefineComponentImportSpecifier(
+      t.importSpecifier(t.identifier('defineWevuComponent'), t.identifier('defineComponent')),
+    )).toBe(true)
+    expect(isJsxDefineComponentImportSpecifier({
+      type: 'ImportSpecifier',
+      imported: { type: 'Identifier', name: 'defineComponent' },
+      local: { type: 'Identifier', name: 'defineWevuComponent' },
+    })).toBe(true)
+    expect(isJsxDefineComponentImportSpecifier({
+      type: 'ImportSpecifier',
+      imported: { type: 'Identifier', name: 'ref' },
+      local: { type: 'Identifier', name: 'ref' },
+    })).toBe(false)
+    expect(getJsxOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
+    expect(getJsxOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
+    expect(collectJsxAutoComponentsWithBabel(`
+import TButton from './TButton'
+const page = {}
+export default page
+`, {
+      astEngine: 'babel',
+      isCollectableTag: () => true,
+      isDefineComponentSource: () => false,
+      resolveBabelComponentExpression: defaultResolveBabelComponentExpression,
+      resolveBabelRenderExpression: defaultResolveBabelRenderExpression,
+    })).toEqual({
+      templateTags: new Set(),
+      importedComponents: [{
+        localName: 'TButton',
+        importSource: './TButton',
+        importedName: 'default',
+        kind: 'default',
+      }],
+    })
+    expect(collectJsxAutoComponentsWithOxc(`
+import TButton from './TButton'
+const page = {}
+export default page
+`, {
+      isCollectableTag: () => true,
+      isDefineComponentSource: () => false,
+    })).toEqual({
+      templateTags: new Set(),
+      importedComponents: [{
+        localName: 'TButton',
+        importSource: './TButton',
+        importedName: 'default',
+        kind: 'default',
+      }],
+    })
+    expect([...collectJsxTemplateTagsFromOxc({
+      type: 'JSXElement',
+      openingElement: { name: { type: 'JSXIdentifier', name: 'TButton' } },
+      children: [
+        {
+          type: 'JSXElement',
+          openingElement: {
+            name: {
+              type: 'JSXNamespacedName',
+              namespace: { name: 'foo' },
+              name: { name: 'bar' },
+            },
+          },
+          children: [],
+        },
+        {
+          type: 'JSXElement',
+          openingElement: {
+            name: {
+              type: 'JSXMemberExpression',
+            },
+          },
+          children: [],
+        },
+      ],
+    }, tag => tag !== 'foo:bar')]).toEqual(['TButton'])
+    expect(resolveOxcComponentExpression(
+      { type: 'ObjectExpression', properties: [] },
+      new Map(),
+      new Set(['defineComponent']),
+    )).toEqual({ type: 'ObjectExpression', properties: [] })
+    expect(resolveOxcComponentExpression(
+      {
+        type: 'CallExpression',
+        callee: { type: 'Identifier', name: 'defineComponent' },
+        arguments: [{ type: 'Identifier', name: 'page' }],
+      },
+      new Map([['page', { type: 'ObjectExpression', properties: [] }]]),
+      new Set(['defineComponent']),
+    )).toEqual({ type: 'ObjectExpression', properties: [] })
+    expect(resolveOxcRenderExpression({
+      type: 'ObjectExpression',
+      properties: [{
+        key: { type: 'Identifier', name: 'render' },
+        value: {
+          type: 'FunctionExpression',
+          body: {
+            type: 'BlockStatement',
+            body: [{ type: 'ReturnStatement', argument: { type: 'Identifier', name: 'view' } }],
+          },
+        },
+      }],
+    })).toEqual({ type: 'Identifier', name: 'view' })
+    expect(resolveOxcRenderExpression({ type: 'Identifier', name: 'page' })).toBeNull()
   })
 
   it('fast rejects jsx auto component analysis without imports or default export', () => {
@@ -433,6 +1073,169 @@ export function useCounter() {
     parseSpy.mockRestore()
   })
 
+  it('exposes onPageScroll location helpers', () => {
+    const lineStarts = createLineStartOffsets('first\nsecond\nthird')
+    const babelInspectionState = {
+      skipped: false,
+    }
+    const babelFunctionPath = {
+      traverse(visitors: Record<string, (path: any) => void>) {
+        visitors.CallExpression?.({
+          node: {
+            callee: t.identifier('setData'),
+          },
+        })
+        visitors.OptionalCallExpression?.({
+          node: {
+            callee: t.optionalMemberExpression(
+              t.identifier('wx'),
+              t.identifier('getStorageSync'),
+              false,
+              true,
+            ),
+          },
+        })
+        visitors.Function?.({
+          skip() {
+            babelInspectionState.skipped = true
+          },
+        })
+      },
+    }
+
+    expect(lineStarts).toEqual([0, 6, 13])
+    expect(getLocationFromOffset(0, lineStarts)).toEqual({ line: 1, column: 1 })
+    expect(getLocationFromOffset(8, lineStarts)).toEqual({ line: 2, column: 3 })
+    expect(getLocationFromOffset(undefined, lineStarts)).toBeUndefined()
+    expect(isStaticPropertyName(t.identifier('onPageScroll'))).toBe('onPageScroll')
+    expect(isStaticPropertyName(t.stringLiteral('render'))).toBe('render')
+    expect(isStaticPropertyName(t.privateName(t.identifier('secret')))).toBeUndefined()
+    expect(getCallExpressionCalleeName(t.identifier('setData'))).toBe('setData')
+    expect(getOnPageScrollCallbackArgument({
+      arguments: [t.arrowFunctionExpression([], t.identifier('view'))],
+    } as any)).toEqual(t.arrowFunctionExpression([], t.identifier('view')))
+    expect(getOnPageScrollCallbackArgument({
+      arguments: [{ type: 'SpreadElement', argument: t.identifier('handler') }],
+    } as any)).toBeUndefined()
+    expect(getOnPageScrollCallbackArgument({
+      arguments: [t.identifier('handler')],
+    } as any)).toBeUndefined()
+    expect(getMemberExpressionPropertyName(t.memberExpression(t.identifier('wx'), t.identifier('setData')))).toBe('setData')
+    expect(getMemberExpressionPropertyName(t.memberExpression(t.identifier('wx'), t.stringLiteral('getStorageSync'), true))).toBe('getStorageSync')
+    expect(isOnPageScrollCallee(t.identifier('onScroll'), new Set(['onScroll']), new Set())).toBe(true)
+    expect(isOnPageScrollCallee(
+      t.memberExpression(t.identifier('wevu'), t.identifier('onPageScroll')),
+      new Set(['onScroll']),
+      new Set(['wevu']),
+    )).toBe(true)
+    expect(isOnPageScrollCallee(t.identifier('onLoad'), new Set(['onScroll']), new Set())).toBe(false)
+    expect(isOxcFunctionLike({ type: 'FunctionExpression' })).toBe(true)
+    expect(isOxcFunctionLike({ type: 'ObjectExpression' })).toBe(false)
+    expect(getOxcStaticPropertyName({ type: 'Identifier', name: 'onPageScroll' })).toBe('onPageScroll')
+    expect(getOxcStaticPropertyName({ type: 'StringLiteral', value: 'render' })).toBe('render')
+    expect(getOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
+    expect(getOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
+    expect(getOxcCallExpressionCalleeName({ type: 'Identifier', name: 'setData' })).toBe('setData')
+    expect(isOxcOnPageScrollCallee(
+      { type: 'Identifier', name: 'onScroll' },
+      new Set(['onScroll']),
+      new Set(),
+    )).toBe(true)
+    expect(isOxcOnPageScrollCallee(
+      {
+        type: 'MemberExpression',
+        object: { type: 'Identifier', name: 'wevu' },
+        property: { type: 'Identifier', name: 'onPageScroll' },
+        computed: false,
+      },
+      new Set(['onScroll']),
+      new Set(['wevu']),
+    )).toBe(true)
+    expect(isOxcOnPageScrollCallee(
+      { type: 'Identifier', name: 'onLoad' },
+      new Set(['onScroll']),
+      new Set(),
+    )).toBe(false)
+    expect(getOxcMemberExpressionPropertyName({
+      type: 'MemberExpression',
+      computed: false,
+      property: { type: 'Identifier', name: 'setData' },
+    })).toBe('setData')
+    expect(getOxcMemberExpressionPropertyName({
+      type: 'MemberExpression',
+      computed: true,
+      property: { type: 'StringLiteral', value: 'getStorageSync' },
+    })).toBe('getStorageSync')
+    expect(getOxcMemberExpressionPropertyName({
+      type: 'MemberExpression',
+      computed: true,
+      property: { type: 'NumericLiteral', value: 1 },
+    })).toBeUndefined()
+    expect(collectPageScrollInspection(
+      babelFunctionPath,
+      t.arrowFunctionExpression(
+        [],
+        t.blockStatement([]),
+      ),
+    )).toEqual({
+      empty: true,
+      hasSetDataCall: true,
+      syncApis: new Set(['wx.getStorageSync']),
+    })
+    expect(babelInspectionState.skipped).toBe(true)
+    expect(collectOnPageScrollWarningsWithBabel(`
+const page = {
+  onPageScroll() {
+    this.setData({ top: 1 })
+  },
+}
+`, '/src/pages/index.ts')[0]).toContain('onPageScroll 内调用 setData')
+    expect(collectOnPageScrollWarningsWithBabel('const page = {}', '/src/pages/index.ts')).toEqual([])
+    expect(collectOnPageScrollWarningsWithOxc(`
+const page = {
+  onPageScroll() {
+    this.setData({ top: 1 })
+  },
+}
+`, '/src/pages/index.ts')[0]).toContain('onPageScroll 内调用 setData')
+    expect(collectOnPageScrollWarningsWithOxc('const page = {}', '/src/pages/index.ts')).toEqual([])
+    expect(collectPageScrollInspectionWithOxc({
+      type: 'ArrowFunctionExpression',
+      body: {
+        type: 'BlockStatement',
+        body: [
+          {
+            type: 'CallExpression',
+            callee: { type: 'Identifier', name: 'setData' },
+          },
+          {
+            type: 'CallExpression',
+            callee: {
+              type: 'MemberExpression',
+              object: { type: 'Identifier', name: 'wx' },
+              property: { type: 'Identifier', name: 'getStorageSync' },
+              computed: false,
+            },
+          },
+        ],
+      },
+    })).toEqual({
+      empty: false,
+      hasSetDataCall: true,
+      syncApis: new Set(['wx.getStorageSync']),
+    })
+    expect(collectPageScrollInspectionWithOxc({
+      type: 'ArrowFunctionExpression',
+      body: { type: 'BlockStatement', body: [] },
+    })).toEqual({
+      empty: true,
+      hasSetDataCall: false,
+      syncApis: new Set(),
+    })
+    expect(createWarningPrefix('/src/pages/index.ts')).toBe('[weapp-vite][onPageScroll] /src/pages/index.ts:?:?')
+    expect(createWarningPrefix('/src/pages/index.ts', 2, 3)).toBe('[weapp-vite][onPageScroll] /src/pages/index.ts:2:3')
+  })
+
   it('collects setData pick keys across engine options', () => {
     const template = `
 <view wx:for="{{ list }}" wx:for-item="row" wx:for-index="i">
@@ -467,5 +1270,55 @@ export function useCounter() {
 
     babelParseSpy.mockRestore()
     engineParseSpy.mockRestore()
+  })
+
+  it('exposes setData pick template helpers', () => {
+    const bindings = new Set<string>()
+
+    expect(extractTemplateExpressions('<text>{{ count }}</text><view>{{ list.length }}</view>')).toEqual(['count', 'list.length'])
+    expect(extractTemplateExpressions('<view>static</view>')).toEqual([])
+    expect([...collectIdentifiersFromExpression('count + this.extra + Math.max(total, 1)')]).toEqual(['count', 'extra', 'total'])
+    expect([...collectIdentifiersFromExpressionWithOxc('count + this.extra + Math.max(total, 1)')]).toEqual(['count', 'extra', 'total'])
+    expect([...collectIdentifiersFromExpression('list.map(item => item.name + index)')]).toEqual(['list', 'index'])
+    expect([...collectIdentifiersFromExpressionWithOxc('list.map(item => item.name + index)')]).toEqual(['list', 'index'])
+    expect(hasBindingInScopes([new Set(['foo']), new Set(['bar'])], 'bar')).toBe(true)
+    expect(hasBindingInScopes([new Set(['foo']), new Set(['bar'])], 'baz')).toBe(false)
+    expect([...collectLoopScopeAliases('<view wx:for="{{ list }}"></view>')]).toEqual(['item', 'index'])
+    expect([...collectLoopScopeAliases('<view wx:for="{{ list }}" wx:for-item="row" wx:for-index="i"></view>')]).toEqual(['row', 'i'])
+    expect(collectSetDataPickKeysWithBabel('<view>static</view>')).toEqual([])
+    expect(collectSetDataPickKeysWithOxc('<view>static</view>')).toEqual([])
+    expect(collectSetDataPickKeysWithBabel('<text>{{ list.map(item => item.name) + count }}</text>')).toEqual(['count', 'list'])
+    expect(collectSetDataPickKeysWithOxc('<text>{{ list.map(item => item.name) + count }}</text>')).toEqual(['count', 'list'])
+    collectPatternBindingNames({
+      type: 'ObjectPattern',
+      properties: [
+        {
+          type: 'ObjectProperty',
+          value: { type: 'Identifier', name: 'foo' },
+        },
+        {
+          type: 'ObjectProperty',
+          value: {
+            type: 'AssignmentPattern',
+            left: { type: 'Identifier', name: 'bar' },
+          },
+        },
+        {
+          type: 'RestElement',
+          argument: { type: 'Identifier', name: 'rest' },
+        },
+      ],
+    }, bindings)
+    collectPatternBindingNames({
+      type: 'ArrayPattern',
+      elements: [
+        { type: 'Identifier', name: 'first' },
+        {
+          type: 'RestElement',
+          argument: { type: 'Identifier', name: 'others' },
+        },
+      ],
+    }, bindings)
+    expect([...bindings]).toEqual(['foo', 'bar', 'rest', 'first', 'others'])
   })
 })
