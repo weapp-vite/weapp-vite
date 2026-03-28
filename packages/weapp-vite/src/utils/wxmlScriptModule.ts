@@ -49,12 +49,14 @@ export function resolveScriptModuleTagName(options?: {
     ?? getDefaultScriptModuleTagByExtension(options?.scriptModuleExtension)
 }
 
-export function getScriptModuleTagNames() {
-  const derivedTagNames = MINI_PROGRAM_PLATFORM_ADAPTERS
+export function getDerivedScriptModuleTagNames() {
+  return MINI_PROGRAM_PLATFORM_ADAPTERS
     .flatMap(adapter => Object.values(adapter.scriptModuleTagByExtension ?? {}))
     .filter((value): value is string => typeof value === 'string' && value.length > 0)
+}
 
-  return [...new Set([...DEFAULT_SCRIPT_MODULE_TAG_NAMES, ...derivedTagNames])]
+export function getScriptModuleTagNames() {
+  return [...new Set([...DEFAULT_SCRIPT_MODULE_TAG_NAMES, ...getDerivedScriptModuleTagNames()])]
 }
 
 export function isScriptModuleTagName(tagName?: string) {
