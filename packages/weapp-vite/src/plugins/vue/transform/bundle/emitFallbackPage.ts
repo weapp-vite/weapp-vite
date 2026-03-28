@@ -12,7 +12,7 @@ import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDat
 import { resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
 import { findFirstResolvedVueLikeEntry } from '../shared'
-import { emitNativeLayoutAssetsIfNeeded, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
+import { emitNativeLayoutAssetsIfNeeded, emitResolvedBundleLayouts, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
 import { resolveBundleOutputExtensions } from './outputExtensions'
 import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
 import { compileVueLikeFile, resolveClassStyleWxsAsset } from './shared'
@@ -102,35 +102,30 @@ export async function emitFallbackPageAssets(
       }
 
       const resolvedLayoutPlan = await resolvePageLayoutPlan(source, entryFilePath, configService)
-      if (resolvedLayoutPlan?.layouts.some(layout => layout.kind === 'native')) {
-        for (const layout of resolvedLayoutPlan.layouts) {
-          if (layout.kind !== 'native') {
-            continue
-          }
-          await emitNativeLayoutAssetsIfNeeded({
-            pluginCtx,
-            bundle,
-            layoutBasePath: layout.file,
-            configService,
-            outputExtensions,
-          })
-        }
-      }
-      if (resolvedLayoutPlan?.layouts.some(layout => layout.kind === 'vue')) {
-        for (const layout of resolvedLayoutPlan.layouts) {
-          if (layout.kind !== 'vue') {
-            continue
-          }
-          await emitVueLayoutScriptFallbackIfNeeded({
-            pluginCtx,
-            bundle,
-            layoutFilePath: layout.file,
-            ctx,
-            configService,
-            compileOptionsState,
-            outputExtensions,
-          })
-        }
+      if (resolvedLayoutPlan?.layouts.length) {
+        await emitResolvedBundleLayouts({
+          layouts: resolvedLayoutPlan.layouts,
+          emitNativeLayout: async (layoutFilePath) => {
+            await emitNativeLayoutAssetsIfNeeded({
+              pluginCtx,
+              bundle,
+              layoutBasePath: layoutFilePath,
+              configService,
+              outputExtensions,
+            })
+          },
+          emitVueLayout: async (layoutFilePath) => {
+            await emitVueLayoutScriptFallbackIfNeeded({
+              pluginCtx,
+              bundle,
+              layoutFilePath,
+              ctx,
+              configService,
+              compileOptionsState,
+              outputExtensions,
+            })
+          },
+        })
       }
 
       if (result.template) {
