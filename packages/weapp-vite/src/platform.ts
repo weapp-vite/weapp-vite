@@ -198,6 +198,10 @@ export function getPlatformNpmImportPrefix(
   return getNpmPlatformOptions(platform, options).importPrefix
 }
 
+export function stripExplicitNpmImportPrefix(importee: string): string {
+  return importee.replace(NPM_PROTOCOL_RE, '').replace(EXPLICIT_NPM_DIR_RE, '')
+}
+
 export function normalizePlatformNpmImportPath(
   platform: MpPlatform,
   importee: string,
@@ -209,7 +213,7 @@ export function normalizePlatformNpmImportPath(
     return importee
   }
 
-  const normalized = importee.replace(NPM_PROTOCOL_RE, '').replace(EXPLICIT_NPM_DIR_RE, '')
+  const normalized = stripExplicitNpmImportPrefix(importee)
   return `${getPlatformNpmImportPrefix(platform, options)}${normalized.replace(LEADING_SLASH_RE, '')}`
 }
 
