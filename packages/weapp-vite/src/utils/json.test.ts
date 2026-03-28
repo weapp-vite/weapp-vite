@@ -6,6 +6,7 @@ import {
   parseCommentJson,
   resolveImportee,
   resolveJson,
+  toKebabCaseComponentName,
 } from './json'
 
 describe('utils/json resolveJson', () => {
@@ -13,6 +14,8 @@ describe('utils/json resolveJson', () => {
     expect(parseCommentJson('{/*c*/"a":1}')).toEqual({ a: 1 })
     expect(jsonFileRemoveJsExtension('pages/home/index.ts')).toBe('pages/home/index')
     expect(jsonFileRemoveJsExtension('pages/home/index.js')).toBe('pages/home/index')
+    expect(toKebabCaseComponentName('HelloWorld')).toBe('hello-world')
+    expect(toKebabCaseComponentName('ABCHelloWorld')).toBe('abc-hello-world')
     expect(matches('foo', 'foo')).toBe(true)
     expect(matches('foo', 'foo/bar')).toBe(true)
     expect(matches(/^foo\//, 'foo/bar')).toBe(true)
