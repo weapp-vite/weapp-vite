@@ -2,7 +2,16 @@ import { describe, expect, it, vi } from 'vitest'
 import { createCompileVueFileOptions, resolveVueTemplatePlatformOptions } from './compileOptions'
 
 const loggerWarnMock = vi.hoisted(() => vi.fn())
-const getSfcCheckMtimeMock = vi.hoisted(() => vi.fn(() => true))
+const createSfcResolveSrcOptionsMock = vi.hoisted(() => vi.fn((pluginCtx: any) => ({
+  resolveId: async (source: string, importer?: string) => {
+    if (typeof pluginCtx?.resolve !== 'function') {
+      return undefined
+    }
+    const resolved = await pluginCtx.resolve(source, importer)
+    return resolved?.id
+  },
+  checkMtime: true,
+})))
 const resolveClassStyleWxsLocationForBaseMock = vi.hoisted(() => vi.fn(() => ({
   src: '/virtual/__class_style__.wxs',
 })))
@@ -18,7 +27,7 @@ vi.mock('../../../logger', () => ({
 }))
 
 vi.mock('../../utils/vueSfc', () => ({
-  getSfcCheckMtime: getSfcCheckMtimeMock,
+  createSfcResolveSrcOptions: createSfcResolveSrcOptionsMock,
 }))
 
 vi.mock('./classStyle', () => ({
