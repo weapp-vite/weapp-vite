@@ -1,15 +1,12 @@
 <script setup lang="ts">
 import type { DashboardDetailItem } from '../types'
-import { computed } from 'vue'
 
-const props = defineProps<{
+defineProps<{
   title: DashboardDetailItem['title']
   meta: DashboardDetailItem['meta']
   value?: DashboardDetailItem['value']
   breakTitle?: boolean
 }>()
-
-const titleClassName = computed(() => props.breakTitle ? 'break-all' : undefined)
 </script>
 
 <template>
@@ -18,7 +15,7 @@ const titleClassName = computed(() => props.breakTitle ? 'break-all' : undefined
       <div class="min-w-0">
         <p
           class="font-medium text-[color:var(--dashboard-text)]"
-          :class="titleClassName"
+          :class="breakTitle ? 'break-all' : undefined"
         >
           {{ title }}
         </p>
