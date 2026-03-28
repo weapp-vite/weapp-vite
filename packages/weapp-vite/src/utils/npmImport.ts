@@ -31,12 +31,20 @@ export function resolveNpmDependencyId(importee: string) {
   return importeeTokens[0]
 }
 
-export function parseNpmPackageSpecifier(specifier: string) {
+export function normalizeNpmPackageSpecifier(specifier: string) {
   const normalized = specifier.trim()
   if (!normalized || normalized.startsWith('.') || normalized.startsWith('/') || normalized.startsWith('\\')) {
     return undefined
   }
   if (WINDOWS_ABSOLUTE_PATH_RE.test(normalized)) {
+    return undefined
+  }
+  return normalized
+}
+
+export function parseNpmPackageSpecifier(specifier: string) {
+  const normalized = normalizeNpmPackageSpecifier(specifier)
+  if (!normalized) {
     return undefined
   }
 
