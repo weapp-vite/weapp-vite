@@ -4,7 +4,6 @@ import type { CandidateEntry } from './candidates'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../utils/file'
 import {
-  areSetsEqual,
   isConfigFile,
   isScriptFile,
   isStyleFile,
@@ -13,10 +12,12 @@ import {
 } from './candidates'
 import { resolveRoute } from './routes'
 import {
+  isAutoRoutesCandidateUnchanged,
   resolveAutoRoutesBasePath,
   resolveAutoRoutesMatcherContext,
   resolveAutoRoutesPath,
   shouldAutoRoutesFullRescan,
+  shouldRemoveAutoRoutesCandidate,
 } from './shared'
 
 export type AutoRoutesFileEvent = ChangeEvent | 'rename'
@@ -140,12 +141,12 @@ export async function updateCandidateFromFile(
   const { base, relativeBase } = resolvedBasePath
   const { matcher, subPackageRoots } = resolveAutoRoutesMatcherContext(ctx)
   const route = resolveRoute(relativeBase, subPackageRoots)
-  if (!route) {
-    const removed = stateCandidates.delete(base)
-    return removed
-  }
-
-  if (!matcher.matches(relativeBase)) {
+  const matchesInclude = matcher.matches(relativeBase)
+  if (shouldRemoveAutoRoutesCandidate({
+    hasRouteMatch: Boolean(route),
+    matchesInclude,
+    hasCandidateEntry: stateCandidates.has(base),
+  })) {
     const removed = stateCandidates.delete(base)
     return removed
   }
@@ -157,13 +158,7 @@ export async function updateCandidateFromFile(
   }
 
   const previous = stateCandidates.get(base)
-  if (
-    previous
-    && previous.jsonPath === candidate.jsonPath
-    && previous.hasScript === candidate.hasScript
-    && previous.hasTemplate === candidate.hasTemplate
-    && areSetsEqual(previous.files, candidate.files)
-  ) {
+  if (isAutoRoutesCandidateUnchanged(previous, candidate)) {
     return false
   }
 

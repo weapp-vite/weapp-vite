@@ -1,10 +1,12 @@
 import type { MutableCompilerContext } from '../../context'
 import type { ChangeEvent } from '../../types'
+import type { CandidateEntry } from './candidates'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { resolveWeappAutoRoutesConfig } from '../../autoRoutesConfig'
 import { normalizePath, toPosixPath } from '../../utils/path'
 import { normalizeFsResolvedId } from '../../utils/resolvedId'
+import { areSetsEqual } from './candidates'
 import { createAutoRoutesMatcher } from './matcher'
 import { getAutoRoutesSubPackageRoots } from './subPackageRoots'
 
@@ -156,4 +158,33 @@ export function shouldAutoRoutesFullRescan(
   event?: ChangeEvent | 'rename',
 ) {
   return event === 'rename' || event === 'create' || event === 'delete'
+}
+
+/**
+ * 判断当前候选是否已不再属于 auto-routes 追踪范围。
+ */
+export function shouldRemoveAutoRoutesCandidate(
+  options: {
+    hasRouteMatch: boolean
+    matchesInclude: boolean
+    hasCandidateEntry: boolean
+  },
+) {
+  return (!options.hasRouteMatch || !options.matchesInclude) && options.hasCandidateEntry
+}
+
+/**
+ * 判断重建后的候选内容是否与现有记录一致。
+ */
+export function isAutoRoutesCandidateUnchanged(
+  previous: CandidateEntry | undefined,
+  candidate: CandidateEntry,
+) {
+  return Boolean(
+    previous
+    && previous.jsonPath === candidate.jsonPath
+    && previous.hasScript === candidate.hasScript
+    && previous.hasTemplate === candidate.hasTemplate
+    && areSetsEqual(previous.files, candidate.files),
+  )
 }
