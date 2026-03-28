@@ -15,10 +15,7 @@ import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitScopedSlotChunks } from '../scopedSlot'
-import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, isAppEntry, registerVueTemplateToken, resolveVueOutputBase } from './shared'
-
-const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
-const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
+import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, isAppEntry, registerVueTemplateToken, resolveVueOutputBase } from './shared'
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -142,24 +139,11 @@ export async function transformVueLikeFile(options: {
     }
 
     let transformedSource = source
-    if (
-      isApp
-      && (AUTO_ROUTES_DEFAULT_IMPORT_RE.test(transformedSource) || AUTO_ROUTES_DYNAMIC_IMPORT_RE.test(transformedSource))
-    ) {
-      AUTO_ROUTES_DEFAULT_IMPORT_RE.lastIndex = 0
-      AUTO_ROUTES_DYNAMIC_IMPORT_RE.lastIndex = 0
-      await measureStage('ensureAutoRoutes', async () => {
-        await ctx.autoRoutesService?.ensureFresh?.()
-      })
-      const routesRef = ctx.autoRoutesService?.getReference?.()
-      const inlineRoutes = {
-        pages: routesRef?.pages ?? [],
-        entries: routesRef?.entries ?? [],
-        subPackages: routesRef?.subPackages ?? [],
-      }
-      transformedSource = transformedSource
-        .replace(AUTO_ROUTES_DEFAULT_IMPORT_RE, (_, localName: string) => `const ${localName} = ${JSON.stringify(inlineRoutes)};`)
-        .replace(AUTO_ROUTES_DYNAMIC_IMPORT_RE, `Promise.resolve(${JSON.stringify(inlineRoutes)})`)
+    if (isApp) {
+      transformedSource = await measureStage('ensureAutoRoutes', async () => await inlineTransformAutoRoutes({
+        source: transformedSource,
+        autoRoutesService: ctx.autoRoutesService,
+      }))
     }
     const compileOptions = createCompileVueFileOptions(ctx, pluginCtx, filename, isPage, isApp, configService, {
       reExportResolutionCache,

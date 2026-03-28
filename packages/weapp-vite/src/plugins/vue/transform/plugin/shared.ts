@@ -13,6 +13,8 @@ import { isVueLikeFile } from '../shared'
 import { buildWeappVueStyleRequest } from '../styleRequest'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
+const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
+const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
 const TEMPLATE_DYNAMIC_HINT_RE = /\{\{|wx:|bind[A-Za-z:_-]+=|catch[A-Za-z:_-]+=/
 const PAGE_FEATURE_HOOK_HINTS = [
   'onPageScroll',
@@ -52,6 +54,10 @@ export function mayNeedTransformPageFeatureInjection(script: string) {
 
 export function mayNeedTransformPageScrollDiagnostics(script: string) {
   return script.includes(PAGE_SCROLL_HOOK_HINT)
+}
+
+export function mayNeedInlineAutoRoutes(source: string) {
+  return AUTO_ROUTES_DEFAULT_IMPORT_RE.test(source) || AUTO_ROUTES_DYNAMIC_IMPORT_RE.test(source)
 }
 
 export function invalidatePageLayoutCaches(
@@ -230,6 +236,39 @@ export function finalizeTransformEntryCode(options: {
   }
 
   return returnedCode
+}
+
+export async function inlineTransformAutoRoutes(options: {
+  source: string
+  autoRoutesService?: {
+    ensureFresh?: () => Promise<void>
+    getReference?: () => {
+      pages?: unknown[]
+      entries?: unknown[]
+      subPackages?: unknown[]
+    } | undefined
+  }
+}) {
+  const { source, autoRoutesService } = options
+  if (!mayNeedInlineAutoRoutes(source)) {
+    return source
+  }
+
+  AUTO_ROUTES_DEFAULT_IMPORT_RE.lastIndex = 0
+  AUTO_ROUTES_DYNAMIC_IMPORT_RE.lastIndex = 0
+
+  await autoRoutesService?.ensureFresh?.()
+
+  const routesRef = autoRoutesService?.getReference?.()
+  const inlineRoutes = {
+    pages: routesRef?.pages ?? [],
+    entries: routesRef?.entries ?? [],
+    subPackages: routesRef?.subPackages ?? [],
+  }
+
+  return source
+    .replace(AUTO_ROUTES_DEFAULT_IMPORT_RE, (_, localName: string) => `const ${localName} = ${JSON.stringify(inlineRoutes)};`)
+    .replace(AUTO_ROUTES_DYNAMIC_IMPORT_RE, `Promise.resolve(${JSON.stringify(inlineRoutes)})`)
 }
 
 export async function registerNativeLayoutChunksForEntry(
