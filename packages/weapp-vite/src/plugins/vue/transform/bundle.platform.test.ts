@@ -10,8 +10,10 @@ import { emitVueBundleAssets } from './bundle'
 import {
   emitAlipayGenericPlaceholderAssets,
   emitAlipayGenericPlaceholderAssetsByBase,
+  emitPlatformConfigSideEffects,
   normalizeVueConfigForPlatform,
   normalizeVueTemplateForPlatform,
+  prepareNormalizedVueConfigForPlatform,
   preparePlatformConfigAsset,
   resolveAlipayGenericPlaceholderBase,
   resolveVueBundlePlatformAssetOptions,
@@ -232,6 +234,21 @@ describe('emitVueBundleAssets platform output', () => {
     }))).toBe(true)
   })
 
+  it('prepares normalized vue config through the shared platform helper', () => {
+    expect(prepareNormalizedVueConfigForPlatform({
+      config: JSON.stringify({
+        usingComponents: {
+          capsule: 'demo',
+        },
+      }),
+      platform: 'weapp',
+    })).toBe(JSON.stringify({
+      usingComponents: {
+        capsule: 'demo',
+      },
+    }))
+  })
+
   it('emits placeholder assets from a resolved placeholder base', () => {
     const emitFile = vi.fn()
     const bundle: Record<string, any> = {}
@@ -246,6 +263,32 @@ describe('emitVueBundleAssets platform output', () => {
         js: 'js',
       },
     )
+
+    const emittedFiles = emitFile.mock.calls.map(call => call[0]?.fileName)
+    expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.axml')
+    expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.json')
+    expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.js')
+  })
+
+  it('emits platform config side effects through the shared helper', () => {
+    const emitFile = vi.fn()
+    const bundle: Record<string, any> = {}
+
+    emitPlatformConfigSideEffects(bundle, {
+      pluginCtx: { emitFile },
+      relativeBase: 'components/direct/index',
+      config: JSON.stringify({
+        componentGenerics: {
+          slotA: true,
+        },
+      }),
+      outputExtensions: {
+        wxml: 'axml',
+        json: 'json',
+        js: 'js',
+      },
+      platform: 'alipay',
+    })
 
     const emittedFiles = emitFile.mock.calls.map(call => call[0]?.fileName)
     expect(emittedFiles).toContain('components/direct/__weapp_vite_generic_component.axml')

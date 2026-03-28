@@ -251,6 +251,39 @@ export function emitAlipayGenericPlaceholderAssets(
   )
 }
 
+export function prepareNormalizedVueConfigForPlatform(options: {
+  config: string | undefined
+  platform: string
+  dependencies?: Record<string, string>
+  alipayNpmMode?: string
+}) {
+  return normalizeVueConfigForPlatform(options.config, {
+    platform: options.platform,
+    dependencies: options.dependencies,
+    alipayNpmMode: options.alipayNpmMode,
+  })
+}
+
+export function emitPlatformConfigSideEffects(
+  bundle: Record<string, any>,
+  options: {
+    pluginCtx: any
+    relativeBase: string
+    config: string | undefined
+    outputExtensions: OutputExtensions | undefined
+    platform: string
+  },
+) {
+  emitAlipayGenericPlaceholderAssets(
+    options.pluginCtx,
+    bundle,
+    options.relativeBase,
+    options.config,
+    options.outputExtensions,
+    options.platform,
+  )
+}
+
 export function preparePlatformConfigAsset(
   bundle: Record<string, any>,
   options: {
@@ -263,18 +296,18 @@ export function preparePlatformConfigAsset(
     alipayNpmMode?: string
   },
 ) {
-  const normalizedConfig = normalizeVueConfigForPlatform(options.config, {
+  const normalizedConfig = prepareNormalizedVueConfigForPlatform({
+    config: options.config,
     platform: options.platform,
     dependencies: options.dependencies,
     alipayNpmMode: options.alipayNpmMode,
   })
-  emitAlipayGenericPlaceholderAssets(
-    options.pluginCtx,
-    bundle,
-    options.relativeBase,
-    normalizedConfig,
-    options.outputExtensions,
-    options.platform,
-  )
+  emitPlatformConfigSideEffects(bundle, {
+    pluginCtx: options.pluginCtx,
+    relativeBase: options.relativeBase,
+    config: normalizedConfig,
+    outputExtensions: options.outputExtensions,
+    platform: options.platform,
+  })
   return normalizedConfig
 }
