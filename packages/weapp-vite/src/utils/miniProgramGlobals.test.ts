@@ -4,6 +4,7 @@ import {
   getMiniProgramGlobalKeys,
   getMiniProgramPlatformGlobalKey,
   getRouteRuntimeGlobalKeys,
+  resolveMiniProgramGlobalHostExpression,
 } from './miniProgramGlobals'
 
 describe('miniProgramGlobals utils', () => {
@@ -18,6 +19,8 @@ describe('miniProgramGlobals utils', () => {
   })
 
   it('creates mini-program global resolve expressions', () => {
+    expect(resolveMiniProgramGlobalHostExpression()).toBe('globalThis')
+    expect(resolveMiniProgramGlobalHostExpression('__host')).toBe('__host')
     expect(createMiniProgramGlobalResolveExpression()).toBe('(globalThis.my ?? globalThis.wx ?? globalThis.tt ?? globalThis.swan ?? globalThis.jd ?? globalThis.xhs)')
     expect(createMiniProgramGlobalResolveExpression({
       globalKeys: ['wx', 'tt', 'my'],
