@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import type { DashboardTokenSwatchItem } from '../types'
 import { mutedPanelStyles } from '../utils/styles'
 
 defineProps<{
-  name: string
-  sample: string
+  name: DashboardTokenSwatchItem['name']
+  sample: DashboardTokenSwatchItem['sample']
 }>()
 </script>
 

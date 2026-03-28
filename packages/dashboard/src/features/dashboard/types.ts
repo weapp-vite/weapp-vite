@@ -315,6 +315,17 @@ export interface DashboardIconFeatureItem extends DashboardTitleBlock {
   meta?: string
 }
 
+export interface DashboardTokenSwatchItem {
+  name: string
+  sample: string
+}
+
+export interface DashboardTokenGroup {
+  title: string
+  iconName: DashboardIconName
+  tokens: DashboardTokenSwatchItem[]
+}
+
 export interface DashboardInfoPillItem {
   label: string
   iconName?: DashboardIconName
