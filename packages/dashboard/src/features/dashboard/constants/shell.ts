@@ -1,4 +1,4 @@
-import type { DashboardIconFeatureItem, DashboardNavItem, DashboardRuntimeEvent } from '../types'
+import type { DashboardIconFeatureItem, DashboardNavItem, DashboardRuntimeEvent, DashboardTokenGroup } from '../types'
 
 export const workspaceNavigation: DashboardNavItem[] = [
   { to: '/', label: '工作台', caption: '应用入口与状态总览', iconName: 'nav-home' },
@@ -102,7 +102,7 @@ export const sampleRuntimeEvents: DashboardRuntimeEvent[] = [
   },
 ]
 
-export const tokenGroups = [
+export const tokenGroups: DashboardTokenGroup[] = [
   {
     title: 'Accent',
     iconName: 'token-color' as const,
