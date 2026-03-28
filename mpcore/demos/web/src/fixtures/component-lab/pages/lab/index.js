@@ -16,6 +16,7 @@ Page({
     savedFilePath: '',
     savedFileInfo: '',
     saveFileMissingTempInfo: '',
+    savedCopyOverwriteInfo: '',
     savedMissingInfo: '',
     savedMissingRemovalInfo: '',
     savedPostRemovalReadInfo: '',
@@ -255,6 +256,33 @@ Page({
           }
         })
       }
+    })
+  },
+  runSavedCopyOverwriteLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/component-lab-copy-source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/component-lab-copy-target.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/component-lab-copy-target.txt',
+      filePath: 'headless://saved/component-lab/copies/target.txt',
+      success: () => {
+        const beforeInfo = wx.getSavedFileInfo({ filePath: 'headless://saved/component-lab/copies/target.txt' })
+        fsManager.copyFileSync(
+          'headless://temp/component-lab-copy-source.txt',
+          'headless://saved/component-lab/copies/target.txt',
+        )
+        const afterInfo = wx.getSavedFileInfo({ filePath: 'headless://saved/component-lab/copies/target.txt' })
+        this.setData({
+          savedCopyOverwriteInfo: JSON.stringify({
+            afterCreateTime: afterInfo.createTime,
+            afterSize: afterInfo.size,
+            beforeCreateTime: beforeInfo.createTime,
+            filePath: 'headless://saved/component-lab/copies/target.txt',
+          }),
+        }, () => {
+          this.push('lab:runSavedCopyOverwriteLab')
+        })
+      },
     })
   },
   runSavedOrderingLab() {

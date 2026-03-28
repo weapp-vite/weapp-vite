@@ -142,6 +142,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('runFileTransferLab')
     bridge.runPageMethod('runFileTransferFailureLab')
     bridge.runPageMethod('runSaveFileMissingTempLab')
+    bridge.runPageMethod('runSavedCopyOverwriteLab')
     bridge.runPageMethod('runSavedOverwriteLab')
     bridge.runPageMethod('runSavedOrderingLab')
     bridge.runPageMethod('runSavedRemovalLab')
@@ -177,6 +178,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.requestSnapshot
           && pageData.savedFileInfo
           && pageData.saveFileMissingTempInfo
+          && pageData.savedCopyOverwriteInfo
           && pageData.savedOrderingInfo
           && pageData.savedOverwriteInfo
           && pageData.savedFilePath
@@ -221,6 +223,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.savedFileInfo).toContain('"errMsg":"getSavedFileInfo:ok"')
     expect(pageData.savedFileInfo).toContain('"size":20')
     expect(pageData.saveFileMissingTempInfo).toContain('"missingTempSaveError":"saveFile:fail tempFilePath not found: headless://temp/component-lab-missing-save-source.txt"')
+    expect(pageData.savedCopyOverwriteInfo).toContain('"afterSize":10')
+    expect(pageData.savedCopyOverwriteInfo).toContain('"filePath":"headless://saved/component-lab/copies/target.txt"')
     expect(pageData.savedOrderingInfo).toContain('"createTimesArePositive":true')
     expect(pageData.savedOrderingInfo).toContain('"headless://saved/component-lab/ordering/alpha.txt"')
     expect(pageData.savedOrderingInfo).toContain('"headless://saved/component-lab/ordering/zeta.txt"')
@@ -240,6 +244,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.storageSnapshot).toContain('"status"')
     expect(pageData.toastState).toContain('showToast:ok')
     expect(pageData.uploadedSnapshot).toContain('"accepted":true')
+    const savedCopyOverwriteInfo = parseJsonString<{ afterCreateTime: number, afterSize: number, beforeCreateTime: number, filePath: string }>(pageData.savedCopyOverwriteInfo)
+    expect(savedCopyOverwriteInfo.afterCreateTime).toBe(savedCopyOverwriteInfo.beforeCreateTime)
     const savedRenameOverwriteInfo = parseJsonString<{ afterCreateTime: number, afterSize: number, beforeCreateTime: number, filePath: string }>(pageData.savedRenameOverwriteInfo)
     expect(savedRenameOverwriteInfo.afterCreateTime).toBe(savedRenameOverwriteInfo.beforeCreateTime)
     const savedOverwriteInfo = parseJsonString<{ afterCreateTime: number, afterSize: number, beforeCreateTime: number, filePath: string }>(pageData.savedOverwriteInfo)
@@ -280,6 +286,10 @@ describe.sequential('simulator browser e2e', () => {
     expect(sessionSnapshot.savedFileList).toContainEqual(expect.objectContaining({
       filePath: pageData.savedFilePath,
       size: 'component-lab report'.length,
+    }))
+    expect(sessionSnapshot.savedFileList).toContainEqual(expect.objectContaining({
+      filePath: 'headless://saved/component-lab/copies/target.txt',
+      size: 'alpha-beta'.length,
     }))
     expect(sessionSnapshot.savedFileList).toContainEqual(expect.objectContaining({
       filePath: 'headless://saved/component-lab/ordering/alpha.txt',
