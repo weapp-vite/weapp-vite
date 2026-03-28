@@ -25,6 +25,11 @@ export interface ProjectPlatformOptions {
   usesProjectRootNpmDir: boolean
 }
 
+export interface IdePlatformOptions {
+  requiresOpenPlatformArg: boolean
+  defaultProjectRoot?: string
+}
+
 export interface JsonPlatformOptions {
   normalizeUsingComponents: boolean
   fillComponentGenericsDefault: boolean
@@ -94,18 +99,21 @@ export function getMiniProgramPlatformAdapter(platform: MpPlatform): MiniProgram
   return adapter
 }
 
-export function shouldPassPlatformArgToIdeOpen(platform?: MpPlatform): boolean {
-  if (!platform) {
-    return false
+export function getIdePlatformOptions(platform?: MpPlatform): IdePlatformOptions {
+  return {
+    requiresOpenPlatformArg: platform
+      ? getMiniProgramPlatformAdapter(platform).ide?.requiresOpenPlatformArg === true
+      : false,
+    defaultProjectRoot: platform ? getMiniProgramPlatformAdapter(platform).ide?.defaultProjectRoot : undefined,
   }
-  return getMiniProgramPlatformAdapter(platform).ide?.requiresOpenPlatformArg === true
+}
+
+export function shouldPassPlatformArgToIdeOpen(platform?: MpPlatform): boolean {
+  return getIdePlatformOptions(platform).requiresOpenPlatformArg
 }
 
 export function getDefaultIdeProjectRoot(platform?: MpPlatform): string | undefined {
-  if (!platform) {
-    return undefined
-  }
-  return getMiniProgramPlatformAdapter(platform).ide?.defaultProjectRoot
+  return getIdePlatformOptions(platform).defaultProjectRoot
 }
 
 export function getPreservedNpmDirNames(
