@@ -309,6 +309,12 @@ export interface DashboardTitleBlock {
   description?: string
 }
 
+export interface DashboardIconFeatureItem extends DashboardTitleBlock {
+  iconName: DashboardIconName
+  eyebrow?: string
+  meta?: string
+}
+
 export interface DashboardInfoPillItem {
   label: string
   iconName?: DashboardIconName
