@@ -6,7 +6,10 @@ import {
   BABEL_TS_MODULE_PARSER_OPTIONS,
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
   collectJsxTemplateTagsFromBabelExpression,
+  createLineStartOffsets,
+  createWarningPrefix,
   defaultIsDefineComponentSource,
+  getLocationFromOffset,
   getObjectPropertyByKey,
   getRenderPropertyFromComponentOptions,
   isPlatformApiIdentifier,
@@ -461,6 +464,17 @@ export function useCounter() {
     expect(parseSpy).not.toHaveBeenCalled()
 
     parseSpy.mockRestore()
+  })
+
+  it('exposes onPageScroll location helpers', () => {
+    const lineStarts = createLineStartOffsets('first\nsecond\nthird')
+
+    expect(lineStarts).toEqual([0, 6, 13])
+    expect(getLocationFromOffset(0, lineStarts)).toEqual({ line: 1, column: 1 })
+    expect(getLocationFromOffset(8, lineStarts)).toEqual({ line: 2, column: 3 })
+    expect(getLocationFromOffset(undefined, lineStarts)).toBeUndefined()
+    expect(createWarningPrefix('/src/pages/index.ts')).toBe('[weapp-vite][onPageScroll] /src/pages/index.ts:?:?')
+    expect(createWarningPrefix('/src/pages/index.ts', 2, 3)).toBe('[weapp-vite][onPageScroll] /src/pages/index.ts:2:3')
   })
 
   it('collects setData pick keys across engine options', () => {

@@ -27,7 +27,12 @@ export type {
   JsxBabelModuleAnalysisOptions,
   JsxImportedComponent,
 } from './operations/jsxAutoComponents'
-export { collectOnPageScrollPerformanceWarnings } from './operations/onPageScroll'
+export {
+  collectOnPageScrollPerformanceWarnings,
+  createLineStartOffsets,
+  createWarningPrefix,
+  getLocationFromOffset,
+} from './operations/onPageScroll'
 export {
   isPlatformApiIdentifier,
   mayContainPlatformApiAccess,

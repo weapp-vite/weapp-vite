@@ -116,7 +116,7 @@ function collectPageScrollInspection(
   return inspection
 }
 
-function createWarningPrefix(filename: string, line?: number, column?: number): string {
+export function createWarningPrefix(filename: string, line?: number, column?: number): string {
   const pos = typeof line === 'number' && typeof column === 'number'
     ? `${line}:${column}`
     : '?:?'
@@ -187,7 +187,7 @@ function getOxcCallExpressionCalleeName(callee: any): string | undefined {
   return undefined
 }
 
-function createLineStartOffsets(code: string) {
+export function createLineStartOffsets(code: string) {
   const offsets = [0]
   for (let index = 0; index < code.length; index += 1) {
     if (code.charCodeAt(index) === 10) {
@@ -197,7 +197,7 @@ function createLineStartOffsets(code: string) {
   return offsets
 }
 
-function getLocationFromOffset(offset: number | undefined, lineStarts: number[]): OxcLoc | undefined {
+export function getLocationFromOffset(offset: number | undefined, lineStarts: number[]): OxcLoc | undefined {
   if (typeof offset !== 'number' || offset < 0) {
     return undefined
   }
