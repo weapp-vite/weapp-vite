@@ -2,13 +2,14 @@
 import { computed, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import AppShellHeader from './features/dashboard/components/AppShellHeader.vue'
-import AppShellNav from './features/dashboard/components/AppShellNav.vue'
 import AppSurfaceCard from './features/dashboard/components/AppSurfaceCard.vue'
+import DashboardIcon from './features/dashboard/components/DashboardIcon.vue'
 import { provideDashboardTheme } from './features/dashboard/composables/useDashboardTheme'
 import { createDashboardWorkspace, provideDashboardWorkspace } from './features/dashboard/composables/useDashboardWorkspace'
 import { useThemeMode } from './features/dashboard/composables/useThemeMode'
 import { workspaceNavigation } from './features/dashboard/constants/shell'
 import { themeOptions } from './features/dashboard/constants/view'
+import { cn } from './lib/cn'
 
 const route = useRoute()
 const mobileNavOpen = ref(false)
@@ -54,6 +55,14 @@ const pageMeta = computed(() => {
 watch(() => route.fullPath, () => {
   mobileNavOpen.value = false
 })
+
+function isActive(currentPath: string, targetPath: string) {
+  if (targetPath === '/') {
+    return currentPath === '/'
+  }
+
+  return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
+}
 </script>
 
 <template>
@@ -68,7 +77,42 @@ watch(() => route.fullPath, () => {
             icon-name="hero-system"
             tone="strong"
           >
-            <AppShellNav :items="workspaceNavigation" :active-path="route.path" />
+            <nav class="grid gap-2">
+              <RouterLink
+                v-for="item in workspaceNavigation"
+                :key="item.to"
+                :to="item.to"
+                :class="cn(
+                  'group rounded-[18px] border px-3 py-3 transition',
+                  isActive(route.path, item.to)
+                    ? 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel-strong)] shadow-[var(--dashboard-shadow)]'
+                    : 'border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]',
+                )"
+              >
+                <div class="flex items-start gap-3">
+                  <span
+                    :class="cn(
+                      'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
+                      isActive(route.path, item.to)
+                        ? 'bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]'
+                        : 'bg-[color:var(--dashboard-panel)] text-[color:var(--dashboard-text-soft)] group-hover:text-[color:var(--dashboard-accent)]',
+                    )"
+                  >
+                    <span class="h-5 w-5">
+                      <DashboardIcon :name="item.iconName" />
+                    </span>
+                  </span>
+                  <div class="min-w-0">
+                    <p class="font-medium text-[color:var(--dashboard-text)]">
+                      {{ item.label }}
+                    </p>
+                    <p class="mt-1 text-xs leading-5 text-[color:var(--dashboard-text-soft)]">
+                      {{ item.caption }}
+                    </p>
+                  </div>
+                </div>
+              </RouterLink>
+            </nav>
           </AppSurfaceCard>
           <AppSurfaceCard
             eyebrow="Theme"
@@ -129,7 +173,43 @@ watch(() => route.fullPath, () => {
           tone="strong"
           content-class="h-full"
         >
-          <AppShellNav :items="workspaceNavigation" :active-path="route.path" @navigate="mobileNavOpen = false" />
+          <nav class="grid gap-2">
+            <RouterLink
+              v-for="item in workspaceNavigation"
+              :key="item.to"
+              :to="item.to"
+              :class="cn(
+                'group rounded-[18px] border px-3 py-3 transition',
+                isActive(route.path, item.to)
+                  ? 'border-[color:var(--dashboard-border-strong)] bg-[color:var(--dashboard-panel-strong)] shadow-[var(--dashboard-shadow)]'
+                  : 'border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel-muted)] hover:border-[color:var(--dashboard-border-strong)] hover:bg-[color:var(--dashboard-panel)]',
+              )"
+              @click="mobileNavOpen = false"
+            >
+              <div class="flex items-start gap-3">
+                <span
+                  :class="cn(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl',
+                    isActive(route.path, item.to)
+                      ? 'bg-[color:var(--dashboard-accent-soft)] text-[color:var(--dashboard-accent)]'
+                      : 'bg-[color:var(--dashboard-panel)] text-[color:var(--dashboard-text-soft)] group-hover:text-[color:var(--dashboard-accent)]',
+                  )"
+                >
+                  <span class="h-5 w-5">
+                    <DashboardIcon :name="item.iconName" />
+                  </span>
+                </span>
+                <div class="min-w-0">
+                  <p class="font-medium text-[color:var(--dashboard-text)]">
+                    {{ item.label }}
+                  </p>
+                  <p class="mt-1 text-xs leading-5 text-[color:var(--dashboard-text-soft)]">
+                    {{ item.caption }}
+                  </p>
+                </div>
+              </div>
+            </RouterLink>
+          </nav>
         </AppSurfaceCard>
       </aside>
     </transition>
