@@ -1,7 +1,7 @@
 import type { MutableCompilerContext } from '../../../context'
 import type { SubPackageStyleEntry } from '../../../types'
 import type { ResolvedStyleConfig } from './config'
-import fs from 'fs-extra'
+import fs from 'node:fs'
 import path from 'pathe'
 import logger from '../../../logger'
 import { changeFileExtension, toPosixPath } from '../../../utils'
@@ -11,6 +11,34 @@ import {
 
 } from './config'
 import { resolveExcludePatterns, resolveIncludePatterns } from './patterns'
+
+export function createStyleEntryDedupeKey(
+  posixOutput: string,
+  include: string[],
+  exclude: string[],
+) {
+  return JSON.stringify({
+    file: posixOutput,
+    include,
+    exclude,
+  })
+}
+
+export function resolveDefaultScopedStyleEntryCandidates(
+  absoluteSrcRoot: string,
+  root: string,
+) {
+  const absoluteSubRoot = path.resolve(absoluteSrcRoot, root)
+
+  return DEFAULT_SCOPED_FILES.flatMap(({ base, scope }) =>
+    DEFAULT_SCOPED_EXTENSIONS.map(ext => ({
+      base,
+      scope,
+      filename: `${base}${ext}`,
+      absolutePath: path.resolve(absoluteSubRoot, `${base}${ext}`),
+    })),
+  )
+}
 
 export function addStyleEntry(
   descriptor: ResolvedStyleConfig,
@@ -31,11 +59,7 @@ export function addStyleEntry(
     include.push('**/*')
   }
 
-  const key = JSON.stringify({
-    file: posixOutput,
-    include,
-    exclude,
-  })
+  const key = createStyleEntryDedupeKey(posixOutput, include, exclude)
   if (dedupe.has(key)) {
     return
   }
@@ -59,29 +83,32 @@ export function appendDefaultScopedStyleEntries(
   dedupe: Set<string>,
   normalized: SubPackageStyleEntry[],
 ) {
-  const absoluteSubRoot = path.resolve(service.absoluteSrcRoot, root)
-  for (const { base, scope } of DEFAULT_SCOPED_FILES) {
-    for (const ext of DEFAULT_SCOPED_EXTENSIONS) {
-      const filename = `${base}${ext}`
-      const absolutePath = path.resolve(absoluteSubRoot, filename)
-      if (!fs.existsSync(absolutePath)) {
-        continue
-      }
-      const descriptor: ResolvedStyleConfig = {
-        source: filename,
-        scope,
-        include: undefined,
-        exclude: undefined,
-        explicitScope: true,
-      }
-      const outputAbsolutePath = changeFileExtension(absolutePath, service.outputExtensions.wxss)
-      const outputRelativePath = service.relativeOutputPath(outputAbsolutePath)
-      if (!outputRelativePath) {
-        continue
-      }
-      const posixOutput = toPosixPath(outputRelativePath)
-      addStyleEntry(descriptor, absolutePath, posixOutput, root, normalizedRoot, dedupe, normalized)
-      break
+  let previousBase = ''
+  let matchedCurrentBase = false
+
+  for (const candidate of resolveDefaultScopedStyleEntryCandidates(service.absoluteSrcRoot, root)) {
+    if (candidate.base !== previousBase) {
+      previousBase = candidate.base
+      matchedCurrentBase = false
     }
+    if (matchedCurrentBase || !fs.existsSync(candidate.absolutePath)) {
+      continue
+    }
+
+    const descriptor: ResolvedStyleConfig = {
+      source: candidate.filename,
+      scope: candidate.scope,
+      include: undefined,
+      exclude: undefined,
+      explicitScope: true,
+    }
+    const outputAbsolutePath = changeFileExtension(candidate.absolutePath, service.outputExtensions.wxss)
+    const outputRelativePath = service.relativeOutputPath(outputAbsolutePath)
+    if (!outputRelativePath) {
+      continue
+    }
+    const posixOutput = toPosixPath(outputRelativePath)
+    addStyleEntry(descriptor, candidate.absolutePath, posixOutput, root, normalizedRoot, dedupe, normalized)
+    matchedCurrentBase = true
   }
 }
