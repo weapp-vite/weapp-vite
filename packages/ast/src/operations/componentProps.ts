@@ -142,7 +142,7 @@ export function getStaticPropertyName(node: any) {
   return undefined
 }
 
-function extractPropertiesObject(node: any): ComponentPropMap | undefined {
+export function extractPropertiesObject(node: any): ComponentPropMap | undefined {
   if (!node || node.type !== 'ObjectExpression') {
     return undefined
   }
@@ -199,7 +199,7 @@ function extractPropertiesObject(node: any): ComponentPropMap | undefined {
   return propMap
 }
 
-function resolveOptionsObjectExpression(node: any, bindings: Map<string, any>): any {
+export function resolveOptionsObjectExpression(node: any, bindings: Map<string, any>): any {
   if (!node) {
     return undefined
   }

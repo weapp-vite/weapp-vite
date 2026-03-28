@@ -12,9 +12,11 @@ export { babelAstEngine } from './engines/babel'
 export { oxcAstEngine } from './engines/oxc'
 export {
   collectComponentPropsFromCode,
+  extractPropertiesObject,
   getStaticPropertyName,
   mapConstructorName,
   mayContainComponentPropsShape,
+  resolveOptionsObjectExpression,
   resolveTypeFromNode,
 } from './operations/componentProps'
 export type { ComponentPropMap } from './operations/componentProps'

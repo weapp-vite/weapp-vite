@@ -12,6 +12,7 @@ import {
   defaultIsDefineComponentSource,
   defaultResolveBabelComponentExpression,
   defaultResolveBabelRenderExpression,
+  extractPropertiesObject,
   extractTemplateExpressions,
   getJsxOxcStaticPropertyName,
   getLocationFromOffset,
@@ -37,6 +38,7 @@ import {
   parse,
   parseJsLikeWithEngine,
   platformApiIdentifierList,
+  resolveOptionsObjectExpression,
   resolveOxcComponentExpression,
   resolveOxcRenderExpression,
   resolveRenderableExpression,
@@ -235,6 +237,42 @@ export function useCounter() {
   })
 
   it('exposes component prop prechecks', () => {
+    const propShape = {
+      type: 'ObjectExpression',
+      properties: [
+        {
+          type: 'ObjectProperty',
+          key: { type: 'Identifier', name: 'title' },
+          value: { type: 'Identifier', name: 'String' },
+        },
+        {
+          type: 'ObjectProperty',
+          key: { type: 'StringLiteral', value: 'count' },
+          value: {
+            type: 'ObjectExpression',
+            properties: [
+              {
+                type: 'ObjectProperty',
+                key: { type: 'Identifier', name: 'type' },
+                value: { type: 'Identifier', name: 'Number' },
+              },
+              {
+                type: 'ObjectProperty',
+                key: { type: 'Identifier', name: 'optionalTypes' },
+                value: {
+                  type: 'ArrayExpression',
+                  elements: [
+                    { type: 'Identifier', name: 'String' },
+                    { type: 'Identifier', name: 'String' },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    }
+
     expect(mayContainComponentPropsShape('Component({ properties: { title: String } })')).toBe(true)
     expect(mayContainComponentPropsShape('const value = ref(1)')).toBe(false)
     expect(mapConstructorName('String')).toBe('string')
@@ -257,6 +295,22 @@ export function useCounter() {
         { type: 'Identifier', name: 'Number' },
       ],
     })).toBe('string | number')
+    expect(extractPropertiesObject(propShape)).toEqual(new Map([
+      ['title', 'string'],
+      ['count', 'number | string'],
+    ]))
+    expect(resolveOptionsObjectExpression(
+      { type: 'Identifier', name: 'options' },
+      new Map([['options', propShape]]),
+    )).toBe(propShape)
+    expect(resolveOptionsObjectExpression(
+      {
+        type: 'TSAsExpression',
+        expression: { type: 'Identifier', name: 'options' },
+      },
+      new Map([['options', propShape]]),
+    )).toBe(propShape)
+    expect(resolveOptionsObjectExpression({ type: 'Identifier', name: 'missing' }, new Map())).toBeUndefined()
     expect(getStaticPropertyName({ type: 'Identifier', name: 'title' })).toBe('title')
     expect(getStaticPropertyName({ type: 'StringLiteral', value: 'count' })).toBe('count')
     expect(getStaticPropertyName({ type: 'NumericLiteral', value: 2 })).toBe('2')
