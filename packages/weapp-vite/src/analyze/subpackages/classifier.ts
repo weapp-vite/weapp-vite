@@ -7,6 +7,46 @@ import { isPathInside } from '../../utils'
 const VIRTUAL_MODULE_INDICATOR = '\u0000'
 const VIRTUAL_PREFIX = `${SHARED_CHUNK_VIRTUAL_PREFIX}/`
 
+function classifyModuleSourceKind(options: {
+  isNodeModule: boolean
+  inSrc: boolean
+  inPlugin: boolean
+}): ModuleSourceType {
+  if (options.isNodeModule) {
+    return 'node_modules'
+  }
+  if (options.inSrc) {
+    return 'src'
+  }
+  if (options.inPlugin) {
+    return 'plugin'
+  }
+  return 'workspace'
+}
+
+function resolvePluginAssetAbsolute(
+  normalizedFileName: string,
+  pluginRoot?: string,
+) {
+  if (!pluginRoot) {
+    return undefined
+  }
+
+  const pluginBase = path.basename(pluginRoot)
+  if (normalizedFileName !== pluginBase && !normalizedFileName.startsWith(`${pluginBase}/`)) {
+    return undefined
+  }
+
+  const relative = normalizedFileName === pluginBase
+    ? ''
+    : normalizedFileName.slice(pluginBase.length + 1)
+  const absolute = path.resolve(pluginRoot, relative)
+
+  return isPathInside(pluginRoot, absolute)
+    ? absolute
+    : undefined
+}
+
 export function classifyPackage(
   fileName: string,
   origin: BuildOrigin,
@@ -61,19 +101,11 @@ export function resolveModuleSourceType(
   const inSrc = isPathInside(srcRoot, absoluteId)
   const inPlugin = pluginRoot ? isPathInside(pluginRoot, absoluteId) : false
 
-  let sourceType: ModuleSourceType
-  if (isNodeModule) {
-    sourceType = 'node_modules'
-  }
-  else if (inSrc) {
-    sourceType = 'src'
-  }
-  else if (inPlugin) {
-    sourceType = 'plugin'
-  }
-  else {
-    sourceType = 'workspace'
-  }
+  const sourceType = classifyModuleSourceKind({
+    isNodeModule,
+    inSrc,
+    inPlugin,
+  })
 
   return {
     source: configService.relativeAbsoluteSrcRoot(absoluteId),
@@ -97,21 +129,17 @@ export function resolveAssetSource(
     }
   }
 
-  const pluginRoot = configService.absolutePluginRoot
-  if (pluginRoot) {
-    const pluginBase = path.basename(pluginRoot)
-    if (normalized === pluginBase || normalized.startsWith(`${pluginBase}/`)) {
-      const relative = normalized === pluginBase
-        ? ''
-        : normalized.slice(pluginBase.length + 1)
-      const absolute = path.resolve(pluginRoot, relative)
-      if (isPathInside(pluginRoot, absolute)) {
-        return {
-          absolute,
-          source: configService.relativeAbsoluteSrcRoot(absolute),
-          sourceType: 'plugin',
-        }
-      }
+  const pluginAbsolute = resolvePluginAssetAbsolute(normalized, configService.absolutePluginRoot)
+  if (pluginAbsolute) {
+    return {
+      absolute: pluginAbsolute,
+      source: configService.relativeAbsoluteSrcRoot(pluginAbsolute),
+      sourceType: 'plugin',
     }
   }
+}
+
+export {
+  classifyModuleSourceKind,
+  resolvePluginAssetAbsolute,
 }
