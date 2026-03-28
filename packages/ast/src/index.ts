@@ -14,7 +14,11 @@ export { collectComponentPropsFromCode } from './operations/componentProps'
 export type { ComponentPropMap } from './operations/componentProps'
 export { collectFeatureFlagsFromCode, mayContainFeatureFlagHints } from './operations/featureFlags'
 export type { FeatureFlagOptions } from './operations/featureFlags'
-export { collectJsxAutoComponentsFromCode } from './operations/jsxAutoComponents'
+export {
+  collectJsxAutoComponentsFromCode,
+  defaultIsDefineComponentSource,
+  mayContainJsxAutoComponentEntry,
+} from './operations/jsxAutoComponents'
 export { collectJsxImportedComponentsAndDefaultExportFromBabelAst } from './operations/jsxAutoComponents'
 export { collectJsxTemplateTagsFromBabelExpression } from './operations/jsxAutoComponents'
 export type {

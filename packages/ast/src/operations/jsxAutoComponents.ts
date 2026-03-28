@@ -39,11 +39,11 @@ export interface JsxBabelModuleAnalysisOptions {
   ) => Expression | null
 }
 
-function mayContainJsxAutoComponentEntry(source: string) {
+export function mayContainJsxAutoComponentEntry(source: string) {
   return source.includes('import') || source.includes('export default')
 }
 
-function defaultIsDefineComponentSource(source: string) {
+export function defaultIsDefineComponentSource(source: string) {
   return source === 'vue'
 }
 

@@ -6,10 +6,12 @@ import {
   BABEL_TS_MODULE_PARSER_OPTIONS,
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
   collectJsxTemplateTagsFromBabelExpression,
+  defaultIsDefineComponentSource,
   getObjectPropertyByKey,
   getRenderPropertyFromComponentOptions,
   isPlatformApiIdentifier,
   mayContainFeatureFlagHints,
+  mayContainJsxAutoComponentEntry,
   mayContainPlatformApiAccess,
   mayContainPlatformApiIdentifierByText,
   mayContainStaticRequireLiteral,
@@ -284,6 +286,14 @@ export default page
         kind: 'named',
       },
     ])
+  })
+
+  it('exposes jsx auto component prechecks', () => {
+    expect(defaultIsDefineComponentSource('vue')).toBe(true)
+    expect(defaultIsDefineComponentSource('wevu')).toBe(false)
+    expect(mayContainJsxAutoComponentEntry(`import Foo from './Foo'`)).toBe(true)
+    expect(mayContainJsxAutoComponentEntry('export default page')).toBe(true)
+    expect(mayContainJsxAutoComponentEntry('const page = createPage()')).toBe(false)
   })
 
   it('fast rejects jsx auto component analysis without imports or default export', () => {
