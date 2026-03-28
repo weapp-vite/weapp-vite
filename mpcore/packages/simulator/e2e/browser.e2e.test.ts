@@ -141,6 +141,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('loadMockQueue')
     bridge.runPageMethod('runFileTransferLab')
     bridge.runPageMethod('runFileTransferFailureLab')
+    bridge.runPageMethod('runSaveFileMissingTempLab')
     bridge.runPageMethod('runSavedOverwriteLab')
     bridge.runPageMethod('runSavedOrderingLab')
     bridge.runPageMethod('runSavedRemovalLab')
@@ -174,6 +175,7 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.fileManagerSnapshot
           && pageData.requestSnapshot
           && pageData.savedFileInfo
+          && pageData.saveFileMissingTempInfo
           && pageData.savedOrderingInfo
           && pageData.savedOverwriteInfo
           && pageData.savedFilePath
@@ -216,6 +218,7 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.requestSnapshot).toContain('"queue":"alpha"')
     expect(pageData.savedFileInfo).toContain('"errMsg":"getSavedFileInfo:ok"')
     expect(pageData.savedFileInfo).toContain('"size":20')
+    expect(pageData.saveFileMissingTempInfo).toContain('"missingTempSaveError":"saveFile:fail tempFilePath not found: headless://temp/component-lab-missing-save-source.txt"')
     expect(pageData.savedOrderingInfo).toContain('"createTimesArePositive":true')
     expect(pageData.savedOrderingInfo).toContain('"headless://saved/component-lab/ordering/alpha.txt"')
     expect(pageData.savedOrderingInfo).toContain('"headless://saved/component-lab/ordering/zeta.txt"')
@@ -283,6 +286,9 @@ describe.sequential('simulator browser e2e', () => {
     expect(sessionSnapshot.savedFileList).toContainEqual(expect.objectContaining({
       filePath: 'headless://saved/component-lab/snapshots/report.txt',
       size: 'second-version'.length,
+    }))
+    expect(sessionSnapshot.savedFileList).not.toContainEqual(expect.objectContaining({
+      filePath: 'headless://temp/component-lab-missing-save-source.txt',
     }))
     expect(sessionSnapshot.savedFileList).not.toContainEqual(expect.objectContaining({
       filePath: 'headless://saved/component-lab/removals/report.txt',
