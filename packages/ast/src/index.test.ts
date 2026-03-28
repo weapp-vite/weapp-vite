@@ -13,6 +13,8 @@ import {
   getObjectPropertyByKey,
   getRenderPropertyFromComponentOptions,
   isPlatformApiIdentifier,
+  mapConstructorName,
+  mayContainComponentPropsShape,
   mayContainFeatureFlagHints,
   mayContainJsxAutoComponentEntry,
   mayContainPlatformApiAccess,
@@ -165,6 +167,14 @@ export function useCounter() {
 
     babelParseSpy.mockRestore()
     engineParseSpy.mockRestore()
+  })
+
+  it('exposes component prop prechecks', () => {
+    expect(mayContainComponentPropsShape('Component({ properties: { title: String } })')).toBe(true)
+    expect(mayContainComponentPropsShape('const value = ref(1)')).toBe(false)
+    expect(mapConstructorName('String')).toBe('string')
+    expect(mapConstructorName('BooleanConstructor')).toBe('boolean')
+    expect(mapConstructorName('CustomCtor')).toBe('any')
   })
 
   it('collects generic feature flags with babel and oxc', () => {
