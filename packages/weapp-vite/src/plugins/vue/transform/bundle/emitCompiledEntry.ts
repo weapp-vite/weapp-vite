@@ -1,12 +1,11 @@
-import type { ClassStyleWxsAsset, CompilationCacheEntry, VueBundleState } from './shared'
+import type { CompilationCacheEntry, VueBundleState } from './shared'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
 import fs from 'fs-extra'
 import { normalizeWatchPath } from '../../../../utils/path'
-import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset } from '../emitAssets'
+import { emitSfcJsonAsset } from '../emitAssets'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
-import { emitScopedSlotAssets } from '../scopedSlot'
 import {
   emitNativeLayoutAssetsIfNeeded,
   emitResolvedBundleLayouts,
@@ -14,8 +13,8 @@ import {
   emitVueLayoutScriptFallbackIfNeeded,
 } from './layoutAssets'
 import { resolveBundleOutputExtensions } from './outputExtensions'
-import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
-import { compileVueLikeFile, getEntryBaseName, isAppVueLikeFile, resolveClassStyleWxsAsset } from './shared'
+import { preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
+import { compileVueLikeFile, emitSharedVueEntryAssets, getEntryBaseName, isAppVueLikeFile } from './shared'
 
 export async function emitCompiledVueEntryAssets(
   bundle: Record<string, any>,
@@ -139,37 +138,20 @@ export async function emitCompiledVueEntryAssets(
     }
   }
 
-  if (result.template) {
-    emitPlatformTemplateAsset(bundle, {
-      ctx,
-      pluginCtx,
-      filename,
-      relativeBase,
-      template: result.template,
-      ...platformAssetOptions,
-    })
-  }
-
-  const classStyleWxs: ClassStyleWxsAsset | undefined = resolveClassStyleWxsAsset(
+  emitSharedVueEntryAssets({
+    bundle,
+    pluginCtx,
     ctx,
+    filename,
     relativeBase,
-    scriptModuleExtension,
-    configService,
     result,
-  )
-
-  if (result.classStyleWxs && classStyleWxs) {
-    emitClassStyleWxsAssetIfMissing(
-      pluginCtx,
-      bundle,
-      classStyleWxs.fileName,
-      classStyleWxs.source,
-    )
-  }
-
-  emitScopedSlotAssets(pluginCtx, bundle, relativeBase, result, ctx, classStyleWxs, outputExtensions, {
-    defaults: jsonConfig?.defaults?.component,
-    mergeStrategy: jsonConfig?.mergeStrategy,
+    configService,
+    templateExtension,
+    scriptModuleExtension,
+    outputExtensions,
+    platformAssetOptions,
+    scopedSlotDefaults: jsonConfig?.defaults?.component,
+    scopedSlotMergeStrategy: jsonConfig?.mergeStrategy,
   })
 
   if (result.config || shouldEmitComponentJson) {

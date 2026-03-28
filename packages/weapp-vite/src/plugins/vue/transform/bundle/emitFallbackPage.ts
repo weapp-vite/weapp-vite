@@ -1,21 +1,20 @@
-import type { ClassStyleWxsAsset, VueBundleState } from './shared'
+import type { VueBundleState } from './shared'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
 import fs from 'fs-extra'
 import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
-import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing } from '../emitAssets'
+import { emitSfcJsonAsset, emitSfcStyleIfMissing } from '../emitAssets'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { resolvePageLayoutPlan } from '../pageLayout'
-import { emitScopedSlotAssets } from '../scopedSlot'
 import { findFirstResolvedVueLikeEntry } from '../shared'
 import { emitNativeLayoutAssetsIfNeeded, emitResolvedBundleLayouts, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
 import { resolveBundleOutputExtensions } from './outputExtensions'
-import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
-import { compileVueLikeFile, resolveClassStyleWxsAsset } from './shared'
+import { preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
+import { compileVueLikeFile, emitSharedVueEntryAssets } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -128,38 +127,21 @@ export async function emitFallbackPageAssets(
         })
       }
 
-      if (result.template) {
-        emitPlatformTemplateAsset(bundle, {
-          ctx,
-          pluginCtx,
-          filename: entryFilePath,
-          relativeBase,
-          template: result.template,
-          ...platformAssetOptions,
-        })
-      }
-
-      const classStyleWxs: ClassStyleWxsAsset | undefined = resolveClassStyleWxsAsset(
-        ctx,
-        relativeBase,
-        scriptModuleExtension,
-        configService,
-        result,
-      )
-
-      if (result.classStyleWxs && classStyleWxs) {
-        emitClassStyleWxsAssetIfMissing(
-          pluginCtx,
-          bundle,
-          classStyleWxs.fileName,
-          classStyleWxs.source,
-        )
-      }
-
       const jsonConfig = configService.weappViteConfig?.json
-      emitScopedSlotAssets(pluginCtx, bundle, relativeBase, result, ctx, classStyleWxs, outputExtensions, {
-        defaults: jsonConfig?.defaults?.component,
-        mergeStrategy: jsonConfig?.mergeStrategy,
+      emitSharedVueEntryAssets({
+        bundle,
+        pluginCtx,
+        ctx,
+        filename: entryFilePath,
+        relativeBase,
+        result,
+        configService,
+        templateExtension,
+        scriptModuleExtension,
+        outputExtensions,
+        platformAssetOptions,
+        scopedSlotDefaults: jsonConfig?.defaults?.component,
+        scopedSlotMergeStrategy: jsonConfig?.mergeStrategy,
       })
 
       if (result.style) {

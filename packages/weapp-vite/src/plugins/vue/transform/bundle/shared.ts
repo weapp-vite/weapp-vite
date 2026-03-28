@@ -4,7 +4,10 @@ import { compileJsxFile, compileVueFile, getClassStyleWxsSource } from 'wevu/com
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { resolveClassStyleWxsLocationForBase } from '../classStyle'
 import { createCompileVueFileOptions } from '../compileOptions'
+import { emitClassStyleWxsAssetIfMissing } from '../emitAssets'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
+import { emitScopedSlotAssets } from '../scopedSlot'
+import { emitPlatformTemplateAsset } from './platform'
 
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 
@@ -46,6 +49,80 @@ export function resolveClassStyleWxsAsset(
   return {
     fileName: classStyleWxsLocation.fileName,
     source: getClassStyleWxsSource({ extension: wxsExtension }),
+  }
+}
+
+export function emitSharedVueEntryAssets(options: {
+  bundle: Record<string, any>
+  pluginCtx: any
+  ctx: CompilerContext
+  filename: string
+  relativeBase: string
+  result: VueTransformResult
+  configService: NonNullable<CompilerContext['configService']>
+  templateExtension: string
+  scriptModuleExtension?: string
+  outputExtensions: NonNullable<CompilerContext['configService']>['outputExtensions']
+  platformAssetOptions: {
+    platform: string
+    templateExtension: string
+    scriptModuleExtension?: string
+    dependencies?: Record<string, string>
+    alipayNpmMode?: string
+  }
+  scopedSlotDefaults?: Record<string, any>
+  scopedSlotMergeStrategy?: any
+}) {
+  const {
+    bundle,
+    pluginCtx,
+    ctx,
+    filename,
+    relativeBase,
+    result,
+    configService,
+    scriptModuleExtension,
+    outputExtensions,
+    platformAssetOptions,
+    scopedSlotDefaults,
+    scopedSlotMergeStrategy,
+  } = options
+
+  if (result.template) {
+    emitPlatformTemplateAsset(bundle, {
+      ctx,
+      pluginCtx,
+      filename,
+      relativeBase,
+      template: result.template,
+      ...platformAssetOptions,
+    })
+  }
+
+  const classStyleWxs = resolveClassStyleWxsAsset(
+    ctx,
+    relativeBase,
+    scriptModuleExtension,
+    configService,
+    result,
+  )
+
+  if (result.classStyleWxs && classStyleWxs) {
+    emitClassStyleWxsAssetIfMissing(
+      pluginCtx,
+      bundle,
+      classStyleWxs.fileName,
+      classStyleWxs.source,
+    )
+  }
+
+  emitScopedSlotAssets(pluginCtx, bundle, relativeBase, result, ctx, classStyleWxs, outputExtensions, {
+    defaults: scopedSlotDefaults,
+    mergeStrategy: scopedSlotMergeStrategy,
+  })
+
+  return {
+    classStyleWxs,
   }
 }
 
