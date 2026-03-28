@@ -5,7 +5,7 @@ import type {
   SubPackageStyleEntry,
 } from '../../../types'
 import type { ResolvedStyleConfig } from './config'
-import fs from 'fs-extra'
+import fs from 'node:fs'
 import path from 'pathe'
 import logger from '../../../logger'
 import {
@@ -25,6 +25,23 @@ import {
   inferScopeFromRelativePath,
   resolveStyleEntryAbsolutePath,
 } from './resolve'
+
+export function isSupportedSharedStyleExtension(absolutePath: string) {
+  return SUPPORTED_SHARED_STYLE_EXTS.has(path.extname(absolutePath).toLowerCase())
+}
+
+export function resolveStyleEntryScope(
+  descriptor: ResolvedStyleConfig,
+  posixOutput: string,
+  normalizedRoot: string,
+) {
+  if (descriptor.explicitScope) {
+    return descriptor.scope
+  }
+
+  const relativeWithinRoot = getRelativePathWithinSubPackage(posixOutput, normalizedRoot)
+  return inferScopeFromRelativePath(relativeWithinRoot) ?? descriptor.scope
+}
 
 export function normalizeSubPackageStyleEntries(
   styles: SubPackageStyleConfigEntry | SubPackageStyleConfigEntry[] | undefined,
@@ -66,8 +83,7 @@ export function normalizeSubPackageStyleEntries(
       continue
     }
 
-    const ext = path.extname(absolutePath).toLowerCase()
-    if (!SUPPORTED_SHARED_STYLE_EXTS.has(ext)) {
+    if (!isSupportedSharedStyleExtension(absolutePath)) {
       logger.warn(`[分包] 分包 ${root} 样式入口 \`${descriptor.source}\` 当前仅支持以下格式：${SUPPORTED_SHARED_STYLE_EXTENSIONS.join(', ')}，已忽略。`)
       continue
     }
@@ -80,14 +96,9 @@ export function normalizeSubPackageStyleEntries(
     }
 
     const posixOutput = toPosixPath(outputRelativePath)
-    const relativeWithinRoot = getRelativePathWithinSubPackage(posixOutput, normalizedRoot)
-    const inferredScope = descriptor.explicitScope
-      ? undefined
-      : inferScopeFromRelativePath(relativeWithinRoot)
-
     const resolvedDescriptor: ResolvedStyleConfig = {
       ...descriptor,
-      scope: inferredScope ?? descriptor.scope,
+      scope: resolveStyleEntryScope(descriptor, posixOutput, normalizedRoot),
     }
 
     addStyleEntry(resolvedDescriptor, absolutePath, posixOutput, root, normalizedRoot, dedupe, normalized)
