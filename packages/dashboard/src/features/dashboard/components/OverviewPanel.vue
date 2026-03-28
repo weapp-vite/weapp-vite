@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DashboardDetailItem, LargestFileEntry, SubPackageDescriptor } from '../types'
+import { computed } from 'vue'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
 import AppCompactListItem from './AppCompactListItem.vue'
@@ -7,7 +8,7 @@ import AppEmptyState from './AppEmptyState.vue'
 import AppPanelHeader from './AppPanelHeader.vue'
 import TreemapCard from './TreemapCard.vue'
 
-defineProps<{
+const props = defineProps<{
   bindChartRef: (element: Element | null) => void
   visibleLargestFiles: LargestFileEntry[]
   subPackages: SubPackageDescriptor[]
@@ -27,6 +28,18 @@ function createSubPackageItem(pkg: SubPackageDescriptor): DashboardDetailItem {
     meta: `${pkg.name ? `别名 ${pkg.name}` : '未设置别名'} · ${pkg.independent ? '独立分包' : '普通分包'}`,
   }
 }
+
+const largestFileItems = computed(() => props.visibleLargestFiles.map(file => ({
+  key: `${file.packageId}:${file.file}`,
+  ...createLargestFileItem(file),
+})))
+
+const subPackageItems = computed(() => props.subPackages.map(pkg => ({
+  key: pkg.root,
+  ...createSubPackageItem(pkg),
+})))
+
+const hasSubPackageItems = computed(() => subPackageItems.value.length > 0)
 </script>
 
 <template>
@@ -46,9 +59,9 @@ function createSubPackageItem(pkg: SubPackageDescriptor): DashboardDetailItem {
         </AppPanelHeader>
         <ol class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm xl:grid-cols-1">
           <AppCompactListItem
-            v-for="file in visibleLargestFiles"
-            :key="`${file.packageId}:${file.file}`"
-            v-bind="createLargestFileItem(file)"
+            v-for="item in largestFileItems"
+            :key="item.key"
+            v-bind="item"
           />
         </ol>
       </section>
@@ -64,13 +77,13 @@ function createSubPackageItem(pkg: SubPackageDescriptor): DashboardDetailItem {
           </template>
         </AppPanelHeader>
         <ul class="mt-3 grid h-[calc(100%-3.5rem)] min-h-0 gap-2 overflow-y-auto pr-1 text-sm text-[color:var(--dashboard-text-muted)]">
-          <AppEmptyState v-if="subPackages.length === 0" as="li" compact>
+          <AppEmptyState v-if="!hasSubPackageItems" as="li" compact>
             当前构建没有配置分包。
           </AppEmptyState>
           <AppCompactListItem
-            v-for="pkg in subPackages"
-            :key="pkg.root"
-            v-bind="createSubPackageItem(pkg)"
+            v-for="item in subPackageItems"
+            :key="item.key"
+            v-bind="item"
           />
         </ul>
       </section>
