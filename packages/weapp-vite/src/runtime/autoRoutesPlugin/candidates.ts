@@ -205,6 +205,22 @@ function resolveCollectTargetRoot(
     : undefined
 }
 
+async function shouldCollectTargetRoot(targetRoot: string) {
+  return fs.pathExists(targetRoot)
+}
+
+async function safeCrawlCandidateFiles(
+  crawler: ReturnType<ReturnType<typeof Fdir>['withFullPaths']>,
+  targetRoot: string,
+) {
+  try {
+    return await crawler.crawl(targetRoot).withPromise()
+  }
+  catch {
+    return []
+  }
+}
+
 function resolveCandidateEntryPath(
   absoluteSrcRoot: string,
   entryPath: string,
@@ -276,17 +292,11 @@ export async function collectCandidates(
       continue
     }
 
-    if (!(await fs.pathExists(targetRoot))) {
+    if (!(await shouldCollectTargetRoot(targetRoot))) {
       continue
     }
 
-    let files: string[]
-    try {
-      files = await crawler.crawl(targetRoot).withPromise()
-    }
-    catch {
-      files = []
-    }
+    const files = await safeCrawlCandidateFiles(crawler, targetRoot)
 
     for (const entryPath of files) {
       const resolvedEntryPath = resolveCandidateEntryPath(absoluteSrcRoot, entryPath)
@@ -336,4 +346,6 @@ export {
   resolveCandidateEntryPath,
   resolveCandidateSearchRoots,
   resolveCollectTargetRoot,
+  safeCrawlCandidateFiles,
+  shouldCollectTargetRoot,
 }
