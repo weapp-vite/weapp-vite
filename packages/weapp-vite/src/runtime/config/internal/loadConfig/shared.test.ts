@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { normalizePath } from '../../../../utils/path'
 import {
   formatProjectConfigPath,
   loadPackageJson,
@@ -99,7 +100,7 @@ describe('loadConfig shared', () => {
 
     await expect(loadPackageJson(existingRoot)).resolves.toEqual({
       packageJson: { name: 'weapp-vite', private: true },
-      packageJsonPath: path.join(existingRoot, 'package.json'),
+      packageJsonPath: normalizePath(path.join(existingRoot, 'package.json')),
     })
 
     const missingRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'weapp-vite-load-config-shared-'))
@@ -107,7 +108,7 @@ describe('loadConfig shared', () => {
 
     await expect(loadPackageJson(missingRoot)).resolves.toEqual({
       packageJson: {},
-      packageJsonPath: path.join(missingRoot, 'package.json'),
+      packageJsonPath: normalizePath(path.join(missingRoot, 'package.json')),
     })
   })
 })
