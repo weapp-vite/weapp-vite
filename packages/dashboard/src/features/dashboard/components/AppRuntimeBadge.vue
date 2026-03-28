@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import type { VariantProps } from 'tailwind-variants'
+import type { DashboardRuntimeBadgeItem } from '../types'
 import { runtimeBadgeStyles } from '../utils/styles'
 
-type RuntimeBadgeTone = NonNullable<VariantProps<typeof runtimeBadgeStyles>['tone']>
-
 const props = withDefaults(defineProps<{
-  label: string
-  tone?: RuntimeBadgeTone
+  label: DashboardRuntimeBadgeItem['label']
+  tone?: DashboardRuntimeBadgeItem['tone']
 }>(), {
   tone: 'neutral',
 })
