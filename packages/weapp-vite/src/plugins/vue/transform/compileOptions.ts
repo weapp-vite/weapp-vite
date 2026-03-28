@@ -12,6 +12,36 @@ interface CompileOptionsContext {
   classStyleRuntimeWarned: { value: boolean }
 }
 
+export function resolveVueTemplatePlatformOptions(options: {
+  platform: string
+  wxsEnabled: boolean
+  wxsExtension?: string
+  classStyleRuntime: 'auto' | 'wxs' | 'js'
+  classStyleRuntimeWarned: { value: boolean }
+}) {
+  const supportsWxs = options.wxsEnabled && typeof options.wxsExtension === 'string' && options.wxsExtension.length > 0
+  const resolvedWxsExtension = supportsWxs ? options.wxsExtension : undefined
+  let classStyleRuntime = options.classStyleRuntime
+
+  if (options.classStyleRuntime === 'auto') {
+    classStyleRuntime = supportsWxs ? 'wxs' : 'js'
+  }
+  else if (options.classStyleRuntime === 'wxs' && !supportsWxs) {
+    classStyleRuntime = 'js'
+    if (!options.classStyleRuntimeWarned.value) {
+      logger.warn('已配置 vue.template.classStyleRuntime = "wxs"，但当前平台不支持 WXS 或已禁用 weapp.wxs，将回退到 JS 运行时。')
+      options.classStyleRuntimeWarned.value = true
+    }
+  }
+
+  return {
+    templatePlatform: getMiniProgramTemplatePlatform(options.platform),
+    supportsWxs,
+    wxsExtension: resolvedWxsExtension,
+    classStyleRuntime,
+  } as const
+}
+
 export function createCompileVueFileOptions(
   ctx: CompilerContext,
   pluginCtx: any,
@@ -30,36 +60,22 @@ export function createCompileVueFileOptions(
   const mustacheInterpolation = configService.weappViteConfig?.vue?.template?.mustacheInterpolation ?? 'compact'
   const wxsEnabled = configService.weappViteConfig?.wxs !== false
   const wxsExtension = configService.outputExtensions?.wxs
-  // class/style 的 WXS 可用条件：
-  // 1) 未禁用 weapp.wxs；
-  // 2) 当前平台存在合法的 wxs/sjs 扩展名。
-  // 只有满足这两个条件，auto 才会优先选择 wxs。
-  const supportsWxs = wxsEnabled && typeof wxsExtension === 'string' && wxsExtension.length > 0
+  const templatePlatformOptions = resolveVueTemplatePlatformOptions({
+    platform: configService.platform,
+    wxsEnabled,
+    wxsExtension,
+    classStyleRuntime: classStyleRuntimeConfig,
+    classStyleRuntimeWarned: state.classStyleRuntimeWarned,
+  })
   const relativeBase = configService.relativeOutputPath(vuePath.slice(0, -4))
-  const resolvedWxsExtension = supportsWxs ? wxsExtension : undefined
+  const resolvedWxsExtension = templatePlatformOptions.wxsExtension
   let classStyleWxsSrc: string | undefined
   if (resolvedWxsExtension && relativeBase) {
     classStyleWxsSrc = resolveClassStyleWxsLocationForBase(ctx, relativeBase, resolvedWxsExtension, configService).src
   }
-  let classStyleRuntime = classStyleRuntimeConfig
-  if (classStyleRuntimeConfig === 'auto') {
-    // auto 的切换规则：支持 WXS => wxs；不支持 => js。
-    // 注意：这是“编译配置级别”的默认决策。
-    // 具体某个 :class/:style 表达式在模板编译阶段仍可能从 wxs 回退到 js。
-    classStyleRuntime = supportsWxs ? 'wxs' : 'js'
-  }
-  else if (classStyleRuntimeConfig === 'wxs' && !supportsWxs) {
-    // 用户强制配置 wxs，但平台不具备 WXS 能力时，安全回退到 js。
-    classStyleRuntime = 'js'
-    if (!state.classStyleRuntimeWarned.value) {
-      logger.warn('已配置 vue.template.classStyleRuntime = "wxs"，但当前平台不支持 WXS 或已禁用 weapp.wxs，将回退到 JS 运行时。')
-      state.classStyleRuntimeWarned.value = true
-    }
-  }
   const jsonConfig = configService.weappViteConfig?.json
   const wevuDefaults = resolveWevuDefaultsWithPreset(configService.weappViteConfig)
   const jsonKind = isApp ? 'app' : isPage ? 'page' : 'component'
-  const templatePlatform = getMiniProgramTemplatePlatform(configService.platform)
   return {
     isPage,
     isApp,
@@ -78,14 +94,14 @@ export function createCompileVueFileOptions(
       },
     },
     template: {
-      platform: templatePlatform,
+      platform: templatePlatformOptions.templatePlatform,
       scopedSlotsCompiler,
       scopedSlotsRequireProps,
       slotMultipleInstance,
-      classStyleRuntime,
+      classStyleRuntime: templatePlatformOptions.classStyleRuntime,
       objectLiteralBindMode,
       mustacheInterpolation,
-      wxsExtension: supportsWxs ? wxsExtension : undefined,
+      wxsExtension: templatePlatformOptions.wxsExtension,
       classStyleWxsSrc,
     },
     json: {
