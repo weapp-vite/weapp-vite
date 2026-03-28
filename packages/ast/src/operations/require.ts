@@ -81,6 +81,18 @@ export function collectRequireTokens(ast: unknown) {
   }
 }
 
+export function isStaticRequireCall(node: any) {
+  if (node?.type !== 'CallExpression') {
+    return false
+  }
+
+  if (node.callee?.type !== 'Identifier' || node.callee.name !== 'require') {
+    return false
+  }
+
+  return typeof getStaticRequireLiteralValue(node.arguments?.[0]) === 'string'
+}
+
 /**
  * 使用统一 AST 入口预判是否存在可静态分析的 `require("...")` / ``require(`...`)``。
  */
@@ -111,16 +123,10 @@ export function mayContainStaticRequireLiteral(
 
     walk(ast, {
       enter(node) {
-        if (found || node.type !== 'CallExpression') {
+        if (found) {
           return
         }
-
-        if (node.callee.type !== 'Identifier' || node.callee.name !== 'require') {
-          return
-        }
-
-        const value = getStaticRequireLiteralValue(node.arguments?.[0])
-        if (typeof value === 'string') {
+        if (isStaticRequireCall(node)) {
           found = true
         }
       },

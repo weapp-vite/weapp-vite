@@ -47,6 +47,7 @@ import {
   isOxcOnPageScrollCallee,
   isPlatformApiIdentifier,
   isStaticPropertyName,
+  isStaticRequireCall,
   mapConstructorName,
   mayContainComponentPropsShape,
   mayContainFeatureFlagHints,
@@ -179,6 +180,25 @@ export function useCounter() {
   })
 
   it('exposes require prechecks', () => {
+    expect(isStaticRequireCall({
+      type: 'CallExpression',
+      callee: { type: 'Identifier', name: 'require' },
+      arguments: [{ type: 'StringLiteral', value: './dep' }],
+    })).toBe(true)
+    expect(isStaticRequireCall({
+      type: 'CallExpression',
+      callee: { type: 'Identifier', name: 'require' },
+      arguments: [{
+        type: 'TemplateLiteral',
+        expressions: [],
+        quasis: [{ value: { cooked: './tmpl' } }],
+      }],
+    })).toBe(true)
+    expect(isStaticRequireCall({
+      type: 'CallExpression',
+      callee: { type: 'Identifier', name: 'require' },
+      arguments: [{ type: 'Identifier', name: 'dep' }],
+    })).toBe(false)
     expect(getRequireAsyncLiteralToken({
       type: 'CallExpression',
       callee: {

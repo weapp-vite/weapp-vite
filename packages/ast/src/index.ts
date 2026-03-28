@@ -78,6 +78,7 @@ export {
   collectRequireTokens,
   getRequireAsyncLiteralToken,
   getStaticRequireLiteralValue,
+  isStaticRequireCall,
   mayContainRequireCallByText,
   mayContainStaticRequireLiteral,
 } from './operations/require'
