@@ -170,6 +170,9 @@ browserPage?.wx.saveFile({
   success: (result) => {
     expectType<{ errMsg: string, savedFilePath: string }>(result)
   },
+  fail: (error) => {
+    expectType<Error>(error)
+  },
   complete: (result) => {
     expectType<{ errMsg: string, savedFilePath: string } | undefined>(result)
   },
@@ -361,6 +364,9 @@ headlessPage?.wx.saveFile({
   tempFilePath: 'headless://wxfile/temp/0001',
   success: (result) => {
     expectType<{ errMsg: string, savedFilePath: string }>(result)
+  },
+  fail: (error) => {
+    expectType<Error>(error)
   },
   complete: (result) => {
     expectType<{ errMsg: string, savedFilePath: string } | undefined>(result)
