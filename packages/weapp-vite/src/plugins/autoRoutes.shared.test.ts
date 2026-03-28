@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AUTO_ROUTES_ID,
   collectAutoRoutesWatchDirs,
   isAutoRoutesWatchFile,
   isAutoRoutesWatchMode,
+  resolveAutoRoutesHotUpdateAction,
+  resolveAutoRoutesVirtualId,
+  resolveAutoRoutesWatchChangeEvent,
+  RESOLVED_VIRTUAL_ID,
+  VIRTUAL_MODULE_ID,
 } from './autoRoutes.shared'
 
 describe('auto routes plugin shared helpers', () => {
@@ -41,5 +47,56 @@ describe('auto routes plugin shared helpers', () => {
     expect(isAutoRoutesWatchFile('C:\\project\\src\\pages\\home\\index.ts', allowedExtensions, isPagesRelatedPath)).toBe(true)
     expect(isAutoRoutesWatchFile('/project/src/pages/home/index.scss', allowedExtensions, isPagesRelatedPath)).toBe(false)
     expect(isAutoRoutesWatchFile('/project/src/components/card/index.vue', allowedExtensions, isPagesRelatedPath)).toBe(false)
+  })
+
+  it('resolves virtual auto-routes ids and alias fallbacks', () => {
+    const aliasTargets = new Set(['/project/src/auto-routes.ts'])
+
+    expect(resolveAutoRoutesVirtualId(AUTO_ROUTES_ID, aliasTargets)).toBe(RESOLVED_VIRTUAL_ID)
+    expect(resolveAutoRoutesVirtualId(VIRTUAL_MODULE_ID, aliasTargets)).toBe(RESOLVED_VIRTUAL_ID)
+    expect(resolveAutoRoutesVirtualId(RESOLVED_VIRTUAL_ID, aliasTargets)).toBe(RESOLVED_VIRTUAL_ID)
+    expect(resolveAutoRoutesVirtualId('/project/src/auto-routes.ts', aliasTargets)).toBe(RESOLVED_VIRTUAL_ID)
+    expect(resolveAutoRoutesVirtualId('/project/src/pages/index.ts', aliasTargets)).toBeNull()
+  })
+
+  it('maps watch change events to rename-like structural changes only', () => {
+    expect(resolveAutoRoutesWatchChangeEvent('create')).toBe('rename')
+    expect(resolveAutoRoutesWatchChangeEvent('delete')).toBe('rename')
+    expect(resolveAutoRoutesWatchChangeEvent('update')).toBeUndefined()
+    expect(resolveAutoRoutesWatchChangeEvent()).toBeUndefined()
+  })
+
+  it('decides hot update handling for serve and build flows', () => {
+    expect(resolveAutoRoutesHotUpdateAction('serve', {
+      isRouteFile: true,
+      isPagesRelatedPath: false,
+    })).toEqual({
+      shouldHandle: true,
+      shouldUpdateRouteFile: true,
+    })
+
+    expect(resolveAutoRoutesHotUpdateAction('serve', {
+      isRouteFile: false,
+      isPagesRelatedPath: true,
+    })).toEqual({
+      shouldHandle: false,
+      shouldUpdateRouteFile: false,
+    })
+
+    expect(resolveAutoRoutesHotUpdateAction('build', {
+      isRouteFile: false,
+      isPagesRelatedPath: true,
+    })).toEqual({
+      shouldHandle: true,
+      shouldUpdateRouteFile: false,
+    })
+
+    expect(resolveAutoRoutesHotUpdateAction(undefined, {
+      isRouteFile: false,
+      isPagesRelatedPath: false,
+    })).toEqual({
+      shouldHandle: false,
+      shouldUpdateRouteFile: false,
+    })
   })
 })

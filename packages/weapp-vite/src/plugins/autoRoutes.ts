@@ -4,7 +4,6 @@ import chokidar from 'chokidar'
 import { vueExtensions } from '../constants'
 import { logger } from '../context/shared'
 import {
-  isAliasedAutoRoutesId,
   isAutoRoutesPagesRelatedPath,
   resolveAutoRoutesAliasTargets,
   resolveAutoRoutesMatcherContext,
@@ -15,11 +14,11 @@ import {
   collectAutoRoutesWatchDirs,
   isAutoRoutesWatchFile,
   isAutoRoutesWatchMode,
+  resolveAutoRoutesHotUpdateAction,
+  resolveAutoRoutesVirtualId,
+  resolveAutoRoutesWatchChangeEvent,
+  RESOLVED_VIRTUAL_ID,
 } from './autoRoutes.shared'
-
-const AUTO_ROUTES_ID = 'weapp-vite/auto-routes'
-const VIRTUAL_MODULE_ID = 'virtual:weapp-vite-auto-routes'
-const RESOLVED_VIRTUAL_ID = '\0weapp-vite:auto-routes'
 
 /**
  * 路由文件监听器的唯一标识，用于在 sidecarWatcherMap 中注册。
@@ -155,20 +154,11 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     },
 
     resolveId(id) {
-      if (id === AUTO_ROUTES_ID || id === VIRTUAL_MODULE_ID) {
-        return RESOLVED_VIRTUAL_ID
-      }
-      if (id === RESOLVED_VIRTUAL_ID) {
-        return RESOLVED_VIRTUAL_ID
-      }
-      if (isAliasedAutoRoutesId(id, autoRoutesAliasTargets)) {
-        return RESOLVED_VIRTUAL_ID
-      }
-      return null
+      return resolveAutoRoutesVirtualId(id, autoRoutesAliasTargets)
     },
 
     async load(id) {
-      if (id !== RESOLVED_VIRTUAL_ID && !isAliasedAutoRoutesId(id, autoRoutesAliasTargets)) {
+      if (resolveAutoRoutesVirtualId(id, autoRoutesAliasTargets) !== RESOLVED_VIRTUAL_ID) {
         return null
       }
 
@@ -196,22 +186,23 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       }
 
       // 仅在结构性变化（如新增/删除文件）时，对未命中的 pages 路径触发全量重扫。
-      if (event === 'create' || event === 'delete') {
-        await service.handleFileChange(id, 'rename')
+      const resolvedEvent = resolveAutoRoutesWatchChangeEvent(event)
+      if (resolvedEvent) {
+        await service.handleFileChange(id, resolvedEvent)
       }
     },
 
     async handleHotUpdate(context) {
-      if (resolvedConfig?.command === 'serve') {
-        if (service.isRouteFile(context.file)) {
-          await service.handleFileChange(context.file, 'update')
-        }
-        else {
-          return
-        }
-      }
-      else if (!service.isRouteFile(context.file) && !isPagesRelatedPath(context.file)) {
+      const routeFile = service.isRouteFile(context.file)
+      const hotUpdateAction = resolveAutoRoutesHotUpdateAction(resolvedConfig?.command, {
+        isRouteFile: routeFile,
+        isPagesRelatedPath: routeFile ? false : isPagesRelatedPath(context.file),
+      })
+      if (!hotUpdateAction.shouldHandle) {
         return
+      }
+      if (hotUpdateAction.shouldUpdateRouteFile) {
+        await service.handleFileChange(context.file, 'update')
       }
 
       const virtualModule = context.server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID)
