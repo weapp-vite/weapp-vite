@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { toAbsoluteId } from './toAbsoluteId'
+import { resolveAbsoluteIdBaseDir, toAbsoluteId } from './toAbsoluteId'
 
 describe('toAbsoluteId', () => {
   const configService = {
     cwd: '/project',
     absoluteSrcRoot: '/project/src',
   }
+
+  it('resolves absolute id base dirs from importer or fallback options', () => {
+    expect(resolveAbsoluteIdBaseDir(configService as any, '/project/src/pages/index.vue')).toBe('/project/src/pages')
+    expect(resolveAbsoluteIdBaseDir(configService as any, '\0vue:/project/src/pages/index.vue?vue&type=script')).toBe('/project/src/pages')
+    expect(resolveAbsoluteIdBaseDir(configService as any, undefined, { base: 'cwd' })).toBe('/project')
+    expect(resolveAbsoluteIdBaseDir(configService as any, 'node:fs')).toBe('/project/src')
+  })
 
   it('returns normalized absolute ids', () => {
     expect(toAbsoluteId('/@fs/project/a.ts?import', configService as any)).toBe('/project/a.ts')
