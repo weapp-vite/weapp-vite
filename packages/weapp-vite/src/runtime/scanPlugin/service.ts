@@ -28,6 +28,26 @@ export interface ScanService {
   drainIndependentDirtyRoots: () => string[]
 }
 
+export function resolveScanAppBasename(absoluteSrcRoot: string) {
+  return path.resolve(absoluteSrcRoot, 'app')
+}
+
+export function resolveScanPluginBasename(absolutePluginRoot?: string) {
+  return absolutePluginRoot ? path.resolve(absolutePluginRoot, 'plugin') : undefined
+}
+
+export function resolveScanJsonEntryBasename(
+  appDirname: string,
+  location: unknown,
+  fallbackName: string,
+) {
+  const value = typeof location === 'string' ? location : undefined
+  if (value === '') {
+    return undefined
+  }
+  return path.resolve(appDirname, value || fallbackName)
+}
+
 export function createScanService(ctx: MutableCompilerContext): ScanService {
   const scanState = ctx.runtimeState.scan
   const { subPackageMap, independentSubPackageMap, independentDirtyRoots } = scanState
@@ -158,7 +178,7 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
     }
 
     const appDirname = ctx.configService.absoluteSrcRoot
-    const appBasename = path.resolve(appDirname, 'app')
+    const appBasename = resolveScanAppBasename(appDirname)
     let { path: appConfigFile } = await findJsonEntry(appBasename)
     const { path: appEntryPath } = await findJsEntry(appBasename)
 
@@ -178,7 +198,7 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
     }
 
     if (ctx.configService.absolutePluginRoot) {
-      const pluginBasename = path.resolve(ctx.configService.absolutePluginRoot, 'plugin')
+      const pluginBasename = resolveScanPluginBasename(ctx.configService.absolutePluginRoot)!
       const { path: pluginConfigFile } = await findJsonEntry(pluginBasename)
       if (pluginConfigFile) {
         const pluginConfig = await ctx.jsonService.read(pluginConfigFile) as unknown as PluginJson
@@ -219,16 +239,17 @@ export function createScanService(ctx: MutableCompilerContext): ScanService {
 
         scanState.appEntry = resolvedAppEntry
 
-        const { sitemapLocation = 'sitemap.json', themeLocation = 'theme.json' } = config
-        if (sitemapLocation) {
-          const { path: sitemapJsonPath } = await findJsonEntry(path.resolve(appDirname, sitemapLocation))
+        const sitemapBasename = resolveScanJsonEntryBasename(appDirname, config.sitemapLocation, 'sitemap.json')
+        const themeBasename = resolveScanJsonEntryBasename(appDirname, config.themeLocation, 'theme.json')
+        if (sitemapBasename) {
+          const { path: sitemapJsonPath } = await findJsonEntry(sitemapBasename)
           if (sitemapJsonPath) {
             resolvedAppEntry.sitemapJsonPath = sitemapJsonPath
             resolvedAppEntry.sitemapJson = await ctx.jsonService.read(sitemapJsonPath) as SitemapJson
           }
         }
-        if (themeLocation) {
-          const { path: themeJsonPath } = await findJsonEntry(path.resolve(appDirname, themeLocation))
+        if (themeBasename) {
+          const { path: themeJsonPath } = await findJsonEntry(themeBasename)
           if (themeJsonPath) {
             resolvedAppEntry.themeJsonPath = themeJsonPath
             resolvedAppEntry.themeJson = await ctx.jsonService.read(themeJsonPath) as ThemeJson
