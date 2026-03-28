@@ -2,7 +2,11 @@ import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取布局资产
 import fs from 'fs-extra'
-import { emitNativeLayoutScriptChunkIfNeeded as emitSharedNativeLayoutScriptChunkIfNeeded, resolveNativeLayoutOutputOptions } from '../../../utils/nativeLayout'
+import {
+  emitNativeLayoutScriptChunkIfNeeded as emitSharedNativeLayoutScriptChunkIfNeeded,
+  resolveNativeLayoutOutputOptions,
+  resolveNativeLayoutStaticAssetEntries,
+} from '../../../utils/nativeLayout'
 import { ensureScriptlessComponentAsset, resolveScriptlessComponentFileName } from '../../../utils/scriptlessComponent'
 import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../emitAssets'
 import { collectNativeLayoutAssets } from '../pageLayout'
@@ -76,14 +80,17 @@ export async function emitNativeLayoutAssetsIfNeeded(options: {
     })
   }
 
-  if (assets.template) {
-    const source = await fs.readFile(assets.template, 'utf8')
-    emitSfcTemplateIfMissing(pluginCtx, bundle, resolvedOptions.relativeBase, source, resolvedOptions.templateExtension)
-  }
-
-  if (assets.style) {
-    const source = await fs.readFile(assets.style, 'utf8')
-    emitSfcStyleIfMissing(pluginCtx, bundle, resolvedOptions.relativeBase, source, resolvedOptions.styleExtension)
+  const staticAssetEntries = await resolveNativeLayoutStaticAssetEntries({
+    assets,
+    resolvedOptions,
+    readFile: fs.readFile,
+  })
+  for (const asset of staticAssetEntries) {
+    if (asset.kind === 'template') {
+      emitSfcTemplateIfMissing(pluginCtx, bundle, resolvedOptions.relativeBase, asset.source, resolvedOptions.templateExtension)
+      continue
+    }
+    emitSfcStyleIfMissing(pluginCtx, bundle, resolvedOptions.relativeBase, asset.source, resolvedOptions.styleExtension)
   }
 }
 
