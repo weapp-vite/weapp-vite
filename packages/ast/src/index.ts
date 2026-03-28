@@ -93,6 +93,7 @@ export {
   collectScriptSetupImportsFromCode,
   collectScriptSetupImportsWithBabel,
   collectScriptSetupImportsWithOxc,
+  getScriptSetupImportedName,
   mayContainRelevantScriptSetupImports,
 } from './operations/scriptSetupImports'
 export type { ScriptSetupImport } from './operations/scriptSetupImports'
