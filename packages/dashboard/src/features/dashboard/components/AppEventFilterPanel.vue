@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import AppFilterGroup from './AppFilterGroup.vue'
-import AppFilterPresetGroup from './AppFilterPresetGroup.vue'
+import { pillButtonStyles } from '../utils/styles'
 import AppInsetPanel from './AppInsetPanel.vue'
-import AppSearchField from './AppSearchField.vue'
+import AppMetaLabel from './AppMetaLabel.vue'
 
 defineProps<{
   searchQuery: string
@@ -28,42 +27,89 @@ const emit = defineEmits<{
 <template>
   <AppInsetPanel>
     <div class="grid gap-3">
-      <AppSearchField
-        input-id="dashboard-event-search"
-        label="搜索事件"
-        placeholder="搜索标题、详情、来源或标签"
-        :model-value="searchQuery"
-        @update:model-value="emit('update:searchQuery', $event)"
-      />
+      <div>
+        <label for="dashboard-event-search">
+          <AppMetaLabel>
+            搜索事件
+          </AppMetaLabel>
+        </label>
+        <input
+          id="dashboard-event-search"
+          :value="searchQuery"
+          type="text"
+          placeholder="搜索标题、详情、来源或标签"
+          class="mt-2 w-full rounded-2xl border border-[color:var(--dashboard-border)] bg-[color:var(--dashboard-panel)] px-3 py-2 text-sm text-[color:var(--dashboard-text)] outline-none transition focus:border-[color:var(--dashboard-border-strong)]"
+          @input="emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
+        >
+      </div>
 
       <div class="grid gap-3">
-        <AppFilterPresetGroup
-          title="快速预设"
-          :description="presetDescription"
-          :presets="filterPresets"
-          @apply="emit('applyPreset', $event)"
-        />
+        <div>
+          <AppMetaLabel>
+            快速预设
+          </AppMetaLabel>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              v-for="preset in filterPresets"
+              :key="preset.key"
+              :class="pillButtonStyles({ kind: 'theme', active: false })"
+              @click="emit('applyPreset', preset.key)"
+            >
+              {{ preset.label }}
+            </button>
+          </div>
+          <p class="mt-2 text-xs leading-5 text-[color:var(--dashboard-text-soft)]">
+            {{ presetDescription }}
+          </p>
+        </div>
 
-        <AppFilterGroup
-          title="类型过滤"
-          :options="eventKindOptions"
-          :selected-value="eventKindFilter"
-          @select="emit('update:eventKindFilter', $event)"
-        />
+        <div>
+          <AppMetaLabel>
+            类型过滤
+          </AppMetaLabel>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              v-for="option in eventKindOptions"
+              :key="option.value"
+              :class="pillButtonStyles({ kind: 'theme', active: eventKindFilter === option.value })"
+              @click="emit('update:eventKindFilter', option.value)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
 
-        <AppFilterGroup
-          title="等级过滤"
-          :options="eventLevelOptions"
-          :selected-value="eventLevelFilter"
-          @select="emit('update:eventLevelFilter', $event)"
-        />
+        <div>
+          <AppMetaLabel>
+            等级过滤
+          </AppMetaLabel>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              v-for="option in eventLevelOptions"
+              :key="option.value"
+              :class="pillButtonStyles({ kind: 'theme', active: eventLevelFilter === option.value })"
+              @click="emit('update:eventLevelFilter', option.value)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
 
-        <AppFilterGroup
-          title="来源过滤"
-          :options="eventSourceOptions"
-          :selected-value="eventSourceFilter"
-          @select="emit('update:eventSourceFilter', $event)"
-        />
+        <div>
+          <AppMetaLabel>
+            来源过滤
+          </AppMetaLabel>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <button
+              v-for="option in eventSourceOptions"
+              :key="option.value"
+              :class="pillButtonStyles({ kind: 'theme', active: eventSourceFilter === option.value })"
+              @click="emit('update:eventSourceFilter', option.value)"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </AppInsetPanel>
