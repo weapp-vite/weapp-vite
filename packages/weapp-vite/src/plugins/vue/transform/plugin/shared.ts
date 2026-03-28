@@ -62,6 +62,27 @@ export function mayNeedInlineAutoRoutes(source: string) {
   return AUTO_ROUTES_DEFAULT_IMPORT_RE.test(source) || AUTO_ROUTES_DYNAMIC_IMPORT_RE.test(source)
 }
 
+export async function loadTransformPageEntries(scanService: CompilerContext['scanService']) {
+  if (!scanService) {
+    return { pages: [], subPackages: [], pluginPages: [] }
+  }
+
+  const appEntry = await scanService.loadAppEntry()
+  const subPackages = scanService.loadSubPackages().map(meta => ({
+    root: meta.subPackage.root,
+    pages: meta.subPackage.pages,
+  }))
+  const pluginPages = scanService.pluginJson
+    ? Object.values((scanService.pluginJson as { pages?: Record<string, string> }).pages ?? {}).map(page => String(page))
+    : []
+
+  return {
+    pages: appEntry.json?.pages ?? [],
+    subPackages,
+    pluginPages,
+  }
+}
+
 export function invalidatePageLayoutCaches(
   configService: NonNullable<CompilerContext['configService']> | undefined,
   compilationCache: Map<string, { result: VueTransformResult, source?: string, isPage: boolean }>,
@@ -309,6 +330,68 @@ export async function inlineTransformAutoRoutes(options: {
   return source
     .replace(AUTO_ROUTES_DEFAULT_IMPORT_RE, (_, localName: string) => `const ${localName} = ${JSON.stringify(inlineRoutes)};`)
     .replace(AUTO_ROUTES_DYNAMIC_IMPORT_RE, `Promise.resolve(${JSON.stringify(inlineRoutes)})`)
+}
+
+export async function resolveTransformEntryFlags(options: {
+  pageMatcher: {
+    isPageFile: (filename: string) => Promise<boolean>
+    markDirty: () => void
+  } | null
+  setPageMatcher: (matcher: {
+    isPageFile: (filename: string) => Promise<boolean>
+    markDirty: () => void
+  }) => void
+  createPageMatcher: (options: {
+    srcRoot: string
+    loadEntries: () => Promise<{
+      pages: string[]
+      subPackages: { root: string, pages: string[] }[]
+      pluginPages: string[]
+    }>
+    warn: (message: string) => void
+  }) => {
+    isPageFile: (filename: string) => Promise<boolean>
+    markDirty: () => void
+  }
+  configService: NonNullable<CompilerContext['configService']>
+  scanService: CompilerContext['scanService']
+  scanDirty: boolean
+  filename: string
+}) {
+  const {
+    pageMatcher,
+    setPageMatcher,
+    createPageMatcher,
+    configService,
+    scanService,
+    scanDirty,
+    filename,
+  } = options
+
+  if (configService.weappLibConfig?.enabled) {
+    return {
+      isPage: false,
+      isApp: false,
+      pageMatcher: pageMatcher ?? null,
+    }
+  }
+
+  const currentPageMatcher = pageMatcher ?? createPageMatcher({
+    srcRoot: configService.absoluteSrcRoot,
+    loadEntries: async () => await loadTransformPageEntries(scanService),
+    warn: (message: string) => logger.warn(message),
+  })
+
+  setPageMatcher(currentPageMatcher)
+  if (scanDirty) {
+    currentPageMatcher.markDirty()
+  }
+
+  return {
+    isPage: await currentPageMatcher.isPageFile(filename),
+    isApp: isAppEntry(filename),
+    pageMatcher: currentPageMatcher,
+  }
 }
 
 export async function registerNativeLayoutChunksForEntry(
