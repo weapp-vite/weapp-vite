@@ -2,7 +2,6 @@ import type { RolldownPluginOption } from 'rolldown'
 import type { InlineConfig, PluginOption } from 'vite'
 import type { LoadConfigOptions, LoadConfigResult } from '../types'
 import { defu } from '@weapp-core/shared'
-import fs from 'fs-extra'
 import path from 'pathe'
 import { loadConfigFromFile } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
@@ -28,6 +27,24 @@ export interface LoadConfigFactoryOptions {
   injectBuiltinAliases: (config: InlineConfig) => void
   oxcRolldownPlugin: RolldownPluginOption<any> | undefined
   oxcVitePlugin: PluginOption | undefined
+}
+
+export function resolveConfigFilePath(cwd: string, configFile?: string) {
+  if (!configFile) {
+    return configFile
+  }
+  return path.isAbsolute(configFile) ? configFile : path.resolve(cwd, configFile)
+}
+
+export function shouldReuseLoadedWeappConfig(
+  weappConfigFilePath?: string,
+  loadedPath?: string,
+) {
+  if (!weappConfigFilePath || !loadedPath) {
+    return false
+  }
+
+  return path.resolve(loadedPath) === path.resolve(weappConfigFilePath)
 }
 
 function injectDefaultSrcAlias(config: InlineConfig, cwd: string, srcRoot: string) {
@@ -94,12 +111,9 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
   return async function loadConfig(opts: LoadConfigOptions): Promise<LoadConfigResult> {
     const { cwd, isDev, mode, pluginOnly = false, inlineConfig, configFile, cliPlatform, projectConfigPath } = opts
 
-    const { packageJson, packageJsonPath } = await loadPackageJson(fs, cwd)
+    const { packageJson, packageJsonPath } = await loadPackageJson(cwd)
 
-    let resolvedConfigFile = configFile
-    if (resolvedConfigFile && !path.isAbsolute(resolvedConfigFile)) {
-      resolvedConfigFile = path.resolve(cwd, resolvedConfigFile)
-    }
+    const resolvedConfigFile = resolveConfigFilePath(cwd, configFile)
 
     const weappConfigFilePath = await resolveWeappConfigFile({
       root: cwd,
@@ -129,9 +143,7 @@ export function createLoadConfig(options: LoadConfigFactoryOptions) {
 
     let weappLoaded: Awaited<ReturnType<typeof loadConfigFromFile>> | undefined
     if (weappConfigFilePath) {
-      const normalizedWeappPath = path.resolve(weappConfigFilePath)
-      const normalizedLoadedPath = loaded?.path ? path.resolve(loaded.path) : undefined
-      if (normalizedLoadedPath && normalizedLoadedPath === normalizedWeappPath) {
+      if (shouldReuseLoadedWeappConfig(weappConfigFilePath, loaded?.path)) {
         weappLoaded = loaded
       }
       else {
