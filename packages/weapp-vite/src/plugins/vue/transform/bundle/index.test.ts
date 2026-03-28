@@ -88,4 +88,14 @@ describe('bundle index helpers', () => {
     expect(emitFallbackPageAssetsMock).toHaveBeenCalledTimes(1)
     expect(emitFallbackPageAssetsMock).toHaveBeenCalledWith(bundle, state)
   })
+
+  it('returns early from bundle asset emission when required services are missing', async () => {
+    await emitVueBundleAssets({}, {
+      ctx: {},
+      compilationCache: new Map(),
+    } as any)
+
+    expect(emitCompiledVueEntryAssetsMock).not.toHaveBeenCalled()
+    expect(emitFallbackPageAssetsMock).not.toHaveBeenCalled()
+  })
 })
