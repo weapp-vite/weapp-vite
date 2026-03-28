@@ -15,6 +15,38 @@ interface MergeWebOptions {
   getDefineImportMetaEnv: () => Record<string, any>
 }
 
+export function mergeWebPlugins(
+  rawPlugins: InlineConfig['plugins'],
+  webPlugin: PluginOption,
+) {
+  const remaining: PluginOption[] = []
+  const collect = (option: PluginOption | undefined) => {
+    if (!option) {
+      return
+    }
+    if (Array.isArray(option)) {
+      option.forEach(item => collect(item))
+      return
+    }
+    if (typeof option === 'object'
+      && option !== null
+      && 'name' in option
+      && option.name === (webPlugin as { name?: string }).name) {
+      return
+    }
+    remaining.push(option)
+  }
+
+  if (Array.isArray(rawPlugins)) {
+    rawPlugins.forEach(entry => collect(entry))
+  }
+  else if (rawPlugins) {
+    collect(rawPlugins)
+  }
+
+  return [webPlugin as any, ...remaining] as InlineConfig['plugins']
+}
+
 export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineConfig | undefined>[]) {
   const {
     config,
@@ -54,32 +86,7 @@ export function mergeWeb(options: MergeWebOptions, ...configs: Partial<InlineCon
   inline.mode = inline.mode ?? mode
 
   const webPlugin = weappWebPlugin(web.pluginOptions)
-  const rawPlugins = inline.plugins
-  const remaining: PluginOption[] = []
-  const collect = (option: PluginOption | undefined) => {
-    if (!option) {
-      return
-    }
-    if (Array.isArray(option)) {
-      option.forEach(item => collect(item))
-      return
-    }
-    if (typeof option === 'object'
-      && option !== null
-      && 'name' in option
-      && option.name === webPlugin.name) {
-      return
-    }
-    remaining.push(option)
-  }
-  if (Array.isArray(rawPlugins)) {
-    rawPlugins.forEach(entry => collect(entry))
-  }
-  else if (rawPlugins) {
-    collect(rawPlugins)
-  }
-  const mergedPlugins = [webPlugin as any, ...remaining]
-  inline.plugins = mergedPlugins as InlineConfig['plugins']
+  inline.plugins = mergeWebPlugins(inline.plugins, webPlugin)
 
   inline.build ??= {}
   inline.build.outDir = web.outDir
