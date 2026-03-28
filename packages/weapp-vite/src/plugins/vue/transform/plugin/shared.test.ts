@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, registerNativeLayoutChunksForEntry } from './shared'
+import { ensureSfcStyleBlocks, finalizeTransformEntryCode, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, inlineTransformAutoRoutes, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, mayNeedInlineAutoRoutes, mayNeedTransformPageFeatureInjection, mayNeedTransformPageScrollDiagnostics, mayNeedTransformSetDataPick, registerNativeLayoutChunksForEntry } from './shared'
 
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn())
@@ -184,6 +184,9 @@ describe('vue transform plugin shared helpers', () => {
     expect(mayNeedTransformPageFeatureInjection('export default {}')).toBe(false)
     expect(mayNeedTransformPageScrollDiagnostics('export default { onPageScroll() {} }')).toBe(true)
     expect(mayNeedTransformPageScrollDiagnostics('export default {}')).toBe(false)
+    expect(mayNeedInlineAutoRoutes('import routes from "weapp-vite/auto-routes"')).toBe(true)
+    expect(mayNeedInlineAutoRoutes('await import("virtual:weapp-vite-auto-routes")')).toBe(true)
+    expect(mayNeedInlineAutoRoutes('const routes = []')).toBe(false)
   })
 
   it('handles transform entry page layout flow through resolve, apply, watch, and native chunk emission', async () => {
@@ -380,5 +383,48 @@ describe('vue transform plugin shared helpers', () => {
 
     expect(buildWeappVueStyleRequestMock).not.toHaveBeenCalled()
     expect(code).toBe('App({})')
+  })
+
+  it('inlines auto routes imports and dynamic imports through shared helper', async () => {
+    const ensureFresh = vi.fn(async () => {})
+    const getReference = vi.fn(() => ({
+      pages: ['pages/home/index'],
+      entries: [{ path: '/project/src/pages/home/index.vue' }],
+      subPackages: [{ root: 'pkg', pages: ['detail/index'] }],
+    }))
+
+    const code = await inlineTransformAutoRoutes({
+      source: `
+import routes from "weapp-vite/auto-routes"
+const promise = import("virtual:weapp-vite-auto-routes")
+console.log(routes, promise)
+      `.trim(),
+      autoRoutesService: {
+        ensureFresh,
+        getReference,
+      },
+    })
+
+    expect(ensureFresh).toHaveBeenCalledTimes(1)
+    expect(getReference).toHaveBeenCalledTimes(1)
+    expect(code).toContain('const routes = {"pages":["pages/home/index"],"entries":[{"path":"/project/src/pages/home/index.vue"}],"subPackages":[{"root":"pkg","pages":["detail/index"]}]};')
+    expect(code).toContain('Promise.resolve({"pages":["pages/home/index"],"entries":[{"path":"/project/src/pages/home/index.vue"}],"subPackages":[{"root":"pkg","pages":["detail/index"]}]})')
+  })
+
+  it('skips auto routes inline work when source does not reference auto routes', async () => {
+    const ensureFresh = vi.fn(async () => {})
+    const getReference = vi.fn()
+    const source = 'const routes = []'
+
+    await expect(inlineTransformAutoRoutes({
+      source,
+      autoRoutesService: {
+        ensureFresh,
+        getReference,
+      },
+    })).resolves.toBe(source)
+
+    expect(ensureFresh).not.toHaveBeenCalled()
+    expect(getReference).not.toHaveBeenCalled()
   })
 })
