@@ -9,6 +9,8 @@ import { applyPageLayoutPlan, collectNativeLayoutAssets, resolvePageLayoutPlan }
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 export const SCRIPTLESS_COMPONENT_STUB = 'Component({})'
 
+export { registerVueTemplateToken } from '../shared'
+
 export interface CompilationCacheEntry {
   result: VueTransformResult
   source?: string
@@ -126,24 +128,4 @@ export async function compileVueLikeFile(options: {
     }
   }
   return result
-}
-
-export function registerVueTemplateToken(
-  ctx: CompilerContext,
-  filename: string,
-  template: string,
-) {
-  const wxmlService = (ctx as Partial<CompilerContext>).wxmlService
-  if (!wxmlService) {
-    return
-  }
-
-  try {
-    const token = wxmlService.analyze(template)
-    wxmlService.tokenMap.set(filename, token)
-    wxmlService.setWxmlComponentsMap(filename, token.components)
-  }
-  catch {
-    // 忽略模板扫描异常，保持模板发射流程可继续
-  }
 }
