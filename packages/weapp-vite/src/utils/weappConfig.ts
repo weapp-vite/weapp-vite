@@ -1,3 +1,4 @@
+/* eslint-disable e18e/ban-dependencies -- fs-extra is still the project-standard file helper in this module. */
 import fs from 'fs-extra'
 import path from 'pathe'
 
@@ -18,6 +19,16 @@ export interface ResolveWeappConfigFileOptions {
   specified?: string
 }
 
+export function resolveSpecifiedWeappConfigPath(root: string, specified: string) {
+  return path.isAbsolute(specified)
+    ? specified
+    : path.resolve(root, specified)
+}
+
+export function isWeappConfigBasename(filePath: string) {
+  return WEAPP_VITE_CONFIG_SET.has(path.basename(filePath))
+}
+
 async function findWeappConfigInDirectory(directory: string): Promise<string | undefined> {
   for (const filename of WEAPP_VITE_CONFIG_CANDIDATES) {
     const candidatePath = path.resolve(directory, filename)
@@ -32,12 +43,9 @@ async function findWeappConfigInDirectory(directory: string): Promise<string | u
 export async function resolveWeappConfigFile(options: ResolveWeappConfigFileOptions): Promise<string | undefined> {
   const { root, specified } = options
   if (specified) {
-    const resolvedSpecified = path.isAbsolute(specified)
-      ? specified
-      : path.resolve(root, specified)
-    const specifiedBaseName = path.basename(resolvedSpecified)
+    const resolvedSpecified = resolveSpecifiedWeappConfigPath(root, specified)
 
-    if (WEAPP_VITE_CONFIG_SET.has(specifiedBaseName)) {
+    if (isWeappConfigBasename(resolvedSpecified)) {
       if (await fs.pathExists(resolvedSpecified)) {
         return resolvedSpecified
       }
