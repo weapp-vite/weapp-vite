@@ -27,6 +27,32 @@ interface MergeMiniprogramOptions {
   oxcRolldownPlugin: RolldownPluginOption<any> | undefined
 }
 
+export function resolveMiniprogramWatchInclude(options: {
+  cwd: string
+  srcRoot: string
+  pluginRoot?: string
+}) {
+  const watchInclude: string[] = [
+    path.join(options.cwd, options.srcRoot, '**'),
+  ]
+
+  if (!options.pluginRoot) {
+    return watchInclude
+  }
+
+  const absolutePluginRoot = path.resolve(options.cwd, options.pluginRoot)
+  const relativeToSrc = path.relative(
+    path.resolve(options.cwd, options.srcRoot),
+    absolutePluginRoot,
+  )
+  const pluginPatternBase = relativeToSrc.startsWith('..')
+    ? absolutePluginRoot
+    : path.join(options.cwd, options.srcRoot, relativeToSrc)
+
+  watchInclude.push(path.join(pluginPatternBase, '**'))
+  return watchInclude
+}
+
 export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: Partial<InlineConfig | undefined>[]) {
   const {
     ctx,
@@ -67,21 +93,11 @@ export function mergeMiniprogram(options: MergeMiniprogramOptions, ...configs: P
   }
 
   if (isDev) {
-    const watchInclude: string[] = [
-      path.join(cwd, srcRoot, '**'),
-    ]
-    const pluginRootConfig = config.weapp?.pluginRoot
-    if (pluginRootConfig) {
-      const absolutePluginRoot = path.resolve(cwd, pluginRootConfig)
-      const relativeToSrc = path.relative(
-        path.resolve(cwd, srcRoot),
-        absolutePluginRoot,
-      )
-      const pluginPatternBase = relativeToSrc.startsWith('..')
-        ? absolutePluginRoot
-        : path.join(cwd, srcRoot, relativeToSrc)
-      watchInclude.push(path.join(pluginPatternBase, '**'))
-    }
+    const watchInclude = resolveMiniprogramWatchInclude({
+      cwd,
+      srcRoot,
+      pluginRoot: config.weapp?.pluginRoot,
+    })
 
     const inline = defu<InlineConfig, (InlineConfig | undefined)[]>(
       config,
