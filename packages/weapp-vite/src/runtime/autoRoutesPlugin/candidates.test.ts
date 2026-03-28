@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   applyCandidateEntryFile,
   buildDefaultSearchRoots,
+  classifyPagesRootEntry,
   hasNestedPagesRoot,
   resolveCandidateEntryPath,
   resolveCandidateSearchRoots,
@@ -11,6 +12,32 @@ import {
 import { createAutoRoutesMatcher } from './matcher'
 
 describe('auto routes candidates helpers', () => {
+  it('classifies page root traversal entries', () => {
+    expect(classifyPagesRootEntry('/project/src', {
+      name: 'pages',
+      isDirectory: () => true,
+    })).toEqual({
+      pageRoot: '/project/src/pages',
+    })
+
+    expect(classifyPagesRootEntry('/project/src', {
+      name: 'pkgA',
+      isDirectory: () => true,
+    })).toEqual({
+      nextPath: '/project/src/pkgA',
+    })
+
+    expect(classifyPagesRootEntry('/project/src', {
+      name: '.git',
+      isDirectory: () => true,
+    })).toBeUndefined()
+
+    expect(classifyPagesRootEntry('/project/src', {
+      name: 'index.ts',
+      isDirectory: () => false,
+    })).toBeUndefined()
+  })
+
   it('detects nested pages roots for subpackages', () => {
     expect(hasNestedPagesRoot('/project/src/pkgA', [
       '/project/src/pages',
