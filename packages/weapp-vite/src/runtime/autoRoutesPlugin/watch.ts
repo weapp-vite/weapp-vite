@@ -16,6 +16,7 @@ import {
 } from './candidates'
 import { createAutoRoutesMatcher } from './matcher'
 import { resolveRoute } from './routes'
+import { resolveAutoRoutesPath } from './shared'
 import { getAutoRoutesSubPackageRoots } from './subPackageRoots'
 
 export type AutoRoutesFileEvent = ChangeEvent | 'rename'
@@ -34,33 +35,30 @@ export function matchesRouteFile(
     return false
   }
 
-  const normalizedSrcRoot = normalizePath(configService.absoluteSrcRoot)
-  const normalizedCandidate = normalizePath(
-    path.isAbsolute(pathWithoutQuery)
-      ? pathWithoutQuery
-      : path.resolve(configService.cwd, pathWithoutQuery),
-  )
-  const relative = toPosixPath(path.relative(normalizedSrcRoot, normalizedCandidate))
-  if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+  const resolvedPath = resolveAutoRoutesPath(candidate, {
+    cwd: configService.cwd,
+    absoluteSrcRoot: configService.absoluteSrcRoot,
+  })
+  if (!resolvedPath) {
     return false
   }
 
   const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
   const subPackageRoots = getAutoRoutesSubPackageRoots(ctx)
   const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, subPackageRoots)
-  if (!matcher.matches(removeExtensionDeep(relative))) {
+  if (!matcher.matches(removeExtensionDeep(resolvedPath.relativePath))) {
     return false
   }
 
-  if (isConfigFile(normalizedCandidate)) {
+  if (isConfigFile(resolvedPath.absolutePath)) {
     return true
   }
 
   if (
-    isVueFile(normalizedCandidate)
-    || isScriptFile(normalizedCandidate)
-    || isTemplateFile(normalizedCandidate)
-    || isStyleFile(normalizedCandidate)
+    isVueFile(resolvedPath.absolutePath)
+    || isScriptFile(resolvedPath.absolutePath)
+    || isTemplateFile(resolvedPath.absolutePath)
+    || isStyleFile(resolvedPath.absolutePath)
   ) {
     return true
   }
