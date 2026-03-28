@@ -46,6 +46,43 @@ export function isAutoRoutesWatchFile(
 }
 
 /**
+ * 判断是否满足 auto-routes sidecar watcher 的启动前置条件。
+ */
+export function shouldStartAutoRoutesWatcher(options: {
+  routeWatcherStarted: boolean
+  isDev: boolean
+  autoRoutesEnabled: boolean
+  autoRoutesWatch: boolean
+  serviceEnabled: boolean
+  watchDirsLength: number
+}) {
+  if (options.routeWatcherStarted) {
+    return false
+  }
+
+  if (!options.isDev) {
+    return false
+  }
+
+  if (!options.autoRoutesEnabled || !options.autoRoutesWatch || !options.serviceEnabled) {
+    return false
+  }
+
+  return options.watchDirsLength > 0
+}
+
+/**
+ * 生成 sidecar watcher map 使用的关闭句柄。
+ */
+export function createAutoRoutesSidecarWatcher(
+  watcher: { close: () => unknown | Promise<unknown> },
+) {
+  return {
+    close: () => void watcher.close(),
+  }
+}
+
+/**
  * 统一解析 auto-routes 虚拟模块与 alias 入口的命中关系。
  */
 export function resolveAutoRoutesVirtualId(

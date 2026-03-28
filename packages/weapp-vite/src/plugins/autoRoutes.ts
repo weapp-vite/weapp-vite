@@ -12,12 +12,14 @@ import { createSidecarWatchOptions } from '../runtime/watch/options'
 import { normalizeWatchPath } from '../utils/path'
 import {
   collectAutoRoutesWatchDirs,
+  createAutoRoutesSidecarWatcher,
   isAutoRoutesWatchFile,
   isAutoRoutesWatchMode,
   resolveAutoRoutesHotUpdateAction,
   resolveAutoRoutesVirtualId,
   resolveAutoRoutesWatchChangeEvent,
   RESOLVED_VIRTUAL_ID,
+  shouldStartAutoRoutesWatcher,
 } from './autoRoutes.shared'
 
 /**
@@ -81,27 +83,26 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
    * 重编译都会触发，提前销毁会导致后续文件变更无法感知）。
    */
   function startRouteFileWatcher() {
-    if (routeWatcherStarted) {
-      return
-    }
-
     const configService = ctx.configService
-    if (!configService?.isDev) {
+    if (!configService) {
       return
     }
 
     const { autoRoutesConfig, matcher: resolvedMatcher } = resolveAutoRoutesMatcherContext(ctx)
-    if (!autoRoutesConfig.enabled || !autoRoutesConfig.watch || !service.isEnabled()) {
-      return
-    }
-
     const allowedExtensions = new Set(vueExtensions.map(ext => `.${ext}`))
     const watchDirs = collectAutoRoutesWatchDirs(
       service.getWatchDirectories(),
       resolvedMatcher.getWatchRoots(configService.absoluteSrcRoot),
     )
 
-    if (watchDirs.length === 0) {
+    if (!shouldStartAutoRoutesWatcher({
+      routeWatcherStarted,
+      isDev: configService.isDev,
+      autoRoutesEnabled: autoRoutesConfig.enabled,
+      autoRoutesWatch: autoRoutesConfig.watch,
+      serviceEnabled: service.isEnabled(),
+      watchDirsLength: watchDirs.length,
+    })) {
       return
     }
 
@@ -132,9 +133,7 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
 
     // 注册到 sidecarWatcherMap，由 watcherService.closeAll() 统一回收
     const { sidecarWatcherMap } = ctx.runtimeState.watcher
-    sidecarWatcherMap.set(ROUTE_WATCHER_KEY, {
-      close: () => void watcher.close(),
-    })
+    sidecarWatcherMap.set(ROUTE_WATCHER_KEY, createAutoRoutesSidecarWatcher(watcher))
 
     routeWatcherStarted = true
   }
