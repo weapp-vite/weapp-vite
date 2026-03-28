@@ -36,7 +36,7 @@ const JS_GLOBAL_IDENTIFIERS = new Set([
   'encodeURIComponent',
 ])
 
-function collectLoopScopeAliases(template: string): Set<string> {
+export function collectLoopScopeAliases(template: string): Set<string> {
   const aliases = new Set<string>()
   const tagMatches = template.match(WX_FOR_TAG_RE) ?? []
   for (const tag of tagMatches) {
@@ -65,7 +65,7 @@ function collectLoopScopeAliases(template: string): Set<string> {
   return aliases
 }
 
-function extractTemplateExpressions(template: string): string[] {
+export function extractTemplateExpressions(template: string): string[] {
   const expressions: string[] = []
   let match = TEMPLATE_MUSTACHE_RE.exec(template)
   while (match) {
@@ -79,7 +79,7 @@ function extractTemplateExpressions(template: string): string[] {
   return expressions
 }
 
-function collectIdentifiersFromExpression(expression: string): Set<string> {
+export function collectIdentifiersFromExpression(expression: string): Set<string> {
   const collected = new Set<string>()
   let ast: t.File | undefined
   try {
@@ -128,7 +128,7 @@ function collectIdentifiersFromExpression(expression: string): Set<string> {
   return collected
 }
 
-function collectPatternBindingNames(node: any, bindings: Set<string>) {
+export function collectPatternBindingNames(node: any, bindings: Set<string>) {
   if (!node) {
     return
   }
@@ -167,7 +167,11 @@ function collectPatternBindingNames(node: any, bindings: Set<string>) {
   }
 }
 
-function collectIdentifiersFromExpressionWithOxc(expression: string): Set<string> {
+export function hasBindingInScopes(scopes: Set<string>[], name: string) {
+  return scopes.some(scope => scope.has(name))
+}
+
+export function collectIdentifiersFromExpressionWithOxc(expression: string): Set<string> {
   const collected = new Set<string>()
   let ast: any
 
@@ -182,10 +186,6 @@ function collectIdentifiersFromExpressionWithOxc(expression: string): Set<string
   }
 
   const scopes: Set<string>[] = [new Set()]
-
-  function hasBinding(name: string) {
-    return scopes.some(scope => scope.has(name))
-  }
 
   function visit(node: any) {
     if (!node) {
@@ -237,7 +237,7 @@ function collectIdentifiersFromExpressionWithOxc(expression: string): Set<string
       case 'Identifier':
         if (
           node.name !== '__weappViteExpr'
-          && !hasBinding(node.name)
+          && !hasBindingInScopes(scopes, node.name)
           && !JS_GLOBAL_IDENTIFIERS.has(node.name)
         ) {
           collected.add(node.name)
@@ -355,7 +355,7 @@ function collectIdentifiersFromExpressionWithOxc(expression: string): Set<string
   return collected
 }
 
-function collectWithBabel(template: string): string[] {
+export function collectSetDataPickKeysWithBabel(template: string): string[] {
   const templateExpressions = extractTemplateExpressions(template)
   if (!templateExpressions.length) {
     return []
@@ -373,7 +373,7 @@ function collectWithBabel(template: string): string[] {
   return [...keys].sort((a, b) => a.localeCompare(b))
 }
 
-function collectWithOxc(template: string): string[] {
+export function collectSetDataPickKeysWithOxc(template: string): string[] {
   const templateExpressions = extractTemplateExpressions(template)
   if (!templateExpressions.length) {
     return []
@@ -409,7 +409,7 @@ export function collectSetDataPickKeysFromTemplateCode(
   const engine = options?.astEngine ?? 'babel'
 
   try {
-    return engine === 'oxc' ? collectWithOxc(template) : collectWithBabel(template)
+    return engine === 'oxc' ? collectSetDataPickKeysWithOxc(template) : collectSetDataPickKeysWithBabel(template)
   }
   catch {
     return []

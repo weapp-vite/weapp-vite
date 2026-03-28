@@ -39,15 +39,58 @@ export interface JsxBabelModuleAnalysisOptions {
   ) => Expression | null
 }
 
-function mayContainJsxAutoComponentEntry(source: string) {
+export function mayContainJsxAutoComponentEntry(source: string) {
   return source.includes('import') || source.includes('export default')
 }
 
-function defaultIsDefineComponentSource(source: string) {
+export function defaultIsDefineComponentSource(source: string) {
   return source === 'vue'
 }
 
-function defaultResolveBabelComponentExpression(
+export function getJsxImportedName(imported: any) {
+  return t.isIdentifier(imported)
+    ? imported.name
+    : t.isStringLiteral(imported)
+      ? imported.value
+      : imported?.type === 'Identifier'
+        ? imported.name
+        : imported?.type === 'StringLiteral'
+          ? imported.value
+          : undefined
+}
+
+export function createJsxImportedComponent(
+  localName: string,
+  importSource: string,
+  kind: JsxImportedComponent['kind'],
+  imported?: any,
+): JsxImportedComponent {
+  return {
+    localName,
+    importSource,
+    importedName: kind === 'default' ? 'default' : getJsxImportedName(imported),
+    kind,
+  }
+}
+
+export function getJsxImportLocalName(specifier: any) {
+  if ('local' in (specifier ?? {}) && t.isIdentifier(specifier.local)) {
+    return specifier.local.name
+  }
+  return specifier?.local?.type === 'Identifier'
+    ? specifier.local.name
+    : undefined
+}
+
+export function isJsxDefineComponentImportSpecifier(specifier: any) {
+  return t.isImportSpecifier(specifier)
+    ? t.isIdentifier(specifier.imported, { name: 'defineComponent' })
+    : specifier?.type === 'ImportSpecifier'
+      && specifier.imported?.type === 'Identifier'
+      && specifier.imported.name === 'defineComponent'
+}
+
+export function defaultResolveBabelComponentExpression(
   declaration: t.Declaration | t.Expression | null,
   defineComponentDecls: Map<string, ObjectExpression>,
   defineComponentAliases: Set<string>,
@@ -77,7 +120,7 @@ function defaultResolveBabelComponentExpression(
   return null
 }
 
-function defaultResolveBabelRenderExpression(componentExpr: Expression) {
+export function defaultResolveBabelRenderExpression(componentExpr: Expression) {
   if (!t.isObjectExpression(componentExpr)) {
     return null
   }
@@ -113,13 +156,12 @@ export function collectJsxImportedComponentsAndDefaultExportFromBabelAst(
 
       if (resolvedOptions.isDefineComponentSource(source)) {
         for (const specifier of path.node.specifiers) {
-          if (!t.isImportSpecifier(specifier)) {
-            continue
+          if (isJsxDefineComponentImportSpecifier(specifier)) {
+            const localName = getJsxImportLocalName(specifier)
+            if (localName) {
+              defineComponentAliases.add(localName)
+            }
           }
-          if (!t.isIdentifier(specifier.imported, { name: 'defineComponent' })) {
-            continue
-          }
-          defineComponentAliases.add(specifier.local.name)
         }
       }
 
@@ -134,33 +176,18 @@ export function collectJsxImportedComponentsAndDefaultExportFromBabelAst(
         if ('importKind' in specifier && specifier.importKind === 'type') {
           continue
         }
-        if (!('local' in specifier) || !t.isIdentifier(specifier.local)) {
+        const localName = getJsxImportLocalName(specifier)
+        if (!localName) {
           continue
         }
-        const localName = specifier.local.name
         if (t.isImportDefaultSpecifier(specifier)) {
-          imports.set(localName, {
-            localName,
-            importSource,
-            importedName: 'default',
-            kind: 'default',
-          })
+          imports.set(localName, createJsxImportedComponent(localName, importSource, 'default'))
           continue
         }
         if (!t.isImportSpecifier(specifier)) {
           continue
         }
-        const importedName = t.isIdentifier(specifier.imported)
-          ? specifier.imported.name
-          : t.isStringLiteral(specifier.imported)
-            ? specifier.imported.value
-            : undefined
-        imports.set(localName, {
-          localName,
-          importSource,
-          importedName,
-          kind: 'named',
-        })
+        imports.set(localName, createJsxImportedComponent(localName, importSource, 'named', specifier.imported))
       }
     },
     VariableDeclarator(path) {
@@ -286,7 +313,7 @@ export function collectJsxTemplateTagsFromBabelExpression(
   return tags
 }
 
-function unwrapOxcExpression(node: any): any {
+export function unwrapOxcExpression(node: any): any {
   let current = node
   while (
     current
@@ -302,7 +329,7 @@ function unwrapOxcExpression(node: any): any {
   return current
 }
 
-function getOxcStaticPropertyName(node: any) {
+export function getJsxOxcStaticPropertyName(node: any) {
   const current = unwrapOxcExpression(node)
   if (!current) {
     return undefined
@@ -319,7 +346,7 @@ function getOxcStaticPropertyName(node: any) {
   return undefined
 }
 
-function resolveOxcComponentExpression(
+export function resolveOxcComponentExpression(
   declaration: any,
   defineComponentDecls: Map<string, any>,
   defineComponentAliases: Set<string>,
@@ -351,14 +378,14 @@ function resolveOxcComponentExpression(
   return null
 }
 
-function resolveOxcRenderExpression(componentExpr: any) {
+export function resolveOxcRenderExpression(componentExpr: any) {
   if (componentExpr?.type !== 'ObjectExpression') {
     return null
   }
 
   let renderProperty: any = null
   for (const property of componentExpr.properties ?? []) {
-    const propertyName = getOxcStaticPropertyName(property?.key)
+    const propertyName = getJsxOxcStaticPropertyName(property?.key)
     if (propertyName === 'render') {
       renderProperty = property
       break
@@ -387,7 +414,7 @@ function resolveOxcRenderExpression(componentExpr: any) {
   return unwrapOxcExpression(normalizedValue.body)
 }
 
-function collectJsxTemplateTagsFromOxc(renderExpression: any, isCollectableTag: (tag: string) => boolean) {
+export function collectJsxTemplateTagsFromOxc(renderExpression: any, isCollectableTag: (tag: string) => boolean) {
   const tags = new Set<string>()
 
   walkOxc(renderExpression, {
@@ -414,7 +441,7 @@ function collectJsxTemplateTagsFromOxc(renderExpression: any, isCollectableTag: 
   return tags
 }
 
-function collectWithBabel(source: string, options: Required<JsxAutoComponentAnalysisOptions>): JsxAutoComponentContext {
+export function collectJsxAutoComponentsWithBabel(source: string, options: Required<JsxAutoComponentAnalysisOptions>): JsxAutoComponentContext {
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as t.File
   const { importedComponents, exportDefaultExpression } = collectJsxImportedComponentsAndDefaultExportFromBabelAst(ast, options)
   if (!exportDefaultExpression) {
@@ -438,7 +465,7 @@ function collectWithBabel(source: string, options: Required<JsxAutoComponentAnal
   }
 }
 
-function collectWithOxc(source: string, options: Required<Pick<JsxAutoComponentAnalysisOptions, 'isCollectableTag' | 'isDefineComponentSource'>>): JsxAutoComponentContext {
+export function collectJsxAutoComponentsWithOxc(source: string, options: Required<Pick<JsxAutoComponentAnalysisOptions, 'isCollectableTag' | 'isDefineComponentSource'>>): JsxAutoComponentContext {
   const ast = parseSync('inline.tsx', source).program as any
   const defineComponentAliases = new Set<string>(['defineComponent', '_defineComponent'])
   const defineComponentDecls = new Map<string, any>()
@@ -450,13 +477,11 @@ function collectWithOxc(source: string, options: Required<Pick<JsxAutoComponentA
       const importSource = statement.source?.value
       if (typeof importSource === 'string' && options.isDefineComponentSource(importSource)) {
         for (const specifier of statement.specifiers ?? []) {
-          if (
-            specifier?.type === 'ImportSpecifier'
-            && specifier.imported?.type === 'Identifier'
-            && specifier.imported.name === 'defineComponent'
-            && specifier.local?.type === 'Identifier'
-          ) {
-            defineComponentAliases.add(specifier.local.name)
+          if (isJsxDefineComponentImportSpecifier(specifier)) {
+            const localName = getJsxImportLocalName(specifier)
+            if (localName) {
+              defineComponentAliases.add(localName)
+            }
           }
         }
       }
@@ -466,33 +491,21 @@ function collectWithOxc(source: string, options: Required<Pick<JsxAutoComponentA
       }
 
       for (const specifier of statement.specifiers ?? []) {
-        if (specifier?.importKind === 'type' || specifier?.local?.type !== 'Identifier') {
+        if (specifier?.importKind === 'type') {
           continue
         }
-        const localName = specifier.local.name
+        const localName = getJsxImportLocalName(specifier)
+        if (!localName) {
+          continue
+        }
         if (specifier.type === 'ImportDefaultSpecifier') {
-          imports.set(localName, {
-            localName,
-            importSource,
-            importedName: 'default',
-            kind: 'default',
-          })
+          imports.set(localName, createJsxImportedComponent(localName, importSource, 'default'))
           continue
         }
         if (specifier.type !== 'ImportSpecifier') {
           continue
         }
-        const importedName = specifier.imported?.type === 'Identifier'
-          ? specifier.imported.name
-          : specifier.imported?.type === 'StringLiteral'
-            ? specifier.imported.value
-            : undefined
-        imports.set(localName, {
-          localName,
-          importSource,
-          importedName,
-          kind: 'named',
-        })
+        imports.set(localName, createJsxImportedComponent(localName, importSource, 'named', specifier.imported))
       }
       continue
     }
@@ -577,8 +590,8 @@ export function collectJsxAutoComponentsFromCode(
 
   try {
     return normalizedOptions.astEngine === 'oxc'
-      ? collectWithOxc(source, normalizedOptions)
-      : collectWithBabel(source, normalizedOptions)
+      ? collectJsxAutoComponentsWithOxc(source, normalizedOptions)
+      : collectJsxAutoComponentsWithBabel(source, normalizedOptions)
   }
   catch {
     return {

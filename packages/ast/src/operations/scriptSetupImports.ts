@@ -9,7 +9,7 @@ export interface ScriptSetupImport {
   kind: 'default' | 'named'
 }
 
-function mayContainRelevantScriptSetupImports(
+export function mayContainRelevantScriptSetupImports(
   scriptSetup: string,
   templateComponentNames: Set<string>,
 ) {
@@ -27,7 +27,29 @@ function mayContainRelevantScriptSetupImports(
   return false
 }
 
-function collectWithOxc(scriptSetup: string, templateComponentNames: Set<string>) {
+export function getScriptSetupImportedName(imported: any) {
+  return imported?.type === 'Identifier'
+    ? imported.name
+    : imported?.type === 'StringLiteral'
+      ? imported.value
+      : undefined
+}
+
+export function createScriptSetupImport(
+  localName: string,
+  importSource: string,
+  kind: ScriptSetupImport['kind'],
+  imported?: any,
+): ScriptSetupImport {
+  return {
+    localName,
+    importSource,
+    importedName: kind === 'default' ? 'default' : getScriptSetupImportedName(imported),
+    kind,
+  }
+}
+
+export function collectScriptSetupImportsWithOxc(scriptSetup: string, templateComponentNames: Set<string>) {
   const results: ScriptSetupImport[] = []
   const ast = parseJsLikeWithEngine(scriptSetup, {
     engine: 'oxc',
@@ -53,15 +75,10 @@ function collectWithOxc(scriptSetup: string, templateComponentNames: Set<string>
         continue
       }
       if (specifier.type === 'ImportDefaultSpecifier') {
-        results.push({ localName, importSource, importedName: 'default', kind: 'default' })
+        results.push(createScriptSetupImport(localName, importSource, 'default'))
       }
       else if (specifier.type === 'ImportSpecifier') {
-        const importedName = specifier.imported?.type === 'Identifier'
-          ? specifier.imported.name
-          : specifier.imported?.type === 'StringLiteral'
-            ? specifier.imported.value
-            : undefined
-        results.push({ localName, importSource, importedName, kind: 'named' })
+        results.push(createScriptSetupImport(localName, importSource, 'named', specifier.imported))
       }
     }
   }
@@ -69,7 +86,7 @@ function collectWithOxc(scriptSetup: string, templateComponentNames: Set<string>
   return results
 }
 
-function collectWithBabel(scriptSetup: string, templateComponentNames: Set<string>) {
+export function collectScriptSetupImportsWithBabel(scriptSetup: string, templateComponentNames: Set<string>) {
   const results: ScriptSetupImport[] = []
   const ast = babelParse(scriptSetup, BABEL_TS_MODULE_PARSER_OPTIONS)
 
@@ -92,16 +109,10 @@ function collectWithBabel(scriptSetup: string, templateComponentNames: Set<strin
         continue
       }
       if (specifier.type === 'ImportDefaultSpecifier') {
-        results.push({ localName, importSource, importedName: 'default', kind: 'default' })
+        results.push(createScriptSetupImport(localName, importSource, 'default'))
       }
       else if (specifier.type === 'ImportSpecifier') {
-        const imported = (specifier as any).imported
-        const importedName = imported?.type === 'Identifier'
-          ? imported.name
-          : imported?.type === 'StringLiteral'
-            ? imported.value
-            : undefined
-        results.push({ localName, importSource, importedName, kind: 'named' })
+        results.push(createScriptSetupImport(localName, importSource, 'named', (specifier as any).imported))
       }
     }
   }
@@ -127,8 +138,8 @@ export function collectScriptSetupImportsFromCode(
 
   try {
     return engine === 'oxc'
-      ? collectWithOxc(scriptSetup, templateComponentNames)
-      : collectWithBabel(scriptSetup, templateComponentNames)
+      ? collectScriptSetupImportsWithOxc(scriptSetup, templateComponentNames)
+      : collectScriptSetupImportsWithBabel(scriptSetup, templateComponentNames)
   }
   catch {
     return []
