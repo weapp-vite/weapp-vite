@@ -4,8 +4,10 @@ import {
   isAliasedAutoRoutesId,
   isAutoRoutesPagesRelatedPath,
   resolveAutoRoutesAliasTargets,
+  resolveAutoRoutesBasePath,
   resolveAutoRoutesMatcherContext,
   resolveAutoRoutesPath,
+  shouldAutoRoutesFullRescan,
 } from './shared'
 
 describe('auto routes shared helpers', () => {
@@ -34,6 +36,21 @@ describe('auto routes shared helpers', () => {
     })).toBeUndefined()
 
     expect(resolveAutoRoutesPath('/project/components/card/index.ts', {
+      cwd: '/project',
+      absoluteSrcRoot: '/project/src',
+    })).toBeUndefined()
+  })
+
+  it('resolves extensionless auto-routes base paths', () => {
+    expect(resolveAutoRoutesBasePath('/project/src/pages/home/index.vue?vue&type=script', {
+      cwd: '/project',
+      absoluteSrcRoot: '/project/src',
+    })).toEqual({
+      base: '/project/src/pages/home/index',
+      relativeBase: 'pages/home/index',
+    })
+
+    expect(resolveAutoRoutesBasePath('/project/components/card/index.ts', {
       cwd: '/project',
       absoluteSrcRoot: '/project/src',
     })).toBeUndefined()
@@ -145,5 +162,13 @@ describe('auto routes shared helpers', () => {
       absoluteSrcRoot: '/project/src',
       include: ['pkgA/screens/**'],
     })).toBe(false)
+  })
+
+  it('marks create delete and rename events for full rescan', () => {
+    expect(shouldAutoRoutesFullRescan('create')).toBe(true)
+    expect(shouldAutoRoutesFullRescan('delete')).toBe(true)
+    expect(shouldAutoRoutesFullRescan('rename')).toBe(true)
+    expect(shouldAutoRoutesFullRescan('update')).toBe(false)
+    expect(shouldAutoRoutesFullRescan()).toBe(false)
   })
 })

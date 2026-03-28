@@ -2,9 +2,7 @@ import type { MutableCompilerContext } from '../../context'
 import type { ChangeEvent } from '../../types'
 import type { CandidateEntry } from './candidates'
 import { removeExtensionDeep } from '@weapp-core/shared'
-import path from 'pathe'
 import { findCssEntry, findJsEntry, findJsonEntry, findTemplateEntry, findVueEntry } from '../../utils/file'
-import { normalizePath, toPosixPath } from '../../utils/path'
 import {
   areSetsEqual,
   isConfigFile,
@@ -14,7 +12,12 @@ import {
   isVueFile,
 } from './candidates'
 import { resolveRoute } from './routes'
-import { resolveAutoRoutesMatcherContext, resolveAutoRoutesPath } from './shared'
+import {
+  resolveAutoRoutesBasePath,
+  resolveAutoRoutesMatcherContext,
+  resolveAutoRoutesPath,
+  shouldAutoRoutesFullRescan,
+} from './shared'
 
 export type AutoRoutesFileEvent = ChangeEvent | 'rename'
 
@@ -120,29 +123,21 @@ export async function updateCandidateFromFile(
     return false
   }
 
-  if (event === 'rename' || event === 'create' || event === 'delete') {
+  if (shouldAutoRoutesFullRescan(event)) {
     markNeedsFullRescan?.()
     return true
   }
 
-  const [pathWithoutQuery] = filePath.split('?')
-  if (!pathWithoutQuery) {
+  const resolvedBasePath = resolveAutoRoutesBasePath(filePath, {
+    cwd: ctx.configService.cwd,
+    absoluteSrcRoot: ctx.configService.absoluteSrcRoot,
+  })
+  if (!resolvedBasePath) {
     markNeedsFullRescan?.()
     return true
   }
 
-  const absolutePath = path.isAbsolute(pathWithoutQuery)
-    ? pathWithoutQuery
-    : path.resolve(ctx.configService.cwd, pathWithoutQuery)
-  const normalizedSrcRoot = normalizePath(ctx.configService.absoluteSrcRoot)
-  const normalizedAbsolutePath = normalizePath(absolutePath)
-  const base = removeExtensionDeep(normalizedAbsolutePath)
-  const relativeBase = toPosixPath(path.relative(normalizedSrcRoot, base))
-  if (!relativeBase || relativeBase.startsWith('..') || path.isAbsolute(relativeBase)) {
-    markNeedsFullRescan?.()
-    return true
-  }
-
+  const { base, relativeBase } = resolvedBasePath
   const { matcher, subPackageRoots } = resolveAutoRoutesMatcherContext(ctx)
   const route = resolveRoute(relativeBase, subPackageRoots)
   if (!route) {

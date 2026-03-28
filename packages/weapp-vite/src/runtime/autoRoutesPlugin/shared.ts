@@ -1,4 +1,5 @@
 import type { MutableCompilerContext } from '../../context'
+import type { ChangeEvent } from '../../types'
 import { removeExtensionDeep } from '@weapp-core/shared'
 import path from 'pathe'
 import { resolveWeappAutoRoutesConfig } from '../../autoRoutesConfig'
@@ -20,6 +21,11 @@ interface AutoRoutesPagesPathOptions extends AutoRoutesPathOptions {
 export interface ResolvedAutoRoutesPath {
   absolutePath: string
   relativePath: string
+}
+
+export interface ResolvedAutoRoutesBasePath {
+  base: string
+  relativeBase: string
 }
 
 export interface ResolvedAutoRoutesMatcherContext {
@@ -74,6 +80,24 @@ export function resolveAutoRoutesPath(
 }
 
 /**
+ * 解析 auto-routes 候选文件对应的无扩展 base 路径，供候选收集与增量更新复用。
+ */
+export function resolveAutoRoutesBasePath(
+  candidate: string,
+  options: AutoRoutesPathOptions,
+): ResolvedAutoRoutesBasePath | undefined {
+  const resolvedPath = resolveAutoRoutesPath(candidate, options)
+  if (!resolvedPath) {
+    return undefined
+  }
+
+  return {
+    base: removeExtensionDeep(resolvedPath.absolutePath),
+    relativeBase: removeExtensionDeep(resolvedPath.relativePath),
+  }
+}
+
+/**
  * 解析 auto-routes 别名可能指向的编译产物与源码入口。
  */
 export function resolveAutoRoutesAliasTargets(packageRoot?: string) {
@@ -123,4 +147,13 @@ export function isAutoRoutesPagesRelatedPath(
     return resolvedPath.absolutePath === normalizedRoot
       || resolvedPath.absolutePath.startsWith(`${normalizedRoot}/`)
   })
+}
+
+/**
+ * 判断当前文件事件是否属于需要回退为全量重扫的结构性变化。
+ */
+export function shouldAutoRoutesFullRescan(
+  event?: ChangeEvent | 'rename',
+) {
+  return event === 'rename' || event === 'create' || event === 'delete'
 }
