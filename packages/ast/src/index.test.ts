@@ -13,6 +13,7 @@ import {
   extractTemplateExpressions,
   getLocationFromOffset,
   getObjectPropertyByKey,
+  getOxcStaticPropertyName,
   getRenderPropertyFromComponentOptions,
   getStaticPropertyName,
   getStaticRequireLiteralValue,
@@ -512,6 +513,10 @@ export function useCounter() {
     expect(getLocationFromOffset(0, lineStarts)).toEqual({ line: 1, column: 1 })
     expect(getLocationFromOffset(8, lineStarts)).toEqual({ line: 2, column: 3 })
     expect(getLocationFromOffset(undefined, lineStarts)).toBeUndefined()
+    expect(getOxcStaticPropertyName({ type: 'Identifier', name: 'onPageScroll' })).toBe('onPageScroll')
+    expect(getOxcStaticPropertyName({ type: 'StringLiteral', value: 'render' })).toBe('render')
+    expect(getOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
+    expect(getOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
     expect(createWarningPrefix('/src/pages/index.ts')).toBe('[weapp-vite][onPageScroll] /src/pages/index.ts:?:?')
     expect(createWarningPrefix('/src/pages/index.ts', 2, 3)).toBe('[weapp-vite][onPageScroll] /src/pages/index.ts:2:3')
   })
