@@ -36,6 +36,26 @@ function formatCurrentTime() {
   return new Date().toLocaleTimeString('zh-CN', { hour12: false })
 }
 
+function createLabelValueItem(label: string, value: string): DashboardLabelValueItem {
+  return { label, value }
+}
+
+function createSignalItem(item: WorkspaceSignalItem): WorkspaceSignalItem {
+  return item
+}
+
+function createCommandItem(item: WorkspaceCommandItem): WorkspaceCommandItem {
+  return item
+}
+
+function createActivityItem(item: WorkspaceActivityItem): WorkspaceActivityItem {
+  return item
+}
+
+function createDiagnosticItem(item: WorkspaceDiagnosticItem): WorkspaceDiagnosticItem {
+  return item
+}
+
 export function createDashboardWorkspace(): DashboardWorkspaceContext {
   const resultRef = shallowRef<AnalyzeSubpackagesResult | null>(window.__WEAPP_VITE_ANALYZE_RESULT__ ?? null)
   const runtimeEvents = shallowRef<DashboardRuntimeEvent[]>(window.__WEAPP_VITE_DASHBOARD_EVENTS__?.length
@@ -84,12 +104,12 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
       : undefined
 
     return [
-      { label: '总事件数', value: String(runtimeEvents.value.length) },
-      { label: '命令事件', value: String(commandCount) },
-      { label: '已记录耗时', value: String(timedEvents.length) },
-      { label: '平均耗时', value: formatDuration(averageDuration) },
-      { label: '警告事件', value: String(warningCount) },
-      { label: '错误事件', value: String(errorCount) },
+      createLabelValueItem('总事件数', String(runtimeEvents.value.length)),
+      createLabelValueItem('命令事件', String(commandCount)),
+      createLabelValueItem('已记录耗时', String(timedEvents.length)),
+      createLabelValueItem('平均耗时', formatDuration(averageDuration)),
+      createLabelValueItem('警告事件', String(warningCount)),
+      createLabelValueItem('错误事件', String(errorCount)),
     ]
   })
 
@@ -98,31 +118,31 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
   )
 
   const signals = computed<WorkspaceSignalItem[]>(() => [
-    {
+    createSignalItem({
       label: '页面骨架',
       value: '4 个',
       iconName: 'metric-ready',
-    },
-    {
+    }),
+    createSignalItem({
       label: '连接状态',
       value: resultRef.value ? '已接入 payload' : '等待注入',
       iconName: resultRef.value ? 'status-live' : 'metric-health',
-    },
-    {
+    }),
+    createSignalItem({
       label: '数据同步',
       value: `${updateCount.value} 次`,
       iconName: 'metric-latency',
-    },
-    {
+    }),
+    createSignalItem({
       label: '产物体积',
       value: resultRef.value ? formatBytes(summary.value.totalBytes) : '未载入',
       iconName: 'metric-quality',
-    },
-    {
+    }),
+    createSignalItem({
       label: '运行事件',
       value: `${runtimeEvents.value.length} 条`,
       iconName: latestRuntimeEvent.value?.level === 'error' ? 'metric-health' : 'metric-time',
-    },
+    }),
   ])
 
   const commandItems = computed<WorkspaceCommandItem[]>(() => {
@@ -131,21 +151,21 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     }
 
     return [
-      {
+      createCommandItem({
         label: '重新分析当前工程',
         command: 'weapp-vite analyze',
         note: `最近同步于 ${lastUpdatedAt.value}，当前可读取 ${summary.value.packageCount} 个包。`,
-      },
-      {
+      }),
+      createCommandItem({
         label: '进入构建联调',
         command: 'weapp-vite build --ui',
         note: `当前产物总体积 ${formatBytes(summary.value.totalBytes)}，适合继续核对 chunk 结构。`,
-      },
-      {
+      }),
+      createCommandItem({
         label: '观察开发态更新',
         command: 'weapp-vite dev --ui',
         note: `已记录 ${updateCount.value} 次 payload 同步，后续可继续接入更细粒度事件。`,
-      },
+      }),
     ]
   })
 
@@ -153,21 +173,21 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     const items = [...activityFeed]
 
     for (const event of runtimeEvents.value.slice(0, 4)) {
-      items.unshift({
+      items.unshift(createActivityItem({
         time: event.timestamp,
         title: event.title,
         summary: event.detail,
         tone: event.level === 'error' || event.level === 'warning' ? 'default' : 'live',
-      })
+      }))
     }
 
     if (resultRef.value) {
-      items.unshift({
+      items.unshift(createActivityItem({
         time: lastUpdatedAt.value,
         title: 'workspace payload received',
         summary: `已收到一份真实 analyze 结果，包含 ${summary.value.packageCount} 个包和 ${summary.value.moduleCount} 个模块。`,
         tone: 'live',
-      })
+      }))
     }
 
     return items
@@ -178,35 +198,35 @@ export function createDashboardWorkspace(): DashboardWorkspaceContext {
     const latestEvent = latestRuntimeEvent.value
 
     if (latestEvent) {
-      items.unshift({
+      items.unshift(createDiagnosticItem({
         label: '最新运行事件',
         detail: `${latestEvent.title} · ${latestEvent.detail}`,
         status: latestEvent.level,
-      })
+      }))
     }
 
     if (!resultRef.value) {
       return [
-        {
+        createDiagnosticItem({
           label: 'CLI 注入链路',
           detail: '尚未接收到 analyze payload，当前页面以空态方式工作。',
           status: '待接入',
-        },
+        }),
         ...items,
       ]
     }
 
     return [
-      {
+      createDiagnosticItem({
         label: '实时分析状态',
         detail: `已接入 payload，当前记录 ${summary.value.duplicateCount} 个跨包复用模块。`,
         status: '在线',
-      },
-      {
+      }),
+      createDiagnosticItem({
         label: '产物规模',
         detail: `总产物体积 ${formatBytes(summary.value.totalBytes)}，可继续进入分析页查看 treemap 与最大文件。`,
         status: '可分析',
-      },
+      }),
       ...items,
     ]
   })
