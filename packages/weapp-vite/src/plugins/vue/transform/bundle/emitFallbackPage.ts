@@ -11,6 +11,7 @@ import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeature
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
+import { findFirstResolvedVueLikeEntry } from '../shared'
 import { emitNativeLayoutAssetsIfNeeded, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
 import { resolveBundleOutputExtensions } from './outputExtensions'
 import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
@@ -46,18 +47,18 @@ export async function emitFallbackPageAssets(
     if (!relativeBase) {
       continue
     }
-    const candidatePaths = [`${entryId}.vue`, `${entryId}.tsx`, `${entryId}.jsx`]
-    const existingPath = candidatePaths.find(candidate => compilationCache.has(candidate))
-    if (existingPath) {
+    const entryFilePath = await findFirstResolvedVueLikeEntry(entryId, {
+      resolve: async (candidate) => {
+        if (compilationCache.has(candidate)) {
+          return null
+        }
+        return await pathExistsCached(candidate, { ttlMs: getPathExistsTtlMs(configService) })
+          ? candidate
+          : undefined
+      },
+    })
+    if (entryFilePath === null) {
       continue
-    }
-
-    let entryFilePath: string | undefined
-    for (const candidate of candidatePaths) {
-      if (await pathExistsCached(candidate, { ttlMs: getPathExistsTtlMs(configService) })) {
-        entryFilePath = candidate
-        break
-      }
     }
     if (!entryFilePath) {
       continue

@@ -1,20 +1,7 @@
+// eslint-disable-next-line e18e/ban-dependencies -- 当前页面回退扫描仍统一复用 fs-extra 目录遍历
 import fs from 'fs-extra'
 import path from 'pathe'
-
-const VUE_LIKE_EXTENSIONS = ['.vue', '.tsx', '.jsx'] as const
-
-function isVueLikeFile(file: string) {
-  return VUE_LIKE_EXTENSIONS.some(ext => file.endsWith(ext))
-}
-
-function stripVueLikeExtension(file: string) {
-  for (const ext of VUE_LIKE_EXTENSIONS) {
-    if (file.endsWith(ext)) {
-      return file.slice(0, -ext.length)
-    }
-  }
-  return file
-}
+import { isVueLikeFile, stripVueLikeExtension } from './shared'
 
 export async function collectVuePages(root: string): Promise<string[]> {
   const results: string[] = []

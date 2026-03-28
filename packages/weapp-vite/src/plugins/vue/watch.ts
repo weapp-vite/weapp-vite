@@ -1,12 +1,7 @@
 import type { Plugin } from 'vite'
 import type { CompilerContext } from '../../context'
 import { VUE_PLUGIN_NAME } from './index'
-
-const VUE_LIKE_EXTENSIONS = ['.vue', '.tsx', '.jsx']
-
-function isVueLikeFile(id: string) {
-  return VUE_LIKE_EXTENSIONS.some(ext => id.endsWith(ext))
-}
+import { isVueLikeFile } from './transform/shared'
 
 export function createVueWatchPlugin(_ctx: CompilerContext): Plugin {
   return {
