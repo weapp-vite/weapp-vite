@@ -14,29 +14,23 @@ import { DEFAULT_SHARED_CHUNK_STRATEGY } from './chunkStrategy'
 const REG_NODE_MODULES_DIR = /[\\/]node_modules[\\/]/gi
 const REG_COMMONJS_HELPERS = /commonjsHelpers\.js$/
 
-function createForceDuplicateTester(patterns?: (string | RegExp)[]) {
-  if (!patterns || patterns.length === 0) {
-    return undefined
+function createStringOrRegExpMatcher(pattern: string | RegExp) {
+  if (typeof pattern === 'string') {
+    const matcher = picomatch(pattern, { dot: true })
+    return (value: string) => matcher(value)
   }
 
-  const matchers = patterns
-    .map((pattern) => {
-      if (typeof pattern === 'string') {
-        const matcher = picomatch(pattern, { dot: true })
-        return (value: string) => matcher(value)
-      }
+  if (isRegexp(pattern)) {
+    return (value: string) => {
+      pattern.lastIndex = 0
+      return pattern.test(value)
+    }
+  }
 
-      if (isRegexp(pattern)) {
-        return (value: string) => {
-          pattern.lastIndex = 0
-          return pattern.test(value)
-        }
-      }
+  return undefined
+}
 
-      return undefined
-    })
-    .filter((matcher): matcher is (value: string) => boolean => typeof matcher === 'function')
-
+function createDualIdMatcher(matchers: Array<(value: string) => boolean>) {
   if (!matchers.length) {
     return undefined
   }
@@ -51,6 +45,18 @@ function createForceDuplicateTester(patterns?: (string | RegExp)[]) {
   }
 }
 
+function createForceDuplicateTester(patterns?: (string | RegExp)[]) {
+  if (!patterns || patterns.length === 0) {
+    return undefined
+  }
+
+  const matchers = patterns
+    .map(pattern => createStringOrRegExpMatcher(pattern))
+    .filter((matcher): matcher is (value: string) => boolean => typeof matcher === 'function')
+
+  return createDualIdMatcher(matchers)
+}
+
 function createSharedModeResolver(
   sharedMode: SharedChunkMode,
   overrides?: SharedChunkOverride[],
@@ -62,19 +68,9 @@ function createSharedModeResolver(
   const matchers = overrides
     .map((override) => {
       const { test, mode } = override
-      if (typeof test === 'string') {
-        const matcher = picomatch(test, { dot: true })
-        return { mode, matches: (value: string) => matcher(value) }
-      }
-
-      if (isRegexp(test)) {
-        return {
-          mode,
-          matches: (value: string) => {
-            test.lastIndex = 0
-            return test.test(value)
-          },
-        }
+      const matches = createStringOrRegExpMatcher(test)
+      if (matches) {
+        return { mode, matches }
       }
 
       return undefined
@@ -86,12 +82,8 @@ function createSharedModeResolver(
   }
 
   return (relativeId: string, absoluteId: string) => {
-    for (const { mode, matches } of matchers) {
-      if (matches(relativeId) || matches(absoluteId)) {
-        return mode
-      }
-    }
-    return sharedMode
+    const matchedEntry = matchers.find(({ matches }) => matches(relativeId) || matches(absoluteId))
+    return matchedEntry?.mode ?? sharedMode
   }
 }
 

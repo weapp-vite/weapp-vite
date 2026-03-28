@@ -2,7 +2,7 @@ import type { ConfigService } from './config/types'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { logger } from '../context/shared'
 import { __clearSharedChunkDiagnosticsForTest } from './chunkStrategy'
-import { createSharedBuildOutput } from './sharedBuildConfig'
+import { createSharedBuildConfig, createSharedBuildOutput } from './sharedBuildConfig'
 
 function createConfigService(chunks: Record<string, unknown> = {}): ConfigService {
   return {
@@ -184,5 +184,51 @@ describe('sharedBuildConfig', () => {
     })
 
     expect(result).toBe('node_modules/fake-pkg/index')
+  })
+
+  it('falls back to the default sharedMode when overrides do not match', () => {
+    const resolveName = createChunkNameResolver({
+      sharedMode: 'common',
+      sharedOverrides: [
+        { test: 'shared/path-only.ts', mode: 'path' },
+      ],
+    })
+
+    const result = resolveName('/project/src/shared/other.ts', {
+      getModuleInfo: () => ({
+        importers: [
+          '/project/src/pages/index/index.ts',
+          '/project/src/packageA/pages/foo.ts',
+        ],
+      }),
+    })
+
+    expect(result).toBe('common')
+  })
+
+  it('creates shared build config from scan service subpackage roots', () => {
+    const config = createSharedBuildConfig(
+      createConfigService({
+        sharedMode: 'path',
+      }),
+      {
+        subPackageMap: new Map([
+          ['packageA', {}],
+          ['packageB', {}],
+        ]),
+      } as any,
+    )
+
+    const resolveName = config.build!.rolldownOptions!.output!.codeSplitting.groups[0].name
+    const result = resolveName('/project/src/shared/deep/feature.ts', {
+      getModuleInfo: () => ({
+        importers: [
+          '/project/src/pages/index/index.ts',
+          '/project/src/packageA/pages/foo.ts',
+        ],
+      }),
+    })
+
+    expect(result).toBe('shared/deep/feature')
   })
 })
