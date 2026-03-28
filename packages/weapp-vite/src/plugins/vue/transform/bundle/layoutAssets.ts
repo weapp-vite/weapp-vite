@@ -3,9 +3,10 @@ import type { OutputExtensions } from '../../../../platforms/types'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取布局资产
 import fs from 'fs-extra'
 import { emitNativeLayoutScriptChunkIfNeeded as emitSharedNativeLayoutScriptChunkIfNeeded, resolveNativeLayoutOutputOptions } from '../../../utils/nativeLayout'
+import { emitScriptlessComponentAsset } from '../../../utils/scriptlessComponent'
 import { emitSfcJsonAsset, emitSfcStyleIfMissing, emitSfcTemplateIfMissing } from '../emitAssets'
 import { collectNativeLayoutAssets } from '../pageLayout'
-import { compileVueLikeFile, getEntryBaseName, SCRIPTLESS_COMPONENT_STUB } from './shared'
+import { compileVueLikeFile, getEntryBaseName } from './shared'
 
 export function resolveVueLayoutAssetOptions(options: {
   configService: NonNullable<CompilerContext['configService']>
@@ -95,11 +96,7 @@ export function emitScriptlessComponentJsFallbackIfMissing(options: {
     return
   }
 
-  pluginCtx.emitFile({
-    type: 'asset',
-    fileName: scriptFileName,
-    source: SCRIPTLESS_COMPONENT_STUB,
-  })
+  emitScriptlessComponentAsset(pluginCtx, scriptFileName)
 }
 
 export async function emitVueLayoutScriptFallbackIfNeeded(options: {
