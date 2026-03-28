@@ -6,6 +6,9 @@ import { createBuildService } from './service'
 
 const buildMock = vi.hoisted(() => vi.fn())
 const cleanOutputsMock = vi.hoisted(() => vi.fn(async () => {}))
+const isOutputRootInsideOutDirMock = vi.hoisted(() => vi.fn((outDir: string, pluginOutputRoot: string) => {
+  return pluginOutputRoot === outDir || pluginOutputRoot.startsWith(`${outDir}/`)
+}))
 const createCompilerContextMock = vi.hoisted(() => vi.fn(async () => ({
   buildService: {
     build: vi.fn(async () => ({ output: [] })),
@@ -39,6 +42,7 @@ vi.mock('vite', () => ({
 
 vi.mock('./outputs', () => ({
   cleanOutputs: cleanOutputsMock,
+  isOutputRootInsideOutDir: isOutputRootInsideOutDirMock,
 }))
 
 vi.mock('../../createContext', () => ({
@@ -144,6 +148,9 @@ function createMockContext(overrides: Record<string, unknown> = {}) {
 describe('runtime buildPlugin service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    isOutputRootInsideOutDirMock.mockImplementation((outDir: string, pluginOutputRoot: string) => {
+      return pluginOutputRoot === outDir || pluginOutputRoot.startsWith(`${outDir}/`)
+    })
     process.env.VITEST = 'true'
     process.env.NODE_ENV = 'test'
     checkWorkersOptionsMock.mockReturnValue({

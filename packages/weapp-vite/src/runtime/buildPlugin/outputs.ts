@@ -10,6 +10,11 @@ function resolvePreservedNpmDirNames(configService: NonNullable<MutableCompilerC
   }))
 }
 
+export function isOutputRootInsideOutDir(outDir: string, pluginOutputRoot: string) {
+  const relativeToOutDir = path.relative(outDir, pluginOutputRoot)
+  return relativeToOutDir === '' || (!relativeToOutDir.startsWith('..') && !path.isAbsolute(relativeToOutDir))
+}
+
 async function removeDirectoryEntries(
   root: string,
   options: {
@@ -53,9 +58,7 @@ export async function cleanOutputs(
   }
   const pluginOutputRoot = configService.absolutePluginOutputRoot
   if (pluginOutputRoot) {
-    const relativeToOutDir = path.relative(configService.outDir, pluginOutputRoot)
-    const isInsideOutDir = relativeToOutDir === '' || (!relativeToOutDir.startsWith('..') && !path.isAbsolute(relativeToOutDir))
-    if (!isInsideOutDir) {
+    if (!isOutputRootInsideOutDir(configService.outDir, pluginOutputRoot)) {
       const deletedPluginFiles = await removeDirectoryEntries(pluginOutputRoot)
       debug?.('deletedPluginOutput', deletedPluginFiles)
       logger.success(`已清空 ${configService.relativeCwd(pluginOutputRoot)} 目录`)
@@ -72,9 +75,7 @@ export async function syncExternalPluginOutputs(
     return
   }
 
-  const relativeToOutDir = path.relative(configService.outDir, pluginOutputRoot)
-  const isInsideOutDir = relativeToOutDir === '' || (!relativeToOutDir.startsWith('..') && !path.isAbsolute(relativeToOutDir))
-  if (isInsideOutDir) {
+  if (isOutputRootInsideOutDir(configService.outDir, pluginOutputRoot)) {
     return
   }
 

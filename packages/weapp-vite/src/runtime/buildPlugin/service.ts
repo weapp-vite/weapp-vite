@@ -17,7 +17,7 @@ import { syncProjectConfigToOutput } from '../../utils/projectConfig'
 import { generateLibDts } from '../libDts'
 import { createSharedBuildConfig } from '../sharedBuildConfig'
 import { createIndependentBuilder } from './independent'
-import { cleanOutputs } from './outputs'
+import { cleanOutputs, isOutputRootInsideOutDir } from './outputs'
 import { resolveTouchAppWxssEnabled } from './touchAppWxss'
 import { buildWorkers, checkWorkersOptions, devWorkers, watchWorkers } from './workers'
 
@@ -220,9 +220,7 @@ export function createBuildService(ctx: MutableCompilerContext): BuildService {
       return undefined
     }
 
-    const relativeToMainOutDir = path.relative(configService.outDir, pluginOutputRoot)
-    const isOutsideMainOutDir = relativeToMainOutDir.startsWith('..') || path.isAbsolute(relativeToMainOutDir)
-    if (!isOutsideMainOutDir) {
+    if (isOutputRootInsideOutDir(configService.outDir, pluginOutputRoot)) {
       return undefined
     }
 
