@@ -168,6 +168,32 @@ export function emitPlatformTemplateAsset(
   return normalizedTemplate
 }
 
+export function resolveAlipayGenericPlaceholderBase(relativeBase: string) {
+  const dirIndex = relativeBase.lastIndexOf('/')
+  const dir = dirIndex >= 0 ? relativeBase.slice(0, dirIndex) : ''
+  const placeholderName = ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.replace(LEADING_DOT_SLASH_RE, '')
+  return dir ? `${dir}/${placeholderName}` : placeholderName
+}
+
+export function emitAlipayGenericPlaceholderAssetsByBase(
+  ctx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
+  bundle: Record<string, any>,
+  placeholderBase: string,
+  outputExtensions: OutputExtensions | undefined,
+) {
+  const templateExtension = outputExtensions?.wxml ?? 'wxml'
+  const jsonExtension = outputExtensions?.json ?? 'json'
+  const scriptExtension = outputExtensions?.js ?? 'js'
+
+  emitSfcTemplateIfMissing(ctx, bundle, placeholderBase, '<view />', templateExtension)
+  emitSfcJsonAsset(ctx, bundle, placeholderBase, { config: JSON.stringify({ component: true }) }, {
+    extension: jsonExtension,
+    kind: 'component',
+  })
+
+  ensureScriptlessComponentAsset(ctx, bundle, placeholderBase, scriptExtension)
+}
+
 export function emitAlipayGenericPlaceholderAssets(
   ctx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
   bundle: Record<string, any>,
@@ -210,21 +236,12 @@ export function emitAlipayGenericPlaceholderAssets(
     return
   }
 
-  const templateExtension = outputExtensions?.wxml ?? 'wxml'
-  const jsonExtension = outputExtensions?.json ?? 'json'
-  const scriptExtension = outputExtensions?.js ?? 'js'
-  const dirIndex = relativeBase.lastIndexOf('/')
-  const dir = dirIndex >= 0 ? relativeBase.slice(0, dirIndex) : ''
-  const placeholderName = ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.replace(LEADING_DOT_SLASH_RE, '')
-  const placeholderBase = dir ? `${dir}/${placeholderName}` : placeholderName
-
-  emitSfcTemplateIfMissing(ctx, bundle, placeholderBase, '<view />', templateExtension)
-  emitSfcJsonAsset(ctx, bundle, placeholderBase, { config: JSON.stringify({ component: true }) }, {
-    extension: jsonExtension,
-    kind: 'component',
-  })
-
-  ensureScriptlessComponentAsset(ctx, bundle, placeholderBase, scriptExtension)
+  emitAlipayGenericPlaceholderAssetsByBase(
+    ctx,
+    bundle,
+    resolveAlipayGenericPlaceholderBase(relativeBase),
+    outputExtensions,
+  )
 }
 
 export function preparePlatformConfigAsset(
