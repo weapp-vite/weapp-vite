@@ -22,6 +22,8 @@ const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(as
 const collectOnPageScrollPerformanceWarningsMock = vi.hoisted(() => vi.fn(() => []))
 const pageMatcherIsPageFileMock = vi.hoisted(() => vi.fn(async () => false))
 const pageMatcherMarkDirtyMock = vi.hoisted(() => vi.fn())
+const loggerErrorMock = vi.hoisted(() => vi.fn())
+const toAbsoluteIdMock = vi.hoisted(() => vi.fn((id: string) => id))
 
 vi.mock('wevu/compiler', () => ({
   compileVueFile: compileVueFileMock,
@@ -55,7 +57,7 @@ vi.mock('../resolver', () => ({
 }))
 
 vi.mock('../../../utils/toAbsoluteId', () => ({
-  toAbsoluteId: vi.fn((id: string) => id),
+  toAbsoluteId: toAbsoluteIdMock,
 }))
 
 vi.mock('../../../utils/path', () => ({
@@ -97,7 +99,7 @@ vi.mock('../../performance/onPageScrollDiagnostics', () => ({
 vi.mock('../../../logger', () => ({
   default: {
     warn: vi.fn(),
-    error: vi.fn(),
+    error: loggerErrorMock,
   },
 }))
 
@@ -125,6 +127,52 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     pageMatcherIsPageFileMock.mockReset()
     pageMatcherIsPageFileMock.mockResolvedValue(false)
     pageMatcherMarkDirtyMock.mockReset()
+    loggerErrorMock.mockReset()
+    toAbsoluteIdMock.mockReset()
+    toAbsoluteIdMock.mockImplementation((id: string) => id)
+  })
+
+  it('returns null when config service is missing', async () => {
+    const { createVueTransformPlugin } = await import('./plugin')
+    const plugin = createVueTransformPlugin({
+      runtimeState: {
+        scan: {
+          isDirty: false,
+        },
+      },
+    } as any)
+
+    await expect(plugin.transform!.call({
+      addWatchFile: vi.fn(),
+    } as any, '<template><view /></template>', '/project/src/components/demo.vue')).resolves.toBeNull()
+  })
+
+  it('returns null when resolved filename is not absolute', async () => {
+    toAbsoluteIdMock.mockReturnValueOnce('relative/demo.vue')
+
+    const { createVueTransformPlugin } = await import('./plugin')
+    const plugin = createVueTransformPlugin({
+      configService: {
+        isDev: false,
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        outputExtensions: {},
+        relativeOutputPath: vi.fn(() => undefined),
+        weappLibConfig: {
+          enabled: true,
+        },
+        weappViteConfig: {},
+      },
+      runtimeState: {
+        scan: {
+          isDirty: false,
+        },
+      },
+    } as any)
+
+    await expect(plugin.transform!.call({
+      addWatchFile: vi.fn(),
+    } as any, '<template><view /></template>', '/project/src/components/demo.vue')).resolves.toBeNull()
   })
 
   it('passes resolved astEngine into setData pick collection', async () => {
@@ -398,5 +446,35 @@ describe('createVueTransformPlugin ast engine smoke', () => {
     } as any, '<template><view /></template>', '/project/src/pages/home/index.vue')
 
     expect(collectOnPageScrollPerformanceWarningsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('logs and rethrows transform errors when compilation fails', async () => {
+    compileVueFileMock.mockRejectedValueOnce(new Error('compile exploded'))
+
+    const { createVueTransformPlugin } = await import('./plugin')
+    const plugin = createVueTransformPlugin({
+      configService: {
+        isDev: false,
+        cwd: '/project',
+        absoluteSrcRoot: '/project/src',
+        outputExtensions: {},
+        relativeOutputPath: vi.fn(() => undefined),
+        weappLibConfig: {
+          enabled: true,
+        },
+        weappViteConfig: {},
+      },
+      runtimeState: {
+        scan: {
+          isDirty: false,
+        },
+      },
+    } as any)
+
+    await expect(plugin.transform!.call({
+      addWatchFile: vi.fn(),
+    } as any, '<template><view /></template>', '/project/src/components/demo.vue')).rejects.toThrow('compile exploded')
+
+    expect(loggerErrorMock).toHaveBeenCalledWith('[Vue 编译] 编译 /project/src/components/demo.vue 失败：compile exploded')
   })
 })
