@@ -19,13 +19,21 @@
     "dev": "weapp-vite dev",
     "dev:open": "weapp-vite dev -o",
     "build": "weapp-vite build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "open": "weapp-vite open",
+    "stylelint": "stylelint \"src/**/*.{css,scss,vue}\" --allow-empty-input",
+    "stylelint:fix": "stylelint \"src/**/*.{css,scss,vue}\" --fix --allow-empty-input",
     "g": "weapp-vite generate",
     "postinstall": "weapp-vite prepare"
   },
   "devDependencies": {
+    "@icebreakers/eslint-config": "^2.1.0",
+    "@icebreakers/stylelint-config": "^2.2.0",
+    "eslint": "^10.1.0",
     "miniprogram-api-typings": "catalog:",
     "sass": "catalog:",
+    "stylelint": "^17.6.0",
     "typescript": "catalog:",
     "weapp-vite": "workspace:*"
   }
