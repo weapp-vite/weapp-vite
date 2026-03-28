@@ -8,6 +8,13 @@ defineProps<{
   cards: DashboardMetricCard[]
   packageTypeSummary: SummaryMetric[]
 }>()
+
+function getMetricCardClassName(card: DashboardMetricCard): string[] {
+  return [
+    surfaceStyles({ padding: 'md' }),
+    card.wide ? 'xl:col-span-2' : 'xl:col-span-1',
+  ]
+}
 </script>
 
 <template>
@@ -15,7 +22,7 @@ defineProps<{
     <article
       v-for="card in cards"
       :key="card.label"
-      :class="[surfaceStyles({ padding: 'md' }), card.wide ? 'xl:col-span-2' : 'xl:col-span-1']"
+      :class="getMetricCardClassName(card)"
     >
       <div class="flex items-start justify-between gap-3">
         <div>

@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { mutedPanelStyles } from '../utils/styles'
 
-defineProps<{
+const props = defineProps<{
   eyebrow?: string
 }>()
+
+const contentClassName = computed(() => props.eyebrow ? 'mt-3' : undefined)
 </script>
 
 <template>
@@ -14,7 +17,7 @@ defineProps<{
     >
       {{ eyebrow }}
     </p>
-    <div :class="eyebrow ? 'mt-3' : undefined">
+    <div :class="contentClassName">
       <slot />
     </div>
   </div>
