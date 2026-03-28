@@ -15,7 +15,7 @@ import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensi
 import { isPathInside, normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
-import { registerResolvedPageLayoutEntries } from '../../../utils/layoutEntries'
+import { markComponentEntries, registerResolvedPageLayoutEntries } from '../../../utils/layoutEntries'
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { emitScriptlessComponentAsset } from '../../../utils/scriptlessComponent'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
@@ -313,13 +313,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           explicitEntryTypes,
         })
 
-    for (const nativeLayoutEntry of nativeLayoutScriptEntries) {
-      const mapped = entriesMap.get(nativeLayoutEntry)
-      if (!mapped) {
-        continue
-      }
-      mapped.type = 'component'
-    }
+    markComponentEntries(entriesMap, nativeLayoutScriptEntries)
 
     const entryResolveRoot = (
       isPluginBuild
