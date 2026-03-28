@@ -12,6 +12,27 @@ interface WorkerOptionsResult {
   workersDir: string | undefined
 }
 
+export function resolveWorkerRenamePath(
+  rawPath: unknown,
+  options: {
+    watchedPath?: string
+    fallbackRoot: string
+  },
+) {
+  const candidate = typeof rawPath === 'string'
+    ? rawPath
+    : rawPath && typeof (rawPath as { toString?: () => string }).toString === 'function'
+      ? (rawPath as { toString: () => string }).toString()
+      : ''
+  if (!candidate) {
+    return ''
+  }
+  const baseDir = options.watchedPath ?? options.fallbackRoot
+  return path.isAbsolute(candidate)
+    ? candidate
+    : path.resolve(baseDir, candidate)
+}
+
 export function checkWorkersOptions(
   target: BuildTarget,
   configService: NonNullable<MutableCompilerContext['configService']>,
@@ -102,20 +123,15 @@ export function watchWorkers(
     if (eventName !== 'rename') {
       return
     }
-    const candidate = typeof rawPath === 'string'
-      ? rawPath
-      : rawPath && typeof (rawPath as { toString?: () => string }).toString === 'function'
-        ? (rawPath as { toString: () => string }).toString()
-        : ''
-    if (!candidate) {
+    const resolved = resolveWorkerRenamePath(rawPath, {
+      watchedPath: typeof details === 'object' && details && 'watchedPath' in details
+        ? (details as { watchedPath?: string }).watchedPath
+        : undefined,
+      fallbackRoot: absWorkerRoot,
+    })
+    if (!resolved) {
       return
     }
-    const baseDir = typeof details === 'object' && details && 'watchedPath' in details
-      ? (details as { watchedPath?: string }).watchedPath ?? absWorkerRoot
-      : absWorkerRoot
-    const resolved = path.isAbsolute(candidate)
-      ? candidate
-      : path.resolve(baseDir, candidate)
     const exists = fs.existsSync(resolved)
     logWorkerEvent(exists ? 'rename->add' : 'rename->unlink', resolved, exists ? 'success' : 'info')
   })

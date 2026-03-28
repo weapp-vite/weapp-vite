@@ -5,6 +5,7 @@ import {
   buildWorkers,
   checkWorkersOptions,
   devWorkers,
+  resolveWorkerRenamePath,
   watchWorkers,
 } from './workers'
 
@@ -81,6 +82,29 @@ afterEach(() => {
 })
 
 describe('runtime buildPlugin workers', () => {
+  it('resolves worker rename paths from raw watcher payloads', () => {
+    expect(resolveWorkerRenamePath('new.ts', {
+      watchedPath: '/project/src/workers',
+      fallbackRoot: '/project/src/workers',
+    })).toBe('/project/src/workers/new.ts')
+
+    expect(resolveWorkerRenamePath('/project/src/workers/abs.ts', {
+      watchedPath: '/project/src/workers',
+      fallbackRoot: '/project/src/workers',
+    })).toBe('/project/src/workers/abs.ts')
+
+    expect(resolveWorkerRenamePath({
+      toString: () => 'nested/task.ts',
+    }, {
+      fallbackRoot: '/project/src/workers',
+    })).toBe('/project/src/workers/nested/task.ts')
+
+    expect(resolveWorkerRenamePath(null, {
+      watchedPath: '/project/src/workers',
+      fallbackRoot: '/project/src/workers',
+    })).toBe('')
+  })
+
   it('checks workers options for plugin and normal targets', () => {
     const configService = createMockConfigService()
     const scanService = { workersDir: 'workers' } as any
