@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PackageInsight } from '../composables/useAnalyzeDashboardData'
+import type { PackageInsight } from '../types'
 import { formatBuildOrigin, formatBytes } from '../utils/format'
 
 defineProps<{

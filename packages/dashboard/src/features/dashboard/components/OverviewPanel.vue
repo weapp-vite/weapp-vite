@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { LargestFileEntry } from '../composables/useAnalyzeDashboardData'
-import type { SubPackageDescriptor } from '../types'
+import type { LargestFileEntry, SubPackageDescriptor } from '../types'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
 import AppCompactListItem from './AppCompactListItem.vue'
