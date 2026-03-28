@@ -223,7 +223,7 @@ export function resolveOptionsObjectExpression(node: any, bindings: Map<string, 
   return undefined
 }
 
-function resolveOptionsObjectExpressionWithBabel(
+export function resolveOptionsObjectExpressionWithBabel(
   path: NodePath<t.CallExpression>,
   node: t.Node | null | undefined,
 ) {

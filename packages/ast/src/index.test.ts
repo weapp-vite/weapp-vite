@@ -44,6 +44,7 @@ import {
   parseJsLikeWithEngine,
   platformApiIdentifierList,
   resolveOptionsObjectExpression,
+  resolveOptionsObjectExpressionWithBabel,
   resolveOxcComponentExpression,
   resolveOxcRenderExpression,
   resolveRenderableExpression,
@@ -316,6 +317,50 @@ export function useCounter() {
       new Map([['options', propShape]]),
     )).toBe(propShape)
     expect(resolveOptionsObjectExpression({ type: 'Identifier', name: 'missing' }, new Map())).toBeUndefined()
+    expect(resolveOptionsObjectExpressionWithBabel(
+      {
+        scope: {
+          getBinding() {
+            return {
+              path: {
+                isVariableDeclarator: () => true,
+                node: {
+                  init: propShape,
+                },
+              },
+            }
+          },
+        },
+      } as any,
+      t.identifier('options'),
+    )).toBe(propShape)
+    expect(resolveOptionsObjectExpressionWithBabel(
+      {
+        scope: {
+          getBinding() {
+            return {
+              path: {
+                isVariableDeclarator: () => true,
+                node: {
+                  init: propShape,
+                },
+              },
+            }
+          },
+        },
+      } as any,
+      t.tsAsExpression(t.identifier('options'), t.tsAnyKeyword()),
+    )).toBe(propShape)
+    expect(resolveOptionsObjectExpressionWithBabel(
+      {
+        scope: {
+          getBinding() {
+            return undefined
+          },
+        },
+      } as any,
+      t.identifier('missing'),
+    )).toBeUndefined()
     expect(getStaticPropertyName({ type: 'Identifier', name: 'title' })).toBe('title')
     expect(getStaticPropertyName({ type: 'StringLiteral', value: 'count' })).toBe('count')
     expect(getStaticPropertyName({ type: 'NumericLiteral', value: 2 })).toBe('2')

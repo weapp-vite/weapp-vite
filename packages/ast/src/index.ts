@@ -17,6 +17,7 @@ export {
   mapConstructorName,
   mayContainComponentPropsShape,
   resolveOptionsObjectExpression,
+  resolveOptionsObjectExpressionWithBabel,
   resolveTypeFromNode,
 } from './operations/componentProps'
 export type { ComponentPropMap } from './operations/componentProps'
