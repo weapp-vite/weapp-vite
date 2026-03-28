@@ -72,6 +72,8 @@ import {
   parse,
   parseJsLikeWithEngine,
   platformApiIdentifierList,
+  registerNamedFeatureFlagLocal,
+  registerNamespaceFeatureFlagLocal,
   resolveOptionsObjectExpression,
   resolveOptionsObjectExpressionWithBabel,
   resolveOxcComponentExpression,
@@ -609,6 +611,16 @@ wevuNs.onShow(() => {})
     consumeNamespaceFeatureFlag(enabled, new Set(['wevuNs']), hookToFeature, 'wevuNs', 'onShow')
     consumeNamespaceFeatureFlag(enabled, new Set(['wevuNs']), hookToFeature, 'otherNs', 'onLoad')
     expect(enabled).toEqual(new Set(['enableLoad', 'enableShow']))
+
+    const namedHookLocals = new Map<string, string>()
+    registerNamedFeatureFlagLocal(namedHookLocals, hookToFeature, 'onLoad', 'useOnLoad')
+    registerNamedFeatureFlagLocal(namedHookLocals, hookToFeature, 'onReady', 'useOnReady')
+    expect(namedHookLocals).toEqual(new Map([['useOnLoad', 'enableLoad']]))
+
+    const namespaceLocals = new Set<string>()
+    registerNamespaceFeatureFlagLocal(namespaceLocals, 'wevuNs')
+    registerNamespaceFeatureFlagLocal(namespaceLocals, undefined)
+    expect(namespaceLocals).toEqual(new Set(['wevuNs']))
   })
 
   it('collects jsx auto components with babel and oxc', () => {

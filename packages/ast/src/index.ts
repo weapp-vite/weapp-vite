@@ -31,6 +31,8 @@ export {
   consumeNamedFeatureFlag,
   consumeNamespaceFeatureFlag,
   mayContainFeatureFlagHints,
+  registerNamedFeatureFlagLocal,
+  registerNamespaceFeatureFlagLocal,
 } from './operations/featureFlags'
 export type { FeatureFlagOptions } from './operations/featureFlags'
 export {
