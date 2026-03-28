@@ -73,6 +73,7 @@ import {
   mayContainRelevantScriptSetupImports,
   mayContainRequireCallByText,
   mayContainStaticRequireLiteral,
+  mergeComponentPropTypes,
   parse,
   parseJsLikeWithEngine,
   platformApiIdentifierList,
@@ -475,6 +476,8 @@ export function useCounter() {
     expect(mapConstructorName('String')).toBe('string')
     expect(mapConstructorName('BooleanConstructor')).toBe('boolean')
     expect(mapConstructorName('CustomCtor')).toBe('any')
+    expect(mergeComponentPropTypes('string', ['number', 'string', '', undefined])).toBe('string | number')
+    expect(mergeComponentPropTypes(undefined, ['', undefined])).toBe('any')
     expect(resolveTypeFromNode({ type: 'Identifier', name: 'String' })).toBe('string')
     expect(resolveTypeFromNode({ type: 'StringLiteral', value: 'Number' })).toBe('number')
     expect(resolveTypeFromNode({

@@ -19,6 +19,7 @@ export {
   getStaticPropertyName,
   mapConstructorName,
   mayContainComponentPropsShape,
+  mergeComponentPropTypes,
   resolveOptionsObjectExpression,
   resolveOptionsObjectExpressionWithBabel,
   resolveTypeFromNode,
