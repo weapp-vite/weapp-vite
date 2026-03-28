@@ -624,6 +624,95 @@ Page({
     expect(session.getRequestLogs()).toEqual([])
   })
 
+  it('supports delayed downloadFile and uploadFile task abort', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-file-transfer-abort-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    logs: []
+  },
+  push(message) {
+    this.setData({
+      logs: [...this.data.logs, message]
+    })
+  },
+  startFileTransferAbortLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/upload-abort.txt', 'upload-abort')
+    const downloadTask = wx.downloadFile({
+      filePath: 'headless://temp/download-abort.txt',
+      url: 'https://mock.mpcore.dev/files/slow-report.txt',
+      success: () => {
+        this.push('download:success')
+      },
+      fail: (error) => {
+        this.push('download:fail:' + error.message)
+      },
+      complete: () => {
+        this.push('download:complete')
+      }
+    })
+    downloadTask.abort()
+    const uploadTask = wx.uploadFile({
+      url: 'https://mock.mpcore.dev/upload/slow-report',
+      filePath: 'headless://temp/upload-abort.txt',
+      name: 'artifact',
+      success: () => {
+        this.push('upload:success')
+      },
+      fail: (error) => {
+        this.push('upload:fail:' + error.message)
+      },
+      complete: () => {
+        this.push('upload:complete')
+      }
+    })
+    uploadTask.abort()
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>file-transfer-abort</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    session.mockDownloadFile({
+      delay: 50,
+      fileContent: 'downloaded later',
+      url: 'https://mock.mpcore.dev/files/slow-report.txt',
+    })
+    session.mockUploadFile({
+      delay: 50,
+      response: JSON.stringify({
+        accepted: true,
+      }),
+      url: 'https://mock.mpcore.dev/upload/slow-report',
+    })
+
+    const page = session.reLaunch('/pages/index/index')
+    page.startFileTransferAbortLab()
+    await new Promise(resolve => setTimeout(resolve, 80))
+
+    expect(page.data.logs).toEqual([
+      'download:fail:downloadFile:fail abort',
+      'download:complete',
+      'upload:fail:uploadFile:fail abort',
+      'upload:complete',
+    ])
+    expect(session.getDownloadFileLogs()).toEqual([])
+    expect(session.getUploadFileLogs()).toEqual([])
+    expect(session.getFileText('headless://temp/download-abort.txt')).toBeNull()
+    expect(session.getFileText('headless://temp/upload-abort.txt')).toBe('upload-abort')
+  })
+
   it('supports downloadFile, saveFile and uploadFile through wx api state', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-file-transfer-'))
     tempDirs.push(root)
