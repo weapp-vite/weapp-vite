@@ -438,3 +438,28 @@ export async function resolveFallbackPageEntryFile(options: {
     },
   })
 }
+
+export async function loadFallbackPageEntryCompilation(options: {
+  entryFilePath: string
+  ctx: CompilerContext
+  pluginCtx: any
+  configService: NonNullable<CompilerContext['configService']>
+  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+}) {
+  const source = await fs.readFile(options.entryFilePath, 'utf-8')
+  const result = await compileAndFinalizeVueLikeFile({
+    source,
+    filename: options.entryFilePath,
+    ctx: options.ctx,
+    pluginCtx: options.pluginCtx,
+    isPage: true,
+    isApp: false,
+    configService: options.configService,
+    compileOptionsState: options.compileOptionsState,
+  })
+
+  return {
+    source,
+    result,
+  }
+}
