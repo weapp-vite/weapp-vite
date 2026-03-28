@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { SHARED_CHUNK_VIRTUAL_PREFIX } from '../../runtime/chunkStrategy'
 import {
+  classifyModuleSourceKind,
   classifyPackage,
   normalizeModuleId,
   resolveAssetSource,
   resolveModuleSourceType,
+  resolvePluginAssetAbsolute,
 } from './classifier'
 
 describe('analyze subpackages classifier', () => {
@@ -77,6 +79,40 @@ describe('analyze subpackages classifier', () => {
       source: '/workspace/shared/index.ts',
       sourceType: 'workspace',
     })
+  })
+
+  it('classifies module source kind by priority', () => {
+    expect(classifyModuleSourceKind({
+      isNodeModule: true,
+      inSrc: true,
+      inPlugin: true,
+    })).toBe('node_modules')
+
+    expect(classifyModuleSourceKind({
+      isNodeModule: false,
+      inSrc: true,
+      inPlugin: true,
+    })).toBe('src')
+
+    expect(classifyModuleSourceKind({
+      isNodeModule: false,
+      inSrc: false,
+      inPlugin: true,
+    })).toBe('plugin')
+
+    expect(classifyModuleSourceKind({
+      isNodeModule: false,
+      inSrc: false,
+      inPlugin: false,
+    })).toBe('workspace')
+  })
+
+  it('resolves plugin asset absolute path only for plugin-root descendants', () => {
+    expect(resolvePluginAssetAbsolute('plugin-root/components/a.wxml', '/project/plugin-root')).toBe('/project/plugin-root/components/a.wxml')
+    expect(resolvePluginAssetAbsolute('plugin-root', '/project/plugin-root')).toBe('/project/plugin-root')
+    expect(resolvePluginAssetAbsolute('other-root/components/a.wxml', '/project/plugin-root')).toBeUndefined()
+    expect(resolvePluginAssetAbsolute('../escape.wxml', '/project/plugin-root')).toBeUndefined()
+    expect(resolvePluginAssetAbsolute('plugin-root/components/a.wxml')).toBeUndefined()
   })
 
   it('resolves asset source from src/plugin roots and ignores unknown paths', () => {
