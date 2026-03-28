@@ -1,14 +1,13 @@
 import type { PluginContext, ResolvedId } from 'rolldown'
-import fs from 'fs-extra'
 import path from 'pathe'
-import { resolveEntryPath } from '../../../../utils/entryResolve'
+import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../../utils/entryResolve'
 
 export interface ResolvedEntryRecord {
   entry: string
   resolvedId: ResolvedId | null
 }
 
-export function createEntryResolver() {
+export function createEntryResolver(configService?: { isDev?: boolean }) {
   const entryResolutionCache = new Map<string, ResolvedId | null>()
 
   async function resolveEntryWithCache(pluginCtx: PluginContext, absPath: string) {
@@ -18,11 +17,9 @@ export function createEntryResolver() {
     }
     let resolvedSource = normalized
     if (!path.extname(normalized)) {
-      const matched = await resolveEntryPath(normalized, {
+      const matched = await resolveEntryPath(normalized, createCachedEntryResolveOptions(configService ?? {}, {
         kind: 'default',
-        exists: (p: string) => fs.pathExists(p),
-        stat: (p: string) => fs.stat(p) as any,
-      })
+      }))
       if (matched) {
         resolvedSource = matched
       }

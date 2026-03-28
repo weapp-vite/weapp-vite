@@ -8,6 +8,11 @@ const readFileCachedMock = vi.hoisted(() => vi.fn(async () => 'export {}'))
 const usingComponentFromResolvedFileMock = vi.hoisted(() => vi.fn((value: string | undefined) => value ? `/using${value}` : undefined))
 
 vi.mock('../../../utils/entryResolve', () => ({
+  createCachedEntryResolveOptions: vi.fn((_configService: any, options?: any) => ({
+    kind: options?.kind,
+    exists: vi.fn(),
+    stat: vi.fn(),
+  })),
   resolveEntryPath: resolveEntryPathMock,
 }))
 

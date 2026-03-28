@@ -1,15 +1,13 @@
 import type { AutoUsingComponentsOptions } from 'wevu/compiler'
 import type { CompilerContext } from '../../../context'
-// eslint-disable-next-line e18e/ban-dependencies -- 当前 usingComponents 解析仍统一复用 fs-extra 的 stat 能力
-import fs from 'fs-extra'
 import path from 'pathe'
 import { resolveAstEngine } from '../../../ast'
-import { getPathExistsTtlMs, getReadFileCheckMtime } from '../../../utils/cachePolicy'
-import { resolveEntryPath } from '../../../utils/entryResolve'
+import { getReadFileCheckMtime } from '../../../utils/cachePolicy'
+import { createCachedEntryResolveOptions, resolveEntryPath } from '../../../utils/entryResolve'
 import { resolveReExportedName } from '../../../utils/reExport'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../utils/resolvedId'
 import { usingComponentFromResolvedFile } from '../../../utils/usingComponentFrom'
-import { pathExists as pathExistsCached, readFile as readFileCached } from '../../utils/cache'
+import { readFile as readFileCached } from '../../utils/cache'
 
 const JS_LIKE_FILE_RE = /\.(?:[cm]?ts|[cm]?js)$/
 
@@ -49,11 +47,9 @@ export async function resolveUsingComponentReference(
   }
 
   if (path.isAbsolute(clean)) {
-    const resolvedEntry = await resolveEntryPath(clean, {
+    const resolvedEntry = await resolveEntryPath(clean, createCachedEntryResolveOptions(configService ?? {}, {
       kind: info?.kind ?? 'default',
-      stat: (p: string) => fs.stat(p) as any,
-      exists: (p: string) => pathExistsCached(p, { ttlMs: getPathExistsTtlMs(configService) }),
-    })
+    }))
     if (resolvedEntry) {
       clean = resolvedEntry
     }
