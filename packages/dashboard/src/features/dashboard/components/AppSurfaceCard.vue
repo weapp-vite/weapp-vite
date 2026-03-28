@@ -5,11 +5,12 @@ import type {
   DashboardSurfaceTone,
   DashboardTitleBlock,
 } from '../types'
+import { computed, useSlots } from 'vue'
 import { cn } from '../../../lib/cn'
 import { iconFrameStyles, surfaceStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   title?: DashboardTitleBlock['title']
   description?: DashboardTitleBlock['description']
   eyebrow?: string
@@ -26,11 +27,16 @@ withDefaults(defineProps<{
   padding: 'md',
   contentClass: '',
 })
+
+const slots = useSlots()
+
+const hasHeader = computed(() => Boolean(props.title || props.description || slots.header))
+const bodyClassName = computed(() => hasHeader.value ? 'mt-4' : '')
 </script>
 
 <template>
   <section :class="cn(surfaceStyles({ tone, padding }), contentClass)">
-    <header v-if="title || description || $slots.header" class="flex items-start justify-between gap-4">
+    <header v-if="hasHeader" class="flex items-start justify-between gap-4">
       <div class="flex items-start gap-3">
         <span v-if="iconName" :class="iconFrameStyles({ size: 'md' })" class="shrink-0">
           <span class="h-5 w-5">
@@ -51,7 +57,7 @@ withDefaults(defineProps<{
       </div>
       <slot name="header" />
     </header>
-    <div :class="title || description || $slots.header ? 'mt-4' : ''">
+    <div :class="bodyClassName">
       <slot />
     </div>
   </section>
