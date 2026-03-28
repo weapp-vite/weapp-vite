@@ -53,6 +53,7 @@ import {
   getStaticRequireLiteralValue,
   hasBindingInScopes,
   hasPlatformApiMemberExpression,
+  hasStaticRequireCall,
   isJsxDefineComponentImportSpecifier,
   isOnPageScrollCallee,
   isOxcFunctionLike,
@@ -285,6 +286,30 @@ export function useCounter() {
       callee: { type: 'Identifier', name: 'require' },
       arguments: [{ type: 'Identifier', name: 'dep' }],
     })).toBe(false)
+    expect(hasStaticRequireCall({
+      type: 'Program',
+      body: [{
+        type: 'ExpressionStatement',
+        expression: {
+          type: 'CallExpression',
+          callee: { type: 'Identifier', name: 'require' },
+          arguments: [{ type: 'StringLiteral', value: './dep' }],
+        },
+      }],
+      sourceType: 'module',
+    } as any)).toBe(true)
+    expect(hasStaticRequireCall({
+      type: 'Program',
+      body: [{
+        type: 'ExpressionStatement',
+        expression: {
+          type: 'CallExpression',
+          callee: { type: 'Identifier', name: 'require' },
+          arguments: [{ type: 'Identifier', name: 'dep' }],
+        },
+      }],
+      sourceType: 'module',
+    } as any)).toBe(false)
     expect(getRequireAsyncLiteralToken({
       type: 'CallExpression',
       callee: {
