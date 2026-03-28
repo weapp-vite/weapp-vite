@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { DashboardTitleBlock } from '../types'
-import { computed } from 'vue'
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   eyebrow?: string
   title: DashboardTitleBlock['title']
   description?: DashboardTitleBlock['description']
@@ -10,8 +9,6 @@ const props = withDefaults(defineProps<{
   eyebrow: undefined,
   description: undefined,
 })
-
-const hasDescription = computed(() => Boolean(props.description))
 </script>
 
 <template>
@@ -24,7 +21,7 @@ const hasDescription = computed(() => Boolean(props.description))
         <h2 class="text-xl font-semibold tracking-tight md:text-2xl">
           {{ title }}
         </h2>
-        <p v-if="hasDescription" class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
+        <p v-if="description" class="mt-1 text-sm leading-6 text-[color:var(--dashboard-text-muted)]">
           {{ description }}
         </p>
       </div>

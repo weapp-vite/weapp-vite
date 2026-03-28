@@ -5,7 +5,7 @@ import type {
   DashboardSurfaceTone,
   DashboardTitleBlock,
 } from '../types'
-import { computed, useSlots } from 'vue'
+import { useSlots } from 'vue'
 import { cn } from '../../../lib/cn'
 import { iconFrameStyles, surfaceStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
@@ -30,8 +30,7 @@ const props = withDefaults(defineProps<{
 
 const slots = useSlots()
 
-const hasHeader = computed(() => Boolean(props.title || props.description || slots.header))
-const bodyClassName = computed(() => hasHeader.value ? 'mt-4' : '')
+const hasHeader = Boolean(props.title || props.description || slots.header)
 </script>
 
 <template>
@@ -57,7 +56,7 @@ const bodyClassName = computed(() => hasHeader.value ? 'mt-4' : '')
       </div>
       <slot name="header" />
     </header>
-    <div :class="bodyClassName">
+    <div :class="hasHeader ? 'mt-4' : ''">
       <slot />
     </div>
   </section>
