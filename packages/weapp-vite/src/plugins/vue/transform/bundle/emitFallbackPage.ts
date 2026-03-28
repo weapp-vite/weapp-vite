@@ -6,6 +6,69 @@ import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
 import { addBundleWatchFile, emitFallbackPageBundleAssets, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, resolveFallbackPageEmitState, resolveVueBundleAssetContext } from './shared'
 
+export async function emitResolvedFallbackPageEntryAssets(options: {
+  bundle: Record<string, any>
+  pluginCtx: any
+  ctx: VueBundleState['ctx']
+  entryFilePath: string
+  relativeBase: string
+  configService: NonNullable<VueBundleState['ctx']['configService']>
+  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+  outputExtensions: NonNullable<NonNullable<VueBundleState['ctx']['configService']>['outputExtensions']>
+  templateExtension: string
+  styleExtension: string
+  jsonExtension: string
+  scriptModuleExtension?: string
+  platformAssetOptions: {
+    platform: string
+    templateExtension: string
+    scriptModuleExtension?: string
+    dependencies?: Record<string, string>
+    alipayNpmMode?: string
+  }
+}) {
+  const { source, result } = await loadFallbackPageEntryCompilation({
+    entryFilePath: options.entryFilePath,
+    ctx: options.ctx,
+    pluginCtx: options.pluginCtx,
+    configService: options.configService,
+    compileOptionsState: options.compileOptionsState,
+  })
+
+  await handleFallbackPageLayouts({
+    source,
+    entryFilePath: options.entryFilePath,
+    configService: options.configService,
+    emitLayouts: async (layouts) => {
+      await emitBundlePageLayoutsIfNeeded({
+        layouts,
+        pluginCtx: options.pluginCtx,
+        bundle: options.bundle,
+        ctx: options.ctx,
+        configService: options.configService,
+        compileOptionsState: options.compileOptionsState,
+        outputExtensions: options.outputExtensions,
+      })
+    },
+  })
+
+  emitFallbackPageBundleAssets({
+    bundle: options.bundle,
+    pluginCtx: options.pluginCtx,
+    ctx: options.ctx,
+    filename: options.entryFilePath,
+    relativeBase: options.relativeBase,
+    result,
+    configService: options.configService,
+    templateExtension: options.templateExtension,
+    styleExtension: options.styleExtension,
+    jsonExtension: options.jsonExtension,
+    scriptModuleExtension: options.scriptModuleExtension,
+    outputExtensions: options.outputExtensions,
+    platformAssetOptions: options.platformAssetOptions,
+  })
+}
+
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
   state: VueBundleState,
@@ -46,39 +109,14 @@ export async function emitFallbackPageAssets(
     addBundleWatchFile(pluginCtx, entryFilePath)
 
     try {
-      const { source, result } = await loadFallbackPageEntryCompilation({
-        entryFilePath,
-        ctx,
-        pluginCtx,
-        configService,
-        compileOptionsState,
-      })
-
-      await handleFallbackPageLayouts({
-        source,
-        entryFilePath,
-        configService,
-        emitLayouts: async (layouts) => {
-          await emitBundlePageLayoutsIfNeeded({
-            layouts,
-            pluginCtx,
-            bundle,
-            ctx,
-            configService,
-            compileOptionsState,
-            outputExtensions,
-          })
-        },
-      })
-
-      emitFallbackPageBundleAssets({
+      await emitResolvedFallbackPageEntryAssets({
         bundle,
         pluginCtx,
+        entryFilePath,
         ctx,
-        filename: entryFilePath,
         relativeBase,
-        result,
         configService,
+        compileOptionsState,
         templateExtension,
         styleExtension,
         jsonExtension,
