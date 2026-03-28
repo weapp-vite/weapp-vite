@@ -1229,6 +1229,52 @@ Page({
     expect(afterInfo.size).toBe(10)
   })
 
+  it('reports saveFile failures when tempFilePath is missing', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-save-file-missing-temp-'))
+    tempDirs.push(root)
+
+    writeFixtureFile(path.join(root, 'project.config.json'), JSON.stringify({
+      appid: 'wx123',
+      miniprogramRoot: 'dist',
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.json'), JSON.stringify({
+      pages: ['pages/index/index'],
+    }, null, 2))
+    writeFixtureFile(path.join(root, 'dist/app.js'), 'App({})\n')
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.js'), `
+Page({
+  data: {
+    completeCount: 0,
+    failSummary: ''
+  },
+  runMissingTempSaveFileLab() {
+    wx.saveFile({
+      tempFilePath: 'headless://temp/missing-save-source.txt',
+      fail: (error) => {
+        this.setData({
+          failSummary: error.message
+        })
+      },
+      complete: () => {
+        this.setData({
+          completeCount: this.data.completeCount + 1
+        })
+      }
+    })
+  }
+})
+`)
+    writeFixtureFile(path.join(root, 'dist/pages/index/index.wxml'), '<view>missing-temp-save-file</view>')
+
+    const session = createHeadlessSession({ projectPath: root })
+    const page = session.reLaunch('/pages/index/index')
+    page.runMissingTempSaveFileLab()
+
+    expect(page.data.failSummary).toBe('saveFile:fail tempFilePath not found: headless://temp/missing-save-source.txt')
+    expect(page.data.completeCount).toBe(1)
+    expect(session.getSavedFileListSnapshot()).toEqual([])
+  })
+
   it('supports getFileSystemManager mkdir readdir and stat operations', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'headless-runtime-wx-fs-dir-ops-'))
     tempDirs.push(root)

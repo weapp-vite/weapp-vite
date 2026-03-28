@@ -698,6 +698,46 @@ Page({
     expect(afterInfo.size).toBe(10)
   })
 
+  it('reports saveFile failures when tempFilePath is missing in browser runtime', () => {
+    const files = createBrowserVirtualFiles([
+      ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
+      ['app.js', 'App({})'],
+      ['pages/index/index.js', `
+Page({
+  data: {
+    completeCount: 0,
+    failSummary: ''
+  },
+  runMissingTempSaveFileLab() {
+    wx.saveFile({
+      tempFilePath: 'headless://temp/browser-missing-save-source.txt',
+      fail: (error) => {
+        this.setData({
+          failSummary: error.message
+        })
+      },
+      complete: () => {
+        this.setData({
+          completeCount: this.data.completeCount + 1
+        })
+      }
+    })
+  }
+})
+`],
+      ['pages/index/index.wxml', '<view>{{failSummary}}</view><view>{{completeCount}}</view>'],
+    ])
+
+    const session = createBrowserHeadlessSession({ files })
+    const page = session.reLaunch('/pages/index/index')
+    page.runMissingTempSaveFileLab()
+
+    expect(page.data.failSummary).toBe('saveFile:fail tempFilePath not found: headless://temp/browser-missing-save-source.txt')
+    expect(page.data.completeCount).toBe(1)
+    expect(session.getSavedFileListSnapshot()).toEqual([])
+    expect(session.renderCurrentPage().wxml).toContain('saveFile:fail tempFilePath not found')
+  })
+
   it('supports getFileSystemManager mkdir readdir and stat in browser runtime', () => {
     const files = createBrowserVirtualFiles([
       ['app.json', JSON.stringify({ pages: ['pages/index/index'] })],
