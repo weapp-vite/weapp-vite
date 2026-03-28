@@ -135,6 +135,8 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('runMissingRenameLab')
     bridge.runPageMethod('runMissingRmdirLab')
     bridge.runPageMethod('runMissingAccessLab')
+    bridge.runPageMethod('runUnsupportedWriteEncodingLab')
+    bridge.runPageMethod('runUnsupportedAppendEncodingLab')
     bridge.runPageMethod('loadMockQueue')
     bridge.runPageMethod('runFileTransferLab')
     bridge.runPageMethod('runSavedOverwriteLab')
@@ -163,6 +165,8 @@ describe.sequential('simulator browser e2e', () => {
           && pageData.fileManagerMissingRmdirInfo
           && pageData.fileManagerMissingStatInfo
           && pageData.fileManagerMissingUnlinkInfo
+          && pageData.fileManagerUnsupportedAppendEncodingInfo
+          && pageData.fileManagerUnsupportedWriteEncodingInfo
           && pageData.fileManagerSnapshot
           && pageData.requestSnapshot
           && pageData.savedFileInfo
@@ -194,6 +198,8 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.fileManagerMissingRmdirInfo).toContain('"missingRmdirError":"rmdir:fail no such file or directory')
     expect(pageData.fileManagerMissingStatInfo).toContain('"missingStatError":"stat:fail no such file or directory')
     expect(pageData.fileManagerMissingUnlinkInfo).toContain('"missingUnlinkError":"unlink:fail no such file or directory')
+    expect(pageData.fileManagerUnsupportedAppendEncodingInfo).toContain('"unsupportedAppendEncodingError":"Unsupported file encoding in headless runtime: latin1"')
+    expect(pageData.fileManagerUnsupportedWriteEncodingInfo).toContain('"unsupportedWriteEncodingError":"Unsupported file encoding in headless runtime: latin1"')
     expect(pageData.fileManagerSnapshot).toContain('"isDirectory":true')
     expect(pageData.fileManagerSnapshot).toContain('"isFile":true')
     expect(pageData.fileManagerSnapshot).toContain('"text":"component-lab"')

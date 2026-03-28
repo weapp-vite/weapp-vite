@@ -25,6 +25,8 @@ Page({
     fileManagerMissingRmdirInfo: '',
     fileManagerMissingStatInfo: '',
     fileManagerMissingUnlinkInfo: '',
+    fileManagerUnsupportedAppendEncodingInfo: '',
+    fileManagerUnsupportedWriteEncodingInfo: '',
     savedOrderingInfo: '',
     savedRemovalInfo: '',
     savedRenameOutInfo: '',
@@ -434,6 +436,40 @@ Page({
           }),
         }, () => {
           this.push('lab:runMissingAccessLab')
+        })
+      },
+    })
+  },
+  runUnsupportedWriteEncodingLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFile({
+      filePath: 'headless://saved/component-lab/unsupported-write.txt',
+      data: 'payload',
+      encoding: 'latin1',
+      fail: (error) => {
+        this.setData({
+          fileManagerUnsupportedWriteEncodingInfo: JSON.stringify({
+            unsupportedWriteEncodingError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runUnsupportedWriteEncodingLab')
+        })
+      },
+    })
+  },
+  runUnsupportedAppendEncodingLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.appendFile({
+      filePath: 'headless://saved/component-lab/unsupported-append.txt',
+      data: 'payload',
+      encoding: 'latin1',
+      fail: (error) => {
+        this.setData({
+          fileManagerUnsupportedAppendEncodingInfo: JSON.stringify({
+            unsupportedAppendEncodingError: error.message,
+          }),
+        }, () => {
+          this.push('lab:runUnsupportedAppendEncodingLab')
         })
       },
     })
