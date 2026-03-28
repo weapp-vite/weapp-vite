@@ -20,13 +20,20 @@ export function resolveScriptModuleTagByPlatform(platform?: MpPlatform, scriptMo
   return getPlatformScriptModuleTag(platform, scriptModuleExtension)
 }
 
+export function normalizeScriptModuleExtension(scriptModuleExtension?: string) {
+  if (!scriptModuleExtension) {
+    return undefined
+  }
+  return scriptModuleExtension.startsWith('.')
+    ? scriptModuleExtension.slice(1)
+    : scriptModuleExtension
+}
+
 export function getDefaultScriptModuleTagByExtension(scriptModuleExtension?: string) {
   if (!scriptModuleExtension) {
     return 'wxs'
   }
-  const normalizedExtension = scriptModuleExtension.startsWith('.')
-    ? scriptModuleExtension.slice(1)
-    : scriptModuleExtension
+  const normalizedExtension = normalizeScriptModuleExtension(scriptModuleExtension)
   return DEFAULT_SCRIPT_MODULE_TAG_BY_EXTENSION[normalizedExtension] ?? 'wxs'
 }
 
