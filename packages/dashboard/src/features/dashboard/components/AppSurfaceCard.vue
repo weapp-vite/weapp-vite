@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import type { DashboardIconName } from '../types'
+import type {
+  DashboardIconName,
+  DashboardSurfacePadding,
+  DashboardSurfaceTone,
+  DashboardTitleBlock,
+} from '../types'
 import { cn } from '../../../lib/cn'
 import { iconFrameStyles, surfaceStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
 
 withDefaults(defineProps<{
-  title?: string
-  description?: string
+  title?: DashboardTitleBlock['title']
+  description?: DashboardTitleBlock['description']
   eyebrow?: string
   iconName?: DashboardIconName
-  tone?: 'default' | 'strong' | 'muted'
-  padding?: 'none' | 'sm' | 'md' | 'header'
+  tone?: DashboardSurfaceTone
+  padding?: DashboardSurfacePadding
   contentClass?: string
 }>(), {
   title: undefined,
