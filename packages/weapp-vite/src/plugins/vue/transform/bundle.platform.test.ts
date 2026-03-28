@@ -12,6 +12,7 @@ import {
   normalizeVueConfigForPlatform,
   normalizeVueTemplateForPlatform,
   preparePlatformConfigAsset,
+  resolveVueBundlePlatformAssetOptions,
   resolveVueBundlePlatformOptions,
 } from './bundle/platform'
 
@@ -79,6 +80,41 @@ describe('emitVueBundleAssets platform output', () => {
   }
 
   it('returns original config/template when direct platform helpers hit fallback branches', () => {
+    expect(resolveVueBundlePlatformAssetOptions({
+      configService: undefined,
+      templateExtension: 'wxml',
+    })).toEqual({
+      platform: 'weapp',
+      templateExtension: 'wxml',
+      scriptModuleExtension: undefined,
+      dependencies: undefined,
+      alipayNpmMode: undefined,
+    })
+    expect(resolveVueBundlePlatformAssetOptions({
+      configService: {
+        platform: 'alipay',
+        packageJson: {
+          dependencies: {
+            dayjs: '^1.0.0',
+          },
+        },
+        weappViteConfig: {
+          npm: {
+            alipayNpmMode: 'node_modules',
+          },
+        },
+      } as any,
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+    })).toEqual({
+      platform: 'alipay',
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+      dependencies: {
+        dayjs: '^1.0.0',
+      },
+      alipayNpmMode: 'node_modules',
+    })
     expect(resolveVueBundlePlatformOptions({
       platform: 'weapp',
       scriptModuleExtension: 'sjs',
