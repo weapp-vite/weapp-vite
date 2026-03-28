@@ -48,5 +48,9 @@ export { collectRequireTokens, mayContainStaticRequireLiteral } from './operatio
 export type { RequireToken } from './operations/require'
 export { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
 export type { ScriptSetupImport } from './operations/scriptSetupImports'
-export { collectSetDataPickKeysFromTemplateCode } from './operations/setDataPick'
+export {
+  collectLoopScopeAliases,
+  collectSetDataPickKeysFromTemplateCode,
+  extractTemplateExpressions,
+} from './operations/setDataPick'
 export type { AstEngineName, AstParserLike, WeappAstConfig } from './types'
