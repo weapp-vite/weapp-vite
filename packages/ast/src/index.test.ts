@@ -14,6 +14,7 @@ import {
   defaultIsDefineComponentSource,
   defaultResolveBabelComponentExpression,
   defaultResolveBabelRenderExpression,
+  extractComponentProperties,
   extractPropertiesObject,
   extractTemplateExpressions,
   getCallExpressionCalleeName,
@@ -278,6 +279,36 @@ export function useCounter() {
         },
       ],
     }
+    const optionsNode = {
+      type: 'ObjectExpression',
+      properties: [
+        {
+          type: 'ObjectProperty',
+          key: { type: 'Identifier', name: 'properties' },
+          value: propShape,
+        },
+      ],
+    }
+    const propsNode = {
+      type: 'ObjectExpression',
+      properties: [
+        {
+          type: 'ObjectProperty',
+          key: { type: 'Identifier', name: 'props' },
+          value: propShape,
+        },
+      ],
+    }
+    const invalidOptionsNode = {
+      type: 'ObjectExpression',
+      properties: [
+        {
+          type: 'ObjectProperty',
+          key: { type: 'Identifier', name: 'props' },
+          value: { type: 'Identifier', name: 'propsRef' },
+        },
+      ],
+    }
 
     expect(mayContainComponentPropsShape('Component({ properties: { title: String } })')).toBe(true)
     expect(mayContainComponentPropsShape('const value = ref(1)')).toBe(false)
@@ -305,6 +336,15 @@ export function useCounter() {
       ['title', 'string'],
       ['count', 'number | string'],
     ]))
+    expect(extractComponentProperties(optionsNode)).toEqual(new Map([
+      ['title', 'string'],
+      ['count', 'number | string'],
+    ]))
+    expect(extractComponentProperties(propsNode)).toEqual(new Map([
+      ['title', 'string'],
+      ['count', 'number | string'],
+    ]))
+    expect(extractComponentProperties(invalidOptionsNode)).toEqual(new Map())
     expect(resolveOptionsObjectExpression(
       { type: 'Identifier', name: 'options' },
       new Map([['options', propShape]]),
