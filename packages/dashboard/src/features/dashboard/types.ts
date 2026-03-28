@@ -115,6 +115,59 @@ export interface SummaryMetric {
   value: number
 }
 
+export interface PackageInsight {
+  id: string
+  label: string
+  type: PackageType
+  totalBytes: number
+  fileCount: number
+  chunkCount: number
+  assetCount: number
+  moduleCount: number
+  duplicateModuleCount: number
+  entryFileCount: number
+  topFiles: Array<{
+    file: string
+    size: number
+    type: PackageFileEntry['type']
+    from: BuildOrigin
+    isEntry: boolean
+    moduleCount: number
+  }>
+}
+
+export interface LargestFileEntry {
+  packageId: string
+  packageLabel: string
+  packageType: PackageType
+  file: string
+  size: number
+  type: PackageFileEntry['type']
+  from: BuildOrigin
+  isEntry: boolean
+  moduleCount: number
+  source?: string
+}
+
+export interface DuplicateModuleEntry {
+  id: string
+  source: string
+  sourceType: ModuleSourceType
+  packageCount: number
+  bytes: number
+  packages: Array<{
+    packageId: string
+    packageLabel: string
+    files: string[]
+  }>
+}
+
+export interface ModuleSourceSummary {
+  sourceType: ModuleSourceType
+  count: number
+  bytes: number
+}
+
 export interface DashboardNavItem {
   to: string
   label: string

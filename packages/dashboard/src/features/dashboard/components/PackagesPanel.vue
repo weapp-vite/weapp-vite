@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PackageInsight } from '../composables/useAnalyzeDashboardData'
+import type { PackageInsight } from '../types'
 import { formatBytes, formatPackageType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
 import AppMetricTile from './AppMetricTile.vue'

@@ -3,7 +3,7 @@ import type {
   DuplicateModuleEntry,
   LargestFileEntry,
   ModuleSourceSummary,
-} from '../composables/useAnalyzeDashboardData'
+} from '../types'
 import { formatBuildOrigin, formatBytes, formatSourceType } from '../utils/format'
 import { surfaceStyles } from '../utils/styles'
 import AppCompactListItem from './AppCompactListItem.vue'
