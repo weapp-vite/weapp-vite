@@ -309,6 +309,13 @@ export interface DashboardInfoPillItem {
   iconName?: DashboardIconName
 }
 
+export type DashboardRuntimeBadgeTone = 'neutral' | 'info' | 'success' | 'warning' | 'error'
+
+export interface DashboardRuntimeBadgeItem {
+  label: string
+  tone?: DashboardRuntimeBadgeTone
+}
+
 export interface DashboardValueOption<T extends string = string> {
   value: T
   label: string
