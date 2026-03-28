@@ -134,6 +134,25 @@ export function normalizeVueTemplateForPlatform(
   }
 }
 
+export function trackPlatformTemplateAnalysis(
+  ctx: CompilerContext,
+  filename: string,
+  template: string,
+) {
+  if (!ctx.wxmlService) {
+    return
+  }
+
+  try {
+    const token = ctx.wxmlService.analyze(template)
+    ctx.wxmlService.tokenMap.set(filename, token)
+    ctx.wxmlService.setWxmlComponentsMap(filename, token.components)
+  }
+  catch {
+    // 忽略模板扫描异常，保持模板发射流程可继续
+  }
+}
+
 export function emitPlatformTemplateAsset(
   bundle: Record<string, any>,
   options: {
@@ -153,16 +172,7 @@ export function emitPlatformTemplateAsset(
     scriptModuleExtension: options.scriptModuleExtension,
   })
 
-  if (options.ctx.wxmlService) {
-    try {
-      const token = options.ctx.wxmlService.analyze(normalizedTemplate)
-      options.ctx.wxmlService.tokenMap.set(options.filename, token)
-      options.ctx.wxmlService.setWxmlComponentsMap(options.filename, token.components)
-    }
-    catch {
-      // 忽略模板扫描异常，保持模板发射流程可继续
-    }
-  }
+  trackPlatformTemplateAnalysis(options.ctx, options.filename, normalizedTemplate)
 
   emitSfcTemplateIfMissing(options.pluginCtx, bundle, options.relativeBase, normalizedTemplate, options.templateExtension)
   return normalizedTemplate

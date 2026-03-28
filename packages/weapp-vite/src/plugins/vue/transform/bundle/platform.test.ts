@@ -3,10 +3,12 @@ import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER } from '../../../../utils'
 import {
   emitAlipayGenericPlaceholderAssets,
   emitAlipayGenericPlaceholderAssetsByBase,
+  emitPlatformTemplateAsset,
   resolveAlipayGenericPlaceholderBase,
   resolveGenericPlaceholderBaseForPlatform,
   resolveVueBundlePlatformOptions,
   shouldEmitAlipayGenericPlaceholder,
+  trackPlatformTemplateAnalysis,
 } from './platform'
 
 const emitSfcJsonAssetMock = vi.hoisted(() => vi.fn())
@@ -180,6 +182,64 @@ describe('bundle platform helpers', () => {
       `pages/demo/${ALIPAY_GENERIC_COMPONENT_PLACEHOLDER.slice(2)}`,
       '<view />',
       'axml',
+    )
+  })
+
+  it('tracks platform template analysis into wxml service caches', () => {
+    const analyze = vi.fn(() => ({
+      components: ['demo-card'],
+    }))
+    const tokenMapSet = vi.fn()
+    const setWxmlComponentsMap = vi.fn()
+
+    trackPlatformTemplateAnalysis({
+      wxmlService: {
+        analyze,
+        tokenMap: {
+          set: tokenMapSet,
+        },
+        setWxmlComponentsMap,
+      },
+    } as any, '/project/src/pages/demo/index.vue', '<view />')
+
+    expect(analyze).toHaveBeenCalledWith('<view />')
+    expect(tokenMapSet).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', {
+      components: ['demo-card'],
+    })
+    expect(setWxmlComponentsMap).toHaveBeenCalledWith('/project/src/pages/demo/index.vue', ['demo-card'])
+  })
+
+  it('emits platform template assets even when template analysis fails', () => {
+    const analyze = vi.fn(() => {
+      throw new Error('scan failed')
+    })
+
+    const result = emitPlatformTemplateAsset({}, {
+      ctx: {
+        wxmlService: {
+          analyze,
+          tokenMap: {
+            set: vi.fn(),
+          },
+          setWxmlComponentsMap: vi.fn(),
+        },
+      } as any,
+      pluginCtx: { emitFile: vi.fn() },
+      filename: '/project/src/pages/demo/index.vue',
+      relativeBase: 'pages/demo/index',
+      template: '<view />',
+      platform: 'weapp',
+      templateExtension: 'wxml',
+      scriptModuleExtension: 'wxs',
+    })
+
+    expect(result).toBe('<view />')
+    expect(emitSfcTemplateIfMissingMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/demo/index',
+      '<view />',
+      'wxml',
     )
   })
 })
