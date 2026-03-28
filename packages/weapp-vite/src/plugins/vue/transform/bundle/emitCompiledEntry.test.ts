@@ -185,6 +185,43 @@ describe('emitCompiledEntry helpers', () => {
     })
   })
 
+  it('returns early for resolved compiled entry emission when config service is missing', async () => {
+    await emitResolvedCompiledVueEntryAssets({
+      bundle: {},
+      state: {
+        ctx: {},
+        pluginCtx: {},
+      } as any,
+      filename: '/project/src/components/card.vue',
+      cached: {
+        isPage: false,
+      } as any,
+      result: {
+        template: '<view />',
+        script: '',
+      } as any,
+      relativeBase: 'components/card',
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+      outputExtensions: { wxml: 'wxml' } as any,
+      templateExtension: 'wxml',
+      jsonExtension: 'json',
+      scriptExtension: 'js',
+      scriptModuleExtension: 'wxs',
+      platformAssetOptions: {
+        platform: 'wechat',
+        templateExtension: 'wxml',
+        scriptModuleExtension: 'wxs',
+      },
+    })
+
+    expect(handleCompiledEntryPageLayoutsMock).not.toHaveBeenCalled()
+    expect(emitCompiledEntryBundleAssetsMock).not.toHaveBeenCalled()
+    expect(emitScriptlessComponentJsFallbackIfMissingMock).not.toHaveBeenCalled()
+  })
+
   it('returns early when required config service is missing', async () => {
     await emitCompiledVueEntryAssets({}, {
       ctx: {},

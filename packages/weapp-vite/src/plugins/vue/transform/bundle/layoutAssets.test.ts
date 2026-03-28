@@ -12,6 +12,7 @@ const compileVueLikeFileMock = vi.hoisted(() => vi.fn(async () => ({
   script: '',
 })))
 const ensureScriptlessComponentAssetMock = vi.hoisted(() => vi.fn())
+const emitNativeLayoutScriptChunkIfNeededSharedMock = vi.hoisted(() => vi.fn())
 
 vi.mock('fs-extra', () => ({
   default: {
@@ -45,6 +46,14 @@ vi.mock('../../../utils/scriptlessComponent', async (importOriginal) => {
   }
 })
 
+vi.mock('../../../utils/nativeLayout', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../utils/nativeLayout')>()
+  return {
+    ...actual,
+    emitNativeLayoutScriptChunkIfNeeded: emitNativeLayoutScriptChunkIfNeededSharedMock,
+  }
+})
+
 describe('resolveVueLayoutAssetOptions', () => {
   beforeEach(() => {
     readFileMock.mockReset()
@@ -61,6 +70,7 @@ describe('resolveVueLayoutAssetOptions', () => {
       script: '',
     })
     ensureScriptlessComponentAssetMock.mockReset()
+    emitNativeLayoutScriptChunkIfNeededSharedMock.mockReset()
   })
 
   it('resolves layout asset output names from platform extensions', () => {
@@ -152,6 +162,21 @@ describe('resolveVueLayoutAssetOptions', () => {
     })
   })
 
+  it('returns undefined for native layout asset state when output options cannot be resolved', async () => {
+    await expect(resolveNativeLayoutAssetState({
+      layoutBasePath: 'layouts/default/index',
+      configService: {
+        relativeOutputPath: () => '',
+      } as any,
+      outputExtensions: {
+        wxml: 'axml',
+        wxss: 'acss',
+        json: 'json',
+        js: 'js',
+      } as any,
+    })).resolves.toBeUndefined()
+  })
+
   it('resolves native layout script chunk state from layout assets and output options', async () => {
     collectNativeLayoutAssetsMock.mockResolvedValue({
       script: '/project/layouts/default/index.js',
@@ -187,6 +212,18 @@ describe('resolveVueLayoutAssetOptions', () => {
     })).resolves.toBeUndefined()
   })
 
+  it('returns undefined for native layout script chunk state when output options cannot be resolved', async () => {
+    await expect(resolveNativeLayoutScriptChunkState({
+      layoutBasePath: 'layouts/default/index',
+      configService: {
+        relativeOutputPath: () => '',
+      } as any,
+      outputExtensions: {
+        js: 'mjs',
+      } as any,
+    })).resolves.toBeUndefined()
+  })
+
   it('returns early when native layout script chunk state is missing', async () => {
     collectNativeLayoutAssetsMock.mockResolvedValue({
       template: '/project/layouts/default/index.wxml',
@@ -204,6 +241,29 @@ describe('resolveVueLayoutAssetOptions', () => {
     })
 
     expect(emitSfcJsonAssetMock).not.toHaveBeenCalled()
+  })
+
+  it('emits native layout script chunk through shared chunk emitter', async () => {
+    collectNativeLayoutAssetsMock.mockResolvedValue({
+      script: '/project/layouts/default/index.js',
+    })
+
+    await emitNativeLayoutScriptChunkIfNeeded({
+      pluginCtx: { emitFile: vi.fn() },
+      layoutBasePath: 'layouts/default/index',
+      configService: {
+        relativeOutputPath: (value: string) => `dist/${value}`,
+      } as any,
+      outputExtensions: {
+        js: 'mjs',
+      } as any,
+    })
+
+    expect(emitNativeLayoutScriptChunkIfNeededSharedMock).toHaveBeenCalledWith({
+      pluginCtx: expect.anything(),
+      scriptId: '/project/layouts/default/index.js',
+      fileName: 'dist/layouts/default/index.mjs',
+    })
   })
 
   it('emits resolved native layout static assets by asset kind', async () => {
@@ -361,6 +421,27 @@ describe('resolveVueLayoutAssetOptions', () => {
         kind: 'component',
       },
     )
+  })
+
+  it('returns early for native layout assets when layout output options are unavailable', async () => {
+    await emitNativeLayoutAssetsIfNeeded({
+      pluginCtx: { emitFile: vi.fn() },
+      bundle: {},
+      layoutBasePath: 'layouts/default/index',
+      configService: {
+        relativeOutputPath: () => '',
+      } as any,
+      outputExtensions: {
+        wxml: 'wxml',
+        wxss: 'wxss',
+        json: 'json',
+        js: 'js',
+      } as any,
+    })
+
+    expect(emitSfcJsonAssetMock).not.toHaveBeenCalled()
+    expect(emitSfcTemplateIfMissingMock).not.toHaveBeenCalled()
+    expect(emitSfcStyleIfMissingMock).not.toHaveBeenCalled()
   })
 
   it('creates bundle layout emitters for native and vue layout paths', async () => {
