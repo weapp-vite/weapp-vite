@@ -9,6 +9,7 @@ Page({
     componentSnapshot: '',
     directorySnapshot: '',
     downloadSnapshot: '',
+    fileTransferFailureInfo: '',
     fileManagerSnapshot: '',
     requestSnapshot: '',
     savedOverwriteInfo: '',
@@ -156,6 +157,51 @@ Page({
       complete: () => {
         this.push('lab:runFileTransferLab:download')
       }
+    })
+  },
+  runFileTransferFailureLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/component-lab-upload-no-mock.txt', 'upload-no-mock')
+    const state = {
+      downloadNoMockError: '',
+      uploadMissingFileError: '',
+      uploadNoMockError: '',
+    }
+    const flush = () => {
+      if (!state.downloadNoMockError || !state.uploadMissingFileError || !state.uploadNoMockError) {
+        return
+      }
+      this.setData({
+        fileTransferFailureInfo: JSON.stringify(state),
+      }, () => {
+        this.push('lab:runFileTransferFailureLab')
+      })
+    }
+    wx.downloadFile({
+      filePath: 'headless://temp/component-lab-download-no-mock.txt',
+      url: 'https://mock.mpcore.dev/files/component-lab-unmatched-report.txt',
+      fail: (error) => {
+        state.downloadNoMockError = error.message
+      },
+      complete: flush,
+    })
+    wx.uploadFile({
+      url: 'https://mock.mpcore.dev/upload/component-lab-missing-source',
+      filePath: 'headless://temp/component-lab-missing-upload.txt',
+      name: 'report',
+      fail: (error) => {
+        state.uploadMissingFileError = error.message
+      },
+      complete: flush,
+    })
+    wx.uploadFile({
+      url: 'https://mock.mpcore.dev/upload/component-lab-unmatched-report',
+      filePath: 'headless://temp/component-lab-upload-no-mock.txt',
+      name: 'report',
+      fail: (error) => {
+        state.uploadNoMockError = error.message
+      },
+      complete: flush,
     })
   },
   runSavedOverwriteLab() {

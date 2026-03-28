@@ -140,6 +140,7 @@ describe.sequential('simulator browser e2e', () => {
     bridge.runPageMethod('runUnsupportedReadEncodingLab')
     bridge.runPageMethod('loadMockQueue')
     bridge.runPageMethod('runFileTransferLab')
+    bridge.runPageMethod('runFileTransferFailureLab')
     bridge.runPageMethod('runSavedOverwriteLab')
     bridge.runPageMethod('runSavedOrderingLab')
     bridge.runPageMethod('runSavedRemovalLab')
@@ -157,6 +158,7 @@ describe.sequential('simulator browser e2e', () => {
           pageData.componentSnapshot
           && pageData.directorySnapshot
           && pageData.downloadSnapshot
+          && pageData.fileTransferFailureInfo
           && pageData.fileManagerMissingAccessInfo
           && pageData.fileManagerMissingCopyInfo
           && pageData.fileManagerMissingMkdirInfo
@@ -192,6 +194,9 @@ describe.sequential('simulator browser e2e', () => {
     expect(pageData.componentSnapshot).toContain('"size":1')
     expect(pageData.directorySnapshot).toBe('["daily"]')
     expect(pageData.downloadSnapshot).toContain('"errMsg":"downloadFile:ok"')
+    expect(pageData.fileTransferFailureInfo).toContain('"downloadNoMockError":"No downloadFile mock matched in headless runtime: https://mock.mpcore.dev/files/component-lab-unmatched-report.txt"')
+    expect(pageData.fileTransferFailureInfo).toContain('"uploadMissingFileError":"uploadFile:fail file not found: headless://temp/component-lab-missing-upload.txt"')
+    expect(pageData.fileTransferFailureInfo).toContain('"uploadNoMockError":"No uploadFile mock matched in headless runtime: https://mock.mpcore.dev/upload/component-lab-unmatched-report"')
     expect(pageData.fileManagerMissingAccessInfo).toContain('"missingAccessError":"access:fail no such file or directory')
     expect(pageData.fileManagerMissingCopyInfo).toContain('"missingCopyError":"copyFile:fail no such file or directory')
     expect(pageData.fileManagerMissingMkdirInfo).toContain('"missingMkdirError":"mkdir:fail no such file or directory')
@@ -258,7 +263,11 @@ describe.sequential('simulator browser e2e', () => {
     expect(sessionSnapshot.directorySnapshot).toContain('headless://saved/component-lab/reports')
     expect(sessionSnapshot.directorySnapshot).toContain('headless://saved/component-lab/reports/daily')
     expect(sessionSnapshot.directorySnapshot).not.toContain('headless://saved/component-lab/archive')
-    expect(sessionSnapshot.downloadFileLogs).toHaveLength(1)
+    expect(sessionSnapshot.downloadFileLogs).toHaveLength(2)
+    expect(sessionSnapshot.downloadFileLogs).toContainEqual(expect.objectContaining({
+      matched: false,
+      url: 'https://mock.mpcore.dev/files/component-lab-unmatched-report.txt',
+    }))
     expect(sessionSnapshot.savedFileList).toContainEqual(expect.objectContaining({
       filePath: pageData.savedFilePath,
       size: 'component-lab report'.length,
@@ -281,10 +290,16 @@ describe.sequential('simulator browser e2e', () => {
     expect(sessionSnapshot.savedFileList).not.toContainEqual(expect.objectContaining({
       filePath: 'headless://saved/component-lab/transfers/rename-out.txt',
     }))
-    expect(sessionSnapshot.uploadFileLogs).toHaveLength(1)
+    expect(sessionSnapshot.uploadFileLogs).toHaveLength(2)
+    expect(sessionSnapshot.uploadFileLogs).toContainEqual(expect.objectContaining({
+      fileContent: 'upload-no-mock',
+      matched: false,
+      url: 'https://mock.mpcore.dev/upload/component-lab-unmatched-report',
+    }))
     expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab report')
     expect(Object.values(sessionSnapshot.fileSnapshot)).toContain('component-lab')
     expect(sessionSnapshot.fileSnapshot['headless://saved/component-lab/removals/report.txt']).toBeUndefined()
+    expect(sessionSnapshot.fileSnapshot['headless://temp/component-lab-download-no-mock.txt']).toBeUndefined()
     expect(sessionSnapshot.fileSnapshot['headless://temp/component-lab-renamed.txt']).toBe('rename-out')
   })
 
