@@ -28,6 +28,8 @@ export {
   collectFeatureFlagsFromCode,
   collectFeatureFlagsWithBabel,
   collectFeatureFlagsWithOxc,
+  consumeNamedFeatureFlag,
+  consumeNamespaceFeatureFlag,
   mayContainFeatureFlagHints,
 } from './operations/featureFlags'
 export type { FeatureFlagOptions } from './operations/featureFlags'

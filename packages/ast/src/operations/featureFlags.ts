@@ -21,6 +21,33 @@ export function mayContainFeatureFlagHints<TFeature extends string>(
   return Object.keys(hookToFeature).some(hookName => code.includes(hookName))
 }
 
+export function consumeNamedFeatureFlag<TFeature extends string>(
+  enabled: Set<TFeature>,
+  namedHookLocals: Map<string, TFeature>,
+  name: string,
+) {
+  const matched = namedHookLocals.get(name)
+  if (matched) {
+    enabled.add(matched)
+  }
+}
+
+export function consumeNamespaceFeatureFlag<TFeature extends string>(
+  enabled: Set<TFeature>,
+  namespaceLocals: Set<string>,
+  hookToFeature: Record<string, TFeature>,
+  namespace: string,
+  hookName: string,
+) {
+  if (!namespaceLocals.has(namespace)) {
+    return
+  }
+  const matched = hookToFeature[hookName]
+  if (matched) {
+    enabled.add(matched)
+  }
+}
+
 export function collectFeatureFlagsWithBabel<TFeature extends string>(
   code: string,
   moduleId: string,
@@ -53,47 +80,30 @@ export function collectFeatureFlagsWithBabel<TFeature extends string>(
 
   const enabled = new Set<TFeature>()
 
-  function consumeHookCallByName(name: string) {
-    const matched = namedHookLocals.get(name)
-    if (matched) {
-      enabled.add(matched)
-    }
-  }
-
-  function consumeNamespaceHookCall(namespace: string, hookName: string) {
-    if (!namespaceLocals.has(namespace)) {
-      return
-    }
-    const matched = hookToFeature[hookName]
-    if (matched) {
-      enabled.add(matched)
-    }
-  }
-
   traverse(ast, {
     CallExpression(path) {
       const callee = path.node.callee
       if (t.isIdentifier(callee)) {
-        consumeHookCallByName(callee.name)
+        consumeNamedFeatureFlag(enabled, namedHookLocals, callee.name)
         return
       }
       if (t.isMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.object)) {
         const property = callee.property
         if (t.isIdentifier(property)) {
-          consumeNamespaceHookCall(callee.object.name, property.name)
+          consumeNamespaceFeatureFlag(enabled, namespaceLocals, hookToFeature, callee.object.name, property.name)
         }
       }
     },
     OptionalCallExpression(path) {
       const callee = path.node.callee
       if (t.isIdentifier(callee)) {
-        consumeHookCallByName(callee.name)
+        consumeNamedFeatureFlag(enabled, namedHookLocals, callee.name)
         return
       }
       if (t.isMemberExpression(callee) && !callee.computed && t.isIdentifier(callee.object)) {
         const property = callee.property
         if (t.isIdentifier(property)) {
-          consumeNamespaceHookCall(callee.object.name, property.name)
+          consumeNamespaceFeatureFlag(enabled, namespaceLocals, hookToFeature, callee.object.name, property.name)
         }
       }
     },
@@ -145,10 +155,7 @@ export function collectFeatureFlagsWithOxc<TFeature extends string>(
 
       const callee = node.callee as any
       if (callee?.type === 'Identifier') {
-        const matched = namedHookLocals.get(callee.name)
-        if (matched) {
-          enabled.add(matched)
-        }
+        consumeNamedFeatureFlag(enabled, namedHookLocals, callee.name)
         return
       }
 
@@ -156,12 +163,8 @@ export function collectFeatureFlagsWithOxc<TFeature extends string>(
         callee?.type === 'MemberExpression'
         && callee.object?.type === 'Identifier'
         && callee.property?.type === 'Identifier'
-        && namespaceLocals.has(callee.object.name)
       ) {
-        const matched = hookToFeature[callee.property.name]
-        if (matched) {
-          enabled.add(matched)
-        }
+        consumeNamespaceFeatureFlag(enabled, namespaceLocals, hookToFeature, callee.object.name, callee.property.name)
       }
     },
   })

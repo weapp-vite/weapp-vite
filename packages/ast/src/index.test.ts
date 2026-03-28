@@ -25,6 +25,8 @@ import {
   collectScriptSetupImportsWithOxc,
   collectSetDataPickKeysWithBabel,
   collectSetDataPickKeysWithOxc,
+  consumeNamedFeatureFlag,
+  consumeNamespaceFeatureFlag,
   createLineStartOffsets,
   createWarningPrefix,
   defaultIsDefineComponentSource,
@@ -596,6 +598,13 @@ wevuNs.onShow(() => {})
     expect(mayContainFeatureFlagHints(`import { onLoad } from 'wevu'`, 'wevu', hookToFeature)).toBe(true)
     expect(mayContainFeatureFlagHints(`import { onReady } from 'wevu'`, 'wevu', hookToFeature)).toBe(false)
     expect(mayContainFeatureFlagHints(`import { onLoad } from 'vue'`, 'wevu', hookToFeature)).toBe(false)
+
+    const enabled = new Set<string>()
+    consumeNamedFeatureFlag(enabled, new Map([['onLoadAlias', 'enableLoad']]), 'onLoadAlias')
+    consumeNamedFeatureFlag(enabled, new Map([['onShowAlias', 'enableShow']]), 'onReadyAlias')
+    consumeNamespaceFeatureFlag(enabled, new Set(['wevuNs']), hookToFeature, 'wevuNs', 'onShow')
+    consumeNamespaceFeatureFlag(enabled, new Set(['wevuNs']), hookToFeature, 'otherNs', 'onLoad')
+    expect(enabled).toEqual(new Set(['enableLoad', 'enableShow']))
   })
 
   it('collects jsx auto components with babel and oxc', () => {
