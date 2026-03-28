@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { addBundleWatchFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -573,6 +573,41 @@ describe('emitSharedVueEntryAssets', () => {
       compilationCache,
       pathExists,
     })).toBe('/project/src/pages/demo/index.vue')
+  })
+
+  it('resolves fallback page emit state only when output path and source entry both exist', async () => {
+    const pathExists = vi.fn(async (candidate: string) => candidate)
+    const configService = {
+      relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+    } as any
+
+    await expect(resolveFallbackPageEmitState({
+      entryId: '/project/src/pages/demo/index',
+      configService,
+      compilationCache: new Map(),
+      pathExists,
+    })).resolves.toEqual({
+      relativeBase: 'pages/demo/index',
+      entryFilePath: '/project/src/pages/demo/index.vue',
+    })
+
+    await expect(resolveFallbackPageEmitState({
+      entryId: '/project/src/pages/demo/missing',
+      configService: {
+        relativeOutputPath: () => '',
+      } as any,
+      compilationCache: new Map(),
+      pathExists,
+    })).resolves.toBeUndefined()
+
+    await expect(resolveFallbackPageEmitState({
+      entryId: '/project/src/pages/demo/index',
+      configService,
+      compilationCache: new Map([
+        ['/project/src/pages/demo/index.vue', { result: {}, isPage: true } as any],
+      ]),
+      pathExists,
+    })).resolves.toBeUndefined()
   })
 
   it('adds normalized watch file through bundle helper', () => {
