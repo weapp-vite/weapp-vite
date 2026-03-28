@@ -35,6 +35,7 @@ import {
   getRequireAsyncLiteralToken,
   getStaticPropertyName,
   getStaticRequireLiteralValue,
+  hasBindingInScopes,
   isOxcFunctionLike,
   isPlatformApiIdentifier,
   isStaticPropertyName,
@@ -992,6 +993,8 @@ export function useCounter() {
     expect([...collectIdentifiersFromExpressionWithOxc('count + this.extra + Math.max(total, 1)')]).toEqual(['count', 'extra', 'total'])
     expect([...collectIdentifiersFromExpression('list.map(item => item.name + index)')]).toEqual(['list', 'index'])
     expect([...collectIdentifiersFromExpressionWithOxc('list.map(item => item.name + index)')]).toEqual(['list', 'index'])
+    expect(hasBindingInScopes([new Set(['foo']), new Set(['bar'])], 'bar')).toBe(true)
+    expect(hasBindingInScopes([new Set(['foo']), new Set(['bar'])], 'baz')).toBe(false)
     expect([...collectLoopScopeAliases('<view wx:for="{{ list }}"></view>')]).toEqual(['item', 'index'])
     expect([...collectLoopScopeAliases('<view wx:for="{{ list }}" wx:for-item="row" wx:for-index="i"></view>')]).toEqual(['row', 'i'])
     collectPatternBindingNames({
