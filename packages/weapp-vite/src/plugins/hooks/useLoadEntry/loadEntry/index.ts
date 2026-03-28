@@ -15,6 +15,7 @@ import { resolveCompilerOutputExtensions } from '../../../../utils/outputExtensi
 import { isPathInside, normalizeWatchPath } from '../../../../utils/path'
 import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
+import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
 import { collectNativeLayoutAssets, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
@@ -254,15 +255,10 @@ export function createEntryLoader(options: EntryLoaderOptions) {
           const vueSource = await fs.readFile(vueEntryPath, 'utf-8')
           const layoutPlan = await resolvePageLayoutPlan(vueSource, vueEntryPath, configService as any)
           if (layoutPlan) {
+            await addResolvedPageLayoutWatchFiles(this, layoutPlan.layouts)
             for (const layout of layoutPlan.layouts) {
-              this.addWatchFile(normalizeWatchPath(layout.file))
               if (layout.kind === 'native') {
                 const nativeAssets = await collectNativeLayoutAssets(layout.file)
-                for (const asset of Object.values(nativeAssets)) {
-                  if (asset) {
-                    this.addWatchFile(normalizeWatchPath(asset))
-                  }
-                }
                 if (nativeAssets.script) {
                   entries.push(layout.importPath)
                   nativeLayoutScriptEntries.add(normalizeEntry(layout.importPath, jsonPath))

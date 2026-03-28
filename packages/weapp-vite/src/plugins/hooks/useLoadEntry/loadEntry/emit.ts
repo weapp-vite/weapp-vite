@@ -12,6 +12,7 @@ import { normalizeWatchPath } from '../../../../utils/path'
 import { isSkippableResolvedId, normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { emitNativeLayoutScriptChunkIfNeeded, resolveNativeLayoutOutputOptions } from '../../../utils/nativeLayout'
+import { expandResolvedPageLayoutFiles } from '../../../utils/pageLayout'
 import { applyPageLayoutPlanToNativePage, collectNativeLayoutAssets, injectNativePageLayoutRuntime, resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectStyleImports } from './watch'
 
@@ -262,18 +263,9 @@ export async function emitEntryOutput(options: EmitEntryOutputOptions) {
     const layoutPlan = await resolvePageLayoutPlan(code, id, configService as any)
     if (layoutPlan) {
       const layoutDependencies = new Set<string>()
-      for (const layout of layoutPlan.layouts) {
-        pluginCtx.addWatchFile(normalizeWatchPath(layout.file))
-        layoutDependencies.add(normalizeFsResolvedId(layout.file))
-        if (layout.kind === 'native') {
-          const nativeAssets = await collectNativeLayoutAssets(layout.file)
-          for (const asset of Object.values(nativeAssets)) {
-            if (asset) {
-              pluginCtx.addWatchFile(normalizeWatchPath(asset))
-              layoutDependencies.add(normalizeFsResolvedId(asset))
-            }
-          }
-        }
+      for (const file of await expandResolvedPageLayoutFiles(layoutPlan.layouts)) {
+        pluginCtx.addWatchFile(normalizeWatchPath(file))
+        layoutDependencies.add(normalizeFsResolvedId(file))
       }
       replaceLayoutDependencies(id, layoutDependencies)
 

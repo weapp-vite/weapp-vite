@@ -1,10 +1,10 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
 import { compileJsxFile, compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
-import { normalizeWatchPath } from '../../../../utils/path'
+import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { resolveClassStyleWxsLocationForBase } from '../classStyle'
 import { createCompileVueFileOptions } from '../compileOptions'
-import { applyPageLayoutPlan, collectNativeLayoutAssets, resolvePageLayoutPlan } from '../pageLayout'
+import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 export const SCRIPTLESS_COMPONENT_STUB = 'Component({})'
@@ -90,19 +90,7 @@ export async function compileVueLikeFile(options: {
       const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
       if (resolvedLayoutPlan) {
         applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
-        if (typeof pluginCtx.addWatchFile === 'function') {
-          for (const layout of resolvedLayoutPlan.layouts) {
-            pluginCtx.addWatchFile(normalizeWatchPath(layout.file))
-            if (layout.kind === 'native') {
-              const nativeAssets = await collectNativeLayoutAssets(layout.file)
-              for (const asset of Object.values(nativeAssets)) {
-                if (asset) {
-                  pluginCtx.addWatchFile(normalizeWatchPath(asset))
-                }
-              }
-            }
-          }
-        }
+        await addResolvedPageLayoutWatchFiles(pluginCtx, resolvedLayoutPlan.layouts)
       }
     }
     return result
@@ -112,19 +100,7 @@ export async function compileVueLikeFile(options: {
     const resolvedLayoutPlan = await resolvePageLayoutPlan(source, filename, configService)
     if (resolvedLayoutPlan) {
       applyPageLayoutPlan(result, filename, resolvedLayoutPlan)
-      if (typeof pluginCtx.addWatchFile === 'function') {
-        for (const layout of resolvedLayoutPlan.layouts) {
-          pluginCtx.addWatchFile(normalizeWatchPath(layout.file))
-          if (layout.kind === 'native') {
-            const nativeAssets = await collectNativeLayoutAssets(layout.file)
-            for (const asset of Object.values(nativeAssets)) {
-              if (asset) {
-                pluginCtx.addWatchFile(normalizeWatchPath(asset))
-              }
-            }
-          }
-        }
-      }
+      await addResolvedPageLayoutWatchFiles(pluginCtx, resolvedLayoutPlan.layouts)
     }
   }
   return result

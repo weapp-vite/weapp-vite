@@ -1,9 +1,9 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
-import { normalizeWatchPath } from '../../../../utils/path'
+import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { emitNativeLayoutScriptChunkIfNeeded } from '../bundle'
-import { collectNativeLayoutAssets, resolvePageLayoutPlan } from '../pageLayout'
+import { resolvePageLayoutPlan } from '../pageLayout'
 import { isVueLikeFile } from '../shared'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
@@ -92,19 +92,7 @@ export async function registerNativeLayoutChunksForEntry(
     return
   }
 
-  if (typeof pluginCtx.addWatchFile === 'function') {
-    for (const layout of resolvedLayoutPlan.layouts) {
-      pluginCtx.addWatchFile(normalizeWatchPath(layout.file))
-      if (layout.kind === 'native') {
-        const nativeAssets = await collectNativeLayoutAssets(layout.file)
-        for (const asset of Object.values(nativeAssets)) {
-          if (asset) {
-            pluginCtx.addWatchFile(normalizeWatchPath(asset))
-          }
-        }
-      }
-    }
-  }
+  await addResolvedPageLayoutWatchFiles(pluginCtx, resolvedLayoutPlan.layouts)
 
   for (const layout of resolvedLayoutPlan.layouts) {
     if (layout.kind !== 'native') {
