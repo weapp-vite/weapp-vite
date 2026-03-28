@@ -1,16 +1,19 @@
 import type { Plugin, ResolvedConfig } from 'vite'
 import type { CompilerContext } from '../context'
-import { removeExtensionDeep } from '@weapp-core/shared'
 import chokidar from 'chokidar'
 import path from 'pathe'
 import { resolveWeappAutoRoutesConfig } from '../autoRoutesConfig'
 import { vueExtensions } from '../constants'
 import { logger } from '../context/shared'
 import { createAutoRoutesMatcher } from '../runtime/autoRoutesPlugin/matcher'
+import {
+  isAliasedAutoRoutesId,
+  isAutoRoutesPagesRelatedPath,
+  resolveAutoRoutesAliasTargets,
+} from '../runtime/autoRoutesPlugin/shared'
 import { getAutoRoutesSubPackageRoots } from '../runtime/autoRoutesPlugin/subPackageRoots'
 import { createSidecarWatchOptions } from '../runtime/watch/options'
-import { normalizePath, normalizeWatchPath, toPosixPath } from '../utils/path'
-import { normalizeFsResolvedId } from '../utils/resolvedId'
+import { normalizeWatchPath } from '../utils/path'
 
 const AUTO_ROUTES_ID = 'weapp-vite/auto-routes'
 const VIRTUAL_MODULE_ID = 'virtual:weapp-vite-auto-routes'
@@ -32,29 +35,11 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     return Boolean(configService?.isDev || configService?.inlineConfig?.build?.watch)
   }
 
-  const normalizeTargetId = (id: string) => {
-    return path.normalize(normalizeFsResolvedId(id))
-  }
-
   const refreshAutoRoutesAliasTargets = () => {
     autoRoutesAliasTargets.clear()
-    const packageRoot = ctx.configService?.packageInfo?.rootPath
-    if (!packageRoot) {
-      return
+    for (const target of resolveAutoRoutesAliasTargets(ctx.configService?.packageInfo?.rootPath)) {
+      autoRoutesAliasTargets.add(target)
     }
-    const candidates = [
-      path.resolve(packageRoot, 'src/auto-routes.ts'),
-      path.resolve(packageRoot, 'auto-routes.ts'),
-      path.resolve(packageRoot, 'dist/auto-routes.mjs'),
-      path.resolve(packageRoot, 'dist/auto-routes.js'),
-    ]
-    for (const candidate of candidates) {
-      autoRoutesAliasTargets.add(path.normalize(candidate))
-    }
-  }
-
-  const isAliasedAutoRoutesId = (id: string) => {
-    return autoRoutesAliasTargets.has(normalizeTargetId(id))
   }
 
   const addWatchTargets = (pluginCtx: Pick<Plugin, 'name'> & { addWatchFile?: (id: string) => void }) => {
@@ -78,34 +63,12 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
     if (!configService) {
       return false
     }
-
-    const [pathWithoutQuery] = id.split('?')
-    if (!pathWithoutQuery) {
-      return false
-    }
-
-    const normalizedSrcRoot = normalizePath(configService.absoluteSrcRoot)
-    const normalizedCandidate = normalizePath(
-      path.isAbsolute(pathWithoutQuery)
-        ? pathWithoutQuery
-        : path.resolve(configService.cwd, pathWithoutQuery),
-    )
-    const relative = toPosixPath(path.relative(normalizedSrcRoot, normalizedCandidate))
-    if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
-      return false
-    }
-
     const autoRoutesConfig = resolveWeappAutoRoutesConfig(configService.weappViteConfig?.autoRoutes)
-    const matcher = createAutoRoutesMatcher(autoRoutesConfig.include, getAutoRoutesSubPackageRoots(ctx))
-
-    if (matcher.matches(removeExtensionDeep(relative))) {
-      return true
-    }
-
-    return matcher.getWatchRoots(configService.absoluteSrcRoot).some((root) => {
-      const normalizedRoot = normalizePath(root)
-      return normalizedCandidate === normalizedRoot
-        || normalizedCandidate.startsWith(`${normalizedRoot}/`)
+    return isAutoRoutesPagesRelatedPath(id, {
+      cwd: configService.cwd,
+      absoluteSrcRoot: configService.absoluteSrcRoot,
+      include: autoRoutesConfig.include,
+      subPackageRoots: getAutoRoutesSubPackageRoots(ctx),
     })
   }
 
@@ -214,14 +177,14 @@ function createAutoRoutesPlugin(ctx: CompilerContext): Plugin {
       if (id === RESOLVED_VIRTUAL_ID) {
         return RESOLVED_VIRTUAL_ID
       }
-      if (isAliasedAutoRoutesId(id)) {
+      if (isAliasedAutoRoutesId(id, autoRoutesAliasTargets)) {
         return RESOLVED_VIRTUAL_ID
       }
       return null
     },
 
     async load(id) {
-      if (id !== RESOLVED_VIRTUAL_ID && !isAliasedAutoRoutesId(id)) {
+      if (id !== RESOLVED_VIRTUAL_ID && !isAliasedAutoRoutesId(id, autoRoutesAliasTargets)) {
         return null
       }
 
