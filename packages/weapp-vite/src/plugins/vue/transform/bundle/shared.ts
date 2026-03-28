@@ -1,7 +1,8 @@
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
-import { compileJsxFile, compileVueFile } from 'wevu/compiler'
+import { compileJsxFile, compileVueFile, getClassStyleWxsSource } from 'wevu/compiler'
 import { normalizeWatchPath } from '../../../../utils/path'
+import { resolveClassStyleWxsLocationForBase } from '../classStyle'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { applyPageLayoutPlan, collectNativeLayoutAssets, resolvePageLayoutPlan } from '../pageLayout'
 
@@ -25,6 +26,26 @@ export interface VueBundleState {
 export interface ClassStyleWxsAsset {
   fileName: string
   source: string
+}
+
+export function resolveClassStyleWxsAsset(
+  ctx: CompilerContext,
+  relativeBase: string,
+  wxsExtension: string | undefined,
+  configService: NonNullable<CompilerContext['configService']>,
+  result: Pick<VueTransformResult, 'classStyleWxs' | 'scopedSlotComponents'>,
+): ClassStyleWxsAsset | undefined {
+  const needsClassStyleWxs = Boolean(result.classStyleWxs)
+    || Boolean(result.scopedSlotComponents?.some(slot => slot.classStyleWxs))
+  if (!needsClassStyleWxs || typeof wxsExtension !== 'string' || wxsExtension.length === 0) {
+    return undefined
+  }
+
+  const classStyleWxsLocation = resolveClassStyleWxsLocationForBase(ctx, relativeBase, wxsExtension, configService)
+  return {
+    fileName: classStyleWxsLocation.fileName,
+    source: getClassStyleWxsSource({ extension: wxsExtension }),
+  }
 }
 
 export function getEntryBaseName(filename: string) {

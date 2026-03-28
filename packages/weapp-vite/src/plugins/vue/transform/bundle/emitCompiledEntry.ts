@@ -1,9 +1,7 @@
 import type { ClassStyleWxsAsset, CompilationCacheEntry, VueBundleState } from './shared'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
 import fs from 'fs-extra'
-import { getClassStyleWxsSource } from 'wevu/compiler'
 import { normalizeWatchPath } from '../../../../utils/path'
-import { resolveClassStyleWxsLocationForBase } from '../classStyle'
 import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset } from '../emitAssets'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
 import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
@@ -12,7 +10,7 @@ import { emitScopedSlotAssets } from '../scopedSlot'
 import { emitNativeLayoutAssetsIfNeeded, emitScriptlessComponentJsFallbackIfMissing, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
 import { resolveBundleOutputExtensions } from './outputExtensions'
 import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
-import { compileVueLikeFile, getEntryBaseName, isAppVueLikeFile } from './shared'
+import { compileVueLikeFile, getEntryBaseName, isAppVueLikeFile, resolveClassStyleWxsAsset } from './shared'
 
 export async function emitCompiledVueEntryAssets(
   bundle: Record<string, any>,
@@ -152,17 +150,13 @@ export async function emitCompiledVueEntryAssets(
     })
   }
 
-  const wxsExtension = scriptModuleExtension
-  const needsClassStyleWxs = Boolean(result.classStyleWxs)
-    || Boolean(result.scopedSlotComponents?.some(slot => slot.classStyleWxs))
-  let classStyleWxs: ClassStyleWxsAsset | undefined
-  if (needsClassStyleWxs && typeof wxsExtension === 'string' && wxsExtension.length > 0) {
-    const classStyleWxsLocation = resolveClassStyleWxsLocationForBase(ctx, relativeBase, wxsExtension, configService)
-    classStyleWxs = {
-      fileName: classStyleWxsLocation.fileName,
-      source: getClassStyleWxsSource({ extension: wxsExtension }),
-    }
-  }
+  const classStyleWxs: ClassStyleWxsAsset | undefined = resolveClassStyleWxsAsset(
+    ctx,
+    relativeBase,
+    scriptModuleExtension,
+    configService,
+    result,
+  )
 
   if (result.classStyleWxs && classStyleWxs) {
     emitClassStyleWxsAssetIfMissing(
