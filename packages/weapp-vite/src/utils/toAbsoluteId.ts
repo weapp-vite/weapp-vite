@@ -12,6 +12,21 @@ export interface ToAbsoluteIdOptions {
   base?: 'srcRoot' | 'cwd'
 }
 
+export function resolveAbsoluteIdBaseDir(
+  configService: Pick<ConfigService, 'cwd' | 'absoluteSrcRoot'>,
+  importer?: string,
+  options?: ToAbsoluteIdOptions,
+) {
+  const cleanImporter = importer ? normalizeFsResolvedId(importer) : undefined
+  if (cleanImporter && !isSkippableResolvedId(cleanImporter) && path.isAbsolute(cleanImporter)) {
+    return path.dirname(cleanImporter)
+  }
+
+  return options?.base === 'cwd'
+    ? configService.cwd
+    : configService.absoluteSrcRoot
+}
+
 /**
  * 将可能为相对路径的 id 解析为绝对路径。
  *
@@ -36,13 +51,6 @@ export function toAbsoluteId(
     return cleanId
   }
 
-  const cleanImporter = importer ? normalizeFsResolvedId(importer) : undefined
-  if (cleanImporter && !isSkippableResolvedId(cleanImporter) && path.isAbsolute(cleanImporter)) {
-    return path.resolve(path.dirname(cleanImporter), cleanId)
-  }
-
-  const baseDir = options?.base === 'cwd'
-    ? configService.cwd
-    : configService.absoluteSrcRoot
+  const baseDir = resolveAbsoluteIdBaseDir(configService, importer, options)
   return path.resolve(baseDir, cleanId)
 }
