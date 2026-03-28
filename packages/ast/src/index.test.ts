@@ -12,6 +12,7 @@ import {
   defaultIsDefineComponentSource,
   extractTemplateExpressions,
   getLocationFromOffset,
+  getMemberExpressionPropertyName,
   getObjectPropertyByKey,
   getOxcMemberExpressionPropertyName,
   getOxcStaticPropertyName,
@@ -19,6 +20,7 @@ import {
   getStaticPropertyName,
   getStaticRequireLiteralValue,
   isPlatformApiIdentifier,
+  isStaticPropertyName,
   mapConstructorName,
   mayContainComponentPropsShape,
   mayContainFeatureFlagHints,
@@ -514,6 +516,11 @@ export function useCounter() {
     expect(getLocationFromOffset(0, lineStarts)).toEqual({ line: 1, column: 1 })
     expect(getLocationFromOffset(8, lineStarts)).toEqual({ line: 2, column: 3 })
     expect(getLocationFromOffset(undefined, lineStarts)).toBeUndefined()
+    expect(isStaticPropertyName(t.identifier('onPageScroll'))).toBe('onPageScroll')
+    expect(isStaticPropertyName(t.stringLiteral('render'))).toBe('render')
+    expect(isStaticPropertyName(t.privateName(t.identifier('secret')))).toBeUndefined()
+    expect(getMemberExpressionPropertyName(t.memberExpression(t.identifier('wx'), t.identifier('setData')))).toBe('setData')
+    expect(getMemberExpressionPropertyName(t.memberExpression(t.identifier('wx'), t.stringLiteral('getStorageSync'), true))).toBe('getStorageSync')
     expect(getOxcStaticPropertyName({ type: 'Identifier', name: 'onPageScroll' })).toBe('onPageScroll')
     expect(getOxcStaticPropertyName({ type: 'StringLiteral', value: 'render' })).toBe('render')
     expect(getOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')

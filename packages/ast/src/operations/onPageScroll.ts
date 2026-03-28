@@ -14,7 +14,7 @@ interface OxcLoc {
   column: number
 }
 
-function isStaticPropertyName(key: t.Expression | t.Identifier | t.PrivateName): string | undefined {
+export function isStaticPropertyName(key: t.Expression | t.Identifier | t.PrivateName): string | undefined {
   if (key.type === 'Identifier') {
     return key.name
   }
@@ -24,7 +24,7 @@ function isStaticPropertyName(key: t.Expression | t.Identifier | t.PrivateName):
   return undefined
 }
 
-function getMemberExpressionPropertyName(node: t.MemberExpression | t.OptionalMemberExpression): string | undefined {
+export function getMemberExpressionPropertyName(node: t.MemberExpression | t.OptionalMemberExpression): string | undefined {
   if (node.computed) {
     return node.property.type === 'StringLiteral' ? node.property.value : undefined
   }
