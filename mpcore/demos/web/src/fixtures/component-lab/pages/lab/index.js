@@ -33,6 +33,7 @@ Page({
     fileManagerUnsupportedWriteEncodingInfo: '',
     savedOrderingInfo: '',
     savedRemovalInfo: '',
+    savedRenameOverwriteInfo: '',
     savedRenameOutInfo: '',
     uploadedSnapshot: '',
     storageSnapshot: '',
@@ -303,6 +304,39 @@ Page({
           this.push('lab:runSavedRenameOutLab')
         })
       }
+    })
+  },
+  runSavedRenameOverwriteLab() {
+    const fsManager = wx.getFileSystemManager()
+    fsManager.writeFileSync('headless://temp/component-lab-rename-source.txt', 'alpha-beta')
+    fsManager.writeFileSync('headless://temp/component-lab-rename-target.txt', 'x')
+    wx.saveFile({
+      tempFilePath: 'headless://temp/component-lab-rename-source.txt',
+      filePath: 'headless://saved/component-lab/transfers/source.txt',
+      success: () => {
+        wx.saveFile({
+          tempFilePath: 'headless://temp/component-lab-rename-target.txt',
+          filePath: 'headless://saved/component-lab/transfers/target.txt',
+          success: () => {
+            const beforeInfo = wx.getSavedFileInfo({ filePath: 'headless://saved/component-lab/transfers/target.txt' })
+            fsManager.renameSync(
+              'headless://saved/component-lab/transfers/source.txt',
+              'headless://saved/component-lab/transfers/target.txt',
+            )
+            const afterInfo = wx.getSavedFileInfo({ filePath: 'headless://saved/component-lab/transfers/target.txt' })
+            this.setData({
+              savedRenameOverwriteInfo: JSON.stringify({
+                afterCreateTime: afterInfo.createTime,
+                afterSize: afterInfo.size,
+                beforeCreateTime: beforeInfo.createTime,
+                filePath: 'headless://saved/component-lab/transfers/target.txt',
+              }),
+            }, () => {
+              this.push('lab:runSavedRenameOverwriteLab')
+            })
+          },
+        })
+      },
     })
   },
   runSavedRemovalLab() {
