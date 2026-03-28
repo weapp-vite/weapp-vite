@@ -1,7 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
-import { invalidatePageLayoutCaches, invalidateVueFileCaches } from './shared'
+import { invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, resolveSfcSrc } from './shared'
 
 describe('vue transform plugin shared helpers', () => {
+  it('detects vue-like ids and resolves sfc src ids', async () => {
+    expect(isVueLikeId('/project/src/pages/home/index.vue')).toBe(true)
+    expect(isVueLikeId('/project/src/pages/home/index.jsx')).toBe(true)
+    expect(isVueLikeId('/project/src/pages/home/index.tsx')).toBe(true)
+    expect(isVueLikeId('/project/src/pages/home/index.ts')).toBe(false)
+
+    expect(await resolveSfcSrc({}, './child.vue', '/project/src/pages/home/index.vue')).toBeUndefined()
+    expect(await resolveSfcSrc({
+      resolve: vi.fn(async () => ({ id: '/project/src/components/child.vue' })),
+    }, './child.vue', '/project/src/pages/home/index.vue')).toBe('/project/src/components/child.vue')
+  })
+
   it('invalidates page layout related caches for page entries', () => {
     const compilationCache = new Map<string, any>([
       ['/project/src/pages/home/index.vue', { isPage: true, source: '<template />', result: {} }],
