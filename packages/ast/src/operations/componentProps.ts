@@ -275,7 +275,7 @@ export function extractComponentProperties(optionsNode: any): ComponentPropMap {
   return new Map()
 }
 
-function collectComponentPropsWithBabel(code: string): ComponentPropMap {
+export function collectComponentPropsWithBabel(code: string): ComponentPropMap {
   const ast = parse(code, BABEL_TS_MODULE_PARSER_OPTIONS)
   let props: ComponentPropMap = new Map()
 
@@ -296,7 +296,7 @@ function collectComponentPropsWithBabel(code: string): ComponentPropMap {
   return props
 }
 
-function collectComponentPropsWithOxc(code: string): ComponentPropMap {
+export function collectComponentPropsWithOxc(code: string): ComponentPropMap {
   const ast = parseJsLikeWithEngine(code, {
     engine: 'oxc',
     filename: 'inline.ts',

@@ -12,6 +12,8 @@ export { babelAstEngine } from './engines/babel'
 export { oxcAstEngine } from './engines/oxc'
 export {
   collectComponentPropsFromCode,
+  collectComponentPropsWithBabel,
+  collectComponentPropsWithOxc,
   extractComponentProperties,
   extractPropertiesObject,
   getStaticPropertyName,
