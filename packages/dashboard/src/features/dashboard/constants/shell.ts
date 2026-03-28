@@ -1,4 +1,12 @@
-import type { DashboardIconFeatureItem, DashboardNavItem, DashboardRuntimeEvent, DashboardTokenGroup } from '../types'
+import type {
+  DashboardIconFeatureItem,
+  DashboardNavItem,
+  DashboardRuntimeEvent,
+  DashboardTokenGroup,
+  WorkspaceActivityItem,
+  WorkspaceCommandItem,
+  WorkspaceDiagnosticItem,
+} from '../types'
 
 export const workspaceNavigation: DashboardNavItem[] = [
   { to: '/', label: '工作台', caption: '应用入口与状态总览', iconName: 'nav-home' },
@@ -28,7 +36,7 @@ export const workspaceHighlights: DashboardIconFeatureItem[] = [
   },
 ]
 
-export const quickCommands = [
+export const quickCommands: WorkspaceCommandItem[] = [
   { label: '启动开发', command: 'pnpm --filter @weapp-vite/dashboard dev', note: '本地预览完整 UI 壳子' },
   { label: '生产构建', command: 'pnpm --filter @weapp-vite/dashboard build', note: '验证静态产物可发布' },
   { label: '主包联调', command: 'weapp-vite build --ui', note: '从 CLI 注入真实分析数据' },
@@ -40,7 +48,7 @@ export const releaseChecklist = [
   '主题切换提升到应用级，避免每个页面各自维护深浅色状态。',
 ]
 
-export const activityFeed = [
+export const activityFeed: WorkspaceActivityItem[] = [
   {
     time: '09:12',
     title: 'analyze payload synced',
@@ -61,7 +69,7 @@ export const activityFeed = [
   },
 ]
 
-export const diagnosticsQueue = [
+export const diagnosticsQueue: WorkspaceDiagnosticItem[] = [
   { label: 'CLI 注入链路', detail: '保留 `window.__WEAPP_VITE_ANALYZE_RESULT__` 兼容层。', status: '兼容' },
   { label: '路由拓展性', detail: '新增页面采用文件路由，后续新增面板不需要修改主路由表。', status: '可扩展' },
   { label: '组件复用', detail: '通用卡片与区块标题已独立，避免页面继续拷贝结构。', status: '已落地' },
