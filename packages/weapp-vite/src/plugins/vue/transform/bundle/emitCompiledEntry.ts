@@ -2,8 +2,6 @@ import type { CompilationCacheEntry, VueBundleState } from './shared'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
 import fs from 'fs-extra'
 import { normalizeWatchPath } from '../../../../utils/path'
-import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
-import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import {
   emitNativeLayoutAssetsIfNeeded,
@@ -11,7 +9,7 @@ import {
   emitScriptlessComponentJsFallbackIfMissing,
   emitVueLayoutScriptFallbackIfNeeded,
 } from './layoutAssets'
-import { compileVueLikeFile, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, getEntryBaseName, isAppVueLikeFile, resolveVueBundleAssetContext } from './shared'
+import { compileAndFinalizeVueLikeFile, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, getEntryBaseName, isAppVueLikeFile, resolveVueBundleAssetContext } from './shared'
 
 export async function emitCompiledVueEntryAssets(
   bundle: Record<string, any>,
@@ -45,7 +43,7 @@ export async function emitCompiledVueEntryAssets(
       const source = await fs.readFile(filename, 'utf-8')
       if (source !== cached.source) {
         const isApp = isAppVueLikeFile(filename)
-        const compiled = await compileVueLikeFile({
+        const compiled = await compileAndFinalizeVueLikeFile({
           source,
           filename,
           ctx,
@@ -55,27 +53,6 @@ export async function emitCompiledVueEntryAssets(
           configService,
           compileOptionsState,
         })
-
-        if (cached.isPage && compiled.script) {
-          const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, compiled.script, filename, {
-            checkMtime: configService.isDev,
-          })
-          if (injected.transformed) {
-            compiled.script = injected.code
-          }
-        }
-        if (
-          !isApp
-          && compiled.script
-          && compiled.template
-          && isAutoSetDataPickEnabled(configService.weappViteConfig)
-        ) {
-          const keys = collectSetDataPickKeysFromTemplate(compiled.template)
-          const injectedPick = injectSetDataPickInJs(compiled.script, keys)
-          if (injectedPick.transformed) {
-            compiled.script = injectedPick.code
-          }
-        }
 
         cached.source = source
         cached.result = compiled

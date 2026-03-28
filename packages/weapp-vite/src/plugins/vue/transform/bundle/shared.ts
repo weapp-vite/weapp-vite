@@ -6,6 +6,8 @@ import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { resolveClassStyleWxsLocationForBase } from '../classStyle'
 import { createCompileVueFileOptions } from '../compileOptions'
 import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing } from '../emitAssets'
+import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
+import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
 import { resolveBundleOutputExtensions } from './outputExtensions'
@@ -290,4 +292,60 @@ export async function compileVueLikeFile(options: {
     }
   }
   return result
+}
+
+export async function finalizeCompiledVueLikeResult(options: {
+  result: VueTransformResult
+  filename: string
+  pluginCtx: any
+  configService: NonNullable<CompilerContext['configService']>
+  isPage: boolean
+  isApp: boolean
+}) {
+  const { result, filename, pluginCtx, configService, isPage, isApp } = options
+
+  if (isPage && result.script) {
+    const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
+      checkMtime: configService.isDev,
+    })
+    if (injected.transformed) {
+      result.script = injected.code
+    }
+  }
+
+  if (
+    !isApp
+    && result.script
+    && result.template
+    && isAutoSetDataPickEnabled(configService.weappViteConfig)
+  ) {
+    const keys = collectSetDataPickKeysFromTemplate(result.template)
+    const injectedPick = injectSetDataPickInJs(result.script, keys)
+    if (injectedPick.transformed) {
+      result.script = injectedPick.code
+    }
+  }
+
+  return result
+}
+
+export async function compileAndFinalizeVueLikeFile(options: {
+  source: string
+  filename: string
+  ctx: CompilerContext
+  pluginCtx: any
+  isPage: boolean
+  isApp: boolean
+  configService: NonNullable<CompilerContext['configService']>
+  compileOptionsState: { reExportResolutionCache: Map<string, Map<string, string | undefined>>, classStyleRuntimeWarned: { value: boolean } }
+}) {
+  const result = await compileVueLikeFile(options)
+  return await finalizeCompiledVueLikeResult({
+    result,
+    filename: options.filename,
+    pluginCtx: options.pluginCtx,
+    configService: options.configService,
+    isPage: options.isPage,
+    isApp: options.isApp,
+  })
 }

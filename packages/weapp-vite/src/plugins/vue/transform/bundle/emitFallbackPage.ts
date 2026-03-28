@@ -6,12 +6,10 @@ import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
-import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
-import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { resolvePageLayoutPlan } from '../pageLayout'
 import { findFirstResolvedVueLikeEntry } from '../shared'
 import { emitNativeLayoutAssetsIfNeeded, emitResolvedBundleLayouts, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
-import { compileVueLikeFile, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, resolveVueBundleAssetContext } from './shared'
+import { compileAndFinalizeVueLikeFile, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, resolveVueBundleAssetContext } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -62,7 +60,7 @@ export async function emitFallbackPageAssets(
 
     try {
       const source = await fs.readFile(entryFilePath, 'utf-8')
-      const result = await compileVueLikeFile({
+      const result = await compileAndFinalizeVueLikeFile({
         source,
         filename: entryFilePath,
         ctx,
@@ -72,26 +70,6 @@ export async function emitFallbackPageAssets(
         configService,
         compileOptionsState,
       })
-
-      if (result.script) {
-        const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, entryFilePath, {
-          checkMtime: configService.isDev,
-        })
-        if (injected.transformed) {
-          result.script = injected.code
-        }
-      }
-      if (
-        result.script
-        && result.template
-        && isAutoSetDataPickEnabled(configService.weappViteConfig)
-      ) {
-        const keys = collectSetDataPickKeysFromTemplate(result.template)
-        const injectedPick = injectSetDataPickInJs(result.script, keys)
-        if (injectedPick.transformed) {
-          result.script = injectedPick.code
-        }
-      }
 
       const resolvedLayoutPlan = await resolvePageLayoutPlan(source, entryFilePath, configService)
       if (resolvedLayoutPlan?.layouts.length) {

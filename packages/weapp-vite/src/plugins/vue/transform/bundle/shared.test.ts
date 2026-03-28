@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, resolveVueBundleAssetContext } from './shared'
+import { emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -11,6 +11,16 @@ const resolveClassStyleWxsLocationForBaseMock = vi.hoisted(() => vi.fn(() => ({
 })))
 const getClassStyleWxsSourceMock = vi.hoisted(() => vi.fn(() => 'module.exports = {}'))
 const preparePlatformConfigAssetMock = vi.hoisted(() => vi.fn(() => '{"component":true}'))
+const injectWevuPageFeaturesInJsWithViteResolverMock = vi.hoisted(() => vi.fn(async (_ctx: any, code: string) => ({
+  transformed: false,
+  code,
+})))
+const collectSetDataPickKeysFromTemplateMock = vi.hoisted(() => vi.fn(() => ['title']))
+const injectSetDataPickInJsMock = vi.hoisted(() => vi.fn((code: string) => ({
+  transformed: false,
+  code,
+})))
+const isAutoSetDataPickEnabledMock = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock('./platform', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./platform')>()
@@ -29,6 +39,16 @@ vi.mock('../emitAssets', () => ({
 
 vi.mock('../scopedSlot', () => ({
   emitScopedSlotAssets: emitScopedSlotAssetsMock,
+}))
+
+vi.mock('../injectPageFeatures', () => ({
+  injectWevuPageFeaturesInJsWithViteResolver: injectWevuPageFeaturesInJsWithViteResolverMock,
+}))
+
+vi.mock('../injectSetDataPick', () => ({
+  collectSetDataPickKeysFromTemplate: collectSetDataPickKeysFromTemplateMock,
+  injectSetDataPickInJs: injectSetDataPickInJsMock,
+  isAutoSetDataPickEnabled: isAutoSetDataPickEnabledMock,
 }))
 
 vi.mock('../classStyle', async (importOriginal) => {
@@ -58,6 +78,20 @@ describe('emitSharedVueEntryAssets', () => {
     getClassStyleWxsSourceMock.mockClear()
     preparePlatformConfigAssetMock.mockReset()
     preparePlatformConfigAssetMock.mockReturnValue('{"component":true}')
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockReset()
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
+      transformed: false,
+      code: 'Component({})',
+    })
+    collectSetDataPickKeysFromTemplateMock.mockReset()
+    collectSetDataPickKeysFromTemplateMock.mockReturnValue(['title'])
+    injectSetDataPickInJsMock.mockReset()
+    injectSetDataPickInJsMock.mockImplementation((code: string) => ({
+      transformed: false,
+      code,
+    }))
+    isAutoSetDataPickEnabledMock.mockReset()
+    isAutoSetDataPickEnabledMock.mockReturnValue(false)
   })
 
   it('emits template, class style wxs, and scoped slot assets through shared flow', () => {
@@ -159,6 +193,62 @@ describe('emitSharedVueEntryAssets', () => {
         alipayNpmMode: 'node_modules',
       },
     })
+  })
+
+  it('finalizes compiled page results with page feature and setDataPick injections', async () => {
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
+      transformed: true,
+      code: 'Page({ data: { ready: true } })',
+    })
+    injectSetDataPickInJsMock.mockReturnValue({
+      transformed: true,
+      code: 'Page({ data: { ready: true }, __setDataPick: ["title"] })',
+    })
+    isAutoSetDataPickEnabledMock.mockReturnValue(true)
+
+    const result = await finalizeCompiledVueLikeResult({
+      result: {
+        template: '<view>{{title}}</view>',
+        script: 'Page({})',
+      } as any,
+      filename: '/project/src/pages/index/index.vue',
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: true,
+      isApp: false,
+    })
+
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
+    expect(collectSetDataPickKeysFromTemplateMock).toHaveBeenCalledWith('<view>{{title}}</view>')
+    expect(injectSetDataPickInJsMock).toHaveBeenCalledWith('Page({ data: { ready: true } })', ['title'])
+    expect(result.script).toBe('Page({ data: { ready: true }, __setDataPick: ["title"] })')
+  })
+
+  it('skips setDataPick injection for app entries', async () => {
+    isAutoSetDataPickEnabledMock.mockReturnValue(true)
+
+    const result = await finalizeCompiledVueLikeResult({
+      result: {
+        template: '<view>{{title}}</view>',
+        script: 'App({})',
+      } as any,
+      filename: '/project/src/app.vue',
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        weappViteConfig: {},
+      } as any,
+      isPage: false,
+      isApp: true,
+    })
+
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).not.toHaveBeenCalled()
+    expect(collectSetDataPickKeysFromTemplateMock).not.toHaveBeenCalled()
+    expect(injectSetDataPickInJsMock).not.toHaveBeenCalled()
+    expect(result.script).toBe('App({})')
   })
 
   it('normalizes config before emitting shared json asset', () => {
