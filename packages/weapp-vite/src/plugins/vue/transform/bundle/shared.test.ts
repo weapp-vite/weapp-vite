@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { addBundleWatchFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
+import { addBundleWatchFile, compileAndFinalizeVueLikeFile, compileVueLikeFile, emitBundleVueEntryAssets, emitCompiledEntryBundleAssets, emitFallbackPageBundleAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, handleCompiledEntryPageLayouts, handleFallbackPageLayouts, loadFallbackPageEntryCompilation, refreshCompiledVueEntryCacheInDev, resolveCompiledEntryEmitState, resolveFallbackPageEmitState, resolveFallbackPageEntryFile, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -26,8 +26,13 @@ const compileVueFileMock = vi.hoisted(() => vi.fn(async () => ({
   template: '<view />',
   script: 'Page({})',
 })))
+const compileJsxFileMock = vi.hoisted(() => vi.fn(async () => ({
+  template: '<view />',
+  script: 'Page({})',
+})))
 const resolvePageLayoutPlanMock = vi.hoisted(() => vi.fn(async () => undefined))
 const applyPageLayoutPlanMock = vi.hoisted(() => vi.fn((result: any) => result))
+const addResolvedPageLayoutWatchFilesMock = vi.hoisted(() => vi.fn(async () => {}))
 
 vi.mock('./platform', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./platform')>()
@@ -67,6 +72,14 @@ vi.mock('../pageLayout', async (importOriginal) => {
   }
 })
 
+vi.mock('../../../utils/pageLayout', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../utils/pageLayout')>()
+  return {
+    ...actual,
+    addResolvedPageLayoutWatchFiles: addResolvedPageLayoutWatchFilesMock,
+  }
+})
+
 vi.mock('../classStyle', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../classStyle')>()
   return {
@@ -79,6 +92,7 @@ vi.mock('wevu/compiler', async (importOriginal) => {
   const actual = await importOriginal<typeof import('wevu/compiler')>()
   return {
     ...actual,
+    compileJsxFile: compileJsxFileMock,
     compileVueFile: compileVueFileMock,
     getClassStyleWxsSource: getClassStyleWxsSourceMock,
   }
@@ -122,10 +136,17 @@ describe('emitSharedVueEntryAssets', () => {
       template: '<view />',
       script: 'Page({})',
     })
+    compileJsxFileMock.mockReset()
+    compileJsxFileMock.mockResolvedValue({
+      template: '<view />',
+      script: 'Page({})',
+    })
     resolvePageLayoutPlanMock.mockReset()
     resolvePageLayoutPlanMock.mockResolvedValue(undefined)
     applyPageLayoutPlanMock.mockReset()
     applyPageLayoutPlanMock.mockImplementation((result: any) => result)
+    addResolvedPageLayoutWatchFilesMock.mockReset()
+    addResolvedPageLayoutWatchFilesMock.mockResolvedValue(undefined)
   })
 
   it('emits template, class style wxs, and scoped slot assets through shared flow', () => {
@@ -433,6 +454,105 @@ describe('emitSharedVueEntryAssets', () => {
     expect(result.script).toBe('Page({ data: { ready: true }, __setDataPick: ["title"] })')
   })
 
+  it('compiles vue page entries and applies resolved layout plans', async () => {
+    resolvePageLayoutPlanMock.mockResolvedValue({
+      layouts: [{ kind: 'native', file: '/layouts/default/index' }],
+    })
+
+    const pluginCtx = { emitFile: vi.fn() }
+    const result = await compileVueLikeFile({
+      source: '<view />',
+      filename: '/project/src/pages/index/index.vue',
+      ctx: {} as any,
+      pluginCtx,
+      isPage: true,
+      isApp: false,
+      configService: {
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
+    expect(compileJsxFileMock).not.toHaveBeenCalled()
+    expect(applyPageLayoutPlanMock).toHaveBeenCalledWith(
+      result,
+      '/project/src/pages/index/index.vue',
+      {
+        layouts: [{ kind: 'native', file: '/layouts/default/index' }],
+      },
+    )
+    expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledWith(
+      pluginCtx,
+      [{ kind: 'native', file: '/layouts/default/index' }],
+    )
+  })
+
+  it('compiles jsx-like page entries through shared jsx branch', async () => {
+    resolvePageLayoutPlanMock.mockResolvedValue({
+      layouts: [{ kind: 'vue', file: '/layouts/default/index.vue' }],
+    })
+
+    const pluginCtx = { emitFile: vi.fn() }
+    await compileVueLikeFile({
+      source: 'export default () => <view />',
+      filename: '/project/src/pages/index/index.tsx',
+      ctx: {} as any,
+      pluginCtx,
+      isPage: true,
+      isApp: false,
+      configService: {
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileJsxFileMock).toHaveBeenCalledTimes(1)
+    expect(compileVueFileMock).not.toHaveBeenCalled()
+    expect(addResolvedPageLayoutWatchFilesMock).toHaveBeenCalledWith(
+      pluginCtx,
+      [{ kind: 'vue', file: '/layouts/default/index.vue' }],
+    )
+  })
+
+  it('compiles and finalizes vue-like entries through shared pipeline', async () => {
+    injectWevuPageFeaturesInJsWithViteResolverMock.mockResolvedValue({
+      transformed: true,
+      code: 'Page({ fromPipeline: true })',
+    })
+
+    const result = await compileAndFinalizeVueLikeFile({
+      source: '<view />',
+      filename: '/project/src/pages/index/index.vue',
+      ctx: {} as any,
+      pluginCtx: { emitFile: vi.fn() },
+      isPage: true,
+      isApp: false,
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(compileVueFileMock).toHaveBeenCalledTimes(1)
+    expect(injectWevuPageFeaturesInJsWithViteResolverMock).toHaveBeenCalledTimes(1)
+    expect(result.script).toBe('Page({ fromPipeline: true })')
+  })
+
   it('skips setDataPick injection for app entries', async () => {
     isAutoSetDataPickEnabledMock.mockReturnValue(true)
 
@@ -584,6 +704,40 @@ describe('emitSharedVueEntryAssets', () => {
     expect(cached.source).toBe('<view updated />')
     expect(cached.result).toBe(result)
     expect((result as any).script).toBe('Page({ refreshed: true })')
+  })
+
+  it('falls back to cached compiled result when dev refresh recompilation fails', async () => {
+    const cached = {
+      result: { script: 'Page({ cached: true })' },
+      source: '<view />',
+      isPage: true,
+    } as any
+    readFileMock.mockResolvedValue('<view updated />')
+    compileVueFileMock.mockRejectedValue(new Error('compile failed'))
+
+    const result = await refreshCompiledVueEntryCacheInDev({
+      filename: '/project/src/pages/index/index.vue',
+      cached,
+      ctx: {
+        autoImportService: {
+          resolve: () => undefined,
+        },
+      } as any,
+      pluginCtx: { emitFile: vi.fn() },
+      configService: {
+        isDev: true,
+        platform: 'weapp',
+        relativeOutputPath: (value: string) => value.replace('/project/src/', ''),
+        weappViteConfig: {},
+      } as any,
+      compileOptionsState: {
+        reExportResolutionCache: new Map(),
+        classStyleRuntimeWarned: { value: false },
+      },
+    })
+
+    expect(result).toBe(cached.result)
+    expect(cached.source).toBe('<view />')
   })
 
   it('resolves fallback page entry file with compilation-cache short circuit', async () => {
