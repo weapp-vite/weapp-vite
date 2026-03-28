@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { DashboardIconName } from '../types'
+import type { DashboardInfoPillItem } from '../types'
 import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
-  label: string
-  iconName?: DashboardIconName
+  label: DashboardInfoPillItem['label']
+  iconName?: DashboardInfoPillItem['iconName']
   uppercase?: boolean
 }>()
 </script>

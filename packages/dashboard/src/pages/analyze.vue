@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DashboardInfoPillItem } from '../features/dashboard/types'
 import { TreemapChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, VisualMapComponent } from 'echarts/components'
 import * as echarts from 'echarts/core'
@@ -57,6 +58,15 @@ const visibleDuplicateModules = computed(() => duplicateModules.value.slice(0, 1
 const visibleLargestFiles = computed(() => largestFiles.value.slice(0, 10))
 const statusText = computed(() => `${updateCount.value} 次数据同步`)
 const statusTone = computed(() => resolvedTheme.value === 'dark' ? 'status-dark' : 'status-light')
+const statusPills = computed<DashboardInfoPillItem[]>(() => [
+  {
+    iconName: statusTone.value,
+    label: statusText.value,
+  },
+  {
+    label: lastUpdatedAt.value,
+  },
+])
 const recentRuntimeEvents = computed(() => runtimeEvents.value.slice(0, 3))
 const visibleRuntimeSourceSummary = computed(() =>
   formatRuntimeSourceSummary(runtimeSourceSummary.value)
@@ -224,8 +234,12 @@ onBeforeUnmount(() => {
             {{ option.label }}
           </button>
         </div>
-        <AppInfoPill :icon-name="statusTone" :label="statusText" uppercase />
-        <AppInfoPill :label="lastUpdatedAt" uppercase />
+        <AppInfoPill
+          v-for="item in statusPills"
+          :key="item.label"
+          v-bind="item"
+          uppercase
+        />
       </div>
     </section>
 
