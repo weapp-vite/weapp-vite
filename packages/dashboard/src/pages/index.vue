@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DashboardIconFeatureItem } from '../features/dashboard/types'
 import { RouterLink } from 'vue-router'
 import AppIconFeatureCard from '../features/dashboard/components/AppIconFeatureCard.vue'
 import AppInsetPanel from '../features/dashboard/components/AppInsetPanel.vue'
@@ -9,6 +10,12 @@ import { useDashboardWorkspace } from '../features/dashboard/composables/useDash
 import { releaseChecklist, workspaceHighlights, workspaceNavigation } from '../features/dashboard/constants/shell'
 
 const { commandItems, signals } = useDashboardWorkspace()
+
+const navigationFeatureItems: DashboardIconFeatureItem[] = workspaceNavigation.map(item => ({
+  iconName: item.iconName,
+  title: item.label,
+  description: item.caption,
+}))
 </script>
 
 <template>
@@ -26,10 +33,7 @@ const { commandItems, signals } = useDashboardWorkspace()
           <AppIconFeatureCard
             v-for="item in workspaceHighlights"
             :key="item.title"
-            :icon-name="item.iconName"
-            :title="item.title"
-            :description="item.description"
-            :eyebrow="item.eyebrow"
+            v-bind="item"
           />
         </div>
 
@@ -63,14 +67,12 @@ const { commandItems, signals } = useDashboardWorkspace()
     >
       <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <RouterLink
-          v-for="item in workspaceNavigation"
+          v-for="(item, index) in workspaceNavigation"
           :key="item.to"
           :to="item.to"
         >
           <AppIconFeatureCard
-            :icon-name="item.iconName"
-            :title="item.label"
-            :description="item.caption"
+            v-bind="navigationFeatureItems[index]"
             interactive
           />
         </RouterLink>
