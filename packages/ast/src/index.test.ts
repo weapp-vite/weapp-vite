@@ -38,6 +38,7 @@ import {
   extractTemplateExpressions,
   getCallExpressionCalleeName,
   getJsxImportedName,
+  getJsxImportLocalName,
   getJsxOxcStaticPropertyName,
   getLocationFromOffset,
   getMemberExpressionPropertyName,
@@ -51,6 +52,7 @@ import {
   getStaticPropertyName,
   getStaticRequireLiteralValue,
   hasBindingInScopes,
+  isJsxDefineComponentImportSpecifier,
   isOnPageScrollCallee,
   isOxcFunctionLike,
   isOxcOnPageScrollCallee,
@@ -704,6 +706,9 @@ export default page
     expect(getJsxImportedName({ type: 'Identifier', name: 'TButton' })).toBe('TButton')
     expect(getJsxImportedName({ type: 'StringLiteral', value: 'van-button' })).toBe('van-button')
     expect(getJsxImportedName({ type: 'Literal', value: 'legacy-button' })).toBeUndefined()
+    expect(getJsxImportLocalName({ local: t.identifier('TButton') })).toBe('TButton')
+    expect(getJsxImportLocalName({ type: 'ImportSpecifier', local: { type: 'Identifier', name: 'TCard' } })).toBe('TCard')
+    expect(getJsxImportLocalName({ local: { type: 'StringLiteral', value: 'bad' } })).toBeUndefined()
     expect(createJsxImportedComponent('TButton', './TButton', 'default')).toEqual({
       localName: 'TButton',
       importSource: './TButton',
@@ -716,6 +721,19 @@ export default page
       importedName: 'CardItem',
       kind: 'named',
     })
+    expect(isJsxDefineComponentImportSpecifier(
+      t.importSpecifier(t.identifier('defineWevuComponent'), t.identifier('defineComponent')),
+    )).toBe(true)
+    expect(isJsxDefineComponentImportSpecifier({
+      type: 'ImportSpecifier',
+      imported: { type: 'Identifier', name: 'defineComponent' },
+      local: { type: 'Identifier', name: 'defineWevuComponent' },
+    })).toBe(true)
+    expect(isJsxDefineComponentImportSpecifier({
+      type: 'ImportSpecifier',
+      imported: { type: 'Identifier', name: 'ref' },
+      local: { type: 'Identifier', name: 'ref' },
+    })).toBe(false)
     expect(getJsxOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
     expect(getJsxOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
     expect(collectJsxAutoComponentsWithBabel(`

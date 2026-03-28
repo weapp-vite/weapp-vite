@@ -73,6 +73,23 @@ export function createJsxImportedComponent(
   }
 }
 
+export function getJsxImportLocalName(specifier: any) {
+  if ('local' in (specifier ?? {}) && t.isIdentifier(specifier.local)) {
+    return specifier.local.name
+  }
+  return specifier?.local?.type === 'Identifier'
+    ? specifier.local.name
+    : undefined
+}
+
+export function isJsxDefineComponentImportSpecifier(specifier: any) {
+  return t.isImportSpecifier(specifier)
+    ? t.isIdentifier(specifier.imported, { name: 'defineComponent' })
+    : specifier?.type === 'ImportSpecifier'
+      && specifier.imported?.type === 'Identifier'
+      && specifier.imported.name === 'defineComponent'
+}
+
 export function defaultResolveBabelComponentExpression(
   declaration: t.Declaration | t.Expression | null,
   defineComponentDecls: Map<string, ObjectExpression>,
@@ -139,13 +156,12 @@ export function collectJsxImportedComponentsAndDefaultExportFromBabelAst(
 
       if (resolvedOptions.isDefineComponentSource(source)) {
         for (const specifier of path.node.specifiers) {
-          if (!t.isImportSpecifier(specifier)) {
-            continue
+          if (isJsxDefineComponentImportSpecifier(specifier)) {
+            const localName = getJsxImportLocalName(specifier)
+            if (localName) {
+              defineComponentAliases.add(localName)
+            }
           }
-          if (!t.isIdentifier(specifier.imported, { name: 'defineComponent' })) {
-            continue
-          }
-          defineComponentAliases.add(specifier.local.name)
         }
       }
 
@@ -160,10 +176,10 @@ export function collectJsxImportedComponentsAndDefaultExportFromBabelAst(
         if ('importKind' in specifier && specifier.importKind === 'type') {
           continue
         }
-        if (!('local' in specifier) || !t.isIdentifier(specifier.local)) {
+        const localName = getJsxImportLocalName(specifier)
+        if (!localName) {
           continue
         }
-        const localName = specifier.local.name
         if (t.isImportDefaultSpecifier(specifier)) {
           imports.set(localName, createJsxImportedComponent(localName, importSource, 'default'))
           continue
@@ -461,13 +477,11 @@ export function collectJsxAutoComponentsWithOxc(source: string, options: Require
       const importSource = statement.source?.value
       if (typeof importSource === 'string' && options.isDefineComponentSource(importSource)) {
         for (const specifier of statement.specifiers ?? []) {
-          if (
-            specifier?.type === 'ImportSpecifier'
-            && specifier.imported?.type === 'Identifier'
-            && specifier.imported.name === 'defineComponent'
-            && specifier.local?.type === 'Identifier'
-          ) {
-            defineComponentAliases.add(specifier.local.name)
+          if (isJsxDefineComponentImportSpecifier(specifier)) {
+            const localName = getJsxImportLocalName(specifier)
+            if (localName) {
+              defineComponentAliases.add(localName)
+            }
           }
         }
       }
@@ -477,10 +491,13 @@ export function collectJsxAutoComponentsWithOxc(source: string, options: Require
       }
 
       for (const specifier of statement.specifiers ?? []) {
-        if (specifier?.importKind === 'type' || specifier?.local?.type !== 'Identifier') {
+        if (specifier?.importKind === 'type') {
           continue
         }
-        const localName = specifier.local.name
+        const localName = getJsxImportLocalName(specifier)
+        if (!localName) {
+          continue
+        }
         if (specifier.type === 'ImportDefaultSpecifier') {
           imports.set(localName, createJsxImportedComponent(localName, importSource, 'default'))
           continue
