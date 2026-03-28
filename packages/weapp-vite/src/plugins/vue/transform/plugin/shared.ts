@@ -1,6 +1,8 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
+// eslint-disable-next-line e18e/ban-dependencies -- 当前 transform 阶段仍统一复用 fs-extra 读取源码
+import fs from 'fs-extra'
 import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { collectOnPageScrollPerformanceWarnings } from '../../../performance/onPageScrollDiagnostics'
@@ -112,6 +114,44 @@ export async function ensureSfcStyleBlocks(
   const styles = await options.load(filename)
   styleBlocksCache.set(filename, styles)
   return styles
+}
+
+export async function loadTransformSource(options: {
+  code: string
+  filename: string
+  isDev: boolean
+  readFileCached: (filename: string, options: { checkMtime: boolean, encoding: 'utf8' }) => Promise<string>
+}) {
+  const { code, filename, isDev, readFileCached } = options
+  if (typeof code === 'string') {
+    return code
+  }
+
+  return isDev
+    ? await readFileCached(filename, { checkMtime: true, encoding: 'utf8' })
+    : await fs.readFile(filename, 'utf-8')
+}
+
+export async function preloadTransformSfcStyleBlocks(options: {
+  filename: string
+  source: string
+  styleBlocksCache: Map<string, SFCStyleBlock[]>
+  load: (filename: string, source: string) => Promise<SFCStyleBlock[]>
+}) {
+  const { filename, source, styleBlocksCache, load } = options
+  if (!filename.endsWith('.vue') || !source.includes('<style')) {
+    return undefined
+  }
+
+  try {
+    return await ensureSfcStyleBlocks(filename, styleBlocksCache, {
+      load: async target => await load(target, source),
+    })
+  }
+  catch {
+    // 忽略解析失败，后续由 compileVueFile 抛出错误
+    return undefined
+  }
 }
 
 export async function handleTransformEntryPageLayoutFlow(options: {
