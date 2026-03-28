@@ -2,7 +2,6 @@ import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 import {
   shouldEmitGenericPlaceholderAsset,
-  shouldNormalizeUsingComponents,
   shouldNormalizeVueTemplateForPlatform,
 } from '../../../../platform'
 import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson } from '../../../../utils'
@@ -10,6 +9,7 @@ import { resolveScriptModuleTagByPlatform } from '../../../../utils/wxmlScriptMo
 import { scanWxml } from '../../../../wxml'
 import { handleWxml } from '../../../../wxml/handle'
 import { emitSfcJsonAsset, emitSfcTemplateIfMissing } from '../emitAssets'
+import { resolveVueTransformJsonPlatformOptions } from '../platform'
 import { SCRIPTLESS_COMPONENT_STUB } from './shared'
 
 const LEADING_DOT_SLASH_RE = /^\.\//
@@ -33,8 +33,12 @@ export function resolveVueBundlePlatformOptions(options: {
   platform: string
   scriptModuleExtension?: string
 }) {
+  const jsonOptions = resolveVueTransformJsonPlatformOptions({
+    platform: options.platform as any,
+  })
+
   return {
-    normalizeUsingComponents: shouldNormalizeUsingComponents(options.platform as any),
+    normalizeUsingComponents: jsonOptions.normalizeUsingComponents,
     normalizeTemplate: shouldNormalizeVueTemplateForPlatform(options.platform as any),
     emitGenericPlaceholder: shouldEmitGenericPlaceholderAsset(options.platform as any),
     scriptModuleTag: resolveScriptModuleTagByPlatform(options.platform as any, options.scriptModuleExtension),
@@ -63,11 +67,19 @@ export function normalizeVueConfigForPlatform(
     alipayNpmMode?: string
   },
 ) {
-  const platformOptions = resolveVueBundlePlatformOptions({
-    platform: options.platform,
+  const jsonPlatformOptions = resolveVueTransformJsonPlatformOptions({
+    platform: options.platform as any,
+    packageJson: {
+      dependencies: options.dependencies,
+    } as any,
+    weappViteConfig: {
+      npm: {
+        alipayNpmMode: options.alipayNpmMode,
+      },
+    } as any,
   })
 
-  if (!config || !platformOptions.normalizeUsingComponents) {
+  if (!config || !jsonPlatformOptions.normalizeUsingComponents) {
     return config
   }
 
@@ -80,8 +92,8 @@ export function normalizeVueConfigForPlatform(
       undefined,
       options.platform as any,
       {
-        dependencies: options.dependencies,
-        alipayNpmMode: options.alipayNpmMode,
+        dependencies: jsonPlatformOptions.dependencies,
+        alipayNpmMode: jsonPlatformOptions.alipayNpmMode,
       },
     ) ?? config
   }

@@ -3,11 +3,11 @@ import type { CompilerContext } from '../../../../context'
 import type { OutputExtensions } from '../../../../platforms/types'
 import type { JsonMergeStrategy } from '../../../../types'
 import { createJsonMerger } from 'wevu/compiler'
-import { shouldNormalizeUsingComponents } from '../../../../platform'
 import { resolveJson } from '../../../../utils'
 import { toPosixPath } from '../../../../utils/path'
 import { resolveBundleOutputExtensions } from '../bundle/outputExtensions'
 import { emitClassStyleWxsAssetIfMissing } from '../emitAssets'
+import { resolveVueTransformJsonPlatformOptions } from '../platform'
 
 interface ClassStyleWxsAsset {
   fileName: string
@@ -30,12 +30,8 @@ function normalizeJsonConfigForPlatform(
   json: Record<string, any>,
   compilerCtx?: Pick<CompilerContext, 'configService'>,
 ) {
-  const configService = compilerCtx?.configService
-  if (!configService) {
-    return json
-  }
-  const platform = configService?.platform
-  if (!shouldNormalizeUsingComponents(platform)) {
+  const jsonPlatformOptions = resolveVueTransformJsonPlatformOptions(compilerCtx?.configService)
+  if (!jsonPlatformOptions.normalizeUsingComponents) {
     return json
   }
 
@@ -43,10 +39,10 @@ function normalizeJsonConfigForPlatform(
     const source = resolveJson(
       { json },
       undefined,
-      platform,
+      jsonPlatformOptions.platform as any,
       {
-        dependencies: configService.packageJson?.dependencies,
-        alipayNpmMode: configService.weappViteConfig?.npm?.alipayNpmMode,
+        dependencies: jsonPlatformOptions.dependencies,
+        alipayNpmMode: jsonPlatformOptions.alipayNpmMode,
       },
     )
     if (!source) {
