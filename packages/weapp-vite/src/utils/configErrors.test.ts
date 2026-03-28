@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { createCjsConfigLoadError } from './configErrors'
+import { createCjsConfigLoadError, formatConfigPath } from './configErrors'
 
 describe('createCjsConfigLoadError', () => {
   const cwd = '/project'
+
+  it('formats config paths relative to cwd when possible', () => {
+    expect(formatConfigPath(undefined, cwd)).toBe('vite.config.ts')
+    expect(formatConfigPath('/project/vite.config.ts', cwd)).toBe('vite.config.ts')
+    expect(formatConfigPath('/project/config/vite.config.ts', cwd)).toBe('config/vite.config.ts')
+    expect(formatConfigPath('/another/vite.config.ts', cwd)).toBe('/another/vite.config.ts')
+  })
 
   it('returns undefined when error text does not match CJS patterns', () => {
     const error = createCjsConfigLoadError({

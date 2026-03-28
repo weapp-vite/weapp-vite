@@ -33,7 +33,7 @@ function collectErrorText(error: unknown, texts: string[]): void {
   }
 }
 
-function formatConfigPath(configPath: string | undefined, cwd: string): string {
+export function formatConfigPath(configPath: string | undefined, cwd: string): string {
   if (!configPath) {
     return 'vite.config.ts'
   }
