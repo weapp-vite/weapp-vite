@@ -4,15 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { startAnalyzeDashboard } from './dashboard'
 
-const existsSyncMock = vi.hoisted(() => vi.fn(() => true))
-const readFileSyncMock = vi.hoisted(() => vi.fn(() => `{
-  // dashboard dev/runtime manifest
-  "weappViteDashboard": {
-    "devRoot": ".",
-    "devConfigFile": "vite.config.ts",
-    "distDir": "dist"
-  }
-}`))
+const existsSyncMock = vi.hoisted(() => vi.fn(() => undefined))
+const readFileSyncMock = vi.hoisted(() => vi.fn(() => undefined))
 const resolveDashboardPackageMock = vi.hoisted(() => vi.fn(() => '/mock/dashboard/package.json'))
 const resolveCommandMock = vi.hoisted(() => vi.fn(() => ({
   command: 'pnpm',
@@ -25,24 +18,46 @@ const loggerMock = vi.hoisted(() => ({
   warn: vi.fn(),
 }))
 
-vi.mock('node:fs', () => ({
-  default: {
-    existsSync: existsSyncMock,
-    readFileSync: readFileSyncMock,
-  },
-  existsSync: existsSyncMock,
-  readFileSync: readFileSyncMock,
-}))
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs')
+
+  const existsSync = vi.fn((...args: Parameters<typeof actual.existsSync>) => {
+    const mocked = existsSyncMock(...args)
+    return typeof mocked === 'boolean' ? mocked : actual.existsSync(...args)
+  })
+
+  const readFileSync = vi.fn((...args: Parameters<typeof actual.readFileSync>) => {
+    const mocked = readFileSyncMock(...args)
+    return mocked === undefined ? actual.readFileSync(...args) : mocked
+  })
+
+  return {
+    ...actual,
+    default: {
+      ...(('default' in actual && actual.default) ? actual.default : actual),
+      existsSync,
+      readFileSync,
+    },
+    existsSync,
+    readFileSync,
+  }
+})
 
 vi.mock('vite', () => ({
   createServer: createServerMock,
 }))
 
-vi.mock('node:module', () => ({
-  createRequire: vi.fn(() => ({
-    resolve: resolveDashboardPackageMock,
-  })),
-}))
+vi.mock('node:module', async () => {
+  const actual = await vi.importActual<typeof import('node:module')>('node:module')
+
+  return {
+    ...actual,
+    createRequire: vi.fn(() => ({
+      ...actual.createRequire(import.meta.url),
+      resolve: resolveDashboardPackageMock,
+    })),
+  }
+})
 
 vi.mock('package-manager-detector/commands', () => ({
   resolveCommand: resolveCommandMock,
@@ -105,19 +120,26 @@ function createAnalyzeResult(label: string) {
 describe('analyze dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    readFileSyncMock.mockReturnValue(`{
-      // dashboard dev/runtime manifest
-      "weappViteDashboard": {
-        "devRoot": ".",
-        "devConfigFile": "vite.config.ts",
-        "distDir": "dist"
+    readFileSyncMock.mockImplementation((value: string) => {
+      if (value !== '/mock/dashboard/package.json') {
+        return undefined
       }
-    }`)
+      return `{
+        // dashboard dev/runtime manifest
+        "weappViteDashboard": {
+          "devRoot": ".",
+          "devConfigFile": "vite.config.ts",
+          "distDir": "dist"
+        }
+      }`
+    })
     existsSyncMock.mockImplementation((value: string) => {
       return value === '/mock/dashboard/dist'
         || value === '/mock/dashboard/src'
         || value === '/mock/dashboard/vite.config.ts'
         || value === '/mock/dashboard/package.json'
+        ? true
+        : undefined
     })
     resolveDashboardPackageMock.mockReturnValue('/mock/dashboard/package.json')
   })
