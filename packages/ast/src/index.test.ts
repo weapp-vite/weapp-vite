@@ -6,6 +6,8 @@ import {
   BABEL_TS_MODULE_PARSER_OPTIONS,
   collectComponentPropsWithBabel,
   collectComponentPropsWithOxc,
+  collectFeatureFlagsWithBabel,
+  collectFeatureFlagsWithOxc,
   collectIdentifiersFromExpression,
   collectIdentifiersFromExpressionWithOxc,
   collectJsxAutoComponentsWithBabel,
@@ -572,6 +574,20 @@ export function useCounter() {
       onShow: 'enableShow',
     } as const
 
+    expect(collectFeatureFlagsWithBabel(`
+import { onLoad } from 'wevu'
+import * as wevuNs from 'wevu'
+onLoad(() => {})
+wevuNs.onShow(() => {})
+`, 'wevu', hookToFeature)).toEqual(new Set(['enableLoad', 'enableShow']))
+    expect(collectFeatureFlagsWithOxc(`
+import { onLoad } from 'wevu'
+import * as wevuNs from 'wevu'
+onLoad(() => {})
+wevuNs.onShow(() => {})
+`, 'wevu', hookToFeature)).toEqual(new Set(['enableLoad', 'enableShow']))
+    expect(collectFeatureFlagsWithBabel('const value = 1', 'wevu', hookToFeature)).toEqual(new Set())
+    expect(collectFeatureFlagsWithOxc('const value = 1', 'wevu', hookToFeature)).toEqual(new Set())
     expect(mayContainFeatureFlagHints(`import { onLoad } from 'wevu'`, 'wevu', hookToFeature)).toBe(true)
     expect(mayContainFeatureFlagHints(`import { onReady } from 'wevu'`, 'wevu', hookToFeature)).toBe(false)
     expect(mayContainFeatureFlagHints(`import { onLoad } from 'vue'`, 'wevu', hookToFeature)).toBe(false)
