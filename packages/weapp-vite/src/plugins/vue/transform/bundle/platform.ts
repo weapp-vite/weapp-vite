@@ -194,6 +194,39 @@ export function emitAlipayGenericPlaceholderAssetsByBase(
   ensureScriptlessComponentAsset(ctx, bundle, placeholderBase, scriptExtension)
 }
 
+export function shouldEmitAlipayGenericPlaceholder(configSource: string | undefined) {
+  if (!configSource) {
+    return false
+  }
+
+  let config: Record<string, any>
+  try {
+    const parsed = JSON.parse(configSource)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return false
+    }
+    config = parsed
+  }
+  catch {
+    return false
+  }
+
+  const componentGenerics = config.componentGenerics
+  if (!componentGenerics || typeof componentGenerics !== 'object' || Array.isArray(componentGenerics)) {
+    return false
+  }
+
+  return Object.values(componentGenerics).some((value) => {
+    if (value === true) {
+      return true
+    }
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return false
+    }
+    return (value as Record<string, any>).default === ALIPAY_GENERIC_COMPONENT_PLACEHOLDER
+  })
+}
+
 export function emitAlipayGenericPlaceholderAssets(
   ctx: { emitFile: (asset: { type: 'asset', fileName: string, source: string }) => void },
   bundle: Record<string, any>,
@@ -206,33 +239,7 @@ export function emitAlipayGenericPlaceholderAssets(
     return
   }
 
-  let config: Record<string, any>
-  try {
-    const parsed = JSON.parse(configSource)
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return
-    }
-    config = parsed
-  }
-  catch {
-    return
-  }
-
-  const componentGenerics = config.componentGenerics
-  if (!componentGenerics || typeof componentGenerics !== 'object' || Array.isArray(componentGenerics)) {
-    return
-  }
-
-  const shouldEmit = Object.values(componentGenerics).some((value) => {
-    if (value === true) {
-      return true
-    }
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      return false
-    }
-    return (value as Record<string, any>).default === ALIPAY_GENERIC_COMPONENT_PLACEHOLDER
-  })
-  if (!shouldEmit) {
+  if (!shouldEmitAlipayGenericPlaceholder(configSource)) {
     return
   }
 
