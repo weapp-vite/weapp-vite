@@ -1,5 +1,14 @@
 import type { OutputExtensions } from '../platforms/types'
 
+export function resolveScriptModuleExtension(
+  outputExtensions?: OutputExtensions,
+  options?: {
+    scriptModuleExtensionFallback?: string
+  },
+) {
+  return outputExtensions?.wxs ?? options?.scriptModuleExtensionFallback
+}
+
 export function resolveOutputExtensions(
   outputExtensions?: OutputExtensions,
   options?: {
@@ -11,7 +20,7 @@ export function resolveOutputExtensions(
     styleExtension: outputExtensions?.wxss ?? 'wxss',
     jsonExtension: outputExtensions?.json ?? 'json',
     scriptExtension: outputExtensions?.js ?? 'js',
-    scriptModuleExtension: outputExtensions?.wxs ?? options?.scriptModuleExtensionFallback,
+    scriptModuleExtension: resolveScriptModuleExtension(outputExtensions, options),
   }
 }
 

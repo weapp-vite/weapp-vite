@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { resolveCompilerOutputExtensions, resolveOutputExtensions } from './outputExtensions'
+import {
+  resolveCompilerOutputExtensions,
+  resolveOutputExtensions,
+  resolveScriptModuleExtension,
+} from './outputExtensions'
 
 describe('utils/outputExtensions', () => {
   it('provides shared output extension defaults with optional script module fallback', () => {
+    expect(resolveScriptModuleExtension()).toBeUndefined()
+    expect(resolveScriptModuleExtension(undefined, {
+      scriptModuleExtensionFallback: 'wxs',
+    })).toBe('wxs')
+    expect(resolveScriptModuleExtension({
+      wxs: 'sjs',
+    })).toBe('sjs')
+
     expect(resolveOutputExtensions()).toEqual({
       templateExtension: 'wxml',
       styleExtension: 'wxss',
