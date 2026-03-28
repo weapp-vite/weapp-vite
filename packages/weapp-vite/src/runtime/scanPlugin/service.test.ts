@@ -90,6 +90,22 @@ describe('scanPlugin service', () => {
     vi.clearAllMocks()
   })
 
+  it('resolves scan basenames for app, plugin and optional json files', async () => {
+    const {
+      resolveScanAppBasename,
+      resolveScanJsonEntryBasename,
+      resolveScanPluginBasename,
+    } = await import('./service')
+
+    expect(resolveScanAppBasename('/project/src')).toBe('/project/src/app')
+    expect(resolveScanPluginBasename('/project/plugin-root')).toBe('/project/plugin-root/plugin')
+    expect(resolveScanPluginBasename(undefined)).toBeUndefined()
+
+    expect(resolveScanJsonEntryBasename('/project/src', undefined, 'sitemap.json')).toBe('/project/src/sitemap.json')
+    expect(resolveScanJsonEntryBasename('/project/src', 'configs/theme.json', 'theme.json')).toBe('/project/src/configs/theme.json')
+    expect(resolveScanJsonEntryBasename('/project/src', '', 'theme.json')).toBeUndefined()
+  })
+
   it('throws when loadAppEntry is called before config/json services are ready', async () => {
     const { createScanService } = await import('./service')
     const service = createScanService(createCtx({
