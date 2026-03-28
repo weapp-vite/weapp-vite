@@ -286,7 +286,7 @@ export function collectJsxTemplateTagsFromBabelExpression(
   return tags
 }
 
-function unwrapOxcExpression(node: any): any {
+export function unwrapOxcExpression(node: any): any {
   let current = node
   while (
     current
@@ -302,7 +302,7 @@ function unwrapOxcExpression(node: any): any {
   return current
 }
 
-function getOxcStaticPropertyName(node: any) {
+export function getJsxOxcStaticPropertyName(node: any) {
   const current = unwrapOxcExpression(node)
   if (!current) {
     return undefined
@@ -358,7 +358,7 @@ function resolveOxcRenderExpression(componentExpr: any) {
 
   let renderProperty: any = null
   for (const property of componentExpr.properties ?? []) {
-    const propertyName = getOxcStaticPropertyName(property?.key)
+    const propertyName = getJsxOxcStaticPropertyName(property?.key)
     if (propertyName === 'render') {
       renderProperty = property
       break

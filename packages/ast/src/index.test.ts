@@ -13,6 +13,7 @@ import {
   defaultResolveBabelComponentExpression,
   defaultResolveBabelRenderExpression,
   extractTemplateExpressions,
+  getJsxOxcStaticPropertyName,
   getLocationFromOffset,
   getMemberExpressionPropertyName,
   getObjectPropertyByKey,
@@ -39,6 +40,7 @@ import {
   resolveRenderableExpression,
   resolveRenderExpressionFromComponentOptions,
   toStaticObjectKey,
+  unwrapOxcExpression,
   unwrapTypeScriptExpression,
 } from './index'
 import { collectComponentPropsFromCode } from './operations/componentProps'
@@ -393,6 +395,19 @@ export default page
     )).toBe(componentObject)
     expect(defaultResolveBabelRenderExpression(componentObject)).toEqual(t.identifier('view'))
     expect(defaultResolveBabelRenderExpression(t.identifier('page'))).toBeNull()
+    expect(unwrapOxcExpression({
+      type: 'TSAsExpression',
+      expression: {
+        type: 'ParenthesizedExpression',
+        expression: { type: 'Identifier', name: 'page' },
+      },
+    })).toEqual({ type: 'Identifier', name: 'page' })
+    expect(getJsxOxcStaticPropertyName({
+      type: 'TSAsExpression',
+      expression: { type: 'StringLiteral', value: 'render' },
+    })).toBe('render')
+    expect(getJsxOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
+    expect(getJsxOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
   })
 
   it('fast rejects jsx auto component analysis without imports or default export', () => {
