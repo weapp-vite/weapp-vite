@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, resolveVueBundleAssetContext } from './shared'
+import { emitBundleVueEntryAssets, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, finalizeCompiledVueLikeResult, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -191,6 +191,66 @@ describe('emitSharedVueEntryAssets', () => {
           dayjs: '^1.11.0',
         },
         alipayNpmMode: 'node_modules',
+      },
+    })
+  })
+
+  it('emits bundle vue entry assets with shared component json defaults', () => {
+    const result = emitBundleVueEntryAssets({
+      bundle: {},
+      pluginCtx: { emitFile: vi.fn() },
+      ctx: {} as any,
+      filename: '/project/src/pages/index/index.vue',
+      relativeBase: 'pages/index/index',
+      result: {
+        template: '<view />',
+        scopedSlotComponents: [],
+      } as any,
+      configService: {
+        weappViteConfig: {
+          json: {
+            defaults: {
+              component: {
+                styleIsolation: 'apply-shared',
+              },
+            },
+            mergeStrategy: 'override',
+          },
+        },
+      } as any,
+      templateExtension: 'axml',
+      scriptModuleExtension: 'sjs',
+      outputExtensions: {},
+      platformAssetOptions: {
+        platform: 'alipay',
+        templateExtension: 'axml',
+        scriptModuleExtension: 'sjs',
+      },
+    })
+
+    expect(emitScopedSlotAssetsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      {},
+      'pages/index/index',
+      expect.objectContaining({ template: '<view />' }),
+      expect.anything(),
+      undefined,
+      {},
+      {
+        defaults: {
+          styleIsolation: 'apply-shared',
+        },
+        mergeStrategy: 'override',
+      },
+    )
+    expect(result).toEqual({
+      jsonConfig: {
+        defaults: {
+          component: {
+            styleIsolation: 'apply-shared',
+          },
+        },
+        mergeStrategy: 'override',
       },
     })
   })

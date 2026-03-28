@@ -9,7 +9,7 @@ import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { resolvePageLayoutPlan } from '../pageLayout'
 import { findFirstResolvedVueLikeEntry } from '../shared'
 import { emitBundlePageLayoutsIfNeeded } from './layoutAssets'
-import { compileAndFinalizeVueLikeFile, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, resolveVueBundleAssetContext } from './shared'
+import { compileAndFinalizeVueLikeFile, emitBundleVueEntryAssets, emitSharedFallbackPageAssets, resolveVueBundleAssetContext } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -82,8 +82,7 @@ export async function emitFallbackPageAssets(
         outputExtensions,
       })
 
-      const jsonConfig = configService.weappViteConfig?.json
-      emitSharedVueEntryAssets({
+      const { jsonConfig } = emitBundleVueEntryAssets({
         bundle,
         pluginCtx,
         ctx,
@@ -95,8 +94,6 @@ export async function emitFallbackPageAssets(
         scriptModuleExtension,
         outputExtensions,
         platformAssetOptions,
-        scopedSlotDefaults: jsonConfig?.defaults?.component,
-        scopedSlotMergeStrategy: jsonConfig?.mergeStrategy,
       })
 
       emitSharedFallbackPageAssets({

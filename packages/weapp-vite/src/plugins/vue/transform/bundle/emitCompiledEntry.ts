@@ -7,7 +7,7 @@ import {
   emitBundlePageLayoutsIfNeeded,
   emitScriptlessComponentJsFallbackIfMissing,
 } from './layoutAssets'
-import { compileAndFinalizeVueLikeFile, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, getEntryBaseName, isAppVueLikeFile, resolveVueBundleAssetContext } from './shared'
+import { compileAndFinalizeVueLikeFile, emitBundleVueEntryAssets, emitSharedVueEntryJsonAsset, getEntryBaseName, isAppVueLikeFile, resolveVueBundleAssetContext } from './shared'
 
 export async function emitCompiledVueEntryAssets(
   bundle: Record<string, any>,
@@ -71,7 +71,6 @@ export async function emitCompiledVueEntryAssets(
   const isAppVue = isAppVueLikeFile(filename)
   const shouldEmitComponentJson = !isAppVue && !cached.isPage
   const shouldMergeJsonAsset = isAppVue
-  const jsonConfig = configService.weappViteConfig?.json
   const jsonKind = isAppVue ? 'app' : cached.isPage ? 'page' : 'component'
 
   if (cached.isPage && cached.source) {
@@ -90,7 +89,7 @@ export async function emitCompiledVueEntryAssets(
     })
   }
 
-  emitSharedVueEntryAssets({
+  const { jsonConfig } = emitBundleVueEntryAssets({
     bundle,
     pluginCtx,
     ctx,
@@ -102,8 +101,6 @@ export async function emitCompiledVueEntryAssets(
     scriptModuleExtension,
     outputExtensions,
     platformAssetOptions,
-    scopedSlotDefaults: jsonConfig?.defaults?.component,
-    scopedSlotMergeStrategy: jsonConfig?.mergeStrategy,
   })
 
   if (result.config || shouldEmitComponentJson) {
