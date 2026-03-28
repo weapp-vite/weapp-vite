@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { ThemeOption, ThemePreference } from '../types'
+import type { DashboardTitleBlock, ThemeOption, ThemePreference } from '../types'
 import AppInfoPill from './AppInfoPill.vue'
 import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
-  title: string
-  description: string
+  title: DashboardTitleBlock['title']
+  description: NonNullable<DashboardTitleBlock['description']>
   themeOptions: ThemeOption[]
   themePreference: ThemePreference
 }>()

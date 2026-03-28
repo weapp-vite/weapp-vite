@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { DashboardIconName } from '../types'
+import type { DashboardIconName, DashboardTitleBlock } from '../types'
 import { iconFrameStyles } from '../utils/styles'
 import DashboardIcon from './DashboardIcon.vue'
 
 defineProps<{
   iconName: DashboardIconName
-  title: string
-  description?: string
+  title: DashboardTitleBlock['title']
+  description?: DashboardTitleBlock['description']
 }>()
 </script>
 
