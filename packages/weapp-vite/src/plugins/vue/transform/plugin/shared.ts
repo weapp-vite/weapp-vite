@@ -1,12 +1,31 @@
 import type { SFCStyleBlock } from 'vue/compiler-sfc'
 import type { VueTransformResult } from 'wevu/compiler'
 import type { CompilerContext } from '../../../../context'
+import { resolveAstEngine } from '../../../../ast'
+import logger from '../../../../logger'
+import { collectOnPageScrollPerformanceWarnings } from '../../../performance/onPageScrollDiagnostics'
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
 import { emitNativeLayoutScriptChunkIfNeeded } from '../bundle'
+import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
+import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { isVueLikeFile } from '../shared'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
+const TEMPLATE_DYNAMIC_HINT_RE = /\{\{|wx:|bind[A-Za-z:_-]+=|catch[A-Za-z:_-]+=/
+const PAGE_FEATURE_HOOK_HINTS = [
+  'onPageScroll',
+  'onPullDownRefresh',
+  'onReachBottom',
+  'onRouteDone',
+  'onTabItemTap',
+  'onResize',
+  'onShareAppMessage',
+  'onShareTimeline',
+  'onAddToFavorites',
+  'onSaveExitState',
+]
+const PAGE_SCROLL_HOOK_HINT = 'onPageScroll'
 
 export { registerVueTemplateToken, resolveVueOutputBase } from '../shared'
 
@@ -20,6 +39,18 @@ export function isAppEntry(filename: string) {
 
 export function isVueLikeId(id: string) {
   return isVueLikeFile(id)
+}
+
+export function mayNeedTransformSetDataPick(template: string) {
+  return TEMPLATE_DYNAMIC_HINT_RE.test(template)
+}
+
+export function mayNeedTransformPageFeatureInjection(script: string) {
+  return PAGE_FEATURE_HOOK_HINTS.some(hint => script.includes(hint))
+}
+
+export function mayNeedTransformPageScrollDiagnostics(script: string) {
+  return script.includes(PAGE_SCROLL_HOOK_HINT)
 }
 
 export function invalidatePageLayoutCaches(
@@ -112,6 +143,54 @@ export async function handleTransformEntryPageLayoutFlow(options: {
   }
 
   return resolvedLayoutPlan
+}
+
+export async function finalizeTransformEntryScript(options: {
+  result: VueTransformResult
+  filename: string
+  pluginCtx: any
+  configService: NonNullable<CompilerContext['configService']>
+  isPage: boolean
+  isApp: boolean
+}) {
+  const { result, filename, pluginCtx, configService, isPage, isApp } = options
+
+  if (isPage && result.script) {
+    if (mayNeedTransformPageScrollDiagnostics(result.script)) {
+      for (const warning of collectOnPageScrollPerformanceWarnings(result.script, filename, {
+        engine: resolveAstEngine(configService.weappViteConfig),
+      })) {
+        logger.warn(warning)
+      }
+    }
+
+    if (mayNeedTransformPageFeatureInjection(result.script)) {
+      const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script, filename, {
+        checkMtime: configService.isDev,
+      })
+      if (injected.transformed) {
+        result.script = injected.code
+      }
+    }
+  }
+
+  if (
+    !isApp
+    && result.script
+    && result.template
+    && isAutoSetDataPickEnabled(configService.weappViteConfig)
+    && mayNeedTransformSetDataPick(result.template)
+  ) {
+    const keys = collectSetDataPickKeysFromTemplate(result.template, {
+      astEngine: resolveAstEngine(configService.weappViteConfig),
+    })
+    const injectedPick = injectSetDataPickInJs(result.script, keys)
+    if (injectedPick.transformed) {
+      result.script = injectedPick.code
+    }
+  }
+
+  return result
 }
 
 export async function registerNativeLayoutChunksForEntry(

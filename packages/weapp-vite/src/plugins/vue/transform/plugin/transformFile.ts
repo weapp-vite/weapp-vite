@@ -6,50 +6,20 @@ import { performance } from 'node:perf_hooks'
 import fs from 'fs-extra'
 import path from 'pathe'
 import { compileJsxFile, compileVueFile } from 'wevu/compiler'
-import { resolveAstEngine } from '../../../../ast'
 import logger from '../../../../logger'
 import { toAbsoluteId } from '../../../../utils/toAbsoluteId'
-import { collectOnPageScrollPerformanceWarnings } from '../../../performance/onPageScrollDiagnostics'
 import { readFile as readFileCached } from '../../../utils/cache'
 import { createReadAndParseSfcOptions, readAndParseSfc } from '../../../utils/vueSfc'
 import { addNormalizedWatchFile } from '../../../utils/watchFiles'
 import { createPageEntryMatcher } from '../../../wevu'
 import { getSourceFromVirtualId } from '../../resolver'
 import { createCompileVueFileOptions } from '../compileOptions'
-import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
-import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDataPickEnabled } from '../injectSetDataPick'
 import { emitScopedSlotChunks } from '../scopedSlot'
 import { buildWeappVueStyleRequest } from '../styleRequest'
-import { ensureSfcStyleBlocks, handleTransformEntryPageLayoutFlow, isAppEntry, registerVueTemplateToken, resolveScriptlessVueEntryStub, resolveVueOutputBase } from './shared'
+import { ensureSfcStyleBlocks, finalizeTransformEntryScript, handleTransformEntryPageLayoutFlow, isAppEntry, registerVueTemplateToken, resolveScriptlessVueEntryStub, resolveVueOutputBase } from './shared'
 
 const AUTO_ROUTES_DEFAULT_IMPORT_RE = /import\s+([A-Za-z_$][\w$]*)\s+from\s+['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"];?/g
 const AUTO_ROUTES_DYNAMIC_IMPORT_RE = /import\(\s*['"](?:weapp-vite\/auto-routes|virtual:weapp-vite-auto-routes)['"]\s*\)/g
-const TEMPLATE_DYNAMIC_HINT_RE = /\{\{|wx:|bind[A-Za-z:_-]+=|catch[A-Za-z:_-]+=/
-const PAGE_FEATURE_HOOK_HINTS = [
-  'onPageScroll',
-  'onPullDownRefresh',
-  'onReachBottom',
-  'onRouteDone',
-  'onTabItemTap',
-  'onResize',
-  'onShareAppMessage',
-  'onShareTimeline',
-  'onAddToFavorites',
-  'onSaveExitState',
-]
-const PAGE_SCROLL_HOOK_HINT = 'onPageScroll'
-
-function mayNeedSetDataPick(template: string) {
-  return TEMPLATE_DYNAMIC_HINT_RE.test(template)
-}
-
-function mayNeedPageFeatureInjection(script: string) {
-  return PAGE_FEATURE_HOOK_HINTS.some(hint => script.includes(hint))
-}
-
-function mayNeedPageScrollDiagnostics(script: string) {
-  return script.includes(PAGE_SCROLL_HOOK_HINT)
-}
 
 export async function transformVueLikeFile(options: {
   ctx: CompilerContext
@@ -222,42 +192,16 @@ export async function transformVueLikeFile(options: {
       }
     }
 
-    if (isPage && result.script) {
-      if (mayNeedPageScrollDiagnostics(result.script)) {
-        for (const warning of collectOnPageScrollPerformanceWarnings(result.script, filename, {
-          engine: resolveAstEngine(configService.weappViteConfig),
-        })) {
-          logger.warn(warning)
-        }
-      }
-      if (mayNeedPageFeatureInjection(result.script)) {
-        await measureStage('injectPageFeatures', async () => {
-          const injected = await injectWevuPageFeaturesInJsWithViteResolver(pluginCtx, result.script!, filename, {
-            checkMtime: configService.isDev,
-          })
-          if (injected.transformed) {
-            result.script = injected.code
-          }
-        })
-      }
-    }
-    if (
-      !isApp
-      && result.script
-      && result.template
-      && isAutoSetDataPickEnabled(configService.weappViteConfig)
-      && mayNeedSetDataPick(result.template)
-    ) {
-      await measureStage('injectSetDataPick', async () => {
-        const keys = collectSetDataPickKeysFromTemplate(result.template!, {
-          astEngine: resolveAstEngine(configService.weappViteConfig),
-        })
-        const injectedPick = injectSetDataPickInJs(result.script!, keys)
-        if (injectedPick.transformed) {
-          result.script = injectedPick.code
-        }
+    await measureStage('finalizeScript', async () => {
+      await finalizeTransformEntryScript({
+        result,
+        filename,
+        pluginCtx,
+        configService,
+        isPage,
+        isApp,
       })
-    }
+    })
     compilationCache.set(filename, { result, source, isPage })
 
     const relativeBase = resolveVueOutputBase(configService, filename)
