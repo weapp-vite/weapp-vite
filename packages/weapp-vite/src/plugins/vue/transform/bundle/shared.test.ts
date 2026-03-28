@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset } from './shared'
+import { emitSharedFallbackPageAssets, emitSharedVueEntryAssets, emitSharedVueEntryJsonAsset, resolveVueBundleAssetContext } from './shared'
 
 const emitPlatformTemplateAssetMock = vi.hoisted(() => vi.fn())
 const emitClassStyleWxsAssetIfMissingMock = vi.hoisted(() => vi.fn())
@@ -12,10 +12,14 @@ const resolveClassStyleWxsLocationForBaseMock = vi.hoisted(() => vi.fn(() => ({
 const getClassStyleWxsSourceMock = vi.hoisted(() => vi.fn(() => 'module.exports = {}'))
 const preparePlatformConfigAssetMock = vi.hoisted(() => vi.fn(() => '{"component":true}'))
 
-vi.mock('./platform', () => ({
-  emitPlatformTemplateAsset: emitPlatformTemplateAssetMock,
-  preparePlatformConfigAsset: preparePlatformConfigAssetMock,
-}))
+vi.mock('./platform', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./platform')>()
+  return {
+    ...actual,
+    emitPlatformTemplateAsset: emitPlatformTemplateAssetMock,
+    preparePlatformConfigAsset: preparePlatformConfigAssetMock,
+  }
+})
 
 vi.mock('../emitAssets', () => ({
   emitClassStyleWxsAssetIfMissing: emitClassStyleWxsAssetIfMissingMock,
@@ -108,6 +112,51 @@ describe('emitSharedVueEntryAssets', () => {
       classStyleWxs: {
         fileName: 'pages/index/__class_style.sjs',
         source: 'module.exports = {}',
+      },
+    })
+  })
+
+  it('resolves shared bundle asset context from config service', () => {
+    expect(resolveVueBundleAssetContext({
+      platform: 'alipay',
+      outputExtensions: {
+        wxml: 'axml',
+        wxss: 'acss',
+        json: 'json',
+        js: 'mjs',
+        wxs: 'sjs',
+      },
+      packageJson: {
+        dependencies: {
+          dayjs: '^1.11.0',
+        },
+      },
+      weappViteConfig: {
+        npm: {
+          alipayNpmMode: 'node_modules',
+        },
+      },
+    } as any)).toEqual({
+      outputExtensions: {
+        wxml: 'axml',
+        wxss: 'acss',
+        json: 'json',
+        js: 'mjs',
+        wxs: 'sjs',
+      },
+      templateExtension: 'axml',
+      styleExtension: 'acss',
+      jsonExtension: 'json',
+      scriptExtension: 'mjs',
+      scriptModuleExtension: 'sjs',
+      platformAssetOptions: {
+        platform: 'alipay',
+        templateExtension: 'axml',
+        scriptModuleExtension: 'sjs',
+        dependencies: {
+          dayjs: '^1.11.0',
+        },
+        alipayNpmMode: 'node_modules',
       },
     })
   })

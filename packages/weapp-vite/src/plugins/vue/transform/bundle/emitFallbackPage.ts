@@ -11,9 +11,7 @@ import { collectSetDataPickKeysFromTemplate, injectSetDataPickInJs, isAutoSetDat
 import { resolvePageLayoutPlan } from '../pageLayout'
 import { findFirstResolvedVueLikeEntry } from '../shared'
 import { emitNativeLayoutAssetsIfNeeded, emitResolvedBundleLayouts, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
-import { resolveBundleOutputExtensions } from './outputExtensions'
-import { resolveVueBundlePlatformAssetOptions } from './platform'
-import { compileVueLikeFile, emitSharedFallbackPageAssets, emitSharedVueEntryAssets } from './shared'
+import { compileVueLikeFile, emitSharedFallbackPageAssets, emitSharedVueEntryAssets, resolveVueBundleAssetContext } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -26,18 +24,14 @@ export async function emitFallbackPageAssets(
   }
 
   const compileOptionsState = { reExportResolutionCache, classStyleRuntimeWarned }
-  const outputExtensions = configService.outputExtensions
   const {
+    outputExtensions,
     templateExtension,
     styleExtension,
     jsonExtension,
     scriptModuleExtension,
-  } = resolveBundleOutputExtensions(outputExtensions)
-  const platformAssetOptions = resolveVueBundlePlatformAssetOptions({
-    configService,
-    templateExtension,
-    scriptModuleExtension,
-  })
+    platformAssetOptions,
+  } = resolveVueBundleAssetContext(configService)
 
   const collectedEntries = await collectFallbackPageEntryIds(configService, scanService)
   for (const entryId of collectedEntries) {

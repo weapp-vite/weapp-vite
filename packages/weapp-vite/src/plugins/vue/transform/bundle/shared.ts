@@ -8,7 +8,8 @@ import { createCompileVueFileOptions } from '../compileOptions'
 import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing } from '../emitAssets'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 import { emitScopedSlotAssets } from '../scopedSlot'
-import { emitPlatformTemplateAsset, preparePlatformConfigAsset } from './platform'
+import { resolveBundleOutputExtensions } from './outputExtensions'
+import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
 
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 
@@ -31,6 +32,23 @@ export interface VueBundleState {
 export interface ClassStyleWxsAsset {
   fileName: string
   source: string
+}
+
+export function resolveVueBundleAssetContext(
+  configService: NonNullable<CompilerContext['configService']>,
+) {
+  const outputExtensions = configService.outputExtensions
+  const bundleOutputExtensions = resolveBundleOutputExtensions(outputExtensions)
+
+  return {
+    outputExtensions,
+    ...bundleOutputExtensions,
+    platformAssetOptions: resolveVueBundlePlatformAssetOptions({
+      configService,
+      templateExtension: bundleOutputExtensions.templateExtension,
+      scriptModuleExtension: bundleOutputExtensions.scriptModuleExtension,
+    }),
+  }
 }
 
 export function emitSharedVueEntryJsonAsset(options: {
