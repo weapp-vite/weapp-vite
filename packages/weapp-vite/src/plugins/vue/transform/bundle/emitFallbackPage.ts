@@ -1,12 +1,10 @@
 import type { ClassStyleWxsAsset, VueBundleState } from './shared'
 // eslint-disable-next-line e18e/ban-dependencies -- 当前 bundle 阶段仍统一复用 fs-extra 读取源码
 import fs from 'fs-extra'
-import { getClassStyleWxsSource } from 'wevu/compiler'
 import logger from '../../../../logger'
 import { getPathExistsTtlMs } from '../../../../utils/cachePolicy'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { pathExists as pathExistsCached } from '../../../utils/cache'
-import { resolveClassStyleWxsLocationForBase } from '../classStyle'
 import { emitClassStyleWxsAssetIfMissing, emitSfcJsonAsset, emitSfcStyleIfMissing } from '../emitAssets'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { injectWevuPageFeaturesInJsWithViteResolver } from '../injectPageFeatures'
@@ -16,7 +14,7 @@ import { emitScopedSlotAssets } from '../scopedSlot'
 import { emitNativeLayoutAssetsIfNeeded, emitVueLayoutScriptFallbackIfNeeded } from './layoutAssets'
 import { resolveBundleOutputExtensions } from './outputExtensions'
 import { emitPlatformTemplateAsset, preparePlatformConfigAsset, resolveVueBundlePlatformAssetOptions } from './platform'
-import { compileVueLikeFile } from './shared'
+import { compileVueLikeFile, resolveClassStyleWxsAsset } from './shared'
 
 export async function emitFallbackPageAssets(
   bundle: Record<string, any>,
@@ -145,17 +143,13 @@ export async function emitFallbackPageAssets(
         })
       }
 
-      const wxsExtension = scriptModuleExtension
-      const needsClassStyleWxs = Boolean(result.classStyleWxs)
-        || Boolean(result.scopedSlotComponents?.some(slot => slot.classStyleWxs))
-      let classStyleWxs: ClassStyleWxsAsset | undefined
-      if (needsClassStyleWxs && typeof wxsExtension === 'string' && wxsExtension.length > 0) {
-        const classStyleWxsLocation = resolveClassStyleWxsLocationForBase(ctx, relativeBase, wxsExtension, configService)
-        classStyleWxs = {
-          fileName: classStyleWxsLocation.fileName,
-          source: getClassStyleWxsSource({ extension: wxsExtension }),
-        }
-      }
+      const classStyleWxs: ClassStyleWxsAsset | undefined = resolveClassStyleWxsAsset(
+        ctx,
+        relativeBase,
+        scriptModuleExtension,
+        configService,
+        result,
+      )
 
       if (result.classStyleWxs && classStyleWxs) {
         emitClassStyleWxsAssetIfMissing(
