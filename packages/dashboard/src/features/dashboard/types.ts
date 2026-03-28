@@ -293,6 +293,12 @@ export interface DashboardLabelValueItem {
   value: string
 }
 
+export interface DashboardDetailItem {
+  title: string
+  meta: string
+  value?: string
+}
+
 export interface DashboardValueOption<T extends string = string> {
   value: T
   label: string

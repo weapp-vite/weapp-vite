@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import type { DashboardDetailItem } from '../types'
+
 defineProps<{
-  title: string
-  meta: string
-  value?: string
+  title: DashboardDetailItem['title']
+  meta: DashboardDetailItem['meta']
+  value?: DashboardDetailItem['value']
   monoTitle?: boolean
 }>()
 </script>
