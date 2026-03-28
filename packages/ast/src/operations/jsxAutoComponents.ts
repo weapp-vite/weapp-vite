@@ -414,7 +414,7 @@ export function collectJsxTemplateTagsFromOxc(renderExpression: any, isCollectab
   return tags
 }
 
-function collectWithBabel(source: string, options: Required<JsxAutoComponentAnalysisOptions>): JsxAutoComponentContext {
+export function collectJsxAutoComponentsWithBabel(source: string, options: Required<JsxAutoComponentAnalysisOptions>): JsxAutoComponentContext {
   const ast = babelParse(source, BABEL_TS_MODULE_PARSER_OPTIONS) as t.File
   const { importedComponents, exportDefaultExpression } = collectJsxImportedComponentsAndDefaultExportFromBabelAst(ast, options)
   if (!exportDefaultExpression) {
@@ -438,7 +438,7 @@ function collectWithBabel(source: string, options: Required<JsxAutoComponentAnal
   }
 }
 
-function collectWithOxc(source: string, options: Required<Pick<JsxAutoComponentAnalysisOptions, 'isCollectableTag' | 'isDefineComponentSource'>>): JsxAutoComponentContext {
+export function collectJsxAutoComponentsWithOxc(source: string, options: Required<Pick<JsxAutoComponentAnalysisOptions, 'isCollectableTag' | 'isDefineComponentSource'>>): JsxAutoComponentContext {
   const ast = parseSync('inline.tsx', source).program as any
   const defineComponentAliases = new Set<string>(['defineComponent', '_defineComponent'])
   const defineComponentDecls = new Map<string, any>()
@@ -577,8 +577,8 @@ export function collectJsxAutoComponentsFromCode(
 
   try {
     return normalizedOptions.astEngine === 'oxc'
-      ? collectWithOxc(source, normalizedOptions)
-      : collectWithBabel(source, normalizedOptions)
+      ? collectJsxAutoComponentsWithOxc(source, normalizedOptions)
+      : collectJsxAutoComponentsWithBabel(source, normalizedOptions)
   }
   catch {
     return {

@@ -4,6 +4,8 @@ import * as babelModule from './babel'
 import * as engineModule from './engine'
 import {
   BABEL_TS_MODULE_PARSER_OPTIONS,
+  collectJsxAutoComponentsWithBabel,
+  collectJsxAutoComponentsWithOxc,
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
   collectJsxTemplateTagsFromBabelExpression,
   collectJsxTemplateTagsFromOxc,
@@ -573,6 +575,41 @@ export default page
     })).toBe('render')
     expect(getJsxOxcStaticPropertyName({ type: 'Literal', value: 'type' })).toBe('type')
     expect(getJsxOxcStaticPropertyName({ type: 'NumericLiteral', value: 1 })).toBeUndefined()
+    expect(collectJsxAutoComponentsWithBabel(`
+import TButton from './TButton'
+const page = {}
+export default page
+`, {
+      astEngine: 'babel',
+      isCollectableTag: () => true,
+      isDefineComponentSource: () => false,
+      resolveBabelComponentExpression: defaultResolveBabelComponentExpression,
+      resolveBabelRenderExpression: defaultResolveBabelRenderExpression,
+    })).toEqual({
+      templateTags: new Set(),
+      importedComponents: [{
+        localName: 'TButton',
+        importSource: './TButton',
+        importedName: 'default',
+        kind: 'default',
+      }],
+    })
+    expect(collectJsxAutoComponentsWithOxc(`
+import TButton from './TButton'
+const page = {}
+export default page
+`, {
+      isCollectableTag: () => true,
+      isDefineComponentSource: () => false,
+    })).toEqual({
+      templateTags: new Set(),
+      importedComponents: [{
+        localName: 'TButton',
+        importSource: './TButton',
+        importedName: 'default',
+        kind: 'default',
+      }],
+    })
     expect([...collectJsxTemplateTagsFromOxc({
       type: 'JSXElement',
       openingElement: { name: { type: 'JSXIdentifier', name: 'TButton' } },

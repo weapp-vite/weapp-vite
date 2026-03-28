@@ -26,6 +26,8 @@ export { collectFeatureFlagsFromCode, mayContainFeatureFlagHints } from './opera
 export type { FeatureFlagOptions } from './operations/featureFlags'
 export {
   collectJsxAutoComponentsFromCode,
+  collectJsxAutoComponentsWithBabel,
+  collectJsxAutoComponentsWithOxc,
   collectJsxTemplateTagsFromOxc,
   defaultIsDefineComponentSource,
   defaultResolveBabelComponentExpression,
