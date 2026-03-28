@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { isSkippableResolvedId, normalizeFsResolvedId } from './resolvedId'
+import {
+  isSkippableResolvedId,
+  normalizeFsResolvedId,
+  resolveFsResolvedIdNormalizeOptions,
+} from './resolvedId'
 
 describe('resolved id utils', () => {
   it('detects skippable ids', () => {
@@ -12,6 +16,19 @@ describe('resolved id utils', () => {
   })
 
   it('normalizes vue virtual and query for fs', () => {
+    expect(resolveFsResolvedIdNormalizeOptions()).toEqual({
+      stripVueVirtualPrefix: true,
+    })
+    expect(resolveFsResolvedIdNormalizeOptions({
+      stripLeadingNullByte: true,
+      normalize: {
+        stripQuery: false,
+      },
+    })).toEqual({
+      stripVueVirtualPrefix: true,
+      stripLeadingNullByte: true,
+      stripQuery: false,
+    })
     expect(normalizeFsResolvedId('\0vue:/a/b.vue?vue&type=script')).toBe('/a/b.vue')
   })
 
