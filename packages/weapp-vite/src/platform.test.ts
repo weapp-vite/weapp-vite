@@ -3,6 +3,7 @@ import {
   createMiniProgramPlatformRegistry,
   DEFAULT_MP_PLATFORM,
   getDefaultIdeProjectRoot,
+  getIdePlatformOptions,
   getJsonPlatformOptions,
   getMiniProgramPlatformAdapter,
   getNpmPlatformOptions,
@@ -95,6 +96,14 @@ describe('platform adapter registry', () => {
     expect(shouldPassPlatformArgToIdeOpen()).toBe(false)
     expect(shouldPassPlatformArgToIdeOpen('weapp')).toBe(false)
     expect(shouldPassPlatformArgToIdeOpen('alipay')).toBe(true)
+    expect(getIdePlatformOptions()).toEqual({
+      requiresOpenPlatformArg: false,
+      defaultProjectRoot: undefined,
+    })
+    expect(getIdePlatformOptions('alipay')).toEqual({
+      requiresOpenPlatformArg: true,
+      defaultProjectRoot: 'dist/alipay/dist',
+    })
     expect(getDefaultIdeProjectRoot()).toBeUndefined()
     expect(getDefaultIdeProjectRoot('weapp')).toBeUndefined()
     expect(getDefaultIdeProjectRoot('alipay')).toBe('dist/alipay/dist')
