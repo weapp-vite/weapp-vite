@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   getDefaultScriptModuleTagByExtension,
+  getDerivedScriptModuleTagNames,
   getScriptModuleImportAttrs,
   getScriptModuleTagNames,
   isScriptModuleImportAttr,
@@ -28,6 +29,7 @@ describe('wxmlScriptModule utils', () => {
   })
 
   it('exposes shared script module tag metadata', () => {
+    expect(getDerivedScriptModuleTagNames()).toContain('import-sjs')
     expect(getScriptModuleTagNames()).toEqual(['wxs', 'sjs', 'import-sjs'])
     expect(normalizeScriptModuleExtension()).toBeUndefined()
     expect(normalizeScriptModuleExtension('.sjs')).toBe('sjs')
