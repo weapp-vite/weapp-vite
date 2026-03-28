@@ -252,8 +252,7 @@ watch(filteredRuntimeEvents, (events) => {
           <AppStatCard
             v-for="item in [...eventSummary, ...filteredEventSummary]"
             :key="item.label"
-            :label="item.label"
-            :value="item.value"
+            v-bind="item"
           />
         </div>
       </AppSurfaceCard>

@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import type { DashboardLabelValueItem } from '../types'
 import { mutedPanelStyles } from '../utils/styles'
 import AppMetaLabel from './AppMetaLabel.vue'
 
 defineProps<{
-  label: string
-  value: string
+  label: DashboardLabelValueItem['label']
+  value: DashboardLabelValueItem['value']
 }>()
 </script>
 
