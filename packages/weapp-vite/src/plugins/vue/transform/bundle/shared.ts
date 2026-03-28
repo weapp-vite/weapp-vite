@@ -7,7 +7,6 @@ import { createCompileVueFileOptions } from '../compileOptions'
 import { applyPageLayoutPlan, resolvePageLayoutPlan } from '../pageLayout'
 
 const APP_VUE_LIKE_FILE_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
-export const SCRIPTLESS_COMPONENT_STUB = 'Component({})'
 
 export { registerVueTemplateToken } from '../shared'
 

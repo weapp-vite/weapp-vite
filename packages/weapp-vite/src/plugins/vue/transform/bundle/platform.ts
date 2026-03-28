@@ -8,9 +8,9 @@ import { ALIPAY_GENERIC_COMPONENT_PLACEHOLDER, resolveJson } from '../../../../u
 import { resolveScriptModuleTagByPlatform } from '../../../../utils/wxmlScriptModule'
 import { scanWxml } from '../../../../wxml'
 import { handleWxml } from '../../../../wxml/handle'
+import { emitScriptlessComponentAsset, SCRIPTLESS_COMPONENT_STUB } from '../../../utils/scriptlessComponent'
 import { emitSfcJsonAsset, emitSfcTemplateIfMissing } from '../emitAssets'
 import { resolveVueTransformJsonPlatformOptions } from '../platform'
-import { SCRIPTLESS_COMPONENT_STUB } from './shared'
 
 const LEADING_DOT_SLASH_RE = /^\.\//
 
@@ -235,7 +235,7 @@ export function emitAlipayGenericPlaceholderAssets(
     return
   }
 
-  ctx.emitFile({ type: 'asset', fileName: scriptFileName, source: scriptSource })
+  emitScriptlessComponentAsset(ctx, scriptFileName)
 }
 
 export function preparePlatformConfigAsset(

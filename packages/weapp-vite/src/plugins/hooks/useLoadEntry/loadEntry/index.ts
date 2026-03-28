@@ -17,6 +17,7 @@ import { normalizeFsResolvedId } from '../../../../utils/resolvedId'
 import { analyzeCommonJson } from '../../../utils/analyze'
 import { registerResolvedPageLayoutEntries } from '../../../utils/layoutEntries'
 import { addResolvedPageLayoutWatchFiles } from '../../../utils/pageLayout'
+import { emitScriptlessComponentAsset } from '../../../utils/scriptlessComponent'
 import { shouldEmitScriptlessVueLayoutJs as shouldEmitScriptlessVueLayoutJsFromSource } from '../../../utils/scriptlessVueLayout'
 import { resolvePageLayoutPlan } from '../../../vue/transform/pageLayout'
 import { collectAppEntries } from './app'
@@ -281,11 +282,7 @@ export function createEntryLoader(options: EntryLoaderOptions) {
               }
               emittedScriptlessVueLayoutJs.add(relativeLayoutBase)
               const { scriptExtension } = resolveCompilerOutputExtensions(configService.outputExtensions)
-              this.emitFile({
-                type: 'asset',
-                fileName: `${relativeLayoutBase}.${scriptExtension}`,
-                source: 'Component({})',
-              })
+              emitScriptlessComponentAsset(this, `${relativeLayoutBase}.${scriptExtension}`)
             }
           }
         }
