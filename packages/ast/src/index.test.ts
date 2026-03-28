@@ -4,6 +4,8 @@ import * as babelModule from './babel'
 import * as engineModule from './engine'
 import {
   BABEL_TS_MODULE_PARSER_OPTIONS,
+  collectIdentifiersFromExpression,
+  collectIdentifiersFromExpressionWithOxc,
   collectJsxAutoComponentsWithBabel,
   collectJsxAutoComponentsWithOxc,
   collectJsxImportedComponentsAndDefaultExportFromBabelAst,
@@ -986,6 +988,10 @@ export function useCounter() {
 
     expect(extractTemplateExpressions('<text>{{ count }}</text><view>{{ list.length }}</view>')).toEqual(['count', 'list.length'])
     expect(extractTemplateExpressions('<view>static</view>')).toEqual([])
+    expect([...collectIdentifiersFromExpression('count + this.extra + Math.max(total, 1)')]).toEqual(['count', 'extra', 'total'])
+    expect([...collectIdentifiersFromExpressionWithOxc('count + this.extra + Math.max(total, 1)')]).toEqual(['count', 'extra', 'total'])
+    expect([...collectIdentifiersFromExpression('list.map(item => item.name + index)')]).toEqual(['list', 'index'])
+    expect([...collectIdentifiersFromExpressionWithOxc('list.map(item => item.name + index)')]).toEqual(['list', 'index'])
     expect([...collectLoopScopeAliases('<view wx:for="{{ list }}"></view>')]).toEqual(['item', 'index'])
     expect([...collectLoopScopeAliases('<view wx:for="{{ list }}" wx:for-item="row" wx:for-index="i"></view>')]).toEqual(['row', 'i'])
     collectPatternBindingNames({
