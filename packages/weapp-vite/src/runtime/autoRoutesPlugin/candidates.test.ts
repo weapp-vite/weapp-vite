@@ -1,4 +1,5 @@
 import type { CandidateEntry } from './candidates'
+import { fileURLToPath } from 'node:url'
 import path from 'pathe'
 import { describe, expect, it } from 'vitest'
 import {
@@ -15,6 +16,9 @@ import {
   shouldCollectTargetRoot,
 } from './candidates'
 import { createAutoRoutesMatcher } from './matcher'
+
+const testDir = path.dirname(fileURLToPath(import.meta.url))
+const packageSrcRoot = path.resolve(testDir, '../..')
 
 describe('auto routes candidates helpers', () => {
   it('classifies page root traversal entries', () => {
@@ -91,7 +95,7 @@ describe('auto routes candidates helpers', () => {
   })
 
   it('checks target root existence and tolerates crawler failures', async () => {
-    expect(await shouldCollectTargetRoot(path.resolve(process.cwd(), 'packages/weapp-vite/src'))).toBe(true)
+    expect(await shouldCollectTargetRoot(packageSrcRoot)).toBe(true)
     expect(await shouldCollectTargetRoot('/project/not-found')).toBe(false)
 
     const successCrawler = {
