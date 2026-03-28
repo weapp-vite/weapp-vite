@@ -1,11 +1,6 @@
 import type { OutputExtensions } from '../../../../platforms/types'
+import { resolveOutputExtensions } from '../../../../utils/outputExtensions'
 
 export function resolveBundleOutputExtensions(outputExtensions?: OutputExtensions) {
-  return {
-    templateExtension: outputExtensions?.wxml ?? 'wxml',
-    styleExtension: outputExtensions?.wxss ?? 'wxss',
-    jsonExtension: outputExtensions?.json ?? 'json',
-    scriptExtension: outputExtensions?.js ?? 'js',
-    scriptModuleExtension: outputExtensions?.wxs,
-  }
+  return resolveOutputExtensions(outputExtensions)
 }
