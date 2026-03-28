@@ -8,18 +8,14 @@ import { getPathExistsTtlMs } from '../../utils/cachePolicy'
 import { toAbsoluteId } from '../../utils/toAbsoluteId'
 import { pathExists as pathExistsCached, readFile as readFileCached } from '../utils/cache'
 import { VUE_PLUGIN_NAME } from './index'
+import { isVueLikeFile, VUE_LIKE_EXTENSIONS } from './transform/shared'
 import { parseWeappVueStyleRequest, WEAPP_VUE_STYLE_VIRTUAL_PREFIX } from './transform/styleRequest'
 
 const VUE_VIRTUAL_MODULE_PREFIX = '\0vue:'
 const LEGACY_WEAPP_VUE_STYLE_VIRTUAL_PREFIX = 'weapp-vite:vue-style:'
-const VUE_LIKE_EXTENSIONS = ['.vue', '.tsx', '.jsx'] as const
 const WINDOWS_ABSOLUTE_PATH_RE = /^[A-Z]:[\\/]/i
 let warnedMissingWevu = false
 let wevuInstallState: 'unknown' | 'present' | 'missing' = 'unknown'
-
-function isVueLikeFile(id: string) {
-  return VUE_LIKE_EXTENSIONS.some(ext => id.endsWith(ext))
-}
 
 function isExplicitFileRequest(id: string) {
   return id.startsWith('.')

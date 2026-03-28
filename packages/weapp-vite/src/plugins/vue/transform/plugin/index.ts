@@ -12,6 +12,7 @@ import { emitVueBundleAssets } from '../bundle'
 import { collectFallbackPageEntryIds } from '../fallbackEntries'
 import { invalidateResolvedPageLayoutsCache, isLayoutFile } from '../pageLayout'
 import { loadScopedSlotModule, resolveScopedSlotVirtualId } from '../scopedSlot'
+import { findFirstResolvedVueLikeEntry } from '../shared'
 import { parseWeappVueStyleRequest } from '../styleRequest'
 import { ensureSfcStyleBlocks, invalidatePageLayoutCaches, invalidateVueFileCaches, isVueLikeId, registerNativeLayoutChunksForEntry, resolveSfcSrc } from './shared'
 import { transformVueLikeFile } from './transformFile'
@@ -40,19 +41,18 @@ export function createVueTransformPlugin(ctx: CompilerContext): Plugin {
 
       const entryIds = await collectFallbackPageEntryIds(configService, scanService)
       for (const entryId of entryIds) {
-        const candidatePaths = [`${entryId}.vue`, `${entryId}.tsx`, `${entryId}.jsx`]
-        for (const candidate of candidatePaths) {
-          if (!await fs.pathExists(candidate)) {
-            continue
-          }
-          try {
-            const source = await fs.readFile(candidate, 'utf8')
-            await registerNativeLayoutChunksForEntry(this, ctx, candidate, source)
-          }
-          catch {
-            // 忽略预扫描失败，交给后续 transform/generateBundle 兜底
-          }
-          break
+        const entryFilePath = await findFirstResolvedVueLikeEntry(entryId, {
+          resolve: async candidate => await fs.pathExists(candidate) ? candidate : undefined,
+        })
+        if (!entryFilePath) {
+          continue
+        }
+        try {
+          const source = await fs.readFile(entryFilePath, 'utf8')
+          await registerNativeLayoutChunksForEntry(this, ctx, entryFilePath, source)
+        }
+        catch {
+          // 忽略预扫描失败，交给后续 transform/generateBundle 兜底
         }
       }
     },

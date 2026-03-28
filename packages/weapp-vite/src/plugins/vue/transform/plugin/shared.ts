@@ -4,6 +4,7 @@ import type { CompilerContext } from '../../../../context'
 import { normalizeWatchPath } from '../../../../utils/path'
 import { emitNativeLayoutScriptChunkIfNeeded } from '../bundle'
 import { collectNativeLayoutAssets, resolvePageLayoutPlan } from '../pageLayout'
+import { isVueLikeFile } from '../shared'
 
 const APP_ENTRY_RE = /[\\/]app\.(?:vue|jsx|tsx)$/
 
@@ -18,7 +19,7 @@ export function isAppEntry(filename: string) {
 }
 
 export function isVueLikeId(id: string) {
-  return id.endsWith('.vue') || id.endsWith('.jsx') || id.endsWith('.tsx')
+  return isVueLikeFile(id)
 }
 
 export async function resolveSfcSrc(pluginCtx: any, source: string, importer?: string) {

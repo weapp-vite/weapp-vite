@@ -1,7 +1,27 @@
 import { describe, expect, it, vi } from 'vitest'
-import { registerVueTemplateToken, resolveVueOutputBase } from './shared'
+import { findFirstResolvedVueLikeEntry, isVueLikeFile, registerVueTemplateToken, resolveVueLikeEntryCandidates, resolveVueOutputBase, stripVueLikeExtension } from './shared'
 
 describe('vue transform shared helpers', () => {
+  it('detects vue-like files and resolves candidate paths', async () => {
+    expect(isVueLikeFile('/project/src/pages/home/index.vue')).toBe(true)
+    expect(isVueLikeFile('/project/src/pages/home/index.jsx')).toBe(true)
+    expect(isVueLikeFile('/project/src/pages/home/index.tsx')).toBe(true)
+    expect(isVueLikeFile('/project/src/pages/home/index.ts')).toBe(false)
+
+    expect(stripVueLikeExtension('/project/src/pages/home/index.vue')).toBe('/project/src/pages/home/index')
+    expect(stripVueLikeExtension('/project/src/pages/home/index.ts')).toBe('/project/src/pages/home/index.ts')
+
+    expect(resolveVueLikeEntryCandidates('/project/src/pages/home/index')).toEqual([
+      '/project/src/pages/home/index.vue',
+      '/project/src/pages/home/index.tsx',
+      '/project/src/pages/home/index.jsx',
+    ])
+
+    expect(await findFirstResolvedVueLikeEntry('/project/src/pages/home/index', {
+      resolve: async candidate => candidate.endsWith('.tsx') ? `${candidate}?found` : undefined,
+    })).toBe('/project/src/pages/home/index.tsx?found')
+  })
+
   it('resolves vue output base from file paths', () => {
     expect(resolveVueOutputBase({
       relativeOutputPath: (value: string) => `dist/${value}`,
