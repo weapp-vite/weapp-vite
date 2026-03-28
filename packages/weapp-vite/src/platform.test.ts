@@ -36,6 +36,7 @@ import {
   shouldRebuildCachedMiniprogramPackage,
   shouldRewriteBundleNpmImports,
   shouldUseProjectRootNpmDir,
+  stripExplicitNpmImportPrefix,
 } from './platform'
 
 describe('platform adapter registry', () => {
@@ -215,6 +216,9 @@ describe('platform adapter registry', () => {
     expect(shouldNormalizePlatformNpmImportPath('alipay')).toBe(true)
     expect(getPlatformNpmImportPrefix('weapp')).toBe('/miniprogram_npm/')
     expect(getPlatformNpmImportPrefix('alipay', { alipayNpmMode: 'node_modules' })).toBe('/node_modules/')
+    expect(stripExplicitNpmImportPrefix('npm:dayjs')).toBe('dayjs')
+    expect(stripExplicitNpmImportPrefix('/miniprogram_npm/dayjs')).toBe('dayjs')
+    expect(stripExplicitNpmImportPrefix('/node_modules/dayjs')).toBe('dayjs')
     expect(normalizePlatformNpmImportPath('weapp', 'npm:dayjs')).toBe('npm:dayjs')
     expect(normalizePlatformNpmImportPath('alipay', 'npm:dayjs')).toBe('/node_modules/dayjs')
     expect(normalizePlatformNpmImportPath('alipay', '/miniprogram_npm/dayjs', { alipayNpmMode: 'node_modules' })).toBe('/node_modules/dayjs')
