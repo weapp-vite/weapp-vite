@@ -1,10 +1,29 @@
 <script setup lang="ts">
 import type { PackageInsight } from '../types'
+import { computed } from 'vue'
 import { formatBuildOrigin, formatBytes } from '../utils/format'
 
-defineProps<{
+interface PackageFileRowItem {
+  file: string
+  type: string
+  fromLabel: string
+  sizeLabel: string
+}
+
+const props = defineProps<{
   files: PackageInsight['topFiles']
 }>()
+
+function createPackageFileRow(file: PackageInsight['topFiles'][number]): PackageFileRowItem {
+  return {
+    file: file.file,
+    type: file.type,
+    fromLabel: formatBuildOrigin(file.from),
+    sizeLabel: formatBytes(file.size),
+  }
+}
+
+const fileRows = computed(() => props.files.map(file => createPackageFileRow(file)))
 </script>
 
 <template>
@@ -27,7 +46,7 @@ defineProps<{
         </tr>
       </thead>
       <tbody class="divide-y divide-[color:var(--dashboard-border)] text-[color:var(--dashboard-text-muted)]">
-        <tr v-for="file in files" :key="file.file">
+        <tr v-for="file in fileRows" :key="file.file">
           <td class="px-3 py-2 font-mono text-xs text-[color:var(--dashboard-text)]">
             {{ file.file }}
           </td>
@@ -35,10 +54,10 @@ defineProps<{
             {{ file.type }}
           </td>
           <td class="px-3 py-2">
-            {{ formatBuildOrigin(file.from) }}
+            {{ file.fromLabel }}
           </td>
           <td class="px-3 py-2 font-medium text-[color:var(--dashboard-text)]">
-            {{ formatBytes(file.size) }}
+            {{ file.sizeLabel }}
           </td>
         </tr>
       </tbody>
