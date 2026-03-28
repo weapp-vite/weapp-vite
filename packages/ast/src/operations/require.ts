@@ -10,11 +10,11 @@ export interface RequireToken {
   async?: boolean
 }
 
-function mayContainRequireCallByText(code: string) {
+export function mayContainRequireCallByText(code: string) {
   return code.includes('require(') || code.includes('require (') || code.includes('require`')
 }
 
-function getStaticRequireLiteralValue(node: any) {
+export function getStaticRequireLiteralValue(node: any) {
   if (!node) {
     return null
   }

@@ -44,7 +44,12 @@ export {
   platformApiIdentifierList,
   platformApiIdentifiers,
 } from './operations/platformApi'
-export { collectRequireTokens, mayContainStaticRequireLiteral } from './operations/require'
+export {
+  collectRequireTokens,
+  getStaticRequireLiteralValue,
+  mayContainRequireCallByText,
+  mayContainStaticRequireLiteral,
+} from './operations/require'
 export type { RequireToken } from './operations/require'
 export { collectScriptSetupImportsFromCode } from './operations/scriptSetupImports'
 export type { ScriptSetupImport } from './operations/scriptSetupImports'

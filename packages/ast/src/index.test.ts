@@ -14,6 +14,7 @@ import {
   getLocationFromOffset,
   getObjectPropertyByKey,
   getRenderPropertyFromComponentOptions,
+  getStaticRequireLiteralValue,
   isPlatformApiIdentifier,
   mapConstructorName,
   mayContainComponentPropsShape,
@@ -21,6 +22,7 @@ import {
   mayContainJsxAutoComponentEntry,
   mayContainPlatformApiAccess,
   mayContainPlatformApiIdentifierByText,
+  mayContainRequireCallByText,
   mayContainStaticRequireLiteral,
   parse,
   parseJsLikeWithEngine,
@@ -129,6 +131,18 @@ export function useCounter() {
     expect(engineParseSpy).not.toHaveBeenCalled()
 
     engineParseSpy.mockRestore()
+  })
+
+  it('exposes require prechecks', () => {
+    expect(mayContainRequireCallByText(`const dep = require('./dep')`)).toBe(true)
+    expect(mayContainRequireCallByText('const dep = load("./dep")')).toBe(false)
+    expect(getStaticRequireLiteralValue({ type: 'StringLiteral', value: './dep' })).toBe('./dep')
+    expect(getStaticRequireLiteralValue({
+      type: 'TemplateLiteral',
+      expressions: [],
+      quasis: [{ value: { cooked: './tmpl' } }],
+    })).toBe('./tmpl')
+    expect(getStaticRequireLiteralValue({ type: 'Identifier', name: 'dep' })).toBeNull()
   })
 
   it('collects component props with babel and oxc', () => {
